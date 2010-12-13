@@ -1,6 +1,7 @@
 from distutils.core import setup, Extension
 
 files = [
+  "_newrelicmodule.c",
   "generic_object.c",
   "logging.c",
   "web_transaction.c",
@@ -14,7 +15,7 @@ files = [
 
 extension = Extension("_newrelic", files,
   define_macros = [('ZTS', '1'), ('HAVE_CONFIG_H', '1'),],
-  include_dirs = ['.'],
+  include_dirs = ['.', '../php_agent'],
 )
 
 setup(name="newrelic",

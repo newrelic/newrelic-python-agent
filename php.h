@@ -48,7 +48,6 @@
 #define INI_STR(x) x
 #define EG(x) 1
 
-// #define NR_WRAPPER_FUNCTION(x)
 #define PHP_FUNCTION(x)
 
 #define PHP_MINIT_FUNCTION(x)

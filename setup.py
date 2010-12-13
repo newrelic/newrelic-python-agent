@@ -1,7 +1,6 @@
 from distutils.core import setup, Extension
 
 files = [
-#  "_newrelicmodule.c",
   "generic_object.c",
   "logging.c",
   "web_transaction.c",

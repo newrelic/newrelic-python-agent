@@ -3,3 +3,6 @@ all:
 
 clean:
 	rm -rf build
+
+install:
+	python setup.py install

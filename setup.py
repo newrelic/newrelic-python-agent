@@ -1,18 +1,21 @@
 from distutils.core import setup, Extension
 
 sources = [
-  "wrapper/_newrelicmodule.c",
-  "agent/generic_object.c",
-  "agent/logging.c",
-  "agent/web_transaction.c",
-  "agent/daemon_protocol.c",
   "agent/application.c",
+  "agent/daemon_protocol.c",
+  "agent/environment.c",
+  "agent/generic_object.c",
   "agent/harvest.c",
+  "agent/logging.c",
   "agent/metric_table.c",
+  "agent/newrelic.c",
   "agent/params.c",
   "agent/samplers.c",
-  "agent/environment.c",
-  "agent/newrelic.c",
+  "agent/web_transaction.c",
+  "wrapper/_newrelicmodule.c",
+  "wrapper/py_application.c",
+  "wrapper/py_background_task.c",
+  "wrapper/py_web_transaction.c",
 ]
 
 extension = Extension(

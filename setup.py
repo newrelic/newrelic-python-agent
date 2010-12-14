@@ -1,21 +1,20 @@
 from distutils.core import setup, Extension
 
 files = [
-  "_newrelicmodule.c",
-  "generic_object.c",
-  "logging.c",
-  "web_transaction.c",
-  "daemon_protocol.c",
-  "application.c",
-  "harvest.c",
-  "metric_table.c",
-  "params.c",
-  "samplers.c",
+  "wrapper/_newrelicmodule.c",
+  "agent/generic_object.c",
+  "agent/logging.c",
+  "agent/web_transaction.c",
+  "agent/daemon_protocol.c",
+  "agent/application.c",
+  "agent/harvest.c",
+  "agent/metric_table.c",
+  "agent/params.c",
+  "agent/samplers.c",
 ]
 
 extension = Extension("_newrelic", files,
-  define_macros = [('ZTS', '1'), ('HAVE_CONFIG_H', '1'),],
-  include_dirs = ['.', '../php_agent'],
+  include_dirs = ['agent', '..'],
 )
 
 setup(name="newrelic",

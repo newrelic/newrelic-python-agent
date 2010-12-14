@@ -1,3 +1,10 @@
+#ifndef PY_AGENT_FIXUPS_H
+#define PY_AGENT_FIXUPS_H
+
+#define HAVE_CONFIG_H
+
+#define ZTS
+
 #define INTERNAL_FUNCTION_PARAMETERS void
 #define ZEND_ATTRIBUTE_PTR_FORMAT(x, y, z)
 
@@ -56,3 +63,4 @@
 #define PHP_RSHUTDOWN_FUNCTION(x)
 #define PHP_MINFO_FUNCTION(x)
 
+#endif

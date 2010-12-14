@@ -11,6 +11,8 @@ files = [
   "agent/metric_table.c",
   "agent/params.c",
   "agent/samplers.c",
+  "agent/environment.c",
+  "agent/newrelic.c",
 ]
 
 extension = Extension("_newrelic", files,

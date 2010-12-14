@@ -9,37 +9,17 @@
 
 #include "globals.h"
 #include "logging.h"
-#include "metric_table_funcs.h"
-#include "application_funcs.h"
-#include "generic_object_funcs.h"
-#include "harvest_funcs.h"
-#include "application_funcs.h"
-#include "daemon_protocol_funcs.h"
-#include "application_funcs.h"
-#include "web_transaction_funcs.h"
+
 #include "web_transaction_data.h"
 
+#include "application_funcs.h"
+#include "daemon_protocol_funcs.h"
+#include "generic_object_funcs.h"
+#include "harvest_funcs.h"
+#include "metric_table_funcs.h"
+#include "web_transaction_funcs.h"
+
 #include "php_newrelic.h"
-
-ZEND_DECLARE_MODULE_GLOBALS(newrelic)
-
-void nr__gather_newrelicphp_information(nr_generic_object* env) {
-}
-
-void nr__put_stack_trace_into_params(nr_param_array* params) {
-}
-
-struct _nr_per_process_globals nr_per_process_globals;
-
-void nr_initialize_global_tt_threshold_from_apdex (nr_application* app) {
-    if( nr_per_process_globals.tt_threshold_is_apdex_f ) {
-	if( app != NULL ) {
-	    nr_per_process_globals.tt_threshold = app->apdex_t * 4;
-	} else {
-	    nr_per_process_globals.tt_threshold = 500 * 1000 * 4;
-	}
-    }
-}
 
 /* ------------------------------------------------------------------------- */
 

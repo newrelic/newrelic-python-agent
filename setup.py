@@ -1,6 +1,6 @@
 from distutils.core import setup, Extension
 
-files = [
+sources = [
   "wrapper/_newrelicmodule.c",
   "agent/generic_object.c",
   "agent/logging.c",
@@ -15,10 +15,16 @@ files = [
   "agent/newrelic.c",
 ]
 
-extension = Extension("_newrelic", files,
+extension = Extension(
+  name = "_newrelic",
+  sources = sources,
   include_dirs = ['agent', '..'],
 )
 
-setup(name="newrelic",
-      ext_modules=[extension],
+setup(
+  name = "newrelic",
+  description = "Python agent for NewRelic RPM",
+  url = "http://www.newrelic.com",
+  packages = ['newrelic'],
+  ext_modules = [extension],
 )

@@ -5,6 +5,7 @@
 /* ------------------------------------------------------------------------- */
 
 #include "py_background_task.h"
+#include "py_function_trace.h"
 
 #include "globals.h"
 #include "logging.h"
@@ -90,6 +91,24 @@ static PyObject *NRBackgroundTask_exit(NRBackgroundTaskObject *self,
     return Py_None;
 }
 
+static PyObject *NRBackgroundTask_function_trace(
+        NRBackgroundTaskObject *self, PyObject *args)
+{
+    NRFunctionTraceObject *rv;
+
+    const char *funcname = NULL;
+    const char *classname = NULL;
+
+    if (!PyArg_ParseTuple(args, "s|s:function_trace", &funcname, &classname))
+        return NULL;
+
+    rv = NRFunctionTrace_New(self->background_task, funcname, classname);
+    if (rv == NULL)
+        return NULL;
+
+    return (PyObject *)rv;
+}
+
 static PyObject *NRBackgroundTask_get_path(NRBackgroundTaskObject *self,
                                            void *closure)
 {
@@ -119,6 +138,7 @@ static int NRBackgroundTask_set_path(NRBackgroundTaskObject *self,
 static PyMethodDef NRBackgroundTask_methods[] = {
     { "__enter__",  (PyCFunction)NRBackgroundTask_enter,  METH_NOARGS, 0 },
     { "__exit__",   (PyCFunction)NRBackgroundTask_exit,   METH_VARARGS, 0 },
+    { "function_trace", (PyCFunction)NRBackgroundTask_function_trace,   METH_VARARGS, 0 },
     { NULL, NULL }
 };
 

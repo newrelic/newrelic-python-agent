@@ -192,6 +192,7 @@ static void NRApplication_initialise(void)
     nr_per_process_globals.loglevel = LOG_VERBOSEDEBUG;
     nr_per_process_globals.appname = "My Application";
     nr_per_process_globals.daemon.sockpath = "/tmp/.newrelic.sock";
+    nr_per_process_globals.tt_enabled = 1;
     /* XXX */
 
     if( nr_per_process_globals.special_flags ) nr__log(LOG_INFO,"special.flags = 0x%x",nr_per_process_globals.special_flags);

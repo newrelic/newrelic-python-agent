@@ -29,6 +29,7 @@ NRWebTransactionObject *NRWebTransaction_New(nr_application *application,
 
     const char *path = "<unknown>";
     int path_type = NR_PATH_TYPE_URI;
+    int64_t queue_start = 0;
 
     /*
      * Extract from the WSGI environ dictionary details of the
@@ -55,6 +56,28 @@ NRWebTransactionObject *NRWebTransaction_New(nr_application *application,
         path_type = NR_PATH_TYPE_UNKNOWN;
 
     /*
+     * See if the WSGI environ dictionary includes the special
+     * 'X-NewRelic-Queue-Start' HTTP header. This header is an
+     * optional header that can be set within the underlying web
+     * server or WSGI server to indicate when the current
+     * request was first received and ready to be processed. The
+     * difference between this time and when application starts
+     * processing the request is the queue time and represents
+     * how long spent in any explicit request queuing system, or
+     * how long waiting in connecting state against listener
+     * sockets where request needs to be proxied between any
+     * processes within the application server.
+     */
+
+    item = PyDict_GetItemString(environ, "HTTP_X_NEWRELIC_QUEUE_START");
+
+    if (item && PyString_Check(item)) {
+        const char *s = PyString_AsString(item);
+        if (s[0] == 't' && s[1] == '=' )
+            queue_start = (int64_t)strtoll(s+2, 0, 0);
+    }
+
+    /*
      * Create transaction object and cache reference to the
      * internal agent client application object instance. Will
      * need the latter when doing some work arounds for lack
@@ -73,9 +96,7 @@ NRWebTransactionObject *NRWebTransaction_New(nr_application *application,
     self->web_transaction->path = nrstrdup(path);
     self->web_transaction->realpath = NULL;
 
-    self->web_transaction->http_x_request_start = 0;
-
-    self->web_transaction->backgroundjob = 0;
+    self->web_transaction->http_x_request_start = queue_start;
 
     return self;
 }

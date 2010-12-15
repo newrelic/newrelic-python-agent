@@ -45,8 +45,6 @@ NRBackgroundTaskObject *NRBackgroundTask_New(nr_application *application,
     self->background_task->path = nrstrdup(PyString_AsString(path));
     self->background_task->realpath = NULL;
 
-    self->background_task->http_x_request_start = 0;
-
     self->background_task->backgroundjob = 1;
 
     self->background_task->has_been_named = 1;

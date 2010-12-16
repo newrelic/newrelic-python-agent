@@ -5,6 +5,7 @@
 /* ------------------------------------------------------------------------- */
 
 #include "py_web_transaction.h"
+#include "py_database_trace.h"
 #include "py_external_trace.h"
 #include "py_function_trace.h"
 #include "py_memcache_trace.h"
@@ -251,6 +252,23 @@ static PyObject *NRWebTransaction_memcache_trace(
     return (PyObject *)rv;
 }
 
+static PyObject *NRWebTransaction_database_trace(
+        NRWebTransactionObject *self, PyObject *args)
+{
+    NRDatabaseTraceObject *rv;
+
+    const char *sql = NULL;
+
+    if (!PyArg_ParseTuple(args, "s:database_trace", &sql))
+        return NULL;
+
+    rv = NRDatabaseTrace_New(self->web_transaction, sql);
+    if (rv == NULL)
+        return NULL;
+
+    return (PyObject *)rv;
+}
+
 static PyObject *NRWebTransaction_get_path(NRWebTransactionObject *self,
                                            void *closure)
 {
@@ -316,6 +334,7 @@ static PyMethodDef NRWebTransaction_methods[] = {
     { "function_trace", (PyCFunction)NRWebTransaction_function_trace,   METH_VARARGS, 0 },
     { "external_trace", (PyCFunction)NRWebTransaction_external_trace,   METH_VARARGS, 0 },
     { "memcache_trace", (PyCFunction)NRWebTransaction_memcache_trace,   METH_VARARGS, 0 },
+    { "database_trace", (PyCFunction)NRWebTransaction_database_trace,   METH_VARARGS, 0 },
     { NULL, NULL }
 };
 

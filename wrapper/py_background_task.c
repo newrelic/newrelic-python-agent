@@ -5,6 +5,7 @@
 /* ------------------------------------------------------------------------- */
 
 #include "py_background_task.h"
+#include "py_database_trace.h"
 #include "py_external_trace.h"
 #include "py_function_trace.h"
 #include "py_memcache_trace.h"
@@ -176,6 +177,23 @@ static PyObject *NRBackgroundTask_memcache_trace(
     return (PyObject *)rv;
 }
 
+static PyObject *NRBackgroundTask_database_trace(
+        NRBackgroundTaskObject *self, PyObject *args)
+{
+    NRDatabaseTraceObject *rv;
+
+    const char *sql = NULL;
+
+    if (!PyArg_ParseTuple(args, "s:database_trace", &sql))
+        return NULL;
+
+    rv = NRDatabaseTrace_New(self->web_transaction, sql);
+    if (rv == NULL)
+        return NULL;
+
+    return (PyObject *)rv;
+}
+
 static PyObject *NRBackgroundTask_get_path(NRBackgroundTaskObject *self,
                                            void *closure)
 {
@@ -216,6 +234,7 @@ static PyMethodDef NRBackgroundTask_methods[] = {
     { "function_trace", (PyCFunction)NRBackgroundTask_function_trace,   METH_VARARGS, 0 },
     { "external_trace", (PyCFunction)NRBackgroundTask_external_trace,   METH_VARARGS, 0 },
     { "memcache_trace", (PyCFunction)NRBackgroundTask_memcache_trace,   METH_VARARGS, 0 },
+    { "database_trace", (PyCFunction)NRBackgroundTask_database_trace,   METH_VARARGS, 0 },
     { NULL, NULL }
 };
 

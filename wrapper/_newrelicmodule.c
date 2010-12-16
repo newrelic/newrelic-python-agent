@@ -8,6 +8,7 @@
 
 #include "py_application.h"
 #include "py_background_task.h"
+#include "py_database_trace.h"
 #include "py_external_trace.h"
 #include "py_function_trace.h"
 #include "py_memcache_trace.h"
@@ -32,6 +33,8 @@ init_newrelic(void)
     if (PyType_Ready(&NRApplication_Type) < 0)
         return;
     if (PyType_Ready(&NRBackgroundTask_Type) < 0)
+        return;
+    if (PyType_Ready(&NRDatabaseTrace_Type) < 0)
         return;
     if (PyType_Ready(&NRExternalTrace_Type) < 0)
         return;

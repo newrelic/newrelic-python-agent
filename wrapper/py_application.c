@@ -279,6 +279,8 @@ static void NRApplication_dealloc(NRApplicationObject *self)
         NRApplication_shutdown();
         Py_END_ALLOW_THREADS
     }
+
+    PyObject_Del(self);
 }
 
 static PyObject *NRApplication_get_name(NRApplicationObject *self,

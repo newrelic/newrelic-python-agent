@@ -17,7 +17,8 @@
 typedef struct {
     PyObject_HEAD
     nr_application *application;
-    nr_web_transaction *background_task;
+    nr_web_transaction *web_transaction;
+    PyObject *custom_parameters;
 } NRBackgroundTaskObject;
 
 extern PyTypeObject NRBackgroundTask_Type;

@@ -37,11 +37,7 @@ NRFunctionTraceObject *NRFunctionTrace_New(nr_web_transaction *transaction,
 
 static void NRFunctionTrace_dealloc(NRFunctionTraceObject *self)
 {
-    /*
-     * Don't need to destroy the transaction trace as
-     * the harvest will automatically destroy it when it
-     * is done.
-     */
+    PyObject_Del(self);
 }
 
 static PyObject *NRFunctionTrace_enter(NRFunctionTraceObject *self,

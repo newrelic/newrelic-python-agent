@@ -12,6 +12,7 @@
 
 #include "application_funcs.h"
 #include "harvest_funcs.h"
+#include "params_funcs.h"
 #include "web_transaction_funcs.h"
 
 /* ------------------------------------------------------------------------- */
@@ -40,26 +41,26 @@ NRBackgroundTaskObject *NRBackgroundTask_New(nr_application *application,
 
     self->application = application;
 
-    self->background_task = nr_web_transaction__allocate();
+    self->web_transaction = nr_web_transaction__allocate();
 
-    self->background_task->path_type = NR_PATH_TYPE_CUSTOM;
-    self->background_task->path = nrstrdup(PyString_AsString(path));
-    self->background_task->realpath = NULL;
+    self->web_transaction->path_type = NR_PATH_TYPE_CUSTOM;
+    self->web_transaction->path = nrstrdup(PyString_AsString(path));
+    self->web_transaction->realpath = NULL;
 
-    self->background_task->backgroundjob = 1;
+    self->web_transaction->backgroundjob = 1;
 
-    self->background_task->has_been_named = 1;
+    self->web_transaction->has_been_named = 1;
+
+    self->custom_parameters = PyDict_New();
 
     return self;
 }
 
 static void NRBackgroundTask_dealloc(NRBackgroundTaskObject *self)
 {
-    /*
-     * Don't need to destroy the transaction object as
-     * the harvest will automatically destroy it when it
-     * is done.
-     */
+    Py_DECREF(self->custom_parameters);
+
+    PyObject_Del(self);
 }
 
 static PyObject *NRBackgroundTask_enter(NRBackgroundTaskObject *self,
@@ -68,7 +69,7 @@ static PyObject *NRBackgroundTask_enter(NRBackgroundTaskObject *self,
     nr_node_header *save;
 
     nr_node_header__record_starttime_and_push_current(
-            (nr_node_header *)self->background_task, &save);
+            (nr_node_header *)self->web_transaction, &save);
 
     Py_INCREF(self);
     return (PyObject *)self;
@@ -77,14 +78,44 @@ static PyObject *NRBackgroundTask_enter(NRBackgroundTaskObject *self,
 static PyObject *NRBackgroundTask_exit(NRBackgroundTaskObject *self,
                                        PyObject *args)
 {
-    nr_node_header__record_stoptime_and_pop_current(
-            (nr_node_header *)self->background_task, NULL);
+    PyObject *key;
+    PyObject *value;
 
-    self->background_task->http_response_code = 0;
+    Py_ssize_t pos = 0;
+
+    PyObject *key_as_string;
+    PyObject *value_as_string;
+
+    nr_node_header__record_stoptime_and_pop_current(
+            (nr_node_header *)self->web_transaction, NULL);
+
+    self->web_transaction->http_response_code = 0;
+
+    while (PyDict_Next(self->custom_parameters, &pos, &key, &value)) {
+        key_as_string = PyObject_Str(key);
+
+        if (!key_as_string)
+           PyErr_Clear();
+
+        value_as_string = PyObject_Str(value);
+
+        if (!value_as_string)
+           PyErr_Clear();
+
+        if (key_as_string && value_as_string) {
+            nr_param_array__set_string_in_hash_at(
+                    self->web_transaction->params, "custom_parameters",
+                    PyString_AsString(key_as_string),
+                    PyString_AsString(value_as_string));
+        }
+
+        Py_XDECREF(key_as_string);
+        Py_XDECREF(value_as_string);
+    }
 
     pthread_mutex_lock(&(nr_per_process_globals.harvest_data_mutex));
     nr__switch_to_application(self->application);
-    nr__distill_web_transaction_into_harvest_data(self->background_task);
+    nr__distill_web_transaction_into_harvest_data(self->web_transaction);
     pthread_mutex_unlock(&(nr_per_process_globals.harvest_data_mutex));
 
     Py_INCREF(Py_None);
@@ -102,7 +133,7 @@ static PyObject *NRBackgroundTask_function_trace(
     if (!PyArg_ParseTuple(args, "s|s:function_trace", &funcname, &classname))
         return NULL;
 
-    rv = NRFunctionTrace_New(self->background_task, funcname, classname);
+    rv = NRFunctionTrace_New(self->web_transaction, funcname, classname);
     if (rv == NULL)
         return NULL;
 
@@ -112,7 +143,7 @@ static PyObject *NRBackgroundTask_function_trace(
 static PyObject *NRBackgroundTask_get_path(NRBackgroundTaskObject *self,
                                            void *closure)
 {
-    return PyString_FromString(self->background_task->path);
+    return PyString_FromString(self->web_transaction->path);
 }
 
 static int NRBackgroundTask_set_path(NRBackgroundTaskObject *self,
@@ -128,11 +159,19 @@ static int NRBackgroundTask_set_path(NRBackgroundTaskObject *self,
         return -1;
     }
 
-    nrfree(self->background_task->path);
+    nrfree(self->web_transaction->path);
 
-    self->background_task->path = nrstrdup(PyString_AsString(value));
+    self->web_transaction->path = nrstrdup(PyString_AsString(value));
 
     return 0;
+}
+
+static PyObject *NRBackgroundTask_get_custom_parameters(
+        NRBackgroundTaskObject *self, void *closure)
+{
+    Py_INCREF(self->custom_parameters);
+
+    return self->custom_parameters;
 }
 
 static PyMethodDef NRBackgroundTask_methods[] = {
@@ -144,6 +183,7 @@ static PyMethodDef NRBackgroundTask_methods[] = {
 
 static PyGetSetDef NRBackgroundTask_getset[] = {
     { "path", (getter)NRBackgroundTask_get_path, (setter)NRBackgroundTask_set_path, 0 },
+    { "custom_parameters", (getter)NRBackgroundTask_get_custom_parameters, NULL, 0 },
     { NULL },
 };
 

@@ -226,7 +226,7 @@ static void NRApplication_shutdown(void)
     nr_generic_object__destroy(nr_per_process_globals.env);
 }
 
-NRApplicationObject *nr__py_application_allocate(const char *name)
+PyObject *NRApplication_New(const char *name, const char *framework)
 {
     NRApplicationObject *self;
 
@@ -257,7 +257,15 @@ NRApplicationObject *nr__py_application_allocate(const char *name)
 
     self->application = nr__find_or_create_application(name);
 
-    return self;
+    /* XXX Not sure where this is supposed to be display in GUI. */
+
+    if (framework) {
+        nr_generic_object__add_string_to_hash(self->application->appconfig,
+                                              "newrelic.framework",
+                                              framework);
+    }
+
+    return (PyObject *)self;
 }
 
 static void NRApplication_dealloc(NRApplicationObject *self)
@@ -287,6 +295,40 @@ static PyObject *NRApplication_get_name(NRApplicationObject *self,
                                         void *closure)
 {
     return PyString_FromString(self->application->appname);
+}
+
+static PyObject *NRApplication_get_framework(NRApplicationObject *self,
+                                             void *closure)
+{
+    nr_generic_object *p;
+
+    p = nr_generic_object__find_in_hash(self->application->appconfig,
+                                        "newrelic.framework");
+
+    if (p && p->type == NR_OBJECT_UTF)
+       return PyString_FromString(p->sval);
+
+    return PyString_FromString("");
+}
+
+static int NRApplication_set_framework(NRApplicationObject *self,
+                                       PyObject *value)
+{
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError, "can't delete framework attribute");
+        return -1;
+    }
+
+    if (!PyString_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "expected string for framework name");
+        return -1;
+    }
+
+    nr_generic_object__add_string_to_hash(self->application->appconfig,
+                                          "newrelic.framework",
+                                          PyString_AsString(value));
+
+    return 0;
 }
 
 static PyObject *NRApplication_web_transaction(NRApplicationObject *self,
@@ -333,22 +375,6 @@ static PyObject *NRApplication_background_task(NRApplicationObject *self,
     return (PyObject *)rv;
 }
 
-PyObject *NRApplication_New(PyObject *self, PyObject *args)
-{
-    NRApplicationObject *rv;
-    const char *name;
-
-    if (!PyArg_ParseTuple(args, "s:Application", &name))
-        return NULL;
-
-    rv = nr__py_application_allocate(name);
-    if (rv == NULL)
-        return NULL;
-
-    return (PyObject *)rv;
-}
-
-
 static PyMethodDef NRApplication_methods[] = {
     { "web_transaction",   (PyCFunction)NRApplication_web_transaction,   METH_VARARGS, 0 },
     { "background_task",   (PyCFunction)NRApplication_background_task,   METH_VARARGS, 0 },
@@ -357,6 +383,7 @@ static PyMethodDef NRApplication_methods[] = {
 
 static PyGetSetDef NRApplication_getset[] = {
     { "name", (getter)NRApplication_get_name, NULL, 0 },
+    { "framework", (getter)NRApplication_get_framework, NRApplication_set_framework, 0 },
     { NULL },
 };
 

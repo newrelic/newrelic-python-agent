@@ -22,7 +22,7 @@ extern PyTypeObject NRApplication_Type;
 
 /* ------------------------------------------------------------------------- */
 
-PyObject *NRApplication_New(PyObject *self, PyObject *args);
+PyObject *NRApplication_New(const char *name, const char *framework);
 
 /* ------------------------------------------------------------------------- */
 

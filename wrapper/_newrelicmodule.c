@@ -16,8 +16,24 @@
 
 /* ------------------------------------------------------------------------- */
 
+PyObject *newrelic_Application(PyObject *self, PyObject *args)
+{
+    NRApplicationObject *rv;
+    const char *name = NULL;
+    const char *framework = NULL;
+
+    if (!PyArg_ParseTuple(args, "s|s:Application", &name, &framework))
+        return NULL;
+
+    rv = NRApplication_New(name, framework);
+    if (rv == NULL)
+        return NULL;
+
+    return (PyObject *)rv;
+}
+
 static PyMethodDef newrelic_methods[] = {
-    { "Application", NRApplication_New, METH_VARARGS, 0 },
+    { "Application", newrelic_Application, METH_VARARGS, 0 },
     { NULL, NULL }
 };
 

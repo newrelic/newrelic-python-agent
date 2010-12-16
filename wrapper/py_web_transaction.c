@@ -93,6 +93,8 @@ NRWebTransactionObject *NRWebTransaction_New(nr_application *application,
 
     self->web_transaction = nr_web_transaction__allocate();
 
+    self->web_transaction->http_response_code = 200;
+
     self->web_transaction->path_type = path_type;
     self->web_transaction->path = nrstrdup(path);
     self->web_transaction->realpath = NULL;
@@ -140,8 +142,6 @@ static PyObject *NRWebTransaction_exit(NRWebTransactionObject *self,
 
     nr_node_header__record_stoptime_and_pop_current(
             (nr_node_header *)self->web_transaction, NULL);
-
-    self->web_transaction->http_response_code = 200;
 
     while (PyDict_Next(self->request_parameters, &pos, &key, &value)) {
         key_as_string = PyObject_Str(key);
@@ -222,6 +222,31 @@ static int NRWebTransaction_set_path(NRWebTransactionObject *self,
     return 0;
 }
 
+static PyObject *NRWebTransaction_get_response_code(
+        NRWebTransactionObject *self, void *closure)
+{
+    return PyInt_FromLong(self->web_transaction->http_response_code);
+}
+
+static int NRWebTransaction_set_response_code(
+        NRWebTransactionObject *self, PyObject *value)
+{
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError,
+                        "can't delete response code attribute");
+        return -1;
+    }
+
+    if (!PyInt_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "expected integer for response code");
+        return -1;
+    }
+
+    self->web_transaction->http_response_code = PyInt_AsLong(value);
+
+    return 0;
+}
+
 static PyObject *NRWebTransaction_get_custom_parameters(
         NRWebTransactionObject *self, void *closure)
 {
@@ -238,6 +263,7 @@ static PyMethodDef NRWebTransaction_methods[] = {
 
 static PyGetSetDef NRWebTransaction_getset[] = {
     { "path", (getter)NRWebTransaction_get_path, (setter)NRWebTransaction_set_path, 0 },
+    { "response_code", (getter)NRWebTransaction_get_response_code, (setter)NRWebTransaction_set_response_code, 0 },
     { "custom_parameters", (getter)NRWebTransaction_get_custom_parameters, NULL, 0 },
     { NULL },
 };

@@ -43,6 +43,8 @@ NRBackgroundTaskObject *NRBackgroundTask_New(nr_application *application,
 
     self->web_transaction = nr_web_transaction__allocate();
 
+    self->web_transaction->http_response_code = 0;
+
     self->web_transaction->path_type = NR_PATH_TYPE_CUSTOM;
     self->web_transaction->path = nrstrdup(PyString_AsString(path));
     self->web_transaction->realpath = NULL;
@@ -88,8 +90,6 @@ static PyObject *NRBackgroundTask_exit(NRBackgroundTaskObject *self,
 
     nr_node_header__record_stoptime_and_pop_current(
             (nr_node_header *)self->web_transaction, NULL);
-
-    self->web_transaction->http_response_code = 0;
 
     while (PyDict_Next(self->custom_parameters, &pos, &key, &value)) {
         key_as_string = PyObject_Str(key);

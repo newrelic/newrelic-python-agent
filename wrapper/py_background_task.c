@@ -5,6 +5,7 @@
 /* ------------------------------------------------------------------------- */
 
 #include "py_background_task.h"
+#include "py_external_trace.h"
 #include "py_function_trace.h"
 
 #include "globals.h"
@@ -140,6 +141,23 @@ static PyObject *NRBackgroundTask_function_trace(
     return (PyObject *)rv;
 }
 
+static PyObject *NRBackgroundTask_external_trace(
+        NRBackgroundTaskObject *self, PyObject *args)
+{
+    NRExternalTraceObject *rv;
+
+    const char *url = NULL;
+
+    if (!PyArg_ParseTuple(args, "s:external_trace", &url))
+        return NULL;
+
+    rv = NRExternalTrace_New(self->web_transaction, url);
+    if (rv == NULL)
+        return NULL;
+
+    return (PyObject *)rv;
+}
+
 static PyObject *NRBackgroundTask_get_path(NRBackgroundTaskObject *self,
                                            void *closure)
 {
@@ -178,6 +196,7 @@ static PyMethodDef NRBackgroundTask_methods[] = {
     { "__enter__",  (PyCFunction)NRBackgroundTask_enter,  METH_NOARGS, 0 },
     { "__exit__",   (PyCFunction)NRBackgroundTask_exit,   METH_VARARGS, 0 },
     { "function_trace", (PyCFunction)NRBackgroundTask_function_trace,   METH_VARARGS, 0 },
+    { "external_trace", (PyCFunction)NRBackgroundTask_external_trace,   METH_VARARGS, 0 },
     { NULL, NULL }
 };
 

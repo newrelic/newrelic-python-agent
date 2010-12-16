@@ -15,6 +15,7 @@ sources = [
   "wrapper/_newrelicmodule.c",
   "wrapper/py_application.c",
   "wrapper/py_background_task.c",
+  "wrapper/py_external_trace.c",
   "wrapper/py_function_trace.c",
   "wrapper/py_web_transaction.c",
 ]

@@ -5,6 +5,7 @@
 /* ------------------------------------------------------------------------- */
 
 #include "py_web_transaction.h"
+#include "py_external_trace.h"
 #include "py_function_trace.h"
 
 #include "globals.h"
@@ -215,6 +216,23 @@ static PyObject *NRWebTransaction_function_trace(
     return (PyObject *)rv;
 }
 
+static PyObject *NRWebTransaction_external_trace(
+        NRWebTransactionObject *self, PyObject *args)
+{
+    NRExternalTraceObject *rv;
+
+    const char *url = NULL;
+
+    if (!PyArg_ParseTuple(args, "s:external_trace", &url))
+        return NULL;
+
+    rv = NRExternalTrace_New(self->web_transaction, url);
+    if (rv == NULL)
+        return NULL;
+
+    return (PyObject *)rv;
+}
+
 static PyObject *NRWebTransaction_get_path(NRWebTransactionObject *self,
                                            void *closure)
 {
@@ -278,6 +296,7 @@ static PyMethodDef NRWebTransaction_methods[] = {
     { "__enter__",  (PyCFunction)NRWebTransaction_enter,  METH_NOARGS, 0 },
     { "__exit__",   (PyCFunction)NRWebTransaction_exit,   METH_VARARGS, 0 },
     { "function_trace", (PyCFunction)NRWebTransaction_function_trace,   METH_VARARGS, 0 },
+    { "external_trace", (PyCFunction)NRWebTransaction_external_trace,   METH_VARARGS, 0 },
     { NULL, NULL }
 };
 

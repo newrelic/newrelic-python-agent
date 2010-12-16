@@ -226,7 +226,8 @@ static void NRApplication_shutdown(void)
     nr_generic_object__destroy(nr_per_process_globals.env);
 }
 
-PyObject *NRApplication_New(const char *name, const char *framework)
+NRApplicationObject *NRApplication_New(const char *name,
+                                       const char *framework)
 {
     NRApplicationObject *self;
 
@@ -265,7 +266,7 @@ PyObject *NRApplication_New(const char *name, const char *framework)
                                               framework);
     }
 
-    return (PyObject *)self;
+    return self;
 }
 
 static void NRApplication_dealloc(NRApplicationObject *self)
@@ -356,7 +357,7 @@ static PyObject *NRApplication_web_transaction(NRApplicationObject *self,
 static PyObject *NRApplication_background_task(NRApplicationObject *self,
                                                PyObject *args)
 {
-    NRWebTransactionObject *rv;
+    NRBackgroundTaskObject *rv;
 
     PyObject *path = NULL;
 
@@ -383,7 +384,7 @@ static PyMethodDef NRApplication_methods[] = {
 
 static PyGetSetDef NRApplication_getset[] = {
     { "name", (getter)NRApplication_get_name, NULL, 0 },
-    { "framework", (getter)NRApplication_get_framework, NRApplication_set_framework, 0 },
+    { "framework", (getter)NRApplication_get_framework, (setter)NRApplication_set_framework, 0 },
     { NULL },
 };
 

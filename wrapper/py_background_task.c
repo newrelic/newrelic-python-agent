@@ -7,6 +7,7 @@
 #include "py_background_task.h"
 #include "py_external_trace.h"
 #include "py_function_trace.h"
+#include "py_memcache_trace.h"
 
 #include "globals.h"
 #include "logging.h"
@@ -158,6 +159,23 @@ static PyObject *NRBackgroundTask_external_trace(
     return (PyObject *)rv;
 }
 
+static PyObject *NRBackgroundTask_memcache_trace(
+        NRBackgroundTaskObject *self, PyObject *args)
+{
+    NRMemcacheTraceObject *rv;
+
+    const char *metric_fragment = NULL;
+
+    if (!PyArg_ParseTuple(args, "s:memcache_trace", &metric_fragment))
+        return NULL;
+
+    rv = NRMemcacheTrace_New(self->web_transaction, metric_fragment);
+    if (rv == NULL)
+        return NULL;
+
+    return (PyObject *)rv;
+}
+
 static PyObject *NRBackgroundTask_get_path(NRBackgroundTaskObject *self,
                                            void *closure)
 {
@@ -197,6 +215,7 @@ static PyMethodDef NRBackgroundTask_methods[] = {
     { "__exit__",   (PyCFunction)NRBackgroundTask_exit,   METH_VARARGS, 0 },
     { "function_trace", (PyCFunction)NRBackgroundTask_function_trace,   METH_VARARGS, 0 },
     { "external_trace", (PyCFunction)NRBackgroundTask_external_trace,   METH_VARARGS, 0 },
+    { "memcache_trace", (PyCFunction)NRBackgroundTask_memcache_trace,   METH_VARARGS, 0 },
     { NULL, NULL }
 };
 

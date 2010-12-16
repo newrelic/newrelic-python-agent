@@ -10,6 +10,7 @@
 #include "py_background_task.h"
 #include "py_external_trace.h"
 #include "py_function_trace.h"
+#include "py_memcache_trace.h"
 #include "py_web_transaction.h"
 
 /* ------------------------------------------------------------------------- */
@@ -35,6 +36,8 @@ init_newrelic(void)
     if (PyType_Ready(&NRExternalTrace_Type) < 0)
         return;
     if (PyType_Ready(&NRFunctionTrace_Type) < 0)
+        return;
+    if (PyType_Ready(&NRMemcacheTrace_Type) < 0)
         return;
     if (PyType_Ready(&NRWebTransaction_Type) < 0)
         return;

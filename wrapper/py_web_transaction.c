@@ -7,6 +7,7 @@
 #include "py_web_transaction.h"
 #include "py_external_trace.h"
 #include "py_function_trace.h"
+#include "py_memcache_trace.h"
 
 #include "globals.h"
 #include "logging.h"
@@ -233,6 +234,23 @@ static PyObject *NRWebTransaction_external_trace(
     return (PyObject *)rv;
 }
 
+static PyObject *NRWebTransaction_memcache_trace(
+        NRWebTransactionObject *self, PyObject *args)
+{
+    NRMemcacheTraceObject *rv;
+
+    const char *metric_fragment = NULL;
+
+    if (!PyArg_ParseTuple(args, "s:memcache_trace", &metric_fragment))
+        return NULL;
+
+    rv = NRMemcacheTrace_New(self->web_transaction, metric_fragment);
+    if (rv == NULL)
+        return NULL;
+
+    return (PyObject *)rv;
+}
+
 static PyObject *NRWebTransaction_get_path(NRWebTransactionObject *self,
                                            void *closure)
 {
@@ -297,6 +315,7 @@ static PyMethodDef NRWebTransaction_methods[] = {
     { "__exit__",   (PyCFunction)NRWebTransaction_exit,   METH_VARARGS, 0 },
     { "function_trace", (PyCFunction)NRWebTransaction_function_trace,   METH_VARARGS, 0 },
     { "external_trace", (PyCFunction)NRWebTransaction_external_trace,   METH_VARARGS, 0 },
+    { "memcache_trace", (PyCFunction)NRWebTransaction_memcache_trace,   METH_VARARGS, 0 },
     { NULL, NULL }
 };
 

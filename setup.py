@@ -18,6 +18,7 @@ sources = [
   "wrapper/py_database_trace.c",
   "wrapper/py_external_trace.c",
   "wrapper/py_function_trace.c",
+  "wrapper/py_global_settings.c",
   "wrapper/py_memcache_trace.c",
   "wrapper/py_web_transaction.c",
 ]

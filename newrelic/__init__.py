@@ -1,3 +1,1 @@
-import _newrelic
-
-Application = _newrelic.Application
+from _newrelic import *

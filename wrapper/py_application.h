@@ -16,6 +16,7 @@
 typedef struct {
     PyObject_HEAD
     nr_application *application;
+    int enabled;
 } NRApplicationObject;
 
 extern PyTypeObject NRApplication_Type;

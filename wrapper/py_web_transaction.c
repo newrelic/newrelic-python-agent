@@ -37,49 +37,57 @@ NRWebTransactionObject *NRWebTransaction_New(nr_application *application,
     int64_t queue_start = 0;
 
     /*
-     * Extract from the WSGI environ dictionary details of the
-     * URL path. This will be set as default path for the web
-     * transaction. This can be overridden by framework to be
-     * more specific to avoid metrics explosion problem resulting
-     * from too many distinct URLs for same resource due to use
-     * of REST style URL concepts or otherwise.
-     *
-     * TODO Note that we only pay attention to REQUEST_URI at
-     * this time. In the PHP agent it is possible to base the
-     * path on the filename of the resource, but this may not
-     * necessarily be appropriate for WSGI. Instead may be
-     * necessary to look at reconstructing equivalent of the
-     * REQUEST_URI from SCRIPT_NAME and PATH_INFO instead where
-     * REQUEST_URI is not available.
+     * If application and environ are NULL then indicates we are
+     * creating a dummy transaction object due to the monitoring
+     * of parent application being disabled.
      */
 
-    item = PyDict_GetItemString(environ, "REQUEST_URI");
+    if (environ) {
+        /*
+         * Extract from the WSGI environ dictionary details of the
+         * URL path. This will be set as default path for the web
+         * transaction. This can be overridden by framework to be
+         * more specific to avoid metrics explosion problem resulting
+         * from too many distinct URLs for same resource due to use
+         * of REST style URL concepts or otherwise.
+         *
+         * TODO Note that we only pay attention to REQUEST_URI at
+         * this time. In the PHP agent it is possible to base the
+         * path on the filename of the resource, but this may not
+         * necessarily be appropriate for WSGI. Instead may be
+         * necessary to look at reconstructing equivalent of the
+         * REQUEST_URI from SCRIPT_NAME and PATH_INFO instead where
+         * REQUEST_URI is not available.
+         */
 
-    if (item && PyString_Check(item))
-        path = PyString_AsString(item);
-    else
-        path_type = NR_PATH_TYPE_UNKNOWN;
+        item = PyDict_GetItemString(environ, "REQUEST_URI");
 
-    /*
-     * See if the WSGI environ dictionary includes the special
-     * 'X-NewRelic-Queue-Start' HTTP header. This header is an
-     * optional header that can be set within the underlying web
-     * server or WSGI server to indicate when the current
-     * request was first received and ready to be processed. The
-     * difference between this time and when application starts
-     * processing the request is the queue time and represents
-     * how long spent in any explicit request queuing system, or
-     * how long waiting in connecting state against listener
-     * sockets where request needs to be proxied between any
-     * processes within the application server.
-     */
+        if (item && PyString_Check(item))
+            path = PyString_AsString(item);
+        else
+            path_type = NR_PATH_TYPE_UNKNOWN;
 
-    item = PyDict_GetItemString(environ, "HTTP_X_NEWRELIC_QUEUE_START");
+        /*
+         * See if the WSGI environ dictionary includes the special
+         * 'X-NewRelic-Queue-Start' HTTP header. This header is an
+         * optional header that can be set within the underlying web
+         * server or WSGI server to indicate when the current
+         * request was first received and ready to be processed. The
+         * difference between this time and when application starts
+         * processing the request is the queue time and represents
+         * how long spent in any explicit request queuing system, or
+         * how long waiting in connecting state against listener
+         * sockets where request needs to be proxied between any
+         * processes within the application server.
+         */
 
-    if (item && PyString_Check(item)) {
-        const char *s = PyString_AsString(item);
-        if (s[0] == 't' && s[1] == '=' )
-            queue_start = (int64_t)strtoll(s+2, 0, 0);
+        item = PyDict_GetItemString(environ, "HTTP_X_NEWRELIC_QUEUE_START");
+
+        if (item && PyString_Check(item)) {
+            const char *s = PyString_AsString(item);
+            if (s[0] == 't' && s[1] == '=' )
+                queue_start = (int64_t)strtoll(s+2, 0, 0);
+        }
     }
 
     /*
@@ -95,18 +103,26 @@ NRWebTransactionObject *NRWebTransaction_New(nr_application *application,
 
     self->application = application;
 
-    self->web_transaction = nr_web_transaction__allocate();
+    if (application) {
+        self->web_transaction = nr_web_transaction__allocate();
 
-    self->web_transaction->http_response_code = 200;
+        self->web_transaction->http_response_code = 200;
 
-    self->web_transaction->path_type = path_type;
-    self->web_transaction->path = nrstrdup(path);
-    self->web_transaction->realpath = NULL;
+        self->web_transaction->path_type = path_type;
+        self->web_transaction->path = nrstrdup(path);
+        self->web_transaction->realpath = NULL;
 
-    self->web_transaction->http_x_request_start = queue_start;
+        self->web_transaction->http_x_request_start = queue_start;
+    }
+    else
+        self->web_transaction = NULL;
 
-    self->request_parameters = environ;
-    Py_INCREF(self->request_parameters);
+    if (environ) {
+        self->request_parameters = environ;
+        Py_INCREF(self->request_parameters);
+    }
+    else
+        self->request_parameters = NULL;
 
     self->custom_parameters = PyDict_New();
 
@@ -116,7 +132,7 @@ NRWebTransactionObject *NRWebTransaction_New(nr_application *application,
 static void NRWebTransaction_dealloc(NRWebTransactionObject *self)
 {
     Py_DECREF(self->custom_parameters);
-    Py_DECREF(self->request_parameters);
+    Py_XDECREF(self->request_parameters);
 
     PyObject_Del(self);
 }
@@ -125,6 +141,11 @@ static PyObject *NRWebTransaction_enter(NRWebTransactionObject *self,
                                         PyObject *args)
 {
     nr_node_header *save;
+
+    if (!self->web_transaction) {
+        Py_INCREF(self);
+        return (PyObject *)self;
+    }
 
     nr_node_header__record_starttime_and_push_current(
             (nr_node_header *)self->web_transaction, &save);
@@ -143,6 +164,11 @@ static PyObject *NRWebTransaction_exit(NRWebTransactionObject *self,
 
     PyObject *key_as_string;
     PyObject *value_as_string;
+
+    if (!self->web_transaction) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
 
     nr_node_header__record_stoptime_and_pop_current(
             (nr_node_header *)self->web_transaction, NULL);
@@ -211,7 +237,11 @@ static PyObject *NRWebTransaction_function_trace(
     if (!PyArg_ParseTuple(args, "s|s:function_trace", &funcname, &classname))
         return NULL;
 
-    rv = NRFunctionTrace_New(self->web_transaction, funcname, classname);
+    if (self->web_transaction)
+        rv = NRFunctionTrace_New(self->web_transaction, funcname, classname);
+    else
+        rv = NRFunctionTrace_New(NULL, NULL, NULL);
+
     if (rv == NULL)
         return NULL;
 
@@ -228,7 +258,11 @@ static PyObject *NRWebTransaction_external_trace(
     if (!PyArg_ParseTuple(args, "s:external_trace", &url))
         return NULL;
 
-    rv = NRExternalTrace_New(self->web_transaction, url);
+    if (self->web_transaction)
+        rv = NRExternalTrace_New(self->web_transaction, url);
+    else
+        rv = NRExternalTrace_New(NULL, NULL);
+
     if (rv == NULL)
         return NULL;
 
@@ -245,7 +279,11 @@ static PyObject *NRWebTransaction_memcache_trace(
     if (!PyArg_ParseTuple(args, "s:memcache_trace", &metric_fragment))
         return NULL;
 
-    rv = NRMemcacheTrace_New(self->web_transaction, metric_fragment);
+    if (self->web_transaction)
+        rv = NRMemcacheTrace_New(self->web_transaction, metric_fragment);
+    else
+        rv = NRMemcacheTrace_New(NULL, NULL);
+
     if (rv == NULL)
         return NULL;
 
@@ -262,7 +300,11 @@ static PyObject *NRWebTransaction_database_trace(
     if (!PyArg_ParseTuple(args, "s:database_trace", &sql))
         return NULL;
 
-    rv = NRDatabaseTrace_New(self->web_transaction, sql);
+    if (self->web_transaction)
+        rv = NRDatabaseTrace_New(self->web_transaction, sql);
+    else
+        rv = NRDatabaseTrace_New(NULL, NULL);
+
     if (rv == NULL)
         return NULL;
 

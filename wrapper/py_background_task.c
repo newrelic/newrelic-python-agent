@@ -44,17 +44,21 @@ NRBackgroundTaskObject *NRBackgroundTask_New(nr_application *application,
 
     self->application = application;
 
-    self->web_transaction = nr_web_transaction__allocate();
+    if (application) {
+        self->web_transaction = nr_web_transaction__allocate();
 
-    self->web_transaction->http_response_code = 0;
+        self->web_transaction->http_response_code = 0;
 
-    self->web_transaction->path_type = NR_PATH_TYPE_CUSTOM;
-    self->web_transaction->path = nrstrdup(PyString_AsString(path));
-    self->web_transaction->realpath = NULL;
+        self->web_transaction->path_type = NR_PATH_TYPE_CUSTOM;
+        self->web_transaction->path = nrstrdup(PyString_AsString(path));
+        self->web_transaction->realpath = NULL;
 
-    self->web_transaction->backgroundjob = 1;
+        self->web_transaction->backgroundjob = 1;
 
-    self->web_transaction->has_been_named = 1;
+        self->web_transaction->has_been_named = 1;
+    }
+    else
+        self->web_transaction = NULL;
 
     self->custom_parameters = PyDict_New();
 
@@ -73,6 +77,11 @@ static PyObject *NRBackgroundTask_enter(NRBackgroundTaskObject *self,
 {
     nr_node_header *save;
 
+    if (!self->web_transaction) {
+        Py_INCREF(self);
+        return (PyObject *)self;
+    }
+
     nr_node_header__record_starttime_and_push_current(
             (nr_node_header *)self->web_transaction, &save);
 
@@ -90,6 +99,11 @@ static PyObject *NRBackgroundTask_exit(NRBackgroundTaskObject *self,
 
     PyObject *key_as_string;
     PyObject *value_as_string;
+
+    if (!self->web_transaction) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
 
     nr_node_header__record_stoptime_and_pop_current(
             (nr_node_header *)self->web_transaction, NULL);
@@ -136,7 +150,11 @@ static PyObject *NRBackgroundTask_function_trace(
     if (!PyArg_ParseTuple(args, "s|s:function_trace", &funcname, &classname))
         return NULL;
 
-    rv = NRFunctionTrace_New(self->web_transaction, funcname, classname);
+    if (self->web_transaction)
+        rv = NRFunctionTrace_New(self->web_transaction, funcname, classname);
+    else
+        rv = NRFunctionTrace_New(NULL, NULL, NULL);
+
     if (rv == NULL)
         return NULL;
 
@@ -153,7 +171,11 @@ static PyObject *NRBackgroundTask_external_trace(
     if (!PyArg_ParseTuple(args, "s:external_trace", &url))
         return NULL;
 
-    rv = NRExternalTrace_New(self->web_transaction, url);
+    if (self->web_transaction)
+        rv = NRExternalTrace_New(self->web_transaction, url);
+    else
+        rv = NRExternalTrace_New(NULL, NULL);
+
     if (rv == NULL)
         return NULL;
 
@@ -170,7 +192,11 @@ static PyObject *NRBackgroundTask_memcache_trace(
     if (!PyArg_ParseTuple(args, "s:memcache_trace", &metric_fragment))
         return NULL;
 
-    rv = NRMemcacheTrace_New(self->web_transaction, metric_fragment);
+    if (self->web_transaction)
+        rv = NRMemcacheTrace_New(self->web_transaction, metric_fragment);
+    else
+        rv = NRMemcacheTrace_New(NULL, NULL);
+
     if (rv == NULL)
         return NULL;
 
@@ -187,7 +213,11 @@ static PyObject *NRBackgroundTask_database_trace(
     if (!PyArg_ParseTuple(args, "s:database_trace", &sql))
         return NULL;
 
-    rv = NRDatabaseTrace_New(self->web_transaction, sql);
+    if (self->web_transaction)
+        rv = NRDatabaseTrace_New(self->web_transaction, sql);
+    else
+        rv = NRDatabaseTrace_New(NULL, NULL);
+
     if (rv == NULL)
         return NULL;
 

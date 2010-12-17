@@ -28,8 +28,12 @@ NRExternalTraceObject *NRExternalTrace_New(nr_web_transaction *transaction,
     if (self == NULL)
         return NULL;
 
-    self->transaction_trace = nr_web_transaction__allocate_external_node(
-            transaction, url);
+    if (transaction) {
+        self->transaction_trace = nr_web_transaction__allocate_external_node(
+                transaction, url);
+    }
+    else
+        self->transaction_trace = NULL;
 
     return self;
 }
@@ -44,6 +48,11 @@ static PyObject *NRExternalTrace_enter(NRExternalTraceObject *self,
 {
     nr_node_header *save;
 
+    if (!self->transaction_trace) {
+        Py_INCREF(self);
+        return (PyObject *)self;
+    }
+
     nr_node_header__record_starttime_and_push_current(
             (nr_node_header *)self->transaction_trace, &save);
 
@@ -54,6 +63,11 @@ static PyObject *NRExternalTrace_enter(NRExternalTraceObject *self,
 static PyObject *NRExternalTrace_exit(NRExternalTraceObject *self,
                                        PyObject *args)
 {
+    if (!self->transaction_trace) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
     nr_node_header__record_stoptime_and_pop_current(
             (nr_node_header *)self->transaction_trace, NULL);
 

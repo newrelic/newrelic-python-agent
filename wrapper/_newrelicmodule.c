@@ -144,7 +144,7 @@ static PyObject *newrelic_Application(PyObject *self, PyObject *args)
     const char *name = NULL;
     const char *framework = NULL;
 
-    if (!PyArg_ParseTuple(args, "s|s:Application", &name, &framework))
+    if (!PyArg_ParseTuple(args, "s|z:Application", &name, &framework))
         return NULL;
 
     rv = NRApplication_New(name, framework);
@@ -175,7 +175,6 @@ PyMODINIT_FUNC
 init_newrelic(void)
 {
     PyObject *module;
-    PyObject *settings;
 
     module = Py_InitModule3("_newrelic", newrelic_methods, NULL);
     if (module == NULL)

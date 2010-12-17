@@ -36,11 +36,11 @@ NRApplicationObject *NRApplication_New(const char *name,
 
     /*
      * If this is the first instance, we need to (re)initialise
-     * the agent client code. It may be a reinitialisation where
-     * all application objects had been destroyed and so agent
-     * client code had already been terminated and cleaned up.
-     * We hold the Python GIL here so do not need to worry about
-     * separate mutex locking when accessing global data.
+     * the harvest thread. It may be a reinitialisation where
+     * all application objects had been destroyed and so the
+     * harvest thread was shutdown. We hold the Python GIL here
+     * so do not need to worry about separate mutex locking when
+     * accessing global data.
      */
 
     if (!NRApplication_instances)
@@ -52,7 +52,9 @@ NRApplicationObject *NRApplication_New(const char *name,
      * Create application object and cache reference to the
      * internal agent client application object instance. Will
      * need the latter when initiating a web transaction or
-     * background task against this application instance.
+     * background task against this application instance as
+     * need to pass that to those objects to work around thread
+     * safety issue in PHP agent code when multithreading used.
      */
 
     self = PyObject_New(NRApplicationObject, &NRApplication_Type);
@@ -61,13 +63,37 @@ NRApplicationObject *NRApplication_New(const char *name,
 
     self->application = nr__find_or_create_application(name);
 
-    /* XXX Not sure where this is supposed to be display in GUI. */
+    /*
+     * Markup what Python web framework may be getting used.
+     * This can be overridden later via attribute of the
+     * application object.
+     *
+     * TODO Not sure where this is supposed to be display in GUI
+     * or whether it is even valid information to pass to the
+     * RPM GUI.
+     */
 
     if (framework) {
-        nr_generic_object__add_string_to_hash(self->application->appconfig,
-                                              "newrelic.framework",
-                                              framework);
+        nr_generic_object__add_string_to_hash(
+                self->application->appconfig,
+                "newrelic.framework", framework);
     }
+
+    /*
+     * Monitoring of an application is enabled by default. If
+     * this needs to be disabled, can be done by assigning the
+     * 'enabled' attribute after creation. Note that the
+     * 'enabled' flag is associated with the Python application
+     * object and not the internal agent client application
+     * object. This means that to have monitoring consistently
+     * enabled/disabled across a whole interpreter, then Python
+     * wrapper module needs to maintain a dictionary of named
+     * application objects and return single instance for all
+     * requests for application object for specific name and
+     * not unique objects.
+     */
+
+    self->enabled = 1;
 
     return self;
 }
@@ -137,6 +163,33 @@ static int NRApplication_set_framework(NRApplicationObject *self,
     return 0;
 }
 
+static PyObject *NRApplication_get_enabled(NRApplicationObject *self,
+                                           void *closure)
+{
+    return PyBool_FromLong(self->enabled);
+}
+
+static int NRApplication_set_enabled(NRApplicationObject *self,
+                                     PyObject *value)
+{
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError, "can't delete enabled attribute");
+        return -1;
+    }
+
+    if (!PyBool_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "expected bool for enabled flag");
+        return -1;
+    }
+
+    if (value == Py_True)
+        self->enabled = 1;
+    else
+        self->enabled = 0;
+
+    return 0;
+}
+
 static PyObject *NRApplication_web_transaction(NRApplicationObject *self,
                                                PyObject *args)
 {
@@ -152,7 +205,17 @@ static PyObject *NRApplication_web_transaction(NRApplicationObject *self,
         return NULL;
     }
 
-    rv = NRWebTransaction_New(self->application, environ);
+    /*
+     * If application monitoring has been disabled we want to
+     * return a dummy web transaction object. Indicate that
+     * by passing NULL for application.
+     */
+
+    if (self->enabled)
+        rv = NRWebTransaction_New(self->application, environ);
+    else
+        rv = NRWebTransaction_New(NULL, NULL);
+
     if (rv == NULL)
         return NULL;
 
@@ -174,7 +237,17 @@ static PyObject *NRApplication_background_task(NRApplicationObject *self,
         return NULL;
     }
 
-    rv = NRBackgroundTask_New(self->application, path);
+    /*
+     * If application monitoring has been disabled we want to
+     * return a dummy web transaction object. Indicate that
+     * by passing NULL for application.
+     */
+
+    if (self->enabled)
+        rv = NRBackgroundTask_New(self->application, path);
+    else
+        rv = NRBackgroundTask_New(NULL, NULL);
+
     if (rv == NULL)
         return NULL;
 
@@ -190,6 +263,7 @@ static PyMethodDef NRApplication_methods[] = {
 static PyGetSetDef NRApplication_getset[] = {
     { "name", (getter)NRApplication_get_name, NULL, 0 },
     { "framework", (getter)NRApplication_get_framework, (setter)NRApplication_set_framework, 0 },
+    { "enabled", (getter)NRApplication_get_enabled, (setter)NRApplication_set_enabled, 0 },
     { NULL },
 };
 

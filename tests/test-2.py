@@ -17,6 +17,6 @@ def handler(environ, start_response):
 environ = { "REQUEST_URI": "/test-2" }
 
 for i in range(1000):
-    handler(environ, None)
+    handler(environ, None).close()
 
 print "finished"

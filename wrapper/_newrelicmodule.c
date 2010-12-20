@@ -167,9 +167,20 @@ static PyObject *newrelic_Settings(PyObject *self, PyObject *args)
     return (PyObject *)rv;
 }
 
+static PyObject *newrelic_harvest(PyObject *self, PyObject *args)
+{
+    Py_BEGIN_ALLOW_THREADS
+    nr__harvest_thread_body("flush");
+    Py_END_ALLOW_THREADS
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
 static PyMethodDef newrelic_methods[] = {
     { "Application", newrelic_Application, METH_VARARGS, 0 },
     { "Settings", newrelic_Settings, METH_NOARGS, 0 },
+    { "harvest", newrelic_harvest, METH_NOARGS, 0 },
     { NULL, NULL }
 };
 

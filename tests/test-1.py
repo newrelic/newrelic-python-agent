@@ -20,4 +20,6 @@ for i in range(1000):
     with application.web_transaction(environ) as transaction:
         time.sleep(random.random()/5.0)
 
+_newrelic.harvest()
+
 print "finished"

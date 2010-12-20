@@ -6,12 +6,14 @@
 
 #include <Python.h>
 
+#include "py_settings.h"
+
 #include "py_application.h"
+
 #include "py_background_task.h"
 #include "py_database_trace.h"
 #include "py_external_trace.h"
 #include "py_function_trace.h"
-#include "py_global_settings.h"
 #include "py_memcache_trace.h"
 #include "py_web_transaction.h"
 
@@ -154,11 +156,11 @@ static PyObject *newrelic_Application(PyObject *self, PyObject *args)
     return (PyObject *)rv;
 }
 
-static PyObject *newrelic_GlobalSettings(PyObject *self, PyObject *args)
+static PyObject *newrelic_Settings(PyObject *self, PyObject *args)
 {
-    NRGlobalSettingsObject *rv;
+    NRSettingsObject *rv;
 
-    rv = NRGlobalSettings_New();
+    rv = NRSettings_New();
     if (rv == NULL)
         return NULL;
 
@@ -167,7 +169,7 @@ static PyObject *newrelic_GlobalSettings(PyObject *self, PyObject *args)
 
 static PyMethodDef newrelic_methods[] = {
     { "Application", newrelic_Application, METH_VARARGS, 0 },
-    { "GlobalSettings", newrelic_GlobalSettings, METH_NOARGS, 0 },
+    { "Settings", newrelic_Settings, METH_NOARGS, 0 },
     { NULL, NULL }
 };
 
@@ -194,7 +196,7 @@ init_newrelic(void)
         return;
     if (PyType_Ready(&NRMemcacheTrace_Type) < 0)
         return;
-    if (PyType_Ready(&NRGlobalSettings_Type) < 0)
+    if (PyType_Ready(&NRSettings_Type) < 0)
         return;
     if (PyType_Ready(&NRWebTransaction_Type) < 0)
         return;

@@ -9,7 +9,7 @@ LOG_VERBOSE = _newrelic.LOG_VERBOSE
 LOG_DEBUG = _newrelic.LOG_DEBUG
 LOG_VERBOSEDEBUG = _newrelic.LOG_VERBOSEDEBUG
 
-settings = _newrelic.GlobalSettings()
+settings = _newrelic.Settings()
 
 _applications_lock = threading.RLock()
 _applications = {}

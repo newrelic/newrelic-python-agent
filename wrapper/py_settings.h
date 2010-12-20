@@ -1,5 +1,5 @@
-#ifndef PY_WRAPPER_GLOBAL_SETTINGS_H
-#define PY_WRAPPER_GLOBAL_SETTINGS_H
+#ifndef PY_WRAPPER_SETTINGS_H
+#define PY_WRAPPER_SETTINGS_H
 
 /* ------------------------------------------------------------------------- */
 
@@ -13,13 +13,13 @@
 
 typedef struct {
     PyObject_HEAD
-} NRGlobalSettingsObject;
+} NRSettingsObject;
 
-extern PyTypeObject NRGlobalSettings_Type;
+extern PyTypeObject NRSettings_Type;
 
 /* ------------------------------------------------------------------------- */
 
-extern NRGlobalSettingsObject *NRGlobalSettings_New(void);
+extern NRSettingsObject *NRSettings_New(void);
 
 /* ------------------------------------------------------------------------- */
 

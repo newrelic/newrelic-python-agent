@@ -4,7 +4,7 @@
 
 /* ------------------------------------------------------------------------- */
 
-#include "py_global_settings.h"
+#include "py_settings.h"
 
 #include "globals.h"
 #include "logging.h"
@@ -17,23 +17,23 @@
 
 /* ------------------------------------------------------------------------- */
 
-NRGlobalSettingsObject *NRGlobalSettings_New(void)
+NRSettingsObject *NRSettings_New(void)
 {
-    NRGlobalSettingsObject *self;
+    NRSettingsObject *self;
 
-    self = PyObject_New(NRGlobalSettingsObject, &NRGlobalSettings_Type);
+    self = PyObject_New(NRSettingsObject, &NRSettings_Type);
     if (self == NULL)
         return NULL;
 
     return self;
 }
 
-static void NRGlobalSettings_dealloc(NRGlobalSettingsObject *self)
+static void NRSettings_dealloc(NRSettingsObject *self)
 {
     PyObject_Del(self);
 }
 
-static PyObject *NRGlobalSettings_get_logfile(NRGlobalSettingsObject *self,
+static PyObject *NRSettings_get_logfile(NRSettingsObject *self,
                                               void *closure)
 {
     if (nr_per_process_globals.logfilename)
@@ -43,7 +43,7 @@ static PyObject *NRGlobalSettings_get_logfile(NRGlobalSettingsObject *self,
     return Py_None;
 }
 
-static int NRGlobalSettings_set_logfile(NRGlobalSettingsObject *self,
+static int NRSettings_set_logfile(NRSettingsObject *self,
                                         PyObject *value)
 {
     if (value == NULL) {
@@ -64,13 +64,13 @@ static int NRGlobalSettings_set_logfile(NRGlobalSettingsObject *self,
     return 0;
 }
 
-static PyObject *NRGlobalSettings_get_loglevel(NRGlobalSettingsObject *self,
+static PyObject *NRSettings_get_loglevel(NRSettingsObject *self,
                                                void *closure)
 {
     return PyInt_FromLong(nr_per_process_globals.loglevel);
 }
 
-static int NRGlobalSettings_set_loglevel(NRGlobalSettingsObject *self,
+static int NRSettings_set_loglevel(NRSettingsObject *self,
                                         PyObject *value)
 {
     int loglevel;
@@ -103,23 +103,23 @@ static int NRGlobalSettings_set_loglevel(NRGlobalSettingsObject *self,
     return 0;
 }
 
-static PyMethodDef NRGlobalSettings_methods[] = {
+static PyMethodDef NRSettings_methods[] = {
     { NULL, NULL }
 };
 
-static PyGetSetDef NRGlobalSettings_getset[] = {
-    { "logfile", (getter)NRGlobalSettings_get_logfile, (setter)NRGlobalSettings_set_logfile, 0 },
-    { "loglevel", (getter)NRGlobalSettings_get_loglevel, (setter)NRGlobalSettings_set_loglevel, 0 },
+static PyGetSetDef NRSettings_getset[] = {
+    { "logfile", (getter)NRSettings_get_logfile, (setter)NRSettings_set_logfile, 0 },
+    { "loglevel", (getter)NRSettings_get_loglevel, (setter)NRSettings_set_loglevel, 0 },
     { NULL },
 };
 
-PyTypeObject NRGlobalSettings_Type = {
+PyTypeObject NRSettings_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "_newrelic.Settings", /*tp_name*/
-    sizeof(NRGlobalSettingsObject), /*tp_basicsize*/
+    sizeof(NRSettingsObject), /*tp_basicsize*/
     0,                      /*tp_itemsize*/
     /* methods */
-    (destructor)NRGlobalSettings_dealloc, /*tp_dealloc*/
+    (destructor)NRSettings_dealloc, /*tp_dealloc*/
     0,                      /*tp_print*/
     0,                      /*tp_getattr*/
     0,                      /*tp_setattr*/
@@ -142,9 +142,9 @@ PyTypeObject NRGlobalSettings_Type = {
     0,                      /*tp_weaklistoffset*/
     0,                      /*tp_iter*/
     0,                      /*tp_iternext*/
-    NRGlobalSettings_methods, /*tp_methods*/
+    NRSettings_methods,     /*tp_methods*/
     0,                      /*tp_members*/
-    NRGlobalSettings_getset, /*tp_getset*/
+    NRSettings_getset,      /*tp_getset*/
     0,                      /*tp_base*/
     0,                      /*tp_dict*/
     0,                      /*tp_descr_get*/

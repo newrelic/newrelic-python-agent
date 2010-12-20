@@ -1,3 +1,5 @@
+# This test checks whether WSGI middleware wrapper works.
+
 import sys
 import os
 import time

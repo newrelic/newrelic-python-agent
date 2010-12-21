@@ -117,6 +117,8 @@ NRWebTransactionObject *NRWebTransaction_New(nr_application *application,
     else
         self->web_transaction = NULL;
 
+    self->transaction_errors = NULL;
+
     if (environ) {
         self->request_parameters = environ;
         Py_INCREF(self->request_parameters);
@@ -157,13 +159,7 @@ static PyObject *NRWebTransaction_enter(NRWebTransactionObject *self,
 static PyObject *NRWebTransaction_exit(NRWebTransactionObject *self,
                                        PyObject *args)
 {
-    PyObject *key;
-    PyObject *value;
-
-    Py_ssize_t pos = 0;
-
-    PyObject *key_as_string;
-    PyObject *value_as_string;
+    int keep_wt = 0;
 
     if (!self->web_transaction) {
         Py_INCREF(Py_None);
@@ -173,54 +169,96 @@ static PyObject *NRWebTransaction_exit(NRWebTransactionObject *self,
     nr_node_header__record_stoptime_and_pop_current(
             (nr_node_header *)self->web_transaction, NULL);
 
-    while (PyDict_Next(self->request_parameters, &pos, &key, &value)) {
-        key_as_string = PyObject_Str(key);
-
-        if (!key_as_string)
-           PyErr_Clear();
-
-        value_as_string = PyObject_Str(value);
-
-        if (!value_as_string)
-           PyErr_Clear();
-
-        if (key_as_string && value_as_string) {
-            nr_param_array__set_string_in_hash_at(
-                    self->web_transaction->params, "request_parameters",
-                    PyString_AsString(key_as_string),
-                    PyString_AsString(value_as_string));
-        }
-
-        Py_XDECREF(key_as_string);
-        Py_XDECREF(value_as_string);
-    }
-
-    while (PyDict_Next(self->custom_parameters, &pos, &key, &value)) {
-        key_as_string = PyObject_Str(key);
-
-        if (!key_as_string)
-           PyErr_Clear();
-
-        value_as_string = PyObject_Str(value);
-
-        if (!value_as_string)
-           PyErr_Clear();
-
-        if (key_as_string && value_as_string) {
-            nr_param_array__set_string_in_hash_at(
-                    self->web_transaction->params, "custom_parameters",
-                    PyString_AsString(key_as_string),
-                    PyString_AsString(value_as_string));
-        }
-
-        Py_XDECREF(key_as_string);
-        Py_XDECREF(value_as_string);
-    }
-
     pthread_mutex_lock(&(nr_per_process_globals.harvest_data_mutex));
+
     nr__switch_to_application(self->application);
-    nr__distill_web_transaction_into_harvest_data(self->web_transaction);
+
+    keep_wt = nr__distill_web_transaction_into_harvest_data(
+            self->web_transaction);
+
+    if (keep_wt || self->transaction_errors != NULL) {
+        if (PyDict_Size(self->request_parameters) > 0) {
+            Py_ssize_t pos = 0;
+
+            PyObject *key;
+            PyObject *value;
+
+            PyObject *key_as_string;
+            PyObject *value_as_string;
+
+            while (PyDict_Next(self->request_parameters, &pos, &key,
+                   &value)) {
+                key_as_string = PyObject_Str(key);
+
+                if (!key_as_string)
+                   PyErr_Clear();
+
+                value_as_string = PyObject_Str(value);
+
+                if (!value_as_string)
+                   PyErr_Clear();
+
+                if (key_as_string && value_as_string) {
+                    nr_param_array__set_string_in_hash_at(
+                            self->web_transaction->params,
+                            "request_parameters",
+                            PyString_AsString(key_as_string),
+                            PyString_AsString(value_as_string));
+                }
+
+                Py_XDECREF(key_as_string);
+                Py_XDECREF(value_as_string);
+            }
+        }
+    }
+
+    if (PyDict_Size(self->custom_parameters) >0) {
+
+        Py_ssize_t pos = 0;
+
+        PyObject *key;
+        PyObject *value;
+
+        PyObject *key_as_string;
+        PyObject *value_as_string;
+
+        while (PyDict_Next(self->custom_parameters, &pos, &key, &value)) {
+            key_as_string = PyObject_Str(key);
+
+            if (!key_as_string)
+               PyErr_Clear();
+
+            value_as_string = PyObject_Str(value);
+
+            if (!value_as_string)
+               PyErr_Clear();
+
+            if (key_as_string && value_as_string) {
+                nr_param_array__set_string_in_hash_at(
+                        self->web_transaction->params,
+                        "custom_parameters",
+                        PyString_AsString(key_as_string),
+                        PyString_AsString(value_as_string));
+            }
+
+            Py_XDECREF(key_as_string);
+            Py_XDECREF(value_as_string);
+        }
+    }
+
+    nr_transaction_error__process_errors(self->transaction_errors,
+            self->application->pending_harvest->metrics);
+
+    if (!keep_wt)
+        nr_web_transaction__destroy(self->web_transaction);
+
+    nr__merge_errors_from_to(&self->transaction_errors,
+                             &self->application->pending_harvest->errors);
+
     pthread_mutex_unlock(&(nr_per_process_globals.harvest_data_mutex));
+
+    self->web_transaction = NULL;
+    self->transaction_errors = NULL;
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -311,6 +349,36 @@ static PyObject *NRWebTransaction_database_trace(
     return (PyObject *)rv;
 }
 
+static PyObject *NRWebTransaction_runtime_error(
+        NRWebTransactionObject *self, PyObject *args)
+{
+    nr_transaction_error* record;
+
+    const char *error = NULL;
+
+    if (!PyArg_ParseTuple(args, "s:runtime_error", &error))
+        return NULL;
+
+    record = nr_transaction_error__allocate(
+            self->web_transaction, &(self->transaction_errors),
+            "xxx.py", 666, error, "ActionView::TemplateError", 0);
+
+    /* XXX */
+    nr_param_array__set_string(record->params, "line_number", "LINE_NUMBER");
+    nr_param_array__set_string(record->params, "source", "SOURCE\nSOURCE");
+    nr_param_array__set_string(record->params, "stack_trace", "STACK_TRACE");
+    nr_param_array__set_string_in_hash_at(record->params, "custom_parameters",
+            "CUSTOM_PARAMETERS_KEY", "CUSTOM_PARAMETERS_VALUE");
+    /* XXX */
+
+#if 0
+    nr__put_stack_trace_into_params(rec->params TSRMLS_CC);
+#endif
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
 static PyObject *NRWebTransaction_get_path(NRWebTransactionObject *self,
                                            void *closure)
 {
@@ -377,6 +445,7 @@ static PyMethodDef NRWebTransaction_methods[] = {
     { "external_trace", (PyCFunction)NRWebTransaction_external_trace,   METH_VARARGS, 0 },
     { "memcache_trace", (PyCFunction)NRWebTransaction_memcache_trace,   METH_VARARGS, 0 },
     { "database_trace", (PyCFunction)NRWebTransaction_database_trace,   METH_VARARGS, 0 },
+    { "runtime_error", (PyCFunction)NRWebTransaction_runtime_error,   METH_VARARGS, 0 },
     { NULL, NULL }
 };
 

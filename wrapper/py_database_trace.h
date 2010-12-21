@@ -16,6 +16,7 @@
 typedef struct {
     PyObject_HEAD
     nr_transaction_node *transaction_trace;
+    nr_node_header* outer_transaction;
 } NRDatabaseTraceObject;
 
 extern PyTypeObject NRDatabaseTrace_Type;

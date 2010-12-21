@@ -35,6 +35,8 @@ NRDatabaseTraceObject *NRDatabaseTrace_New(nr_web_transaction *transaction,
     else
         self->transaction_trace = NULL;
 
+    self->outer_transaction = NULL;
+
     return self;
 }
 
@@ -46,15 +48,14 @@ static void NRDatabaseTrace_dealloc(NRDatabaseTraceObject *self)
 static PyObject *NRDatabaseTrace_enter(NRDatabaseTraceObject *self,
                                         PyObject *args)
 {
-    nr_node_header *save;
-
     if (!self->transaction_trace) {
         Py_INCREF(self);
         return (PyObject *)self;
     }
 
     nr_node_header__record_starttime_and_push_current(
-            (nr_node_header *)self->transaction_trace, &save);
+            (nr_node_header *)self->transaction_trace,
+            &self->outer_transaction);
 
     Py_INCREF(self);
     return (PyObject *)self;
@@ -69,7 +70,10 @@ static PyObject *NRDatabaseTrace_exit(NRDatabaseTraceObject *self,
     }
 
     nr_node_header__record_stoptime_and_pop_current(
-            (nr_node_header *)self->transaction_trace, NULL);
+            (nr_node_header *)self->transaction_trace,
+            &self->outer_transaction);
+
+    self->outer_transaction = NULL;
 
     Py_INCREF(Py_None);
     return Py_None;

@@ -18,6 +18,7 @@ typedef struct {
     PyObject_HEAD
     nr_application *application;
     nr_web_transaction *web_transaction;
+    nr_transaction_error* transaction_errors;
     PyObject *request_parameters;
     PyObject *custom_parameters;
 } NRWebTransactionObject;

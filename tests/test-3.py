@@ -18,6 +18,8 @@ settings.loglevel = _newrelic.LOG_VERBOSEDEBUG
 
 application = _newrelic.Application("Tests")
 
+_newrelic.harvest()
+
 environ = { "REQUEST_URI": "/test-3" }
 
 for i in range(1000):

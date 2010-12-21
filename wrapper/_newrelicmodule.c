@@ -169,6 +169,8 @@ static PyObject *newrelic_Settings(PyObject *self, PyObject *args)
 
 static PyObject *newrelic_harvest(PyObject *self, PyObject *args)
 {
+    nr__log (LOG_INFO, "%s", "Force harvest on process shutdown");
+
     Py_BEGIN_ALLOW_THREADS
     nr__harvest_thread_body("flush");
     Py_END_ALLOW_THREADS

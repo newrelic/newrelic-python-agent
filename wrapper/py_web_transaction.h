@@ -21,6 +21,7 @@ typedef struct {
     nr_transaction_error* transaction_errors;
     PyObject *request_parameters;
     PyObject *custom_parameters;
+    int transaction_active;
 } NRWebTransactionObject;
 
 extern PyTypeObject NRWebTransaction_Type;

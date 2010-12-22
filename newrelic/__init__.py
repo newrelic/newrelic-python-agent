@@ -1,6 +1,7 @@
 import threading
 import atexit
 import types
+import sys
 
 import _newrelic
 
@@ -83,7 +84,7 @@ atexit.register(_newrelic.harvest)
 # rather than needing a new generator be created that stops
 # 'wsgi.file_wrapper' from working.
 
-class _CallbackFile:
+class _ExitCallbackFile:
 
     def __init__(self, filelike, callback):
         self.__filelike = filelike
@@ -100,10 +101,13 @@ class _CallbackFile:
         try:
             if hasattr(self.__filelike, 'close'):
                 self.__filelike.close()
+        except:
+            self.__callback(*sys.exc_info())
+            raise
         finally:
-            self.__callback()
+            self.__callback(None, None, None)
 
-class _CallbackGenerator:
+class _ExitCallbackGenerator:
 
     def __init__(self, generator, callback):
         self.__generator = generator
@@ -117,6 +121,9 @@ class _CallbackGenerator:
         try:
             if hasattr(self.__generator, 'close'):
                 self.__generator.close()
+        except:
+            self.__callback(*sys.exc_info())
+            raise
         finally:
             self.__callback()
 
@@ -132,15 +139,15 @@ class _ExecuteOnCompletion:
         try:
             result = self.__callable(environ, start_response)
         except:
-            transaction.__exit__()
+            transaction.__exit__(*sys.exc_info())
             raise
 
         if str(type(result)).find("'mod_wsgi.Stream'") != -1 and \
                 hasattr(result, 'file'):
             return environ['wsgi.file_wrapper'](
-                    _CallbackFile(result.file(), transaction.__exit__))
+                    _ExitCallbackFile(result.file(), transaction.__exit__))
         else:
-            return _CallbackGenerator(result, transaction.__exit__)
+            return _ExitCallbackGenerator(result, transaction.__exit__)
 
 def application_monitor(name, framework=None):
     application = _Application(name, framework)

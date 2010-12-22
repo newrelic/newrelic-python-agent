@@ -57,7 +57,9 @@ NRWebTransactionObject *NRWebTransaction_New(nr_application *application,
          * necessarily be appropriate for WSGI. Instead may be
          * necessary to look at reconstructing equivalent of the
          * REQUEST_URI from SCRIPT_NAME and PATH_INFO instead where
-         * REQUEST_URI is not available.
+         * REQUEST_URI is not available. Ultimately though expect
+         * that path will be set to be something more specific by
+         * higher level wrappers for a specific framework.
          */
 
         item = PyDict_GetItemString(environ, "REQUEST_URI");
@@ -128,11 +130,34 @@ NRWebTransactionObject *NRWebTransaction_New(nr_application *application,
 
     self->custom_parameters = PyDict_New();
 
+    self->transaction_active = 0;
+
     return self;
 }
 
+static PyObject *NRWebTransaction_exit(NRWebTransactionObject *self,
+                                       PyObject *args);
+
 static void NRWebTransaction_dealloc(NRWebTransactionObject *self)
 {
+    /*
+     * If transaction still active when this object is begin
+     * destroyed then force call of exit method to finalise the
+     * transaction.
+     */
+
+    if (self->transaction_active) {
+        PyObject *args;
+        PyObject *result;
+
+        args = Py_BuildValue("(OOO)", Py_None, Py_None, Py_None);
+
+        result = NRWebTransaction_exit(self, args);
+
+        Py_XDECREF(result);
+        Py_DECREF(args);
+    }
+
     Py_DECREF(self->custom_parameters);
     Py_XDECREF(self->request_parameters);
 
@@ -143,6 +168,13 @@ static PyObject *NRWebTransaction_enter(NRWebTransactionObject *self,
                                         PyObject *args)
 {
     nr_node_header *save;
+
+    if (self->transaction_active) {
+        PyErr_SetString(PyExc_RuntimeError, "transaction already active");
+        return NULL;
+    }
+
+    self->transaction_active = 1;
 
     if (!self->web_transaction) {
         Py_INCREF(self);
@@ -161,6 +193,29 @@ static PyObject *NRWebTransaction_exit(NRWebTransactionObject *self,
 {
     int keep_wt = 0;
 
+    PyObject *type = NULL;
+    PyObject *value = NULL;
+    PyObject *traceback = NULL;
+
+    /*
+     * We parse out the required parameters for conformity but
+     * don't do anything with them. Specifically, when passed in
+     * exception details we don't attach the error details to
+     * the transaction. Instead we rely on higher level catching
+     * the exception and attaching it as easier to deal with it
+     * at Python code level. Thus we return None which means that
+     * caller responsible for re raising the exception if there
+     * is one.
+     */
+
+    if (!PyArg_ParseTuple(args, "OOO:__exit__", &type, &value, &traceback))
+        return NULL;
+
+    if (!self->transaction_active) {
+        PyErr_SetString(PyExc_RuntimeError, "transaction not active");
+        return NULL;
+    }
+
     if (!self->web_transaction) {
         Py_INCREF(Py_None);
         return Py_None;
@@ -175,6 +230,13 @@ static PyObject *NRWebTransaction_exit(NRWebTransactionObject *self,
 
     keep_wt = nr__distill_web_transaction_into_harvest_data(
             self->web_transaction);
+
+    /*
+     * Only add request parameters and custom parameters into
+     * web transaction object if the record is being kept due
+     * to associated errors or because it is being tracked as
+     * a slow transaction.
+     */
 
     if (keep_wt || self->transaction_errors != NULL) {
         if (PyDict_Size(self->request_parameters) > 0) {
@@ -210,39 +272,40 @@ static PyObject *NRWebTransaction_exit(NRWebTransactionObject *self,
                 Py_XDECREF(value_as_string);
             }
         }
-    }
 
-    if (PyDict_Size(self->custom_parameters) >0) {
+        if (PyDict_Size(self->custom_parameters) >0) {
 
-        Py_ssize_t pos = 0;
+            Py_ssize_t pos = 0;
 
-        PyObject *key;
-        PyObject *value;
+            PyObject *key;
+            PyObject *value;
 
-        PyObject *key_as_string;
-        PyObject *value_as_string;
+            PyObject *key_as_string;
+            PyObject *value_as_string;
 
-        while (PyDict_Next(self->custom_parameters, &pos, &key, &value)) {
-            key_as_string = PyObject_Str(key);
+            while (PyDict_Next(self->custom_parameters, &pos, &key,
+                    &value)) {
+                key_as_string = PyObject_Str(key);
 
-            if (!key_as_string)
-               PyErr_Clear();
+                if (!key_as_string)
+                   PyErr_Clear();
 
-            value_as_string = PyObject_Str(value);
+                value_as_string = PyObject_Str(value);
 
-            if (!value_as_string)
-               PyErr_Clear();
+                if (!value_as_string)
+                   PyErr_Clear();
 
-            if (key_as_string && value_as_string) {
-                nr_param_array__set_string_in_hash_at(
-                        self->web_transaction->params,
-                        "custom_parameters",
-                        PyString_AsString(key_as_string),
-                        PyString_AsString(value_as_string));
+                if (key_as_string && value_as_string) {
+                    nr_param_array__set_string_in_hash_at(
+                            self->web_transaction->params,
+                            "custom_parameters",
+                            PyString_AsString(key_as_string),
+                            PyString_AsString(value_as_string));
+                }
+
+                Py_XDECREF(key_as_string);
+                Py_XDECREF(value_as_string);
             }
-
-            Py_XDECREF(key_as_string);
-            Py_XDECREF(value_as_string);
         }
     }
 
@@ -260,6 +323,8 @@ static PyObject *NRWebTransaction_exit(NRWebTransactionObject *self,
     self->web_transaction = NULL;
     self->transaction_errors = NULL;
 
+    self->transaction_active = 0;
+
     Py_INCREF(Py_None);
     return Py_None;
 }
@@ -274,6 +339,11 @@ static PyObject *NRWebTransaction_function_trace(
 
     if (!PyArg_ParseTuple(args, "s|s:function_trace", &funcname, &classname))
         return NULL;
+
+    if (!self->transaction_active) {
+        PyErr_SetString(PyExc_RuntimeError, "transaction not active");
+        return NULL;
+    }
 
     if (self->web_transaction)
         rv = NRFunctionTrace_New(self->web_transaction, funcname, classname);
@@ -296,6 +366,11 @@ static PyObject *NRWebTransaction_external_trace(
     if (!PyArg_ParseTuple(args, "s:external_trace", &url))
         return NULL;
 
+    if (!self->transaction_active) {
+        PyErr_SetString(PyExc_RuntimeError, "transaction not active");
+        return NULL;
+    }
+
     if (self->web_transaction)
         rv = NRExternalTrace_New(self->web_transaction, url);
     else
@@ -316,6 +391,11 @@ static PyObject *NRWebTransaction_memcache_trace(
 
     if (!PyArg_ParseTuple(args, "s:memcache_trace", &metric_fragment))
         return NULL;
+
+    if (!self->transaction_active) {
+        PyErr_SetString(PyExc_RuntimeError, "transaction not active");
+        return NULL;
+    }
 
     if (self->web_transaction)
         rv = NRMemcacheTrace_New(self->web_transaction, metric_fragment);
@@ -338,6 +418,11 @@ static PyObject *NRWebTransaction_database_trace(
     if (!PyArg_ParseTuple(args, "s:database_trace", &sql))
         return NULL;
 
+    if (!self->transaction_active) {
+        PyErr_SetString(PyExc_RuntimeError, "transaction not active");
+        return NULL;
+    }
+
     if (self->web_transaction)
         rv = NRDatabaseTrace_New(self->web_transaction, sql);
     else
@@ -358,6 +443,11 @@ static PyObject *NRWebTransaction_runtime_error(
 
     if (!PyArg_ParseTuple(args, "s:runtime_error", &error))
         return NULL;
+
+    if (!self->transaction_active) {
+        PyErr_SetString(PyExc_RuntimeError, "transaction not active");
+        return NULL;
+    }
 
     record = nr_transaction_error__allocate(
             self->web_transaction, &(self->transaction_errors),

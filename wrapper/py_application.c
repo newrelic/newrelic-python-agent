@@ -4,6 +4,8 @@
 
 /* ------------------------------------------------------------------------- */
 
+#include "py_config.h"
+
 #include "py_application.h"
 #include "py_background_task.h"
 #include "py_web_transaction.h"
@@ -66,18 +68,28 @@ NRApplicationObject *NRApplication_New(const char *name,
     /*
      * Markup what Python web framework may be getting used.
      * This can be overridden later via attribute of the
-     * application object.
-     *
-     * TODO Not sure where this is supposed to be display in GUI
-     * or whether it is even valid information to pass to the
-     * RPM GUI.
+     * application object. This displays in the agent
+     * configuration in the RPM GUI.
      */
 
     if (framework) {
         nr_generic_object__add_string_to_hash(
                 self->application->appconfig,
-                "newrelic.framework", framework);
+                "application.framework", framework);
     }
+
+    /* Markup what version of the Python agent wrapper is being
+     * used. This display in the agent configuration in the
+     * RPM GUI.
+     */
+
+    nr_generic_object__add_string_to_hash(
+            self->application->appconfig, "agent.binding",
+            "Python");
+    nr_generic_object__add_string_to_hash(
+            self->application->appconfig, "agent.version",
+            "library=" PHP_NEWRELIC_VERSION ", "
+            "binding=" NR_PYTHON_AGENT_VERSION);
 
     /*
      * Monitoring of an application is enabled by default. If
@@ -135,7 +147,7 @@ static PyObject *NRApplication_get_framework(NRApplicationObject *self,
     nr_generic_object *p;
 
     p = nr_generic_object__find_in_hash(self->application->appconfig,
-                                        "newrelic.framework");
+                                        "application.framework");
 
     if (p && p->type == NR_OBJECT_UTF)
        return PyString_FromString(p->sval);
@@ -157,7 +169,7 @@ static int NRApplication_set_framework(NRApplicationObject *self,
     }
 
     nr_generic_object__add_string_to_hash(self->application->appconfig,
-                                          "newrelic.framework",
+                                          "application.framework",
                                           PyString_AsString(value));
 
     return 0;

@@ -273,8 +273,7 @@ static PyObject *NRWebTransaction_exit(NRWebTransactionObject *self,
             }
         }
 
-        if (PyDict_Size(self->custom_parameters) >0) {
-
+        if (PyDict_Size(self->custom_parameters) > 0) {
             Py_ssize_t pos = 0;
 
             PyObject *key;
@@ -439,31 +438,88 @@ static PyObject *NRWebTransaction_runtime_error(
 {
     nr_transaction_error* record;
 
-    const char *error = NULL;
+    const char *error_message = NULL;
+    const char *error_class = NULL;
 
-    if (!PyArg_ParseTuple(args, "s:runtime_error", &error))
+    const char *stack_trace = NULL;
+
+    const char *file_name = NULL;
+    int line_number = 0;
+
+    const char *source = NULL;
+
+    PyObject *custom_parameters = NULL;
+
+    if (!PyArg_ParseTuple(args, "s|zzzizO:runtime_error", &error_message,
+                          &error_class, &stack_trace, &file_name,
+                          &line_number, &source, &custom_parameters )) {
         return NULL;
+    }
+
+    if (custom_parameters && !PyDict_Check(custom_parameters)) {
+        PyErr_SetString(PyExc_TypeError, "dictionary expected "
+                        "for custom parameters");
+        return NULL;
+    }
 
     if (!self->transaction_active) {
         PyErr_SetString(PyExc_RuntimeError, "transaction not active");
         return NULL;
     }
 
+    if (!error_class)
+        error_class = "";
+
     record = nr_transaction_error__allocate(
             self->web_transaction, &(self->transaction_errors),
-            "xxx.py", 666, error, "ActionView::TemplateError", 0);
+            "", 0, error_message, error_class, 0);
 
-    /* XXX */
-    nr_param_array__set_string(record->params, "line_number", "LINE_NUMBER");
-    nr_param_array__set_string(record->params, "source", "SOURCE\nSOURCE");
-    nr_param_array__set_string(record->params, "stack_trace", "STACK_TRACE");
-    nr_param_array__set_string_in_hash_at(record->params, "custom_parameters",
-            "CUSTOM_PARAMETERS_KEY", "CUSTOM_PARAMETERS_VALUE");
-    /* XXX */
+    if (file_name) {
+        char buffer[123];
 
-#if 0
-    nr__put_stack_trace_into_params(rec->params TSRMLS_CC);
-#endif
+        sprintf(buffer, "%d", line_number);
+
+        nr_param_array__set_string(record->params, "file_name", file_name);
+        nr_param_array__set_string(record->params, "line_number", buffer);
+    }
+
+    if (source)
+        nr_param_array__set_string(record->params, "source", source);
+
+    if (stack_trace)
+        nr_param_array__set_string(record->params, "stack_trace", stack_trace);
+
+    if (custom_parameters && PyDict_Size(custom_parameters) > 0) {
+        Py_ssize_t pos = 0;
+
+        PyObject *key;
+        PyObject *value;
+
+        PyObject *key_as_string;
+        PyObject *value_as_string;
+
+        while (PyDict_Next(custom_parameters, &pos, &key, &value)) {
+            key_as_string = PyObject_Str(key);
+
+            if (!key_as_string)
+               PyErr_Clear();
+
+            value_as_string = PyObject_Str(value);
+
+            if (!value_as_string)
+               PyErr_Clear();
+
+            if (key_as_string && value_as_string) {
+                nr_param_array__set_string_in_hash_at(
+                        record->params, "custom_parameters",
+                        PyString_AsString(key_as_string),
+                        PyString_AsString(value_as_string));
+            }
+
+            Py_XDECREF(key_as_string);
+            Py_XDECREF(value_as_string);
+        }
+    }
 
     Py_INCREF(Py_None);
     return Py_None;

@@ -32,6 +32,7 @@ NRWebTransactionObject *NRWebTransaction_New(nr_application *application,
     NRWebTransactionObject *self;
     PyObject *item;
 
+    const char *realpath = "<unknown>";
     const char *path = "<unknown>";
     int path_type = NR_PATH_TYPE_URI;
     int64_t queue_start = 0;
@@ -65,7 +66,10 @@ NRWebTransactionObject *NRWebTransaction_New(nr_application *application,
         item = PyDict_GetItemString(environ, "REQUEST_URI");
 
         if (item && PyString_Check(item))
-            path = PyString_AsString(item);
+            realpath = PyString_AsString(item);
+
+        if (realpath)
+            path = realpath;
         else
             path_type = NR_PATH_TYPE_UNKNOWN;
 
@@ -108,11 +112,11 @@ NRWebTransactionObject *NRWebTransaction_New(nr_application *application,
     if (application) {
         self->web_transaction = nr_web_transaction__allocate();
 
-        self->web_transaction->http_response_code = 200;
+        self->web_transaction->http_response_code = 0;
 
         self->web_transaction->path_type = path_type;
         self->web_transaction->path = nrstrdup(path);
-        self->web_transaction->realpath = NULL;
+        self->web_transaction->realpath = nrstrdup(realpath);
 
         self->web_transaction->http_x_request_start = queue_start;
     }
@@ -197,6 +201,13 @@ static PyObject *NRWebTransaction_exit(NRWebTransactionObject *self,
     PyObject *value = NULL;
     PyObject *traceback = NULL;
 
+    nr_transaction_error* record;
+
+    PyObject *error_message = NULL;
+    PyObject *stack_trace = NULL;
+
+    PyObject *module = NULL;
+
     /*
      * We parse out the required parameters for conformity but
      * don't do anything with them. Specifically, when passed in
@@ -219,6 +230,70 @@ static PyObject *NRWebTransaction_exit(NRWebTransactionObject *self,
     if (!self->web_transaction) {
         Py_INCREF(Py_None);
         return Py_None;
+    }
+
+    /*
+     * Treat any exception passed in as being unhandled and record
+     * details of exception against the transaction.
+     */
+
+    if (type != Py_None && value != Py_None && traceback != Py_None) {
+        error_message = PyObject_Str(value);
+
+        module = PyImport_ImportModule("traceback");
+
+        if (module) {
+            PyObject *dict = NULL;
+            PyObject *object = NULL;
+
+            dict = PyModule_GetDict(module);
+            object = PyDict_GetItemString(dict, "format_exception");
+
+            if (object) {
+                PyObject *args = NULL;
+                PyObject *result = NULL;
+
+                Py_INCREF(object);
+
+                args = Py_BuildValue("(OOO)", type, value, traceback);
+                result = PyEval_CallObject(object, args);
+
+                Py_DECREF(args);
+                Py_DECREF(object);
+
+                if (result) {
+                    PyObject *sep = NULL;
+                    
+                    sep = PyString_FromString("");
+                    stack_trace = _PyString_Join(sep, result);
+
+                    if (!stack_trace)
+                        PyErr_Clear();
+
+                    Py_DECREF(sep);
+                }
+                else
+                    PyErr_Clear();
+
+                Py_XDECREF(result);
+            }
+        }
+        else
+            PyErr_Clear();
+
+        Py_XDECREF(module);
+
+        record = nr_transaction_error__allocate(
+                self->web_transaction, &(self->transaction_errors), "", 0,
+                PyString_AsString(error_message), Py_TYPE(value)->tp_name, 0);
+
+        if (stack_trace) {
+            nr_param_array__set_string(record->params, "stack_trace",
+                                       PyString_AsString(stack_trace));
+        }
+
+        Py_XDECREF(stack_trace);
+        Py_DECREF(error_message);
     }
 
     nr_node_header__record_stoptime_and_pop_current(

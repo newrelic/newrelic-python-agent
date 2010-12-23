@@ -2,6 +2,8 @@ import threading
 import atexit
 import types
 import sys
+import traceback
+import os
 
 import _newrelic
 
@@ -86,32 +88,32 @@ atexit.register(_newrelic.harvest)
 
 class _ExitCallbackFile:
 
-    def __init__(self, filelike, callback):
-        self.__filelike = filelike
-        self.__callback = callback
+    def __init__(self, transaction, file):
+        self.__transaction = transaction
+        self.__file = file
 
-        if hasattr(self.__filelike, 'fileno'):
-            self.fileno = self.__filelike.fileno
-        if hasattr(self.__filelike, 'read'):
-            self.read = self.__filelike.read
-        if hasattr(self.__filelike, 'tell'):
-            self.tell = self.__filelike.tell
+        if hasattr(self.__file, 'fileno'):
+            self.fileno = self.__file.fileno
+        if hasattr(self.__file, 'read'):
+            self.read = self.__file.read
+        if hasattr(self.__file, 'tell'):
+            self.tell = self.__file.tell
 
     def close(self):
         try:
-            if hasattr(self.__filelike, 'close'):
-                self.__filelike.close()
+            if hasattr(self.__file, 'close'):
+                self.__file.close()
         except:
-            self.__callback(*sys.exc_info())
+            self.__transaction.__exit__(*sys.exc_info())
             raise
         finally:
-            self.__callback(None, None, None)
+            self.__transaction.__exit__(None, None, None)
 
 class _ExitCallbackGenerator:
 
-    def __init__(self, generator, callback):
+    def __init__(self, transaction, generator):
+        self.__transaction = transaction
         self.__generator = generator
-        self.__callback = callback
 
     def __iter__(self):
         for item in self.__generator:
@@ -122,10 +124,10 @@ class _ExitCallbackGenerator:
             if hasattr(self.__generator, 'close'):
                 self.__generator.close()
         except:
-            self.__callback(*sys.exc_info())
+            self.__transaction.__exit__(*sys.exc_info())
             raise
         finally:
-            self.__callback()
+            self.__transaction.__exit__(None, None, None)
 
 class _ExecuteOnCompletion:
 
@@ -136,8 +138,13 @@ class _ExecuteOnCompletion:
     def __call__(self, environ, start_response):
         transaction = self.__application.web_transaction(environ)
         transaction.__enter__()
+
+        def _start_response(status, response_headers, exc_info=None):
+            transaction.response_code = int(status.split(' ')[0])
+            return start_response(status, response_headers, exc_info)
+
         try:
-            result = self.__callable(environ, start_response)
+            result = self.__callable(environ, _start_response)
         except:
             transaction.__exit__(*sys.exc_info())
             raise
@@ -145,9 +152,9 @@ class _ExecuteOnCompletion:
         if str(type(result)).find("'mod_wsgi.Stream'") != -1 and \
                 hasattr(result, 'file'):
             return environ['wsgi.file_wrapper'](
-                    _ExitCallbackFile(result.file(), transaction.__exit__))
+                    _ExitCallbackFile(transaction, result.file()))
         else:
-            return _ExitCallbackGenerator(result, transaction.__exit__)
+            return _ExitCallbackGenerator(transaction, result)
 
 def application_monitor(name, framework=None):
     application = _Application(name, framework)

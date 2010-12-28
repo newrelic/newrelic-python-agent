@@ -621,7 +621,14 @@ static int NRWebTransaction_set_path(NRWebTransactionObject *self,
 
     nrfree(self->web_transaction->path);
 
+    /*
+     * TODO Review whether path type should be able to be specified
+     * in some way, or whether allow settings from callable object
+     * and have code work out appropriate name to use for path.
+     */
+
     self->web_transaction->path = nrstrdup(PyString_AsString(value));
+    self->web_transaction->path_type = NR_PATH_TYPE_FUNCTION;
 
     return 0;
 }

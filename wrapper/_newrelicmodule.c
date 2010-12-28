@@ -144,12 +144,11 @@ static PyObject *newrelic_Application(PyObject *self, PyObject *args)
 {
     NRApplicationObject *rv;
     const char *name = NULL;
-    const char *framework = NULL;
 
-    if (!PyArg_ParseTuple(args, "s|z:Application", &name, &framework))
+    if (!PyArg_ParseTuple(args, "s:Application", &name))
         return NULL;
 
-    rv = NRApplication_New(name, framework);
+    rv = NRApplication_New(name);
     if (rv == NULL)
         return NULL;
 
@@ -184,6 +183,56 @@ static PyMethodDef newrelic_methods[] = {
     { NULL, NULL }
 };
 
+static PyCFunctionWithKeywords newrelic_builtin_import = NULL;
+
+static PyObject *newrelic_import(PyObject *self, PyObject *args,
+                                    PyObject *kwds)
+{
+    static char *kwlist[] = {"name", "globals", "locals", "fromlist",
+                             "level", 0};
+    char *name;
+    PyObject *globals = NULL;
+    PyObject *locals = NULL;
+    PyObject *fromlist = NULL;
+    int level = -1;
+
+    int index;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s|OOOi:__import__",
+            kwlist, &name, &globals, &locals, &fromlist, &level))
+        return NULL;
+
+    fprintf(stderr, "newrelic_import %s\n", name);
+    fflush(stderr);
+
+    return newrelic_builtin_import(self, args, kwds);
+}
+
+static void newrelic_init_import_intercept(void)
+{
+    PyObject *module;
+    PyObject *dict;
+    PyObject *import;
+
+    module = PyImport_ImportModule("__builtin__");
+
+    if (!module)
+        Py_FatalError("can't locate __builtin__ module");
+
+    dict = PyModule_GetDict(module);
+    import = PyDict_GetItemString(dict, "__import__");
+
+    if (!import)
+        Py_FatalError("can't locate __import__ method");
+
+    if (!PyCFunction_Check(import))
+        Py_FatalError("__import__ is not a C function");
+
+    newrelic_builtin_import = (PyCFunctionWithKeywords) PyCFunction_GET_FUNCTION(import);
+
+    PyCFunction_GET_FUNCTION(import) = (PyCFunction)newrelic_import;
+}
+
 PyMODINIT_FUNC
 init_newrelic(void)
 {
@@ -192,6 +241,16 @@ init_newrelic(void)
     module = Py_InitModule3("_newrelic", newrelic_methods, NULL);
     if (module == NULL)
         return;
+
+    /*
+     * Insert evil intercept of Python '__import__()' method in
+     * builtins module for purposes of being able to track all
+     * imports and perform post import fixups.
+     */
+
+#if 0
+    newrelic_init_import_intercept();
+#endif
 
     /* Initialise type objects. */
 

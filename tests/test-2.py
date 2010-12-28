@@ -12,7 +12,7 @@ print "starting"
 newrelic.settings.logfile = "/tmp/newrelic-agent.log"
 newrelic.settings.loglevel = newrelic.LOG_VERBOSEDEBUG
 
-@newrelic.application_monitor("Tests")
+@newrelic.web_transaction("Tests")
 def handler(environ, start_response):
     time.sleep(random.random()/5.0)
 

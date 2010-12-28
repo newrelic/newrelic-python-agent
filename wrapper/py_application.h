@@ -23,8 +23,7 @@ extern PyTypeObject NRApplication_Type;
 
 /* ------------------------------------------------------------------------- */
 
-NRApplicationObject *NRApplication_New(const char *name,
-                                       const char *framework);
+NRApplicationObject *NRApplication_New(const char *name);
 
 /* ------------------------------------------------------------------------- */
 

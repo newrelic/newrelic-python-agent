@@ -31,8 +31,7 @@
 
 static int NRApplication_instances = 0;
 
-NRApplicationObject *NRApplication_New(const char *name,
-                                       const char *framework)
+NRApplicationObject *NRApplication_New(const char *name)
 {
     NRApplicationObject *self;
 
@@ -64,19 +63,6 @@ NRApplicationObject *NRApplication_New(const char *name,
         return NULL;
 
     self->application = nr__find_or_create_application(name);
-
-    /*
-     * Markup what Python web framework may be getting used.
-     * This can be overridden later via attribute of the
-     * application object. This displays in the agent
-     * configuration in the RPM GUI.
-     */
-
-    if (framework) {
-        nr_generic_object__add_string_to_hash(
-                self->application->appconfig,
-                "application.framework", framework);
-    }
 
     /* Markup what version of the Python agent wrapper is being
      * used. This display in the agent configuration in the
@@ -139,40 +125,6 @@ static PyObject *NRApplication_get_name(NRApplicationObject *self,
                                         void *closure)
 {
     return PyString_FromString(self->application->appname);
-}
-
-static PyObject *NRApplication_get_framework(NRApplicationObject *self,
-                                             void *closure)
-{
-    nr_generic_object *p;
-
-    p = nr_generic_object__find_in_hash(self->application->appconfig,
-                                        "application.framework");
-
-    if (p && p->type == NR_OBJECT_UTF)
-       return PyString_FromString(p->sval);
-
-    return PyString_FromString("");
-}
-
-static int NRApplication_set_framework(NRApplicationObject *self,
-                                       PyObject *value)
-{
-    if (value == NULL) {
-        PyErr_SetString(PyExc_TypeError, "can't delete framework attribute");
-        return -1;
-    }
-
-    if (!PyString_Check(value)) {
-        PyErr_SetString(PyExc_TypeError, "expected string for framework name");
-        return -1;
-    }
-
-    nr_generic_object__add_string_to_hash(self->application->appconfig,
-                                          "application.framework",
-                                          PyString_AsString(value));
-
-    return 0;
 }
 
 static PyObject *NRApplication_get_enabled(NRApplicationObject *self,
@@ -274,7 +226,6 @@ static PyMethodDef NRApplication_methods[] = {
 
 static PyGetSetDef NRApplication_getset[] = {
     { "name", (getter)NRApplication_get_name, NULL, 0 },
-    { "framework", (getter)NRApplication_get_framework, (setter)NRApplication_set_framework, 0 },
     { "enabled", (getter)NRApplication_get_enabled, (setter)NRApplication_set_enabled, 0 },
     { NULL },
 };

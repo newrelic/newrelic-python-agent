@@ -1,3 +1,5 @@
+# vi: set sw=4 expandtab :
+
 import threading
 import atexit
 import types
@@ -13,6 +15,64 @@ LOG_WARNING = _newrelic.LOG_WARNING
 LOG_VERBOSE = _newrelic.LOG_VERBOSE
 LOG_DEBUG = _newrelic.LOG_DEBUG
 LOG_VERBOSEDEBUG = _newrelic.LOG_VERBOSEDEBUG
+
+# Replace __import__() in __builtin__ module so that we can
+# implement post import hook.
+
+"""
+import __builtin__
+
+__old_import__ = __builtin__.__import__
+
+def __import__(name, *args, **kwargs):
+    print '__import__ ', name, args[2:3]
+    return __old_import__(name, *args, **kwargs)
+
+__builtin__.__import__ = __import__
+"""
+
+"""
+class _ModuleLoader:
+
+    def __init__(self, loader):
+        self.__loader = loader
+
+    def load_module(self, fullname):
+        print "load_module start", fullname
+        try:
+            return self.__loader(fullname)
+        finally:
+            print "load_module finish", fullname
+
+class _ModuleImporter:
+
+    def __init__(self):
+        self.__flags = threading.local()
+
+    def find_module(self, fullname, path=None):
+        try:
+            if self.__flags.skip:
+                return None
+        except:
+            pass
+
+        self.__flags.skip = True
+
+        print "find_module", fullname
+        for importer in sys.meta_path:
+            print "find_module import", importer
+            if importer != self:
+                loader = importer.find_module(fullname, path)
+                if loader:
+                    return _ModuleLoader(loader)
+
+sys.meta_path.insert(0, _ModuleImporter())
+"""
+
+"""
+def profiler(frame, event, arg):
+      print event, frame.f_code.co_name, frame.f_lineno, "->", arg
+"""
 
 # Provide single instance of settings object as a convenience.
 
@@ -37,14 +97,14 @@ settings = _newrelic.Settings()
 _applications_lock = threading.RLock()
 _applications = {}
 
-def _Application(name, framework=None):
+def _Application(name):
 
     _applications_lock.acquire()
 
     application = _applications.get(name, None)
 
     if application is None:
-        application = _newrelic.Application(name, framework)
+        application = _newrelic.Application(name)
         _applications[name] = application
         _newrelic.harvest()
 
@@ -86,6 +146,14 @@ atexit.register(_newrelic.harvest)
 # rather than needing a new generator be created that stops
 # 'wsgi.file_wrapper' from working.
 
+_context = threading.local()
+
+def current_transaction():
+    try:
+        return _context.transactions[-1]
+    except IndexError:
+        raise RuntimeError('no active transaction')
+
 class _ExitCallbackFile:
 
     def __init__(self, transaction, file):
@@ -104,10 +172,14 @@ class _ExitCallbackFile:
             if hasattr(self.__file, 'close'):
                 self.__file.close()
         except:
+            #sys.setprofile(None)
             self.__transaction.__exit__(*sys.exc_info())
             raise
-        finally:
+        else:
+            #sys.setprofile(None)
             self.__transaction.__exit__(None, None, None)
+        finally:
+            _context.transactions.pop()
 
 class _ExitCallbackGenerator:
 
@@ -124,10 +196,14 @@ class _ExitCallbackGenerator:
             if hasattr(self.__generator, 'close'):
                 self.__generator.close()
         except:
+            #sys.setprofile(None)
             self.__transaction.__exit__(*sys.exc_info())
             raise
-        finally:
+        else:
+            #sys.setprofile(None)
             self.__transaction.__exit__(None, None, None)
+        finally:
+            _context.transactions.pop()
 
 class _ExecuteOnCompletion:
 
@@ -137,7 +213,17 @@ class _ExecuteOnCompletion:
 
     def __call__(self, environ, start_response):
         transaction = self.__application.web_transaction(environ)
+
+        try:
+            _context.transactions.append(transaction)
+        except AttributeError:
+            _context.transactions = [transaction]
+
         transaction.__enter__()
+        #sys.setprofile(profiler)
+
+        import time
+        transaction.custom_parameters['time'] = time.time()
 
         def _start_response(status, response_headers, exc_info=None):
             transaction.response_code = int(status.split(' ')[0])
@@ -146,7 +232,9 @@ class _ExecuteOnCompletion:
         try:
             result = self.__callable(environ, _start_response)
         except:
+            sys.setprofile(None)
             transaction.__exit__(*sys.exc_info())
+            _context.transactions.pop()
             raise
 
         if str(type(result)).find("'mod_wsgi.Stream'") != -1 and \
@@ -156,10 +244,118 @@ class _ExecuteOnCompletion:
         else:
             return _ExitCallbackGenerator(transaction, result)
 
-def application_monitor(name, framework=None):
-    application = _Application(name, framework)
+def web_transaction(name):
+    application = _Application(name)
 
     def decorator(callable):
         return _ExecuteOnCompletion(application, callable)
+
+    return decorator
+
+# Provide decorators for transaction traces which ensure sub
+# timing is started and stopped appropriatey in all situations.
+# Note that these stop timing on exit from the wrapped callable.
+# If the result is a generator which is then consumed in outer
+# scope, that consumption doesn't count towards the time.
+
+def _qualified_name(callable):
+    if hasattr(callable, 'im_class'):
+        return '%s:%s.%s' % (callable.im_class.__module__,
+                callable.im_class.__name__, callable.__name__)
+    elif hasattr(callable, '__module__'):
+        return '%s:%s' % (callable.__module__, callable.__name__)
+    else:
+        return callable.__name__
+
+def function_trace(name=None, inherit=False):
+
+    def decorator(callable):
+
+        def wrapper(*args, **kwargs):
+            try:
+                transaction = _context.transactions[-1]
+            except IndexError:
+                return callable(*args, **kwargs)
+
+            qualified_name = name or _qualified_name(callable)
+
+            if inherit:
+                transaction.path = qualified_name
+
+            trace = transaction.function_trace(qualified_name)
+            trace.__enter__()
+
+            try:
+                return callable(*args, **kwargs)
+            finally:
+                trace.__exit__(None, None, None)
+
+        return wrapper
+
+    return decorator
+
+def external_trace(index):
+
+    def decorator(callable):
+
+        def wrapper(*args, **kwargs):
+            try:
+                transaction = _context.transactions[-1]
+            except IndexError:
+                return callable(*args, **kwargs)
+
+            trace = transaction.external_trace(args[index])
+            trace.__enter__()
+
+            try:
+                return callable(*args, **kwargs)
+            finally:
+                trace.__exit__(None, None, None)
+
+        return wrapper
+
+    return decorator
+
+def memcache_trace(index):
+
+    def decorator(callable):
+
+        def wrapper(*args, **kwargs):
+            try:
+                transaction = _context.transactions[-1]
+            except IndexError:
+                return callable(*args, **kwargs)
+
+            trace = transaction.memcache_trace(args[index])
+            trace.__enter__()
+
+            try:
+                return callable(*args, **kwargs)
+            finally:
+                trace.__exit__(None, None, None)
+
+        return wrapper
+
+    return decorator
+
+def database_trace(index):
+
+    def decorator(callable):
+
+        def wrapper(*args, **kwargs):
+            try:
+                transaction = _context.transactions[-1]
+            except IndexError:
+                return callable(*args, **kwargs)
+
+            trace = transaction.database_trace(args[index])
+            trace.__enter__()
+
+            try:
+                return callable(*args, **kwargs)
+            finally:
+                trace.__exit__(None, None, None)
+
+        return wrapper
 
     return decorator

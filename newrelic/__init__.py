@@ -16,64 +16,6 @@ LOG_VERBOSE = _newrelic.LOG_VERBOSE
 LOG_DEBUG = _newrelic.LOG_DEBUG
 LOG_VERBOSEDEBUG = _newrelic.LOG_VERBOSEDEBUG
 
-# Replace __import__() in __builtin__ module so that we can
-# implement post import hook.
-
-"""
-import __builtin__
-
-__old_import__ = __builtin__.__import__
-
-def __import__(name, *args, **kwargs):
-    print '__import__ ', name, args[2:3]
-    return __old_import__(name, *args, **kwargs)
-
-__builtin__.__import__ = __import__
-"""
-
-"""
-class _ModuleLoader:
-
-    def __init__(self, loader):
-        self.__loader = loader
-
-    def load_module(self, fullname):
-        print "load_module start", fullname
-        try:
-            return self.__loader(fullname)
-        finally:
-            print "load_module finish", fullname
-
-class _ModuleImporter:
-
-    def __init__(self):
-        self.__flags = threading.local()
-
-    def find_module(self, fullname, path=None):
-        try:
-            if self.__flags.skip:
-                return None
-        except:
-            pass
-
-        self.__flags.skip = True
-
-        print "find_module", fullname
-        for importer in sys.meta_path:
-            print "find_module import", importer
-            if importer != self:
-                loader = importer.find_module(fullname, path)
-                if loader:
-                    return _ModuleLoader(loader)
-
-sys.meta_path.insert(0, _ModuleImporter())
-"""
-
-"""
-def profiler(frame, event, arg):
-      print event, frame.f_code.co_name, frame.f_lineno, "->", arg
-"""
-
 # Provide single instance of settings object as a convenience.
 
 settings = _newrelic.Settings()

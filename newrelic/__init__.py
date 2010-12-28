@@ -114,11 +114,9 @@ class _ExitCallbackFile:
             if hasattr(self.__file, 'close'):
                 self.__file.close()
         except:
-            #sys.setprofile(None)
             self.__transaction.__exit__(*sys.exc_info())
             raise
         else:
-            #sys.setprofile(None)
             self.__transaction.__exit__(None, None, None)
         finally:
             _context.transactions.pop()
@@ -138,11 +136,9 @@ class _ExitCallbackGenerator:
             if hasattr(self.__generator, 'close'):
                 self.__generator.close()
         except:
-            #sys.setprofile(None)
             self.__transaction.__exit__(*sys.exc_info())
             raise
         else:
-            #sys.setprofile(None)
             self.__transaction.__exit__(None, None, None)
         finally:
             _context.transactions.pop()
@@ -162,7 +158,6 @@ class _ExecuteOnCompletion:
             _context.transactions = [transaction]
 
         transaction.__enter__()
-        #sys.setprofile(profiler)
 
         import time
         transaction.custom_parameters['time'] = time.time()

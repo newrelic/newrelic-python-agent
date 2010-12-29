@@ -23,7 +23,7 @@ def _push_transaction(transaction):
 
 def _pop_transaction(transaction=None):
     current = _context.transactions.pop()
-    if not _transaction and _transaction != current:
+    if not transaction and transaction != current:
         raise RuntimeError('not the current transaction')
 
 # Provide a WSGI middleware wrapper for initiating a web
@@ -38,38 +38,33 @@ def _pop_transaction(transaction=None):
 # finalisation. Doing this defeats any optimisations possible
 # through using 'wsgi.file_wrapper'. For mod_wsgi case rely on a
 # specific back door in mod_wsgi which allows extraction of file
-# object from 'wsgi.file_wrapper' instance as we rewrap the file
-# object and create new 'wsgi.file_wrapper'. The 'close()' of
-# the wrapped file object is then replaced rather than needing a
-# new generator be created that stops 'wsgi.file_wrapper' from
-# working.
+# object from 'wsgi.file_wrapper' instance. We then rewrap the
+# file object using new custom derived instance of the type
+# 'wsgi.file_wrapper'. The 'close()' method of derived file
+# wrapper the performs the required cleanup. This optimisation
+# will only work for mod_wsgi 4.0+. Technically though it could
+# work for any WSGI hosting system that satisfies criteria of
+# 'wsgi.file_wrapper' being the type object for the wrapper and
+# and instance of the type having attributes 'filelike' and
+# 'blksize'.
 
-class _ExitCallbackFile:
+def _ExitFileWrapper(transaction, generator):
 
-    def __init__(self, transaction, file):
-        self.__transaction = transaction
-        self.__file = file
+    class _ExitFileWrapper(type(generator)):
+        def close(self):
+            try:
+                super(_ExitFileWrapper, self).close()
+            except:
+                transaction.__exit__(*sys.exc_info())
+                raise
+            else:
+                transaction.__exit__(None, None, None)
+            finally:
+                _context.transactions.pop()
 
-        if hasattr(self.__file, 'fileno'):
-            self.fileno = self.__file.fileno
-        if hasattr(self.__file, 'read'):
-            self.read = self.__file.read
-        if hasattr(self.__file, 'tell'):
-            self.tell = self.__file.tell
+    return _ExitFileWrapper(generator.filelike, generator.blksize)
 
-    def close(self):
-        try:
-            if hasattr(self.__file, 'close'):
-                self.__file.close()
-        except:
-            self.__transaction.__exit__(*sys.exc_info())
-            raise
-        else:
-            self.__transaction.__exit__(None, None, None)
-        finally:
-            _context.transactions.pop()
-
-class _ExitCallbackGenerator:
+class _ExitGenerator:
 
     def __init__(self, transaction, generator):
         self.__transaction = transaction
@@ -111,12 +106,11 @@ class WebTransaction:
             result = self.__callable(environ, _start_response)
         except:
             transaction.__exit__(*sys.exc_info())
-            _pop_transaction(transactions)
+            _pop_transaction(transaction)
             raise
 
-        if str(type(result)).find("'mod_wsgi.Stream'") != -1 and \
-                hasattr(result, 'file'):
-            return environ['wsgi.file_wrapper'](
-                    _ExitCallbackFile(transaction, result.file()))
+        if type(result) == environ.get('wsgi.file_wrapper', None) and \
+                hasattr(result, 'filelike') and hasattr(result, 'blksize'):
+            return _ExitFileWrapper(transaction, result)
         else:
-            return _ExitCallbackGenerator(transaction, result)
+            return _ExitGenerator(transaction, result)

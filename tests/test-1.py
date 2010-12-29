@@ -14,7 +14,7 @@ settings = _newrelic.Settings()
 settings.logfile = "/tmp/newrelic-agent.log"
 settings.loglevel = _newrelic.LOG_VERBOSEDEBUG
 
-application = _newrelic.Application("Tests", "Test Scripts")
+application = _newrelic.Application("Tests")
 
 _newrelic.harvest()
 

@@ -100,7 +100,7 @@ class _ContextManager:
 
     def __exit__(self, *args):
         _pop_transaction(self.__transaction)
-        self.__transaction.__exit(*args)
+        self.__transaction.__exit__(*args)
 
 class WebTransaction:
 
@@ -127,6 +127,6 @@ class WebTransaction:
         file_wrapper = environ.get('wsgi.file_wrapper', None)
         if file_wrapper and isinstance(result, file_wrapper) and \
                 hasattr(result, 'filelike') and hasattr(result, 'blksize'):
-            return _FileWrapper(transaction, result)
+            return _FileWrapper(context, result)
         else:
-            return _Generator(transaction, result)
+            return _Generator(context, result)

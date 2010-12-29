@@ -48,26 +48,31 @@ def _pop_transaction(transaction=None):
 # and instance of the type having attributes 'filelike' and
 # 'blksize'.
 
-def _ExitFileWrapper(transaction, generator):
+def _FileWrapper(context, generator):
 
-    class _ExitFileWrapper(type(generator)):
+    class _FileWrapper(type(generator)):
+
+        def __init__(self, context, generator):
+            super(_FileWrapper, self).__init__(generator.filelike,
+                                               generator.blksize)
+            self.__context = context
+            self.__generator = generator
+
         def close(self):
             try:
-                super(_ExitFileWrapper, self).close()
+                self.__generator.close()
             except:
-                transaction.__exit__(*sys.exc_info())
+                self.__context.__exit__(*sys.exc_info())
                 raise
             else:
-                transaction.__exit__(None, None, None)
-            finally:
-                _context.transactions.pop()
+                self.__context.__exit__(None, None, None)
 
-    return _ExitFileWrapper(generator.filelike, generator.blksize)
+    return _FileWrapper(context, generator)
 
-class _ExitGenerator:
+class _Generator:
 
-    def __init__(self, transaction, generator):
-        self.__transaction = transaction
+    def __init__(self, context, generator):
+        self.__context = context
         self.__generator = generator
 
     def __iter__(self):
@@ -79,12 +84,23 @@ class _ExitGenerator:
             if hasattr(self.__generator, 'close'):
                 self.__generator.close()
         except:
-            self.__transaction.__exit__(*sys.exc_info())
+            self.__context.__exit__(*sys.exc_info())
             raise
         else:
-            self.__transaction.__exit__(None, None, None)
-        finally:
-            _context.transactions.pop()
+            self.__context.__exit__(None, None, None)
+
+class _ContextManager:
+
+    def __init__(self, transaction):
+        self.__transaction = transaction
+
+    def __enter__(self):
+        _push_transaction(self.__transaction)
+        self.__transaction.__enter__()
+
+    def __exit__(self, *args):
+        _pop_transaction(self.__transaction)
+        self.__transaction.__exit(*args)
 
 class WebTransaction:
 
@@ -94,9 +110,9 @@ class WebTransaction:
 
     def __call__(self, environ, start_response):
         transaction = self.__application.web_transaction(environ)
+        context = _ContextManager(transaction)
 
-        _push_transaction(transaction)
-        transaction.__enter__()
+        context.__enter__()
 
         def _start_response(status, response_headers, exc_info=None):
             transaction.response_code = int(status.split(' ')[0])
@@ -105,12 +121,12 @@ class WebTransaction:
         try:
             result = self.__callable(environ, _start_response)
         except:
-            transaction.__exit__(*sys.exc_info())
-            _pop_transaction(transaction)
+            context.__exit__(*sys.exc_info())
             raise
 
-        if type(result) == environ.get('wsgi.file_wrapper', None) and \
+        file_wrapper = environ.get('wsgi.file_wrapper', None)
+        if file_wrapper and isinstance(result, file_wrapper) and \
                 hasattr(result, 'filelike') and hasattr(result, 'blksize'):
-            return _ExitFileWrapper(transaction, result)
+            return _FileWrapper(transaction, result)
         else:
-            return _ExitGenerator(transaction, result)
+            return _Generator(transaction, result)

@@ -1,6 +1,6 @@
 /* ------------------------------------------------------------------------- */
 
-/* (C) Copyright 2010 New Relic Inc. All rights reserved. */
+/* (C) Copyright 2010-2011 New Relic Inc. All rights reserved. */
 
 /* ------------------------------------------------------------------------- */
 
@@ -18,11 +18,32 @@
 #include "params_funcs.h"
 #include "web_transaction_funcs.h"
 
+#include "pythread.h"
+
 /* ------------------------------------------------------------------------- */
 
 #ifndef PyVarObject_HEAD_INIT
 #define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
 #endif
+
+/* ------------------------------------------------------------------------- */
+
+static int NRWebTransaction_tls_key = 0;
+
+/* ------------------------------------------------------------------------- */
+
+NRWebTransactionObject *NRWebTransaction_CurrentTransaction()
+{
+    NRWebTransactionObject *result = NULL;
+
+    if (!NRWebTransaction_tls_key)
+        return NULL;
+
+    result = (NRWebTransactionObject *)PyThread_get_key_value(
+            NRWebTransaction_tls_key);
+
+    return result;
+}
 
 /* ------------------------------------------------------------------------- */
 
@@ -36,6 +57,11 @@ NRWebTransactionObject *NRWebTransaction_New(nr_application *application,
     const char *path = "<unknown>";
     int path_type = NR_PATH_TYPE_URI;
     int64_t queue_start = 0;
+
+    /* Initialise thread local storage if necessary. */
+
+    if (!NRWebTransaction_tls_key)
+        NRWebTransaction_tls_key = PyThread_create_key();
 
     /*
      * If application and environ are NULL then indicates we are
@@ -179,6 +205,8 @@ static PyObject *NRWebTransaction_enter(NRWebTransactionObject *self,
     }
 
     self->transaction_active = 1;
+
+    PyThread_set_key_value(NRWebTransaction_tls_key, self);
 
     if (!self->web_transaction) {
         Py_INCREF(self);
@@ -393,6 +421,8 @@ static PyObject *NRWebTransaction_exit(NRWebTransactionObject *self,
                              &self->application->pending_harvest->errors);
 
     pthread_mutex_unlock(&(nr_per_process_globals.harvest_data_mutex));
+
+    PyThread_delete_key_value(NRWebTransaction_tls_key);
 
     self->web_transaction = NULL;
     self->transaction_errors = NULL;

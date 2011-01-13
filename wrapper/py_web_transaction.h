@@ -3,7 +3,7 @@
 
 /* ------------------------------------------------------------------------- */
 
-/* (C) Copyright 2010 New Relic Inc. All rights reserved. */
+/* (C) Copyright 2010-2011 New Relic Inc. All rights reserved. */
 
 /* ------------------------------------------------------------------------- */
 
@@ -30,6 +30,8 @@ extern PyTypeObject NRWebTransaction_Type;
 
 extern NRWebTransactionObject *NRWebTransaction_New(
         nr_application *application, PyObject *environ);
+
+extern NRWebTransactionObject *NRWebTransaction_CurrentTransaction(void);
 
 /* ------------------------------------------------------------------------- */
 

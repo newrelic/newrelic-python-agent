@@ -5,6 +5,8 @@ import atexit
 
 import _newrelic
 
+from frameworks import _instrument
+
 # We ensure only single application object for a specific name
 # is created as it is the Python object and not the internal
 # agent client application instance that holds the 'enabled'
@@ -21,23 +23,70 @@ import _newrelic
 # especially important where process generating metrics is short
 # lived.
 
-_applications_lock = threading.RLock()
+_lock = threading.RLock()
+
 _applications = {}
+_frameworks = {}
 
-def Application(name):
+_Application = _newrelic.Application
 
-    _applications_lock.acquire()
+"""
+class _Application(object):
 
-    application = _applications.get(name, None)
+    def __init__(self, instance):
+        self.__instance = instance
 
-    if application is None:
-        application = _newrelic.Application(name)
-        _applications[name] = application
-        _newrelic.harvest()
+    def __getattr__(self, name):
+        if name in self.__dict__:
+            return self.__dict__[name]
+        else:
+            return getattr(self.__instance, name)
 
-    _applications_lock.release()
+    #def __setattr__(self, name, value):
+    #    if name in self.__instance.__dict__:
+    #        setattr(self.__instance, name, value)
+    #    else:
+    #        self.__dict__[name] = value
+"""
 
-    return application 
+def initialize(application, framework=None):
+    _lock.acquire()
+
+    try:
+        instance = _applications.get(application, None)
+
+        if instance and instance.framework != framework:
+            raise RuntimeError('framework name has changed')
+
+        if not instance and _frameworks.has_key(framework):
+            raise RuntimeError('framework already initialized')
+
+        if instance is None:
+            print 'XXX 1'
+            settings = _instrument(application, framework)
+
+            instance = _newrelic.Application(application)
+            print 'XXX 2'
+            # TODO Make application object take settings and push it
+            # so it appear in agent configuration.
+            #instance = _Application(instance, settings)
+            #instance = _Application(instance)
+
+            _frameworks[framework] = settings
+
+            #instance.framework = framework
+            #instance.settings = settings
+
+            _applications[framework] = instance
+
+            print 'XXX 3'
+            _newrelic.harvest()
+            print 'XXX 4'
+
+    finally:
+        _lock.release()
+
+    return instance 
 
 # A harvest will only normally be forced when all the
 # application objects are destroyed. Because application objects

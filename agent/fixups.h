@@ -17,6 +17,7 @@
 
 #define zval int
 
+#define zend_class_entry int
 #define zend_op_array int
 #define zend_file_handle int
 #define zend_op_array int

@@ -10,7 +10,7 @@ LOG_DEBUG = _newrelic.LOG_DEBUG
 LOG_VERBOSEDEBUG = _newrelic.LOG_VERBOSEDEBUG
 
 from settings import settings
-from applications import Application
+from applications import initialize
 from middleware import current_transaction, WebTransaction
 from decorators import (web_transaction, function_trace, external_trace,
                         memcache_trace, database_trace)

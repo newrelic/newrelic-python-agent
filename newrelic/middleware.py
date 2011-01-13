@@ -2,6 +2,7 @@
 
 import threading
 import sys
+import types
 
 # Use thread local storage to track the current transaction for
 # the executing thread. Storage is implemented as a stack just
@@ -69,7 +70,7 @@ def _FileWrapper(context, generator):
 
     return _FileWrapper(context, generator)
 
-class _Generator:
+class _Generator(object):
 
     def __init__(self, context, generator):
         self.__context = context
@@ -89,7 +90,7 @@ class _Generator:
         else:
             self.__context.__exit__(None, None, None)
 
-class _ContextManager:
+class _ContextManager(object):
 
     def __init__(self, transaction):
         self.__transaction = transaction
@@ -102,13 +103,19 @@ class _ContextManager:
         _pop_transaction(self.__transaction)
         self.__transaction.__exit__(*args)
 
-class WebTransaction:
+class WebTransaction(object):
 
     def __init__(self, application, callable):
         self.__application = application
         self.__callable = callable
 
-    def __call__(self, environ, start_response):
+    def __get__(self, obj, objtype=None):
+        return types.MethodType(self, obj, objtype)
+
+    def __call__(self, *args):
+        environ = args[-2]
+        start_response = args[-1]
+
         transaction = self.__application.web_transaction(environ)
         context = _ContextManager(transaction)
 
@@ -119,7 +126,7 @@ class WebTransaction:
             return start_response(status, response_headers, exc_info)
 
         try:
-            result = self.__callable(environ, _start_response)
+            result = self.__callable(*args)
         except:
             context.__exit__(*sys.exc_info())
             raise

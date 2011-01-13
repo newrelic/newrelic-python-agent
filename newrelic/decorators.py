@@ -1,5 +1,8 @@
 # vi: set sw=4 expandtab :
 
+import inspect
+import types
+
 import applications
 import middleware
 
@@ -20,21 +23,49 @@ import middleware
 # scope, that consumption doesn't count towards the time.
 
 def web_transaction(name):
-    application = applications.Application(name)
+    application = applications._Application(name)
 
     def decorator(callable):
         return middleware.WebTransaction(application, callable)
 
     return decorator
 
-def _qualified_name(callable):
-    if hasattr(callable, 'im_class'):
-        return '%s:%s.%s' % (callable.im_class.__module__,
-                callable.im_class.__name__, callable.__name__)
-    elif hasattr(callable, '__module__'):
-        return '%s:%s' % (callable.__module__, callable.__name__)
+def _qualified_name(object):
+    mname = inspect.getmodule(object).__name__
+
+    if inspect.isclass(object):
+        cname = object.__name__
+    elif hasattr(object, 'im_class'):
+        cname = object.im_class.__name__
+    elif isinstance(object, types.InstanceType):
+        cname = object.__class__.__name__
+    elif hasattr(object, '__class__'):
+        cname = object.__class__.__name__
     else:
-        return callable.__name__
+        cname = None
+
+    if inspect.isfunction(object):
+        fname = object.__name__
+    elif inspect.ismethod(object):
+        fname = object.__name__
+    elif isinstance(object, types.TypeType):
+        fname = None
+    elif hasattr(object, '__call__'):
+        fname = '__call__'
+    else:
+        fname = None
+
+    path = mname
+
+    if cname:
+        path += '.'
+        path += cname
+
+    if fname:
+        path += ':'
+        path += fname
+
+    return path
 
 def function_trace(name=None, override_path=False):
 

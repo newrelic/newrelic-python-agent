@@ -1,6 +1,6 @@
 /* ------------------------------------------------------------------------- */
 
-/* (C) Copyright 2010 New Relic Inc. All rights reserved. */
+/* (C) Copyright 2010-2011 New Relic Inc. All rights reserved. */
 
 /* ------------------------------------------------------------------------- */
 
@@ -21,6 +21,8 @@
 #include "logging.h"
 
 #include "generic_object_funcs.h"
+#include "params_funcs.h"
+#include "web_transaction_funcs.h"
 
 /* ------------------------------------------------------------------------- */
 
@@ -176,10 +178,216 @@ static PyObject *newrelic_harvest(PyObject *self, PyObject *args)
     return Py_None;
 }
 
+static PyMethodDef *newrelic_lookup_function(const char *mname,
+                                             const char *cname,
+                                             const char *fname)
+{
+    PyObject *module = NULL;
+
+    PyMethodDef *function = NULL;
+
+    module = PyImport_ImportModule(mname);
+
+    if (module) {
+        PyObject *dict = NULL;
+        PyObject *cobject = NULL;
+        PyObject *fobject = NULL;
+
+        dict = PyModule_GetDict(module);
+
+        if (cname) {
+            PyTypeObject *tobject;
+            PyMethodDef *methods;
+
+            cobject = PyDict_GetItemString(dict, cname);
+
+            if (!cobject || !PyType_Check(cobject)) {
+                PyErr_SetString(PyExc_RuntimeError, "not a valid class type");
+                Py_XDECREF(cobject);
+                Py_DECREF(module);
+                return NULL;
+            }
+
+            tobject = (PyTypeObject *)cobject;
+            methods = tobject->tp_methods;
+            while (methods->ml_name) {
+                if (!strcmp(methods->ml_name, fname)) {
+                    function = methods;
+                    break;
+                }
+                methods++;
+            }
+
+            if (!function) {
+                PyErr_SetString(PyExc_RuntimeError, "not a valid method");
+                Py_DECREF(cobject);
+                Py_XDECREF(fobject);
+                Py_DECREF(module);
+                return NULL;
+            }
+
+            Py_DECREF(cobject);
+        }
+        else {
+            PyCFunctionObject *cfobject;
+
+            fobject = PyDict_GetItemString(dict, fname);
+
+            if (!fobject || !PyCFunction_Check(fobject)) {
+                PyErr_SetString(PyExc_RuntimeError, "not a valid function");
+                Py_XDECREF(fobject);
+                Py_DECREF(module);
+                return NULL;
+            }
+
+            cfobject = (PyCFunctionObject *)fobject;
+            function = cfobject->m_ml;
+
+            Py_DECREF(fobject);
+        }
+
+        Py_XDECREF(cobject);
+    }
+    else {
+        PyErr_SetString(PyExc_RuntimeError, "not a valid module");
+        return NULL;
+    }
+
+    Py_XDECREF(module);
+
+    return function;
+}
+
+typedef struct {
+    PyCFunction outer;
+    const char *mname;
+    const char *cname;
+    const char *fname;
+    int argnum;
+    PyCFunction original;
+    PyMethodDef *inner;
+} NRMethodWrapper;
+
+static NRMethodWrapper MRMethodWrapper_table[];
+
+static PyObject *newrelic_call_database_trace(PyCFunction function, int argnum,
+                                              PyObject *self, PyObject *args)
+{
+    PyObject *result = NULL;
+
+    NRWebTransactionObject *object = NULL;
+
+    nr_transaction_node *transaction_trace = NULL;
+    nr_node_header *save = NULL;
+
+    const char *sql = NULL;
+
+    if (PyTuple_Check(args) && argnum > 0 && PyTuple_Size(args) >= argnum) {
+        PyObject *object;
+
+        object = PyTuple_GetItem(args, argnum-1);
+        if (PyString_Check(object)) {
+            sql = PyString_AsString(object);
+        }
+    }
+
+    if (sql)
+        object = NRWebTransaction_CurrentTransaction();
+
+    if (object) {
+        transaction_trace = nr_web_transaction__allocate_sql_node(
+                object->web_transaction, sql, strlen(sql));
+
+        nr_node_header__record_starttime_and_push_current(
+                (nr_node_header *)transaction_trace, &save);
+    }
+
+    result = function(self, args);
+
+    if (object) {
+        nr_node_header__record_stoptime_and_pop_current(
+                (nr_node_header *)transaction_trace, &save);
+
+        /* TODO Only do this if slow. */
+
+        transaction_trace->stacktrace_params = nr_param_array__allocate();
+        nr_param_array__add_string_to_array_at(transaction_trace->stacktrace_params,"stack_trace", "stacktrace");
+    }
+
+    return result;
+}
+
+static PyObject *newrelic_database_trace_0(PyObject *self, PyObject* args)
+{
+    NRMethodWrapper *wrapper;
+    wrapper = &MRMethodWrapper_table[0];
+
+    return newrelic_call_database_trace(wrapper->original, wrapper->argnum,
+            self, args);
+}
+
+static PyObject *newrelic_database_trace_1(PyObject *self, PyObject* args)
+{
+    NRMethodWrapper *wrapper;
+    wrapper = &MRMethodWrapper_table[1];
+
+    return newrelic_call_database_trace(wrapper->original, wrapper->argnum,
+            self, args);
+}
+
+static int NRMethodWrapper_count = 0;
+static int NRMethodWrapper_maximum = 2;
+
+static NRMethodWrapper MRMethodWrapper_table[] = {
+    { newrelic_database_trace_0 },
+    { newrelic_database_trace_1 },
+};
+
+static PyObject *newrelic_wrap_c_database_trace(PyObject *self, PyObject* args)
+{
+    const char *mname = NULL;
+    const char *cname = NULL;
+    const char *fname = NULL;
+    int argnum;
+
+    PyMethodDef *function;
+
+    if (!PyArg_ParseTuple(args, "szsi", &mname, &cname, &fname, &argnum))
+        return NULL;
+
+    if (NRMethodWrapper_count >= NRMethodWrapper_maximum) {
+        PyErr_SetString(PyExc_RuntimeError, "no more wrapper slots");
+        return NULL;
+    }
+
+    function = newrelic_lookup_function(mname, cname, fname);
+
+    if (!function)
+        return NULL;
+
+    MRMethodWrapper_table[NRMethodWrapper_count].mname = mname;
+    MRMethodWrapper_table[NRMethodWrapper_count].cname = cname;
+    MRMethodWrapper_table[NRMethodWrapper_count].fname = fname;
+
+    MRMethodWrapper_table[NRMethodWrapper_count].argnum = argnum;
+
+    MRMethodWrapper_table[NRMethodWrapper_count].original = function->ml_meth;
+
+    MRMethodWrapper_table[NRMethodWrapper_count].inner = function;
+
+    function->ml_meth = MRMethodWrapper_table[NRMethodWrapper_count].outer;
+
+    NRMethodWrapper_count++;
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
 static PyMethodDef newrelic_methods[] = {
     { "Application", newrelic_Application, METH_VARARGS, 0 },
     { "Settings", newrelic_Settings, METH_NOARGS, 0 },
     { "harvest", newrelic_harvest, METH_NOARGS, 0 },
+    { "wrap_c_database_trace", newrelic_wrap_c_database_trace, METH_VARARGS, 0 },
     { NULL, NULL }
 };
 
@@ -292,6 +500,7 @@ init_newrelic(void)
      */
 
     nr_per_process_globals.tt_enabled = 1;
+    nr_per_process_globals.tt_recordsql = 1;
 
     /* Initialise support for tracking multiple applications. */
 

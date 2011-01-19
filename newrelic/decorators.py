@@ -62,12 +62,12 @@ def _qualified_name(object):
         path += cname
 
     if fname:
-        path += ':'
+        path += '::'
         path += fname
 
     return path
 
-def function_trace(name=None, override_path=False):
+def function_trace(name=None, scope=None, override_path=False):
 
     def decorator(callable):
 
@@ -79,10 +79,12 @@ def function_trace(name=None, override_path=False):
 
             qualified_name = name or _qualified_name(callable)
 
+            print scope, callable, qualified_name
+
             if override_path:
                 transaction.path = qualified_name
 
-            trace = transaction.function_trace(qualified_name)
+            trace = transaction.function_trace(qualified_name, None, scope)
             trace.__enter__()
 
             try:

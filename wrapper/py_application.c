@@ -218,9 +218,28 @@ static PyObject *NRApplication_background_task(NRApplicationObject *self,
     return (PyObject *)rv;
 }
 
+static PyObject *NRApplication_custom_metric(NRApplicationObject *self,
+                                             PyObject *args)
+{
+    const char *key = NULL;
+    const char *scope = NULL;
+    double value = 0.0;
+
+    if (!PyArg_ParseTuple(args, "szd:custom_metric", &key, scope, value))
+        return NULL;
+
+    pthread_mutex_lock(&(nr_per_process_globals.harvest_data_mutex));
+    nr_metric_table__add_metric_double(nr_per_process_globals.current_application->pending_harvest->metrics, key, scope, value);
+    pthread_mutex_unlock(&(nr_per_process_globals.harvest_data_mutex));
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
 static PyMethodDef NRApplication_methods[] = {
     { "web_transaction",   (PyCFunction)NRApplication_web_transaction,   METH_VARARGS, 0 },
     { "background_task",   (PyCFunction)NRApplication_background_task,   METH_VARARGS, 0 },
+    { "custom_metric",     (PyCFunction)NRApplication_custom_metric,     METH_VARARGS, 0 },
     { NULL, NULL}
 };
 

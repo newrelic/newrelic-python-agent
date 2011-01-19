@@ -440,19 +440,24 @@ static PyObject *NRWebTransaction_function_trace(
 
     const char *funcname = NULL;
     const char *classname = NULL;
+    const char *scope = NULL;
 
-    if (!PyArg_ParseTuple(args, "s|s:function_trace", &funcname, &classname))
+    if (!PyArg_ParseTuple(args, "s|zz:function_trace", &funcname,
+              &classname, &scope)) {
         return NULL;
+    }
 
     if (!self->transaction_active) {
         PyErr_SetString(PyExc_RuntimeError, "transaction not active");
         return NULL;
     }
 
-    if (self->web_transaction)
-        rv = NRFunctionTrace_New(self->web_transaction, funcname, classname);
+    if (self->web_transaction) {
+        rv = NRFunctionTrace_New(self->web_transaction, funcname,
+                classname, scope);
+    }
     else
-        rv = NRFunctionTrace_New(NULL, NULL, NULL);
+        rv = NRFunctionTrace_New(NULL, NULL, NULL, NULL);
 
     if (rv == NULL)
         return NULL;

@@ -25,7 +25,7 @@ extern PyTypeObject NRFunctionTrace_Type;
 
 extern NRFunctionTraceObject *NRFunctionTrace_New(
         nr_web_transaction *transaction, const char *funcname,
-        const char *classname);
+        const char *classname, const char *scope);
 
 /* ------------------------------------------------------------------------- */
 

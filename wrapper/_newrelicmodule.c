@@ -313,8 +313,62 @@ static PyObject *newrelic_call_database_trace(PyCFunction function, int argnum,
 
         /* TODO Only do this if slow. */
 
-        transaction_trace->stacktrace_params = nr_param_array__allocate();
-        nr_param_array__add_string_to_array_at(transaction_trace->stacktrace_params,"stack_trace", "stacktrace");
+        /*
+         * Treat any exception passed in as being unhandled and record
+         * details of exception against the transaction.
+         */
+
+        PyObject *module;
+        PyObject *result = NULL;
+
+        module = PyImport_ImportModule("traceback");
+
+        if (module) {
+            PyObject *dict = NULL;
+            PyObject *object = NULL;
+
+            dict = PyModule_GetDict(module);
+            object = PyDict_GetItemString(dict, "format_stack");
+
+            if (object) {
+                PyObject *args = NULL;
+
+                Py_INCREF(object);
+
+                args = Py_BuildValue("()");
+                result = PyEval_CallObject(object, args);
+
+                Py_DECREF(args);
+                Py_DECREF(object);
+
+                if (!result) {
+                    /* TODO Should be remembering old error and
+                     * restoring it. */
+
+                    PyErr_Clear();
+                }
+            }
+        }
+        else {
+            /* TODO Should be remembering old error and
+             * restoring it. */
+
+            PyErr_Clear();
+        }
+
+        Py_XDECREF(module);
+
+        if (result) {
+            int i;
+
+            transaction_trace->stacktrace_params = nr_param_array__allocate();
+
+            for (i=0; i<PyList_Size(result); i++)
+                nr_param_array__add_string_to_array_at(transaction_trace->stacktrace_params,"stack_trace", PyString_AsString(PyList_GetItem(result, i)));
+
+        }
+
+        Py_XDECREF(result);
     }
 
     return result;

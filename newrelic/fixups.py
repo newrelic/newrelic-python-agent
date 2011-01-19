@@ -32,7 +32,7 @@ def _object_path(mname, cname, fname):
         path += cname
 
     if fname:
-        path += ':'
+        path += '::'
         path += fname
 
     return path
@@ -86,7 +86,7 @@ def _wrap_web_transaction(mname, cname, fname, application):
     wrapper = web_transaction(application)(object)
     setattr(parent, name, wrapper)
 
-def _wrap_function_trace(mname, cname, fname):
+def _wrap_function_trace(mname, cname, fname, scope=None):
     parent, name, object = _load_object(mname, cname, fname)
-    wrapper = function_trace(_object_path(mname, cname, fname))(object)
+    wrapper = function_trace(_object_path(mname, cname, fname), scope=scope)(object)
     setattr(parent, name, wrapper)

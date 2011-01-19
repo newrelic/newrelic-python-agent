@@ -21,7 +21,8 @@
 
 NRFunctionTraceObject *NRFunctionTrace_New(nr_web_transaction *transaction,
                                            const char *funcname,
-                                           const char *classname)
+                                           const char *classname,
+                                           const char *scope)
 {
     NRFunctionTraceObject *self;
 
@@ -31,7 +32,7 @@ NRFunctionTraceObject *NRFunctionTrace_New(nr_web_transaction *transaction,
 
     if (transaction) {
         self->transaction_trace = nr_web_transaction__allocate_function_node(
-                transaction, funcname, classname);
+                transaction, funcname, classname, scope);
     }
     else
         self->transaction_trace = NULL;

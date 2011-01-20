@@ -23,59 +23,29 @@
 
 /* ------------------------------------------------------------------------- */
 
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
+static int NRApplication_instances = 0;
 
 /* ------------------------------------------------------------------------- */
 
-static int NRApplication_instances = 0;
-
-NRApplicationObject *NRApplication_New(const char *name)
+static PyObject *NRApplication_new(PyTypeObject *type, PyObject *args,
+                                   PyObject *kwds)
 {
     NRApplicationObject *self;
 
-    /*
-     * If this is the first instance, we need to (re)initialise
-     * the harvest thread. It may be a reinitialisation where
-     * all application objects had been destroyed and so the
-     * harvest thread was shutdown. We hold the Python GIL here
-     * so do not need to worry about separate mutex locking when
-     * accessing global data.
-     */
+    self = (NRApplicationObject *)type->tp_alloc(type, 0);
 
-    if (!NRApplication_instances)
-        nr__create_harvest_thread();
-
-    NRApplication_instances++;
-
-    /*
-     * Create application object and cache reference to the
-     * internal agent client application object instance. Will
-     * need the latter when initiating a web transaction or
-     * background task against this application instance as
-     * need to pass that to those objects to work around thread
-     * safety issue in PHP agent code when multithreading used.
-     */
-
-    self = PyObject_New(NRApplicationObject, &NRApplication_Type);
-    if (self == NULL)
+    if (!self)
         return NULL;
 
-    self->application = nr__find_or_create_application(name);
-
-    /* Markup what version of the Python agent wrapper is being
-     * used. This display in the agent configuration in the
-     * RPM GUI.
+    /*
+     * Application isn't initialised here but in the init
+     * method. Calling of the init method is therefore mandatory
+     * and if not done by the time a transaction is created or a
+     * custom metric associated with the application then the
+     * transaction will fail.
      */
 
-    nr_generic_object__add_string_to_hash(
-            self->application->appconfig, "agent.binding",
-            "Python");
-    nr_generic_object__add_string_to_hash(
-            self->application->appconfig, "agent.version",
-            "library=" PHP_NEWRELIC_VERSION ", "
-            "binding=" NR_PYTHON_AGENT_VERSION);
+    self->application = NULL;
 
     /*
      * Monitoring of an application is enabled by default. If
@@ -93,8 +63,74 @@ NRApplicationObject *NRApplication_New(const char *name)
 
     self->enabled = 1;
 
-    return self;
+    return (PyObject *)self;
 }
+
+/* ------------------------------------------------------------------------- */
+
+static int NRApplication_init(NRApplicationObject *self, PyObject *args,
+                              PyObject *kwds)
+{
+    const char *name = NULL;
+
+    static char *kwlist[] = { "name", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s:Application",
+                                     kwlist, &name)) {
+        return -1;
+    }
+
+    /*
+     * Validate that this method hasn't been called previously.
+     */
+
+    if (self->application) {
+        PyErr_SetString(PyExc_TypeError, "application already initialized");
+        return -1;
+    }
+
+    /*
+     * If this is the first instance, we need to (re)initialise
+     * the harvest thread. It may be a reinitialisation where
+     * all application objects had been destroyed and so the
+     * harvest thread was shutdown. We hold the Python GIL here
+     * so do not need to worry about separate mutex locking when
+     * accessing global data.
+     */
+
+    if (!NRApplication_instances)
+        nr__create_harvest_thread();
+
+    NRApplication_instances++;
+
+    /*
+     * Cache reference to the internal agent client application
+     * object instance. Will need the latter when initiating a
+     * web transaction or background task against this
+     * application instance as need to pass that to those
+     * objects to work around thread safety issue in PHP agent
+     * code when multithreading used.
+     */
+
+    self->application = nr__find_or_create_application(name);
+
+    /* Markup what version of the Python agent wrapper is being
+     * used. This display in the agent configuration in the
+     * RPM GUI.
+     */
+
+    nr_generic_object__add_string_to_hash(
+            self->application->appconfig, "agent.binding",
+            "Python");
+    nr_generic_object__add_string_to_hash(
+            self->application->appconfig, "agent.version",
+            "library=" PHP_NEWRELIC_VERSION ", "
+            "binding=" NR_PYTHON_AGENT_VERSION);
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
 
 static void NRApplication_dealloc(NRApplicationObject *self)
 {
@@ -104,34 +140,48 @@ static void NRApplication_dealloc(NRApplicationObject *self)
      * Python GIL here so do not need to worry about separate
      * mutex locking when accessing global data but do release
      * the GIL when performing shutdown of the agent client code
-     * as it may want to talk over the network.
+     * as it may want to talk over the network and so could
+     * block.
      */
 
-    NRApplication_instances--;
+    if (self->application) {
+        NRApplication_instances--;
 
-    if (!NRApplication_instances) {
-        Py_BEGIN_ALLOW_THREADS
-        nr__harvest_thread_body("shutdown");
-        nr__stop_communication(&(nr_per_process_globals.daemon),
-                               self->application);
-        nr__destroy_harvest_thread();
-        Py_END_ALLOW_THREADS
+        if (!NRApplication_instances) {
+            Py_BEGIN_ALLOW_THREADS
+            nr__harvest_thread_body("shutdown");
+            nr__stop_communication(&(nr_per_process_globals.daemon),
+                                   self->application);
+            nr__destroy_harvest_thread();
+            Py_END_ALLOW_THREADS
+        }
     }
 
-    PyObject_Del(self);
+    Py_TYPE(self)->tp_free(self);
 }
+
+/* ------------------------------------------------------------------------- */
 
 static PyObject *NRApplication_get_name(NRApplicationObject *self,
                                         void *closure)
 {
+    if (!self->application) {
+        PyErr_SetString(PyExc_TypeError, "application not initialized");
+        return NULL;
+    }
+
     return PyString_FromString(self->application->appname);
 }
+
+/* ------------------------------------------------------------------------- */
 
 static PyObject *NRApplication_get_enabled(NRApplicationObject *self,
                                            void *closure)
 {
     return PyBool_FromLong(self->enabled);
 }
+
+/* ------------------------------------------------------------------------- */
 
 static int NRApplication_set_enabled(NRApplicationObject *self,
                                      PyObject *value)
@@ -154,12 +204,19 @@ static int NRApplication_set_enabled(NRApplicationObject *self,
     return 0;
 }
 
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRApplication_web_transaction(NRApplicationObject *self,
                                                PyObject *args)
 {
     NRWebTransactionObject *rv;
 
     PyObject *environ = NULL;
+
+    if (!self->application) {
+        PyErr_SetString(PyExc_TypeError, "application not initialized");
+        return NULL;
+    }
 
     if (!PyArg_ParseTuple(args, "O:web_transaction", &environ))
         return NULL;
@@ -186,12 +243,19 @@ static PyObject *NRApplication_web_transaction(NRApplicationObject *self,
     return (PyObject *)rv;
 }
 
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRApplication_background_task(NRApplicationObject *self,
                                                PyObject *args)
 {
     NRBackgroundTaskObject *rv;
 
     PyObject *path = NULL;
+
+    if (!self->application) {
+        PyErr_SetString(PyExc_TypeError, "application not initialized");
+        return NULL;
+    }
 
     if (!PyArg_ParseTuple(args, "O:background_task", &path))
         return NULL;
@@ -218,6 +282,8 @@ static PyObject *NRApplication_background_task(NRApplicationObject *self,
     return (PyObject *)rv;
 }
 
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRApplication_custom_metric(NRApplicationObject *self,
                                              PyObject *args)
 {
@@ -225,16 +291,28 @@ static PyObject *NRApplication_custom_metric(NRApplicationObject *self,
     const char *scope = NULL;
     double value = 0.0;
 
+    if (!self->application) {
+        PyErr_SetString(PyExc_TypeError, "application not initialized");
+        return NULL;
+    }
+
     if (!PyArg_ParseTuple(args, "szd:custom_metric", &key, scope, value))
         return NULL;
 
     pthread_mutex_lock(&(nr_per_process_globals.harvest_data_mutex));
-    nr_metric_table__add_metric_double(nr_per_process_globals.current_application->pending_harvest->metrics, key, scope, value);
+    nr_metric_table__add_metric_double(
+            self->application->pending_harvest->metrics, key, scope, value);
     pthread_mutex_unlock(&(nr_per_process_globals.harvest_data_mutex));
 
     Py_INCREF(Py_None);
     return Py_None;
 }
+
+/* ------------------------------------------------------------------------- */
+
+#ifndef PyVarObject_HEAD_INIT
+#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
+#endif
 
 static PyMethodDef NRApplication_methods[] = {
     { "web_transaction",   (PyCFunction)NRApplication_web_transaction,   METH_VARARGS, 0 },
@@ -286,9 +364,9 @@ PyTypeObject NRApplication_Type = {
     0,                      /*tp_descr_get*/
     0,                      /*tp_descr_set*/
     0,                      /*tp_dictoffset*/
-    0,                      /*tp_init*/
+    (initproc)NRApplication_init, /*tp_init*/
     0,                      /*tp_alloc*/
-    0,                      /*tp_new*/
+    NRApplication_new,      /*tp_new*/
     0,                      /*tp_free*/
     0,                      /*tp_is_gc*/
 };

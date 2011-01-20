@@ -15,6 +15,7 @@
 #include "py_external_trace.h"
 #include "py_function_trace.h"
 #include "py_memcache_trace.h"
+#include "py_transaction.h"
 #include "py_web_transaction.h"
 
 #include "globals.h"
@@ -143,21 +144,6 @@ static void newrelic_populate_plugin_list(void)
         nr_generic_object__add_string_to_array(plugins,
                                                PyImport_Inittab[i].name) ;
     }
-}
-
-static PyObject *newrelic_Application(PyObject *self, PyObject *args)
-{
-    NRApplicationObject *rv;
-    const char *name = NULL;
-
-    if (!PyArg_ParseTuple(args, "s:Application", &name))
-        return NULL;
-
-    rv = NRApplication_New(name);
-    if (rv == NULL)
-        return NULL;
-
-    return (PyObject *)rv;
 }
 
 static PyObject *newrelic_Settings(PyObject *self, PyObject *args)
@@ -441,7 +427,6 @@ static PyObject *newrelic_wrap_c_database_trace(PyObject *self, PyObject* args)
 }
 
 static PyMethodDef newrelic_methods[] = {
-    { "Application", newrelic_Application, METH_VARARGS, 0 },
     { "Settings", newrelic_Settings, METH_NOARGS, 0 },
     { "harvest", newrelic_harvest, METH_NOARGS, 0 },
     { "wrap_c_database_trace", newrelic_wrap_c_database_trace, METH_VARARGS, 0 },
@@ -473,8 +458,15 @@ init_newrelic(void)
         return;
     if (PyType_Ready(&NRSettings_Type) < 0)
         return;
+    if (PyType_Ready(&NRTransaction_Type) < 0)
+        return;
     if (PyType_Ready(&NRWebTransaction_Type) < 0)
         return;
+
+    /* Initialise type objects. */
+
+    PyModule_AddObject(module, "Application", (PyObject *)&NRApplication_Type);
+    PyModule_AddObject(module, "Transaction", (PyObject *)&NRTransaction_Type);
 
     /* Initialise module constants. */
 

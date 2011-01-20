@@ -1,5 +1,5 @@
-#ifndef PY_WRAPPER_APPLICATION_H
-#define PY_WRAPPER_APPLICATION_H
+#ifndef PY_WRAPPER_TRACEBACK_H
+#define PY_WRAPPER_TRACEBACK_H
 
 /* ------------------------------------------------------------------------- */
 
@@ -9,17 +9,10 @@
 
 #include <Python.h>
 
-#include "application_data.h"
-
 /* ------------------------------------------------------------------------- */
 
-typedef struct {
-    PyObject_HEAD
-    nr_application *application;
-    int enabled;
-} NRApplicationObject;
-
-extern PyTypeObject NRApplication_Type;
+extern PyObject *nrpy__format_exception(PyObject *type, PyObject *value,
+                                        PyObject *traceback);
 
 /* ------------------------------------------------------------------------- */
 

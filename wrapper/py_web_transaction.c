@@ -151,6 +151,12 @@ NRWebTransactionObject *NRWebTransaction_New(nr_application *application,
 
     self->transaction_errors = NULL;
 
+    /*
+     * TODO Should copy into request_parameters, Not
+     * hold reference so keep a copy of original data
+     * and not what middleware changes it to.
+     */
+
     if (environ) {
         self->request_parameters = environ;
         Py_INCREF(self->request_parameters);

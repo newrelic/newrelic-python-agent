@@ -6,6 +6,7 @@
 
 #include "py_transaction.h"
 
+#include "py_params.h"
 #include "py_traceback.h"
 
 #include "py_database_trace.h"
@@ -65,16 +66,9 @@ static PyObject *NRTransaction_new(PyTypeObject *type, PyObject *args,
     self->application = NULL;
     self->transaction = NULL;
     self->transaction_errors = NULL;
-    self->request_parameters = NULL;
 
     self->transaction_enabled = 0;
     self->transaction_active = 0;
-
-    /* XXX Should initialise request_parameters as well.
-     * The derived class should copy values into it and
-     * not assign as WSGI middleware down stack could 
-     * add stuff or modify it so only want the original.
-     */
 
     /*
      * XXX Have to look at ignore flag and implications
@@ -82,6 +76,7 @@ static PyObject *NRTransaction_new(PyTypeObject *type, PyObject *args,
      * that.
      */
 
+    self->request_parameters = PyDict_New();
     self->custom_parameters = PyDict_New();
 
     /*
@@ -167,8 +162,8 @@ static void NRTransaction_dealloc(NRTransactionObject *self)
         Py_XDECREF(result);
     }
 
-    Py_XDECREF(self->custom_parameters);
-    Py_XDECREF(self->request_parameters);
+    Py_DECREF(self->custom_parameters);
+    Py_DECREF(self->request_parameters);
 
     Py_XDECREF(self->application);
 
@@ -187,13 +182,13 @@ static PyObject *NRTransaction_enter(NRTransactionObject *self,
         return NULL;
     }
 
-    if (self->transaction_active) {
-        PyErr_SetString(PyExc_RuntimeError, "transaction already active");
+    if (self->transaction_enabled && !self->transaction) {
+        PyErr_SetString(PyExc_RuntimeError, "transaction already completed");
         return NULL;
     }
 
-    if (self->transaction_enabled && !self->transaction) {
-        PyErr_SetString(PyExc_RuntimeError, "transaction already completed");
+    if (self->transaction_active) {
+        PyErr_SetString(PyExc_RuntimeError, "transaction already active");
         return NULL;
     }
 
@@ -324,85 +319,27 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
 
     /*
      * Only add request parameters and custom parameters into
-     * web transaction object if the record is being kept due
-     * to associated errors or because it is being tracked as
-     * a slow transaction.
-     */
-
-    /*
-     * XXX Put updating of params from dictionary into
-     * separate function.
+     * web transaction object if the record is being kept due to
+     * associated errors or because it is being tracked as a
+     * slow transaction.
      */
 
     if (keep_wt || self->transaction_errors != NULL) {
-        if (PyDict_Size(self->request_parameters) > 0) {
-            Py_ssize_t pos = 0;
-
-            PyObject *key;
-            PyObject *value;
-
-            PyObject *key_as_string;
-            PyObject *value_as_string;
-
-            while (PyDict_Next(self->request_parameters, &pos, &key,
-                   &value)) {
-                key_as_string = PyObject_Str(key);
-
-                if (!key_as_string)
-                   PyErr_Clear();
-
-                value_as_string = PyObject_Str(value);
-
-                if (!value_as_string)
-                   PyErr_Clear();
-
-                if (key_as_string && value_as_string) {
-                    nr_param_array__set_string_in_hash_at(
-                            self->transaction->params,
-                            "request_parameters",
-                            PyString_AsString(key_as_string),
-                            PyString_AsString(value_as_string));
-                }
-
-                Py_XDECREF(key_as_string);
-                Py_XDECREF(value_as_string);
-            }
-        }
-
-        if (PyDict_Size(self->custom_parameters) > 0) {
-            Py_ssize_t pos = 0;
-
-            PyObject *key;
-            PyObject *value;
-
-            PyObject *key_as_string;
-            PyObject *value_as_string;
-
-            while (PyDict_Next(self->custom_parameters, &pos, &key,
-                    &value)) {
-                key_as_string = PyObject_Str(key);
-
-                if (!key_as_string)
-                   PyErr_Clear();
-
-                value_as_string = PyObject_Str(value);
-
-                if (!value_as_string)
-                   PyErr_Clear();
-
-                if (key_as_string && value_as_string) {
-                    nr_param_array__set_string_in_hash_at(
-                            self->transaction->params,
-                            "custom_parameters",
-                            PyString_AsString(key_as_string),
-                            PyString_AsString(value_as_string));
-                }
-
-                Py_XDECREF(key_as_string);
-                Py_XDECREF(value_as_string);
-            }
-        }
+        nrpy__merge_dict_into_params_at(self->transaction->params,
+                                        "request_parameters",
+                                        self->request_parameters);
+        nrpy__merge_dict_into_params_at(self->transaction->params,
+                                        "custom_parameters",
+                                        self->custom_parameters);
     }
+
+    /*
+     * Process any errors associated with transaction and destroy
+     * the transaction. Errors can be from unhandled exception
+     * that propogated all the way back up the call stack, or one
+     * which was explicitly attached to transaction by user code
+     * but then supressed within the code.
+     */
 
     nr_transaction_error__process_errors(self->transaction_errors,
             application->pending_harvest->metrics);
@@ -423,6 +360,8 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
     Py_INCREF(Py_None);
     return Py_None;
 }
+
+/* ------------------------------------------------------------------------- */
 
 static PyObject *NRTransaction_function_trace(
         NRTransactionObject *self, PyObject *args)
@@ -626,9 +565,90 @@ static PyObject *NRTransaction_runtime_error(
     return Py_None;
 }
 
+static PyObject *NRTransaction_get_ignore(NRTransactionObject *self,
+                                          void *closure)
+{
+    if (!self->initialised) {
+        PyErr_SetString(PyExc_TypeError, "transaction not initialized");
+        return NULL;
+    }
+
+    if (self->transaction_enabled && !self->transaction) {
+        PyErr_SetString(PyExc_RuntimeError, "transaction already completed");
+        return NULL;
+    }
+
+    if (!self->transaction_active) {
+        PyErr_SetString(PyExc_RuntimeError, "transaction not active");
+        return NULL;
+    }
+
+    return PyBool_FromLong(self->transaction->ignore);
+}
+
+static int NRTransaction_set_ignore(NRTransactionObject *self,
+                                    PyObject *value)
+{
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError, "can't delete ignore attribute");
+        return -1;
+    }
+
+    if (!PyBool_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "expected bool for ignore attribute");
+        return -1;
+    }
+
+    if (!self->initialised) {
+        PyErr_SetString(PyExc_TypeError, "transaction not initialized");
+        return -1;
+    }
+
+    if (self->transaction_enabled && !self->transaction) {
+        PyErr_SetString(PyExc_RuntimeError, "transaction already completed");
+        return -1;
+    }
+
+    if (!self->transaction_active) {
+        PyErr_SetString(PyExc_RuntimeError, "transaction not active");
+        return -1;
+    }
+
+    /*
+     * If the application was not enabled and so we are running
+     * as a dummy transaction then return without actually doing
+     * anything.
+     */
+
+    if (!self->transaction_enabled)
+        return 0;
+
+    if (value == Py_True)
+        self->transaction->ignore = 1;
+    else
+        self->transaction->ignore = 0;
+
+    return 0;
+}
+
 static PyObject *NRTransaction_get_path(NRTransactionObject *self,
                                         void *closure)
 {
+    if (!self->initialised) {
+        PyErr_SetString(PyExc_TypeError, "transaction not initialized");
+        return NULL;
+    }
+
+    if (self->transaction_enabled && !self->transaction) {
+        PyErr_SetString(PyExc_RuntimeError, "transaction already completed");
+        return NULL;
+    }
+
+    if (!self->transaction_active) {
+        PyErr_SetString(PyExc_RuntimeError, "transaction not active");
+        return NULL;
+    }
+
     return PyString_FromString(self->transaction->path);
 }
 
@@ -641,20 +661,42 @@ static int NRTransaction_set_path(NRTransactionObject *self,
     }
 
     if (!PyString_Check(value)) {
-        PyErr_SetString(PyExc_TypeError, "expected string for URL path");
+        PyErr_SetString(PyExc_TypeError, "expected string for "
+                        "URL path attribute");
+        return -1;
+    }
+
+    if (!self->initialised) {
+        PyErr_SetString(PyExc_TypeError, "transaction not initialized");
+        return -1;
+    }
+
+    if (self->transaction_enabled && !self->transaction) {
+        PyErr_SetString(PyExc_RuntimeError, "transaction already completed");
+        return -1;
+    }
+
+    if (!self->transaction_active) {
+        PyErr_SetString(PyExc_RuntimeError, "transaction not active");
         return -1;
     }
 
     nrfree(self->transaction->path);
 
     /*
-     * TODO Review whether path type should be able to be specified
-     * in some way, or whether allow settings from callable object
-     * and have code work out appropriate name to use for path.
+     * TODO We set path type to be 'CUSTOM' for now, but PHP
+     * sets it different based on what it is being named with.
+     * If a callable object it uses 'FUNCTION' and if a file
+     * path then uses 'ACTION'. Do not understand the
+     * differences and how that may be used in RPM GUI. The PHP
+     * code also disallows the overriding of the path if already
+     * set, the fact of it being set being recorded by
+     * 'has_been_named' attribute of the transaction object. See:
+     * https://www.pivotaltracker.com/story/show/9011677.
      */
 
     self->transaction->path = nrstrdup(PyString_AsString(value));
-    self->transaction->path_type = NR_PATH_TYPE_FUNCTION;
+    self->transaction->path_type = NR_PATH_TYPE_CUSTOM;
 
     return 0;
 }
@@ -704,6 +746,7 @@ static PyMethodDef NRTransaction_methods[] = {
 };
 
 static PyGetSetDef NRTransaction_getset[] = {
+    { "ignore", (getter)NRTransaction_get_ignore, (setter)NRTransaction_set_ignore, 0 },
     { "path", (getter)NRTransaction_get_path, (setter)NRTransaction_set_path, 0 },
     { "response_code", (getter)NRTransaction_get_response_code, (setter)NRTransaction_set_response_code, 0 },
     { "custom_parameters", (getter)NRTransaction_get_custom_parameters, NULL, 0 },

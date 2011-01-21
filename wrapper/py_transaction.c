@@ -70,12 +70,6 @@ static PyObject *NRTransaction_new(PyTypeObject *type, PyObject *args,
     self->transaction_enabled = 0;
     self->transaction_active = 0;
 
-    /*
-     * XXX Have to look at ignore flag and implications
-     * of that and whether need to add way of setting
-     * that.
-     */
-
     self->request_parameters = PyDict_New();
     self->custom_parameters = PyDict_New();
 
@@ -233,14 +227,10 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
     int keep_wt = 0;
 
     nr_application *application;
-    nr_transaction_error *record;
 
     PyObject *type = NULL;
     PyObject *value = NULL;
     PyObject *traceback = NULL;
-
-    PyObject *error_message = NULL;
-    PyObject *stack_trace = NULL;
 
     if (!PyArg_ParseTuple(args, "OOO:__exit__", &type, &value, &traceback))
         return NULL;
@@ -277,23 +267,12 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
      */
 
     if (type != Py_None && value != Py_None && traceback != Py_None) {
-        error_message = PyObject_Str(value);
-        stack_trace = nrpy__format_exception(type, value, traceback);
+        PyObject *result;
 
-        if (!stack_trace)
-           PyErr_Clear();
+        result = PyObject_CallMethod((PyObject *)self, "runtime_error",
+                                     "(OOO)", type, value, traceback);
 
-        record = nr_transaction_error__allocate(
-                self->transaction, &(self->transaction_errors), "", 0,
-                PyString_AsString(error_message), Py_TYPE(value)->tp_name, 0);
-
-        if (stack_trace) {
-            nr_param_array__set_string(record->params, "stack_trace",
-                                       PyString_AsString(stack_trace));
-        }
-
-        Py_XDECREF(stack_trace);
-        Py_DECREF(error_message);
+        Py_XDECREF(result);
     }
 
     nr_node_header__record_stoptime_and_pop_current(
@@ -473,32 +452,24 @@ static PyObject *NRTransaction_database_trace(
     return (PyObject *)rv;
 }
 
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRTransaction_runtime_error(
         NRTransactionObject *self, PyObject *args)
 {
-    nr_transaction_error* record;
+    nr_transaction_error *record;
 
-    const char *error_message = NULL;
-    const char *error_class = NULL;
+    PyObject *type = NULL;
+    PyObject *value = NULL;
+    PyTracebackObject *traceback = NULL;
+    PyObject *params = NULL;
 
-    const char *stack_trace = NULL;
+    PyObject *error_message = NULL;
+    PyObject *stack_trace = NULL;
 
-    const char *file_name = NULL;
-    int line_number = 0;
-
-    const char *source = NULL;
-
-    PyObject *custom_parameters = NULL;
-
-    if (!PyArg_ParseTuple(args, "s|zzzizO:runtime_error", &error_message,
-                          &error_class, &stack_trace, &file_name,
-                          &line_number, &source, &custom_parameters )) {
-        return NULL;
-    }
-
-    if (custom_parameters && !PyDict_Check(custom_parameters)) {
-        PyErr_SetString(PyExc_TypeError, "dictionary expected "
-                        "for custom parameters");
+    if (!PyArg_ParseTuple(args, "OOO!|O!:runtime_error", &type, &value,
+                          &PyTraceBack_Type, &traceback, &PyDict_Type,
+                          &params)) {
         return NULL;
     }
 
@@ -507,63 +478,58 @@ static PyObject *NRTransaction_runtime_error(
         return NULL;
     }
 
-    if (!error_class)
-        error_class = "";
+    if (type != Py_None && value != Py_None) {
+        error_message = PyObject_Str(value);
+        stack_trace = nrpy__format_exception(type, value,
+                                             (PyObject *)traceback);
 
-    record = nr_transaction_error__allocate(
-            self->transaction, &(self->transaction_errors),
-            "", 0, error_message, error_class, 0);
+        if (!stack_trace)
+           PyErr_Clear();
 
-    if (file_name) {
-        char buffer[123];
+        record = nr_transaction_error__allocate(
+                self->transaction, &(self->transaction_errors), "", 0,
+                PyString_AsString(error_message), Py_TYPE(value)->tp_name, 0);
 
-        sprintf(buffer, "%d", line_number);
-
-        nr_param_array__set_string(record->params, "file_name", file_name);
-        nr_param_array__set_string(record->params, "line_number", buffer);
-    }
-
-    if (source)
-        nr_param_array__set_string(record->params, "source", source);
-
-    if (stack_trace)
-        nr_param_array__set_string(record->params, "stack_trace", stack_trace);
-
-    if (custom_parameters && PyDict_Size(custom_parameters) > 0) {
-        Py_ssize_t pos = 0;
-
-        PyObject *key;
-        PyObject *value;
-
-        PyObject *key_as_string;
-        PyObject *value_as_string;
-
-        while (PyDict_Next(custom_parameters, &pos, &key, &value)) {
-            key_as_string = PyObject_Str(key);
-
-            if (!key_as_string)
-               PyErr_Clear();
-
-            value_as_string = PyObject_Str(value);
-
-            if (!value_as_string)
-               PyErr_Clear();
-
-            if (key_as_string && value_as_string) {
-                nr_param_array__set_string_in_hash_at(
-                        record->params, "custom_parameters",
-                        PyString_AsString(key_as_string),
-                        PyString_AsString(value_as_string));
-            }
-
-            Py_XDECREF(key_as_string);
-            Py_XDECREF(value_as_string);
+        if (stack_trace) {
+            nr_param_array__set_string(record->params, "stack_trace",
+                                       PyString_AsString(stack_trace));
         }
+
+        if (params) {
+            nrpy__merge_dict_into_params_at(record->params,
+                                            "custom_parameters", params);
+        }
+
+        /*
+	 * TODO There is also provision for passing back
+	 * 'file_name', 'line_number' and 'source' params as
+	 * well. These are dependent on RPM have been updated
+         * to show them for something other than Ruby. The
+         * passing back of such additional information as the
+         * source code should be done by setting a flag and
+         * not be on by default. The file name and line number
+         * may not display in RPM the source code isn't also
+         * sent. Need to see how RPM is changed. See details in:
+         * https://www.pivotaltracker.com/story/show/7922639
+         */
+
+        /*
+         * TODO Are there any default things that could be added
+         * to the custom parameters for this unhandled exception
+         * case. What about stack variables and values associated
+         * with them. These should only be passed back though
+         * if enabled through a flag.
+         */
+
+        Py_XDECREF(stack_trace);
+        Py_DECREF(error_message);
     }
 
     Py_INCREF(Py_None);
     return Py_None;
 }
+
+/* ------------------------------------------------------------------------- */
 
 static PyObject *NRTransaction_get_ignore(NRTransactionObject *self,
                                           void *closure)
@@ -583,8 +549,21 @@ static PyObject *NRTransaction_get_ignore(NRTransactionObject *self,
         return NULL;
     }
 
+    /*
+     * If the application was not enabled and so we are running
+     * as a dummy transaction then return that transaction is
+     * being ignored.
+     */
+
+    if (!self->transaction_enabled) {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
     return PyBool_FromLong(self->transaction->ignore);
 }
+
+/* ------------------------------------------------------------------------- */
 
 static int NRTransaction_set_ignore(NRTransactionObject *self,
                                     PyObject *value)
@@ -631,6 +610,8 @@ static int NRTransaction_set_ignore(NRTransactionObject *self,
     return 0;
 }
 
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRTransaction_get_path(NRTransactionObject *self,
                                         void *closure)
 {
@@ -649,8 +630,20 @@ static PyObject *NRTransaction_get_path(NRTransactionObject *self,
         return NULL;
     }
 
+    /*
+     * If the application was not enabled and so we are running
+     * as a dummy transaction then return None.
+     */
+
+    if (!self->transaction_enabled) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
     return PyString_FromString(self->transaction->path);
 }
+
+/* ------------------------------------------------------------------------- */
 
 static int NRTransaction_set_path(NRTransactionObject *self,
                                   PyObject *value)
@@ -681,7 +674,14 @@ static int NRTransaction_set_path(NRTransactionObject *self,
         return -1;
     }
 
-    nrfree(self->transaction->path);
+    /*
+     * If the application was not enabled and so we are running
+     * as a dummy transaction then return without actually doing
+     * anything.
+     */
+
+    if (!self->transaction_enabled)
+        return 0;
 
     /*
      * TODO We set path type to be 'CUSTOM' for now, but PHP
@@ -695,36 +695,15 @@ static int NRTransaction_set_path(NRTransactionObject *self,
      * https://www.pivotaltracker.com/story/show/9011677.
      */
 
+    nrfree(self->transaction->path);
+
     self->transaction->path = nrstrdup(PyString_AsString(value));
     self->transaction->path_type = NR_PATH_TYPE_CUSTOM;
 
     return 0;
 }
 
-static PyObject *NRTransaction_get_response_code(
-        NRTransactionObject *self, void *closure)
-{
-    return PyInt_FromLong(self->transaction->http_response_code);
-}
-
-static int NRTransaction_set_response_code(
-        NRTransactionObject *self, PyObject *value)
-{
-    if (value == NULL) {
-        PyErr_SetString(PyExc_TypeError,
-                        "can't delete response code attribute");
-        return -1;
-    }
-
-    if (!PyInt_Check(value)) {
-        PyErr_SetString(PyExc_TypeError, "expected integer for response code");
-        return -1;
-    }
-
-    self->transaction->http_response_code = PyInt_AsLong(value);
-
-    return 0;
-}
+/* ------------------------------------------------------------------------- */
 
 static PyObject *NRTransaction_get_custom_parameters(
         NRTransactionObject *self, void *closure)
@@ -733,6 +712,8 @@ static PyObject *NRTransaction_get_custom_parameters(
 
     return self->custom_parameters;
 }
+
+/* ------------------------------------------------------------------------- */
 
 static PyMethodDef NRTransaction_methods[] = {
     { "__enter__",  (PyCFunction)NRTransaction_enter,  METH_NOARGS, 0 },
@@ -748,7 +729,6 @@ static PyMethodDef NRTransaction_methods[] = {
 static PyGetSetDef NRTransaction_getset[] = {
     { "ignore", (getter)NRTransaction_get_ignore, (setter)NRTransaction_set_ignore, 0 },
     { "path", (getter)NRTransaction_get_path, (setter)NRTransaction_set_path, 0 },
-    { "response_code", (getter)NRTransaction_get_response_code, (setter)NRTransaction_set_response_code, 0 },
     { "custom_parameters", (getter)NRTransaction_get_custom_parameters, NULL, 0 },
     { NULL },
 };

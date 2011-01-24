@@ -7,31 +7,11 @@
 
 /* ------------------------------------------------------------------------- */
 
-#include <Python.h>
-
-#include "application_data.h"
-#include "web_transaction_data.h"
+#include "py_transaction.h"
 
 /* ------------------------------------------------------------------------- */
-
-typedef struct {
-    PyObject_HEAD
-    nr_application *application;
-    nr_web_transaction *web_transaction;
-    nr_transaction_error* transaction_errors;
-    PyObject *request_parameters;
-    PyObject *custom_parameters;
-    int transaction_active;
-} NRWebTransactionObject;
 
 extern PyTypeObject NRWebTransaction_Type;
-
-/* ------------------------------------------------------------------------- */
-
-extern NRWebTransactionObject *NRWebTransaction_New(
-        nr_application *application, PyObject *environ);
-
-extern NRWebTransactionObject *NRWebTransaction_CurrentTransaction(void);
 
 /* ------------------------------------------------------------------------- */
 

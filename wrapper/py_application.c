@@ -206,6 +206,7 @@ static int NRApplication_set_enabled(NRApplicationObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+#if 0
 static PyObject *NRApplication_web_transaction(NRApplicationObject *self,
                                                PyObject *args)
 {
@@ -281,6 +282,7 @@ static PyObject *NRApplication_background_task(NRApplicationObject *self,
 
     return (PyObject *)rv;
 }
+#endif
 
 /* ------------------------------------------------------------------------- */
 
@@ -315,8 +317,10 @@ static PyObject *NRApplication_custom_metric(NRApplicationObject *self,
 #endif
 
 static PyMethodDef NRApplication_methods[] = {
+#if 0
     { "web_transaction",   (PyCFunction)NRApplication_web_transaction,   METH_VARARGS, 0 },
     { "background_task",   (PyCFunction)NRApplication_background_task,   METH_VARARGS, 0 },
+#endif
     { "custom_metric",     (PyCFunction)NRApplication_custom_metric,     METH_VARARGS, 0 },
     { NULL, NULL}
 };

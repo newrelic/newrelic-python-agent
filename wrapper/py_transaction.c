@@ -26,12 +26,6 @@
 
 /* ------------------------------------------------------------------------- */
 
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
-
-/* ------------------------------------------------------------------------- */
-
 static int NRTransaction_tls_key = 0;
 
 /* ------------------------------------------------------------------------- */
@@ -56,31 +50,55 @@ static PyObject *NRTransaction_new(PyTypeObject *type, PyObject *args,
 {
     NRTransactionObject *self;
 
+    /*
+     * Initialise thread local storage if necessary. Do this
+     * here rather than init method as technically the latter
+     * may not be called.
+     */
+
+    if (!NRTransaction_tls_key)
+        NRTransaction_tls_key = PyThread_create_key();
+
+    /*
+     * We check arguments here because we want to catch the
+     * special case of where no arguments at all are provided.
+     * When this occurs we look up what the current transaction
+     * is instead and return a reference to that instead. This
+     * could be avoided if knew we had to initialise the TLS
+     * key, but that only happens once so why bother to have
+     * special case for that.
+     */
+
+    if (PyTuple_Size(args) == 0) {
+        self = (NRTransactionObject *)PyThread_get_key_value(
+                NRTransaction_tls_key);
+
+        if (!self)
+            PyErr_SetString(PyExc_TypeError, "no active transaction");
+
+        Py_XINCREF(self);
+
+        return (PyObject *)self;
+    }
+
+    /*
+     * Allocate the transaction object and initialise it as per
+     * normal.
+     */
+
     self = (NRTransactionObject *)type->tp_alloc(type, 0);
 
     if (!self)
         return NULL;
 
-    self->initialised = 0;
-
     self->application = NULL;
     self->transaction = NULL;
     self->transaction_errors = NULL;
 
-    self->transaction_enabled = 0;
-    self->transaction_active = 0;
+    self->transaction_state = NR_TRANSACTION_STATE_PENDING;
 
     self->request_parameters = PyDict_New();
     self->custom_parameters = PyDict_New();
-
-    /*
-     * Initialise thread local storage if necessary. Do this
-     * here rather than init method as technically the latter
-     * may not be called, although we will require it.
-     */
-
-    if (!NRTransaction_tls_key)
-        NRTransaction_tls_key = PyThread_create_key();
 
     return (PyObject *)self;
 }
@@ -94,18 +112,22 @@ static int NRTransaction_init(NRTransactionObject *self, PyObject *args,
 
     static char *kwlist[] = { "application", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!:Transaction",
-                                     kwlist, &NRApplication_Type,
-                                     &application)) {
-        return -1;
-    }
-
     /*
-     * Validate that this method hasn't been called previously.
+     * For the case that no argument was provided then the new
+     * method would have returned a reference to an existing
+     * in progress transaction instance which has already been
+     * initialised. We check for this case and skip doing any
+     * initialisation a second time. We also return here if the
+     * init method has been called twice when it should not
+     * have been.
      */
 
-    if (self->initialised) {
-        PyErr_SetString(PyExc_TypeError, "transaction already initialized");
+    if (self->application)
+        return 0;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!:Transaction",
+                                     kwlist, &NRApplication_Type,
+                                     &application)) {
         return -1;
     }
 
@@ -119,20 +141,16 @@ static int NRTransaction_init(NRTransactionObject *self, PyObject *args,
      * standins so any code still runs.
      */
 
-    if (application->enabled) {
-        self->application = application;
+    self->application = application;
+    Py_INCREF(self->application);
 
+    if (application->enabled) {
         self->transaction = nr_web_transaction__allocate();
 
-        self->transaction->path_type = NR_PATH_TYPE_URI;
-        self->transaction->path = nrstrdup("<unknown>");
-        self->transaction->realpath = nrstrdup("<unknown>");
-
-        self->transaction_enabled = 1;
-        self->transaction_active = 0;
+        self->transaction->path_type = NR_PATH_TYPE_UNKNOWN;
+        self->transaction->path = NULL;
+        self->transaction->realpath = NULL;
     }
-
-    self->initialised = 1;
 
     return 0;
 }
@@ -142,12 +160,12 @@ static int NRTransaction_init(NRTransactionObject *self, PyObject *args,
 static void NRTransaction_dealloc(NRTransactionObject *self)
 {
     /*
-     * If transaction still active when this object is begin
+     * If transaction still running when this object is being
      * destroyed then force call of exit method to finalise the
      * transaction.
      */
 
-    if (self->transaction && self->transaction_active) {
+    if (self->transaction_state == NR_TRANSACTION_STATE_RUNNING) {
         PyObject *result;
 
         result = PyObject_CallMethod((PyObject *)self, "__exit__", "(OOO)",
@@ -171,22 +189,22 @@ static PyObject *NRTransaction_enter(NRTransactionObject *self,
 {
     nr_node_header *save;
 
-    if (!self->initialised) {
+    if (!self->application) {
         PyErr_SetString(PyExc_TypeError, "transaction not initialized");
         return NULL;
     }
 
-    if (self->transaction_enabled && !self->transaction) {
+    if (self->transaction_state == NR_TRANSACTION_STATE_STOPPED) {
         PyErr_SetString(PyExc_RuntimeError, "transaction already completed");
         return NULL;
     }
 
-    if (self->transaction_active) {
+    if (self->transaction_state == NR_TRANSACTION_STATE_RUNNING) {
         PyErr_SetString(PyExc_RuntimeError, "transaction already active");
         return NULL;
     }
 
-    self->transaction_active = 1;
+    self->transaction_state = NR_TRANSACTION_STATE_RUNNING;
 
     /*
      * Save away the current transaction object into thread
@@ -203,7 +221,7 @@ static PyObject *NRTransaction_enter(NRTransactionObject *self,
      * doing anything.
      */
 
-    if (!self->transaction_enabled) {
+    if (!self->transaction) {
         Py_INCREF(self);
         return (PyObject *)self;
     }
@@ -235,7 +253,7 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
     if (!PyArg_ParseTuple(args, "OOO:__exit__", &type, &value, &traceback))
         return NULL;
 
-    if (!self->transaction_active) {
+    if (self->transaction_state != NR_TRANSACTION_STATE_RUNNING) {
         PyErr_SetString(PyExc_RuntimeError, "transaction not active");
         return NULL;
     }
@@ -253,7 +271,9 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
      * doing anything.
      */
 
-    if (!self->transaction_enabled) {
+    if (!self->transaction) {
+        self->transaction_state = NR_TRANSACTION_STATE_STOPPED;
+
         Py_INCREF(Py_None);
         return Py_None;
     }
@@ -331,10 +351,7 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
 
     pthread_mutex_unlock(&(nr_per_process_globals.harvest_data_mutex));
 
-    self->transaction = NULL;
-    self->transaction_errors = NULL;
-
-    self->transaction_active = 0;
+    self->transaction_state = NR_TRANSACTION_STATE_STOPPED;
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -356,7 +373,7 @@ static PyObject *NRTransaction_function_trace(
         return NULL;
     }
 
-    if (!self->transaction_active) {
+    if (self->transaction_state != NR_TRANSACTION_STATE_RUNNING) {
         PyErr_SetString(PyExc_RuntimeError, "transaction not active");
         return NULL;
     }
@@ -384,7 +401,7 @@ static PyObject *NRTransaction_external_trace(
     if (!PyArg_ParseTuple(args, "s:external_trace", &url))
         return NULL;
 
-    if (!self->transaction_active) {
+    if (self->transaction_state != NR_TRANSACTION_STATE_RUNNING) {
         PyErr_SetString(PyExc_RuntimeError, "transaction not active");
         return NULL;
     }
@@ -410,7 +427,7 @@ static PyObject *NRTransaction_memcache_trace(
     if (!PyArg_ParseTuple(args, "s:memcache_trace", &metric_fragment))
         return NULL;
 
-    if (!self->transaction_active) {
+    if (self->transaction_state != NR_TRANSACTION_STATE_RUNNING) {
         PyErr_SetString(PyExc_RuntimeError, "transaction not active");
         return NULL;
     }
@@ -436,7 +453,7 @@ static PyObject *NRTransaction_database_trace(
     if (!PyArg_ParseTuple(args, "s:database_trace", &sql))
         return NULL;
 
-    if (!self->transaction_active) {
+    if (self->transaction_state != NR_TRANSACTION_STATE_RUNNING) {
         PyErr_SetString(PyExc_RuntimeError, "transaction not active");
         return NULL;
     }
@@ -467,13 +484,18 @@ static PyObject *NRTransaction_runtime_error(
     PyObject *error_message = NULL;
     PyObject *stack_trace = NULL;
 
+    /*
+     * TODO Need to support keyword arguments so that can easily
+     * pass parms after *sys.exc_info().
+     */
+
     if (!PyArg_ParseTuple(args, "OOO!|O!:runtime_error", &type, &value,
                           &PyTraceBack_Type, &traceback, &PyDict_Type,
                           &params)) {
         return NULL;
     }
 
-    if (!self->transaction_active) {
+    if (self->transaction_state != NR_TRANSACTION_STATE_RUNNING) {
         PyErr_SetString(PyExc_RuntimeError, "transaction not active");
         return NULL;
     }
@@ -531,33 +553,27 @@ static PyObject *NRTransaction_runtime_error(
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRTransaction_get_application(NRTransactionObject *self,
+                                               void *closure)
+{
+    Py_INCREF(self->application);
+    return (PyObject *)self->application;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRTransaction_get_ignore(NRTransactionObject *self,
                                           void *closure)
 {
-    if (!self->initialised) {
-        PyErr_SetString(PyExc_TypeError, "transaction not initialized");
-        return NULL;
-    }
-
-    if (self->transaction_enabled && !self->transaction) {
-        PyErr_SetString(PyExc_RuntimeError, "transaction already completed");
-        return NULL;
-    }
-
-    if (!self->transaction_active) {
-        PyErr_SetString(PyExc_RuntimeError, "transaction not active");
-        return NULL;
-    }
-
     /*
      * If the application was not enabled and so we are running
      * as a dummy transaction then return that transaction is
      * being ignored.
      */
 
-    if (!self->transaction_enabled) {
-        Py_INCREF(Py_False);
-        return Py_False;
+    if (!self->transaction) {
+        Py_INCREF(Py_True);
+        return Py_True;
     }
 
     return PyBool_FromLong(self->transaction->ignore);
@@ -578,28 +594,13 @@ static int NRTransaction_set_ignore(NRTransactionObject *self,
         return -1;
     }
 
-    if (!self->initialised) {
-        PyErr_SetString(PyExc_TypeError, "transaction not initialized");
-        return -1;
-    }
-
-    if (self->transaction_enabled && !self->transaction) {
-        PyErr_SetString(PyExc_RuntimeError, "transaction already completed");
-        return -1;
-    }
-
-    if (!self->transaction_active) {
-        PyErr_SetString(PyExc_RuntimeError, "transaction not active");
-        return -1;
-    }
-
     /*
      * If the application was not enabled and so we are running
      * as a dummy transaction then return without actually doing
      * anything.
      */
 
-    if (!self->transaction_enabled)
+    if (!self->transaction)
         return 0;
 
     if (value == Py_True)
@@ -615,27 +616,12 @@ static int NRTransaction_set_ignore(NRTransactionObject *self,
 static PyObject *NRTransaction_get_path(NRTransactionObject *self,
                                         void *closure)
 {
-    if (!self->initialised) {
-        PyErr_SetString(PyExc_TypeError, "transaction not initialized");
-        return NULL;
-    }
-
-    if (self->transaction_enabled && !self->transaction) {
-        PyErr_SetString(PyExc_RuntimeError, "transaction already completed");
-        return NULL;
-    }
-
-    if (!self->transaction_active) {
-        PyErr_SetString(PyExc_RuntimeError, "transaction not active");
-        return NULL;
-    }
-
     /*
      * If the application was not enabled and so we are running
      * as a dummy transaction then return None.
      */
 
-    if (!self->transaction_enabled) {
+    if (!self->transaction) {
         Py_INCREF(Py_None);
         return Py_None;
     }
@@ -659,28 +645,13 @@ static int NRTransaction_set_path(NRTransactionObject *self,
         return -1;
     }
 
-    if (!self->initialised) {
-        PyErr_SetString(PyExc_TypeError, "transaction not initialized");
-        return -1;
-    }
-
-    if (self->transaction_enabled && !self->transaction) {
-        PyErr_SetString(PyExc_RuntimeError, "transaction already completed");
-        return -1;
-    }
-
-    if (!self->transaction_active) {
-        PyErr_SetString(PyExc_RuntimeError, "transaction not active");
-        return -1;
-    }
-
     /*
      * If the application was not enabled and so we are running
      * as a dummy transaction then return without actually doing
      * anything.
      */
 
-    if (!self->transaction_enabled)
+    if (!self->transaction)
         return 0;
 
     /*
@@ -705,6 +676,25 @@ static int NRTransaction_set_path(NRTransactionObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRTransaction_get_has_been_named(NRTransactionObject *self,
+                                                  void *closure)
+{
+    /*
+     * If the application was not enabled and so we are running
+     * as a dummy transaction then return that transaction is
+     * being ignored.
+     */
+
+    if (!self->transaction) {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    return PyBool_FromLong(self->transaction->has_been_named);
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRTransaction_get_custom_parameters(
         NRTransactionObject *self, void *closure)
 {
@@ -715,21 +705,99 @@ static PyObject *NRTransaction_get_custom_parameters(
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRTransaction_get_request_parameters(
+        NRTransactionObject *self, void *closure)
+{
+    Py_INCREF(self->request_parameters);
+
+    return self->request_parameters;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRTransaction_get_response_code(
+        NRTransactionObject *self, void *closure)
+{
+    /*
+     * If the application was not enabled and so we are running
+     * as a dummy transaction then return 0 as response code.
+     */
+
+    if (!self->transaction)
+        return PyInt_FromLong(0);
+
+    return PyInt_FromLong(self->transaction->http_response_code);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRTransaction_set_response_code(
+        NRTransactionObject *self, PyObject *value)
+{
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError,
+                        "can't delete response code attribute");
+        return -1;
+    }
+
+    if (!PyInt_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "expected integer for response code");
+        return -1;
+    }
+
+    /*
+     * If the application was not enabled and so we are running
+     * as a dummy transaction then return without actually doing
+     * anything.
+     */
+
+    if (!self->transaction)
+        return 0;
+
+    self->transaction->http_response_code = PyInt_AsLong(value);
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+#ifndef PyVarObject_HEAD_INIT
+#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
+#endif
+
 static PyMethodDef NRTransaction_methods[] = {
-    { "__enter__",  (PyCFunction)NRTransaction_enter,  METH_NOARGS, 0 },
-    { "__exit__",   (PyCFunction)NRTransaction_exit,   METH_VARARGS, 0 },
-    { "function_trace", (PyCFunction)NRTransaction_function_trace,   METH_VARARGS, 0 },
-    { "external_trace", (PyCFunction)NRTransaction_external_trace,   METH_VARARGS, 0 },
-    { "memcache_trace", (PyCFunction)NRTransaction_memcache_trace,   METH_VARARGS, 0 },
-    { "database_trace", (PyCFunction)NRTransaction_database_trace,   METH_VARARGS, 0 },
-    { "runtime_error", (PyCFunction)NRTransaction_runtime_error,   METH_VARARGS, 0 },
+    { "__enter__",          (PyCFunction)NRTransaction_enter,
+                            METH_NOARGS, 0 },
+    { "__exit__",           (PyCFunction)NRTransaction_exit,
+                            METH_VARARGS, 0 },
+    { "function_trace",     (PyCFunction)NRTransaction_function_trace,
+                            METH_VARARGS, 0 },
+    { "external_trace",     (PyCFunction)NRTransaction_external_trace,
+                            METH_VARARGS, 0 },
+    { "memcache_trace",     (PyCFunction)NRTransaction_memcache_trace,
+                            METH_VARARGS, 0 },
+    { "database_trace",     (PyCFunction)NRTransaction_database_trace,
+                            METH_VARARGS, 0 },
+    { "runtime_error",      (PyCFunction)NRTransaction_runtime_error,
+                            METH_VARARGS, 0 },
     { NULL, NULL }
 };
 
 static PyGetSetDef NRTransaction_getset[] = {
-    { "ignore", (getter)NRTransaction_get_ignore, (setter)NRTransaction_set_ignore, 0 },
-    { "path", (getter)NRTransaction_get_path, (setter)NRTransaction_set_path, 0 },
-    { "custom_parameters", (getter)NRTransaction_get_custom_parameters, NULL, 0 },
+    { "application",        (getter)NRTransaction_get_application,
+                            NULL, 0 },
+    { "ignore",             (getter)NRTransaction_get_ignore,
+                            (setter)NRTransaction_set_ignore, 0 },
+    { "path",               (getter)NRTransaction_get_path,
+                            (setter)NRTransaction_set_path, 0 },
+    { "has_been_named",     (getter)NRTransaction_get_has_been_named,
+                            NULL, 0 },
+    { "custom_parameters",  (getter)NRTransaction_get_custom_parameters,
+                            NULL, 0 },
+    { "request_parameters", (getter)NRTransaction_get_request_parameters,
+                            NULL, 0 },
+    { "response_code",      (getter)NRTransaction_get_response_code,
+                            (setter)NRTransaction_set_response_code, 0 },
     { NULL },
 };
 
@@ -754,7 +822,8 @@ PyTypeObject NRTransaction_Type = {
     0,                      /*tp_getattro*/
     0,                      /*tp_setattro*/
     0,                      /*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT,     /*tp_flags*/
+    Py_TPFLAGS_DEFAULT |
+    Py_TPFLAGS_BASETYPE,    /*tp_flags*/
     0,                      /*tp_doc*/
     0,                      /*tp_traverse*/
     0,                      /*tp_clear*/

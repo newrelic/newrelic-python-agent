@@ -167,6 +167,7 @@ static PyObject *newrelic_harvest(PyObject *self, PyObject *args)
     return Py_None;
 }
 
+#if 0
 static PyMethodDef *newrelic_lookup_function(const char *mname,
                                              const char *cname,
                                              const char *fname)
@@ -425,11 +426,14 @@ static PyObject *newrelic_wrap_c_database_trace(PyObject *self, PyObject* args)
     Py_INCREF(Py_None);
     return Py_None;
 }
+#endif
 
 static PyMethodDef newrelic_methods[] = {
     { "Settings", newrelic_Settings, METH_NOARGS, 0 },
     { "harvest", newrelic_harvest, METH_NOARGS, 0 },
+#if 0
     { "wrap_c_database_trace", newrelic_wrap_c_database_trace, METH_VARARGS, 0 },
+#endif
     { NULL, NULL }
 };
 
@@ -465,17 +469,36 @@ init_newrelic(void)
 
     /* Initialise type objects. */
 
-    PyModule_AddObject(module, "Application", (PyObject *)&NRApplication_Type);
-    PyModule_AddObject(module, "Transaction", (PyObject *)&NRTransaction_Type);
+    Py_INCREF(&NRApplication_Type);
+    PyModule_AddObject(module, "Application",
+                       (PyObject *)&NRApplication_Type);
+
+    Py_INCREF(&NRBackgroundTask_Type);
+    PyModule_AddObject(module, "BackgroundTask",
+                       (PyObject *)&NRBackgroundTask_Type);
+
+    Py_INCREF(&NRTransaction_Type);
+    PyModule_AddObject(module, "Transaction",
+                       (PyObject *)&NRTransaction_Type);
+
+    Py_INCREF(&NRWebTransaction_Type);
+    PyModule_AddObject(module, "WebTransaction",
+                       (PyObject *)&NRWebTransaction_Type);
 
     /* Initialise module constants. */
 
-    PyModule_AddObject(module, "LOG_ERROR", PyInt_FromLong(LOG_ERROR));
-    PyModule_AddObject(module, "LOG_INFO", PyInt_FromLong(LOG_INFO));
-    PyModule_AddObject(module, "LOG_WARNING", PyInt_FromLong(LOG_WARNING));
-    PyModule_AddObject(module, "LOG_VERBOSE", PyInt_FromLong(LOG_VERBOSE));
-    PyModule_AddObject(module, "LOG_DEBUG", PyInt_FromLong(LOG_DEBUG));
-    PyModule_AddObject(module, "LOG_VERBOSEDEBUG", PyInt_FromLong(LOG_VERBOSEDEBUG));
+    PyModule_AddObject(module, "LOG_ERROR",
+                       PyInt_FromLong(LOG_ERROR));
+    PyModule_AddObject(module, "LOG_INFO",
+                       PyInt_FromLong(LOG_INFO));
+    PyModule_AddObject(module, "LOG_WARNING",
+                       PyInt_FromLong(LOG_WARNING));
+    PyModule_AddObject(module, "LOG_VERBOSE",
+                       PyInt_FromLong(LOG_VERBOSE));
+    PyModule_AddObject(module, "LOG_DEBUG",
+                       PyInt_FromLong(LOG_DEBUG));
+    PyModule_AddObject(module, "LOG_VERBOSEDEBUG",
+                       PyInt_FromLong(LOG_VERBOSEDEBUG));
 
     /*
      * TODO Don't install signal handlers for catching back

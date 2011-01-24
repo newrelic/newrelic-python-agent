@@ -16,16 +16,18 @@
 
 /* ------------------------------------------------------------------------- */
 
+#define NR_TRANSACTION_STATE_PENDING 0
+#define NR_TRANSACTION_STATE_RUNNING 1
+#define NR_TRANSACTION_STATE_STOPPED 2
+
 typedef struct {
     PyObject_HEAD
-    int initialised;
     NRApplicationObject *application;
     nr_web_transaction *transaction;
     nr_transaction_error* transaction_errors;
     PyObject *request_parameters;
     PyObject *custom_parameters;
-    int transaction_enabled;
-    int transaction_active;
+    int transaction_state;
 } NRTransactionObject;
 
 extern PyTypeObject NRTransaction_Type;

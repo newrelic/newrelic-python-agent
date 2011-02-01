@@ -172,6 +172,8 @@ static PyObject *newrelic_Settings(PyObject *self, PyObject *args)
 
 static PyObject *newrelic_harvest(PyObject *self, PyObject *args)
 {
+    /* TODO Add reason argument. */
+
     Py_BEGIN_ALLOW_THREADS
     nr__harvest_thread_body("flush");
     Py_END_ALLOW_THREADS
@@ -442,9 +444,12 @@ static PyObject *newrelic_wrap_c_database_trace(PyObject *self, PyObject* args)
 #endif
 
 static PyMethodDef newrelic_methods[] = {
-    { "Application", (PyCFunction)newrelic_Application, METH_VARARGS|METH_KEYWORDS, 0 },
-    { "Settings", newrelic_Settings, METH_NOARGS, 0 },
-    { "harvest", newrelic_harvest, METH_NOARGS, 0 },
+    { "Application",        (PyCFunction)newrelic_Application,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
+    { "Settings",           newrelic_Settings,
+                            METH_NOARGS, 0 },
+    { "harvest",            newrelic_harvest,
+                            METH_VARARGS, 0 },
 #if 0
     { "wrap_c_database_trace", newrelic_wrap_c_database_trace, METH_VARARGS, 0 },
 #endif

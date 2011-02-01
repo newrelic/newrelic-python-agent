@@ -171,7 +171,7 @@ static void NRApplication_dealloc(NRApplicationObject *self)
 {
     /*
      * TODO This needs to be moved into destructor of Settings
-     * object, or some other means use to ensure that agent
+     * object, or use some other means use to ensure that agent
      * shutdown properly on process shutdown to try and flush
      * out metrics.
      */
@@ -251,18 +251,22 @@ static int NRApplication_set_enabled(NRApplicationObject *self,
 /* ------------------------------------------------------------------------- */
 
 static PyObject *NRApplication_custom_metric(NRApplicationObject *self,
-                                             PyObject *args)
+                                             PyObject *args, PyObject *kwds)
 {
     const char *key = NULL;
     double value = 0.0;
+
+    static char *kwlist[] = { "key", "value", NULL };
 
     if (!self->application) {
         PyErr_SetString(PyExc_TypeError, "application not initialized");
         return NULL;
     }
 
-    if (!PyArg_ParseTuple(args, "sd:custom_metric", &key, &value))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "sd:custom_metric",
+                                     kwlist, &key, &value)) {
         return NULL;
+    }
 
     pthread_mutex_lock(&(nr_per_process_globals.harvest_data_mutex));
     nr_metric_table__add_metric_double(
@@ -281,7 +285,7 @@ static PyObject *NRApplication_custom_metric(NRApplicationObject *self,
 
 static PyMethodDef NRApplication_methods[] = {
     { "custom_metric",      (PyCFunction)NRApplication_custom_metric,
-                            METH_VARARGS, 0 },
+                            METH_VARARGS|METH_KEYWORDS, 0 },
     { NULL, NULL}
 };
 
@@ -335,6 +339,10 @@ PyTypeObject NRApplication_Type = {
     NRApplication_new,      /*tp_new*/
     0,                      /*tp_free*/
     0,                      /*tp_is_gc*/
-};
+} 
 
 /* ------------------------------------------------------------------------- */
+
+/*
+ * vim: et cino=>2,e0,n0,f0,{2,}0,^0,\:2,=2,p2,t2,c1,+2,(2,u2,)20,*30,g2,h2 ts=8
+ */;

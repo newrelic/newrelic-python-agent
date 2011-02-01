@@ -21,13 +21,5 @@ class ApplicationTests01(unittest.TestCase):
         application2 = _newrelic.Application("UnitTests")
         self.assertEqual(id(application1), id(application2))
 
-    def test_harvest(self):
-        application = _newrelic.Application("UnitTests")
-        _newrelic.harvest()
-
-    def test_harvest_reason(self):
-        application = _newrelic.Application("UnitTests")
-        _newrelic.harvest("shutdown")
-
 if __name__ == '__main__':
     unittest.main()

@@ -1,5 +1,5 @@
-#ifndef PY_WRAPPER_CONFIG_H
-#define PY_WRAPPER_CONFIG_H
+#ifndef PY_WRAPPER_VERSION_H
+#define PY_WRAPPER_VERSION_H
 
 /* ------------------------------------------------------------------------- */
 
@@ -7,7 +7,7 @@
 
 /* ------------------------------------------------------------------------- */
 
-#define NR_PYTHON_AGENT_VERSION "1.0a"
+#define NEWRELIC_PYTHON_AGENT_VERSION "1.0a"
 
 /* ------------------------------------------------------------------------- */
 

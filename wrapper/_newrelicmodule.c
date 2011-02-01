@@ -153,6 +153,12 @@ static void newrelic_populate_plugin_list(void)
     }
 }
 
+static PyObject *newrelic_Application(PyObject *self, PyObject *args,
+                                      PyObject *kwds)
+{
+    return NRApplication_Singleton(args, kwds);
+}
+
 static PyObject *newrelic_Settings(PyObject *self, PyObject *args)
 {
     NRSettingsObject *rv;
@@ -436,6 +442,7 @@ static PyObject *newrelic_wrap_c_database_trace(PyObject *self, PyObject* args)
 #endif
 
 static PyMethodDef newrelic_methods[] = {
+    { "Application", (PyCFunction)newrelic_Application, METH_VARARGS|METH_KEYWORDS, 0 },
     { "Settings", newrelic_Settings, METH_NOARGS, 0 },
     { "harvest", newrelic_harvest, METH_NOARGS, 0 },
 #if 0
@@ -478,9 +485,11 @@ init_newrelic(void)
 
     /* Initialise type objects. */
 
+#if 0
     Py_INCREF(&NRApplication_Type);
     PyModule_AddObject(module, "Application",
                        (PyObject *)&NRApplication_Type);
+#endif
 
     Py_INCREF(&NRBackgroundTask_Type);
     PyModule_AddObject(module, "BackgroundTask",

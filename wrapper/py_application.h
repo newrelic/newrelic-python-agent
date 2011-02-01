@@ -23,4 +23,8 @@ extern PyTypeObject NRApplication_Type;
 
 /* ------------------------------------------------------------------------- */
 
+extern PyObject *NRApplication_Singleton(PyObject *args, PyObject *kwds);
+
+/* ------------------------------------------------------------------------- */
+
 #endif

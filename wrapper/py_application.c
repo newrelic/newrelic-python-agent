@@ -4,15 +4,13 @@
 
 /* ------------------------------------------------------------------------- */
 
-#include "py_config.h"
+#include "py_version.h"
 
 #include "py_application.h"
 
 #include "globals.h"
-#include "logging.h"
 
 #include "application.h"
-#include "daemon_protocol.h"
 #include "genericobject.h"
 #include "harvest.h"
 #include "metric_table.h"
@@ -21,7 +19,70 @@
 
 /* ------------------------------------------------------------------------- */
 
-static int NRApplication_instances = 0;
+static PyObject *NRApplication_instances = NULL;
+
+/* ------------------------------------------------------------------------- */
+
+PyObject *NRApplication_Singleton(PyObject *args, PyObject *kwds)
+{
+    PyObject *result = NULL;
+    const char *name = NULL;
+
+    static char *kwlist[] = { "name", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s:Application",
+                                     kwlist, &name)) {
+        return NULL;
+    }
+
+    /*
+     * If this is the first application object instance being
+     * created, we need to initialise the harvest thread and
+     * create a global dictionary to hold all application object
+     * instances keyed by name. Application object instances
+     * will be cached in this dictionary and successive calls to
+     * create an application object instance for a named
+     * application that already exists will result in the
+     * application object instance from the global dictionary
+     * being return instead of a new instance being created.
+     * Because this global dictionary is shared between the main
+     * Python interpreter and all of the sub interpreters, this
+     * means that a specific application object instance may be
+     * used at same time from different interpreters. As the
+     * attributes of the application object are simple, this
+     * sharing should be okay.
+     */
+
+    if (!NRApplication_instances) {
+        nr__create_harvest_thread();
+        NRApplication_instances = PyDict_New();
+    }
+
+    /*
+     * Check for existing application object instance with the
+     * specified name in the global dictionary and return it if
+     * it exists.
+     */
+
+    result = PyDict_GetItemString(NRApplication_instances, name);
+
+    if (result) {
+        Py_INCREF(result);
+        return result;
+    }
+
+    /*
+     * Otherwise we will need to create a new application object
+     * instance, store it in the dictionary and then return it.
+     */
+
+    result = PyEval_CallObjectWithKeywords((PyObject *)&NRApplication_Type,
+                                           args, kwds);
+
+    PyDict_SetItemString(NRApplication_instances, name, result);
+
+    return result;
+}
 
 /* ------------------------------------------------------------------------- */
 
@@ -36,11 +97,12 @@ static PyObject *NRApplication_new(PyTypeObject *type, PyObject *args,
         return NULL;
 
     /*
-     * Application isn't initialised here but in the init
-     * method. Calling of the init method is therefore mandatory
-     * and if not done by the time a transaction is created or a
-     * custom metric associated with the application then the
-     * transaction will fail.
+     * The internal agent client application object isn't
+     * initialised here but in the init method. Calling of the
+     * init method is therefore mandatory and if not done by the
+     * time a transaction is created or a custom metric
+     * associated with the application then the transaction will
+     * fail.
      */
 
     self->application = NULL;
@@ -48,15 +110,7 @@ static PyObject *NRApplication_new(PyTypeObject *type, PyObject *args,
     /*
      * Monitoring of an application is enabled by default. If
      * this needs to be disabled, can be done by assigning the
-     * 'enabled' attribute after creation. Note that the
-     * 'enabled' flag is associated with the Python application
-     * object and not the internal agent client application
-     * object. This means that to have monitoring consistently
-     * enabled/disabled across a whole interpreter, then Python
-     * wrapper module needs to maintain a dictionary of named
-     * application objects and return single instance for all
-     * requests for application object for specific name and
-     * not unique objects.
+     * 'enabled' attribute after creation.
      */
 
     self->enabled = 1;
@@ -88,20 +142,6 @@ static int NRApplication_init(NRApplicationObject *self, PyObject *args,
     }
 
     /*
-     * If this is the first instance, we need to (re)initialise
-     * the harvest thread. It may be a reinitialisation where
-     * all application objects had been destroyed and so the
-     * harvest thread was shutdown. We hold the Python GIL here
-     * so do not need to worry about separate mutex locking when
-     * accessing global data.
-     */
-
-    if (!NRApplication_instances)
-        nr__create_harvest_thread();
-
-    NRApplication_instances++;
-
-    /*
      * Cache reference to the internal agent client application
      * object instance. Will need the latter when initiating a
      * web transaction or background task against this
@@ -113,15 +153,14 @@ static int NRApplication_init(NRApplicationObject *self, PyObject *args,
     self->application = nr__find_or_create_application(name);
 
     /* Markup what version of the Python agent wrapper is being
-     * used. This display in the agent configuration in the
+     * used. This displays in the agent configuration in the
      * RPM GUI.
      */
 
     nro__set_hash_string(self->application->appconfig,
-            "agent.binding", "Python");
+            "binding.language", "Python");
     nro__set_hash_string(self->application->appconfig,
-            "agent.version", "library=" NEWRELIC_AGENT_VERSION ", "
-            "binding=" NR_PYTHON_AGENT_VERSION);
+            "binding.version", NEWRELIC_PYTHON_AGENT_VERSION);
 
     return 0;
 }
@@ -130,6 +169,13 @@ static int NRApplication_init(NRApplicationObject *self, PyObject *args,
 
 static void NRApplication_dealloc(NRApplicationObject *self)
 {
+    /*
+     * TODO This needs to be moved into destructor of Settings
+     * object, or some other means use to ensure that agent
+     * shutdown properly on process shutdown to try and flush
+     * out metrics.
+     */
+
     /*
      * If this the last instance, we can force a harvest cycle
      * be run and then shutdown the harvest thread.  We hold the
@@ -140,6 +186,7 @@ static void NRApplication_dealloc(NRApplicationObject *self)
      * block.
      */
 
+#if 0
     if (self->application) {
         NRApplication_instances--;
 
@@ -152,6 +199,7 @@ static void NRApplication_dealloc(NRApplicationObject *self)
             Py_END_ALLOW_THREADS
         }
     }
+#endif
 
     Py_TYPE(self)->tp_free(self);
 }
@@ -202,86 +250,6 @@ static int NRApplication_set_enabled(NRApplicationObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-#if 0
-static PyObject *NRApplication_web_transaction(NRApplicationObject *self,
-                                               PyObject *args)
-{
-    NRWebTransactionObject *rv;
-
-    PyObject *environ = NULL;
-
-    if (!self->application) {
-        PyErr_SetString(PyExc_TypeError, "application not initialized");
-        return NULL;
-    }
-
-    if (!PyArg_ParseTuple(args, "O:web_transaction", &environ))
-        return NULL;
-
-    if (!PyDict_Check(environ)) {
-        PyErr_Format(PyExc_TypeError, "expected WSGI environ dictionary");
-        return NULL;
-    }
-
-    /*
-     * If application monitoring has been disabled we want to
-     * return a dummy web transaction object. Indicate that
-     * by passing NULL for application.
-     */
-
-    if (self->enabled)
-        rv = NRWebTransaction_New(self->application, environ);
-    else
-        rv = NRWebTransaction_New(NULL, NULL);
-
-    if (rv == NULL)
-        return NULL;
-
-    return (PyObject *)rv;
-}
-
-/* ------------------------------------------------------------------------- */
-
-static PyObject *NRApplication_background_task(NRApplicationObject *self,
-                                               PyObject *args)
-{
-    NRBackgroundTaskObject *rv;
-
-    PyObject *path = NULL;
-
-    if (!self->application) {
-        PyErr_SetString(PyExc_TypeError, "application not initialized");
-        return NULL;
-    }
-
-    if (!PyArg_ParseTuple(args, "O:background_task", &path))
-        return NULL;
-
-    if (!PyString_Check(path)) {
-        PyErr_Format(PyExc_TypeError, "expected string for URL path");
-        return NULL;
-    }
-
-    /*
-     * If application monitoring has been disabled we want to
-     * return a dummy web transaction object. Indicate that
-     * by passing NULL for application.
-     */
-
-    if (self->enabled)
-        rv = NRBackgroundTask_New(self->application, path);
-    else
-        rv = NRBackgroundTask_New(NULL, NULL);
-
-    if (rv == NULL)
-        return NULL;
-
-    return (PyObject *)rv;
-}
-#endif
-
-/* ------------------------------------------------------------------------- */
-
 static PyObject *NRApplication_custom_metric(NRApplicationObject *self,
                                              PyObject *args)
 {
@@ -312,17 +280,16 @@ static PyObject *NRApplication_custom_metric(NRApplicationObject *self,
 #endif
 
 static PyMethodDef NRApplication_methods[] = {
-#if 0
-    { "web_transaction",   (PyCFunction)NRApplication_web_transaction,   METH_VARARGS, 0 },
-    { "background_task",   (PyCFunction)NRApplication_background_task,   METH_VARARGS, 0 },
-#endif
-    { "custom_metric",     (PyCFunction)NRApplication_custom_metric,     METH_VARARGS, 0 },
+    { "custom_metric",      (PyCFunction)NRApplication_custom_metric,
+                            METH_VARARGS, 0 },
     { NULL, NULL}
 };
 
 static PyGetSetDef NRApplication_getset[] = {
-    { "name", (getter)NRApplication_get_name, NULL, 0 },
-    { "enabled", (getter)NRApplication_get_enabled, (setter)NRApplication_set_enabled, 0 },
+    { "name",               (getter)NRApplication_get_name,
+                            NULL, 0 },
+    { "enabled",            (getter)NRApplication_get_enabled,
+                            (setter)NRApplication_set_enabled, 0 },
     { NULL },
 };
 

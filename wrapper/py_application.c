@@ -7,10 +7,6 @@
 #include "py_config.h"
 
 #include "py_application.h"
-#if 0
-#include "py_background_task.h"
-#include "py_web_transaction.h"
-#endif
 
 #include "globals.h"
 #include "logging.h"
@@ -22,10 +18,6 @@
 #include "metric_table.h"
 
 #include "nr_version.h"
-
-#if 0
-#include "php_newrelic.h"
-#endif
 
 /* ------------------------------------------------------------------------- */
 
@@ -294,7 +286,6 @@ static PyObject *NRApplication_custom_metric(NRApplicationObject *self,
                                              PyObject *args)
 {
     const char *key = NULL;
-    const char *scope = NULL;
     double value = 0.0;
 
     if (!self->application) {
@@ -302,12 +293,12 @@ static PyObject *NRApplication_custom_metric(NRApplicationObject *self,
         return NULL;
     }
 
-    if (!PyArg_ParseTuple(args, "szd:custom_metric", &key, scope, value))
+    if (!PyArg_ParseTuple(args, "szd:custom_metric", &key, &value))
         return NULL;
 
     pthread_mutex_lock(&(nr_per_process_globals.harvest_data_mutex));
     nr_metric_table__add_metric_double(
-            self->application->pending_harvest->metrics, key, scope, value);
+            self->application->pending_harvest->metrics, key, NULL, value);
     pthread_mutex_unlock(&(nr_per_process_globals.harvest_data_mutex));
 
     Py_INCREF(Py_None);

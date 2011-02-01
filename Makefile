@@ -1,8 +1,17 @@
-all:
+all :
 	python setup.py build
 
-clean:
+install :
+	python setup.py install
+
+clean :
 	rm -rf build
 
-install:
-	python setup.py install
+distclean : clean
+	rm -rf tests-virtualenv
+
+test : tests-virtualenv
+	tests-virtualenv/bin/python setup.py install
+
+tests-virtualenv :
+	virtualenv tests-virtualenv

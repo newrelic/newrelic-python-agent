@@ -48,7 +48,7 @@ PyObject *NRApplication_Singleton(PyObject *args, PyObject *kwds)
      * create an application object instance for a named
      * application that already exists will result in the
      * application object instance from the global dictionary
-     * being return instead of a new instance being created.
+     * being returned instead of a new instance being created.
      * Because this global dictionary is shared between the main
      * Python interpreter and all of the sub interpreters, this
      * means that a specific application object instance may be
@@ -173,7 +173,8 @@ static int NRApplication_init(NRApplicationObject *self, PyObject *args,
 
     self->application = nr__find_or_create_application(name);
 
-    /* Markup what version of the Python agent wrapper is being
+    /*
+     * Markup what version of the Python agent wrapper is being
      * used. This displays in the agent configuration in the
      * RPM GUI.
      */

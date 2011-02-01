@@ -18,16 +18,16 @@ void nrpy__merge_dict_into_params_at(nrobj_t array,
     PyObject *key;
     PyObject *value;
 
-    PyObject *key_as_string;
-    PyObject *value_as_string;
-
-    if PyDict_Check(dict)
+    if (!PyDict_Check(dict))
         return;
 
-    if (PyDict_Size(dict) > 0)
+    if (PyDict_Size(dict) == 0)
         return;
 
     while (PyDict_Next(dict, &pos, &key, &value)) {
+        PyObject *key_as_string = NULL;
+        PyObject *value_as_string = NULL;
+
         key_as_string = PyObject_Str(key);
 
         if (!key_as_string)

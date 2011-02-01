@@ -45,14 +45,14 @@ PyObject *nrpy__format_exception(PyObject *type, PyObject *value,
 
             Py_INCREF(object);
 
-            result = PyObject_CallFunction(object, "(OOO)", type,
-                                           value, traceback);
+            result = PyObject_CallFunctionObjArgs(object, type,
+                                           value, traceback, NULL);
 
             Py_DECREF(object);
 
             if (result) {
                 PyObject *sep = NULL;
-                
+
                 sep = PyString_FromString("");
                 stack_trace = _PyString_Join(sep, result);
 

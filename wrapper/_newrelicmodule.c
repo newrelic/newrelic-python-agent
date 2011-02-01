@@ -75,8 +75,6 @@ static void newrelic_populate_environment(void)
     nro__set_hash_string(nr_per_process_globals.env,
                          "Python Platform", Py_GetPlatform());
     nro__set_hash_string(nr_per_process_globals.env,
-                         "Python Copyright", Py_GetCopyright());
-    nro__set_hash_string(nr_per_process_globals.env,
                          "Python Compiler", Py_GetCompiler());
     nro__set_hash_string(nr_per_process_globals.env,
                          "Python Build Info", Py_GetBuildInfo());

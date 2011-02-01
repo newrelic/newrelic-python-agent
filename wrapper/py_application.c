@@ -293,7 +293,7 @@ static PyObject *NRApplication_custom_metric(NRApplicationObject *self,
         return NULL;
     }
 
-    if (!PyArg_ParseTuple(args, "szd:custom_metric", &key, &value))
+    if (!PyArg_ParseTuple(args, "sd:custom_metric", &key, &value))
         return NULL;
 
     pthread_mutex_lock(&(nr_per_process_globals.harvest_data_mutex));

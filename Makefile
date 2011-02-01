@@ -6,6 +6,7 @@ install :
 
 clean :
 	rm -rf build
+	rm -f tests/test_*.py.log
 
 distclean : clean
 	rm -rf tests-virtualenv

@@ -37,7 +37,11 @@ PyObject *NRApplication_Singleton(PyObject *args, PyObject *kwds)
 
     /*
      * If this is the first application object instance being
-     * created, we need to initialise the harvest thread and
+     * created, we need to initialise the harvest thread. This
+     * is only done here when first application object created
+     * so that we allow for global settings to be first set.
+     *
+     * In addition to starting the harvest thread, we also
      * create a global dictionary to hold all application object
      * instances keyed by name. Application object instances
      * will be cached in this dictionary and successive calls to
@@ -80,6 +84,23 @@ PyObject *NRApplication_Singleton(PyObject *args, PyObject *kwds)
                                            args, kwds);
 
     PyDict_SetItemString(NRApplication_instances, name, result);
+
+    /*
+     * Force a harvest to be performed at this point. This will
+     * ensure early notification is received by the local daemon
+     * agent and details of the application passed on with the
+     * application then being registered with the RPM server.
+     * This hopefully allows local daemon to get back a response
+     * from the RPM server in time for first true metrics
+     * harvest. If it doesn't then the metrics data from the
+     * first harvest can be lost because of the local daemon
+     * agent not yet having received from the RPM server the
+     * configuration options for this specific application. This
+     * can be a problem with short lived processes. See issue
+     * https://www.pivotaltracker.com/projects/???????.
+     */
+
+    nr__harvest_thread_body(name);
 
     return result;
 }
@@ -169,38 +190,6 @@ static int NRApplication_init(NRApplicationObject *self, PyObject *args,
 
 static void NRApplication_dealloc(NRApplicationObject *self)
 {
-    /*
-     * TODO This needs to be moved into destructor of Settings
-     * object, or use some other means use to ensure that agent
-     * shutdown properly on process shutdown to try and flush
-     * out metrics.
-     */
-
-    /*
-     * If this the last instance, we can force a harvest cycle
-     * be run and then shutdown the harvest thread.  We hold the
-     * Python GIL here so do not need to worry about separate
-     * mutex locking when accessing global data but do release
-     * the GIL when performing shutdown of the agent client code
-     * as it may want to talk over the network and so could
-     * block.
-     */
-
-#if 0
-    if (self->application) {
-        NRApplication_instances--;
-
-        if (!NRApplication_instances) {
-            Py_BEGIN_ALLOW_THREADS
-            nr__harvest_thread_body("shutdown");
-            nr__stop_communication(&(nr_per_process_globals.daemon),
-                                   self->application);
-            nr__destroy_harvest_thread();
-            Py_END_ALLOW_THREADS
-        }
-    }
-#endif
-
     Py_TYPE(self)->tp_free(self);
 }
 

@@ -1,35 +1,35 @@
 import unittest
+import math
 
 import _newrelic
 
-import math
-import time
+settings = _newrelic.Settings()
+settings.logfile = "%s.log" % __file__
+settings.loglevel = _newrelic.LOG_VERBOSEDEBUG
 
 class CustomMetricTests01(unittest.TestCase):
 
+    def setUp(self):
+        _newrelic.log(_newrelic.LOG_DEBUG, "STARTING - %s" %
+                      self._testMethodName)
+
+    def tearDown(self):
+        _newrelic.log(_newrelic.LOG_DEBUG, "STOPPING - %s" %
+                      self._testMethodName)
+
     def test_int(self):
-        application = _newrelic.Application("UnitTests")
-        _newrelic.harvest()
-        time.sleep(0.1)
         for i in range(100):
             application.custom_metric("CustomMetricTests01/Int", i)
-        _newrelic.harvest()
 
     def test_float(self):
-        application = _newrelic.Application("UnitTests")
-        _newrelic.harvest()
-        time.sleep(0.1)
         for i in map(math.sqrt, range(100)):
             application.custom_metric("CustomMetricTests01/Float", i)
-        _newrelic.harvest()
 
     def test_disabled(self):
-        application = _newrelic.Application("UnitTests")
         application.enabled = False
-        _newrelic.harvest()
-        time.sleep(0.1)
         application.custom_metric("CustomMetricTests01/Disabled", 1)
-        _newrelic.harvest()
+        application.enabled = True
 
 if __name__ == '__main__':
+    application = _newrelic.Application("UnitTests")
     unittest.main()

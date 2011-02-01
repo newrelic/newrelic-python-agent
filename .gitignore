@@ -1,3 +1,4 @@
 build
 tests-virtualenv
 *.swp
+tests/test_*.py.log

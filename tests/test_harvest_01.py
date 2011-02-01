@@ -2,17 +2,25 @@ import unittest
 
 import _newrelic
 
+settings = _newrelic.Settings()
+settings.logfile = "%s.log" % __file__
+settings.loglevel = _newrelic.LOG_VERBOSEDEBUG
+
 class HarvestTests01(unittest.TestCase):
 
-    def test_harvest(self):
+    def setUp(self):
+        _newrelic.log(_newrelic.LOG_DEBUG, "STARTING - %s" %
+                      self._testMethodName)
+
+    def tearDown(self):
+        _newrelic.log(_newrelic.LOG_DEBUG, "STOPPING - %s" %
+                      self._testMethodName)
+
+    def test_execute(self):
         _newrelic.harvest()
 
-    def test_harvest_reason(self):
-        _newrelic.harvest("shutdown")
-
-    def test_harvest_application(self):
-        application = _newrelic.Application("UnitTests")
-        _newrelic.harvest()
+    def test_reason(self):
+        _newrelic.harvest("reason")
 
 if __name__ == '__main__':
     unittest.main()

@@ -24,6 +24,7 @@
 #include "logging.h"
 
 #include "application.h"
+#include "daemon_protocol.h"
 #include "genericobject.h"
 #include "harvest.h"
 #include "metric_table.h"
@@ -170,6 +171,26 @@ static PyObject *newrelic_Settings(PyObject *self, PyObject *args)
     return (PyObject *)rv;
 }
 
+static PyObject *newrelic_log(PyObject *self, PyObject *args, PyObject *kwds)
+{
+    int level = 0;
+    const char *message = NULL;
+
+    static char *kwlist[] = { "level", "message", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "is:log",
+                                     kwlist, &level, &message)) {
+        return NULL;
+    }
+
+    Py_BEGIN_ALLOW_THREADS
+    nr__log(level, "%s", message);
+    Py_END_ALLOW_THREADS
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
 static PyObject *newrelic_harvest(PyObject *self, PyObject *args,
                                   PyObject *kwds)
 {
@@ -188,6 +209,32 @@ static PyObject *newrelic_harvest(PyObject *self, PyObject *args,
     Py_BEGIN_ALLOW_THREADS
     nr__harvest_thread_body(reason);
     Py_END_ALLOW_THREADS
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+static PyObject *newrelic_shutdown(PyObject *self, PyObject *args)
+{
+    static int shutdown = 0;
+
+    if (!shutdown) {
+        shutdown = 1;
+
+        Py_BEGIN_ALLOW_THREADS
+
+        nr__harvest_thread_body("shutdown");
+        nr__stop_communication(&(nr_per_process_globals.daemon), NULL);
+        nr__destroy_harvest_thread();
+
+        nr__free_applications_global();
+        nrfree (nr_per_process_globals.daemon.sockpath);
+        if (nr_per_process_globals.env != NULL) {
+            nro__delete (nr_per_process_globals.env);
+        }
+
+        Py_END_ALLOW_THREADS
+    }
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -459,6 +506,8 @@ static PyMethodDef newrelic_methods[] = {
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "Settings",           newrelic_Settings,
                             METH_NOARGS, 0 },
+    { "log",                (PyCFunction)newrelic_log,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
     { "harvest",            (PyCFunction)newrelic_harvest,
                             METH_VARARGS|METH_KEYWORDS, 0 },
 #if 0
@@ -467,10 +516,17 @@ static PyMethodDef newrelic_methods[] = {
     { NULL, NULL }
 };
 
+static PyMethodDef newrelic_method_shutdown = {
+    "shutdown", newrelic_shutdown, METH_NOARGS, 0
+};
+
 PyMODINIT_FUNC
 init_newrelic(void)
 {
     PyObject *module;
+    PyObject *atexit_module;
+
+    PyGILState_STATE gil_state;
 
     module = Py_InitModule3("_newrelic", newrelic_methods, NULL);
     if (module == NULL)
@@ -618,6 +674,60 @@ init_newrelic(void)
 
     newrelic_populate_environment();
     newrelic_populate_plugin_list();
+
+    /*
+     * Register shutdown method with atexit module for execution
+     * on process shutdown. Because functions registered with
+     * the atexit module are technically only invoked for the
+     * main interpreter and not sub interpreters (except under
+     * mod_wsgi), then we explicitly release the GIL and then
+     * reacquire it against the main interpreter before actually
+     * performing the registration. Note that under mod_python,
+     * functions registered with the atexit module aren't called
+     * at all as it doesn't properly shutdown the interpreter
+     * when the process is being stopped. Since mod_python is
+     * officially dead, use of it should be discouraged. Also be
+     * aware that if both mod_python and mod_wsgi are loaded at
+     * the same time into Apache, even if mod_python is not
+     * actually used, mod_python controls interpreter
+     * initialisation and destruction and so simply loading
+     * mod_python causes any functions registered with atexit
+     * module under mod_wsgi to not be called either.
+     */
+
+    Py_BEGIN_ALLOW_THREADS
+
+    gil_state = PyGILState_Ensure();
+
+    atexit_module = PyImport_ImportModule("atexit");
+
+    if (atexit_module) {
+        PyObject *module_dict = NULL;
+        PyObject *register_function = NULL;
+        PyObject *callback_function = NULL;
+        PyObject *result = NULL;
+
+        module_dict = PyModule_GetDict(atexit_module);
+        register_function = PyDict_GetItemString(module_dict, "register");
+
+        if (register_function) {
+            callback_function = PyCFunction_New(&newrelic_method_shutdown,
+                                                NULL);
+
+            result = PyObject_CallFunctionObjArgs(register_function,
+                                                  callback_function, NULL);
+        }
+
+        Py_XDECREF(result);
+        Py_XDECREF(callback_function);
+        Py_XDECREF(register_function);
+    }
+
+    Py_XDECREF(atexit_module);
+
+    PyGILState_Release(gil_state);
+
+    Py_END_ALLOW_THREADS
 }
 
 /* ------------------------------------------------------------------------- */

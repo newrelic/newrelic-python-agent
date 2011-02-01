@@ -32,15 +32,14 @@ static int NRTransaction_tls_key = 0;
 
 /* ------------------------------------------------------------------------- */
 
-NRTransactionObject *NRTransaction_CurrentTransaction()
+PyObject *NRTransaction_CurrentTransaction()
 {
-    NRTransactionObject *result = NULL;
+    PyObject *result = NULL;
 
     if (!NRTransaction_tls_key)
         return NULL;
 
-    result = (NRTransactionObject *)PyThread_get_key_value(
-            NRTransaction_tls_key);
+    result = (PyObject *)PyThread_get_key_value(NRTransaction_tls_key);
 
     return result;
 }
@@ -60,28 +59,6 @@ static PyObject *NRTransaction_new(PyTypeObject *type, PyObject *args,
 
     if (!NRTransaction_tls_key)
         NRTransaction_tls_key = PyThread_create_key();
-
-    /*
-     * We check arguments here because we want to catch the
-     * special case of where no arguments at all are provided.
-     * When this occurs we look up what the current transaction
-     * is instead and return a reference to that instead. This
-     * could be avoided if knew we had to initialise the TLS
-     * key, but that only happens once so why bother to have
-     * special case for that.
-     */
-
-    if (PyTuple_Size(args) == 0) {
-        self = (NRTransactionObject *)PyThread_get_key_value(
-                NRTransaction_tls_key);
-
-        if (!self)
-            PyErr_SetString(PyExc_TypeError, "no active transaction");
-
-        Py_XINCREF(self);
-
-        return (PyObject *)self;
-    }
 
     /*
      * Allocate the transaction object and initialise it as per
@@ -114,22 +91,18 @@ static int NRTransaction_init(NRTransactionObject *self, PyObject *args,
 
     static char *kwlist[] = { "application", NULL };
 
-    /*
-     * For the case that no argument was provided then the new
-     * method would have returned a reference to an existing
-     * in progress transaction instance which has already been
-     * initialised. We check for this case and skip doing any
-     * initialisation a second time. We also return here if the
-     * init method has been called twice when it should not
-     * have been.
-     */
-
-    if (self->application)
-        return 0;
-
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!:Transaction",
                                      kwlist, &NRApplication_Type,
                                      &application)) {
+        return -1;
+    }
+
+    /*
+     * Validate that this method hasn't been called previously.
+     */
+
+    if (self->application) {
+        PyErr_SetString(PyExc_TypeError, "transaction already initialized");
         return -1;
     }
 
@@ -482,7 +455,7 @@ static PyObject *NRTransaction_runtime_error(
 
     PyObject *type = NULL;
     PyObject *value = NULL;
-    PyTracebackObject *traceback = NULL;
+    PyObject *traceback = NULL;
     PyObject *params = NULL;
 
     PyObject *error_message = NULL;
@@ -506,8 +479,7 @@ static PyObject *NRTransaction_runtime_error(
 
     if (type != Py_None && value != Py_None) {
         error_message = PyObject_Str(value);
-        stack_trace = nrpy__format_exception(type, value,
-                                             (PyObject *)traceback);
+        stack_trace = nrpy__format_exception(type, value, traceback);
 
         if (!stack_trace)
            PyErr_Clear();

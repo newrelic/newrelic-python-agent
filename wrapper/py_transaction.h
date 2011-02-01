@@ -31,7 +31,7 @@ extern PyTypeObject NRTransaction_Type;
 
 /* ------------------------------------------------------------------------- */
 
-extern NRTransactionObject *NRTransaction_CurrentTransaction(void);
+extern PyObject *NRTransaction_CurrentTransaction(void);
 
 /* ------------------------------------------------------------------------- */
 

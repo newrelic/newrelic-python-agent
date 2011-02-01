@@ -2,7 +2,7 @@ import unittest
 
 import _newrelic
 
-settings = _newrelic.Settings()
+settings = _newrelic.settings()
 settings.logfile = "%s.log" % __file__
 settings.loglevel = _newrelic.LOG_VERBOSEDEBUG
 

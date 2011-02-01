@@ -154,13 +154,13 @@ static void newrelic_populate_plugin_list(void)
     }
 }
 
-static PyObject *newrelic_Application(PyObject *self, PyObject *args,
+static PyObject *newrelic_application(PyObject *self, PyObject *args,
                                       PyObject *kwds)
 {
     return NRApplication_Singleton(args, kwds);
 }
 
-static PyObject *newrelic_Settings(PyObject *self, PyObject *args)
+static PyObject *newrelic_settings(PyObject *self, PyObject *args)
 {
     NRSettingsObject *rv;
 
@@ -209,6 +209,21 @@ static PyObject *newrelic_harvest(PyObject *self, PyObject *args,
     Py_BEGIN_ALLOW_THREADS
     nr__harvest_thread_body(reason);
     Py_END_ALLOW_THREADS
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+static PyObject *newrelic_transaction(PyObject *self, PyObject *args)
+{
+    PyObject *result;
+
+    result = NRTransaction_CurrentTransaction();
+
+    if (result) {
+        Py_INCREF(result);
+        return result;
+    }
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -502,14 +517,16 @@ static PyObject *newrelic_wrap_c_database_trace(PyObject *self, PyObject* args)
 #endif
 
 static PyMethodDef newrelic_methods[] = {
-    { "Application",        (PyCFunction)newrelic_Application,
+    { "application",        (PyCFunction)newrelic_application,
                             METH_VARARGS|METH_KEYWORDS, 0 },
-    { "Settings",           newrelic_Settings,
+    { "settings",           newrelic_settings,
                             METH_NOARGS, 0 },
     { "log",                (PyCFunction)newrelic_log,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "harvest",            (PyCFunction)newrelic_harvest,
                             METH_VARARGS|METH_KEYWORDS, 0 },
+    { "transaction",        newrelic_transaction,
+                            METH_NOARGS, 0 },
 #if 0
     { "wrap_c_database_trace", newrelic_wrap_c_database_trace, METH_VARARGS, 0 },
 #endif
@@ -567,9 +584,11 @@ init_newrelic(void)
     PyModule_AddObject(module, "BackgroundTask",
                        (PyObject *)&NRBackgroundTask_Type);
 
+#if 0
     Py_INCREF(&NRTransaction_Type);
     PyModule_AddObject(module, "Transaction",
                        (PyObject *)&NRTransaction_Type);
+#endif
 
     Py_INCREF(&NRWebTransaction_Type);
     PyModule_AddObject(module, "WebTransaction",

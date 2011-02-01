@@ -2,7 +2,7 @@ import unittest
 
 import _newrelic
 
-settings = _newrelic.Settings()
+settings = _newrelic.settings()
 settings.logfile = "%s.log" % __file__
 settings.loglevel = _newrelic.LOG_VERBOSEDEBUG
 
@@ -17,11 +17,11 @@ class ApplicationTests01(unittest.TestCase):
                       self._testMethodName)
 
     def test_create(self):
-        application = _newrelic.Application("UnitTests")
+        application = _newrelic.application("UnitTests")
         self.assertEqual(application.name, "UnitTests")
 
     def test_enabled(self):
-        application = _newrelic.Application("UnitTests")
+        application = _newrelic.application("UnitTests")
         self.assertTrue(application.enabled)
         application.enabled = False
         self.assertFalse(application.enabled)
@@ -29,8 +29,8 @@ class ApplicationTests01(unittest.TestCase):
         self.assertTrue(application.enabled)
 
     def test_singleton(self):
-        application1 = _newrelic.Application("UnitTests")
-        application2 = _newrelic.Application("UnitTests")
+        application1 = _newrelic.application("UnitTests")
+        application2 = _newrelic.application("UnitTests")
         self.assertEqual(id(application1), id(application2))
 
 if __name__ == '__main__':

@@ -3,9 +3,11 @@ import math
 
 import _newrelic
 
-settings = _newrelic.Settings()
+settings = _newrelic.settings()
 settings.logfile = "%s.log" % __file__
 settings.loglevel = _newrelic.LOG_VERBOSEDEBUG
+
+application = _newrelic.application("UnitTests")
 
 class CustomMetricTests01(unittest.TestCase):
 
@@ -31,5 +33,4 @@ class CustomMetricTests01(unittest.TestCase):
         application.enabled = True
 
 if __name__ == '__main__':
-    application = _newrelic.Application("UnitTests")
     unittest.main()

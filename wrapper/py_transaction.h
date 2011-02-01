@@ -11,9 +11,6 @@
 
 #include "py_application.h"
 
-#include "application_data.h"
-#include "web_transaction_data.h"
-
 /* ------------------------------------------------------------------------- */
 
 #define NR_TRANSACTION_STATE_PENDING 0

@@ -7,13 +7,14 @@
 
 /* ------------------------------------------------------------------------- */
 
-#include "params_funcs.h"
+#include "globals.h"
+#include "web_transaction.h"
 
 #include <Python.h>
 
 /* ------------------------------------------------------------------------- */
 
-extern void nrpy__merge_dict_into_params_at(nr_param_array* array,
+extern void nrpy__merge_dict_into_params_at(nrobj_t array,
                                             const char *name, PyObject *dict);
 
 /* ------------------------------------------------------------------------- */

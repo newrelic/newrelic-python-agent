@@ -9,13 +9,13 @@
 
 #include <Python.h>
 
-#include "application_data.h"
+#include "nrtypes.h"
 
 /* ------------------------------------------------------------------------- */
 
 typedef struct {
     PyObject_HEAD
-    nr_application *application;
+    nrapp_t *application;
     int enabled;
 } NRApplicationObject;
 

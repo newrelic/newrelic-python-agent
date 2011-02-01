@@ -7,12 +7,6 @@
 #include "py_web_transaction.h"
 
 #include "globals.h"
-#include "logging.h"
-
-#include "application_funcs.h"
-#include "harvest_funcs.h"
-#include "params_funcs.h"
-#include "web_transaction_funcs.h"
 
 /* ------------------------------------------------------------------------- */
 

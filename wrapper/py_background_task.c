@@ -5,18 +5,8 @@
 /* ------------------------------------------------------------------------- */
 
 #include "py_background_task.h"
-#include "py_database_trace.h"
-#include "py_external_trace.h"
-#include "py_function_trace.h"
-#include "py_memcache_trace.h"
 
 #include "globals.h"
-#include "logging.h"
-
-#include "application_funcs.h"
-#include "harvest_funcs.h"
-#include "params_funcs.h"
-#include "web_transaction_funcs.h"
 
 /* ------------------------------------------------------------------------- */
 

@@ -6,9 +6,11 @@
 
 #include "py_params.h"
 
+#include "genericobject.h"
+
 /* ------------------------------------------------------------------------- */
 
-void nrpy__merge_dict_into_params_at(nr_param_array* array,
+void nrpy__merge_dict_into_params_at(nrobj_t array,
                                      const char *name, PyObject *dict)
 {
     Py_ssize_t pos = 0;
@@ -37,9 +39,9 @@ void nrpy__merge_dict_into_params_at(nr_param_array* array,
            PyErr_Clear();
 
         if (key_as_string && value_as_string) {
-            nr_param_array__set_string_in_hash_at(array, name,
+            nro__set_in_hash_at(array, name,
                     PyString_AsString(key_as_string),
-                    PyString_AsString(value_as_string));
+                    nro__new_string(PyString_AsString(value_as_string)));
         }
 
         Py_XDECREF(key_as_string);

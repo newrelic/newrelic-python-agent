@@ -7,19 +7,25 @@
 #include "py_config.h"
 
 #include "py_application.h"
+#if 0
 #include "py_background_task.h"
 #include "py_web_transaction.h"
+#endif
 
 #include "globals.h"
 #include "logging.h"
 
-#include "application_funcs.h"
-#include "daemon_protocol_funcs.h"
-#include "generic_object_funcs.h"
-#include "harvest_funcs.h"
-#include "metric_table_funcs.h"
+#include "application.h"
+#include "daemon_protocol.h"
+#include "genericobject.h"
+#include "harvest.h"
+#include "metric_table.h"
 
+#include "nr_version.h"
+
+#if 0
 #include "php_newrelic.h"
+#endif
 
 /* ------------------------------------------------------------------------- */
 
@@ -119,12 +125,10 @@ static int NRApplication_init(NRApplicationObject *self, PyObject *args,
      * RPM GUI.
      */
 
-    nr_generic_object__add_string_to_hash(
-            self->application->appconfig, "agent.binding",
-            "Python");
-    nr_generic_object__add_string_to_hash(
-            self->application->appconfig, "agent.version",
-            "library=" PHP_NEWRELIC_VERSION ", "
+    nro__set_hash_string(self->application->appconfig,
+            "agent.binding", "Python");
+    nro__set_hash_string(self->application->appconfig,
+            "agent.version", "library=" NEWRELIC_AGENT_VERSION ", "
             "binding=" NR_PYTHON_AGENT_VERSION);
 
     return 0;

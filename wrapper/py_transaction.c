@@ -9,18 +9,20 @@
 #include "py_params.h"
 #include "py_traceback.h"
 
+#if 0
 #include "py_database_trace.h"
 #include "py_external_trace.h"
 #include "py_function_trace.h"
 #include "py_memcache_trace.h"
+#endif
 
 #include "globals.h"
 #include "logging.h"
 
-#include "application_funcs.h"
-#include "harvest_funcs.h"
-#include "params_funcs.h"
-#include "web_transaction_funcs.h"
+#include "application.h"
+#include "genericobject.h"
+#include "harvest.h"
+#include "web_transaction.h"
 
 #include "pythread.h"
 
@@ -244,7 +246,7 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
 {
     int keep_wt = 0;
 
-    nr_application *application;
+    nrapp_t *application;
 
     PyObject *type = NULL;
     PyObject *value = NULL;
@@ -359,6 +361,7 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+#if 0
 static PyObject *NRTransaction_function_trace(
         NRTransactionObject *self, PyObject *args)
 {
@@ -468,6 +471,7 @@ static PyObject *NRTransaction_database_trace(
 
     return (PyObject *)rv;
 }
+#endif
 
 /* ------------------------------------------------------------------------- */
 
@@ -513,8 +517,8 @@ static PyObject *NRTransaction_runtime_error(
                 PyString_AsString(error_message), Py_TYPE(value)->tp_name, 0);
 
         if (stack_trace) {
-            nr_param_array__set_string(record->params, "stack_trace",
-                                       PyString_AsString(stack_trace));
+            nro__set_hash_string(record->params, "stack_trace",
+                                 PyString_AsString(stack_trace));
         }
 
         if (params) {
@@ -770,6 +774,7 @@ static PyMethodDef NRTransaction_methods[] = {
                             METH_NOARGS, 0 },
     { "__exit__",           (PyCFunction)NRTransaction_exit,
                             METH_VARARGS, 0 },
+#if 0
     { "function_trace",     (PyCFunction)NRTransaction_function_trace,
                             METH_VARARGS, 0 },
     { "external_trace",     (PyCFunction)NRTransaction_external_trace,
@@ -778,6 +783,7 @@ static PyMethodDef NRTransaction_methods[] = {
                             METH_VARARGS, 0 },
     { "database_trace",     (PyCFunction)NRTransaction_database_trace,
                             METH_VARARGS, 0 },
+#endif
     { "runtime_error",      (PyCFunction)NRTransaction_runtime_error,
                             METH_VARARGS, 0 },
     { NULL, NULL }

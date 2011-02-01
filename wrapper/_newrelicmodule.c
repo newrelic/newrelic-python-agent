@@ -11,22 +11,39 @@
 #include "py_application.h"
 
 #include "py_background_task.h"
+#if 0
 #include "py_database_trace.h"
 #include "py_external_trace.h"
 #include "py_function_trace.h"
 #include "py_memcache_trace.h"
+#endif
 #include "py_transaction.h"
 #include "py_web_transaction.h"
 
 #include "globals.h"
 #include "logging.h"
 
-#include "application_funcs.h"
-#include "generic_object_funcs.h"
-#include "harvest_funcs.h"
-#include "metric_table_funcs.h"
-#include "params_funcs.h"
-#include "web_transaction_funcs.h"
+#include "application.h"
+#include "genericobject.h"
+#include "harvest.h"
+#include "metric_table.h"
+#include "web_transaction.h"
+
+/* ------------------------------------------------------------------------- */
+
+struct _nr_per_process_globals nr_per_process_globals;
+
+#if 0
+void nr_initialize_global_tt_threshold_from_apdex (nrapp_t *app) {
+    if( nr_per_process_globals.tt_threshold_is_apdex_f ) {
+        if( app != NULL ) {
+            nr_per_process_globals.tt_threshold = app->apdex_t * 4;
+        } else {
+            nr_per_process_globals.tt_threshold = 500 * 1000 * 4;
+        }
+    }
+}
+#endif
 
 /* ------------------------------------------------------------------------- */
 
@@ -42,33 +59,27 @@ static void newrelic_populate_environment(void)
      * process.
      */
 
-    nr_generic_object__add_string_to_hash(nr_per_process_globals.env,
-                                          "Python Program Name",
-                                          Py_GetProgramName());
-    nr_generic_object__add_string_to_hash(nr_per_process_globals.env,
-                                          "Python Home", Py_GetPythonHome());
+    nro__set_hash_string(nr_per_process_globals.env,
+                         "Python Program Name", Py_GetProgramName());
+    nro__set_hash_string(nr_per_process_globals.env,
+                         "Python Home", Py_GetPythonHome());
 
-    nr_generic_object__add_string_to_hash(nr_per_process_globals.env,
-                                          "Python Program Full Path",
-                                          Py_GetProgramFullPath());
-    nr_generic_object__add_string_to_hash(nr_per_process_globals.env,
-                                          "Python Prefix", Py_GetPrefix());
-    nr_generic_object__add_string_to_hash(nr_per_process_globals.env,
-                                          "Python Exec Prefix",
-                                          Py_GetPrefix());
-    nr_generic_object__add_string_to_hash(nr_per_process_globals.env,
-                                          "Python Version", Py_GetVersion());
-    nr_generic_object__add_string_to_hash(nr_per_process_globals.env,
-                                          "Python Platform", Py_GetPlatform());
-    nr_generic_object__add_string_to_hash(nr_per_process_globals.env,
-                                          "Python Copyright",
-                                          Py_GetCopyright());
-    nr_generic_object__add_string_to_hash(nr_per_process_globals.env,
-                                          "Python Compiler",
-                                          Py_GetCompiler());
-    nr_generic_object__add_string_to_hash(nr_per_process_globals.env,
-                                          "Python Build Info",
-                                          Py_GetBuildInfo());
+    nro__set_hash_string(nr_per_process_globals.env,
+                         "Python Program Full Path", Py_GetProgramFullPath());
+    nro__set_hash_string(nr_per_process_globals.env,
+                         "Python Prefix", Py_GetPrefix());
+    nro__set_hash_string(nr_per_process_globals.env,
+                         "Python Exec Prefix", Py_GetPrefix());
+    nro__set_hash_string(nr_per_process_globals.env,
+                         "Python Version", Py_GetVersion());
+    nro__set_hash_string(nr_per_process_globals.env,
+                         "Python Platform", Py_GetPlatform());
+    nro__set_hash_string(nr_per_process_globals.env,
+                         "Python Copyright", Py_GetCopyright());
+    nro__set_hash_string(nr_per_process_globals.env,
+                         "Python Compiler", Py_GetCompiler());
+    nro__set_hash_string(nr_per_process_globals.env,
+                         "Python Build Info", Py_GetBuildInfo());
     
     /*
      * Also try and obtain the options supplied to the
@@ -102,9 +113,9 @@ static void newrelic_populate_environment(void)
             result = PyEval_CallObject(object, args);
 
             if (result && result != Py_None) {
-                nr_generic_object__add_string_to_hash(
-                        nr_per_process_globals.env, "Python Config Args",
-                        PyString_AsString(result));
+                nro__set_hash_string(nr_per_process_globals.env,
+                                     "Python Config Args",
+                                     PyString_AsString(result));
             }
             else
                 PyErr_Clear();
@@ -131,18 +142,16 @@ static void newrelic_populate_plugin_list(void)
      */
 
     int i;
-    nr_generic_object* plugins;
+    nrobj_t plugins;
 
-    plugins = nr_generic_object__allocate(NR_OBJECT_ARRAY);
-    plugins = nr_generic_object__add_object_to_hash(nr_per_process_globals.env,
-                                                    "Plugin List", plugins);
+    plugins = nro__new(NR_OBJECT_ARRAY);
+    nro__set_hash_array(nr_per_process_globals.env, "Plugin List", plugins);
 
     for (i = 0; PyImport_Inittab[i].name != NULL; i++) {
         if (!PyImport_Inittab[i].name)
             break;
 
-        nr_generic_object__add_string_to_array(plugins,
-                                               PyImport_Inittab[i].name) ;
+        nro__set_array_string (plugins, 0, PyImport_Inittab[i].name);
     }
 }
 
@@ -452,6 +461,7 @@ init_newrelic(void)
         return;
     if (PyType_Ready(&NRBackgroundTask_Type) < 0)
         return;
+#if 0
     if (PyType_Ready(&NRDatabaseTrace_Type) < 0)
         return;
     if (PyType_Ready(&NRExternalTrace_Type) < 0)
@@ -460,6 +470,7 @@ init_newrelic(void)
         return;
     if (PyType_Ready(&NRMemcacheTrace_Type) < 0)
         return;
+#endif
     if (PyType_Ready(&NRSettings_Type) < 0)
         return;
     if (PyType_Ready(&NRTransaction_Type) < 0)
@@ -580,7 +591,7 @@ init_newrelic(void)
 
     /* Initialise the global application environment. */
 
-    nr_per_process_globals.env = nr_generic_object__allocate(NR_OBJECT_HASH);
+    nr_per_process_globals.env = nro__new(NR_OBJECT_HASH);
 
     newrelic_populate_environment();
     newrelic_populate_plugin_list();

@@ -268,10 +268,17 @@ static PyObject *NRApplication_custom_metric(NRApplicationObject *self,
         return NULL;
     }
 
-    pthread_mutex_lock(&(nr_per_process_globals.harvest_data_mutex));
-    nr_metric_table__add_metric_double(
-            self->application->pending_harvest->metrics, key, NULL, value);
-    pthread_mutex_unlock(&(nr_per_process_globals.harvest_data_mutex));
+    /*
+     * Don't record any custom metrics if the application has
+     * been disabled.
+     */
+
+    if (self->enabled) {
+        pthread_mutex_lock(&(nr_per_process_globals.harvest_data_mutex));
+        nr_metric_table__add_metric_double(
+                self->application->pending_harvest->metrics, key, NULL, value);
+        pthread_mutex_unlock(&(nr_per_process_globals.harvest_data_mutex));
+    }
 
     Py_INCREF(Py_None);
     return Py_None;

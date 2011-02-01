@@ -23,5 +23,13 @@ class CustomMetricTests01(unittest.TestCase):
             application.custom_metric("CustomMetricTests01/Float", i)
         _newrelic.harvest()
 
+    def test_disabled(self):
+        application = _newrelic.Application("UnitTests")
+        application.enabled = False
+        _newrelic.harvest()
+        time.sleep(0.1)
+        application.custom_metric("CustomMetricTests01/Disabled", 1)
+        _newrelic.harvest()
+
 if __name__ == '__main__':
     unittest.main()

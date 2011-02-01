@@ -170,12 +170,23 @@ static PyObject *newrelic_Settings(PyObject *self, PyObject *args)
     return (PyObject *)rv;
 }
 
-static PyObject *newrelic_harvest(PyObject *self, PyObject *args)
+static PyObject *newrelic_harvest(PyObject *self, PyObject *args,
+                                  PyObject *kwds)
 {
-    /* TODO Add reason argument. */
+    const char *reason = NULL;
+
+    static char *kwlist[] = { "reason", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|z:harvest",
+                                     kwlist, &reason)) {
+        return NULL;
+    }
+
+    if (!reason)
+        reason = "flush";
 
     Py_BEGIN_ALLOW_THREADS
-    nr__harvest_thread_body("flush");
+    nr__harvest_thread_body(reason);
     Py_END_ALLOW_THREADS
 
     Py_INCREF(Py_None);
@@ -448,8 +459,8 @@ static PyMethodDef newrelic_methods[] = {
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "Settings",           newrelic_Settings,
                             METH_NOARGS, 0 },
-    { "harvest",            newrelic_harvest,
-                            METH_VARARGS, 0 },
+    { "harvest",            (PyCFunction)newrelic_harvest,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
 #if 0
     { "wrap_c_database_trace", newrelic_wrap_c_database_trace, METH_VARARGS, 0 },
 #endif

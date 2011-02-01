@@ -25,5 +25,9 @@ class ApplicationTests01(unittest.TestCase):
         application = _newrelic.Application("UnitTests")
         _newrelic.harvest()
 
+    def test_harvest_reason(self):
+        application = _newrelic.Application("UnitTests")
+        _newrelic.harvest("shutdown")
+
 if __name__ == '__main__':
     unittest.main()

@@ -16,6 +16,7 @@ static int NRWebTransaction_init(NRTransactionObject *self, PyObject *args,
     NRApplicationObject *application = NULL;
     PyObject *environ = NULL;
 
+    PyObject *enabled = NULL;
     PyObject *newargs = NULL;
     PyObject *object = NULL;
 
@@ -28,26 +29,60 @@ static int NRWebTransaction_init(NRTransactionObject *self, PyObject *args,
 
     static char *kwlist[] = { "application", "environ", NULL };
 
-    /*
-     * For the case that no argument was provided then the new
-     * method would have returned a reference to an existing
-     * in progress transaction instance which has already been
-     * initialised. We check for this case and skip doing any
-     * initialisation a second time. We also return here if the
-     * init method has been called twice when it should not
-     * have been.
-     */
-
-    if (self->application)
-        return 0;
-
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O!:WebTransaction",
                                      kwlist, &NRApplication_Type,
                                      &application, &PyDict_Type, &environ)) {
         return -1;
     }
 
-    newargs = PySequence_GetSlice(args, 0, 1);
+    /*
+     * Validate that this method hasn't been called previously.
+     */
+
+    if (self->application) {
+        PyErr_SetString(PyExc_TypeError, "transaction already initialized");
+        return -1;
+    }
+
+    /*
+     * Transaction can be enabled/disabled by the value of the
+     * variable "newrelic.enabled" in the WSGI environ
+     * dictionary. Allow either boolean or string. In the case
+     * of string a value of 'Off' (case insensitive) will
+     * disable the transaction. We have to allow string as
+     * SetEnv under Apache when passed through to WSGI environ
+     * dictionary only allows for strings.
+     */
+
+    object = PyDict_GetItemString(environ, "newrelic.enabled");
+
+    if (object) {
+        if (PyBool_Check(object)) {
+            enabled = object;
+        }
+        else if (PyString_Check(object)) {
+            const char *value;
+
+            value = PyString_AsString(object);
+
+            if (!strcasecmp(value, "off"))
+                enabled = Py_False;
+            else
+                enabled = Py_True;
+        }
+    }
+
+    /*
+     * Pass application object and optionally the enabled flag to
+     * the base class constructor. Where enabled flag is passed in,
+     * that takes precedence over what may be set in the application
+     * object itself.
+     */
+
+    if (enabled)
+        newargs = PyTuple_Pack(2, PyTuple_GetItem(args, 0), enabled);
+    else
+        newargs = PyTuple_Pack(1, PyTuple_GetItem(args, 0));
 
     if (NRTransaction_Type.tp_init((PyObject *)self, newargs, kwds) < 0) {
         Py_DECREF(newargs);

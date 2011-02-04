@@ -88,12 +88,13 @@ static int NRTransaction_init(NRTransactionObject *self, PyObject *args,
                               PyObject *kwds)
 {
     NRApplicationObject *application = NULL;
+    PyObject *enabled = NULL;
 
-    static char *kwlist[] = { "application", NULL };
+    static char *kwlist[] = { "application", "enabled", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!:Transaction",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!|O!:Transaction",
                                      kwlist, &NRApplication_Type,
-                                     &application)) {
+                                     &application, &PyBool_Type, &enabled)) {
         return -1;
     }
 
@@ -119,7 +120,7 @@ static int NRTransaction_init(NRTransactionObject *self, PyObject *args,
     self->application = application;
     Py_INCREF(self->application);
 
-    if (application->enabled) {
+    if (enabled == Py_True || (!enabled && application->enabled)) {
         self->transaction = nr_web_transaction__allocate();
 
         self->transaction->path_type = NR_PATH_TYPE_UNKNOWN;

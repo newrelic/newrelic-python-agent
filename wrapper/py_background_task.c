@@ -20,26 +20,26 @@ static int NRBackgroundTask_init(NRTransactionObject *self, PyObject *args,
 
     static char *kwlist[] = { "application", "path", NULL };
 
-    /*
-     * For the case that no argument was provided then the new
-     * method would have returned a reference to an existing
-     * in progress transaction instance which has already been
-     * initialised. We check for this case and skip doing any
-     * initialisation a second time. We also return here if the
-     * init method has been called twice when it should not
-     * have been.
-     */
-
-    if (self->application)
-        return 0;
-
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!s:BackgroundTask",
                                      kwlist, &NRApplication_Type,
                                      &application, &path)) {
         return -1;
     }
 
-    newargs = PySequence_GetSlice(args, 0, 1);
+    /*
+     * Validate that this method hasn't been called previously.
+     */
+
+    if (self->application) {
+        PyErr_SetString(PyExc_TypeError, "transaction already initialized");
+        return -1;
+    }
+
+    /*
+     * Pass application object to the base class constructor.
+     */
+
+    newargs = PyTuple_Pack(1, PyTuple_GetItem(args, 0));
 
     if (NRTransaction_Type.tp_init((PyObject *)self, newargs, kwds) < 0) {
         Py_DECREF(newargs);

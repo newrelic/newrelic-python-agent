@@ -81,5 +81,19 @@ class BackgroundTaskTests01(unittest.TestCase):
             self.assertEqual(_newrelic.transaction(), transaction)
         application.enabled = True
 
+    def test_ignore_transaction(self):
+        name = "test_ignore_transaction"
+        transaction = _newrelic.BackgroundTask(application, name)
+        with transaction:
+            self.assertFalse(transaction.ignore)
+            transaction.ignore = True
+            self.assertTrue(transaction.ignore)
+            transaction.ignore = False
+            self.assertFalse(transaction.ignore)
+            transaction.ignore = True
+            self.assertTrue(transaction.ignore)
+            self.assertTrue(transaction.enabled)
+            time.sleep(1.0)
+
 if __name__ == '__main__':
     unittest.main()

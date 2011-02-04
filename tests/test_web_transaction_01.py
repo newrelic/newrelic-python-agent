@@ -52,17 +52,25 @@ class WebTransactionTests01(unittest.TestCase):
             for i in range(10):
                 try:
                     raise RuntimeError("runtime_error %d" % i)
-                except:
+                except RuntimeError:
                     transaction.runtime_error(*sys.exc_info())
 
-    def test_exit_runtime_error(self):
-        environ = { "REQUEST_URI": "/exit_runtime_error" }
+    def test_implicit_runtime_error(self):
+        environ = { "REQUEST_URI": "/implicit_runtime_error" }
         transaction = _newrelic.WebTransaction(application, environ)
         try:
             with transaction:
                 raise RuntimeError("runtime_error")
         except RuntimeError:
             pass
+
+    def test_application_disabled(self):
+        application.enabled = False
+        environ = { "REQUEST_URI": "/application_disabled" }
+        transaction = _newrelic.WebTransaction(application, environ)
+        with transaction:
+            self.assertEqual(_newrelic.transaction(), transaction)
+        application.enabled = True
 
 if __name__ == '__main__':
     unittest.main()

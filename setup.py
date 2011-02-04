@@ -38,7 +38,8 @@ sources = [
 extension = Extension(
   name = "_newrelic",
   sources = sources,
-  define_macros = [('HAVE_CONFIG_H', '1')],
+  define_macros = [('HAVE_CONFIG_H', '1'),
+                   ('NEWRELIC_AGENT_LANGUAGE', '"python"'),],
   include_dirs = ['..', '../php_agent'],
 )
 

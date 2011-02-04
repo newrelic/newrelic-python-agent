@@ -174,6 +174,13 @@ static int NRApplication_init(NRApplicationObject *self, PyObject *args,
     self->application = nr__find_or_create_application(name);
 
     /*
+     * Internal agent code leaves the application specific lock
+     * locked and so need to unlock it.
+     */
+
+    pthread_mutex_unlock (&self->application->lock);
+
+    /*
      * Markup what version of the Python agent wrapper is being
      * used. This displays in the agent configuration in the
      * RPM GUI.

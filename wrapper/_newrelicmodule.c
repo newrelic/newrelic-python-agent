@@ -730,6 +730,8 @@ init_newrelic(void)
         register_function = PyDict_GetItemString(module_dict, "register");
 
         if (register_function) {
+            Py_INCREF(register_function);
+
             callback_function = PyCFunction_New(&newrelic_method_shutdown,
                                                 NULL);
 

@@ -1,5 +1,6 @@
 import unittest
 import time
+import sys
 
 import _newrelic
 
@@ -43,6 +44,25 @@ class WebTransactionTests01(unittest.TestCase):
             transaction.custom_parameters[8] = "8"
             transaction.custom_parameters[9.0] = "9.0"
             time.sleep(1.0)
+
+    def test_explicit_runtime_error(self):
+        environ = { "REQUEST_URI": "/explicit_runtime_error" }
+        transaction = _newrelic.WebTransaction(application, environ)
+        with transaction:
+            for i in range(10):
+                try:
+                    raise RuntimeError("runtime_error %d" % i)
+                except:
+                    transaction.runtime_error(*sys.exc_info())
+
+    def test_exit_runtime_error(self):
+        environ = { "REQUEST_URI": "/exit_runtime_error" }
+        transaction = _newrelic.WebTransaction(application, environ)
+        try:
+            with transaction:
+                raise RuntimeError("runtime_error")
+        except RuntimeError:
+            pass
 
 if __name__ == '__main__':
     unittest.main()

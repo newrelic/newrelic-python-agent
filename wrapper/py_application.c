@@ -80,8 +80,7 @@ PyObject *NRApplication_Singleton(PyObject *args, PyObject *kwds)
      * instance, store it in the dictionary and then return it.
      */
 
-    result = PyEval_CallObjectWithKeywords((PyObject *)&NRApplication_Type,
-                                           args, kwds);
+    result = PyObject_Call((PyObject *)&NRApplication_Type, args, kwds);
 
     PyDict_SetItemString(NRApplication_instances, name, result);
 

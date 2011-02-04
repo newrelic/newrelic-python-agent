@@ -41,14 +41,16 @@ PyObject *nrpy__format_exception(PyObject *type, PyObject *value,
         object = PyDict_GetItemString(dict, "format_exception");
 
         if (object) {
+            PyObject *args = NULL;
             PyObject *result = NULL;
 
             Py_INCREF(object);
 
-            result = PyObject_CallFunctionObjArgs(object, type,
-                                           value, traceback, NULL);
+            args = PyTuple_Pack(3, type, value, traceback);
+            result = PyObject_Call(object, args, NULL);
 
             Py_DECREF(object);
+            Py_DECREF(args);
 
             if (result) {
                 PyObject *sep = NULL;

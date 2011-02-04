@@ -141,12 +141,23 @@ static void NRTransaction_dealloc(NRTransactionObject *self)
      */
 
     if (self->transaction_state == NR_TRANSACTION_STATE_RUNNING) {
-        PyObject *result;
+        PyObject *object = NULL;
 
-        result = PyObject_CallMethod((PyObject *)self, "__exit__", "(OOO)",
-                                     Py_None, Py_None, Py_None);
+        object = PyObject_GetAttrString((PyObject *)self, "__exit__");
 
-        Py_XDECREF(result);
+        if (object) {
+            PyObject *args = NULL;
+            PyObject *result = NULL;
+
+            Py_INCREF(object);
+
+            args = PyTuple_Pack(3, Py_None, Py_None, Py_None);
+            result = PyObject_Call(object, args, NULL);
+
+            Py_DECREF(args);
+            Py_DECREF(object);
+            Py_XDECREF(result);
+        }
     }
 
     Py_DECREF(self->custom_parameters);
@@ -262,12 +273,23 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
      */
 
     if (type != Py_None && value != Py_None && traceback != Py_None) {
-        PyObject *result;
+        PyObject *object = NULL;
 
-        result = PyObject_CallMethod((PyObject *)self, "runtime_error",
-                                     "(OOO)", type, value, traceback);
+        object = PyObject_GetAttrString((PyObject *)self, "runtime_error");
 
-        Py_XDECREF(result);
+        if (object) {
+            PyObject *args = NULL;
+            PyObject *result = NULL;
+
+            Py_INCREF(object);
+
+            args = PyTuple_Pack(3, type, value, traceback);
+            result = PyObject_Call(object, args, NULL);
+
+            Py_DECREF(args);
+            Py_DECREF(object);
+            Py_XDECREF(result);
+        }
     }
 
     nr_node_header__record_stoptime_and_pop_current(

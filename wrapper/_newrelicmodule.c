@@ -104,12 +104,15 @@ static void newrelic_populate_environment(void)
 
         if (object) {
             PyObject *args = NULL;
+            PyObject *arg0 = NULL;
             PyObject *result = NULL;
 
             Py_INCREF(object);
 
-            args = Py_BuildValue("(s)", "CONFIG_ARGS");
-            result = PyEval_CallObject(object, args);
+            arg0 = PyString_FromString("CONFIG_ARGS");
+            args = PyTuple_Pack(1, arg0);
+
+            result = PyObject_Call(object, args, NULL);
 
             if (result && result != Py_None) {
                 nro__set_hash_string(nr_per_process_globals.env,
@@ -121,6 +124,7 @@ static void newrelic_populate_environment(void)
 
             Py_XDECREF(result);
 
+            Py_DECREF(arg0);
             Py_DECREF(args);
             Py_DECREF(object);
         }
@@ -410,8 +414,8 @@ static PyObject *newrelic_call_database_trace(PyCFunction function, int argnum,
 
                 Py_INCREF(object);
 
-                args = Py_BuildValue("()");
-                result = PyEval_CallObject(object, args);
+                args = PyTuple_New(0);
+                result = PyObject_Call(object, args, NULL);
 
                 Py_DECREF(args);
                 Py_DECREF(object);
@@ -723,28 +727,32 @@ init_newrelic(void)
     if (atexit_module) {
         PyObject *module_dict = NULL;
         PyObject *register_function = NULL;
-        PyObject *callback_function = NULL;
-        PyObject *result = NULL;
 
         module_dict = PyModule_GetDict(atexit_module);
         register_function = PyDict_GetItemString(module_dict, "register");
 
         if (register_function) {
+            PyObject *callback_function = NULL;
+            PyObject *args = NULL;
+            PyObject *result = NULL;
+
             Py_INCREF(register_function);
 
             callback_function = PyCFunction_New(&newrelic_method_shutdown,
                                                 NULL);
 
-            result = PyObject_CallFunctionObjArgs(register_function,
-                                                  callback_function, NULL);
+            args = PyTuple_Pack(1, callback_function);
+            result = PyObject_Call(register_function, args, NULL);
+
+            Py_DECREF(callback_function);
+            Py_DECREF(args);
+            Py_DECREF(register_function);
+
+            Py_XDECREF(result);
         }
 
-        Py_XDECREF(result);
-        Py_XDECREF(callback_function);
-        Py_XDECREF(register_function);
+        Py_DECREF(atexit_module);
     }
-
-    Py_XDECREF(atexit_module);
 
     PyGILState_Release(gil_state);
 

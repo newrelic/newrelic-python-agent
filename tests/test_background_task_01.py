@@ -72,5 +72,13 @@ class BackgroundTaskTests01(unittest.TestCase):
             self.assertEqual(_newrelic.transaction(), transaction)
         application.enabled = True
 
+    def test_exit_on_delete(self):
+        name = "exit_on_delete"
+        transaction = _newrelic.BackgroundTask(application, name)
+        transaction.__enter__()
+        time.sleep(1.0)
+        del transaction
+        self.assertEqual(_newrelic.transaction(), None)
+
 if __name__ == '__main__':
     unittest.main()

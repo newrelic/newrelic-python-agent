@@ -29,6 +29,20 @@ class BackgroundTaskTests01(unittest.TestCase):
         with transaction:
             self.assertTrue(transaction.enabled)
             self.assertEqual(_newrelic.transaction(), transaction)
+            self.assertTrue(transaction.has_been_named)
+            time.sleep(1.0)
+
+    def test_named_transaction(self):
+        name = "DUMMY"
+        transaction = _newrelic.BackgroundTask(application, name)
+        with transaction:
+            self.assertTrue(transaction.has_been_named)
+            path = "test_named_transaction"
+            transaction.path = path
+            self.assertTrue(transaction.enabled)
+            self.assertEqual(_newrelic.transaction(), transaction)
+            self.assertEqual(transaction.path, path)
+            self.assertTrue(transaction.has_been_named)
             time.sleep(1.0)
 
     def test_exit_on_delete(self):

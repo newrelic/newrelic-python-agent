@@ -670,6 +670,8 @@ static int NRTransaction_set_path(NRTransactionObject *self,
     self->transaction->path = nrstrdup(PyString_AsString(value));
     self->transaction->path_type = NR_PATH_TYPE_CUSTOM;
 
+    self->transaction->has_been_named = 1;
+
     return 0;
 }
 

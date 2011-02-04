@@ -29,6 +29,20 @@ class WebTransactionTests01(unittest.TestCase):
         with transaction:
             self.assertTrue(transaction.enabled)
             self.assertEqual(_newrelic.transaction(), transaction)
+            self.assertFalse(transaction.has_been_named)
+            time.sleep(1.0)
+
+    def test_named_transaction(self):
+        environ = { "REQUEST_URI": "DUMMY" }
+        transaction = _newrelic.WebTransaction(application, environ)
+        with transaction:
+            self.assertFalse(transaction.has_been_named)
+            path = "/test_named_transaction"
+            transaction.path = path
+            self.assertTrue(transaction.enabled)
+            self.assertEqual(_newrelic.transaction(), transaction)
+            self.assertEqual(transaction.path, path)
+            self.assertTrue(transaction.has_been_named)
             time.sleep(1.0)
 
     def test_exit_on_delete(self):

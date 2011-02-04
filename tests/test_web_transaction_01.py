@@ -27,8 +27,17 @@ class WebTransactionTests01(unittest.TestCase):
         environ = { "REQUEST_URI": "/test_transaction" }
         transaction = _newrelic.WebTransaction(application, environ)
         with transaction:
+            self.assertTrue(transaction.enabled)
             self.assertEqual(_newrelic.transaction(), transaction)
             time.sleep(1.0)
+
+    def test_exit_on_delete(self):
+        environ = { "REQUEST_URI": "/exit_on_delete" }
+        transaction = _newrelic.WebTransaction(application, environ)
+        transaction.__enter__()
+        time.sleep(1.0)
+        del transaction
+        self.assertEqual(_newrelic.transaction(), None)
 
     def test_custom_parameters(self):
         environ = { "REQUEST_URI": "/custom_parameters" }
@@ -69,16 +78,9 @@ class WebTransactionTests01(unittest.TestCase):
         environ = { "REQUEST_URI": "/application_disabled" }
         transaction = _newrelic.WebTransaction(application, environ)
         with transaction:
+            self.assertFalse(transaction.enabled)
             self.assertEqual(_newrelic.transaction(), transaction)
         application.enabled = True
-
-    def test_exit_on_delete(self):
-        environ = { "REQUEST_URI": "/exit_on_delete" }
-        transaction = _newrelic.WebTransaction(application, environ)
-        transaction.__enter__()
-        time.sleep(1.0)
-        del transaction
-        self.assertEqual(_newrelic.transaction(), None)
 
     def test_environ_enabled_bool(self):
         application.enabled = False
@@ -86,6 +88,7 @@ class WebTransactionTests01(unittest.TestCase):
                     "newrelic.enabled": True }
         transaction = _newrelic.WebTransaction(application, environ)
         with transaction:
+            self.assertTrue(transaction.enabled)
             self.assertEqual(_newrelic.transaction(), transaction)
         application.enabled = True
 
@@ -94,6 +97,7 @@ class WebTransactionTests01(unittest.TestCase):
                     "newrelic.enabled": False }
         transaction = _newrelic.WebTransaction(application, environ)
         with transaction:
+            self.assertFalse(transaction.enabled)
             self.assertEqual(_newrelic.transaction(), transaction)
 
     def test_environ_enabled_string(self):
@@ -102,6 +106,7 @@ class WebTransactionTests01(unittest.TestCase):
                     "newrelic.enabled": "On" }
         transaction = _newrelic.WebTransaction(application, environ)
         with transaction:
+            self.assertTrue(transaction.enabled)
             self.assertEqual(_newrelic.transaction(), transaction)
         application.enabled = True
 
@@ -110,6 +115,7 @@ class WebTransactionTests01(unittest.TestCase):
                     "newrelic.enabled": "Off" }
         transaction = _newrelic.WebTransaction(application, environ)
         with transaction:
+            self.assertFalse(transaction.enabled)
             self.assertEqual(_newrelic.transaction(), transaction)
 
 if __name__ == '__main__':

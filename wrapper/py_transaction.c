@@ -675,6 +675,20 @@ static int NRTransaction_set_path(NRTransactionObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRTransaction_get_enabled(NRTransactionObject *self,
+                                           void *closure)
+{
+    if (self->transaction) {
+        Py_INCREF(Py_True);
+        return Py_True;
+    }
+
+    Py_INCREF(Py_False);
+    return Py_False;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRTransaction_get_has_been_named(NRTransactionObject *self,
                                                   void *closure)
 {
@@ -791,6 +805,8 @@ static PyGetSetDef NRTransaction_getset[] = {
                             (setter)NRTransaction_set_ignore, 0 },
     { "path",               (getter)NRTransaction_get_path,
                             (setter)NRTransaction_set_path, 0 },
+    { "enabled",            (getter)NRTransaction_get_enabled,
+                            NULL, 0 },
     { "has_been_named",     (getter)NRTransaction_get_has_been_named,
                             NULL, 0 },
     { "custom_parameters",  (getter)NRTransaction_get_custom_parameters,

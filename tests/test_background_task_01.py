@@ -27,8 +27,17 @@ class BackgroundTaskTests01(unittest.TestCase):
         name = "test_transaction"
         transaction = _newrelic.BackgroundTask(application, name)
         with transaction:
+            self.assertTrue(transaction.enabled)
             self.assertEqual(_newrelic.transaction(), transaction)
             time.sleep(1.0)
+
+    def test_exit_on_delete(self):
+        name = "exit_on_delete"
+        transaction = _newrelic.BackgroundTask(application, name)
+        transaction.__enter__()
+        time.sleep(1.0)
+        del transaction
+        self.assertEqual(_newrelic.transaction(), None)
 
     def test_custom_parameters(self):
         name = "custom_parameters"
@@ -71,14 +80,6 @@ class BackgroundTaskTests01(unittest.TestCase):
         with transaction:
             self.assertEqual(_newrelic.transaction(), transaction)
         application.enabled = True
-
-    def test_exit_on_delete(self):
-        name = "exit_on_delete"
-        transaction = _newrelic.BackgroundTask(application, name)
-        transaction.__enter__()
-        time.sleep(1.0)
-        del transaction
-        self.assertEqual(_newrelic.transaction(), None)
 
 if __name__ == '__main__':
     unittest.main()

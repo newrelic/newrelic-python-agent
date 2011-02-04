@@ -177,7 +177,7 @@ static int NRApplication_init(NRApplicationObject *self, PyObject *args,
      * locked and so need to unlock it.
      */
 
-    pthread_mutex_unlock (&self->application->lock);
+    pthread_mutex_unlock(&self->application->lock);
 
     /*
      * Markup what version of the Python agent wrapper is being
@@ -342,10 +342,10 @@ PyTypeObject NRApplication_Type = {
     NRApplication_new,      /*tp_new*/
     0,                      /*tp_free*/
     0,                      /*tp_is_gc*/
-} 
+};
 
 /* ------------------------------------------------------------------------- */
 
 /*
  * vim: et cino=>2,e0,n0,f0,{2,}0,^0,\:2,=2,p2,t2,c1,+2,(2,u2,)20,*30,g2,h2 ts=8
- */;
+ */

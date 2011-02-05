@@ -549,6 +549,8 @@ init_newrelic(void)
 
     PyGILState_STATE gil_state;
 
+    pthread_mutexattr_t mutex_attr;
+
     module = Py_InitModule3("_newrelic", newrelic_methods, NULL);
     if (module == NULL)
         return;
@@ -620,7 +622,10 @@ init_newrelic(void)
      * a time since last harvest was performed.
      */
 
-    pthread_mutex_init(&(nr_per_process_globals.daemon.lock),NULL);
+    pthread_mutexattr_init(&mutex_attr);
+    pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutex_init(&(nr_per_process_globals.daemon.lock), &mutex_attr);
+    pthread_mutexattr_destroy(&mutex_attr);
 
     /*
      * Logging initialisation in daemon client code is PHP

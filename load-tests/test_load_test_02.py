@@ -22,7 +22,6 @@ class LoadTest02(unittest.TestCase):
                       self._testMethodName)
 
     def test_run(self):
-        environ = { "REQUEST_URI": "/load_test_02" }
         for i in range(2000):
             now = time.time()
             ts = int((now-(random.random()*0.04)) * 1000000)

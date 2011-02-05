@@ -1,4 +1,4 @@
 build
-testenv
+test-env
 *.swp
 unit-tests/test_*.py.log

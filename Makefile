@@ -11,16 +11,17 @@ clean :
 distclean : clean
 	rm -rf test-env
 
+install-test-env : test-env all
+	test-env/bin/python setup.py install
+
 .PHONY: unit-tests
 
-unit-tests : test-env
-	test-env/bin/python setup.py install
+unit-tests : test-env install-test-env
 	@for test in unit-tests/*.py; do test-env/bin/python $$test -v; done
 
 .PHONY: load-tests
 
-load-tests : test-env
-	test-env/bin/python setup.py install
+load-tests : test-env install-test-env
 	@echo Usage: test-env/bin/python load-tests/test_load_test_??.py
 
 test-env :

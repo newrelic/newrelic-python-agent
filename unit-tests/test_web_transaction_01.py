@@ -216,5 +216,14 @@ class WebTransactionTests01(unittest.TestCase):
         with transaction:
             self.assertTrue(transaction.ignore)
 
+    def test_queue_start(self):
+        now = time.time()
+        ts = int((now-0.2) * 1000000)
+        environ = { "REQUEST_URI": "/queue_start",
+                    "HTTP_X_NEWRELIC_QUEUE_START": "t=%d" % ts }
+        transaction = _newrelic.WebTransaction(application, environ)
+        with transaction:
+            time.sleep(0.8)
+
 if __name__ == '__main__':
     unittest.main()

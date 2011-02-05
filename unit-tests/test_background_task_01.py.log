@@ -1,0 +1,92 @@
+2011-02-05 18:31:38 (26759) VerboseDebug: f_or_c_application(UnitTests)
+2011-02-05 18:31:38 (26759) Debug: harvest (UnitTests) 1 applications
+2011-02-05 18:31:38 (26759) Debug: connecting to /tmp/.newrelic.sock with timeout 10 (nonblocking)
+2011-02-05 18:31:38 (26759) Verbose: [UnitTests] sending "start"..
+2011-02-05 18:31:38 (26759) VerboseDebug: wrote 1556 bytes to daemon
+2011-02-05 18:31:38 (26759) VerboseDebug: read 107 bytes from daemon
+2011-02-05 18:31:38 (26759) Debug: collect_traces=1, collect_errors=1, agent_run_id=0x4d4cfae600000000, apdex_t=0.5
+2011-02-05 18:31:38 (26759) Verbose: ..start sent -> ok
+2011-02-05 18:31:38 (26759) Debug: [UnitTests] start command successful
+2011-02-05 18:31:38 (26759) Verbose: [UnitTests] harvesting 2 metrics
+2011-02-05 18:31:38 (26759) VerboseDebug: sending metrics for agent_run_id=0x4d4cfae600000000
+2011-02-05 18:31:38 (26759) Verbose: sending "metric_data"..
+2011-02-05 18:31:38 (26759) VerboseDebug: wrote 190 bytes to daemon
+2011-02-05 18:31:38 (26759) VerboseDebug: read 8 bytes from daemon
+2011-02-05 18:31:38 (26759) Verbose: ..data sent -> ok
+2011-02-05 18:31:38 (26759) Debug: STARTING - test_application_disabled
+2011-02-05 18:31:38 (26759) Debug: STOPPING - test_application_disabled
+2011-02-05 18:31:38 (26759) Debug: STARTING - test_background_task
+2011-02-05 18:31:39 (26759) Debug: STOPPING - test_background_task
+2011-02-05 18:31:39 (26759) Debug: STARTING - test_custom_parameters
+2011-02-05 18:31:39 (26759) Debug: STOPPING - test_custom_parameters
+2011-02-05 18:31:39 (26759) Debug: STARTING - test_exit_on_delete
+2011-02-05 18:31:39 (26759) Debug: STOPPING - test_exit_on_delete
+2011-02-05 18:31:39 (26759) Debug: STARTING - test_explicit_runtime_error
+2011-02-05 18:31:39 (26759) Debug: STOPPING - test_explicit_runtime_error
+2011-02-05 18:31:39 (26759) Debug: STARTING - test_ignore_background_task
+2011-02-05 18:31:39 (26759) Debug: STOPPING - test_ignore_background_task
+2011-02-05 18:31:39 (26759) Debug: STARTING - test_implicit_runtime_error
+2011-02-05 18:31:39 (26759) Debug: STOPPING - test_implicit_runtime_error
+2011-02-05 18:31:39 (26759) Debug: STARTING - test_inactive
+2011-02-05 18:31:39 (26759) Debug: STOPPING - test_inactive
+2011-02-05 18:31:39 (26759) Debug: STARTING - test_named_background_task
+2011-02-05 18:31:39 (26759) Debug: STOPPING - test_named_background_task
+2011-02-05 18:31:39 (26759) Debug: harvest (shutdown) 1 applications
+2011-02-05 18:31:39 (26759) Verbose: [UnitTests] harvesting 7 metrics
+2011-02-05 18:31:39 (26759) VerboseDebug: sending metrics for agent_run_id=0x4d4cfae600000000
+2011-02-05 18:31:39 (26759) Verbose: sending "metric_data"..
+2011-02-05 18:31:39 (26759) VerboseDebug: wrote 760 bytes to daemon
+2011-02-05 18:31:39 (26759) VerboseDebug: read 8 bytes from daemon
+2011-02-05 18:31:39 (26759) Verbose: ..data sent -> ok
+2011-02-05 18:31:39 (26759) Verbose: [UnitTests] harvesting 1 tts
+2011-02-05 18:31:39 (26759) Verbose: sending "tt"..
+2011-02-05 18:31:39 (26759) Verbose: ..TT(OtherTransaction/Custom/background_task)
+2011-02-05 18:31:39 (26759) VerboseDebug: wrote 209 bytes to daemon
+2011-02-05 18:31:39 (26759) VerboseDebug: read 8 bytes from daemon
+2011-02-05 18:31:39 (26759) Verbose: ..tt sent -> ok
+2011-02-05 18:31:39 (26759) Verbose: [UnitTests] harvesting 11 errors
+2011-02-05 18:31:39 (26759) Verbose: sending "error"..
+2011-02-05 18:31:39 (26759) VerboseDebug: wrote 346 bytes to daemon
+2011-02-05 18:31:39 (26759) VerboseDebug: read 8 bytes from daemon
+2011-02-05 18:31:39 (26759) Verbose: ..error sent -> ok
+2011-02-05 18:31:39 (26759) Verbose: sending "error"..
+2011-02-05 18:31:39 (26759) VerboseDebug: wrote 357 bytes to daemon
+2011-02-05 18:31:39 (26759) VerboseDebug: read 8 bytes from daemon
+2011-02-05 18:31:39 (26759) Verbose: ..error sent -> ok
+2011-02-05 18:31:39 (26759) Verbose: sending "error"..
+2011-02-05 18:31:39 (26759) VerboseDebug: wrote 357 bytes to daemon
+2011-02-05 18:31:39 (26759) VerboseDebug: read 8 bytes from daemon
+2011-02-05 18:31:39 (26759) Verbose: ..error sent -> ok
+2011-02-05 18:31:39 (26759) Verbose: sending "error"..
+2011-02-05 18:31:39 (26759) VerboseDebug: wrote 357 bytes to daemon
+2011-02-05 18:31:39 (26759) VerboseDebug: read 8 bytes from daemon
+2011-02-05 18:31:39 (26759) Verbose: ..error sent -> ok
+2011-02-05 18:31:39 (26759) Verbose: sending "error"..
+2011-02-05 18:31:39 (26759) VerboseDebug: wrote 357 bytes to daemon
+2011-02-05 18:31:39 (26759) VerboseDebug: read 8 bytes from daemon
+2011-02-05 18:31:39 (26759) Verbose: ..error sent -> ok
+2011-02-05 18:31:39 (26759) Verbose: sending "error"..
+2011-02-05 18:31:39 (26759) VerboseDebug: wrote 357 bytes to daemon
+2011-02-05 18:31:39 (26759) VerboseDebug: read 8 bytes from daemon
+2011-02-05 18:31:39 (26759) Verbose: ..error sent -> ok
+2011-02-05 18:31:39 (26759) Verbose: sending "error"..
+2011-02-05 18:31:39 (26759) VerboseDebug: wrote 357 bytes to daemon
+2011-02-05 18:31:39 (26759) VerboseDebug: read 8 bytes from daemon
+2011-02-05 18:31:39 (26759) Verbose: ..error sent -> ok
+2011-02-05 18:31:39 (26759) Verbose: sending "error"..
+2011-02-05 18:31:39 (26759) VerboseDebug: wrote 357 bytes to daemon
+2011-02-05 18:31:39 (26759) VerboseDebug: read 8 bytes from daemon
+2011-02-05 18:31:39 (26759) Verbose: ..error sent -> ok
+2011-02-05 18:31:39 (26759) Verbose: sending "error"..
+2011-02-05 18:31:39 (26759) VerboseDebug: wrote 357 bytes to daemon
+2011-02-05 18:31:39 (26759) VerboseDebug: read 8 bytes from daemon
+2011-02-05 18:31:39 (26759) Verbose: ..error sent -> ok
+2011-02-05 18:31:39 (26759) Verbose: sending "error"..
+2011-02-05 18:31:39 (26759) VerboseDebug: wrote 357 bytes to daemon
+2011-02-05 18:31:39 (26759) VerboseDebug: read 8 bytes from daemon
+2011-02-05 18:31:39 (26759) Verbose: ..error sent -> ok
+2011-02-05 18:31:39 (26759) Verbose: sending "error"..
+2011-02-05 18:31:39 (26759) VerboseDebug: wrote 357 bytes to daemon
+2011-02-05 18:31:39 (26759) VerboseDebug: read 8 bytes from daemon
+2011-02-05 18:31:39 (26759) Verbose: ..error sent -> ok
+2011-02-05 18:31:39 (26759) Debug: closed daemon connection

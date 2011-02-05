@@ -1,4 +1,4 @@
 build
-tests-virtualenv
+testenv
 *.swp
-tests/test_*.py.log
+unit-tests/test_*.py.log

@@ -6,14 +6,16 @@ install :
 
 clean :
 	rm -rf build
-	rm -f tests/test_*.py.log
+	rm -f unit-tests/test_*.py.log
 
 distclean : clean
-	rm -rf tests-virtualenv
+	rm -rf testenv
 
-test : tests-virtualenv
-	tests-virtualenv/bin/python setup.py install
-	@for test in tests/*.py; do tests-virtualenv/bin/python $$test -v; done
+.PHONY: unit-tests
 
-tests-virtualenv :
-	virtualenv tests-virtualenv
+unit-tests : testenv
+	testenv/bin/python setup.py install
+	@for test in unit-tests/*.py; do testenv/bin/python $$test -v; done
+
+testenv :
+	virtualenv testenv

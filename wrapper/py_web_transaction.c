@@ -194,6 +194,31 @@ static int NRWebTransaction_init(NRTransactionObject *self, PyObject *args,
                     self->transaction->backgroundjob = 1;
             }
         }
+
+        /*
+	 * Check whether web transaction being flagged as to be
+	 * ignored. This is different to being disabled
+	 * completely via the enabled flag as ignored state
+	 * could be undone where as for disabled case tracking
+	 * of transaction does not even occur.
+         */
+
+        object = PyDict_GetItemString(environ, "newrelic.ignore_transaction");
+
+        if (object) {
+            if (PyBool_Check(object)) {
+                if (object == Py_True)
+                    self->transaction->ignore = 1;
+            }
+            else if (PyString_Check(object)) {
+                const char *value;
+
+                value = PyString_AsString(object);
+
+                if (!strcasecmp(value, "on"))
+                    self->transaction->ignore = 1;
+            }
+        }
     }
 
     return 0;

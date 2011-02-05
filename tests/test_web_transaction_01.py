@@ -175,5 +175,19 @@ class WebTransactionTests01(unittest.TestCase):
             self.assertTrue(transaction.ignore)
             self.assertTrue(transaction.enabled)
 
+    def test_environ_ignore_web_transaction_bool(self):
+        environ = { "REQUEST_URI": "/environ_ignore_web_transaction_bool",
+                    "newrelic.ignore_transaction": True }
+        transaction = _newrelic.WebTransaction(application, environ)
+        with transaction:
+            self.assertTrue(transaction.ignore)
+
+    def test_environ_ignore_web_transaction_string(self):
+        environ = { "REQUEST_URI": "/environ_ignore_web_transaction_string",
+                    "newrelic.ignore_transaction": "On" }
+        transaction = _newrelic.WebTransaction(application, environ)
+        with transaction:
+            self.assertTrue(transaction.ignore)
+
 if __name__ == '__main__':
     unittest.main()

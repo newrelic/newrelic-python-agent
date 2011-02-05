@@ -23,7 +23,7 @@ class LoadTest02(unittest.TestCase):
 
     def test_run(self):
         environ = { "REQUEST_URI": "/load_test_02" }
-        for i in range(1000):
+        for i in range(2000):
             transaction = _newrelic.WebTransaction(application, environ)
             with transaction:
                 sys.stderr.write(".")

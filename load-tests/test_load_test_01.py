@@ -26,7 +26,7 @@ class LoadTest01(unittest.TestCase):
             transaction = _newrelic.WebTransaction(application, environ)
             with transaction:
                 sys.stderr.write(".")
-                time.sleep(0.02)
+                time.sleep(0.1)
         sys.stderr.write("\n")
 
 if __name__ == '__main__':

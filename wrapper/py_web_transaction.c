@@ -174,12 +174,70 @@ static int NRWebTransaction_init(NRTransactionObject *self, PyObject *args,
     return 0;
 }
 
+/* ------------------------------------------------------------------------- */
+
+static int NRWebTransaction_set_background_task(
+        NRTransactionObject *self, PyObject *value)
+{
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError, "can't delete "
+                        "background_task attribute");
+        return -1;
+    }
+
+    if (!PyBool_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "expected bool for "
+                        "background_task attribute");
+        return -1;
+    }
+
+    /*
+     * If the application was not enabled and so we are running
+     * as a dummy transaction then return without actually doing
+     * anything.
+     */
+
+    if (!self->transaction)
+        return 0;
+
+    if (value == Py_True)
+        self->transaction->backgroundjob = 1;
+    else
+        self->transaction->backgroundjob = 0;
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRWebTransaction_get_background_task(
+        NRTransactionObject *self, void *closure)
+{
+    /*
+     * If the application was not enabled and so we are running
+     * as a dummy transaction then return that transaction is
+     * being ignored.
+     */
+
+    if (!self->transaction) {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    return PyBool_FromLong(self->transaction->backgroundjob);
+}
 
 /* ------------------------------------------------------------------------- */
 
 #ifndef PyVarObject_HEAD_INIT
 #define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
 #endif
+
+static PyGetSetDef NRWebTransaction_getset[] = {
+    { "background_task",    (getter)NRWebTransaction_get_background_task,
+                            (setter)NRWebTransaction_set_background_task, 0 },
+    { NULL },
+};
 
 PyTypeObject NRWebTransaction_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)
@@ -212,7 +270,7 @@ PyTypeObject NRWebTransaction_Type = {
     0,                      /*tp_iternext*/
     0,                      /*tp_methods*/
     0,                      /*tp_members*/
-    0,                      /*tp_getset*/
+    NRWebTransaction_getset, /*tp_getset*/
     &NRTransaction_Type,    /*tp_base*/
     0,                      /*tp_dict*/
     0,                      /*tp_descr_get*/

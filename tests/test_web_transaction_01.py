@@ -23,26 +23,42 @@ class WebTransactionTests01(unittest.TestCase):
     def test_inactive(self):
         self.assertEqual(_newrelic.transaction(), None)
 
-    def test_transaction(self):
-        environ = { "REQUEST_URI": "/test_transaction" }
+    def test_web_transaction(self):
+        environ = { "REQUEST_URI": "/web_transaction" }
         transaction = _newrelic.WebTransaction(application, environ)
         with transaction:
             self.assertTrue(transaction.enabled)
             self.assertEqual(_newrelic.transaction(), transaction)
             self.assertFalse(transaction.has_been_named)
+            self.assertFalse(transaction.background_task)
             time.sleep(1.0)
 
-    def test_named_transaction(self):
+    def test_named_web_transaction(self):
         environ = { "REQUEST_URI": "DUMMY" }
         transaction = _newrelic.WebTransaction(application, environ)
         with transaction:
             self.assertFalse(transaction.has_been_named)
-            path = "/test_named_transaction"
+            path = "/named_web_transaction"
             transaction.path = path
             self.assertTrue(transaction.enabled)
             self.assertEqual(_newrelic.transaction(), transaction)
             self.assertEqual(transaction.path, path)
             self.assertTrue(transaction.has_been_named)
+            time.sleep(1.0)
+
+    def test_background_web_transaction(self):
+        environ = { "REQUEST_URI": "DUMMY" }
+        transaction = _newrelic.WebTransaction(application, environ)
+        with transaction:
+            path = "background_web_transaction"
+            transaction.path = path
+            self.assertFalse(transaction.background_task)
+            transaction.background_task = True
+            self.assertTrue(transaction.background_task)
+            transaction.background_task = False
+            self.assertFalse(transaction.background_task)
+            transaction.background_task = True
+            self.assertTrue(transaction.background_task)
             time.sleep(1.0)
 
     def test_exit_on_delete(self):
@@ -132,8 +148,8 @@ class WebTransactionTests01(unittest.TestCase):
             self.assertFalse(transaction.enabled)
             self.assertEqual(_newrelic.transaction(), transaction)
 
-    def test_ignore_transaction(self):
-        environ = { "REQUEST_URI": "/test_ignore_transaction" }
+    def test_ignore_web_transaction(self):
+        environ = { "REQUEST_URI": "/ignore_web_transaction" }
         transaction = _newrelic.WebTransaction(application, environ)
         with transaction:
             self.assertFalse(transaction.ignore)

@@ -691,6 +691,25 @@ static PyObject *NRTransaction_get_enabled(NRTransactionObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRTransaction_get_background_task(NRTransactionObject *self,
+                                                   void *closure)
+{
+    /*
+     * If the application was not enabled and so we are running
+     * as a dummy transaction then return that transaction is
+     * being ignored.
+     */
+
+    if (!self->transaction) {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    return PyBool_FromLong(self->transaction->backgroundjob);
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRTransaction_get_has_been_named(NRTransactionObject *self,
                                                   void *closure)
 {
@@ -808,6 +827,8 @@ static PyGetSetDef NRTransaction_getset[] = {
     { "path",               (getter)NRTransaction_get_path,
                             (setter)NRTransaction_set_path, 0 },
     { "enabled",            (getter)NRTransaction_get_enabled,
+                            NULL, 0 },
+    { "background_task",    (getter)NRTransaction_get_background_task,
                             NULL, 0 },
     { "has_been_named",     (getter)NRTransaction_get_has_been_named,
                             NULL, 0 },

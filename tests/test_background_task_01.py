@@ -23,21 +23,26 @@ class BackgroundTaskTests01(unittest.TestCase):
     def test_inactive(self):
         self.assertEqual(_newrelic.transaction(), None)
 
-    def test_transaction(self):
-        name = "test_transaction"
+    def test_background_task(self):
+        name = "background_task"
         transaction = _newrelic.BackgroundTask(application, name)
         with transaction:
             self.assertTrue(transaction.enabled)
             self.assertEqual(_newrelic.transaction(), transaction)
             self.assertTrue(transaction.has_been_named)
+            self.assertTrue(transaction.background_task)
+            try:
+                transaction.background_task = False
+            except AttributeError:
+                pass
             time.sleep(1.0)
 
-    def test_named_transaction(self):
+    def test_named_background_task(self):
         name = "DUMMY"
         transaction = _newrelic.BackgroundTask(application, name)
         with transaction:
             self.assertTrue(transaction.has_been_named)
-            path = "test_named_transaction"
+            path = "named_background_task"
             transaction.path = path
             self.assertTrue(transaction.enabled)
             self.assertEqual(_newrelic.transaction(), transaction)
@@ -95,8 +100,8 @@ class BackgroundTaskTests01(unittest.TestCase):
             self.assertEqual(_newrelic.transaction(), transaction)
         application.enabled = True
 
-    def test_ignore_transaction(self):
-        name = "test_ignore_transaction"
+    def test_ignore_background_task(self):
+        name = "ignore_background_task"
         transaction = _newrelic.BackgroundTask(application, name)
         with transaction:
             self.assertFalse(transaction.ignore)

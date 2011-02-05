@@ -48,13 +48,11 @@ class BackgroundTaskTests01(unittest.TestCase):
             self.assertEqual(_newrelic.transaction(), transaction)
             self.assertEqual(transaction.path, path)
             self.assertTrue(transaction.has_been_named)
-            time.sleep(1.0)
 
     def test_exit_on_delete(self):
         name = "exit_on_delete"
         transaction = _newrelic.BackgroundTask(application, name)
         transaction.__enter__()
-        time.sleep(1.0)
         del transaction
         self.assertEqual(_newrelic.transaction(), None)
 
@@ -71,7 +69,6 @@ class BackgroundTaskTests01(unittest.TestCase):
             transaction.custom_parameters["7"] = {"7": 7}
             transaction.custom_parameters[8] = "8"
             transaction.custom_parameters[9.0] = "9.0"
-            time.sleep(1.0)
 
     def test_explicit_runtime_error(self):
         name = "explicit_runtime_error"
@@ -112,7 +109,6 @@ class BackgroundTaskTests01(unittest.TestCase):
             transaction.ignore = True
             self.assertTrue(transaction.ignore)
             self.assertTrue(transaction.enabled)
-            time.sleep(1.0)
 
 if __name__ == '__main__':
     unittest.main()

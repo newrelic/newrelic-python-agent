@@ -44,7 +44,6 @@ class WebTransactionTests01(unittest.TestCase):
             self.assertEqual(_newrelic.transaction(), transaction)
             self.assertEqual(transaction.path, path)
             self.assertTrue(transaction.has_been_named)
-            time.sleep(1.0)
 
     def test_background_web_transaction(self):
         environ = { "REQUEST_URI": "DUMMY" }
@@ -59,13 +58,29 @@ class WebTransactionTests01(unittest.TestCase):
             self.assertFalse(transaction.background_task)
             transaction.background_task = True
             self.assertTrue(transaction.background_task)
-            time.sleep(1.0)
+
+    def test_environ_background_web_transaction_bool(self):
+        environ = { "REQUEST_URI": "DUMMY",
+                    "newrelic.background_task": True }
+        transaction = _newrelic.WebTransaction(application, environ)
+        with transaction:
+            path = "environ_background_web_transaction_bool"
+            transaction.path = path
+            self.assertTrue(transaction.background_task)
+
+    def test_environ_background_web_transaction_string(self):
+        environ = { "REQUEST_URI": "DUMMY",
+                    "newrelic.background_task": "On" }
+        transaction = _newrelic.WebTransaction(application, environ)
+        with transaction:
+            path = "environ_background_web_transaction_string"
+            transaction.path = path
+            self.assertTrue(transaction.background_task)
 
     def test_exit_on_delete(self):
         environ = { "REQUEST_URI": "/exit_on_delete" }
         transaction = _newrelic.WebTransaction(application, environ)
         transaction.__enter__()
-        time.sleep(1.0)
         del transaction
         self.assertEqual(_newrelic.transaction(), None)
 
@@ -82,7 +97,6 @@ class WebTransactionTests01(unittest.TestCase):
             transaction.custom_parameters["7"] = {"7": 7}
             transaction.custom_parameters[8] = "8"
             transaction.custom_parameters[9.0] = "9.0"
-            time.sleep(1.0)
 
     def test_explicit_runtime_error(self):
         environ = { "REQUEST_URI": "/explicit_runtime_error" }
@@ -160,7 +174,6 @@ class WebTransactionTests01(unittest.TestCase):
             transaction.ignore = True
             self.assertTrue(transaction.ignore)
             self.assertTrue(transaction.enabled)
-            time.sleep(1.0)
 
 if __name__ == '__main__':
     unittest.main()

@@ -166,9 +166,34 @@ static int NRWebTransaction_init(NRTransactionObject *self, PyObject *args,
         self->transaction->path = nrstrdup(path);
         self->transaction->realpath = nrstrdup(realpath);
 
+        self->transaction->backgroundjob = 0;
+
         self->transaction->http_x_request_start = queue_start;
 
         PyDict_Update(self->request_parameters, environ);
+
+        /*
+         * Check whether web transaction being flagged as a
+         * background task via variable in the WSGI environ
+         * dictionary.
+         */
+
+        object = PyDict_GetItemString(environ, "newrelic.background_task");
+
+        if (object) {
+            if (PyBool_Check(object)) {
+                if (object == Py_True)
+                    self->transaction->backgroundjob = 1;
+            }
+            else if (PyString_Check(object)) {
+                const char *value;
+
+                value = PyString_AsString(object);
+
+                if (!strcasecmp(value, "on"))
+                    self->transaction->backgroundjob = 1;
+            }
+        }
     }
 
     return 0;

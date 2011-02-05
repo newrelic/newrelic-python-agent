@@ -2,3 +2,4 @@ build
 test-env
 *.swp
 unit-tests/test_*.py.log
+load-tests/test_*.py.log

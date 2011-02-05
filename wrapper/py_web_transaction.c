@@ -20,13 +20,6 @@ static int NRWebTransaction_init(NRTransactionObject *self, PyObject *args,
     PyObject *newargs = NULL;
     PyObject *object = NULL;
 
-    const char *tmppath = NULL;
-
-    const char *realpath = "<unknown>";
-    const char *path = "<unknown>";
-    int path_type = NR_PATH_TYPE_UNKNOWN;
-    int64_t queue_start = 0;
-
     static char *kwlist[] = { "application", "environ", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O!:WebTransaction",
@@ -73,10 +66,10 @@ static int NRWebTransaction_init(NRTransactionObject *self, PyObject *args,
     }
 
     /*
-     * Pass application object and optionally the enabled flag to
-     * the base class constructor. Where enabled flag is passed in,
-     * that takes precedence over what may be set in the application
-     * object itself.
+     * Pass application object and optionally the enabled flag
+     * to the base class constructor. Where enabled flag is
+     * passed in, that takes precedence over what may be set in
+     * the application object itself.
      */
 
     if (enabled)
@@ -92,68 +85,83 @@ static int NRWebTransaction_init(NRTransactionObject *self, PyObject *args,
     Py_DECREF(newargs);
 
     /*
-     * XXX Don't need to bother to extract details if not
-     * real transaction.
-     */
-
-    /*
-     * Extract from the WSGI environ dictionary details of the
-     * URL path. This will be set as default path for the web
-     * transaction. This can be overridden by framework to be
-     * more specific to avoid metrics explosion problem resulting
-     * from too many distinct URLs for same resource due to use
-     * of REST style URL concepts or otherwise.
-     *
-     * TODO Note that we only pay attention to REQUEST_URI at
-     * this time. In the PHP agent it is possible to base the
-     * path on the filename of the resource, but this may not
-     * necessarily be appropriate for WSGI. Instead may be
-     * necessary to look at reconstructing equivalent of the
-     * REQUEST_URI from SCRIPT_NAME and PATH_INFO instead where
-     * REQUEST_URI is not available. Ultimately though expect
-     * that path will be set to be something more specific by
-     * higher level wrappers for a specific framework.
-     */
-
-    object = PyDict_GetItemString(environ, "REQUEST_URI");
-
-    if (object && PyString_Check(object))
-        tmppath = PyString_AsString(object);
-
-    if (tmppath) {
-        path = tmppath;
-        realpath = tmppath;
-        path_type = NR_PATH_TYPE_URI;
-    }
-
-    /*
-     * See if the WSGI environ dictionary includes the special
-     * 'X-NewRelic-Queue-Start' HTTP header. This header is an
-     * optional header that can be set within the underlying web
-     * server or WSGI server to indicate when the current
-     * request was first received and ready to be processed. The
-     * difference between this time and when application starts
-     * processing the request is the queue time and represents
-     * how long spent in any explicit request queuing system, or
-     * how long waiting in connecting state against listener
-     * sockets where request needs to be proxied between any
-     * processes within the application server.
-     */
-
-    object = PyDict_GetItemString(environ, "HTTP_X_NEWRELIC_QUEUE_START");
-
-    if (object && PyString_Check(object)) {
-        const char *s = PyString_AsString(object);
-        if (s[0] == 't' && s[1] == '=' )
-            queue_start = (int64_t)strtoll(s+2, 0, 0);
-    }
-
-    /*
-     * Setup the background task specific attributes of the
+     * Setup the web transaction specific attributes of the
      * transaction.
      */
 
     if (self->transaction) {
+        const char *tmppath = NULL;
+
+        const char *realpath = "<unknown>";
+        const char *path = "<unknown>";
+        int path_type = NR_PATH_TYPE_UNKNOWN;
+        int64_t queue_start = 0;
+
+        /*
+	 * Extract from the WSGI environ dictionary details of
+	 * the URL path. This will be set as default path for
+	 * the web transaction. This can be overridden by
+	 * framework to be more specific to avoid metrics
+	 * explosion problem resulting from too many distinct
+	 * URLs for same resource due to use of REST style URL
+	 * concepts or otherwise.
+	 *
+	 * TODO Note that we only pay attention to REQUEST_URI
+	 * at this time. In the PHP agent it is possible to base
+	 * the path on the filename of the resource, but this
+	 * may not necessarily be appropriate for WSGI. Instead
+	 * may be necessary to look at reconstructing equivalent
+	 * of the REQUEST_URI from SCRIPT_NAME and PATH_INFO
+	 * instead where REQUEST_URI is not available.
+	 * Ultimately though expect that path will be set to be
+	 * something more specific by higher level wrappers for
+	 * a specific framework.
+         */
+
+        object = PyDict_GetItemString(environ, "REQUEST_URI");
+
+        if (object && PyString_Check(object))
+            tmppath = PyString_AsString(object);
+
+        if (tmppath) {
+            path = tmppath;
+            realpath = tmppath;
+            path_type = NR_PATH_TYPE_URI;
+        }
+
+        /*
+	 * See if the WSGI environ dictionary includes the
+	 * special 'X-NewRelic-Queue-Start' HTTP header. This
+	 * header is an optional header that can be set within
+	 * the underlying web server or WSGI server to indicate
+	 * when the current request was first received and ready
+	 * to be processed. The difference between this time and
+	 * when application starts processing the request is the
+	 * queue time and represents how long spent in any
+	 * explicit request queuing system, or how long waiting
+	 * in connecting state against listener sockets where
+	 * request needs to be proxied between any processes
+	 * within the application server.
+         */
+
+        object = PyDict_GetItemString(environ, "HTTP_X_NEWRELIC_QUEUE_START");
+
+        if (object && PyString_Check(object)) {
+            const char *s = PyString_AsString(object);
+            if (s[0] == 't' && s[1] == '=' )
+                queue_start = (int64_t)strtoll(s+2, 0, 0);
+        }
+
+        /*
+	 * Set the transaction attributes based on overrides
+	 * from the WSGI environ dictionary. We also create a
+	 * copy of the WSGI environ for the request parameters.
+	 * We don't just reference the original environ
+	 * dictionary as WSGI middleware may change the content
+	 * in place and so data could end up being different to
+	 * what it was at start of the request
+         */
+
         self->transaction->path_type = path_type;
         self->transaction->path = nrstrdup(path);
         self->transaction->realpath = nrstrdup(realpath);

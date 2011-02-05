@@ -28,10 +28,37 @@ class WebTransactionTests01(unittest.TestCase):
         transaction = _newrelic.WebTransaction(application, environ)
         with transaction:
             self.assertTrue(transaction.enabled)
+            self.assertEqual(transaction.path, environ["REQUEST_URI"])
             self.assertEqual(_newrelic.transaction(), transaction)
             self.assertFalse(transaction.has_been_named)
             self.assertFalse(transaction.background_task)
             time.sleep(1.0)
+
+    def test_script_name_web_transaction(self):
+        environ = { "SCRIPT_NAME": "/script_name_web_transaction" }
+        transaction = _newrelic.WebTransaction(application, environ)
+        with transaction:
+            self.assertEqual(transaction.path, environ["SCRIPT_NAME"])
+
+    def test_path_info_web_transaction(self):
+        environ = { "PATH_INFO": "/path_info_web_transaction" }
+        transaction = _newrelic.WebTransaction(application, environ)
+        with transaction:
+            self.assertEqual(transaction.path, environ["PATH_INFO"])
+
+    def test_script_name_path_info_web_transaction(self):
+        environ = { "SCRIPT_NAME": "/script_name_",
+                    "PATH_INFO": "path_info_web_transaction" }
+        transaction = _newrelic.WebTransaction(application, environ)
+        with transaction:
+            self.assertEqual(transaction.path, environ["SCRIPT_NAME"] + \
+                             environ["PATH_INFO"])
+
+    def test_no_path_web_transaction(self):
+        environ = {}
+        transaction = _newrelic.WebTransaction(application, environ)
+        with transaction:
+            self.assertEqual(transaction.path, "<unknown>")
 
     def test_named_web_transaction(self):
         environ = { "REQUEST_URI": "DUMMY" }

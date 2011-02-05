@@ -619,7 +619,10 @@ init_newrelic(void)
      * rely on the ability to have a background thread for
      * performing harvesting. We do not support harvesting
      * being triggered as a side effect of request based on
-     * a time since last harvest was performed.
+     * a time since last harvest was performed. A recursive
+     * mutex must be used because code which deals with the
+     * daemon connection performs nested calls which attempt
+     * to reacquire the thread mutex.
      */
 
     pthread_mutexattr_init(&mutex_attr);

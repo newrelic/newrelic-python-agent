@@ -11,16 +11,26 @@
 
 /* ------------------------------------------------------------------------- */
 
-NRSettingsObject *NRSettings_New(void)
+static PyObject *NRSettingsObject_instance = NULL;
+
+/* ------------------------------------------------------------------------- */
+
+PyObject *NRSetting_Singleton(PyObject *self, PyObject *args)
 {
-    NRSettingsObject *self;
+    if (!NRSettingsObject_instance) {
+        NRSettingsObject_instance = (PyObject *)PyObject_New(
+                NRSettingsObject, &NRSettings_Type);
 
-    self = PyObject_New(NRSettingsObject, &NRSettings_Type);
-    if (self == NULL)
-        return NULL;
+        if (NRSettingsObject_instance == NULL)
+            return NULL;
+    }
 
-    return self;
+    Py_INCREF(NRSettingsObject_instance);
+
+    return NRSettingsObject_instance;
 }
+
+/* ------------------------------------------------------------------------- */
 
 static void NRSettings_dealloc(NRSettingsObject *self)
 {
@@ -36,6 +46,8 @@ static PyObject *NRSettings_get_logfile(NRSettingsObject *self,
     Py_INCREF(Py_None);
     return Py_None;
 }
+
+/* ------------------------------------------------------------------------- */
 
 static int NRSettings_set_logfile(NRSettingsObject *self,
                                         PyObject *value)
@@ -58,11 +70,15 @@ static int NRSettings_set_logfile(NRSettingsObject *self,
     return 0;
 }
 
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRSettings_get_loglevel(NRSettingsObject *self,
                                                void *closure)
 {
     return PyInt_FromLong(nr_per_process_globals.loglevel);
 }
+
+/* ------------------------------------------------------------------------- */
 
 static int NRSettings_set_loglevel(NRSettingsObject *self,
                                         PyObject *value)

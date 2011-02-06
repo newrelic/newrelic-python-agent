@@ -19,7 +19,7 @@ extern PyTypeObject NRSettings_Type;
 
 /* ------------------------------------------------------------------------- */
 
-extern NRSettingsObject *NRSettings_New(void);
+extern PyObject *NRSetting_Singleton(PyObject *self, PyObject *args);
 
 /* ------------------------------------------------------------------------- */
 

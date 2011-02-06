@@ -166,13 +166,7 @@ static PyObject *newrelic_application(PyObject *self, PyObject *args,
 
 static PyObject *newrelic_settings(PyObject *self, PyObject *args)
 {
-    NRSettingsObject *rv;
-
-    rv = NRSettings_New();
-    if (rv == NULL)
-        return NULL;
-
-    return (PyObject *)rv;
+    return NRSetting_Singleton(self, args);
 }
 
 static PyObject *newrelic_log(PyObject *self, PyObject *args, PyObject *kwds)
@@ -523,13 +517,13 @@ static PyObject *newrelic_wrap_c_database_trace(PyObject *self, PyObject* args)
 static PyMethodDef newrelic_methods[] = {
     { "application",        (PyCFunction)newrelic_application,
                             METH_VARARGS|METH_KEYWORDS, 0 },
-    { "settings",           newrelic_settings,
+    { "settings",           (PyCFunction)newrelic_settings,
                             METH_NOARGS, 0 },
     { "log",                (PyCFunction)newrelic_log,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "harvest",            (PyCFunction)newrelic_harvest,
                             METH_VARARGS|METH_KEYWORDS, 0 },
-    { "transaction",        newrelic_transaction,
+    { "transaction",        (PyCFunction)newrelic_transaction,
                             METH_NOARGS, 0 },
 #if 0
     { "wrap_c_database_trace", newrelic_wrap_c_database_trace, METH_VARARGS, 0 },

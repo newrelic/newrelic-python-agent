@@ -9,8 +9,15 @@ LOG_VERBOSE = _newrelic.LOG_VERBOSE
 LOG_DEBUG = _newrelic.LOG_DEBUG
 LOG_VERBOSEDEBUG = _newrelic.LOG_VERBOSEDEBUG
 
-from settings import settings
+log = _newrelic.log
+settings = _newrelic.settings
+application = _newrelic.application
+transaction = _newrelic.transaction
+
+WebTransaction = _newrelic.WebTransaction
+BackgroundTask = _newrelic.BackgroundTask
+
 from applications import initialize
-from middleware import current_transaction, WebTransaction
-from decorators import (web_transaction, function_trace, external_trace,
+from middleware import WSGIApplication
+from decorators import (wsgi_application, function_trace, external_trace,
                         memcache_trace, database_trace)

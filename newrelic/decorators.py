@@ -3,6 +3,8 @@
 import inspect
 import types
 
+import _newrelic
+
 import applications
 import middleware
 
@@ -22,11 +24,11 @@ import middleware
 # If the result is a generator which is then consumed in outer
 # scope, that consumption doesn't count towards the time.
 
-def web_transaction(name):
-    application = applications._Application(name)
+def wsgi_application(name):
+    application = _newrelic.application(name)
 
     def decorator(callable):
-        return middleware.WebTransaction(application, callable)
+        return middleware.WSGIApplication(application, callable)
 
     return decorator
 
@@ -72,9 +74,8 @@ def function_trace(name=None, scope=None, override_path=False):
     def decorator(callable):
 
         def wrapper(*args, **kwargs):
-            try:
-                transaction = middleware.current_transaction()
-            except:
+            transaction = _newrelic.transaction()
+            if not transaction:
                 return callable(*args, **kwargs)
 
             qualified_name = name or _qualified_name(callable)
@@ -101,9 +102,8 @@ def external_trace(index):
     def decorator(callable):
 
         def wrapper(*args, **kwargs):
-            try:
-                transaction = middleware.current_transaction()
-            except:
+            transaction = _newrelic.transaction()
+            if not transaction:
                 return callable(*args, **kwargs)
 
             trace = transaction.external_trace(args[index])
@@ -123,9 +123,8 @@ def memcache_trace(index):
     def decorator(callable):
 
         def wrapper(*args, **kwargs):
-            try:
-                transaction = middleware.current_transaction()
-            except:
+            transaction = _newrelic.transaction()
+            if not transaction:
                 return callable(*args, **kwargs)
 
             trace = transaction.memcache_trace(args[index])
@@ -145,9 +144,8 @@ def database_trace(index):
     def decorator(callable):
 
         def wrapper(*args, **kwargs):
-            try:
-                transaction = middleware.current_transaction()
-            except:
+            transaction = _newrelic.transaction()
+            if not transaction:
                 return callable(*args, **kwargs)
 
             trace = transaction.database_trace(args[index])

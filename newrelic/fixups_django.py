@@ -3,13 +3,12 @@
 import os
 import traceback
 
+import _newrelic
+
 from fixups import (_wrap_pre_function, _wrap_post_function,
                     _wrap_web_transaction, _pass_function,
                    _wrap_function_trace)
 from decorators import function_trace
-from middleware import current_transaction
-
-import _newrelic
 
 # TODO Database cursors.
 # TODO URL path mapped to view name.
@@ -98,9 +97,11 @@ def _fixup_resolver(resolver, *args, **kwargs):
     resolver.resolve = wrapper
 
 def _fixup_exception(handler, request, resolver, exc_info):
-    transaction = current_transaction()
-    transaction.runtime_error(str(exc_info[1]), type(exc_info[1]).__name__,
-            ''.join(traceback.format_exception(*exc_info)))
+    transaction = _newrelic.transaction()
+    if transaction:
+        transaction.runtime_error(str(exc_info[1]),
+                type(exc_info[1]).__name__, ''.join(
+                traceback.format_exception(*exc_info)))
 
 def _instrument(application):
     import django

@@ -4,31 +4,10 @@ import threading
 import sys
 import types
 
-# Use thread local storage to track the current transaction for
-# the executing thread. Storage is implemented as a stack just
-# in case some valid reason arises for nesting transactions.
+import _newrelic
 
-_context = threading.local()
-
-def current_transaction():
-    try:
-        return _context.transactions[-1]
-    except IndexError:
-        raise RuntimeError('no active transaction')
-
-def _push_transaction(transaction):
-    try:
-        _context.transactions.append(transaction)
-    except AttributeError:
-        _context.transactions = [transaction]
-
-def _pop_transaction(transaction=None):
-    current = _context.transactions.pop()
-    if not transaction and transaction != current:
-        raise RuntimeError('not the current transaction')
-
-# Provide a WSGI middleware wrapper for initiating a web
-# transaction for each request and ensuring that timing is
+# Provide a WSGI application middleware wrapper for initiating a
+# web transaction for each request and ensuring that timing is
 # started and stopped appropriately. For WSGI compliant case the
 # latter is quite tricky as need to attach it to when the
 # 'close()' method of any generator returned by a WSGI
@@ -49,31 +28,31 @@ def _pop_transaction(transaction=None):
 # and instance of the type having attributes 'filelike' and
 # 'blksize'.
 
-def _FileWrapper(context, generator):
+def _FileWrapper(transaction, generator):
 
     class _FileWrapper(type(generator)):
 
-        def __init__(self, context, generator):
+        def __init__(self, transaction, generator):
             super(_FileWrapper, self).__init__(generator.filelike,
                                                generator.blksize)
-            self.__context = context
+            self.__transaction = transaction
             self.__generator = generator
 
         def close(self):
             try:
                 self.__generator.close()
             except:
-                self.__context.__exit__(*sys.exc_info())
+                self.__transaction.__exit__(*sys.exc_info())
                 raise
             else:
-                self.__context.__exit__(None, None, None)
+                self.__transaction.__exit__(None, None, None)
 
-    return _FileWrapper(context, generator)
+    return _FileWrapper(transaction, generator)
 
 class _Generator(object):
 
-    def __init__(self, context, generator):
-        self.__context = context
+    def __init__(self, transaction, generator):
+        self.__transaction = transaction
         self.__generator = generator
 
     def __iter__(self):
@@ -85,25 +64,12 @@ class _Generator(object):
             if hasattr(self.__generator, 'close'):
                 self.__generator.close()
         except:
-            self.__context.__exit__(*sys.exc_info())
+            self.__transaction.__exit__(*sys.exc_info())
             raise
         else:
-            self.__context.__exit__(None, None, None)
+            self.__transaction.__exit__(None, None, None)
 
-class _ContextManager(object):
-
-    def __init__(self, transaction):
-        self.__transaction = transaction
-
-    def __enter__(self):
-        _push_transaction(self.__transaction)
-        self.__transaction.__enter__()
-
-    def __exit__(self, *args):
-        _pop_transaction(self.__transaction)
-        self.__transaction.__exit__(*args)
-
-class WebTransaction(object):
+class WSGIApplication(object):
 
     def __init__(self, application, callable):
         self.__application = application
@@ -116,10 +82,8 @@ class WebTransaction(object):
         environ = args[-2]
         start_response = args[-1]
 
-        transaction = self.__application.web_transaction(environ)
-        context = _ContextManager(transaction)
-
-        context.__enter__()
+        transaction = _newrelic.WebTransaction(self.__application, environ)
+        transaction.__enter__()
 
         def _start_response(status, response_headers, exc_info=None):
             transaction.response_code = int(status.split(' ')[0])
@@ -128,12 +92,12 @@ class WebTransaction(object):
         try:
             result = self.__callable(*args)
         except:
-            context.__exit__(*sys.exc_info())
+            transaction.__exit__(*sys.exc_info())
             raise
 
         file_wrapper = environ.get('wsgi.file_wrapper', None)
         if file_wrapper and isinstance(result, file_wrapper) and \
                 hasattr(result, 'filelike') and hasattr(result, 'blksize'):
-            return _FileWrapper(context, result)
+            return _FileWrapper(transaction, result)
         else:
-            return _Generator(context, result)
+            return _Generator(transaction, result)

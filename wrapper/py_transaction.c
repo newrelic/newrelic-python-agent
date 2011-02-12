@@ -9,10 +9,6 @@
 #include "py_params.h"
 #include "py_traceback.h"
 
-#if 0
-#include "py_database_trace.h"
-#endif
-
 #include "globals.h"
 #include "logging.h"
 
@@ -357,36 +353,6 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-#if 0
-static PyObject *NRTransaction_database_trace(
-        NRTransactionObject *self, PyObject *args)
-{
-    NRDatabaseTraceObject *rv;
-
-    const char *sql = NULL;
-
-    if (!PyArg_ParseTuple(args, "s:database_trace", &sql))
-        return NULL;
-
-    if (self->transaction_state != NR_TRANSACTION_STATE_RUNNING) {
-        PyErr_SetString(PyExc_RuntimeError, "transaction not active");
-        return NULL;
-    }
-
-    if (self->transaction)
-        rv = NRDatabaseTrace_New(self->transaction, sql);
-    else
-        rv = NRDatabaseTrace_New(NULL, NULL);
-
-    if (rv == NULL)
-        return NULL;
-
-    return (PyObject *)rv;
-}
-#endif
-
-/* ------------------------------------------------------------------------- */
-
 static PyObject *NRTransaction_runtime_error(
         NRTransactionObject *self, PyObject *args, PyObject *kwds)
 {
@@ -717,14 +683,6 @@ static PyMethodDef NRTransaction_methods[] = {
                             METH_NOARGS, 0 },
     { "__exit__",           (PyCFunction)NRTransaction_exit,
                             METH_VARARGS, 0 },
-#if 0
-    { "external_trace",     (PyCFunction)NRTransaction_external_trace,
-                            METH_VARARGS, 0 },
-    { "memcache_trace",     (PyCFunction)NRTransaction_memcache_trace,
-                            METH_VARARGS, 0 },
-    { "database_trace",     (PyCFunction)NRTransaction_database_trace,
-                            METH_VARARGS, 0 },
-#endif
     { "runtime_error",      (PyCFunction)NRTransaction_runtime_error,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { NULL, NULL }

@@ -11,9 +11,7 @@
 #include "py_application.h"
 
 #include "py_background_task.h"
-#if 0
 #include "py_database_trace.h"
-#endif
 #include "py_external_trace.h"
 #include "py_function_trace.h"
 #include "py_memcache_trace.h"
@@ -539,10 +537,8 @@ init_newrelic(void)
         return;
     if (PyType_Ready(&NRBackgroundTask_Type) < 0)
         return;
-#if 0
     if (PyType_Ready(&NRDatabaseTrace_Type) < 0)
         return;
-#endif
     if (PyType_Ready(&NRExternalTrace_Type) < 0)
         return;
     if (PyType_Ready(&NRFunctionTrace_Type) < 0)
@@ -561,6 +557,9 @@ init_newrelic(void)
     Py_INCREF(&NRBackgroundTask_Type);
     PyModule_AddObject(module, "BackgroundTask",
                        (PyObject *)&NRBackgroundTask_Type);
+    Py_INCREF(&NRDatabaseTrace_Type);
+    PyModule_AddObject(module, "DatabaseTrace",
+                       (PyObject *)&NRDatabaseTrace_Type);
     Py_INCREF(&NRExternalTrace_Type);
     PyModule_AddObject(module, "ExternalTrace",
                        (PyObject *)&NRExternalTrace_Type);

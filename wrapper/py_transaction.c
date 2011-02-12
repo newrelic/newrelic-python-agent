@@ -11,7 +11,6 @@
 
 #if 0
 #include "py_database_trace.h"
-#include "py_memcache_trace.h"
 #endif
 
 #include "globals.h"
@@ -359,32 +358,6 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
 /* ------------------------------------------------------------------------- */
 
 #if 0
-static PyObject *NRTransaction_memcache_trace(
-        NRTransactionObject *self, PyObject *args)
-{
-    NRMemcacheTraceObject *rv;
-
-    const char *metric_fragment = NULL;
-
-    if (!PyArg_ParseTuple(args, "s:memcache_trace", &metric_fragment))
-        return NULL;
-
-    if (self->transaction_state != NR_TRANSACTION_STATE_RUNNING) {
-        PyErr_SetString(PyExc_RuntimeError, "transaction not active");
-        return NULL;
-    }
-
-    if (self->transaction)
-        rv = NRMemcacheTrace_New(self->transaction, metric_fragment);
-    else
-        rv = NRMemcacheTrace_New(NULL, NULL);
-
-    if (rv == NULL)
-        return NULL;
-
-    return (PyObject *)rv;
-}
-
 static PyObject *NRTransaction_database_trace(
         NRTransactionObject *self, PyObject *args)
 {

@@ -82,6 +82,11 @@ static int NRFunctionTrace_init(NRFunctionTraceObject *self, PyObject *args,
     self->parent_transaction = transaction;
 
     /*
+     * Don't need to create the inner agent transaction trace
+     * node when executing against a dummy transaction.
+     */
+
+    /*
      * TODO The PHP agent code doesn't yet support the 'scope'
      * argument to this function.
      */

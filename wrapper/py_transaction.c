@@ -11,7 +11,6 @@
 
 #if 0
 #include "py_database_trace.h"
-#include "py_external_trace.h"
 #include "py_memcache_trace.h"
 #endif
 
@@ -360,32 +359,6 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
 /* ------------------------------------------------------------------------- */
 
 #if 0
-static PyObject *NRTransaction_external_trace(
-        NRTransactionObject *self, PyObject *args)
-{
-    NRExternalTraceObject *rv;
-
-    const char *url = NULL;
-
-    if (!PyArg_ParseTuple(args, "s:external_trace", &url))
-        return NULL;
-
-    if (self->transaction_state != NR_TRANSACTION_STATE_RUNNING) {
-        PyErr_SetString(PyExc_RuntimeError, "transaction not active");
-        return NULL;
-    }
-
-    if (self->transaction)
-        rv = NRExternalTrace_New(self->transaction, url);
-    else
-        rv = NRExternalTrace_New(NULL, NULL);
-
-    if (rv == NULL)
-        return NULL;
-
-    return (PyObject *)rv;
-}
-
 static PyObject *NRTransaction_memcache_trace(
         NRTransactionObject *self, PyObject *args)
 {

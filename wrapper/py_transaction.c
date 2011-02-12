@@ -475,7 +475,7 @@ static PyObject *NRTransaction_database_trace(
 /* ------------------------------------------------------------------------- */
 
 static PyObject *NRTransaction_runtime_error(
-        NRTransactionObject *self, PyObject *args)
+        NRTransactionObject *self, PyObject *args, PyObject *kwds)
 {
     nr_transaction_error *record;
 
@@ -487,14 +487,11 @@ static PyObject *NRTransaction_runtime_error(
     PyObject *error_message = NULL;
     PyObject *stack_trace = NULL;
 
-    /*
-     * TODO Need to support keyword arguments so that can easily
-     * pass parms after *sys.exc_info().
-     */
+    static char *kwlist[] = { "type", "value", "traceback", "params", NULL };
 
-    if (!PyArg_ParseTuple(args, "OOO!|O!:runtime_error", &type, &value,
-                          &PyTraceBack_Type, &traceback, &PyDict_Type,
-                          &params)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OOO!|O!:runtime_error",
+                                     kwlist, &type, &value, &PyTraceBack_Type,
+                                     &traceback, &PyDict_Type, &params)) {
         return NULL;
     }
 
@@ -818,7 +815,7 @@ static PyMethodDef NRTransaction_methods[] = {
                             METH_VARARGS, 0 },
 #endif
     { "runtime_error",      (PyCFunction)NRTransaction_runtime_error,
-                            METH_VARARGS, 0 },
+                            METH_VARARGS|METH_KEYWORDS, 0 },
     { NULL, NULL }
 };
 

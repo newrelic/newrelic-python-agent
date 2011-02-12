@@ -7,6 +7,7 @@
 #include "py_params.h"
 
 #include "genericobject.h"
+#include "web_transaction.h"
 
 /* ------------------------------------------------------------------------- */
 

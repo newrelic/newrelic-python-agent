@@ -8,7 +8,7 @@
 /* ------------------------------------------------------------------------- */
 
 #include "globals.h"
-#include "web_transaction.h"
+#include "nrtypes.h"
 
 #include <Python.h>
 

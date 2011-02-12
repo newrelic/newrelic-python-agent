@@ -29,5 +29,14 @@ class ExternalTraceTests01(unittest.TestCase):
                 time.sleep(0.1)
             time.sleep(0.1)
 
+    def test_transaction_not_running(self):
+        environ = { "REQUEST_URI": "/transaction_not_running" }
+        transaction = _newrelic.WebTransaction(application, environ)
+        try:
+            with _newrelic.ExternalTrace(transaction, "http://localhost/"):
+                time.sleep(0.1)
+        except RuntimeError:
+            pass
+
 if __name__ == '__main__':
     unittest.main()

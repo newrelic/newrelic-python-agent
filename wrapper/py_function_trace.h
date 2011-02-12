@@ -7,26 +7,23 @@
 
 /* ------------------------------------------------------------------------- */
 
-#include <Python.h>
-
-#include "web_transaction_data.h"
+#include "py_transaction.h"
 
 /* ------------------------------------------------------------------------- */
 
 typedef struct {
     PyObject_HEAD
+    NRTransactionObject *parent_transaction;
     nr_transaction_node *transaction_trace;
-    nr_node_header* outer_transaction;
+    nr_node_header* saved_trace_node;
 } NRFunctionTraceObject;
 
 extern PyTypeObject NRFunctionTrace_Type;
 
 /* ------------------------------------------------------------------------- */
 
-extern NRFunctionTraceObject *NRFunctionTrace_New(
-        nr_web_transaction *transaction, const char *funcname,
-        const char *classname, const char *scope);
-
-/* ------------------------------------------------------------------------- */
-
 #endif
+
+/*
+ * vim: et cino=>2,e0,n0,f0,{2,}0,^0,\:2,=2,p2,t2,c1,+2,(2,u2,)20,*30,g2,h2 ts=8
+ */

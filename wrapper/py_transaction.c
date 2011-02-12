@@ -12,7 +12,6 @@
 #if 0
 #include "py_database_trace.h"
 #include "py_external_trace.h"
-#include "py_function_trace.h"
 #include "py_memcache_trace.h"
 #endif
 
@@ -361,38 +360,6 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
 /* ------------------------------------------------------------------------- */
 
 #if 0
-static PyObject *NRTransaction_function_trace(
-        NRTransactionObject *self, PyObject *args)
-{
-    NRFunctionTraceObject *rv;
-
-    const char *funcname = NULL;
-    const char *classname = NULL;
-    const char *scope = NULL;
-
-    if (!PyArg_ParseTuple(args, "s|zz:function_trace", &funcname,
-              &classname, &scope)) {
-        return NULL;
-    }
-
-    if (self->transaction_state != NR_TRANSACTION_STATE_RUNNING) {
-        PyErr_SetString(PyExc_RuntimeError, "transaction not active");
-        return NULL;
-    }
-
-    if (self->transaction) {
-        rv = NRFunctionTrace_New(self->transaction, funcname,
-                classname, scope);
-    }
-    else
-        rv = NRFunctionTrace_New(NULL, NULL, NULL, NULL);
-
-    if (rv == NULL)
-        return NULL;
-
-    return (PyObject *)rv;
-}
-
 static PyObject *NRTransaction_external_trace(
         NRTransactionObject *self, PyObject *args)
 {
@@ -805,8 +772,6 @@ static PyMethodDef NRTransaction_methods[] = {
     { "__exit__",           (PyCFunction)NRTransaction_exit,
                             METH_VARARGS, 0 },
 #if 0
-    { "function_trace",     (PyCFunction)NRTransaction_function_trace,
-                            METH_VARARGS, 0 },
     { "external_trace",     (PyCFunction)NRTransaction_external_trace,
                             METH_VARARGS, 0 },
     { "memcache_trace",     (PyCFunction)NRTransaction_memcache_trace,

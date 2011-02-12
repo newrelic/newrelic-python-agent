@@ -177,7 +177,7 @@ static int NRApplication_init(NRApplicationObject *self, PyObject *args,
      * locked and so need to unlock it.
      */
 
-    pthread_mutex_unlock(&self->application->lock);
+    nrthread_mutex_unlock(&self->application->lock);
 
     /*
      * Markup what version of the Python agent wrapper is being
@@ -270,10 +270,10 @@ static PyObject *NRApplication_custom_metric(NRApplicationObject *self,
      */
 
     if (self->enabled) {
-        pthread_mutex_lock(&(nr_per_process_globals.harvest_data_mutex));
+        nrthread_mutex_lock(&self->application->lock);
         nr_metric_table__add_metric_double(
                 self->application->pending_harvest->metrics, key, NULL, value);
-        pthread_mutex_unlock(&(nr_per_process_globals.harvest_data_mutex));
+        nrthread_mutex_unlock(&self->application->lock);
     }
 
     Py_INCREF(Py_None);

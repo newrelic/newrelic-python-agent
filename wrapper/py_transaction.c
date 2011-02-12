@@ -296,9 +296,9 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
     nr_node_header__record_stoptime_and_pop_current(
             (nr_node_header *)self->transaction, NULL);
 
-    pthread_mutex_lock(&(nr_per_process_globals.harvest_data_mutex));
-
     application = self->application->application;
+
+    nrthread_mutex_lock(&application->lock);
 
     /*
      * TODO Switching what the current application is here is a
@@ -306,7 +306,10 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
      * application as a parameter rather than internally
      * consulting the global variable referencing the current
      * application. See more details on Pivotal Tracker at
-     * https://www.pivotaltracker.com/projects/154789.
+     * https://www.pivotaltracker.com/projects/154789. Luckily
+     * we don't release the Python GIL through this section
+     * of code so rely on that to stop another thread from
+     * changing what the current application is set to.
      */
 
     nr__switch_to_application(application);
@@ -347,7 +350,7 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
     nr__merge_errors_from_to(&self->transaction_errors,
                              &application->pending_harvest->errors);
 
-    pthread_mutex_unlock(&(nr_per_process_globals.harvest_data_mutex));
+    nrthread_mutex_unlock(&application->lock);
 
     self->transaction_state = NR_TRANSACTION_STATE_STOPPED;
 

@@ -23,28 +23,14 @@
 #include "globals.h"
 #include "logging.h"
 
+#include "nrthread.h"
+
 #include "application.h"
 #include "daemon_protocol.h"
 #include "genericobject.h"
 #include "harvest.h"
 #include "metric_table.h"
 #include "web_transaction.h"
-
-/* ------------------------------------------------------------------------- */
-
-struct _nr_per_process_globals nr_per_process_globals;
-
-#if 0
-void nr_initialize_global_tt_threshold_from_apdex (nrapp_t *app) {
-    if( nr_per_process_globals.tt_threshold_is_apdex_f ) {
-        if( app != NULL ) {
-            nr_per_process_globals.tt_threshold = app->apdex_t * 4;
-        } else {
-            nr_per_process_globals.tt_threshold = 500 * 1000 * 4;
-        }
-    }
-}
-#endif
 
 /* ------------------------------------------------------------------------- */
 
@@ -543,8 +529,6 @@ init_newrelic(void)
 
     PyGILState_STATE gil_state;
 
-    pthread_mutexattr_t mutex_attr;
-
     module = Py_InitModule3("_newrelic", newrelic_methods, NULL);
     if (module == NULL)
         return;
@@ -613,16 +597,10 @@ init_newrelic(void)
      * rely on the ability to have a background thread for
      * performing harvesting. We do not support harvesting
      * being triggered as a side effect of request based on
-     * a time since last harvest was performed. A recursive
-     * mutex must be used because code which deals with the
-     * daemon connection performs nested calls which attempt
-     * to reacquire the thread mutex.
+     * a time since last harvest was performed.
      */
 
-    pthread_mutexattr_init(&mutex_attr);
-    pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_RECURSIVE);
-    pthread_mutex_init(&(nr_per_process_globals.daemon.lock), &mutex_attr);
-    pthread_mutexattr_destroy(&mutex_attr);
+    nrthread_mutex_init(&(nr_per_process_globals.daemon.lock), NULL);
 
     /*
      * Logging initialisation in daemon client code is PHP

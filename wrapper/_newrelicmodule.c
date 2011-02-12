@@ -16,9 +16,7 @@
 #endif
 #include "py_external_trace.h"
 #include "py_function_trace.h"
-#if 0
 #include "py_memcache_trace.h"
-#endif
 #include "py_transaction.h"
 #include "py_web_transaction.h"
 
@@ -549,10 +547,8 @@ init_newrelic(void)
         return;
     if (PyType_Ready(&NRFunctionTrace_Type) < 0)
         return;
-#if 0
     if (PyType_Ready(&NRMemcacheTrace_Type) < 0)
         return;
-#endif
     if (PyType_Ready(&NRSettings_Type) < 0)
         return;
     if (PyType_Ready(&NRTransaction_Type) < 0)
@@ -571,6 +567,9 @@ init_newrelic(void)
     Py_INCREF(&NRFunctionTrace_Type);
     PyModule_AddObject(module, "FunctionTrace",
                        (PyObject *)&NRFunctionTrace_Type);
+    Py_INCREF(&NRMemcacheTrace_Type);
+    PyModule_AddObject(module, "MemcacheTrace",
+                       (PyObject *)&NRMemcacheTrace_Type);
     Py_INCREF(&NRWebTransaction_Type);
     PyModule_AddObject(module, "WebTransaction",
                        (PyObject *)&NRWebTransaction_Type);

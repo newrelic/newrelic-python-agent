@@ -7,43 +7,99 @@
 #include "py_memcache_trace.h"
 
 #include "globals.h"
-#include "logging.h"
 
-#include "web_transaction_funcs.h"
-
-/* ------------------------------------------------------------------------- */
-
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
+#include "web_transaction.h"
 
 /* ------------------------------------------------------------------------- */
 
-NRMemcacheTraceObject *NRMemcacheTrace_New(nr_web_transaction *transaction,
-                                           const char *metric_fragment)
+static PyObject *NRMemcacheTrace_new(PyTypeObject *type, PyObject *args,
+                                     PyObject *kwds)
 {
     NRMemcacheTraceObject *self;
 
-    self = PyObject_New(NRMemcacheTraceObject, &NRMemcacheTrace_Type);
-    if (self == NULL)
+    /*
+     * Allocate the transaction object and initialise it as per
+     * normal.
+     */
+
+    self = (NRMemcacheTraceObject *)type->tp_alloc(type, 0);
+
+    if (!self)
         return NULL;
 
-    if (transaction) {
-        self->transaction_trace = nr_web_transaction__allocate_memcache_node(
-                transaction, metric_fragment);
-    }
-    else
-        self->transaction_trace = NULL;
+    self->parent_transaction = NULL;
+    self->transaction_trace = NULL;
+    self->saved_trace_node = NULL;
 
-    self->outer_transaction = NULL;
-
-    return self;
+    return (PyObject *)self;
 }
+
+/* ------------------------------------------------------------------------- */
+
+static int NRMemcacheTrace_init(NRMemcacheTraceObject *self, PyObject *args,
+                                PyObject *kwds)
+{
+    NRTransactionObject *transaction = NULL;
+
+    const char *metric_fragment = NULL;
+
+    static char *kwlist[] = { "transaction", "metric_fragment", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!s:MemcacheTrace",
+                                     kwlist, &NRTransaction_Type,
+                                     &transaction, &metric_fragment)) {
+        return -1;
+    }
+
+    /*
+     * Validate that this method hasn't been called previously.
+     */
+
+    if (self->parent_transaction) {
+        PyErr_SetString(PyExc_TypeError, "trace already initialized");
+        return -1;
+    }
+
+    /*
+     * Validate that the parent transaction has been started.
+     */
+
+    if (transaction->transaction_state != NR_TRANSACTION_STATE_RUNNING) {
+        PyErr_SetString(PyExc_RuntimeError, "transaction not active");
+        return -1;
+    }
+
+    /*
+     * Keep reference to parent transaction to ensure that it
+     * is not destroyed before any trace created against it.
+     */
+
+    Py_INCREF(transaction);
+    self->parent_transaction = transaction;
+
+    /*
+     * Don't need to create the inner agent transaction trace
+     * node when executing against a dummy transaction.
+     */
+
+    if (transaction->transaction) {
+        self->transaction_trace = nr_web_transaction__allocate_memcache_node(
+                transaction->transaction, metric_fragment);
+    }
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
 
 static void NRMemcacheTrace_dealloc(NRMemcacheTraceObject *self)
 {
-    PyObject_Del(self);
+    Py_XDECREF(self->parent_transaction);
+
+    Py_TYPE(self)->tp_free(self);
 }
+
+/* ------------------------------------------------------------------------- */
 
 static PyObject *NRMemcacheTrace_enter(NRMemcacheTraceObject *self,
                                         PyObject *args)
@@ -55,11 +111,13 @@ static PyObject *NRMemcacheTrace_enter(NRMemcacheTraceObject *self,
 
     nr_node_header__record_starttime_and_push_current(
             (nr_node_header *)self->transaction_trace,
-            &self->outer_transaction);
+            &self->saved_trace_node);
 
     Py_INCREF(self);
     return (PyObject *)self;
 }
+
+/* ------------------------------------------------------------------------- */
 
 static PyObject *NRMemcacheTrace_exit(NRMemcacheTraceObject *self,
                                        PyObject *args)
@@ -71,13 +129,19 @@ static PyObject *NRMemcacheTrace_exit(NRMemcacheTraceObject *self,
 
     nr_node_header__record_stoptime_and_pop_current(
             (nr_node_header *)self->transaction_trace,
-            &self->outer_transaction);
+            &self->saved_trace_node);
 
-    self->outer_transaction = NULL;
+    self->saved_trace_node = NULL;
 
     Py_INCREF(Py_None);
     return Py_None;
 }
+
+/* ------------------------------------------------------------------------- */
+
+#ifndef PyVarObject_HEAD_INIT
+#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
+#endif
 
 static PyMethodDef NRMemcacheTrace_methods[] = {
     { "__enter__",  (PyCFunction)NRMemcacheTrace_enter,  METH_NOARGS, 0 },
@@ -126,9 +190,9 @@ PyTypeObject NRMemcacheTrace_Type = {
     0,                      /*tp_descr_get*/
     0,                      /*tp_descr_set*/
     0,                      /*tp_dictoffset*/
-    0,                      /*tp_init*/
+    (initproc)NRMemcacheTrace_init, /*tp_init*/
     0,                      /*tp_alloc*/
-    0,                      /*tp_new*/
+    NRMemcacheTrace_new,    /*tp_new*/
     0,                      /*tp_free*/
     0,                      /*tp_is_gc*/
 };

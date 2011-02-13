@@ -99,9 +99,7 @@ def _fixup_resolver(resolver, *args, **kwargs):
 def _fixup_exception(handler, request, resolver, exc_info):
     transaction = _newrelic.transaction()
     if transaction:
-        transaction.runtime_error(str(exc_info[1]),
-                type(exc_info[1]).__name__, ''.join(
-                traceback.format_exception(*exc_info)))
+        transaction.runtime_error(*exc_info)
 
 def _instrument(application):
     import django

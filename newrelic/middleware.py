@@ -1,6 +1,7 @@
 # vi: set sw=4 expandtab :
 
-import threading
+__all__ = [ 'WSGIApplication', 'wsgi_application' ]
+
 import sys
 import types
 
@@ -101,3 +102,16 @@ class WSGIApplication(object):
             return _FileWrapper(transaction, result)
         else:
             return _Generator(transaction, result)
+
+# Provide decorator for WSGI application. With this decorator
+# the WSGI application middleware wrapper is used so that the
+# end of the corresponding web transaction is recorded as being
+# when all response content is written back to the HTTP client.
+
+def wsgi_application(name):
+    application = _newrelic.application(name)
+
+    def decorator(callable):
+        return WSGIApplication(application, callable)
+
+    return decorator

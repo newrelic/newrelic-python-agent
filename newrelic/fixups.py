@@ -1,6 +1,7 @@
 # vi: set sw=4 expandtab :
 
-from decorators import wsgi_application, function_trace
+from middleware import wsgi_application
+from decorators import function_trace
 
 def _load_object(mname, cname, fname):
     module = __import__(mname)

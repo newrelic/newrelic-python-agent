@@ -73,16 +73,18 @@ def background_task(name=None):
 	    # instance possessing a bound method which the
 	    # associated function is our wrapper function.
 
-            if not name and inspect.isfunction(callable):
+            qualified_name = name
+
+            if not qualified_name and inspect.isfunction(callable):
                 if len(args) >= 1 and hasattr(args[0], '__class__'):
                     klass = args[0].__class__
                     if hasattr(klass, callable.__name__):
                         method = getattr(klass, callable.__name__)
                         if inspect.ismethod(method):
                             if method.im_func == wrapper:
-                                name = _qualified_name(method)
+                                qualified_name = _qualified_name(method)
 
-            path = name or _qualified_name(callable)
+            path = qualified_name or _qualified_name(callable)
 
             transaction = _newrelic.BackgroundTask(application, path)
 
@@ -144,21 +146,24 @@ def function_trace(name=None, scope=None, override_path=False):
 	    # instance possessing a bound method which the
 	    # associated function is our wrapper function.
 
-            if not name and inspect.isfunction(callable):
+            qualified_name = name
+
+            if not qualified_name and inspect.isfunction(callable):
                 if len(args) >= 1 and hasattr(args[0], '__class__'):
                     klass = args[0].__class__
                     if hasattr(klass, callable.__name__):
                         method = getattr(klass, callable.__name__)
                         if inspect.ismethod(method):
                             if method.im_func == wrapper:
-                                name = _qualified_name(method)
+                                qualified_name = _qualified_name(method)
 
-            name = name or _qualified_name(callable)
+            qualified_name = qualified_name or _qualified_name(callable)
 
             if override_path:
-                transaction.path = name
+                transaction.path = qualified_name
 
-            trace = _newrelic.FunctionTrace(transaction, name, None, scope)
+            trace = _newrelic.FunctionTrace(transaction, qualified_name,
+                                            None, scope)
             trace.__enter__()
 
             try:

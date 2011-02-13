@@ -22,6 +22,7 @@
 #include "logging.h"
 
 #include "nrthread.h"
+#include "nrtypes.h"
 
 #include "application.h"
 #include "daemon_protocol.h"
@@ -237,7 +238,6 @@ static PyObject *newrelic_shutdown(PyObject *self, PyObject *args)
     return Py_None;
 }
 
-#if 0
 static PyMethodDef *newrelic_lookup_function(const char *mname,
                                              const char *cname,
                                              const char *fname)
@@ -335,9 +335,9 @@ static PyObject *newrelic_call_database_trace(PyCFunction function, int argnum,
 {
     PyObject *result = NULL;
 
-    NRWebTransactionObject *object = NULL;
+    NRTransactionObject *object = NULL;
 
-    nr_transaction_node *transaction_trace = NULL;
+    nr_sql_node *transaction_trace = NULL;
     nr_node_header *save = NULL;
 
     const char *sql = NULL;
@@ -352,11 +352,11 @@ static PyObject *newrelic_call_database_trace(PyCFunction function, int argnum,
     }
 
     if (sql)
-        object = NRWebTransaction_CurrentTransaction();
+        object = (NRTransactionObject *)NRTransaction_CurrentTransaction();
 
     if (object) {
         transaction_trace = nr_web_transaction__allocate_sql_node(
-                object->web_transaction, sql, strlen(sql));
+                object->transaction, sql, strlen(sql));
 
         nr_node_header__record_starttime_and_push_current(
                 (nr_node_header *)transaction_trace, &save);
@@ -418,11 +418,13 @@ static PyObject *newrelic_call_database_trace(PyCFunction function, int argnum,
         if (result) {
             int i;
 
-            transaction_trace->stacktrace_params = nr_param_array__allocate();
+            transaction_trace->u.s.stacktrace_params = nro__new(NR_OBJECT_HASH);
 
             for (i=0; i<PyList_Size(result); i++)
-                nr_param_array__add_string_to_array_at(transaction_trace->stacktrace_params,"stack_trace", PyString_AsString(PyList_GetItem(result, i)));
-
+                nro__set_in_array_at(transaction_trace->u.s.stacktrace_params,
+                                     "stack_trace", nro__new_string(
+                                     PyString_AsString(PyList_GetItem(
+                                     result, i))));
         }
 
         Py_XDECREF(result);
@@ -496,7 +498,6 @@ static PyObject *newrelic_wrap_c_database_trace(PyObject *self, PyObject* args)
     Py_INCREF(Py_None);
     return Py_None;
 }
-#endif
 
 static PyMethodDef newrelic_methods[] = {
     { "application",        (PyCFunction)newrelic_application,
@@ -509,9 +510,7 @@ static PyMethodDef newrelic_methods[] = {
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "transaction",        (PyCFunction)newrelic_transaction,
                             METH_NOARGS, 0 },
-#if 0
     { "wrap_c_database_trace", newrelic_wrap_c_database_trace, METH_VARARGS, 0 },
-#endif
     { NULL, NULL }
 };
 

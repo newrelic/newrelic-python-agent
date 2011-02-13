@@ -85,7 +85,8 @@ def function_trace(name=None, scope=None, override_path=False):
             if override_path:
                 transaction.path = qualified_name
 
-            trace = transaction.function_trace(qualified_name, None, scope)
+            trace = _newrelic.FunctionTrace(transaction, qualified_name,
+                                            None, scope)
             trace.__enter__()
 
             try:
@@ -106,7 +107,7 @@ def external_trace(index):
             if not transaction:
                 return callable(*args, **kwargs)
 
-            trace = transaction.external_trace(args[index])
+            trace = _newrelic.ExternalTrace(transaction, args[index])
             trace.__enter__()
 
             try:
@@ -127,7 +128,7 @@ def memcache_trace(index):
             if not transaction:
                 return callable(*args, **kwargs)
 
-            trace = transaction.memcache_trace(args[index])
+            trace = _newrelic.MemcacheTrace(transaction, args[index])
             trace.__enter__()
 
             try:
@@ -148,7 +149,7 @@ def database_trace(index):
             if not transaction:
                 return callable(*args, **kwargs)
 
-            trace = transaction.database_trace(args[index])
+            trace = _newrelic.DatabaseTrace(transaction, args[index])
             trace.__enter__()
 
             try:

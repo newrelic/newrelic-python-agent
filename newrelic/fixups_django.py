@@ -6,7 +6,7 @@ import traceback
 import _newrelic
 
 from fixups import (_wrap_pre_function, _wrap_post_function,
-                    _wrap_web_transaction, _pass_function,
+                    _wrap_wsgi_application, _pass_function,
                    _wrap_function_trace)
 from decorators import function_trace
 
@@ -111,7 +111,7 @@ def _instrument(application):
     settings['django.version'] = django.get_version()
     settings['django.path'] = os.path.dirname(django.__file__)
 
-    _wrap_web_transaction('django.core.handlers.wsgi', 'WSGIHandler',
+    _wrap_wsgi_application('django.core.handlers.wsgi', 'WSGIHandler',
                           '__call__', application)
 
     _wrap_post_function('django.core.handlers.base','BaseHandler',

@@ -1,6 +1,6 @@
 # vi: set sw=4 expandtab :
 
-from decorators import web_transaction, function_trace
+from decorators import wsgi_application, function_trace
 
 def _load_object(mname, cname, fname):
     module = __import__(mname)
@@ -81,9 +81,9 @@ def _wrap_pass_function(mname, cname, fname, function):
     wrapper = _pass_function(function)(object)
     setattr(parent, name, wrapper)
 
-def _wrap_web_transaction(mname, cname, fname, application):
+def _wrap_wsgi_application(mname, cname, fname, application):
     parent, name, object = _load_object(mname, cname, fname)
-    wrapper = web_transaction(application)(object)
+    wrapper = wsgi_application(application)(object)
     setattr(parent, name, wrapper)
 
 def _wrap_function_trace(mname, cname, fname, scope=None):

@@ -35,27 +35,23 @@ def wsgi_application(name):
 def _qualified_name(object):
     mname = inspect.getmodule(object).__name__
 
+    cname = None
+    fname = None
+
     if inspect.isclass(object):
         cname = object.__name__
-    elif hasattr(object, 'im_class'):
+        fname = '__init__'
+    elif inspect.ismethod(object):
         cname = object.im_class.__name__
+        fname = object.__name__
+    elif inspect.isfunction(object):
+        fname = object.__name__
     elif isinstance(object, types.InstanceType):
         cname = object.__class__.__name__
+        fname = '__call__'
     elif hasattr(object, '__class__'):
         cname = object.__class__.__name__
-    else:
-        cname = None
-
-    if inspect.isfunction(object):
-        fname = object.__name__
-    elif inspect.ismethod(object):
-        fname = object.__name__
-    elif isinstance(object, types.TypeType):
-        fname = None
-    elif hasattr(object, '__call__'):
         fname = '__call__'
-    else:
-        fname = None
 
     path = mname
 
@@ -79,8 +75,6 @@ def function_trace(name=None, scope=None, override_path=False):
                 return callable(*args, **kwargs)
 
             qualified_name = name or _qualified_name(callable)
-
-            print scope, callable, qualified_name
 
             if override_path:
                 transaction.path = qualified_name

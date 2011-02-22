@@ -17,7 +17,7 @@
 #include "py_memcache_trace.h"
 #include "py_transaction.h"
 #include "py_web_transaction.h"
-#include "py_wrapped_object.h"
+#include "py_wrapped_callable.h"
 
 #include "globals.h"
 #include "logging.h"
@@ -219,15 +219,16 @@ static PyObject *newrelic_wrap_pre_function(PyObject *self, PyObject *args,
     const char *module_name = NULL;
     const char *class_name = NULL;
     const char *object_name = NULL;
-
     PyObject *function = NULL;
+    PyObject *run_once = NULL;
 
     static char *kwlist[] = { "module_name", "class_name", "object_name",
-                              "function", NULL };
+                              "function", "run_once", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO:wrap_pre_function",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO|i!:wrap_pre_function",
                                      kwlist, &module_name, &class_name,
-                                     &object_name, &function)) {
+                                     &object_name, &function, &PyBool_Type,
+                                     &run_once)) {
         return NULL;
     }
 
@@ -237,8 +238,9 @@ static PyObject *newrelic_wrap_pre_function(PyObject *self, PyObject *args,
         return NULL;
     }
 
-    return NRWrappedObject_WrapPreFunction(module_name, class_name,
-                                           object_name, function);
+    return NRWrappedCallable_WrapPreFunction(module_name, class_name,
+                                             object_name, function,
+                                             (run_once == Py_True));
 }
 
 static PyObject *newrelic_shutdown(PyObject *self, PyObject *args)
@@ -573,6 +575,8 @@ init_newrelic(void)
     if (PyType_Ready(&NRTransaction_Type) < 0)
         return;
     if (PyType_Ready(&NRWebTransaction_Type) < 0)
+        return;
+    if (PyType_Ready(&NRWrappedCallable_Type) < 0)
         return;
 
     /* Initialise type objects. */

@@ -17,6 +17,7 @@
 #include "py_memcache_trace.h"
 #include "py_transaction.h"
 #include "py_web_transaction.h"
+#include "py_wrapped_object.h"
 
 #include "globals.h"
 #include "logging.h"
@@ -212,6 +213,34 @@ static PyObject *newrelic_transaction(PyObject *self, PyObject *args)
     return Py_None;
 }
 
+static PyObject *newrelic_wrap_pre_function(PyObject *self, PyObject *args,
+                                            PyObject *kwds)
+{
+    const char *module_name = NULL;
+    const char *class_name = NULL;
+    const char *object_name = NULL;
+
+    PyObject *function = NULL;
+
+    static char *kwlist[] = { "module_name", "class_name", "object_name",
+                              "function", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO:wrap_pre_function",
+                                     kwlist, &module_name, &class_name,
+                                     &object_name, &function)) {
+        return NULL;
+    }
+
+    if (!class_name && !object_name) {
+        PyErr_SetString(PyExc_RuntimeError, "class or object name must be "
+                        "supplied");
+        return NULL;
+    }
+
+    return NRWrappedObject_WrapPreFunction(module_name, class_name,
+                                           object_name, function);
+}
+
 static PyObject *newrelic_shutdown(PyObject *self, PyObject *args)
 {
     static int shutdown = 0;
@@ -263,7 +292,6 @@ static PyMethodDef *newrelic_lookup_function(const char *mname,
 
             if (!cobject || !PyType_Check(cobject)) {
                 PyErr_SetString(PyExc_RuntimeError, "not a valid class type");
-                Py_XDECREF(cobject);
                 Py_DECREF(module);
                 return NULL;
             }
@@ -280,7 +308,6 @@ static PyMethodDef *newrelic_lookup_function(const char *mname,
 
             if (!function) {
                 PyErr_SetString(PyExc_RuntimeError, "not a valid method");
-                Py_DECREF(cobject);
                 Py_XDECREF(fobject);
                 Py_DECREF(module);
                 return NULL;
@@ -295,18 +322,13 @@ static PyMethodDef *newrelic_lookup_function(const char *mname,
 
             if (!fobject || !PyCFunction_Check(fobject)) {
                 PyErr_SetString(PyExc_RuntimeError, "not a valid function");
-                Py_XDECREF(fobject);
                 Py_DECREF(module);
                 return NULL;
             }
 
             cfobject = (PyCFunctionObject *)fobject;
             function = cfobject->m_ml;
-
-            Py_DECREF(fobject);
         }
-
-        Py_XDECREF(cobject);
     }
     else {
         PyErr_SetString(PyExc_RuntimeError, "not a valid module");
@@ -510,6 +532,8 @@ static PyMethodDef newrelic_methods[] = {
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "transaction",        (PyCFunction)newrelic_transaction,
                             METH_NOARGS, 0 },
+    { "wrap_pre_function", (PyCFunction)newrelic_wrap_pre_function,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
     { "wrap_c_database_trace", newrelic_wrap_c_database_trace, METH_VARARGS, 0 },
     { NULL, NULL }
 };

@@ -32,6 +32,7 @@ sources = [
   "wrapper/py_traceback.c",
   "wrapper/py_transaction.c",
   "wrapper/py_web_transaction.c",
+  "wrapper/py_wrapped_object.c",
 ]
 
 extension = Extension(

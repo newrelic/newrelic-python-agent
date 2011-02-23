@@ -201,6 +201,48 @@ PyObject *NRUtilities_LookupCallable(const char *module_name,
 
 /* ------------------------------------------------------------------------- */
 
+PyObject *NRUtilities_ReplaceWithWrapper(PyObject *parent_object,
+                                         const char *attribute_name,
+                                         PyObject *wrapper_object)
+{
+    if (PyModule_Check(parent_object)) {
+        /*
+	 * For a module, need to access the module dictionary
+	 * and replace the attribute.
+         */
+
+        PyObject *dict = NULL;
+
+        dict = PyModule_GetDict(parent_object);
+
+        PyDict_SetItemString(dict, attribute_name, wrapper_object);
+    }
+    else {
+        /*
+	 * For everything else we attempt to use the attribute
+         * interface of an object to replace the attribute. If
+         * that doesn't work then modify the objects dictionary
+         * directly instead.
+         */
+
+        if (PyObject_SetAttrString(parent_object, attribute_name,
+                               wrapper_object) == -1) {
+            PyObject *dict = NULL;
+
+            PyErr_Clear();
+
+            dict = ((PyTypeObject *)parent_object)->tp_dict;
+
+            PyDict_SetItemString(dict, attribute_name, wrapper_object);
+        }
+    }
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+/* ------------------------------------------------------------------------- */
+
 void NRUtilities_MergeDictIntoParams(nrobj_t array, const char *name,
                                      PyObject *dict)
 {

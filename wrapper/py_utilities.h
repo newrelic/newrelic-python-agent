@@ -23,6 +23,10 @@ extern PyObject *NRUtilities_LookupCallable(const char *module_name,
                                             PyObject **parent_object,
                                             const char **attribute_name);
 
+extern PyObject *NRUtilities_ReplaceWithWrapper(PyObject *parent_object,
+                                                const char *attribute_name,
+                                                PyObject *wrapper_object);
+
 extern void NRUtilities_MergeDictIntoParams(nrobj_t array,
                                             const char *name,
                                             PyObject *dict);

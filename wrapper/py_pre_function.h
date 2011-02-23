@@ -1,5 +1,5 @@
-#ifndef PY_WRAPPER_WRAPPED_CALLABLE_H
-#define PY_WRAPPER_WRAPPED_CALLABLE_H
+#ifndef PY_WRAPPER_PRE_FUNCTION_H
+#define PY_WRAPPER_PRE_FUNCTION_H
 
 /* ------------------------------------------------------------------------- */
 
@@ -11,27 +11,22 @@
 
 /* ------------------------------------------------------------------------- */
 
-#define NR_FUNCTION_TYPE_PRE_FUNCTION 0
-#define NR_FUNCTION_TYPE_POST_FUNCTION 1
-#define NR_FUNCTION_TYPE_PASS_FUNCTION 2
-
 typedef struct {
     PyObject_HEAD
     PyObject *wrapped_object;
-    int function_type;
     PyObject *function_object;
     int run_once;
-} NRWrappedCallableObject;
+} NRPreFunctionObject;
 
-extern PyTypeObject NRWrappedCallable_Type;
+extern PyTypeObject NRPreFunction_Type;
 
 /* ------------------------------------------------------------------------- */
 
-extern PyObject *NRWrappedCallable_WrapPreFunction(const char *module_name,
-                                                   const char *class_name,
-                                                   const char *name,
-                                                   PyObject *function,
-                                                   int run_once);
+extern PyObject *NRPreFunction_Wrap(const char *module_name,
+                                    const char *class_name,
+                                    const char *name,
+                                    PyObject *function,
+                                    int run_once);
 
 /* ------------------------------------------------------------------------- */
 

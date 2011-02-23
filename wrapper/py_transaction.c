@@ -6,8 +6,7 @@
 
 #include "py_transaction.h"
 
-#include "py_params.h"
-#include "py_traceback.h"
+#include "py_utilities.h"
 
 #include "globals.h"
 #include "logging.h"
@@ -318,10 +317,10 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
      */
 
     if (keep_wt || self->transaction_errors != NULL) {
-        nrpy__merge_dict_into_params_at(self->transaction->params,
+        NRUtilities_MergeDictIntoParams(self->transaction->params,
                                         "request_parameters",
                                         self->request_parameters);
-        nrpy__merge_dict_into_params_at(self->transaction->params,
+        NRUtilities_MergeDictIntoParams(self->transaction->params,
                                         "custom_parameters",
                                         self->custom_parameters);
     }
@@ -381,7 +380,7 @@ static PyObject *NRTransaction_runtime_error(
 
     if (type != Py_None && value != Py_None) {
         error_message = PyObject_Str(value);
-        stack_trace = nrpy__format_exception(type, value, traceback);
+        stack_trace = NRUtilities_FormatException(type, value, traceback);
 
         if (!stack_trace)
            PyErr_Clear();
@@ -396,7 +395,7 @@ static PyObject *NRTransaction_runtime_error(
         }
 
         if (params) {
-            nrpy__merge_dict_into_params_at(record->params,
+            NRUtilities_MergeDictIntoParams(record->params,
                                             "custom_parameters", params);
         }
 

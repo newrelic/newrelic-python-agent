@@ -22,14 +22,6 @@ extern PyTypeObject NRPreFunction_Type;
 
 /* ------------------------------------------------------------------------- */
 
-extern PyObject *NRPreFunction_Wrap(const char *module_name,
-                                    const char *class_name,
-                                    const char *name,
-                                    PyObject *function,
-                                    int run_once);
-
-/* ------------------------------------------------------------------------- */
-
 #endif
 
 /*

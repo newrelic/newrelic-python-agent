@@ -20,6 +20,8 @@
 
 #include "py_pre_function.h"
 
+#include "py_utilities.h"
+
 #include "globals.h"
 #include "logging.h"
 
@@ -120,6 +122,8 @@ static void newrelic_populate_environment(void)
       PyErr_Clear();
 }
 
+/* ------------------------------------------------------------------------- */
+
 static void newrelic_populate_plugin_list(void)
 {
     /*
@@ -145,16 +149,22 @@ static void newrelic_populate_plugin_list(void)
     }
 }
 
+/* ------------------------------------------------------------------------- */
+
 static PyObject *newrelic_application(PyObject *self, PyObject *args,
                                       PyObject *kwds)
 {
     return NRApplication_Singleton(args, kwds);
 }
 
+/* ------------------------------------------------------------------------- */
+
 static PyObject *newrelic_settings(PyObject *self, PyObject *args)
 {
     return NRSetting_Singleton(self, args);
 }
+
+/* ------------------------------------------------------------------------- */
 
 static PyObject *newrelic_log(PyObject *self, PyObject *args, PyObject *kwds)
 {
@@ -175,6 +185,8 @@ static PyObject *newrelic_log(PyObject *self, PyObject *args, PyObject *kwds)
     Py_INCREF(Py_None);
     return Py_None;
 }
+
+/* ------------------------------------------------------------------------- */
 
 static PyObject *newrelic_harvest(PyObject *self, PyObject *args,
                                   PyObject *kwds)
@@ -199,6 +211,8 @@ static PyObject *newrelic_harvest(PyObject *self, PyObject *args,
     return Py_None;
 }
 
+/* ------------------------------------------------------------------------- */
+
 static PyObject *newrelic_transaction(PyObject *self, PyObject *args)
 {
     PyObject *result;
@@ -214,22 +228,32 @@ static PyObject *newrelic_transaction(PyObject *self, PyObject *args)
     return Py_None;
 }
 
+/* ------------------------------------------------------------------------- */
+
 static PyObject *newrelic_wrap_pre_function(PyObject *self, PyObject *args,
                                             PyObject *kwds)
 {
     const char *module_name = NULL;
     const char *class_name = NULL;
     const char *object_name = NULL;
-    PyObject *function = NULL;
+    PyObject *function_object = NULL;
     PyObject *run_once = NULL;
+
+    PyObject *wrapped_object = NULL;
+    PyObject *parent_object = NULL;
+    const char *attribute_name = NULL;
+
+    NRPreFunctionObject *wrapper_object = NULL;
+
+    PyObject *result = NULL;
 
     static char *kwlist[] = { "module_name", "class_name", "object_name",
                               "function", "run_once", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO|i!:wrap_pre_function",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO|O!:wrap_pre_function",
                                      kwlist, &module_name, &class_name,
-                                     &object_name, &function, &PyBool_Type,
-                                     &run_once)) {
+                                     &object_name, &function_object,
+                                     &PyBool_Type, &run_once)) {
         return NULL;
     }
 
@@ -239,9 +263,30 @@ static PyObject *newrelic_wrap_pre_function(PyObject *self, PyObject *args,
         return NULL;
     }
 
-    return NRPreFunction_Wrap(module_name, class_name, object_name,
-                              function, (run_once == Py_True));
+    wrapped_object = NRUtilities_LookupCallable(module_name, class_name,
+                                                 object_name, &parent_object,
+                                                 &attribute_name);
+
+    if (!wrapped_object)
+        return NULL;
+
+    wrapper_object = (NRPreFunctionObject *)PyObject_CallFunctionObjArgs(
+            (PyObject *)&NRPreFunction_Type, wrapped_object, function_object,
+            (run_once ? Py_True : Py_False), NULL);
+
+    result = NRUtilities_ReplaceWithWrapper(parent_object, attribute_name,
+                                            (PyObject *)wrapper_object);
+
+    Py_DECREF(parent_object);
+    Py_DECREF(wrapped_object);
+
+    if (!result)
+        return NULL;
+
+    return (PyObject *)wrapper_object;
 }
+
+/* ------------------------------------------------------------------------- */
 
 static PyObject *newrelic_shutdown(PyObject *self, PyObject *args)
 {
@@ -268,6 +313,8 @@ static PyObject *newrelic_shutdown(PyObject *self, PyObject *args)
     Py_INCREF(Py_None);
     return Py_None;
 }
+
+/* ------------------------------------------------------------------------- */
 
 static PyMethodDef *newrelic_lookup_function(const char *mname,
                                              const char *cname,
@@ -523,6 +570,8 @@ static PyObject *newrelic_wrap_c_database_trace(PyObject *self, PyObject* args)
     return Py_None;
 }
 
+/* ------------------------------------------------------------------------- */
+
 static PyMethodDef newrelic_methods[] = {
     { "application",        (PyCFunction)newrelic_application,
                             METH_VARARGS|METH_KEYWORDS, 0 },
@@ -539,6 +588,8 @@ static PyMethodDef newrelic_methods[] = {
     { "wrap_c_database_trace", newrelic_wrap_c_database_trace, METH_VARARGS, 0 },
     { NULL, NULL }
 };
+
+/* ------------------------------------------------------------------------- */
 
 static PyMethodDef newrelic_method_shutdown = {
     "shutdown", newrelic_shutdown, METH_NOARGS, 0
@@ -596,6 +647,9 @@ init_newrelic(void)
     Py_INCREF(&NRMemcacheTrace_Type);
     PyModule_AddObject(module, "MemcacheTrace",
                        (PyObject *)&NRMemcacheTrace_Type);
+    Py_INCREF(&NRPreFunction_Type);
+    PyModule_AddObject(module, "PreFunction",
+                       (PyObject *)&NRPreFunction_Type);
     Py_INCREF(&NRWebTransaction_Type);
     PyModule_AddObject(module, "WebTransaction",
                        (PyObject *)&NRWebTransaction_Type);

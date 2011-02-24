@@ -29,6 +29,36 @@ static PyObject *NRPreFunction_new(PyTypeObject *type, PyObject *args,
 
 /* ------------------------------------------------------------------------- */
 
+static int NRPreFunction_init(NRPreFunctionObject *self, PyObject *args,
+                              PyObject *kwds)
+{
+    PyObject *wrapped_object = NULL;
+    PyObject *function_object = NULL;
+    PyObject *run_once = NULL;
+
+    static char *kwlist[] = { "wrapped", "function", "run_once", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO|O!:PreFunction",
+                                     kwlist, &wrapped_object, &function_object,
+                                     &PyBool_Type, &run_once)) {
+        return -1;
+    }
+
+    Py_INCREF(wrapped_object);
+    Py_XDECREF(self->wrapped_object);
+    self->wrapped_object = wrapped_object;
+
+    Py_INCREF(function_object);
+    Py_XDECREF(self->function_object);
+    self->function_object = function_object;
+
+    self->run_once = (run_once == Py_True);
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static void NRPreFunction_dealloc(NRPreFunctionObject *self)
 {
     Py_DECREF(self->wrapped_object);
@@ -44,12 +74,20 @@ static PyObject *NRPreFunction_call(NRPreFunctionObject *self,
 {
     PyObject *result = NULL;
 
-    result = PyObject_Call(self->function_object, args, kwds);
+    if (self->function_object) {
+        result = PyObject_Call(self->function_object, args, kwds);
 
-    if (!result)
-        return NULL;
+        if (self->run_once) {
+            self->run_once = 0;
+            Py_DECREF(self->function_object);
+            self->function_object = NULL;
+        }
 
-    Py_DECREF(result);
+        if (!result)
+            return NULL;
+
+        Py_DECREF(result);
+    }
 
     return PyObject_Call(self->wrapped_object, args, kwds);
 }
@@ -124,52 +162,12 @@ PyTypeObject NRPreFunction_Type = {
     NRPreFunction_descr_get, /*tp_descr_get*/
     0,                      /*tp_descr_set*/
     0,                      /*tp_dictoffset*/
-    0,                      /*tp_init*/
+    (initproc)NRPreFunction_init, /*tp_init*/
     0,                      /*tp_alloc*/
     NRPreFunction_new,      /*tp_new*/
     0,                      /*tp_free*/
     0,                      /*tp_is_gc*/
 };
-
-/* ------------------------------------------------------------------------- */
-
-PyObject *NRPreFunction_Wrap(const char *module_name, const char *class_name,
-                             const char *name, PyObject *function,
-                             int run_once)
-{
-    PyObject *result = NULL;
-
-    PyObject *callable_object = NULL;
-
-    PyObject *parent_object = NULL;
-    const char *attribute_name = NULL;
-
-    NRPreFunctionObject *wrapper_object = NULL;
-
-    callable_object = NRUtilities_LookupCallable(module_name, class_name,
-                                                 name, &parent_object,
-                                                 &attribute_name);
-
-    if (!callable_object)
-        return NULL;
-
-    wrapper_object = (NRPreFunctionObject *)PyObject_CallObject(
-            (PyObject *)&NRPreFunction_Type, NULL);
-
-    wrapper_object->wrapped_object = callable_object;
-
-    Py_INCREF(function);
-
-    wrapper_object->function_object = function;
-    wrapper_object->run_once = run_once;
-
-    result = NRUtilities_ReplaceWithWrapper(parent_object, attribute_name,
-                                            (PyObject *)wrapper_object);
-
-    Py_DECREF(parent_object);
-
-    return (PyObject *)wrapper_object;
-}
 
 /* ------------------------------------------------------------------------- */
 

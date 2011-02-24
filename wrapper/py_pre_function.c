@@ -54,6 +54,12 @@ static int NRPreFunction_init(NRPreFunctionObject *self, PyObject *args,
 
     self->run_once = (run_once == Py_True);
 
+    /*
+     * TODO This should set __module__, __name__, __doc__ and
+     * update __dict__ to preserve introspection capabilities.
+     * See @wraps in functools of recent Python versions.
+     */
+
     return 0;
 }
 

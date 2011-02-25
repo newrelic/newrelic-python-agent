@@ -21,6 +21,7 @@
 /* ------------------------------------------------------------------------- */
 
 static int NRTransaction_tls_key = 0;
+static nrthread_mutex_t NRTransaction_exit_mutex;
 
 /* ------------------------------------------------------------------------- */
 
@@ -47,10 +48,17 @@ static PyObject *NRTransaction_new(PyTypeObject *type, PyObject *args,
      * Initialise thread local storage if necessary. Do this
      * here rather than init method as technically the latter
      * may not be called.
+     *
+     * TODO Also initialise mutex for __exit__() function
+     * used to get around thread safety issues in inner agent
+     * code. See https://www.pivotaltracker.com/projects/154789.
      */
 
-    if (!NRTransaction_tls_key)
+    if (!NRTransaction_tls_key) {
         NRTransaction_tls_key = PyThread_create_key();
+
+        nrthread_mutex_init(&NRTransaction_exit_mutex, NULL);
+    }
 
     /*
      * Allocate the transaction object and initialise it as per
@@ -314,11 +322,16 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
      * application as a parameter rather than internally
      * consulting the global variable referencing the current
      * application. See more details on Pivotal Tracker at
-     * https://www.pivotaltracker.com/projects/154789. Luckily
-     * we don't release the Python GIL through this section
-     * of code so rely on that to stop another thread from
-     * changing what the current application is set to.
+     * https://www.pivotaltracker.com/projects/154789. We use
+     * a local mutex to prevent multiple threads running
+     * through this critical section at this point. We release
+     * the Python GIL at this point in case inner agent code
+     * were ever to block.
      */
+
+    nrthread_mutex_lock(&NRTransaction_exit_mutex);
+
+    Py_BEGIN_ALLOW_THREADS
 
     nr__switch_to_application(application);
 
@@ -359,6 +372,10 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
                              &application->pending_harvest->errors);
 
     nrthread_mutex_unlock(&application->lock);
+
+    Py_END_ALLOW_THREADS
+
+    nrthread_mutex_unlock(&NRTransaction_exit_mutex);
 
     self->transaction_state = NR_TRANSACTION_STATE_STOPPED;
 

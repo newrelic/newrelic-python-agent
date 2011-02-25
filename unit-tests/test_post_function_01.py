@@ -14,13 +14,13 @@ _test_result = {}
 _test_count = 0
 _test_phase = None
 
-def _pre_function(*args, **kwargs):
+def _post_function(*args, **kwargs):
     global _test_result
     _test_result = (args, kwargs)
     global _test_count
     _test_count += 1
     global _test_phase
-    _test_phase = '_pre_function'
+    _test_phase = '_post_function'
     return args, kwargs
 
 def _test_function_1(*args, **kwargs):
@@ -45,25 +45,25 @@ class _test_class_2(object):
         _test_phase = '_test_class_2._test_function'
         return args, kwargs
 
-def _pre_function_decorator(pre_function, run_once=False):
+def _post_function_decorator(post_function, run_once=False):
     def decorator(function):
-        return _newrelic.PreFunction(function, pre_function, run_once)
+        return _newrelic.PreFunction(function, post_function, run_once)
     return decorator
 
 def _test_function_3(*args, **kwargs):
     global _test_phase
     _test_phase = '_test_function_3'
     return args, kwargs
-_test_function_3 = _pre_function_decorator(_pre_function)(_test_function_3)
+_test_function_3 = _post_function_decorator(_post_function)(_test_function_3)
 
 def _test_function_4(*args, **kwargs):
     global _test_phase
     _test_phase = '_test_function_4'
     return args, kwargs
-_test_function_4 = _pre_function_decorator(_pre_function,
+_test_function_4 = _post_function_decorator(_post_function,
                                            run_once=True)(_test_function_4)
 
-class PreFunctionTests01(unittest.TestCase):
+class PostFunctionTests01(unittest.TestCase):
 
     def setUp(self):
         _newrelic.log(_newrelic.LOG_DEBUG, "STARTING - %s" %
@@ -75,8 +75,8 @@ class PreFunctionTests01(unittest.TestCase):
 
     def test_wrap_function(self):
         o1 = _test_function_1
-        o2 = _newrelic.wrap_pre_function(__name__, None, '_test_function_1',
-                                         _pre_function)
+        o2 = _newrelic.wrap_post_function(__name__, None, '_test_function_1',
+                                          _post_function)
         self.assertEqual(o1, o2.__wrapped__)
 
         global _test_result
@@ -95,7 +95,7 @@ class PreFunctionTests01(unittest.TestCase):
 
         self.assertEqual(result, (args, kwargs)) 
         self.assertEqual(_test_result, (args, kwargs))
-        self.assertEqual(_test_phase, "_test_function_1")
+        self.assertEqual(_test_phase, "_post_function")
 
         result = _test_function_1(*args, **kwargs)
         result = _test_function_1(*args, **kwargs)
@@ -104,8 +104,8 @@ class PreFunctionTests01(unittest.TestCase):
 
     def test_wrap_old_style_class_method(self):
         o1 = _test_class_1._test_function
-        o2 = _newrelic.wrap_pre_function(__name__, '_test_class_1',
-                                         '_test_function', _pre_function)
+        o2 = _newrelic.wrap_post_function(__name__, '_test_class_1',
+                                          '_test_function', _post_function)
         self.assertEqual(o1, o2.__wrapped__)
 
         global _test_result
@@ -125,8 +125,8 @@ class PreFunctionTests01(unittest.TestCase):
 
     def test_wrap_new_style_class_method(self):
         o1 = _test_class_2._test_function
-        o2 = _newrelic.wrap_pre_function(__name__, '_test_class_2',
-                                         '_test_function', _pre_function)
+        o2 = _newrelic.wrap_post_function(__name__, '_test_class_2',
+                                          '_test_function', _post_function)
         self.assertEqual(o1, o2.__wrapped__)
 
         global _test_result
@@ -146,8 +146,8 @@ class PreFunctionTests01(unittest.TestCase):
 
     def test_wrap_capi_class_method(self):
         o1 = sqlite3.Cursor.execute
-        o2 = _newrelic.wrap_pre_function('sqlite3', 'Cursor', 'execute',
-                                         _pre_function)
+        o2 = _newrelic.wrap_post_function('sqlite3', 'Cursor', 'execute',
+                                          _post_function)
         self.assertEqual(o1, o2.__wrapped__)
 
         global _test_result
@@ -173,8 +173,8 @@ class PreFunctionTests01(unittest.TestCase):
 
     def test_wrap_run_once(self):
         o1 = _test_function_2
-        o2 = _newrelic.wrap_pre_function(__name__, None, '_test_function_2',
-                                         _pre_function, run_once=True)
+        o2 = _newrelic.wrap_post_function(__name__, None, '_test_function_2',
+                                          _post_function, run_once=True)
         self.assertEqual(o1, o2.__wrapped__)
 
         global _test_result

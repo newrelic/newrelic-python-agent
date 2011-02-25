@@ -309,12 +309,10 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
         }
     }
 
+    /* Stop the current transaction and then distill data. */
+
     nr_node_header__record_stoptime_and_pop_current(
             (nr_node_header *)self->transaction, NULL);
-
-    application = self->application->application;
-
-    nrthread_mutex_lock(&application->lock);
 
     /*
      * TODO Switching what the current application is here is a
@@ -325,18 +323,28 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
      * https://www.pivotaltracker.com/projects/154789. We use
      * a local mutex to prevent multiple threads running
      * through this critical section at this point. We release
-     * the Python GIL at this point in case inner agent code
-     * were ever to block.
+     * the Python GIL at this point just in case inner agent
+     * code were ever to take a long time or changed in some
+     * way that it may block because of forced socket operations.
+     * If that can never occur and processing of transaction
+     * is always quick, then could just use Python GIL for the
+     * purposes of excluding multiple threads from this section.
      */
+
+    application = self->application->application;
 
     nrthread_mutex_lock(&NRTransaction_exit_mutex);
 
-    Py_BEGIN_ALLOW_THREADS
+    nrthread_mutex_lock(&application->lock);
 
     nr__switch_to_application(application);
 
+    Py_BEGIN_ALLOW_THREADS
+
     keep_wt = nr__distill_web_transaction_into_harvest_data(
             self->transaction);
+
+    Py_END_ALLOW_THREADS
 
     /*
      * Only add request parameters and custom parameters into
@@ -362,6 +370,8 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
      * but then supressed within the code.
      */
 
+    Py_BEGIN_ALLOW_THREADS
+
     nr_transaction_error__process_errors(self->transaction_errors,
             application->pending_harvest->metrics);
 
@@ -371,9 +381,9 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
     nr__merge_errors_from_to(&self->transaction_errors,
                              &application->pending_harvest->errors);
 
-    nrthread_mutex_unlock(&application->lock);
-
     Py_END_ALLOW_THREADS
+
+    nrthread_mutex_unlock(&application->lock);
 
     nrthread_mutex_unlock(&NRTransaction_exit_mutex);
 

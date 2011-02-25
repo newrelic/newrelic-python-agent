@@ -142,14 +142,30 @@ static void NRTransaction_dealloc(NRTransactionObject *self)
             PyObject *args = NULL;
             PyObject *result = NULL;
 
+            PyObject *type = NULL;
+            PyObject *value = NULL;
+            PyObject *traceback = NULL;
+
+            int have_error = PyErr_Occurred() ? 1 : 0;
+
+            if (have_error)
+                PyErr_Fetch(&type, &value, &traceback);
+
             Py_INCREF(object);
 
             args = PyTuple_Pack(3, Py_None, Py_None, Py_None);
             result = PyObject_Call(object, args, NULL);
 
+            if (!result)
+                PyErr_WriteUnraisable(object);
+            else
+                Py_DECREF(result);
+
+            if (have_error)
+                PyErr_Restore(type, value, traceback);
+
             Py_DECREF(args);
             Py_DECREF(object);
-            Py_XDECREF(result);
         }
     }
 

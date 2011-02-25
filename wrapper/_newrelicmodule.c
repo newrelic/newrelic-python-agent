@@ -18,6 +18,7 @@
 #include "py_transaction.h"
 #include "py_web_transaction.h"
 
+#include "py_pass_function.h"
 #include "py_post_function.h"
 #include "py_pre_function.h"
 
@@ -227,6 +228,64 @@ static PyObject *newrelic_transaction(PyObject *self, PyObject *args)
 
     Py_INCREF(Py_None);
     return Py_None;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *newrelic_wrap_pass_function(PyObject *self, PyObject *args,
+                                             PyObject *kwds)
+{
+    const char *module_name = NULL;
+    const char *class_name = NULL;
+    const char *object_name = NULL;
+    PyObject *function_object = NULL;
+    PyObject *run_once = NULL;
+
+    PyObject *wrapped_object = NULL;
+    PyObject *parent_object = NULL;
+    const char *attribute_name = NULL;
+
+    NRPassFunctionObject *wrapper_object = NULL;
+
+    PyObject *result = NULL;
+
+    static char *kwlist[] = { "module_name", "class_name", "object_name",
+                              "function", "run_once", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO|O!:wrap_pass_function",
+                                     kwlist, &module_name, &class_name,
+                                     &object_name, &function_object,
+                                     &PyBool_Type, &run_once)) {
+        return NULL;
+    }
+
+    if (!class_name && !object_name) {
+        PyErr_SetString(PyExc_RuntimeError, "class or object name must be "
+                        "supplied");
+        return NULL;
+    }
+
+    wrapped_object = NRUtilities_LookupCallable(module_name, class_name,
+                                                 object_name, &parent_object,
+                                                 &attribute_name);
+
+    if (!wrapped_object)
+        return NULL;
+
+    wrapper_object = (NRPassFunctionObject *)PyObject_CallFunctionObjArgs(
+            (PyObject *)&NRPassFunction_Type, wrapped_object, function_object,
+            (run_once ? Py_True : Py_False), NULL);
+
+    result = NRUtilities_ReplaceWithWrapper(parent_object, attribute_name,
+                                            (PyObject *)wrapper_object);
+
+    Py_DECREF(parent_object);
+    Py_DECREF(wrapped_object);
+
+    if (!result)
+        return NULL;
+
+    return (PyObject *)wrapper_object;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -642,6 +701,8 @@ static PyMethodDef newrelic_methods[] = {
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "transaction",        (PyCFunction)newrelic_transaction,
                             METH_NOARGS, 0 },
+    { "wrap_pass_function", (PyCFunction)newrelic_wrap_pass_function,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
     { "wrap_post_function", (PyCFunction)newrelic_wrap_post_function,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "wrap_pre_function", (PyCFunction)newrelic_wrap_pre_function,
@@ -688,6 +749,8 @@ init_newrelic(void)
         return;
     if (PyType_Ready(&NRWebTransaction_Type) < 0)
         return;
+    if (PyType_Ready(&NRPassFunction_Type) < 0)
+        return;
     if (PyType_Ready(&NRPostFunction_Type) < 0)
         return;
     if (PyType_Ready(&NRPreFunction_Type) < 0)
@@ -713,6 +776,9 @@ init_newrelic(void)
     Py_INCREF(&NRWebTransaction_Type);
     PyModule_AddObject(module, "WebTransaction",
                        (PyObject *)&NRWebTransaction_Type);
+    Py_INCREF(&NRPassFunction_Type);
+    PyModule_AddObject(module, "PassFunction",
+                       (PyObject *)&NRPassFunction_Type);
     Py_INCREF(&NRPostFunction_Type);
     PyModule_AddObject(module, "PostFunction",
                        (PyObject *)&NRPostFunction_Type);

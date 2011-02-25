@@ -10,7 +10,7 @@ settings = _newrelic.settings()
 settings.logfile = "%s.log" % __file__
 settings.loglevel = _newrelic.LOG_VERBOSEDEBUG
 
-_test_result = {}
+_test_result = None
 _test_count = 0
 _test_phase = None
 
@@ -80,7 +80,7 @@ class PostFunctionTests01(unittest.TestCase):
         self.assertEqual(o1, o2.__wrapped__)
 
         global _test_result
-        _test_result = {}
+        _test_result = None
 
         global _test_count
         _test_count = 0
@@ -109,7 +109,7 @@ class PostFunctionTests01(unittest.TestCase):
         self.assertEqual(o1, o2.__wrapped__)
 
         global _test_result
-        _test_result = {}
+        _test_result = None
 
         global _test_count
         _test_count = 0
@@ -130,7 +130,7 @@ class PostFunctionTests01(unittest.TestCase):
         self.assertEqual(o1, o2.__wrapped__)
 
         global _test_result
-        _test_result = {}
+        _test_result = None
 
         global _test_count
         _test_count = 0
@@ -151,7 +151,7 @@ class PostFunctionTests01(unittest.TestCase):
         self.assertEqual(o1, o2.__wrapped__)
 
         global _test_result
-        _test_result = {}
+        _test_result = None
 
         global _test_count
         _test_count = 0
@@ -178,7 +178,7 @@ class PostFunctionTests01(unittest.TestCase):
         self.assertEqual(o1, o2.__wrapped__)
 
         global _test_result
-        _test_result = {}
+        _test_result = None
 
         global _test_count
         _test_count = 0
@@ -198,7 +198,7 @@ class PostFunctionTests01(unittest.TestCase):
 
     def test_decorator(self):
         global _test_result
-        _test_result = {}
+        _test_result = None
 
         global _test_count
         _test_count = 0
@@ -218,7 +218,7 @@ class PostFunctionTests01(unittest.TestCase):
 
     def test_decorator_run_once(self):
         global _test_result
-        _test_result = {}
+        _test_result = None
 
         global _test_count
         _test_count = 0

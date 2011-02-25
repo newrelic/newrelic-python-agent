@@ -91,7 +91,7 @@ def _pass_resolver_resolve(result):
 
 def _fixup_resolver(resolver, *args, **kwargs):
     function = resolver.resolve
-    wrapper = _newrelic.PassFunction(function, _pass_resolver_resolve)
+    wrapper = _newrelic.PassFunctionWrapper(function, _pass_resolver_resolve)
     resolver.resolve = wrapper
 
 def _fixup_exception(handler, request, resolver, exc_info):
@@ -108,21 +108,24 @@ def _instrument(application):
     settings['django.path'] = os.path.dirname(django.__file__)
 
     _wrap_wsgi_application('django.core.handlers.wsgi', 'WSGIHandler',
-                          '__call__', application)
+                           '__call__', application)
 
     _newrelic.wrap_post_function('django.core.handlers.base','BaseHandler',
-                        'load_middleware', _fixup_middleware, run_once=True)
+                                 'load_middleware', _fixup_middleware,
+                                 run_once=True)
 
     _newrelic.wrap_post_function('django.core.urlresolvers','RegexURLPattern',
-                        '__init__', _fixup_resolver)
+                                 '__init__', _fixup_resolver)
 
     _newrelic.wrap_pre_function('django.core.handlers.wsgi', 'WSGIHandler',
-                          'handle_uncaught_exception', _fixup_exception)
+                                'handle_uncaught_exception', _fixup_exception)
 
     if django.VERSION < (1, 3, 0):
-        _wrap_function_trace('django.template', 'Template', 'render', scope='Template')
+        _wrap_function_trace('django.template', 'Template', 'render',
+                             scope='Template')
     else:
-        _wrap_function_trace('django.template.base', 'Template', 'render', scope='Template')
+        _wrap_function_trace('django.template.base', 'Template', 'render',
+                             scope='Template')
 
     _wrap_function_trace('django.template.loader', None,
                          'find_template_loader', scope='Template')

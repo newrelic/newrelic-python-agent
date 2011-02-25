@@ -47,7 +47,7 @@ class _test_class_2(object):
 
 def _pass_function_decorator(pass_function, run_once=False):
     def decorator(function):
-        return _newrelic.PassFunction(function, pass_function, run_once)
+        return _newrelic.PassFunctionWrapper(function, pass_function, run_once)
     return decorator
 
 def _test_function_3(*args, **kwargs):

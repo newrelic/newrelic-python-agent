@@ -47,7 +47,7 @@ class _test_class_2(object):
 
 def _post_function_decorator(post_function, run_once=False):
     def decorator(function):
-        return _newrelic.PreFunction(function, post_function, run_once)
+        return _newrelic.PostFunctionWrapper(function, post_function, run_once)
     return decorator
 
 def _test_function_3(*args, **kwargs):

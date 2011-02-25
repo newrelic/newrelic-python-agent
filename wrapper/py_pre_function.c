@@ -10,12 +10,12 @@
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRPreFunction_new(PyTypeObject *type, PyObject *args,
-                                       PyObject *kwds)
+static PyObject *NRPreFunctionWrapper_new(PyTypeObject *type,
+                                          PyObject *args, PyObject *kwds)
 {
-    NRPreFunctionObject *self;
+    NRPreFunctionWrapperObject *self;
 
-    self = (NRPreFunctionObject *)type->tp_alloc(type, 0);
+    self = (NRPreFunctionWrapperObject *)type->tp_alloc(type, 0);
 
     if (!self)
         return NULL;
@@ -29,8 +29,8 @@ static PyObject *NRPreFunction_new(PyTypeObject *type, PyObject *args,
 
 /* ------------------------------------------------------------------------- */
 
-static int NRPreFunction_init(NRPreFunctionObject *self, PyObject *args,
-                              PyObject *kwds)
+static int NRPreFunctionWrapper_init(NRPreFunctionWrapperObject *self,
+                                     PyObject *args, PyObject *kwds)
 {
     PyObject *wrapped_object = NULL;
     PyObject *function_object = NULL;
@@ -38,7 +38,7 @@ static int NRPreFunction_init(NRPreFunctionObject *self, PyObject *args,
 
     static char *kwlist[] = { "wrapped", "function", "run_once", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO|O!:PreFunction",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO|O!:PreFunctionWrapper",
                                      kwlist, &wrapped_object, &function_object,
                                      &PyBool_Type, &run_once)) {
         return -1;
@@ -65,7 +65,7 @@ static int NRPreFunction_init(NRPreFunctionObject *self, PyObject *args,
 
 /* ------------------------------------------------------------------------- */
 
-static void NRPreFunction_dealloc(NRPreFunctionObject *self)
+static void NRPreFunctionWrapper_dealloc(NRPreFunctionWrapperObject *self)
 {
     Py_DECREF(self->wrapped_object);
     Py_XDECREF(self->function_object);
@@ -75,8 +75,8 @@ static void NRPreFunction_dealloc(NRPreFunctionObject *self)
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRPreFunction_call(NRPreFunctionObject *self,
-                                        PyObject *args, PyObject *kwds)
+static PyObject *NRPreFunctionWrapper_call(NRPreFunctionWrapperObject *self,
+                                           PyObject *args, PyObject *kwds)
 {
     if (self->function_object) {
         PyObject *function_result = NULL;
@@ -100,8 +100,8 @@ static PyObject *NRPreFunction_call(NRPreFunctionObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRPreFunction_get_wrapped(NRPreFunctionObject *self,
-                                           void *closure)
+static PyObject *NRPreFunctionWrapper_get_wrapped(
+        NRPreFunctionWrapperObject *self, void *closure)
 {
     Py_INCREF(self->wrapped_object);
     return self->wrapped_object;
@@ -109,9 +109,9 @@ static PyObject *NRPreFunction_get_wrapped(NRPreFunctionObject *self,
  
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRPreFunction_descr_get(PyObject *function,
-                                             PyObject *object,
-                                             PyObject *type)
+static PyObject *NRPreFunctionWrapper_descr_get(PyObject *function,
+                                                PyObject *object,
+                                                PyObject *type)
 {
     if (object == Py_None)
         object = NULL;
@@ -125,19 +125,19 @@ static PyObject *NRPreFunction_descr_get(PyObject *function,
 #define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
 #endif
 
-static PyGetSetDef NRPreFunction_getset[] = {
-    { "__wrapped__",        (getter)NRPreFunction_get_wrapped,
+static PyGetSetDef NRPreFunctionWrapper_getset[] = {
+    { "__wrapped__",        (getter)NRPreFunctionWrapper_get_wrapped,
                             NULL, 0 },
     { NULL },
 };
 
-PyTypeObject NRPreFunction_Type = {
+PyTypeObject NRPreFunctionWrapper_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "_newrelic.PreFunction", /*tp_name*/
-    sizeof(NRPreFunctionObject), /*tp_basicsize*/
+    "_newrelic.PreFunctionWrapper", /*tp_name*/
+    sizeof(NRPreFunctionWrapperObject), /*tp_basicsize*/
     0,                      /*tp_itemsize*/
     /* methods */
-    (destructor)NRPreFunction_dealloc, /*tp_dealloc*/
+    (destructor)NRPreFunctionWrapper_dealloc, /*tp_dealloc*/
     0,                      /*tp_print*/
     0,                      /*tp_getattr*/
     0,                      /*tp_setattr*/
@@ -147,7 +147,7 @@ PyTypeObject NRPreFunction_Type = {
     0,                      /*tp_as_sequence*/
     0,                      /*tp_as_mapping*/
     0,                      /*tp_hash*/
-    (ternaryfunc)NRPreFunction_call, /*tp_call*/
+    (ternaryfunc)NRPreFunctionWrapper_call, /*tp_call*/
     0,                      /*tp_str*/
     0,                      /*tp_getattro*/
     0,                      /*tp_setattro*/
@@ -162,15 +162,15 @@ PyTypeObject NRPreFunction_Type = {
     0,                      /*tp_iternext*/
     0,                      /*tp_methods*/
     0,                      /*tp_members*/
-    NRPreFunction_getset,   /*tp_getset*/
+    NRPreFunctionWrapper_getset, /*tp_getset*/
     0,                      /*tp_base*/
     0,                      /*tp_dict*/
-    NRPreFunction_descr_get, /*tp_descr_get*/
+    NRPreFunctionWrapper_descr_get, /*tp_descr_get*/
     0,                      /*tp_descr_set*/
     0,                      /*tp_dictoffset*/
-    (initproc)NRPreFunction_init, /*tp_init*/
+    (initproc)NRPreFunctionWrapper_init, /*tp_init*/
     0,                      /*tp_alloc*/
-    NRPreFunction_new,      /*tp_new*/
+    NRPreFunctionWrapper_new, /*tp_new*/
     0,                      /*tp_free*/
     0,                      /*tp_is_gc*/
 };

@@ -16,9 +16,9 @@ typedef struct {
     PyObject *wrapped_object;
     PyObject *function_object;
     int run_once;
-} NRPostFunctionObject;
+} NRPostFunctionWrapperObject;
 
-extern PyTypeObject NRPostFunction_Type;
+extern PyTypeObject NRPostFunctionWrapper_Type;
 
 /* ------------------------------------------------------------------------- */
 

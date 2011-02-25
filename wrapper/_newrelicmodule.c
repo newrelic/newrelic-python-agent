@@ -245,7 +245,7 @@ static PyObject *newrelic_wrap_pass_function(PyObject *self, PyObject *args,
     PyObject *parent_object = NULL;
     const char *attribute_name = NULL;
 
-    NRPassFunctionObject *wrapper_object = NULL;
+    NRPassFunctionWrapperObject *wrapper_object = NULL;
 
     PyObject *result = NULL;
 
@@ -272,8 +272,8 @@ static PyObject *newrelic_wrap_pass_function(PyObject *self, PyObject *args,
     if (!wrapped_object)
         return NULL;
 
-    wrapper_object = (NRPassFunctionObject *)PyObject_CallFunctionObjArgs(
-            (PyObject *)&NRPassFunction_Type, wrapped_object, function_object,
+    wrapper_object = (NRPassFunctionWrapperObject *)PyObject_CallFunctionObjArgs(
+            (PyObject *)&NRPassFunctionWrapper_Type, wrapped_object, function_object,
             (run_once ? Py_True : Py_False), NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object, attribute_name,
@@ -303,7 +303,7 @@ static PyObject *newrelic_wrap_post_function(PyObject *self, PyObject *args,
     PyObject *parent_object = NULL;
     const char *attribute_name = NULL;
 
-    NRPostFunctionObject *wrapper_object = NULL;
+    NRPostFunctionWrapperObject *wrapper_object = NULL;
 
     PyObject *result = NULL;
 
@@ -330,8 +330,8 @@ static PyObject *newrelic_wrap_post_function(PyObject *self, PyObject *args,
     if (!wrapped_object)
         return NULL;
 
-    wrapper_object = (NRPostFunctionObject *)PyObject_CallFunctionObjArgs(
-            (PyObject *)&NRPostFunction_Type, wrapped_object, function_object,
+    wrapper_object = (NRPostFunctionWrapperObject *)PyObject_CallFunctionObjArgs(
+            (PyObject *)&NRPostFunctionWrapper_Type, wrapped_object, function_object,
             (run_once ? Py_True : Py_False), NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object, attribute_name,
@@ -361,7 +361,7 @@ static PyObject *newrelic_wrap_pre_function(PyObject *self, PyObject *args,
     PyObject *parent_object = NULL;
     const char *attribute_name = NULL;
 
-    NRPreFunctionObject *wrapper_object = NULL;
+    NRPreFunctionWrapperObject *wrapper_object = NULL;
 
     PyObject *result = NULL;
 
@@ -388,8 +388,8 @@ static PyObject *newrelic_wrap_pre_function(PyObject *self, PyObject *args,
     if (!wrapped_object)
         return NULL;
 
-    wrapper_object = (NRPreFunctionObject *)PyObject_CallFunctionObjArgs(
-            (PyObject *)&NRPreFunction_Type, wrapped_object, function_object,
+    wrapper_object = (NRPreFunctionWrapperObject *)PyObject_CallFunctionObjArgs(
+            (PyObject *)&NRPreFunctionWrapper_Type, wrapped_object, function_object,
             (run_once ? Py_True : Py_False), NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object, attribute_name,
@@ -749,11 +749,11 @@ init_newrelic(void)
         return;
     if (PyType_Ready(&NRWebTransaction_Type) < 0)
         return;
-    if (PyType_Ready(&NRPassFunction_Type) < 0)
+    if (PyType_Ready(&NRPassFunctionWrapper_Type) < 0)
         return;
-    if (PyType_Ready(&NRPostFunction_Type) < 0)
+    if (PyType_Ready(&NRPostFunctionWrapper_Type) < 0)
         return;
-    if (PyType_Ready(&NRPreFunction_Type) < 0)
+    if (PyType_Ready(&NRPreFunctionWrapper_Type) < 0)
         return;
 
     /* Initialise type objects. */
@@ -776,15 +776,15 @@ init_newrelic(void)
     Py_INCREF(&NRWebTransaction_Type);
     PyModule_AddObject(module, "WebTransaction",
                        (PyObject *)&NRWebTransaction_Type);
-    Py_INCREF(&NRPassFunction_Type);
-    PyModule_AddObject(module, "PassFunction",
-                       (PyObject *)&NRPassFunction_Type);
-    Py_INCREF(&NRPostFunction_Type);
-    PyModule_AddObject(module, "PostFunction",
-                       (PyObject *)&NRPostFunction_Type);
-    Py_INCREF(&NRPreFunction_Type);
-    PyModule_AddObject(module, "PreFunction",
-                       (PyObject *)&NRPreFunction_Type);
+    Py_INCREF(&NRPassFunctionWrapper_Type);
+    PyModule_AddObject(module, "PassFunctionWrapper",
+                       (PyObject *)&NRPassFunctionWrapper_Type);
+    Py_INCREF(&NRPostFunctionWrapper_Type);
+    PyModule_AddObject(module, "PostFunctionWrapper",
+                       (PyObject *)&NRPostFunctionWrapper_Type);
+    Py_INCREF(&NRPreFunctionWrapper_Type);
+    PyModule_AddObject(module, "PreFunctionWrapper",
+                       (PyObject *)&NRPreFunctionWrapper_Type);
 
     /* Initialise module constants. */
 

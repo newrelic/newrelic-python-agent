@@ -45,11 +45,6 @@ class _test_class_2(object):
         _test_phase = '_test_class_2._test_function'
         return args, kwargs
 
-def _pass_function_decorator(pass_function, run_once=False):
-    def decorator(function):
-        return _newrelic.PassFunctionWrapper(function, pass_function, run_once)
-    return decorator
-
 #@_newrelic.pass_function(_pass_function)
 def _test_function_3(*args, **kwargs):
     global _test_phase

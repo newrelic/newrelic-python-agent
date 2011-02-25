@@ -38,28 +38,6 @@ def _object_path(mname, cname, fname):
 
     return path
 
-# TODO These should set __module__, __name__, __doc__ and update
-# __dict__ to preserve introspection capabilities. See @wraps in
-# functools of recent Python versions.
-
-def _pre_function(pre_function):
-    def decorator(function):
-        def wrapper(*args, **kwargs):
-            pre_function(*args, **kwargs)
-            result = function(*args, **kwargs)
-            return result
-        return wrapper
-    return decorator
-
-def _post_function(post_function):
-    def decorator(function):
-        def wrapper(*args, **kwargs):
-            result = function(*args, **kwargs)
-            post_function(*args, **kwargs)
-            return result
-        return wrapper
-    return decorator
-
 def _wrap_wsgi_application(mname, cname, fname, application):
     parent, name, object = _load_object(mname, cname, fname)
     wrapper = wsgi_application(application)(object)

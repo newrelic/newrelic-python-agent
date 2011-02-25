@@ -240,7 +240,7 @@ static PyObject *newrelic_pass_function(PyObject *self, PyObject *args,
 
     static char *kwlist[] = { "function", "run_once", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O!:wrap_pass_function",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O!:pass_function",
                                      kwlist, &function_object, &PyBool_Type,
                                      &run_once)) {
         return NULL;
@@ -310,6 +310,26 @@ static PyObject *newrelic_wrap_pass_function(PyObject *self, PyObject *args,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *newrelic_post_function(PyObject *self, PyObject *args,
+                                        PyObject *kwds)
+{
+    PyObject *function_object = NULL;
+    PyObject *run_once = NULL;
+
+    static char *kwlist[] = { "function", "run_once", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O!:post_function",
+                                     kwlist, &function_object, &PyBool_Type,
+                                     &run_once)) {
+        return NULL;
+    }
+
+    return PyObject_CallFunctionObjArgs((PyObject *)
+            &NRPostFunctionDecorator_Type, function_object, run_once, NULL);
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *newrelic_wrap_post_function(PyObject *self, PyObject *args,
                                              PyObject *kwds)
 {
@@ -364,6 +384,26 @@ static PyObject *newrelic_wrap_post_function(PyObject *self, PyObject *args,
         return NULL;
 
     return wrapper_object;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *newrelic_pre_function(PyObject *self, PyObject *args,
+                                       PyObject *kwds)
+{
+    PyObject *function_object = NULL;
+    PyObject *run_once = NULL;
+
+    static char *kwlist[] = { "function", "run_once", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O!:pre_function",
+                                     kwlist, &function_object, &PyBool_Type,
+                                     &run_once)) {
+        return NULL;
+    }
+
+    return PyObject_CallFunctionObjArgs((PyObject *)
+            &NRPreFunctionDecorator_Type, function_object, run_once, NULL);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -725,7 +765,11 @@ static PyMethodDef newrelic_methods[] = {
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "wrap_pass_function", (PyCFunction)newrelic_wrap_pass_function,
                             METH_VARARGS|METH_KEYWORDS, 0 },
+    { "post_function",      (PyCFunction)newrelic_post_function,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
     { "wrap_post_function", (PyCFunction)newrelic_wrap_post_function,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
+    { "pre_function",      (PyCFunction)newrelic_pre_function,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "wrap_pre_function", (PyCFunction)newrelic_wrap_pre_function,
                             METH_VARARGS|METH_KEYWORDS, 0 },
@@ -775,7 +819,11 @@ init_newrelic(void)
         return;
     if (PyType_Ready(&NRPassFunctionWrapper_Type) < 0)
         return;
+    if (PyType_Ready(&NRPostFunctionDecorator_Type) < 0)
+        return;
     if (PyType_Ready(&NRPostFunctionWrapper_Type) < 0)
+        return;
+    if (PyType_Ready(&NRPreFunctionDecorator_Type) < 0)
         return;
     if (PyType_Ready(&NRPreFunctionWrapper_Type) < 0)
         return;
@@ -802,13 +850,19 @@ init_newrelic(void)
                        (PyObject *)&NRWebTransaction_Type);
     Py_INCREF(&NRPassFunctionDecorator_Type);
     PyModule_AddObject(module, "PassFunctionDecorator",
-                       (PyObject *)&NRPassFunctionWrapper_Type);
+                       (PyObject *)&NRPassFunctionDecorator_Type);
     Py_INCREF(&NRPassFunctionWrapper_Type);
     PyModule_AddObject(module, "PassFunctionWrapper",
                        (PyObject *)&NRPassFunctionWrapper_Type);
+    Py_INCREF(&NRPostFunctionDecorator_Type);
+    PyModule_AddObject(module, "PostFunctionDecorator",
+                       (PyObject *)&NRPostFunctionDecorator_Type);
     Py_INCREF(&NRPostFunctionWrapper_Type);
     PyModule_AddObject(module, "PostFunctionWrapper",
                        (PyObject *)&NRPostFunctionWrapper_Type);
+    Py_INCREF(&NRPreFunctionDecorator_Type);
+    PyModule_AddObject(module, "PreFunctionDecorator",
+                       (PyObject *)&NRPreFunctionDecorator_Type);
     Py_INCREF(&NRPreFunctionWrapper_Type);
     PyModule_AddObject(module, "PreFunctionWrapper",
                        (PyObject *)&NRPreFunctionWrapper_Type);

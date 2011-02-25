@@ -45,23 +45,20 @@ class _test_class_2(object):
         _test_phase = '_test_class_2._test_function'
         return args, kwargs
 
-def _post_function_decorator(post_function, run_once=False):
-    def decorator(function):
-        return _newrelic.PostFunctionWrapper(function, post_function, run_once)
-    return decorator
-
+@_newrelic.post_function(_post_function)
 def _test_function_3(*args, **kwargs):
     global _test_phase
     _test_phase = '_test_function_3'
     return args, kwargs
-_test_function_3 = _post_function_decorator(_post_function)(_test_function_3)
+#_test_function_3 = _newrelic.post_function(_post_function)(_test_function_3)
 
+@_newrelic.post_function(_post_function, run_once=True)
 def _test_function_4(*args, **kwargs):
     global _test_phase
     _test_phase = '_test_function_4'
     return args, kwargs
-_test_function_4 = _post_function_decorator(_post_function,
-                                           run_once=True)(_test_function_4)
+#_test_function_4 = _newrelic.post_function(_post_function,
+#                                           run_once=True)(_test_function_4)
 
 class PostFunctionTests01(unittest.TestCase):
 

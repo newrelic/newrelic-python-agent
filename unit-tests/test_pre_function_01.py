@@ -45,23 +45,20 @@ class _test_class_2(object):
         _test_phase = '_test_class_2._test_function'
         return args, kwargs
 
-def _pre_function_decorator(pre_function, run_once=False):
-    def decorator(function):
-        return _newrelic.PreFunctionWrapper(function, pre_function, run_once)
-    return decorator
-
+#@_newrelic.pre_function(_pre_function)
 def _test_function_3(*args, **kwargs):
     global _test_phase
     _test_phase = '_test_function_3'
     return args, kwargs
-_test_function_3 = _pre_function_decorator(_pre_function)(_test_function_3)
+_test_function_3 = _newrelic.pre_function(_pre_function)(_test_function_3)
 
+#@_newrelic.pre_function(_pre_function, run_once=True)
 def _test_function_4(*args, **kwargs):
     global _test_phase
     _test_phase = '_test_function_4'
     return args, kwargs
-_test_function_4 = _pre_function_decorator(_pre_function,
-                                           run_once=True)(_test_function_4)
+_test_function_4 = _newrelic.pre_function(_pre_function,
+                                          run_once=True)(_test_function_4)
 
 class PreFunctionTests01(unittest.TestCase):
 

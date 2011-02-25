@@ -20,6 +20,14 @@ typedef struct {
 
 extern PyTypeObject NRPostFunctionWrapper_Type;
 
+typedef struct {
+    PyObject_HEAD
+    PyObject *function_object;
+    int run_once;
+} NRPostFunctionDecoratorObject;
+
+extern PyTypeObject NRPostFunctionDecorator_Type;
+
 /* ------------------------------------------------------------------------- */
 
 #endif

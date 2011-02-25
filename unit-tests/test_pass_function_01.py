@@ -50,17 +50,19 @@ def _pass_function_decorator(pass_function, run_once=False):
         return _newrelic.PassFunctionWrapper(function, pass_function, run_once)
     return decorator
 
+#@_newrelic.pass_function(_pass_function)
 def _test_function_3(*args, **kwargs):
     global _test_phase
     _test_phase = '_test_function_3'
     return args, kwargs
-_test_function_3 = _pass_function_decorator(_pass_function)(_test_function_3)
+_test_function_3 = _newrelic.pass_function(_pass_function)(_test_function_3)
 
+#@_newrelic.pass_function(_pass_function, run_once=True)
 def _test_function_4(*args, **kwargs):
     global _test_phase
     _test_phase = '_test_function_4'
     return args, kwargs
-_test_function_4 = _pass_function_decorator(_pass_function,
+_test_function_4 = _newrelic.pass_function(_pass_function,
                                            run_once=True)(_test_function_4)
 
 class PassFunctionTests01(unittest.TestCase):

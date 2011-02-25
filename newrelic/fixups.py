@@ -60,13 +60,6 @@ def _post_function(post_function):
         return wrapper
     return decorator
 
-def _pass_function(pass_function):
-    def decorator(function):
-        def wrapper(*args, **kwargs):
-            return pass_function(function(*args, **kwargs))
-        return wrapper
-    return decorator
-
 def _wrap_wsgi_application(mname, cname, fname, application):
     parent, name, object = _load_object(mname, cname, fname)
     wrapper = wsgi_application(application)(object)

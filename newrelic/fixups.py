@@ -51,11 +51,6 @@ def _pre_function(pre_function):
         return wrapper
     return decorator
 
-def _wrap_pre_function(mname, cname, fname, function):
-    parent, name, object = _load_object(mname, cname, fname)
-    wrapper = _pre_function(function)(object)
-    setattr(parent, name, wrapper)
-
 def _post_function(post_function):
     def decorator(function):
         def wrapper(*args, **kwargs):
@@ -65,22 +60,12 @@ def _post_function(post_function):
         return wrapper
     return decorator
 
-def _wrap_post_function(mname, cname, fname, function):
-    parent, name, object = _load_object(mname, cname, fname)
-    wrapper = _post_function(function)(object)
-    setattr(parent, name, wrapper)
-
 def _pass_function(pass_function):
     def decorator(function):
         def wrapper(*args, **kwargs):
             return pass_function(function(*args, **kwargs))
         return wrapper
     return decorator
-
-def _wrap_pass_function(mname, cname, fname, function):
-    parent, name, object = _load_object(mname, cname, fname)
-    wrapper = _pass_function(function)(object)
-    setattr(parent, name, wrapper)
 
 def _wrap_wsgi_application(mname, cname, fname, application):
     parent, name, object = _load_object(mname, cname, fname)

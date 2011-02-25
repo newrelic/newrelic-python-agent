@@ -5,9 +5,7 @@ import traceback
 
 import _newrelic
 
-from fixups import (_wrap_pre_function, _wrap_post_function,
-                    _wrap_wsgi_application, _pass_function,
-                   _wrap_function_trace)
+from fixups import (_wrap_wsgi_application, _wrap_function_trace)
 from decorators import function_trace
 
 # TODO Database cursors.
@@ -93,7 +91,7 @@ def _pass_resolver_resolve(result):
 
 def _fixup_resolver(resolver, *args, **kwargs):
     function = resolver.resolve
-    wrapper = _pass_function(_pass_resolver_resolve)(function)
+    wrapper = _newrelic.PassFunction(function, _pass_resolver_resolve)
     resolver.resolve = wrapper
 
 def _fixup_exception(handler, request, resolver, exc_info):
@@ -112,13 +110,13 @@ def _instrument(application):
     _wrap_wsgi_application('django.core.handlers.wsgi', 'WSGIHandler',
                           '__call__', application)
 
-    _wrap_post_function('django.core.handlers.base','BaseHandler',
-                        'load_middleware', _fixup_middleware)
+    _newrelic.wrap_post_function('django.core.handlers.base','BaseHandler',
+                        'load_middleware', _fixup_middleware, run_once=True)
 
-    _wrap_post_function('django.core.urlresolvers','RegexURLPattern',
+    _newrelic.wrap_post_function('django.core.urlresolvers','RegexURLPattern',
                         '__init__', _fixup_resolver)
 
-    _wrap_pre_function('django.core.handlers.wsgi', 'WSGIHandler',
+    _newrelic.wrap_pre_function('django.core.handlers.wsgi', 'WSGIHandler',
                           'handle_uncaught_exception', _fixup_exception)
 
     if django.VERSION < (1, 3, 0):

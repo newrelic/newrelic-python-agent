@@ -232,6 +232,79 @@ static PyObject *newrelic_transaction(PyObject *self, PyObject *args)
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *newrelic_database_trace(PyObject *self, PyObject *args,
+                                         PyObject *kwds)
+{
+    PyObject *argnum = NULL;
+
+    static char *kwlist[] = { "argnum", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!:database_trace",
+                                     kwlist, &PyInt_Type, &argnum)) {
+        return NULL;
+    }
+
+    return PyObject_CallFunctionObjArgs((PyObject *)
+            &NRDatabaseTraceDecorator_Type, argnum, NULL);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *newrelic_wrap_database_trace(PyObject *self, PyObject *args,
+                                              PyObject *kwds)
+{
+    const char *module_name = NULL;
+    const char *class_name = NULL;
+    const char *object_name = NULL;
+    PyObject *argnum = NULL;
+
+    PyObject *wrapped_object = NULL;
+    PyObject *parent_object = NULL;
+    const char *attribute_name = NULL;
+
+    PyObject *wrapper_object = NULL;
+
+    PyObject *result = NULL;
+
+    static char *kwlist[] = { "module_name", "class_name", "object_name",
+                              "argnum", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO!:wrap_pass_function",
+                                     kwlist, &module_name, &class_name,
+                                     &object_name, &PyInt_Type, &argnum)) {
+        return NULL;
+    }
+
+    if (!class_name && !object_name) {
+        PyErr_SetString(PyExc_RuntimeError, "class or object name must be "
+                        "supplied");
+        return NULL;
+    }
+
+    wrapped_object = NRUtilities_LookupCallable(module_name, class_name,
+                                                 object_name, &parent_object,
+                                                 &attribute_name);
+
+    if (!wrapped_object)
+        return NULL;
+
+    wrapper_object = PyObject_CallFunctionObjArgs((PyObject *)
+            &NRDatabaseTraceWrapper_Type, wrapped_object, argnum, NULL);
+
+    result = NRUtilities_ReplaceWithWrapper(parent_object, attribute_name,
+                                            wrapper_object);
+
+    Py_DECREF(parent_object);
+    Py_DECREF(wrapped_object);
+
+    if (!result)
+        return NULL;
+
+    return wrapper_object;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *newrelic_pass_function(PyObject *self, PyObject *args,
                                         PyObject *kwds)
 {
@@ -761,6 +834,10 @@ static PyMethodDef newrelic_methods[] = {
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "transaction",        (PyCFunction)newrelic_transaction,
                             METH_NOARGS, 0 },
+    { "database_trace",     (PyCFunction)newrelic_database_trace,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
+    { "wrap_database_trace", (PyCFunction)newrelic_wrap_database_trace,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
     { "pass_function",      (PyCFunction)newrelic_pass_function,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "wrap_pass_function", (PyCFunction)newrelic_wrap_pass_function,
@@ -803,6 +880,10 @@ init_newrelic(void)
         return;
     if (PyType_Ready(&NRDatabaseTrace_Type) < 0)
         return;
+    if (PyType_Ready(&NRDatabaseTraceDecorator_Type) < 0)
+        return;
+    if (PyType_Ready(&NRDatabaseTraceWrapper_Type) < 0)
+        return;
     if (PyType_Ready(&NRExternalTrace_Type) < 0)
         return;
     if (PyType_Ready(&NRFunctionTrace_Type) < 0)
@@ -836,6 +917,12 @@ init_newrelic(void)
     Py_INCREF(&NRDatabaseTrace_Type);
     PyModule_AddObject(module, "DatabaseTrace",
                        (PyObject *)&NRDatabaseTrace_Type);
+    Py_INCREF(&NRDatabaseTraceDecorator_Type);
+    PyModule_AddObject(module, "DatabaseTraceDecorator",
+                       (PyObject *)&NRDatabaseTraceDecorator_Type);
+    Py_INCREF(&NRDatabaseTraceWrapper_Type);
+    PyModule_AddObject(module, "DatabaseTraceWrapper",
+                       (PyObject *)&NRDatabaseTraceWrapper_Type);
     Py_INCREF(&NRExternalTrace_Type);
     PyModule_AddObject(module, "ExternalTrace",
                        (PyObject *)&NRExternalTrace_Type);

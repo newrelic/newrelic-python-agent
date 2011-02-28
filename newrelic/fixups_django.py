@@ -8,12 +8,7 @@ import _newrelic
 from fixups import (_wrap_wsgi_application, _wrap_function_trace)
 from decorators import function_trace
 
-# TODO Database cursors.
 # TODO URL path mapped to view name.
-
-def _wrap_c_database_trace(mname, cname, fname, argnum):
-    print mname, cname, fname, argnum
-    return _newrelic.wrap_c_database_trace(mname, cname, fname, argnum)
 
 def _fixup_database():
     from django.conf import settings
@@ -28,9 +23,9 @@ def _fixup_database():
             interface = module.base.Database
 
             if interface.__name__ == 'sqlite3.dbapi2':
-                _wrap_c_database_trace('sqlite3.dbapi2', 'Cursor',
+                _newrelic.wrap_database_trace('sqlite3', 'Cursor',
                                        'execute', 1)
-                _wrap_c_database_trace('sqlite3.dbapi2', 'Cursor',
+                _newrelic.wrap_database_trace('sqlite3', 'Cursor',
                                        'executemany', 1)
 
 def _fixup_middleware(handler, *args, **kwargs):

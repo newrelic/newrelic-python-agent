@@ -1,4 +1,5 @@
 from distutils.core import setup, Extension
+import sys
 
 sources = [
   "agent/application.c",
@@ -36,11 +37,17 @@ sources = [
   "wrapper/py_web_transaction.c",
 ]
 
+define_macros = []
+define_macros.append(('NEWRELIC_AGENT_LANGUAGE', '"python"'))
+define_macros.append(('HAVE_CONFIG_H', '1'))
+
+if sys.version_info[:2] < (2, 5):
+    define_macros.append(('Py_ssize_t', 'int'))
+
 extension = Extension(
   name = "_newrelic",
   sources = sources,
-  define_macros = [('HAVE_CONFIG_H', '1'),
-                   ('NEWRELIC_AGENT_LANGUAGE', '"python"'),],
+  define_macros = define_macros,
   include_dirs = ['..', '../php_agent'],
 )
 

@@ -273,6 +273,8 @@ static PyObject *NRDatabaseTraceWrapper_call(
 
     PyObject *sql_object = NULL;
 
+    Py_ssize_t argnum = 0;
+
     /*
      * If there is no current transaction then we can call
      * the wrapped function and return immediately.
@@ -291,10 +293,10 @@ static PyObject *NRDatabaseTraceWrapper_call(
      * immediately.
      */
 
-    if (PyTuple_Size(args) > PyInt_AsLong(self->argnum)) {
+    if (PyTuple_Size(args) > (argnum = PyInt_AsLong(self->argnum))) {
         PyObject *object;
 
-        object = PyTuple_GetItem(args, PyInt_AsLong(self->argnum));
+        object = PyTuple_GetItem(args, argnum);
 
         if (PyString_Check(object) || PyUnicode_Check(object)) {
             sql_object = object;
@@ -307,7 +309,7 @@ static PyObject *NRDatabaseTraceWrapper_call(
     }
     else {
         PyErr_Format(PyExc_IndexError, "invalid argnum %ld to identify "
-                     "sql argument", PyInt_AsLong(self->argnum));
+                     "sql argument", argnum);
         PyErr_WriteUnraisable(self->wrapped_object);
     }
 

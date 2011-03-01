@@ -12,7 +12,7 @@ application = _newrelic.application("UnitTests")
 
 #@_newrelic.database_trace(argnum=0)
 def _test_function_1(sql):
-    time.sleep(0.1)
+    time.sleep(1.0)
 _test_function_1 = _newrelic.database_trace(argnum=0)(_test_function_1)
 
 class DatabaseTraceTests01(unittest.TestCase):
@@ -31,7 +31,7 @@ class DatabaseTraceTests01(unittest.TestCase):
         with transaction:
             time.sleep(0.1)
             with _newrelic.DatabaseTrace(transaction, "select * from cat"):
-                time.sleep(0.1)
+                time.sleep(1.0)
             time.sleep(0.1)
 
     def test_transaction_not_running(self):

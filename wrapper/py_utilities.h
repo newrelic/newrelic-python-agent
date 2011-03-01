@@ -31,6 +31,8 @@ extern void NRUtilities_MergeDictIntoParams(nrobj_t array,
                                             const char *name,
                                             PyObject *dict);
 
+extern PyObject *NRUtilities_StackTrace(void);
+
 /* ------------------------------------------------------------------------- */
 
 #endif

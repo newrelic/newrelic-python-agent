@@ -6,8 +6,11 @@
 
 #include "py_database_trace.h"
 
+#include "py_utilities.h"
+
 #include "globals.h"
 
+#include "genericobject.h"
 #include "web_transaction.h"
 
 /* ------------------------------------------------------------------------- */
@@ -131,6 +134,44 @@ static PyObject *NRDatabaseTrace_exit(NRDatabaseTraceObject *self,
             (nr_node_header *)self->transaction_trace,
             &self->saved_trace_node);
 
+    /* Record stack trace if this was a slow sql transaction. */
+
+    if (nr_per_process_globals.slow_sql_stacktrace > 0) {
+        if (self->transaction_trace->header.times.duration >
+            nr_per_process_globals.slow_sql_stacktrace) {
+
+            PyObject *stack_trace = NULL;
+
+            stack_trace = NRUtilities_StackTrace();
+
+            if (stack_trace) {
+                int i;
+
+                self->transaction_trace->u.s.stacktrace_params = nro__new(
+                        NR_OBJECT_HASH);
+
+                for (i=0; i<PyList_Size(stack_trace); i++) {
+                    nro__set_in_array_at(
+                            self->transaction_trace->u.s.stacktrace_params,
+                            "stack_trace", nro__new_string(
+                            PyString_AsString(PyList_GetItem(
+                            stack_trace, i))));
+                }
+                Py_DECREF(stack_trace);
+            }
+            else {
+                /*
+                 * Obtaining the stack trace should never fail. In
+                 * the unlikely event that it does, then propogate
+                 * the error back through to the caller.
+                 */
+
+                self->saved_trace_node = NULL;
+                return NULL;
+            }
+        }
+    }
+
     self->saved_trace_node = NULL;
 
     Py_INCREF(Py_None);
@@ -236,6 +277,7 @@ static int NRDatabaseTraceWrapper_init(NRDatabaseTraceWrapperObject *self,
     self->wrapped_object = wrapped_object;
 
     Py_INCREF(argnum);
+    Py_XDECREF(self->argnum);
     self->argnum = argnum;
 
     /*
@@ -492,7 +534,7 @@ static PyObject *NRDatabaseTraceDecorator_new(PyTypeObject *type,
     if (!self)
         return NULL;
 
-    self->argnum = 0;
+    self->argnum = NULL;
 
     return (PyObject *)self;
 }
@@ -512,6 +554,7 @@ static int NRDatabaseTraceDecorator_init(NRDatabaseTraceDecoratorObject *self,
     }
 
     Py_INCREF(argnum);
+    Py_XDECREF(self->argnum);
     self->argnum = argnum;
 
     return 0;

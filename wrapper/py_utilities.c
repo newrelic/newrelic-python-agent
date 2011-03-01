@@ -284,6 +284,40 @@ void NRUtilities_MergeDictIntoParams(nrobj_t array, const char *name,
 
 /* ------------------------------------------------------------------------- */
 
+PyObject *NRUtilities_StackTrace(void)
+{
+    PyObject *module;
+    PyObject *result = NULL;
+
+    module = PyImport_ImportModule("traceback");
+
+    if (module) {
+        PyObject *dict = NULL;
+        PyObject *object = NULL;
+
+        dict = PyModule_GetDict(module);
+        object = PyDict_GetItemString(dict, "format_stack");
+
+        if (object) {
+            PyObject *args = NULL;
+
+            Py_INCREF(object);
+
+            args = PyTuple_New(0);
+            result = PyObject_Call(object, args, NULL);
+
+            Py_DECREF(args);
+            Py_DECREF(object);
+        }
+
+        Py_DECREF(module);
+    }
+
+    return result;
+}
+
+/* ------------------------------------------------------------------------- */
+
 /*
  * vim: et cino=>2,e0,n0,f0,{2,}0,^0,\:2,=2,p2,t2,c1,+2,(2,u2,)20,*30,g2,h2 ts=8
  */

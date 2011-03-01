@@ -1034,14 +1034,23 @@ init_newrelic(void)
     nr__initialize_overflow_metric();
 
     /*
-     * Initialise transaction tracing defaults. Transaction
-     * tracing is on by default and can be overridden via the
-     * settings object at any time and will apply on the
-     * next harvest cycle.
+     * Initialise transaction and sql tracing defaults.
+     * Transaction tracing is on by default and can be
+     * overridden via the settings object at any time and will
+     * apply on the next harvest cycle.
+     *
+     * TODO These need to be able to be overridden on per
+     * request basis via WSGI environ dictionary.
      */
 
     nr_per_process_globals.tt_enabled = 1;
-    nr_per_process_globals.tt_recordsql = 1;
+    nr_per_process_globals.tt_recordsql =
+            NR_TRANSACTION_TRACE_RECORDSQL_OBFUSCATED;
+
+    nr_per_process_globals.slow_sql_stacktrace = 500 * 1000;
+
+    nr_per_process_globals.tt_total_node_limit = 2000;
+    nr_per_process_globals.tt_per_node_children_limit = 200;
 
     /* Initialise support for tracking multiple applications. */
 

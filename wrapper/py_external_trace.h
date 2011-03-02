@@ -20,6 +20,21 @@ typedef struct {
 
 extern PyTypeObject NRExternalTrace_Type;
 
+typedef struct {
+    PyObject_HEAD
+    PyObject *wrapped_object;
+    PyObject *argnum;
+} NRExternalTraceWrapperObject;
+
+extern PyTypeObject NRExternalTraceWrapper_Type;
+
+typedef struct {
+    PyObject_HEAD
+    PyObject *argnum;
+} NRExternalTraceDecoratorObject;
+
+extern PyTypeObject NRExternalTraceDecorator_Type;
+
 /* ------------------------------------------------------------------------- */
 
 #endif

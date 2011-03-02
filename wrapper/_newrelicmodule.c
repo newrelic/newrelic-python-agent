@@ -305,6 +305,79 @@ static PyObject *newrelic_wrap_database_trace(PyObject *self, PyObject *args,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *newrelic_external_trace(PyObject *self, PyObject *args,
+                                         PyObject *kwds)
+{
+    PyObject *argnum = NULL;
+
+    static char *kwlist[] = { "argnum", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!:external_trace",
+                                     kwlist, &PyInt_Type, &argnum)) {
+        return NULL;
+    }
+
+    return PyObject_CallFunctionObjArgs((PyObject *)
+            &NRExternalTraceDecorator_Type, argnum, NULL);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *newrelic_wrap_external_trace(PyObject *self, PyObject *args,
+                                              PyObject *kwds)
+{
+    const char *module_name = NULL;
+    const char *class_name = NULL;
+    const char *object_name = NULL;
+    PyObject *argnum = NULL;
+
+    PyObject *wrapped_object = NULL;
+    PyObject *parent_object = NULL;
+    const char *attribute_name = NULL;
+
+    PyObject *wrapper_object = NULL;
+
+    PyObject *result = NULL;
+
+    static char *kwlist[] = { "module_name", "class_name", "object_name",
+                              "argnum", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO!:wrap_external_trace",
+                                     kwlist, &module_name, &class_name,
+                                     &object_name, &PyInt_Type, &argnum)) {
+        return NULL;
+    }
+
+    if (!class_name && !object_name) {
+        PyErr_SetString(PyExc_RuntimeError, "class or object name must be "
+                        "supplied");
+        return NULL;
+    }
+
+    wrapped_object = NRUtilities_LookupCallable(module_name, class_name,
+                                                 object_name, &parent_object,
+                                                 &attribute_name);
+
+    if (!wrapped_object)
+        return NULL;
+
+    wrapper_object = PyObject_CallFunctionObjArgs((PyObject *)
+            &NRExternalTraceWrapper_Type, wrapped_object, argnum, NULL);
+
+    result = NRUtilities_ReplaceWithWrapper(parent_object, attribute_name,
+                                            wrapper_object);
+
+    Py_DECREF(parent_object);
+    Py_DECREF(wrapped_object);
+
+    if (!result)
+        return NULL;
+
+    return wrapper_object;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *newrelic_memcache_trace(PyObject *self, PyObject *args,
                                          PyObject *kwds)
 {
@@ -655,6 +728,10 @@ static PyMethodDef newrelic_methods[] = {
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "wrap_database_trace", (PyCFunction)newrelic_wrap_database_trace,
                             METH_VARARGS|METH_KEYWORDS, 0 },
+    { "external_trace",     (PyCFunction)newrelic_external_trace,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
+    { "wrap_external_trace", (PyCFunction)newrelic_wrap_external_trace,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
     { "memcache_trace",     (PyCFunction)newrelic_memcache_trace,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "wrap_memcache_trace", (PyCFunction)newrelic_wrap_memcache_trace,
@@ -706,6 +783,10 @@ init_newrelic(void)
         return;
     if (PyType_Ready(&NRExternalTrace_Type) < 0)
         return;
+    if (PyType_Ready(&NRExternalTraceDecorator_Type) < 0)
+        return;
+    if (PyType_Ready(&NRExternalTraceWrapper_Type) < 0)
+        return;
     if (PyType_Ready(&NRFunctionTrace_Type) < 0)
         return;
     if (PyType_Ready(&NRMemcacheTrace_Type) < 0)
@@ -750,6 +831,12 @@ init_newrelic(void)
     Py_INCREF(&NRExternalTrace_Type);
     PyModule_AddObject(module, "ExternalTrace",
                        (PyObject *)&NRExternalTrace_Type);
+    Py_INCREF(&NRExternalTraceDecorator_Type);
+    PyModule_AddObject(module, "ExternalTraceDecorator",
+                       (PyObject *)&NRExternalTraceDecorator_Type);
+    Py_INCREF(&NRExternalTraceWrapper_Type);
+    PyModule_AddObject(module, "ExternalTraceWrapper",
+                       (PyObject *)&NRExternalTraceWrapper_Type);
     Py_INCREF(&NRFunctionTrace_Type);
     PyModule_AddObject(module, "FunctionTrace",
                        (PyObject *)&NRFunctionTrace_Type);

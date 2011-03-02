@@ -269,7 +269,7 @@ static PyObject *newrelic_wrap_database_trace(PyObject *self, PyObject *args,
     static char *kwlist[] = { "module_name", "class_name", "object_name",
                               "argnum", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO!:wrap_pass_function",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO!:wrap_database_trace",
                                      kwlist, &module_name, &class_name,
                                      &object_name, &PyInt_Type, &argnum)) {
         return NULL;
@@ -290,6 +290,79 @@ static PyObject *newrelic_wrap_database_trace(PyObject *self, PyObject *args,
 
     wrapper_object = PyObject_CallFunctionObjArgs((PyObject *)
             &NRDatabaseTraceWrapper_Type, wrapped_object, argnum, NULL);
+
+    result = NRUtilities_ReplaceWithWrapper(parent_object, attribute_name,
+                                            wrapper_object);
+
+    Py_DECREF(parent_object);
+    Py_DECREF(wrapped_object);
+
+    if (!result)
+        return NULL;
+
+    return wrapper_object;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *newrelic_memcache_trace(PyObject *self, PyObject *args,
+                                         PyObject *kwds)
+{
+    PyObject *command = NULL;
+
+    static char *kwlist[] = { "command", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!:memcache_trace",
+                                     kwlist, &PyString_Type, &command)) {
+        return NULL;
+    }
+
+    return PyObject_CallFunctionObjArgs((PyObject *)
+            &NRMemcacheTraceDecorator_Type, command, NULL);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *newrelic_wrap_memcache_trace(PyObject *self, PyObject *args,
+                                              PyObject *kwds)
+{
+    const char *module_name = NULL;
+    const char *class_name = NULL;
+    const char *object_name = NULL;
+    PyObject *command = NULL;
+
+    PyObject *wrapped_object = NULL;
+    PyObject *parent_object = NULL;
+    const char *attribute_name = NULL;
+
+    PyObject *wrapper_object = NULL;
+
+    PyObject *result = NULL;
+
+    static char *kwlist[] = { "module_name", "class_name", "object_name",
+                              "command", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO!:wrap_memcache_trace",
+                                     kwlist, &module_name, &class_name,
+                                     &object_name, &PyString_Type, &command)) {
+        return NULL;
+    }
+
+    if (!class_name && !object_name) {
+        PyErr_SetString(PyExc_RuntimeError, "class or object name must be "
+                        "supplied");
+        return NULL;
+    }
+
+    wrapped_object = NRUtilities_LookupCallable(module_name, class_name,
+                                                 object_name, &parent_object,
+                                                 &attribute_name);
+
+    if (!wrapped_object)
+        return NULL;
+
+    wrapper_object = PyObject_CallFunctionObjArgs((PyObject *)
+            &NRMemcacheTraceWrapper_Type, wrapped_object, command, NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object, attribute_name,
                                             wrapper_object);
@@ -582,6 +655,10 @@ static PyMethodDef newrelic_methods[] = {
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "wrap_database_trace", (PyCFunction)newrelic_wrap_database_trace,
                             METH_VARARGS|METH_KEYWORDS, 0 },
+    { "memcache_trace",     (PyCFunction)newrelic_memcache_trace,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
+    { "wrap_memcache_trace", (PyCFunction)newrelic_wrap_memcache_trace,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
     { "pass_function",      (PyCFunction)newrelic_pass_function,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "wrap_pass_function", (PyCFunction)newrelic_wrap_pass_function,
@@ -633,6 +710,10 @@ init_newrelic(void)
         return;
     if (PyType_Ready(&NRMemcacheTrace_Type) < 0)
         return;
+    if (PyType_Ready(&NRMemcacheTraceDecorator_Type) < 0)
+        return;
+    if (PyType_Ready(&NRMemcacheTraceWrapper_Type) < 0)
+        return;
     if (PyType_Ready(&NRSettings_Type) < 0)
         return;
     if (PyType_Ready(&NRTransaction_Type) < 0)
@@ -675,6 +756,12 @@ init_newrelic(void)
     Py_INCREF(&NRMemcacheTrace_Type);
     PyModule_AddObject(module, "MemcacheTrace",
                        (PyObject *)&NRMemcacheTrace_Type);
+    Py_INCREF(&NRMemcacheTraceDecorator_Type);
+    PyModule_AddObject(module, "MemcacheTraceDecorator",
+                       (PyObject *)&NRMemcacheTraceDecorator_Type);
+    Py_INCREF(&NRMemcacheTraceWrapper_Type);
+    PyModule_AddObject(module, "MemcacheTraceWrapper",
+                       (PyObject *)&NRMemcacheTraceWrapper_Type);
     Py_INCREF(&NRWebTransaction_Type);
     PyModule_AddObject(module, "WebTransaction",
                        (PyObject *)&NRWebTransaction_Type);

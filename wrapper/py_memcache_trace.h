@@ -20,6 +20,21 @@ typedef struct {
 
 extern PyTypeObject NRMemcacheTrace_Type;
 
+typedef struct {
+    PyObject_HEAD
+    PyObject *wrapped_object;
+    PyObject *command;
+} NRMemcacheTraceWrapperObject;
+
+extern PyTypeObject NRMemcacheTraceWrapper_Type;
+
+typedef struct {
+    PyObject_HEAD
+    PyObject *command;
+} NRMemcacheTraceDecoratorObject;
+
+extern PyTypeObject NRMemcacheTraceDecorator_Type;
+
 /* ------------------------------------------------------------------------- */
 
 #endif

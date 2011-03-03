@@ -6,6 +6,8 @@
 
 #include "py_function_trace.h"
 
+#include "py_utilities.h"
+
 #include "globals.h"
 
 #include "web_transaction.h"
@@ -41,17 +43,30 @@ static int NRFunctionTrace_init(NRFunctionTraceObject *self, PyObject *args,
 {
     NRTransactionObject *transaction = NULL;
 
-    const char *funcname = NULL;
-    const char *classname = NULL;
-    const char *scope = NULL;
+    PyObject *name = Py_None;
+    PyObject *scope = Py_None;
+    PyObject *override_path = Py_False;
 
-    static char *kwlist[] = { "transaction", "funcname", "classname",
-            "scope", NULL };
+    static char *kwlist[] = { "transaction", "name", "scope",
+                              "override_path", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!s|zz:FunctionTrace",
-                                     kwlist, &NRTransaction_Type,
-                                     &transaction, &funcname, &classname,
-                                     &scope)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O|OO!:FunctionTrace",
+                                     kwlist, &NRTransaction_Type, &transaction,
+                                     &name, &scope, &PyBool_Type,
+                                     &override_path)) {
+        return -1;
+    }
+
+    if (!PyString_Check(name) && !PyUnicode_Check(name)) {
+        PyErr_Format(PyExc_TypeError, "name argument must be str or unicode, "
+                     "found type '%s'", name->ob_type->tp_name);
+        return -1;
+    }
+
+    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
+        scope != Py_None) {
+        PyErr_Format(PyExc_TypeError, "scope argument must be str, unicode "
+                     "or None, found type '%s'", scope->ob_type->tp_name);
         return -1;
     }
 
@@ -92,13 +107,46 @@ static int NRFunctionTrace_init(NRFunctionTraceObject *self, PyObject *args,
      */
 
     if (transaction->transaction) {
+        const char *name_string = NULL;
+        const char *scope_string = NULL;
+
+        if (PyUnicode_Check(name))
+            name = PyUnicode_AsUTF8String(name);
+        else if (PyString_Check(name))
+            Py_INCREF(name);
+
+        name_string = PyString_AsString(name);
+
+        if (PyUnicode_Check(scope))
+            scope = PyUnicode_AsUTF8String(scope);
+        else if (PyString_Check(scope))
+            Py_INCREF(scope);
+
+        if (scope != Py_None)
+            scope_string = PyString_AsString(scope);
+        else
+            scope = NULL;
+
 #if 0
         self->transaction_trace = nr_web_transaction__allocate_function_node(
-                transaction->transaction, funcname, classname, scope);
+                transaction->transaction, name_string, NULL, scope_string);
 #else
         self->transaction_trace = nr_web_transaction__allocate_function_node(
-                transaction->transaction, funcname, classname);
+                transaction->transaction, name_string, NULL);
 #endif
+
+        /*
+         * Override transaction path if required.
+         *
+         * TODO this is currently using UTF8 variant of string if
+         * was a unicode object.
+         */
+
+        if (override_path == Py_True)
+            PyObject_SetAttrString((PyObject *)transaction, "path", name);
+
+        Py_DECREF(name);
+        Py_XDECREF(scope);
     }
 
     return 0;
@@ -207,6 +255,464 @@ PyTypeObject NRFunctionTrace_Type = {
     (initproc)NRFunctionTrace_init, /*tp_init*/
     0,                      /*tp_alloc*/
     NRFunctionTrace_new,    /*tp_new*/
+    0,                      /*tp_free*/
+    0,                      /*tp_is_gc*/
+};
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRFunctionTraceWrapper_new(PyTypeObject *type, PyObject *args,
+                                           PyObject *kwds)
+{
+    NRFunctionTraceWrapperObject *self;
+
+    self = (NRFunctionTraceWrapperObject *)type->tp_alloc(type, 0);
+
+    if (!self)
+        return NULL;
+
+    self->wrapped_object = NULL;
+    self->name = NULL;
+    self->scope = NULL;
+
+    return (PyObject *)self;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRFunctionTraceWrapper_init(NRFunctionTraceWrapperObject *self,
+                                       PyObject *args, PyObject *kwds)
+{
+    PyObject *wrapped_object = NULL;
+
+    PyObject *name = Py_None;
+    PyObject *scope = Py_None;
+    PyObject *override_path = Py_False;
+
+    static char *kwlist[] = { "wrapped", "name", "scope", "override_path",
+                              NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|OOO!:FunctionTraceWrapper",
+                                     kwlist, &wrapped_object, &name, &scope,
+                                     &PyBool_Type, &override_path)) {
+        return -1;
+    }
+
+    if (!PyString_Check(name) && !PyUnicode_Check(name) &&
+        name != Py_None) {
+        PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
+                     "or None, found type '%s'", name->ob_type->tp_name);
+        return -1;
+    }
+
+    if (!PyString_Check(scope) && !PyUnicode_Check(name) &&
+        scope != Py_None) {
+        PyErr_Format(PyExc_TypeError, "scope argument must be str, unicode "
+                     "or None, found type '%s'", scope->ob_type->tp_name);
+        return -1;
+    }
+
+    Py_INCREF(wrapped_object);
+    Py_XDECREF(self->wrapped_object);
+    self->wrapped_object = wrapped_object;
+
+    Py_INCREF(name);
+    Py_XDECREF(self->name);
+    self->name = name;
+
+    Py_INCREF(scope);
+    Py_XDECREF(self->scope);
+    self->scope = scope;
+
+    Py_INCREF(override_path);
+    Py_XDECREF(self->override_path);
+    self->override_path = override_path;
+
+    /*
+     * TODO This should set __module__, __name__, __doc__ and
+     * update __dict__ to preserve introspection capabilities.
+     * See @wraps in functools of recent Python versions.
+     */
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static void NRFunctionTraceWrapper_dealloc(NRFunctionTraceWrapperObject *self)
+{
+    Py_XDECREF(self->wrapped_object);
+
+    Py_XDECREF(self->name);
+    Py_XDECREF(self->scope);
+    Py_XDECREF(self->override_path);
+
+    Py_TYPE(self)->tp_free(self);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRFunctionTraceWrapper_call(
+        NRFunctionTraceWrapperObject *self, PyObject *args, PyObject *kwds)
+{
+    PyObject *wrapped_result = NULL;
+
+    PyObject *current_transaction = NULL;
+    PyObject *database_trace = NULL;
+
+    PyObject *instance_method = NULL;
+    PyObject *method_args = NULL;
+    PyObject *method_result = NULL;
+
+    PyObject *name = NULL;
+
+    /*
+     * If there is no current transaction then we can call
+     * the wrapped function and return immediately.
+     */
+
+    current_transaction = NRTransaction_CurrentTransaction();
+
+    if (!current_transaction)
+        return PyObject_Call(self->wrapped_object, args, kwds);
+
+    /* Create database trace context manager. */
+
+    if (self->name == Py_None) {
+        name = NRUtilities_CallableName((PyObject *)self,
+                                        self->wrapped_object, args);
+    }
+    else {
+        name = self->name;
+        Py_INCREF(name);
+    }
+
+    database_trace = PyObject_CallFunctionObjArgs((PyObject *)
+            &NRFunctionTrace_Type, current_transaction, name,
+            self->scope, self->override_path, NULL);
+
+    Py_DECREF(name);
+
+    /* Now call __enter__() on the context manager. */
+
+    instance_method = PyObject_GetAttrString(database_trace, "__enter__");
+
+    Py_INCREF(instance_method);
+
+    method_args = PyTuple_Pack(0);
+    method_result = PyObject_Call(instance_method, method_args, NULL);
+
+    if (!method_result)
+        PyErr_WriteUnraisable(instance_method);
+    else
+        Py_DECREF(method_result);
+
+    Py_DECREF(method_args);
+    Py_DECREF(instance_method);
+
+    /*
+     * Now call the actual wrapped function with the original
+     * position and keyword arguments.
+     */
+
+    wrapped_result = PyObject_Call(self->wrapped_object, args, kwds);
+
+    /*
+     * Now call __enter__() on the context manager. If the call
+     * of the wrapped function is successful then pass all None
+     * objects, else pass exception details.
+     */
+
+    instance_method = PyObject_GetAttrString(database_trace, "__exit__");
+
+    Py_INCREF(instance_method);
+
+    if (wrapped_result) {
+        method_args = PyTuple_Pack(3, Py_None, Py_None, Py_None);
+        method_result = PyObject_Call(instance_method, method_args, NULL);
+
+        if (!method_result)
+            PyErr_WriteUnraisable(instance_method);
+        else
+            Py_DECREF(method_result);
+
+        Py_DECREF(method_args);
+        Py_DECREF(instance_method);
+    }
+    else {
+        PyObject *type = NULL;
+        PyObject *value = NULL;
+        PyObject *traceback = NULL;
+
+        PyErr_Fetch(&type, &value, &traceback);
+
+        if (!value) {
+            value = Py_None;
+            Py_INCREF(value);
+        }
+
+        if (!traceback) {
+            traceback = Py_None;
+            Py_INCREF(traceback);
+        }
+
+        PyErr_NormalizeException(&type, &value, &traceback);
+
+        method_args = PyTuple_Pack(3, type, value, traceback);
+        method_result = PyObject_Call(instance_method, method_args, NULL);
+
+        if (!method_result)
+            PyErr_WriteUnraisable(instance_method);
+        else
+            Py_DECREF(method_result);
+
+        Py_DECREF(method_args);
+        Py_DECREF(instance_method);
+
+        PyErr_Restore(type, value, traceback);
+    }
+
+    return wrapped_result;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRFunctionTraceWrapper_get_name(
+        NRFunctionTraceWrapperObject *self, void *closure)
+{
+    return PyObject_GetAttrString(self->wrapped_object, "__name__");
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRFunctionTraceWrapper_get_module(
+        NRFunctionTraceWrapperObject *self, void *closure)
+{
+    return PyObject_GetAttrString(self->wrapped_object, "__module__");
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRFunctionTraceWrapper_get_wrapped(
+        NRFunctionTraceWrapperObject *self, void *closure)
+{
+    Py_INCREF(self->wrapped_object);
+    return self->wrapped_object;
+}
+ 
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRFunctionTraceWrapper_descr_get(PyObject *function,
+                                                  PyObject *object,
+                                                  PyObject *type)
+{
+    if (object == Py_None)
+        object = NULL;
+
+    return PyMethod_New(function, object, type);
+}
+
+/* ------------------------------------------------------------------------- */
+
+#ifndef PyVarObject_HEAD_INIT
+#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
+#endif
+
+static PyGetSetDef NRFunctionTraceWrapper_getset[] = {
+    { "__name__",           (getter)NRFunctionTraceWrapper_get_name,
+                            NULL, 0 },
+    { "__module__",         (getter)NRFunctionTraceWrapper_get_module,
+                            NULL, 0 },
+    { "__wrapped__",        (getter)NRFunctionTraceWrapper_get_wrapped,
+                            NULL, 0 },
+    { NULL },
+};
+
+PyTypeObject NRFunctionTraceWrapper_Type = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "_newrelic.FunctionTraceWrapper", /*tp_name*/
+    sizeof(NRFunctionTraceWrapperObject), /*tp_basicsize*/
+    0,                      /*tp_itemsize*/
+    /* methods */
+    (destructor)NRFunctionTraceWrapper_dealloc, /*tp_dealloc*/
+    0,                      /*tp_print*/
+    0,                      /*tp_getattr*/
+    0,                      /*tp_setattr*/
+    0,                      /*tp_compare*/
+    0,                      /*tp_repr*/
+    0,                      /*tp_as_number*/
+    0,                      /*tp_as_sequence*/
+    0,                      /*tp_as_mapping*/
+    0,                      /*tp_hash*/
+    (ternaryfunc)NRFunctionTraceWrapper_call, /*tp_call*/
+    0,                      /*tp_str*/
+    0,                      /*tp_getattro*/
+    0,                      /*tp_setattro*/
+    0,                      /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT,     /*tp_flags*/
+    0,                      /*tp_doc*/
+    0,                      /*tp_traverse*/
+    0,                      /*tp_clear*/
+    0,                      /*tp_richcompare*/
+    0,                      /*tp_weaklistoffset*/
+    0,                      /*tp_iter*/
+    0,                      /*tp_iternext*/
+    0,                      /*tp_methods*/
+    0,                      /*tp_members*/
+    NRFunctionTraceWrapper_getset, /*tp_getset*/
+    0,                      /*tp_base*/
+    0,                      /*tp_dict*/
+    NRFunctionTraceWrapper_descr_get, /*tp_descr_get*/
+    0,                      /*tp_descr_set*/
+    0,                      /*tp_dictoffset*/
+    (initproc)NRFunctionTraceWrapper_init, /*tp_init*/
+    0,                      /*tp_alloc*/
+    NRFunctionTraceWrapper_new, /*tp_new*/
+    0,                      /*tp_free*/
+    0,                      /*tp_is_gc*/
+};
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRFunctionTraceDecorator_new(PyTypeObject *type,
+                                              PyObject *args, PyObject *kwds)
+{
+    NRFunctionTraceDecoratorObject *self;
+
+    self = (NRFunctionTraceDecoratorObject *)type->tp_alloc(type, 0);
+
+    if (!self)
+        return NULL;
+
+    self->name = NULL;
+    self->scope = NULL;
+
+    return (PyObject *)self;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRFunctionTraceDecorator_init(NRFunctionTraceDecoratorObject *self,
+                                         PyObject *args, PyObject *kwds)
+{
+    PyObject *name = Py_None;
+    PyObject *scope = Py_None;
+    PyObject *override_path = Py_False;
+
+    static char *kwlist[] = { "name", "scope", "override_path", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OOO!:FunctionTraceDecorator",
+                                     kwlist, &name, &scope, &PyBool_Type,
+                                     &override_path)) {
+        return -1;
+    }
+
+    if (!PyString_Check(name) && !PyUnicode_Check(name) &&
+        name != Py_None) {
+        PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
+                     "or None, found type '%s'", name->ob_type->tp_name);
+        return -1;
+    }
+
+    if (!PyString_Check(scope) && !PyUnicode_Check(name) &&
+        scope != Py_None) {
+        PyErr_Format(PyExc_TypeError, "scope argument must be str, unicode "
+                     "or None, found type '%s'", scope->ob_type->tp_name);
+        return -1;
+    }
+
+    Py_INCREF(name);
+    Py_XDECREF(self->name);
+    self->name = name;
+
+    Py_INCREF(scope);
+    Py_XDECREF(self->scope);
+    self->scope = scope;
+
+    Py_INCREF(override_path);
+    Py_XDECREF(self->override_path);
+    self->override_path = override_path;
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static void NRFunctionTraceDecorator_dealloc(
+        NRFunctionTraceDecoratorObject *self)
+{
+    Py_XDECREF(self->name);
+    Py_XDECREF(self->scope);
+    Py_XDECREF(self->override_path);
+
+    Py_TYPE(self)->tp_free(self);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRFunctionTraceDecorator_call(
+        NRFunctionTraceDecoratorObject *self, PyObject *args, PyObject *kwds)
+{
+    PyObject *wrapped_object = NULL;
+
+    static char *kwlist[] = { "wrapped", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:FunctionTraceDecorator",
+                                     kwlist, &wrapped_object)) {
+        return NULL;
+    }
+
+    return PyObject_CallFunctionObjArgs(
+            (PyObject *)&NRFunctionTraceWrapper_Type,
+            wrapped_object, self->name, self->scope, NULL);
+}
+
+/* ------------------------------------------------------------------------- */
+
+#ifndef PyVarObject_HEAD_INIT
+#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
+#endif
+
+PyTypeObject NRFunctionTraceDecorator_Type = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "_newrelic.FunctionTraceDecorator", /*tp_name*/
+    sizeof(NRFunctionTraceDecoratorObject), /*tp_basicsize*/
+    0,                      /*tp_itemsize*/
+    /* methods */
+    (destructor)NRFunctionTraceDecorator_dealloc, /*tp_dealloc*/
+    0,                      /*tp_print*/
+    0,                      /*tp_getattr*/
+    0,                      /*tp_setattr*/
+    0,                      /*tp_compare*/
+    0,                      /*tp_repr*/
+    0,                      /*tp_as_number*/
+    0,                      /*tp_as_sequence*/
+    0,                      /*tp_as_mapping*/
+    0,                      /*tp_hash*/
+    (ternaryfunc)NRFunctionTraceDecorator_call, /*tp_call*/
+    0,                      /*tp_str*/
+    0,                      /*tp_getattro*/
+    0,                      /*tp_setattro*/
+    0,                      /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT,     /*tp_flags*/
+    0,                      /*tp_doc*/
+    0,                      /*tp_traverse*/
+    0,                      /*tp_clear*/
+    0,                      /*tp_richcompare*/
+    0,                      /*tp_weaklistoffset*/
+    0,                      /*tp_iter*/
+    0,                      /*tp_iternext*/
+    0,                      /*tp_methods*/
+    0,                      /*tp_members*/
+    0,                      /*tp_getset*/
+    0,                      /*tp_base*/
+    0,                      /*tp_dict*/
+    0,                      /*tp_descr_get*/
+    0,                      /*tp_descr_set*/
+    0,                      /*tp_dictoffset*/
+    (initproc)NRFunctionTraceDecorator_init, /*tp_init*/
+    0,                      /*tp_alloc*/
+    NRFunctionTraceDecorator_new, /*tp_new*/
     0,                      /*tp_free*/
     0,                      /*tp_is_gc*/
 };

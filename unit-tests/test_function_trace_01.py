@@ -10,6 +10,49 @@ settings.loglevel = _newrelic.LOG_VERBOSEDEBUG
 
 application = _newrelic.application("UnitTests")
 
+#@_newrelic.function_trace(name='_test_function_1')
+def _test_function_1():
+    time.sleep(1.0)
+_test_function_1 = _newrelic.function_trace(
+        name='_test_function_1')(_test_function_1)
+
+#@_newrelic.function_trace()
+def _test_function_nn_1():
+    time.sleep(0.1)
+_test_function_nn_1 = _newrelic.function_trace()(_test_function_nn_1)
+
+class _test_class_nn_2:
+    def _test_function(self):
+        time.sleep(0.1)
+
+_test_class_instance_nn_2 = _test_class_nn_2()
+_test_class_instance_nn_2._test_function = _newrelic.function_trace()(
+        _test_class_instance_nn_2._test_function)
+
+class _test_class_nn_3(object):
+    def _test_function(self):
+        time.sleep(0.1)
+
+_test_class_instance_nn_3 = _test_class_nn_3()
+_test_class_instance_nn_3._test_function = _newrelic.function_trace()(
+        _test_class_instance_nn_3._test_function)
+
+class _test_class_nn_4:
+    #@_newrelic.function_trace()
+    def _test_function(self):
+        time.sleep(0.1)
+    _test_function = _newrelic.function_trace()(_test_function)
+
+_test_class_instance_nn_4 = _test_class_nn_4()
+
+class _test_class_nn_5(object):
+    #@_newrelic.function_trace()
+    def _test_function(self):
+        time.sleep(0.1)
+    _test_function = _newrelic.function_trace()(_test_function)
+
+_test_class_instance_nn_5 = _test_class_nn_5()
+
 class FunctionTraceTests01(unittest.TestCase):
 
     def setUp(self):
@@ -56,6 +99,35 @@ class FunctionTraceTests01(unittest.TestCase):
                 time.sleep(0.1)
         except RuntimeError:
             pass
+
+    def test_function_trace_decorator(self):
+        environ = { "REQUEST_URI": "/function_trace_decorator" }
+        transaction = _newrelic.WebTransaction(application, environ)
+        with transaction:
+            time.sleep(0.1)
+            _test_function_1()
+            time.sleep(0.1)
+
+    def test_function_trace_decorator_error(self):
+        environ = { "REQUEST_URI": "/function_trace_decorator_error" }
+        transaction = _newrelic.WebTransaction(application, environ)
+        with transaction:
+            try:
+                _test_function_1()
+            except TypeError:
+                pass
+
+    def test_function_trace_decorator_no_name(self):
+        environ = { "REQUEST_URI": "/function_trace_decorator_no_name" }
+        transaction = _newrelic.WebTransaction(application, environ)
+        with transaction:
+            time.sleep(0.1)
+            _test_function_nn_1()
+            _test_class_instance_nn_2._test_function()
+            _test_class_instance_nn_3._test_function()
+            _test_class_instance_nn_4._test_function()
+            _test_class_instance_nn_5._test_function()
+            time.sleep(0.1)
 
 if __name__ == '__main__':
     unittest.main()

@@ -378,6 +378,151 @@ static PyObject *newrelic_wrap_external_trace(PyObject *self, PyObject *args,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *newrelic_function_trace(PyObject *self, PyObject *args,
+                                         PyObject *kwds)
+{
+    PyObject *name = Py_None;
+    PyObject *scope = Py_None;
+    PyObject *override_path = Py_False;
+
+    static char *kwlist[] = { "name", "scope", "override_path", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OOO!:function_trace",
+                                     kwlist, &name, &scope, &PyBool_Type,
+                                     &override_path)) {
+        return NULL;
+    }
+
+    if (!PyString_Check(name) && !PyUnicode_Check(name) &&
+        name != Py_None) {
+        PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
+                     "or None, found type '%s'", name->ob_type->tp_name);
+        return NULL;
+    }
+
+    if (!PyString_Check(scope) && !PyUnicode_Check(name) &&
+        scope != Py_None) {
+        PyErr_Format(PyExc_TypeError, "scope argument must be str, unicode "
+                     "or None, found type '%s'", scope->ob_type->tp_name);
+        return NULL;
+    }
+
+    return PyObject_CallFunctionObjArgs((PyObject *)
+            &NRFunctionTraceDecorator_Type, name, scope, override_path, NULL);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *newrelic_wrap_function_trace(PyObject *self, PyObject *args,
+                                              PyObject *kwds)
+{
+    const char *module_name = NULL;
+    const char *class_name = NULL;
+    const char *object_name = NULL;
+
+    PyObject *name = Py_None;
+    PyObject *scope = Py_None;
+    PyObject *override_path = Py_False;
+
+    PyObject *wrapped_object = NULL;
+    PyObject *parent_object = NULL;
+    const char *attribute_name = NULL;
+
+    PyObject *wrapper_object = NULL;
+
+    PyObject *result = NULL;
+
+    static char *kwlist[] = { "module_name", "class_name", "object_name",
+                              "name", "scope", "override_path", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds,
+                                     "szz|OOO!:wrap_function_trace",
+                                     kwlist, &module_name, &class_name,
+                                     &object_name, &name, &scope,
+                                     &PyBool_Type, &override_path)) {
+        return NULL;
+    }
+
+    if (!class_name && !object_name) {
+        PyErr_SetString(PyExc_RuntimeError, "class or object name must be "
+                        "supplied");
+        return NULL;
+    }
+
+    if (!PyString_Check(name) && !PyUnicode_Check(name) &&
+        name != Py_None) {
+        PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
+                     "or None, found type '%s'", name->ob_type->tp_name);
+        return NULL;
+    }
+
+    if (!PyString_Check(scope) && !PyUnicode_Check(name) &&
+        scope != Py_None) {
+        PyErr_Format(PyExc_TypeError, "scope argument must be str, unicode "
+                     "or None, found type '%s'", scope->ob_type->tp_name);
+        return NULL;
+    }
+
+    wrapped_object = NRUtilities_LookupCallable(module_name, class_name,
+                                                 object_name, &parent_object,
+                                                 &attribute_name);
+
+    if (!wrapped_object)
+        return NULL;
+
+    if (name == Py_None) {
+        int len = 0;
+        char *s = NULL;
+
+        if (module_name)
+            len += strlen(module_name);
+        if (module_name && class_name)
+            len += 1;
+        if (class_name)
+            len += strlen(class_name);
+
+        len += 2;
+        len += strlen(object_name);
+        len += 1;
+
+        s = alloca(len);
+        *s = '\0';
+
+        if (module_name)
+            strcat(s, module_name);
+        if (module_name && class_name)
+            strcat(s, ".");
+        if (class_name)
+            strcat(s, class_name);
+
+        strcat(s, "::");
+        strcat(s, object_name);
+
+        name = PyString_FromString(s);
+    }
+    else
+        Py_INCREF(name);
+
+    wrapper_object = PyObject_CallFunctionObjArgs((PyObject *)
+            &NRFunctionTraceWrapper_Type, wrapped_object, name, scope,
+            override_path, NULL);
+
+    result = NRUtilities_ReplaceWithWrapper(parent_object, attribute_name,
+                                            wrapper_object);
+
+    Py_DECREF(parent_object);
+    Py_DECREF(wrapped_object);
+
+    Py_DECREF(name);
+
+    if (!result)
+        return NULL;
+
+    return wrapper_object;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *newrelic_memcache_trace(PyObject *self, PyObject *args,
                                          PyObject *kwds)
 {
@@ -385,8 +530,8 @@ static PyObject *newrelic_memcache_trace(PyObject *self, PyObject *args,
 
     static char *kwlist[] = { "command", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!:memcache_trace",
-                                     kwlist, &PyString_Type, &command)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "S:memcache_trace",
+                                     kwlist, &command)) {
         return NULL;
     }
 
@@ -415,9 +560,9 @@ static PyObject *newrelic_wrap_memcache_trace(PyObject *self, PyObject *args,
     static char *kwlist[] = { "module_name", "class_name", "object_name",
                               "command", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO!:wrap_memcache_trace",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzS:wrap_memcache_trace",
                                      kwlist, &module_name, &class_name,
-                                     &object_name, &PyString_Type, &command)) {
+                                     &object_name, &command)) {
         return NULL;
     }
 
@@ -695,6 +840,8 @@ static PyObject *newrelic_shutdown(PyObject *self, PyObject *args)
         Py_BEGIN_ALLOW_THREADS
 
         nr__harvest_thread_body("shutdown");
+
+        nr__send_stop_for_each_application();
         nr__stop_communication(&(nr_per_process_globals.daemon), NULL);
         nr__destroy_harvest_thread();
 
@@ -731,6 +878,10 @@ static PyMethodDef newrelic_methods[] = {
     { "external_trace",     (PyCFunction)newrelic_external_trace,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "wrap_external_trace", (PyCFunction)newrelic_wrap_external_trace,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
+    { "function_trace",     (PyCFunction)newrelic_function_trace,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
+    { "wrap_function_trace", (PyCFunction)newrelic_wrap_function_trace,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "memcache_trace",     (PyCFunction)newrelic_memcache_trace,
                             METH_VARARGS|METH_KEYWORDS, 0 },
@@ -789,6 +940,10 @@ init_newrelic(void)
         return;
     if (PyType_Ready(&NRFunctionTrace_Type) < 0)
         return;
+    if (PyType_Ready(&NRFunctionTraceDecorator_Type) < 0)
+        return;
+    if (PyType_Ready(&NRFunctionTraceWrapper_Type) < 0)
+        return;
     if (PyType_Ready(&NRMemcacheTrace_Type) < 0)
         return;
     if (PyType_Ready(&NRMemcacheTraceDecorator_Type) < 0)
@@ -840,6 +995,12 @@ init_newrelic(void)
     Py_INCREF(&NRFunctionTrace_Type);
     PyModule_AddObject(module, "FunctionTrace",
                        (PyObject *)&NRFunctionTrace_Type);
+    Py_INCREF(&NRFunctionTraceDecorator_Type);
+    PyModule_AddObject(module, "FunctionTraceDecorator",
+                       (PyObject *)&NRFunctionTraceDecorator_Type);
+    Py_INCREF(&NRFunctionTraceWrapper_Type);
+    PyModule_AddObject(module, "FunctionTraceWrapper",
+                       (PyObject *)&NRFunctionTraceWrapper_Type);
     Py_INCREF(&NRMemcacheTrace_Type);
     PyModule_AddObject(module, "MemcacheTrace",
                        (PyObject *)&NRMemcacheTrace_Type);

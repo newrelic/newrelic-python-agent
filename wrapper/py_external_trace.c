@@ -534,18 +534,18 @@ static void NRExternalTraceDecorator_dealloc(
 static PyObject *NRExternalTraceDecorator_call(
         NRExternalTraceDecoratorObject *self, PyObject *args, PyObject *kwds)
 {
-    PyObject *function_object = NULL;
+    PyObject *wrapped_object = NULL;
 
-    static char *kwlist[] = { "function", NULL };
+    static char *kwlist[] = { "wrapped", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:ExternalTraceDecorator",
-                                     kwlist, &function_object)) {
+                                     kwlist, &wrapped_object)) {
         return NULL;
     }
 
     return PyObject_CallFunctionObjArgs(
             (PyObject *)&NRExternalTraceWrapper_Type,
-            function_object, self->argnum, NULL);
+            wrapped_object, self->argnum, NULL);
 }
 
 /* ------------------------------------------------------------------------- */

@@ -1,7 +1,6 @@
 # vi: set sw=4 expandtab :
 
-__all__ = [ 'background_task', 'function_trace', 'external_trace',
-            'memcache_trace', 'database_trace' ]
+__all__ = [ 'background_task' ]
 
 import inspect
 import types
@@ -125,6 +124,7 @@ def background_task(name=None):
 # If the result is a generator which is then consumed in outer
 # scope, that consumption doesn't count towards the time.
 
+"""
 def function_trace(name=None, scope=None, override_path=False):
 
     def decorator(callable):
@@ -181,75 +181,4 @@ def function_trace(name=None, scope=None, override_path=False):
         return wrapper
 
     return decorator
-
-def external_trace(index):
-
-    def decorator(callable):
-
-        def wrapper(*args, **kwargs):
-            transaction = _newrelic.transaction()
-            if not transaction:
-                return callable(*args, **kwargs)
-
-            trace = _newrelic.ExternalTrace(transaction, args[index])
-            trace.__enter__()
-
-            try:
-                return callable(*args, **kwargs)
-            finally:
-                trace.__exit__(None, None, None)
-
-        wrapper.__name__ = getattr(callable, '__name__', wrapper.__name__)
-        wrapper.__doc__ = getattr(callable, '__doc__', None)
-
-        return wrapper
-
-    return decorator
-
-def memcache_trace(index):
-
-    def decorator(callable):
-
-        def wrapper(*args, **kwargs):
-            transaction = _newrelic.transaction()
-            if not transaction:
-                return callable(*args, **kwargs)
-
-            trace = _newrelic.MemcacheTrace(transaction, args[index])
-            trace.__enter__()
-
-            try:
-                return callable(*args, **kwargs)
-            finally:
-                trace.__exit__(None, None, None)
-
-        wrapper.__name__ = getattr(callable, '__name__', wrapper.__name__)
-        wrapper.__doc__ = getattr(callable, '__doc__', None)
-
-        return wrapper
-
-    return decorator
-
-def database_trace(index):
-
-    def decorator(callable):
-
-        def wrapper(*args, **kwargs):
-            transaction = _newrelic.transaction()
-            if not transaction:
-                return callable(*args, **kwargs)
-
-            trace = _newrelic.DatabaseTrace(transaction, args[index])
-            trace.__enter__()
-
-            try:
-                return callable(*args, **kwargs)
-            finally:
-                trace.__exit__(None, None, None)
-
-        wrapper.__name__ = getattr(callable, '__name__', wrapper.__name__)
-        wrapper.__doc__ = getattr(callable, '__doc__', None)
-
-        return wrapper
-
-    return decorator
+"""

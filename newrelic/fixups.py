@@ -1,7 +1,7 @@
 # vi: set sw=4 expandtab :
 
 from middleware import wsgi_application
-from decorators import function_trace
+#from decorators import function_trace
 
 def _load_object(mname, cname, fname):
     module = __import__(mname)
@@ -43,7 +43,9 @@ def _wrap_wsgi_application(mname, cname, fname, application):
     wrapper = wsgi_application(application)(object)
     setattr(parent, name, wrapper)
 
+"""
 def _wrap_function_trace(mname, cname, fname, scope=None):
     parent, name, object = _load_object(mname, cname, fname)
     wrapper = function_trace(_object_path(mname, cname, fname), scope=scope)(object)
     setattr(parent, name, wrapper)
+"""

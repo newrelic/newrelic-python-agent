@@ -225,9 +225,8 @@ static int NRMemcacheTraceWrapper_init(NRMemcacheTraceWrapperObject *self,
 
     static char *kwlist[] = { "wrapped", "command", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO!:MemcacheTraceWrapper",
-                                     kwlist, &wrapped_object, &PyString_Type,
-                                     &command)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OS:MemcacheTraceWrapper",
+                                     kwlist, &wrapped_object, &command)) {
         return -1;
     }
 
@@ -473,8 +472,8 @@ static int NRMemcacheTraceDecorator_init(NRMemcacheTraceDecoratorObject *self,
 
     static char *kwlist[] = { "command", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!:MemcacheTraceDecorator",
-                                     kwlist, &PyString_Type, &command)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "S:MemcacheTraceDecorator",
+                                     kwlist, &command)) {
         return -1;
     }
 
@@ -500,18 +499,18 @@ static void NRMemcacheTraceDecorator_dealloc(
 static PyObject *NRMemcacheTraceDecorator_call(
         NRMemcacheTraceDecoratorObject *self, PyObject *args, PyObject *kwds)
 {
-    PyObject *function_object = NULL;
+    PyObject *wrapped_object = NULL;
 
-    static char *kwlist[] = { "function", NULL };
+    static char *kwlist[] = { "wrapped", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:MemcacheTraceDecorator",
-                                     kwlist, &function_object)) {
+                                     kwlist, &wrapped_object)) {
         return NULL;
     }
 
     return PyObject_CallFunctionObjArgs(
             (PyObject *)&NRMemcacheTraceWrapper_Type,
-            function_object, self->command, NULL);
+            wrapped_object, self->command, NULL);
 }
 
 /* ------------------------------------------------------------------------- */

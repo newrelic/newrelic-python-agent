@@ -136,7 +136,7 @@ PyObject *NRUtilities_LookupCallable(const char *module_name,
             }
             else {
                 /*
-                 * TODO This can't handle nested classes.
+                 * TODO This doesn't attempt to deal with nested classes.
                  */
 
                 callable_object = PyObject_GetAttrString(class_object,
@@ -197,6 +197,146 @@ PyObject *NRUtilities_LookupCallable(const char *module_name,
     }
 
     return callable_object;
+}
+
+/* ------------------------------------------------------------------------- */
+
+PyObject *NRUtilities_CallableName(PyObject *wrapper, PyObject *object,
+                                   PyObject *args)
+{
+    PyObject *module_name = NULL;
+    PyObject *class_name = NULL;
+    PyObject *object_name = NULL;
+
+    const char *module_name_string = NULL;
+    const char *class_name_string = NULL;
+    const char *object_name_string = NULL;
+
+    int len = 0;
+    char *s = NULL;
+
+    PyObject *temp_object = NULL;
+
+    /*
+     * When a decorator is used on a class method, it isn't
+     * bound to a class instance at the time and so within the
+     * decorator we are not able to determine the class. To work
+     * out the class we need to look at the class associated
+     * with the first argument, ie., self argument passed to the
+     * method. Because though we don't know if we are even being
+     * called as a class method we have to do an elaborate check
+     * whereby we see if the first argument is a class instance
+     * possessing a bound method for which the associated function
+     * is our wrapper function.
+     */
+
+    if (PyFunction_Check(object)) {
+        if (PyTuple_Size(args) >= 1) {
+            temp_object = PyTuple_GetItem(args, 0);
+            temp_object = PyObject_GetAttrString(temp_object, "__class__");
+            if (temp_object) {
+                object_name = PyObject_GetAttrString(object, "__name__");
+                if (object_name) {
+                   temp_object = PyObject_GetAttr(temp_object, object_name);
+                   if (temp_object && PyMethod_Check(temp_object)) {
+                       if (((PyMethodObject *)temp_object)->im_func == wrapper)
+                           object = temp_object;
+                   }
+                }
+            }
+        }
+
+        PyErr_Clear();
+    }
+
+    /*
+     * Derive, module, class and object name.
+     *
+     * TODO This doesn't attempt to deal with nested classes.
+     *
+     * TODO Should exceptions from PyObject_GetAttrString() be
+     * cleared immediately.
+     */
+
+    module_name = PyObject_GetAttrString(object, "__module__");
+
+    if (module_name && PyString_Check(module_name))
+        module_name_string = PyString_AsString(module_name);
+
+    class_name_string = "";
+    object_name_string = "";
+
+    if (PyType_Check(object) || PyClass_Check(object)) {
+        class_name = PyObject_GetAttrString(object, "__name__");
+        if (class_name && PyString_Check(class_name))
+            class_name_string = PyString_AsString(class_name);
+        object_name_string = "__init__";
+    }
+    else if (PyMethod_Check(object)) {
+        class_name = PyObject_GetAttrString(((PyMethodObject *)
+                                            object)->im_class, "__name__");
+        if (class_name && PyString_Check(class_name))
+            class_name_string = PyString_AsString(class_name);
+        object_name = PyObject_GetAttrString(object, "__name__");
+        if (object_name && PyString_Check(object_name))
+            object_name_string = PyString_AsString(object_name);
+    }
+    else if (PyFunction_Check(object)) {
+        class_name_string = NULL;
+        object_name = PyObject_GetAttrString(object, "__name__");
+        if (object_name && PyString_Check(object_name))
+            object_name_string = PyString_AsString(object_name);
+    }
+    else if (PyInstance_Check(object)) {
+        temp_object = PyObject_GetAttrString(object, "__class__");
+        if (temp_object) {
+            class_name = PyObject_GetAttrString(temp_object, "__name__");
+            if (class_name && PyString_Check(class_name))
+                class_name_string = PyString_AsString(class_name);
+        }
+        object_name_string = "__call__";
+    }
+    else if ((temp_object = PyObject_GetAttrString(object, "__class__"))) {
+        class_name = PyObject_GetAttrString(temp_object, "__name__");
+        if (class_name && PyString_Check(class_name))
+            class_name_string = PyString_AsString(class_name);
+        object_name_string = "__call__";
+    }
+    else
+    {
+        class_name_string = NULL;
+        object_name_string = NULL;
+    }
+
+    PyErr_Clear();
+
+    /* Construct the composite name. */
+
+    if (module_name_string)
+        len += strlen(module_name_string);
+    if (module_name_string && class_name_string)
+        len += 1;
+    if (class_name_string)
+        len += strlen(class_name_string);
+
+    len += 2;
+    len += strlen(object_name_string);
+    len += 1;
+
+    s = alloca(len);
+    *s = '\0';
+
+    if (module_name_string)
+        strcat(s, module_name_string);
+    if (module_name_string && class_name_string)
+        strcat(s, ".");
+    if (class_name_string)
+        strcat(s, class_name_string);
+
+    strcat(s, "::");
+    strcat(s, object_name_string);
+
+    return PyString_FromString(s);
 }
 
 /* ------------------------------------------------------------------------- */

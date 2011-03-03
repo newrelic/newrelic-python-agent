@@ -99,7 +99,15 @@ PyObject *NRApplication_Singleton(PyObject *args, PyObject *kwds)
      * https://www.pivotaltracker.com/projects/???????.
      */
 
+#if 0
+    /*
+     * XXX Don't force a harvest now as local daemon is supposed
+     * to be making a greater effort to ensure that metric data
+     * is not lost.
+     */
+
     nr__harvest_thread_body(name);
+#endif
 
     return result;
 }

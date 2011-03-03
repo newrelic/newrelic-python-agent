@@ -6,9 +6,6 @@ import traceback
 import _newrelic
 
 from fixups import _wrap_wsgi_application
-#from decorators import function_trace
-
-# TODO URL path mapped to view name.
 
 def _fixup_database():
     from django.conf import settings
@@ -17,7 +14,6 @@ def _fixup_database():
 
     if hasattr(settings, 'DATABASES'):
         for alias, database in settings.DATABASES.items():
-            print 'DATABASE', database['ENGINE']
             parts = database['ENGINE'].split('.')
             module = __import__(database['ENGINE'], fromlist='base')
             interface = module.base.Database

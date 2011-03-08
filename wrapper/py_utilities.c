@@ -121,9 +121,9 @@ PyObject *NRUtilities_LookupCallable(const char *module_name,
 
             if (!object_name) {
                 /*
-		 * In case of class name but no object name, the
-		 * the parent object is the module and the
-		 * callable object is the class object itself.
+                 * In case of class name but no object name, the
+                 * the parent object is the module and the
+                 * callable object is the class object itself.
                  */
 
                 Py_INCREF(module_object);
@@ -150,10 +150,10 @@ PyObject *NRUtilities_LookupCallable(const char *module_name,
                 }
 
                 /*
-		 * In case of class name and object name, the
-		 * parent object is the class and the callable
-		 * object is the object which is the attribute
-		 * of the class.
+                 * In case of class name and object name, the
+                 * parent object is the class and the callable
+                 * object is the object which is the attribute
+                 * of the class.
                  */
 
                 Py_INCREF(class_object);
@@ -347,8 +347,8 @@ PyObject *NRUtilities_ReplaceWithWrapper(PyObject *parent_object,
 {
     if (PyModule_Check(parent_object)) {
         /*
-	 * For a module, need to access the module dictionary
-	 * and replace the attribute.
+         * For a module, need to access the module dictionary
+         * and replace the attribute.
          */
 
         PyObject *dict = NULL;
@@ -359,10 +359,18 @@ PyObject *NRUtilities_ReplaceWithWrapper(PyObject *parent_object,
     }
     else {
         /*
-	 * For everything else we attempt to use the attribute
+         * For everything else we attempt to use the attribute
          * interface of an object to replace the attribute. If
          * that doesn't work then modify the objects dictionary
          * directly instead.
+         *
+         * XXX Check this. The latter means the type as a whole
+         * is being modified and so only should be done when
+         * modifying the raw method functions of a C API class
+         * implementation. Should perhaps check explicitly for
+         * that scenario and only do it if sensible. If can't do
+         * that then raise an error indicating can't wrap the
+         * target object.
          */
 
         if (PyObject_SetAttrString(parent_object, attribute_name,

@@ -443,9 +443,9 @@ static PyObject *NRTransaction_runtime_error(
         }
 
         /*
-	 * TODO There is also provision for passing back
-	 * 'file_name', 'line_number' and 'source' params as
-	 * well. These are dependent on RPM have been updated
+         * TODO There is also provision for passing back
+         * 'file_name', 'line_number' and 'source' params as
+         * well. These are dependent on RPM have been updated
          * to show them for something other than Ruby. The
          * passing back of such additional information as the
          * source code should be done by setting a flag and

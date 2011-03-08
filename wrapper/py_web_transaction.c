@@ -91,13 +91,13 @@ static int NRWebTransaction_init(NRTransactionObject *self, PyObject *args,
 
     if (self->transaction) {
         /*
-	 * Extract from the WSGI environ dictionary details of
-	 * the URL path. This will be set as default path for
-	 * the web transaction. This can be overridden by
-	 * framework to be more specific to avoid metrics
-	 * explosion problem resulting from too many distinct
-	 * URLs for same resource due to use of REST style URL
-	 * concepts or otherwise.
+         * Extract from the WSGI environ dictionary details of
+         * the URL path. This will be set as default path for
+         * the web transaction. This can be overridden by
+         * framework to be more specific to avoid metrics
+         * explosion problem resulting from too many distinct
+         * URLs for same resource due to use of REST style URL
+         * concepts or otherwise.
          */
 
         self->transaction->path = 0;
@@ -151,18 +151,18 @@ static int NRWebTransaction_init(NRTransactionObject *self, PyObject *args,
         }
 
         /*
-	 * See if the WSGI environ dictionary includes the
-	 * special 'X-NewRelic-Queue-Start' HTTP header. This
-	 * header is an optional header that can be set within
-	 * the underlying web server or WSGI server to indicate
-	 * when the current request was first received and ready
-	 * to be processed. The difference between this time and
-	 * when application starts processing the request is the
-	 * queue time and represents how long spent in any
-	 * explicit request queuing system, or how long waiting
-	 * in connecting state against listener sockets where
-	 * request needs to be proxied between any processes
-	 * within the application server.
+         * See if the WSGI environ dictionary includes the
+         * special 'X-NewRelic-Queue-Start' HTTP header. This
+         * header is an optional header that can be set within
+         * the underlying web server or WSGI server to indicate
+         * when the current request was first received and ready
+         * to be processed. The difference between this time and
+         * when application starts processing the request is the
+         * queue time and represents how long spent in any
+         * explicit request queuing system, or how long waiting
+         * in connecting state against listener sockets where
+         * request needs to be proxied between any processes
+         * within the application server.
          */
 
         self->transaction->http_x_request_start = 0;
@@ -203,11 +203,11 @@ static int NRWebTransaction_init(NRTransactionObject *self, PyObject *args,
         }
 
         /*
-	 * Check whether web transaction being flagged as to be
-	 * ignored. This is different to being disabled
-	 * completely via the enabled flag as ignored state
-	 * could be undone where as for disabled case tracking
-	 * of transaction does not even occur.
+         * Check whether web transaction being flagged as to be
+         * ignored. This is different to being disabled
+         * completely via the enabled flag as ignored state
+         * could be undone where as for disabled case tracking
+         * of transaction does not even occur.
          */
 
         self->transaction->ignore = 0;
@@ -230,11 +230,11 @@ static int NRWebTransaction_init(NRTransactionObject *self, PyObject *args,
         }
 
         /*
-	 * Create a copy of the WSGI environ for the request
-	 * parameters. We don't just reference the original
-	 * environ dictionary as WSGI middleware may change the
-	 * content in place and so data could end up being
-	 * different to what it was at start of the request.
+         * Create a copy of the WSGI environ for the request
+         * parameters. We don't just reference the original
+         * environ dictionary as WSGI middleware may change the
+         * content in place and so data could end up being
+         * different to what it was at start of the request.
          */
 
         PyDict_Update(self->request_parameters, environ);

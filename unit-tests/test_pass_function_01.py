@@ -52,13 +52,6 @@ def _test_function_3(*args, **kwargs):
     return args, kwargs
 _test_function_3 = _newrelic.pass_function(_pass_function)(_test_function_3)
 
-#@_newrelic.pass_function(_pass_function, run_once=True)
-def _test_function_4(*args, **kwargs):
-    global _test_phase
-    _test_phase = '_test_function_4'
-    return args, kwargs
-_test_function_4 = _newrelic.pass_function(_pass_function,
-                                           run_once=True)(_test_function_4)
 
 class PassFunctionTests01(unittest.TestCase):
 
@@ -169,31 +162,6 @@ class PassFunctionTests01(unittest.TestCase):
         self.assertEqual(_test_result, c)
         self.assertEqual(result, c)
 
-    def test_wrap_run_once(self):
-        o1 = _test_function_2
-        o2 = _newrelic.wrap_pass_function(__name__, None, '_test_function_2',
-                                          _pass_function, run_once=True)
-        self.assertEqual(o1, o2.__wrapped__)
-
-        global _test_result
-        _test_result = None
-
-        global _test_count
-        _test_count = 0
-
-        args = (1, 2, 3)
-        kwargs = { "one": 1, "two": 2, "three": 3 }
-
-        result = _test_function_2(*args, **kwargs)
-
-        self.assertEqual(result, (args, kwargs)) 
-        self.assertEqual(_test_result, (args, kwargs))
-
-        result = _test_function_2(*args, **kwargs)
-        result = _test_function_2(*args, **kwargs)
-
-        self.assertEqual(_test_count, 1) 
-
     def test_decorator(self):
         global _test_result
         _test_result = None
@@ -213,26 +181,6 @@ class PassFunctionTests01(unittest.TestCase):
         result = _test_function_3(*args, **kwargs)
 
         self.assertEqual(_test_count, 3) 
-
-    def test_decorator_run_once(self):
-        global _test_result
-        _test_result = None
-
-        global _test_count
-        _test_count = 0
-
-        args = (1, 2, 3)
-        kwargs = { "one": 1, "two": 2, "three": 3 }
-
-        result = _test_function_4(*args, **kwargs)
-
-        self.assertEqual(result, (args, kwargs)) 
-        self.assertEqual(_test_result, (args, kwargs))
-
-        result = _test_function_4(*args, **kwargs)
-        result = _test_function_4(*args, **kwargs)
-
-        self.assertEqual(_test_count, 1) 
 
 if __name__ == '__main__':
     unittest.main()

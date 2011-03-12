@@ -14,15 +14,6 @@ _test_result = None
 _test_count = 0
 _test_phase = None
 
-def _in_function(*args, **kwds):
-    global _test_result
-    _test_result = (args, kwds)
-    global _test_count
-    _test_count += 1
-    global _test_phase
-    _test_phase = '_in_function'
-    return (args, kwds)
-
 def _out_function(result):
     global _test_result
     _test_result = result
@@ -54,24 +45,15 @@ class _test_class_2(object):
         _test_phase = '_test_class_2._test_function'
         return args, kwargs
 
-#@_newrelic.pass_function(out_function=_out_function)
+#@_newrelic.out_function(_out_function)
 def _test_function_3(*args, **kwargs):
     global _test_phase
     _test_phase = '_test_function_3'
     return args, kwargs
-_test_function_3 = _newrelic.pass_function(
-        out_function=_out_function)(_test_function_3)
-
-#@_newrelic.pass_function(in_function=_in_function)
-def _test_function_4(*args, **kwargs):
-    global _test_phase
-    _test_phase = '_test_function_4'
-    return args, kwargs
-_test_function_4 = _newrelic.pass_function(
-        in_function=_in_function)(_test_function_4)
+_test_function_3 = _newrelic.out_function(_out_function)(_test_function_3)
 
 
-class PassFunctionTests01(unittest.TestCase):
+class OutFunctionTests01(unittest.TestCase):
 
     def setUp(self):
         _newrelic.log(_newrelic.LOG_DEBUG, "STARTING - %s" %
@@ -83,8 +65,8 @@ class PassFunctionTests01(unittest.TestCase):
 
     def test_wrap_function(self):
         o1 = _test_function_1
-        o2 = _newrelic.wrap_pass_function(__name__, None, '_test_function_1',
-                                          out_function=_out_function)
+        o2 = _newrelic.wrap_out_function(__name__, None, '_test_function_1',
+                                          _out_function)
         self.assertEqual(o1, o2.__wrapped__)
 
         global _test_result
@@ -112,9 +94,8 @@ class PassFunctionTests01(unittest.TestCase):
 
     def test_wrap_old_style_class_method(self):
         o1 = _test_class_1._test_function
-        o2 = _newrelic.wrap_pass_function(__name__, '_test_class_1',
-                                          '_test_function',
-                                          out_function=_out_function)
+        o2 = _newrelic.wrap_out_function(__name__, '_test_class_1',
+                                         '_test_function', _out_function)
         self.assertEqual(o1, o2.__wrapped__)
 
         global _test_result
@@ -134,9 +115,8 @@ class PassFunctionTests01(unittest.TestCase):
 
     def test_wrap_new_style_class_method(self):
         o1 = _test_class_2._test_function
-        o2 = _newrelic.wrap_pass_function(__name__, '_test_class_2',
-                                          '_test_function',
-                                          out_function=_out_function)
+        o2 = _newrelic.wrap_out_function(__name__, '_test_class_2',
+                                         '_test_function', _out_function)
         self.assertEqual(o1, o2.__wrapped__)
 
         global _test_result
@@ -156,8 +136,8 @@ class PassFunctionTests01(unittest.TestCase):
 
     def test_wrap_capi_class_method(self):
         o1 = sqlite3.Cursor.execute
-        o2 = _newrelic.wrap_pass_function('sqlite3', 'Cursor', 'execute',
-                                          out_function=_out_function)
+        o2 = _newrelic.wrap_out_function('sqlite3', 'Cursor', 'execute',
+                                         _out_function)
         self.assertEqual(o1, o2.__wrapped__)
 
         global _test_result
@@ -199,26 +179,6 @@ class PassFunctionTests01(unittest.TestCase):
 
         result = _test_function_3(*args, **kwargs)
         result = _test_function_3(*args, **kwargs)
-
-        self.assertEqual(_test_count, 3) 
-
-    def test_decorator_in_function(self):
-        global _test_result
-        _test_result = None
-
-        global _test_count
-        _test_count = 0
-
-        args = (1, 2, 3)
-        kwargs = { "one": 1, "two": 2, "three": 3 }
-
-        result = _test_function_4(*args, **kwargs)
-
-        self.assertEqual(result, (args, kwargs)) 
-        self.assertEqual(_test_result, (args, kwargs))
-
-        result = _test_function_4(*args, **kwargs)
-        result = _test_function_4(*args, **kwargs)
 
         self.assertEqual(_test_count, 3) 
 

@@ -1,5 +1,5 @@
-#ifndef PY_WRAPPER_PASS_FUNCTION_H
-#define PY_WRAPPER_PASS_FUNCTION_H
+#ifndef PY_WRAPPER_IN_FUNCTION_H
+#define PY_WRAPPER_IN_FUNCTION_H
 
 /* ------------------------------------------------------------------------- */
 
@@ -14,19 +14,17 @@
 typedef struct {
     PyObject_HEAD
     PyObject *wrapped_object;
-    PyObject *in_function_object;
-    PyObject *out_function_object;
-} NRPassFunctionWrapperObject;
+    PyObject *function_object;
+} NRInFunctionWrapperObject;
 
-extern PyTypeObject NRPassFunctionWrapper_Type;
+extern PyTypeObject NRInFunctionWrapper_Type;
 
 typedef struct {
     PyObject_HEAD
-    PyObject *in_function_object;
-    PyObject *out_function_object;
-} NRPassFunctionDecoratorObject;
+    PyObject *function_object;
+} NRInFunctionDecoratorObject;
 
-extern PyTypeObject NRPassFunctionDecorator_Type;
+extern PyTypeObject NRInFunctionDecorator_Type;
 
 /* ------------------------------------------------------------------------- */
 

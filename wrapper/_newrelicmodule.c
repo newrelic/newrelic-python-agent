@@ -18,7 +18,8 @@
 #include "py_transaction.h"
 #include "py_web_transaction.h"
 
-#include "py_pass_function.h"
+#include "py_in_function.h"
+#include "py_out_function.h"
 #include "py_post_function.h"
 #include "py_pre_function.h"
 
@@ -596,41 +597,31 @@ static PyObject *newrelic_wrap_memcache_trace(PyObject *self, PyObject *args,
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *newrelic_pass_function(PyObject *self, PyObject *args,
-                                        PyObject *kwds)
+static PyObject *newrelic_in_function(PyObject *self, PyObject *args,
+                                      PyObject *kwds)
 {
-    PyObject *in_function_object = Py_None;
-    PyObject *out_function_object = Py_None;
+    PyObject *function_object = Py_None;
 
-    static char *kwlist[] = { "in_function", "out_function", NULL };
+    static char *kwlist[] = { "in_function", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OO:pass_function",
-                                     kwlist, &in_function_object,
-                                     &out_function_object)) {
-        return NULL;
-    }
-
-    if (in_function_object == Py_None && out_function_object == Py_None) {
-        PyErr_SetString(PyExc_TypeError, "either in function or out function "
-                        "or both must be not None");
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:in_function",
+                                     kwlist, &function_object)) {
         return NULL;
     }
 
     return PyObject_CallFunctionObjArgs((PyObject *)
-            &NRPassFunctionDecorator_Type, in_function_object,
-            out_function_object, NULL);
+            &NRInFunctionDecorator_Type, function_object, NULL);
 }
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *newrelic_wrap_pass_function(PyObject *self, PyObject *args,
-                                             PyObject *kwds)
+static PyObject *newrelic_wrap_in_function(PyObject *self, PyObject *args,
+                                           PyObject *kwds)
 {
     const char *module_name = NULL;
     const char *class_name = NULL;
     const char *object_name = NULL;
-    PyObject *in_function_object = Py_None;
-    PyObject *out_function_object = Py_None;
+    PyObject *function_object = Py_None;
 
     PyObject *wrapped_object = NULL;
     PyObject *parent_object = NULL;
@@ -641,24 +632,17 @@ static PyObject *newrelic_wrap_pass_function(PyObject *self, PyObject *args,
     PyObject *result = NULL;
 
     static char *kwlist[] = { "module_name", "class_name", "object_name",
-                              "in_function", "out_function", NULL };
+                              "in_function", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szz|OO:wrap_pass_function",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO:wrap_in_function",
                                      kwlist, &module_name, &class_name,
-                                     &object_name, &in_function_object,
-                                     &out_function_object)) {
+                                     &object_name, &function_object)) {
         return NULL;
     }
 
     if (!class_name && !object_name) {
         PyErr_SetString(PyExc_RuntimeError, "class or object name must be "
                         "supplied");
-        return NULL;
-    }
-
-    if (in_function_object == Py_None && out_function_object == Py_None) {
-        PyErr_SetString(PyExc_TypeError, "either in function or out function "
-                        "or both must be not None");
         return NULL;
     }
 
@@ -670,8 +654,82 @@ static PyObject *newrelic_wrap_pass_function(PyObject *self, PyObject *args,
         return NULL;
 
     wrapper_object = PyObject_CallFunctionObjArgs((PyObject *)
-            &NRPassFunctionWrapper_Type, wrapped_object,
-            in_function_object, out_function_object, NULL);
+            &NRInFunctionWrapper_Type, wrapped_object,
+            function_object, NULL);
+
+    result = NRUtilities_ReplaceWithWrapper(parent_object, attribute_name,
+                                            wrapper_object);
+
+    Py_DECREF(parent_object);
+    Py_DECREF(wrapped_object);
+
+    if (!result)
+        return NULL;
+
+    return wrapper_object;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *newrelic_out_function(PyObject *self, PyObject *args,
+                                       PyObject *kwds)
+{
+    PyObject *function_object = Py_None;
+
+    static char *kwlist[] = { "out_function", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:out_function",
+                                     kwlist, &function_object)) {
+        return NULL;
+    }
+
+    return PyObject_CallFunctionObjArgs((PyObject *)
+            &NROutFunctionDecorator_Type, function_object, NULL);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *newrelic_wrap_out_function(PyObject *self, PyObject *args,
+                                            PyObject *kwds)
+{
+    const char *module_name = NULL;
+    const char *class_name = NULL;
+    const char *object_name = NULL;
+    PyObject *function_object = Py_None;
+
+    PyObject *wrapped_object = NULL;
+    PyObject *parent_object = NULL;
+    const char *attribute_name = NULL;
+
+    PyObject *wrapper_object = NULL;
+
+    PyObject *result = NULL;
+
+    static char *kwlist[] = { "module_name", "class_name", "object_name",
+                              "out_function", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO:wrap_pass_function",
+                                     kwlist, &module_name, &class_name,
+                                     &object_name, &function_object)) {
+        return NULL;
+    }
+
+    if (!class_name && !object_name) {
+        PyErr_SetString(PyExc_RuntimeError, "class or object name must be "
+                        "supplied");
+        return NULL;
+    }
+
+    wrapped_object = NRUtilities_LookupCallable(module_name, class_name,
+                                                 object_name, &parent_object,
+                                                 &attribute_name);
+
+    if (!wrapped_object)
+        return NULL;
+
+    wrapper_object = PyObject_CallFunctionObjArgs((PyObject *)
+            &NROutFunctionWrapper_Type, wrapped_object,
+            function_object, NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object, attribute_name,
                                             wrapper_object);
@@ -900,9 +958,13 @@ static PyMethodDef newrelic_methods[] = {
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "wrap_memcache_trace", (PyCFunction)newrelic_wrap_memcache_trace,
                             METH_VARARGS|METH_KEYWORDS, 0 },
-    { "pass_function",      (PyCFunction)newrelic_pass_function,
+    { "in_function",        (PyCFunction)newrelic_in_function,
                             METH_VARARGS|METH_KEYWORDS, 0 },
-    { "wrap_pass_function", (PyCFunction)newrelic_wrap_pass_function,
+    { "wrap_in_function",   (PyCFunction)newrelic_wrap_in_function,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
+    { "out_function",       (PyCFunction)newrelic_out_function,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
+    { "wrap_out_function",  (PyCFunction)newrelic_wrap_out_function,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "post_function",      (PyCFunction)newrelic_post_function,
                             METH_VARARGS|METH_KEYWORDS, 0 },
@@ -969,9 +1031,13 @@ init_newrelic(void)
         return;
     if (PyType_Ready(&NRWebTransaction_Type) < 0)
         return;
-    if (PyType_Ready(&NRPassFunctionDecorator_Type) < 0)
+    if (PyType_Ready(&NRInFunctionDecorator_Type) < 0)
         return;
-    if (PyType_Ready(&NRPassFunctionWrapper_Type) < 0)
+    if (PyType_Ready(&NRInFunctionWrapper_Type) < 0)
+        return;
+    if (PyType_Ready(&NROutFunctionDecorator_Type) < 0)
+        return;
+    if (PyType_Ready(&NROutFunctionWrapper_Type) < 0)
         return;
     if (PyType_Ready(&NRPostFunctionDecorator_Type) < 0)
         return;
@@ -1026,12 +1092,18 @@ init_newrelic(void)
     Py_INCREF(&NRWebTransaction_Type);
     PyModule_AddObject(module, "WebTransaction",
                        (PyObject *)&NRWebTransaction_Type);
-    Py_INCREF(&NRPassFunctionDecorator_Type);
-    PyModule_AddObject(module, "PassFunctionDecorator",
-                       (PyObject *)&NRPassFunctionDecorator_Type);
-    Py_INCREF(&NRPassFunctionWrapper_Type);
-    PyModule_AddObject(module, "PassFunctionWrapper",
-                       (PyObject *)&NRPassFunctionWrapper_Type);
+    Py_INCREF(&NRInFunctionDecorator_Type);
+    PyModule_AddObject(module, "InFunctionDecorator",
+                       (PyObject *)&NRInFunctionDecorator_Type);
+    Py_INCREF(&NRInFunctionWrapper_Type);
+    PyModule_AddObject(module, "InFunctionWrapper",
+                       (PyObject *)&NRInFunctionWrapper_Type);
+    Py_INCREF(&NROutFunctionDecorator_Type);
+    PyModule_AddObject(module, "OutFunctionDecorator",
+                       (PyObject *)&NROutFunctionDecorator_Type);
+    Py_INCREF(&NROutFunctionWrapper_Type);
+    PyModule_AddObject(module, "OutFunctionWrapper",
+                       (PyObject *)&NROutFunctionWrapper_Type);
     Py_INCREF(&NRPostFunctionDecorator_Type);
     PyModule_AddObject(module, "PostFunctionDecorator",
                        (PyObject *)&NRPostFunctionDecorator_Type);

@@ -604,7 +604,7 @@ static PyObject *newrelic_pass_function(PyObject *self, PyObject *args,
     static char *kwlist[] = { "function", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:pass_function",
-                                     kwlist, &function_object, &PyBool_Type)) {
+                                     kwlist, &function_object)) {
         return NULL;
     }
 
@@ -633,10 +633,9 @@ static PyObject *newrelic_wrap_pass_function(PyObject *self, PyObject *args,
     static char *kwlist[] = { "module_name", "class_name", "object_name",
                               "function", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO|O!:wrap_pass_function",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO:wrap_pass_function",
                                      kwlist, &module_name, &class_name,
-                                     &object_name, &function_object,
-                                     &PyBool_Type)) {
+                                     &object_name, &function_object)) {
         return NULL;
     }
 

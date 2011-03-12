@@ -36,7 +36,7 @@ static int NRPreFunctionWrapper_init(NRPreFunctionWrapperObject *self,
     PyObject *function_object = NULL;
     PyObject *run_once = NULL;
 
-    static char *kwlist[] = { "wrapped", "function", "run_once", NULL };
+    static char *kwlist[] = { "wrapped", "pre_function", "run_once", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO|O!:PreFunctionWrapper",
                                      kwlist, &wrapped_object, &function_object,
@@ -201,7 +201,7 @@ static int NRPreFunctionDecorator_init(NRPreFunctionDecoratorObject *self,
     PyObject *function_object = NULL;
     PyObject *run_once = NULL;
 
-    static char *kwlist[] = { "function", "run_once", NULL };
+    static char *kwlist[] = { "pre_function", "run_once", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O!:PreFunctionDecorator",
                                      kwlist, &function_object, &PyBool_Type,
@@ -234,7 +234,7 @@ static PyObject *NRPreFunctionDecorator_call(
 {
     PyObject *function_object = NULL;
 
-    static char *kwlist[] = { "function", NULL };
+    static char *kwlist[] = { "pre_function", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:PreFunctionDecorator",
                                      kwlist, &function_object)) {

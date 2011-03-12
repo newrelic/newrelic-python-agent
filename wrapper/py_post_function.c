@@ -36,7 +36,7 @@ static int NRPostFunctionWrapper_init(NRPostFunctionWrapperObject *self,
     PyObject *function_object = NULL;
     PyObject *run_once = NULL;
 
-    static char *kwlist[] = { "wrapped", "function", "run_once", NULL };
+    static char *kwlist[] = { "wrapped", "post_function", "run_once", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO|O!:PostFunctionWrapper",
                                      kwlist, &wrapped_object, &function_object,
@@ -230,7 +230,7 @@ static int NRPostFunctionDecorator_init(NRPostFunctionDecoratorObject *self,
     PyObject *function_object = NULL;
     PyObject *run_once = NULL;
 
-    static char *kwlist[] = { "function", "run_once", NULL };
+    static char *kwlist[] = { "post_function", "run_once", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O!:PostFunctionDecorator",
                                      kwlist, &function_object, &PyBool_Type,
@@ -263,7 +263,7 @@ static PyObject *NRPostFunctionDecorator_call(
 {
     PyObject *function_object = NULL;
 
-    static char *kwlist[] = { "function", NULL };
+    static char *kwlist[] = { "post_function", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:PostFunctionDecorator",
                                      kwlist, &function_object)) {

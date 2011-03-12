@@ -601,7 +601,7 @@ static PyObject *newrelic_pass_function(PyObject *self, PyObject *args,
 {
     PyObject *function_object = NULL;
 
-    static char *kwlist[] = { "function", NULL };
+    static char *kwlist[] = { "in_function", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:pass_function",
                                      kwlist, &function_object)) {
@@ -631,7 +631,7 @@ static PyObject *newrelic_wrap_pass_function(PyObject *self, PyObject *args,
     PyObject *result = NULL;
 
     static char *kwlist[] = { "module_name", "class_name", "object_name",
-                              "function", NULL };
+                              "in_function", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO:wrap_pass_function",
                                      kwlist, &module_name, &class_name,
@@ -676,7 +676,7 @@ static PyObject *newrelic_post_function(PyObject *self, PyObject *args,
     PyObject *function_object = NULL;
     PyObject *run_once = NULL;
 
-    static char *kwlist[] = { "function", "run_once", NULL };
+    static char *kwlist[] = { "post_function", "run_once", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O!:post_function",
                                      kwlist, &function_object, &PyBool_Type,
@@ -708,7 +708,7 @@ static PyObject *newrelic_wrap_post_function(PyObject *self, PyObject *args,
     PyObject *result = NULL;
 
     static char *kwlist[] = { "module_name", "class_name", "object_name",
-                              "function", "run_once", NULL };
+                              "post_function", "run_once", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO|O!:wrap_post_function",
                                      kwlist, &module_name, &class_name,
@@ -754,7 +754,7 @@ static PyObject *newrelic_pre_function(PyObject *self, PyObject *args,
     PyObject *function_object = NULL;
     PyObject *run_once = NULL;
 
-    static char *kwlist[] = { "function", "run_once", NULL };
+    static char *kwlist[] = { "pre_function", "run_once", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O!:pre_function",
                                      kwlist, &function_object, &PyBool_Type,
@@ -786,7 +786,7 @@ static PyObject *newrelic_wrap_pre_function(PyObject *self, PyObject *args,
     PyObject *result = NULL;
 
     static char *kwlist[] = { "module_name", "class_name", "object_name",
-                              "function", "run_once", NULL };
+                              "pre_function", "run_once", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO|O!:wrap_pre_function",
                                      kwlist, &module_name, &class_name,

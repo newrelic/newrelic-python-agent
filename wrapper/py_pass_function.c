@@ -34,7 +34,7 @@ static int NRPassFunctionWrapper_init(NRPassFunctionWrapperObject *self,
     PyObject *wrapped_object = NULL;
     PyObject *function_object = NULL;
 
-    static char *kwlist[] = { "wrapped", "function", NULL };
+    static char *kwlist[] = { "wrapped", "in_function", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO:PassFunctionWrapper",
                                      kwlist, &wrapped_object,
@@ -196,7 +196,7 @@ static int NRPassFunctionDecorator_init(NRPassFunctionDecoratorObject *self,
 {
     PyObject *function_object = NULL;
 
-    static char *kwlist[] = { "function", NULL };
+    static char *kwlist[] = { "in_function", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:PassFunctionDecorator",
                                      kwlist, &function_object)) {
@@ -226,7 +226,7 @@ static PyObject *NRPassFunctionDecorator_call(
 {
     PyObject *function_object = NULL;
 
-    static char *kwlist[] = { "function", NULL };
+    static char *kwlist[] = { "in_function", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:PassFunctionDecorator",
                                      kwlist, &function_object)) {

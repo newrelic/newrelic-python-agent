@@ -14,14 +14,16 @@
 typedef struct {
     PyObject_HEAD
     PyObject *wrapped_object;
-    PyObject *function_object;
+    PyObject *in_function_object;
+    PyObject *out_function_object;
 } NRPassFunctionWrapperObject;
 
 extern PyTypeObject NRPassFunctionWrapper_Type;
 
 typedef struct {
     PyObject_HEAD
-    PyObject *function_object;
+    PyObject *in_function_object;
+    PyObject *out_function_object;
 } NRPassFunctionDecoratorObject;
 
 extern PyTypeObject NRPassFunctionDecorator_Type;

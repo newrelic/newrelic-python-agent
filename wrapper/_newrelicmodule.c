@@ -599,17 +599,26 @@ static PyObject *newrelic_wrap_memcache_trace(PyObject *self, PyObject *args,
 static PyObject *newrelic_pass_function(PyObject *self, PyObject *args,
                                         PyObject *kwds)
 {
-    PyObject *function_object = NULL;
+    PyObject *in_function_object = Py_None;
+    PyObject *out_function_object = Py_None;
 
-    static char *kwlist[] = { "in_function", NULL };
+    static char *kwlist[] = { "in_function", "out_function", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:pass_function",
-                                     kwlist, &function_object)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OO:pass_function",
+                                     kwlist, &in_function_object,
+                                     &out_function_object)) {
+        return NULL;
+    }
+
+    if (in_function_object == Py_None && out_function_object == Py_None) {
+        PyErr_SetString(PyExc_TypeError, "either in function or out function "
+                        "or both must be not None");
         return NULL;
     }
 
     return PyObject_CallFunctionObjArgs((PyObject *)
-            &NRPassFunctionDecorator_Type, function_object, NULL);
+            &NRPassFunctionDecorator_Type, in_function_object,
+            out_function_object, NULL);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -620,7 +629,8 @@ static PyObject *newrelic_wrap_pass_function(PyObject *self, PyObject *args,
     const char *module_name = NULL;
     const char *class_name = NULL;
     const char *object_name = NULL;
-    PyObject *function_object = NULL;
+    PyObject *in_function_object = Py_None;
+    PyObject *out_function_object = Py_None;
 
     PyObject *wrapped_object = NULL;
     PyObject *parent_object = NULL;
@@ -631,17 +641,24 @@ static PyObject *newrelic_wrap_pass_function(PyObject *self, PyObject *args,
     PyObject *result = NULL;
 
     static char *kwlist[] = { "module_name", "class_name", "object_name",
-                              "in_function", NULL };
+                              "in_function", "out_function", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO:wrap_pass_function",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szz|OO:wrap_pass_function",
                                      kwlist, &module_name, &class_name,
-                                     &object_name, &function_object)) {
+                                     &object_name, &in_function_object,
+                                     &out_function_object)) {
         return NULL;
     }
 
     if (!class_name && !object_name) {
         PyErr_SetString(PyExc_RuntimeError, "class or object name must be "
                         "supplied");
+        return NULL;
+    }
+
+    if (in_function_object == Py_None && out_function_object == Py_None) {
+        PyErr_SetString(PyExc_TypeError, "either in function or out function "
+                        "or both must be not None");
         return NULL;
     }
 
@@ -654,7 +671,7 @@ static PyObject *newrelic_wrap_pass_function(PyObject *self, PyObject *args,
 
     wrapper_object = PyObject_CallFunctionObjArgs((PyObject *)
             &NRPassFunctionWrapper_Type, wrapped_object,
-            function_object, NULL);
+            in_function_object, out_function_object, NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object, attribute_name,
                                             wrapper_object);

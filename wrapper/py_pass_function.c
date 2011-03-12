@@ -21,7 +21,8 @@ static PyObject *NRPassFunctionWrapper_new(PyTypeObject *type, PyObject *args,
         return NULL;
 
     self->wrapped_object = NULL;
-    self->function_object = NULL;
+    self->in_function_object = NULL;
+    self->out_function_object = NULL;
 
     return (PyObject *)self;
 }
@@ -32,13 +33,21 @@ static int NRPassFunctionWrapper_init(NRPassFunctionWrapperObject *self,
                                       PyObject *args, PyObject *kwds)
 {
     PyObject *wrapped_object = NULL;
-    PyObject *function_object = NULL;
+    PyObject *in_function_object = Py_None;
+    PyObject *out_function_object = Py_None;
 
-    static char *kwlist[] = { "wrapped", "in_function", NULL };
+    static char *kwlist[] = { "wrapped", "in_function", "out_function", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO:PassFunctionWrapper",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|OO:PassFunctionWrapper",
                                      kwlist, &wrapped_object,
-                                     &function_object)) {
+                                     &in_function_object,
+                                     &out_function_object)) {
+        return -1;
+    }
+
+    if (in_function_object == Py_None && out_function_object == Py_None) {
+        PyErr_SetString(PyExc_TypeError, "either in function or out function "
+                        "or both must be not None");
         return -1;
     }
 
@@ -46,9 +55,13 @@ static int NRPassFunctionWrapper_init(NRPassFunctionWrapperObject *self,
     Py_XDECREF(self->wrapped_object);
     self->wrapped_object = wrapped_object;
 
-    Py_INCREF(function_object);
-    Py_XDECREF(self->function_object);
-    self->function_object = function_object;
+    Py_INCREF(in_function_object);
+    Py_XDECREF(self->in_function_object);
+    self->in_function_object = in_function_object;
+
+    Py_INCREF(out_function_object);
+    Py_XDECREF(self->out_function_object);
+    self->out_function_object = out_function_object;
 
     /*
      * TODO This should set __module__, __name__, __doc__ and
@@ -64,7 +77,8 @@ static int NRPassFunctionWrapper_init(NRPassFunctionWrapperObject *self,
 static void NRPassFunctionWrapper_dealloc(NRPassFunctionWrapperObject *self)
 {
     Py_DECREF(self->wrapped_object);
-    Py_XDECREF(self->function_object);
+    Py_XDECREF(self->in_function_object);
+    Py_XDECREF(self->out_function_object);
 
     Py_TYPE(self)->tp_free(self);
 }
@@ -74,18 +88,72 @@ static void NRPassFunctionWrapper_dealloc(NRPassFunctionWrapperObject *self)
 static PyObject *NRPassFunctionWrapper_call(NRPassFunctionWrapperObject *self,
                                             PyObject *args, PyObject *kwds)
 {
+    PyObject *wrapped_args = NULL;
+    PyObject *wrapped_kwds = NULL;
     PyObject *wrapped_result = NULL;
 
-    wrapped_result = PyObject_Call(self->wrapped_object, args, kwds);
+    if (self->in_function_object != Py_None) {
+        PyObject *function_result = NULL;
+
+        function_result = PyObject_Call(self->in_function_object, args, kwds);
+
+        if (!function_result)
+            return NULL;
+
+        if (!PyTuple_Check(function_result)) {
+            PyErr_SetString(PyExc_TypeError, "result of out bound pass "
+                            "function must be 2 tuple of args and kwds");
+            return NULL;
+        }
+
+        if (PyTuple_Size(function_result) != 2) {
+            PyErr_SetString(PyExc_TypeError, "result of out bound pass "
+                            "function must be 2 tuple of args and kwds");
+            return NULL;
+        }
+
+        wrapped_args = PyTuple_GetItem(function_result, 0);
+        wrapped_kwds = PyTuple_GetItem(function_result, 1);
+
+        if (!PyTuple_Check(wrapped_args)) {
+            PyErr_SetString(PyExc_TypeError, "result of out bound pass "
+                            "function must be 2 tuple of args and kwds");
+            return NULL;
+        }
+
+        if (!PyDict_Check(wrapped_kwds)) {
+            PyErr_SetString(PyExc_TypeError, "result of out bound pass "
+                            "function must be 2 tuple of args and kwds");
+            return NULL;
+        }
+
+        Py_INCREF(wrapped_args);
+        Py_INCREF(wrapped_kwds);
+
+        Py_DECREF(function_result);
+    }
+    else {
+        Py_INCREF(args);
+        wrapped_args = args;
+
+        Py_XINCREF(kwds);
+        wrapped_kwds = kwds;
+    }
+
+    wrapped_result = PyObject_Call(self->wrapped_object, wrapped_args,
+                     wrapped_kwds);
+
+    Py_DECREF(wrapped_args);
+    Py_XDECREF(wrapped_kwds);
 
     if (!wrapped_result)
         return NULL;
 
-    if (self->function_object) {
+    if (self->out_function_object != Py_None) {
         PyObject *function_result = NULL;
 
-        function_result = PyObject_CallFunctionObjArgs(self->function_object,
-                                                       wrapped_result, NULL);
+        function_result = PyObject_CallFunctionObjArgs(
+                self->out_function_object, wrapped_result, NULL);
 
         Py_DECREF(wrapped_result);
 
@@ -184,7 +252,8 @@ static PyObject *NRPassFunctionDecorator_new(PyTypeObject *type,
     if (!self)
         return NULL;
 
-    self->function_object = NULL;
+    self->in_function_object = NULL;
+    self->out_function_object = NULL;
 
     return (PyObject *)self;
 }
@@ -194,18 +263,30 @@ static PyObject *NRPassFunctionDecorator_new(PyTypeObject *type,
 static int NRPassFunctionDecorator_init(NRPassFunctionDecoratorObject *self,
                                         PyObject *args, PyObject *kwds)
 {
-    PyObject *function_object = NULL;
+    PyObject *in_function_object = Py_None;
+    PyObject *out_function_object = Py_None;
 
-    static char *kwlist[] = { "in_function", NULL };
+    static char *kwlist[] = { "in_function", "out_function", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:PassFunctionDecorator",
-                                     kwlist, &function_object)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OO:PassFunctionDecorator",
+                                     kwlist, &in_function_object,
+                                     &out_function_object)) {
         return -1;
     }
 
-    Py_INCREF(function_object);
-    Py_XDECREF(self->function_object);
-    self->function_object = function_object;
+    if (in_function_object == Py_None && out_function_object == Py_None) {
+        PyErr_SetString(PyExc_TypeError, "either in function or out function "
+                        "or both must be not None");
+        return -1;
+    }
+
+    Py_INCREF(in_function_object);
+    Py_XDECREF(self->in_function_object);
+    self->in_function_object = in_function_object;
+
+    Py_INCREF(out_function_object);
+    Py_XDECREF(self->out_function_object);
+    self->out_function_object = out_function_object;
 
     return 0;
 }
@@ -214,7 +295,8 @@ static int NRPassFunctionDecorator_init(NRPassFunctionDecoratorObject *self,
 
 static void NRPassFunctionDecorator_dealloc(NRPassFunctionDecoratorObject *self)
 {
-    Py_XDECREF(self->function_object);
+    Py_XDECREF(self->in_function_object);
+    Py_XDECREF(self->out_function_object);
 
     Py_TYPE(self)->tp_free(self);
 }
@@ -224,18 +306,18 @@ static void NRPassFunctionDecorator_dealloc(NRPassFunctionDecoratorObject *self)
 static PyObject *NRPassFunctionDecorator_call(
         NRPassFunctionDecoratorObject *self, PyObject *args, PyObject *kwds)
 {
-    PyObject *function_object = NULL;
+    PyObject *wrapped_object = NULL;
 
-    static char *kwlist[] = { "in_function", NULL };
+    static char *kwlist[] = { "wrapped", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:PassFunctionDecorator",
-                                     kwlist, &function_object)) {
+                                     kwlist, &wrapped_object)) {
         return NULL;
     }
 
     return PyObject_CallFunctionObjArgs(
-            (PyObject *)&NRPassFunctionWrapper_Type,
-            function_object, self->function_object, NULL);
+            (PyObject *)&NRPassFunctionWrapper_Type, wrapped_object,
+            self->in_function_object, self->out_function_object, NULL);
 }
 
 /* ------------------------------------------------------------------------- */

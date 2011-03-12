@@ -1,6 +1,13 @@
 from distutils.core import setup, Extension
 import sys
 
+from distutils import sysconfig
+print sysconfig.get_config_vars('CFLAGS', 'OPT')
+sysconfig._config_vars['CFLAGS'] = sysconfig._config_vars['CFLAGS'].replace(
+  ' -Os ', ' ')
+sysconfig._config_vars['OPT'] = sysconfig._config_vars['OPT'].replace(
+  ' -Os ', ' ')
+
 sources = [
   "agent/application.c",
   "agent/daemon_protocol.c",

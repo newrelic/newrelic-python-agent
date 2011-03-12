@@ -86,6 +86,15 @@ static PyObject *NRPostFunctionWrapper_call(NRPostFunctionWrapperObject *self,
 
     wrapped_result = PyObject_Call(self->wrapped_object, args, kwds);
 
+    /*
+     * TODO Should the post function even be called if an error
+     * occurs in the wrapped function. The post function would
+     * need to deal with the problem that an error occurred but
+     * it would know when called except by detecting that the
+     * data that may have been set up by the wrapped function
+     * isn't present.
+     */
+
     if (self->function_object) {
         PyObject *function_result = NULL;
 

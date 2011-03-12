@@ -22,7 +22,6 @@ static PyObject *NRPassFunctionWrapper_new(PyTypeObject *type, PyObject *args,
 
     self->wrapped_object = NULL;
     self->function_object = NULL;
-    self->run_once = 0;
 
     return (PyObject *)self;
 }
@@ -34,13 +33,12 @@ static int NRPassFunctionWrapper_init(NRPassFunctionWrapperObject *self,
 {
     PyObject *wrapped_object = NULL;
     PyObject *function_object = NULL;
-    PyObject *run_once = NULL;
 
-    static char *kwlist[] = { "wrapped", "function", "run_once", NULL };
+    static char *kwlist[] = { "wrapped", "function", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO|O!:PassFunctionWrapper",
                                      kwlist, &wrapped_object, &function_object,
-                                     &PyBool_Type, &run_once)) {
+                                     &PyBool_Type)) {
         return -1;
     }
 
@@ -51,8 +49,6 @@ static int NRPassFunctionWrapper_init(NRPassFunctionWrapperObject *self,
     Py_INCREF(function_object);
     Py_XDECREF(self->function_object);
     self->function_object = function_object;
-
-    self->run_once = (run_once == Py_True);
 
     /*
      * TODO This should set __module__, __name__, __doc__ and
@@ -90,12 +86,6 @@ static PyObject *NRPassFunctionWrapper_call(NRPassFunctionWrapperObject *self,
 
         function_result = PyObject_CallFunctionObjArgs(self->function_object,
                                                        wrapped_result, NULL);
-
-        if (self->run_once) {
-            self->run_once = 0;
-            Py_DECREF(self->function_object);
-            self->function_object = NULL;
-        }
 
         Py_DECREF(wrapped_result);
 
@@ -195,7 +185,6 @@ static PyObject *NRPassFunctionDecorator_new(PyTypeObject *type,
         return NULL;
 
     self->function_object = NULL;
-    self->run_once = 0;
 
     return (PyObject *)self;
 }
@@ -206,21 +195,17 @@ static int NRPassFunctionDecorator_init(NRPassFunctionDecoratorObject *self,
                                         PyObject *args, PyObject *kwds)
 {
     PyObject *function_object = NULL;
-    PyObject *run_once = NULL;
 
-    static char *kwlist[] = { "function", "run_once", NULL };
+    static char *kwlist[] = { "function", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O!:PassFunctionDecorator",
-                                     kwlist, &function_object, &PyBool_Type,
-                                     &run_once)) {
+                                     kwlist, &function_object, &PyBool_Type)) {
         return -1;
     }
 
     Py_INCREF(function_object);
     Py_XDECREF(self->function_object);
     self->function_object = function_object;
-
-    self->run_once = (run_once == Py_True);
 
     return 0;
 }
@@ -250,8 +235,7 @@ static PyObject *NRPassFunctionDecorator_call(
 
     return PyObject_CallFunctionObjArgs(
             (PyObject *)&NRPassFunctionWrapper_Type,
-            function_object, self->function_object,
-            (self->run_once ? Py_True : Py_False), NULL);
+            function_object, self->function_object, NULL);
 }
 
 /* ------------------------------------------------------------------------- */

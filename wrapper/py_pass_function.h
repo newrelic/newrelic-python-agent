@@ -15,7 +15,6 @@ typedef struct {
     PyObject_HEAD
     PyObject *wrapped_object;
     PyObject *function_object;
-    int run_once;
 } NRPassFunctionWrapperObject;
 
 extern PyTypeObject NRPassFunctionWrapper_Type;
@@ -23,7 +22,6 @@ extern PyTypeObject NRPassFunctionWrapper_Type;
 typedef struct {
     PyObject_HEAD
     PyObject *function_object;
-    int run_once;
 } NRPassFunctionDecoratorObject;
 
 extern PyTypeObject NRPassFunctionDecorator_Type;

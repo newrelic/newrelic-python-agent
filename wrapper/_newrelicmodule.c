@@ -600,18 +600,16 @@ static PyObject *newrelic_pass_function(PyObject *self, PyObject *args,
                                         PyObject *kwds)
 {
     PyObject *function_object = NULL;
-    PyObject *run_once = NULL;
 
-    static char *kwlist[] = { "function", "run_once", NULL };
+    static char *kwlist[] = { "function", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O!:pass_function",
-                                     kwlist, &function_object, &PyBool_Type,
-                                     &run_once)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:pass_function",
+                                     kwlist, &function_object, &PyBool_Type)) {
         return NULL;
     }
 
     return PyObject_CallFunctionObjArgs((PyObject *)
-            &NRPassFunctionDecorator_Type, function_object, run_once, NULL);
+            &NRPassFunctionDecorator_Type, function_object, NULL);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -623,7 +621,6 @@ static PyObject *newrelic_wrap_pass_function(PyObject *self, PyObject *args,
     const char *class_name = NULL;
     const char *object_name = NULL;
     PyObject *function_object = NULL;
-    PyObject *run_once = NULL;
 
     PyObject *wrapped_object = NULL;
     PyObject *parent_object = NULL;
@@ -634,12 +631,12 @@ static PyObject *newrelic_wrap_pass_function(PyObject *self, PyObject *args,
     PyObject *result = NULL;
 
     static char *kwlist[] = { "module_name", "class_name", "object_name",
-                              "function", "run_once", NULL };
+                              "function", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO|O!:wrap_pass_function",
                                      kwlist, &module_name, &class_name,
                                      &object_name, &function_object,
-                                     &PyBool_Type, &run_once)) {
+                                     &PyBool_Type)) {
         return NULL;
     }
 
@@ -658,7 +655,7 @@ static PyObject *newrelic_wrap_pass_function(PyObject *self, PyObject *args,
 
     wrapper_object = PyObject_CallFunctionObjArgs((PyObject *)
             &NRPassFunctionWrapper_Type, wrapped_object,
-            function_object, (run_once ? Py_True : Py_False), NULL);
+            function_object, NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object, attribute_name,
                                             wrapper_object);

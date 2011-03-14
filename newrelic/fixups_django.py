@@ -2,6 +2,7 @@
 
 import os
 import traceback
+import types
 
 import _newrelic
 
@@ -18,11 +19,24 @@ def _fixup_database():
             module = __import__(database['ENGINE'], fromlist='base')
             interface = module.base.Database
 
+            """
             if interface.__name__ == 'sqlite3.dbapi2':
                 _newrelic.wrap_database_trace('sqlite3', 'Cursor',
                                        'execute', 1)
                 _newrelic.wrap_database_trace('sqlite3', 'Cursor',
                                        'executemany', 1)
+            """
+
+            _newrelic.wrap_database_trace(interface.__name__, 'Cursor',
+                                   'execute', 1)
+            _newrelic.wrap_database_trace(interface.__name__, 'Cursor',
+                                   'executemany', 1)
+
+    elif hasattr(settings, 'DATABASE_ENGINE'):
+        _newrelic.wrap_database_trace(settings.DATABASE_ENGINE, 'Cursor',
+                               'execute', 1)
+        _newrelic.wrap_database_trace(settings.DATABASE_ENGINE, 'Cursor',
+                               'executemany', 1)
 
 def _fixup_middleware(handler, *args, **kwargs):
     if hasattr(handler, '_request_middleware'):
@@ -72,7 +86,7 @@ def _fixup_middleware(handler, *args, **kwargs):
 
     _fixup_database()
 
-def _pass_resolver_resolve(result):
+def _out_resolver_resolve(result):
     if result is None:
         return
 
@@ -89,13 +103,33 @@ def _pass_resolver_resolve(result):
 
 def _fixup_resolver(resolver, *args, **kwargs):
     function = resolver.resolve
-    wrapper = _newrelic.PassFunctionWrapper(function, _pass_resolver_resolve)
+    wrapper = _newrelic.OutFunctionWrapper(function, _out_resolver_resolve)
     resolver.resolve = wrapper
 
 def _fixup_exception(handler, request, resolver, exc_info):
     transaction = _newrelic.transaction()
     if transaction:
         transaction.runtime_error(*exc_info)
+
+class TemplateRenderWrapper(object):
+    def __init__(self, wrapped):
+        self._wrapped = wrapped
+    def __get__(self, obj, objtype=None):
+        return types.MethodType(self, obj, objtype)
+    def __call__(self, template, context):
+        wrapper = _newrelic.FunctionTraceWrapper(self._wrapped,
+                name='%s Template' % template.name, scope='Template')
+        return wrapper(template, context)
+
+class NodeRenderWrapper(object):
+    def __init__(self, wrapped):
+        self._wrapped = wrapped
+    def __get__(self, obj, objtype=None):
+        return types.MethodType(self, obj, objtype)
+    def __call__(self, template, node, context):
+        wrapper = _newrelic.FunctionTraceWrapper(self._wrapped,
+                name='%s Node' % node.__class__.__name__, scope='Template')
+        return wrapper(template, node, context)
 
 def _instrument(application):
     import django
@@ -118,26 +152,24 @@ def _instrument(application):
     _newrelic.wrap_pre_function('django.core.handlers.wsgi', 'WSGIHandler',
                                 'handle_uncaught_exception', _fixup_exception)
 
-    if django.VERSION < (1, 3, 0):
-        _newrelic.wrap_function_trace('django.template', 'Template', 'render',
-                             scope='Template')
+    from django.template import Template, NodeList
+    if hasattr(Template, '_render'):
+        Template._render = TemplateRenderWrapper(Template._render)
     else:
-        _newrelic.wrap_function_trace('django.template.base', 'Template', 'render',
-                             scope='Template')
+        Template.render = TemplateRenderWrapper(Template.render)
 
-    _newrelic.wrap_function_trace('django.template.loader', None,
-                         'find_template_loader', scope='Template')
-    _newrelic.wrap_function_trace('django.template.loader', None,
-                         'find_template', scope='Template')
-    _newrelic.wrap_function_trace('django.template.loader', None,
-                         'find_template_source', scope='Template')
-    _newrelic.wrap_function_trace('django.template.loader', None,
-                         'get_template', scope='Template')
-    _newrelic.wrap_function_trace('django.template.loader', None,
-                         'get_template_from_string', scope='Template')
-    _newrelic.wrap_function_trace('django.template.loader', None,
-                         'render_to_string', scope='Template')
-    _newrelic.wrap_function_trace('django.template.loader', None,
-                         'select_template', scope='Template')
+    NodeList.render_node = NodeRenderWrapper(NodeList.render_node)
+
+    from django.template.debug import DebugNodeList
+    DebugNodeList.render_node = NodeRenderWrapper(DebugNodeList.render_node)
+
+    # This is not Django specific, but is an example of eternal node.
+
+    try:
+        import feedparser
+    except:
+        pass
+    else:
+        _newrelic.wrap_external_trace('feedparser', None, 'parse', 0)
 
     return settings

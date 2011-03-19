@@ -159,8 +159,6 @@ static void NRTransaction_dealloc(NRTransactionObject *self)
             if (have_error)
                 PyErr_Fetch(&type, &value, &traceback);
 
-            Py_INCREF(object);
-
             args = PyTuple_Pack(3, Py_None, Py_None, Py_None);
             result = PyObject_Call(object, args, NULL);
 
@@ -297,8 +295,6 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
         if (object) {
             PyObject *args = NULL;
             PyObject *result = NULL;
-
-            Py_INCREF(object);
 
             args = PyTuple_Pack(3, type, value, traceback);
             result = PyObject_Call(object, args, NULL);

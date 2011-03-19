@@ -339,12 +339,22 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
 
     nr__switch_to_application(application);
 
+    /*
+     * XXX Can't release GIL here as trying to acquire it on
+     * exit could deadlock where another thread is trying to
+     * lock the exit mutex lock above.
+     */
+
+#if 0
     Py_BEGIN_ALLOW_THREADS
+#endif
 
     keep_wt = nr__distill_web_transaction_into_harvest_data(
             self->transaction);
 
+#if 0
     Py_END_ALLOW_THREADS
+#endif
 
     /*
      * Only add request parameters and custom parameters into
@@ -370,7 +380,9 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
      * but then supressed within the code.
      */
 
+#if 0
     Py_BEGIN_ALLOW_THREADS
+#endif
 
     nr_transaction_error__process_errors(self->transaction_errors,
             application->pending_harvest->metrics);
@@ -381,7 +393,9 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
     nr__merge_errors_from_to(&self->transaction_errors,
                              &application->pending_harvest->errors);
 
+#if 0
     Py_END_ALLOW_THREADS
+#endif
 
     nrthread_mutex_unlock(&application->lock);
 

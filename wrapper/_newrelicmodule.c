@@ -233,6 +233,23 @@ static PyObject *newrelic_transaction(PyObject *self, PyObject *args)
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *newrelic_callable_name(PyObject *self, PyObject *args,
+                                        PyObject *kwds)
+{
+    PyObject *object = NULL;
+
+    static char *kwlist[] = { "object", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:callable_name",
+                                     kwlist, &object)) {
+        return NULL;
+    }
+
+    return NRUtilities_CallableName(object, NULL, NULL);
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *newrelic_database_trace(PyObject *self, PyObject *args,
                                          PyObject *kwds)
 {
@@ -942,6 +959,8 @@ static PyMethodDef newrelic_methods[] = {
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "transaction",        (PyCFunction)newrelic_transaction,
                             METH_NOARGS, 0 },
+    { "callable_name",      (PyCFunction)newrelic_callable_name,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
     { "database_trace",     (PyCFunction)newrelic_database_trace,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "wrap_database_trace", (PyCFunction)newrelic_wrap_database_trace,
@@ -1207,8 +1226,11 @@ init_newrelic(void)
      */
 
     nr_per_process_globals.tt_enabled = 1;
+    nr_per_process_globals.tt_recordsql = NR_TRANSACTION_TRACE_RECORDSQL_RAW;
+#if 0
     nr_per_process_globals.tt_recordsql =
             NR_TRANSACTION_TRACE_RECORDSQL_OBFUSCATED;
+#endif
 
     nr_per_process_globals.slow_sql_stacktrace = 500 * 1000;
 

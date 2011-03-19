@@ -201,7 +201,7 @@ PyObject *NRUtilities_LookupCallable(const char *module_name,
 
 /* ------------------------------------------------------------------------- */
 
-PyObject *NRUtilities_CallableName(PyObject *wrapper, PyObject *object,
+PyObject *NRUtilities_CallableName(PyObject *object, PyObject *wrapper,
                                    PyObject *args)
 {
     PyObject *module_name = NULL;
@@ -230,8 +230,10 @@ PyObject *NRUtilities_CallableName(PyObject *wrapper, PyObject *object,
      * is our wrapper function.
      */
 
-    if (PyFunction_Check(object)) {
-        if (PyTuple_Size(args) >= 1) {
+    /* XXX This leaks objects returned by PyObject_GetAttrString. */
+
+    if (wrapper && args) {
+        if (PyFunction_Check(object) && PyTuple_Size(args) >= 1) {
             temp_object = PyTuple_GetItem(args, 0);
             temp_object = PyObject_GetAttrString(temp_object, "__class__");
             if (temp_object) {

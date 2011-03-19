@@ -367,8 +367,6 @@ static PyObject *NRDatabaseTraceWrapper_call(
 
     instance_method = PyObject_GetAttrString(database_trace, "__enter__");
 
-    Py_INCREF(instance_method);
-
     method_args = PyTuple_Pack(0);
     method_result = PyObject_Call(instance_method, method_args, NULL);
 
@@ -388,14 +386,12 @@ static PyObject *NRDatabaseTraceWrapper_call(
     wrapped_result = PyObject_Call(self->wrapped_object, args, kwds);
 
     /*
-     * Now call __enter__() on the context manager. If the call
+     * Now call __exit__() on the context manager. If the call
      * of the wrapped function is successful then pass all None
      * objects, else pass exception details.
      */
 
     instance_method = PyObject_GetAttrString(database_trace, "__exit__");
-
-    Py_INCREF(instance_method);
 
     if (wrapped_result) {
         method_args = PyTuple_Pack(3, Py_None, Py_None, Py_None);
@@ -441,6 +437,8 @@ static PyObject *NRDatabaseTraceWrapper_call(
 
         PyErr_Restore(type, value, traceback);
     }
+
+    Py_DECREF(database_trace);
 
     return wrapped_result;
 }

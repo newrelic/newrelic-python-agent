@@ -265,7 +265,7 @@ static PyObject *NRMemcacheTraceWrapper_call(
     PyObject *wrapped_result = NULL;
 
     PyObject *current_transaction = NULL;
-    PyObject *database_trace = NULL;
+    PyObject *memcache_trace = NULL;
 
     PyObject *instance_method = NULL;
     PyObject *method_args = NULL;
@@ -283,15 +283,13 @@ static PyObject *NRMemcacheTraceWrapper_call(
 
     /* Create database trace context manager. */
 
-    database_trace = PyObject_CallFunctionObjArgs((PyObject *)
+    memcache_trace = PyObject_CallFunctionObjArgs((PyObject *)
             &NRMemcacheTrace_Type, current_transaction,
             self->command, NULL);
 
     /* Now call __enter__() on the context manager. */
 
-    instance_method = PyObject_GetAttrString(database_trace, "__enter__");
-
-    Py_INCREF(instance_method);
+    instance_method = PyObject_GetAttrString(memcache_trace, "__enter__");
 
     method_args = PyTuple_Pack(0);
     method_result = PyObject_Call(instance_method, method_args, NULL);
@@ -312,14 +310,12 @@ static PyObject *NRMemcacheTraceWrapper_call(
     wrapped_result = PyObject_Call(self->wrapped_object, args, kwds);
 
     /*
-     * Now call __enter__() on the context manager. If the call
+     * Now call __exit__() on the context manager. If the call
      * of the wrapped function is successful then pass all None
      * objects, else pass exception details.
      */
 
-    instance_method = PyObject_GetAttrString(database_trace, "__exit__");
-
-    Py_INCREF(instance_method);
+    instance_method = PyObject_GetAttrString(memcache_trace, "__exit__");
 
     if (wrapped_result) {
         method_args = PyTuple_Pack(3, Py_None, Py_None, Py_None);
@@ -365,6 +361,8 @@ static PyObject *NRMemcacheTraceWrapper_call(
 
         PyErr_Restore(type, value, traceback);
     }
+
+    Py_DECREF(memcache_trace);
 
     return wrapped_result;
 }

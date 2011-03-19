@@ -274,6 +274,7 @@ static PyObject *NRFunctionTraceWrapper_new(PyTypeObject *type, PyObject *args,
     self->wrapped_object = NULL;
     self->name = NULL;
     self->scope = NULL;
+    self->override_path = NULL;
 
     return (PyObject *)self;
 }
@@ -358,7 +359,7 @@ static PyObject *NRFunctionTraceWrapper_call(
     PyObject *wrapped_result = NULL;
 
     PyObject *current_transaction = NULL;
-    PyObject *database_trace = NULL;
+    PyObject *function_trace = NULL;
 
     PyObject *instance_method = NULL;
     PyObject *method_args = NULL;
@@ -379,15 +380,15 @@ static PyObject *NRFunctionTraceWrapper_call(
     /* Create database trace context manager. */
 
     if (self->name == Py_None) {
-        name = NRUtilities_CallableName((PyObject *)self,
-                                        self->wrapped_object, args);
+        name = NRUtilities_CallableName(self->wrapped_object,
+                                        (PyObject *)self, args);
     }
     else {
         name = self->name;
         Py_INCREF(name);
     }
 
-    database_trace = PyObject_CallFunctionObjArgs((PyObject *)
+    function_trace = PyObject_CallFunctionObjArgs((PyObject *)
             &NRFunctionTrace_Type, current_transaction, name,
             self->scope, self->override_path, NULL);
 
@@ -395,9 +396,7 @@ static PyObject *NRFunctionTraceWrapper_call(
 
     /* Now call __enter__() on the context manager. */
 
-    instance_method = PyObject_GetAttrString(database_trace, "__enter__");
-
-    Py_INCREF(instance_method);
+    instance_method = PyObject_GetAttrString(function_trace, "__enter__");
 
     method_args = PyTuple_Pack(0);
     method_result = PyObject_Call(instance_method, method_args, NULL);
@@ -418,14 +417,12 @@ static PyObject *NRFunctionTraceWrapper_call(
     wrapped_result = PyObject_Call(self->wrapped_object, args, kwds);
 
     /*
-     * Now call __enter__() on the context manager. If the call
+     * Now call __exit__() on the context manager. If the call
      * of the wrapped function is successful then pass all None
      * objects, else pass exception details.
      */
 
-    instance_method = PyObject_GetAttrString(database_trace, "__exit__");
-
-    Py_INCREF(instance_method);
+    instance_method = PyObject_GetAttrString(function_trace, "__exit__");
 
     if (wrapped_result) {
         method_args = PyTuple_Pack(3, Py_None, Py_None, Py_None);
@@ -471,6 +468,8 @@ static PyObject *NRFunctionTraceWrapper_call(
 
         PyErr_Restore(type, value, traceback);
     }
+
+    Py_DECREF(function_trace);
 
     return wrapped_result;
 }

@@ -128,7 +128,8 @@ class NodeRenderWrapper(object):
         return types.MethodType(self, obj, objtype)
     def __call__(self, template, node, context):
         wrapper = _newrelic.FunctionTraceWrapper(self._wrapped,
-                name='%s Node' % node.__class__.__name__, scope='Template')
+                name='%s Node' % _newrelic.callable_name(node),
+                scope='Template')
         return wrapper(template, node, context)
 
 def _instrument(application):
@@ -158,10 +159,10 @@ def _instrument(application):
     else:
         Template.render = TemplateRenderWrapper(Template.render)
 
-    NodeList.render_node = NodeRenderWrapper(NodeList.render_node)
+    #NodeList.render_node = NodeRenderWrapper(NodeList.render_node)
 
-    from django.template.debug import DebugNodeList
-    DebugNodeList.render_node = NodeRenderWrapper(DebugNodeList.render_node)
+    #from django.template.debug import DebugNodeList
+    #DebugNodeList.render_node = NodeRenderWrapper(DebugNodeList.render_node)
 
     # This is not Django specific, but is an example of eternal node.
 

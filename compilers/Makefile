@@ -1,5 +1,5 @@
 all : setup bin
-	bin/buildout -v -c buildout-`uname -s | tr A-Z a-z`.cfg
+	bin/buildout -v -v -c buildout-`uname -s | tr A-Z a-z`.cfg
 
 setup : tools/bin/buildout
 

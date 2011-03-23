@@ -1,0 +1,10 @@
+Requirements
+============
+
+Host system must have the following:
+
+1. GCC/G++. G++ is required for doing Python build on some systems.
+
+2. Python. Preferably Python 2.5 or later. This is only use to bootstrap the
+   build process. Specifically used by 'buildout' package used to coordinate
+   the builds.

@@ -3,3 +3,10 @@ test-env
 *.swp
 unit-tests/test_*.py.log
 load-tests/test_*.py.log
+compilers/.installed.cfg
+compilers/bin/
+compilers/downloads/
+compilers/eggs/
+compilers/parts/
+compilers/tools/
+compilers/virtualenv

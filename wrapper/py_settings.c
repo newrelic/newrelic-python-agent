@@ -37,6 +37,8 @@ static void NRSettings_dealloc(NRSettingsObject *self)
     PyObject_Del(self);
 }
 
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRSettings_get_logfile(NRSettingsObject *self,
                                               void *closure)
 {

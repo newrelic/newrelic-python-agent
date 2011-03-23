@@ -214,6 +214,11 @@ static PyObject *NRTransaction_enter(NRTransactionObject *self,
      * need to have a handle to the original transaction.
      */
 
+    if (PyThread_get_key_value(NRTransaction_tls_key)) {
+        PyErr_SetString(PyExc_RuntimeError, "thread local already set");
+        return NULL;
+    }
+
     PyThread_set_key_value(NRTransaction_tls_key, self);
 
     /*
@@ -263,6 +268,11 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
      * Remove the reference to the transaction from thread
      * local storage.
      */
+
+    if (!PyThread_get_key_value(NRTransaction_tls_key)) {
+        PyErr_SetString(PyExc_RuntimeError, "thread local not set");
+        return NULL;
+    }
 
     PyThread_delete_key_value(NRTransaction_tls_key);
 

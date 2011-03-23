@@ -160,8 +160,6 @@ PyObject *NRUtilities_LookupCallable(const char *module_name,
                 *parent_object = class_object;
 
                 *attribute_name = object_name;
-
-                Py_INCREF(callable_object);
             }
         }
         else {

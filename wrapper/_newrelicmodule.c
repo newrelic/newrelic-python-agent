@@ -933,11 +933,21 @@ static PyObject *newrelic_shutdown(PyObject *self, PyObject *args)
         nr__stop_communication(&(nr_per_process_globals.daemon), NULL);
         nr__destroy_harvest_thread();
 
+        /*
+	 * XXX Can't destroy application globals here because
+	 * Python objects may get destroyed later than the
+	 * shutdown function and they may try and access a
+	 * cached application object which is referencing what
+	 * would be deleted memory.
+         */
+
+#if 0
         nr__free_applications_global();
         nrfree (nr_per_process_globals.daemon.sockpath);
         if (nr_per_process_globals.env != NULL) {
             nro__delete (nr_per_process_globals.env);
         }
+#endif
 
         Py_END_ALLOW_THREADS
     }

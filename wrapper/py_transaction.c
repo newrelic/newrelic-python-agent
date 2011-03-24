@@ -173,7 +173,7 @@ static void NRTransaction_dealloc(NRTransactionObject *self)
              * get the method from the type dictionary.
              */
 
-            PyErr_WriteUnraisable(self);
+            PyErr_WriteUnraisable((PyObject *)self);
         }
         else
             Py_DECREF(result);

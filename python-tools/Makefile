@@ -7,7 +7,7 @@ virtualenv :
 	git clone https://github.com/pypa/virtualenv.git 
 
 tools : virtualenv
-	python virtualenv/virtualenv.py tools
+	python virtualenv/virtualenv.py --no-site-packages tools
 
 tools/bin/buildout : tools
 	tools/bin/easy_install zc.buildout

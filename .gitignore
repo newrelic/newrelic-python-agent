@@ -10,3 +10,5 @@ python-tools/eggs/
 python-tools/parts/
 python-tools/tools/
 python-tools/virtualenv
+php_agent
+config.h

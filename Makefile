@@ -2,7 +2,7 @@ BINDIR = python-tools/parts/python-2.6/bin
 PYTHON = $(BINDIR)/python
 VIRTUALENV = $(BINDIR)/virtualenv
 
-all :
+all : php_agent config.h
 	$(PYTHON) setup.py build
 
 install :
@@ -11,9 +11,22 @@ install :
 clean :
 	rm -rf build
 	rm -f unit-tests/test_*.py.log
+	$(RM) config.log config.status
+	rm -rf autom4te.cache
+	$(RM) config.h
 
 distclean : clean
 	rm -rf test-env
+	-(cd php_agent && git clean -fdx)
+
+realclean : distclean
+	rm -rf php_agent
+
+php_agent :
+	git clone repo.newrelic.com:/git/php_agent.git
+
+config.h :
+	./configure
 
 install-testing : test-env all
 	test-env/bin/python setup.py install

@@ -2,32 +2,32 @@ from distutils.core import setup, Extension
 import sys
 
 from distutils import sysconfig
-print sysconfig.get_config_vars('CFLAGS', 'OPT')
+dummy = sysconfig.get_config_vars('CFLAGS', 'OPT')
 sysconfig._config_vars['CFLAGS'] = sysconfig._config_vars['CFLAGS'].replace(
   ' -Os ', ' ')
 sysconfig._config_vars['OPT'] = sysconfig._config_vars['OPT'].replace(
   ' -Os ', ' ')
 
 sources = [
-  "agent/application.c",
-  "agent/daemon_protocol.c",
-  "agent/genericobject.c",
-  "agent/globals.c",
-  "agent/harvest.c",
-  "agent/logging.c",
-  "agent/metric_table.c",
-  "agent/nrbuffer.c",
-  "agent/nrthread.c",
-  "agent/samplers.c",
-  "agent/utils.c",
-  "agent/web_transaction.c",
-  "agent/wt_error.c",
-  "agent/wt_external.c",
-  "agent/wt_function.c",
-  "agent/wt_memcache.c",
-  "agent/wt_params.c",
-  "agent/wt_sql.c",
-  "agent/wt_utils.c",
+  "php_agent/application.c",
+  "php_agent/daemon_protocol.c",
+  "php_agent/genericobject.c",
+  "php_agent/globals.c",
+  "php_agent/harvest.c",
+  "php_agent/logging.c",
+  "php_agent/metric_table.c",
+  "php_agent/nrbuffer.c",
+  "php_agent/nrthread.c",
+  "php_agent/samplers.c",
+  "php_agent/utils.c",
+  "php_agent/web_transaction.c",
+  "php_agent/wt_error.c",
+  "php_agent/wt_external.c",
+  "php_agent/wt_function.c",
+  "php_agent/wt_memcache.c",
+  "php_agent/wt_params.c",
+  "php_agent/wt_sql.c",
+  "php_agent/wt_utils.c",
   "wrapper/_newrelicmodule.c",
   "wrapper/py_application.c",
   "wrapper/py_background_task.c",
@@ -56,7 +56,8 @@ extension = Extension(
   name = "_newrelic",
   sources = sources,
   define_macros = define_macros,
-  include_dirs = ['..', '../php_agent'],
+  #include_dirs = ['..', '../php_agent'],
+  include_dirs = ['php_agent'],
 )
 
 setup(

@@ -1,0 +1,28 @@
+AC_INIT
+
+AC_CANONICAL_HOST
+
+AC_CHECK_FUNC(backtrace_symbols_fd, [AC_DEFINE(HAVE_STACK_BACKTRACE, 1, [Whether you can do a backtrace])])
+
+AC_CHECK_HEADERS(malloc.h malloc/malloc.h sys/resource.h)
+AC_CHECK_FUNCS(mstats getrusage getpagesize)
+
+if test -f /proc/self/statm ; then
+  AC_DEFINE(HAVE_PROC_SELF_STATM, 1, [Whether you have /proc/self/statm])
+fi
+
+case "$host" in
+  *linux*)    AC_DEFINE(NR_LINUX_SAMPLER, 1, [Linux-based usage sampler])
+              AC_DEFINE(NRTHREAD_MUTEX_ERRORCHECK, PTHREAD_MUTEX_ERRORCHECK_NP, [How to get error checking mutexes])
+              ;;
+  *darwin*)   AC_DEFINE(NR_DARWIN_SAMPLER, 1, [Darwin-based usage sampler])
+              AC_DEFINE(NRTHREAD_MUTEX_ERRORCHECK, PTHREAD_MUTEX_ERRORCHECK, [How to get error checking mutexes])
+              ;;
+  *solaris*)  AC_DEFINE(NR_SOLARIS_SAMPLER, 1, [Solaris-based usage sampler])
+              AC_DEFINE(NRTHREAD_MUTEX_ERRORCHECK, PTHREAD_MUTEX_ERRORCHECK, [How to get error checking mutexes])
+              ;;
+esac
+
+AC_CONFIG_HEADER(config.h)
+
+AC_OUTPUT()

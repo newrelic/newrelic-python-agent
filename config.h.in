@@ -1,0 +1,35 @@
+/* Define to 1 if you have the `getpagesize' function. */
+#undef HAVE_GETPAGESIZE
+
+/* Define to 1 if you have the `getrusage' function. */
+#undef HAVE_GETRUSAGE
+
+/* Define to 1 if you have the <malloc.h> header file. */
+#undef HAVE_MALLOC_H
+
+/* Define to 1 if you have the <malloc/malloc.h> header file. */
+#undef HAVE_MALLOC_MALLOC_H
+
+/* Define to 1 if you have the `mstats' function. */
+#undef HAVE_MSTATS
+
+/* Whether you have /proc/self/statm */
+#undef HAVE_PROC_SELF_STATM
+
+/* Whether you can do a backtrace */
+#undef HAVE_STACK_BACKTRACE
+
+/* Define to 1 if you have the <sys/resource.h> header file. */
+#undef HAVE_SYS_RESOURCE_H
+
+/* How to get error checking mutexes */
+#undef NRTHREAD_MUTEX_ERRORCHECK
+
+/* Darwin-based usage sampler */
+#undef NR_DARWIN_SAMPLER
+
+/* Linux-based usage sampler */
+#undef NR_LINUX_SAMPLER
+
+/* Solaris-based usage sampler */
+#undef NR_SOLARIS_SAMPLER

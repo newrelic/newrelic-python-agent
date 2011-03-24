@@ -351,7 +351,7 @@ static PyObject *NRDatabaseTraceWrapper_call(
     }
     else {
         PyErr_Format(PyExc_IndexError, "invalid argnum %ld to identify "
-                     "sql argument", argnum);
+                     "sql argument", (long)argnum);
         PyErr_WriteUnraisable(self->wrapped_object);
     }
 

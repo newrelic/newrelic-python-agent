@@ -310,7 +310,7 @@ static PyObject *NRExternalTraceWrapper_call(
     }
     else {
         PyErr_Format(PyExc_IndexError, "invalid argnum %ld to identify "
-                     "url argument", argnum);
+                     "url argument", (long)argnum);
         PyErr_WriteUnraisable(self->wrapped_object);
     }
 

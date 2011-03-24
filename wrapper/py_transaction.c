@@ -133,46 +133,55 @@ static int NRTransaction_init(NRTransactionObject *self, PyObject *args,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRTransaction_exit(NRTransactionObject *self,
+                                        PyObject *args);
+
 static void NRTransaction_dealloc(NRTransactionObject *self)
 {
     /*
      * If transaction still running when this object is being
      * destroyed then force call of exit method to finalise the
-     * transaction.
+     * transaction. Note that we call the exit method directly
+     * rather than looking it up from the object because doing
+     * the later causes the object to be destroyed twice. This
+     * would be a problem if a derived class overrides the exit
+     * method, but this in practice should never occur.
      */
 
     if (self->transaction_state == NR_TRANSACTION_STATE_RUNNING) {
-        PyObject *object = NULL;
+        PyObject *args = NULL;
+        PyObject *result = NULL;
 
-        object = PyObject_GetAttrString((PyObject *)self, "__exit__");
+        PyObject *type = NULL;
+        PyObject *value = NULL;
+        PyObject *traceback = NULL;
 
-        if (object) {
-            PyObject *args = NULL;
-            PyObject *result = NULL;
+        int have_error = PyErr_Occurred() ? 1 : 0;
 
-            PyObject *type = NULL;
-            PyObject *value = NULL;
-            PyObject *traceback = NULL;
+        if (have_error)
+            PyErr_Fetch(&type, &value, &traceback);
 
-            int have_error = PyErr_Occurred() ? 1 : 0;
+        args = PyTuple_Pack(3, Py_None, Py_None, Py_None);
 
-            if (have_error)
-                PyErr_Fetch(&type, &value, &traceback);
+        result = NRTransaction_exit(self, args);
 
-            args = PyTuple_Pack(3, Py_None, Py_None, Py_None);
-            result = PyObject_Call(object, args, NULL);
+        if (!result) {
+            /*
+             * XXX The error should really be logged against the
+             * exit method, but we don't have an handle to it as
+             * a Python object. Only way around that would be to
+             * get the method from the type dictionary.
+             */
 
-            if (!result)
-                PyErr_WriteUnraisable(object);
-            else
-                Py_DECREF(result);
-
-            if (have_error)
-                PyErr_Restore(type, value, traceback);
-
-            Py_DECREF(args);
-            Py_DECREF(object);
+            PyErr_WriteUnraisable(self);
         }
+        else
+            Py_DECREF(result);
+
+        if (have_error)
+            PyErr_Restore(type, value, traceback);
+
+        Py_DECREF(args);
     }
 
     Py_DECREF(self->custom_parameters);

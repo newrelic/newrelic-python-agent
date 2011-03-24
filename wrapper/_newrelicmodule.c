@@ -934,11 +934,11 @@ static PyObject *newrelic_shutdown(PyObject *self, PyObject *args)
         nr__destroy_harvest_thread();
 
         /*
-	 * XXX Can't destroy application globals here because
-	 * Python objects may get destroyed later than the
-	 * shutdown function and they may try and access a
-	 * cached application object which is referencing what
-	 * would be deleted memory.
+         * XXX Can't destroy application globals here because
+         * Python objects may get destroyed later than the
+         * shutdown function and they may try and access a
+         * cached application object which is referencing what
+         * would be deleted memory.
          */
 
 #if 0

@@ -13,9 +13,9 @@ clean :
 	rm -f unit-tests/test_*.py.log
 	$(RM) config.log config.status
 	rm -rf autom4te.cache
-	$(RM) config.h
 
 distclean : clean
+	$(RM) config.h
 	rm -rf test-env
 	-(cd php_agent && git clean -fdx)
 

@@ -12,3 +12,6 @@ python-tools/tools/
 python-tools/virtualenv
 php_agent
 config.h
+config.log
+config.status
+autom4te.cache

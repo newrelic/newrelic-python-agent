@@ -56,8 +56,7 @@ extension = Extension(
   name = "_newrelic",
   sources = sources,
   define_macros = define_macros,
-  #include_dirs = ['..', '../php_agent'],
-  include_dirs = ['php_agent'],
+  include_dirs = ['.', 'php_agent'],
 )
 
 setup(

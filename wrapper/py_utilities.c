@@ -199,7 +199,7 @@ PyObject *NRUtilities_LookupCallable(const char *module_name,
 
 /* ------------------------------------------------------------------------- */
 
-PyObject *NRUtilities_CallableName(PyObject *object, PyObject *wrapper,
+PyObject *NRUtilities_CallableName(PyObject *wrapped, PyObject *wrapper,
                                    PyObject *args)
 {
     PyObject *module_name = NULL;
@@ -213,7 +213,10 @@ PyObject *NRUtilities_CallableName(PyObject *object, PyObject *wrapper,
     int len = 0;
     char *s = NULL;
 
-    PyObject *temp_object = NULL;
+    PyObject *class_object = NULL;
+    PyObject *method_object = NULL;
+
+    PyObject *object = NULL;
 
     /*
      * When a decorator is used on a class method, it isn't
@@ -228,25 +231,36 @@ PyObject *NRUtilities_CallableName(PyObject *object, PyObject *wrapper,
      * is our wrapper function.
      */
 
-    /* XXX This leaks objects returned by PyObject_GetAttrString. */
-
     if (wrapper && args) {
-        if (PyFunction_Check(object) && PyTuple_Size(args) >= 1) {
-            temp_object = PyTuple_GetItem(args, 0);
-            temp_object = PyObject_GetAttrString(temp_object, "__class__");
-            if (temp_object) {
-                object_name = PyObject_GetAttrString(object, "__name__");
+        if (PyFunction_Check(wrapped) && PyTuple_Size(args) >= 1) {
+            class_object = PyObject_GetAttrString(
+                    PyTuple_GetItem(args, 0), "__class__");
+            if (class_object) {
+                object_name = PyObject_GetAttrString(wrapped, "__name__");
                 if (object_name) {
-                   temp_object = PyObject_GetAttr(temp_object, object_name);
-                   if (temp_object && PyMethod_Check(temp_object)) {
-                       if (((PyMethodObject *)temp_object)->im_func == wrapper)
-                           object = temp_object;
+                   method_object = PyObject_GetAttr(class_object, object_name);
+                   if (method_object && PyMethod_Check(method_object) &&
+                       ((PyMethodObject *)method_object)->im_func == wrapper) {
+                       object = method_object;
                    }
                 }
             }
         }
 
+        Py_XDECREF(class_object);
+        Py_XDECREF(method_object);
+        Py_XDECREF(object_name);
+
+        class_object = NULL;
+        method_object = NULL;
+        object_name = NULL;
+
         PyErr_Clear();
+    }
+
+    if (!object) {
+        Py_INCREF(wrapped);
+        object = wrapped;
     }
 
     /*
@@ -288,16 +302,16 @@ PyObject *NRUtilities_CallableName(PyObject *object, PyObject *wrapper,
             object_name_string = PyString_AsString(object_name);
     }
     else if (PyInstance_Check(object)) {
-        temp_object = PyObject_GetAttrString(object, "__class__");
-        if (temp_object) {
-            class_name = PyObject_GetAttrString(temp_object, "__name__");
+        class_object = PyObject_GetAttrString(object, "__class__");
+        if (class_object) {
+            class_name = PyObject_GetAttrString(class_object, "__name__");
             if (class_name && PyString_Check(class_name))
                 class_name_string = PyString_AsString(class_name);
         }
         object_name_string = "__call__";
     }
-    else if ((temp_object = PyObject_GetAttrString(object, "__class__"))) {
-        class_name = PyObject_GetAttrString(temp_object, "__name__");
+    else if ((class_object = PyObject_GetAttrString(object, "__class__"))) {
+        class_name = PyObject_GetAttrString(class_object, "__name__");
         if (class_name && PyString_Check(class_name))
             class_name_string = PyString_AsString(class_name);
         object_name_string = "__call__";
@@ -335,6 +349,13 @@ PyObject *NRUtilities_CallableName(PyObject *object, PyObject *wrapper,
 
     strcat(s, "::");
     strcat(s, object_name_string);
+
+    Py_XDECREF(module_name);
+    Py_XDECREF(class_object);
+    Py_XDECREF(class_name);
+    Py_XDECREF(object_name);
+
+    Py_XDECREF(object);
 
     return PyString_FromString(s);
 }

@@ -23,7 +23,8 @@ extern PyObject *NRUtilities_LookupCallable(const char *module_name,
                                             PyObject **parent_object,
                                             const char **attribute_name);
 
-extern PyObject *NRUtilities_CallableName(PyObject *wrapper, PyObject *object,
+extern PyObject *NRUtilities_CallableName(PyObject *wrapped,
+                                          PyObject *wrapper,
                                           PyObject *args);
 
 extern PyObject *NRUtilities_ReplaceWithWrapper(PyObject *parent_object,

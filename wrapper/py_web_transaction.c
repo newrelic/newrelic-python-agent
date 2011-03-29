@@ -301,14 +301,6 @@ static PyObject *NRWebTransaction_header(NRTransactionObject *self,
     episodes_url = self->application->application->episodes_file;
     application_id = self->application->application->application_id;
 
-    fprintf(stderr, "app py=%ld\n", (long)self->application->application);
-    fprintf(stderr, "appname=%s\n", self->application->application->appname);
-    fprintf(stderr, "license_key=%s\n", license_key);
-    fprintf(stderr, "beacon=%s\n", beacon);
-    fprintf(stderr, "browser_key=%s\n", browser_key);
-    fprintf(stderr, "episodes_url=%s\n", episodes_url);
-    fprintf(stderr, "application_id=%d\n", application_id);
-
     if (!beacon)
         return PyString_FromString("");
 

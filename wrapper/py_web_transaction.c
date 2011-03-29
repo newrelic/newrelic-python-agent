@@ -254,7 +254,6 @@ static PyObject *NRWebTransaction_header(NRTransactionObject *self,
             "NREUMQ.push([\"mark\",\"firstbyte\",new Date().getTime()]);"
             "</script>";
 
-#if 0
     const char *script_long_fragment = "<script>var NREUMQ=[];"
             "NREUMQ.push([\"mark\",\"firstbyte\",new Date().getTime()]);"
             "(function(){var d=document;var e=d.createElement(\"script\");"
@@ -262,26 +261,6 @@ static PyObject *NRWebTransaction_header(NRTransactionObject *self,
             "var s=d.getElementsByTagName(\"script\")[0];"
             "s.parentNode.insertBefore(e,s);})();"
             "</script>";
-#endif
-
-    /*
-     * XXX Add 'http://' in start of URL for episode file as not
-     * currently being passed through by PHP agent code properly.
-     */
-
-    const char *script_long_fragment = "<script>var NREUMQ=[];"
-            "NREUMQ.push([\"mark\",\"firstbyte\",new Date().getTime()]);"
-            "(function(){var d=document;var e=d.createElement(\"script\");"
-            "e.type=\"text/javascript\";e.async=true;e.src=\"http://%s\";"
-            "var s=d.getElementsByTagName(\"script\")[0];"
-            "s.parentNode.insertBefore(e,s);})();"
-            "</script>";
-
-    char const *license_key = NULL;
-    char const *beacon = NULL;
-    char const *browser_key = NULL;
-    char const *episodes_url = NULL;
-    int application_id = 0;
 
     if (!self->transaction)
         return PyString_FromString("");
@@ -289,27 +268,19 @@ static PyObject *NRWebTransaction_header(NRTransactionObject *self,
     if (self->transaction_state != NR_TRANSACTION_STATE_RUNNING)
         return PyString_FromString("");
 
-    /*
-     * XXX This needs to be updated when PHP agent code is updated to
-     * pass back episodes_url and load_episodes_file flag. Just check
-     * for beacon being set for now.
-     */
+    if (self->transaction->ignore)
+        return PyString_FromString("");
 
-    license_key = self->application->application->license_key;
-    beacon = self->application->application->beacon;
-    browser_key = self->application->application->browser_key;
-    episodes_url = self->application->application->episodes_file;
-    application_id = self->application->application->application_id;
-
-    if (!beacon)
+    if (!self->application->application->episodes_url)
         return PyString_FromString("");
 
     self->transaction->has_returned_browser_timing_header = 1;
 
-    if (episodes_url && *episodes_url)
-        return PyString_FromFormat(script_long_fragment, episodes_url);
-    else
+    if (!self->application->application->load_episodes_file)
         return PyString_FromString(script_short_fragment);
+
+    return PyString_FromFormat(script_long_fragment,
+            self->application->application->episodes_url);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -320,11 +291,6 @@ static PyObject *NRWebTransaction_footer(NRTransactionObject *self,
     const char *script_fragment = "<script type=\"text/javascript\" "
             "charset=\"utf-8\">NREUMQ.push([\"nrf2\",\"%s\",\"%s\",%d,"
             "\"%s\",%ld,%ld])</script>";
-
-    char const *license_key = NULL;
-    char const *beacon = NULL;
-    char const *browser_key = NULL;
-    int application_id = 0; 
 
     struct timeval t;
 
@@ -345,19 +311,20 @@ static PyObject *NRWebTransaction_footer(NRTransactionObject *self,
     if (self->transaction_state != NR_TRANSACTION_STATE_RUNNING)
         return PyString_FromString("");
 
+    if (self->transaction->ignore)
+        return PyString_FromString("");
+
     if (!self->transaction->has_returned_browser_timing_header)
         return PyString_FromString("");
 
-    license_key = self->application->application->license_key;
-    beacon = self->application->application->beacon;
-    browser_key = self->application->application->browser_key;
-    application_id = self->application->application->application_id;
-
-    if (!license_key || !beacon || !browser_key)
+    if (!self->application->application->license_key ||
+        strlen(self->application->application->license_key) < 13) {
         return PyString_FromString("");
+    }
 
     transaction_name = NRUtilities_ObfuscateTransactionName(
-            self->transaction->path, license_key);
+            self->transaction->path,
+            self->application->application->license_key);
 
     if (!transaction_name)
         return NULL;
@@ -379,11 +346,13 @@ static PyObject *NRWebTransaction_footer(NRTransactionObject *self,
     queue_duration_usec = start_time_usec - queue_time_usec;
     total_duration_usec = stop_time_usec - queue_time_usec;
 
-    result = PyString_FromFormat(script_fragment, beacon, browser_key,
-                                 application_id,
-                                 PyString_AsString(transaction_name),
-                                 (long)(queue_duration_usec/1000),
-                                 (long)(total_duration_usec/1000));
+    result = PyString_FromFormat(script_fragment,
+            self->application->application->beacon,
+            self->application->application->browser_key,
+            self->application->application->application_id,
+            PyString_AsString(transaction_name),
+            (long)(queue_duration_usec/1000),
+            (long)(total_duration_usec/1000));
 
     Py_DECREF(transaction_name);
 

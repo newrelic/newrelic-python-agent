@@ -8,6 +8,8 @@
 
 #include "globals.h"
 
+#include "py_utilities.h"
+
 /* ------------------------------------------------------------------------- */
 
 static int NRWebTransaction_init(NRTransactionObject *self, PyObject *args,
@@ -245,6 +247,159 @@ static int NRWebTransaction_init(NRTransactionObject *self, PyObject *args,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRWebTransaction_header(NRTransactionObject *self,
+                                         PyObject *args)
+{
+    const char *script_short_fragment = "<script>var NREUMQ=[];"
+            "NREUMQ.push([\"mark\",\"firstbyte\",new Date().getTime()]);"
+            "</script>";
+
+#if 0
+    const char *script_long_fragment = "<script>var NREUMQ=[];"
+            "NREUMQ.push([\"mark\",\"firstbyte\",new Date().getTime()]);"
+            "(function(){var d=document;var e=d.createElement(\"script\");"
+            "e.type=\"text/javascript\";e.async=true;e.src=\"%s\";"
+            "var s=d.getElementsByTagName(\"script\")[0];"
+            "s.parentNode.insertBefore(e,s);})();"
+            "</script>";
+#endif
+
+    /*
+     * XXX Add 'http://' in start of URL for episode file as not
+     * currently being passed through by PHP agent code properly.
+     */
+
+    const char *script_long_fragment = "<script>var NREUMQ=[];"
+            "NREUMQ.push([\"mark\",\"firstbyte\",new Date().getTime()]);"
+            "(function(){var d=document;var e=d.createElement(\"script\");"
+            "e.type=\"text/javascript\";e.async=true;e.src=\"http://%s\";"
+            "var s=d.getElementsByTagName(\"script\")[0];"
+            "s.parentNode.insertBefore(e,s);})();"
+            "</script>";
+
+    char const *license_key = NULL;
+    char const *beacon = NULL;
+    char const *browser_key = NULL;
+    char const *episodes_url = NULL;
+    int application_id = 0;
+
+    if (!self->transaction)
+        return PyString_FromString("");
+
+    if (self->transaction_state != NR_TRANSACTION_STATE_RUNNING)
+        return PyString_FromString("");
+
+    /*
+     * XXX This needs to be updated when PHP agent code is updated to
+     * pass back episodes_url and load_episodes_file flag. Just check
+     * for beacon being set for now.
+     */
+
+    license_key = self->application->application->license_key;
+    beacon = self->application->application->beacon;
+    browser_key = self->application->application->browser_key;
+    episodes_url = self->application->application->episodes_file;
+    application_id = self->application->application->application_id;
+
+    fprintf(stderr, "app py=%ld\n", (long)self->application->application);
+    fprintf(stderr, "appname=%s\n", self->application->application->appname);
+    fprintf(stderr, "license_key=%s\n", license_key);
+    fprintf(stderr, "beacon=%s\n", beacon);
+    fprintf(stderr, "browser_key=%s\n", browser_key);
+    fprintf(stderr, "episodes_url=%s\n", episodes_url);
+    fprintf(stderr, "application_id=%d\n", application_id);
+
+    if (!beacon)
+        return PyString_FromString("");
+
+    self->transaction->has_returned_browser_timing_header = 1;
+
+    if (episodes_url && *episodes_url)
+        return PyString_FromFormat(script_long_fragment, episodes_url);
+    else
+        return PyString_FromString(script_short_fragment);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRWebTransaction_footer(NRTransactionObject *self,
+                                         PyObject *args)
+{
+    const char *script_fragment = "<script type=\"text/javascript\" "
+            "charset=\"utf-8\">NREUMQ.push([\"nrf2\",\"%s\",\"%s\",%d,"
+            "\"%s\",%ld,%ld])</script>";
+
+    char const *license_key = NULL;
+    char const *beacon = NULL;
+    char const *browser_key = NULL;
+    int application_id = 0; 
+
+    struct timeval t;
+
+    int64_t queue_time_usec = 0;
+    int64_t start_time_usec = 0;
+    int64_t stop_time_usec = 0;
+
+    int64_t queue_duration_usec = 0;
+    int64_t total_duration_usec = 0;
+
+    PyObject *transaction_name = NULL;
+
+    PyObject *result = NULL;
+
+    if (!self->transaction)
+        return PyString_FromString("");
+
+    if (self->transaction_state != NR_TRANSACTION_STATE_RUNNING)
+        return PyString_FromString("");
+
+    if (!self->transaction->has_returned_browser_timing_header)
+        return PyString_FromString("");
+
+    license_key = self->application->application->license_key;
+    beacon = self->application->application->beacon;
+    browser_key = self->application->application->browser_key;
+    application_id = self->application->application->application_id;
+
+    if (!license_key || !beacon || !browser_key)
+        return PyString_FromString("");
+
+    transaction_name = NRUtilities_ObfuscateTransactionName(
+            self->transaction->path, license_key);
+
+    if (!transaction_name)
+        return NULL;
+
+    /*
+     * The web transaction isn't over at this point so we need to
+     * calculate time to now from start of the web transaction.
+     */
+
+    queue_time_usec = self->transaction->http_x_request_start;
+    start_time_usec = self->transaction->header.times.starttime;
+
+    gettimeofday(&t, NULL);
+    stop_time_usec = ((int64_t)t.tv_sec) * 1000000 + ((int64_t)t.tv_usec);
+
+    if (!queue_time_usec)
+        queue_time_usec = start_time_usec;
+        
+    queue_duration_usec = start_time_usec - queue_time_usec;
+    total_duration_usec = stop_time_usec - queue_time_usec;
+
+    result = PyString_FromFormat(script_fragment, beacon, browser_key,
+                                 application_id,
+                                 PyString_AsString(transaction_name),
+                                 (long)(queue_duration_usec/1000),
+                                 (long)(total_duration_usec/1000));
+
+    Py_DECREF(transaction_name);
+
+    return result;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static int NRWebTransaction_set_background_task(
         NRTransactionObject *self, PyObject *value)
 {
@@ -302,6 +457,14 @@ static PyObject *NRWebTransaction_get_background_task(
 #define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
 #endif
 
+static PyMethodDef NRWebTransaction_methods[] = {
+    { "browser_timing_header", (PyCFunction)NRWebTransaction_header,
+                            METH_NOARGS, 0 },
+    { "browser_timing_footer", (PyCFunction)NRWebTransaction_footer,
+                            METH_NOARGS, 0 },
+    { NULL, NULL }
+};
+
 static PyGetSetDef NRWebTransaction_getset[] = {
     { "background_task",    (getter)NRWebTransaction_get_background_task,
                             (setter)NRWebTransaction_set_background_task, 0 },
@@ -337,7 +500,7 @@ PyTypeObject NRWebTransaction_Type = {
     0,                      /*tp_weaklistoffset*/
     0,                      /*tp_iter*/
     0,                      /*tp_iternext*/
-    0,                      /*tp_methods*/
+    NRWebTransaction_methods, /*tp_methods*/
     0,                      /*tp_members*/
     NRWebTransaction_getset, /*tp_getset*/
     &NRTransaction_Type,    /*tp_base*/

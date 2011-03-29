@@ -487,6 +487,56 @@ PyObject *NRUtilities_StackTrace(void)
 
 /* ------------------------------------------------------------------------- */
 
+extern PyObject *NRUtilities_ObfuscateTransactionName(const char *name,
+                                                      const char *license_key)
+{
+  PyObject *result = NULL;
+
+  PyObject *module = NULL;
+  PyObject *dict = NULL;
+  PyObject *object = NULL;
+  PyObject *args = NULL;
+
+  int len = strlen(name);
+  char *xored = alloca(len+1);
+  int i;
+
+  for (i = 0; i < len; i++) {
+    int licenseIndex = i % 13;
+    char c = name[i] ^ license_key[licenseIndex];
+    xored[i] = c;
+  }
+
+  xored[len] = '\0';
+
+  module = PyImport_ImportModule("base64");
+
+  if (!module)
+      return NULL;
+
+  dict = PyModule_GetDict(module);
+
+  object = PyDict_GetItemString(dict, "b64encode");
+
+  if (!object) {
+      Py_DECREF(module);
+      return NULL;
+  }
+
+  Py_INCREF(object);
+
+  args = Py_BuildValue("(s#)", xored, len);
+  result = PyEval_CallObject(object, args);
+
+  Py_DECREF(module);
+  Py_DECREF(object);
+  Py_DECREF(args);
+
+  return result;
+}
+
+/* ------------------------------------------------------------------------- */
+
 /*
  * vim: et cino=>2,e0,n0,f0,{2,}0,^0,\:2,=2,p2,t2,c1,+2,(2,u2,)20,*30,g2,h2 ts=8
  */

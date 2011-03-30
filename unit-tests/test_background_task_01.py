@@ -13,13 +13,8 @@ application = _newrelic.application("UnitTests")
 #@_newrelic.background_task(application, name='_test_function_1')
 def _test_function_1():
     time.sleep(1.0)
-#_test_function_1 = _newrelic.background_task(
-#        application, name='_test_function_1')(_test_function_1)
-
-decorator = _newrelic.background_task(
-        application, name='_test_function_1')
-print type(decorator)
-_test_function_1 = decorator(_test_function_1)
+_test_function_1 = _newrelic.background_task(
+        "UnitTests", name='_test_function_1')(_test_function_1)
 
 #@_newrelic.background_task(application)
 def _test_function_nn_1():

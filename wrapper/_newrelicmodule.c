@@ -258,9 +258,8 @@ static PyObject *newrelic_background_task(PyObject *self, PyObject *args,
 
     static char *kwlist[] = { "application", "name", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!|O:background_task",
-                                     kwlist, &NRApplication_Type,
-                                     &application, &name)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O:background_task",
+                                     kwlist, &application, &name)) {
         return NULL;
     }
 
@@ -269,6 +268,14 @@ static PyObject *newrelic_background_task(PyObject *self, PyObject *args,
         PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
                      "or None, found type '%s'", name->ob_type->tp_name);
         return NULL;
+    }
+
+    if (Py_TYPE(application) != &NRApplication_Type &&
+        !PyString_Check(application) && !PyUnicode_Check(application)) {
+        PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
+                     "or application object, found type '%s'",
+                     name->ob_type->tp_name);
+        return -1;
     }
 
     return PyObject_CallFunctionObjArgs((PyObject *)

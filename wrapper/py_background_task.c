@@ -154,9 +154,8 @@ static int NRBackgroundTaskWrapper_init(NRBackgroundTaskWrapperObject *self,
 
     static char *kwlist[] = { "wrapped", "application", "name", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO!|O:BackgroundTaskWrapper",
-                                     kwlist, &wrapped_object,
-                                     &NRApplication_Type, &application,
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO|O:BackgroundTaskWrapper",
+                                     kwlist, &wrapped_object, &application,
                                      &name)) {
         return -1;
     }
@@ -167,6 +166,25 @@ static int NRBackgroundTaskWrapper_init(NRBackgroundTaskWrapperObject *self,
                      "or None, found type '%s'", name->ob_type->tp_name);
         return -1;
     }
+
+    if (Py_TYPE(application) != &NRApplication_Type &&
+        !PyString_Check(application) && !PyUnicode_Check(application)) {
+        PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
+                     "or application object, found type '%s'",
+                     name->ob_type->tp_name);
+        return -1;
+    }
+
+    if (Py_TYPE(application) != &NRApplication_Type) {
+        PyObject *func_args;
+
+        func_args = PyTuple_Pack(1, application);
+        application = NRApplication_Singleton(func_args, NULL);
+
+        Py_DECREF(func_args);
+    }
+    else
+        Py_INCREF(application);
 
     Py_INCREF(wrapped_object);
     Py_XDECREF(self->wrapped_object);
@@ -185,6 +203,8 @@ static int NRBackgroundTaskWrapper_init(NRBackgroundTaskWrapperObject *self,
      * update __dict__ to preserve introspection capabilities.
      * See @wraps in functools of recent Python versions.
      */
+
+    Py_DECREF(application);
 
     return 0;
 }
@@ -436,9 +456,8 @@ static int NRBackgroundTaskDecorator_init(NRBackgroundTaskDecoratorObject *self,
 
     static char *kwlist[] = { "application", "name", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!|O:BackgroundTaskDecorator",
-                                     kwlist, &NRApplication_Type,
-                                     &application, &name)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O:BackgroundTaskDecorator",
+                                     kwlist, &application, &name)) {
         return -1;
     }
 
@@ -446,6 +465,14 @@ static int NRBackgroundTaskDecorator_init(NRBackgroundTaskDecoratorObject *self,
         name != Py_None) {
         PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
                      "or None, found type '%s'", name->ob_type->tp_name);
+        return -1;
+    }
+
+    if (Py_TYPE(application) != &NRApplication_Type &&
+        !PyString_Check(application) && !PyUnicode_Check(application)) {
+        PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
+                     "or application object, found type '%s'",
+                     name->ob_type->tp_name);
         return -1;
     }
 

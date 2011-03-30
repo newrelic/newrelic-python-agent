@@ -272,10 +272,10 @@ static PyObject *newrelic_background_task(PyObject *self, PyObject *args,
 
     if (Py_TYPE(application) != &NRApplication_Type &&
         !PyString_Check(application) && !PyUnicode_Check(application)) {
-        PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
-                     "or application object, found type '%s'",
+        PyErr_Format(PyExc_TypeError, "application argument must be str, "
+                     "unicode, or application object, found type '%s'",
                      name->ob_type->tp_name);
-        return -1;
+        return NULL;
     }
 
     return PyObject_CallFunctionObjArgs((PyObject *)
@@ -306,10 +306,9 @@ static PyObject *newrelic_wrap_background_task(PyObject *self, PyObject *args,
                               "application", "name", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds,
-                                     "szzO!|O:wrap_background_task",
+                                     "szzO|O:wrap_background_task",
                                      kwlist, &module_name, &class_name,
-                                     &object_name, &NRApplication_Type,
-                                     &application, &name)) {
+                                     &object_name, &application, &name)) {
         return NULL;
     }
 
@@ -323,6 +322,14 @@ static PyObject *newrelic_wrap_background_task(PyObject *self, PyObject *args,
         name != Py_None) {
         PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
                      "or None, found type '%s'", name->ob_type->tp_name);
+        return NULL;
+    }
+
+    if (Py_TYPE(application) != &NRApplication_Type &&
+        !PyString_Check(application) && !PyUnicode_Check(application)) {
+        PyErr_Format(PyExc_TypeError, "application argument must be str, "
+                     "unicode, or application object, found type '%s'",
+                     name->ob_type->tp_name);
         return NULL;
     }
 

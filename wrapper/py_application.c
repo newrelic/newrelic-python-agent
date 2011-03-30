@@ -30,6 +30,8 @@ PyObject *NRApplication_Singleton(PyObject *args, PyObject *kwds)
 
     static char *kwlist[] = { "name", NULL };
 
+    /* TODO Need to deal with UTF-8 here for name. */
+
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "s:Application",
                                      kwlist, &name)) {
         return NULL;

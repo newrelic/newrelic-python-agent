@@ -306,7 +306,7 @@ static int NRFunctionTraceWrapper_init(NRFunctionTraceWrapperObject *self,
         return -1;
     }
 
-    if (!PyString_Check(scope) && !PyUnicode_Check(name) &&
+    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
         scope != Py_None) {
         PyErr_Format(PyExc_TypeError, "scope argument must be str, unicode "
                      "or None, found type '%s'", scope->ob_type->tp_name);
@@ -613,7 +613,7 @@ static int NRFunctionTraceDecorator_init(NRFunctionTraceDecoratorObject *self,
         return -1;
     }
 
-    if (!PyString_Check(scope) && !PyUnicode_Check(name) &&
+    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
         scope != Py_None) {
         PyErr_Format(PyExc_TypeError, "scope argument must be str, unicode "
                      "or None, found type '%s'", scope->ob_type->tp_name);

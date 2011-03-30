@@ -171,7 +171,7 @@ static int NRBackgroundTaskWrapper_init(NRBackgroundTaskWrapperObject *self,
         !PyString_Check(application) && !PyUnicode_Check(application)) {
         PyErr_Format(PyExc_TypeError, "application argument must be str, "
                      "unicode, or application object, found type '%s'",
-                     name->ob_type->tp_name);
+                     application->ob_type->tp_name);
         return -1;
     }
 
@@ -441,6 +441,7 @@ static PyObject *NRBackgroundTaskDecorator_new(PyTypeObject *type,
     if (!self)
         return NULL;
 
+    self->application = NULL;
     self->name = NULL;
 
     return (PyObject *)self;
@@ -472,7 +473,7 @@ static int NRBackgroundTaskDecorator_init(NRBackgroundTaskDecoratorObject *self,
         !PyString_Check(application) && !PyUnicode_Check(application)) {
         PyErr_Format(PyExc_TypeError, "application argument must be str, "
                      "unicode, or application object, found type '%s'",
-                     name->ob_type->tp_name);
+                     application->ob_type->tp_name);
         return -1;
     }
 

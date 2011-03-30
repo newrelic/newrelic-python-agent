@@ -274,7 +274,7 @@ static PyObject *newrelic_background_task(PyObject *self, PyObject *args,
         !PyString_Check(application) && !PyUnicode_Check(application)) {
         PyErr_Format(PyExc_TypeError, "application argument must be str, "
                      "unicode, or application object, found type '%s'",
-                     name->ob_type->tp_name);
+                     application->ob_type->tp_name);
         return NULL;
     }
 
@@ -329,7 +329,7 @@ static PyObject *newrelic_wrap_background_task(PyObject *self, PyObject *args,
         !PyString_Check(application) && !PyUnicode_Check(application)) {
         PyErr_Format(PyExc_TypeError, "application argument must be str, "
                      "unicode, or application object, found type '%s'",
-                     name->ob_type->tp_name);
+                     application->ob_type->tp_name);
         return NULL;
     }
 

@@ -250,6 +250,135 @@ static PyObject *newrelic_callable_name(PyObject *self, PyObject *args,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *newrelic_background_task(PyObject *self, PyObject *args,
+                                          PyObject *kwds)
+{
+    PyObject *application = NULL;
+    PyObject *name = Py_None;
+
+    static char *kwlist[] = { "application", "name", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!|O:background_task",
+                                     kwlist, &NRApplication_Type,
+                                     &application, &name)) {
+        return NULL;
+    }
+
+    if (!PyString_Check(name) && !PyUnicode_Check(name) &&
+        name != Py_None) {
+        PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
+                     "or None, found type '%s'", name->ob_type->tp_name);
+        return NULL;
+    }
+
+    return PyObject_CallFunctionObjArgs((PyObject *)
+            &NRBackgroundTaskDecorator_Type, application, name, NULL);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *newrelic_wrap_background_task(PyObject *self, PyObject *args,
+                                               PyObject *kwds)
+{
+    const char *module_name = NULL;
+    const char *class_name = NULL;
+    const char *object_name = NULL;
+
+    PyObject *application = NULL;
+    PyObject *name = Py_None;
+
+    PyObject *wrapped_object = NULL;
+    PyObject *parent_object = NULL;
+    const char *attribute_name = NULL;
+
+    PyObject *wrapper_object = NULL;
+
+    PyObject *result = NULL;
+
+    static char *kwlist[] = { "module_name", "class_name", "object_name",
+                              "application", "name", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds,
+                                     "szzO!|O:wrap_background_task",
+                                     kwlist, &module_name, &class_name,
+                                     &object_name, &NRApplication_Type,
+                                     &application, &name)) {
+        return NULL;
+    }
+
+    if (!class_name && !object_name) {
+        PyErr_SetString(PyExc_RuntimeError, "class or object name must be "
+                        "supplied");
+        return NULL;
+    }
+
+    if (!PyString_Check(name) && !PyUnicode_Check(name) &&
+        name != Py_None) {
+        PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
+                     "or None, found type '%s'", name->ob_type->tp_name);
+        return NULL;
+    }
+
+    wrapped_object = NRUtilities_LookupCallable(module_name, class_name,
+                                                 object_name, &parent_object,
+                                                 &attribute_name);
+
+    if (!wrapped_object)
+        return NULL;
+
+    if (name == Py_None) {
+        int len = 0;
+        char *s = NULL;
+
+        if (module_name)
+            len += strlen(module_name);
+        if (module_name && class_name)
+            len += 1;
+        if (class_name)
+            len += strlen(class_name);
+
+        len += 2;
+        len += strlen(object_name);
+        len += 1;
+
+        s = alloca(len);
+        *s = '\0';
+
+        if (module_name)
+            strcat(s, module_name);
+        if (module_name && class_name)
+            strcat(s, ".");
+        if (class_name)
+            strcat(s, class_name);
+
+        strcat(s, "::");
+        strcat(s, object_name);
+
+        name = PyString_FromString(s);
+    }
+    else
+        Py_INCREF(name);
+
+    wrapper_object = PyObject_CallFunctionObjArgs((PyObject *)
+            &NRBackgroundTaskWrapper_Type, wrapped_object, application,
+            name, NULL);
+
+    result = NRUtilities_ReplaceWithWrapper(parent_object, attribute_name,
+                                            wrapper_object);
+
+    Py_DECREF(parent_object);
+    Py_DECREF(wrapped_object);
+
+    Py_DECREF(name);
+
+    if (!result)
+        return NULL;
+
+    return wrapper_object;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *newrelic_database_trace(PyObject *self, PyObject *args,
                                          PyObject *kwds)
 {
@@ -418,7 +547,7 @@ static PyObject *newrelic_function_trace(PyObject *self, PyObject *args,
         return NULL;
     }
 
-    if (!PyString_Check(scope) && !PyUnicode_Check(name) &&
+    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
         scope != Py_None) {
         PyErr_Format(PyExc_TypeError, "scope argument must be str, unicode "
                      "or None, found type '%s'", scope->ob_type->tp_name);
@@ -971,6 +1100,10 @@ static PyMethodDef newrelic_methods[] = {
                             METH_NOARGS, 0 },
     { "callable_name",      (PyCFunction)newrelic_callable_name,
                             METH_VARARGS|METH_KEYWORDS, 0 },
+    { "background_task",    (PyCFunction)newrelic_background_task,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
+    { "wrap_background_task", (PyCFunction)newrelic_wrap_background_task,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
     { "database_trace",     (PyCFunction)newrelic_database_trace,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "wrap_database_trace", (PyCFunction)newrelic_wrap_database_trace,
@@ -1030,6 +1163,10 @@ init_newrelic(void)
         return;
     if (PyType_Ready(&NRBackgroundTask_Type) < 0)
         return;
+    if (PyType_Ready(&NRBackgroundTaskDecorator_Type) < 0)
+        return;
+    if (PyType_Ready(&NRBackgroundTaskWrapper_Type) < 0)
+        return;
     if (PyType_Ready(&NRDatabaseTrace_Type) < 0)
         return;
     if (PyType_Ready(&NRDatabaseTraceDecorator_Type) < 0)
@@ -1082,6 +1219,12 @@ init_newrelic(void)
     Py_INCREF(&NRBackgroundTask_Type);
     PyModule_AddObject(module, "BackgroundTask",
                        (PyObject *)&NRBackgroundTask_Type);
+    Py_INCREF(&NRBackgroundTaskDecorator_Type);
+    PyModule_AddObject(module, "BackgroundTaskDecorator",
+                       (PyObject *)&NRBackgroundTaskDecorator_Type);
+    Py_INCREF(&NRBackgroundTaskWrapper_Type);
+    PyModule_AddObject(module, "BackgroundTaskWrapper",
+                       (PyObject *)&NRBackgroundTaskWrapper_Type);
     Py_INCREF(&NRDatabaseTrace_Type);
     PyModule_AddObject(module, "DatabaseTrace",
                        (PyObject *)&NRDatabaseTrace_Type);

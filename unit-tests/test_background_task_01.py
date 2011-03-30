@@ -10,6 +10,23 @@ settings.loglevel = _newrelic.LOG_VERBOSEDEBUG
 
 application = _newrelic.application("UnitTests")
 
+#@_newrelic.background_task(application, name='_test_function_1')
+def _test_function_1():
+    time.sleep(1.0)
+#_test_function_1 = _newrelic.background_task(
+#        application, name='_test_function_1')(_test_function_1)
+
+decorator = _newrelic.background_task(
+        application, name='_test_function_1')
+print type(decorator)
+_test_function_1 = decorator(_test_function_1)
+
+#@_newrelic.background_task(application)
+def _test_function_nn_1():
+    time.sleep(0.1)
+_test_function_nn_1 = _newrelic.background_task(
+        application)(_test_function_nn_1)
+
 class BackgroundTaskTests01(unittest.TestCase):
 
     def setUp(self):
@@ -109,6 +126,12 @@ class BackgroundTaskTests01(unittest.TestCase):
             transaction.ignore = True
             self.assertTrue(transaction.ignore)
             self.assertTrue(transaction.enabled)
+
+    def test_background_task_named_decorator(self):
+        _test_function_1()
+
+    def test_background_task_decorator(self):
+        _test_function_nn_1()
 
 if __name__ == '__main__':
     unittest.main()

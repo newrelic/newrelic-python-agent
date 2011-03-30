@@ -13,6 +13,23 @@
 
 extern PyTypeObject NRBackgroundTask_Type;
 
+typedef struct {
+    PyObject_HEAD
+    PyObject *application;
+    PyObject *wrapped_object;
+    PyObject *name;
+} NRBackgroundTaskWrapperObject;
+
+extern PyTypeObject NRBackgroundTaskWrapper_Type;
+
+typedef struct {
+    PyObject_HEAD
+    PyObject *application;
+    PyObject *name;
+} NRBackgroundTaskDecoratorObject;
+
+extern PyTypeObject NRBackgroundTaskDecorator_Type;
+
 /* ------------------------------------------------------------------------- */
 
 #endif

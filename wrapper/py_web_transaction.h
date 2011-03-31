@@ -30,17 +30,6 @@ typedef struct {
     PyObject_HEAD
     PyObject *application;
     PyObject *wrapped_object;
-    PyObject *environ;
-    PyObject *start_response;
-    PyObject *transaction;
-} NRWebTransactionAdapterObject;
-
-extern PyTypeObject NRWebTransactionAdapter_Type;
-
-typedef struct {
-    PyObject_HEAD
-    PyObject *application;
-    PyObject *wrapped_object;
 } NRWebTransactionWrapperObject;
 
 extern PyTypeObject NRWebTransactionWrapper_Type;

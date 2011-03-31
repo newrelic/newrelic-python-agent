@@ -140,7 +140,7 @@ def _instrument(application):
     settings['django.version'] = django.get_version()
     settings['django.path'] = os.path.dirname(django.__file__)
 
-    _wrap_wsgi_application('django.core.handlers.wsgi', 'WSGIHandler',
+    _newrelic.wrap_web_transaction('django.core.handlers.wsgi', 'WSGIHandler',
                            '__call__', application)
 
     _newrelic.wrap_post_function('django.core.handlers.base','BaseHandler',

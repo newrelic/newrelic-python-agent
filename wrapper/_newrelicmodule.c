@@ -250,6 +250,98 @@ static PyObject *newrelic_callable_name(PyObject *self, PyObject *args,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *newrelic_web_transaction(PyObject *self, PyObject *args,
+                                          PyObject *kwds)
+{
+    PyObject *application = NULL;
+
+    static char *kwlist[] = { "application", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:web_transaction",
+                                     kwlist, &application)) {
+        return NULL;
+    }
+
+    if (Py_TYPE(application) != &NRApplication_Type &&
+        !PyString_Check(application) && !PyUnicode_Check(application)) {
+        PyErr_Format(PyExc_TypeError, "application argument must be str, "
+                     "unicode, or application object, found type '%s'",
+                     application->ob_type->tp_name);
+        return NULL;
+    }
+
+    return PyObject_CallFunctionObjArgs((PyObject *)
+            &NRWebTransactionDecorator_Type, application, NULL);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *newrelic_wrap_web_transaction(PyObject *self, PyObject *args,
+                                               PyObject *kwds)
+{
+    const char *module_name = NULL;
+    const char *class_name = NULL;
+    const char *object_name = NULL;
+
+    PyObject *application = NULL;
+
+    PyObject *wrapped_object = NULL;
+    PyObject *parent_object = NULL;
+    const char *attribute_name = NULL;
+
+    PyObject *wrapper_object = NULL;
+
+    PyObject *result = NULL;
+
+    static char *kwlist[] = { "module_name", "class_name", "object_name",
+                              "application", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds,
+                                     "szzO|O:wrap_web_transaction",
+                                     kwlist, &module_name, &class_name,
+                                     &object_name, &application)) {
+        return NULL;
+    }
+
+    if (!class_name && !object_name) {
+        PyErr_SetString(PyExc_RuntimeError, "class or object name must be "
+                        "supplied");
+        return NULL;
+    }
+
+    if (Py_TYPE(application) != &NRApplication_Type &&
+        !PyString_Check(application) && !PyUnicode_Check(application)) {
+        PyErr_Format(PyExc_TypeError, "application argument must be str, "
+                     "unicode, or application object, found type '%s'",
+                     application->ob_type->tp_name);
+        return NULL;
+    }
+
+    wrapped_object = NRUtilities_LookupCallable(module_name, class_name,
+                                                 object_name, &parent_object,
+                                                 &attribute_name);
+
+    if (!wrapped_object)
+        return NULL;
+
+    wrapper_object = PyObject_CallFunctionObjArgs((PyObject *)
+            &NRWebTransactionWrapper_Type, wrapped_object, application,
+            NULL);
+
+    result = NRUtilities_ReplaceWithWrapper(parent_object, attribute_name,
+                                            wrapper_object);
+
+    Py_DECREF(parent_object);
+    Py_DECREF(wrapped_object);
+
+    if (!result)
+        return NULL;
+
+    return wrapper_object;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *newrelic_background_task(PyObject *self, PyObject *args,
                                           PyObject *kwds)
 {
@@ -1114,6 +1206,10 @@ static PyMethodDef newrelic_methods[] = {
                             METH_NOARGS, 0 },
     { "callable_name",      (PyCFunction)newrelic_callable_name,
                             METH_VARARGS|METH_KEYWORDS, 0 },
+    { "web_transaction",    (PyCFunction)newrelic_web_transaction,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
+    { "wrap_web_transaction", (PyCFunction)newrelic_wrap_web_transaction,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
     { "background_task",    (PyCFunction)newrelic_background_task,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "wrap_background_task", (PyCFunction)newrelic_wrap_background_task,
@@ -1211,6 +1307,12 @@ init_newrelic(void)
         return;
     if (PyType_Ready(&NRWebTransaction_Type) < 0)
         return;
+    if (PyType_Ready(&NRWebTransactionIterable_Type) < 0)
+        return;
+    if (PyType_Ready(&NRWebTransactionDecorator_Type) < 0)
+        return;
+    if (PyType_Ready(&NRWebTransactionWrapper_Type) < 0)
+        return;
     if (PyType_Ready(&NRInFunctionDecorator_Type) < 0)
         return;
     if (PyType_Ready(&NRInFunctionWrapper_Type) < 0)
@@ -1278,6 +1380,12 @@ init_newrelic(void)
     Py_INCREF(&NRWebTransaction_Type);
     PyModule_AddObject(module, "WebTransaction",
                        (PyObject *)&NRWebTransaction_Type);
+    Py_INCREF(&NRWebTransactionDecorator_Type);
+    PyModule_AddObject(module, "WebTransactionDecorator",
+                       (PyObject *)&NRWebTransactionDecorator_Type);
+    Py_INCREF(&NRWebTransactionWrapper_Type);
+    PyModule_AddObject(module, "WebTransactionWrapper",
+                       (PyObject *)&NRWebTransactionWrapper_Type);
     Py_INCREF(&NRInFunctionDecorator_Type);
     PyModule_AddObject(module, "InFunctionDecorator",
                        (PyObject *)&NRInFunctionDecorator_Type);

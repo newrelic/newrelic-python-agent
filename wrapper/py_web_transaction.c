@@ -478,6 +478,1011 @@ PyTypeObject NRWebTransaction_Type = {
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRWebTransactionIterable_new(PyTypeObject *type,
+                                              PyObject *args,
+                                              PyObject *kwds)
+{
+    NRWebTransactionIterableObject *self;
+
+    self = (NRWebTransactionIterableObject *)type->tp_alloc(type, 0);
+
+    if (!self)
+        return NULL;
+
+    self->application = NULL;
+    self->wrapped_object = NULL;
+    self->transaction = NULL;
+    self->result = NULL;
+    self->iterable = NULL;
+
+    return (PyObject *)self;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRWebTransactionIterable_init(NRWebTransactionIterableObject *self,
+                                         PyObject *args, PyObject *kwds)
+{
+    PyObject *application = NULL;
+    PyObject *wrapped_object = NULL;
+    PyObject *environ = NULL;
+    PyObject *start_response = NULL;
+
+    PyObject *instance_method = NULL;
+    PyObject *method_args = NULL;
+    PyObject *method_result = NULL;
+
+    static char *kwlist[] = { "application", "wrapped", "environ",
+                              "start_response", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds,
+                                     "O!OO!O:WebTransactionIterable",
+                                     kwlist, &NRApplication_Type,
+                                     &application, &wrapped_object,
+                                     &PyDict_Type, &environ,
+                                     &start_response)) {
+        return -1;
+    }
+
+    Py_INCREF(application);
+    Py_XDECREF(self->application);
+    self->application = application;
+
+    Py_INCREF(wrapped_object);
+    Py_XDECREF(self->wrapped_object);
+    self->wrapped_object = wrapped_object;
+
+    Py_INCREF(environ);
+    Py_XDECREF(self->environ);
+    self->environ = environ;
+
+    Py_INCREF(start_response);
+    Py_XDECREF(self->start_response);
+    self->start_response = start_response;
+
+    /* XXX So far assuming constructor not called twice. */
+
+    self->transaction = PyObject_CallFunctionObjArgs((PyObject *)
+            &NRWebTransaction_Type, self->application, self->environ, NULL);
+
+    /* Now call __enter__() on the context manager. */
+
+    instance_method = PyObject_GetAttrString(self->transaction, "__enter__");
+
+    method_args = PyTuple_Pack(0);
+    method_result = PyObject_Call(instance_method, method_args, NULL);
+
+    if (!method_result)
+        PyErr_WriteUnraisable(instance_method);
+    else
+        Py_DECREF(method_result);
+
+    Py_DECREF(method_args);
+    Py_DECREF(instance_method);
+
+    /* Now call wrapper object to get the iterable it returns. */
+
+    instance_method = PyObject_GetAttrString((PyObject *)self,
+                                             "start_response");
+
+    self->result = PyObject_CallFunctionObjArgs(self->wrapped_object,
+        self->environ, instance_method, NULL);
+
+    Py_DECREF(instance_method);
+
+    /* It returned an error, call __exit__() on context manager. */
+
+    if (!self->result) {
+        PyObject *type = NULL;
+        PyObject *value = NULL;
+        PyObject *traceback = NULL;
+
+        instance_method = PyObject_GetAttrString(self->transaction, "__exit__");
+
+        PyErr_Fetch(&type, &value, &traceback);
+
+        if (!value) {
+            value = Py_None;
+            Py_INCREF(value);
+        }
+
+        if (!traceback) {
+            traceback = Py_None;
+            Py_INCREF(traceback);
+        }
+
+        PyErr_NormalizeException(&type, &value, &traceback);
+
+        method_args = PyTuple_Pack(3, type, value, traceback);
+        method_result = PyObject_Call(instance_method, method_args, NULL);
+
+        if (!method_result)
+            PyErr_WriteUnraisable(instance_method);
+        else
+            Py_DECREF(method_result);
+
+        Py_DECREF(method_args);
+        Py_DECREF(instance_method);
+
+        PyErr_Restore(type, value, traceback);
+
+        return -1;
+    }
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static void NRWebTransactionIterable_dealloc(
+        NRWebTransactionIterableObject *self)
+{
+    Py_XDECREF(self->application);
+    Py_XDECREF(self->wrapped_object);
+    Py_XDECREF(self->transaction);
+    Py_XDECREF(self->result);
+    Py_XDECREF(self->iterable);
+
+    Py_TYPE(self)->tp_free(self);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRWebTransactionIterable_iter(
+        NRWebTransactionIterableObject *self)
+{
+    self->iterable = PyObject_GetIter(self->result);
+
+    Py_INCREF(self);
+    return (PyObject *)self;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRWebTransactionIterable_iternext(
+        NRWebTransactionIterableObject *self)
+{
+    return PyIter_Next(self->iterable);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRWebTransactionIterable_close(
+        NRWebTransactionIterableObject *self, PyObject *args)
+{
+    PyObject *wrapped_method = NULL;
+    PyObject *wrapped_result = NULL;
+
+    PyObject *manager_method = NULL;
+
+    PyObject *method_args = NULL;
+    PyObject *method_result = NULL;
+
+    wrapped_method = PyObject_GetAttrString(self->iterable, "close");
+
+    if (!wrapped_method) {
+        PyErr_Clear();
+
+        Py_INCREF(Py_None);
+        wrapped_result = Py_None;
+    }
+    else
+        wrapped_result = PyObject_CallFunctionObjArgs(wrapped_method, NULL);
+
+    Py_XDECREF(wrapped_method);
+
+    /*
+     * Now call __exit__() on the context manager. If the call
+     * of the wrapped function is successful then pass all None
+     * objects, else pass exception details.
+     */
+
+    manager_method = PyObject_GetAttrString(self->transaction, "__exit__");
+
+    if (wrapped_result) {
+        method_args = PyTuple_Pack(3, Py_None, Py_None, Py_None);
+        method_result = PyObject_Call(manager_method, method_args, NULL);
+
+        if (!method_result)
+            PyErr_WriteUnraisable(manager_method);
+        else
+            Py_DECREF(method_result);
+
+        Py_DECREF(method_args);
+        Py_DECREF(manager_method);
+    }
+    else {
+        PyObject *type = NULL;
+        PyObject *value = NULL;
+        PyObject *traceback = NULL;
+
+        PyErr_Fetch(&type, &value, &traceback);
+
+        if (!value) {
+            value = Py_None;
+            Py_INCREF(value);
+        }
+
+        if (!traceback) {
+            traceback = Py_None;
+            Py_INCREF(traceback);
+        }
+
+        PyErr_NormalizeException(&type, &value, &traceback);
+
+        method_args = PyTuple_Pack(3, type, value, traceback);
+        method_result = PyObject_Call(manager_method, method_args, NULL);
+
+        if (!method_result)
+            PyErr_WriteUnraisable(manager_method);
+        else
+            Py_DECREF(method_result);
+
+        Py_DECREF(method_args);
+        Py_DECREF(manager_method);
+
+        PyErr_Restore(type, value, traceback);
+    }
+
+    return wrapped_result;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRWebTransactionIterable_start(
+        NRWebTransactionIterableObject *self, PyObject *args)
+{
+    PyObject *status_line = NULL;
+    PyObject *headers = NULL;
+    PyObject *exc_info = NULL;
+
+    long status_as_int = 0;
+    PyObject *status = NULL;
+
+    if (!PyArg_ParseTuple(args, "O!O!|O!:start_response", &PyString_Type,
+                          &status_line, &PyList_Type, &headers,
+                          &PyTuple_Type, &exc_info)) {
+        return NULL;
+    }
+
+    status_as_int = strtol(PyString_AsString(status_line), NULL, 10);
+    status = PyInt_FromLong(status_as_int);
+
+    if (PyObject_SetAttrString(self->transaction, "response_code",
+                               status) == -1) {
+        return NULL;
+    }
+
+    Py_DECREF(status);
+
+    return PyEval_CallObject(self->start_response, args);
+}
+
+/* ------------------------------------------------------------------------- */
+
+#ifndef PyVarObject_HEAD_INIT
+#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
+#endif
+
+static PyMethodDef NRWebTransactionIterable_methods[] = {
+    { "close",              (PyCFunction)NRWebTransactionIterable_close,
+                            METH_NOARGS, 0 },
+    { "start_response",     (PyCFunction)NRWebTransactionIterable_start,
+                            METH_VARARGS, 0 },
+    { NULL, NULL }
+};
+
+PyTypeObject NRWebTransactionIterable_Type = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "_newrelic.WebTransactionIterable", /*tp_name*/
+    sizeof(NRWebTransactionIterableObject), /*tp_basicsize*/
+    0,                      /*tp_itemsize*/
+    /* methods */
+    (destructor)NRWebTransactionIterable_dealloc, /*tp_dealloc*/
+    0,                      /*tp_print*/
+    0,                      /*tp_getattr*/
+    0,                      /*tp_setattr*/
+    0,                      /*tp_compare*/
+    0,                      /*tp_repr*/
+    0,                      /*tp_as_number*/
+    0,                      /*tp_as_sequence*/
+    0,                      /*tp_as_mapping*/
+    0,                      /*tp_hash*/
+    0,                      /*tp_call*/
+    0,                      /*tp_str*/
+    0,                      /*tp_getattro*/
+    0,                      /*tp_setattro*/
+    0,                      /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT,     /*tp_flags*/
+    0,                      /*tp_doc*/
+    0,                      /*tp_traverse*/
+    0,                      /*tp_clear*/
+    0,                      /*tp_richcompare*/
+    0,                      /*tp_weaklistoffset*/
+    (getiterfunc)NRWebTransactionIterable_iter, /*tp_iter*/
+    (iternextfunc)NRWebTransactionIterable_iternext, /*tp_iternext*/
+    NRWebTransactionIterable_methods, /*tp_methods*/
+    0,                      /*tp_members*/
+    0,                      /*tp_getset*/
+    0,                      /*tp_base*/
+    0,                      /*tp_dict*/
+    0,                      /*tp_descr_get*/
+    0,                      /*tp_descr_set*/
+    0,                      /*tp_dictoffset*/
+    (initproc)NRWebTransactionIterable_init, /*tp_init*/
+    0,                      /*tp_alloc*/
+    NRWebTransactionIterable_new, /*tp_new*/
+    0,                      /*tp_free*/
+    0,                      /*tp_is_gc*/
+};
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRWebTransactionAdapter_new(PyTypeObject *type,
+                                              PyObject *args,
+                                              PyObject *kwds)
+{
+    NRWebTransactionAdapterObject *self;
+
+    self = (NRWebTransactionAdapterObject *)type->tp_alloc(type, 0);
+
+    if (!self)
+        return NULL;
+
+    self->application = NULL;
+    self->wrapped_object = NULL;
+    self->environ = NULL;
+    self->start_response = NULL;
+
+    return (PyObject *)self;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRWebTransactionAdapter_init(NRWebTransactionAdapterObject *self,
+                                         PyObject *args, PyObject *kwds)
+{
+    PyObject *application = NULL;
+    PyObject *wrapped_object = NULL;
+    PyObject *environ = NULL;
+    PyObject *start_response = NULL;
+
+    static char *kwlist[] = { "application", "wrapped", "environ",
+                              "start_response", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O:WebTransactionAdapter",
+                                     kwlist, &NRApplication_Type,
+                                     &application, &wrapped_object,
+                                     &environ, &start_response)) {
+        return -1;
+    }
+
+    Py_INCREF(application);
+    Py_XDECREF(self->application);
+    self->application = application;
+
+    Py_INCREF(wrapped_object);
+    Py_XDECREF(self->wrapped_object);
+    self->wrapped_object = wrapped_object;
+
+    Py_INCREF(environ);
+    Py_XDECREF(self->environ);
+    self->environ = environ;
+
+    Py_INCREF(start_response);
+    Py_XDECREF(self->start_response);
+    self->start_response = start_response;
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static void NRWebTransactionAdapter_dealloc(
+        NRWebTransactionAdapterObject *self)
+{
+    Py_XDECREF(self->application);
+    Py_XDECREF(self->wrapped_object);
+    Py_XDECREF(self->environ);
+    Py_XDECREF(self->start_response);
+
+    Py_TYPE(self)->tp_free(self);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRWebTransactionAdapter_start(
+        NRWebTransactionAdapterObject *self, PyObject *args)
+{
+    PyObject *status_line = NULL;
+    PyObject *headers = NULL;
+    PyObject *exc_info = NULL;
+
+    /* TODO Capture status. */
+
+    if (!PyArg_ParseTuple(args, "OO!|O:start_response", &status_line,
+                          &headers, &exc_info)) {
+        return NULL;
+    }
+
+    return PyEval_CallObject(self->start_response, args);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRWebTransactionAdapter_call(
+        NRWebTransactionAdapterObject *self, PyObject *args)
+{
+#if 0
+    PyObject *instance_method = NULL;
+    PyObject *method_args = NULL;
+    PyObject *method_result = NULL;
+
+    PyObject *result = NULL;
+
+    self->transaction = PyObject_CallFunctionObjArgs((PyObject *)
+            &NRWebTransaction_Type, self->application, self->environ, NULL);
+
+    /* Now call __enter__() on the context manager. */
+
+    instance_method = PyObject_GetAttrString(self->transaction, "__enter__");
+
+    method_args = PyTuple_Pack(0);
+    method_result = PyObject_Call(instance_method, method_args, NULL);
+
+    if (!method_result)
+        PyErr_WriteUnraisable(instance_method);
+    else
+        Py_DECREF(method_result);
+
+    Py_DECREF(method_args);
+    Py_DECREF(instance_method);
+
+    /* Now call wrapper object to get the iterable it returns. */
+
+    instance_method = PyObject_GetAttrString(self, "start_response");
+
+    method_result = PyObject_CallFunctionObjArgs(self->wrapped_object,
+        self->environ, instance_method, NULL);
+
+    Py_DECREF(instance_method);
+
+    /* It returned an error, call __exit__() on context manager. */
+
+    if (!method_result) {
+        PyObject *type = NULL;
+        PyObject *value = NULL;
+        PyObject *traceback = NULL;
+
+        manager_method = PyObject_GetAttrString(self->transaction, "__exit__");
+
+        PyErr_Fetch(&type, &value, &traceback);
+
+        if (!value) {
+            value = Py_None;
+            Py_INCREF(value);
+        }
+
+        if (!traceback) {
+            traceback = Py_None;
+            Py_INCREF(traceback);
+        }
+
+        PyErr_NormalizeException(&type, &value, &traceback);
+
+        method_args = PyTuple_Pack(3, type, value, traceback);
+        method_result = PyObject_Call(manager_method, method_args, NULL);
+
+        if (!method_result)
+            PyErr_WriteUnraisable(manager_method);
+        else
+            Py_DECREF(method_result);
+
+        Py_DECREF(method_args);
+        Py_DECREF(manager_method);
+
+        PyErr_Restore(type, value, traceback);
+
+        return NULL;
+    }
+
+    /* Return iterable. */
+
+    result = PyObject_CallFunctionObjArgs(&NRWebTransactionIterable_Type,
+            self->transaction, method_result, NULL);
+
+    Py_DECREF(method_result);
+
+    return result;
+#endif
+}
+
+/* ------------------------------------------------------------------------- */
+
+#ifndef PyVarObject_HEAD_INIT
+#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
+#endif
+
+static PyMethodDef NRWebTransactionAdapter_methods[] = {
+    { "start_response",     (PyCFunction)NRWebTransactionAdapter_start,
+                            METH_VARARGS, 0 },
+    { NULL, NULL }
+};
+
+PyTypeObject NRWebTransactionAdapter_Type = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "_newrelic.WebTransactionAdapter", /*tp_name*/
+    sizeof(NRWebTransactionAdapterObject), /*tp_basicsize*/
+    0,                      /*tp_itemsize*/
+    /* methods */
+    (destructor)NRWebTransactionAdapter_dealloc, /*tp_dealloc*/
+    0,                      /*tp_print*/
+    0,                      /*tp_getattr*/
+    0,                      /*tp_setattr*/
+    0,                      /*tp_compare*/
+    0,                      /*tp_repr*/
+    0,                      /*tp_as_number*/
+    0,                      /*tp_as_sequence*/
+    0,                      /*tp_as_mapping*/
+    0,                      /*tp_hash*/
+    (ternaryfunc)NRWebTransactionAdapter_call, /*tp_call*/
+    0,                      /*tp_str*/
+    0,                      /*tp_getattro*/
+    0,                      /*tp_setattro*/
+    0,                      /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT,     /*tp_flags*/
+    0,                      /*tp_doc*/
+    0,                      /*tp_traverse*/
+    0,                      /*tp_clear*/
+    0,                      /*tp_richcompare*/
+    0,                      /*tp_weaklistoffset*/
+    0,                      /*tp_iter*/
+    0,                      /*tp_iternext*/
+    NRWebTransactionAdapter_methods, /*tp_methods*/
+    0,                      /*tp_members*/
+    0,                      /*tp_getset*/
+    0,                      /*tp_base*/
+    0,                      /*tp_dict*/
+    0,                      /*tp_descr_get*/
+    0,                      /*tp_descr_set*/
+    0,                      /*tp_dictoffset*/
+    (initproc)NRWebTransactionAdapter_init, /*tp_init*/
+    0,                      /*tp_alloc*/
+    NRWebTransactionAdapter_new, /*tp_new*/
+    0,                      /*tp_free*/
+    0,                      /*tp_is_gc*/
+};
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRWebTransactionWrapper_new(PyTypeObject *type, PyObject *args,
+                                           PyObject *kwds)
+{
+    NRWebTransactionWrapperObject *self;
+
+    self = (NRWebTransactionWrapperObject *)type->tp_alloc(type, 0);
+
+    if (!self)
+        return NULL;
+
+    self->wrapped_object = NULL;
+    self->application = NULL;
+
+    return (PyObject *)self;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRWebTransactionWrapper_init(NRWebTransactionWrapperObject *self,
+                                       PyObject *args, PyObject *kwds)
+{
+    PyObject *wrapped_object = NULL;
+
+    PyObject *application = NULL;
+
+    static char *kwlist[] = { "wrapped", "application", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO:WebTransactionWrapper",
+                                     kwlist, &wrapped_object, &application)) {
+        return -1;
+    }
+
+    if (Py_TYPE(application) != &NRApplication_Type &&
+        !PyString_Check(application) && !PyUnicode_Check(application)) {
+        PyErr_Format(PyExc_TypeError, "application argument must be str, "
+                     "unicode, or application object, found type '%s'",
+                     application->ob_type->tp_name);
+        return -1;
+    }
+
+    if (Py_TYPE(application) != &NRApplication_Type) {
+        PyObject *func_args;
+
+        func_args = PyTuple_Pack(1, application);
+        application = NRApplication_Singleton(func_args, NULL);
+
+        Py_DECREF(func_args);
+    }
+    else
+        Py_INCREF(application);
+
+    Py_INCREF(wrapped_object);
+    Py_XDECREF(self->wrapped_object);
+    self->wrapped_object = wrapped_object;
+
+    Py_INCREF(application);
+    Py_XDECREF(self->application);
+    self->application = application;
+
+    /*
+     * TODO This should set __module__, __name__, __doc__ and
+     * update __dict__ to preserve introspection capabilities.
+     * See @wraps in functools of recent Python versions.
+     */
+
+    Py_DECREF(application);
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static void NRWebTransactionWrapper_dealloc(NRWebTransactionWrapperObject *self)
+{
+    Py_XDECREF(self->wrapped_object);
+
+    Py_XDECREF(self->application);
+
+    Py_TYPE(self)->tp_free(self);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRWebTransactionWrapper_call(
+        NRWebTransactionWrapperObject *self, PyObject *args, PyObject *kwds)
+{
+    PyObject *environ = NULL;
+    PyObject *start_response = NULL;
+
+    if (!PyArg_ParseTuple(args, "OO:__call__", &environ, &start_response))
+        return NULL;
+
+    return PyObject_CallFunctionObjArgs((PyObject *)
+            &NRWebTransactionIterable_Type, self->application,
+            self->wrapped_object, environ, start_response, NULL);
+
+#if 0
+    PyObject *wrapped_result = NULL;
+
+    PyObject *background_task = NULL;
+
+    PyObject *instance_method = NULL;
+    PyObject *method_args = NULL;
+    PyObject *method_result = NULL;
+
+    PyObject *name = NULL;
+
+    /* Create database trace context manager. */
+
+    if (self->name == Py_None) {
+        name = NRUtilities_CallableName(self->wrapped_object,
+                                        (PyObject *)self, args);
+    }
+    else {
+        name = self->name;
+        Py_INCREF(name);
+    }
+
+    background_task = PyObject_CallFunctionObjArgs((PyObject *)
+            &NRWebTransaction_Type, self->application, name, NULL);
+
+    Py_DECREF(name);
+
+    /* Now call __enter__() on the context manager. */
+
+    instance_method = PyObject_GetAttrString(background_task, "__enter__");
+
+    method_args = PyTuple_Pack(0);
+    method_result = PyObject_Call(instance_method, method_args, NULL);
+
+    if (!method_result)
+        PyErr_WriteUnraisable(instance_method);
+    else
+        Py_DECREF(method_result);
+
+    Py_DECREF(method_args);
+    Py_DECREF(instance_method);
+
+    /*
+     * Now call the actual wrapped function with the original
+     * position and keyword arguments.
+     */
+
+    wrapped_result = PyObject_Call(self->wrapped_object, args, kwds);
+
+    /*
+     * Now call __exit__() on the context manager. If the call
+     * of the wrapped function is successful then pass all None
+     * objects, else pass exception details.
+     */
+
+    instance_method = PyObject_GetAttrString(background_task, "__exit__");
+
+    if (wrapped_result) {
+        method_args = PyTuple_Pack(3, Py_None, Py_None, Py_None);
+        method_result = PyObject_Call(instance_method, method_args, NULL);
+
+        if (!method_result)
+            PyErr_WriteUnraisable(instance_method);
+        else
+            Py_DECREF(method_result);
+
+        Py_DECREF(method_args);
+        Py_DECREF(instance_method);
+    }
+    else {
+        PyObject *type = NULL;
+        PyObject *value = NULL;
+        PyObject *traceback = NULL;
+
+        PyErr_Fetch(&type, &value, &traceback);
+
+        if (!value) {
+            value = Py_None;
+            Py_INCREF(value);
+        }
+
+        if (!traceback) {
+            traceback = Py_None;
+            Py_INCREF(traceback);
+        }
+
+        PyErr_NormalizeException(&type, &value, &traceback);
+
+        method_args = PyTuple_Pack(3, type, value, traceback);
+        method_result = PyObject_Call(instance_method, method_args, NULL);
+
+        if (!method_result)
+            PyErr_WriteUnraisable(instance_method);
+        else
+            Py_DECREF(method_result);
+
+        Py_DECREF(method_args);
+        Py_DECREF(instance_method);
+
+        PyErr_Restore(type, value, traceback);
+    }
+
+    Py_DECREF(background_task);
+
+    return wrapped_result;
+#endif
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRWebTransactionWrapper_get_name(
+        NRWebTransactionWrapperObject *self, void *closure)
+{
+    return PyObject_GetAttrString(self->wrapped_object, "__name__");
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRWebTransactionWrapper_get_module(
+        NRWebTransactionWrapperObject *self, void *closure)
+{
+    return PyObject_GetAttrString(self->wrapped_object, "__module__");
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRWebTransactionWrapper_get_wrapped(
+        NRWebTransactionWrapperObject *self, void *closure)
+{
+    Py_INCREF(self->wrapped_object);
+    return self->wrapped_object;
+}
+ 
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRWebTransactionWrapper_descr_get(PyObject *function,
+                                                  PyObject *object,
+                                                  PyObject *type)
+{
+    if (object == Py_None)
+        object = NULL;
+
+    return PyMethod_New(function, object, type);
+}
+
+/* ------------------------------------------------------------------------- */
+
+#ifndef PyVarObject_HEAD_INIT
+#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
+#endif
+
+static PyGetSetDef NRWebTransactionWrapper_getset[] = {
+    { "__name__",           (getter)NRWebTransactionWrapper_get_name,
+                            NULL, 0 },
+    { "__module__",         (getter)NRWebTransactionWrapper_get_module,
+                            NULL, 0 },
+    { "__wrapped__",        (getter)NRWebTransactionWrapper_get_wrapped,
+                            NULL, 0 },
+    { NULL },
+};
+
+PyTypeObject NRWebTransactionWrapper_Type = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "_newrelic.WebTransactionWrapper", /*tp_name*/
+    sizeof(NRWebTransactionWrapperObject), /*tp_basicsize*/
+    0,                      /*tp_itemsize*/
+    /* methods */
+    (destructor)NRWebTransactionWrapper_dealloc, /*tp_dealloc*/
+    0,                      /*tp_print*/
+    0,                      /*tp_getattr*/
+    0,                      /*tp_setattr*/
+    0,                      /*tp_compare*/
+    0,                      /*tp_repr*/
+    0,                      /*tp_as_number*/
+    0,                      /*tp_as_sequence*/
+    0,                      /*tp_as_mapping*/
+    0,                      /*tp_hash*/
+    (ternaryfunc)NRWebTransactionWrapper_call, /*tp_call*/
+    0,                      /*tp_str*/
+    0,                      /*tp_getattro*/
+    0,                      /*tp_setattro*/
+    0,                      /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT,     /*tp_flags*/
+    0,                      /*tp_doc*/
+    0,                      /*tp_traverse*/
+    0,                      /*tp_clear*/
+    0,                      /*tp_richcompare*/
+    0,                      /*tp_weaklistoffset*/
+    0,                      /*tp_iter*/
+    0,                      /*tp_iternext*/
+    0,                      /*tp_methods*/
+    0,                      /*tp_members*/
+    NRWebTransactionWrapper_getset, /*tp_getset*/
+    0,                      /*tp_base*/
+    0,                      /*tp_dict*/
+    NRWebTransactionWrapper_descr_get, /*tp_descr_get*/
+    0,                      /*tp_descr_set*/
+    0,                      /*tp_dictoffset*/
+    (initproc)NRWebTransactionWrapper_init, /*tp_init*/
+    0,                      /*tp_alloc*/
+    NRWebTransactionWrapper_new, /*tp_new*/
+    0,                      /*tp_free*/
+    0,                      /*tp_is_gc*/
+};
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRWebTransactionDecorator_new(PyTypeObject *type,
+                                              PyObject *args, PyObject *kwds)
+{
+    NRWebTransactionDecoratorObject *self;
+
+    self = (NRWebTransactionDecoratorObject *)type->tp_alloc(type, 0);
+
+    if (!self)
+        return NULL;
+
+    self->application = NULL;
+
+    return (PyObject *)self;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRWebTransactionDecorator_init(NRWebTransactionDecoratorObject *self,
+                                         PyObject *args, PyObject *kwds)
+{
+    PyObject *application = NULL;
+
+    static char *kwlist[] = { "application", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:WebTransactionDecorator",
+                                     kwlist, &application)) {
+        return -1;
+    }
+
+    if (Py_TYPE(application) != &NRApplication_Type &&
+        !PyString_Check(application) && !PyUnicode_Check(application)) {
+        PyErr_Format(PyExc_TypeError, "application argument must be str, "
+                     "unicode, or application object, found type '%s'",
+                     application->ob_type->tp_name);
+        return -1;
+    }
+
+    Py_INCREF(application);
+    Py_XDECREF(self->application);
+    self->application = application;
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static void NRWebTransactionDecorator_dealloc(
+        NRWebTransactionDecoratorObject *self)
+{
+    Py_XDECREF(self->application);
+
+    Py_TYPE(self)->tp_free(self);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRWebTransactionDecorator_call(
+        NRWebTransactionDecoratorObject *self, PyObject *args, PyObject *kwds)
+{
+    PyObject *wrapped_object = NULL;
+
+    static char *kwlist[] = { "wrapped", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:WebTransactionDecorator",
+                                     kwlist, &wrapped_object)) {
+        return NULL;
+    }
+
+    return PyObject_CallFunctionObjArgs(
+            (PyObject *)&NRWebTransactionWrapper_Type,
+            wrapped_object, self->application, NULL);
+}
+
+/* ------------------------------------------------------------------------- */
+
+#ifndef PyVarObject_HEAD_INIT
+#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
+#endif
+
+PyTypeObject NRWebTransactionDecorator_Type = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "_newrelic.WebTransactionDecorator", /*tp_name*/
+    sizeof(NRWebTransactionDecoratorObject), /*tp_basicsize*/
+    0,                      /*tp_itemsize*/
+    /* methods */
+    (destructor)NRWebTransactionDecorator_dealloc, /*tp_dealloc*/
+    0,                      /*tp_print*/
+    0,                      /*tp_getattr*/
+    0,                      /*tp_setattr*/
+    0,                      /*tp_compare*/
+    0,                      /*tp_repr*/
+    0,                      /*tp_as_number*/
+    0,                      /*tp_as_sequence*/
+    0,                      /*tp_as_mapping*/
+    0,                      /*tp_hash*/
+    (ternaryfunc)NRWebTransactionDecorator_call, /*tp_call*/
+    0,                      /*tp_str*/
+    0,                      /*tp_getattro*/
+    0,                      /*tp_setattro*/
+    0,                      /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT,     /*tp_flags*/
+    0,                      /*tp_doc*/
+    0,                      /*tp_traverse*/
+    0,                      /*tp_clear*/
+    0,                      /*tp_richcompare*/
+    0,                      /*tp_weaklistoffset*/
+    0,                      /*tp_iter*/
+    0,                      /*tp_iternext*/
+    0,                      /*tp_methods*/
+    0,                      /*tp_members*/
+    0,                      /*tp_getset*/
+    0,                      /*tp_base*/
+    0,                      /*tp_dict*/
+    0,                      /*tp_descr_get*/
+    0,                      /*tp_descr_set*/
+    0,                      /*tp_dictoffset*/
+    (initproc)NRWebTransactionDecorator_init, /*tp_init*/
+    0,                      /*tp_alloc*/
+    NRWebTransactionDecorator_new, /*tp_new*/
+    0,                      /*tp_free*/
+    0,                      /*tp_is_gc*/
+};
+
+/* ------------------------------------------------------------------------- */
+
 /*
  * vim: et cino=>2,e0,n0,f0,{2,}0,^0,\:2,=2,p2,t2,c1,+2,(2,u2,)20,*30,g2,h2 ts=8
  */

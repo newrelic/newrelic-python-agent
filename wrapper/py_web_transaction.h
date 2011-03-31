@@ -13,6 +13,45 @@
 
 extern PyTypeObject NRWebTransaction_Type;
 
+typedef struct {
+    PyObject_HEAD
+    PyObject *application;
+    PyObject *wrapped_object;
+    PyObject *environ;
+    PyObject *start_response;
+    PyObject *transaction;
+    PyObject *result;
+    PyObject *iterable;
+} NRWebTransactionIterableObject;
+
+extern PyTypeObject NRWebTransactionIterable_Type;
+
+typedef struct {
+    PyObject_HEAD
+    PyObject *application;
+    PyObject *wrapped_object;
+    PyObject *environ;
+    PyObject *start_response;
+    PyObject *transaction;
+} NRWebTransactionAdapterObject;
+
+extern PyTypeObject NRWebTransactionAdapter_Type;
+
+typedef struct {
+    PyObject_HEAD
+    PyObject *application;
+    PyObject *wrapped_object;
+} NRWebTransactionWrapperObject;
+
+extern PyTypeObject NRWebTransactionWrapper_Type;
+
+typedef struct {
+    PyObject_HEAD
+    PyObject *application;
+} NRWebTransactionDecoratorObject;
+
+extern PyTypeObject NRWebTransactionDecorator_Type;
+
 /* ------------------------------------------------------------------------- */
 
 #endif

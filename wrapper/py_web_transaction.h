@@ -17,7 +17,6 @@ typedef struct {
     PyObject_HEAD
     PyObject *application;
     PyObject *wrapped_object;
-    PyObject *environ;
     PyObject *start_response;
     PyObject *transaction;
     PyObject *result;

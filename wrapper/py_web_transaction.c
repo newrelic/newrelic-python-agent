@@ -505,6 +505,8 @@ static int NRWebTransactionIterable_init(NRWebTransactionIterableObject *self,
 {
     PyObject *application = NULL;
     PyObject *wrapped_object = NULL;
+    PyObject *application_args = NULL;
+
     PyObject *environ = NULL;
     PyObject *start_response = NULL;
 
@@ -512,15 +514,21 @@ static int NRWebTransactionIterable_init(NRWebTransactionIterableObject *self,
     PyObject *method_args = NULL;
     PyObject *method_result = NULL;
 
-    static char *kwlist[] = { "application", "wrapped", "environ",
-                              "start_response", NULL };
+    int i = 0;
+
+    static char *kwlist[] = { "application", "wrapped", "args", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds,
-                                     "O!OO!O:WebTransactionIterable",
+                                     "O!OO!:WebTransactionIterable",
                                      kwlist, &NRApplication_Type,
                                      &application, &wrapped_object,
-                                     &PyDict_Type, &environ,
-                                     &start_response)) {
+                                     &PyTuple_Type, &application_args)) {
+        return -1;
+    }
+
+    if (PyTuple_Size(application_args) < 2) {
+        PyErr_SetString(PyExc_ValueError,
+                        "insufficient application arguments");
         return -1;
     }
 
@@ -532,18 +540,20 @@ static int NRWebTransactionIterable_init(NRWebTransactionIterableObject *self,
     Py_XDECREF(self->wrapped_object);
     self->wrapped_object = wrapped_object;
 
-    Py_INCREF(environ);
-    Py_XDECREF(self->environ);
-    self->environ = environ;
+    start_response = PyTuple_GetItem(application_args,
+                                     PyTuple_Size(application_args)-1);
 
     Py_INCREF(start_response);
     Py_XDECREF(self->start_response);
     self->start_response = start_response;
 
+    environ = PyTuple_GetItem(application_args,
+                              PyTuple_Size(application_args)-2);
+
     /* XXX So far assuming constructor not called twice. */
 
     self->transaction = PyObject_CallFunctionObjArgs((PyObject *)
-            &NRWebTransaction_Type, self->application, self->environ, NULL);
+            &NRWebTransaction_Type, self->application, environ, NULL);
 
     /* Now call __enter__() on the context manager. */
 
@@ -565,10 +575,20 @@ static int NRWebTransactionIterable_init(NRWebTransactionIterableObject *self,
     instance_method = PyObject_GetAttrString((PyObject *)self,
                                              "start_response");
 
-    self->result = PyObject_CallFunctionObjArgs(self->wrapped_object,
-        self->environ, instance_method, NULL);
+    method_args = PyTuple_New(PyTuple_Size(application_args));
 
-    Py_DECREF(instance_method);
+    for (i=0; i<PyTuple_Size(application_args)-1; i++) {
+        PyObject *object = PyTuple_GetItem(application_args, i);
+        Py_INCREF(object);
+        PyTuple_SetItem(method_args, i, object);
+    }
+
+    PyTuple_SetItem(method_args, PyTuple_Size(application_args)-1,
+                    instance_method);
+
+    self->result = PyEval_CallObject(self->wrapped_object, method_args);
+
+    Py_DECREF(method_args);
 
     /* It returned an error, call __exit__() on context manager. */
 
@@ -619,6 +639,7 @@ static void NRWebTransactionIterable_dealloc(
 {
     Py_XDECREF(self->application);
     Py_XDECREF(self->wrapped_object);
+    Py_XDECREF(self->start_response);
     Py_XDECREF(self->transaction);
     Py_XDECREF(self->result);
     Py_XDECREF(self->iterable);
@@ -904,122 +925,9 @@ static void NRWebTransactionWrapper_dealloc(NRWebTransactionWrapperObject *self)
 static PyObject *NRWebTransactionWrapper_call(
         NRWebTransactionWrapperObject *self, PyObject *args, PyObject *kwds)
 {
-    PyObject *environ = NULL;
-    PyObject *start_response = NULL;
-
-    if (!PyArg_ParseTuple(args, "OO:__call__", &environ, &start_response))
-        return NULL;
-
     return PyObject_CallFunctionObjArgs((PyObject *)
             &NRWebTransactionIterable_Type, self->application,
-            self->wrapped_object, environ, start_response, NULL);
-
-#if 0
-    PyObject *wrapped_result = NULL;
-
-    PyObject *background_task = NULL;
-
-    PyObject *instance_method = NULL;
-    PyObject *method_args = NULL;
-    PyObject *method_result = NULL;
-
-    PyObject *name = NULL;
-
-    /* Create database trace context manager. */
-
-    if (self->name == Py_None) {
-        name = NRUtilities_CallableName(self->wrapped_object,
-                                        (PyObject *)self, args);
-    }
-    else {
-        name = self->name;
-        Py_INCREF(name);
-    }
-
-    background_task = PyObject_CallFunctionObjArgs((PyObject *)
-            &NRWebTransaction_Type, self->application, name, NULL);
-
-    Py_DECREF(name);
-
-    /* Now call __enter__() on the context manager. */
-
-    instance_method = PyObject_GetAttrString(background_task, "__enter__");
-
-    method_args = PyTuple_Pack(0);
-    method_result = PyObject_Call(instance_method, method_args, NULL);
-
-    if (!method_result)
-        PyErr_WriteUnraisable(instance_method);
-    else
-        Py_DECREF(method_result);
-
-    Py_DECREF(method_args);
-    Py_DECREF(instance_method);
-
-    /*
-     * Now call the actual wrapped function with the original
-     * position and keyword arguments.
-     */
-
-    wrapped_result = PyObject_Call(self->wrapped_object, args, kwds);
-
-    /*
-     * Now call __exit__() on the context manager. If the call
-     * of the wrapped function is successful then pass all None
-     * objects, else pass exception details.
-     */
-
-    instance_method = PyObject_GetAttrString(background_task, "__exit__");
-
-    if (wrapped_result) {
-        method_args = PyTuple_Pack(3, Py_None, Py_None, Py_None);
-        method_result = PyObject_Call(instance_method, method_args, NULL);
-
-        if (!method_result)
-            PyErr_WriteUnraisable(instance_method);
-        else
-            Py_DECREF(method_result);
-
-        Py_DECREF(method_args);
-        Py_DECREF(instance_method);
-    }
-    else {
-        PyObject *type = NULL;
-        PyObject *value = NULL;
-        PyObject *traceback = NULL;
-
-        PyErr_Fetch(&type, &value, &traceback);
-
-        if (!value) {
-            value = Py_None;
-            Py_INCREF(value);
-        }
-
-        if (!traceback) {
-            traceback = Py_None;
-            Py_INCREF(traceback);
-        }
-
-        PyErr_NormalizeException(&type, &value, &traceback);
-
-        method_args = PyTuple_Pack(3, type, value, traceback);
-        method_result = PyObject_Call(instance_method, method_args, NULL);
-
-        if (!method_result)
-            PyErr_WriteUnraisable(instance_method);
-        else
-            Py_DECREF(method_result);
-
-        Py_DECREF(method_args);
-        Py_DECREF(instance_method);
-
-        PyErr_Restore(type, value, traceback);
-    }
-
-    Py_DECREF(background_task);
-
-    return wrapped_result;
-#endif
+            self->wrapped_object, args, NULL);
 }
 
 /* ------------------------------------------------------------------------- */

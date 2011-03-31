@@ -297,7 +297,7 @@ static PyObject *newrelic_wrap_web_transaction(PyObject *self, PyObject *args,
                               "application", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds,
-                                     "szzO|O:wrap_web_transaction",
+                                     "szzO:wrap_web_transaction",
                                      kwlist, &module_name, &class_name,
                                      &object_name, &application)) {
         return NULL;

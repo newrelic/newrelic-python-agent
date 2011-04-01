@@ -9,21 +9,14 @@ import _newrelic
 def _fixup_database():
     from django.conf import settings
 
-    # TODO Need to cope with old single database config.
-
     if hasattr(settings, 'DATABASES'):
         for alias, database in settings.DATABASES.items():
             parts = database['ENGINE'].split('.')
             module = __import__(database['ENGINE'], fromlist='base')
             interface = module.base.Database
 
-            """
-            if interface.__name__ == 'sqlite3.dbapi2':
-                _newrelic.wrap_database_trace('sqlite3', 'Cursor',
-                                       'execute', 1)
-                _newrelic.wrap_database_trace('sqlite3', 'Cursor',
-                                       'executemany', 1)
-            """
+            # XXX Can probably just instrument database['ENGINE']
+            # as that should be the database module name.
 
             _newrelic.wrap_database_trace(interface.__name__, 'Cursor',
                                    'execute', 1)
@@ -109,27 +102,6 @@ def _fixup_exception(handler, request, resolver, exc_info):
     if transaction:
         transaction.runtime_error(*exc_info)
 
-class TemplateRenderWrapper(object):
-    def __init__(self, wrapped):
-        self._wrapped = wrapped
-    def __get__(self, obj, objtype=None):
-        return types.MethodType(self, obj, objtype)
-    def __call__(self, template, context):
-        wrapper = _newrelic.FunctionTraceWrapper(self._wrapped,
-                name='%s Template' % template.name, scope='Template')
-        return wrapper(template, context)
-
-class NodeRenderWrapper(object):
-    def __init__(self, wrapped):
-        self._wrapped = wrapped
-    def __get__(self, obj, objtype=None):
-        return types.MethodType(self, obj, objtype)
-    def __call__(self, template, node, context):
-        wrapper = _newrelic.FunctionTraceWrapper(self._wrapped,
-                name='%s Node' % _newrelic.callable_name(node),
-                scope='Template')
-        return wrapper(template, node, context)
-
 def _instrument(application):
     import django
 
@@ -151,18 +123,23 @@ def _instrument(application):
     _newrelic.wrap_pre_function('django.core.handlers.wsgi', 'WSGIHandler',
                                 'handle_uncaught_exception', _fixup_exception)
 
-    from django.template import Template, NodeList
+    from django.template import Template
     if hasattr(Template, '_render'):
-        _newrelic.wrap_object('django.template', 'Template', '_render',
-                              TemplateRenderWrapper)
+        _newrelic.wrap_function_trace('django.template', 'Template',
+              '_render', lambda template, context: \
+              '%s Template ' % template.name, 'Template')
     else:
-        _newrelic.wrap_object('django.template', 'Template', 'render',
-                              TemplateRenderWrapper)
+        _newrelic.wrap_function_trace('django.template', 'Template',
+              'render', lambda template, context: \
+              '%s Template ' % template.name, 'Template')
 
-    #NodeList.render_node = NodeRenderWrapper(NodeList.render_node)
+    #_newrelic.wrap_function_trace('django.template', 'NodeList',
+    #      'render_node', lambda template, node, context: \
+    #      '%s Node ' % _newrelic.callable_name(node), 'Template')
 
-    #from django.template.debug import DebugNodeList
-    #DebugNodeList.render_node = NodeRenderWrapper(DebugNodeList.render_node)
+    #_newrelic.wrap_function_trace('django.template.debug', 'DebugNodeList',
+    #      'render_node', lambda template, node, context: \
+    #      '%s Node ' % _newrelic.callable_name(node), 'Template')
 
     # This is not Django specific, but is an example of eternal node.
 

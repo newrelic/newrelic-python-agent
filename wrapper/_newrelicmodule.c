@@ -646,12 +646,14 @@ static PyObject *newrelic_function_trace(PyObject *self, PyObject *args,
         return NULL;
     }
 
+#if 0
     if (!PyString_Check(name) && !PyUnicode_Check(name) &&
         name != Py_None) {
         PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
                      "or None, found type '%s'", name->ob_type->tp_name);
         return NULL;
     }
+#endif
 
     if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
         scope != Py_None) {
@@ -702,12 +704,14 @@ static PyObject *newrelic_wrap_function_trace(PyObject *self, PyObject *args,
         return NULL;
     }
 
+#if 0
     if (!PyString_Check(name) && !PyUnicode_Check(name) &&
         name != Py_None) {
         PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
                      "or None, found type '%s'", name->ob_type->tp_name);
         return NULL;
     }
+#endif
 
     if (!PyString_Check(scope) && !PyUnicode_Check(name) &&
         scope != Py_None) {

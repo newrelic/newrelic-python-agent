@@ -53,6 +53,10 @@ class _test_class_nn_5(object):
 
 _test_class_instance_nn_5 = _test_class_nn_5()
 
+def _test_function_6(name):
+    time.sleep(0.1)
+_test_function_6 = _newrelic.function_trace(lambda x: x)(_test_function_6)
+
 class FunctionTraceTests01(unittest.TestCase):
 
     def setUp(self):
@@ -127,6 +131,7 @@ class FunctionTraceTests01(unittest.TestCase):
             _test_class_instance_nn_3._test_function()
             _test_class_instance_nn_4._test_function()
             _test_class_instance_nn_5._test_function()
+            _test_function_6("function+lambda")
             time.sleep(0.1)
 
 if __name__ == '__main__':

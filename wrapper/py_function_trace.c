@@ -57,11 +57,13 @@ static int NRFunctionTrace_init(NRFunctionTraceObject *self, PyObject *args,
         return -1;
     }
 
+#if 0
     if (!PyString_Check(name) && !PyUnicode_Check(name)) {
         PyErr_Format(PyExc_TypeError, "name argument must be str or unicode, "
                      "found type '%s'", name->ob_type->tp_name);
         return -1;
     }
+#endif
 
     if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
         scope != Py_None) {
@@ -299,12 +301,14 @@ static int NRFunctionTraceWrapper_init(NRFunctionTraceWrapperObject *self,
         return -1;
     }
 
+#if 0
     if (!PyString_Check(name) && !PyUnicode_Check(name) &&
         name != Py_None) {
         PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
                      "or None, found type '%s'", name->ob_type->tp_name);
         return -1;
     }
+#endif
 
     if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
         scope != Py_None) {
@@ -383,9 +387,20 @@ static PyObject *NRFunctionTraceWrapper_call(
         name = NRUtilities_CallableName(self->wrapped_object,
                                         (PyObject *)self, args);
     }
-    else {
+    else if (PyString_Check(self->name)) {
         name = self->name;
         Py_INCREF(name);
+    }
+    else {
+        /*
+         * Name if actually a callable function to provide the
+         * name based on arguments supplied to wrapped function.
+         */
+
+        name = PyObject_Call(self->name, args, kwds);
+
+        if (!name)
+            return NULL;
     }
 
     function_trace = PyObject_CallFunctionObjArgs((PyObject *)
@@ -606,12 +621,14 @@ static int NRFunctionTraceDecorator_init(NRFunctionTraceDecoratorObject *self,
         return -1;
     }
 
+#if 0
     if (!PyString_Check(name) && !PyUnicode_Check(name) &&
         name != Py_None) {
         PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
                      "or None, found type '%s'", name->ob_type->tp_name);
         return -1;
     }
+#endif
 
     if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
         scope != Py_None) {

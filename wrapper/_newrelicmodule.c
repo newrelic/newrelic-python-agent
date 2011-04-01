@@ -1153,6 +1153,61 @@ static PyObject *newrelic_wrap_pre_function(PyObject *self, PyObject *args,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *newrelic_wrap_object(PyObject *self, PyObject *args,
+                                      PyObject *kwds)
+{
+    const char *module_name = NULL;
+    const char *class_name = NULL;
+    const char *object_name = NULL;
+    PyObject *factory_object = NULL;
+
+    PyObject *wrapped_object = NULL;
+    PyObject *parent_object = NULL;
+    const char *attribute_name = NULL;
+
+    PyObject *wrapper_object = NULL;
+
+    PyObject *result = NULL;
+
+    static char *kwlist[] = { "module_name", "class_name", "object_name",
+                              "factory", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO:wrap_object",
+                                     kwlist, &module_name, &class_name,
+                                     &object_name, &factory_object)) {
+        return NULL;
+    }
+
+    if (!class_name && !object_name) {
+        PyErr_SetString(PyExc_RuntimeError, "class or object name must be "
+                        "supplied");
+        return NULL;
+    }
+
+    wrapped_object = NRUtilities_LookupCallable(module_name, class_name,
+                                                 object_name, &parent_object,
+                                                 &attribute_name);
+
+    if (!wrapped_object)
+        return NULL;
+
+    wrapper_object = PyObject_CallFunctionObjArgs((PyObject *)
+            factory_object, wrapped_object, NULL);
+
+    result = NRUtilities_ReplaceWithWrapper(parent_object, attribute_name,
+                                            wrapper_object);
+
+    Py_DECREF(parent_object);
+    Py_DECREF(wrapped_object);
+
+    if (!result)
+        return NULL;
+
+    return wrapper_object;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *newrelic_shutdown(PyObject *self, PyObject *args)
 {
     static int shutdown = 0;
@@ -1242,9 +1297,11 @@ static PyMethodDef newrelic_methods[] = {
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "wrap_post_function", (PyCFunction)newrelic_wrap_post_function,
                             METH_VARARGS|METH_KEYWORDS, 0 },
-    { "pre_function",      (PyCFunction)newrelic_pre_function,
+    { "pre_function",       (PyCFunction)newrelic_pre_function,
                             METH_VARARGS|METH_KEYWORDS, 0 },
-    { "wrap_pre_function", (PyCFunction)newrelic_wrap_pre_function,
+    { "wrap_pre_function",  (PyCFunction)newrelic_wrap_pre_function,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
+    { "wrap_object",        (PyCFunction)newrelic_wrap_object,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { NULL, NULL }
 };

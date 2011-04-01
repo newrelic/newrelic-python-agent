@@ -153,9 +153,11 @@ def _instrument(application):
 
     from django.template import Template, NodeList
     if hasattr(Template, '_render'):
-        Template._render = TemplateRenderWrapper(Template._render)
+        _newrelic.wrap_object('django.template', 'Template', '_render',
+                              TemplateRenderWrapper)
     else:
-        Template.render = TemplateRenderWrapper(Template.render)
+        _newrelic.wrap_object('django.template', 'Template', 'render',
+                              TemplateRenderWrapper)
 
     #NodeList.render_node = NodeRenderWrapper(NodeList.render_node)
 

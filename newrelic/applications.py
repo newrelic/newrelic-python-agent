@@ -1,7 +1,6 @@
 # vi: set sw=4 expandtab :
 
 import threading
-import atexit
 
 import _newrelic
 

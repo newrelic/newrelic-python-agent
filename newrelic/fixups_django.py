@@ -6,8 +6,6 @@ import types
 
 import _newrelic
 
-from fixups import _wrap_wsgi_application
-
 def _fixup_database():
     from django.conf import settings
 

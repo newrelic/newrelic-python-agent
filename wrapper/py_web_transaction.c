@@ -679,18 +679,25 @@ static PyObject *NRWebTransactionIterable_close(
     PyObject *method_args = NULL;
     PyObject *method_result = NULL;
 
-    wrapped_method = PyObject_GetAttrString(self->iterable, "close");
+    if (self->iterable) {
+        wrapped_method = PyObject_GetAttrString(self->iterable, "close");
 
-    if (!wrapped_method) {
-        PyErr_Clear();
+        if (!wrapped_method) {
+            PyErr_Clear();
 
+            Py_INCREF(Py_None);
+            wrapped_result = Py_None;
+        }
+        else
+            wrapped_result = PyObject_CallFunctionObjArgs(wrapped_method, NULL);
+
+        Py_XDECREF(wrapped_method);
+
+    }
+    else {
         Py_INCREF(Py_None);
         wrapped_result = Py_None;
     }
-    else
-        wrapped_result = PyObject_CallFunctionObjArgs(wrapped_method, NULL);
-
-    Py_XDECREF(wrapped_method);
 
     /*
      * Now call __exit__() on the context manager. If the call

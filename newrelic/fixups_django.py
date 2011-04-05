@@ -6,6 +6,8 @@ import types
 
 import _newrelic
 
+#import importhook
+
 def _fixup_database():
     from django.conf import settings
 
@@ -102,16 +104,11 @@ def _fixup_exception(handler, request, resolver, exc_info):
     if transaction:
         transaction.runtime_error(*exc_info)
 
-def _instrument(application):
-    import django
+#@_newrelic.when_imported('django')
+def instrument(module):
 
-    settings = {}
-
-    settings['django.version'] = django.get_version()
-    settings['django.path'] = os.path.dirname(django.__file__)
-
-    _newrelic.wrap_web_transaction('django.core.handlers.wsgi', 'WSGIHandler',
-                           '__call__', application)
+    #_newrelic.wrap_web_transaction('django.core.handlers.wsgi', 'WSGIHandler',
+    #                       '__call__', application)
 
     _newrelic.wrap_post_function('django.core.handlers.base','BaseHandler',
                                  'load_middleware', _fixup_middleware,
@@ -150,4 +147,4 @@ def _instrument(application):
     else:
         _newrelic.wrap_external_trace('feedparser', None, 'parse', 0)
 
-    return settings
+_newrelic.register_import_hook(instrument, 'django')

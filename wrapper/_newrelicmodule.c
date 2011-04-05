@@ -23,6 +23,8 @@
 #include "py_post_function.h"
 #include "py_pre_function.h"
 
+#include "py_import_hook.h"
+
 #include "py_utilities.h"
 
 #include "globals.h"
@@ -1212,6 +1214,35 @@ static PyObject *newrelic_wrap_object(PyObject *self, PyObject *args,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *newrelic_register_import_hook(PyObject *self,
+                                               PyObject *args,
+                                               PyObject *kwds)
+{
+    PyObject *callable = NULL;
+    PyObject *name = NULL;
+
+    static char *kwlist[] = { "callable", "name", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO:register_import_hook",
+                                     kwlist, &callable, &name)) {
+        return NULL;
+    }
+
+    if (!PyCallable_Check(callable)) {
+        PyErr_SetString(PyExc_TypeError, "expected callable");
+        return NULL;
+    }
+
+    if (!PyString_Check(name)) {
+        PyErr_SetString(PyExc_TypeError, "expected string for module name");
+        return NULL;
+    }
+
+    return NRImport_RegisterImportHook(callable, name);
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *newrelic_shutdown(PyObject *self, PyObject *args)
 {
     static int shutdown = 0;
@@ -1307,6 +1338,8 @@ static PyMethodDef newrelic_methods[] = {
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "wrap_object",        (PyCFunction)newrelic_wrap_object,
                             METH_VARARGS|METH_KEYWORDS, 0 },
+    { "register_import_hook", (PyCFunction)newrelic_register_import_hook,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
     { NULL, NULL }
 };
 
@@ -1390,6 +1423,10 @@ init_newrelic(void)
         return;
     if (PyType_Ready(&NRPreFunctionWrapper_Type) < 0)
         return;
+    if (PyType_Ready(&NRImportFinder_Type) < 0)
+        return;
+    if (PyType_Ready(&NRImportLoader_Type) < 0)
+        return;
 
     /* Initialise type objects. */
 
@@ -1471,6 +1508,9 @@ init_newrelic(void)
     Py_INCREF(&NRPreFunctionWrapper_Type);
     PyModule_AddObject(module, "PreFunctionWrapper",
                        (PyObject *)&NRPreFunctionWrapper_Type);
+    Py_INCREF(&NRImportFinder_Type);
+    PyModule_AddObject(module, "ImportFinder",
+                       (PyObject *)&NRImportFinder_Type);
 
     /* Initialise module constants. */
 

@@ -1,4 +1,4 @@
-BINDIR = python-tools/parts/python-2.6/bin
+BINDIR = python-tools/parts/python-2.6-ucs2/bin
 PYTHON = $(BINDIR)/python
 VIRTUALENV = $(BINDIR)/virtualenv
 

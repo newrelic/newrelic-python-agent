@@ -34,6 +34,7 @@ sources = [
   "wrapper/py_database_trace.c",
   "wrapper/py_external_trace.c",
   "wrapper/py_function_trace.c",
+  "wrapper/py_import_hook.c",
   "wrapper/py_in_function.c",
   "wrapper/py_memcache_trace.c",
   "wrapper/py_out_function.c",

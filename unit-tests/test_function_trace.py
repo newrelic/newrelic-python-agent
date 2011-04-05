@@ -57,7 +57,7 @@ def _test_function_6(name):
     time.sleep(0.1)
 _test_function_6 = _newrelic.function_trace(lambda x: x)(_test_function_6)
 
-class FunctionTraceTests01(unittest.TestCase):
+class FunctionTraceTests(unittest.TestCase):
 
     def setUp(self):
         _newrelic.log(_newrelic.LOG_DEBUG, "STARTING - %s" %

@@ -14,14 +14,14 @@ _test_result = None
 _test_count = 0
 _test_phase = None
 
-def _post_function(*args, **kwargs):
+def _in_function(*args, **kwds):
     global _test_result
-    _test_result = (args, kwargs)
+    _test_result = (args, kwds)
     global _test_count
     _test_count += 1
     global _test_phase
-    _test_phase = '_post_function'
-    return args, kwargs
+    _test_phase = '_in_function'
+    return (args, kwds)
 
 def _test_function_1(*args, **kwargs):
     global _test_phase
@@ -45,22 +45,15 @@ class _test_class_2(object):
         _test_phase = '_test_class_2._test_function'
         return args, kwargs
 
-@_newrelic.post_function(_post_function)
+#@_newrelic.in_function(in_function=_in_function)
 def _test_function_3(*args, **kwargs):
     global _test_phase
     _test_phase = '_test_function_3'
     return args, kwargs
-#_test_function_3 = _newrelic.post_function(_post_function)(_test_function_3)
+_test_function_3 = _newrelic.in_function(_in_function)(_test_function_3)
 
-@_newrelic.post_function(_post_function, run_once=True)
-def _test_function_4(*args, **kwargs):
-    global _test_phase
-    _test_phase = '_test_function_4'
-    return args, kwargs
-#_test_function_4 = _newrelic.post_function(_post_function,
-#                                           run_once=True)(_test_function_4)
 
-class PostFunctionTests01(unittest.TestCase):
+class InFunctionTests(unittest.TestCase):
 
     def setUp(self):
         _newrelic.log(_newrelic.LOG_DEBUG, "STARTING - %s" %
@@ -72,8 +65,8 @@ class PostFunctionTests01(unittest.TestCase):
 
     def test_wrap_function(self):
         o1 = _test_function_1
-        o2 = _newrelic.wrap_post_function(__name__, None, '_test_function_1',
-                                          _post_function)
+        o2 = _newrelic.wrap_in_function(__name__, None, '_test_function_1',
+                                        _in_function)
         self.assertEqual(o1, o2.__wrapped__)
 
         global _test_result
@@ -92,7 +85,7 @@ class PostFunctionTests01(unittest.TestCase):
 
         self.assertEqual(result, (args, kwargs)) 
         self.assertEqual(_test_result, (args, kwargs))
-        self.assertEqual(_test_phase, "_post_function")
+        self.assertEqual(_test_phase, "_test_function_1")
 
         result = _test_function_1(*args, **kwargs)
         result = _test_function_1(*args, **kwargs)
@@ -101,8 +94,8 @@ class PostFunctionTests01(unittest.TestCase):
 
     def test_wrap_old_style_class_method(self):
         o1 = _test_class_1._test_function
-        o2 = _newrelic.wrap_post_function(__name__, '_test_class_1',
-                                          '_test_function', _post_function)
+        o2 = _newrelic.wrap_in_function(__name__, '_test_class_1',
+                                        '_test_function', _in_function)
         self.assertEqual(o1, o2.__wrapped__)
 
         global _test_result
@@ -122,8 +115,8 @@ class PostFunctionTests01(unittest.TestCase):
 
     def test_wrap_new_style_class_method(self):
         o1 = _test_class_2._test_function
-        o2 = _newrelic.wrap_post_function(__name__, '_test_class_2',
-                                          '_test_function', _post_function)
+        o2 = _newrelic.wrap_in_function(__name__, '_test_class_2',
+                                        '_test_function', _in_function)
         self.assertEqual(o1, o2.__wrapped__)
 
         global _test_result
@@ -143,8 +136,8 @@ class PostFunctionTests01(unittest.TestCase):
 
     def test_wrap_capi_class_method(self):
         o1 = sqlite3.Cursor.execute
-        o2 = _newrelic.wrap_post_function('sqlite3', 'Cursor', 'execute',
-                                          _post_function)
+        o2 = _newrelic.wrap_in_function('sqlite3', 'Cursor', 'execute',
+                                        _in_function)
         self.assertEqual(o1, o2.__wrapped__)
 
         global _test_result
@@ -162,38 +155,14 @@ class PostFunctionTests01(unittest.TestCase):
             pass
         conn = sqlite3.connect(db)
         c = conn.cursor()
-        c.execute(*args)
+        result = c.execute(*args)
         conn.commit()
         os.unlink(db)
 
-        self.assertEqual(_test_result, ((c, )+args, {}))
+        self.assertEqual(_test_result, ((c,)+args, {}))
+        self.assertEqual(result, c)
 
-    def test_wrap_run_once(self):
-        o1 = _test_function_2
-        o2 = _newrelic.wrap_post_function(__name__, None, '_test_function_2',
-                                          _post_function, run_once=True)
-        self.assertEqual(o1, o2.__wrapped__)
-
-        global _test_result
-        _test_result = None
-
-        global _test_count
-        _test_count = 0
-
-        args = (1, 2, 3)
-        kwargs = { "one": 1, "two": 2, "three": 3 }
-
-        result = _test_function_2(*args, **kwargs)
-
-        self.assertEqual(result, (args, kwargs)) 
-        self.assertEqual(_test_result, (args, kwargs))
-
-        result = _test_function_2(*args, **kwargs)
-        result = _test_function_2(*args, **kwargs)
-
-        self.assertEqual(_test_count, 1) 
-
-    def test_decorator(self):
+    def test_decorator_in_function(self):
         global _test_result
         _test_result = None
 
@@ -212,26 +181,6 @@ class PostFunctionTests01(unittest.TestCase):
         result = _test_function_3(*args, **kwargs)
 
         self.assertEqual(_test_count, 3) 
-
-    def test_decorator_run_once(self):
-        global _test_result
-        _test_result = None
-
-        global _test_count
-        _test_count = 0
-
-        args = (1, 2, 3)
-        kwargs = { "one": 1, "two": 2, "three": 3 }
-
-        result = _test_function_4(*args, **kwargs)
-
-        self.assertEqual(result, (args, kwargs)) 
-        self.assertEqual(_test_result, (args, kwargs))
-
-        result = _test_function_4(*args, **kwargs)
-        result = _test_function_4(*args, **kwargs)
-
-        self.assertEqual(_test_count, 1) 
 
 if __name__ == '__main__':
     unittest.main()

@@ -22,7 +22,7 @@ def _test_function_nn_1():
 _test_function_nn_1 = _newrelic.background_task(
         application)(_test_function_nn_1)
 
-class BackgroundTaskTests01(unittest.TestCase):
+class BackgroundTaskTests(unittest.TestCase):
 
     def setUp(self):
         _newrelic.log(_newrelic.LOG_DEBUG, "STARTING - %s" %

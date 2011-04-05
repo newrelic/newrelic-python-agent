@@ -10,12 +10,12 @@ settings.loglevel = _newrelic.LOG_VERBOSEDEBUG
 
 application = _newrelic.application("UnitTests")
 
-#@_newrelic.memcache_trace(command="get")
-def _test_function_1(command):
+#@_newrelic.external_trace(argnum=0)
+def _test_function_1(url):
     time.sleep(1.0)
-_test_function_1 = _newrelic.memcache_trace(command="get")(_test_function_1)
+_test_function_1 = _newrelic.external_trace(argnum=0)(_test_function_1)
 
-class MemcacheTraceTests01(unittest.TestCase):
+class ExternalTraceTests(unittest.TestCase):
 
     def setUp(self):
         _newrelic.log(_newrelic.LOG_DEBUG, "STARTING - %s" %
@@ -25,12 +25,12 @@ class MemcacheTraceTests01(unittest.TestCase):
         _newrelic.log(_newrelic.LOG_DEBUG, "STOPPING - %s" %
                       self._testMethodName)
 
-    def test_memcache_trace(self):
-        environ = { "REQUEST_URI": "/memcache_trace" }
+    def test_external_trace(self):
+        environ = { "REQUEST_URI": "/external_trace" }
         transaction = _newrelic.WebTransaction(application, environ)
         with transaction:
             time.sleep(0.1)
-            with _newrelic.MemcacheTrace(transaction, "get"):
+            with _newrelic.ExternalTrace(transaction, "http://localhost/"):
                 time.sleep(0.1)
             time.sleep(0.1)
 
@@ -38,25 +38,25 @@ class MemcacheTraceTests01(unittest.TestCase):
         environ = { "REQUEST_URI": "/transaction_not_running" }
         transaction = _newrelic.WebTransaction(application, environ)
         try:
-            with _newrelic.MemcacheTrace(transaction, "get"):
+            with _newrelic.ExternalTrace(transaction, "http://localhost/"):
                 time.sleep(0.1)
         except RuntimeError:
             pass
 
-    def test_memcache_trace_decorator(self):
-        environ = { "REQUEST_URI": "/memcache_trace_decorator" }
+    def test_external_trace_decorator(self):
+        environ = { "REQUEST_URI": "/external_trace_decorator" }
         transaction = _newrelic.WebTransaction(application, environ)
         with transaction:
             time.sleep(0.1)
-            _test_function_1("set")
+            _test_function_1("http://localhost/")
             time.sleep(0.1)
 
-    def test_memcache_trace_decorator_error(self):
-        environ = { "REQUEST_URI": "/memcache_trace_decorator_error" }
+    def test_external_trace_decorator_error(self):
+        environ = { "REQUEST_URI": "/external_trace_decorator_error" }
         transaction = _newrelic.WebTransaction(application, environ)
         with transaction:
             try:
-                _test_function_1("set", None)
+                _test_function_1("http://localhost/", None)
             except TypeError:
                 pass
 

@@ -10,7 +10,7 @@ settings.loglevel = _newrelic.LOG_VERBOSEDEBUG
 
 application = _newrelic.application("UnitTests")
 
-class WebTransactionTests01(unittest.TestCase):
+class WebTransactionTests(unittest.TestCase):
 
     def setUp(self):
         _newrelic.log(_newrelic.LOG_DEBUG, "STARTING - %s" %

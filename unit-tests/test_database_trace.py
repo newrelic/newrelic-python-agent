@@ -10,12 +10,12 @@ settings.loglevel = _newrelic.LOG_VERBOSEDEBUG
 
 application = _newrelic.application("UnitTests")
 
-#@_newrelic.external_trace(argnum=0)
-def _test_function_1(url):
+#@_newrelic.database_trace(argnum=0)
+def _test_function_1(sql):
     time.sleep(1.0)
-_test_function_1 = _newrelic.external_trace(argnum=0)(_test_function_1)
+_test_function_1 = _newrelic.database_trace(argnum=0)(_test_function_1)
 
-class ExternalTraceTests01(unittest.TestCase):
+class DatabaseTraceTests(unittest.TestCase):
 
     def setUp(self):
         _newrelic.log(_newrelic.LOG_DEBUG, "STARTING - %s" %
@@ -25,38 +25,38 @@ class ExternalTraceTests01(unittest.TestCase):
         _newrelic.log(_newrelic.LOG_DEBUG, "STOPPING - %s" %
                       self._testMethodName)
 
-    def test_external_trace(self):
-        environ = { "REQUEST_URI": "/external_trace" }
+    def test_database_trace(self):
+        environ = { "REQUEST_URI": "/database_trace" }
         transaction = _newrelic.WebTransaction(application, environ)
         with transaction:
             time.sleep(0.1)
-            with _newrelic.ExternalTrace(transaction, "http://localhost/"):
-                time.sleep(0.1)
+            with _newrelic.DatabaseTrace(transaction, "select * from cat"):
+                time.sleep(1.0)
             time.sleep(0.1)
 
     def test_transaction_not_running(self):
         environ = { "REQUEST_URI": "/transaction_not_running" }
         transaction = _newrelic.WebTransaction(application, environ)
         try:
-            with _newrelic.ExternalTrace(transaction, "http://localhost/"):
+            with _newrelic.DatabaseTrace(transaction, "select * from cat"):
                 time.sleep(0.1)
         except RuntimeError:
             pass
 
-    def test_external_trace_decorator(self):
-        environ = { "REQUEST_URI": "/external_trace_decorator" }
+    def test_database_trace_decorator(self):
+        environ = { "REQUEST_URI": "/database_trace_decorator" }
         transaction = _newrelic.WebTransaction(application, environ)
         with transaction:
             time.sleep(0.1)
-            _test_function_1("http://localhost/")
+            _test_function_1("select * from cat")
             time.sleep(0.1)
 
-    def test_external_trace_decorator_error(self):
-        environ = { "REQUEST_URI": "/external_trace_decorator_error" }
+    def test_database_trace_decorator_error(self):
+        environ = { "REQUEST_URI": "/database_trace_decorator_error" }
         transaction = _newrelic.WebTransaction(application, environ)
         with transaction:
             try:
-                _test_function_1("http://localhost/", None)
+                _test_function_1("select * from cat", None)
             except TypeError:
                 pass
 

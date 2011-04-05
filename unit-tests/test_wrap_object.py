@@ -22,7 +22,7 @@ class _wrapper(object):
        _function_args = (args, kwargs)
        return self._wrapped(*args, **kwargs)
 
-class ApplicationTests01(unittest.TestCase):
+class ApplicationTests(unittest.TestCase):
 
     def setUp(self):
         _newrelic.log(_newrelic.LOG_DEBUG, "STARTING - %s" %

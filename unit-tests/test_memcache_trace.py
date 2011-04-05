@@ -10,12 +10,12 @@ settings.loglevel = _newrelic.LOG_VERBOSEDEBUG
 
 application = _newrelic.application("UnitTests")
 
-#@_newrelic.database_trace(argnum=0)
-def _test_function_1(sql):
+#@_newrelic.memcache_trace(command="get")
+def _test_function_1(command):
     time.sleep(1.0)
-_test_function_1 = _newrelic.database_trace(argnum=0)(_test_function_1)
+_test_function_1 = _newrelic.memcache_trace(command="get")(_test_function_1)
 
-class DatabaseTraceTests01(unittest.TestCase):
+class MemcacheTraceTests(unittest.TestCase):
 
     def setUp(self):
         _newrelic.log(_newrelic.LOG_DEBUG, "STARTING - %s" %
@@ -25,38 +25,38 @@ class DatabaseTraceTests01(unittest.TestCase):
         _newrelic.log(_newrelic.LOG_DEBUG, "STOPPING - %s" %
                       self._testMethodName)
 
-    def test_database_trace(self):
-        environ = { "REQUEST_URI": "/database_trace" }
+    def test_memcache_trace(self):
+        environ = { "REQUEST_URI": "/memcache_trace" }
         transaction = _newrelic.WebTransaction(application, environ)
         with transaction:
             time.sleep(0.1)
-            with _newrelic.DatabaseTrace(transaction, "select * from cat"):
-                time.sleep(1.0)
+            with _newrelic.MemcacheTrace(transaction, "get"):
+                time.sleep(0.1)
             time.sleep(0.1)
 
     def test_transaction_not_running(self):
         environ = { "REQUEST_URI": "/transaction_not_running" }
         transaction = _newrelic.WebTransaction(application, environ)
         try:
-            with _newrelic.DatabaseTrace(transaction, "select * from cat"):
+            with _newrelic.MemcacheTrace(transaction, "get"):
                 time.sleep(0.1)
         except RuntimeError:
             pass
 
-    def test_database_trace_decorator(self):
-        environ = { "REQUEST_URI": "/database_trace_decorator" }
+    def test_memcache_trace_decorator(self):
+        environ = { "REQUEST_URI": "/memcache_trace_decorator" }
         transaction = _newrelic.WebTransaction(application, environ)
         with transaction:
             time.sleep(0.1)
-            _test_function_1("select * from cat")
+            _test_function_1("set")
             time.sleep(0.1)
 
-    def test_database_trace_decorator_error(self):
-        environ = { "REQUEST_URI": "/database_trace_decorator_error" }
+    def test_memcache_trace_decorator_error(self):
+        environ = { "REQUEST_URI": "/memcache_trace_decorator_error" }
         transaction = _newrelic.WebTransaction(application, environ)
         with transaction:
             try:
-                _test_function_1("select * from cat", None)
+                _test_function_1("set", None)
             except TypeError:
                 pass
 

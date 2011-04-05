@@ -14,14 +14,14 @@ _test_result = None
 _test_count = 0
 _test_phase = None
 
-def _in_function(*args, **kwds):
+def _out_function(result):
     global _test_result
-    _test_result = (args, kwds)
+    _test_result = result
     global _test_count
     _test_count += 1
     global _test_phase
-    _test_phase = '_in_function'
-    return (args, kwds)
+    _test_phase = '_out_function'
+    return result
 
 def _test_function_1(*args, **kwargs):
     global _test_phase
@@ -45,15 +45,15 @@ class _test_class_2(object):
         _test_phase = '_test_class_2._test_function'
         return args, kwargs
 
-#@_newrelic.in_function(in_function=_in_function)
+#@_newrelic.out_function(_out_function)
 def _test_function_3(*args, **kwargs):
     global _test_phase
     _test_phase = '_test_function_3'
     return args, kwargs
-_test_function_3 = _newrelic.in_function(_in_function)(_test_function_3)
+_test_function_3 = _newrelic.out_function(_out_function)(_test_function_3)
 
 
-class InFunctionTests01(unittest.TestCase):
+class OutFunctionTests(unittest.TestCase):
 
     def setUp(self):
         _newrelic.log(_newrelic.LOG_DEBUG, "STARTING - %s" %
@@ -65,8 +65,8 @@ class InFunctionTests01(unittest.TestCase):
 
     def test_wrap_function(self):
         o1 = _test_function_1
-        o2 = _newrelic.wrap_in_function(__name__, None, '_test_function_1',
-                                        _in_function)
+        o2 = _newrelic.wrap_out_function(__name__, None, '_test_function_1',
+                                          _out_function)
         self.assertEqual(o1, o2.__wrapped__)
 
         global _test_result
@@ -85,7 +85,7 @@ class InFunctionTests01(unittest.TestCase):
 
         self.assertEqual(result, (args, kwargs)) 
         self.assertEqual(_test_result, (args, kwargs))
-        self.assertEqual(_test_phase, "_test_function_1")
+        self.assertEqual(_test_phase, "_out_function")
 
         result = _test_function_1(*args, **kwargs)
         result = _test_function_1(*args, **kwargs)
@@ -94,8 +94,8 @@ class InFunctionTests01(unittest.TestCase):
 
     def test_wrap_old_style_class_method(self):
         o1 = _test_class_1._test_function
-        o2 = _newrelic.wrap_in_function(__name__, '_test_class_1',
-                                        '_test_function', _in_function)
+        o2 = _newrelic.wrap_out_function(__name__, '_test_class_1',
+                                         '_test_function', _out_function)
         self.assertEqual(o1, o2.__wrapped__)
 
         global _test_result
@@ -111,12 +111,12 @@ class InFunctionTests01(unittest.TestCase):
         result = c._test_function(*args, **kwargs)
 
         self.assertEqual(result, (args, kwargs)) 
-        self.assertEqual(_test_result, ((c,)+args, kwargs))
+        self.assertEqual(_test_result, (args, kwargs))
 
     def test_wrap_new_style_class_method(self):
         o1 = _test_class_2._test_function
-        o2 = _newrelic.wrap_in_function(__name__, '_test_class_2',
-                                        '_test_function', _in_function)
+        o2 = _newrelic.wrap_out_function(__name__, '_test_class_2',
+                                         '_test_function', _out_function)
         self.assertEqual(o1, o2.__wrapped__)
 
         global _test_result
@@ -132,12 +132,12 @@ class InFunctionTests01(unittest.TestCase):
         result = c._test_function(*args, **kwargs)
 
         self.assertEqual(result, (args, kwargs)) 
-        self.assertEqual(_test_result, ((c,)+args, kwargs))
+        self.assertEqual(_test_result, (args, kwargs))
 
     def test_wrap_capi_class_method(self):
         o1 = sqlite3.Cursor.execute
-        o2 = _newrelic.wrap_in_function('sqlite3', 'Cursor', 'execute',
-                                        _in_function)
+        o2 = _newrelic.wrap_out_function('sqlite3', 'Cursor', 'execute',
+                                         _out_function)
         self.assertEqual(o1, o2.__wrapped__)
 
         global _test_result
@@ -159,10 +159,10 @@ class InFunctionTests01(unittest.TestCase):
         conn.commit()
         os.unlink(db)
 
-        self.assertEqual(_test_result, ((c,)+args, {}))
+        self.assertEqual(_test_result, c)
         self.assertEqual(result, c)
 
-    def test_decorator_in_function(self):
+    def test_decorator_out_function(self):
         global _test_result
         _test_result = None
 

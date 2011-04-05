@@ -6,7 +6,7 @@ settings = _newrelic.settings()
 settings.logfile = "%s.log" % __file__
 settings.loglevel = _newrelic.LOG_VERBOSEDEBUG
 
-class ApplicationTests01(unittest.TestCase):
+class ApplicationTests(unittest.TestCase):
 
     def setUp(self):
         _newrelic.log(_newrelic.LOG_DEBUG, "STARTING - %s" %

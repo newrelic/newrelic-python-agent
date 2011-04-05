@@ -41,7 +41,7 @@ class _wsgiapp_class_decorator:
         transaction = _newrelic.transaction()
         assert transaction != None
 
-class WSGIApplicationTests01(unittest.TestCase):
+class WSGIApplicationTests(unittest.TestCase):
 
     def setUp(self):
         _newrelic.log(_newrelic.LOG_DEBUG, "STARTING - %s" %

@@ -1,5 +1,27 @@
 AC_INIT
 
+AC_ARG_WITH(python, AC_HELP_STRING([--with-python=NAME],
+            [name of the python executable [[python]]]),
+            [PYTHON="$with_python"])
+
+if test -z "${PYTHON}"; then
+    AC_PATH_PROGS(PYTHON, python, [python],
+                  [$PATH:/usr/local/bin])
+fi
+
+AC_SUBST(PYTHON)
+
+AC_ARG_WITH(python, AC_HELP_STRING([--with-virtualenv=NAME],
+            [name of the virtualenv executable [[virtualenv]]]),
+            [VIRTUALENV="$with_virtualenv"])
+
+if test -z "${VIRTUALENV}"; then
+    AC_PATH_PROGS(VIRTUALENV, virtualenv, [virtualenv],
+                  [`dirname $PYTHON`:$PATH:/usr/local/bin])
+fi
+
+AC_SUBST(VIRTUALENV)
+
 AC_CANONICAL_HOST
 
 AC_CHECK_FUNC(backtrace_symbols_fd, [AC_DEFINE(HAVE_STACK_BACKTRACE, 1, [Whether you can do a backtrace])])
@@ -25,4 +47,4 @@ esac
 
 AC_CONFIG_HEADER(config.h)
 
-AC_OUTPUT()
+AC_OUTPUT(Makefile)

@@ -1,5 +1,6 @@
 all : setup bin
-	bin/buildout -v -v -c buildout-`uname -s | tr A-Z a-z`.cfg
+	bin/buildout -v -v -c \
+	  configs/`../config.guess | sed -e "s/[0-9.]*$$//"`.cfg
 
 setup : tools/bin/buildout
 

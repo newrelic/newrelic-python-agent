@@ -1,6 +1,5 @@
 all : setup bin
-	bin/buildout -v -v -c \
-	  configs/`../config.guess | sed -e "s/[0-9.]*$$//"`.cfg
+	bin/buildout -v -v -c `../config.guess | sed -e "s/[0-9.]*$$//"`.cfg
 
 setup : tools/bin/buildout
 

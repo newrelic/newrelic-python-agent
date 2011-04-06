@@ -17,3 +17,4 @@ config.status
 autom4te.cache
 newrelic/*.pyc
 Makefile
+python-tools/buildout.cfg

@@ -8,12 +8,12 @@
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRImportFinder_new(PyTypeObject *type, PyObject *args,
-                                    PyObject *kwds)
+static PyObject *NRImportHookFinder_new(PyTypeObject *type, PyObject *args,
+                                        PyObject *kwds)
 {
-    NRImportFinderObject *self;
+    NRImportHookFinderObject *self;
 
-    self = (NRImportFinderObject *)type->tp_alloc(type, 0);
+    self = (NRImportHookFinderObject *)type->tp_alloc(type, 0);
 
     if (!self)
         return NULL;
@@ -25,7 +25,7 @@ static PyObject *NRImportFinder_new(PyTypeObject *type, PyObject *args,
 
 /* ------------------------------------------------------------------------- */
 
-static void NRImportFinder_dealloc(NRImportFinderObject *self)
+static void NRImportHookFinder_dealloc(NRImportHookFinderObject *self)
 {
     Py_XDECREF(self->skip);
 
@@ -34,8 +34,8 @@ static void NRImportFinder_dealloc(NRImportFinderObject *self)
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRImportFinder_find_module(
-        NRImportFinderObject *self, PyObject *args, PyObject *kwds)
+static PyObject *NRImportHookFinder_find_module(
+        NRImportHookFinderObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *fullname = NULL;
     PyObject *path = Py_None;
@@ -78,7 +78,7 @@ static PyObject *NRImportFinder_find_module(
     PyDict_DelItem(self->skip, fullname);
 
     return PyObject_CallFunctionObjArgs(
-            (PyObject *)&NRImportLoader_Type, NULL);
+            (PyObject *)&NRImportHookLoader_Type, NULL);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -87,19 +87,19 @@ static PyObject *NRImportFinder_find_module(
 #define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
 #endif
 
-static PyMethodDef NRImportFinder_methods[] = {
-    { "find_module",        (PyCFunction)NRImportFinder_find_module,
+static PyMethodDef NRImportHookFinder_methods[] = {
+    { "find_module",        (PyCFunction)NRImportHookFinder_find_module,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { NULL, NULL }
 };
 
-PyTypeObject NRImportFinder_Type = {
+PyTypeObject NRImportHookFinder_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "_newrelic.ImportFinder", /*tp_name*/
-    sizeof(NRImportFinderObject), /*tp_basicsize*/
+    "_newrelic.ImportHookFinder", /*tp_name*/
+    sizeof(NRImportHookFinderObject), /*tp_basicsize*/
     0,                      /*tp_itemsize*/
     /* methods */
-    (destructor)NRImportFinder_dealloc, /*tp_dealloc*/
+    (destructor)NRImportHookFinder_dealloc, /*tp_dealloc*/
     0,                      /*tp_print*/
     0,                      /*tp_getattr*/
     0,                      /*tp_setattr*/
@@ -122,7 +122,7 @@ PyTypeObject NRImportFinder_Type = {
     0,                      /*tp_weaklistoffset*/
     0,                      /*tp_iter*/
     0,                      /*tp_iternext*/
-    NRImportFinder_methods, /*tp_methods*/
+    NRImportHookFinder_methods, /*tp_methods*/
     0,                      /*tp_members*/
     0,                      /*tp_getset*/
     0,                      /*tp_base*/
@@ -132,19 +132,19 @@ PyTypeObject NRImportFinder_Type = {
     0,                      /*tp_dictoffset*/
     0,                      /*tp_init*/
     0,                      /*tp_alloc*/
-    NRImportFinder_new,      /*tp_new*/
+    NRImportHookFinder_new, /*tp_new*/
     0,                      /*tp_free*/
     0,                      /*tp_is_gc*/
 };
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRImportLoader_new(PyTypeObject *type, PyObject *args,
-                                    PyObject *kwds)
+static PyObject *NRImportHookLoader_new(PyTypeObject *type, PyObject *args,
+                                        PyObject *kwds)
 {
-    NRImportLoaderObject *self;
+    NRImportHookLoaderObject *self;
 
-    self = (NRImportLoaderObject *)type->tp_alloc(type, 0);
+    self = (NRImportHookLoaderObject *)type->tp_alloc(type, 0);
 
     if (!self)
         return NULL;
@@ -154,15 +154,15 @@ static PyObject *NRImportLoader_new(PyTypeObject *type, PyObject *args,
 
 /* ------------------------------------------------------------------------- */
 
-static void NRImportLoader_dealloc(NRImportLoaderObject *self)
+static void NRImportHookLoader_dealloc(NRImportHookLoaderObject *self)
 {
     Py_TYPE(self)->tp_free(self);
 }
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRImportLoader_load_module(
-        NRImportLoaderObject *self, PyObject *args, PyObject *kwds)
+static PyObject *NRImportHookLoader_load_module(
+        NRImportHookLoaderObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *fullname = NULL;
     PyObject *modules = NULL;
@@ -201,19 +201,19 @@ static PyObject *NRImportLoader_load_module(
 #define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
 #endif
 
-static PyMethodDef NRImportLoader_methods[] = {
-    { "load_module",        (PyCFunction)NRImportLoader_load_module,
+static PyMethodDef NRImportHookLoader_methods[] = {
+    { "load_module",        (PyCFunction)NRImportHookLoader_load_module,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { NULL, NULL }
 };
 
-PyTypeObject NRImportLoader_Type = {
+PyTypeObject NRImportHookLoader_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "_newrelic.ImportLoader", /*tp_name*/
-    sizeof(NRImportLoaderObject), /*tp_basicsize*/
+    "_newrelic.ImportHookLoader", /*tp_name*/
+    sizeof(NRImportHookLoaderObject), /*tp_basicsize*/
     0,                      /*tp_itemsize*/
     /* methods */
-    (destructor)NRImportLoader_dealloc, /*tp_dealloc*/
+    (destructor)NRImportHookLoader_dealloc, /*tp_dealloc*/
     0,                      /*tp_print*/
     0,                      /*tp_getattr*/
     0,                      /*tp_setattr*/
@@ -236,7 +236,7 @@ PyTypeObject NRImportLoader_Type = {
     0,                      /*tp_weaklistoffset*/
     0,                      /*tp_iter*/
     0,                      /*tp_iternext*/
-    NRImportLoader_methods, /*tp_methods*/
+    NRImportHookLoader_methods, /*tp_methods*/
     0,                      /*tp_members*/
     0,                      /*tp_getset*/
     0,                      /*tp_base*/
@@ -246,7 +246,130 @@ PyTypeObject NRImportLoader_Type = {
     0,                      /*tp_dictoffset*/
     0,                      /*tp_init*/
     0,                      /*tp_alloc*/
-    NRImportLoader_new,     /*tp_new*/
+    NRImportHookLoader_new, /*tp_new*/
+    0,                      /*tp_free*/
+    0,                      /*tp_is_gc*/
+};
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRImportHookDecorator_new(PyTypeObject *type,
+                                           PyObject *args, PyObject *kwds)
+{
+    NRImportHookDecoratorObject *self;
+
+    self = (NRImportHookDecoratorObject *)type->tp_alloc(type, 0);
+
+    if (!self)
+        return NULL;
+
+    self->name = NULL;
+
+    return (PyObject *)self;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRImportHookDecorator_init(NRImportHookDecoratorObject *self,
+                                      PyObject *args, PyObject *kwds)
+{
+    PyObject *name = Py_None;
+
+    static char *kwlist[] = { "name", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:ImportHookDecorator",
+                                     kwlist, &name)) {
+        return -1;
+    }
+
+#if 0
+    if (!PyString_Check(name) && !PyUnicode_Check(name) &&
+        name != Py_None) {
+        PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
+                     "or None, found type '%s'", name->ob_type->tp_name);
+        return -1;
+    }
+#endif
+
+    Py_INCREF(name);
+    Py_XDECREF(self->name);
+    self->name = name;
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static void NRImportHookDecorator_dealloc(NRImportHookDecoratorObject *self)
+{
+    Py_XDECREF(self->name);
+
+    Py_TYPE(self)->tp_free(self);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRImportHookDecorator_call(
+        NRImportHookDecoratorObject *self, PyObject *args, PyObject *kwds)
+{
+    PyObject *wrapped_object = NULL;
+
+    static char *kwlist[] = { "wrapped", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:ImportHookDecorator",
+                                     kwlist, &wrapped_object)) {
+        return NULL;
+    }
+
+    return NRImport_RegisterImportHook(wrapped_object, self->name);
+}
+
+/* ------------------------------------------------------------------------- */
+
+#ifndef PyVarObject_HEAD_INIT
+#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
+#endif
+
+PyTypeObject NRImportHookDecorator_Type = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "_newrelic.ImportHookDecorator", /*tp_name*/
+    sizeof(NRImportHookDecoratorObject), /*tp_basicsize*/
+    0,                      /*tp_itemsize*/
+    /* methods */
+    (destructor)NRImportHookDecorator_dealloc, /*tp_dealloc*/
+    0,                      /*tp_print*/
+    0,                      /*tp_getattr*/
+    0,                      /*tp_setattr*/
+    0,                      /*tp_compare*/
+    0,                      /*tp_repr*/
+    0,                      /*tp_as_number*/
+    0,                      /*tp_as_sequence*/
+    0,                      /*tp_as_mapping*/
+    0,                      /*tp_hash*/
+    (ternaryfunc)NRImportHookDecorator_call, /*tp_call*/
+    0,                      /*tp_str*/
+    0,                      /*tp_getattro*/
+    0,                      /*tp_setattro*/
+    0,                      /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT,     /*tp_flags*/
+    0,                      /*tp_doc*/
+    0,                      /*tp_traverse*/
+    0,                      /*tp_clear*/
+    0,                      /*tp_richcompare*/
+    0,                      /*tp_weaklistoffset*/
+    0,                      /*tp_iter*/
+    0,                      /*tp_iternext*/
+    0,                      /*tp_methods*/
+    0,                      /*tp_members*/
+    0,                      /*tp_getset*/
+    0,                      /*tp_base*/
+    0,                      /*tp_dict*/
+    0,                      /*tp_descr_get*/
+    0,                      /*tp_descr_set*/
+    0,                      /*tp_dictoffset*/
+    (initproc)NRImportHookDecorator_init, /*tp_init*/
+    0,                      /*tp_alloc*/
+    NRImportHookDecorator_new, /*tp_new*/
     0,                      /*tp_free*/
     0,                      /*tp_is_gc*/
 };

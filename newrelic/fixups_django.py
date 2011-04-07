@@ -104,7 +104,7 @@ def _fixup_exception(handler, request, resolver, exc_info):
     if transaction:
         transaction.runtime_error(*exc_info)
 
-#@_newrelic.when_imported('django')
+@_newrelic.post_import_hook('django')
 def instrument(module):
 
     #_newrelic.wrap_web_transaction('django.core.handlers.wsgi', 'WSGIHandler',
@@ -147,4 +147,4 @@ def instrument(module):
     else:
         _newrelic.wrap_external_trace('feedparser', None, 'parse', 0)
 
-_newrelic.register_import_hook(instrument, 'django')
+#_newrelic.register_post_import_hook(instrument, 'django')

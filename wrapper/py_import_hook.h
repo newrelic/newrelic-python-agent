@@ -14,15 +14,22 @@
 typedef struct {
     PyObject_HEAD
     PyObject *skip;
-} NRImportFinderObject;
+} NRImportHookFinderObject;
 
-extern PyTypeObject NRImportFinder_Type;
+extern PyTypeObject NRImportHookFinder_Type;
 
 typedef struct {
     PyObject_HEAD
-} NRImportLoaderObject;
+} NRImportHookLoaderObject;
 
-extern PyTypeObject NRImportLoader_Type;
+extern PyTypeObject NRImportHookLoader_Type;
+
+typedef struct {
+    PyObject_HEAD
+    PyObject *name;
+} NRImportHookDecoratorObject;
+
+extern PyTypeObject NRImportHookDecorator_Type;
 
 /* ------------------------------------------------------------------------- */
 

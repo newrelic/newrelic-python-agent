@@ -1214,16 +1214,17 @@ static PyObject *newrelic_wrap_object(PyObject *self, PyObject *args,
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *newrelic_register_import_hook(PyObject *self,
-                                               PyObject *args,
-                                               PyObject *kwds)
+static PyObject *newrelic_register_post_import_hook(PyObject *self,
+                                                    PyObject *args,
+                                                    PyObject *kwds)
 {
     PyObject *callable = NULL;
     PyObject *name = NULL;
 
     static char *kwlist[] = { "callable", "name", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO:register_import_hook",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds,
+                                     "OO:register_post_import_hook",
                                      kwlist, &callable, &name)) {
         return NULL;
     }
@@ -1239,6 +1240,29 @@ static PyObject *newrelic_register_import_hook(PyObject *self,
     }
 
     return NRImport_RegisterImportHook(callable, name);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *newrelic_post_import_hook(PyObject *self, PyObject *args,
+                                           PyObject *kwds)
+{
+    PyObject *name = NULL;
+
+    static char *kwlist[] = { "name", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:post_import_hook",
+                                     kwlist, &name)) {
+        return NULL;
+    }
+
+    if (!PyString_Check(name)) {
+        PyErr_SetString(PyExc_TypeError, "expected string for module name");
+        return NULL;
+    }
+
+    return PyObject_CallFunctionObjArgs((PyObject *)
+            &NRImportHookDecorator_Type, name, NULL);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1338,7 +1362,9 @@ static PyMethodDef newrelic_methods[] = {
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "wrap_object",        (PyCFunction)newrelic_wrap_object,
                             METH_VARARGS|METH_KEYWORDS, 0 },
-    { "register_import_hook", (PyCFunction)newrelic_register_import_hook,
+    { "register_post_import_hook", (PyCFunction)newrelic_register_post_import_hook,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
+    { "post_import_hook",   (PyCFunction)newrelic_post_import_hook,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { NULL, NULL }
 };
@@ -1423,9 +1449,11 @@ init_newrelic(void)
         return;
     if (PyType_Ready(&NRPreFunctionWrapper_Type) < 0)
         return;
-    if (PyType_Ready(&NRImportFinder_Type) < 0)
+    if (PyType_Ready(&NRImportHookFinder_Type) < 0)
         return;
-    if (PyType_Ready(&NRImportLoader_Type) < 0)
+    if (PyType_Ready(&NRImportHookLoader_Type) < 0)
+        return;
+    if (PyType_Ready(&NRImportHookDecorator_Type) < 0)
         return;
 
     /* Initialise type objects. */
@@ -1508,9 +1536,9 @@ init_newrelic(void)
     Py_INCREF(&NRPreFunctionWrapper_Type);
     PyModule_AddObject(module, "PreFunctionWrapper",
                        (PyObject *)&NRPreFunctionWrapper_Type);
-    Py_INCREF(&NRImportFinder_Type);
-    PyModule_AddObject(module, "ImportFinder",
-                       (PyObject *)&NRImportFinder_Type);
+    Py_INCREF(&NRImportHookFinder_Type);
+    PyModule_AddObject(module, "ImportHookFinder",
+                       (PyObject *)&NRImportHookFinder_Type);
 
     /* Initialise module constants. */
 

@@ -600,6 +600,7 @@ static PyObject *NRFunctionTraceDecorator_new(PyTypeObject *type,
 
     self->name = NULL;
     self->scope = NULL;
+    self->override_path = NULL;
 
     return (PyObject *)self;
 }

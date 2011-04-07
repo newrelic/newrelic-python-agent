@@ -288,6 +288,12 @@ PyObject* NRImport_RegisterImportHook(PyObject *callable, PyObject *name)
     PyObject *hooks = NULL;
     PyObject *modules = NULL;
 
+    PyObject *imp_module = NULL;
+    PyObject *imp_dict = NULL;
+    PyObject *imp_lock = NULL;
+    PyObject *imp_unlock = NULL;
+    PyObject *imp_result = NULL;
+
     PyObject *result = NULL;
 
     registry = NRImport_GetImportHooks();
@@ -297,9 +303,27 @@ PyObject* NRImport_RegisterImportHook(PyObject *callable, PyObject *name)
 
     modules = PyImport_GetModuleDict();
 
-#if 0
-    _PyImport_AcquireLock();
-#endif
+    imp_module = PyImport_ImportModule("imp");
+
+    if (!imp_module) {
+        return NULL;
+    }
+
+    imp_dict = PyModule_GetDict(imp_module);
+
+    imp_lock = PyDict_GetItemString(imp_dict, "acquire_lock");
+    imp_unlock = PyDict_GetItemString(imp_dict, "release_lock");
+
+    if (imp_lock && imp_unlock) {
+        imp_result = PyObject_CallFunctionObjArgs(imp_lock, NULL);
+        if (!imp_result) {
+            Py_XDECREF(imp_lock);
+            Py_XDECREF(imp_unlock);
+            Py_XDECREF(imp_module);
+            return NULL;
+        }
+        Py_DECREF(imp_result);
+    }
 
     hooks = PyDict_GetItem(registry, name);
 
@@ -357,9 +381,21 @@ PyObject* NRImport_RegisterImportHook(PyObject *callable, PyObject *name)
                      Py_TYPE(hooks)->tp_name);
     }
 
-#if 0
-    _PyImport_ReleaseLock();
-#endif
+    if (imp_lock && imp_unlock) {
+        imp_result = PyObject_CallFunctionObjArgs(imp_unlock, NULL);
+        if (!imp_result) {
+            Py_XDECREF(imp_lock);
+            Py_XDECREF(imp_unlock);
+            Py_XDECREF(imp_module);
+            Py_XDECREF(result);
+            return NULL;
+        }
+        Py_DECREF(imp_result);
+    }
+
+    Py_XDECREF(imp_lock);
+    Py_XDECREF(imp_unlock);
+    Py_XDECREF(imp_module);
 
     return result;
 }

@@ -1214,23 +1214,17 @@ static PyObject *newrelic_wrap_object(PyObject *self, PyObject *args,
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *newrelic_register_post_import_hook(PyObject *self,
+static PyObject *newrelic_register_import_hook(PyObject *self,
                                                     PyObject *args,
                                                     PyObject *kwds)
 {
     PyObject *callable = NULL;
     PyObject *name = NULL;
 
-    static char *kwlist[] = { "callable", "name", NULL };
+    static char *kwlist[] = { "name", "callable", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds,
-                                     "OO:register_post_import_hook",
-                                     kwlist, &callable, &name)) {
-        return NULL;
-    }
-
-    if (!PyCallable_Check(callable)) {
-        PyErr_SetString(PyExc_TypeError, "expected callable");
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO:register_import_hook",
+                                     kwlist, &name, &callable)) {
         return NULL;
     }
 
@@ -1239,19 +1233,24 @@ static PyObject *newrelic_register_post_import_hook(PyObject *self,
         return NULL;
     }
 
-    return NRImport_RegisterImportHook(callable, name);
+    if (!PyCallable_Check(callable)) {
+        PyErr_SetString(PyExc_TypeError, "expected callable");
+        return NULL;
+    }
+
+    return NRImport_RegisterImportHook(name, callable);
 }
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *newrelic_post_import_hook(PyObject *self, PyObject *args,
-                                           PyObject *kwds)
+static PyObject *newrelic_import_hook(PyObject *self, PyObject *args,
+                                      PyObject *kwds)
 {
     PyObject *name = NULL;
 
     static char *kwlist[] = { "name", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:post_import_hook",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:import_hook",
                                      kwlist, &name)) {
         return NULL;
     }
@@ -1362,9 +1361,9 @@ static PyMethodDef newrelic_methods[] = {
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "wrap_object",        (PyCFunction)newrelic_wrap_object,
                             METH_VARARGS|METH_KEYWORDS, 0 },
-    { "register_post_import_hook", (PyCFunction)newrelic_register_post_import_hook,
+    { "register_import_hook", (PyCFunction)newrelic_register_import_hook,
                             METH_VARARGS|METH_KEYWORDS, 0 },
-    { "post_import_hook",   (PyCFunction)newrelic_post_import_hook,
+    { "import_hook",        (PyCFunction)newrelic_import_hook,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { NULL, NULL }
 };

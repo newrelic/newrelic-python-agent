@@ -35,7 +35,7 @@ extern PyTypeObject NRImportHookDecorator_Type;
 
 PyObject *NRImport_GetImportHooks(void);
 
-PyObject *NRImport_RegisterImportHook(PyObject *callable, PyObject *name);
+PyObject *NRImport_RegisterImportHook(PyObject *name, PyObject *callable);
 
 PyObject *NRImport_NotifyHooks(PyObject *name, PyObject *module);
 

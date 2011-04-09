@@ -322,7 +322,7 @@ static PyObject *NRImportHookDecorator_call(
         return NULL;
     }
 
-    return NRImport_RegisterImportHook(wrapped_object, self->name);
+    return NRImport_RegisterImportHook(self->name, wrapped_object);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -406,7 +406,7 @@ PyObject *NRImport_GetImportHooks(void)
 
 /* ------------------------------------------------------------------------- */
 
-PyObject* NRImport_RegisterImportHook(PyObject *callable, PyObject *name)
+PyObject* NRImport_RegisterImportHook(PyObject *name, PyObject *callable)
 {
     PyObject *registry = NULL;
     PyObject *hooks = NULL;

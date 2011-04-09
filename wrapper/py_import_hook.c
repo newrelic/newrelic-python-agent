@@ -72,7 +72,8 @@ static PyObject *NRImportHookFinder_find_module(
 
     if (!module) {
         PyErr_Clear();
-        return NULL;
+        Py_INCREF(Py_None);
+        return Py_None;
     }
 
     PyDict_DelItem(self->skip, fullname);

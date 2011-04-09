@@ -440,8 +440,6 @@ PyObject* NRImport_RegisterImportHook(PyObject *callable, PyObject *name)
     if (imp_lock && imp_unlock) {
         imp_result = PyObject_CallFunctionObjArgs(imp_lock, NULL);
         if (!imp_result) {
-            Py_XDECREF(imp_lock);
-            Py_XDECREF(imp_unlock);
             Py_XDECREF(imp_module);
             return NULL;
         }
@@ -489,6 +487,9 @@ PyObject* NRImport_RegisterImportHook(PyObject *callable, PyObject *name)
             PyList_Append(hooks, callable);
             PyDict_SetItem(registry, name, hooks);
             Py_DECREF(hooks);
+
+            Py_INCREF(Py_None);
+            result = Py_None;
         }
     }
     else if (PyList_Check(hooks)) {
@@ -498,6 +499,9 @@ PyObject* NRImport_RegisterImportHook(PyObject *callable, PyObject *name)
          */
 
         PyList_Append(hooks, callable);
+
+        Py_INCREF(Py_None);
+        result = Py_None;
     }
     else {
         PyErr_Format(PyExc_TypeError, "expected list of hooks, got '%.200s'",
@@ -507,8 +511,6 @@ PyObject* NRImport_RegisterImportHook(PyObject *callable, PyObject *name)
     if (imp_lock && imp_unlock) {
         imp_result = PyObject_CallFunctionObjArgs(imp_unlock, NULL);
         if (!imp_result) {
-            Py_XDECREF(imp_lock);
-            Py_XDECREF(imp_unlock);
             Py_XDECREF(imp_module);
             Py_XDECREF(result);
             return NULL;
@@ -516,8 +518,6 @@ PyObject* NRImport_RegisterImportHook(PyObject *callable, PyObject *name)
         Py_DECREF(imp_result);
     }
 
-    Py_XDECREF(imp_lock);
-    Py_XDECREF(imp_unlock);
     Py_XDECREF(imp_module);
 
     return result;
@@ -535,7 +535,7 @@ PyObject *NRImport_NotifyHooks(PyObject *name, PyObject *module)
 
     hooks = PyDict_GetItem(registry, name);
 
-    if (!hooks && PyList_Check(hooks)) {
+    if (hooks && PyList_Check(hooks)) {
         PyObject *iter = NULL;
 
         iter = PyObject_GetIter(hooks);

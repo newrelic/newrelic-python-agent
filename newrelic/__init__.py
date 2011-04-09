@@ -1,8 +1,2 @@
-#vi: set sw=4 expandtab :
-
-from _newrelic import *
-
-import sys
-sys.meta_path.insert(0, ImportHookFinder())
-
-import fixups_django
+import pkgutil
+__path__ = pkgutil.extend_path(__path__, __name__)

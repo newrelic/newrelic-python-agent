@@ -4,71 +4,37 @@
 
 /* ------------------------------------------------------------------------- */
 
-#include "py_function_trace.h"
-
-#include "py_utilities.h"
-
-#include "globals.h"
-
-#include "web_transaction.h"
+#include "py_error_trace.h"
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRFunctionTrace_new(PyTypeObject *type, PyObject *args,
-                                     PyObject *kwds)
+static PyObject *NRErrorTrace_new(PyTypeObject *type, PyObject *args,
+                                  PyObject *kwds)
 {
-    NRFunctionTraceObject *self;
+    NRErrorTraceObject *self;
 
-    /*
-     * Allocate the transaction object and initialise it as per
-     * normal.
-     */
-
-    self = (NRFunctionTraceObject *)type->tp_alloc(type, 0);
+    self = (NRErrorTraceObject *)type->tp_alloc(type, 0);
 
     if (!self)
         return NULL;
 
     self->parent_transaction = NULL;
-    self->transaction_trace = NULL;
-    self->saved_trace_node = NULL;
 
     return (PyObject *)self;
 }
 
 /* ------------------------------------------------------------------------- */
 
-static int NRFunctionTrace_init(NRFunctionTraceObject *self, PyObject *args,
+static int NRErrorTrace_init(NRErrorTraceObject *self, PyObject *args,
                                 PyObject *kwds)
 {
     NRTransactionObject *transaction = NULL;
 
-    PyObject *name = Py_None;
-    PyObject *scope = Py_None;
-    PyObject *override_path = Py_False;
+    static char *kwlist[] = { "transaction", NULL };
 
-    static char *kwlist[] = { "transaction", "name", "scope",
-                              "override_path", NULL };
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O|OO!:FunctionTrace",
-                                     kwlist, &NRTransaction_Type, &transaction,
-                                     &name, &scope, &PyBool_Type,
-                                     &override_path)) {
-        return -1;
-    }
-
-#if 0
-    if (!PyString_Check(name) && !PyUnicode_Check(name)) {
-        PyErr_Format(PyExc_TypeError, "name argument must be str or unicode, "
-                     "found type '%s'", name->ob_type->tp_name);
-        return -1;
-    }
-#endif
-
-    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
-        scope != Py_None) {
-        PyErr_Format(PyExc_TypeError, "scope argument must be str, unicode "
-                     "or None, found type '%s'", scope->ob_type->tp_name);
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!:ErrorTrace",
+                                     kwlist, &NRTransaction_Type,
+                                     &transaction)) {
         return -1;
     }
 
@@ -98,65 +64,12 @@ static int NRFunctionTrace_init(NRFunctionTraceObject *self, PyObject *args,
     Py_INCREF(transaction);
     self->parent_transaction = transaction;
 
-    /*
-     * Don't need to create the inner agent transaction trace
-     * node when executing against a dummy transaction.
-     */
-
-    /*
-     * TODO The PHP agent code doesn't yet support the 'scope'
-     * argument to this function.
-     */
-
-    if (transaction->transaction) {
-        const char *name_string = NULL;
-        const char *scope_string = NULL;
-
-        if (PyUnicode_Check(name))
-            name = PyUnicode_AsUTF8String(name);
-        else if (PyString_Check(name))
-            Py_INCREF(name);
-
-        name_string = PyString_AsString(name);
-
-        if (PyUnicode_Check(scope))
-            scope = PyUnicode_AsUTF8String(scope);
-        else if (PyString_Check(scope))
-            Py_INCREF(scope);
-
-        if (scope != Py_None)
-            scope_string = PyString_AsString(scope);
-        else
-            scope = NULL;
-
-#if 0
-        self->transaction_trace = nr_web_transaction__allocate_function_node(
-                transaction->transaction, name_string, NULL, scope_string);
-#else
-        self->transaction_trace = nr_web_transaction__allocate_function_node(
-                transaction->transaction, name_string, NULL);
-#endif
-
-        /*
-         * Override transaction path if required.
-         *
-         * TODO this is currently using UTF8 variant of string if
-         * was a unicode object.
-         */
-
-        if (override_path == Py_True)
-            PyObject_SetAttrString((PyObject *)transaction, "path", name);
-
-        Py_DECREF(name);
-        Py_XDECREF(scope);
-    }
-
     return 0;
 }
 
 /* ------------------------------------------------------------------------- */
 
-static void NRFunctionTrace_dealloc(NRFunctionTraceObject *self)
+static void NRErrorTrace_dealloc(NRErrorTraceObject *self)
 {
     Py_XDECREF(self->parent_transaction);
 
@@ -165,37 +78,62 @@ static void NRFunctionTrace_dealloc(NRFunctionTraceObject *self)
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRFunctionTrace_enter(NRFunctionTraceObject *self,
+static PyObject *NRErrorTrace_enter(NRErrorTraceObject *self,
                                         PyObject *args)
 {
-    if (!self->transaction_trace) {
-        Py_INCREF(self);
-        return (PyObject *)self;
-    }
-
-    nr_node_header__record_starttime_and_push_current(
-            (nr_node_header *)self->transaction_trace,
-            &self->saved_trace_node);
-
     Py_INCREF(self);
     return (PyObject *)self;
 }
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRFunctionTrace_exit(NRFunctionTraceObject *self,
+static PyObject *NRErrorTrace_exit(NRErrorTraceObject *self,
                                        PyObject *args)
 {
-    if (!self->transaction_trace) {
+    PyObject *type = NULL;
+    PyObject *value = NULL;
+    PyObject *traceback = NULL;
+
+    if (!PyArg_ParseTuple(args, "OOO:__exit__", &type, &value, &traceback))
+        return NULL;
+
+    if (!self->parent_transaction->transaction) {
         Py_INCREF(Py_None);
         return Py_None;
     }
 
-    nr_node_header__record_stoptime_and_pop_current(
-            (nr_node_header *)self->transaction_trace,
-            &self->saved_trace_node);
+    if (self->parent_transaction->transaction_state !=
+        NR_TRANSACTION_STATE_RUNNING) {
+        PyErr_SetString(PyExc_RuntimeError, "transaction not active");
+        return NULL;
+    }
 
-    self->saved_trace_node = NULL;
+    /*
+     * Treat any exception passed in as being unhandled and
+     * record details of exception against the transaction.
+     * It is presumed that original error was not registered in
+     * this context and so do not need to restore it when any
+     * error here is cleared.
+     */
+
+    if (type != Py_None && value != Py_None && traceback != Py_None) {
+        PyObject *object = NULL;
+
+        object = PyObject_GetAttrString((PyObject *)self->parent_transaction,
+                                        "runtime_error");
+
+        if (object) {
+            PyObject *args = NULL;
+            PyObject *result = NULL;
+
+            args = PyTuple_Pack(3, type, value, traceback);
+            result = PyObject_Call(object, args, NULL);
+
+            Py_DECREF(args);
+            Py_DECREF(object);
+            Py_XDECREF(result);
+        }
+    }
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -207,23 +145,19 @@ static PyObject *NRFunctionTrace_exit(NRFunctionTraceObject *self,
 #define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
 #endif
 
-static PyMethodDef NRFunctionTrace_methods[] = {
-    { "__enter__",  (PyCFunction)NRFunctionTrace_enter,  METH_NOARGS, 0 },
-    { "__exit__",   (PyCFunction)NRFunctionTrace_exit,   METH_VARARGS, 0 },
+static PyMethodDef NRErrorTrace_methods[] = {
+    { "__enter__",  (PyCFunction)NRErrorTrace_enter,  METH_NOARGS, 0 },
+    { "__exit__",   (PyCFunction)NRErrorTrace_exit,   METH_VARARGS, 0 },
     { NULL, NULL }
 };
 
-static PyGetSetDef NRFunctionTrace_getset[] = {
-    { NULL },
-};
-
-PyTypeObject NRFunctionTrace_Type = {
+PyTypeObject NRErrorTrace_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "_newrelic.FunctionTrace", /*tp_name*/
-    sizeof(NRFunctionTraceObject), /*tp_basicsize*/
+    "_newrelic.ErrorTrace", /*tp_name*/
+    sizeof(NRErrorTraceObject), /*tp_basicsize*/
     0,                      /*tp_itemsize*/
     /* methods */
-    (destructor)NRFunctionTrace_dealloc, /*tp_dealloc*/
+    (destructor)NRErrorTrace_dealloc, /*tp_dealloc*/
     0,                      /*tp_print*/
     0,                      /*tp_getattr*/
     0,                      /*tp_setattr*/
@@ -246,92 +180,55 @@ PyTypeObject NRFunctionTrace_Type = {
     0,                      /*tp_weaklistoffset*/
     0,                      /*tp_iter*/
     0,                      /*tp_iternext*/
-    NRFunctionTrace_methods, /*tp_methods*/
+    NRErrorTrace_methods, /*tp_methods*/
     0,                      /*tp_members*/
-    NRFunctionTrace_getset, /*tp_getset*/
+    0,                      /*tp_getset*/
     0,                      /*tp_base*/
     0,                      /*tp_dict*/
     0,                      /*tp_descr_get*/
     0,                      /*tp_descr_set*/
     0,                      /*tp_dictoffset*/
-    (initproc)NRFunctionTrace_init, /*tp_init*/
+    (initproc)NRErrorTrace_init, /*tp_init*/
     0,                      /*tp_alloc*/
-    NRFunctionTrace_new,    /*tp_new*/
+    NRErrorTrace_new,       /*tp_new*/
     0,                      /*tp_free*/
     0,                      /*tp_is_gc*/
 };
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRFunctionTraceWrapper_new(PyTypeObject *type, PyObject *args,
-                                           PyObject *kwds)
+static PyObject *NRErrorTraceWrapper_new(PyTypeObject *type, PyObject *args,
+                                         PyObject *kwds)
 {
-    NRFunctionTraceWrapperObject *self;
+    NRErrorTraceWrapperObject *self;
 
-    self = (NRFunctionTraceWrapperObject *)type->tp_alloc(type, 0);
+    self = (NRErrorTraceWrapperObject *)type->tp_alloc(type, 0);
 
     if (!self)
         return NULL;
 
     self->wrapped_object = NULL;
-    self->name = NULL;
-    self->scope = NULL;
-    self->override_path = NULL;
 
     return (PyObject *)self;
 }
 
 /* ------------------------------------------------------------------------- */
 
-static int NRFunctionTraceWrapper_init(NRFunctionTraceWrapperObject *self,
+static int NRErrorTraceWrapper_init(NRErrorTraceWrapperObject *self,
                                        PyObject *args, PyObject *kwds)
 {
     PyObject *wrapped_object = NULL;
 
-    PyObject *name = Py_None;
-    PyObject *scope = Py_None;
-    PyObject *override_path = Py_False;
+    static char *kwlist[] = { "wrapped", NULL };
 
-    static char *kwlist[] = { "wrapped", "name", "scope", "override_path",
-                              NULL };
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|OOO!:FunctionTraceWrapper",
-                                     kwlist, &wrapped_object, &name, &scope,
-                                     &PyBool_Type, &override_path)) {
-        return -1;
-    }
-
-#if 0
-    if (!PyString_Check(name) && !PyUnicode_Check(name) &&
-        name != Py_None) {
-        PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
-                     "or None, found type '%s'", name->ob_type->tp_name);
-        return -1;
-    }
-#endif
-
-    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
-        scope != Py_None) {
-        PyErr_Format(PyExc_TypeError, "scope argument must be str, unicode "
-                     "or None, found type '%s'", scope->ob_type->tp_name);
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:ErrorTraceWrapper",
+                                     kwlist, &wrapped_object)) {
         return -1;
     }
 
     Py_INCREF(wrapped_object);
     Py_XDECREF(self->wrapped_object);
     self->wrapped_object = wrapped_object;
-
-    Py_INCREF(name);
-    Py_XDECREF(self->name);
-    self->name = name;
-
-    Py_INCREF(scope);
-    Py_XDECREF(self->scope);
-    self->scope = scope;
-
-    Py_INCREF(override_path);
-    Py_XDECREF(self->override_path);
-    self->override_path = override_path;
 
     /*
      * TODO This should set __module__, __name__, __doc__ and
@@ -344,32 +241,26 @@ static int NRFunctionTraceWrapper_init(NRFunctionTraceWrapperObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-static void NRFunctionTraceWrapper_dealloc(NRFunctionTraceWrapperObject *self)
+static void NRErrorTraceWrapper_dealloc(NRErrorTraceWrapperObject *self)
 {
     Py_XDECREF(self->wrapped_object);
-
-    Py_XDECREF(self->name);
-    Py_XDECREF(self->scope);
-    Py_XDECREF(self->override_path);
 
     Py_TYPE(self)->tp_free(self);
 }
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRFunctionTraceWrapper_call(
-        NRFunctionTraceWrapperObject *self, PyObject *args, PyObject *kwds)
+static PyObject *NRErrorTraceWrapper_call(
+        NRErrorTraceWrapperObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *wrapped_result = NULL;
 
     PyObject *current_transaction = NULL;
-    PyObject *function_trace = NULL;
+    PyObject *error_trace = NULL;
 
     PyObject *instance_method = NULL;
     PyObject *method_args = NULL;
     PyObject *method_result = NULL;
-
-    PyObject *name = NULL;
 
     /*
      * If there is no current transaction then we can call
@@ -381,37 +272,14 @@ static PyObject *NRFunctionTraceWrapper_call(
     if (!current_transaction)
         return PyObject_Call(self->wrapped_object, args, kwds);
 
-    /* Create function trace context manager. */
+    /* Create error trace context manager. */
 
-    if (self->name == Py_None) {
-        name = NRUtilities_CallableName(self->wrapped_object,
-                                        (PyObject *)self, args);
-    }
-    else if (PyString_Check(self->name)) {
-        name = self->name;
-        Py_INCREF(name);
-    }
-    else {
-        /*
-         * Name if actually a callable function to provide the
-         * name based on arguments supplied to wrapped function.
-         */
-
-        name = PyObject_Call(self->name, args, kwds);
-
-        if (!name)
-            return NULL;
-    }
-
-    function_trace = PyObject_CallFunctionObjArgs((PyObject *)
-            &NRFunctionTrace_Type, current_transaction, name,
-            self->scope, self->override_path, NULL);
-
-    Py_DECREF(name);
+    error_trace = PyObject_CallFunctionObjArgs((PyObject *)
+            &NRErrorTrace_Type, current_transaction, NULL);
 
     /* Now call __enter__() on the context manager. */
 
-    instance_method = PyObject_GetAttrString(function_trace, "__enter__");
+    instance_method = PyObject_GetAttrString(error_trace, "__enter__");
 
     method_args = PyTuple_Pack(0);
     method_result = PyObject_Call(instance_method, method_args, NULL);
@@ -437,7 +305,7 @@ static PyObject *NRFunctionTraceWrapper_call(
      * objects, else pass exception details.
      */
 
-    instance_method = PyObject_GetAttrString(function_trace, "__exit__");
+    instance_method = PyObject_GetAttrString(error_trace, "__exit__");
 
     if (wrapped_result) {
         method_args = PyTuple_Pack(3, Py_None, Py_None, Py_None);
@@ -484,31 +352,31 @@ static PyObject *NRFunctionTraceWrapper_call(
         PyErr_Restore(type, value, traceback);
     }
 
-    Py_DECREF(function_trace);
+    Py_DECREF(error_trace);
 
     return wrapped_result;
 }
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRFunctionTraceWrapper_get_name(
-        NRFunctionTraceWrapperObject *self, void *closure)
+static PyObject *NRErrorTraceWrapper_get_name(
+        NRErrorTraceWrapperObject *self, void *closure)
 {
     return PyObject_GetAttrString(self->wrapped_object, "__name__");
 }
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRFunctionTraceWrapper_get_module(
-        NRFunctionTraceWrapperObject *self, void *closure)
+static PyObject *NRErrorTraceWrapper_get_module(
+        NRErrorTraceWrapperObject *self, void *closure)
 {
     return PyObject_GetAttrString(self->wrapped_object, "__module__");
 }
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRFunctionTraceWrapper_get_wrapped(
-        NRFunctionTraceWrapperObject *self, void *closure)
+static PyObject *NRErrorTraceWrapper_get_wrapped(
+        NRErrorTraceWrapperObject *self, void *closure)
 {
     Py_INCREF(self->wrapped_object);
     return self->wrapped_object;
@@ -516,7 +384,7 @@ static PyObject *NRFunctionTraceWrapper_get_wrapped(
  
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRFunctionTraceWrapper_descr_get(PyObject *function,
+static PyObject *NRErrorTraceWrapper_descr_get(PyObject *function,
                                                   PyObject *object,
                                                   PyObject *type)
 {
@@ -532,23 +400,23 @@ static PyObject *NRFunctionTraceWrapper_descr_get(PyObject *function,
 #define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
 #endif
 
-static PyGetSetDef NRFunctionTraceWrapper_getset[] = {
-    { "__name__",           (getter)NRFunctionTraceWrapper_get_name,
+static PyGetSetDef NRErrorTraceWrapper_getset[] = {
+    { "__name__",           (getter)NRErrorTraceWrapper_get_name,
                             NULL, 0 },
-    { "__module__",         (getter)NRFunctionTraceWrapper_get_module,
+    { "__module__",         (getter)NRErrorTraceWrapper_get_module,
                             NULL, 0 },
-    { "__wrapped__",        (getter)NRFunctionTraceWrapper_get_wrapped,
+    { "__wrapped__",        (getter)NRErrorTraceWrapper_get_wrapped,
                             NULL, 0 },
     { NULL },
 };
 
-PyTypeObject NRFunctionTraceWrapper_Type = {
+PyTypeObject NRErrorTraceWrapper_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "_newrelic.FunctionTraceWrapper", /*tp_name*/
-    sizeof(NRFunctionTraceWrapperObject), /*tp_basicsize*/
+    "_newrelic.ErrorTraceWrapper", /*tp_name*/
+    sizeof(NRErrorTraceWrapperObject), /*tp_basicsize*/
     0,                      /*tp_itemsize*/
     /* methods */
-    (destructor)NRFunctionTraceWrapper_dealloc, /*tp_dealloc*/
+    (destructor)NRErrorTraceWrapper_dealloc, /*tp_dealloc*/
     0,                      /*tp_print*/
     0,                      /*tp_getattr*/
     0,                      /*tp_setattr*/
@@ -558,7 +426,7 @@ PyTypeObject NRFunctionTraceWrapper_Type = {
     0,                      /*tp_as_sequence*/
     0,                      /*tp_as_mapping*/
     0,                      /*tp_hash*/
-    (ternaryfunc)NRFunctionTraceWrapper_call, /*tp_call*/
+    (ternaryfunc)NRErrorTraceWrapper_call, /*tp_call*/
     0,                      /*tp_str*/
     0,                      /*tp_getattro*/
     0,                      /*tp_setattro*/
@@ -573,115 +441,73 @@ PyTypeObject NRFunctionTraceWrapper_Type = {
     0,                      /*tp_iternext*/
     0,                      /*tp_methods*/
     0,                      /*tp_members*/
-    NRFunctionTraceWrapper_getset, /*tp_getset*/
+    NRErrorTraceWrapper_getset, /*tp_getset*/
     0,                      /*tp_base*/
     0,                      /*tp_dict*/
-    NRFunctionTraceWrapper_descr_get, /*tp_descr_get*/
+    NRErrorTraceWrapper_descr_get, /*tp_descr_get*/
     0,                      /*tp_descr_set*/
     0,                      /*tp_dictoffset*/
-    (initproc)NRFunctionTraceWrapper_init, /*tp_init*/
+    (initproc)NRErrorTraceWrapper_init, /*tp_init*/
     0,                      /*tp_alloc*/
-    NRFunctionTraceWrapper_new, /*tp_new*/
+    NRErrorTraceWrapper_new, /*tp_new*/
     0,                      /*tp_free*/
     0,                      /*tp_is_gc*/
 };
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRFunctionTraceDecorator_new(PyTypeObject *type,
-                                              PyObject *args, PyObject *kwds)
+static PyObject *NRErrorTraceDecorator_new(PyTypeObject *type,
+                                           PyObject *args, PyObject *kwds)
 {
-    NRFunctionTraceDecoratorObject *self;
+    NRErrorTraceDecoratorObject *self;
 
-    self = (NRFunctionTraceDecoratorObject *)type->tp_alloc(type, 0);
+    self = (NRErrorTraceDecoratorObject *)type->tp_alloc(type, 0);
 
     if (!self)
         return NULL;
-
-    self->name = NULL;
-    self->scope = NULL;
-    self->override_path = NULL;
 
     return (PyObject *)self;
 }
 
 /* ------------------------------------------------------------------------- */
 
-static int NRFunctionTraceDecorator_init(NRFunctionTraceDecoratorObject *self,
+static int NRErrorTraceDecorator_init(NRErrorTraceDecoratorObject *self,
                                          PyObject *args, PyObject *kwds)
 {
-    PyObject *name = Py_None;
-    PyObject *scope = Py_None;
-    PyObject *override_path = Py_False;
+    static char *kwlist[] = { NULL };
 
-    static char *kwlist[] = { "name", "scope", "override_path", NULL };
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OOO!:FunctionTraceDecorator",
-                                     kwlist, &name, &scope, &PyBool_Type,
-                                     &override_path)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, ":ErrorTraceDecorator",
+                                     kwlist)) {
         return -1;
     }
-
-#if 0
-    if (!PyString_Check(name) && !PyUnicode_Check(name) &&
-        name != Py_None) {
-        PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
-                     "or None, found type '%s'", name->ob_type->tp_name);
-        return -1;
-    }
-#endif
-
-    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
-        scope != Py_None) {
-        PyErr_Format(PyExc_TypeError, "scope argument must be str, unicode "
-                     "or None, found type '%s'", scope->ob_type->tp_name);
-        return -1;
-    }
-
-    Py_INCREF(name);
-    Py_XDECREF(self->name);
-    self->name = name;
-
-    Py_INCREF(scope);
-    Py_XDECREF(self->scope);
-    self->scope = scope;
-
-    Py_INCREF(override_path);
-    Py_XDECREF(self->override_path);
-    self->override_path = override_path;
 
     return 0;
 }
 
 /* ------------------------------------------------------------------------- */
 
-static void NRFunctionTraceDecorator_dealloc(
-        NRFunctionTraceDecoratorObject *self)
+static void NRErrorTraceDecorator_dealloc(
+        NRErrorTraceDecoratorObject *self)
 {
-    Py_XDECREF(self->name);
-    Py_XDECREF(self->scope);
-    Py_XDECREF(self->override_path);
-
     Py_TYPE(self)->tp_free(self);
 }
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRFunctionTraceDecorator_call(
-        NRFunctionTraceDecoratorObject *self, PyObject *args, PyObject *kwds)
+static PyObject *NRErrorTraceDecorator_call(
+        NRErrorTraceDecoratorObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *wrapped_object = NULL;
 
     static char *kwlist[] = { "wrapped", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:FunctionTraceDecorator",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:ErrorTraceDecorator",
                                      kwlist, &wrapped_object)) {
         return NULL;
     }
 
     return PyObject_CallFunctionObjArgs(
-            (PyObject *)&NRFunctionTraceWrapper_Type,
-            wrapped_object, self->name, self->scope, NULL);
+            (PyObject *)&NRErrorTraceWrapper_Type, wrapped_object, NULL);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -690,13 +516,13 @@ static PyObject *NRFunctionTraceDecorator_call(
 #define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
 #endif
 
-PyTypeObject NRFunctionTraceDecorator_Type = {
+PyTypeObject NRErrorTraceDecorator_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "_newrelic.FunctionTraceDecorator", /*tp_name*/
-    sizeof(NRFunctionTraceDecoratorObject), /*tp_basicsize*/
+    "_newrelic.ErrorTraceDecorator", /*tp_name*/
+    sizeof(NRErrorTraceDecoratorObject), /*tp_basicsize*/
     0,                      /*tp_itemsize*/
     /* methods */
-    (destructor)NRFunctionTraceDecorator_dealloc, /*tp_dealloc*/
+    (destructor)NRErrorTraceDecorator_dealloc, /*tp_dealloc*/
     0,                      /*tp_print*/
     0,                      /*tp_getattr*/
     0,                      /*tp_setattr*/
@@ -706,7 +532,7 @@ PyTypeObject NRFunctionTraceDecorator_Type = {
     0,                      /*tp_as_sequence*/
     0,                      /*tp_as_mapping*/
     0,                      /*tp_hash*/
-    (ternaryfunc)NRFunctionTraceDecorator_call, /*tp_call*/
+    (ternaryfunc)NRErrorTraceDecorator_call, /*tp_call*/
     0,                      /*tp_str*/
     0,                      /*tp_getattro*/
     0,                      /*tp_setattro*/
@@ -727,9 +553,9 @@ PyTypeObject NRFunctionTraceDecorator_Type = {
     0,                      /*tp_descr_get*/
     0,                      /*tp_descr_set*/
     0,                      /*tp_dictoffset*/
-    (initproc)NRFunctionTraceDecorator_init, /*tp_init*/
+    (initproc)NRErrorTraceDecorator_init, /*tp_init*/
     0,                      /*tp_alloc*/
-    NRFunctionTraceDecorator_new, /*tp_new*/
+    NRErrorTraceDecorator_new, /*tp_new*/
     0,                      /*tp_free*/
     0,                      /*tp_is_gc*/
 };

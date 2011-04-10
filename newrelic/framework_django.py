@@ -1,6 +1,6 @@
 from newrelic.agent import (FunctionTraceWrapper, OutFunctionWrapper,
         wrap_pre_function, wrap_post_function, wrap_function_trace,
-        callable_name, transaction)
+        wrap_error_trace, callable_name, transaction)
 
 def wrap_middleware(handler, *args, **kwargs):
     if hasattr(handler, '_request_middleware'):
@@ -66,7 +66,6 @@ def wrap_uncaught_exception(handler, request, resolver, exc_info):
     if current_transaction:
         current_transaction.runtime_error(*exc_info)
 
-#@_newrelic.post_import_hook('django')
 def instrument(module):
 
     #wrap_web_transaction('django.core.handlers.wsgi', 'WSGIHandler',
@@ -80,6 +79,8 @@ def instrument(module):
 
     wrap_pre_function('django.core.handlers.wsgi', 'WSGIHandler',
             'handle_uncaught_exception', wrap_uncaught_exception)
+
+    wrap_error_trace('django.core.urlresolvers', None, 'get_callable')
 
     from django.template import Template
 
@@ -97,5 +98,3 @@ def instrument(module):
     #wrap_function_trace('django.template.debug', 'DebugNodeList',
     #      'render_node', lambda template, node, context: '%s Node ' %
     #      callable_name(node))
-
-#_newrelic.register_post_import_hook(instrument, 'django')

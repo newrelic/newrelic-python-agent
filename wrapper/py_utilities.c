@@ -74,7 +74,7 @@ PyObject *NRUtilities_FormatException(PyObject *type, PyObject *value,
 
 /* ------------------------------------------------------------------------- */
 
-PyObject *NRUtilities_LookupCallable(const char *module_name,
+PyObject *NRUtilities_LookupCallable(PyObject *module,
                                      const char *class_name,
                                      const char *object_name,
                                      PyObject **parent_object,
@@ -93,7 +93,12 @@ PyObject *NRUtilities_LookupCallable(const char *module_name,
         return NULL;
     }
 
-    module_object = PyImport_ImportModule(module_name);
+    if (PyModule_Check(module)) {
+        Py_INCREF(module);
+        module_object = module;
+    }
+    else
+        module_object = PyImport_ImportModule(PyString_AsString(module));
 
     if (module_object) {
         PyObject *dict = NULL;

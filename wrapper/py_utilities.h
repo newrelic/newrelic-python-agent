@@ -17,7 +17,7 @@
 extern PyObject *NRUtilities_FormatException(PyObject *type, PyObject *value,
                                              PyObject *traceback);
 
-extern PyObject *NRUtilities_LookupCallable(const char *module_name,
+extern PyObject *NRUtilities_LookupCallable(PyObject *module,
                                             const char *class_name,
                                             const char *object_name,
                                             PyObject **parent_object,

@@ -282,7 +282,7 @@ static PyObject *newrelic_web_transaction(PyObject *self, PyObject *args,
 static PyObject *newrelic_wrap_web_transaction(PyObject *self, PyObject *args,
                                                PyObject *kwds)
 {
-    const char *module_name = NULL;
+    PyObject *module = NULL;
     const char *class_name = NULL;
     const char *object_name = NULL;
 
@@ -296,13 +296,19 @@ static PyObject *newrelic_wrap_web_transaction(PyObject *self, PyObject *args,
 
     PyObject *result = NULL;
 
-    static char *kwlist[] = { "module_name", "class_name", "object_name",
+    static char *kwlist[] = { "module", "class_name", "object_name",
                               "application", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds,
-                                     "szzO:wrap_web_transaction",
-                                     kwlist, &module_name, &class_name,
+                                     "OzzO:wrap_web_transaction",
+                                     kwlist, &module, &class_name,
                                      &object_name, &application)) {
+        return NULL;
+    }
+
+    if (!PyModule_Check(module) && !PyString_Check(module)) {
+        PyErr_SetString(PyExc_TypeError, "module reference must be "
+                        "module or string");
         return NULL;
     }
 
@@ -320,9 +326,9 @@ static PyObject *newrelic_wrap_web_transaction(PyObject *self, PyObject *args,
         return NULL;
     }
 
-    wrapped_object = NRUtilities_LookupCallable(module_name, class_name,
-                                                 object_name, &parent_object,
-                                                 &attribute_name);
+    wrapped_object = NRUtilities_LookupCallable(module, class_name,
+                                                object_name, &parent_object,
+                                                &attribute_name);
 
     if (!wrapped_object)
         return NULL;
@@ -382,7 +388,7 @@ static PyObject *newrelic_background_task(PyObject *self, PyObject *args,
 static PyObject *newrelic_wrap_background_task(PyObject *self, PyObject *args,
                                                PyObject *kwds)
 {
-    const char *module_name = NULL;
+    PyObject *module = NULL;
     const char *class_name = NULL;
     const char *object_name = NULL;
 
@@ -397,13 +403,19 @@ static PyObject *newrelic_wrap_background_task(PyObject *self, PyObject *args,
 
     PyObject *result = NULL;
 
-    static char *kwlist[] = { "module_name", "class_name", "object_name",
+    static char *kwlist[] = { "module", "class_name", "object_name",
                               "application", "name", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds,
-                                     "szzO|O:wrap_background_task",
-                                     kwlist, &module_name, &class_name,
+                                     "OzzO|O:wrap_background_task",
+                                     kwlist, &module, &class_name,
                                      &object_name, &application, &name)) {
+        return NULL;
+    }
+
+    if (!PyModule_Check(module) && !PyString_Check(module)) {
+        PyErr_SetString(PyExc_TypeError, "module reference must be "
+                        "module or string");
         return NULL;
     }
 
@@ -428,9 +440,9 @@ static PyObject *newrelic_wrap_background_task(PyObject *self, PyObject *args,
         return NULL;
     }
 
-    wrapped_object = NRUtilities_LookupCallable(module_name, class_name,
-                                                 object_name, &parent_object,
-                                                 &attribute_name);
+    wrapped_object = NRUtilities_LookupCallable(module, class_name,
+                                                object_name, &parent_object,
+                                                &attribute_name);
 
     if (!wrapped_object)
         return NULL;
@@ -438,6 +450,13 @@ static PyObject *newrelic_wrap_background_task(PyObject *self, PyObject *args,
     if (name == Py_None) {
         int len = 0;
         char *s = NULL;
+
+        const char *module_name = NULL;
+
+        if (PyModule_Check(module))
+            module_name = PyModule_GetName(module);
+        else
+            module_name = PyString_AsString(module);
 
         if (module_name)
             len += strlen(module_name);
@@ -509,7 +528,7 @@ static PyObject *newrelic_database_trace(PyObject *self, PyObject *args,
 static PyObject *newrelic_wrap_database_trace(PyObject *self, PyObject *args,
                                               PyObject *kwds)
 {
-    const char *module_name = NULL;
+    PyObject *module = NULL;
     const char *class_name = NULL;
     const char *object_name = NULL;
     PyObject *argnum = NULL;
@@ -522,12 +541,18 @@ static PyObject *newrelic_wrap_database_trace(PyObject *self, PyObject *args,
 
     PyObject *result = NULL;
 
-    static char *kwlist[] = { "module_name", "class_name", "object_name",
+    static char *kwlist[] = { "module", "class_name", "object_name",
                               "argnum", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO!:wrap_database_trace",
-                                     kwlist, &module_name, &class_name,
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OzzO!:wrap_database_trace",
+                                     kwlist, &module, &class_name,
                                      &object_name, &PyInt_Type, &argnum)) {
+        return NULL;
+    }
+
+    if (!PyModule_Check(module) && !PyString_Check(module)) {
+        PyErr_SetString(PyExc_TypeError, "module reference must be "
+                        "module or string");
         return NULL;
     }
 
@@ -537,9 +562,9 @@ static PyObject *newrelic_wrap_database_trace(PyObject *self, PyObject *args,
         return NULL;
     }
 
-    wrapped_object = NRUtilities_LookupCallable(module_name, class_name,
-                                                 object_name, &parent_object,
-                                                 &attribute_name);
+    wrapped_object = NRUtilities_LookupCallable(module, class_name,
+                                                object_name, &parent_object,
+                                                &attribute_name);
 
     if (!wrapped_object)
         return NULL;
@@ -582,7 +607,7 @@ static PyObject *newrelic_external_trace(PyObject *self, PyObject *args,
 static PyObject *newrelic_wrap_external_trace(PyObject *self, PyObject *args,
                                               PyObject *kwds)
 {
-    const char *module_name = NULL;
+    PyObject *module = NULL;
     const char *class_name = NULL;
     const char *object_name = NULL;
     PyObject *argnum = NULL;
@@ -595,12 +620,18 @@ static PyObject *newrelic_wrap_external_trace(PyObject *self, PyObject *args,
 
     PyObject *result = NULL;
 
-    static char *kwlist[] = { "module_name", "class_name", "object_name",
+    static char *kwlist[] = { "module", "class_name", "object_name",
                               "argnum", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO!:wrap_external_trace",
-                                     kwlist, &module_name, &class_name,
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OzzO!:wrap_external_trace",
+                                     kwlist, &module, &class_name,
                                      &object_name, &PyInt_Type, &argnum)) {
+        return NULL;
+    }
+
+    if (!PyModule_Check(module) && !PyString_Check(module)) {
+        PyErr_SetString(PyExc_TypeError, "module reference must be "
+                        "module or string");
         return NULL;
     }
 
@@ -610,9 +641,9 @@ static PyObject *newrelic_wrap_external_trace(PyObject *self, PyObject *args,
         return NULL;
     }
 
-    wrapped_object = NRUtilities_LookupCallable(module_name, class_name,
-                                                 object_name, &parent_object,
-                                                 &attribute_name);
+    wrapped_object = NRUtilities_LookupCallable(module, class_name,
+                                                object_name, &parent_object,
+                                                &attribute_name);
 
     if (!wrapped_object)
         return NULL;
@@ -651,7 +682,7 @@ static PyObject *newrelic_error_trace(PyObject *self, PyObject *args,
 static PyObject *newrelic_wrap_error_trace(PyObject *self, PyObject *args,
                                            PyObject *kwds)
 {
-    const char *module_name = NULL;
+    PyObject *module = NULL;
     const char *class_name = NULL;
     const char *object_name = NULL;
 
@@ -663,12 +694,18 @@ static PyObject *newrelic_wrap_error_trace(PyObject *self, PyObject *args,
 
     PyObject *result = NULL;
 
-    static char *kwlist[] = { "module_name", "class_name", "object_name",
+    static char *kwlist[] = { "module", "class_name", "object_name",
                               NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szz:wrap_error_trace",
-                                     kwlist, &module_name, &class_name,
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "Ozz:wrap_error_trace",
+                                     kwlist, &module, &class_name,
                                      &object_name)) {
+        return NULL;
+    }
+
+    if (!PyModule_Check(module) && !PyString_Check(module)) {
+        PyErr_SetString(PyExc_TypeError, "module reference must be "
+                        "module or string");
         return NULL;
     }
 
@@ -678,9 +715,9 @@ static PyObject *newrelic_wrap_error_trace(PyObject *self, PyObject *args,
         return NULL;
     }
 
-    wrapped_object = NRUtilities_LookupCallable(module_name, class_name,
-                                                 object_name, &parent_object,
-                                                 &attribute_name);
+    wrapped_object = NRUtilities_LookupCallable(module, class_name,
+                                                object_name, &parent_object,
+                                                &attribute_name);
 
     if (!wrapped_object)
         return NULL;
@@ -742,7 +779,7 @@ static PyObject *newrelic_function_trace(PyObject *self, PyObject *args,
 static PyObject *newrelic_wrap_function_trace(PyObject *self, PyObject *args,
                                               PyObject *kwds)
 {
-    const char *module_name = NULL;
+    PyObject *module = NULL;
     const char *class_name = NULL;
     const char *object_name = NULL;
 
@@ -758,14 +795,20 @@ static PyObject *newrelic_wrap_function_trace(PyObject *self, PyObject *args,
 
     PyObject *result = NULL;
 
-    static char *kwlist[] = { "module_name", "class_name", "object_name",
+    static char *kwlist[] = { "module", "class_name", "object_name",
                               "name", "scope", "override_path", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds,
-                                     "szz|OOO!:wrap_function_trace",
-                                     kwlist, &module_name, &class_name,
+                                     "Ozz|OOO!:wrap_function_trace",
+                                     kwlist, &module, &class_name,
                                      &object_name, &name, &scope,
                                      &PyBool_Type, &override_path)) {
+        return NULL;
+    }
+
+    if (!PyModule_Check(module) && !PyString_Check(module)) {
+        PyErr_SetString(PyExc_TypeError, "module reference must be "
+                        "module or string");
         return NULL;
     }
 
@@ -791,9 +834,9 @@ static PyObject *newrelic_wrap_function_trace(PyObject *self, PyObject *args,
         return NULL;
     }
 
-    wrapped_object = NRUtilities_LookupCallable(module_name, class_name,
-                                                 object_name, &parent_object,
-                                                 &attribute_name);
+    wrapped_object = NRUtilities_LookupCallable(module, class_name,
+                                                object_name, &parent_object,
+                                                &attribute_name);
 
     if (!wrapped_object)
         return NULL;
@@ -801,6 +844,13 @@ static PyObject *newrelic_wrap_function_trace(PyObject *self, PyObject *args,
     if (name == Py_None) {
         int len = 0;
         char *s = NULL;
+
+        const char *module_name = NULL;
+
+        if (PyModule_Check(module))
+            module_name = PyModule_GetName(module);
+        else
+            module_name = PyString_AsString(module);
 
         if (module_name)
             len += strlen(module_name);
@@ -872,7 +922,7 @@ static PyObject *newrelic_memcache_trace(PyObject *self, PyObject *args,
 static PyObject *newrelic_wrap_memcache_trace(PyObject *self, PyObject *args,
                                               PyObject *kwds)
 {
-    const char *module_name = NULL;
+    PyObject *module = NULL;
     const char *class_name = NULL;
     const char *object_name = NULL;
     PyObject *command = NULL;
@@ -885,12 +935,18 @@ static PyObject *newrelic_wrap_memcache_trace(PyObject *self, PyObject *args,
 
     PyObject *result = NULL;
 
-    static char *kwlist[] = { "module_name", "class_name", "object_name",
+    static char *kwlist[] = { "module", "class_name", "object_name",
                               "command", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzS:wrap_memcache_trace",
-                                     kwlist, &module_name, &class_name,
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OzzS:wrap_memcache_trace",
+                                     kwlist, &module, &class_name,
                                      &object_name, &command)) {
+        return NULL;
+    }
+
+    if (!PyModule_Check(module) && !PyString_Check(module)) {
+        PyErr_SetString(PyExc_TypeError, "module reference must be "
+                        "module or string");
         return NULL;
     }
 
@@ -900,9 +956,9 @@ static PyObject *newrelic_wrap_memcache_trace(PyObject *self, PyObject *args,
         return NULL;
     }
 
-    wrapped_object = NRUtilities_LookupCallable(module_name, class_name,
-                                                 object_name, &parent_object,
-                                                 &attribute_name);
+    wrapped_object = NRUtilities_LookupCallable(module, class_name,
+                                                object_name, &parent_object,
+                                                &attribute_name);
 
     if (!wrapped_object)
         return NULL;
@@ -945,7 +1001,7 @@ static PyObject *newrelic_in_function(PyObject *self, PyObject *args,
 static PyObject *newrelic_wrap_in_function(PyObject *self, PyObject *args,
                                            PyObject *kwds)
 {
-    const char *module_name = NULL;
+    PyObject *module = NULL;
     const char *class_name = NULL;
     const char *object_name = NULL;
     PyObject *function_object = Py_None;
@@ -958,12 +1014,18 @@ static PyObject *newrelic_wrap_in_function(PyObject *self, PyObject *args,
 
     PyObject *result = NULL;
 
-    static char *kwlist[] = { "module_name", "class_name", "object_name",
+    static char *kwlist[] = { "module", "class_name", "object_name",
                               "in_function", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO:wrap_in_function",
-                                     kwlist, &module_name, &class_name,
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OzzO:wrap_in_function",
+                                     kwlist, &module, &class_name,
                                      &object_name, &function_object)) {
+        return NULL;
+    }
+
+    if (!PyModule_Check(module) && !PyString_Check(module)) {
+        PyErr_SetString(PyExc_TypeError, "module reference must be "
+                        "module or string");
         return NULL;
     }
 
@@ -973,9 +1035,9 @@ static PyObject *newrelic_wrap_in_function(PyObject *self, PyObject *args,
         return NULL;
     }
 
-    wrapped_object = NRUtilities_LookupCallable(module_name, class_name,
-                                                 object_name, &parent_object,
-                                                 &attribute_name);
+    wrapped_object = NRUtilities_LookupCallable(module, class_name,
+                                                object_name, &parent_object,
+                                                &attribute_name);
 
     if (!wrapped_object)
         return NULL;
@@ -1019,7 +1081,7 @@ static PyObject *newrelic_out_function(PyObject *self, PyObject *args,
 static PyObject *newrelic_wrap_out_function(PyObject *self, PyObject *args,
                                             PyObject *kwds)
 {
-    const char *module_name = NULL;
+    PyObject *module = NULL;
     const char *class_name = NULL;
     const char *object_name = NULL;
     PyObject *function_object = Py_None;
@@ -1032,12 +1094,18 @@ static PyObject *newrelic_wrap_out_function(PyObject *self, PyObject *args,
 
     PyObject *result = NULL;
 
-    static char *kwlist[] = { "module_name", "class_name", "object_name",
+    static char *kwlist[] = { "module", "class_name", "object_name",
                               "out_function", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO:wrap_pass_function",
-                                     kwlist, &module_name, &class_name,
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OzzO:wrap_pass_function",
+                                     kwlist, &module, &class_name,
                                      &object_name, &function_object)) {
+        return NULL;
+    }
+
+    if (!PyModule_Check(module) && !PyString_Check(module)) {
+        PyErr_SetString(PyExc_TypeError, "module reference must be "
+                        "module or string");
         return NULL;
     }
 
@@ -1047,9 +1115,9 @@ static PyObject *newrelic_wrap_out_function(PyObject *self, PyObject *args,
         return NULL;
     }
 
-    wrapped_object = NRUtilities_LookupCallable(module_name, class_name,
-                                                 object_name, &parent_object,
-                                                 &attribute_name);
+    wrapped_object = NRUtilities_LookupCallable(module, class_name,
+                                                object_name, &parent_object,
+                                                &attribute_name);
 
     if (!wrapped_object)
         return NULL;
@@ -1095,7 +1163,7 @@ static PyObject *newrelic_post_function(PyObject *self, PyObject *args,
 static PyObject *newrelic_wrap_post_function(PyObject *self, PyObject *args,
                                              PyObject *kwds)
 {
-    const char *module_name = NULL;
+    PyObject *module = NULL;
     const char *class_name = NULL;
     const char *object_name = NULL;
     PyObject *function_object = NULL;
@@ -1109,11 +1177,11 @@ static PyObject *newrelic_wrap_post_function(PyObject *self, PyObject *args,
 
     PyObject *result = NULL;
 
-    static char *kwlist[] = { "module_name", "class_name", "object_name",
+    static char *kwlist[] = { "module", "class_name", "object_name",
                               "post_function", "run_once", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO|O!:wrap_post_function",
-                                     kwlist, &module_name, &class_name,
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OzzO|O!:wrap_post_function",
+                                     kwlist, &module, &class_name,
                                      &object_name, &function_object,
                                      &PyBool_Type, &run_once)) {
         return NULL;
@@ -1125,9 +1193,9 @@ static PyObject *newrelic_wrap_post_function(PyObject *self, PyObject *args,
         return NULL;
     }
 
-    wrapped_object = NRUtilities_LookupCallable(module_name, class_name,
-                                                 object_name, &parent_object,
-                                                 &attribute_name);
+    wrapped_object = NRUtilities_LookupCallable(module, class_name,
+                                                object_name, &parent_object,
+                                                &attribute_name);
 
     if (!wrapped_object)
         return NULL;
@@ -1173,7 +1241,7 @@ static PyObject *newrelic_pre_function(PyObject *self, PyObject *args,
 static PyObject *newrelic_wrap_pre_function(PyObject *self, PyObject *args,
                                             PyObject *kwds)
 {
-    const char *module_name = NULL;
+    PyObject *module = NULL;
     const char *class_name = NULL;
     const char *object_name = NULL;
     PyObject *function_object = NULL;
@@ -1187,13 +1255,19 @@ static PyObject *newrelic_wrap_pre_function(PyObject *self, PyObject *args,
 
     PyObject *result = NULL;
 
-    static char *kwlist[] = { "module_name", "class_name", "object_name",
+    static char *kwlist[] = { "module", "class_name", "object_name",
                               "pre_function", "run_once", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO|O!:wrap_pre_function",
-                                     kwlist, &module_name, &class_name,
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OzzO|O!:wrap_pre_function",
+                                     kwlist, &module, &class_name,
                                      &object_name, &function_object,
                                      &PyBool_Type, &run_once)) {
+        return NULL;
+    }
+
+    if (!PyModule_Check(module) && !PyString_Check(module)) {
+        PyErr_SetString(PyExc_TypeError, "module reference must be "
+                        "module or string");
         return NULL;
     }
 
@@ -1203,9 +1277,9 @@ static PyObject *newrelic_wrap_pre_function(PyObject *self, PyObject *args,
         return NULL;
     }
 
-    wrapped_object = NRUtilities_LookupCallable(module_name, class_name,
-                                                 object_name, &parent_object,
-                                                 &attribute_name);
+    wrapped_object = NRUtilities_LookupCallable(module, class_name,
+                                                object_name, &parent_object,
+                                                &attribute_name);
 
     if (!wrapped_object)
         return NULL;
@@ -1231,7 +1305,7 @@ static PyObject *newrelic_wrap_pre_function(PyObject *self, PyObject *args,
 static PyObject *newrelic_wrap_object(PyObject *self, PyObject *args,
                                       PyObject *kwds)
 {
-    const char *module_name = NULL;
+    PyObject *module = NULL;
     const char *class_name = NULL;
     const char *object_name = NULL;
     PyObject *factory_object = NULL;
@@ -1244,12 +1318,18 @@ static PyObject *newrelic_wrap_object(PyObject *self, PyObject *args,
 
     PyObject *result = NULL;
 
-    static char *kwlist[] = { "module_name", "class_name", "object_name",
+    static char *kwlist[] = { "module", "class_name", "object_name",
                               "factory", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "szzO:wrap_object",
-                                     kwlist, &module_name, &class_name,
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OzzO:wrap_object",
+                                     kwlist, &module, &class_name,
                                      &object_name, &factory_object)) {
+        return NULL;
+    }
+
+    if (!PyModule_Check(module) && !PyString_Check(module)) {
+        PyErr_SetString(PyExc_TypeError, "module reference must be "
+                        "module or string");
         return NULL;
     }
 
@@ -1259,9 +1339,9 @@ static PyObject *newrelic_wrap_object(PyObject *self, PyObject *args,
         return NULL;
     }
 
-    wrapped_object = NRUtilities_LookupCallable(module_name, class_name,
-                                                 object_name, &parent_object,
-                                                 &attribute_name);
+    wrapped_object = NRUtilities_LookupCallable(module, class_name,
+                                                object_name, &parent_object,
+                                                &attribute_name);
 
     if (!wrapped_object)
         return NULL;

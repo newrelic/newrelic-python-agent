@@ -122,14 +122,28 @@ static PyObject *NRExternalTrace_enter(NRExternalTraceObject *self,
 static PyObject *NRExternalTrace_exit(NRExternalTraceObject *self,
                                        PyObject *args)
 {
-    if (!self->transaction_trace) {
+    nr_web_transaction *transaction;
+    nr_transaction_node *transaction_trace;
+
+    transaction_trace = self->transaction_trace;
+
+    if (!transaction_trace) {
         Py_INCREF(Py_None);
         return Py_None;
     }
 
-    nr_node_header__record_stoptime_and_pop_current(
-            (nr_node_header *)self->transaction_trace,
-            &self->saved_trace_node);
+    if (nr_node_header__record_stoptime_and_pop_current(
+            (nr_node_header *)transaction_trace, &self->saved_trace_node)) {
+
+        transaction = self->parent_transaction->transaction;
+
+        nr__generate_external_metrics_for_node_1(transaction_trace,
+                transaction, transaction->in_progress_metrics);
+
+        nr_node_header__delete_if_not_slow_enough(
+                (nr_node_header *)transaction_trace,
+                self->parent_transaction->most_expensive_nodes);
+    }
 
     self->saved_trace_node = NULL;
 

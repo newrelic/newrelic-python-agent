@@ -16,6 +16,8 @@
 #include "harvest.h"
 #include "web_transaction.h"
 
+#include "metric_table.h"
+
 #include "pythread.h"
 
 /* ------------------------------------------------------------------------- */
@@ -72,6 +74,7 @@ static PyObject *NRTransaction_new(PyTypeObject *type, PyObject *args,
 
     self->application = NULL;
     self->transaction = NULL;
+    self->most_expensive_nodes = NULL;
     self->transaction_errors = NULL;
 
     self->transaction_state = NR_TRANSACTION_STATE_PENDING;
@@ -248,6 +251,9 @@ static PyObject *NRTransaction_enter(NRTransactionObject *self,
     nr_node_header__record_starttime_and_push_current(
             (nr_node_header *)self->transaction, &save);
 
+    self->most_expensive_nodes = nrmalloc(sizeof(nr_node_header*) *
+            nr_per_process_globals.expensive_nodes_size);
+
     Py_INCREF(self);
     return (PyObject *)self;
 }
@@ -401,12 +407,13 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
 
     nr_transaction_error__process_errors(self->transaction_errors,
             application->pending_harvest->metrics);
+    nr__merge_errors_from_to(&self->transaction_errors,
+            &application->pending_harvest->errors);
+    nr__replace_pointers_in_errors (application->pending_harvest->errors);
+    nr_metric_table__clear (self->transaction->in_progress_metrics);
 
     if (!keep_wt)
         nr_web_transaction__destroy(self->transaction);
-
-    nr__merge_errors_from_to(&self->transaction_errors,
-                             &application->pending_harvest->errors);
 
 #if 0
     Py_END_ALLOW_THREADS
@@ -415,6 +422,8 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
     nrthread_mutex_unlock(&application->lock);
 
     nrthread_mutex_unlock(&NRTransaction_exit_mutex);
+
+    nrfree(self->most_expensive_nodes);
 
     self->transaction_state = NR_TRANSACTION_STATE_STOPPED;
 

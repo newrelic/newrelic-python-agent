@@ -41,6 +41,8 @@
 #include "metric_table.h"
 #include "web_transaction.h"
 
+#include "samplers.h"
+
 /* ------------------------------------------------------------------------- */
 
 static void newrelic_populate_environment(void)
@@ -1097,7 +1099,7 @@ static PyObject *newrelic_wrap_out_function(PyObject *self, PyObject *args,
     static char *kwlist[] = { "module", "class_name", "object_name",
                               "out_function", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OzzO:wrap_pass_function",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OzzO:wrap_out_function",
                                      kwlist, &module, &class_name,
                                      &object_name, &function_object)) {
         return NULL;
@@ -1805,8 +1807,18 @@ init_newrelic(void)
 
     nr_per_process_globals.slow_sql_stacktrace = 500 * 1000;
 
+#if 0
     nr_per_process_globals.tt_total_node_limit = 2000;
     nr_per_process_globals.tt_per_node_children_limit = 200;
+#endif
+
+    nr_per_process_globals.metric_limit = 3000;
+    nr_per_process_globals.expensive_nodes_size = 100;
+    nr_per_process_globals.expensive_node_minimum = 1;
+
+#if 0
+    nr_per_process_globals.special_flags = NR_SPECIAL_SHOW_METRIC_TABLE;
+#endif
 
     /* Initialise support for tracking multiple applications. */
 
@@ -1878,6 +1890,10 @@ init_newrelic(void)
     PyGILState_Release(gil_state);
 
     Py_END_ALLOW_THREADS
+
+    /* Initialise samplers. */
+
+    nr__initialize_samplers();
 }
 
 /* ------------------------------------------------------------------------- */

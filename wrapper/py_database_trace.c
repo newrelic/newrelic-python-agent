@@ -125,52 +125,76 @@ static PyObject *NRDatabaseTrace_enter(NRDatabaseTraceObject *self,
 static PyObject *NRDatabaseTrace_exit(NRDatabaseTraceObject *self,
                                        PyObject *args)
 {
-    if (!self->transaction_trace) {
+    nrapp_t *application;
+    nr_web_transaction *transaction;
+    nr_transaction_node *transaction_trace;
+
+    transaction_trace = self->transaction_trace;
+
+    if (!transaction_trace) {
         Py_INCREF(Py_None);
         return Py_None;
     }
 
-    nr_node_header__record_stoptime_and_pop_current(
-            (nr_node_header *)self->transaction_trace,
-            &self->saved_trace_node);
+    if (nr_node_header__record_stoptime_and_pop_current(
+            (nr_node_header *)transaction_trace, &self->saved_trace_node)) {
+        /*
+         * Generate the essential metrics for this node. We generate
+         * them here because we might be about to throw this node
+         * away if it's not slow enough to qualify for saving in the
+         * call tree.
+         */
 
-    /* Record stack trace if this was a slow sql transaction. */
+        transaction = self->parent_transaction->transaction;
+        application = self->parent_transaction->application->application;
 
-    if (nr_per_process_globals.slow_sql_stacktrace > 0) {
-        if (self->transaction_trace->header.times.duration >
-            nr_per_process_globals.slow_sql_stacktrace) {
+        nr__generate_sql_metrics_for_node_1(transaction_trace,
+                transaction, transaction->in_progress_metrics);
 
-            PyObject *stack_trace = NULL;
+        /* Record stack trace if this was a slow sql transaction. */
 
-            stack_trace = NRUtilities_StackTrace();
+        if (!nr_node_header__delete_if_not_slow_enough(
+                (nr_node_header *)transaction_trace,
+                self->parent_transaction->most_expensive_nodes)) {
+            if (nr_per_process_globals.slow_sql_stacktrace > 0) {
+                if (transaction_trace->header.times.duration >
+                    nr_per_process_globals.slow_sql_stacktrace) {
 
-            if (stack_trace) {
-                int i;
+                    PyObject *stack_trace = NULL;
 
-                self->transaction_trace->u.s.stacktrace_params = nro__new(
-                        NR_OBJECT_HASH);
+                    stack_trace = NRUtilities_StackTrace();
 
-                for (i=0; i<PyList_Size(stack_trace); i++) {
-                    nro__set_in_array_at(
-                            self->transaction_trace->u.s.stacktrace_params,
-                            "stack_trace", nro__new_string(
-                            PyString_AsString(PyList_GetItem(
-                            stack_trace, i))));
+                    if (stack_trace) {
+                        int i;
+
+                        transaction_trace->u.s.stacktrace_params = nro__new(
+                                NR_OBJECT_HASH);
+
+                        for (i=0; i<PyList_Size(stack_trace); i++) {
+                            nro__set_in_array_at(
+                                    transaction_trace->u.s.stacktrace_params,
+                                    "stack_trace", nro__new_string(
+                                    PyString_AsString(PyList_GetItem(
+                                    stack_trace, i))));
+                        }
+                        Py_DECREF(stack_trace);
+                    }
+                    else {
+                        /*
+                         * Obtaining the stack trace should never fail. In
+                         * the unlikely event that it does, then propogate
+                         * the error back through to the caller.
+                         */
+
+                        self->saved_trace_node = NULL;
+                        return NULL;
+                    }
                 }
-                Py_DECREF(stack_trace);
-            }
-            else {
-                /*
-                 * Obtaining the stack trace should never fail. In
-                 * the unlikely event that it does, then propogate
-                 * the error back through to the caller.
-                 */
-
-                self->saved_trace_node = NULL;
-                return NULL;
             }
         }
     }
+
+    /* XXX Not doing specific recording of database errors. */
 
     self->saved_trace_node = NULL;
 

@@ -43,7 +43,7 @@ def wrap_middleware(handler, *args, **kwargs):
 
         handler._exception_middleware = exception_middleware
 
-def wrap_url_resolver_result(result):
+def wrap_url_resolver_output(result):
     if result is None:
         return
 
@@ -58,7 +58,7 @@ def wrap_url_resolver_result(result):
 
 def wrap_url_resolver(resolver, *args, **kwargs):
     function = resolver.resolve
-    wrapper = OutFunctionWrapper(function, wrap_url_resolver_result)
+    wrapper = OutFunctionWrapper(function, wrap_url_resolver_output)
     resolver.resolve = wrapper
 
 def wrap_uncaught_exception(handler, request, resolver, exc_info):
@@ -67,9 +67,6 @@ def wrap_uncaught_exception(handler, request, resolver, exc_info):
         current_transaction.runtime_error(*exc_info)
 
 def instrument(module):
-
-    #wrap_web_transaction('django.core.handlers.wsgi', 'WSGIHandler',
-    #                       '__call__', application)
 
     wrap_post_function('django.core.handlers.base','BaseHandler',
             'load_middleware', wrap_middleware, run_once=True)

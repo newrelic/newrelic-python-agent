@@ -13,6 +13,7 @@ def _hook(hook_module_name):
     return _instrument
 
 register_import_hook('django', _hook('newrelic.framework_django'))
+register_import_hook('flask', _hook('newrelic.framework_flask'))
 
 register_import_hook('cx_Oracle', _hook('newrelic.database_dbapi2'))
 register_import_hook('MySQLdb', _hook('newrelic.database_dbapi2'))
@@ -20,5 +21,7 @@ register_import_hook('psycopg', _hook('newrelic.database_dbapi2'))
 register_import_hook('psycopg2', _hook('newrelic.database_dbapi2'))
 register_import_hook('pysqlite2', _hook('newrelic.database_dbapi2'))
 register_import_hook('sqlite3', _hook('newrelic.database_dbapi2'))
+
+register_import_hook('jinja2', _hook('newrelic.template_jinja2'))
 
 register_import_hook('feedparser', _hook('newrelic.external_feedparser'))

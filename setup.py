@@ -19,6 +19,7 @@ sources = [
   "php_agent/nrbuffer.c",
   "php_agent/nrthread.c",
   "php_agent/samplers.c",
+  "php_agent/stringpool.c",
   "php_agent/utils.c",
   "php_agent/web_transaction.c",
   "php_agent/wt_error.c",

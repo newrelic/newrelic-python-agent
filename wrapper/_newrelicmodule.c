@@ -1429,7 +1429,7 @@ static PyObject *newrelic_shutdown(PyObject *self, PyObject *args)
         nr__harvest_thread_body("shutdown");
 
         nr__send_stop_for_each_application();
-        nr__stop_communication(&(nr_per_process_globals.daemon), NULL);
+        nr__stop_communication(&(nr_per_process_globals.nrdaemon), NULL);
         nr__destroy_harvest_thread();
 
         /*
@@ -1442,7 +1442,7 @@ static PyObject *newrelic_shutdown(PyObject *self, PyObject *args)
 
 #if 0
         nr__free_applications_global();
-        nrfree (nr_per_process_globals.daemon.sockpath);
+        nrfree (nr_per_process_globals.nrdaemon.sockpath);
         if (nr_per_process_globals.env != NULL) {
             nro__delete (nr_per_process_globals.env);
         }
@@ -1743,7 +1743,7 @@ init_newrelic(void)
      * a time since last harvest was performed.
      */
 
-    nrthread_mutex_init(&(nr_per_process_globals.daemon.lock), NULL);
+    nrthread_mutex_init(&(nr_per_process_globals.nrdaemon.lock), NULL);
 
     /*
      * Logging initialisation in daemon client code is PHP
@@ -1769,11 +1769,11 @@ init_newrelic(void)
      * the local daemon as part of the harvest cycle.
      */
 
-    nr_per_process_globals.daemon.sockpath = nrstrdup("/tmp/.newrelic.sock");
-    nr_per_process_globals.daemon.sockfd = -1;
-    nr_per_process_globals.daemon.timeout = 10;
-    nr_per_process_globals.daemon.nonblock = 1;
-    nr_per_process_globals.daemon.buffer = NULL;
+    nr_per_process_globals.nrdaemon.sockpath = nrstrdup("/tmp/.newrelic.sock");
+    nr_per_process_globals.nrdaemon.sockfd = -1;
+    nr_per_process_globals.nrdaemon.timeout = 10;
+    nr_per_process_globals.nrdaemon.nonblock = 1;
+    nr_per_process_globals.nrdaemon.buffer = NULL;
 
     /*
      * Initialise metrics table. The limit of number of metrics

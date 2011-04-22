@@ -74,7 +74,6 @@ static PyObject *NRTransaction_new(PyTypeObject *type, PyObject *args,
 
     self->application = NULL;
     self->transaction = NULL;
-    self->most_expensive_nodes = NULL;
     self->transaction_errors = NULL;
 
     self->transaction_state = NR_TRANSACTION_STATE_PENDING;
@@ -251,9 +250,6 @@ static PyObject *NRTransaction_enter(NRTransactionObject *self,
     nr_node_header__record_starttime_and_push_current(
             (nr_node_header *)self->transaction, &save);
 
-    self->most_expensive_nodes = nrmalloc(sizeof(nr_node_header*) *
-            nr_per_process_globals.expensive_nodes_size);
-
     Py_INCREF(self);
     return (PyObject *)self;
 }
@@ -422,8 +418,6 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
     nrthread_mutex_unlock(&application->lock);
 
     nrthread_mutex_unlock(&NRTransaction_exit_mutex);
-
-    nrfree(self->most_expensive_nodes);
 
     self->transaction_state = NR_TRANSACTION_STATE_STOPPED;
 
@@ -627,7 +621,10 @@ static int NRTransaction_set_path(NRTransactionObject *self,
     nrfree(self->transaction->path);
 
     self->transaction->path = nrstrdup(PyString_AsString(value));
+#if 0
     self->transaction->path_type = NR_PATH_TYPE_CUSTOM;
+#endif
+    self->transaction->path_type = NR_PATH_TYPE_FUNCTION;
 
     self->transaction->has_been_named = 1;
 

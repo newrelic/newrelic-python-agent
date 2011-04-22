@@ -132,17 +132,17 @@ static PyObject *NRMemcacheTrace_exit(NRMemcacheTraceObject *self,
         return Py_None;
     }
 
-    if (nr_node_header__record_stoptime_and_pop_current(
-            (nr_node_header *)transaction_trace, &self->saved_trace_node)) {
+    nr_node_header__record_stoptime_and_pop_current(
+            (nr_node_header *)transaction_trace, &self->saved_trace_node);
 
-        transaction = self->parent_transaction->transaction;
+    transaction = self->parent_transaction->transaction;
 
-        nr__generate_memcache_metrics_for_node_1(transaction_trace,
-                transaction, transaction->in_progress_metrics);
+    nr__generate_memcache_metrics_for_node_1(transaction_trace, transaction);
 
-        nr_node_header__delete_if_not_slow_enough(
-                (nr_node_header *)transaction_trace,
-                self->parent_transaction->most_expensive_nodes);
+    if (!nr_node_header__delete_if_not_slow_enough(
+            (nr_node_header *)transaction_trace, 1, transaction)) {
+        nr_web_transaction__convert_from_stack_based(transaction_trace,
+                transaction);
     }
 
     self->saved_trace_node = NULL;

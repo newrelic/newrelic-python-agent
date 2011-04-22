@@ -503,7 +503,7 @@ extern PyObject *NRUtilities_ObfuscateTransactionName(const char *name,
   PyObject *args = NULL;
 
   int len = strlen(name);
-  char *xored = alloca(len+1);
+  unsigned char *xored = alloca(len+1);
   int i;
 
   for (i = 0; i < len; i++) {
@@ -530,7 +530,7 @@ extern PyObject *NRUtilities_ObfuscateTransactionName(const char *name,
 
   Py_INCREF(object);
 
-  args = Py_BuildValue("(s#)", xored, len);
+  args = Py_BuildValue("(s#)", (char *)xored, len);
   result = PyEval_CallObject(object, args);
 
   Py_DECREF(module);

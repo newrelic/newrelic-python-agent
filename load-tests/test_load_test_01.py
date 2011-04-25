@@ -5,8 +5,8 @@ import sys
 import _newrelic
 
 settings = _newrelic.settings()
-settings.logfile = "%s.log" % __file__
-settings.loglevel = _newrelic.LOG_VERBOSEDEBUG
+settings.log_file = "%s.log" % __file__
+settings.log_level = _newrelic.LOG_VERBOSEDEBUG
 
 application = _newrelic.application("LoadTests")
 

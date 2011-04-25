@@ -39,8 +39,7 @@ static void NRSettings_dealloc(NRSettingsObject *self)
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRSettings_get_logfile(NRSettingsObject *self,
-                                              void *closure)
+static PyObject *NRSettings_get_log_file(NRSettingsObject *self, void *closure)
 {
     if (nr_per_process_globals.logfilename)
         return PyString_FromString(nr_per_process_globals.logfilename);
@@ -51,11 +50,10 @@ static PyObject *NRSettings_get_logfile(NRSettingsObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-static int NRSettings_set_logfile(NRSettingsObject *self,
-                                        PyObject *value)
+static int NRSettings_set_log_file(NRSettingsObject *self, PyObject *value)
 {
     if (value == NULL) {
-        PyErr_SetString(PyExc_TypeError, "can't delete logfile attribute");
+        PyErr_SetString(PyExc_TypeError, "can't delete log_file attribute");
         return -1;
     }
 
@@ -74,21 +72,19 @@ static int NRSettings_set_logfile(NRSettingsObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRSettings_get_loglevel(NRSettingsObject *self,
-                                               void *closure)
+static PyObject *NRSettings_get_log_level(NRSettingsObject *self, void *closure)
 {
     return PyInt_FromLong(nr_per_process_globals.loglevel);
 }
 
 /* ------------------------------------------------------------------------- */
 
-static int NRSettings_set_loglevel(NRSettingsObject *self,
-                                        PyObject *value)
+static int NRSettings_set_log_level(NRSettingsObject *self, PyObject *value)
 {
-    int loglevel;
+    int log_level;
 
     if (value == NULL) {
-        PyErr_SetString(PyExc_TypeError, "can't delete loglevel attribute");
+        PyErr_SetString(PyExc_TypeError, "can't delete log_level attribute");
         return -1;
     }
 
@@ -97,7 +93,7 @@ static int NRSettings_set_loglevel(NRSettingsObject *self,
         return -1;
     }
 
-    loglevel = PyInt_AsLong(value);
+    log_level = PyInt_AsLong(value);
 
     /*
      * Constrain value as LOG_DUMP level in PHP code appears to
@@ -105,12 +101,12 @@ static int NRSettings_set_loglevel(NRSettingsObject *self,
      * blank lines into log file.
      */
 
-    if (loglevel < LOG_ERROR || loglevel > LOG_VERBOSEDEBUG) {
+    if (log_level < LOG_ERROR || log_level > LOG_VERBOSEDEBUG) {
         PyErr_SetString(PyExc_ValueError, "log level out of range");
         return -1;
     }
 
-    nr_per_process_globals.loglevel = loglevel;
+    nr_per_process_globals.loglevel = log_level;
 
     return 0;
 }
@@ -126,10 +122,10 @@ static PyMethodDef NRSettings_methods[] = {
 };
 
 static PyGetSetDef NRSettings_getset[] = {
-    { "logfile",            (getter)NRSettings_get_logfile,
-                            (setter)NRSettings_set_logfile, 0 },
-    { "loglevel",           (getter)NRSettings_get_loglevel,
-                            (setter)NRSettings_set_loglevel, 0 },
+    { "log_file",           (getter)NRSettings_get_log_file,
+                            (setter)NRSettings_set_log_file, 0 },
+    { "log_level",          (getter)NRSettings_get_log_level,
+                            (setter)NRSettings_set_log_level, 0 },
     { NULL },
 };
 

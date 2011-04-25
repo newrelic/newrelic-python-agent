@@ -16,8 +16,8 @@ _LOG_LEVELS = {
 }
 
 _CONFIG_VALUES = {
-    'logfile': str,
-    'loglevel': _LOG_LEVELS.__getitem__,
+    'log_file': str,
+    'log_level': _LOG_LEVELS.__getitem__,
 }
 
 _settings = settings()

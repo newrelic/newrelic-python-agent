@@ -869,7 +869,7 @@ static int NRWebTransactionWrapper_init(NRWebTransactionWrapperObject *self,
 {
     PyObject *wrapped_object = NULL;
 
-    PyObject *application = NULL;
+    PyObject *application = Py_None;
 
     static char *kwlist[] = { "wrapped", "application", NULL };
 
@@ -878,10 +878,11 @@ static int NRWebTransactionWrapper_init(NRWebTransactionWrapperObject *self,
         return -1;
     }
 
-    if (Py_TYPE(application) != &NRApplication_Type &&
+    if (application != Py_None &&
+        Py_TYPE(application) != &NRApplication_Type &&
         !PyString_Check(application) && !PyUnicode_Check(application)) {
-        PyErr_Format(PyExc_TypeError, "application argument must be str, "
-                     "unicode, or application object, found type '%s'",
+        PyErr_Format(PyExc_TypeError, "application argument must be None, "
+                     "str, unicode, or application object, found type '%s'",
                      application->ob_type->tp_name);
         return -1;
     }
@@ -889,7 +890,15 @@ static int NRWebTransactionWrapper_init(NRWebTransactionWrapperObject *self,
     if (Py_TYPE(application) != &NRApplication_Type) {
         PyObject *func_args;
 
-        func_args = PyTuple_Pack(1, application);
+        if (application == Py_None) {
+            application = PyString_FromString(nr_per_process_globals.appname);
+            func_args = PyTuple_Pack(1, application);
+            Py_DECREF(application);
+            application = Py_None;
+        }
+        else
+            func_args = PyTuple_Pack(1, application);
+
         application = NRApplication_Singleton(func_args, NULL);
 
         Py_DECREF(func_args);
@@ -1056,7 +1065,7 @@ static PyObject *NRWebTransactionDecorator_new(PyTypeObject *type,
 static int NRWebTransactionDecorator_init(NRWebTransactionDecoratorObject *self,
                                          PyObject *args, PyObject *kwds)
 {
-    PyObject *application = NULL;
+    PyObject *application = Py_None;
 
     static char *kwlist[] = { "application", NULL };
 
@@ -1065,10 +1074,11 @@ static int NRWebTransactionDecorator_init(NRWebTransactionDecoratorObject *self,
         return -1;
     }
 
-    if (Py_TYPE(application) != &NRApplication_Type &&
+    if (application != Py_None &&
+        Py_TYPE(application) != &NRApplication_Type &&
         !PyString_Check(application) && !PyUnicode_Check(application)) {
-        PyErr_Format(PyExc_TypeError, "application argument must be str, "
-                     "unicode, or application object, found type '%s'",
+        PyErr_Format(PyExc_TypeError, "application argument must be None, "
+                     "str, unicode, or application object, found type '%s'",
                      application->ob_type->tp_name);
         return -1;
     }

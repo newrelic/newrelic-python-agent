@@ -149,12 +149,12 @@ static int NRBackgroundTaskWrapper_init(NRBackgroundTaskWrapperObject *self,
 {
     PyObject *wrapped_object = NULL;
 
-    PyObject *application = NULL;
+    PyObject *application = Py_None;
     PyObject *name = Py_None;
 
     static char *kwlist[] = { "wrapped", "application", "name", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO|O:BackgroundTaskWrapper",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|OO:BackgroundTaskWrapper",
                                      kwlist, &wrapped_object, &application,
                                      &name)) {
         return -1;
@@ -167,10 +167,11 @@ static int NRBackgroundTaskWrapper_init(NRBackgroundTaskWrapperObject *self,
         return -1;
     }
 
-    if (Py_TYPE(application) != &NRApplication_Type &&
+    if (application != Py_None &&
+        Py_TYPE(application) != &NRApplication_Type &&
         !PyString_Check(application) && !PyUnicode_Check(application)) {
-        PyErr_Format(PyExc_TypeError, "application argument must be str, "
-                     "unicode, or application object, found type '%s'",
+        PyErr_Format(PyExc_TypeError, "application argument must be None, "
+                     "str, unicode, or application object, found type '%s'",
                      application->ob_type->tp_name);
         return -1;
     }
@@ -178,7 +179,15 @@ static int NRBackgroundTaskWrapper_init(NRBackgroundTaskWrapperObject *self,
     if (Py_TYPE(application) != &NRApplication_Type) {
         PyObject *func_args;
 
-        func_args = PyTuple_Pack(1, application);
+        if (application == Py_None) {
+            application = PyString_FromString(nr_per_process_globals.appname);
+            func_args = PyTuple_Pack(1, application);
+            Py_DECREF(application);
+            application = Py_None;
+        }
+        else
+            func_args = PyTuple_Pack(1, application);
+
         application = NRApplication_Singleton(func_args, NULL);
 
         Py_DECREF(func_args);
@@ -452,12 +461,12 @@ static PyObject *NRBackgroundTaskDecorator_new(PyTypeObject *type,
 static int NRBackgroundTaskDecorator_init(NRBackgroundTaskDecoratorObject *self,
                                          PyObject *args, PyObject *kwds)
 {
-    PyObject *application = NULL;
+    PyObject *application = Py_None;
     PyObject *name = Py_None;
 
     static char *kwlist[] = { "application", "name", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O:BackgroundTaskDecorator",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OO:BackgroundTaskDecorator",
                                      kwlist, &application, &name)) {
         return -1;
     }
@@ -469,10 +478,11 @@ static int NRBackgroundTaskDecorator_init(NRBackgroundTaskDecoratorObject *self,
         return -1;
     }
 
-    if (Py_TYPE(application) != &NRApplication_Type &&
+    if (application != Py_None &&
+        Py_TYPE(application) != &NRApplication_Type &&
         !PyString_Check(application) && !PyUnicode_Check(application)) {
-        PyErr_Format(PyExc_TypeError, "application argument must be str, "
-                     "unicode, or application object, found type '%s'",
+        PyErr_Format(PyExc_TypeError, "application argument must be None, "
+                     "str, unicode, or application object, found type '%s'",
                      application->ob_type->tp_name);
         return -1;
     }

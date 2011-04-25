@@ -5,22 +5,23 @@ import sys
 import _newrelic
 
 settings = _newrelic.settings()
+settings.app_name = "UnitTests"
 settings.log_file = "%s.log" % __file__
 settings.log_level = _newrelic.LOG_VERBOSEDEBUG
 
 application = _newrelic.application("UnitTests")
 
-#@_newrelic.background_task(application, name='_test_function_1')
+@_newrelic.background_task("UnitTests", name='_test_function_1')
 def _test_function_1():
     time.sleep(1.0)
-_test_function_1 = _newrelic.background_task(
-        "UnitTests", name='_test_function_1')(_test_function_1)
 
-#@_newrelic.background_task(application)
+@_newrelic.background_task(application)
 def _test_function_nn_1():
     time.sleep(0.1)
-_test_function_nn_1 = _newrelic.background_task(
-        application)(_test_function_nn_1)
+
+@_newrelic.background_task()
+def _test_function_da_1():
+    time.sleep(0.1)
 
 class BackgroundTaskTests(unittest.TestCase):
 
@@ -127,6 +128,9 @@ class BackgroundTaskTests(unittest.TestCase):
 
     def test_background_task_decorator(self):
         _test_function_nn_1()
+
+    def test_background_task_decorator_default(self):
+        _test_function_da_1()
 
 if __name__ == '__main__':
     unittest.main()

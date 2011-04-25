@@ -3,6 +3,7 @@ import unittest
 import _newrelic
 
 settings = _newrelic.settings()
+settings.app_name = "UnitTests"
 settings.log_file = "%s.log" % __file__
 settings.log_level = _newrelic.LOG_VERBOSEDEBUG
 
@@ -30,6 +31,11 @@ _wsgiapp_class = _newrelic.WebTransactionWrapper(
 
 @_newrelic.web_transaction("UnitTests")
 def _wsgiapp_function_decorator(self, *args):
+    transaction = _newrelic.transaction()
+    assert transaction != None
+
+@_newrelic.web_transaction()
+def _wsgiapp_function_decorator_default(self, *args):
     transaction = _newrelic.transaction()
     assert transaction != None
 
@@ -79,6 +85,10 @@ class WSGIApplicationTests(unittest.TestCase):
     def test_wsgiapp_function_decorator(self):
         environ = { "REQUEST_URI": "/wsgiapp_function_decorator" }
         _wsgiapp_function_decorator(environ, None).close()
+
+    def test_wsgiapp_function_decorator_default(self):
+        environ = { "REQUEST_URI": "/wsgiapp_function_decorator_default" }
+        _wsgiapp_function_decorator_default(environ, None).close()
 
     @_newrelic.web_transaction("UnitTests")
     def _wsgiapp_method_decorator(self, *args):

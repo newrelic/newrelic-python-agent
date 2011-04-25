@@ -39,6 +39,39 @@ static void NRSettings_dealloc(NRSettingsObject *self)
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRSettings_get_app_name(NRSettingsObject *self, void *closure)
+{
+    if (nr_per_process_globals.appname)
+        return PyString_FromString(nr_per_process_globals.appname);
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRSettings_set_app_name(NRSettingsObject *self, PyObject *value)
+{
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError, "can't delete app_name attribute");
+        return -1;
+    }
+
+    if (!PyString_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "expected string for app name");
+        return -1;
+    }
+
+    if (nr_per_process_globals.appname)
+        nrfree(nr_per_process_globals.appname);
+
+    nr_per_process_globals.appname = nrstrdup(PyString_AsString(value));
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRSettings_get_log_file(NRSettingsObject *self, void *closure)
 {
     if (nr_per_process_globals.logfilename)
@@ -122,6 +155,8 @@ static PyMethodDef NRSettings_methods[] = {
 };
 
 static PyGetSetDef NRSettings_getset[] = {
+    { "app_name",           (getter)NRSettings_get_app_name,
+                            (setter)NRSettings_set_app_name, 0 },
     { "log_file",           (getter)NRSettings_get_log_file,
                             (setter)NRSettings_set_log_file, 0 },
     { "log_level",          (getter)NRSettings_get_log_level,

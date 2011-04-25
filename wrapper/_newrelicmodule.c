@@ -311,19 +311,20 @@ static PyObject *newrelic_object_context(PyObject *self, PyObject *args,
 static PyObject *newrelic_web_transaction(PyObject *self, PyObject *args,
                                           PyObject *kwds)
 {
-    PyObject *application = NULL;
+    PyObject *application = Py_None;
 
     static char *kwlist[] = { "application", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:web_transaction",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O:web_transaction",
                                      kwlist, &application)) {
         return NULL;
     }
 
-    if (Py_TYPE(application) != &NRApplication_Type &&
+    if (application != Py_None &&
+        Py_TYPE(application) != &NRApplication_Type &&
         !PyString_Check(application) && !PyUnicode_Check(application)) {
-        PyErr_Format(PyExc_TypeError, "application argument must be str, "
-                     "unicode, or application object, found type '%s'",
+        PyErr_Format(PyExc_TypeError, "application argument must be None, "
+                     "str, unicode, or application object, found type '%s'",
                      application->ob_type->tp_name);
         return NULL;
     }
@@ -341,7 +342,7 @@ static PyObject *newrelic_wrap_web_transaction(PyObject *self, PyObject *args,
     const char *class_name = NULL;
     const char *object_name = NULL;
 
-    PyObject *application = NULL;
+    PyObject *application = Py_None;
 
     PyObject *wrapped_object = NULL;
     PyObject *parent_object = NULL;
@@ -355,7 +356,7 @@ static PyObject *newrelic_wrap_web_transaction(PyObject *self, PyObject *args,
                               "application", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds,
-                                     "OzzO:wrap_web_transaction",
+                                     "Ozz|O:wrap_web_transaction",
                                      kwlist, &module, &class_name,
                                      &object_name, &application)) {
         return NULL;
@@ -373,10 +374,11 @@ static PyObject *newrelic_wrap_web_transaction(PyObject *self, PyObject *args,
         return NULL;
     }
 
-    if (Py_TYPE(application) != &NRApplication_Type &&
+    if (application != Py_None &&
+        Py_TYPE(application) != &NRApplication_Type &&
         !PyString_Check(application) && !PyUnicode_Check(application)) {
-        PyErr_Format(PyExc_TypeError, "application argument must be str, "
-                     "unicode, or application object, found type '%s'",
+        PyErr_Format(PyExc_TypeError, "application argument must be None, "
+                     "str, unicode, or application object, found type '%s'",
                      application->ob_type->tp_name);
         return NULL;
     }
@@ -409,12 +411,12 @@ static PyObject *newrelic_wrap_web_transaction(PyObject *self, PyObject *args,
 static PyObject *newrelic_background_task(PyObject *self, PyObject *args,
                                           PyObject *kwds)
 {
-    PyObject *application = NULL;
+    PyObject *application = Py_None;
     PyObject *name = Py_None;
 
     static char *kwlist[] = { "application", "name", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O:background_task",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OO:background_task",
                                      kwlist, &application, &name)) {
         return NULL;
     }
@@ -426,10 +428,11 @@ static PyObject *newrelic_background_task(PyObject *self, PyObject *args,
         return NULL;
     }
 
-    if (Py_TYPE(application) != &NRApplication_Type &&
+    if (application != Py_None &&
+        Py_TYPE(application) != &NRApplication_Type &&
         !PyString_Check(application) && !PyUnicode_Check(application)) {
-        PyErr_Format(PyExc_TypeError, "application argument must be str, "
-                     "unicode, or application object, found type '%s'",
+        PyErr_Format(PyExc_TypeError, "application argument must be None, "
+                     "str, unicode, or application object, found type '%s'",
                      application->ob_type->tp_name);
         return NULL;
     }
@@ -447,7 +450,7 @@ static PyObject *newrelic_wrap_background_task(PyObject *self, PyObject *args,
     const char *class_name = NULL;
     const char *object_name = NULL;
 
-    PyObject *application = NULL;
+    PyObject *application = Py_None;
     PyObject *name = Py_None;
 
     PyObject *wrapped_object = NULL;
@@ -462,7 +465,7 @@ static PyObject *newrelic_wrap_background_task(PyObject *self, PyObject *args,
                               "application", "name", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds,
-                                     "OzzO|O:wrap_background_task",
+                                     "Ozz|OO:wrap_background_task",
                                      kwlist, &module, &class_name,
                                      &object_name, &application, &name)) {
         return NULL;
@@ -487,10 +490,11 @@ static PyObject *newrelic_wrap_background_task(PyObject *self, PyObject *args,
         return NULL;
     }
 
-    if (Py_TYPE(application) != &NRApplication_Type &&
+    if (application != Py_None &&
+        Py_TYPE(application) != &NRApplication_Type &&
         !PyString_Check(application) && !PyUnicode_Check(application)) {
-        PyErr_Format(PyExc_TypeError, "application argument must be str, "
-                     "unicode, or application object, found type '%s'",
+        PyErr_Format(PyExc_TypeError, "application argument must be None, "
+                     "str, unicode, or application object, found type '%s'",
                      application->ob_type->tp_name);
         return NULL;
     }
@@ -1803,10 +1807,18 @@ init_newrelic(void)
     nrthread_mutex_init(&(nr_per_process_globals.nrdaemon.lock), NULL);
 
     /*
+     * Application name initialisation. This is only a default
+     * and can be overridden by configuration file or in user
+     * code at point decorator or wrapper applied.
+     */
+
+    nr_per_process_globals.appname = nrstrdup("My Application");
+
+    /*
      * Logging initialisation in daemon client code is PHP
      * specific so set reasonable defaults here instead.
      * Initially there will be no log file and set level to be
-     * INFO. Because the first time something is logged the log
+     * WARNING. Because the first time something is logged the log
      * file will be created, need to avoid doing any logging
      * during initialisation of this module. This provides
      * opportunity for user to override the log file location
@@ -1814,7 +1826,7 @@ init_newrelic(void)
      */
 
     nr_per_process_globals.logfilename = NULL;
-    nr_per_process_globals.loglevel = LOG_INFO;
+    nr_per_process_globals.loglevel = LOG_WARNING;
     nr_per_process_globals.logfileptr = NULL;
 
     /*

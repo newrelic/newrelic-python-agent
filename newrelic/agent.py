@@ -16,6 +16,7 @@ _LOG_LEVELS = {
 }
 
 _CONFIG_VALUES = {
+    'app_name': str,
     'log_file': str,
     'log_level': _LOG_LEVELS.__getitem__,
 }

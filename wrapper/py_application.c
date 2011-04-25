@@ -281,7 +281,7 @@ static PyObject *NRApplication_custom_metric(NRApplicationObject *self,
 
     if (self->enabled) {
         nrthread_mutex_lock(&self->application->lock);
-        nr_metric_table__add_metric_double(
+        nr_metric_table__force_add_metric_double(
                 self->application->pending_harvest->metrics, key, NULL, value);
         nrthread_mutex_unlock(&self->application->lock);
     }

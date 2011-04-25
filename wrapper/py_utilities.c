@@ -9,6 +9,8 @@
 #include "genericobject.h"
 #include "web_transaction.h"
 
+#include <string.h>
+
 /* ------------------------------------------------------------------------- */
 
 PyObject *NRUtilities_FormatException(PyObject *type, PyObject *value,
@@ -363,6 +365,241 @@ PyObject *NRUtilities_CallableName(PyObject *wrapped, PyObject *wrapper,
     Py_XDECREF(object);
 
     return PyString_FromString(s);
+}
+
+/* ------------------------------------------------------------------------- */
+
+PyObject *NRUtilities_ResolveObject(PyObject *module,
+                                    PyObject *object_name,
+                                    PyObject **parent_object,
+                                    PyObject **attribute_name)
+{
+    PyObject *dict = NULL;
+
+    PyObject *node_object1 = NULL;
+    PyObject *node_object2 = NULL;
+
+    PyObject *attribute = NULL;
+
+    const char *s = NULL;
+    const char *p = NULL;
+
+    *parent_object = NULL;
+    *attribute_name = NULL;
+
+    /*
+     * If the module reference is not actually a module already
+     * then assume being supplied a module name and import it.
+     */
+
+    if (PyModule_Check(module)) {
+        Py_INCREF(module);
+        node_object1 = module;
+    }
+    else
+        node_object1 = PyImport_ImportModule(PyString_AsString(module));
+
+    if (!node_object1) {
+        PyErr_SetString(PyExc_RuntimeError, "not a valid module");
+        return NULL;
+    }
+
+    /*
+     * Now need to traverse the dotted path provided as object
+     * name. The first lookup needs to be against the module
+     * dictionary and subsequent to that will be lookups of
+     * object attributes.
+     */
+
+    s = PyString_AsString(object_name);
+
+    p = strchr(s, '.');
+
+    if (p) {
+        attribute = PyString_FromStringAndSize(s, p-s);
+        s = p+1;
+    }
+    else {
+        Py_INCREF(object_name);
+        attribute = object_name;
+        s = NULL;
+    }
+
+    dict = PyModule_GetDict(node_object1);
+
+    node_object2 = PyDict_GetItem(dict, attribute);
+
+    if (!node_object2) {
+        PyErr_SetString(PyExc_RuntimeError, "no such module attribute");
+        Py_DECREF(node_object1);
+        Py_DECREF(attribute);
+        return NULL;
+    }
+
+    Py_INCREF(node_object2);
+
+    while (s) {
+        Py_DECREF(attribute);
+
+        p = strchr(s, '.');
+
+        if (p) {
+            attribute = PyString_FromStringAndSize(s, p-s);
+            s = p+1;
+        }
+        else {
+            attribute = PyString_FromString(s);
+            s = NULL;
+        }
+
+        Py_DECREF(node_object1);
+        node_object1 = node_object2;
+
+        node_object2 = PyObject_GetAttr(node_object1, attribute);
+
+        if (!node_object2) {
+            Py_DECREF(node_object1);
+            Py_DECREF(attribute);
+            return NULL;
+        }
+    }
+
+    *parent_object = node_object1;
+    *attribute_name = attribute;
+
+    return node_object2;
+}
+
+/* ------------------------------------------------------------------------- */
+
+PyObject *NRUtilities_ObjectContext(PyObject *wrapped, PyObject *wrapper,
+                                    PyObject *args)
+{
+    PyObject *module_name = NULL;
+    PyObject *class_name = NULL;
+    PyObject *object_name = NULL;
+
+    PyObject *class_object = NULL;
+    PyObject *method_object = NULL;
+
+    PyObject *object = NULL;
+
+    PyObject *attribute_name = NULL;
+
+    PyObject *result = NULL;
+
+    /*
+     * When a decorator is used on a class method, it isn't
+     * bound to a class instance at the time and so within the
+     * decorator we are not able to determine the class. To work
+     * out the class we need to look at the class associated
+     * with the first argument, ie., self argument passed to the
+     * method. Because though we don't know if we are even being
+     * called as a class method we have to do an elaborate check
+     * whereby we see if the first argument is a class instance
+     * possessing a bound method for which the associated function
+     * is our wrapper function.
+     */
+
+    if (wrapper && args) {
+        if (PyFunction_Check(wrapped) && PyTuple_Size(args) >= 1) {
+            class_object = PyObject_GetAttrString(
+                    PyTuple_GetItem(args, 0), "__class__");
+            if (class_object) {
+                object_name = PyObject_GetAttrString(wrapped, "__name__");
+                if (object_name) {
+                   method_object = PyObject_GetAttr(class_object, object_name);
+                   if (method_object && PyMethod_Check(method_object) &&
+                       ((PyMethodObject *)method_object)->im_func == wrapper) {
+                       object = method_object;
+                   }
+                }
+            }
+        }
+
+        Py_XDECREF(class_object);
+        Py_XDECREF(method_object);
+        Py_XDECREF(object_name);
+
+        class_object = NULL;
+        method_object = NULL;
+        object_name = NULL;
+
+        PyErr_Clear();
+    }
+
+    if (!object) {
+        Py_INCREF(wrapped);
+        object = wrapped;
+    }
+
+    module_name = PyObject_GetAttrString(object, "__module__");
+
+    if (PyType_Check(object) || PyClass_Check(object)) {
+        class_name = PyObject_GetAttrString(object, "__name__");
+    }
+    else if (PyMethod_Check(object)) {
+        class_name = PyObject_GetAttrString(((PyMethodObject *)
+                                            object)->im_class, "__name__");
+        object_name = PyObject_GetAttrString(object, "__name__");
+    }
+    else if (PyFunction_Check(object)) {
+        object_name = PyObject_GetAttrString(object, "__name__");
+    }
+    else if (PyInstance_Check(object)) {
+        class_object = PyObject_GetAttrString(object, "__class__");
+        if (class_object)
+            class_name = PyObject_GetAttrString(class_object, "__name__");
+    }
+    else if ((class_object = PyObject_GetAttrString(object, "__class__"))) {
+        class_name = PyObject_GetAttrString(class_object, "__name__");
+        object_name = PyObject_GetAttrString(object, "__name__");
+    }
+
+    PyErr_Clear();
+
+    if (!module_name || !PyString_Check(module_name)) {
+        module_name = PyString_FromString("<unknown>");
+        attribute_name = PyString_FromString("<unknown>");
+        result = PyTuple_Pack(2, module_name, attribute_name);
+    }
+    else if (class_name && !PyString_Check(class_name)) {
+        module_name = PyString_FromString("<unknown>");
+        attribute_name = PyString_FromString("<unknown>");
+        result = PyTuple_Pack(2, module_name, attribute_name);
+    }
+    else if (object_name && !PyString_Check(object_name)) {
+        module_name = PyString_FromString("<unknown>");
+        attribute_name = PyString_FromString("<unknown>");
+        result = PyTuple_Pack(2, module_name, attribute_name);
+    }
+    else if (class_name && object_name) {
+        attribute_name = PyString_FromFormat("%s.%s",
+                PyString_AsString(class_name),
+                PyString_AsString(object_name));
+        result = PyTuple_Pack(2, module_name, attribute_name);
+    }
+    else if (class_name && !object_name) {
+        result = PyTuple_Pack(2, module_name, class_name);
+    }
+    else if (!class_name && object_name) {
+        result = PyTuple_Pack(2, module_name, object_name);
+    }
+    else {
+        attribute_name = PyString_FromString("<unknown>");
+        result = PyTuple_Pack(2, module_name, attribute_name);
+    }
+
+    Py_XDECREF(module_name);
+    Py_XDECREF(class_object);
+    Py_XDECREF(class_name);
+    Py_XDECREF(object_name);
+
+    Py_XDECREF(object);
+
+    Py_XDECREF(attribute_name);
+
+    return result;
 }
 
 /* ------------------------------------------------------------------------- */

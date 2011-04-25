@@ -255,6 +255,59 @@ static PyObject *newrelic_callable_name(PyObject *self, PyObject *args,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *newrelic_resolve_object(PyObject *self, PyObject *args,
+                                         PyObject *kwds)
+{
+    PyObject *module = NULL;
+    PyObject *object_name = NULL;
+
+    PyObject *parent_object = NULL;
+    PyObject *attribute_name = NULL;
+    PyObject *object = NULL;
+
+    PyObject *result = NULL;
+
+    static char *kwlist[] = { "module", "object_name", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OS:resolve_object",
+                                     kwlist, &module, &object_name)) {
+        return NULL;
+    }
+
+    object = NRUtilities_ResolveObject(module, object_name, &parent_object,
+                                       &attribute_name);
+
+    if (!object)
+        return NULL;
+
+    result = PyTuple_Pack(3, parent_object, attribute_name, object);
+
+    Py_DECREF(parent_object);
+    Py_DECREF(attribute_name);
+    Py_DECREF(object);
+
+    return result;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *newrelic_object_context(PyObject *self, PyObject *args,
+                                         PyObject *kwds)
+{
+    PyObject *object = NULL;
+
+    static char *kwlist[] = { "object", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:object_context",
+                                     kwlist, &object)) {
+        return NULL;
+    }
+
+    return NRUtilities_ObjectContext(object, NULL, NULL);
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *newrelic_web_transaction(PyObject *self, PyObject *args,
                                           PyObject *kwds)
 {
@@ -1469,6 +1522,10 @@ static PyMethodDef newrelic_methods[] = {
     { "transaction",        (PyCFunction)newrelic_transaction,
                             METH_NOARGS, 0 },
     { "callable_name",      (PyCFunction)newrelic_callable_name,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
+    { "resolve_object",     (PyCFunction)newrelic_resolve_object,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
+    { "object_context",     (PyCFunction)newrelic_object_context,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "web_transaction",    (PyCFunction)newrelic_web_transaction,
                             METH_VARARGS|METH_KEYWORDS, 0 },

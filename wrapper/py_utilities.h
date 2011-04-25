@@ -27,6 +27,15 @@ extern PyObject *NRUtilities_CallableName(PyObject *wrapped,
                                           PyObject *wrapper,
                                           PyObject *args);
 
+extern PyObject *NRUtilities_ResolveObject(PyObject *module,
+                                           PyObject *object_name,
+                                           PyObject **parent_object,
+                                           PyObject **attribute_name);
+
+extern PyObject *NRUtilities_ObjectContext(PyObject *wrapped,
+                                           PyObject *wrapper,
+                                           PyObject *args);
+
 extern PyObject *NRUtilities_ReplaceWithWrapper(PyObject *parent_object,
                                                 const char *attribute_name,
                                                 PyObject *wrapper_object);

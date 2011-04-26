@@ -1817,7 +1817,7 @@ init_newrelic(void)
      * applications and everything is disabled.
      */
 
-    NRApplication_EnableMonitoring();
+    NRSettings_EnableMonitoring();
 
     /*
      * Application name initialisation. This is only a default

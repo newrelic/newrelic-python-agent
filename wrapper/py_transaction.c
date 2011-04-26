@@ -6,6 +6,7 @@
 
 #include "py_transaction.h"
 
+#include "py_settings.h"
 #include "py_utilities.h"
 
 #include "globals.h"
@@ -125,7 +126,7 @@ static int NRTransaction_init(NRTransactionObject *self, PyObject *args,
     self->application = application;
     Py_INCREF(self->application);
 
-    if (NRApplication_MonitoringEnabled() &&
+    if (NRSettings_MonitoringEnabled() &&
         (enabled == Py_True || (!enabled && application->enabled))) {
         self->transaction = nr_web_transaction__allocate();
 

@@ -19,31 +19,6 @@
 
 /* ------------------------------------------------------------------------- */
 
-static int NRApplication_MonitorMode = 1;
-
-/* ------------------------------------------------------------------------- */
-
-int NRApplication_MonitoringEnabled()
-{
-    return NRApplication_MonitorMode;
-}
-
-/* ------------------------------------------------------------------------- */
-
-void NRApplication_DisableMonitoring()
-{
-    NRApplication_MonitorMode = 0;
-}
-
-/* ------------------------------------------------------------------------- */
-
-void NRApplication_EnableMonitoring()
-{
-    NRApplication_MonitorMode = 1;
-}
-
-/* ------------------------------------------------------------------------- */
-
 static PyObject *NRApplication_instances = NULL;
 
 /* ------------------------------------------------------------------------- */

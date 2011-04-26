@@ -23,10 +23,6 @@ extern PyTypeObject NRApplication_Type;
 
 /* ------------------------------------------------------------------------- */
 
-extern int NRApplication_MonitoringEnabled(void);
-extern void NRApplication_DisableMonitoring(void);
-extern void NRApplication_EnableMonitoring(void);
-
 extern PyObject *NRApplication_Singleton(PyObject *args, PyObject *kwds);
 
 /* ------------------------------------------------------------------------- */

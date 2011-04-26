@@ -21,6 +21,10 @@ extern PyTypeObject NRSettings_Type;
 
 extern PyObject *NRSetting_Singleton(PyObject *self, PyObject *args);
 
+extern int NRSettings_MonitoringEnabled(void);
+extern void NRSettings_DisableMonitoring(void);
+extern void NRSettings_EnableMonitoring(void);
+
 /* ------------------------------------------------------------------------- */
 
 #endif

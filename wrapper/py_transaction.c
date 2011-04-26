@@ -116,13 +116,17 @@ static int NRTransaction_init(NRTransactionObject *self, PyObject *args,
      * application object also holds the enabled flag for the
      * application. If the application isn't enabled then we
      * don't actually do anything but still create objects as
-     * standins so any code still runs.
+     * standins so any code still runs. Note though that the
+     * global agent application monitoring flag trumps
+     * everything and if that is disabled doesn't matter what
+     * other settings are.
      */
 
     self->application = application;
     Py_INCREF(self->application);
 
-    if (enabled == Py_True || (!enabled && application->enabled)) {
+    if (NRApplication_MonitoringEnabled() &&
+        (enabled == Py_True || (!enabled && application->enabled))) {
         self->transaction = nr_web_transaction__allocate();
 
         self->transaction->path_type = NR_PATH_TYPE_UNKNOWN;

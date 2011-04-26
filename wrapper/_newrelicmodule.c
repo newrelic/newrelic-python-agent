@@ -1807,6 +1807,19 @@ init_newrelic(void)
     nrthread_mutex_init(&(nr_per_process_globals.nrdaemon.lock), NULL);
 
     /*
+     * Global agent application monitoring enabled by default.
+     * This is only a default and can be overridden by
+     * configuration file or in user code. It is possible to
+     * enable/disable monitoring on a per application basis, but
+     * the global monitoring switch takes precedence to the
+     * extent that if global monitoring is switched off then it
+     * doesn't matter what setting is for the individual
+     * applications and everything is disabled.
+     */
+
+    NRApplication_EnableMonitoring();
+
+    /*
      * Application name initialisation. This is only a default
      * and can be overridden by configuration file or in user
      * code at point decorator or wrapper applied.

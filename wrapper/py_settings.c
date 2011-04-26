@@ -6,6 +6,8 @@
 
 #include "py_settings.h"
 
+#include "py_application.h"
+
 #include "globals.h"
 #include "logging.h"
 
@@ -66,6 +68,36 @@ static int NRSettings_set_app_name(NRSettingsObject *self, PyObject *value)
         nrfree(nr_per_process_globals.appname);
 
     nr_per_process_globals.appname = nrstrdup(PyString_AsString(value));
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRSettings_get_monitor_mode(NRSettingsObject *self,
+                                             void *closure)
+{
+    return PyInt_FromLong(NRApplication_MonitoringEnabled());
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRSettings_set_monitor_mode(NRSettingsObject *self, PyObject *value)
+{
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError, "can't delete monitor_mode attribute");
+        return -1;
+    }
+
+    if (!PyBool_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "expected bool for monitor mode");
+        return -1;
+    }
+
+    if (value == Py_True)
+        NRApplication_EnableMonitoring();
+    else
+        NRApplication_DisableMonitoring();
 
     return 0;
 }
@@ -157,6 +189,8 @@ static PyMethodDef NRSettings_methods[] = {
 static PyGetSetDef NRSettings_getset[] = {
     { "app_name",           (getter)NRSettings_get_app_name,
                             (setter)NRSettings_set_app_name, 0 },
+    { "monitor_mode",       (getter)NRSettings_get_monitor_mode,
+                            (setter)NRSettings_set_monitor_mode, 0 },
     { "log_file",           (getter)NRSettings_get_log_file,
                             (setter)NRSettings_set_log_file, 0 },
     { "log_level",          (getter)NRSettings_get_log_level,

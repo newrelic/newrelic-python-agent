@@ -66,7 +66,6 @@ static int NRBackgroundTask_init(NRTransactionObject *self, PyObject *args,
         self->transaction->realpath = NULL;
 
         self->transaction->backgroundjob = 1;
-        self->transaction->has_been_named = 1;
     }
 
     return 0;

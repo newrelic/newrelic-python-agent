@@ -81,6 +81,8 @@ static PyObject *NRTransaction_new(PyTypeObject *type, PyObject *args,
 
     self->transaction_state = NR_TRANSACTION_STATE_PENDING;
 
+    self->path_frozen = 0;
+
     self->request_parameters = PyDict_New();
     self->custom_parameters = PyDict_New();
 
@@ -643,6 +645,24 @@ static int NRTransaction_set_path(NRTransactionObject *self,
     }
 
     /*
+     * Raise an exception if the path has been frozen and should
+     * no longer be modified. The path would be frozen upon the
+     * footer being generated for RUM as that encodes the path
+     * into a magic key which is included in the footer. If the
+     * path is changed after that, then will not be possible to
+     * correlate data from RUM and agent. An exception is raised
+     * to highlight that a problem exists in way instrumentation
+     * is done. Specifically, that transaction should always be
+     * named prior to generation of footer for RUM.
+     */
+
+    if (self->path_frozen) {
+        PyErr_SetString(PyExc_TypeError, "URL path has been frozen and "
+                        "can no longer be updated");
+        return -1;
+    }
+
+    /*
      * If the application was not enabled and so we are running
      * as a dummy transaction then return without actually doing
      * anything.
@@ -670,8 +690,6 @@ static int NRTransaction_set_path(NRTransactionObject *self,
     self->transaction->path_type = NR_PATH_TYPE_CUSTOM;
 #endif
     self->transaction->path_type = NR_PATH_TYPE_FUNCTION;
-
-    self->transaction->has_been_named = 1;
 
     return 0;
 }
@@ -707,25 +725,6 @@ static PyObject *NRTransaction_get_background_task(NRTransactionObject *self,
     }
 
     return PyBool_FromLong(self->transaction->backgroundjob);
-}
-
-/* ------------------------------------------------------------------------- */
-
-static PyObject *NRTransaction_get_has_been_named(NRTransactionObject *self,
-                                                  void *closure)
-{
-    /*
-     * If the application was not enabled and so we are running
-     * as a dummy transaction then return that transaction is
-     * being ignored.
-     */
-
-    if (!self->transaction) {
-        Py_INCREF(Py_False);
-        return Py_False;
-    }
-
-    return PyBool_FromLong(self->transaction->has_been_named);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -886,8 +885,6 @@ static PyGetSetDef NRTransaction_getset[] = {
     { "enabled",            (getter)NRTransaction_get_enabled,
                             NULL, 0 },
     { "background_task",    (getter)NRTransaction_get_background_task,
-                            NULL, 0 },
-    { "has_been_named",     (getter)NRTransaction_get_has_been_named,
                             NULL, 0 },
     { "custom_parameters",  (getter)NRTransaction_get_custom_parameters,
                             NULL, 0 },

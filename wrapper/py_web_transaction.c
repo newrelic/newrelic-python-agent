@@ -356,6 +356,8 @@ static PyObject *NRWebTransaction_footer(NRTransactionObject *self,
 
     Py_DECREF(transaction_name);
 
+    self->path_frozen = 1;
+
     return result;
 }
 

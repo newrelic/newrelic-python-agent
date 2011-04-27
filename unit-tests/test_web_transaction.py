@@ -30,7 +30,6 @@ class WebTransactionTests(unittest.TestCase):
             self.assertTrue(transaction.enabled)
             self.assertEqual(transaction.path, environ["REQUEST_URI"])
             self.assertEqual(_newrelic.transaction(), transaction)
-            self.assertFalse(transaction.has_been_named)
             self.assertFalse(transaction.background_task)
             time.sleep(1.0)
 
@@ -64,13 +63,11 @@ class WebTransactionTests(unittest.TestCase):
         environ = { "REQUEST_URI": "DUMMY" }
         transaction = _newrelic.WebTransaction(application, environ)
         with transaction:
-            self.assertFalse(transaction.has_been_named)
             path = "/named_web_transaction"
             transaction.path = path
             self.assertTrue(transaction.enabled)
             self.assertEqual(_newrelic.transaction(), transaction)
             self.assertEqual(transaction.path, path)
-            self.assertTrue(transaction.has_been_named)
 
     def test_background_web_transaction(self):
         environ = { "REQUEST_URI": "DUMMY" }

@@ -23,6 +23,7 @@ typedef struct {
     PyObject *request_parameters;
     PyObject *custom_parameters;
     int transaction_state;
+    int path_frozen;
     int capture_params;
     PyObject *ignored_params;
 } NRTransactionObject;

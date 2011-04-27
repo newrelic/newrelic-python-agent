@@ -344,7 +344,7 @@ static PyObject *NRWebTransaction_footer(NRTransactionObject *self,
         queue_time_usec = start_time_usec;
         
     queue_duration_usec = start_time_usec - queue_time_usec;
-    total_duration_usec = stop_time_usec - queue_time_usec;
+    total_duration_usec = stop_time_usec - start_time_usec;
 
     result = PyString_FromFormat(script_fragment,
             self->application->application->beacon,

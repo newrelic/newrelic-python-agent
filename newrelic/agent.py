@@ -23,6 +23,8 @@ _CONFIG_VALUES = {
     'log_level': ('get', _LOG_LEVELS.__getitem__),
     'capture_params': ('getboolean', None),
     'ignored_params': ('get', lambda x: map(string.strip,x.split(','))),
+    'transaction_tracer.enabled': ('getboolean', None),
+    'error_collector.enabled': ('getboolean', None),
 }
 
 _settings = settings()
@@ -44,7 +46,15 @@ if _config_file:
             except:
                 raise ValueError('Invalid configuration entry with name '
                                    '"%s" and value "%s".' % (key, value))
-            setattr(_settings, key, value)
+            obj = _settings
+            parts = string.splitfields(key, '.', 1) 
+            while True:
+                if len(parts) == 1:
+                    setattr(obj, parts[0], value)
+                    break
+                else:
+                    obj = getattr(obj, parts[0])
+                    parts = string.splitfields(parts[1], '.', 1)
 
 # Setup instrumentation by triggering off module imports.
 

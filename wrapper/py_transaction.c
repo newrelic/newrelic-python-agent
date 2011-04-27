@@ -500,6 +500,13 @@ static PyObject *NRTransaction_runtime_error(
         return NULL;
     }
 
+    /* Only continue if the error collector is enabled. */
+
+    if (!nr_per_process_globals.errors_enabled) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
     if (type != Py_None && value != Py_None) {
         error_message = PyObject_Str(value);
         stack_trace = NRUtilities_FormatException(type, value, traceback);

@@ -13,6 +13,20 @@
 
 typedef struct {
     PyObject_HEAD
+} NRTracerSettingsObject;
+
+extern PyTypeObject NRTracerSettings_Type;
+
+typedef struct {
+    PyObject_HEAD
+} NRErrorsSettingsObject;
+
+extern PyTypeObject NRErrorsSettings_Type;
+
+typedef struct {
+    PyObject_HEAD
+    NRTracerSettingsObject *tracer_settings;
+    NRErrorsSettingsObject *errors_settings;
     int monitor_mode;
     PyObject *ignored_params;
 } NRSettingsObject;

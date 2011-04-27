@@ -11,6 +11,232 @@
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRTracerSettings_new(PyTypeObject *type, PyObject *args,
+                                      PyObject *kwds)
+{
+    NRTracerSettingsObject *self;
+
+    self = (NRTracerSettingsObject *)type->tp_alloc(type, 0);
+
+    if (!self)
+        return NULL;
+
+    return (PyObject *)self;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static void NRTracerSettings_dealloc(NRTracerSettingsObject *self)
+{
+    PyObject_Del(self);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRTracerSettings_get_enabled(NRTracerSettingsObject *self,
+                                              void *closure)
+{
+    return PyBool_FromLong(nr_per_process_globals.tt_enabled);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRTracerSettings_set_enabled(NRTracerSettingsObject *self,
+                                        PyObject *value)
+{
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError, "can't delete enabled attribute");
+        return -1;
+    }
+
+    if (!PyBool_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "expected bool for enabled");
+        return -1;
+    }
+
+    if (value == Py_True)
+        nr_per_process_globals.tt_enabled = 1;
+    else
+        nr_per_process_globals.tt_enabled = 0;
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+#ifndef PyVarObject_HEAD_INIT
+#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
+#endif
+
+static PyMethodDef NRTracerSettings_methods[] = {
+    { NULL, NULL }
+};
+
+static PyGetSetDef NRTracerSettings_getset[] = {
+    { "enabled",            (getter)NRTracerSettings_get_enabled,
+                            (setter)NRTracerSettings_set_enabled, 0 },
+    { NULL },
+};
+
+PyTypeObject NRTracerSettings_Type = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "_newrelic.TracerSettings", /*tp_name*/
+    sizeof(NRTracerSettingsObject), /*tp_basicsize*/
+    0,                      /*tp_itemsize*/
+    /* methods */
+    (destructor)NRTracerSettings_dealloc, /*tp_dealloc*/
+    0,                      /*tp_print*/
+    0,                      /*tp_getattr*/
+    0,                      /*tp_setattr*/
+    0,                      /*tp_compare*/
+    0,                      /*tp_repr*/
+    0,                      /*tp_as_number*/
+    0,                      /*tp_as_sequence*/
+    0,                      /*tp_as_mapping*/
+    0,                      /*tp_hash*/
+    0,                      /*tp_call*/
+    0,                      /*tp_str*/
+    0,                      /*tp_getattro*/
+    0,                      /*tp_setattro*/
+    0,                      /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT,     /*tp_flags*/
+    0,                      /*tp_doc*/
+    0,                      /*tp_traverse*/
+    0,                      /*tp_clear*/
+    0,                      /*tp_richcompare*/
+    0,                      /*tp_weaklistoffset*/
+    0,                      /*tp_iter*/
+    0,                      /*tp_iternext*/
+    NRTracerSettings_methods,     /*tp_methods*/
+    0,                      /*tp_members*/
+    NRTracerSettings_getset,      /*tp_getset*/
+    0,                      /*tp_base*/
+    0,                      /*tp_dict*/
+    0,                      /*tp_descr_get*/
+    0,                      /*tp_descr_set*/
+    0,                      /*tp_dictoffset*/
+    0,                      /*tp_init*/
+    0,                      /*tp_alloc*/
+    NRTracerSettings_new,         /*tp_new*/
+    0,                      /*tp_free*/
+    0,                      /*tp_is_gc*/
+};
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRErrorsSettings_new(PyTypeObject *type, PyObject *args,
+                                      PyObject *kwds)
+{
+    NRErrorsSettingsObject *self;
+
+    self = (NRErrorsSettingsObject *)type->tp_alloc(type, 0);
+
+    if (!self)
+        return NULL;
+
+    return (PyObject *)self;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static void NRErrorsSettings_dealloc(NRErrorsSettingsObject *self)
+{
+    PyObject_Del(self);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRErrorsSettings_get_enabled(NRErrorsSettingsObject *self,
+                                              void *closure)
+{
+    return PyBool_FromLong(nr_per_process_globals.tt_enabled);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRErrorsSettings_set_enabled(NRErrorsSettingsObject *self,
+                                        PyObject *value)
+{
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError, "can't delete enabled attribute");
+        return -1;
+    }
+
+    if (!PyBool_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "expected bool for enabled");
+        return -1;
+    }
+
+    if (value == Py_True)
+        nr_per_process_globals.errors_enabled = 1;
+    else
+        nr_per_process_globals.errors_enabled = 0;
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+#ifndef PyVarObject_HEAD_INIT
+#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
+#endif
+
+static PyMethodDef NRErrorsSettings_methods[] = {
+    { NULL, NULL }
+};
+
+static PyGetSetDef NRErrorsSettings_getset[] = {
+    { "enabled",            (getter)NRErrorsSettings_get_enabled,
+                            (setter)NRErrorsSettings_set_enabled, 0 },
+    { NULL },
+};
+
+PyTypeObject NRErrorsSettings_Type = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "_newrelic.ErrorsSettings", /*tp_name*/
+    sizeof(NRErrorsSettingsObject), /*tp_basicsize*/
+    0,                      /*tp_itemsize*/
+    /* methods */
+    (destructor)NRErrorsSettings_dealloc, /*tp_dealloc*/
+    0,                      /*tp_print*/
+    0,                      /*tp_getattr*/
+    0,                      /*tp_setattr*/
+    0,                      /*tp_compare*/
+    0,                      /*tp_repr*/
+    0,                      /*tp_as_number*/
+    0,                      /*tp_as_sequence*/
+    0,                      /*tp_as_mapping*/
+    0,                      /*tp_hash*/
+    0,                      /*tp_call*/
+    0,                      /*tp_str*/
+    0,                      /*tp_getattro*/
+    0,                      /*tp_setattro*/
+    0,                      /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT,     /*tp_flags*/
+    0,                      /*tp_doc*/
+    0,                      /*tp_traverse*/
+    0,                      /*tp_clear*/
+    0,                      /*tp_richcompare*/
+    0,                      /*tp_weaklistoffset*/
+    0,                      /*tp_iter*/
+    0,                      /*tp_iternext*/
+    NRErrorsSettings_methods,     /*tp_methods*/
+    0,                      /*tp_members*/
+    NRErrorsSettings_getset,      /*tp_getset*/
+    0,                      /*tp_base*/
+    0,                      /*tp_dict*/
+    0,                      /*tp_descr_get*/
+    0,                      /*tp_descr_set*/
+    0,                      /*tp_dictoffset*/
+    0,                      /*tp_init*/
+    0,                      /*tp_alloc*/
+    NRErrorsSettings_new,         /*tp_new*/
+    0,                      /*tp_free*/
+    0,                      /*tp_is_gc*/
+};
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRSettingsObject_instance = NULL;
 
 /* ------------------------------------------------------------------------- */
@@ -42,6 +268,13 @@ static PyObject *NRSettings_new(PyTypeObject *type, PyObject *args,
     if (!self)
         return NULL;
 
+    self->tracer_settings = (NRTracerSettingsObject *)
+            PyObject_CallFunctionObjArgs(
+            (PyObject *)&NRTracerSettings_Type, NULL);
+    self->errors_settings = (NRErrorsSettingsObject *)
+            PyObject_CallFunctionObjArgs(
+            (PyObject *)&NRErrorsSettings_Type, NULL);
+
     self->monitor_mode = 1;
     self->ignored_params = PyList_New(0);
 
@@ -53,6 +286,9 @@ static PyObject *NRSettings_new(PyTypeObject *type, PyObject *args,
 static void NRSettings_dealloc(NRSettingsObject *self)
 {
     Py_DECREF(self->ignored_params);
+
+    Py_DECREF(self->tracer_settings);
+    Py_DECREF(self->errors_settings);
 
     PyObject_Del(self);
 }
@@ -260,6 +496,24 @@ static int NRSettings_set_ignored_params(NRSettingsObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRSettings_get_transaction_tracer(NRSettingsObject *self,
+                                                   void *closure)
+{
+    Py_INCREF(self->tracer_settings);
+    return (PyObject *)self->tracer_settings;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRSettings_get_error_collector(NRSettingsObject *self,
+                                                void *closure)
+{
+    Py_INCREF(self->errors_settings);
+    return (PyObject *)self->errors_settings;
+}
+
+/* ------------------------------------------------------------------------- */
+
 #ifndef PyVarObject_HEAD_INIT
 #define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
 #endif
@@ -281,6 +535,10 @@ static PyGetSetDef NRSettings_getset[] = {
                             (setter)NRSettings_set_capture_params, 0 },
     { "ignored_params",     (getter)NRSettings_get_ignored_params,
                             (setter)NRSettings_set_ignored_params, 0 },
+    { "transaction_tracer", (getter)NRSettings_get_transaction_tracer,
+                            NULL, 0 },
+    { "error_collector",    (getter)NRSettings_get_error_collector,
+                            NULL, 0 },
     { NULL },
 };
 

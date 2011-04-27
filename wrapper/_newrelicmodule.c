@@ -1644,6 +1644,10 @@ init_newrelic(void)
         return;
     if (PyType_Ready(&NRSettings_Type) < 0)
         return;
+    if (PyType_Ready(&NRTracerSettings_Type) < 0)
+        return;
+    if (PyType_Ready(&NRErrorsSettings_Type) < 0)
+        return;
     if (PyType_Ready(&NRTransaction_Type) < 0)
         return;
     if (PyType_Ready(&NRWebTransaction_Type) < 0)
@@ -1867,16 +1871,23 @@ init_newrelic(void)
     nr__initialize_overflow_metric();
 
     /*
-     * Initialise transaction and sql tracing defaults.
+     * Initialise transaction, errors and sql tracing defaults.
      * Transaction tracing is on by default and can be
      * overridden via the settings object at any time and will
      * apply on the next harvest cycle.
      *
      * TODO These need to be able to be overridden on per
-     * request basis via WSGI environ dictionary.
+     * request basis via WSGI environ dictionary. The globals
+     * may not need to use PHP variables if only PHP wrapper
+     * refers to them. Only problem is that PHP agent isn't
+     * properly thread safe and relies on fact that per request
+     * variable stashed into a global.
      */
 
+    nr_per_process_globals.errors_enabled = 1;
+
     nr_per_process_globals.tt_enabled = 1;
+
     nr_per_process_globals.tt_recordsql = NR_TRANSACTION_TRACE_RECORDSQL_RAW;
 #if 0
     nr_per_process_globals.tt_recordsql =

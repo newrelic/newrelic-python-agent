@@ -47,6 +47,9 @@ static PyObject *NRTransaction_new(PyTypeObject *type, PyObject *args,
 {
     NRTransactionObject *self;
 
+    PyObject *settings = NULL;
+    PyObject *ignored = NULL;
+
     /*
      * Initialise thread local storage if necessary. Do this
      * here rather than init method as technically the latter
@@ -81,6 +84,17 @@ static PyObject *NRTransaction_new(PyTypeObject *type, PyObject *args,
 
     self->request_parameters = PyDict_New();
     self->custom_parameters = PyDict_New();
+
+    self->capture_params = nr_per_process_globals.enable_params;
+
+    settings = NRSettings_Singleton();
+    ignored = PyObject_GetAttrString(settings, "ignored_params");
+
+    self->ignored_params = PyObject_CallFunctionObjArgs(
+                (PyObject *)&PyList_Type, ignored, NULL);
+
+    Py_DECREF(ignored);
+    Py_DECREF(settings);
 
     return (PyObject *)self;
 }
@@ -190,6 +204,8 @@ static void NRTransaction_dealloc(NRTransactionObject *self)
 
         Py_DECREF(args);
     }
+
+    Py_DECREF(self->ignored_params);
 
     Py_DECREF(self->custom_parameters);
     Py_DECREF(self->request_parameters);
@@ -383,12 +399,34 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
      * web transaction object if the record is being kept due to
      * associated errors or because it is being tracked as a
      * slow transaction.
+     *
+     * XXX Note that we don't provide a way for whether request
+     * parameters are recorded to be enabled on per request basis
+     * using an API call as the PHP agent does. The Java and Ruby
+     * agents don't have such an API call either.
      */
 
     if (keep_wt || self->transaction_errors != NULL) {
-        NRUtilities_MergeDictIntoParams(self->transaction->params,
-                                        "request_parameters",
-                                        self->request_parameters);
+        if (self->capture_params) {
+            PyObject *iter = NULL;
+            PyObject *item = NULL;
+
+            iter = PyObject_GetIter(self->ignored_params);
+
+            if (iter) {
+                while ((item = PyIter_Next(iter))) {
+                    if (PyDict_DelItem(self->request_parameters, item) == -1)
+                        PyErr_Clear();
+                }
+            }
+            else
+                PyErr_Clear();
+
+            NRUtilities_MergeDictIntoParams(self->transaction->params,
+                                            "request_parameters",
+                                            self->request_parameters);
+        }
+
         NRUtilities_MergeDictIntoParams(self->transaction->params,
                                         "custom_parameters",
                                         self->custom_parameters);
@@ -710,6 +748,72 @@ static PyObject *NRTransaction_get_request_parameters(
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRTransaction_get_capture_params(NRTransactionObject *self,
+                                                  void *closure)
+{
+    return PyBool_FromLong(self->capture_params);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRTransaction_set_capture_params(NRTransactionObject *self,
+                                            PyObject *value)
+{
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError,
+                        "can't delete capture_params attribute");
+        return -1;
+    }
+
+    if (!PyBool_Check(value)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "expected bool for capture_params attribute");
+        return -1;
+    }
+
+    if (value == Py_True)
+        self->capture_params = 1;
+    else
+        self->capture_params = 0;
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRTransaction_get_ignored_params(NRTransactionObject *self,
+                                                  void *closure)
+{
+    Py_INCREF(self->ignored_params);
+    return self->ignored_params;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRTransaction_set_ignored_params(NRTransactionObject *self,
+                                            PyObject *value)
+{
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError,
+                        "can't delete ignored_params attribute");
+        return -1;
+    }
+
+    if (!PyList_Check(value)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "expected list for ignored_params attribute");
+        return -1;
+    }
+
+    Py_INCREF(value);
+    Py_DECREF(self->ignored_params);
+    self->ignored_params = value;
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRTransaction_get_response_code(
         NRTransactionObject *self, void *closure)
 {
@@ -787,6 +891,10 @@ static PyGetSetDef NRTransaction_getset[] = {
                             NULL, 0 },
     { "request_parameters", (getter)NRTransaction_get_request_parameters,
                             NULL, 0 },
+    { "capture_params",     (getter)NRTransaction_get_capture_params,
+                            (setter)NRTransaction_set_capture_params, 0 },
+    { "ignored_params",     (getter)NRTransaction_get_ignored_params,
+                            (setter)NRTransaction_set_ignored_params, 0 },
     { "response_code",      (getter)NRTransaction_get_response_code,
                             (setter)NRTransaction_set_response_code, 0 },
     { NULL },

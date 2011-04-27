@@ -13,13 +13,14 @@
 
 typedef struct {
     PyObject_HEAD
+    PyObject *ignored_params;
 } NRSettingsObject;
 
 extern PyTypeObject NRSettings_Type;
 
 /* ------------------------------------------------------------------------- */
 
-extern PyObject *NRSetting_Singleton(PyObject *self, PyObject *args);
+extern PyObject *NRSettings_Singleton(void);
 
 extern int NRSettings_MonitoringEnabled(void);
 extern void NRSettings_DisableMonitoring(void);

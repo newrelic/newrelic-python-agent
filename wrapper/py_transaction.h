@@ -23,6 +23,8 @@ typedef struct {
     PyObject *request_parameters;
     PyObject *custom_parameters;
     int transaction_state;
+    int capture_params;
+    PyObject *ignored_params;
 } NRTransactionObject;
 
 extern PyTypeObject NRTransaction_Type;

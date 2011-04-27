@@ -1,5 +1,6 @@
 import sys
 import os
+import string
 import ConfigParser
 
 from _newrelic import *
@@ -16,10 +17,12 @@ _LOG_LEVELS = {
 }
 
 _CONFIG_VALUES = {
-    'app_name': str,
-    'monitor_mode': lambda x: x.lower() != 'false',
-    'log_file': str,
-    'log_level': _LOG_LEVELS.__getitem__,
+    'app_name': ('get', None),
+    'monitor_mode': ('getboolean', None),
+    'log_file': ('get', None),
+    'log_level': ('get', _LOG_LEVELS.__getitem__),
+    'capture_params': ('getboolean', None),
+    'ignored_params': ('get', lambda x: map(string.strip,x.split(','))),
 }
 
 _settings = settings()
@@ -29,14 +32,18 @@ _config_file = os.environ.get('NEWRELIC_CONFIG', None)
 if _config_file:
     _config_object = ConfigParser.SafeConfigParser()
     _config_object.read([_config_file])
-    for key, format in _CONFIG_VALUES.iteritems():
-        string = _config_object.get('newrelic', key, None)
-        if string is not None:
+    for key, (getter, mapper) in _CONFIG_VALUES.iteritems():
+        try:
+            value = getattr(_config_object, getter)('newrelic', key)
+        except ConfigParser.NoOptionError:
+            pass
+        else:
             try:
-                value = format(string)
+                if mapper:
+                    value = mapper(value)
             except:
-                raise RuntimeError('Invalid configuration entry with name '
-                                   '"%s" and value "%s".' % (key, string))
+                raise ValueError('Invalid configuration entry with name '
+                                   '"%s" and value "%s".' % (key, value))
             setattr(_settings, key, value)
 
 # Setup instrumentation by triggering off module imports.

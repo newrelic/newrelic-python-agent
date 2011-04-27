@@ -169,7 +169,7 @@ static PyObject *newrelic_application(PyObject *self, PyObject *args,
 
 static PyObject *newrelic_settings(PyObject *self, PyObject *args)
 {
-    return NRSetting_Singleton(self, args);
+    return NRSettings_Singleton();
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1815,6 +1815,10 @@ init_newrelic(void)
      * extent that if global monitoring is switched off then it
      * doesn't matter what setting is for the individual
      * applications and everything is disabled.
+     *
+     * XXX The PHP agent code has variable for this as a thread
+     * local rather than a global and that doesn't quite work
+     * for Python agent. So, use our own global variable.
      */
 
     NRSettings_EnableMonitoring();
@@ -1856,6 +1860,15 @@ init_newrelic(void)
     nr_per_process_globals.nrdaemon.timeout = 10;
     nr_per_process_globals.nrdaemon.nonblock = 1;
     nr_per_process_globals.nrdaemon.buffer = NULL;
+
+    /*
+     * Initialise default whether request parameters are
+     * captured. This is only a default and can be overridden by
+     * configuration file or in user code. When enabled specific
+     * request parameters can still be excluded.
+     */
+
+    nr_per_process_globals.enable_params = 1;
 
     /*
      * Initialise metrics table. The limit of number of metrics

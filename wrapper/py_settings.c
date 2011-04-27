@@ -15,11 +15,11 @@ static PyObject *NRSettingsObject_instance = NULL;
 
 /* ------------------------------------------------------------------------- */
 
-PyObject *NRSetting_Singleton(PyObject *self, PyObject *args)
+PyObject *NRSettings_Singleton(void)
 {
     if (!NRSettingsObject_instance) {
-        NRSettingsObject_instance = (PyObject *)PyObject_New(
-                NRSettingsObject, &NRSettings_Type);
+        NRSettingsObject_instance = PyObject_CallFunctionObjArgs(
+                (PyObject *)&NRSettings_Type, NULL);
 
         if (NRSettingsObject_instance == NULL)
             return NULL;
@@ -36,29 +36,48 @@ static int NRSettings_MonitorMode = 1;
 
 /* ------------------------------------------------------------------------- */
 
-int NRSettings_MonitoringEnabled()
+int NRSettings_MonitoringEnabled(void)
 {
     return NRSettings_MonitorMode;
 }
 
 /* ------------------------------------------------------------------------- */
 
-void NRSettings_DisableMonitoring()
+void NRSettings_DisableMonitoring(void)
 {
     NRSettings_MonitorMode = 0;
 }
 
 /* ------------------------------------------------------------------------- */
 
-void NRSettings_EnableMonitoring()
+void NRSettings_EnableMonitoring(void)
 {
     NRSettings_MonitorMode = 1;
 }
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRSettings_new(PyTypeObject *type, PyObject *args,
+                                PyObject *kwds)
+{
+    NRSettingsObject *self;
+
+    self = (NRSettingsObject *)type->tp_alloc(type, 0);
+
+    if (!self)
+        return NULL;
+
+    self->ignored_params = PyList_New(0);
+
+    return (PyObject *)self;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static void NRSettings_dealloc(NRSettingsObject *self)
 {
+    Py_DECREF(self->ignored_params);
+
     PyObject_Del(self);
 }
 
@@ -83,7 +102,7 @@ static int NRSettings_set_app_name(NRSettingsObject *self, PyObject *value)
     }
 
     if (!PyString_Check(value)) {
-        PyErr_SetString(PyExc_TypeError, "expected string for app name");
+        PyErr_SetString(PyExc_TypeError, "expected string for app_name");
         return -1;
     }
 
@@ -113,7 +132,7 @@ static int NRSettings_set_monitor_mode(NRSettingsObject *self, PyObject *value)
     }
 
     if (!PyBool_Check(value)) {
-        PyErr_SetString(PyExc_TypeError, "expected bool for monitor mode");
+        PyErr_SetString(PyExc_TypeError, "expected bool for monitor_mode");
         return -1;
     }
 
@@ -146,7 +165,7 @@ static int NRSettings_set_log_file(NRSettingsObject *self, PyObject *value)
     }
 
     if (!PyString_Check(value)) {
-        PyErr_SetString(PyExc_TypeError, "expected string for log file name");
+        PyErr_SetString(PyExc_TypeError, "expected string for log_file");
         return -1;
     }
 
@@ -177,7 +196,7 @@ static int NRSettings_set_log_level(NRSettingsObject *self, PyObject *value)
     }
 
     if (!PyInt_Check(value)) {
-        PyErr_SetString(PyExc_TypeError, "expected integer for log level");
+        PyErr_SetString(PyExc_TypeError, "expected integer for log_level");
         return -1;
     }
 
@@ -201,6 +220,70 @@ static int NRSettings_set_log_level(NRSettingsObject *self, PyObject *value)
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRSettings_get_capture_params(NRSettingsObject *self,
+                                               void *closure)
+{
+    return PyInt_FromLong(nr_per_process_globals.enable_params);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRSettings_set_capture_params(NRSettingsObject *self,
+                                         PyObject *value)
+{
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError,
+                        "can't delete capture_params attribute");
+        return -1;
+    }
+
+    if (!PyBool_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "expected bool for capture_params");
+        return -1;
+    }
+
+    if (value == Py_True)
+        nr_per_process_globals.enable_params = 1;
+    else
+        nr_per_process_globals.enable_params = 0;
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRSettings_get_ignored_params(NRSettingsObject *self,
+                                               void *closure)
+{
+    Py_INCREF(self->ignored_params);
+    return self->ignored_params;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRSettings_set_ignored_params(NRSettingsObject *self,
+                                         PyObject *value)
+{
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError,
+                        "can't delete ignored_params attribute");
+        return -1;
+    }
+
+    if (!PyList_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "expected list for ignored_params");
+        return -1;
+    }
+
+    Py_INCREF(value);
+    Py_DECREF(self->ignored_params);
+    self->ignored_params = value;
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
 #ifndef PyVarObject_HEAD_INIT
 #define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
 #endif
@@ -218,6 +301,10 @@ static PyGetSetDef NRSettings_getset[] = {
                             (setter)NRSettings_set_log_file, 0 },
     { "log_level",          (getter)NRSettings_get_log_level,
                             (setter)NRSettings_set_log_level, 0 },
+    { "capture_params",     (getter)NRSettings_get_capture_params,
+                            (setter)NRSettings_set_capture_params, 0 },
+    { "ignored_params",     (getter)NRSettings_get_ignored_params,
+                            (setter)NRSettings_set_ignored_params, 0 },
     { NULL },
 };
 
@@ -260,7 +347,7 @@ PyTypeObject NRSettings_Type = {
     0,                      /*tp_dictoffset*/
     0,                      /*tp_init*/
     0,                      /*tp_alloc*/
-    0,                      /*tp_new*/
+    NRSettings_new,         /*tp_new*/
     0,                      /*tp_free*/
     0,                      /*tp_is_gc*/
 };

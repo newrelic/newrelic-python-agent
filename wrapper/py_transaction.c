@@ -47,8 +47,7 @@ static PyObject *NRTransaction_new(PyTypeObject *type, PyObject *args,
 {
     NRTransactionObject *self;
 
-    PyObject *settings = NULL;
-    PyObject *ignored = NULL;
+    NRSettingsObject *settings = NULL;
 
     /*
      * Initialise thread local storage if necessary. Do this
@@ -87,13 +86,11 @@ static PyObject *NRTransaction_new(PyTypeObject *type, PyObject *args,
 
     self->capture_params = nr_per_process_globals.enable_params;
 
-    settings = NRSettings_Singleton();
-    ignored = PyObject_GetAttrString(settings, "ignored_params");
+    settings = (NRSettingsObject *)NRSettings_Singleton();
 
     self->ignored_params = PyObject_CallFunctionObjArgs(
-                (PyObject *)&PyList_Type, ignored, NULL);
+                (PyObject *)&PyList_Type, settings->ignored_params, NULL);
 
-    Py_DECREF(ignored);
     Py_DECREF(settings);
 
     return (PyObject *)self;
@@ -105,6 +102,9 @@ static int NRTransaction_init(NRTransactionObject *self, PyObject *args,
                               PyObject *kwds)
 {
     NRApplicationObject *application = NULL;
+
+    NRSettingsObject *settings = NULL;
+
     PyObject *enabled = NULL;
 
     static char *kwlist[] = { "application", "enabled", NULL };
@@ -140,7 +140,9 @@ static int NRTransaction_init(NRTransactionObject *self, PyObject *args,
     self->application = application;
     Py_INCREF(self->application);
 
-    if (NRSettings_MonitoringEnabled() &&
+    settings = (NRSettingsObject *)NRSettings_Singleton();
+
+    if (settings->monitor_mode &&
         (enabled == Py_True || (!enabled && application->enabled))) {
         self->transaction = nr_web_transaction__allocate();
 

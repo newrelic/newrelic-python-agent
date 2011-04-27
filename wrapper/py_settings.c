@@ -32,31 +32,6 @@ PyObject *NRSettings_Singleton(void)
 
 /* ------------------------------------------------------------------------- */
 
-static int NRSettings_MonitorMode = 1;
-
-/* ------------------------------------------------------------------------- */
-
-int NRSettings_MonitoringEnabled(void)
-{
-    return NRSettings_MonitorMode;
-}
-
-/* ------------------------------------------------------------------------- */
-
-void NRSettings_DisableMonitoring(void)
-{
-    NRSettings_MonitorMode = 0;
-}
-
-/* ------------------------------------------------------------------------- */
-
-void NRSettings_EnableMonitoring(void)
-{
-    NRSettings_MonitorMode = 1;
-}
-
-/* ------------------------------------------------------------------------- */
-
 static PyObject *NRSettings_new(PyTypeObject *type, PyObject *args,
                                 PyObject *kwds)
 {
@@ -67,6 +42,7 @@ static PyObject *NRSettings_new(PyTypeObject *type, PyObject *args,
     if (!self)
         return NULL;
 
+    self->monitor_mode = 1;
     self->ignored_params = PyList_New(0);
 
     return (PyObject *)self;
@@ -119,7 +95,7 @@ static int NRSettings_set_app_name(NRSettingsObject *self, PyObject *value)
 static PyObject *NRSettings_get_monitor_mode(NRSettingsObject *self,
                                              void *closure)
 {
-    return PyInt_FromLong(NRSettings_MonitoringEnabled());
+    return PyBool_FromLong(self->monitor_mode);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -137,9 +113,9 @@ static int NRSettings_set_monitor_mode(NRSettingsObject *self, PyObject *value)
     }
 
     if (value == Py_True)
-        NRSettings_EnableMonitoring();
+        self->monitor_mode = 1;
     else
-        NRSettings_DisableMonitoring();
+        self->monitor_mode = 0;
 
     return 0;
 }

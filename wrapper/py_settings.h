@@ -13,6 +13,7 @@
 
 typedef struct {
     PyObject_HEAD
+    int monitor_mode;
     PyObject *ignored_params;
 } NRSettingsObject;
 
@@ -21,10 +22,6 @@ extern PyTypeObject NRSettings_Type;
 /* ------------------------------------------------------------------------- */
 
 extern PyObject *NRSettings_Singleton(void);
-
-extern int NRSettings_MonitoringEnabled(void);
-extern void NRSettings_DisableMonitoring(void);
-extern void NRSettings_EnableMonitoring(void);
 
 /* ------------------------------------------------------------------------- */
 

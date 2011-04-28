@@ -7,7 +7,7 @@ from _newrelic import *
 
 # Read in and apply agent configuration.
 
-_LOG_LEVELS = {
+_LOG_LEVEL = {
     'ERROR' : LOG_ERROR,
     'INFO' : LOG_INFO,
     'WARNING': LOG_WARNING,
@@ -17,7 +17,7 @@ _LOG_LEVELS = {
 }
 
 def _map_log_level(s):
-    return _LOG_LEVELS[s]
+    return _LOG_LEVEL[s]
 
 def _map_ignored_params(s):
     return map(string.strip, s.split(','))
@@ -26,6 +26,15 @@ def _map_transaction_threshold(s):
     if s == 'apdex_f':
         return None
     return float(s)
+
+_RECORD_SQL = {
+    "off": RECORDSQL_OFF,
+    "raw": RECORDSQL_RAW,
+    "obfuscated": RECORDSQL_OBFUSCATED,
+}
+
+def _map_record_sql(s):
+    return _RECORD_SQL[s]
 
 _CONFIG_VALUES = {
     'app_name': ('get', None),
@@ -37,6 +46,7 @@ _CONFIG_VALUES = {
     'transaction_tracer.enabled': ('getboolean', None),
     'transaction_tracer.transaction_threshold':
             ('get', _map_transaction_threshold),
+    'transaction_tracer.record_sql': ('get', _map_record_sql),
     'error_collector.enabled': ('getboolean', None),
 }
 

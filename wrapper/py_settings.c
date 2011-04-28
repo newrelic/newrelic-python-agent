@@ -171,6 +171,34 @@ static int NRTracerSettings_set_threshold(NRTracerSettingsObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRTracerSettings_get_record_sql(NRTracerSettingsObject *self,
+                                                 void *closure)
+{
+    return PyInt_FromLong(nr_per_process_globals.tt_recordsql);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRTracerSettings_set_record_sql(NRTracerSettingsObject *self,
+                                           PyObject *value)
+{
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError, "can't delete record_sql attribute");
+        return -1;
+    }
+
+    if (!PyInt_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "expected int for record_sql");
+        return -1;
+    }
+
+    nr_per_process_globals.tt_recordsql = PyInt_AsLong(value);
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
 #ifndef PyVarObject_HEAD_INIT
 #define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
 #endif
@@ -184,6 +212,8 @@ static PyGetSetDef NRTracerSettings_getset[] = {
                             (setter)NRTracerSettings_set_enabled, 0 },
     { "transaction_threshold", (getter)NRTracerSettings_get_threshold,
                             (setter)NRTracerSettings_set_threshold, 0 },
+    { "record_sql",         (getter)NRTracerSettings_get_record_sql,
+                            (setter)NRTracerSettings_set_record_sql, 0 },
     { NULL },
 };
 

@@ -1789,6 +1789,14 @@ init_newrelic(void)
     PyModule_AddObject(module, "LOG_VERBOSEDEBUG",
                        PyInt_FromLong(LOG_VERBOSEDEBUG));
 
+    PyModule_AddObject(module, "RECORDSQL_OFF",
+                       PyInt_FromLong(NR_TRANSACTION_TRACE_RECORDSQL_OFF));
+    PyModule_AddObject(module, "RECORDSQL_RAW",
+                       PyInt_FromLong(NR_TRANSACTION_TRACE_RECORDSQL_RAW));
+    PyModule_AddObject(module, "RECORDSQL_OBFUSCATED",
+                       PyInt_FromLong(
+                       NR_TRANSACTION_TRACE_RECORDSQL_OBFUSCATED));
+
     /*
      * TODO Don't install signal handlers for catching back
      * trace when crash at this time as can't test it on
@@ -1890,18 +1898,10 @@ init_newrelic(void)
     nr_per_process_globals.tt_threshold_is_apdex_f = 1;
     nr_initialize_global_tt_threshold_from_apdex(NULL);
 
-    nr_per_process_globals.tt_recordsql = NR_TRANSACTION_TRACE_RECORDSQL_RAW;
-#if 0
     nr_per_process_globals.tt_recordsql =
             NR_TRANSACTION_TRACE_RECORDSQL_OBFUSCATED;
-#endif
 
     nr_per_process_globals.slow_sql_stacktrace = 500 * 1000;
-
-#if 0
-    nr_per_process_globals.tt_total_node_limit = 2000;
-    nr_per_process_globals.tt_per_node_children_limit = 200;
-#endif
 
     nr_per_process_globals.metric_limit = 3000;
     nr_per_process_globals.expensive_nodes_size = 100;

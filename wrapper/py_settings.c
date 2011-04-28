@@ -317,6 +317,8 @@ static PyObject *NRErrorsSettings_new(PyTypeObject *type, PyObject *args,
     if (!self)
         return NULL;
 
+    self->ignore_errors = PyDict_New();
+
     return (PyObject *)self;
 }
 
@@ -324,6 +326,8 @@ static PyObject *NRErrorsSettings_new(PyTypeObject *type, PyObject *args,
 
 static void NRErrorsSettings_dealloc(NRErrorsSettingsObject *self)
 {
+    Py_DECREF(self->ignore_errors);
+
     PyObject_Del(self);
 }
 
@@ -360,6 +364,46 @@ static int NRErrorsSettings_set_enabled(NRErrorsSettingsObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRErrorsSettings_get_ignore_errors(
+        NRErrorsSettingsObject *self, void *closure)
+{
+    return PyDict_Keys(self->ignore_errors);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRErrorsSettings_set_ignore_errors(
+        NRErrorsSettingsObject *self, PyObject *value)
+{
+    PyObject *iter = NULL;
+    PyObject *item = NULL;
+
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError,
+                        "can't delete ignore_errors attribute");
+        return -1;
+    }
+
+    if (!PyList_Check(value)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "expected list for ignore_errors");
+        return -1;
+    }
+
+    PyDict_Clear(self->ignore_errors);
+
+    iter = PyObject_GetIter(value);
+
+    while ((item = PyIter_Next(iter)))
+        PyDict_SetItem(self->ignore_errors, item, Py_None);
+
+    Py_DECREF(iter);
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
 #ifndef PyVarObject_HEAD_INIT
 #define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
 #endif
@@ -371,6 +415,8 @@ static PyMethodDef NRErrorsSettings_methods[] = {
 static PyGetSetDef NRErrorsSettings_getset[] = {
     { "enabled",            (getter)NRErrorsSettings_get_enabled,
                             (setter)NRErrorsSettings_set_enabled, 0 },
+    { "ignore_errors",      (getter)NRErrorsSettings_get_ignore_errors,
+                            (setter)NRErrorsSettings_set_ignore_errors, 0 },
     { NULL },
 };
 

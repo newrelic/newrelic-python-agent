@@ -21,6 +21,7 @@ extern PyTypeObject NRTracerSettings_Type;
 
 typedef struct {
     PyObject_HEAD
+    PyObject *ignore_errors;
 } NRErrorsSettingsObject;
 
 extern PyTypeObject NRErrorsSettings_Type;

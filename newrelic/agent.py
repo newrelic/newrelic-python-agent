@@ -36,6 +36,9 @@ _RECORD_SQL = {
 def _map_record_sql(s):
     return _RECORD_SQL[s]
 
+def _map_ignore_errors(s):
+    return map(string.strip, s.split(','))
+
 _CONFIG_VALUES = {
     'app_name': ('get', None),
     'monitor_mode': ('getboolean', None),
@@ -49,6 +52,7 @@ _CONFIG_VALUES = {
     'transaction_tracer.record_sql': ('get', _map_record_sql),
     'transaction_tracer.stack_trace_threshold': ('getfloat', None),
     'error_collector.enabled': ('getboolean', None),
+    'error_collector.ignore_errors': ('get', _map_ignore_errors),
 }
 
 _settings = settings()

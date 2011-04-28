@@ -458,6 +458,8 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
                     if (PyDict_DelItem(self->request_parameters, item) == -1)
                         PyErr_Clear();
                 }
+
+                Py_DECREF(iter);
             }
             else
                 PyErr_Clear();
@@ -527,6 +529,8 @@ static PyObject *NRTransaction_notice_error(
     PyObject *error_message = NULL;
     PyObject *stack_trace = NULL;
 
+    NRSettingsObject *settings = NULL;
+
     static char *kwlist[] = { "type", "value", "traceback", "params", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "OOO!|O!:notice_error",
@@ -548,58 +552,71 @@ static PyObject *NRTransaction_notice_error(
     }
 
     if (type != Py_None && value != Py_None) {
-        error_message = PyObject_Str(value);
-        stack_trace = NRUtilities_FormatException(type, value, traceback);
+        PyObject *item = NULL;
 
-        if (!stack_trace)
-           PyErr_Clear();
+        settings = (NRSettingsObject *)NRSettings_Singleton();
 
-        record = nr_transaction_error__allocate(
-                self->transaction, &(self->transaction_errors), "", 0,
-                PyString_AsString(error_message), Py_TYPE(value)->tp_name, 0);
+        /* Check whether this is an error type we should ignore. */
 
-        if (stack_trace) {
-            nro__set_hash_string(record->params, "stack_trace",
-                                 PyString_AsString(stack_trace));
+        item = PyDict_GetItemString(
+                settings->errors_settings->ignore_errors,
+                Py_TYPE(value)->tp_name);
+
+        if (!item) {
+            error_message = PyObject_Str(value);
+            stack_trace = NRUtilities_FormatException(type, value, traceback);
+
+            if (!stack_trace)
+               PyErr_Clear();
+
+            record = nr_transaction_error__allocate(
+                    self->transaction, &(self->transaction_errors), "", 0,
+                    PyString_AsString(error_message),
+                    Py_TYPE(value)->tp_name, 0);
+
+            if (stack_trace) {
+                nro__set_hash_string(record->params, "stack_trace",
+                                     PyString_AsString(stack_trace));
 #if 0
-            /*
-             * XXX How source code can be recorded when RPM UI
-             * actually displays it.
-             */
-            nro__set_hash_string(record->params, "file_name", "FILENAME");
-            nro__set_hash_string(record->params, "line_number", "LINENUMBER");
-            nro__set_hash_string(record->params, "source", "SOURCE #1\nSOURCE #2");
+                /*
+                 * XXX How source code can be recorded when RPM UI
+                 * actually displays it.
+                 */
+                nro__set_hash_string(record->params, "file_name", "FILENAME");
+                nro__set_hash_string(record->params, "line_number", "LINENUMBER");
+                nro__set_hash_string(record->params, "source", "SOURCE #1\nSOURCE #2");
 #endif
+            }
+
+            if (params) {
+                NRUtilities_MergeDictIntoParams(record->params,
+                                                "custom_parameters", params);
+            }
+
+            /*
+             * TODO There is also provision for passing back
+             * 'file_name', 'line_number' and 'source' params as
+             * well. These are dependent on RPM have been updated
+             * to show them for something other than Ruby. The
+             * passing back of such additional information as the
+             * source code should be done by setting a flag and
+             * not be on by default. The file name and line number
+             * may not display in RPM the source code isn't also
+             * sent. Need to see how RPM is changed. See details in:
+             * https://www.pivotaltracker.com/story/show/7922639
+             */
+
+            /*
+             * TODO Are there any default things that could be added
+             * to the custom parameters for this unhandled exception
+             * case. What about stack variables and values associated
+             * with them. These should only be passed back though
+             * if enabled through a flag.
+             */
+
+            Py_XDECREF(stack_trace);
+            Py_DECREF(error_message);
         }
-
-        if (params) {
-            NRUtilities_MergeDictIntoParams(record->params,
-                                            "custom_parameters", params);
-        }
-
-        /*
-         * TODO There is also provision for passing back
-         * 'file_name', 'line_number' and 'source' params as
-         * well. These are dependent on RPM have been updated
-         * to show them for something other than Ruby. The
-         * passing back of such additional information as the
-         * source code should be done by setting a flag and
-         * not be on by default. The file name and line number
-         * may not display in RPM the source code isn't also
-         * sent. Need to see how RPM is changed. See details in:
-         * https://www.pivotaltracker.com/story/show/7922639
-         */
-
-        /*
-         * TODO Are there any default things that could be added
-         * to the custom parameters for this unhandled exception
-         * case. What about stack variables and values associated
-         * with them. These should only be passed back though
-         * if enabled through a flag.
-         */
-
-        Py_XDECREF(stack_trace);
-        Py_DECREF(error_message);
     }
 
     Py_INCREF(Py_None);

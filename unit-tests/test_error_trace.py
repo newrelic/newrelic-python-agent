@@ -8,14 +8,20 @@ settings = _newrelic.settings()
 settings.log_file = "%s.log" % __file__
 settings.log_level = _newrelic.LOG_VERBOSEDEBUG
 
+settings.error_collector.ignore_errors = ['exceptions.NotImplementedError']
+
 application = _newrelic.application("UnitTests")
 
+@_newrelic.error_trace()
 def function_1():
     raise RuntimeError("runtime_error 1")
-function_1 = _newrelic.error_trace()(function_1)
 
 def function_2():
     raise RuntimeError("runtime_error 2")
+
+@_newrelic.error_trace()
+def function_3():
+    raise NotImplementedError("runtime_error 3")
 
 class ErrorTraceTransactionTests(unittest.TestCase):
 
@@ -56,6 +62,16 @@ class ErrorTraceTransactionTests(unittest.TestCase):
             time.sleep(0.5)
             try:
                 function_2()
+            except:
+                pass
+
+    def test_implicit_runtime_error_ignore(self):
+        environ = { "REQUEST_URI": "/error_trace_ignore" }
+        transaction = _newrelic.WebTransaction(application, environ)
+        with transaction:
+            time.sleep(0.5)
+            try:
+                function_3()
             except:
                 pass
 

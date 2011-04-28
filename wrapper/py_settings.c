@@ -91,7 +91,8 @@ static PyObject *NRTracerSettings_get_threshold(NRTracerSettingsObject *self,
         return Py_None;
     }
 
-    return PyInt_FromLong(nr_per_process_globals.tt_threshold);
+    return PyFloat_FromDouble((double)
+            nr_per_process_globals.tt_threshold/1000000.0);
 #endif
 
     if (self->transaction_threshold_is_apdex_f) {
@@ -99,7 +100,7 @@ static PyObject *NRTracerSettings_get_threshold(NRTracerSettingsObject *self,
         return Py_None;
     }
 
-    return PyInt_FromLong(self->transaction_threshold);
+    return PyFloat_FromDouble((double)self->transaction_threshold/1000000.0);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -114,8 +115,8 @@ static int NRTracerSettings_set_threshold(NRTracerSettingsObject *self,
     }
 
     if (value != Py_None && !PyFloat_Check(value) && !PyInt_Check(value)) {
-        PyErr_SetString(PyExc_TypeError,
-                        "expected int or None for transaction_threshold");
+        PyErr_SetString(PyExc_TypeError, "expected int, float or None for "
+                        "transaction_threshold");
         return -1;
     }
 
@@ -199,6 +200,47 @@ static int NRTracerSettings_set_record_sql(NRTracerSettingsObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRTracerSettings_get_sql_threshold(
+        NRTracerSettingsObject *self, void *closure)
+{
+    return PyFloat_FromDouble((double)
+            nr_per_process_globals.slow_sql_stacktrace/1000000.0);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRTracerSettings_set_sql_threshold(NRTracerSettingsObject *self,
+                                              PyObject *value)
+{
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError,
+                        "can't delete stack_trace_threshold attribute");
+        return -1;
+    }
+
+    if (!PyFloat_Check(value) && !PyInt_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "expected int or float for "
+                        "stack_transaction_threshold");
+        return -1;
+    }
+
+    if (PyFloat_Check(value)) {
+        nr_per_process_globals.slow_sql_stacktrace =
+                PyFloat_AsDouble(value) * 1000000;
+    }
+    else {
+        nr_per_process_globals.slow_sql_stacktrace =
+                PyInt_AsLong(value) * 1000000;
+    }
+
+    if (nr_per_process_globals.slow_sql_stacktrace < 0)
+        nr_per_process_globals.slow_sql_stacktrace = 0;
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
 #ifndef PyVarObject_HEAD_INIT
 #define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
 #endif
@@ -214,6 +256,8 @@ static PyGetSetDef NRTracerSettings_getset[] = {
                             (setter)NRTracerSettings_set_threshold, 0 },
     { "record_sql",         (getter)NRTracerSettings_get_record_sql,
                             (setter)NRTracerSettings_set_record_sql, 0 },
+    { "stack_trace_threshold", (getter)NRTracerSettings_get_sql_threshold,
+                            (setter)NRTracerSettings_set_sql_threshold, 0 },
     { NULL },
 };
 

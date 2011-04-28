@@ -47,6 +47,7 @@ _CONFIG_VALUES = {
     'transaction_tracer.transaction_threshold':
             ('get', _map_transaction_threshold),
     'transaction_tracer.record_sql': ('get', _map_record_sql),
+    'transaction_tracer.stack_trace_threshold': ('getfloat', None),
     'error_collector.enabled': ('getboolean', None),
 }
 

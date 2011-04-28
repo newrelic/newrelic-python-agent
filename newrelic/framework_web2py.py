@@ -31,7 +31,7 @@ class name_transaction(object):
             current_transaction.path = environment['response'].view
         return self._wrapped(environment)
 
-class runtime_error(object):
+class capture_error(object):
     def __init__(self, wrapped):
         self._wrapped = wrapped
     def __get__(self, obj, objtype=None):
@@ -45,7 +45,7 @@ class runtime_error(object):
             except HTTP:
                 raise
             except:
-                current_transaction.runtime_error(*sys.exc_info())
+                current_transaction.notice_error(*sys.exc_info())
                 raise
         else:
             return self._wrapped(request, response, session)
@@ -66,4 +66,4 @@ def instrument(module):
         wrap_object(module, None, 'run_models_in', name_transaction)
 
     elif module.__name__ == 'gluon.main':
-        wrap_object(module, None, 'serve_controller', runtime_error)
+        wrap_object(module, None, 'serve_controller', capture_error)

@@ -64,7 +64,7 @@ def wrap_url_resolver(resolver, *args, **kwargs):
 def wrap_uncaught_exception(handler, request, resolver, exc_info):
     current_transaction = transaction()
     if current_transaction:
-        current_transaction.runtime_error(*exc_info)
+        current_transaction.notice_error(*exc_info)
 
 def instrument(module):
 

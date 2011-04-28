@@ -120,7 +120,7 @@ static PyObject *NRErrorTrace_exit(NRErrorTraceObject *self,
         PyObject *object = NULL;
 
         object = PyObject_GetAttrString((PyObject *)self->parent_transaction,
-                                        "runtime_error");
+                                        "notice_error");
 
         if (object) {
             PyObject *args = NULL;

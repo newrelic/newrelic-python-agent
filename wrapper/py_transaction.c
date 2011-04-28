@@ -339,7 +339,7 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
     if (type != Py_None && value != Py_None && traceback != Py_None) {
         PyObject *object = NULL;
 
-        object = PyObject_GetAttrString((PyObject *)self, "runtime_error");
+        object = PyObject_GetAttrString((PyObject *)self, "notice_error");
 
         if (object) {
             PyObject *args = NULL;
@@ -514,7 +514,7 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRTransaction_runtime_error(
+static PyObject *NRTransaction_notice_error(
         NRTransactionObject *self, PyObject *args, PyObject *kwds)
 {
     nr_transaction_error *record;
@@ -529,7 +529,7 @@ static PyObject *NRTransaction_runtime_error(
 
     static char *kwlist[] = { "type", "value", "traceback", "params", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OOO!|O!:runtime_error",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OOO!|O!:notice_error",
                                      kwlist, &type, &value, &PyTraceBack_Type,
                                      &traceback, &PyDict_Type, &params)) {
         return NULL;
@@ -917,7 +917,7 @@ static PyMethodDef NRTransaction_methods[] = {
                             METH_NOARGS, 0 },
     { "__exit__",           (PyCFunction)NRTransaction_exit,
                             METH_VARARGS, 0 },
-    { "runtime_error",      (PyCFunction)NRTransaction_runtime_error,
+    { "notice_error",       (PyCFunction)NRTransaction_notice_error,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { NULL, NULL }
 };

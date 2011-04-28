@@ -12,7 +12,7 @@ def wrap_add_url_rule_input(self, rule, endpoint=None, view_func=None,
 def wrap_handle_exception(self, e):
     current_transaction = transaction()
     if current_transaction:
-        current_transaction.runtime_error(*sys.exc_info())
+        current_transaction.notice_error(*sys.exc_info())
 
 def name_render_template(template_name, **context):
     return '%s Template' % template_name

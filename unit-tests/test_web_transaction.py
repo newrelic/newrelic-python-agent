@@ -130,7 +130,7 @@ class WebTransactionTests(unittest.TestCase):
                 try:
                     raise RuntimeError("runtime_error %d" % i)
                 except RuntimeError:
-                    transaction.runtime_error(*sys.exc_info())
+                    transaction.notice_error(*sys.exc_info())
 
     def test_implicit_runtime_error(self):
         environ = { "REQUEST_URI": "/implicit_runtime_error" }

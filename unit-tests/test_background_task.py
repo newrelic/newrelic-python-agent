@@ -88,7 +88,9 @@ class BackgroundTaskTests(unittest.TestCase):
                 try:
                     raise RuntimeError("runtime_error %d" % i)
                 except RuntimeError:
-                    transaction.runtime_error(*sys.exc_info())
+                    transaction.notice_error(*sys.exc_info())
+                    import inspect
+                    print inspect.getsource(sys.exc_info()[2])
 
     def test_implicit_runtime_error(self):
         name = "implicit_runtime_error"

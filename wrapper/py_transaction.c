@@ -561,6 +561,15 @@ static PyObject *NRTransaction_notice_error(
         if (stack_trace) {
             nro__set_hash_string(record->params, "stack_trace",
                                  PyString_AsString(stack_trace));
+#if 0
+            /*
+             * XXX How source code can be recorded when RPM UI
+             * actually displays it.
+             */
+            nro__set_hash_string(record->params, "file_name", "FILENAME");
+            nro__set_hash_string(record->params, "line_number", "LINENUMBER");
+            nro__set_hash_string(record->params, "source", "SOURCE #1\nSOURCE #2");
+#endif
         }
 
         if (params) {

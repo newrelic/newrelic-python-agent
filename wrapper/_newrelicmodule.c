@@ -1887,6 +1887,8 @@ init_newrelic(void)
     nr_per_process_globals.errors_enabled = 1;
 
     nr_per_process_globals.tt_enabled = 1;
+    nr_per_process_globals.tt_threshold_is_apdex_f = 1;
+    nr_initialize_global_tt_threshold_from_apdex(NULL);
 
     nr_per_process_globals.tt_recordsql = NR_TRANSACTION_TRACE_RECORDSQL_RAW;
 #if 0

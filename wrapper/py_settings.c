@@ -9,6 +9,8 @@
 #include "globals.h"
 #include "logging.h"
 
+#include "daemon_protocol.h"
+
 /* ------------------------------------------------------------------------- */
 
 static PyObject *NRTracerSettings_new(PyTypeObject *type, PyObject *args,
@@ -20,6 +22,9 @@ static PyObject *NRTracerSettings_new(PyTypeObject *type, PyObject *args,
 
     if (!self)
         return NULL;
+
+    self->transaction_threshold = 0;
+    self->transaction_threshold_is_apdex_f = 1;
 
     return (PyObject *)self;
 }
@@ -64,6 +69,108 @@ static int NRTracerSettings_set_enabled(NRTracerSettingsObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRTracerSettings_get_threshold(NRTracerSettingsObject *self,
+                                                void *closure)
+{
+    /*
+     * We use a None value to indicate that threshold is being
+     * calculated from apdex_f value.
+     */
+
+    /*
+     * TODO Use of global for transaction_threshold is broken in the
+     * PHP agent core. We need to workaround that by storing the
+     * values in this object and updating transaction threshold
+     * values on each request before distilling metrics. See
+     * https://www.pivotaltracker.com/story/show/12771611.
+     */
+
+#if 0
+    if (nr_per_process_globals.tt_threshold_is_apdex_f) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
+    return PyInt_FromLong(nr_per_process_globals.tt_threshold);
+#endif
+
+    if (self->transaction_threshold_is_apdex_f) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
+    return PyInt_FromLong(self->transaction_threshold);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRTracerSettings_set_threshold(NRTracerSettingsObject *self,
+                                          PyObject *value)
+{
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError,
+                        "can't delete transaction_threshold attribute");
+        return -1;
+    }
+
+    if (value != Py_None && !PyFloat_Check(value) && !PyInt_Check(value)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "expected int or None for transaction_threshold");
+        return -1;
+    }
+
+    /*
+     * We use a None value to indicate that threshold should be
+     * set based on apdex_f calculation. Need to ensure flag it
+     * is apdex calculation so that retreival of value also
+     * returns None in that case. For case where actual time
+     * value is used, we accept value in seconds and PHP agent
+     * core expects microseconds so need to adjust appropriately.
+     */
+
+    /*
+     * TODO Use of global for transaction_threshold is broken in the
+     * PHP agent core. We need to workaround that by storing the
+     * values in this object and updating transaction threshold
+     * values on each request before distilling metrics. See
+     * https://www.pivotaltracker.com/story/show/12771611.
+     */
+
+#if 0
+    if (value == Py_None) {
+        nr_per_process_globals.tt_threshold_is_apdex_f = 1;
+        nr_initialize_global_tt_threshold_from_apdex(NULL);
+    }
+    else {
+        nr_per_process_globals.tt_threshold_is_apdex_f = 0;
+        if (PyFloat_Check(value))
+            nr_per_process_globals.tt_threshold = PyFloat_AsDouble(value) * 1000000;
+        else
+            nr_per_process_globals.tt_threshold = PyInt_AsLong(value) * 1000000;
+        if (nr_per_process_globals.tt_threshold < 0)
+            nr_per_process_globals.tt_threshold = 0;
+    }
+#endif
+
+    if (value == Py_None) {
+        self->transaction_threshold_is_apdex_f = 1;
+        self->transaction_threshold = 0;
+    }
+    else {
+        self->transaction_threshold_is_apdex_f = 0;
+        if (PyFloat_Check(value))
+            self->transaction_threshold = PyFloat_AsDouble(value) * 1000000;
+        else
+            self->transaction_threshold = PyInt_AsLong(value) * 1000000;
+        if (self->transaction_threshold < 0)
+            self->transaction_threshold = 0;
+    }
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
 #ifndef PyVarObject_HEAD_INIT
 #define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
 #endif
@@ -75,6 +182,8 @@ static PyMethodDef NRTracerSettings_methods[] = {
 static PyGetSetDef NRTracerSettings_getset[] = {
     { "enabled",            (getter)NRTracerSettings_get_enabled,
                             (setter)NRTracerSettings_set_enabled, 0 },
+    { "transaction_threshold", (getter)NRTracerSettings_get_threshold,
+                            (setter)NRTracerSettings_set_threshold, 0 },
     { NULL },
 };
 

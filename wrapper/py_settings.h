@@ -13,6 +13,8 @@
 
 typedef struct {
     PyObject_HEAD
+    int64_t transaction_threshold;
+    int transaction_threshold_is_apdex_f;
 } NRTracerSettingsObject;
 
 extern PyTypeObject NRTracerSettings_Type;

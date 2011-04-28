@@ -18,6 +18,7 @@
 #include "web_transaction.h"
 
 #include "metric_table.h"
+#include "daemon_protocol.h"
 
 #include "pythread.h"
 
@@ -292,6 +293,8 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
     PyObject *value = NULL;
     PyObject *traceback = NULL;
 
+    NRSettingsObject *settings = NULL;
+
     if (!PyArg_ParseTuple(args, "OOO:__exit__", &type, &value, &traceback))
         return NULL;
 
@@ -362,7 +365,7 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
      * application as a parameter rather than internally
      * consulting the global variable referencing the current
      * application. See more details on Pivotal Tracker at
-     * https://www.pivotaltracker.com/projects/154789. We use
+     * https://www.pivotaltracker.com/story/show/8953159. We use
      * a local mutex to prevent multiple threads running
      * through this critical section at this point. We release
      * the Python GIL at this point just in case inner agent
@@ -377,7 +380,40 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
 
     nrthread_mutex_lock(&NRTransaction_exit_mutex);
 
+    /*
+     * TODO The use of a global for transaction threshold in
+     * PHP agent core is broken for multithreaded applications.
+     * The problem being that the global needs to be switched
+     * on each request to correspond to the value for the
+     * associated application if apdex_f calculation being used
+     * or fallback to integer value supplied in configuration
+     * file if not. See more details on Pivotal Tracker at
+     * https://www.pivotaltracker.com/story/show/12771611.
+     * Note have have this workaround before lock application
+     * because setting threshold from apdex against a specific
+     * application grabs the application lock. If do it after
+     * we have grabbed application lock it will deadlock as the
+     * lock isn't recursive.
+     */
+
+    settings = (NRSettingsObject *)NRSettings_Singleton();
+
+    if (settings->tracer_settings->transaction_threshold_is_apdex_f) {
+        nr_per_process_globals.tt_threshold_is_apdex_f = 1;
+#if 0
+        /* Done in nr__switch_to_application(). */
+        nr_initialize_global_tt_threshold_from_apdex(application);
+#endif
+    }
+    else {
+        nr_per_process_globals.tt_threshold_is_apdex_f = 0;
+        nr_per_process_globals.tt_threshold =
+                settings->tracer_settings->transaction_threshold;
+    }
+
+#if 0
     nrthread_mutex_lock(&application->lock);
+#endif
 
     nr__switch_to_application(application);
 
@@ -462,11 +498,15 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
     Py_END_ALLOW_THREADS
 #endif
 
+#if 0
     nrthread_mutex_unlock(&application->lock);
+#endif
 
     nrthread_mutex_unlock(&NRTransaction_exit_mutex);
 
     self->transaction_state = NR_TRANSACTION_STATE_STOPPED;
+
+    Py_DECREF(settings);
 
     Py_INCREF(Py_None);
     return Py_None;

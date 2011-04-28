@@ -16,14 +16,27 @@ _LOG_LEVELS = {
     'VERBOSEDEBUG': LOG_VERBOSEDEBUG,
 }
 
+def _map_log_level(s):
+    return _LOG_LEVELS[s]
+
+def _map_ignored_params(s):
+    return map(string.strip, s.split(','))
+
+def _map_transaction_threshold(s):
+    if s == 'apdex_f':
+        return None
+    return float(s)
+
 _CONFIG_VALUES = {
     'app_name': ('get', None),
     'monitor_mode': ('getboolean', None),
     'log_file': ('get', None),
-    'log_level': ('get', _LOG_LEVELS.__getitem__),
+    'log_level': ('get', _map_log_level),
     'capture_params': ('getboolean', None),
-    'ignored_params': ('get', lambda x: map(string.strip,x.split(','))),
+    'ignored_params': ('get', _map_ignored_params),
     'transaction_tracer.enabled': ('getboolean', None),
+    'transaction_tracer.transaction_threshold':
+            ('get', _map_transaction_threshold),
     'error_collector.enabled': ('getboolean', None),
 }
 

@@ -466,6 +466,163 @@ PyTypeObject NRErrorsSettings_Type = {
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRDebugSettings_new(PyTypeObject *type, PyObject *args,
+                                     PyObject *kwds)
+{
+    NRDebugSettingsObject *self;
+
+    self = (NRDebugSettingsObject *)type->tp_alloc(type, 0);
+
+    if (!self)
+        return NULL;
+
+    return (PyObject *)self;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static void NRDebugSettings_dealloc(NRDebugSettingsObject *self)
+{
+    PyObject_Del(self);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRDebugSettings_get_dump_metric_table(
+        NRDebugSettingsObject *self, void *closure)
+{
+    return PyBool_FromLong(nr_per_process_globals.special_flags &
+                           NR_SPECIAL_SHOW_METRIC_TABLE);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRDebugSettings_set_dump_metric_table(
+        NRDebugSettingsObject *self, PyObject *value)
+{
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError,
+                        "can't delete dump_metric_table attribute");
+        return -1;
+    }
+
+    if (!PyBool_Check(value)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "expected bool for dump_metric_table");
+        return -1;
+    }
+
+    if (value == Py_True)
+        nr_per_process_globals.special_flags |= NR_SPECIAL_SHOW_METRIC_TABLE;
+    else
+        nr_per_process_globals.special_flags &= ~NR_SPECIAL_SHOW_METRIC_TABLE;
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRDebugSettings_get_sql_parsing(
+        NRDebugSettingsObject *self, void *closure)
+{
+    return PyBool_FromLong(nr_per_process_globals.special_flags &
+                           NR_SPECIAL_NO_SQL_PARSING);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRDebugSettings_set_sql_parsing(
+        NRDebugSettingsObject *self, PyObject *value)
+{
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError,
+                        "can't delete sql_statement_parsing attribute");
+        return -1;
+    }
+
+    if (!PyBool_Check(value)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "expected bool for sql_statement_parsing");
+        return -1;
+    }
+
+    /*
+     * Note that the flag has opposite logic to what the bit mask
+     * flag records.
+     */
+
+    if (value == Py_True)
+        nr_per_process_globals.special_flags &= ~NR_SPECIAL_NO_SQL_PARSING;
+    else
+        nr_per_process_globals.special_flags |= NR_SPECIAL_NO_SQL_PARSING;
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+#ifndef PyVarObject_HEAD_INIT
+#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
+#endif
+
+static PyMethodDef NRDebugSettings_methods[] = {
+    { NULL, NULL }
+};
+
+static PyGetSetDef NRDebugSettings_getset[] = {
+    { "dump_metric_table",  (getter)NRDebugSettings_get_dump_metric_table,
+                            (setter)NRDebugSettings_set_dump_metric_table, 0 },
+    { "sql_statement_parsing", (getter)NRDebugSettings_get_sql_parsing,
+                            (setter)NRDebugSettings_set_sql_parsing, 0 },
+    { NULL },
+};
+
+PyTypeObject NRDebugSettings_Type = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "_newrelic.DebugSettings", /*tp_name*/
+    sizeof(NRDebugSettingsObject), /*tp_basicsize*/
+    0,                      /*tp_itemsize*/
+    /* methods */
+    (destructor)NRDebugSettings_dealloc, /*tp_dealloc*/
+    0,                      /*tp_print*/
+    0,                      /*tp_getattr*/
+    0,                      /*tp_setattr*/
+    0,                      /*tp_compare*/
+    0,                      /*tp_repr*/
+    0,                      /*tp_as_number*/
+    0,                      /*tp_as_sequence*/
+    0,                      /*tp_as_mapping*/
+    0,                      /*tp_hash*/
+    0,                      /*tp_call*/
+    0,                      /*tp_str*/
+    0,                      /*tp_getattro*/
+    0,                      /*tp_setattro*/
+    0,                      /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT,     /*tp_flags*/
+    0,                      /*tp_doc*/
+    0,                      /*tp_traverse*/
+    0,                      /*tp_clear*/
+    0,                      /*tp_richcompare*/
+    0,                      /*tp_weaklistoffset*/
+    0,                      /*tp_iter*/
+    0,                      /*tp_iternext*/
+    NRDebugSettings_methods,     /*tp_methods*/
+    0,                      /*tp_members*/
+    NRDebugSettings_getset,      /*tp_getset*/
+    0,                      /*tp_base*/
+    0,                      /*tp_dict*/
+    0,                      /*tp_descr_get*/
+    0,                      /*tp_descr_set*/
+    0,                      /*tp_dictoffset*/
+    0,                      /*tp_init*/
+    0,                      /*tp_alloc*/
+    NRDebugSettings_new,         /*tp_new*/
+    0,                      /*tp_free*/
+    0,                      /*tp_is_gc*/
+};
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRSettingsObject_instance = NULL;
 
 /* ------------------------------------------------------------------------- */
@@ -503,6 +660,9 @@ static PyObject *NRSettings_new(PyTypeObject *type, PyObject *args,
     self->errors_settings = (NRErrorsSettingsObject *)
             PyObject_CallFunctionObjArgs(
             (PyObject *)&NRErrorsSettings_Type, NULL);
+    self->debug_settings = (NRErrorsSettingsObject *)
+            PyObject_CallFunctionObjArgs(
+            (PyObject *)&NRDebugSettings_Type, NULL);
 
     self->monitor_mode = 1;
     self->ignored_params = PyList_New(0);
@@ -518,6 +678,7 @@ static void NRSettings_dealloc(NRSettingsObject *self)
 
     Py_DECREF(self->tracer_settings);
     Py_DECREF(self->errors_settings);
+    Py_DECREF(self->debug_settings);
 
     PyObject_Del(self);
 }
@@ -743,6 +904,15 @@ static PyObject *NRSettings_get_error_collector(NRSettingsObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRSettings_get_debug_settings(NRSettingsObject *self,
+                                               void *closure)
+{
+    Py_INCREF(self->debug_settings);
+    return (PyObject *)self->debug_settings;
+}
+
+/* ------------------------------------------------------------------------- */
+
 #ifndef PyVarObject_HEAD_INIT
 #define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
 #endif
@@ -767,6 +937,8 @@ static PyGetSetDef NRSettings_getset[] = {
     { "transaction_tracer", (getter)NRSettings_get_transaction_tracer,
                             NULL, 0 },
     { "error_collector",    (getter)NRSettings_get_error_collector,
+                            NULL, 0 },
+    { "debug",              (getter)NRSettings_get_debug_settings,
                             NULL, 0 },
     { NULL },
 };

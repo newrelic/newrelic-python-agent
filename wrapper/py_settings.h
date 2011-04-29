@@ -28,8 +28,15 @@ extern PyTypeObject NRErrorsSettings_Type;
 
 typedef struct {
     PyObject_HEAD
+} NRDebugSettingsObject;
+
+extern PyTypeObject NRDebugSettings_Type;
+
+typedef struct {
+    PyObject_HEAD
     NRTracerSettingsObject *tracer_settings;
     NRErrorsSettingsObject *errors_settings;
+    NRErrorsSettingsObject *debug_settings;
     int monitor_mode;
     PyObject *ignored_params;
 } NRSettingsObject;

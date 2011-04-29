@@ -85,6 +85,9 @@ def _process_configuration(section):
     _process_setting(section, 'error_collector.enabled', 'getboolean', None),
     _process_setting(section, 'error_collector.ignore_errors',
                      'get', _map_ignore_errors)
+    _process_setting(section, 'debug.dump_metric_table', 'getboolean', None)
+    _process_setting(section, 'debug.sql_statement_parsing',
+                     'getboolean', None)
 
 if _config_file:
     _config_object.read([_config_file])

@@ -1648,6 +1648,8 @@ init_newrelic(void)
         return;
     if (PyType_Ready(&NRErrorsSettings_Type) < 0)
         return;
+    if (PyType_Ready(&NRDebugSettings_Type) < 0)
+        return;
     if (PyType_Ready(&NRTransaction_Type) < 0)
         return;
     if (PyType_Ready(&NRWebTransaction_Type) < 0)
@@ -1907,9 +1909,7 @@ init_newrelic(void)
     nr_per_process_globals.expensive_nodes_size = 100;
     nr_per_process_globals.expensive_node_minimum = 1;
 
-#if 0
-    nr_per_process_globals.special_flags = NR_SPECIAL_SHOW_METRIC_TABLE;
-#endif
+    nr_per_process_globals.special_flags = 0;
 
     /* Initialise support for tracking multiple applications. */
 

@@ -155,37 +155,39 @@ static PyObject *NRDatabaseTrace_exit(NRDatabaseTraceObject *self,
 
     if (!nr_node_header__delete_if_not_slow_enough(
             (nr_node_header *)transaction_trace, 1, transaction)) {
-        if (transaction_trace->header.times.duration >
-            nr_per_process_globals.slow_sql_stacktrace) {
+        if (nr_per_process_globals.slow_sql_stacktrace >= 0) {
+            if (transaction_trace->header.times.duration >
+                nr_per_process_globals.slow_sql_stacktrace) {
 
-            PyObject *stack_trace = NULL;
+                PyObject *stack_trace = NULL;
 
-            stack_trace = NRUtilities_StackTrace();
+                stack_trace = NRUtilities_StackTrace();
 
-            if (stack_trace) {
-                int i;
+                if (stack_trace) {
+                    int i;
 
-                transaction_trace->u.s.stacktrace_params = nro__new(
-                        NR_OBJECT_HASH);
+                    transaction_trace->u.s.stacktrace_params = nro__new(
+                            NR_OBJECT_HASH);
 
-                for (i=0; i<PyList_Size(stack_trace); i++) {
-                    nro__set_in_array_at(
-                            transaction_trace->u.s.stacktrace_params,
-                            "stack_trace", nro__new_string(
-                            PyString_AsString(PyList_GetItem(
-                            stack_trace, i))));
+                    for (i=0; i<PyList_Size(stack_trace); i++) {
+                        nro__set_in_array_at(
+                                transaction_trace->u.s.stacktrace_params,
+                                "stack_trace", nro__new_string(
+                                PyString_AsString(PyList_GetItem(
+                                stack_trace, i))));
+                    }
+                    Py_DECREF(stack_trace);
                 }
-                Py_DECREF(stack_trace);
-            }
-            else {
-                /*
-                 * Obtaining the stack trace should never fail. In
-                 * the unlikely event that it does, then propogate
-                 * the error back through to the caller.
-                 */
+                else {
+                    /*
+                     * Obtaining the stack trace should never fail. In
+                     * the unlikely event that it does, then propogate
+                     * the error back through to the caller.
+                     */
 
-                self->saved_trace_node = NULL;
-                return NULL;
+                    self->saved_trace_node = NULL;
+                    return NULL;
+                }
             }
         }
 

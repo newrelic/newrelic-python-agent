@@ -234,7 +234,7 @@ static int NRTracerSettings_set_sql_threshold(NRTracerSettingsObject *self,
     }
 
     if (nr_per_process_globals.slow_sql_stacktrace < 0)
-        nr_per_process_globals.slow_sql_stacktrace = 0;
+        nr_per_process_globals.slow_sql_stacktrace = -1;
 
     return 0;
 }

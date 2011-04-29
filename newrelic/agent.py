@@ -16,6 +16,12 @@ _LOG_LEVEL = {
     'VERBOSEDEBUG': LOG_VERBOSEDEBUG,
 }
 
+_RECORD_SQL = {
+    "off": RECORDSQL_OFF,
+    "raw": RECORDSQL_RAW,
+    "obfuscated": RECORDSQL_OBFUSCATED,
+}
+
 def _map_log_level(s):
     return _LOG_LEVEL[s]
 
@@ -27,62 +33,64 @@ def _map_transaction_threshold(s):
         return None
     return float(s)
 
-_RECORD_SQL = {
-    "off": RECORDSQL_OFF,
-    "raw": RECORDSQL_RAW,
-    "obfuscated": RECORDSQL_OBFUSCATED,
-}
-
 def _map_record_sql(s):
     return _RECORD_SQL[s]
 
 def _map_ignore_errors(s):
     return map(string.strip, s.split(','))
 
-_CONFIG_VALUES = {
-    'app_name': ('get', None),
-    'monitor_mode': ('getboolean', None),
-    'log_file': ('get', None),
-    'log_level': ('get', _map_log_level),
-    'capture_params': ('getboolean', None),
-    'ignored_params': ('get', _map_ignored_params),
-    'transaction_tracer.enabled': ('getboolean', None),
-    'transaction_tracer.transaction_threshold':
-            ('get', _map_transaction_threshold),
-    'transaction_tracer.record_sql': ('get', _map_record_sql),
-    'transaction_tracer.stack_trace_threshold': ('getfloat', None),
-    'error_collector.enabled': ('getboolean', None),
-    'error_collector.ignore_errors': ('get', _map_ignore_errors),
-}
-
 _settings = settings()
 
 _config_file = os.environ.get('NEWRELIC_CONFIG', None)
+_config_environment = os.environ.get('NEWRELIC_ENVIRONMENT', None)
+_config_object = ConfigParser.SafeConfigParser()
 
-if _config_file:
-    _config_object = ConfigParser.SafeConfigParser()
-    _config_object.read([_config_file])
-    for key, (getter, mapper) in _CONFIG_VALUES.iteritems():
+def _process_setting(section, option, getter, mapper):
+    try:
+        value = getattr(_config_object, getter)(section, option)
+    except ConfigParser.NoOptionError:
+        pass
+    else:
         try:
-            value = getattr(_config_object, getter)('newrelic', key)
-        except ConfigParser.NoOptionError:
-            pass
+            if mapper:
+                value = mapper(value)
+        except:
+            raise ValueError('Invalid configuration entry with name '
+                               '"%s" and value "%s".' % (option, value))
         else:
-            try:
-                if mapper:
-                    value = mapper(value)
-            except:
-                raise ValueError('Invalid configuration entry with name '
-                                   '"%s" and value "%s".' % (key, value))
-            obj = _settings
-            parts = string.splitfields(key, '.', 1) 
+            target = _settings
+            parts = string.splitfields(option, '.', 1) 
             while True:
                 if len(parts) == 1:
-                    setattr(obj, parts[0], value)
+                    setattr(target, parts[0], value)
                     break
                 else:
-                    obj = getattr(obj, parts[0])
+                    target = getattr(target, parts[0])
                     parts = string.splitfields(parts[1], '.', 1)
+
+def _process_configuration(section):
+    _process_setting(section, 'app_name', 'get', None)
+    _process_setting(section, 'monitor_mode', 'getboolean', None)
+    _process_setting(section, 'log_file', 'get', None)
+    _process_setting(section, 'log_level', 'get', _map_log_level)
+    _process_setting(section, 'capture_params', 'getboolean', None)
+    _process_setting(section, 'ignored_params', 'get', _map_ignored_params)
+    _process_setting(section, 'transaction_tracer.enabled', 'getboolean', None)
+    _process_setting(section, 'transaction_tracer.transaction_threshold',
+                     'get', _map_transaction_threshold)
+    _process_setting(section, 'transaction_tracer.record_sql',
+                     'get', _map_record_sql)
+    _process_setting(section, 'transaction_tracer.stack_trace_threshold',
+                     'getfloat', None)
+    _process_setting(section, 'error_collector.enabled', 'getboolean', None),
+    _process_setting(section, 'error_collector.ignore_errors',
+                     'get', _map_ignore_errors)
+
+if _config_file:
+    _config_object.read([_config_file])
+    _process_configuration('newrelic')
+    if _config_environment:
+        _process_configuration('newrelic:%s' % _config_environment)
 
 # Setup instrumentation by triggering off module imports.
 

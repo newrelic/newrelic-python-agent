@@ -16,6 +16,7 @@ clean :
 distclean : clean
 	$(RM) config.h
 	$(RM) Makefile
+	$(RM) setup.py
 	rm -rf test-env
 	-(cd php_agent && git clean -fdx)
 

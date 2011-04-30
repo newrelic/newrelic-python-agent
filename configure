@@ -669,6 +669,7 @@ OBJEXT
 CPP
 GREP
 EGREP
+PLATFORM
 LIBOBJS
 LTLIBOBJS'
 ac_subst_files=''
@@ -3826,6 +3827,7 @@ cat >>confdefs.h <<\_ACEOF
 #define NRTHREAD_MUTEX_ERRORCHECK PTHREAD_MUTEX_ERRORCHECK_NP
 _ACEOF
 
+              PLATFORM="LINUX"
               ;;
   *darwin*)
 cat >>confdefs.h <<\_ACEOF
@@ -3837,6 +3839,7 @@ cat >>confdefs.h <<\_ACEOF
 #define NRTHREAD_MUTEX_ERRORCHECK PTHREAD_MUTEX_ERRORCHECK
 _ACEOF
 
+              PLATFORM="DARWIN"
               ;;
   *solaris*)
 cat >>confdefs.h <<\_ACEOF
@@ -3848,13 +3851,28 @@ cat >>confdefs.h <<\_ACEOF
 #define NRTHREAD_MUTEX_ERRORCHECK PTHREAD_MUTEX_ERRORCHECK
 _ACEOF
 
+              PLATFORM="SOLARIS"
+              ;;
+  *freebsd*)
+cat >>confdefs.h <<\_ACEOF
+#define NR_FREEBSD_SAMPLER 1
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define NRTHREAD_MUTEX_ERRORCHECK PTHREAD_MUTEX_ERRORCHECK
+_ACEOF
+
+              PLATFORM="FREEBSD"
               ;;
 esac
+
+
 
 ac_config_headers="$ac_config_headers config.h"
 
 
-ac_config_files="$ac_config_files Makefile"
+ac_config_files="$ac_config_files Makefile setup.py"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -4410,6 +4428,7 @@ do
   case $ac_config_target in
     "config.h") CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
+    "setup.py") CONFIG_FILES="$CONFIG_FILES setup.py" ;;
 
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
@@ -4528,11 +4547,12 @@ OBJEXT!$OBJEXT$ac_delim
 CPP!$CPP$ac_delim
 GREP!$GREP$ac_delim
 EGREP!$EGREP$ac_delim
+PLATFORM!$PLATFORM$ac_delim
 LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 59; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 60; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

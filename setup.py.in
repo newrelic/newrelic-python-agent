@@ -3,10 +3,9 @@ import sys
 
 from distutils import sysconfig
 dummy = sysconfig.get_config_vars('CFLAGS', 'OPT')
-sysconfig._config_vars['CFLAGS'] = sysconfig._config_vars['CFLAGS'].replace(
-  ' -Os ', ' ')
-sysconfig._config_vars['OPT'] = sysconfig._config_vars['OPT'].replace(
-  ' -Os ', ' ')
+config_vars = sysconfig._config_vars
+config_vars['CFLAGS'] = config_vars['CFLAGS'].replace(' -Os ', ' ')
+config_vars['OPT'] = config_vars['OPT'].replace(' -Os ', ' ')
 
 sources = [
   "php_agent/application.c",
@@ -48,9 +47,12 @@ sources = [
   "wrapper/py_web_transaction.c",
 ]
 
+platform = "@PLATFORM@"
+
 define_macros = []
 define_macros.append(('NEWRELIC_AGENT_LANGUAGE', '"python"'))
 define_macros.append(('HAVE_CONFIG_H', '1'))
+define_macros.append(('NR_BUILD_%s' % platform, '1'))
 
 if sys.version_info[:2] < (2, 5):
     define_macros.append(('Py_ssize_t', 'int'))

@@ -36,15 +36,24 @@ fi
 case "$host" in
   *linux*)    AC_DEFINE(NR_LINUX_SAMPLER, 1, [Linux-based usage sampler])
               AC_DEFINE(NRTHREAD_MUTEX_ERRORCHECK, PTHREAD_MUTEX_ERRORCHECK_NP, [How to get error checking mutexes])
+              PLATFORM="LINUX"
               ;;
   *darwin*)   AC_DEFINE(NR_DARWIN_SAMPLER, 1, [Darwin-based usage sampler])
               AC_DEFINE(NRTHREAD_MUTEX_ERRORCHECK, PTHREAD_MUTEX_ERRORCHECK, [How to get error checking mutexes])
+              PLATFORM="DARWIN"
               ;;
   *solaris*)  AC_DEFINE(NR_SOLARIS_SAMPLER, 1, [Solaris-based usage sampler])
               AC_DEFINE(NRTHREAD_MUTEX_ERRORCHECK, PTHREAD_MUTEX_ERRORCHECK, [How to get error checking mutexes])
+              PLATFORM="SOLARIS"
+              ;;
+  *freebsd*)  AC_DEFINE(NR_FREEBSD_SAMPLER, 1, [FreeBSD-based usage sampler])
+              AC_DEFINE(NRTHREAD_MUTEX_ERRORCHECK, PTHREAD_MUTEX_ERRORCHECK, [How to get error checking mutexes])
+              PLATFORM="FREEBSD"
               ;;
 esac
 
+AC_SUBST(PLATFORM)
+
 AC_CONFIG_HEADER(config.h)
 
-AC_OUTPUT(Makefile)
+AC_OUTPUT(Makefile setup.py)

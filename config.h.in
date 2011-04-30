@@ -28,6 +28,9 @@
 /* Darwin-based usage sampler */
 #undef NR_DARWIN_SAMPLER
 
+/* FreeBSD-based usage sampler */
+#undef NR_FREEBSD_SAMPLER
+
 /* Linux-based usage sampler */
 #undef NR_LINUX_SAMPLER
 

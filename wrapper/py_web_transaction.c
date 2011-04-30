@@ -92,6 +92,9 @@ static int NRWebTransaction_init(NRTransactionObject *self, PyObject *args,
      */
 
     if (self->transaction) {
+        const char *script_name = NULL;
+        const char *path_info = NULL;
+
         /*
          * Extract from the WSGI environ dictionary details of
          * the URL path. This will be set as default path for
@@ -104,45 +107,43 @@ static int NRWebTransaction_init(NRTransactionObject *self, PyObject *args,
 
         self->transaction->path = 0;
 
-        object = PyDict_GetItemString(environ, "REQUEST_URI");
+        object = PyDict_GetItemString(environ, "SCRIPT_NAME");
 
-        if (object && PyString_Check(object)) {
+        if (object && PyString_Check(object))
+            script_name = PyString_AsString(object);
+
+        object = PyDict_GetItemString(environ, "PATH_INFO");
+
+        if (object && PyString_Check(object))
+            path_info = PyString_AsString(object);
+
+        if (script_name || path_info) {
+            char *path = NULL;
+
             self->transaction->path_type = NR_PATH_TYPE_URI;
-            self->transaction->path = nrstrdup(PyString_AsString(object));
-            self->transaction->realpath = nrstrdup(self->transaction->path);
+
+            if (!script_name)
+                script_name = "";
+
+            if (!path_info)
+                path_info = "";
+
+            path = nrmalloc(strlen(script_name)+strlen(path_info)+1);
+
+            strcpy(path, script_name);
+            strcat(path, path_info);
+
+            self->transaction->path = path;
+            self->transaction->realpath = nrstrdup(path);
         }
-        else {
-            const char *script_name = NULL;
-            const char *path_info = NULL;
 
-            object = PyDict_GetItemString(environ, "SCRIPT_NAME");
+        if (self->transaction->path == 0) {
+            object = PyDict_GetItemString(environ, "REQUEST_URI");
 
-            if (object && PyString_Check(object))
-                script_name = PyString_AsString(object);
-
-            object = PyDict_GetItemString(environ, "PATH_INFO");
-
-            if (object && PyString_Check(object))
-                path_info = PyString_AsString(object);
-
-            if (script_name || path_info) {
-                char *path = NULL;
-
+            if (object && PyString_Check(object)) {
                 self->transaction->path_type = NR_PATH_TYPE_URI;
-
-                if (!script_name)
-                    script_name = "";
-
-                if (!path_info)
-                    path_info = "";
-
-                path = nrmalloc(strlen(script_name)+strlen(path_info)+1);
-
-                strcpy(path, script_name);
-                strcat(path, path_info);
-
-                self->transaction->path = path;
-                self->transaction->realpath = nrstrdup(path);
+                self->transaction->path = nrstrdup(PyString_AsString(object));
+                self->transaction->realpath = nrstrdup(self->transaction->path);
             }
         }
 

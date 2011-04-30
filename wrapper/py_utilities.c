@@ -223,7 +223,35 @@ PyObject *NRUtilities_CallableName(PyObject *wrapped, PyObject *wrapper,
     PyObject *class_object = NULL;
     PyObject *method_object = NULL;
 
+    PyObject *target = NULL;
     PyObject *object = NULL;
+
+    /*
+     * We need to deal with case where we may have wrapped a
+     * wrapper. In that case we need to check for the
+     * __wrapped__ attribute and follow the chain of these to
+     * get to the inner most object which isn't marked as being
+     * a wrapper.
+     *
+     * TODO Should we perhaps only follow __wrapped__ for our
+     * own wrapper objects given that convention of using a
+     * wrapped attribute exists for Python 3.2+.
+     */
+
+    target = wrapped;
+    Py_INCREF(target);
+
+    object = PyObject_GetAttrString(target, "__wrapped__");
+
+    if (object) {
+        while (object) {
+            Py_DECREF(target);
+            target = object;
+            object = PyObject_GetAttrString(target, "__wrapped__");
+        }
+    }
+
+    PyErr_Clear();
 
     /*
      * When a decorator is used on a class method, it isn't
@@ -239,11 +267,11 @@ PyObject *NRUtilities_CallableName(PyObject *wrapped, PyObject *wrapper,
      */
 
     if (wrapper && args) {
-        if (PyFunction_Check(wrapped) && PyTuple_Size(args) >= 1) {
+        if (PyFunction_Check(target) && PyTuple_Size(args) >= 1) {
             class_object = PyObject_GetAttrString(
                     PyTuple_GetItem(args, 0), "__class__");
             if (class_object) {
-                object_name = PyObject_GetAttrString(wrapped, "__name__");
+                object_name = PyObject_GetAttrString(target, "__name__");
                 if (object_name) {
                    method_object = PyObject_GetAttr(class_object, object_name);
                    if (method_object && PyMethod_Check(method_object) &&
@@ -266,8 +294,8 @@ PyObject *NRUtilities_CallableName(PyObject *wrapped, PyObject *wrapper,
     }
 
     if (!object) {
-        Py_INCREF(wrapped);
-        object = wrapped;
+        Py_INCREF(target);
+        object = target;
     }
 
     /*
@@ -363,6 +391,8 @@ PyObject *NRUtilities_CallableName(PyObject *wrapped, PyObject *wrapper,
     Py_XDECREF(object_name);
 
     Py_XDECREF(object);
+
+    Py_DECREF(target);
 
     return PyString_FromString(s);
 }

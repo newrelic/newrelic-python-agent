@@ -1,6 +1,6 @@
 from newrelic.agent import (FunctionTraceWrapper, OutFunctionWrapper,
         wrap_pre_function, wrap_post_function, wrap_function_trace,
-        wrap_error_trace, callable_name, transaction)
+        wrap_error_trace, callable_name, transaction, NameTransactionWrapper)
 
 def wrap_middleware(handler, *args, **kwargs):
     if hasattr(handler, '_request_middleware'):
@@ -49,10 +49,15 @@ def wrap_url_resolver_output(result):
 
     if type(result) == type(()):
         callback, args, kwargs = result
-        callback = FunctionTraceWrapper(callback, override_path=True)
-        result = (callback, args, kwargs)
+        #callback = FunctionTraceWrapper(callback, override_path=True)
+        wrapper = NameTransactionWrapper(callback)
+        wrapper = FunctionTraceWrapper(wrapper)
+        result = (wrapper, args, kwargs)
     else:
-        result.func = FunctionTraceWrapper(result.func, override_path=True)
+        #result.func = FunctionTraceWrapper(result.func, override_path=True)
+        wrapper = NameTransactionWrapper(result.func)
+        wrapper = FunctionTraceWrapper(wrapper)
+        result.func = wrapper
 
     return result
 

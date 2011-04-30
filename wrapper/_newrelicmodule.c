@@ -16,6 +16,7 @@
 #include "py_external_trace.h"
 #include "py_function_trace.h"
 #include "py_memcache_trace.h"
+#include "py_name_transaction.h"
 #include "py_transaction.h"
 #include "py_web_transaction.h"
 
@@ -1039,6 +1040,129 @@ static PyObject *newrelic_wrap_memcache_trace(PyObject *self, PyObject *args,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *newrelic_name_transaction(PyObject *self, PyObject *args,
+                                           PyObject *kwds)
+{
+    PyObject *name = Py_None;
+
+    static char *kwlist[] = { "name", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O:name_transaction",
+                                     kwlist, &name)) {
+        return NULL;
+    }
+
+    return PyObject_CallFunctionObjArgs((PyObject *)
+            &NRNameTransactionDecorator_Type, name, NULL);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *newrelic_wrap_name_transaction(PyObject *self, PyObject *args,
+                                                PyObject *kwds)
+{
+    PyObject *module = NULL;
+    const char *class_name = NULL;
+    const char *object_name = NULL;
+
+    PyObject *name = Py_None;
+
+    PyObject *wrapped_object = NULL;
+    PyObject *parent_object = NULL;
+    const char *attribute_name = NULL;
+
+    PyObject *wrapper_object = NULL;
+
+    PyObject *result = NULL;
+
+    static char *kwlist[] = { "module", "class_name", "object_name",
+                              "name", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds,
+                                     "Ozz|O:wrap_name_transaction",
+                                     kwlist, &module, &class_name,
+                                     &object_name, &name)) {
+        return NULL;
+    }
+
+    if (!PyModule_Check(module) && !PyString_Check(module)) {
+        PyErr_SetString(PyExc_TypeError, "module reference must be "
+                        "module or string");
+        return NULL;
+    }
+
+    if (!class_name && !object_name) {
+        PyErr_SetString(PyExc_RuntimeError, "class or object name must be "
+                        "supplied");
+        return NULL;
+    }
+
+    wrapped_object = NRUtilities_LookupCallable(module, class_name,
+                                                object_name, &parent_object,
+                                                &attribute_name);
+
+    if (!wrapped_object)
+        return NULL;
+
+    if (name == Py_None) {
+        int len = 0;
+        char *s = NULL;
+
+        const char *module_name = NULL;
+
+        if (PyModule_Check(module))
+            module_name = PyModule_GetName(module);
+        else
+            module_name = PyString_AsString(module);
+
+        if (module_name)
+            len += strlen(module_name);
+        if (module_name && class_name)
+            len += 1;
+        if (class_name)
+            len += strlen(class_name);
+
+        len += 2;
+        len += strlen(object_name);
+        len += 1;
+
+        s = alloca(len);
+        *s = '\0';
+
+        if (module_name)
+            strcat(s, module_name);
+        if (module_name && class_name)
+            strcat(s, ".");
+        if (class_name)
+            strcat(s, class_name);
+
+        strcat(s, "::");
+        strcat(s, object_name);
+
+        name = PyString_FromString(s);
+    }
+    else
+        Py_INCREF(name);
+
+    wrapper_object = PyObject_CallFunctionObjArgs((PyObject *)
+            &NRNameTransactionWrapper_Type, wrapped_object, name, NULL);
+
+    result = NRUtilities_ReplaceWithWrapper(parent_object, attribute_name,
+                                            wrapper_object);
+
+    Py_DECREF(parent_object);
+    Py_DECREF(wrapped_object);
+
+    Py_DECREF(name);
+
+    if (!result)
+        return NULL;
+
+    return wrapper_object;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *newrelic_in_function(PyObject *self, PyObject *args,
                                       PyObject *kwds)
 {
@@ -1559,6 +1683,10 @@ static PyMethodDef newrelic_methods[] = {
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "wrap_memcache_trace", (PyCFunction)newrelic_wrap_memcache_trace,
                             METH_VARARGS|METH_KEYWORDS, 0 },
+    { "name_transaction",   (PyCFunction)newrelic_name_transaction,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
+    { "wrap_name_transaction", (PyCFunction)newrelic_wrap_name_transaction,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
     { "in_function",        (PyCFunction)newrelic_in_function,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "wrap_in_function",   (PyCFunction)newrelic_wrap_in_function,
@@ -1641,6 +1769,10 @@ init_newrelic(void)
     if (PyType_Ready(&NRMemcacheTraceDecorator_Type) < 0)
         return;
     if (PyType_Ready(&NRMemcacheTraceWrapper_Type) < 0)
+        return;
+    if (PyType_Ready(&NRNameTransactionWrapper_Type) < 0)
+        return;
+    if (PyType_Ready(&NRNameTransactionDecorator_Type) < 0)
         return;
     if (PyType_Ready(&NRSettings_Type) < 0)
         return;
@@ -1739,6 +1871,12 @@ init_newrelic(void)
     Py_INCREF(&NRMemcacheTraceWrapper_Type);
     PyModule_AddObject(module, "MemcacheTraceWrapper",
                        (PyObject *)&NRMemcacheTraceWrapper_Type);
+    Py_INCREF(&NRNameTransactionDecorator_Type);
+    PyModule_AddObject(module, "NameTransactionDecorator",
+                       (PyObject *)&NRNameTransactionDecorator_Type);
+    Py_INCREF(&NRNameTransactionWrapper_Type);
+    PyModule_AddObject(module, "NameTransactionWrapper",
+                       (PyObject *)&NRNameTransactionWrapper_Type);
     Py_INCREF(&NRWebTransaction_Type);
     PyModule_AddObject(module, "WebTransaction",
                        (PyObject *)&NRWebTransaction_Type);

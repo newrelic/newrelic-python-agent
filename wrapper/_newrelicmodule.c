@@ -1905,9 +1905,18 @@ init_newrelic(void)
 
     nr_per_process_globals.slow_sql_stacktrace = 500 * 1000;
 
+    /*
+     * XXX Following metrics settings only available as string
+     * macros and not integers so cannot use them and need to
+     * redefine them. The macro for node time threshold is
+     * actually in seconds and not the required micro seconds.
+     * Believed it is actually meant to equate to 2 milli
+     * seconds.
+     */
+
     nr_per_process_globals.metric_limit = 3000;
     nr_per_process_globals.expensive_nodes_size = 100;
-    nr_per_process_globals.expensive_node_minimum = 1;
+    nr_per_process_globals.expensive_node_minimum = 2000;
 
     nr_per_process_globals.special_flags = 0;
 

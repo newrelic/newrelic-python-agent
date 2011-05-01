@@ -90,7 +90,8 @@ def _process_configuration(section):
                      'getboolean', None)
 
 if _config_file:
-    _config_object.read([_config_file])
+    if not _config_object.read([_config_file]):
+        raise IOError('unable to open file %s' % _config_file)
     _process_configuration('newrelic')
     if _config_environment:
         _process_configuration('newrelic:%s' % _config_environment)

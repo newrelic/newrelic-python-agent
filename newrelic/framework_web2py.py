@@ -1,7 +1,7 @@
 import sys
 
 from newrelic.agent import (wrap_function_trace, wrap_object, transaction,
-         wrap_error_trace, wrap_out_function)
+         wrap_error_trace, wrap_out_function, wrap_name_transaction)
 
 def name_models(environment):
     return '%s/%s Models' % (environment['request'].controller,
@@ -19,17 +19,6 @@ def name_restricted(code, environment={}, layer='Unknown'):
     if layer.startswith(folder):
         return '%s Execute' % layer[len(folder):]
     return '%s Execute' % layer
-
-class name_transaction(object):
-    def __init__(self, wrapped):
-        self._wrapped = wrapped
-    def __get__(self, obj, objtype=None):
-        return types.MethodType(self, obj, objtype)
-    def __call__(self, environment):
-        current_transaction = transaction()
-        if current_transaction:
-            current_transaction.path = environment['response'].view
-        return self._wrapped(environment)
 
 class capture_error(object):
     def __init__(self, wrapped):
@@ -63,7 +52,8 @@ def instrument(module):
         wrap_function_trace(module, None, 'restricted',
                 name_restricted)
 
-        wrap_object(module, None, 'run_models_in', name_transaction)
+        wrap_name_transaction(module, None, 'run_models_in',
+                lambda environment: environment['response'].view)
 
     elif module.__name__ == 'gluon.main':
         wrap_object(module, None, 'serve_controller', capture_error)

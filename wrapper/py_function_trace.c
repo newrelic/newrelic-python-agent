@@ -44,13 +44,12 @@ static int NRFunctionTrace_init(NRFunctionTraceObject *self, PyObject *args,
     NRTransactionObject *transaction = NULL;
 
     PyObject *name = Py_None;
-    PyObject *override_path = Py_False;
 
-    static char *kwlist[] = { "transaction", "name", "override_path", NULL };
+    static char *kwlist[] = { "transaction", "name", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O|O!:FunctionTrace",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O:FunctionTrace",
                                      kwlist, &NRTransaction_Type, &transaction,
-                                     &name, &PyBool_Type, &override_path)) {
+                                     &name)) {
         return -1;
     }
 
@@ -105,16 +104,6 @@ static int NRFunctionTrace_init(NRFunctionTraceObject *self, PyObject *args,
 
         self->transaction_trace = nr_web_transaction__allocate_function_node(
                 transaction->transaction, name_string, NULL);
-
-        /*
-         * Override transaction path if required.
-         *
-         * TODO this is currently using UTF8 variant of string if
-         * was a unicode object.
-         */
-
-        if (override_path == Py_True)
-            PyObject_SetAttrString((PyObject *)transaction, "path", name);
 
         Py_DECREF(name);
     }
@@ -264,7 +253,6 @@ static PyObject *NRFunctionTraceWrapper_new(PyTypeObject *type, PyObject *args,
 
     self->wrapped_object = NULL;
     self->name = NULL;
-    self->override_path = NULL;
 
     return (PyObject *)self;
 }
@@ -277,13 +265,11 @@ static int NRFunctionTraceWrapper_init(NRFunctionTraceWrapperObject *self,
     PyObject *wrapped_object = NULL;
 
     PyObject *name = Py_None;
-    PyObject *override_path = Py_False;
 
-    static char *kwlist[] = { "wrapped", "name", "override_path", NULL };
+    static char *kwlist[] = { "wrapped", "name", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|OO!:FunctionTraceWrapper",
-                                     kwlist, &wrapped_object, &name,
-                                     &PyBool_Type, &override_path)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O:FunctionTraceWrapper",
+                                     kwlist, &wrapped_object, &name)) {
         return -1;
     }
 
@@ -304,10 +290,6 @@ static int NRFunctionTraceWrapper_init(NRFunctionTraceWrapperObject *self,
     Py_XDECREF(self->name);
     self->name = name;
 
-    Py_INCREF(override_path);
-    Py_XDECREF(self->override_path);
-    self->override_path = override_path;
-
     /*
      * TODO This should set __module__, __name__, __doc__ and
      * update __dict__ to preserve introspection capabilities.
@@ -324,7 +306,6 @@ static void NRFunctionTraceWrapper_dealloc(NRFunctionTraceWrapperObject *self)
     Py_XDECREF(self->wrapped_object);
 
     Py_XDECREF(self->name);
-    Py_XDECREF(self->override_path);
 
     Py_TYPE(self)->tp_free(self);
 }
@@ -378,8 +359,7 @@ static PyObject *NRFunctionTraceWrapper_call(
     }
 
     function_trace = PyObject_CallFunctionObjArgs((PyObject *)
-            &NRFunctionTrace_Type, current_transaction, name,
-            self->override_path, NULL);
+            &NRFunctionTrace_Type, current_transaction, name, NULL);
 
     Py_DECREF(name);
 
@@ -573,7 +553,6 @@ static PyObject *NRFunctionTraceDecorator_new(PyTypeObject *type,
         return NULL;
 
     self->name = NULL;
-    self->override_path = NULL;
 
     return (PyObject *)self;
 }
@@ -584,13 +563,11 @@ static int NRFunctionTraceDecorator_init(NRFunctionTraceDecoratorObject *self,
                                          PyObject *args, PyObject *kwds)
 {
     PyObject *name = Py_None;
-    PyObject *override_path = Py_False;
 
-    static char *kwlist[] = { "name", "override_path", NULL };
+    static char *kwlist[] = { "name", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OO!:FunctionTraceDecorator",
-                                     kwlist, &name, &PyBool_Type,
-                                     &override_path)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O:FunctionTraceDecorator",
+                                     kwlist, &name)) {
         return -1;
     }
 
@@ -607,10 +584,6 @@ static int NRFunctionTraceDecorator_init(NRFunctionTraceDecoratorObject *self,
     Py_XDECREF(self->name);
     self->name = name;
 
-    Py_INCREF(override_path);
-    Py_XDECREF(self->override_path);
-    self->override_path = override_path;
-
     return 0;
 }
 
@@ -620,7 +593,6 @@ static void NRFunctionTraceDecorator_dealloc(
         NRFunctionTraceDecoratorObject *self)
 {
     Py_XDECREF(self->name);
-    Py_XDECREF(self->override_path);
 
     Py_TYPE(self)->tp_free(self);
 }

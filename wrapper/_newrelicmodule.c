@@ -803,13 +803,12 @@ static PyObject *newrelic_function_trace(PyObject *self, PyObject *args,
                                          PyObject *kwds)
 {
     PyObject *name = Py_None;
-    PyObject *scope = Py_None;
     PyObject *override_path = Py_False;
 
-    static char *kwlist[] = { "name", "scope", "override_path", NULL };
+    static char *kwlist[] = { "name", "override_path", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OOO!:function_trace",
-                                     kwlist, &name, &scope, &PyBool_Type,
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OO!:function_trace",
+                                     kwlist, &name, &PyBool_Type,
                                      &override_path)) {
         return NULL;
     }
@@ -823,15 +822,8 @@ static PyObject *newrelic_function_trace(PyObject *self, PyObject *args,
     }
 #endif
 
-    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
-        scope != Py_None) {
-        PyErr_Format(PyExc_TypeError, "scope argument must be str, unicode "
-                     "or None, found type '%s'", scope->ob_type->tp_name);
-        return NULL;
-    }
-
     return PyObject_CallFunctionObjArgs((PyObject *)
-            &NRFunctionTraceDecorator_Type, name, scope, override_path, NULL);
+            &NRFunctionTraceDecorator_Type, name, override_path, NULL);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -844,7 +836,6 @@ static PyObject *newrelic_wrap_function_trace(PyObject *self, PyObject *args,
     const char *object_name = NULL;
 
     PyObject *name = Py_None;
-    PyObject *scope = Py_None;
     PyObject *override_path = Py_False;
 
     PyObject *wrapped_object = NULL;
@@ -856,13 +847,13 @@ static PyObject *newrelic_wrap_function_trace(PyObject *self, PyObject *args,
     PyObject *result = NULL;
 
     static char *kwlist[] = { "module", "class_name", "object_name",
-                              "name", "scope", "override_path", NULL };
+                              "name", "override_path", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds,
-                                     "Ozz|OOO!:wrap_function_trace",
+                                     "Ozz|OO!:wrap_function_trace",
                                      kwlist, &module, &class_name,
-                                     &object_name, &name, &scope,
-                                     &PyBool_Type, &override_path)) {
+                                     &object_name, &name, &PyBool_Type,
+                                     &override_path)) {
         return NULL;
     }
 
@@ -886,13 +877,6 @@ static PyObject *newrelic_wrap_function_trace(PyObject *self, PyObject *args,
         return NULL;
     }
 #endif
-
-    if (!PyString_Check(scope) && !PyUnicode_Check(name) &&
-        scope != Py_None) {
-        PyErr_Format(PyExc_TypeError, "scope argument must be str, unicode "
-                     "or None, found type '%s'", scope->ob_type->tp_name);
-        return NULL;
-    }
 
     wrapped_object = NRUtilities_LookupCallable(module, class_name,
                                                 object_name, &parent_object,
@@ -942,7 +926,7 @@ static PyObject *newrelic_wrap_function_trace(PyObject *self, PyObject *args,
         Py_INCREF(name);
 
     wrapper_object = PyObject_CallFunctionObjArgs((PyObject *)
-            &NRFunctionTraceWrapper_Type, wrapped_object, name, scope,
+            &NRFunctionTraceWrapper_Type, wrapped_object, name,
             override_path, NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object, attribute_name,

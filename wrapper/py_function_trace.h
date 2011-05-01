@@ -24,7 +24,6 @@ typedef struct {
     PyObject_HEAD
     PyObject *wrapped_object;
     PyObject *name;
-    PyObject *scope;
     PyObject *override_path;
 } NRFunctionTraceWrapperObject;
 
@@ -33,7 +32,6 @@ extern PyTypeObject NRFunctionTraceWrapper_Type;
 typedef struct {
     PyObject_HEAD
     PyObject *name;
-    PyObject *scope;
     PyObject *override_path;
 } NRFunctionTraceDecoratorObject;
 

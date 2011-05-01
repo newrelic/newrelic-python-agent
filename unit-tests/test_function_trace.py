@@ -72,24 +72,18 @@ class FunctionTraceTests(unittest.TestCase):
         transaction = _newrelic.WebTransaction(application, environ)
         with transaction:
             time.sleep(0.2)
-            with _newrelic.FunctionTrace(transaction, "function-1",
-                                         "class"):
+            with _newrelic.FunctionTrace(transaction, "function-1"):
                 time.sleep(0.1)
-                with _newrelic.FunctionTrace(transaction, "function-1-1",
-                                             "class"):
+                with _newrelic.FunctionTrace(transaction, "function-1-1"):
                     time.sleep(0.1)
-                with _newrelic.FunctionTrace(transaction, "function-1-2",
-                                             "class"):
+                with _newrelic.FunctionTrace(transaction, "function-1-2"):
                     time.sleep(0.1)
                 time.sleep(0.1)
-            with _newrelic.FunctionTrace(transaction, "function-2",
-                                         "class"):
+            with _newrelic.FunctionTrace(transaction, "function-2"):
                 time.sleep(0.1)
-                with _newrelic.FunctionTrace(transaction, "function-2-1",
-                                             "class"):
+                with _newrelic.FunctionTrace(transaction, "function-2-1"):
                     time.sleep(0.1)
-                    with _newrelic.FunctionTrace(transaction, "function-2-1-1",
-                                                 "class"):
+                    with _newrelic.FunctionTrace(transaction, "function-2-1-1"):
                         time.sleep(0.1)
                     time.sleep(0.1)
                 time.sleep(0.1)
@@ -99,7 +93,7 @@ class FunctionTraceTests(unittest.TestCase):
         environ = { "REQUEST_URI": "/transaction_not_running" }
         transaction = _newrelic.WebTransaction(application, environ)
         try:
-            with _newrelic.FunctionTrace(transaction, "function", "class"):
+            with _newrelic.FunctionTrace(transaction, "function"):
                 time.sleep(0.1)
         except RuntimeError:
             pass

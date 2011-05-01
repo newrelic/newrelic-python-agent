@@ -44,16 +44,13 @@ static int NRFunctionTrace_init(NRFunctionTraceObject *self, PyObject *args,
     NRTransactionObject *transaction = NULL;
 
     PyObject *name = Py_None;
-    PyObject *scope = Py_None;
     PyObject *override_path = Py_False;
 
-    static char *kwlist[] = { "transaction", "name", "scope",
-                              "override_path", NULL };
+    static char *kwlist[] = { "transaction", "name", "override_path", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O|OO!:FunctionTrace",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O|O!:FunctionTrace",
                                      kwlist, &NRTransaction_Type, &transaction,
-                                     &name, &scope, &PyBool_Type,
-                                     &override_path)) {
+                                     &name, &PyBool_Type, &override_path)) {
         return -1;
     }
 
@@ -64,13 +61,6 @@ static int NRFunctionTrace_init(NRFunctionTraceObject *self, PyObject *args,
         return -1;
     }
 #endif
-
-    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
-        scope != Py_None) {
-        PyErr_Format(PyExc_TypeError, "scope argument must be str, unicode "
-                     "or None, found type '%s'", scope->ob_type->tp_name);
-        return -1;
-    }
 
     /*
      * Validate that this method hasn't been called previously.
@@ -103,14 +93,8 @@ static int NRFunctionTrace_init(NRFunctionTraceObject *self, PyObject *args,
      * node when executing against a dummy transaction.
      */
 
-    /*
-     * TODO The PHP agent code doesn't yet support the 'scope'
-     * argument to this function.
-     */
-
     if (transaction->transaction) {
         const char *name_string = NULL;
-        const char *scope_string = NULL;
 
         if (PyUnicode_Check(name))
             name = PyUnicode_AsUTF8String(name);
@@ -119,23 +103,8 @@ static int NRFunctionTrace_init(NRFunctionTraceObject *self, PyObject *args,
 
         name_string = PyString_AsString(name);
 
-        if (PyUnicode_Check(scope))
-            scope = PyUnicode_AsUTF8String(scope);
-        else if (PyString_Check(scope))
-            Py_INCREF(scope);
-
-        if (scope != Py_None)
-            scope_string = PyString_AsString(scope);
-        else
-            scope = NULL;
-
-#if 0
-        self->transaction_trace = nr_web_transaction__allocate_function_node(
-                transaction->transaction, name_string, NULL, scope_string);
-#else
         self->transaction_trace = nr_web_transaction__allocate_function_node(
                 transaction->transaction, name_string, NULL);
-#endif
 
         /*
          * Override transaction path if required.
@@ -148,7 +117,6 @@ static int NRFunctionTrace_init(NRFunctionTraceObject *self, PyObject *args,
             PyObject_SetAttrString((PyObject *)transaction, "path", name);
 
         Py_DECREF(name);
-        Py_XDECREF(scope);
     }
 
     return 0;
@@ -296,7 +264,6 @@ static PyObject *NRFunctionTraceWrapper_new(PyTypeObject *type, PyObject *args,
 
     self->wrapped_object = NULL;
     self->name = NULL;
-    self->scope = NULL;
     self->override_path = NULL;
 
     return (PyObject *)self;
@@ -310,14 +277,12 @@ static int NRFunctionTraceWrapper_init(NRFunctionTraceWrapperObject *self,
     PyObject *wrapped_object = NULL;
 
     PyObject *name = Py_None;
-    PyObject *scope = Py_None;
     PyObject *override_path = Py_False;
 
-    static char *kwlist[] = { "wrapped", "name", "scope", "override_path",
-                              NULL };
+    static char *kwlist[] = { "wrapped", "name", "override_path", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|OOO!:FunctionTraceWrapper",
-                                     kwlist, &wrapped_object, &name, &scope,
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|OO!:FunctionTraceWrapper",
+                                     kwlist, &wrapped_object, &name,
                                      &PyBool_Type, &override_path)) {
         return -1;
     }
@@ -331,13 +296,6 @@ static int NRFunctionTraceWrapper_init(NRFunctionTraceWrapperObject *self,
     }
 #endif
 
-    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
-        scope != Py_None) {
-        PyErr_Format(PyExc_TypeError, "scope argument must be str, unicode "
-                     "or None, found type '%s'", scope->ob_type->tp_name);
-        return -1;
-    }
-
     Py_INCREF(wrapped_object);
     Py_XDECREF(self->wrapped_object);
     self->wrapped_object = wrapped_object;
@@ -345,10 +303,6 @@ static int NRFunctionTraceWrapper_init(NRFunctionTraceWrapperObject *self,
     Py_INCREF(name);
     Py_XDECREF(self->name);
     self->name = name;
-
-    Py_INCREF(scope);
-    Py_XDECREF(self->scope);
-    self->scope = scope;
 
     Py_INCREF(override_path);
     Py_XDECREF(self->override_path);
@@ -370,7 +324,6 @@ static void NRFunctionTraceWrapper_dealloc(NRFunctionTraceWrapperObject *self)
     Py_XDECREF(self->wrapped_object);
 
     Py_XDECREF(self->name);
-    Py_XDECREF(self->scope);
     Py_XDECREF(self->override_path);
 
     Py_TYPE(self)->tp_free(self);
@@ -426,7 +379,7 @@ static PyObject *NRFunctionTraceWrapper_call(
 
     function_trace = PyObject_CallFunctionObjArgs((PyObject *)
             &NRFunctionTrace_Type, current_transaction, name,
-            self->scope, self->override_path, NULL);
+            self->override_path, NULL);
 
     Py_DECREF(name);
 
@@ -620,7 +573,6 @@ static PyObject *NRFunctionTraceDecorator_new(PyTypeObject *type,
         return NULL;
 
     self->name = NULL;
-    self->scope = NULL;
     self->override_path = NULL;
 
     return (PyObject *)self;
@@ -632,13 +584,12 @@ static int NRFunctionTraceDecorator_init(NRFunctionTraceDecoratorObject *self,
                                          PyObject *args, PyObject *kwds)
 {
     PyObject *name = Py_None;
-    PyObject *scope = Py_None;
     PyObject *override_path = Py_False;
 
-    static char *kwlist[] = { "name", "scope", "override_path", NULL };
+    static char *kwlist[] = { "name", "override_path", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OOO!:FunctionTraceDecorator",
-                                     kwlist, &name, &scope, &PyBool_Type,
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OO!:FunctionTraceDecorator",
+                                     kwlist, &name, &PyBool_Type,
                                      &override_path)) {
         return -1;
     }
@@ -652,20 +603,9 @@ static int NRFunctionTraceDecorator_init(NRFunctionTraceDecoratorObject *self,
     }
 #endif
 
-    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
-        scope != Py_None) {
-        PyErr_Format(PyExc_TypeError, "scope argument must be str, unicode "
-                     "or None, found type '%s'", scope->ob_type->tp_name);
-        return -1;
-    }
-
     Py_INCREF(name);
     Py_XDECREF(self->name);
     self->name = name;
-
-    Py_INCREF(scope);
-    Py_XDECREF(self->scope);
-    self->scope = scope;
 
     Py_INCREF(override_path);
     Py_XDECREF(self->override_path);
@@ -680,7 +620,6 @@ static void NRFunctionTraceDecorator_dealloc(
         NRFunctionTraceDecoratorObject *self)
 {
     Py_XDECREF(self->name);
-    Py_XDECREF(self->scope);
     Py_XDECREF(self->override_path);
 
     Py_TYPE(self)->tp_free(self);
@@ -701,8 +640,8 @@ static PyObject *NRFunctionTraceDecorator_call(
     }
 
     return PyObject_CallFunctionObjArgs(
-            (PyObject *)&NRFunctionTraceWrapper_Type,
-            wrapped_object, self->name, self->scope, NULL);
+            (PyObject *)&NRFunctionTraceWrapper_Type, wrapped_object,
+            self->name, NULL);
 }
 
 /* ------------------------------------------------------------------------- */

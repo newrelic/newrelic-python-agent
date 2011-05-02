@@ -649,17 +649,17 @@ static PyObject *newrelic_wrap_database_trace(PyObject *self, PyObject *args,
 static PyObject *newrelic_external_trace(PyObject *self, PyObject *args,
                                          PyObject *kwds)
 {
-    PyObject *argnum = NULL;
+    PyObject *url = NULL;
 
-    static char *kwlist[] = { "argnum", NULL };
+    static char *kwlist[] = { "url", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!:external_trace",
-                                     kwlist, &PyInt_Type, &argnum)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:external_trace",
+                                     kwlist, &url)) {
         return NULL;
     }
 
     return PyObject_CallFunctionObjArgs((PyObject *)
-            &NRExternalTraceDecorator_Type, argnum, NULL);
+            &NRExternalTraceDecorator_Type, url, NULL);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -670,7 +670,7 @@ static PyObject *newrelic_wrap_external_trace(PyObject *self, PyObject *args,
     PyObject *module = NULL;
     const char *class_name = NULL;
     const char *object_name = NULL;
-    PyObject *argnum = NULL;
+    PyObject *url = NULL;
 
     PyObject *wrapped_object = NULL;
     PyObject *parent_object = NULL;
@@ -681,11 +681,11 @@ static PyObject *newrelic_wrap_external_trace(PyObject *self, PyObject *args,
     PyObject *result = NULL;
 
     static char *kwlist[] = { "module", "class_name", "object_name",
-                              "argnum", NULL };
+                              "url", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OzzO!:wrap_external_trace",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OzzO:wrap_external_trace",
                                      kwlist, &module, &class_name,
-                                     &object_name, &PyInt_Type, &argnum)) {
+                                     &object_name, &url)) {
         return NULL;
     }
 
@@ -709,7 +709,7 @@ static PyObject *newrelic_wrap_external_trace(PyObject *self, PyObject *args,
         return NULL;
 
     wrapper_object = PyObject_CallFunctionObjArgs((PyObject *)
-            &NRExternalTraceWrapper_Type, wrapped_object, argnum, NULL);
+            &NRExternalTraceWrapper_Type, wrapped_object, url, NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object, attribute_name,
                                             wrapper_object);

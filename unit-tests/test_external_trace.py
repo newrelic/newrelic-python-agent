@@ -10,10 +10,9 @@ settings.log_level = _newrelic.LOG_VERBOSEDEBUG
 
 application = _newrelic.application("UnitTests")
 
-#@_newrelic.external_trace(argnum=0)
+@_newrelic.external_trace(lambda url: url)
 def _test_function_1(url):
     time.sleep(1.0)
-_test_function_1 = _newrelic.external_trace(argnum=0)(_test_function_1)
 
 class ExternalTraceTests(unittest.TestCase):
 
@@ -30,7 +29,7 @@ class ExternalTraceTests(unittest.TestCase):
         transaction = _newrelic.WebTransaction(application, environ)
         with transaction:
             time.sleep(0.1)
-            with _newrelic.ExternalTrace(transaction, "http://localhost/"):
+            with _newrelic.ExternalTrace(transaction, "localhost/test/"):
                 time.sleep(0.1)
             time.sleep(0.1)
 
@@ -38,7 +37,7 @@ class ExternalTraceTests(unittest.TestCase):
         environ = { "REQUEST_URI": "/transaction_not_running" }
         transaction = _newrelic.WebTransaction(application, environ)
         try:
-            with _newrelic.ExternalTrace(transaction, "http://localhost/"):
+            with _newrelic.ExternalTrace(transaction, "localhost/test/"):
                 time.sleep(0.1)
         except RuntimeError:
             pass
@@ -48,7 +47,7 @@ class ExternalTraceTests(unittest.TestCase):
         transaction = _newrelic.WebTransaction(application, environ)
         with transaction:
             time.sleep(0.1)
-            _test_function_1("http://localhost/")
+            _test_function_1("http://localhost/test/")
             time.sleep(0.1)
 
     def test_external_trace_decorator_error(self):
@@ -56,7 +55,7 @@ class ExternalTraceTests(unittest.TestCase):
         transaction = _newrelic.WebTransaction(application, environ)
         with transaction:
             try:
-                _test_function_1("http://localhost/", None)
+                _test_function_1("localhost/test/", None)
             except TypeError:
                 pass
 

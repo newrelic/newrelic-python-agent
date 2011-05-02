@@ -224,7 +224,7 @@ static PyObject *NRExternalTraceWrapper_new(PyTypeObject *type, PyObject *args,
         return NULL;
 
     self->wrapped_object = NULL;
-    self->argnum = NULL;
+    self->url = NULL;
 
     return (PyObject *)self;
 }
@@ -235,13 +235,12 @@ static int NRExternalTraceWrapper_init(NRExternalTraceWrapperObject *self,
                                        PyObject *args, PyObject *kwds)
 {
     PyObject *wrapped_object = NULL;
-    PyObject *argnum = NULL;
+    PyObject *url = NULL;
 
-    static char *kwlist[] = { "wrapped", "argnum", NULL };
+    static char *kwlist[] = { "wrapped", "url", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO!:ExternalTraceWrapper",
-                                     kwlist, &wrapped_object, &PyInt_Type,
-                                     &argnum)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO:ExternalTraceWrapper",
+                                     kwlist, &wrapped_object, &url)) {
         return -1;
     }
 
@@ -249,9 +248,9 @@ static int NRExternalTraceWrapper_init(NRExternalTraceWrapperObject *self,
     Py_XDECREF(self->wrapped_object);
     self->wrapped_object = wrapped_object;
 
-    Py_INCREF(argnum);
-    Py_XDECREF(self->argnum);
-    self->argnum = argnum;
+    Py_INCREF(url);
+    Py_XDECREF(self->url);
+    self->url = url;
 
     /*
      * TODO This should set __module__, __name__, __doc__ and
@@ -267,7 +266,7 @@ static int NRExternalTraceWrapper_init(NRExternalTraceWrapperObject *self,
 static void NRExternalTraceWrapper_dealloc(NRExternalTraceWrapperObject *self)
 {
     Py_DECREF(self->wrapped_object);
-    Py_DECREF(self->argnum);
+    Py_DECREF(self->url);
 
     Py_TYPE(self)->tp_free(self);
 }
@@ -286,9 +285,7 @@ static PyObject *NRExternalTraceWrapper_call(
     PyObject *method_args = NULL;
     PyObject *method_result = NULL;
 
-    PyObject *url_object = NULL;
-
-    Py_ssize_t argnum = 0;
+    PyObject *url = NULL;
 
     /*
      * If there is no current transaction then we can call
@@ -300,41 +297,28 @@ static PyObject *NRExternalTraceWrapper_call(
     if (!current_transaction)
         return PyObject_Call(self->wrapped_object, args, kwds);
 
-    /*
-     * Extract the url from the designated function parameter to
-     * be supplied to the wrapped function. If argnum is wrong,
-     * ie., not a valid argument or argument of the wrong type
-     * then log an error and call wrapped function and return
-     * immediately.
-     */
+    /* Create function trace context manager. */
 
-    if (PyTuple_Size(args) > (argnum = PyInt_AsLong(self->argnum))) {
-        PyObject *object;
-
-        object = PyTuple_GetItem(args, argnum);
-
-        if (PyString_Check(object) || PyUnicode_Check(object)) {
-            url_object = object;
-        }
-        else {
-            PyErr_Format(PyExc_TypeError, "url argument must be str or "
-                         "unicode, found type '%s'", object->ob_type->tp_name);
-            PyErr_WriteUnraisable(self->wrapped_object);
-        }
+    if (PyString_Check(self->url)) {
+        url = self->url;
+        Py_INCREF(url);
     }
     else {
-        PyErr_Format(PyExc_IndexError, "invalid argnum %ld to identify "
-                     "url argument", (long)argnum);
-        PyErr_WriteUnraisable(self->wrapped_object);
+        /*
+         * Name if actually a callable function to provide the
+         * name based on arguments supplied to wrapped function.
+         */
+
+        url = PyObject_Call(self->url, args, kwds);
+
+        if (!url)
+            return NULL;
     }
 
-    if (!url_object)
-        return PyObject_Call(self->wrapped_object, args, kwds);
-
-    /* Create database trace context manager. */
-
     external_trace = PyObject_CallFunctionObjArgs((PyObject *)
-            &NRExternalTrace_Type, current_transaction, url_object, NULL);
+            &NRExternalTrace_Type, current_transaction, url, NULL);
+
+    Py_DECREF(url);
 
     /* Now call __enter__() on the context manager. */
 
@@ -505,7 +489,7 @@ static PyObject *NRExternalTraceDecorator_new(PyTypeObject *type,
     if (!self)
         return NULL;
 
-    self->argnum = NULL;
+    self->url = NULL;
 
     return (PyObject *)self;
 }
@@ -515,18 +499,18 @@ static PyObject *NRExternalTraceDecorator_new(PyTypeObject *type,
 static int NRExternalTraceDecorator_init(NRExternalTraceDecoratorObject *self,
                                          PyObject *args, PyObject *kwds)
 {
-    PyObject *argnum = NULL;
+    PyObject *url = NULL;
 
-    static char *kwlist[] = { "argnum", NULL };
+    static char *kwlist[] = { "url", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!:ExternalTraceDecorator",
-                                     kwlist, &PyInt_Type, &argnum)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:ExternalTraceDecorator",
+                                     kwlist, &url)) {
         return -1;
     }
 
-    Py_INCREF(argnum);
-    Py_XDECREF(self->argnum);
-    self->argnum = argnum;
+    Py_INCREF(url);
+    Py_XDECREF(self->url);
+    self->url = url;
 
     return 0;
 }
@@ -536,7 +520,7 @@ static int NRExternalTraceDecorator_init(NRExternalTraceDecoratorObject *self,
 static void NRExternalTraceDecorator_dealloc(
         NRExternalTraceDecoratorObject *self)
 {
-    Py_DECREF(self->argnum);
+    Py_DECREF(self->url);
 
     Py_TYPE(self)->tp_free(self);
 }
@@ -557,7 +541,7 @@ static PyObject *NRExternalTraceDecorator_call(
 
     return PyObject_CallFunctionObjArgs(
             (PyObject *)&NRExternalTraceWrapper_Type,
-            wrapped_object, self->argnum, NULL);
+            wrapped_object, self->url, NULL);
 }
 
 /* ------------------------------------------------------------------------- */

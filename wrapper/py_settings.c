@@ -654,6 +654,12 @@ static PyObject *NRSettings_new(PyTypeObject *type, PyObject *args,
     if (!self)
         return NULL;
 
+    self->config_file = Py_None;
+    Py_INCREF(self->config_file);
+
+    self->environment = Py_None;
+    Py_INCREF(self->environment);
+
     self->tracer_settings = (NRTracerSettingsObject *)
             PyObject_CallFunctionObjArgs(
             (PyObject *)&NRTracerSettings_Type, NULL);
@@ -674,6 +680,9 @@ static PyObject *NRSettings_new(PyTypeObject *type, PyObject *args,
 
 static void NRSettings_dealloc(NRSettingsObject *self)
 {
+    Py_DECREF(self->config_file);
+    Py_DECREF(self->environment);
+
     Py_DECREF(self->ignored_params);
 
     Py_DECREF(self->tracer_settings);
@@ -681,6 +690,76 @@ static void NRSettings_dealloc(NRSettingsObject *self)
     Py_DECREF(self->debug_settings);
 
     PyObject_Del(self);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRSettings_get_config_file(NRSettingsObject *self,
+                                            void *closure)
+{
+    Py_INCREF(self->config_file);
+    return self->config_file;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRSettings_set_config_file(NRSettingsObject *self, PyObject *value)
+{
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError, "can't delete config_file attribute");
+        return -1;
+    }
+
+    if (!PyString_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "expected string for config_file");
+        return -1;
+    }
+
+    if (self->config_file != Py_None) {
+        PyErr_SetString(PyExc_RuntimeError, "config_file already updated");
+        return -1;
+    }
+
+    Py_INCREF(value);
+    Py_DECREF(self->config_file);
+    self->config_file = value;
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRSettings_get_environment(NRSettingsObject *self,
+                                            void *closure)
+{
+    Py_INCREF(self->environment);
+    return self->environment;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRSettings_set_environment(NRSettingsObject *self, PyObject *value)
+{
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError, "can't delete environment attribute");
+        return -1;
+    }
+
+    if (!PyString_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "expected string for environment");
+        return -1;
+    }
+
+    if (self->environment != Py_None) {
+        PyErr_SetString(PyExc_RuntimeError, "environment already updated");
+        return -1;
+    }
+
+    Py_INCREF(value);
+    Py_DECREF(self->environment);
+    self->environment = value;
+
+    return 0;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -922,6 +1001,10 @@ static PyMethodDef NRSettings_methods[] = {
 };
 
 static PyGetSetDef NRSettings_getset[] = {
+    { "config_file",        (getter)NRSettings_get_config_file,
+                            (setter)NRSettings_set_config_file, 0 },
+    { "environment",        (getter)NRSettings_get_environment,
+                            (setter)NRSettings_set_environment, 0 },
     { "app_name",           (getter)NRSettings_get_app_name,
                             (setter)NRSettings_set_app_name, 0 },
     { "monitor_mode",       (getter)NRSettings_get_monitor_mode,

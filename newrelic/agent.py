@@ -92,9 +92,16 @@ def _process_configuration(section):
 if _config_file:
     if not _config_object.read([_config_file]):
         raise IOError('unable to open file %s' % _config_file)
-    _process_configuration('newrelic')
-    if _config_environment:
-        _process_configuration('newrelic:%s' % _config_environment)
+
+    # Although we have read the configuration here, only process
+    # it if this hasn't already been done previously.
+
+    if _settings.config_file is None:
+        _settings.config_file = _config_file
+        _process_configuration('newrelic')
+        if _config_environment:
+            _settings.environment = _config_environment
+            _process_configuration('newrelic:%s' % _config_environment)
 
 # Setup instrumentation by triggering off module imports.
 

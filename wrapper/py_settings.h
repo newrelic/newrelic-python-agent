@@ -34,6 +34,8 @@ extern PyTypeObject NRDebugSettings_Type;
 
 typedef struct {
     PyObject_HEAD
+    PyObject *config_file;
+    PyObject *environment;
     NRTracerSettingsObject *tracer_settings;
     NRErrorsSettingsObject *errors_settings;
     NRErrorsSettingsObject *debug_settings;

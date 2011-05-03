@@ -239,7 +239,7 @@ static int NRMemcacheTraceWrapper_init(NRMemcacheTraceWrapperObject *self,
 
     static char *kwlist[] = { "wrapped", "command", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OS:MemcacheTraceWrapper",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO:MemcacheTraceWrapper",
                                      kwlist, &wrapped_object, &command)) {
         return -1;
     }
@@ -285,6 +285,8 @@ static PyObject *NRMemcacheTraceWrapper_call(
     PyObject *method_args = NULL;
     PyObject *method_result = NULL;
 
+    PyObject *command = NULL;
+
     /*
      * If there is no current transaction then we can call
      * the wrapped function and return immediately.
@@ -295,11 +297,28 @@ static PyObject *NRMemcacheTraceWrapper_call(
     if (!current_transaction)
         return PyObject_Call(self->wrapped_object, args, kwds);
 
-    /* Create database trace context manager. */
+    /* Create memcache trace context manager. */
+
+    if (PyString_Check(self->command)) {
+        command = self->command;
+        Py_INCREF(command);
+    }
+    else {
+        /*
+         * Name if actually a callable function to provide the
+         * name based on arguments supplied to wrapped function.
+         */
+
+        command = PyObject_Call(self->command, args, kwds);
+
+        if (!command)
+            return NULL;
+    }
 
     memcache_trace = PyObject_CallFunctionObjArgs((PyObject *)
-            &NRMemcacheTrace_Type, current_transaction,
-            self->command, NULL);
+            &NRMemcacheTrace_Type, current_transaction, command, NULL);
+
+    Py_DECREF(command);
 
     /* Now call __enter__() on the context manager. */
 
@@ -484,7 +503,7 @@ static int NRMemcacheTraceDecorator_init(NRMemcacheTraceDecoratorObject *self,
 
     static char *kwlist[] = { "command", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "S:MemcacheTraceDecorator",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:MemcacheTraceDecorator",
                                      kwlist, &command)) {
         return -1;
     }

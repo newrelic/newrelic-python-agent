@@ -297,7 +297,7 @@ static PyObject *NRExternalTraceWrapper_call(
     if (!current_transaction)
         return PyObject_Call(self->wrapped_object, args, kwds);
 
-    /* Create function trace context manager. */
+    /* Create external trace context manager. */
 
     if (PyString_Check(self->url)) {
         url = self->url;

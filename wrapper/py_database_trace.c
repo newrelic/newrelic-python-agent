@@ -349,7 +349,7 @@ static PyObject *NRDatabaseTraceWrapper_call(
     if (!current_transaction)
         return PyObject_Call(self->wrapped_object, args, kwds);
 
-    /* Create function trace context manager. */
+    /* Create database trace context manager. */
 
     if (PyString_Check(self->sql)) {
         sql = self->sql;

@@ -947,7 +947,7 @@ static PyObject *newrelic_memcache_trace(PyObject *self, PyObject *args,
 
     static char *kwlist[] = { "command", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "S:memcache_trace",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:memcache_trace",
                                      kwlist, &command)) {
         return NULL;
     }
@@ -977,7 +977,7 @@ static PyObject *newrelic_wrap_memcache_trace(PyObject *self, PyObject *args,
     static char *kwlist[] = { "module", "class_name", "object_name",
                               "command", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OzzS:wrap_memcache_trace",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OzzO:wrap_memcache_trace",
                                      kwlist, &module, &class_name,
                                      &object_name, &command)) {
         return NULL;

@@ -41,7 +41,7 @@ def _map_ignore_errors(s):
 
 _settings = settings()
 
-_config_file = os.environ.get('NEWRELIC_CONFIG', None)
+_config_file = os.environ.get('NEWRELIC_CONFIG_FILE', None)
 _config_environment = os.environ.get('NEWRELIC_ENVIRONMENT', None)
 _config_object = ConfigParser.SafeConfigParser()
 

@@ -309,14 +309,14 @@ static PyObject *newrelic_object_context(PyObject *self, PyObject *args,
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *newrelic_web_transaction(PyObject *self, PyObject *args,
-                                          PyObject *kwds)
+static PyObject *newrelic_wsgi_application(PyObject *self, PyObject *args,
+                                           PyObject *kwds)
 {
     PyObject *application = Py_None;
 
     static char *kwlist[] = { "application", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O:web_transaction",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O:wsgi_application",
                                      kwlist, &application)) {
         return NULL;
     }
@@ -331,13 +331,13 @@ static PyObject *newrelic_web_transaction(PyObject *self, PyObject *args,
     }
 
     return PyObject_CallFunctionObjArgs((PyObject *)
-            &NRWebTransactionDecorator_Type, application, NULL);
+            &NRWSGIApplicationDecorator_Type, application, NULL);
 }
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *newrelic_wrap_web_transaction(PyObject *self, PyObject *args,
-                                               PyObject *kwds)
+static PyObject *newrelic_wrap_wsgi_application(
+        PyObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *module = NULL;
     const char *class_name = NULL;
@@ -357,7 +357,7 @@ static PyObject *newrelic_wrap_web_transaction(PyObject *self, PyObject *args,
                               "application", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds,
-                                     "Ozz|O:wrap_web_transaction",
+                                     "Ozz|O:wrap_wsgi_application",
                                      kwlist, &module, &class_name,
                                      &object_name, &application)) {
         return NULL;
@@ -392,7 +392,7 @@ static PyObject *newrelic_wrap_web_transaction(PyObject *self, PyObject *args,
         return NULL;
 
     wrapper_object = PyObject_CallFunctionObjArgs((PyObject *)
-            &NRWebTransactionWrapper_Type, wrapped_object, application,
+            &NRWSGIApplicationWrapper_Type, wrapped_object, application,
             NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object, attribute_name,
@@ -1634,9 +1634,9 @@ static PyMethodDef newrelic_methods[] = {
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "object_context",     (PyCFunction)newrelic_object_context,
                             METH_VARARGS|METH_KEYWORDS, 0 },
-    { "web_transaction",    (PyCFunction)newrelic_web_transaction,
+    { "wsgi_application",   (PyCFunction)newrelic_wsgi_application,
                             METH_VARARGS|METH_KEYWORDS, 0 },
-    { "wrap_web_transaction", (PyCFunction)newrelic_wrap_web_transaction,
+    { "wrap_wsgi_application", (PyCFunction)newrelic_wrap_wsgi_application,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "background_task",    (PyCFunction)newrelic_background_task,
                             METH_VARARGS|METH_KEYWORDS, 0 },
@@ -1765,11 +1765,11 @@ init_newrelic(void)
         return;
     if (PyType_Ready(&NRWebTransaction_Type) < 0)
         return;
-    if (PyType_Ready(&NRWebTransactionIterable_Type) < 0)
+    if (PyType_Ready(&NRWSGIApplicationIterable_Type) < 0)
         return;
-    if (PyType_Ready(&NRWebTransactionDecorator_Type) < 0)
+    if (PyType_Ready(&NRWSGIApplicationDecorator_Type) < 0)
         return;
-    if (PyType_Ready(&NRWebTransactionWrapper_Type) < 0)
+    if (PyType_Ready(&NRWSGIApplicationWrapper_Type) < 0)
         return;
     if (PyType_Ready(&NRInFunctionDecorator_Type) < 0)
         return;
@@ -1859,12 +1859,12 @@ init_newrelic(void)
     Py_INCREF(&NRWebTransaction_Type);
     PyModule_AddObject(module, "WebTransaction",
                        (PyObject *)&NRWebTransaction_Type);
-    Py_INCREF(&NRWebTransactionDecorator_Type);
-    PyModule_AddObject(module, "WebTransactionDecorator",
-                       (PyObject *)&NRWebTransactionDecorator_Type);
-    Py_INCREF(&NRWebTransactionWrapper_Type);
-    PyModule_AddObject(module, "WebTransactionWrapper",
-                       (PyObject *)&NRWebTransactionWrapper_Type);
+    Py_INCREF(&NRWSGIApplicationDecorator_Type);
+    PyModule_AddObject(module, "WSGIApplicationDecorator",
+                       (PyObject *)&NRWSGIApplicationDecorator_Type);
+    Py_INCREF(&NRWSGIApplicationWrapper_Type);
+    PyModule_AddObject(module, "WSGIApplicationWrapper",
+                       (PyObject *)&NRWSGIApplicationWrapper_Type);
     Py_INCREF(&NRInFunctionDecorator_Type);
     PyModule_AddObject(module, "InFunctionDecorator",
                        (PyObject *)&NRInFunctionDecorator_Type);

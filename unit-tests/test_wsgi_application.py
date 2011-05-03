@@ -12,12 +12,12 @@ _application = _newrelic.application("UnitTests")
 def _wsgiapp_function(self, *args):
     transaction = _newrelic.transaction()
     assert transaction != None
-_wsgiapp_function = _newrelic.WebTransactionWrapper(
+_wsgiapp_function = _newrelic.WSGIApplicationWrapper(
         _wsgiapp_function, _application)
 
 def _wsgiapp_function_error(self, *args):
     raise RuntimeError("_wsgiapp_function_error")
-_wsgiapp_function_error = _newrelic.WebTransactionWrapper(
+_wsgiapp_function_error = _newrelic.WSGIApplicationWrapper(
         _wsgiapp_function_error, _application)
 
 class _wsgiapp_class:
@@ -26,20 +26,20 @@ class _wsgiapp_class:
     def __call__(self):
         transaction = _newrelic.transaction()
         assert transaction != None
-_wsgiapp_class = _newrelic.WebTransactionWrapper(
+_wsgiapp_class = _newrelic.WSGIApplicationWrapper(
         _wsgiapp_class, _application)
 
-@_newrelic.web_transaction("UnitTests")
+@_newrelic.wsgi_application("UnitTests")
 def _wsgiapp_function_decorator(self, *args):
     transaction = _newrelic.transaction()
     assert transaction != None
 
-@_newrelic.web_transaction()
+@_newrelic.wsgi_application()
 def _wsgiapp_function_decorator_default(self, *args):
     transaction = _newrelic.transaction()
     assert transaction != None
 
-@_newrelic.web_transaction("UnitTests")
+@_newrelic.wsgi_application("UnitTests")
 class _wsgiapp_class_decorator:
     def __init__(self, *args):
         pass
@@ -71,7 +71,7 @@ class WSGIApplicationTests(unittest.TestCase):
     def _wsgiapp_method(self, *args):
         transaction = _newrelic.transaction()
         self.assertNotEqual(transaction, None)
-    _wsgiapp_method = _newrelic.WebTransactionWrapper(
+    _wsgiapp_method = _newrelic.WSGIApplicationWrapper(
             _wsgiapp_method, _application)
 
     def test_wsgiapp_method(self):
@@ -90,7 +90,7 @@ class WSGIApplicationTests(unittest.TestCase):
         environ = { "REQUEST_URI": "/wsgiapp_function_decorator_default" }
         _wsgiapp_function_decorator_default(environ, None).close()
 
-    @_newrelic.web_transaction("UnitTests")
+    @_newrelic.wsgi_application("UnitTests")
     def _wsgiapp_method_decorator(self, *args):
         transaction = _newrelic.transaction()
         self.assertNotEqual(transaction, None)

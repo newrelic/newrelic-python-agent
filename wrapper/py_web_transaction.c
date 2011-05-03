@@ -481,13 +481,13 @@ PyTypeObject NRWebTransaction_Type = {
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRWebTransactionIterable_new(PyTypeObject *type,
-                                              PyObject *args,
-                                              PyObject *kwds)
+static PyObject *NRWSGIApplicationIterable_new(PyTypeObject *type,
+                                               PyObject *args,
+                                               PyObject *kwds)
 {
-    NRWebTransactionIterableObject *self;
+    NRWSGIApplicationIterableObject *self;
 
-    self = (NRWebTransactionIterableObject *)type->tp_alloc(type, 0);
+    self = (NRWSGIApplicationIterableObject *)type->tp_alloc(type, 0);
 
     if (!self)
         return NULL;
@@ -503,8 +503,8 @@ static PyObject *NRWebTransactionIterable_new(PyTypeObject *type,
 
 /* ------------------------------------------------------------------------- */
 
-static int NRWebTransactionIterable_init(NRWebTransactionIterableObject *self,
-                                         PyObject *args, PyObject *kwds)
+static int NRWSGIApplicationIterable_init(NRWSGIApplicationIterableObject *self,
+                                          PyObject *args, PyObject *kwds)
 {
     PyObject *application = NULL;
     PyObject *wrapped_object = NULL;
@@ -522,7 +522,7 @@ static int NRWebTransactionIterable_init(NRWebTransactionIterableObject *self,
     static char *kwlist[] = { "application", "wrapped", "args", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds,
-                                     "O!OO!:WebTransactionIterable",
+                                     "O!OO!:WSGIApplicationIterable",
                                      kwlist, &NRApplication_Type,
                                      &application, &wrapped_object,
                                      &PyTuple_Type, &application_args)) {
@@ -637,8 +637,8 @@ static int NRWebTransactionIterable_init(NRWebTransactionIterableObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-static void NRWebTransactionIterable_dealloc(
-        NRWebTransactionIterableObject *self)
+static void NRWSGIApplicationIterable_dealloc(
+        NRWSGIApplicationIterableObject *self)
 {
     Py_XDECREF(self->application);
     Py_XDECREF(self->wrapped_object);
@@ -652,8 +652,8 @@ static void NRWebTransactionIterable_dealloc(
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRWebTransactionIterable_iter(
-        NRWebTransactionIterableObject *self)
+static PyObject *NRWSGIApplicationIterable_iter(
+        NRWSGIApplicationIterableObject *self)
 {
     self->iterable = PyObject_GetIter(self->result);
 
@@ -663,16 +663,16 @@ static PyObject *NRWebTransactionIterable_iter(
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRWebTransactionIterable_iternext(
-        NRWebTransactionIterableObject *self)
+static PyObject *NRWSGIApplicationIterable_iternext(
+        NRWSGIApplicationIterableObject *self)
 {
     return PyIter_Next(self->iterable);
 }
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRWebTransactionIterable_close(
-        NRWebTransactionIterableObject *self, PyObject *args)
+static PyObject *NRWSGIApplicationIterable_close(
+        NRWSGIApplicationIterableObject *self, PyObject *args)
 {
     PyObject *wrapped_method = NULL;
     PyObject *wrapped_result = NULL;
@@ -760,8 +760,8 @@ static PyObject *NRWebTransactionIterable_close(
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRWebTransactionIterable_start(
-        NRWebTransactionIterableObject *self, PyObject *args)
+static PyObject *NRWSGIApplicationIterable_start(
+        NRWSGIApplicationIterableObject *self, PyObject *args)
 {
     PyObject *status_line = NULL;
     PyObject *headers = NULL;
@@ -795,21 +795,21 @@ static PyObject *NRWebTransactionIterable_start(
 #define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
 #endif
 
-static PyMethodDef NRWebTransactionIterable_methods[] = {
-    { "close",              (PyCFunction)NRWebTransactionIterable_close,
+static PyMethodDef NRWSGIApplicationIterable_methods[] = {
+    { "close",              (PyCFunction)NRWSGIApplicationIterable_close,
                             METH_NOARGS, 0 },
-    { "start_response",     (PyCFunction)NRWebTransactionIterable_start,
+    { "start_response",     (PyCFunction)NRWSGIApplicationIterable_start,
                             METH_VARARGS, 0 },
     { NULL, NULL }
 };
 
-PyTypeObject NRWebTransactionIterable_Type = {
+PyTypeObject NRWSGIApplicationIterable_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "_newrelic.WebTransactionIterable", /*tp_name*/
-    sizeof(NRWebTransactionIterableObject), /*tp_basicsize*/
+    "_newrelic.WSGIApplicationIterable", /*tp_name*/
+    sizeof(NRWSGIApplicationIterableObject), /*tp_basicsize*/
     0,                      /*tp_itemsize*/
     /* methods */
-    (destructor)NRWebTransactionIterable_dealloc, /*tp_dealloc*/
+    (destructor)NRWSGIApplicationIterable_dealloc, /*tp_dealloc*/
     0,                      /*tp_print*/
     0,                      /*tp_getattr*/
     0,                      /*tp_setattr*/
@@ -830,9 +830,9 @@ PyTypeObject NRWebTransactionIterable_Type = {
     0,                      /*tp_clear*/
     0,                      /*tp_richcompare*/
     0,                      /*tp_weaklistoffset*/
-    (getiterfunc)NRWebTransactionIterable_iter, /*tp_iter*/
-    (iternextfunc)NRWebTransactionIterable_iternext, /*tp_iternext*/
-    NRWebTransactionIterable_methods, /*tp_methods*/
+    (getiterfunc)NRWSGIApplicationIterable_iter, /*tp_iter*/
+    (iternextfunc)NRWSGIApplicationIterable_iternext, /*tp_iternext*/
+    NRWSGIApplicationIterable_methods, /*tp_methods*/
     0,                      /*tp_members*/
     0,                      /*tp_getset*/
     0,                      /*tp_base*/
@@ -840,21 +840,21 @@ PyTypeObject NRWebTransactionIterable_Type = {
     0,                      /*tp_descr_get*/
     0,                      /*tp_descr_set*/
     0,                      /*tp_dictoffset*/
-    (initproc)NRWebTransactionIterable_init, /*tp_init*/
+    (initproc)NRWSGIApplicationIterable_init, /*tp_init*/
     0,                      /*tp_alloc*/
-    NRWebTransactionIterable_new, /*tp_new*/
+    NRWSGIApplicationIterable_new, /*tp_new*/
     0,                      /*tp_free*/
     0,                      /*tp_is_gc*/
 };
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRWebTransactionWrapper_new(PyTypeObject *type, PyObject *args,
-                                           PyObject *kwds)
+static PyObject *NRWSGIApplicationWrapper_new(
+        PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
-    NRWebTransactionWrapperObject *self;
+    NRWSGIApplicationWrapperObject *self;
 
-    self = (NRWebTransactionWrapperObject *)type->tp_alloc(type, 0);
+    self = (NRWSGIApplicationWrapperObject *)type->tp_alloc(type, 0);
 
     if (!self)
         return NULL;
@@ -867,8 +867,8 @@ static PyObject *NRWebTransactionWrapper_new(PyTypeObject *type, PyObject *args,
 
 /* ------------------------------------------------------------------------- */
 
-static int NRWebTransactionWrapper_init(NRWebTransactionWrapperObject *self,
-                                       PyObject *args, PyObject *kwds)
+static int NRWSGIApplicationWrapper_init(
+        NRWSGIApplicationWrapperObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *wrapped_object = NULL;
 
@@ -876,7 +876,7 @@ static int NRWebTransactionWrapper_init(NRWebTransactionWrapperObject *self,
 
     static char *kwlist[] = { "wrapped", "application", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO:WebTransactionWrapper",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO:WSGIApplicationWrapper",
                                      kwlist, &wrapped_object, &application)) {
         return -1;
     }
@@ -930,7 +930,8 @@ static int NRWebTransactionWrapper_init(NRWebTransactionWrapperObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-static void NRWebTransactionWrapper_dealloc(NRWebTransactionWrapperObject *self)
+static void NRWSGIApplicationWrapper_dealloc(
+        NRWSGIApplicationWrapperObject *self)
 {
     Py_XDECREF(self->wrapped_object);
 
@@ -941,34 +942,34 @@ static void NRWebTransactionWrapper_dealloc(NRWebTransactionWrapperObject *self)
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRWebTransactionWrapper_call(
-        NRWebTransactionWrapperObject *self, PyObject *args, PyObject *kwds)
+static PyObject *NRWSGIApplicationWrapper_call(
+        NRWSGIApplicationWrapperObject *self, PyObject *args, PyObject *kwds)
 {
     return PyObject_CallFunctionObjArgs((PyObject *)
-            &NRWebTransactionIterable_Type, self->application,
+            &NRWSGIApplicationIterable_Type, self->application,
             self->wrapped_object, args, NULL);
 }
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRWebTransactionWrapper_get_name(
-        NRWebTransactionWrapperObject *self, void *closure)
+static PyObject *NRWSGIApplicationWrapper_get_name(
+        NRWSGIApplicationWrapperObject *self, void *closure)
 {
     return PyObject_GetAttrString(self->wrapped_object, "__name__");
 }
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRWebTransactionWrapper_get_module(
-        NRWebTransactionWrapperObject *self, void *closure)
+static PyObject *NRWSGIApplicationWrapper_get_module(
+        NRWSGIApplicationWrapperObject *self, void *closure)
 {
     return PyObject_GetAttrString(self->wrapped_object, "__module__");
 }
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRWebTransactionWrapper_get_wrapped(
-        NRWebTransactionWrapperObject *self, void *closure)
+static PyObject *NRWSGIApplicationWrapper_get_wrapped(
+        NRWSGIApplicationWrapperObject *self, void *closure)
 {
     Py_INCREF(self->wrapped_object);
     return self->wrapped_object;
@@ -976,7 +977,7 @@ static PyObject *NRWebTransactionWrapper_get_wrapped(
  
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRWebTransactionWrapper_descr_get(PyObject *function,
+static PyObject *NRWSGIApplicationWrapper_descr_get(PyObject *function,
                                                   PyObject *object,
                                                   PyObject *type)
 {
@@ -992,23 +993,23 @@ static PyObject *NRWebTransactionWrapper_descr_get(PyObject *function,
 #define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
 #endif
 
-static PyGetSetDef NRWebTransactionWrapper_getset[] = {
-    { "__name__",           (getter)NRWebTransactionWrapper_get_name,
+static PyGetSetDef NRWSGIApplicationWrapper_getset[] = {
+    { "__name__",           (getter)NRWSGIApplicationWrapper_get_name,
                             NULL, 0 },
-    { "__module__",         (getter)NRWebTransactionWrapper_get_module,
+    { "__module__",         (getter)NRWSGIApplicationWrapper_get_module,
                             NULL, 0 },
-    { "__wrapped__",        (getter)NRWebTransactionWrapper_get_wrapped,
+    { "__wrapped__",        (getter)NRWSGIApplicationWrapper_get_wrapped,
                             NULL, 0 },
     { NULL },
 };
 
-PyTypeObject NRWebTransactionWrapper_Type = {
+PyTypeObject NRWSGIApplicationWrapper_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "_newrelic.WebTransactionWrapper", /*tp_name*/
-    sizeof(NRWebTransactionWrapperObject), /*tp_basicsize*/
+    "_newrelic.WSGIApplicationWrapper", /*tp_name*/
+    sizeof(NRWSGIApplicationWrapperObject), /*tp_basicsize*/
     0,                      /*tp_itemsize*/
     /* methods */
-    (destructor)NRWebTransactionWrapper_dealloc, /*tp_dealloc*/
+    (destructor)NRWSGIApplicationWrapper_dealloc, /*tp_dealloc*/
     0,                      /*tp_print*/
     0,                      /*tp_getattr*/
     0,                      /*tp_setattr*/
@@ -1018,7 +1019,7 @@ PyTypeObject NRWebTransactionWrapper_Type = {
     0,                      /*tp_as_sequence*/
     0,                      /*tp_as_mapping*/
     0,                      /*tp_hash*/
-    (ternaryfunc)NRWebTransactionWrapper_call, /*tp_call*/
+    (ternaryfunc)NRWSGIApplicationWrapper_call, /*tp_call*/
     0,                      /*tp_str*/
     0,                      /*tp_getattro*/
     0,                      /*tp_setattro*/
@@ -1033,27 +1034,27 @@ PyTypeObject NRWebTransactionWrapper_Type = {
     0,                      /*tp_iternext*/
     0,                      /*tp_methods*/
     0,                      /*tp_members*/
-    NRWebTransactionWrapper_getset, /*tp_getset*/
+    NRWSGIApplicationWrapper_getset, /*tp_getset*/
     0,                      /*tp_base*/
     0,                      /*tp_dict*/
-    NRWebTransactionWrapper_descr_get, /*tp_descr_get*/
+    NRWSGIApplicationWrapper_descr_get, /*tp_descr_get*/
     0,                      /*tp_descr_set*/
     0,                      /*tp_dictoffset*/
-    (initproc)NRWebTransactionWrapper_init, /*tp_init*/
+    (initproc)NRWSGIApplicationWrapper_init, /*tp_init*/
     0,                      /*tp_alloc*/
-    NRWebTransactionWrapper_new, /*tp_new*/
+    NRWSGIApplicationWrapper_new, /*tp_new*/
     0,                      /*tp_free*/
     0,                      /*tp_is_gc*/
 };
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRWebTransactionDecorator_new(PyTypeObject *type,
+static PyObject *NRWSGIApplicationDecorator_new(PyTypeObject *type,
                                               PyObject *args, PyObject *kwds)
 {
-    NRWebTransactionDecoratorObject *self;
+    NRWSGIApplicationDecoratorObject *self;
 
-    self = (NRWebTransactionDecoratorObject *)type->tp_alloc(type, 0);
+    self = (NRWSGIApplicationDecoratorObject *)type->tp_alloc(type, 0);
 
     if (!self)
         return NULL;
@@ -1065,14 +1066,15 @@ static PyObject *NRWebTransactionDecorator_new(PyTypeObject *type,
 
 /* ------------------------------------------------------------------------- */
 
-static int NRWebTransactionDecorator_init(NRWebTransactionDecoratorObject *self,
+static int NRWSGIApplicationDecorator_init(
+        NRWSGIApplicationDecoratorObject *self,
                                          PyObject *args, PyObject *kwds)
 {
     PyObject *application = Py_None;
 
     static char *kwlist[] = { "application", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:WebTransactionDecorator",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:WSGIApplicationDecorator",
                                      kwlist, &application)) {
         return -1;
     }
@@ -1095,8 +1097,8 @@ static int NRWebTransactionDecorator_init(NRWebTransactionDecoratorObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-static void NRWebTransactionDecorator_dealloc(
-        NRWebTransactionDecoratorObject *self)
+static void NRWSGIApplicationDecorator_dealloc(
+        NRWSGIApplicationDecoratorObject *self)
 {
     Py_XDECREF(self->application);
 
@@ -1105,20 +1107,20 @@ static void NRWebTransactionDecorator_dealloc(
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRWebTransactionDecorator_call(
-        NRWebTransactionDecoratorObject *self, PyObject *args, PyObject *kwds)
+static PyObject *NRWSGIApplicationDecorator_call(
+        NRWSGIApplicationDecoratorObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *wrapped_object = NULL;
 
     static char *kwlist[] = { "wrapped", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:WebTransactionDecorator",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:WSGIApplicationDecorator",
                                      kwlist, &wrapped_object)) {
         return NULL;
     }
 
     return PyObject_CallFunctionObjArgs(
-            (PyObject *)&NRWebTransactionWrapper_Type,
+            (PyObject *)&NRWSGIApplicationWrapper_Type,
             wrapped_object, self->application, NULL);
 }
 
@@ -1128,13 +1130,13 @@ static PyObject *NRWebTransactionDecorator_call(
 #define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
 #endif
 
-PyTypeObject NRWebTransactionDecorator_Type = {
+PyTypeObject NRWSGIApplicationDecorator_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "_newrelic.WebTransactionDecorator", /*tp_name*/
-    sizeof(NRWebTransactionDecoratorObject), /*tp_basicsize*/
+    "_newrelic.WSGIApplicationDecorator", /*tp_name*/
+    sizeof(NRWSGIApplicationDecoratorObject), /*tp_basicsize*/
     0,                      /*tp_itemsize*/
     /* methods */
-    (destructor)NRWebTransactionDecorator_dealloc, /*tp_dealloc*/
+    (destructor)NRWSGIApplicationDecorator_dealloc, /*tp_dealloc*/
     0,                      /*tp_print*/
     0,                      /*tp_getattr*/
     0,                      /*tp_setattr*/
@@ -1144,7 +1146,7 @@ PyTypeObject NRWebTransactionDecorator_Type = {
     0,                      /*tp_as_sequence*/
     0,                      /*tp_as_mapping*/
     0,                      /*tp_hash*/
-    (ternaryfunc)NRWebTransactionDecorator_call, /*tp_call*/
+    (ternaryfunc)NRWSGIApplicationDecorator_call, /*tp_call*/
     0,                      /*tp_str*/
     0,                      /*tp_getattro*/
     0,                      /*tp_setattro*/
@@ -1165,9 +1167,9 @@ PyTypeObject NRWebTransactionDecorator_Type = {
     0,                      /*tp_descr_get*/
     0,                      /*tp_descr_set*/
     0,                      /*tp_dictoffset*/
-    (initproc)NRWebTransactionDecorator_init, /*tp_init*/
+    (initproc)NRWSGIApplicationDecorator_init, /*tp_init*/
     0,                      /*tp_alloc*/
-    NRWebTransactionDecorator_new, /*tp_new*/
+    NRWSGIApplicationDecorator_new, /*tp_new*/
     0,                      /*tp_free*/
     0,                      /*tp_is_gc*/
 };

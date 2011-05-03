@@ -21,24 +21,24 @@ typedef struct {
     PyObject *transaction;
     PyObject *result;
     PyObject *iterable;
-} NRWebTransactionIterableObject;
+} NRWSGIApplicationIterableObject;
 
-extern PyTypeObject NRWebTransactionIterable_Type;
+extern PyTypeObject NRWSGIApplicationIterable_Type;
 
 typedef struct {
     PyObject_HEAD
     PyObject *application;
     PyObject *wrapped_object;
-} NRWebTransactionWrapperObject;
+} NRWSGIApplicationWrapperObject;
 
-extern PyTypeObject NRWebTransactionWrapper_Type;
+extern PyTypeObject NRWSGIApplicationWrapper_Type;
 
 typedef struct {
     PyObject_HEAD
     PyObject *application;
-} NRWebTransactionDecoratorObject;
+} NRWSGIApplicationDecoratorObject;
 
-extern PyTypeObject NRWebTransactionDecorator_Type;
+extern PyTypeObject NRWSGIApplicationDecorator_Type;
 
 /* ------------------------------------------------------------------------- */
 

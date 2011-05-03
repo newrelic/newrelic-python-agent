@@ -23,14 +23,14 @@ extern PyTypeObject NRDatabaseTrace_Type;
 typedef struct {
     PyObject_HEAD
     PyObject *wrapped_object;
-    PyObject *argnum;
+    PyObject *sql;
 } NRDatabaseTraceWrapperObject;
 
 extern PyTypeObject NRDatabaseTraceWrapper_Type;
 
 typedef struct {
     PyObject_HEAD
-    PyObject *argnum;
+    PyObject *sql;
 } NRDatabaseTraceDecoratorObject;
 
 extern PyTypeObject NRDatabaseTraceDecorator_Type;

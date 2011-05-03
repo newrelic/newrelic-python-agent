@@ -276,7 +276,7 @@ static PyObject *NRDatabaseTraceWrapper_new(PyTypeObject *type, PyObject *args,
         return NULL;
 
     self->wrapped_object = NULL;
-    self->argnum = NULL;
+    self->sql = NULL;
 
     return (PyObject *)self;
 }
@@ -287,13 +287,12 @@ static int NRDatabaseTraceWrapper_init(NRDatabaseTraceWrapperObject *self,
                                        PyObject *args, PyObject *kwds)
 {
     PyObject *wrapped_object = NULL;
-    PyObject *argnum = NULL;
+    PyObject *sql = NULL;
 
-    static char *kwlist[] = { "wrapped", "argnum", NULL };
+    static char *kwlist[] = { "wrapped", "sql", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO!:DatabaseTraceWrapper",
-                                     kwlist, &wrapped_object, &PyInt_Type,
-                                     &argnum)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO:DatabaseTraceWrapper",
+                                     kwlist, &wrapped_object, &sql)) {
         return -1;
     }
 
@@ -301,9 +300,9 @@ static int NRDatabaseTraceWrapper_init(NRDatabaseTraceWrapperObject *self,
     Py_XDECREF(self->wrapped_object);
     self->wrapped_object = wrapped_object;
 
-    Py_INCREF(argnum);
-    Py_XDECREF(self->argnum);
-    self->argnum = argnum;
+    Py_INCREF(sql);
+    Py_XDECREF(self->sql);
+    self->sql = sql;
 
     /*
      * TODO This should set __module__, __name__, __doc__ and
@@ -319,7 +318,7 @@ static int NRDatabaseTraceWrapper_init(NRDatabaseTraceWrapperObject *self,
 static void NRDatabaseTraceWrapper_dealloc(NRDatabaseTraceWrapperObject *self)
 {
     Py_DECREF(self->wrapped_object);
-    Py_DECREF(self->argnum);
+    Py_DECREF(self->sql);
 
     Py_TYPE(self)->tp_free(self);
 }
@@ -338,9 +337,7 @@ static PyObject *NRDatabaseTraceWrapper_call(
     PyObject *method_args = NULL;
     PyObject *method_result = NULL;
 
-    PyObject *sql_object = NULL;
-
-    Py_ssize_t argnum = 0;
+    PyObject *sql = NULL;
 
     /*
      * If there is no current transaction then we can call
@@ -352,41 +349,28 @@ static PyObject *NRDatabaseTraceWrapper_call(
     if (!current_transaction)
         return PyObject_Call(self->wrapped_object, args, kwds);
 
-    /*
-     * Extract the sql from the designated function parameter to
-     * be supplied to the wrapped function. If argnum is wrong,
-     * ie., not a valid argument or argument of the wrong type
-     * then log an error and call wrapped function and return
-     * immediately.
-     */
+    /* Create function trace context manager. */
 
-    if (PyTuple_Size(args) > (argnum = PyInt_AsLong(self->argnum))) {
-        PyObject *object;
-
-        object = PyTuple_GetItem(args, argnum);
-
-        if (PyString_Check(object) || PyUnicode_Check(object)) {
-            sql_object = object;
-        }
-        else {
-            PyErr_Format(PyExc_TypeError, "sql argument must be str or "
-                         "unicode, found type '%s'", object->ob_type->tp_name);
-            PyErr_WriteUnraisable(self->wrapped_object);
-        }
+    if (PyString_Check(self->sql)) {
+        sql = self->sql;
+        Py_INCREF(sql);
     }
     else {
-        PyErr_Format(PyExc_IndexError, "invalid argnum %ld to identify "
-                     "sql argument", (long)argnum);
-        PyErr_WriteUnraisable(self->wrapped_object);
+        /*
+         * Name if actually a callable function to provide the
+         * name based on arguments supplied to wrapped function.
+         */
+
+        sql = PyObject_Call(self->sql, args, kwds);
+
+        if (!sql)
+            return NULL;
     }
 
-    if (!sql_object)
-        return PyObject_Call(self->wrapped_object, args, kwds);
-
-    /* Create database trace context manager. */
-
     database_trace = PyObject_CallFunctionObjArgs((PyObject *)
-            &NRDatabaseTrace_Type, current_transaction, sql_object, NULL);
+            &NRDatabaseTrace_Type, current_transaction, sql, NULL);
+
+    Py_DECREF(sql);
 
     /* Now call __enter__() on the context manager. */
 
@@ -557,7 +541,7 @@ static PyObject *NRDatabaseTraceDecorator_new(PyTypeObject *type,
     if (!self)
         return NULL;
 
-    self->argnum = NULL;
+    self->sql = NULL;
 
     return (PyObject *)self;
 }
@@ -567,18 +551,18 @@ static PyObject *NRDatabaseTraceDecorator_new(PyTypeObject *type,
 static int NRDatabaseTraceDecorator_init(NRDatabaseTraceDecoratorObject *self,
                                          PyObject *args, PyObject *kwds)
 {
-    PyObject *argnum = NULL;
+    PyObject *sql = NULL;
 
-    static char *kwlist[] = { "argnum", NULL };
+    static char *kwlist[] = { "sql", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!:DatabaseTraceDecorator",
-                                     kwlist, &PyInt_Type, &argnum)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:DatabaseTraceDecorator",
+                                     kwlist, &sql)) {
         return -1;
     }
 
-    Py_INCREF(argnum);
-    Py_XDECREF(self->argnum);
-    self->argnum = argnum;
+    Py_INCREF(sql);
+    Py_XDECREF(self->sql);
+    self->sql = sql;
 
     return 0;
 }
@@ -588,7 +572,7 @@ static int NRDatabaseTraceDecorator_init(NRDatabaseTraceDecoratorObject *self,
 static void NRDatabaseTraceDecorator_dealloc(
         NRDatabaseTraceDecoratorObject *self)
 {
-    Py_DECREF(self->argnum);
+    Py_DECREF(self->sql);
 
     Py_TYPE(self)->tp_free(self);
 }
@@ -609,7 +593,7 @@ static PyObject *NRDatabaseTraceDecorator_call(
 
     return PyObject_CallFunctionObjArgs(
             (PyObject *)&NRDatabaseTraceWrapper_Type,
-            wrapped_object, self->argnum, NULL);
+            wrapped_object, self->sql, NULL);
 }
 
 /* ------------------------------------------------------------------------- */

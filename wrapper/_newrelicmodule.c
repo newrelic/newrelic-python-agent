@@ -570,17 +570,17 @@ static PyObject *newrelic_wrap_background_task(PyObject *self, PyObject *args,
 static PyObject *newrelic_database_trace(PyObject *self, PyObject *args,
                                          PyObject *kwds)
 {
-    PyObject *argnum = NULL;
+    PyObject *sql = NULL;
 
-    static char *kwlist[] = { "argnum", NULL };
+    static char *kwlist[] = { "sql", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!:database_trace",
-                                     kwlist, &PyInt_Type, &argnum)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:database_trace",
+                                     kwlist, &sql)) {
         return NULL;
     }
 
     return PyObject_CallFunctionObjArgs((PyObject *)
-            &NRDatabaseTraceDecorator_Type, argnum, NULL);
+            &NRDatabaseTraceDecorator_Type, sql, NULL);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -591,7 +591,7 @@ static PyObject *newrelic_wrap_database_trace(PyObject *self, PyObject *args,
     PyObject *module = NULL;
     const char *class_name = NULL;
     const char *object_name = NULL;
-    PyObject *argnum = NULL;
+    PyObject *sql = NULL;
 
     PyObject *wrapped_object = NULL;
     PyObject *parent_object = NULL;
@@ -602,11 +602,11 @@ static PyObject *newrelic_wrap_database_trace(PyObject *self, PyObject *args,
     PyObject *result = NULL;
 
     static char *kwlist[] = { "module", "class_name", "object_name",
-                              "argnum", NULL };
+                              "sql", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OzzO!:wrap_database_trace",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OzzO:wrap_database_trace",
                                      kwlist, &module, &class_name,
-                                     &object_name, &PyInt_Type, &argnum)) {
+                                     &object_name, &sql)) {
         return NULL;
     }
 
@@ -630,7 +630,7 @@ static PyObject *newrelic_wrap_database_trace(PyObject *self, PyObject *args,
         return NULL;
 
     wrapper_object = PyObject_CallFunctionObjArgs((PyObject *)
-            &NRDatabaseTraceWrapper_Type, wrapped_object, argnum, NULL);
+            &NRDatabaseTraceWrapper_Type, wrapped_object, sql, NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object, attribute_name,
                                             wrapper_object);

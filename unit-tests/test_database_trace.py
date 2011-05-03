@@ -10,10 +10,9 @@ settings.log_level = _newrelic.LOG_VERBOSEDEBUG
 
 application = _newrelic.application("UnitTests")
 
-#@_newrelic.database_trace(argnum=0)
+@_newrelic.database_trace(lambda sql: sql)
 def _test_function_1(sql):
     time.sleep(1.0)
-_test_function_1 = _newrelic.database_trace(argnum=0)(_test_function_1)
 
 class DatabaseTraceTests(unittest.TestCase):
 

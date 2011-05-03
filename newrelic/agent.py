@@ -102,6 +102,9 @@ if _config_file:
         if _config_environment:
             _settings.environment = _config_environment
             _process_configuration('newrelic:%s' % _config_environment)
+    else:
+        assert _settings.config_file == _config_file
+        assert _settings.environment == _config_environment
 
 # Setup instrumentation by triggering off module imports.
 

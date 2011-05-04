@@ -180,6 +180,28 @@ static int NRWebTransaction_init(NRTransactionObject *self, PyObject *args,
             }
         }
 
+        if (self->transaction->http_x_request_start == 0) {
+            object = PyDict_GetItemString(environ, "HTTP_X_REQUEST_START");
+
+            if (object && PyString_Check(object)) {
+                const char *s = PyString_AsString(object);
+                if (s[0] == 't' && s[1] == '=' ) {
+                    self->transaction->http_x_request_start = (int64_t)strtoll(
+                            s+2, 0, 0);
+                }
+            }
+        }
+
+        if (self->transaction->http_x_request_start == 0) {
+            object = PyDict_GetItemString(environ, "mod_wsgi.request_time");
+
+            if (object && PyString_Check(object)) {
+                const char *s = PyString_AsString(object);
+                self->transaction->http_x_request_start = (int64_t)strtoll(
+                            s, 0, 0);
+            }
+        }
+
         /*
          * Check whether web transaction being flagged as a
          * background task via variable in the WSGI environ

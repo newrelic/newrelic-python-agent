@@ -10,19 +10,20 @@ def insert_rum(request, response):
     ctype = response.get('Content-Type', '').lower()
     if ctype != "text/html" and not ctype.startswith("text/html;"):
         return response
-    content = response.content
-    start = content.find('<head>')
-    end = content.rfind('</body>', -1024)
+    start = response.content.find('<head>')
+    end = response.content.rfind('</body>', -1024)
     if start != -1 and end != -1:
-        start = content.find('>', start, start+1024)
+        start = response.content.find('>', start, start+1024)
         if start != -1 and start < end:
             parts = []
-            parts.append(content[0:start+6])
+            parts.append(response.content[0:start+6])
             parts.append(t.browser_timing_header())
-            parts.append(content[start+6:end])
+            parts.append(response.content[start+6:end])
             parts.append(t.browser_timing_footer())
-            parts.append(content[end:])
-            response.content = ''.join(parts)
+            parts.append(response.content[end:])
+            response.content = ''
+            content = ''.join(parts)
+            response.content = content
     return response
 
 def wrap_middleware(handler, *args, **kwargs):

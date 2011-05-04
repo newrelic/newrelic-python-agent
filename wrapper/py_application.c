@@ -28,11 +28,13 @@ PyObject *NRApplication_Singleton(PyObject *args, PyObject *kwds)
     PyObject *result = NULL;
     const char *name = NULL;
 
+    PyObject *newargs = NULL;
+
     static char *kwlist[] = { "name", NULL };
 
     /* TODO Need to deal with UTF-8 here for name. */
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s:Application",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|z:Application",
                                      kwlist, &name)) {
         return NULL;
     }
@@ -65,6 +67,17 @@ PyObject *NRApplication_Singleton(PyObject *args, PyObject *kwds)
     }
 
     /*
+     * The name can be optional or None in which case we use
+     * the default application name as dictated by configuration.
+     */
+
+    if (!name) {
+        name = nr_per_process_globals.appname;
+        newargs = Py_BuildValue("(s)", name);
+        args = newargs;
+    }
+
+    /*
      * Check for existing application object instance with the
      * specified name in the global dictionary and return it if
      * it exists.
@@ -82,7 +95,7 @@ PyObject *NRApplication_Singleton(PyObject *args, PyObject *kwds)
      * instance, store it in the dictionary and then return it.
      */
 
-    result = PyObject_Call((PyObject *)&NRApplication_Type, args, kwds);
+    result = PyObject_Call((PyObject *)&NRApplication_Type, args, NULL);
 
     PyDict_SetItemString(NRApplication_instances, name, result);
 
@@ -110,6 +123,8 @@ PyObject *NRApplication_Singleton(PyObject *args, PyObject *kwds)
 
     nr__harvest_thread_body(name);
 #endif
+
+    Py_XDECREF(newargs);
 
     return result;
 }

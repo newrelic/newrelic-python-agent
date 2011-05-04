@@ -1,6 +1,29 @@
 from newrelic.agent import (FunctionTraceWrapper, OutFunctionWrapper,
         wrap_pre_function, wrap_post_function, wrap_function_trace,
-        wrap_error_trace, callable_name, transaction, NameTransactionWrapper)
+        wrap_error_trace, callable_name, transaction, NameTransactionWrapper,
+        transaction)
+
+def insert_rum(request, response):
+    t = transaction()
+    if not t:
+        return response
+    ctype = response.get('Content-Type', '').lower()
+    if ctype != "text/html" and not ctype.startswith("text/html;"):
+        return response
+    content = response.content
+    start = content.find('<head>')
+    end = content.rfind('</body>', -1024)
+    if start != -1 and end != -1:
+        start = content.find('>', start, start+1024)
+        if start != -1 and start < end:
+            parts = []
+            parts.append(content[0:start+6])
+            parts.append(t.browser_timing_header())
+            parts.append(content[start+6:end])
+            parts.append(t.browser_timing_footer())
+            parts.append(content[end:])
+            response.content = ''.join(parts)
+    return response
 
 def wrap_middleware(handler, *args, **kwargs):
     if hasattr(handler, '_request_middleware'):
@@ -32,8 +55,11 @@ def wrap_middleware(handler, *args, **kwargs):
         for function in handler._response_middleware:
             wrapper = FunctionTraceWrapper(function)
             response_middleware.append(wrapper)
-
         handler._response_middleware = response_middleware
+
+        # Insert middleware for inserting RUM header/footer.
+
+        response_middleware.insert(0, insert_rum)
 
     if hasattr(handler, '_exception_middleware'):
         exception_middleware = []
@@ -49,12 +75,10 @@ def wrap_url_resolver_output(result):
 
     if type(result) == type(()):
         callback, args, kwargs = result
-        #callback = FunctionTraceWrapper(callback, override_path=True)
         wrapper = NameTransactionWrapper(callback)
         wrapper = FunctionTraceWrapper(wrapper)
         result = (wrapper, args, kwargs)
     else:
-        #result.func = FunctionTraceWrapper(result.func, override_path=True)
         wrapper = NameTransactionWrapper(result.func)
         wrapper = FunctionTraceWrapper(wrapper)
         result.func = wrapper

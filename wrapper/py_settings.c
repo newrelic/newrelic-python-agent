@@ -466,6 +466,123 @@ PyTypeObject NRErrorsSettings_Type = {
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRBrowserSettings_new(PyTypeObject *type, PyObject *args,
+                                       PyObject *kwds)
+{
+    NRBrowserSettingsObject *self;
+
+    self = (NRBrowserSettingsObject *)type->tp_alloc(type, 0);
+
+    if (!self)
+        return NULL;
+
+    self->auto_instrument = 1;
+
+    return (PyObject *)self;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static void NRBrowserSettings_dealloc(NRBrowserSettingsObject *self)
+{
+    PyObject_Del(self);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRBrowserSettings_get_auto_instrument(
+        NRBrowserSettingsObject *self, void *closure)
+{
+    return PyBool_FromLong(self->auto_instrument);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRBrowserSettings_set_auto_instrument(
+        NRBrowserSettingsObject *self, PyObject *value)
+{
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError,
+                        "can't delete auto_instrument attribute");
+        return -1;
+    }
+
+    if (!PyBool_Check(value)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "expected bool for auto_instrument");
+        return -1;
+    }
+
+    if (value == Py_True)
+        self->auto_instrument = 1;
+    else
+        self->auto_instrument = 0;
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+#ifndef PyVarObject_HEAD_INIT
+#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
+#endif
+
+static PyMethodDef NRBrowserSettings_methods[] = {
+    { NULL, NULL }
+};
+
+static PyGetSetDef NRBrowserSettings_getset[] = {
+    { "auto_instrument",    (getter)NRBrowserSettings_get_auto_instrument,
+                            (setter)NRBrowserSettings_set_auto_instrument, 0 },
+    { NULL },
+};
+
+PyTypeObject NRBrowserSettings_Type = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "_newrelic.DebugSettings", /*tp_name*/
+    sizeof(NRBrowserSettingsObject), /*tp_basicsize*/
+    0,                      /*tp_itemsize*/
+    /* methods */
+    (destructor)NRBrowserSettings_dealloc, /*tp_dealloc*/
+    0,                      /*tp_print*/
+    0,                      /*tp_getattr*/
+    0,                      /*tp_setattr*/
+    0,                      /*tp_compare*/
+    0,                      /*tp_repr*/
+    0,                      /*tp_as_number*/
+    0,                      /*tp_as_sequence*/
+    0,                      /*tp_as_mapping*/
+    0,                      /*tp_hash*/
+    0,                      /*tp_call*/
+    0,                      /*tp_str*/
+    0,                      /*tp_getattro*/
+    0,                      /*tp_setattro*/
+    0,                      /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT,     /*tp_flags*/
+    0,                      /*tp_doc*/
+    0,                      /*tp_traverse*/
+    0,                      /*tp_clear*/
+    0,                      /*tp_richcompare*/
+    0,                      /*tp_weaklistoffset*/
+    0,                      /*tp_iter*/
+    0,                      /*tp_iternext*/
+    NRBrowserSettings_methods, /*tp_methods*/
+    0,                      /*tp_members*/
+    NRBrowserSettings_getset, /*tp_getset*/
+    0,                      /*tp_base*/
+    0,                      /*tp_dict*/
+    0,                      /*tp_descr_get*/
+    0,                      /*tp_descr_set*/
+    0,                      /*tp_dictoffset*/
+    0,                      /*tp_init*/
+    0,                      /*tp_alloc*/
+    NRBrowserSettings_new,  /*tp_new*/
+    0,                      /*tp_free*/
+    0,                      /*tp_is_gc*/
+};
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRDebugSettings_new(PyTypeObject *type, PyObject *args,
                                      PyObject *kwds)
 {
@@ -666,7 +783,10 @@ static PyObject *NRSettings_new(PyTypeObject *type, PyObject *args,
     self->errors_settings = (NRErrorsSettingsObject *)
             PyObject_CallFunctionObjArgs(
             (PyObject *)&NRErrorsSettings_Type, NULL);
-    self->debug_settings = (NRErrorsSettingsObject *)
+    self->browser_settings = (NRBrowserSettingsObject *)
+            PyObject_CallFunctionObjArgs(
+            (PyObject *)&NRBrowserSettings_Type, NULL);
+    self->debug_settings = (NRDebugSettingsObject *)
             PyObject_CallFunctionObjArgs(
             (PyObject *)&NRDebugSettings_Type, NULL);
 
@@ -687,6 +807,7 @@ static void NRSettings_dealloc(NRSettingsObject *self)
 
     Py_DECREF(self->tracer_settings);
     Py_DECREF(self->errors_settings);
+    Py_DECREF(self->browser_settings);
     Py_DECREF(self->debug_settings);
 
     PyObject_Del(self);
@@ -983,6 +1104,15 @@ static PyObject *NRSettings_get_error_collector(NRSettingsObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRSettings_get_browser_monitoring(NRSettingsObject *self,
+                                                   void *closure)
+{
+    Py_INCREF(self->browser_settings);
+    return (PyObject *)self->browser_settings;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRSettings_get_debug_settings(NRSettingsObject *self,
                                                void *closure)
 {
@@ -1020,6 +1150,8 @@ static PyGetSetDef NRSettings_getset[] = {
     { "transaction_tracer", (getter)NRSettings_get_transaction_tracer,
                             NULL, 0 },
     { "error_collector",    (getter)NRSettings_get_error_collector,
+                            NULL, 0 },
+    { "browser_monitoring", (getter)NRSettings_get_browser_monitoring,
                             NULL, 0 },
     { "debug",              (getter)NRSettings_get_debug_settings,
                             NULL, 0 },

@@ -1,14 +1,20 @@
 from newrelic.agent import (FunctionTraceWrapper, OutFunctionWrapper,
         wrap_pre_function, wrap_post_function, wrap_function_trace,
         wrap_error_trace, callable_name, transaction, NameTransactionWrapper,
-        transaction)
+        transaction, settings)
 
 def insert_rum(request, response):
+    if not settings().browser_monitoring.auto_instrument:
+        return response
     t = transaction()
     if not t:
         return response
     ctype = response.get('Content-Type', '').lower()
     if ctype != "text/html" and not ctype.startswith("text/html;"):
+        return response
+    header = t.browser_timing_header()
+    footer = t.browser_timing_footer()
+    if not header or not footer:
         return response
     start = response.content.find('<head>')
     end = response.content.rfind('</body>', -1024)
@@ -17,9 +23,9 @@ def insert_rum(request, response):
         if start != -1 and start < end:
             parts = []
             parts.append(response.content[0:start+6])
-            parts.append(t.browser_timing_header())
+            parts.append(header)
             parts.append(response.content[start+6:end])
-            parts.append(t.browser_timing_footer())
+            parts.append(footer)
             parts.append(response.content[end:])
             response.content = ''
             content = ''.join(parts)

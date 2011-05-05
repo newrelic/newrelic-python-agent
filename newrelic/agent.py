@@ -69,23 +69,34 @@ def _process_setting(section, option, getter, mapper):
                     parts = string.splitfields(parts[1], '.', 1)
 
 def _process_configuration(section):
-    _process_setting(section, 'app_name', 'get', None)
-    _process_setting(section, 'monitor_mode', 'getboolean', None)
-    _process_setting(section, 'log_file', 'get', None)
-    _process_setting(section, 'log_level', 'get', _map_log_level)
-    _process_setting(section, 'capture_params', 'getboolean', None)
-    _process_setting(section, 'ignored_params', 'get', _map_ignored_params)
-    _process_setting(section, 'transaction_tracer.enabled', 'getboolean', None)
+    _process_setting(section, 'app_name',
+                     'get', None)
+    _process_setting(section, 'monitor_mode',
+                     'getboolean', None)
+    _process_setting(section, 'log_file',
+                     'get', None)
+    _process_setting(section, 'log_level',
+                     'get', _map_log_level)
+    _process_setting(section, 'capture_params',
+                     'getboolean', None)
+    _process_setting(section, 'ignored_params',
+                     'get', _map_ignored_params)
+    _process_setting(section, 'transaction_tracer.enabled',
+                     'getboolean', None)
     _process_setting(section, 'transaction_tracer.transaction_threshold',
                      'get', _map_transaction_threshold)
     _process_setting(section, 'transaction_tracer.record_sql',
                      'get', _map_record_sql)
     _process_setting(section, 'transaction_tracer.stack_trace_threshold',
                      'getfloat', None)
-    _process_setting(section, 'error_collector.enabled', 'getboolean', None),
+    _process_setting(section, 'error_collector.enabled',
+                     'getboolean', None),
     _process_setting(section, 'error_collector.ignore_errors',
                      'get', _map_ignore_errors)
-    _process_setting(section, 'debug.dump_metric_table', 'getboolean', None)
+    _process_setting(section, 'browser_monitoring.auto_instrument',
+                     'getboolean', None)
+    _process_setting(section, 'debug.dump_metric_table',
+                     'getboolean', None)
     _process_setting(section, 'debug.sql_statement_parsing',
                      'getboolean', None)
 
@@ -119,6 +130,7 @@ def _hook(hook_module_name):
     return _instrument
 
 register_import_hook('django', _hook('newrelic.framework_django'))
+
 register_import_hook('flask', _hook('newrelic.framework_flask'))
 
 register_import_hook('gluon.compileapp', _hook('newrelic.framework_web2py'))

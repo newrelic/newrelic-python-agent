@@ -28,6 +28,13 @@ extern PyTypeObject NRErrorsSettings_Type;
 
 typedef struct {
     PyObject_HEAD
+    int auto_instrument;
+} NRBrowserSettingsObject;
+
+extern PyTypeObject NRBrowserSettings_Type;
+
+typedef struct {
+    PyObject_HEAD
 } NRDebugSettingsObject;
 
 extern PyTypeObject NRDebugSettings_Type;
@@ -38,7 +45,8 @@ typedef struct {
     PyObject *environment;
     NRTracerSettingsObject *tracer_settings;
     NRErrorsSettingsObject *errors_settings;
-    NRErrorsSettingsObject *debug_settings;
+    NRBrowserSettingsObject *browser_settings;
+    NRDebugSettingsObject *debug_settings;
     int monitor_mode;
     PyObject *ignored_params;
 } NRSettingsObject;

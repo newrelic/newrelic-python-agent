@@ -32,6 +32,18 @@ def insert_rum(request, response):
             response.content = content
     return response
 
+def newrelic_browser_timing_header():
+    t = transaction()
+    if not t:
+        return ""
+    return t.browser_timing_header()
+
+def newrelic_browser_timing_footer():
+    t = transaction()
+    if not t:
+        return ""
+    return t.browser_timing_footer()
+
 def wrap_middleware(handler, *args, **kwargs):
     if hasattr(handler, '_request_middleware'):
         request_middleware = []
@@ -75,6 +87,14 @@ def wrap_middleware(handler, *args, **kwargs):
             exception_middleware.append(wrapper)
 
         handler._exception_middleware = exception_middleware
+
+    # Register template tags for RUM header/footer.
+
+    import django.template
+    library = django.template.Library()
+    library.simple_tag(newrelic_browser_timing_header)
+    library.simple_tag(newrelic_browser_timing_footer)
+    django.template.libraries['django.templatetags.newrelic'] = library
 
 def wrap_url_resolver_output(result):
     if result is None:

@@ -22,7 +22,7 @@ def name_restricted(code, environment={}, layer='Unknown'):
 
 class capture_error(object):
     def __init__(self, wrapped):
-        self._wrapped = wrapped
+        self.__wrapped__ = wrapped
     def __get__(self, obj, objtype=None):
         return types.MethodType(self, obj, objtype)
     def __call__(self, request, response, session):
@@ -30,14 +30,14 @@ class capture_error(object):
         if current_transaction:
             from gluon.http import HTTP
             try:
-                return self._wrapped(request, response, session)
+                return self.__wrapped__(request, response, session)
             except HTTP:
                 raise
             except:
                 current_transaction.notice_error(*sys.exc_info())
                 raise
         else:
-            return self._wrapped(request, response, session)
+            return self.__wrapped__(request, response, session)
 
 def instrument(module):
 

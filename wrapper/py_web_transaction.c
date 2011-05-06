@@ -155,7 +155,7 @@ static int NRWebTransaction_init(NRTransactionObject *self, PyObject *args,
 
         /*
          * See if the WSGI environ dictionary includes the
-         * special 'X-NewRelic-Queue-Start' HTTP header. This
+         * special 'X-Queue-Start' HTTP header. This
          * header is an optional header that can be set within
          * the underlying web server or WSGI server to indicate
          * when the current request was first received and ready
@@ -166,11 +166,19 @@ static int NRWebTransaction_init(NRTransactionObject *self, PyObject *args,
          * in connecting state against listener sockets where
          * request needs to be proxied between any processes
          * within the application server.
+         *
+	 * Note that mod_wsgi 4.0 sets its own distinct variable
+	 * called mod_wsgi.queue_start so that not necessary to
+	 * enable and use mod_headers to add X-Queue-Start. So
+	 * also check for that, but give priority to the
+	 * explicitly added header in case that header was added
+	 * in front end server to Apache instead although for that
+         * case they should be using X-Request-Start.
          */
 
         self->transaction->http_x_request_start = 0;
 
-        object = PyDict_GetItemString(environ, "HTTP_X_NEWRELIC_QUEUE_START");
+        object = PyDict_GetItemString(environ, "HTTP_X_QUEUE_START");
 
         if (object && PyString_Check(object)) {
             const char *s = PyString_AsString(object);
@@ -181,19 +189,7 @@ static int NRWebTransaction_init(NRTransactionObject *self, PyObject *args,
         }
 
         if (self->transaction->http_x_request_start == 0) {
-            object = PyDict_GetItemString(environ, "HTTP_X_REQUEST_START");
-
-            if (object && PyString_Check(object)) {
-                const char *s = PyString_AsString(object);
-                if (s[0] == 't' && s[1] == '=' ) {
-                    self->transaction->http_x_request_start = (int64_t)strtoll(
-                            s+2, 0, 0);
-                }
-            }
-        }
-
-        if (self->transaction->http_x_request_start == 0) {
-            object = PyDict_GetItemString(environ, "mod_wsgi.request_time");
+            object = PyDict_GetItemString(environ, "mod_wsgi.queue_start");
 
             if (object && PyString_Check(object)) {
                 const char *s = PyString_AsString(object);

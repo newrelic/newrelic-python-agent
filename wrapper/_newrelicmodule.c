@@ -518,29 +518,33 @@ static PyObject *newrelic_wrap_background_task(PyObject *self, PyObject *args,
         else
             module_name = PyString_AsString(module);
 
-        if (module_name)
-            len += strlen(module_name);
-        if (module_name && class_name)
-            len += 1;
+        len += strlen(module_name);
+
+        len += 1;
+
         if (class_name)
             len += strlen(class_name);
+        if (class_name && object_name)
+            len += 1;
+        if (object_name)
+            len += strlen(object_name);
 
-        len += 2;
-        len += strlen(object_name);
         len += 1;
 
         s = alloca(len);
         *s = '\0';
 
-        if (module_name)
-            strcat(s, module_name);
-        if (module_name && class_name)
-            strcat(s, ".");
+        strcat(s, module_name);
+        strcat(s, ":");
+
         if (class_name)
             strcat(s, class_name);
 
-        strcat(s, "::");
-        strcat(s, object_name);
+        if (class_name && object_name)
+            strcat(s, ".");
+
+        if (object_name)
+            strcat(s, object_name);
 
         name = PyString_FromString(s);
     }
@@ -892,29 +896,33 @@ static PyObject *newrelic_wrap_function_trace(PyObject *self, PyObject *args,
         else
             module_name = PyString_AsString(module);
 
-        if (module_name)
-            len += strlen(module_name);
-        if (module_name && class_name)
-            len += 1;
+        len += strlen(module_name);
+
+        len += 1;
+
         if (class_name)
             len += strlen(class_name);
+        if (class_name && object_name)
+            len += 1;
+        if (object_name)
+            len += strlen(object_name);
 
-        len += 2;
-        len += strlen(object_name);
         len += 1;
 
         s = alloca(len);
         *s = '\0';
 
-        if (module_name)
-            strcat(s, module_name);
-        if (module_name && class_name)
-            strcat(s, ".");
+        strcat(s, module_name);
+        strcat(s, ":");
+
         if (class_name)
             strcat(s, class_name);
 
-        strcat(s, "::");
-        strcat(s, object_name);
+        if (class_name && object_name)
+            strcat(s, ".");
+
+        if (object_name)
+            strcat(s, object_name);
 
         name = PyString_FromString(s);
     }
@@ -1094,29 +1102,33 @@ static PyObject *newrelic_wrap_name_transaction(PyObject *self, PyObject *args,
         else
             module_name = PyString_AsString(module);
 
-        if (module_name)
-            len += strlen(module_name);
-        if (module_name && class_name)
-            len += 1;
+        len += strlen(module_name);
+
+        len += 1;
+
         if (class_name)
             len += strlen(class_name);
+        if (class_name && object_name)
+            len += 1;
+        if (object_name)
+            len += strlen(object_name);
 
-        len += 2;
-        len += strlen(object_name);
         len += 1;
 
         s = alloca(len);
         *s = '\0';
 
-        if (module_name)
-            strcat(s, module_name);
-        if (module_name && class_name)
-            strcat(s, ".");
+        strcat(s, module_name);
+        strcat(s, ":");
+
         if (class_name)
             strcat(s, class_name);
 
-        strcat(s, "::");
-        strcat(s, object_name);
+        if (class_name && object_name)
+            strcat(s, ".");
+
+        if (object_name)
+            strcat(s, object_name);
 
         name = PyString_FromString(s);
     }

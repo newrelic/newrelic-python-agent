@@ -528,6 +528,8 @@ static int NRWSGIApplicationIterable_init(NRWSGIApplicationIterableObject *self,
     PyObject *wrapped_object = NULL;
     PyObject *application_args = NULL;
 
+    PyObject *app_name = NULL;
+
     PyObject *environ = NULL;
     PyObject *start_response = NULL;
 
@@ -571,10 +573,43 @@ static int NRWSGIApplicationIterable_init(NRWSGIApplicationIterableObject *self,
     environ = PyTuple_GetItem(application_args,
                               PyTuple_Size(application_args)-2);
 
-    /* XXX So far assuming constructor not called twice. */
+    if (!PyDict_Check(environ)) {
+        PyErr_SetString(PyExc_ValueError, "environ expect to be a dict");
+        return -1;
+    }
 
-    self->transaction = PyObject_CallFunctionObjArgs((PyObject *)
-            &NRWebTransaction_Type, self->application, environ, NULL);
+    app_name = PyDict_GetItemString(environ, "newrelic.app_name");
+
+    /*
+     * XXX So far assuming constructor not called twice. Also
+     * not checking that creation of transaction failing.
+     */
+
+    if (app_name) {
+        PyObject *func_args = NULL;
+
+        PyObject *override = NULL;
+
+        if (!PyString_Check(app_name)) {
+            PyErr_SetString(PyExc_ValueError,
+                    "newrelic.app_name expect to be a dict");
+            return -1;
+        }
+
+        func_args = PyTuple_Pack(1, app_name);
+
+        override = NRApplication_Singleton(func_args, NULL);
+
+        self->transaction = PyObject_CallFunctionObjArgs((PyObject *)
+                &NRWebTransaction_Type, override, environ, NULL);
+
+        Py_DECREF(func_args);
+        Py_DECREF(override);
+    }
+    else {
+        self->transaction = PyObject_CallFunctionObjArgs((PyObject *)
+                &NRWebTransaction_Type, self->application, environ, NULL);
+    }
 
     /* Now call __enter__() on the context manager. */
 
@@ -894,7 +929,7 @@ static int NRWSGIApplicationWrapper_init(
 
     static char *kwlist[] = { "wrapped", "application", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO:WSGIApplicationWrapper",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O:WSGIApplicationWrapper",
                                      kwlist, &wrapped_object, &application)) {
         return -1;
     }

@@ -144,6 +144,7 @@ register_import_hook('pysqlite2', _hook('newrelic.database_dbapi2'))
 register_import_hook('sqlite3', _hook('newrelic.database_dbapi2'))
 
 register_import_hook('memcache', _hook('newrelic.memcache_memcache'))
+register_import_hook('pylibmc', _hook('newrelic.memcache_pylibmc'))
 
 register_import_hook('jinja2', _hook('newrelic.template_jinja2'))
 

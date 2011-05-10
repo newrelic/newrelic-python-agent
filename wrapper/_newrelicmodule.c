@@ -388,7 +388,7 @@ static PyObject *newrelic_wrap_wsgi_application(
             NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object,
-            PyString_AsString(attribute_name), wrapper_object);
+            attribute_name, wrapper_object);
 
     Py_DECREF(parent_object);
     Py_DECREF(wrapped_object);
@@ -526,7 +526,7 @@ static PyObject *newrelic_wrap_background_task(PyObject *self, PyObject *args,
             name, NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object,
-            PyString_AsString(attribute_name), wrapper_object);
+            attribute_name, wrapper_object);
 
     Py_DECREF(parent_object);
     Py_DECREF(wrapped_object);
@@ -599,7 +599,7 @@ static PyObject *newrelic_wrap_database_trace(PyObject *self, PyObject *args,
             &NRDatabaseTraceWrapper_Type, wrapped_object, sql, NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object,
-            PyString_AsString(attribute_name), wrapper_object);
+            attribute_name, wrapper_object);
 
     Py_DECREF(parent_object);
     Py_DECREF(wrapped_object);
@@ -670,7 +670,7 @@ static PyObject *newrelic_wrap_external_trace(PyObject *self, PyObject *args,
             &NRExternalTraceWrapper_Type, wrapped_object, url, NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object,
-            PyString_AsString(attribute_name), wrapper_object);
+            attribute_name, wrapper_object);
 
     Py_DECREF(parent_object);
     Py_DECREF(wrapped_object);
@@ -736,7 +736,7 @@ static PyObject *newrelic_wrap_error_trace(PyObject *self, PyObject *args,
             &NRErrorTraceWrapper_Type, wrapped_object, NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object,
-            PyString_AsString(attribute_name), wrapper_object);
+            attribute_name, wrapper_object);
 
     Py_DECREF(parent_object);
     Py_DECREF(wrapped_object);
@@ -855,7 +855,7 @@ static PyObject *newrelic_wrap_function_trace(PyObject *self, PyObject *args,
             &NRFunctionTraceWrapper_Type, wrapped_object, name, NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object,
-            PyString_AsString(attribute_name), wrapper_object);
+            attribute_name, wrapper_object);
 
     Py_DECREF(parent_object);
     Py_DECREF(wrapped_object);
@@ -929,7 +929,7 @@ static PyObject *newrelic_wrap_memcache_trace(PyObject *self, PyObject *args,
             &NRMemcacheTraceWrapper_Type, wrapped_object, command, NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object,
-            PyString_AsString(attribute_name), wrapper_object);
+            attribute_name, wrapper_object);
 
     Py_DECREF(parent_object);
     Py_DECREF(wrapped_object);
@@ -1030,7 +1030,7 @@ static PyObject *newrelic_wrap_name_transaction(PyObject *self, PyObject *args,
             &NRNameTransactionWrapper_Type, wrapped_object, name, NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object,
-            PyString_AsString(attribute_name), wrapper_object);
+            attribute_name, wrapper_object);
 
     Py_DECREF(parent_object);
     Py_DECREF(wrapped_object);
@@ -1105,7 +1105,7 @@ static PyObject *newrelic_wrap_in_function(PyObject *self, PyObject *args,
             function_object, NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object,
-            PyString_AsString(attribute_name), wrapper_object);
+            attribute_name, wrapper_object);
 
     Py_DECREF(parent_object);
     Py_DECREF(wrapped_object);
@@ -1178,7 +1178,7 @@ static PyObject *newrelic_wrap_out_function(PyObject *self, PyObject *args,
             function_object, NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object,
-            PyString_AsString(attribute_name), wrapper_object);
+            attribute_name, wrapper_object);
 
     Py_DECREF(parent_object);
     Py_DECREF(wrapped_object);
@@ -1250,7 +1250,7 @@ static PyObject *newrelic_wrap_post_function(PyObject *self, PyObject *args,
             function_object, run_once, NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object,
-            PyString_AsString(attribute_name), wrapper_object);
+            attribute_name, wrapper_object);
 
     Py_DECREF(parent_object);
     Py_DECREF(wrapped_object);
@@ -1328,7 +1328,7 @@ static PyObject *newrelic_wrap_pre_function(PyObject *self, PyObject *args,
             function_object, run_once, NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object,
-            PyString_AsString(attribute_name), wrapper_object);
+            attribute_name, wrapper_object);
 
     Py_DECREF(parent_object);
     Py_DECREF(wrapped_object);
@@ -1382,7 +1382,7 @@ static PyObject *newrelic_wrap_object(PyObject *self, PyObject *args,
             factory_object, wrapped_object, NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object,
-            PyString_AsString(attribute_name), wrapper_object);
+            attribute_name, wrapper_object);
 
     Py_DECREF(parent_object);
     Py_DECREF(wrapped_object);

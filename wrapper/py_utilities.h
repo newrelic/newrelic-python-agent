@@ -17,12 +17,6 @@
 extern PyObject *NRUtilities_FormatException(PyObject *type, PyObject *value,
                                              PyObject *traceback);
 
-extern PyObject *NRUtilities_LookupCallable(PyObject *module,
-                                            const char *class_name,
-                                            const char *object_name,
-                                            PyObject **parent_object,
-                                            const char **attribute_name);
-
 extern PyObject *NRUtilities_CallableName(PyObject *wrapped,
                                           PyObject *wrapper,
                                           PyObject *args);
@@ -37,7 +31,7 @@ extern PyObject *NRUtilities_ObjectContext(PyObject *wrapped,
                                            PyObject *args);
 
 extern PyObject *NRUtilities_ReplaceWithWrapper(PyObject *parent_object,
-                                                const char *attribute_name,
+                                                PyObject *attribute_name,
                                                 PyObject *wrapper_object);
 
 extern void NRUtilities_MergeDictIntoParams(nrobj_t array,

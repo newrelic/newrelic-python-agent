@@ -76,332 +76,6 @@ PyObject *NRUtilities_FormatException(PyObject *type, PyObject *value,
 
 /* ------------------------------------------------------------------------- */
 
-PyObject *NRUtilities_LookupCallable(PyObject *module,
-                                     const char *class_name,
-                                     const char *object_name,
-                                     PyObject **parent_object,
-                                     const char **attribute_name)
-{
-    PyObject *module_object = NULL;
-
-    PyObject *callable_object = NULL;
-
-    *parent_object = NULL;
-    *attribute_name = NULL;
-
-    if (!class_name && !object_name) {
-        PyErr_SetString(PyExc_RuntimeError, "class or object name must be "
-                        "supplied");
-        return NULL;
-    }
-
-    if (PyModule_Check(module)) {
-        Py_INCREF(module);
-        module_object = module;
-    }
-    else
-        module_object = PyImport_ImportModule(PyString_AsString(module));
-
-    if (module_object) {
-        PyObject *dict = NULL;
-
-        PyObject *class_object = NULL;
-
-        dict = PyModule_GetDict(module_object);
-
-        if (class_name) {
-            class_object = PyDict_GetItemString(dict, class_name);
-
-            if (!class_object) {
-                PyErr_SetString(PyExc_RuntimeError, "no such module "
-                                "attribute");
-                Py_DECREF(module_object);
-                return NULL;
-            }
-
-            if (!PyType_Check(class_object) && !PyClass_Check(class_object)) {
-                PyErr_Format(PyExc_RuntimeError, "not a valid class type, "
-                             "found %s", class_object->ob_type->tp_name);
-                Py_DECREF(module_object);
-                return NULL;
-            }
-
-            if (!object_name) {
-                /*
-                 * In case of class name but no object name, the
-                 * the parent object is the module and the
-                 * callable object is the class object itself.
-                 */
-
-                Py_INCREF(module_object);
-                *parent_object = module_object;
-
-                *attribute_name = class_name;
-
-                Py_INCREF(class_object);
-                callable_object = class_object;
-            }
-            else {
-                /*
-                 * TODO This doesn't attempt to deal with nested classes.
-                 */
-
-                callable_object = PyObject_GetAttrString(class_object,
-                                                         object_name);
-
-                if (!callable_object) {
-                    PyErr_SetString(PyExc_RuntimeError, "no such class "
-                                    "attribute");
-                    Py_DECREF(module_object);
-                    return NULL;
-                }
-
-                /*
-                 * In case of class name and object name, the
-                 * parent object is the class and the callable
-                 * object is the object which is the attribute
-                 * of the class.
-                 */
-
-                Py_INCREF(class_object);
-                *parent_object = class_object;
-
-                *attribute_name = object_name;
-            }
-        }
-        else {
-            callable_object = PyDict_GetItemString(dict, object_name);
-
-            if (!callable_object) {
-                PyErr_SetString(PyExc_RuntimeError, "no such module "
-                                "attribute");
-                Py_DECREF(module_object);
-                return NULL;
-            }
-
-            /*
-             * In case of no class name and object name, the
-             * parent object is the module and the callable
-             * object is the object which is the attribute
-             * of the module.
-             */
-
-            Py_INCREF(module_object);
-            *parent_object = module_object;
-
-            *attribute_name = object_name;
-
-            Py_INCREF(callable_object);
-        }
-
-        Py_DECREF(module_object);
-    }
-    else {
-        PyErr_SetString(PyExc_RuntimeError, "not a valid module");
-        return NULL;
-    }
-
-    return callable_object;
-}
-
-/* ------------------------------------------------------------------------- */
-
-#if 0
-PyObject *NRUtilities_CallableName(PyObject *wrapped, PyObject *wrapper,
-                                   PyObject *args)
-{
-    PyObject *module_name = NULL;
-    PyObject *class_name = NULL;
-    PyObject *object_name = NULL;
-
-    const char *module_name_string = NULL;
-    const char *class_name_string = NULL;
-    const char *object_name_string = NULL;
-
-    int len = 0;
-    char *s = NULL;
-
-    PyObject *class_object = NULL;
-    PyObject *method_object = NULL;
-
-    PyObject *target = NULL;
-    PyObject *object = NULL;
-
-    /*
-     * We need to deal with case where we may have wrapped a
-     * wrapper. In that case we need to check for the
-     * __wrapped__ attribute and follow the chain of these to
-     * get to the inner most object which isn't marked as being
-     * a wrapper.
-     *
-     * TODO Should we perhaps only follow __wrapped__ for our
-     * own wrapper objects given that convention of using a
-     * wrapped attribute exists for Python 3.2+.
-     */
-
-    target = wrapped;
-    Py_INCREF(target);
-
-    object = PyObject_GetAttrString(target, "__wrapped__");
-
-    while (object) {
-        Py_DECREF(target);
-        target = object;
-        object = PyObject_GetAttrString(target, "__wrapped__");
-    }
-
-    PyErr_Clear();
-
-    /*
-     * When a decorator is used on a class method, it isn't
-     * bound to a class instance at the time and so within the
-     * decorator we are not able to determine the class. To work
-     * out the class we need to look at the class associated
-     * with the first argument, ie., self argument passed to the
-     * method. Because though we don't know if we are even being
-     * called as a class method we have to do an elaborate check
-     * whereby we see if the first argument is a class instance
-     * possessing a bound method for which the associated function
-     * is our wrapper function.
-     */
-
-    if (wrapper && args) {
-        if (PyFunction_Check(target) && PyTuple_Size(args) >= 1) {
-            class_object = PyObject_GetAttrString(
-                    PyTuple_GetItem(args, 0), "__class__");
-            if (class_object) {
-                object_name = PyObject_GetAttrString(target, "__name__");
-                if (object_name) {
-                   method_object = PyObject_GetAttr(class_object, object_name);
-                   if (method_object && PyMethod_Check(method_object) &&
-                       ((PyMethodObject *)method_object)->im_func == wrapper) {
-                       object = method_object;
-                   }
-                }
-            }
-        }
-
-        /*
-	 * XXX This DECREF's method_object but then it is used
-	 * below via object variable.
-         */
-
-        Py_XDECREF(class_object);
-        Py_XDECREF(method_object);
-        Py_XDECREF(object_name);
-
-        class_object = NULL;
-        method_object = NULL;
-        object_name = NULL;
-
-        PyErr_Clear();
-    }
-
-    if (!object) {
-        Py_INCREF(target);
-        object = target;
-    }
-
-    /*
-     * Derive, module, class and object name.
-     *
-     * TODO This doesn't attempt to deal with nested classes.
-     *
-     * TODO Should exceptions from PyObject_GetAttrString() be
-     * cleared immediately.
-     */
-
-    module_name = PyObject_GetAttrString(object, "__module__");
-
-    if (module_name && PyString_Check(module_name))
-        module_name_string = PyString_AsString(module_name);
-
-    class_name_string = "";
-    object_name_string = "";
-
-    if (PyType_Check(object) || PyClass_Check(object)) {
-        class_name = PyObject_GetAttrString(object, "__name__");
-        if (class_name && PyString_Check(class_name))
-            class_name_string = PyString_AsString(class_name);
-        object_name_string = "__init__";
-    }
-    else if (PyMethod_Check(object)) {
-        class_name = PyObject_GetAttrString(((PyMethodObject *)
-                                            object)->im_class, "__name__");
-        if (class_name && PyString_Check(class_name))
-            class_name_string = PyString_AsString(class_name);
-        object_name = PyObject_GetAttrString(object, "__name__");
-        if (object_name && PyString_Check(object_name))
-            object_name_string = PyString_AsString(object_name);
-    }
-    else if (PyFunction_Check(object)) {
-        class_name_string = NULL;
-        object_name = PyObject_GetAttrString(object, "__name__");
-        if (object_name && PyString_Check(object_name))
-            object_name_string = PyString_AsString(object_name);
-    }
-    else if (PyInstance_Check(object)) {
-        class_object = PyObject_GetAttrString(object, "__class__");
-        if (class_object) {
-            class_name = PyObject_GetAttrString(class_object, "__name__");
-            if (class_name && PyString_Check(class_name))
-                class_name_string = PyString_AsString(class_name);
-        }
-        object_name_string = "__call__";
-    }
-    else if ((class_object = PyObject_GetAttrString(object, "__class__"))) {
-        class_name = PyObject_GetAttrString(class_object, "__name__");
-        if (class_name && PyString_Check(class_name))
-            class_name_string = PyString_AsString(class_name);
-        object_name_string = "__call__";
-    }
-    else
-    {
-        class_name_string = NULL;
-        object_name_string = NULL;
-    }
-
-    PyErr_Clear();
-
-    /* Construct the composite name. */
-
-    if (module_name_string)
-        len += strlen(module_name_string);
-    if (module_name_string && class_name_string)
-        len += 1;
-    if (class_name_string)
-        len += strlen(class_name_string);
-
-    len += 2;
-    len += strlen(object_name_string);
-    len += 1;
-
-    s = alloca(len);
-    *s = '\0';
-
-    if (module_name_string)
-        strcat(s, module_name_string);
-    if (module_name_string && class_name_string)
-        strcat(s, ".");
-    if (class_name_string)
-        strcat(s, class_name_string);
-
-    strcat(s, "::");
-    strcat(s, object_name_string);
-
-    Py_XDECREF(module_name);
-    Py_XDECREF(class_object);
-    Py_XDECREF(class_name);
-    Py_XDECREF(object_name);
-
-    Py_XDECREF(object);
-
-    Py_DECREF(target);
-
-    return PyString_FromString(s);
-}
-#endif
-
 PyObject *NRUtilities_CallableName(PyObject *wrapped, PyObject *wrapper,
                                    PyObject *args)
 {
@@ -697,7 +371,7 @@ PyObject *NRUtilities_ObjectContext(PyObject *wrapped, PyObject *wrapper,
 /* ------------------------------------------------------------------------- */
 
 PyObject *NRUtilities_ReplaceWithWrapper(PyObject *parent_object,
-                                         const char *attribute_name,
+                                         PyObject *attribute_name,
                                          PyObject *wrapper_object)
 {
     if (PyModule_Check(parent_object)) {
@@ -710,7 +384,7 @@ PyObject *NRUtilities_ReplaceWithWrapper(PyObject *parent_object,
 
         dict = PyModule_GetDict(parent_object);
 
-        PyDict_SetItemString(dict, attribute_name, wrapper_object);
+        PyDict_SetItem(dict, attribute_name, wrapper_object);
     }
     else {
         /*
@@ -728,7 +402,7 @@ PyObject *NRUtilities_ReplaceWithWrapper(PyObject *parent_object,
          * target object.
          */
 
-        if (PyObject_SetAttrString(parent_object, attribute_name,
+        if (PyObject_SetAttr(parent_object, attribute_name,
                                wrapper_object) == -1) {
             PyObject *dict = NULL;
 
@@ -736,7 +410,7 @@ PyObject *NRUtilities_ReplaceWithWrapper(PyObject *parent_object,
 
             dict = ((PyTypeObject *)parent_object)->tp_dict;
 
-            PyDict_SetItemString(dict, attribute_name, wrapper_object);
+            PyDict_SetItem(dict, attribute_name, wrapper_object);
         }
     }
 

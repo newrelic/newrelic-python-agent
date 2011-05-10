@@ -9,7 +9,7 @@ def name_template_compile(self, source, name=None, filename=None, raw=False,
 
 def instrument(module):
 
-    wrap_function_trace('jinja2.environment', 'Template', 'render',
+    wrap_function_trace('jinja2.environment', 'Template.render',
             name_template_render)
-    wrap_function_trace('jinja2.environment', 'Environment', 'compile',
+    wrap_function_trace('jinja2.environment', 'Environment.compile',
             name_template_compile)

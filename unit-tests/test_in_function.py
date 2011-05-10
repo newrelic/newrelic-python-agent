@@ -65,7 +65,7 @@ class InFunctionTests(unittest.TestCase):
 
     def test_wrap_function(self):
         o1 = _test_function_1
-        o2 = _newrelic.wrap_in_function(__name__, None, '_test_function_1',
+        o2 = _newrelic.wrap_in_function(__name__, '_test_function_1',
                                         _in_function)
         self.assertEqual(o1, o2.__wrapped__)
 
@@ -94,8 +94,8 @@ class InFunctionTests(unittest.TestCase):
 
     def test_wrap_old_style_class_method(self):
         o1 = _test_class_1._test_function
-        o2 = _newrelic.wrap_in_function(__name__, '_test_class_1',
-                                        '_test_function', _in_function)
+        o2 = _newrelic.wrap_in_function(__name__,
+                '_test_class_1._test_function', _in_function)
         self.assertEqual(o1, o2.__wrapped__)
 
         global _test_result
@@ -115,8 +115,8 @@ class InFunctionTests(unittest.TestCase):
 
     def test_wrap_new_style_class_method(self):
         o1 = _test_class_2._test_function
-        o2 = _newrelic.wrap_in_function(__name__, '_test_class_2',
-                                        '_test_function', _in_function)
+        o2 = _newrelic.wrap_in_function(__name__,
+                '_test_class_2._test_function', _in_function)
         self.assertEqual(o1, o2.__wrapped__)
 
         global _test_result
@@ -136,7 +136,7 @@ class InFunctionTests(unittest.TestCase):
 
     def test_wrap_capi_class_method(self):
         o1 = sqlite3.Cursor.execute
-        o2 = _newrelic.wrap_in_function('sqlite3', 'Cursor', 'execute',
+        o2 = _newrelic.wrap_in_function('sqlite3', 'Cursor.execute',
                                         _in_function)
         self.assertEqual(o1, o2.__wrapped__)
 

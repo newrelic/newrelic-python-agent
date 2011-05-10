@@ -57,7 +57,7 @@ class ErrorTraceTransactionTests(unittest.TestCase):
     def test_implicit_runtime_error_wrap(self):
         environ = { "REQUEST_URI": "/error_trace_wrap" }
         transaction = _newrelic.WebTransaction(application, environ)
-        _newrelic.wrap_error_trace(__name__, None, 'function_2')
+        _newrelic.wrap_error_trace(__name__, 'function_2')
         with transaction:
             time.sleep(0.5)
             try:

@@ -42,18 +42,14 @@ class capture_error(object):
 def instrument(module):
 
     if module.__name__ == 'gluon.compileapp':
-        wrap_function_trace(module, None, 'run_models_in',
-                name_models)
-        wrap_function_trace(module, None, 'run_controller_in',
-                name_controller)
-        wrap_function_trace(module, None, 'run_view_in',
-                name_view)
+        wrap_function_trace(module, 'run_models_in', name_models)
+        wrap_function_trace(module, 'run_controller_in', name_controller)
+        wrap_function_trace(module, 'run_view_in', name_view)
 
-        wrap_function_trace(module, None, 'restricted',
-                name_restricted)
+        wrap_function_trace(module, 'restricted', name_restricted)
 
-        wrap_name_transaction(module, None, 'run_models_in',
+        wrap_name_transaction(module, 'run_models_in',
                 lambda environment: environment['response'].view)
 
     elif module.__name__ == 'gluon.main':
-        wrap_object(module, None, 'serve_controller', capture_error)
+        wrap_object(module, 'serve_controller', capture_error)

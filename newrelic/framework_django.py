@@ -124,30 +124,35 @@ def wrap_uncaught_exception(handler, request, resolver, exc_info):
 
 def instrument(module):
 
-    wrap_post_function('django.core.handlers.base','BaseHandler',
-            'load_middleware', wrap_middleware, run_once=True)
+    wrap_post_function('django.core.handlers.base',
+            'BaseHandler.load_middleware',
+            wrap_middleware, run_once=True)
 
-    wrap_post_function('django.core.urlresolvers','RegexURLPattern',
-            '__init__', wrap_url_resolver)
+    wrap_post_function('django.core.urlresolvers',
+            'RegexURLPattern.__init__',
+             wrap_url_resolver)
 
-    wrap_pre_function('django.core.handlers.wsgi', 'WSGIHandler',
-            'handle_uncaught_exception', wrap_uncaught_exception)
+    wrap_pre_function('django.core.handlers.wsgi',
+            'WSGIHandler.handle_uncaught_exception',
+            wrap_uncaught_exception)
 
-    wrap_error_trace('django.core.urlresolvers', None, 'get_callable')
+    wrap_error_trace('django.core.urlresolvers',
+            'get_callable')
 
     from django.template import Template
 
     if hasattr(Template, '_render'):
-        wrap_function_trace('django.template', 'Template', '_render',
+        wrap_function_trace('django.template', 'Template._render',
                 lambda template, context: '%s Template ' % template.name)
     else:
-        wrap_function_trace('django.template', 'Template', 'render',
+        wrap_function_trace('django.template', 'Template.render',
                 lambda template, context: '%s Template ' % template.name)
 
-    #wrap_function_trace('django.template', 'NodeList', 'render_node',
+    #wrap_function_trace('django.template', 'NodeList.render_node',
     #        lambda template, node, context: '%s Node ' %
     #        callable_name(node))
 
-    #wrap_function_trace('django.template.debug', 'DebugNodeList',
-    #      'render_node', lambda template, node, context: '%s Node ' %
-    #      callable_name(node))
+    #wrap_function_trace('django.template.debug',
+    #        'DebugNodeList.render_node',
+    #        lambda template, node, context: '%s Node ' %
+    #        callable_name(node))

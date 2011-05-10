@@ -72,7 +72,7 @@ class PostFunctionTests(unittest.TestCase):
 
     def test_wrap_function(self):
         o1 = _test_function_1
-        o2 = _newrelic.wrap_post_function(__name__, None, '_test_function_1',
+        o2 = _newrelic.wrap_post_function(__name__, '_test_function_1',
                                           _post_function)
         self.assertEqual(o1, o2.__wrapped__)
 
@@ -101,8 +101,8 @@ class PostFunctionTests(unittest.TestCase):
 
     def test_wrap_old_style_class_method(self):
         o1 = _test_class_1._test_function
-        o2 = _newrelic.wrap_post_function(__name__, '_test_class_1',
-                                          '_test_function', _post_function)
+        o2 = _newrelic.wrap_post_function(__name__,
+                '_test_class_1._test_function', _post_function)
         self.assertEqual(o1, o2.__wrapped__)
 
         global _test_result
@@ -122,8 +122,8 @@ class PostFunctionTests(unittest.TestCase):
 
     def test_wrap_new_style_class_method(self):
         o1 = _test_class_2._test_function
-        o2 = _newrelic.wrap_post_function(__name__, '_test_class_2',
-                                          '_test_function', _post_function)
+        o2 = _newrelic.wrap_post_function(__name__,
+                '_test_class_2._test_function', _post_function)
         self.assertEqual(o1, o2.__wrapped__)
 
         global _test_result
@@ -143,7 +143,7 @@ class PostFunctionTests(unittest.TestCase):
 
     def test_wrap_capi_class_method(self):
         o1 = sqlite3.Cursor.execute
-        o2 = _newrelic.wrap_post_function('sqlite3', 'Cursor', 'execute',
+        o2 = _newrelic.wrap_post_function('sqlite3', 'Cursor.execute',
                                           _post_function)
         self.assertEqual(o1, o2.__wrapped__)
 
@@ -170,7 +170,7 @@ class PostFunctionTests(unittest.TestCase):
 
     def test_wrap_run_once(self):
         o1 = _test_function_2
-        o2 = _newrelic.wrap_post_function(__name__, None, '_test_function_2',
+        o2 = _newrelic.wrap_post_function(__name__, '_test_function_2',
                                           _post_function, run_once=True)
         self.assertEqual(o1, o2.__wrapped__)
 

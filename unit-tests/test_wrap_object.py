@@ -33,7 +33,7 @@ class ApplicationTests(unittest.TestCase):
                       self._testMethodName)
 
     def test_wrap_object(self):
-        _newrelic.wrap_object(__name__, None, '_function', _wrapper)
+        _newrelic.wrap_object(__name__, '_function', _wrapper)
         args = (1, 2, 3)
         kwargs = { "one": 1, "two": 2, "three": 3 }
         result = _function(*args, **kwargs)

@@ -21,11 +21,11 @@ def name_render_template(template_name, **context):
 
 def instrument(module):
 
-    wrap_in_function('flask.app', 'Flask', 'add_url_rule',
+    wrap_in_function('flask.app', 'Flask.add_url_rule',
         wrap_add_url_rule_input)
 
-    wrap_pre_function('flask.app', 'Flask', 'handle_exception',
+    wrap_pre_function('flask.app', 'Flask.handle_exception',
         wrap_handle_exception)
 
-    wrap_function_trace('flask', None, 'render_template')
-    wrap_function_trace('flask', None, 'render_template_string')
+    wrap_function_trace('flask', 'render_template')
+    wrap_function_trace('flask', 'render_template_string')

@@ -6,4 +6,4 @@ def format_path(url):
     return '%s/feedparser%s' % (parts[1], parts[2])
     
 def instrument(module):
-    wrap_external_trace(module, None, 'parse', format_path)
+    wrap_external_trace(module, 'parse', format_path)

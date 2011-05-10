@@ -241,6 +241,86 @@ static int NRTracerSettings_set_sql_threshold(NRTracerSettingsObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRTracerSettings_get_expensive_limit(
+        NRTracerSettingsObject *self, void *closure)
+{
+    return PyInt_FromLong(nr_per_process_globals.expensive_nodes_size);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRTracerSettings_set_expensive_limit(NRTracerSettingsObject *self,
+                                                PyObject *value)
+{
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError,
+                        "can't delete expensive_nodes_limit attribute");
+        return -1;
+    }
+
+    if (!PyInt_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "expected int for "
+                        "expensive_nodes_limit");
+        return -1;
+    }
+
+    nr_per_process_globals.expensive_nodes_size = PyInt_AsLong(value);
+
+    if (nr_per_process_globals.expensive_nodes_size < 1)
+        nr_per_process_globals.expensive_nodes_size = 1;
+
+    if (nr_per_process_globals.expensive_nodes_size >
+            NR_EXPENSIVE_NODE_LIMIT_MAX) {
+        nr_per_process_globals.expensive_nodes_size =
+                NR_EXPENSIVE_NODE_LIMIT_MAX;
+    }
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRTracerSettings_get_expensive_min(
+        NRTracerSettingsObject *self, void *closure)
+{
+    return PyFloat_FromDouble((double)
+            nr_per_process_globals.expensive_node_minimum/1000000.0);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRTracerSettings_set_expensive_min(NRTracerSettingsObject *self,
+                                              PyObject *value)
+{
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError,
+                        "can't delete expensive_node_minimum attribute");
+        return -1;
+    }
+
+    if (!PyFloat_Check(value) && !PyInt_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "expected int or float for "
+                        "expensive_node_minimum");
+        return -1;
+    }
+
+    if (PyFloat_Check(value)) {
+        nr_per_process_globals.expensive_node_minimum =
+                PyFloat_AsDouble(value) * 1000000;
+    }
+    else {
+        nr_per_process_globals.expensive_node_minimum =
+                PyInt_AsLong(value) * 1000000;
+    }
+
+    if (nr_per_process_globals.expensive_node_minimum < 0)
+        nr_per_process_globals.expensive_node_minimum = 0;
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
 #ifndef PyVarObject_HEAD_INIT
 #define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
 #endif
@@ -258,6 +338,10 @@ static PyGetSetDef NRTracerSettings_getset[] = {
                             (setter)NRTracerSettings_set_record_sql, 0 },
     { "stack_trace_threshold", (getter)NRTracerSettings_get_sql_threshold,
                             (setter)NRTracerSettings_set_sql_threshold, 0 },
+    { "expensive_nodes_limit", (getter)NRTracerSettings_get_expensive_limit,
+                            (setter)NRTracerSettings_set_expensive_limit, 0 },
+    { "expensive_node_minimum", (getter)NRTracerSettings_get_expensive_min,
+                            (setter)NRTracerSettings_set_expensive_min, 0 },
     { NULL },
 };
 

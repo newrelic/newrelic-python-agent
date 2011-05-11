@@ -16,6 +16,7 @@ typedef struct {
     NRTransactionObject *parent_transaction;
     nr_transaction_node *transaction_trace;
     nr_node_header* saved_trace_node;
+    int interesting;
 } NRFunctionTraceObject;
 
 extern PyTypeObject NRFunctionTrace_Type;
@@ -24,6 +25,7 @@ typedef struct {
     PyObject_HEAD
     PyObject *wrapped_object;
     PyObject *name;
+    int interesting;
 } NRFunctionTraceWrapperObject;
 
 extern PyTypeObject NRFunctionTraceWrapper_Type;
@@ -31,6 +33,7 @@ extern PyTypeObject NRFunctionTraceWrapper_Type;
 typedef struct {
     PyObject_HEAD
     PyObject *name;
+    int interesting;
 } NRFunctionTraceDecoratorObject;
 
 extern PyTypeObject NRFunctionTraceDecorator_Type;

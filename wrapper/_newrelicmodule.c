@@ -1632,6 +1632,8 @@ init_newrelic(void)
         return;
     if (PyType_Ready(&NRBrowserSettings_Type) < 0)
         return;
+    if (PyType_Ready(&NRDaemonSettings_Type) < 0)
+        return;
     if (PyType_Ready(&NRDebugSettings_Type) < 0)
         return;
     if (PyType_Ready(&NRTransaction_Type) < 0)

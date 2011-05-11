@@ -99,6 +99,10 @@ def _process_configuration(section):
                      'get', _map_ignore_errors)
     _process_setting(section, 'browser_monitoring.auto_instrument',
                      'getboolean', None)
+    _process_setting(section, 'local_daemon.socket_path',
+                     'get', None)
+    _process_setting(section, 'local_daemon.socket_timeout',
+                     'getint', None)
     _process_setting(section, 'debug.dump_metric_table',
                      'getboolean', None)
     _process_setting(section, 'debug.sql_statement_parsing',

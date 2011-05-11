@@ -667,6 +667,160 @@ PyTypeObject NRBrowserSettings_Type = {
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRDaemonSettings_new(PyTypeObject *type, PyObject *args,
+                                      PyObject *kwds)
+{
+    NRDaemonSettingsObject *self;
+
+    self = (NRDaemonSettingsObject *)type->tp_alloc(type, 0);
+
+    if (!self)
+        return NULL;
+
+    return (PyObject *)self;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static void NRDaemonSettings_dealloc(NRDaemonSettingsObject *self)
+{
+    PyObject_Del(self);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRDaemonSettings_get_socket_path(
+        NRDaemonSettingsObject *self, void *closure)
+{
+    return PyString_FromString(nr_per_process_globals.nrdaemon.sockpath);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRDaemonSettings_set_socket_path(
+        NRDaemonSettingsObject *self, PyObject *value)
+{
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError,
+                        "can't delete socket_path attribute");
+        return -1;
+    }
+
+    if (!PyString_Check(value)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "expected str for socket_path");
+        return -1;
+    }
+
+    if (nr_per_process_globals.nrdaemon.sockpath)
+        nrfree(nr_per_process_globals.nrdaemon.sockpath);
+
+    nr_per_process_globals.nrdaemon.sockpath = nrstrdup(
+            PyString_AsString(value));
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRDaemonSettings_get_socket_timeout(
+        NRDaemonSettingsObject *self, void *closure)
+{
+    return PyInt_FromLong(nr_per_process_globals.nrdaemon.timeout);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRDaemonSettings_set_socket_timeout(
+        NRDaemonSettingsObject *self, PyObject *value)
+{
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError,
+                        "can't delete socket_timeout attribute");
+        return -1;
+    }
+
+    if (!PyBool_Check(value)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "expected bool for socket_timeout");
+        return -1;
+    }
+
+    nr_per_process_globals.nrdaemon.timeout = PyInt_AsLong(value);
+
+    if (nr_per_process_globals.nrdaemon.timeout < 10)
+        nr_per_process_globals.nrdaemon.timeout = 10;
+
+    if (nr_per_process_globals.nrdaemon.timeout > 120)
+        nr_per_process_globals.nrdaemon.timeout = 120;
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
+#ifndef PyVarObject_HEAD_INIT
+#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
+#endif
+
+static PyMethodDef NRDaemonSettings_methods[] = {
+    { NULL, NULL }
+};
+
+static PyGetSetDef NRDaemonSettings_getset[] = {
+    { "socket_path",        (getter)NRDaemonSettings_get_socket_path,
+                            (setter)NRDaemonSettings_set_socket_path, 0 },
+    { "socket_timeout",     (getter)NRDaemonSettings_get_socket_timeout,
+                            (setter)NRDaemonSettings_set_socket_timeout, 0 },
+    { NULL },
+};
+
+PyTypeObject NRDaemonSettings_Type = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "_newrelic.DebugSettings", /*tp_name*/
+    sizeof(NRDaemonSettingsObject), /*tp_basicsize*/
+    0,                      /*tp_itemsize*/
+    /* methods */
+    (destructor)NRDaemonSettings_dealloc, /*tp_dealloc*/
+    0,                      /*tp_print*/
+    0,                      /*tp_getattr*/
+    0,                      /*tp_setattr*/
+    0,                      /*tp_compare*/
+    0,                      /*tp_repr*/
+    0,                      /*tp_as_number*/
+    0,                      /*tp_as_sequence*/
+    0,                      /*tp_as_mapping*/
+    0,                      /*tp_hash*/
+    0,                      /*tp_call*/
+    0,                      /*tp_str*/
+    0,                      /*tp_getattro*/
+    0,                      /*tp_setattro*/
+    0,                      /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT,     /*tp_flags*/
+    0,                      /*tp_doc*/
+    0,                      /*tp_traverse*/
+    0,                      /*tp_clear*/
+    0,                      /*tp_richcompare*/
+    0,                      /*tp_weaklistoffset*/
+    0,                      /*tp_iter*/
+    0,                      /*tp_iternext*/
+    NRDaemonSettings_methods,     /*tp_methods*/
+    0,                      /*tp_members*/
+    NRDaemonSettings_getset,      /*tp_getset*/
+    0,                      /*tp_base*/
+    0,                      /*tp_dict*/
+    0,                      /*tp_descr_get*/
+    0,                      /*tp_descr_set*/
+    0,                      /*tp_dictoffset*/
+    0,                      /*tp_init*/
+    0,                      /*tp_alloc*/
+    NRDaemonSettings_new,         /*tp_new*/
+    0,                      /*tp_free*/
+    0,                      /*tp_is_gc*/
+};
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRDebugSettings_new(PyTypeObject *type, PyObject *args,
                                      PyObject *kwds)
 {
@@ -870,6 +1024,9 @@ static PyObject *NRSettings_new(PyTypeObject *type, PyObject *args,
     self->browser_settings = (NRBrowserSettingsObject *)
             PyObject_CallFunctionObjArgs(
             (PyObject *)&NRBrowserSettings_Type, NULL);
+    self->daemon_settings = (NRDaemonSettingsObject *)
+            PyObject_CallFunctionObjArgs(
+            (PyObject *)&NRDaemonSettings_Type, NULL);
     self->debug_settings = (NRDebugSettingsObject *)
             PyObject_CallFunctionObjArgs(
             (PyObject *)&NRDebugSettings_Type, NULL);
@@ -892,6 +1049,7 @@ static void NRSettings_dealloc(NRSettingsObject *self)
     Py_DECREF(self->tracer_settings);
     Py_DECREF(self->errors_settings);
     Py_DECREF(self->browser_settings);
+    Py_DECREF(self->daemon_settings);
     Py_DECREF(self->debug_settings);
 
     PyObject_Del(self);
@@ -1197,6 +1355,15 @@ static PyObject *NRSettings_get_browser_monitoring(NRSettingsObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRSettings_get_local_daemon(NRSettingsObject *self,
+                                             void *closure)
+{
+    Py_INCREF(self->daemon_settings);
+    return (PyObject *)self->daemon_settings;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRSettings_get_debug_settings(NRSettingsObject *self,
                                                void *closure)
 {
@@ -1236,6 +1403,8 @@ static PyGetSetDef NRSettings_getset[] = {
     { "error_collector",    (getter)NRSettings_get_error_collector,
                             NULL, 0 },
     { "browser_monitoring", (getter)NRSettings_get_browser_monitoring,
+                            NULL, 0 },
+    { "local_daemon",       (getter)NRSettings_get_local_daemon,
                             NULL, 0 },
     { "debug",              (getter)NRSettings_get_debug_settings,
                             NULL, 0 },

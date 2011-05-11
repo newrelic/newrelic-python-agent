@@ -35,6 +35,12 @@ extern PyTypeObject NRBrowserSettings_Type;
 
 typedef struct {
     PyObject_HEAD
+} NRDaemonSettingsObject;
+
+extern PyTypeObject NRDaemonSettings_Type;
+
+typedef struct {
+    PyObject_HEAD
 } NRDebugSettingsObject;
 
 extern PyTypeObject NRDebugSettings_Type;
@@ -46,6 +52,7 @@ typedef struct {
     NRTracerSettingsObject *tracer_settings;
     NRErrorsSettingsObject *errors_settings;
     NRBrowserSettingsObject *browser_settings;
+    NRDaemonSettingsObject *daemon_settings;
     NRDebugSettingsObject *debug_settings;
     int monitor_mode;
     PyObject *ignored_params;

@@ -128,6 +128,7 @@ class WebTransactionTests(unittest.TestCase):
         with transaction:
             for i in range(10):
                 try:
+                    transaction.custom_parameters["1"] = "1" 
                     raise RuntimeError("runtime_error %d" % i)
                 except RuntimeError:
                     transaction.notice_error(*sys.exc_info())

@@ -302,10 +302,10 @@ static int NRApplication_set_enabled(NRApplicationObject *self,
 static PyObject *NRApplication_record_metric(NRApplicationObject *self,
                                              PyObject *args, PyObject *kwds)
 {
-    PyObject *key = NULL;
+    PyObject *name = NULL;
     double value = 0.0;
 
-    static char *kwlist[] = { "key", "value", NULL };
+    static char *kwlist[] = { "name", "value", NULL };
 
     if (!self->application) {
         PyErr_SetString(PyExc_TypeError, "application not initialized");
@@ -313,14 +313,14 @@ static PyObject *NRApplication_record_metric(NRApplicationObject *self,
     }
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "Od:record_metric",
-                                     kwlist, &key, &value)) {
+                                     kwlist, &name, &value)) {
         return NULL;
     }
 
-    if (!PyString_Check(key) && !PyUnicode_Check(key)) {
+    if (!PyString_Check(name) && !PyUnicode_Check(name)) {
         PyErr_Format(PyExc_TypeError, "expected string or Unicode "
-                        "for custom metric key name, found type '%s'",
-                        key->ob_type->tp_name);
+                        "for custom metric name, found type '%s'",
+                        name->ob_type->tp_name);
         return NULL;
     }
 
@@ -332,24 +332,24 @@ static PyObject *NRApplication_record_metric(NRApplicationObject *self,
     if (self->enabled) {
         nrthread_mutex_lock(&self->application->lock);
 
-        if (PyUnicode_Check(key)) {
-            PyObject *key_as_bytes = NULL;
+        if (PyUnicode_Check(name)) {
+            PyObject *name_as_bytes = NULL;
 
-            key_as_bytes = PyUnicode_AsUTF8String(key);
+            name_as_bytes = PyUnicode_AsUTF8String(name);
 
-            if (!key_as_bytes)
+            if (!name_as_bytes)
                 return NULL;
 
             nr_metric_table__force_add_metric_double(
                     self->application->pending_harvest->metrics,
-                    PyString_AsString(key_as_bytes), NULL, value);
+                    PyString_AsString(name_as_bytes), NULL, value);
 
-            Py_DECREF(key_as_bytes);
+            Py_DECREF(name_as_bytes);
         }
         else {
             nr_metric_table__force_add_metric_double(
                     self->application->pending_harvest->metrics,
-                    PyString_AsString(key), NULL, value);
+                    PyString_AsString(name), NULL, value);
         }
 
         nrthread_mutex_unlock(&self->application->lock);

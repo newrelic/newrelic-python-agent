@@ -55,7 +55,8 @@ static int NRTracerSettings_set_enabled(NRTracerSettingsObject *self,
     }
 
     if (!PyBool_Check(value)) {
-        PyErr_SetString(PyExc_TypeError, "expected bool for enabled");
+        PyErr_SetString(PyExc_TypeError, "expected bool for enabled "
+                        "attribute");
         return -1;
     }
 
@@ -116,7 +117,7 @@ static int NRTracerSettings_set_threshold(NRTracerSettingsObject *self,
 
     if (value != Py_None && !PyFloat_Check(value) && !PyInt_Check(value)) {
         PyErr_SetString(PyExc_TypeError, "expected int, float or None for "
-                        "transaction_threshold");
+                        "transaction_threshold attribute");
         return -1;
     }
 
@@ -189,7 +190,8 @@ static int NRTracerSettings_set_record_sql(NRTracerSettingsObject *self,
     }
 
     if (!PyInt_Check(value)) {
-        PyErr_SetString(PyExc_TypeError, "expected int for record_sql");
+        PyErr_SetString(PyExc_TypeError, "expected int for record_sql "
+                        "attribute");
         return -1;
     }
 
@@ -220,7 +222,7 @@ static int NRTracerSettings_set_sql_threshold(NRTracerSettingsObject *self,
 
     if (!PyFloat_Check(value) && !PyInt_Check(value)) {
         PyErr_SetString(PyExc_TypeError, "expected int or float for "
-                        "stack_transaction_threshold");
+                        "stack_transaction_threshold attribute");
         return -1;
     }
 
@@ -260,7 +262,7 @@ static int NRTracerSettings_set_expensive_limit(NRTracerSettingsObject *self,
 
     if (!PyInt_Check(value)) {
         PyErr_SetString(PyExc_TypeError, "expected int for "
-                        "expensive_nodes_limit");
+                        "expensive_nodes_limit attribute");
         return -1;
     }
 
@@ -300,7 +302,7 @@ static int NRTracerSettings_set_expensive_min(NRTracerSettingsObject *self,
 
     if (!PyFloat_Check(value) && !PyInt_Check(value)) {
         PyErr_SetString(PyExc_TypeError, "expected int or float for "
-                        "expensive_node_minimum");
+                        "expensive_node_minimum attribute");
         return -1;
     }
 
@@ -430,7 +432,8 @@ static int NRErrorsSettings_set_enabled(NRErrorsSettingsObject *self,
     }
 
     if (!PyBool_Check(value)) {
-        PyErr_SetString(PyExc_TypeError, "expected bool for enabled");
+        PyErr_SetString(PyExc_TypeError, "expected bool for enabled "
+                        "attribute");
         return -1;
     }
 
@@ -466,7 +469,7 @@ static int NRErrorsSettings_set_ignore_errors(
 
     if (!PyList_Check(value)) {
         PyErr_SetString(PyExc_TypeError,
-                        "expected list for ignore_errors");
+                        "expected list for ignore_errors attribute");
         return -1;
     }
 
@@ -585,7 +588,7 @@ static int NRBrowserSettings_set_auto_instrument(
 
     if (!PyBool_Check(value)) {
         PyErr_SetString(PyExc_TypeError,
-                        "expected bool for auto_instrument");
+                        "expected bool for auto_instrument attribute");
         return -1;
     }
 
@@ -696,7 +699,7 @@ static int NRDaemonSettings_set_socket_path(
 
     if (!PyString_Check(value)) {
         PyErr_SetString(PyExc_TypeError,
-                        "expected str for socket_path");
+                        "expected string for socket_path attribute");
         return -1;
     }
 
@@ -730,7 +733,7 @@ static int NRDaemonSettings_set_socket_timeout(
 
     if (!PyBool_Check(value)) {
         PyErr_SetString(PyExc_TypeError,
-                        "expected bool for socket_timeout");
+                        "expected bool for socket_timeout attribute");
         return -1;
     }
 
@@ -847,7 +850,7 @@ static int NRDebugSettings_set_dump_metric_table(
 
     if (!PyBool_Check(value)) {
         PyErr_SetString(PyExc_TypeError,
-                        "expected bool for dump_metric_table");
+                        "expected bool for dump_metric_table attribute");
         return -1;
     }
 
@@ -881,7 +884,7 @@ static int NRDebugSettings_set_sql_parsing(
 
     if (!PyBool_Check(value)) {
         PyErr_SetString(PyExc_TypeError,
-                        "expected bool for sql_statement_parsing");
+                        "expected bool for sql_statement_parsing attribute");
         return -1;
     }
 
@@ -1054,12 +1057,14 @@ static int NRSettings_set_config_file(NRSettingsObject *self, PyObject *value)
     }
 
     if (!PyString_Check(value)) {
-        PyErr_SetString(PyExc_TypeError, "expected string for config_file");
+        PyErr_SetString(PyExc_TypeError, "expected string for config_file "
+                        "attribute");
         return -1;
     }
 
     if (self->config_file != Py_None) {
-        PyErr_SetString(PyExc_RuntimeError, "config_file already updated");
+        PyErr_SetString(PyExc_RuntimeError, "config_file attribute has "
+                        "already been set");
         return -1;
     }
 
@@ -1089,12 +1094,14 @@ static int NRSettings_set_environment(NRSettingsObject *self, PyObject *value)
     }
 
     if (!PyString_Check(value)) {
-        PyErr_SetString(PyExc_TypeError, "expected string for environment");
+        PyErr_SetString(PyExc_TypeError, "expected string for environment "
+                        "attribute");
         return -1;
     }
 
     if (self->environment != Py_None) {
-        PyErr_SetString(PyExc_RuntimeError, "environment already updated");
+        PyErr_SetString(PyExc_RuntimeError, "environment attribute has "
+                        "already been set");
         return -1;
     }
 
@@ -1126,7 +1133,8 @@ static int NRSettings_set_app_name(NRSettingsObject *self, PyObject *value)
     }
 
     if (!PyString_Check(value)) {
-        PyErr_SetString(PyExc_TypeError, "expected string for app_name");
+        PyErr_SetString(PyExc_TypeError, "expected string for app_name "
+                        "attribute");
         return -1;
     }
 
@@ -1156,7 +1164,8 @@ static int NRSettings_set_monitor_mode(NRSettingsObject *self, PyObject *value)
     }
 
     if (!PyBool_Check(value)) {
-        PyErr_SetString(PyExc_TypeError, "expected bool for monitor_mode");
+        PyErr_SetString(PyExc_TypeError, "expected bool for monitor_mode "
+                        "attribute");
         return -1;
     }
 
@@ -1189,7 +1198,8 @@ static int NRSettings_set_log_file(NRSettingsObject *self, PyObject *value)
     }
 
     if (!PyString_Check(value)) {
-        PyErr_SetString(PyExc_TypeError, "expected string for log_file");
+        PyErr_SetString(PyExc_TypeError, "expected string for log_file "
+                        "attribute");
         return -1;
     }
 
@@ -1220,7 +1230,8 @@ static int NRSettings_set_log_level(NRSettingsObject *self, PyObject *value)
     }
 
     if (!PyInt_Check(value)) {
-        PyErr_SetString(PyExc_TypeError, "expected integer for log_level");
+        PyErr_SetString(PyExc_TypeError, "expected integer for log_level "
+                        "attribute");
         return -1;
     }
 

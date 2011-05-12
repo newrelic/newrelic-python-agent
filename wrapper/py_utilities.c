@@ -461,7 +461,7 @@ void NRUtilities_MergeDictIntoParams(nrobj_t array, const char *name,
 
 /* ------------------------------------------------------------------------- */
 
-PyObject *NRUtilities_StackTrace(void)
+PyObject *NRUtilities_FormatStackTrace(void)
 {
     PyObject *module;
     PyObject *result = NULL;

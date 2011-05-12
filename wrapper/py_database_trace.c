@@ -161,7 +161,7 @@ static PyObject *NRDatabaseTrace_exit(NRDatabaseTraceObject *self,
 
                 PyObject *stack_trace = NULL;
 
-                stack_trace = NRUtilities_StackTrace();
+                stack_trace = NRUtilities_FormatStackTrace();
 
                 if (stack_trace) {
                     int i;

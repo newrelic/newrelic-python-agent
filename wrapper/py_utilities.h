@@ -38,7 +38,7 @@ extern void NRUtilities_MergeDictIntoParams(nrobj_t array,
                                             const char *name,
                                             PyObject *dict);
 
-extern PyObject *NRUtilities_StackTrace(void);
+extern PyObject *NRUtilities_FormatStackTrace(void);
 
 extern PyObject *NRUtilities_ObfuscateTransactionName(const char *name,
                                                       const char *license_key);

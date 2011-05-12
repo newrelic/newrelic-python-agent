@@ -498,49 +498,49 @@ PyObject *NRUtilities_FormatStackTrace(void)
 extern PyObject *NRUtilities_ObfuscateTransactionName(const char *name,
                                                       const char *license_key)
 {
-  PyObject *result = NULL;
+    PyObject *result = NULL;
 
-  PyObject *module = NULL;
-  PyObject *dict = NULL;
-  PyObject *object = NULL;
-  PyObject *args = NULL;
+    PyObject *module = NULL;
+    PyObject *dict = NULL;
+    PyObject *object = NULL;
+    PyObject *args = NULL;
 
-  int len = strlen(name);
-  unsigned char *xored = alloca(len+1);
-  int i;
+    int len = strlen(name);
+    unsigned char *xored = alloca(len+1);
+    int i;
 
-  for (i = 0; i < len; i++) {
-    int licenseIndex = i % 13;
-    char c = name[i] ^ license_key[licenseIndex];
-    xored[i] = c;
-  }
+    for (i = 0; i < len; i++) {
+        int licenseIndex = i % 13;
+        char c = name[i] ^ license_key[licenseIndex];
+        xored[i] = c;
+    }
 
-  xored[len] = '\0';
+    xored[len] = '\0';
 
-  module = PyImport_ImportModule("base64");
+    module = PyImport_ImportModule("base64");
 
-  if (!module)
-      return NULL;
+    if (!module)
+        return NULL;
 
-  dict = PyModule_GetDict(module);
+    dict = PyModule_GetDict(module);
 
-  object = PyDict_GetItemString(dict, "b64encode");
+    object = PyDict_GetItemString(dict, "b64encode");
 
-  if (!object) {
-      Py_DECREF(module);
-      return NULL;
-  }
+    if (!object) {
+        Py_DECREF(module);
+        return NULL;
+    }
 
-  Py_INCREF(object);
+    Py_INCREF(object);
 
-  args = Py_BuildValue("(s#)", (char *)xored, len);
-  result = PyEval_CallObject(object, args);
+    args = Py_BuildValue("(s#)", (char *)xored, len);
+    result = PyEval_CallObject(object, args);
 
-  Py_DECREF(module);
-  Py_DECREF(object);
-  Py_DECREF(args);
+    Py_DECREF(module);
+    Py_DECREF(object);
+    Py_DECREF(args);
 
-  return result;
+    return result;
 }
 
 /* ------------------------------------------------------------------------- */

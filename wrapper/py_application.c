@@ -299,7 +299,7 @@ static int NRApplication_set_enabled(NRApplicationObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRApplication_custom_metric(NRApplicationObject *self,
+static PyObject *NRApplication_record_metric(NRApplicationObject *self,
                                              PyObject *args, PyObject *kwds)
 {
     const char *key = NULL;
@@ -312,7 +312,7 @@ static PyObject *NRApplication_custom_metric(NRApplicationObject *self,
         return NULL;
     }
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "sd:custom_metric",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "sd:record_metric",
                                      kwlist, &key, &value)) {
         return NULL;
     }
@@ -336,7 +336,7 @@ static PyObject *NRApplication_custom_metric(NRApplicationObject *self,
 /* ------------------------------------------------------------------------- */
 
 static PyMethodDef NRApplication_methods[] = {
-    { "custom_metric",      (PyCFunction)NRApplication_custom_metric,
+    { "record_metric",      (PyCFunction)NRApplication_record_metric,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { NULL, NULL}
 };

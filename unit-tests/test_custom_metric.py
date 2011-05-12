@@ -21,15 +21,15 @@ class CustomMetricTests(unittest.TestCase):
 
     def test_int(self):
         for i in range(100):
-            application.custom_metric("CustomMetricTests01/Int", i)
+            application.record_metric("CustomMetricTests01/Int", i)
 
     def test_float(self):
         for i in map(math.sqrt, range(100)):
-            application.custom_metric("CustomMetricTests01/Float", i)
+            application.record_metric("CustomMetricTests01/Float", i)
 
     def test_disabled(self):
         application.enabled = False
-        application.custom_metric("CustomMetricTests01/Disabled", 1)
+        application.record_metric("CustomMetricTests01/Disabled", 1)
         application.enabled = True
 
 if __name__ == '__main__':

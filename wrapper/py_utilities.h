@@ -10,7 +10,7 @@
 #include "globals.h"
 #include "nrtypes.h"
 
-#include <Python.h>
+#include "py_python.h"
 
 /* ------------------------------------------------------------------------- */
 

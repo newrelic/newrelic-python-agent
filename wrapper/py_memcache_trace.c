@@ -153,10 +153,6 @@ static PyObject *NRMemcacheTrace_exit(NRMemcacheTraceObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
-
 static PyMethodDef NRMemcacheTrace_methods[] = {
     { "__enter__",  (PyCFunction)NRMemcacheTrace_enter,  METH_NOARGS, 0 },
     { "__exit__",   (PyCFunction)NRMemcacheTrace_exit,   METH_VARARGS, 0 },
@@ -423,10 +419,6 @@ static PyObject *NRMemcacheTraceWrapper_descr_get(PyObject *function,
 
 /* ------------------------------------------------------------------------- */
 
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
-
 static PyGetSetDef NRMemcacheTraceWrapper_getset[] = {
     { "__wrapped__",        (getter)NRMemcacheTraceWrapper_get_wrapped,
                             NULL, 0 },
@@ -545,10 +537,6 @@ static PyObject *NRMemcacheTraceDecorator_call(
 }
 
 /* ------------------------------------------------------------------------- */
-
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
 
 PyTypeObject NRMemcacheTraceDecorator_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)

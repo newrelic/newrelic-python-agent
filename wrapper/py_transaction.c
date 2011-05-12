@@ -934,10 +934,6 @@ static int NRTransaction_set_response_code(
 
 /* ------------------------------------------------------------------------- */
 
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
-
 static PyMethodDef NRTransaction_methods[] = {
     { "__enter__",          (PyCFunction)NRTransaction_enter,
                             METH_NOARGS, 0 },

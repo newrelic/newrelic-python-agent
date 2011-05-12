@@ -162,10 +162,6 @@ static PyObject *NRNameTransactionWrapper_descr_get(PyObject *function,
 
 /* ------------------------------------------------------------------------- */
 
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
-
 static PyGetSetDef NRNameTransactionWrapper_getset[] = {
     { "__name__",           (getter)NRNameTransactionWrapper_get_name,
                             NULL, 0 },
@@ -290,10 +286,6 @@ static PyObject *NRNameTransactionDecorator_call(
 }
 
 /* ------------------------------------------------------------------------- */
-
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
 
 PyTypeObject NRNameTransactionDecorator_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)

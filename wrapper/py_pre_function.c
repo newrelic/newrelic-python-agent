@@ -121,10 +121,6 @@ static PyObject *NRPreFunctionWrapper_descr_get(PyObject *function,
 
 /* ------------------------------------------------------------------------- */
 
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
-
 static PyGetSetDef NRPreFunctionWrapper_getset[] = {
     { "__wrapped__",        (getter)NRPreFunctionWrapper_get_wrapped,
                             NULL, 0 },
@@ -248,10 +244,6 @@ static PyObject *NRPreFunctionDecorator_call(
 }
 
 /* ------------------------------------------------------------------------- */
-
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
 
 PyTypeObject NRPreFunctionDecorator_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)

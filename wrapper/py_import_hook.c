@@ -84,10 +84,6 @@ static PyObject *NRImportHookFinder_find_module(
 
 /* ------------------------------------------------------------------------- */
 
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
-
 static PyMethodDef NRImportHookFinder_methods[] = {
     { "find_module",        (PyCFunction)NRImportHookFinder_find_module,
                             METH_VARARGS|METH_KEYWORDS, 0 },
@@ -197,10 +193,6 @@ static PyObject *NRImportHookLoader_load_module(
 }
 
 /* ------------------------------------------------------------------------- */
-
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
 
 static PyMethodDef NRImportHookLoader_methods[] = {
     { "load_module",        (PyCFunction)NRImportHookLoader_load_module,
@@ -326,10 +318,6 @@ static PyObject *NRImportHookDecorator_call(
 }
 
 /* ------------------------------------------------------------------------- */
-
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
 
 PyTypeObject NRImportHookDecorator_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)

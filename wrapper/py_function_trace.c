@@ -190,10 +190,6 @@ static PyObject *NRFunctionTrace_exit(NRFunctionTraceObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
-
 static PyMethodDef NRFunctionTrace_methods[] = {
     { "__enter__",  (PyCFunction)NRFunctionTrace_enter,  METH_NOARGS, 0 },
     { "__exit__",   (PyCFunction)NRFunctionTrace_exit,   METH_VARARGS, 0 },
@@ -500,10 +496,6 @@ static PyObject *NRFunctionTraceWrapper_descr_get(PyObject *function,
 
 /* ------------------------------------------------------------------------- */
 
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
-
 static PyGetSetDef NRFunctionTraceWrapper_getset[] = {
     { "__name__",           (getter)NRFunctionTraceWrapper_get_name,
                             NULL, 0 },
@@ -643,10 +635,6 @@ static PyObject *NRFunctionTraceDecorator_call(
 }
 
 /* ------------------------------------------------------------------------- */
-
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
 
 PyTypeObject NRFunctionTraceDecorator_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)

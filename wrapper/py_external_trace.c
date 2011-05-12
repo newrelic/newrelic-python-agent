@@ -153,10 +153,6 @@ static PyObject *NRExternalTrace_exit(NRExternalTraceObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
-
 static PyMethodDef NRExternalTrace_methods[] = {
     { "__enter__",  (PyCFunction)NRExternalTrace_enter,  METH_NOARGS, 0 },
     { "__exit__",   (PyCFunction)NRExternalTrace_exit,   METH_VARARGS, 0 },
@@ -423,10 +419,6 @@ static PyObject *NRExternalTraceWrapper_descr_get(PyObject *function,
 
 /* ------------------------------------------------------------------------- */
 
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
-
 static PyGetSetDef NRExternalTraceWrapper_getset[] = {
     { "__wrapped__",        (getter)NRExternalTraceWrapper_get_wrapped,
                             NULL, 0 },
@@ -545,10 +537,6 @@ static PyObject *NRExternalTraceDecorator_call(
 }
 
 /* ------------------------------------------------------------------------- */
-
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
 
 PyTypeObject NRExternalTraceDecorator_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)

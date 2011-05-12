@@ -307,10 +307,6 @@ static PyObject *NRApplication_custom_metric(NRApplicationObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
-
 static PyMethodDef NRApplication_methods[] = {
     { "custom_metric",      (PyCFunction)NRApplication_custom_metric,
                             METH_VARARGS|METH_KEYWORDS, 0 },

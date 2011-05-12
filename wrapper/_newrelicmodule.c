@@ -4,8 +4,6 @@
 
 /* ------------------------------------------------------------------------- */
 
-#include <Python.h>
-
 #include "py_settings.h"
 
 #include "py_application.h"

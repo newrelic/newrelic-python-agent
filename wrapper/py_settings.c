@@ -321,10 +321,6 @@ static int NRTracerSettings_set_expensive_min(NRTracerSettingsObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
-
 static PyMethodDef NRTracerSettings_methods[] = {
     { NULL, NULL }
 };
@@ -488,10 +484,6 @@ static int NRErrorsSettings_set_ignore_errors(
 
 /* ------------------------------------------------------------------------- */
 
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
-
 static PyMethodDef NRErrorsSettings_methods[] = {
     { NULL, NULL }
 };
@@ -606,10 +598,6 @@ static int NRBrowserSettings_set_auto_instrument(
 }
 
 /* ------------------------------------------------------------------------- */
-
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
 
 static PyMethodDef NRBrowserSettings_methods[] = {
     { NULL, NULL }
@@ -758,10 +746,6 @@ static int NRDaemonSettings_set_socket_timeout(
 }
 
 /* ------------------------------------------------------------------------- */
-
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
 
 static PyMethodDef NRDaemonSettings_methods[] = {
     { NULL, NULL }
@@ -915,10 +899,6 @@ static int NRDebugSettings_set_sql_parsing(
 }
 
 /* ------------------------------------------------------------------------- */
-
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
 
 static PyMethodDef NRDebugSettings_methods[] = {
     { NULL, NULL }
@@ -1372,10 +1352,6 @@ static PyObject *NRSettings_get_debug_settings(NRSettingsObject *self,
 }
 
 /* ------------------------------------------------------------------------- */
-
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
 
 static PyMethodDef NRSettings_methods[] = {
     { NULL, NULL }

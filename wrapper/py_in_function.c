@@ -158,10 +158,6 @@ static PyObject *NRInFunctionWrapper_descr_get(PyObject *function,
 
 /* ------------------------------------------------------------------------- */
 
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
-
 static PyGetSetDef NRInFunctionWrapper_getset[] = {
     { "__wrapped__",        (getter)NRInFunctionWrapper_get_wrapped,
                             NULL, 0 },
@@ -279,10 +275,6 @@ static PyObject *NRInFunctionDecorator_call(
 }
 
 /* ------------------------------------------------------------------------- */
-
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
 
 PyTypeObject NRInFunctionDecorator_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)

@@ -435,10 +435,6 @@ static PyObject *NRWebTransaction_get_background_task(
 
 /* ------------------------------------------------------------------------- */
 
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
-
 static PyMethodDef NRWebTransaction_methods[] = {
     { "browser_timing_header", (PyCFunction)NRWebTransaction_header,
                             METH_NOARGS, 0 },
@@ -844,10 +840,6 @@ static PyObject *NRWSGIApplicationIterable_start(
 
 /* ------------------------------------------------------------------------- */
 
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
-
 static PyMethodDef NRWSGIApplicationIterable_methods[] = {
     { "close",              (PyCFunction)NRWSGIApplicationIterable_close,
                             METH_NOARGS, 0 },
@@ -1042,10 +1034,6 @@ static PyObject *NRWSGIApplicationWrapper_descr_get(PyObject *function,
 
 /* ------------------------------------------------------------------------- */
 
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
-
 static PyGetSetDef NRWSGIApplicationWrapper_getset[] = {
     { "__name__",           (getter)NRWSGIApplicationWrapper_get_name,
                             NULL, 0 },
@@ -1178,10 +1166,6 @@ static PyObject *NRWSGIApplicationDecorator_call(
 }
 
 /* ------------------------------------------------------------------------- */
-
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
 
 PyTypeObject NRWSGIApplicationDecorator_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)

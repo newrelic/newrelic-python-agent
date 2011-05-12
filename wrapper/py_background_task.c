@@ -74,10 +74,6 @@ static int NRBackgroundTask_init(NRTransactionObject *self, PyObject *args,
 
 /* ------------------------------------------------------------------------- */
 
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
-
 PyTypeObject NRBackgroundTask_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "_newrelic.BackgroundTask", /*tp_name*/
@@ -379,10 +375,6 @@ static PyObject *NRBackgroundTaskWrapper_descr_get(PyObject *function,
 
 /* ------------------------------------------------------------------------- */
 
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
-
 static PyGetSetDef NRBackgroundTaskWrapper_getset[] = {
     { "__name__",           (getter)NRBackgroundTaskWrapper_get_name,
                             NULL, 0 },
@@ -528,10 +520,6 @@ static PyObject *NRBackgroundTaskDecorator_call(
 }
 
 /* ------------------------------------------------------------------------- */
-
-#ifndef PyVarObject_HEAD_INIT
-#define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
-#endif
 
 PyTypeObject NRBackgroundTaskDecorator_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)

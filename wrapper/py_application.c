@@ -26,16 +26,22 @@ static PyObject *NRApplication_instances = NULL;
 PyObject *NRApplication_Singleton(PyObject *args, PyObject *kwds)
 {
     PyObject *result = NULL;
-    const char *name = NULL;
+    PyObject *name = Py_None;
 
-    PyObject *newargs = NULL;
+    PyObject *name_as_bytes = NULL;
 
     static char *kwlist[] = { "name", NULL };
 
-    /* TODO Need to deal with UTF-8 here for name. */
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|z:Application",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O:Application",
                                      kwlist, &name)) {
+        return NULL;
+    }
+
+    if (!PyString_Check(name) && !PyUnicode_Check(name) &&
+            name != Py_None) {
+        PyErr_Format(PyExc_TypeError, "expected string, Unicode or None "
+                        "for application name, found type '%s'",
+                        name->ob_type->tp_name);
         return NULL;
     }
 
@@ -67,14 +73,20 @@ PyObject *NRApplication_Singleton(PyObject *args, PyObject *kwds)
     }
 
     /*
-     * The name can be optional or None in which case we use
-     * the default application name as dictated by configuration.
+     * The name can be optional. Where specified need to convert
+     * a Unicode string to bytes. For None we use the default
+     * application name as dictated by configuration.
      */
 
-    if (!name) {
-        name = nr_per_process_globals.appname;
-        newargs = Py_BuildValue("(s)", name);
-        args = newargs;
+    if (PyString_Check(name)) {
+        Py_INCREF(name);
+        name_as_bytes = name;
+    }
+    else if (PyUnicode_Check(name)) {
+        name_as_bytes = PyUnicode_AsUTF8String(name);
+    }
+    else {
+        name_as_bytes = PyString_FromString(nr_per_process_globals.appname);
     }
 
     /*
@@ -83,9 +95,10 @@ PyObject *NRApplication_Singleton(PyObject *args, PyObject *kwds)
      * it exists.
      */
 
-    result = PyDict_GetItemString(NRApplication_instances, name);
+    result = PyDict_GetItem(NRApplication_instances, name_as_bytes);
 
     if (result) {
+        Py_DECREF(name_as_bytes);
         Py_INCREF(result);
         return result;
     }
@@ -95,9 +108,12 @@ PyObject *NRApplication_Singleton(PyObject *args, PyObject *kwds)
      * instance, store it in the dictionary and then return it.
      */
 
-    result = PyObject_Call((PyObject *)&NRApplication_Type, args, NULL);
+    result = PyObject_CallFunctionObjArgs((PyObject *)&NRApplication_Type,
+            name_as_bytes, NULL);
 
-    PyDict_SetItemString(NRApplication_instances, name, result);
+    PyDict_SetItem(NRApplication_instances, name_as_bytes, result);
+
+    Py_DECREF(name_as_bytes);
 
     /*
      * Force a harvest to be performed at this point. This will
@@ -123,8 +139,6 @@ PyObject *NRApplication_Singleton(PyObject *args, PyObject *kwds)
 
     nr__harvest_thread_body(name);
 #endif
-
-    Py_XDECREF(newargs);
 
     return result;
 }
@@ -168,11 +182,23 @@ static PyObject *NRApplication_new(PyTypeObject *type, PyObject *args,
 static int NRApplication_init(NRApplicationObject *self, PyObject *args,
                               PyObject *kwds)
 {
-    const char *name = NULL;
+    PyObject *name = NULL;
 
     static char *kwlist[] = { "name", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s:Application",
+    /*
+     * This constructor should only be called from within the
+     * agent code itself at a point where any Unicode string
+     * used for application name has been converted to a normal
+     * byte string. Thus only need to check for a string type
+     * being supplied. We don't convert to a character string
+     * because that would silently convert a Unicode string with
+     * the default encoding if somehow called with one and we
+     * are better noting that Unicode string wrongly got
+     * through.
+     */
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "S:Application",
                                      kwlist, &name)) {
         return -1;
     }
@@ -195,7 +221,8 @@ static int NRApplication_init(NRApplicationObject *self, PyObject *args,
      * code when multithreading used.
      */
 
-    self->application = nr__find_or_create_application(name);
+    self->application = nr__find_or_create_application(
+            PyString_AsString(name));
 
     /*
      * Internal agent code leaves the application specific lock
@@ -257,7 +284,8 @@ static int NRApplication_set_enabled(NRApplicationObject *self,
     }
 
     if (!PyBool_Check(value)) {
-        PyErr_SetString(PyExc_TypeError, "expected bool for enabled flag");
+        PyErr_SetString(PyExc_TypeError, "expected bool for enabled "
+                        "attribute");
         return -1;
     }
 

@@ -1132,16 +1132,29 @@ static int NRSettings_set_app_name(NRSettingsObject *self, PyObject *value)
         return -1;
     }
 
-    if (!PyString_Check(value)) {
-        PyErr_SetString(PyExc_TypeError, "expected string for app_name "
-                        "attribute");
+    if (!PyString_Check(value) && !PyUnicode_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "expected string or Unicode for "
+                        "app_name attribute");
         return -1;
     }
 
     if (nr_per_process_globals.appname)
         nrfree(nr_per_process_globals.appname);
 
-    nr_per_process_globals.appname = nrstrdup(PyString_AsString(value));
+    if (PyUnicode_Check(value)) {
+        PyObject *bytes = NULL;
+
+        bytes = PyUnicode_AsUTF8String(value);
+
+        if (!bytes)
+            return -1;
+
+        nr_per_process_globals.appname = nrstrdup(PyString_AsString(bytes));
+
+        Py_DECREF(bytes);
+    }
+    else
+        nr_per_process_globals.appname = nrstrdup(PyString_AsString(value));
 
     return 0;
 }

@@ -586,15 +586,20 @@ static int NRWSGIApplicationIterable_init(NRWSGIApplicationIterableObject *self,
 
         PyObject *override = NULL;
 
-        if (!PyString_Check(app_name)) {
+        if (!PyString_Check(app_name) && !PyUnicode_Check(app_name)) {
             PyErr_SetString(PyExc_ValueError,
-                    "newrelic.app_name expect to be a dict");
+                    "newrelic.app_name expected to be string or Unicode");
             return -1;
         }
 
         func_args = PyTuple_Pack(1, app_name);
 
         override = NRApplication_Singleton(func_args, NULL);
+
+        if (!override) {
+            Py_DECREF(func_args);
+            return -1;
+        }
 
         self->transaction = PyObject_CallFunctionObjArgs((PyObject *)
                 &NRWebTransaction_Type, override, environ, NULL);
@@ -942,7 +947,6 @@ static int NRWSGIApplicationWrapper_init(
             application = PyString_FromString(nr_per_process_globals.appname);
             func_args = PyTuple_Pack(1, application);
             Py_DECREF(application);
-            application = Py_None;
         }
         else
             func_args = PyTuple_Pack(1, application);

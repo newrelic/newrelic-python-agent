@@ -178,7 +178,6 @@ static int NRBackgroundTaskWrapper_init(NRBackgroundTaskWrapperObject *self,
             application = PyString_FromString(nr_per_process_globals.appname);
             func_args = PyTuple_Pack(1, application);
             Py_DECREF(application);
-            application = Py_None;
         }
         else
             func_args = PyTuple_Pack(1, application);
@@ -462,19 +461,19 @@ static int NRBackgroundTaskDecorator_init(NRBackgroundTaskDecoratorObject *self,
         return -1;
     }
 
-    if (!PyString_Check(name) && !PyUnicode_Check(name) &&
-        name != Py_None) {
-        PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
-                     "or None, found type '%s'", name->ob_type->tp_name);
-        return -1;
-    }
-
     if (application != Py_None &&
         Py_TYPE(application) != &NRApplication_Type &&
         !PyString_Check(application) && !PyUnicode_Check(application)) {
         PyErr_Format(PyExc_TypeError, "application argument must be None, "
                      "str, unicode, or application object, found type '%s'",
                      application->ob_type->tp_name);
+        return -1;
+    }
+
+    if (!PyString_Check(name) && !PyUnicode_Check(name) &&
+        name != Py_None) {
+        PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
+                     "or None, found type '%s'", name->ob_type->tp_name);
         return -1;
     }
 

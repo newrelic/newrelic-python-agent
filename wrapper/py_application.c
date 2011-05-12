@@ -302,7 +302,7 @@ static int NRApplication_set_enabled(NRApplicationObject *self,
 static PyObject *NRApplication_record_metric(NRApplicationObject *self,
                                              PyObject *args, PyObject *kwds)
 {
-    const char *key = NULL;
+    PyObject *key = NULL;
     double value = 0.0;
 
     static char *kwlist[] = { "key", "value", NULL };
@@ -312,8 +312,15 @@ static PyObject *NRApplication_record_metric(NRApplicationObject *self,
         return NULL;
     }
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "sd:record_metric",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "Od:record_metric",
                                      kwlist, &key, &value)) {
+        return NULL;
+    }
+
+    if (!PyString_Check(key) && !PyUnicode_Check(key)) {
+        PyErr_Format(PyExc_TypeError, "expected string or Unicode "
+                        "for custom metric key name, found type '%s'",
+                        key->ob_type->tp_name);
         return NULL;
     }
 
@@ -324,8 +331,27 @@ static PyObject *NRApplication_record_metric(NRApplicationObject *self,
 
     if (self->enabled) {
         nrthread_mutex_lock(&self->application->lock);
-        nr_metric_table__force_add_metric_double(
-                self->application->pending_harvest->metrics, key, NULL, value);
+
+        if (PyUnicode_Check(key)) {
+            PyObject *key_as_bytes = NULL;
+
+            key_as_bytes = PyUnicode_AsUTF8String(key);
+
+            if (!key_as_bytes)
+                return NULL;
+
+            nr_metric_table__force_add_metric_double(
+                    self->application->pending_harvest->metrics,
+                    PyString_AsString(key_as_bytes), NULL, value);
+
+            Py_DECREF(key_as_bytes);
+        }
+        else {
+            nr_metric_table__force_add_metric_double(
+                    self->application->pending_harvest->metrics,
+                    PyString_AsString(key), NULL, value);
+        }
+
         nrthread_mutex_unlock(&self->application->lock);
     }
 

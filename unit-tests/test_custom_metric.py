@@ -1,3 +1,5 @@
+# vim: set fileencoding=utf-8 :
+  
 import unittest
 import math
 
@@ -26,6 +28,10 @@ class CustomMetricTests(unittest.TestCase):
     def test_float(self):
         for i in map(math.sqrt, range(100)):
             application.record_metric("CustomMetricTests01/Float", i)
+
+    def test_unicode(self):
+        for i in map(math.sqrt, range(100)):
+            application.record_metric(u"CustomMetricTests01/√√√√√", i)
 
     def test_disabled(self):
         application.enabled = False

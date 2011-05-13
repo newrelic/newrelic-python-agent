@@ -438,12 +438,40 @@ void NRUtilities_MergeDictIntoParams(nrobj_t array, const char *name,
         PyObject *key_as_string = NULL;
         PyObject *value_as_string = NULL;
 
+        /*
+	 * We ignore any entry in the dictionary which has a
+	 * type other than string or Unicode. For Unicode we
+	 * convert to UTF-8. In other words, entries with key
+         * of other type are silently dropped.
+         */
+
+        if (PyString_Check(key)) {
+            Py_INCREF(key);
+            key_as_string = key;
+        }
+        else if (PyUnicode_Check(key)) {
+            key_as_string = PyUnicode_AsUTF8String(key);
+        }
+        else {
+            continue;
+        }
+
         key_as_string = PyObject_Str(key);
 
         if (!key_as_string)
            PyErr_Clear();
 
-        value_as_string = PyObject_Str(value);
+        /*
+	 * We convert value to its representation. That way if
+	 * it is a unicode string it will be converted based on
+	 * processes default encoding and then will get sent to
+	 * core UI as an ASCII string. Therefore don't have to
+	 * worry a byte string with different encoding to UI
+	 * getting through. The result also display better in
+	 * the UI anyway.
+         */
+
+        value_as_string = PyObject_Repr(value);
 
         if (!value_as_string)
            PyErr_Clear();

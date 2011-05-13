@@ -711,9 +711,9 @@ static int NRTransaction_set_path(NRTransactionObject *self,
         return -1;
     }
 
-    if (!PyString_Check(value)) {
-        PyErr_SetString(PyExc_TypeError, "expected string for "
-                        "URL path attribute");
+    if (!PyString_Check(value) && !PyUnicode_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "expected string or Unicode for "
+                        "path attribute");
         return -1;
     }
 
@@ -758,7 +758,18 @@ static int NRTransaction_set_path(NRTransactionObject *self,
 
     nrfree(self->transaction->path);
 
-    self->transaction->path = nrstrdup(PyString_AsString(value));
+    if (PyUnicode_Check(value)) {
+        PyObject *value_as_bytes = NULL;
+
+        value_as_bytes = PyUnicode_AsUTF8String(value);
+
+        self->transaction->path = nrstrdup(PyString_AsString(value_as_bytes));
+
+        Py_DECREF(value_as_bytes);
+    }
+    else
+        self->transaction->path = nrstrdup(PyString_AsString(value));
+
 #if 0
     self->transaction->path_type = NR_PATH_TYPE_CUSTOM;
 #endif

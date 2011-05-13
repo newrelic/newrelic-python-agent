@@ -573,6 +573,38 @@ extern PyObject *NRUtilities_ObfuscateTransactionName(const char *name,
 
 /* ------------------------------------------------------------------------- */
 
+PyObject *NRUtilities_FormatObject(PyObject *object)
+{
+    PyObject *string = NULL;
+    PyObject *unicode = NULL;
+
+    string = PyObject_Str(object);
+
+    if (string)
+        return string;
+
+    PyErr_Clear();
+
+    unicode = PyObject_Unicode(object);
+
+    if (unicode) {
+        string = PyUnicode_AsEncodedString(unicode, "utf-8",
+                                           "backslashreplace");
+
+        Py_DECREF(unicode);
+
+        if (string)
+            return string;
+    }
+
+    PyErr_Clear();
+
+    return PyString_FromFormat("<unprintable %s object>",
+                               object->ob_type->tp_name);
+}
+
+/* ------------------------------------------------------------------------- */
+
 /*
  * vim: set cino=>2,e0,n0,f0,{2,}0,^0,\:2,=2,p2,t2,c1,+2,(2,u2,)20,*30,g2,h2 ts=8
  */

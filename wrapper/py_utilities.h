@@ -43,6 +43,8 @@ extern PyObject *NRUtilities_FormatStackTrace(void);
 extern PyObject *NRUtilities_ObfuscateTransactionName(const char *name,
                                                       const char *license_key);
 
+extern PyObject *NRUtilities_FormatObject(PyObject *object);
+
 /* ------------------------------------------------------------------------- */
 
 #endif

@@ -1,3 +1,5 @@
+# vim: set fileencoding=utf-8 :
+  
 import unittest
 import time
 import sys
@@ -72,6 +74,19 @@ class ErrorTraceTransactionTests(unittest.TestCase):
             time.sleep(0.5)
             try:
                 function_3()
+            except:
+                pass
+
+    def test_implicit_runtime_unicode(self):
+        environ = { "REQUEST_URI": "/error_trace_unicode" }
+        transaction = _newrelic.WebTransaction(application, environ)
+        with transaction:
+            time.sleep(0.5)
+            try:
+                with _newrelic.ErrorTrace(transaction):
+                    import sys
+                    raise RuntimeError(u"runtime_error %s √√√√" %
+                                       sys.getdefaultencoding())
             except:
                 pass
 

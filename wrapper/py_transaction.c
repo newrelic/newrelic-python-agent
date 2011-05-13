@@ -563,7 +563,7 @@ static PyObject *NRTransaction_notice_error(
                 Py_TYPE(value)->tp_name);
 
         if (!item) {
-            error_message = PyObject_Str(value);
+            error_message = NRUtilities_FormatObject(value);
             stack_trace = NRUtilities_FormatException(type, value, traceback);
 
             if (!stack_trace)

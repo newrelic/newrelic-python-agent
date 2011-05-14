@@ -309,7 +309,7 @@ static PyObject *NRWebTransaction_footer(NRTransactionObject *self,
 {
     const char *script_fragment = "<script type=\"text/javascript\" "
             "charset=\"utf-8\">NREUMQ.push([\"nrf2\",\"%s\",\"%s\",%d,"
-            "\"%s\",%ld,%ld])</script>";
+            "\"%s\",%ld,%ld,new Date().getTime()])</script>";
 
     struct timeval t;
 

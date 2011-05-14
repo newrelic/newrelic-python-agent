@@ -44,13 +44,19 @@ static int NRDatabaseTrace_init(NRDatabaseTraceObject *self, PyObject *args,
 {
     NRTransactionObject *transaction = NULL;
 
-    const char *sql = NULL;
+    PyObject *sql = NULL;
 
     static char *kwlist[] = { "transaction", "sql", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!s:DatabaseTrace",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O:DatabaseTrace",
                                      kwlist, &NRTransaction_Type,
                                      &transaction, &sql)) {
+        return -1;
+    }
+
+    if (!PyString_Check(sql) && !PyUnicode_Check(sql)) {
+        PyErr_Format(PyExc_TypeError, "expected string or Unicode for "
+                     "sql, found type '%s'", sql->ob_type->tp_name);
         return -1;
     }
 
@@ -86,8 +92,18 @@ static int NRDatabaseTrace_init(NRDatabaseTraceObject *self, PyObject *args,
      */
 
     if (transaction->transaction) {
-        self->transaction_trace = nr_web_transaction__allocate_sql_node(
-                transaction->transaction, sql);
+        if (PyUnicode_Check(sql)) {
+            PyObject *bytes = NULL;
+
+            bytes = PyUnicode_AsUTF8String(sql);
+            self->transaction_trace = nr_web_transaction__allocate_sql_node(
+                    transaction->transaction, PyString_AsString(bytes));
+            Py_DECREF(bytes);
+        }
+        else {
+            self->transaction_trace = nr_web_transaction__allocate_sql_node(
+                    transaction->transaction, PyString_AsString(sql));
+        }
     }
 
     return 0;
@@ -347,7 +363,7 @@ static PyObject *NRDatabaseTraceWrapper_call(
 
     /* Create database trace context manager. */
 
-    if (PyString_Check(self->sql)) {
+    if (PyString_Check(self->sql) || PyUnicode_Check(self->sql)) {
         sql = self->sql;
         Py_INCREF(sql);
     }

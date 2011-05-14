@@ -787,15 +787,6 @@ static PyObject *newrelic_function_trace(PyObject *self, PyObject *args,
         return NULL;
     }
 
-#if 0
-    if (!PyString_Check(name) && !PyUnicode_Check(name) &&
-        name != Py_None) {
-        PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
-                     "or None, found type '%s'", name->ob_type->tp_name);
-        return NULL;
-    }
-#endif
-
     return PyObject_CallFunctionObjArgs((PyObject *)
             &NRFunctionTraceDecorator_Type, name, interesting, NULL);
 }
@@ -834,15 +825,6 @@ static PyObject *newrelic_wrap_function_trace(PyObject *self, PyObject *args,
                         "module or string");
         return NULL;
     }
-
-#if 0
-    if (!PyString_Check(name) && !PyUnicode_Check(name) &&
-        name != Py_None) {
-        PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
-                     "or None, found type '%s'", name->ob_type->tp_name);
-        return NULL;
-    }
-#endif
 
     wrapped_object = NRUtilities_ResolveObject(module, object_name,
                                                &parent_object,

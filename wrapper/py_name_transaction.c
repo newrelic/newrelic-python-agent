@@ -96,7 +96,7 @@ static PyObject *NRNameTransactionWrapper_call(
             name = NRUtilities_CallableName(self->wrapped_object,
                                             (PyObject *)self, args);
         }
-        else if (PyString_Check(self->name)) {
+        else if (PyString_Check(self->name) || PyUnicode_Check(self->name)) {
             name = self->name;
             Py_INCREF(name);
         }

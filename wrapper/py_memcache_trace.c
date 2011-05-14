@@ -41,13 +41,19 @@ static int NRMemcacheTrace_init(NRMemcacheTraceObject *self, PyObject *args,
 {
     NRTransactionObject *transaction = NULL;
 
-    const char *command = NULL;
+    PyObject *command = NULL;
 
     static char *kwlist[] = { "transaction", "command", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!s:MemcacheTrace",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O:MemcacheTrace",
                                      kwlist, &NRTransaction_Type,
                                      &transaction, &command)) {
+        return -1;
+    }
+
+    if (!PyString_Check(command) && !PyUnicode_Check(command)) {
+        PyErr_Format(PyExc_TypeError, "expected string or Unicode for "
+                     "command, found type '%s'", command->ob_type->tp_name);
         return -1;
     }
 
@@ -83,8 +89,20 @@ static int NRMemcacheTrace_init(NRMemcacheTraceObject *self, PyObject *args,
      */
 
     if (transaction->transaction) {
-        self->transaction_trace = nr_web_transaction__allocate_memcache_node(
-                transaction->transaction, command);
+        if (PyUnicode_Check(command)) {
+            PyObject *bytes = NULL;
+
+            bytes = PyUnicode_AsUTF8String(command);
+            self->transaction_trace =
+                    nr_web_transaction__allocate_memcache_node(
+                    transaction->transaction, PyString_AsString(bytes));
+            Py_DECREF(bytes);
+        }
+        else {
+            self->transaction_trace =
+                    nr_web_transaction__allocate_memcache_node(
+                    transaction->transaction, PyString_AsString(command));
+        }
     }
 
     return 0;
@@ -295,7 +313,7 @@ static PyObject *NRMemcacheTraceWrapper_call(
 
     /* Create memcache trace context manager. */
 
-    if (PyString_Check(self->command)) {
+    if (PyString_Check(self->command) || PyUnicode_Check(self->command)) {
         command = self->command;
         Py_INCREF(command);
     }

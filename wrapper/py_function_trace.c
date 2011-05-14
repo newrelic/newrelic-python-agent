@@ -45,7 +45,7 @@ static int NRFunctionTrace_init(NRFunctionTraceObject *self, PyObject *args,
 {
     NRTransactionObject *transaction = NULL;
 
-    PyObject *name = Py_None;
+    PyObject *name = NULL;
     PyObject *interesting = Py_True;
 
     static char *kwlist[] = { "transaction", "name", "interesting", NULL };
@@ -56,13 +56,11 @@ static int NRFunctionTrace_init(NRFunctionTraceObject *self, PyObject *args,
         return -1;
     }
 
-#if 0
     if (!PyString_Check(name) && !PyUnicode_Check(name)) {
-        PyErr_Format(PyExc_TypeError, "name argument must be str or unicode, "
-                     "found type '%s'", name->ob_type->tp_name);
+        PyErr_Format(PyExc_TypeError, "expected string or Unicode for "
+                     "name, found type '%s'", name->ob_type->tp_name);
         return -1;
     }
-#endif
 
     /*
      * Validate that this method hasn't been called previously.
@@ -96,24 +94,25 @@ static int NRFunctionTrace_init(NRFunctionTraceObject *self, PyObject *args,
      */
 
     if (transaction->transaction) {
-        const char *name_string = NULL;
+        if (PyUnicode_Check(name)) {
+            PyObject *bytes = NULL;
 
-        if (PyUnicode_Check(name))
-            name = PyUnicode_AsUTF8String(name);
-        else if (PyString_Check(name))
-            Py_INCREF(name);
-
-        name_string = PyString_AsString(name);
-
-        self->transaction_trace = nr_web_transaction__allocate_function_node(
-                transaction->transaction, name_string, NULL);
+            bytes = PyUnicode_AsUTF8String(name);
+            self->transaction_trace =
+                    nr_web_transaction__allocate_function_node(
+                    transaction->transaction, PyString_AsString(bytes), NULL);
+            Py_DECREF(bytes);
+        }
+        else {
+            self->transaction_trace =
+                    nr_web_transaction__allocate_function_node(
+                    transaction->transaction, PyString_AsString(name), NULL);
+        }
 
         if (interesting == Py_True)
             self->interesting = 1;
         else
             self->interesting = 0;
-
-        Py_DECREF(name);
     }
 
     return 0;
@@ -281,15 +280,6 @@ static int NRFunctionTraceWrapper_init(NRFunctionTraceWrapperObject *self,
         return -1;
     }
 
-#if 0
-    if (!PyString_Check(name) && !PyUnicode_Check(name) &&
-        name != Py_None) {
-        PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
-                     "or None, found type '%s'", name->ob_type->tp_name);
-        return -1;
-    }
-#endif
-
     Py_INCREF(wrapped_object);
     Py_XDECREF(self->wrapped_object);
     self->wrapped_object = wrapped_object;
@@ -355,7 +345,7 @@ static PyObject *NRFunctionTraceWrapper_call(
         name = NRUtilities_CallableName(self->wrapped_object,
                                         (PyObject *)self, args);
     }
-    else if (PyString_Check(self->name)) {
+    else if (PyString_Check(self->name) || PyUnicode_Check(self->name)) {
         name = self->name;
         Py_INCREF(name);
     }
@@ -583,15 +573,6 @@ static int NRFunctionTraceDecorator_init(NRFunctionTraceDecoratorObject *self,
                                      &interesting)) {
         return -1;
     }
-
-#if 0
-    if (!PyString_Check(name) && !PyUnicode_Check(name) &&
-        name != Py_None) {
-        PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
-                     "or None, found type '%s'", name->ob_type->tp_name);
-        return -1;
-    }
-#endif
 
     Py_INCREF(name);
     Py_XDECREF(self->name);

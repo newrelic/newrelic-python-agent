@@ -654,7 +654,8 @@ static int NRWSGIApplicationIterable_init(NRWSGIApplicationIterableObject *self,
         PyObject *value = NULL;
         PyObject *traceback = NULL;
 
-        instance_method = PyObject_GetAttrString(self->transaction, "__exit__");
+        instance_method = PyObject_GetAttrString(self->transaction,
+                                                 "__exit__");
 
         PyErr_Fetch(&type, &value, &traceback);
 
@@ -746,7 +747,8 @@ static PyObject *NRWSGIApplicationIterable_close(
             wrapped_result = Py_None;
         }
         else
-            wrapped_result = PyObject_CallFunctionObjArgs(wrapped_method, NULL);
+            wrapped_result = PyObject_CallFunctionObjArgs(wrapped_method,
+                                                          NULL);
 
         Py_XDECREF(wrapped_method);
 

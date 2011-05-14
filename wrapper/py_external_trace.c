@@ -41,13 +41,19 @@ static int NRExternalTrace_init(NRExternalTraceObject *self, PyObject *args,
 {
     NRTransactionObject *transaction = NULL;
 
-    const char *url = NULL;
+    PyObject *url = NULL;
 
     static char *kwlist[] = { "transaction", "url", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!s:ExternalTrace",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O:ExternalTrace",
                                      kwlist, &NRTransaction_Type,
                                      &transaction, &url)) {
+        return -1;
+    }
+
+    if (!PyString_Check(url) && !PyUnicode_Check(url)) {
+        PyErr_Format(PyExc_TypeError, "expected string or Unicode for "
+                     "url, found type '%s'", url->ob_type->tp_name);
         return -1;
     }
 
@@ -83,8 +89,20 @@ static int NRExternalTrace_init(NRExternalTraceObject *self, PyObject *args,
      */
 
     if (transaction->transaction) {
-        self->transaction_trace = nr_web_transaction__allocate_external_node(
-                transaction->transaction, url);
+        if (PyUnicode_Check(url)) {
+            PyObject *bytes = NULL;
+
+            bytes = PyUnicode_AsUTF8String(url);
+            self->transaction_trace =
+                    nr_web_transaction__allocate_external_node(
+                    transaction->transaction, PyString_AsString(bytes));
+            Py_DECREF(bytes);
+        }
+        else {
+            self->transaction_trace =
+                    nr_web_transaction__allocate_external_node(
+                    transaction->transaction, PyString_AsString(url));
+        }
     }
 
     return 0;
@@ -295,7 +313,7 @@ static PyObject *NRExternalTraceWrapper_call(
 
     /* Create external trace context manager. */
 
-    if (PyString_Check(self->url)) {
+    if (PyString_Check(self->url) || PyUnicode_Check(self->url)) {
         url = self->url;
         Py_INCREF(url);
     }

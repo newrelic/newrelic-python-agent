@@ -176,18 +176,43 @@ static PyObject *newrelic_settings(PyObject *self, PyObject *args)
 static PyObject *newrelic_log(PyObject *self, PyObject *args, PyObject *kwds)
 {
     int level = 0;
-    const char *message = NULL;
+    PyObject *message = NULL;
 
     static char *kwlist[] = { "level", "message", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "is:log",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "iO:log",
                                      kwlist, &level, &message)) {
         return NULL;
     }
 
-    Py_BEGIN_ALLOW_THREADS
-    nr__log(level, "%s", message);
-    Py_END_ALLOW_THREADS
+    if (!PyString_Check(message) && !PyUnicode_Check(message)) {
+        PyErr_Format(PyExc_TypeError, "expected string or Unicode for "
+                     "message, found type '%s'", message->ob_type->tp_name);
+        return NULL;
+    }
+
+    if (PyUnicode_Check(message)) {
+        PyObject *bytes = NULL;
+        const char *str = NULL;
+
+        bytes = PyUnicode_AsUTF8String(message);
+        str = PyString_AsString(bytes);
+
+        Py_BEGIN_ALLOW_THREADS
+        nr__log(level, "%s", str);
+        Py_END_ALLOW_THREADS
+
+        Py_DECREF(bytes);
+    }
+    else {
+        const char *str = NULL;
+
+        str = PyString_AsString(message);
+
+        Py_BEGIN_ALLOW_THREADS
+        nr__log(level, "%s", str);
+        Py_END_ALLOW_THREADS
+    }
 
     Py_INCREF(Py_None);
     return Py_None;

@@ -16,15 +16,21 @@ static int NRBackgroundTask_init(NRTransactionObject *self, PyObject *args,
                                  PyObject *kwds)
 {
     NRApplicationObject *application = NULL;
-    char const *path = NULL;
+    PyObject *path = NULL;
 
     PyObject *newargs = NULL;
 
     static char *kwlist[] = { "application", "path", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!s:BackgroundTask",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O:BackgroundTask",
                                      kwlist, &NRApplication_Type,
                                      &application, &path)) {
+        return -1;
+    }
+
+    if (!PyString_Check(path) && !PyUnicode_Check(path)) {
+        PyErr_Format(PyExc_TypeError, "expected string or Unicode for "
+                     "path, found type '%s'", path->ob_type->tp_name);
         return -1;
     }
 
@@ -62,7 +68,17 @@ static int NRBackgroundTask_init(NRTransactionObject *self, PyObject *args,
 
     if (self->transaction) {
         self->transaction->path_type = NR_PATH_TYPE_CUSTOM;
-        self->transaction->path = nrstrdup(path);
+
+        if (PyUnicode_Check(path)) {
+            PyObject *bytes = NULL;
+
+            bytes = PyUnicode_AsUTF8String(path);
+            self->transaction->path = nrstrdup(PyString_AsString(bytes));
+            Py_DECREF(bytes);
+        }
+        else
+            self->transaction->path = nrstrdup(PyString_AsString(path));
+
         self->transaction->realpath = NULL;
 
         self->transaction->backgroundjob = 1;

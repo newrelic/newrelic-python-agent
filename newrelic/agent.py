@@ -26,7 +26,7 @@ def _map_log_level(s):
     return _LOG_LEVEL[s]
 
 def _map_ignored_params(s):
-    return map(string.strip, s.split(','))
+    return s.split()
 
 def _map_transaction_threshold(s):
     if s == 'apdex_f':
@@ -37,7 +37,7 @@ def _map_record_sql(s):
     return _RECORD_SQL[s]
 
 def _map_ignore_errors(s):
-    return map(string.strip, s.split(','))
+    return s.split()
 
 _settings = settings()
 

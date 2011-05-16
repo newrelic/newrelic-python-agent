@@ -129,31 +129,62 @@ if _config_file:
 
 sys.meta_path.insert(0, ImportHookFinder())
 
-def _hook(hook_module_name):
-    def _instrument(module):
-        hook_module = __import__(hook_module_name)
-        for name in hook_module_name.split('.')[1:]:
-            hook_module = getattr(hook_module, name)
-        hook_module.instrument(module)
+def _import_hook(module, function):
+    def _instrument(target):
+        object = __import__(module)
+        for name in module.split('.')[1:]:
+            object = getattr(object, name)
+        getattr(object, function)(target)
     return _instrument
 
-register_import_hook('django', _hook('newrelic.framework_django'))
+def _process_import_hook(target, module, function='instrument'):
+    enabled = True
+    section = 'import-hook:%s' % target
+    if _config_object.has_section(section):
+        try:
+            enabled = _config_object.getboolean(section, 'enabled')
+        except ConfigParser.NoOptionError:
+            pass
+    if enabled and not _config_object.has_option(section, 'execute'):
+        register_import_hook(target, _import_hook(module, function))
 
-register_import_hook('flask', _hook('newrelic.framework_flask'))
+for section in _config_object.sections():
+    if section.startswith('import-hook:'):
+        target = section.split(':')[1]
+        try:
+            enabled = _config_object.getboolean(section, 'enabled')
+        except ConfigParser.NoOptionError:
+            pass
+        else:
+            if enabled:
+                try:
+                    parts = _config_object.get(section, 'execute').split(':')
+                except ConfigParser.NoOptionError:
+                    pass
+                else:
+                    if len(parts) == 1:
+                        hook = _import_hook(parts[0], 'instrument')
+                    else:
+                        hook = _import_hook(parts[0], parts[1])
+                    register_import_hook(target, hook)
 
-register_import_hook('gluon.compileapp', _hook('newrelic.framework_web2py'))
-register_import_hook('gluon.main', _hook('newrelic.framework_web2py'))
+_process_import_hook('django', 'newrelic.framework_django')
 
-register_import_hook('cx_Oracle', _hook('newrelic.database_dbapi2'))
-register_import_hook('MySQLdb', _hook('newrelic.database_dbapi2'))
-register_import_hook('psycopg', _hook('newrelic.database_dbapi2'))
-register_import_hook('psycopg2', _hook('newrelic.database_dbapi2'))
-register_import_hook('pysqlite2', _hook('newrelic.database_dbapi2'))
-register_import_hook('sqlite3', _hook('newrelic.database_dbapi2'))
+_process_import_hook('flask', 'newrelic.framework_flask')
 
-register_import_hook('memcache', _hook('newrelic.memcache_memcache'))
-register_import_hook('pylibmc', _hook('newrelic.memcache_pylibmc'))
+_process_import_hook('gluon.compileapp', 'newrelic.framework_web2py')
+_process_import_hook('gluon.main', 'newrelic.framework_web2py')
 
-register_import_hook('jinja2', _hook('newrelic.template_jinja2'))
+_process_import_hook('cx_Oracle', 'newrelic.database_dbapi2')
+_process_import_hook('MySQLdb', 'newrelic.database_dbapi2')
+_process_import_hook('psycopg', 'newrelic.database_dbapi2')
+_process_import_hook('psycopg2', 'newrelic.database_dbapi2')
+_process_import_hook('pysqlite2', 'newrelic.database_dbapi2')
+_process_import_hook('sqlite3', 'newrelic.database_dbapi2')
 
-register_import_hook('feedparser', _hook('newrelic.external_feedparser'))
+_process_import_hook('memcache', 'newrelic.memcache_memcache')
+_process_import_hook('pylibmc', 'newrelic.memcache_pylibmc')
+
+_process_import_hook('jinja2', 'newrelic.template_jinja2')
+
+_process_import_hook('feedparser', 'newrelic.external_feedparser')

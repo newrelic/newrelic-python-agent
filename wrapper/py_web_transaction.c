@@ -276,9 +276,8 @@ static PyObject *NRWebTransaction_header(NRTransactionObject *self,
     const char *script_long_fragment = "<script>var NREUMQ=[];"
             "NREUMQ.push([\"mark\",\"firstbyte\",new Date().getTime()]);"
             "(function(){var d=document;var e=d.createElement(\"script\");"
-            "e.type=\"text/javascript\";e.async=true;e.src=\"%s\";"
-            "var s=d.getElementsByTagName(\"script\")[0];"
-            "s.parentNode.insertBefore(e,s);})();"
+            "e.async=true;e.src=\"%s\";var s=d.getElementsByTagName("
+            "\"script\")[0];s.parentNode.insertBefore(e,s);})();"
             "</script>";
 
     if (!self->transaction)
@@ -307,9 +306,9 @@ static PyObject *NRWebTransaction_header(NRTransactionObject *self,
 static PyObject *NRWebTransaction_footer(NRTransactionObject *self,
                                          PyObject *args)
 {
-    const char *script_fragment = "<script type=\"text/javascript\" "
-            "charset=\"utf-8\">NREUMQ.push([\"nrf2\",\"%s\",\"%s\",%d,"
-            "\"%s\",%ld,%ld,new Date().getTime()])</script>";
+    const char *script_fragment = "<script charset=\"utf-8\">"
+            "NREUMQ.push([\"nrf2\",\"%s\",\"%s\",%d,\"%s\",%ld,%ld,"
+            "new Date().getTime()])</script>";
 
     struct timeval t;
 

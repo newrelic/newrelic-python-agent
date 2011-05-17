@@ -4,10 +4,10 @@ VIRTUALENV = @VIRTUALENV@
 all : php_agent
 	$(PYTHON) setup.py build
 
-install :
+install : all
 	$(PYTHON) setup.py install
 
-install-destdir :
+install-destdir : all
 	$(PYTHON) setup.py install --prefix=${DESTDIR}
 
 clean :

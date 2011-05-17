@@ -974,11 +974,26 @@ static PyObject *newrelic_name_transaction(PyObject *self, PyObject *args,
                                            PyObject *kwds)
 {
     PyObject *name = Py_None;
+    PyObject *scope = Py_None;
 
-    static char *kwlist[] = { "name", NULL };
+    static char *kwlist[] = { "name", "scope", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O:name_transaction",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OO:name_transaction",
                                      kwlist, &name)) {
+        return NULL;
+    }
+
+    if (!PyString_Check(name) && !PyUnicode_Check(name) &&
+        name != Py_None) {
+        PyErr_Format(PyExc_TypeError, "name argument must be string, Unicode, "
+                     "or None, found type '%s'", name->ob_type->tp_name);
+        return NULL;
+    }
+
+    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
+        scope != Py_None) {
+        PyErr_Format(PyExc_TypeError, "scope argument must be string, Unicode, "
+                     "or None, found type '%s'", scope->ob_type->tp_name);
         return NULL;
     }
 
@@ -995,6 +1010,7 @@ static PyObject *newrelic_wrap_name_transaction(PyObject *self, PyObject *args,
     PyObject *object_name = NULL;
 
     PyObject *name = Py_None;
+    PyObject *scope = Py_None;
 
     PyObject *wrapped_object = NULL;
     PyObject *parent_object = NULL;
@@ -1004,17 +1020,32 @@ static PyObject *newrelic_wrap_name_transaction(PyObject *self, PyObject *args,
 
     PyObject *result = NULL;
 
-    static char *kwlist[] = { "module", "object_name", "name", NULL };
+    static char *kwlist[] = { "module", "object_name", "name", "scope", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds,
-                                     "OS|O:wrap_name_transaction",
-                                     kwlist, &module, &object_name, &name)) {
+                                     "OS|OO:wrap_name_transaction",
+                                     kwlist, &module, &object_name,
+                                     &name, &scope)) {
         return NULL;
     }
 
     if (!PyModule_Check(module) && !PyString_Check(module)) {
         PyErr_SetString(PyExc_TypeError, "module reference must be "
                         "module or string");
+        return NULL;
+    }
+
+    if (!PyString_Check(name) && !PyUnicode_Check(name) &&
+        name != Py_None) {
+        PyErr_Format(PyExc_TypeError, "name argument must be string, Unicode, "
+                     "or None, found type '%s'", name->ob_type->tp_name);
+        return NULL;
+    }
+
+    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
+        scope != Py_None) {
+        PyErr_Format(PyExc_TypeError, "scope argument must be string, Unicode, "
+                     "or None, found type '%s'", scope->ob_type->tp_name);
         return NULL;
     }
 
@@ -1054,7 +1085,8 @@ static PyObject *newrelic_wrap_name_transaction(PyObject *self, PyObject *args,
         Py_INCREF(name);
 
     wrapper_object = PyObject_CallFunctionObjArgs((PyObject *)
-            &NRNameTransactionWrapper_Type, wrapped_object, name, NULL);
+            &NRNameTransactionWrapper_Type, wrapped_object, name,
+            scope, NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object,
             attribute_name, wrapper_object);

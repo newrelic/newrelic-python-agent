@@ -25,6 +25,7 @@ static PyObject *NRNameTransactionWrapper_new(PyTypeObject *type,
 
     self->wrapped_object = NULL;
     self->name = NULL;
+    self->scope = NULL;
 
     return (PyObject *)self;
 }
@@ -37,11 +38,26 @@ static int NRNameTransactionWrapper_init(NRNameTransactionWrapperObject *self,
     PyObject *wrapped_object = NULL;
 
     PyObject *name = Py_None;
+    PyObject *scope = Py_None;
 
-    static char *kwlist[] = { "wrapped", "name", NULL };
+    static char *kwlist[] = { "wrapped", "name", "scope", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O:NameTransactionWrapper",
-                                     kwlist, &wrapped_object, &name)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|OO:NameTransactionWrapper",
+                                     kwlist, &wrapped_object, &name, &scope)) {
+        return -1;
+    }
+
+    if (!PyString_Check(name) && !PyUnicode_Check(name) &&
+        name != Py_None) {
+        PyErr_Format(PyExc_TypeError, "name argument must be string, Unicode, "
+                     "or None, found type '%s'", name->ob_type->tp_name);
+        return -1;
+    }
+
+    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
+        scope != Py_None) {
+        PyErr_Format(PyExc_TypeError, "scope argument must be string, Unicode, "
+                     "or None, found type '%s'", scope->ob_type->tp_name);
         return -1;
     }
 
@@ -52,6 +68,10 @@ static int NRNameTransactionWrapper_init(NRNameTransactionWrapperObject *self,
     Py_INCREF(name);
     Py_XDECREF(self->name);
     self->name = name;
+
+    Py_INCREF(scope);
+    Py_XDECREF(self->scope);
+    self->scope = scope;
 
     /*
      * TODO This should set __module__, __name__, __doc__ and
@@ -70,6 +90,7 @@ static void NRNameTransactionWrapper_dealloc(
     Py_XDECREF(self->wrapped_object);
 
     Py_XDECREF(self->name);
+    Py_XDECREF(self->scope);
 
     Py_TYPE(self)->tp_free(self);
 }
@@ -90,6 +111,15 @@ static PyObject *NRNameTransactionWrapper_call(
     current_transaction = NRTransaction_CurrentTransaction();
 
     if (current_transaction) {
+        PyObject *method = NULL;
+        PyObject *result = NULL;
+
+        method = PyObject_GetAttrString(current_transaction,
+                                        "name_transaction");
+
+        if (!method)
+            return NULL;
+
         /* Create function trace context manager. */
 
         if (self->name == Py_None) {
@@ -112,13 +142,15 @@ static PyObject *NRNameTransactionWrapper_call(
                 return NULL;
         }
 
-        if (PyObject_SetAttrString(current_transaction, "path", name) == -1) {
-            Py_DECREF(name);
-            return NULL;
-        }
-    }
+        result = PyObject_CallFunctionObjArgs(method, name,
+                                              self->scope, NULL);
 
-    Py_DECREF(name);
+        Py_DECREF(method);
+        Py_DECREF(name);
+
+        if (!result)
+            return NULL;
+    }
 
     return PyObject_Call(self->wrapped_object, args, kwds);
 }
@@ -229,28 +261,48 @@ static PyObject *NRNameTransactionDecorator_new(PyTypeObject *type,
         return NULL;
 
     self->name = NULL;
+    self->scope = NULL;
 
     return (PyObject *)self;
 }
 
 /* ------------------------------------------------------------------------- */
 
-static int NRNameTransactionDecorator_init(NRNameTransactionDecoratorObject *self,
-                                         PyObject *args, PyObject *kwds)
+static int NRNameTransactionDecorator_init(
+        NRNameTransactionDecoratorObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *name = Py_None;
+    PyObject *scope = Py_None;
 
-    static char *kwlist[] = { "name", NULL };
+    static char *kwlist[] = { "name", "scope", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds,
-                                     "|O!:NameTransactionDecorator",
-                                     kwlist, &name)) {
+                                     "|OO:NameTransactionDecorator",
+                                     kwlist, &name, &scope)) {
+        return -1;
+    }
+
+    if (!PyString_Check(name) && !PyUnicode_Check(name) &&
+        name != Py_None) {
+        PyErr_Format(PyExc_TypeError, "name argument must be string, Unicode, "
+                     "or None, found type '%s'", name->ob_type->tp_name);
+        return -1;
+    }
+
+    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
+        scope != Py_None) {
+        PyErr_Format(PyExc_TypeError, "scope argument must be string, Unicode, "
+                     "or None, found type '%s'", scope->ob_type->tp_name);
         return -1;
     }
 
     Py_INCREF(name);
     Py_XDECREF(self->name);
     self->name = name;
+
+    Py_INCREF(scope);
+    Py_XDECREF(self->scope);
+    self->scope = scope;
 
     return 0;
 }
@@ -261,6 +313,7 @@ static void NRNameTransactionDecorator_dealloc(
         NRNameTransactionDecoratorObject *self)
 {
     Py_XDECREF(self->name);
+    Py_XDECREF(self->scope);
 
     Py_TYPE(self)->tp_free(self);
 }
@@ -282,7 +335,7 @@ static PyObject *NRNameTransactionDecorator_call(
 
     return PyObject_CallFunctionObjArgs(
             (PyObject *)&NRNameTransactionWrapper_Type,
-            wrapped_object, self->name, NULL);
+            wrapped_object, self->name, self->scope, NULL);
 }
 
 /* ------------------------------------------------------------------------- */

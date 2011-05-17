@@ -625,6 +625,68 @@ static PyObject *NRTransaction_notice_error(
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRTransaction_name_transaction(
+        NRTransactionObject *self, PyObject *args, PyObject *kwds)
+{
+    PyObject *bytes = NULL;
+
+    PyObject *name = NULL;
+    PyObject *scope = Py_None;
+
+    static char *kwlist[] = { "name", "scope", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O:name_transaction",
+                                     kwlist, &name, &scope)) {
+        return NULL;
+    }
+
+    /*
+     * Raise an exception if the path has been frozen and should
+     * no longer be modified. The path would be frozen upon the
+     * footer being generated for RUM as that encodes the path
+     * into a magic key which is included in the footer. If the
+     * path is changed after that, then will not be possible to
+     * correlate data from RUM and agent. An exception is raised
+     * to highlight that a problem exists in way instrumentation
+     * is done. Specifically, that transaction should always be
+     * named prior to generation of footer for RUM.
+     */
+
+    if (self->path_frozen) {
+        PyErr_SetString(PyExc_TypeError, "transaction name has been "
+                        "frozen and can no longer be updated");
+        return NULL;
+    }
+
+    /*
+     * If the application was not enabled and so we are running
+     * as a dummy transaction then return without actually doing
+     * anything.
+     */
+
+    if (!self->transaction) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
+    /*
+     * XXX No ability in PHP agent core yet to override scope so
+     * we just append to a custom prefix.
+     */
+
+    nrfree(self->transaction->path);
+
+    bytes = NRUtilities_ConstructPath(name, scope);
+    self->transaction->path_type = NR_PATH_TYPE_CUSTOM;
+    self->transaction->path = nrstrdup(PyString_AsString(bytes));
+    Py_DECREF(bytes);
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRTransaction_get_application(NRTransactionObject *self,
                                                void *closure)
 {
@@ -699,83 +761,6 @@ static PyObject *NRTransaction_get_path(NRTransactionObject *self,
     }
 
     return PyString_FromString(self->transaction->path);
-}
-
-/* ------------------------------------------------------------------------- */
-
-static int NRTransaction_set_path(NRTransactionObject *self,
-                                  PyObject *value)
-{
-    if (value == NULL) {
-        PyErr_SetString(PyExc_TypeError, "can't delete URL path attribute");
-        return -1;
-    }
-
-    if (!PyString_Check(value) && !PyUnicode_Check(value)) {
-        PyErr_SetString(PyExc_TypeError, "expected string or Unicode for "
-                        "path attribute");
-        return -1;
-    }
-
-    /*
-     * Raise an exception if the path has been frozen and should
-     * no longer be modified. The path would be frozen upon the
-     * footer being generated for RUM as that encodes the path
-     * into a magic key which is included in the footer. If the
-     * path is changed after that, then will not be possible to
-     * correlate data from RUM and agent. An exception is raised
-     * to highlight that a problem exists in way instrumentation
-     * is done. Specifically, that transaction should always be
-     * named prior to generation of footer for RUM.
-     */
-
-    if (self->path_frozen) {
-        PyErr_SetString(PyExc_TypeError, "URL path has been frozen and "
-                        "can no longer be updated");
-        return -1;
-    }
-
-    /*
-     * If the application was not enabled and so we are running
-     * as a dummy transaction then return without actually doing
-     * anything.
-     */
-
-    if (!self->transaction)
-        return 0;
-
-    /*
-     * TODO We set path type to be 'CUSTOM' for now, but PHP
-     * sets it different based on what it is being named with.
-     * If a callable object it uses 'FUNCTION' and if a file
-     * path then uses 'ACTION'. Do not understand the
-     * differences and how that may be used in RPM GUI. The PHP
-     * code also disallows the overriding of the path if already
-     * set, the fact of it being set being recorded by
-     * 'has_been_named' attribute of the transaction object. See:
-     * https://www.pivotaltracker.com/story/show/9011677.
-     */
-
-    nrfree(self->transaction->path);
-
-    if (PyUnicode_Check(value)) {
-        PyObject *value_as_bytes = NULL;
-
-        value_as_bytes = PyUnicode_AsUTF8String(value);
-
-        self->transaction->path = nrstrdup(PyString_AsString(value_as_bytes));
-
-        Py_DECREF(value_as_bytes);
-    }
-    else
-        self->transaction->path = nrstrdup(PyString_AsString(value));
-
-#if 0
-    self->transaction->path_type = NR_PATH_TYPE_CUSTOM;
-#endif
-    self->transaction->path_type = NR_PATH_TYPE_FUNCTION;
-
-    return 0;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -952,6 +937,8 @@ static PyMethodDef NRTransaction_methods[] = {
                             METH_VARARGS, 0 },
     { "notice_error",       (PyCFunction)NRTransaction_notice_error,
                             METH_VARARGS|METH_KEYWORDS, 0 },
+    { "name_transaction",   (PyCFunction)NRTransaction_name_transaction,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
     { NULL, NULL }
 };
 
@@ -961,7 +948,7 @@ static PyGetSetDef NRTransaction_getset[] = {
     { "ignore",             (getter)NRTransaction_get_ignore,
                             (setter)NRTransaction_set_ignore, 0 },
     { "path",               (getter)NRTransaction_get_path,
-                            (setter)NRTransaction_set_path, 0 },
+                            NULL, 0 },
     { "enabled",            (getter)NRTransaction_get_enabled,
                             NULL, 0 },
     { "background_task",    (getter)NRTransaction_get_background_task,

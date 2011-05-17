@@ -63,18 +63,19 @@ class WebTransactionTests(unittest.TestCase):
         environ = { "REQUEST_URI": "DUMMY" }
         transaction = _newrelic.WebTransaction(application, environ)
         with transaction:
+            scope = "Function"
             path = "/named_web_transaction"
-            transaction.path = path
+            transaction.name_transaction(path, scope)
             self.assertTrue(transaction.enabled)
             self.assertEqual(_newrelic.transaction(), transaction)
-            self.assertEqual(transaction.path, path)
+            self.assertEqual(transaction.path, scope+path)
 
     def test_background_web_transaction(self):
         environ = { "REQUEST_URI": "DUMMY" }
         transaction = _newrelic.WebTransaction(application, environ)
         with transaction:
             path = "background_web_transaction"
-            transaction.path = path
+            transaction.name_transaction(path)
             self.assertFalse(transaction.background_task)
             transaction.background_task = True
             self.assertTrue(transaction.background_task)
@@ -89,7 +90,7 @@ class WebTransactionTests(unittest.TestCase):
         transaction = _newrelic.WebTransaction(application, environ)
         with transaction:
             path = "environ_background_web_transaction_bool"
-            transaction.path = path
+            transaction.name_transaction(path)
             self.assertTrue(transaction.background_task)
 
     def test_environ_background_web_transaction_string(self):
@@ -98,7 +99,7 @@ class WebTransactionTests(unittest.TestCase):
         transaction = _newrelic.WebTransaction(application, environ)
         with transaction:
             path = "environ_background_web_transaction_string"
-            transaction.path = path
+            transaction.name_transaction(path)
             self.assertTrue(transaction.background_task)
 
     def test_exit_on_delete(self):

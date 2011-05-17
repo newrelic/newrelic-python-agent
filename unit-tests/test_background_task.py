@@ -53,11 +53,12 @@ class BackgroundTaskTests(unittest.TestCase):
         name = "DUMMY"
         transaction = _newrelic.BackgroundTask(application, name)
         with transaction:
+            scope = "Function"
             path = "named_background_task"
-            transaction.path = path
+            transaction.name_transaction(path, scope)
             self.assertTrue(transaction.enabled)
             self.assertEqual(_newrelic.transaction(), transaction)
-            self.assertEqual(transaction.path, path)
+            self.assertEqual(transaction.path, scope+'/'+path)
 
     def test_exit_on_delete(self):
         name = "exit_on_delete"

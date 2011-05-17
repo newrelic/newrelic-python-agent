@@ -78,7 +78,7 @@ def wrap_middleware(handler, *args, **kwargs):
 
         # Insert middleware for inserting RUM header/footer.
 
-        response_middleware.insert(0, insert_rum)
+        handler._response_middleware.insert(0, insert_rum)
 
     if hasattr(handler, '_exception_middleware'):
         exception_middleware = []
@@ -102,11 +102,11 @@ def wrap_url_resolver_output(result):
 
     if type(result) == type(()):
         callback, args, kwargs = result
-        wrapper = NameTransactionWrapper(callback)
+        wrapper = NameTransactionWrapper(callback, None, 'Django')
         wrapper = FunctionTraceWrapper(wrapper)
         result = (wrapper, args, kwargs)
     else:
-        wrapper = NameTransactionWrapper(result.func)
+        wrapper = NameTransactionWrapper(result.func, None, 'Django')
         wrapper = FunctionTraceWrapper(wrapper)
         result.func = wrapper
 
@@ -148,11 +148,11 @@ def instrument(module):
         wrap_function_trace('django.template', 'Template.render',
                 lambda template, context: '%s Template ' % template.name)
 
-    #wrap_function_trace('django.template', 'NodeList.render_node',
-    #        lambda template, node, context: '%s Node ' %
-    #        callable_name(node))
+    wrap_function_trace('django.template', 'NodeList.render_node',
+            lambda template, node, context: '%s Node ' %
+            callable_name(node), False)
 
-    #wrap_function_trace('django.template.debug',
-    #        'DebugNodeList.render_node',
-    #        lambda template, node, context: '%s Node ' %
-    #        callable_name(node))
+    wrap_function_trace('django.template.debug',
+            'DebugNodeList.render_node',
+            lambda template, node, context: '%s Node ' %
+            callable_name(node), False)

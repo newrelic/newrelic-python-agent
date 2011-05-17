@@ -15,6 +15,7 @@ typedef struct {
     PyObject_HEAD
     PyObject *wrapped_object;
     PyObject *name;
+    PyObject *scope;
 } NRNameTransactionWrapperObject;
 
 extern PyTypeObject NRNameTransactionWrapper_Type;
@@ -22,6 +23,7 @@ extern PyTypeObject NRNameTransactionWrapper_Type;
 typedef struct {
     PyObject_HEAD
     PyObject *name;
+    PyObject *scope;
 } NRNameTransactionDecoratorObject;
 
 extern PyTypeObject NRNameTransactionDecorator_Type;

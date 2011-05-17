@@ -12,3 +12,12 @@ Host system must have the following:
 3. The sqlite3 and sqlite3-dev packages. Needed if want to run unit tests.
 
 4. The zlib and zlib-dev packages. Needed if want to run unit tests.
+
+Unbuntu 10.4 LTS
+================
+
+To install above requirements run:
+
+   sudo apt-get install g++
+   sudo apt-get install sqlite3 libsqlite3-dev
+   sudo apt-get install zlib1g-dev

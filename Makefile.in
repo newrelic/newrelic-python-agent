@@ -8,7 +8,8 @@ install : all
 	$(PYTHON) setup.py install
 
 install-destdir : all
-	$(PYTHON) setup.py install --prefix=${DESTDIR}
+	$(PYTHON) setup.py install \
+	  --install-platlib=${DESTDIR} --install-purelib=${DESTDIR}
 
 clean :
 	rm -rf build

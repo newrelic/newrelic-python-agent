@@ -19,6 +19,4 @@ newrelic/*.pyc
 Makefile
 setup.py
 python-tools/buildout.cfg
-newrelic-i386-apple-darwin
-newrelic-i686-pc-linux-gnu
-newrelic-x86_64-unknown-linux-gnu
+newrelic-python-*

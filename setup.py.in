@@ -7,6 +7,8 @@ config_vars = sysconfig._config_vars
 config_vars['CFLAGS'] = config_vars['CFLAGS'].replace(' -Os ', ' ')
 config_vars['OPT'] = config_vars['OPT'].replace(' -Os ', ' ')
 
+version = open('VERSION').read().strip()
+
 sources = [
   "php_agent/application.c",
   "php_agent/daemon_protocol.c",
@@ -52,6 +54,7 @@ platform = "@PLATFORM@"
 
 define_macros = []
 define_macros.append(('NEWRELIC_AGENT_LANGUAGE', '"python"'))
+define_macros.append(('NEWRELIC_PYTHON_AGENT_VERSION', '"%s"' % version))
 define_macros.append(('HAVE_CONFIG_H', '1'))
 define_macros.append(('NR_BUILD_%s' % platform, '1'))
 
@@ -67,6 +70,7 @@ extension = Extension(
 
 setup(
   name = "newrelic",
+  version = version,
   description = "Python agent for NewRelic RPM",
   url = "http://www.newrelic.com",
   packages = ['newrelic'],

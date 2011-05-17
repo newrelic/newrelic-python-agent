@@ -24,7 +24,9 @@ case $PLATFORM in
         ;;
 esac
 
-ROOTDIR=newrelic-$PLATFORM
+VERSION=`cat VERSION`
+
+ROOTDIR=newrelic-python-$VERSION-$PLATFORM
 
 test -f Makefile && make distclean
 test -d $ROOTDIR && rm -rf $ROOTDIR
@@ -39,3 +41,9 @@ do
         make install-destdir DESTDIR=$ROOTDIR/python-$i-$j
     done
 done
+
+rm -f $ROOTDIR.tar
+rm -f $ROOTDIR.tar.gz
+
+tar cvf $ROOTDIR.tar $ROOTDIR
+gzip --best $ROOTDIR.tar

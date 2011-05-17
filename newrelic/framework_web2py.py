@@ -17,8 +17,8 @@ def name_view(environment):
 def name_restricted(code, environment={}, layer='Unknown'):
     folder = environment['request'].folder
     if layer.startswith(folder):
-        return '%s Execute' % layer[len(folder):]
-    return '%s Execute' % layer
+        return layer[len(folder):]
+    return layer
 
 class capture_error(object):
     def __init__(self, wrapped):
@@ -46,7 +46,8 @@ def instrument(module):
         wrap_function_trace(module, 'run_controller_in', name_controller)
         wrap_function_trace(module, 'run_view_in', name_view)
 
-        wrap_function_trace(module, 'restricted', name_restricted)
+        wrap_function_trace(module, 'restricted', name_restricted,
+                            'Script/Execute')
 
         wrap_name_transaction(module, 'run_models_in',
                 lambda environment: environment['response'].view)

@@ -46,19 +46,30 @@ static int NRFunctionTrace_init(NRFunctionTraceObject *self, PyObject *args,
     NRTransactionObject *transaction = NULL;
 
     PyObject *name = NULL;
+    PyObject *scope = Py_None;
     PyObject *interesting = Py_True;
 
-    static char *kwlist[] = { "transaction", "name", "interesting", NULL };
+    static char *kwlist[] = { "transaction", "name", "scope",
+                              "interesting", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O|O!:FunctionTrace",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O|OO!:FunctionTrace",
                                      kwlist, &NRTransaction_Type, &transaction,
-                                     &name, &PyBool_Type, &interesting)) {
+                                     &name, &scope, &PyBool_Type,
+                                     &interesting)) {
         return -1;
     }
 
     if (!PyString_Check(name) && !PyUnicode_Check(name)) {
         PyErr_Format(PyExc_TypeError, "expected string or Unicode for "
                      "name, found type '%s'", name->ob_type->tp_name);
+        return -1;
+    }
+
+    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
+        scope != Py_None) {
+        PyErr_Format(PyExc_TypeError, "scope argument must be string, "
+                     "Unicode, or None, found type '%s'",
+                     scope->ob_type->tp_name);
         return -1;
     }
 
@@ -94,20 +105,13 @@ static int NRFunctionTrace_init(NRFunctionTraceObject *self, PyObject *args,
      */
 
     if (transaction->transaction) {
-        if (PyUnicode_Check(name)) {
-            PyObject *bytes = NULL;
+        PyObject *bytes = NULL;
 
-            bytes = PyUnicode_AsUTF8String(name);
-            self->transaction_trace =
-                    nr_web_transaction__allocate_function_node(
-                    transaction->transaction, PyString_AsString(bytes), NULL);
-            Py_DECREF(bytes);
-        }
-        else {
-            self->transaction_trace =
-                    nr_web_transaction__allocate_function_node(
-                    transaction->transaction, PyString_AsString(name), NULL);
-        }
+        bytes = NRUtilities_ConstructPath(name, scope);
+        self->transaction_trace =
+                nr_web_transaction__allocate_function_node(
+                transaction->transaction, PyString_AsString(bytes), NULL);
+        Py_DECREF(bytes);
 
         if (interesting == Py_True)
             self->interesting = 1;
@@ -257,6 +261,7 @@ static PyObject *NRFunctionTraceWrapper_new(PyTypeObject *type, PyObject *args,
 
     self->wrapped_object = NULL;
     self->name = NULL;
+    self->scope = NULL;
     self->interesting = 1;
 
     return (PyObject *)self;
@@ -270,12 +275,14 @@ static int NRFunctionTraceWrapper_init(NRFunctionTraceWrapperObject *self,
     PyObject *wrapped_object = NULL;
 
     PyObject *name = Py_None;
+    PyObject *scope = Py_None;
     PyObject *interesting = Py_True;
 
-    static char *kwlist[] = { "wrapped", "name", "interesting", NULL };
+    static char *kwlist[] = { "wrapped", "name", "scope",
+                              "interesting", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|OO!:FunctionTraceWrapper",
-                                     kwlist, &wrapped_object, &name,
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|OOO!:FunctionTraceWrapper",
+                                     kwlist, &wrapped_object, &name, &scope,
                                      &PyBool_Type, &interesting)) {
         return -1;
     }
@@ -287,6 +294,10 @@ static int NRFunctionTraceWrapper_init(NRFunctionTraceWrapperObject *self,
     Py_INCREF(name);
     Py_XDECREF(self->name);
     self->name = name;
+
+    Py_INCREF(scope);
+    Py_XDECREF(self->scope);
+    self->scope = scope;
 
     if (interesting == Py_True)
         self->interesting = 1;
@@ -309,6 +320,7 @@ static void NRFunctionTraceWrapper_dealloc(NRFunctionTraceWrapperObject *self)
     Py_XDECREF(self->wrapped_object);
 
     Py_XDECREF(self->name);
+    Py_XDECREF(self->scope);
 
     Py_TYPE(self)->tp_free(self);
 }
@@ -363,7 +375,7 @@ static PyObject *NRFunctionTraceWrapper_call(
 
     function_trace = PyObject_CallFunctionObjArgs((PyObject *)
             &NRFunctionTrace_Type, current_transaction, name,
-            self->interesting ? Py_True : Py_False, NULL);
+            self->scope, self->interesting ? Py_True : Py_False, NULL);
 
     Py_DECREF(name);
 
@@ -553,6 +565,7 @@ static PyObject *NRFunctionTraceDecorator_new(PyTypeObject *type,
         return NULL;
 
     self->name = NULL;
+    self->scope = NULL;
     self->interesting = 1;
 
     return (PyObject *)self;
@@ -564,12 +577,13 @@ static int NRFunctionTraceDecorator_init(NRFunctionTraceDecoratorObject *self,
                                          PyObject *args, PyObject *kwds)
 {
     PyObject *name = Py_None;
+    PyObject *scope = Py_None;
     PyObject *interesting = Py_True;
 
-    static char *kwlist[] = { "name", "interesting", NULL };
+    static char *kwlist[] = { "name", "scope", "interesting", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OO!:FunctionTraceDecorator",
-                                     kwlist, &name, &PyBool_Type,
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OOO!:FunctionTraceDecorator",
+                                     kwlist, &name, &scope, &PyBool_Type,
                                      &interesting)) {
         return -1;
     }
@@ -577,6 +591,10 @@ static int NRFunctionTraceDecorator_init(NRFunctionTraceDecoratorObject *self,
     Py_INCREF(name);
     Py_XDECREF(self->name);
     self->name = name;
+
+    Py_INCREF(scope);
+    Py_XDECREF(self->scope);
+    self->scope = scope;
 
     if (interesting == Py_True)
         self->interesting = 1;
@@ -592,6 +610,7 @@ static void NRFunctionTraceDecorator_dealloc(
         NRFunctionTraceDecoratorObject *self)
 {
     Py_XDECREF(self->name);
+    Py_XDECREF(self->scope);
 
     Py_TYPE(self)->tp_free(self);
 }
@@ -612,7 +631,8 @@ static PyObject *NRFunctionTraceDecorator_call(
 
     return PyObject_CallFunctionObjArgs(
             (PyObject *)&NRFunctionTraceWrapper_Type, wrapped_object,
-            self->name, self->interesting ? Py_True : Py_False, NULL);
+            self->name, self->scope, self->interesting ? Py_True : Py_False,
+            NULL);
 }
 
 /* ------------------------------------------------------------------------- */

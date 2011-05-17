@@ -793,18 +793,19 @@ static PyObject *newrelic_function_trace(PyObject *self, PyObject *args,
                                          PyObject *kwds)
 {
     PyObject *name = Py_None;
+    PyObject *scope = Py_None;
     PyObject *interesting = Py_True;
 
-    static char *kwlist[] = { "name", "interesting", NULL };
+    static char *kwlist[] = { "name", "scope", "interesting", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OO!:function_trace",
-                                     kwlist, &name, &PyBool_Type,
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OOO!:function_trace",
+                                     kwlist, &name, &scope, &PyBool_Type,
                                      &interesting)) {
         return NULL;
     }
 
     return PyObject_CallFunctionObjArgs((PyObject *)
-            &NRFunctionTraceDecorator_Type, name, interesting, NULL);
+            &NRFunctionTraceDecorator_Type, name, scope, interesting, NULL);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -816,6 +817,7 @@ static PyObject *newrelic_wrap_function_trace(PyObject *self, PyObject *args,
     PyObject *object_name = NULL;
 
     PyObject *name = Py_None;
+    PyObject *scope = Py_None;
     PyObject *interesting = Py_True;
 
     PyObject *wrapped_object = NULL;
@@ -826,13 +828,13 @@ static PyObject *newrelic_wrap_function_trace(PyObject *self, PyObject *args,
 
     PyObject *result = NULL;
 
-    static char *kwlist[] = { "module", "object_name", "name",
+    static char *kwlist[] = { "module", "object_name", "name", "scope",
                               "interesting", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds,
-                                     "OS|OO!:wrap_function_trace",
+                                     "OS|OOO!:wrap_function_trace",
                                      kwlist, &module, &object_name, &name,
-                                     &PyBool_Type, &interesting)) {
+                                     &scope, &PyBool_Type, &interesting)) {
         return NULL;
     }
 
@@ -879,7 +881,7 @@ static PyObject *newrelic_wrap_function_trace(PyObject *self, PyObject *args,
 
     wrapper_object = PyObject_CallFunctionObjArgs((PyObject *)
             &NRFunctionTraceWrapper_Type, wrapped_object, name,
-            interesting, NULL);
+            scope, interesting, NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object,
             attribute_name, wrapper_object);

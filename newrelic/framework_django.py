@@ -143,16 +143,15 @@ def instrument(module):
 
     if hasattr(Template, '_render'):
         wrap_function_trace('django.template', 'Template._render',
-                lambda template, context: '%s Template ' % template.name)
+                (lambda template, context: template.name), 'Template')
     else:
         wrap_function_trace('django.template', 'Template.render',
-                lambda template, context: '%s Template ' % template.name)
+                (lambda template, context: template.name), 'Template')
 
     wrap_function_trace('django.template', 'NodeList.render_node',
-            lambda template, node, context: '%s Node ' %
-            callable_name(node), False)
+            (lambda template, node, context: callable_name(node)),
+            None, False)
 
-    wrap_function_trace('django.template.debug',
-            'DebugNodeList.render_node',
-            lambda template, node, context: '%s Node ' %
-            callable_name(node), False)
+    wrap_function_trace('django.template.debug', 'DebugNodeList.render_node',
+            (lambda template, node, context: callable_name(node)),
+            None, False)

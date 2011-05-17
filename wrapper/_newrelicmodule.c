@@ -432,9 +432,9 @@ static PyObject *newrelic_background_task(PyObject *self, PyObject *args,
     PyObject *name = Py_None;
     PyObject *scope = Py_None;
 
-    static char *kwlist[] = { "application", "name", NULL };
+    static char *kwlist[] = { "application", "name", "scope", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OO:background_task",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OOO:background_task",
                                      kwlist, &application, &name, &scope)) {
         return NULL;
     }

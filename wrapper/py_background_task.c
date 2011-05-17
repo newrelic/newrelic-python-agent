@@ -16,21 +16,29 @@ static int NRBackgroundTask_init(NRTransactionObject *self, PyObject *args,
                                  PyObject *kwds)
 {
     NRApplicationObject *application = NULL;
-    PyObject *path = NULL;
+    PyObject *name = NULL;
+    PyObject *scope = Py_None;
 
     PyObject *newargs = NULL;
 
-    static char *kwlist[] = { "application", "path", NULL };
+    static char *kwlist[] = { "application", "name", "scope", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O:BackgroundTask",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O|O:BackgroundTask",
                                      kwlist, &NRApplication_Type,
-                                     &application, &path)) {
+                                     &application, &name, &scope)) {
         return -1;
     }
 
-    if (!PyString_Check(path) && !PyUnicode_Check(path)) {
+    if (!PyString_Check(name) && !PyUnicode_Check(name)) {
         PyErr_Format(PyExc_TypeError, "expected string or Unicode for "
-                     "path, found type '%s'", path->ob_type->tp_name);
+                     "name, found type '%s'", name->ob_type->tp_name);
+        return -1;
+    }
+
+    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
+        scope != Py_None) {
+        PyErr_Format(PyExc_TypeError, "expected string, Unicode or None "
+                     "for scope, found type '%s'", scope->ob_type->tp_name);
         return -1;
     }
 
@@ -67,17 +75,12 @@ static int NRBackgroundTask_init(NRTransactionObject *self, PyObject *args,
      */
 
     if (self->transaction) {
+        PyObject *bytes = NULL;
+
+        bytes = NRUtilities_ConstructPath(name, scope);
         self->transaction->path_type = NR_PATH_TYPE_CUSTOM;
-
-        if (PyUnicode_Check(path)) {
-            PyObject *bytes = NULL;
-
-            bytes = PyUnicode_AsUTF8String(path);
-            self->transaction->path = nrstrdup(PyString_AsString(bytes));
-            Py_DECREF(bytes);
-        }
-        else
-            self->transaction->path = nrstrdup(PyString_AsString(path));
+        self->transaction->path = nrstrdup(PyString_AsString(bytes));
+        Py_DECREF(bytes);
 
         self->transaction->realpath = NULL;
 
@@ -149,6 +152,7 @@ static PyObject *NRBackgroundTaskWrapper_new(PyTypeObject *type, PyObject *args,
     self->wrapped_object = NULL;
     self->application = NULL;
     self->name = NULL;
+    self->scope = NULL;
 
     return (PyObject *)self;
 }
@@ -162,12 +166,14 @@ static int NRBackgroundTaskWrapper_init(NRBackgroundTaskWrapperObject *self,
 
     PyObject *application = Py_None;
     PyObject *name = Py_None;
+    PyObject *scope = Py_None;
 
-    static char *kwlist[] = { "wrapped", "application", "name", NULL };
+    static char *kwlist[] = { "wrapped", "application", "name",
+                              "scope", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|OO:BackgroundTaskWrapper",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|OOO:BackgroundTaskWrapper",
                                      kwlist, &wrapped_object, &application,
-                                     &name)) {
+                                     &name, &scope)) {
         return -1;
     }
 
@@ -175,6 +181,13 @@ static int NRBackgroundTaskWrapper_init(NRBackgroundTaskWrapperObject *self,
         name != Py_None) {
         PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
                      "or None, found type '%s'", name->ob_type->tp_name);
+        return -1;
+    }
+
+    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
+        scope != Py_None) {
+        PyErr_Format(PyExc_TypeError, "expected string, Unicode or None "
+                     "for scope, found type '%s'", scope->ob_type->tp_name);
         return -1;
     }
 
@@ -217,6 +230,10 @@ static int NRBackgroundTaskWrapper_init(NRBackgroundTaskWrapperObject *self,
     Py_XDECREF(self->name);
     self->name = name;
 
+    Py_INCREF(scope);
+    Py_XDECREF(self->scope);
+    self->scope = scope;
+
     /*
      * TODO This should set __module__, __name__, __doc__ and
      * update __dict__ to preserve introspection capabilities.
@@ -236,6 +253,7 @@ static void NRBackgroundTaskWrapper_dealloc(NRBackgroundTaskWrapperObject *self)
 
     Py_XDECREF(self->application);
     Py_XDECREF(self->name);
+    Py_XDECREF(self->scope);
 
     Py_TYPE(self)->tp_free(self);
 }
@@ -267,7 +285,8 @@ static PyObject *NRBackgroundTaskWrapper_call(
     }
 
     background_task = PyObject_CallFunctionObjArgs((PyObject *)
-            &NRBackgroundTask_Type, self->application, name, NULL);
+            &NRBackgroundTask_Type, self->application, name,
+            self->scope, NULL);
 
     Py_DECREF(name);
 
@@ -458,22 +477,25 @@ static PyObject *NRBackgroundTaskDecorator_new(PyTypeObject *type,
 
     self->application = NULL;
     self->name = NULL;
+    self->scope = NULL;
 
     return (PyObject *)self;
 }
 
 /* ------------------------------------------------------------------------- */
 
-static int NRBackgroundTaskDecorator_init(NRBackgroundTaskDecoratorObject *self,
-                                         PyObject *args, PyObject *kwds)
+static int NRBackgroundTaskDecorator_init(
+        NRBackgroundTaskDecoratorObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *application = Py_None;
     PyObject *name = Py_None;
+    PyObject *scope = Py_None;
 
-    static char *kwlist[] = { "application", "name", NULL };
+    static char *kwlist[] = { "application", "name", "scope", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OO:BackgroundTaskDecorator",
-                                     kwlist, &application, &name)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds,
+                                     "|OOO:BackgroundTaskDecorator",
+                                     kwlist, &application, &name, &scope)) {
         return -1;
     }
 
@@ -493,6 +515,13 @@ static int NRBackgroundTaskDecorator_init(NRBackgroundTaskDecoratorObject *self,
         return -1;
     }
 
+    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
+        scope != Py_None) {
+        PyErr_Format(PyExc_TypeError, "scope argument must be str, unicode, "
+                     "or None, found type '%s'", scope->ob_type->tp_name);
+        return -1;
+    }
+
     Py_INCREF(application);
     Py_XDECREF(self->application);
     self->application = application;
@@ -500,6 +529,10 @@ static int NRBackgroundTaskDecorator_init(NRBackgroundTaskDecoratorObject *self,
     Py_INCREF(name);
     Py_XDECREF(self->name);
     self->name = name;
+
+    Py_INCREF(scope);
+    Py_XDECREF(self->scope);
+    self->scope = scope;
 
     return 0;
 }
@@ -511,6 +544,7 @@ static void NRBackgroundTaskDecorator_dealloc(
 {
     Py_XDECREF(self->application);
     Py_XDECREF(self->name);
+    Py_XDECREF(self->scope);
 
     Py_TYPE(self)->tp_free(self);
 }
@@ -531,7 +565,7 @@ static PyObject *NRBackgroundTaskDecorator_call(
 
     return PyObject_CallFunctionObjArgs(
             (PyObject *)&NRBackgroundTaskWrapper_Type,
-            wrapped_object, self->application, self->name, NULL);
+            wrapped_object, self->application, self->name, self->scope, NULL);
 }
 
 /* ------------------------------------------------------------------------- */

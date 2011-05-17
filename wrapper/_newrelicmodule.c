@@ -430,11 +430,12 @@ static PyObject *newrelic_background_task(PyObject *self, PyObject *args,
 {
     PyObject *application = Py_None;
     PyObject *name = Py_None;
+    PyObject *scope = Py_None;
 
     static char *kwlist[] = { "application", "name", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OO:background_task",
-                                     kwlist, &application, &name)) {
+                                     kwlist, &application, &name, &scope)) {
         return NULL;
     }
 
@@ -442,6 +443,13 @@ static PyObject *newrelic_background_task(PyObject *self, PyObject *args,
         name != Py_None) {
         PyErr_Format(PyExc_TypeError, "name argument must be string, Unicode, "
                      "or None, found type '%s'", name->ob_type->tp_name);
+        return NULL;
+    }
+
+    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
+        scope != Py_None) {
+        PyErr_Format(PyExc_TypeError, "scope argument must be string, Unicode, "
+                     "or None, found type '%s'", scope->ob_type->tp_name);
         return NULL;
     }
 
@@ -455,7 +463,7 @@ static PyObject *newrelic_background_task(PyObject *self, PyObject *args,
     }
 
     return PyObject_CallFunctionObjArgs((PyObject *)
-            &NRBackgroundTaskDecorator_Type, application, name, NULL);
+            &NRBackgroundTaskDecorator_Type, application, name, scope, NULL);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -468,6 +476,7 @@ static PyObject *newrelic_wrap_background_task(PyObject *self, PyObject *args,
 
     PyObject *application = Py_None;
     PyObject *name = Py_None;
+    PyObject *scope = Py_None;
 
     PyObject *wrapped_object = NULL;
     PyObject *parent_object = NULL;
@@ -478,12 +487,12 @@ static PyObject *newrelic_wrap_background_task(PyObject *self, PyObject *args,
     PyObject *result = NULL;
 
     static char *kwlist[] = { "module", "object_name", "application",
-                              "name", NULL };
+                              "name", "scope", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds,
-                                     "OS|OO:wrap_background_task",
+                                     "OS|OOO:wrap_background_task",
                                      kwlist, &module, &object_name,
-                                     &application, &name)) {
+                                     &application, &name, &scope)) {
         return NULL;
     }
 
@@ -497,6 +506,13 @@ static PyObject *newrelic_wrap_background_task(PyObject *self, PyObject *args,
         name != Py_None) {
         PyErr_Format(PyExc_TypeError, "name argument must be string, Unicode, "
                      "or None, found type '%s'", name->ob_type->tp_name);
+        return NULL;
+    }
+
+    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
+        scope != Py_None) {
+        PyErr_Format(PyExc_TypeError, "scope argument must be string, Unicode, "
+                     "or None, found type '%s'", scope->ob_type->tp_name);
         return NULL;
     }
 
@@ -546,7 +562,7 @@ static PyObject *newrelic_wrap_background_task(PyObject *self, PyObject *args,
 
     wrapper_object = PyObject_CallFunctionObjArgs((PyObject *)
             &NRBackgroundTaskWrapper_Type, wrapped_object, application,
-            name, NULL);
+            name, scope, NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object,
             attribute_name, wrapper_object);

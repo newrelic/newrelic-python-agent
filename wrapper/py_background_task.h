@@ -18,6 +18,7 @@ typedef struct {
     PyObject *application;
     PyObject *wrapped_object;
     PyObject *name;
+    PyObject *scope;
 } NRBackgroundTaskWrapperObject;
 
 extern PyTypeObject NRBackgroundTaskWrapper_Type;
@@ -26,6 +27,7 @@ typedef struct {
     PyObject_HEAD
     PyObject *application;
     PyObject *name;
+    PyObject *scope;
 } NRBackgroundTaskDecoratorObject;
 
 extern PyTypeObject NRBackgroundTaskDecorator_Type;

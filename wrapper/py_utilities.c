@@ -605,6 +605,76 @@ PyObject *NRUtilities_FormatObject(PyObject *object)
 
 /* ------------------------------------------------------------------------- */
 
+extern PyObject *NRUtilities_ConstructPath(PyObject *name, PyObject *scope)
+{
+    PyObject *name_as_bytes = NULL;
+    PyObject *scope_as_bytes = NULL;
+
+    const char *name_as_char = NULL;
+    const char *scope_as_char = NULL;
+
+    PyObject *result = NULL;
+
+    if (!PyString_Check(name) && !PyUnicode_Check(name)) {
+        PyErr_Format(PyExc_TypeError, "expected string or Unicode for "
+                     "name, found type '%s'", name->ob_type->tp_name);
+        return NULL;
+    }
+
+    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
+        scope != Py_None) {
+        PyErr_Format(PyExc_TypeError, "expected string, Unicode or None for "
+                     "scope, found type '%s'", scope->ob_type->tp_name);
+        return NULL;
+    }
+
+    if (PyUnicode_Check(name)) {
+        name_as_bytes = PyUnicode_AsUTF8String(name);
+        name_as_char = PyString_AsString(name_as_bytes);
+    }
+    else {
+        Py_INCREF(name);
+        name_as_bytes = name;
+        name_as_char = PyString_AsString(name);
+    }
+
+    while (*name_as_char == '/')
+        name_as_char++;
+
+    if (*name_as_char == '\0')
+        name_as_char = "<unknown>";
+
+    if (scope != Py_None) {
+        if (PyUnicode_Check(scope)) {
+            scope_as_bytes = PyUnicode_AsUTF8String(scope);
+            scope_as_char = PyString_AsString(scope_as_bytes);
+        }
+        else {
+            Py_INCREF(scope);
+            scope_as_bytes = scope;
+            scope_as_char = PyString_AsString(scope);
+        }
+
+        while (*scope_as_char == '/')
+            scope_as_char++;
+
+        if (*scope_as_char == '\0')
+            scope_as_char = NULL;
+    }
+
+    if (scope_as_char)
+        result = PyString_FromFormat("%s/%s", scope_as_char, name_as_char);
+    else
+        result = PyString_FromFormat("Function/%s", name_as_char);
+
+    Py_XDECREF(name_as_bytes);
+    Py_XDECREF(scope_as_bytes);
+
+    return result;
+}
+
+/* ------------------------------------------------------------------------- */
+
 /*
  * vim: set cino=>2,e0,n0,f0,{2,}0,^0,\:2,=2,p2,t2,c1,+2,(2,u2,)20,*30,g2,h2 ts=8
  */

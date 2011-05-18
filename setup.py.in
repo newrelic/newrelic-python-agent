@@ -75,7 +75,7 @@ setup(
   description = "Python agent for New Relic",
   author = "New Relic",
   author_email = "support@newrelic.com",
-  licence = copyright,
+  license = copyright,
   url = "http://www.newrelic.com",
   packages = ["newrelic"],
   ext_modules = [extension],

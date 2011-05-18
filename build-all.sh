@@ -26,7 +26,12 @@ esac
 
 VERSION=`cat VERSION`
 
-ROOTDIR=newrelic-python-$VERSION-$PLATFORM
+if test -z "$BUILD_NUMBER"
+then
+    BUILD_NUMBER=0
+fi
+
+ROOTDIR=newrelic-python-$VERSION.$BUILD_NUMBER-$PLATFORM
 
 test -f Makefile && make distclean
 test -d $ROOTDIR && rm -rf $ROOTDIR

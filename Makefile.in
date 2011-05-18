@@ -26,9 +26,7 @@ distclean : clean
 
 realclean : distclean
 	rm -rf php_agent
-	rm -rf newrelic-i386-apple-darwin
-	rm -rf newrelic-i686-pc-linux-gnu
-	rm -rf newrelic-x86_64-unknown-linux-gnu
+	rm -rf newrelic-python-*
 
 php_agent :
 	git clone repo.newrelic.com:/git/php_agent.git

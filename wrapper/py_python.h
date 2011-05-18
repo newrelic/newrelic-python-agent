@@ -33,6 +33,18 @@
 #define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
 #endif
 
+#ifndef Py_REFCNT
+#define Py_REFCNT(ob)           (((PyObject*)(ob))->ob_refcnt)
+#endif
+
+#ifndef Py_TYPE
+#define Py_TYPE(ob)             (((PyObject*)(ob))->ob_type)
+#endif
+
+#ifndef Py_SIZE
+#define Py_SIZE(ob)             (((PyVarObject*)(ob))->ob_size)
+#endif
+
 /* ------------------------------------------------------------------------- */
 
 #endif

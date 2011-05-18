@@ -44,6 +44,8 @@ do
         ./configure --with-python=$TOOLSDIR/python-$i-$j/bin/python$i
         echo make install-destdir DESTDIR=$ROOTDIR/python-$i-$j
         make install-destdir DESTDIR=$ROOTDIR/python-$i-$j
+        echo make distlcean
+        make distlcean
     done
 done
 

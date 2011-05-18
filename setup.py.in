@@ -8,6 +8,7 @@ config_vars['CFLAGS'] = config_vars['CFLAGS'].replace(' -Os ', ' ')
 config_vars['OPT'] = config_vars['OPT'].replace(' -Os ', ' ')
 
 version = open('VERSION').read().strip()
+copyright = '(C) Copyright 2010-2011 New Relic Inc. All rights reserved.'
 
 sources = [
   "php_agent/application.c",
@@ -71,8 +72,12 @@ extension = Extension(
 setup(
   name = "newrelic",
   version = version,
-  description = "Python agent for NewRelic RPM",
+  description = "Python agent for New Relic",
+  author = "New Relic",
+  author_email = "support@newrelic.com",
+  licence = copyright,
   url = "http://www.newrelic.com",
-  packages = ['newrelic'],
+  packages = ["newrelic"],
   ext_modules = [extension],
+  platforms = [platform],
 )

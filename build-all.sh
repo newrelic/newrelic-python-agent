@@ -52,5 +52,8 @@ done
 rm -f $ROOTDIR.tar
 rm -f $ROOTDIR.tar.gz
 
+cp config.guess $ROOTDIR/config.guess
+cp package.py $ROOTDIR/package.py
+
 tar cvf $ROOTDIR.tar $ROOTDIR
 gzip --best $ROOTDIR.tar

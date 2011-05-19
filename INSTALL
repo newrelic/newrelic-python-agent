@@ -124,7 +124,7 @@ can then use the '--help' option in conjunction with the specific command.
 
 Because the script works the same as a traditional 'setup.py' script, you
 can install into a standard Python distribution, a Python virtual
-environment or any location as specific by supplying customised options
+environment or any location as specified by supplying customised options
 to the install command.
 
 Do note however that when using options to specific a specific directory
@@ -133,13 +133,18 @@ a relative path. This is because the script will change the work directory
 to be inside of the subdirectory corresponding to the files to be installed.
 This will invalidate any relative paths used in command line options.
 
+For further information on how to use distutils installation scripts see
+the documentation at:
+
+  http://docs.python.org/install/index.html
+
 
 Do I have to use the installation script?
 -----------------------------------------
 
 No you don't. The subdirectories are laid out such that you could leave the
-unpacked directories in place and instead point PYTHONPATH, sys.path, a
-.pth file or a specific WSGI hosting mechanisms configuration option for
+unpacked directories in place and instead point "PYTHONPATH", "sys.path", a
+".pth" file or a specific WSGI hosting mechanisms configuration option for
 setting the Python module search path, at the subdirectory containing the
 appropriate files for your Python installation.
 

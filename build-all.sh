@@ -12,7 +12,7 @@ PLATFORM=`./config.guess | sed -e "s/[0-9.]*$//"`
 case $PLATFORM in
     i386-apple-darwin)
         PYTHON_VERSIONS='2.6 2.7'
-        UNICODE_VARIANTS='ucs2'
+        UNICODE_VARIANTS='ucs2 ucs4'
         ;;
     i686-pc-linux-gnu)
         PYTHON_VERSIONS='2.4 2.5 2.6 2.7'

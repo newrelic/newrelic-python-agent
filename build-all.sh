@@ -55,5 +55,10 @@ rm -f $ROOTDIR.tar.gz
 cp config.guess $ROOTDIR/config.guess
 cp package.py $ROOTDIR/package.py
 
+cp VERSION $ROOTDIR/VERSION
+cp INSTALL $ROOTDIR/INSTALL
+
+echo $PLATFORM > $ROOTDIR/PLATFORM
+
 tar cvf $ROOTDIR.tar $ROOTDIR
 gzip --best $ROOTDIR.tar

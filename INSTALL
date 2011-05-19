@@ -1,0 +1,146 @@
+New Relic Python Agent
+======================
+
+Thanks for trying the New Relic python agent.
+
+(C) Copyright 2010-2011 New Relic Inc. All rights reserved.
+
+
+If you don't read instructions
+------------------------------
+
+To install the New Relic Python agent into your Python installation run:
+
+  python package.py install
+
+If installing into a system wide Python installation remember to use the
+'sudo' command or run the command as 'root'.
+
+In this directory you will then find a sample 'newrelic.ini' configuration
+file that can be used in conjunction with the Python agent. See the New
+Relic support site for details on how to integrate the Python agent into
+your web application and refer to the included configuration file.
+
+  http://support.newrelic.com/help/kb/python/new-relic-for-python
+
+
+What platform can this be used on?
+----------------------------------
+
+When you downloaded the release file from New Relic you should have
+selected the appropriate tar ball file for your operating system platform.
+Which platform this specific release file was built for can be found listed
+in the 'PLATFORM' file contained in this directory.
+
+The 'package.py' script used to perform the installation will validate that
+this is the correct release file for your platform. If you are unsure
+whether this matches the operating system you are using and want to
+validate this yourself, you can run the 'config.guess' command located in
+this directory and compare it to that listed in the 'PLATFORM' file.
+
+Note that when comparing the result, you can ignore any operating system
+or kernel version listed at the end of the output from 'config.guess'.
+
+
+What does this directory contain?
+---------------------------------
+
+In this directory you will find one or more variants of the Python package
+'newrelic' and a corresponding binary extension module '_newrelic.so'.
+
+As the extension module is a binary, it will only work on the specific
+platform it was compiled for. Further, it will only work with the specific
+version of Python it was compiled against. Complicating matters, Python may
+also be installed in slightly different incompatible configurations. The
+primary difference is the width of characters stored within Unicode strings
+in the underlying implementation of Python.
+
+As a result, the actual package and extension module are located in
+subdirectories where each subdirectory is named according to the version
+of Python and the Unicode variant. For example:
+
+  python-2.6-ucs2
+  python-2.6-ucs4
+  python-2.7-ucs2
+  python-2.7-ucs4
+
+Which version of Python you are using can be determined by running the
+command:
+
+  python -V
+
+Whether your Python installation has been configured as UCS2 or UCS4 can be
+determined by running the command:
+
+  python -c 'import sys; print sys.maxunicode'
+
+If the result is '65535' then it is configured for UCS2. If the result is
+'1114111' then it is configured for UCS4.
+
+Combining the version and Unicode variant you should select the appropriate
+copies of the 'newrelic' Python package and '_newrelic.so' extension module.
+
+The 'package.py' script used for installation will do this automatically for
+you and fail to run if you are attempting to use a Python version or Unicode
+variant for which no binaries have been provided.
+
+If this is the case and we haven't provided a variant corresponding to the
+Python installation you are using, you should contact New Relic support by
+sending an email to 'support@newrelic.com' indicating what Python version
+and Unicode variant you require the Python agent for.
+
+
+Running the installation script
+-------------------------------
+
+The simplest way to install the Python agent package and extension module
+is to use the 'package.py' installation script. This script works the same
+as a traditional Python distutils 'setup.py' script as found in other Python
+packages, except that no source code is provided for the extension module.
+Instead binary versions of the different Python versions and Unicode variants
+are provided and it will select the correct version automatically from the
+various subdirectories.
+
+To find out what commands distutils setup packages accept for the specific
+Python version being used, you can use the '--help-commands' option.
+
+  python package.py --help-commands
+
+To find out the options that can then be used with specific commands, you
+can then use the '--help' option in conjunction with the specific command.
+
+  python package.py --help install
+
+Because the script works the same as a traditional 'setup.py' script, you
+can install into a standard Python distribution, a Python virtual
+environment or any location as specific by supplying customised options
+to the install command.
+
+Do note however that when using options to specific a specific directory
+location for items to be installed, you must use an asbolute path and not
+a relative path. This is because the script will change the work directory
+to be inside of the subdirectory corresponding to the files to be installed.
+This will invalidate any relative paths used in command line options.
+
+
+Do I have to use the installation script?
+-----------------------------------------
+
+No you don't. The subdirectories are laid out such that you could leave the
+unpacked directories in place and instead point PYTHONPATH, sys.path, a
+.pth file or a specific WSGI hosting mechanisms configuration option for
+setting the Python module search path, at the subdirectory containing the
+appropriate files for your Python installation.
+
+
+How do I make use of the Python agent?
+--------------------------------------
+
+For details on how to integrate the Python agent into your web application
+see the New Relic support site.
+
+  http://support.newrelic.com/help/kb/python/new-relic-for-python
+
+A sample configuration file called 'newrelic.ini' can be found in this
+directory and can be used when you have integrated the Python agent into
+your code.

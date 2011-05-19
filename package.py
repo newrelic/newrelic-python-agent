@@ -19,7 +19,7 @@ package_version, package_platform = release_fields[-2:]
 
 config_guess = 'config.guess | sed -e "s/[0-9.]*$//"'
 config_guess = os.path.join(script_directory, config_guess)
-actual_platform = os.popen4(config_guess)[0].read().strip()
+actual_platform = os.popen4(config_guess)[1].read().strip()
 
 if package_platform != actual_platform:
   print >> sys.stderr, 'Sorry, this is the wrong release for this platform.'

@@ -58,6 +58,8 @@ cp package.py $ROOTDIR/package.py
 cp VERSION $ROOTDIR/VERSION
 cp INSTALL $ROOTDIR/INSTALL
 
+cp newrelic.ini $ROOTDIR/newrelic.ini
+
 echo $PLATFORM > $ROOTDIR/PLATFORM
 
 tar cvf $ROOTDIR.tar $ROOTDIR

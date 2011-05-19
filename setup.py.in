@@ -1,5 +1,5 @@
 from distutils.core import setup, Extension
-import sys
+import sys, os
 
 from distutils import sysconfig
 dummy = sysconfig.get_config_vars('CFLAGS', 'OPT')
@@ -9,6 +9,20 @@ config_vars['OPT'] = config_vars['OPT'].replace(' -Os ', ' ')
 
 version = open('VERSION').read().strip()
 copyright = '(C) Copyright 2010-2011 New Relic Inc. All rights reserved.'
+
+script_directory = os.path.dirname(__file__)
+if not script_directory:
+  script_directory = os.getcwd()
+
+config_guess = 'config.guess | sed -e "s/[0-9.]*$//"'
+config_guess = os.path.join(script_directory, config_guess)
+
+try:
+  import subprocess
+  platform = subprocess.Popen(config_guess,
+      stdout=subprocess.PIPE).stdout.read().strip()
+except:
+  platform = os.popen4(config_guess)[1].read().strip()
 
 sources = [
   "php_agent/application.c",
@@ -51,13 +65,11 @@ sources = [
   "wrapper/py_web_transaction.c",
 ]
 
-platform = "@PLATFORM@"
-
 define_macros = []
 define_macros.append(('NEWRELIC_AGENT_LANGUAGE', '"python"'))
 define_macros.append(('NEWRELIC_PYTHON_AGENT_VERSION', '"%s"' % version))
 define_macros.append(('HAVE_CONFIG_H', '1'))
-define_macros.append(('NR_BUILD_%s' % platform, '1'))
+define_macros.append(('NR_BUILD_@PLATFORM@', '1'))
 
 if sys.version_info[:2] < (2, 5):
     define_macros.append(('Py_ssize_t', 'int'))

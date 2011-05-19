@@ -23,7 +23,7 @@ _RECORD_SQL = {
 }
 
 def _map_log_level(s):
-    return _LOG_LEVEL[s]
+    return _LOG_LEVEL[s.upper()]
 
 def _map_ignored_params(s):
     return s.split()

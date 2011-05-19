@@ -41,6 +41,17 @@ this directory and compare it to that listed in the 'PLATFORM' file.
 Note that when comparing the result, you can ignore any operating system
 or kernel version listed at the end of the output from 'config.guess'.
 
+If you find that we don't provide a release file for your platform you
+should contact New Relic support by sending an email to 'support@newrelic.com'
+indicating what the platform string is produced by 'config.guess' as well
+as telling us the name of the operating system, whether is it 32 bit or 64
+bit and any other relevant information. The output from running the command:
+
+  uname -a
+
+would also be most helpful. We can then indicate whether there are
+intentions to support the platform.
+
 
 What does this directory contain?
 ---------------------------------

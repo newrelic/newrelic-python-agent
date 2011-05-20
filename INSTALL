@@ -16,6 +16,12 @@ To install the New Relic Python agent into your Python installation run:
 If installing into a system wide Python installation remember to use the
 'sudo' command or run the command as 'root'.
 
+If you have already installed the local daemon process and it is running,
+then you can quickly test that data can get through to the New Relic UI
+by running the command:
+
+  python -m newrelic.test
+
 In this directory you will then find a sample 'newrelic.ini' configuration
 file that can be used in conjunction with the Python agent. See the New
 Relic support site for details on how to integrate the Python agent into
@@ -147,6 +153,43 @@ unpacked directories in place and instead point "PYTHONPATH", "sys.path", a
 ".pth" file or a specific WSGI hosting mechanisms configuration option for
 setting the Python module search path, at the subdirectory containing the
 appropriate files for your Python installation.
+
+
+How can I test that the install is okay?
+----------------------------------------
+
+If you have already installed the local daemon process and it is running,
+then you can quickly test that data can get through to the New Relic UI
+by running the command:
+
+  python -m newrelic.test
+
+This command will run a small test harness which will attempt to report
+data to the account corresponding to the licence key which you configured
+when you setup the local daemon process.
+
+The name of the application in the New Relic UI which the data will be
+reported against is called "Python Agent Test". If the data shows up then
+all is okay. After a period the UI will regard that application as inactive
+and you can delete the application from the list of your applications using
+the tools drop down (press the small cog at end of application list entry).
+
+If data doesn't appear to be getting through to the UI after five minutes
+then you should check the log file produce by the test which can be found
+at "/tmp/python-agent-test.log". When the test is run the verbosity of the
+log messages is turned up and various details about the actions of the
+agent will be recorded. Ensure you include this log to New Relic support if
+you try to obtain assistant in debugging why the agent isn't able to report
+data to the UI.
+
+You can also check the log file produced by the local daemon via which the
+agent needs to report data to the UI. The location of that log file may
+vary depending on the operating system being used. The actual location was
+listed in the output of the installer script when you installed the local
+daemon process.
+
+For assistance if debugging any problems send email to "support@newrelic.com"
+including any log files, details of operating system, Python version etc.
 
 
 How do I make use of the Python agent?

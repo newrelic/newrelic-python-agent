@@ -1,4 +1,4 @@
-import os, sys, string
+import os, sys, string, re
 from distutils.core import setup
 from distutils.command.install_data import install_data
 
@@ -24,8 +24,7 @@ except ValueError:
   print >> sys.stderr
   raise SystemExit(1)
 
-config_guess = 'config.guess | sed -e "s/[0-9.]*$//"'
-config_guess = os.path.join(script_directory, config_guess)
+config_guess = os.path.join(script_directory, 'config.guess')
 
 try:
   import subprocess
@@ -33,6 +32,8 @@ try:
       stdout=subprocess.PIPE).stdout.read().strip()
 except:
   actual_platform = os.popen4(config_guess)[1].read().strip()
+
+actual_platform = re.sub('[0-9.]*$', '', actual_platform)
 
 if package_platform != actual_platform:
   print >> sys.stderr
@@ -61,8 +62,6 @@ class install_lib(install_data):
     install_cmd = self.get_finalized_command('install')
     self.install_dir = getattr(install_cmd, 'install_lib')
     return install_data.run(self)
-
-print package_version
 
 setup(
   name = "newrelic",

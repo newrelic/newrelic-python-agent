@@ -1937,7 +1937,7 @@ init_newrelic(void)
      * code at point decorator or wrapper applied.
      */
 
-    nr_per_process_globals.appname = nrstrdup("My Application");
+    nr_per_process_globals.appname = nrstrdup("Python Application");
 
     /*
      * Logging initialisation in daemon client code is PHP

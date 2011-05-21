@@ -49,6 +49,49 @@ static void newrelic_populate_environment(void)
     PyObject *module = NULL;
 
     /*
+     * Try and identify the hosting mechanism being used.
+     */
+
+    module = PyImport_ImportModule("mod_wsgi");
+
+    if (module) {
+        PyObject *version = NULL;
+
+        version = PyObject_GetAttrString(module, "version");
+
+        if (version) {
+            PyObject *version_as_string = NULL;
+
+            version_as_string = PyObject_Str(version);
+
+            if (version_as_string) {
+                nro__set_hash_string(nr_per_process_globals.env,
+                                     "WSGI Server Name", "Apache/mod_wsgi");
+                nro__set_hash_string(nr_per_process_globals.env,
+                                     "WSGI Server Version",
+                                     PyString_AsString(version_as_string));
+
+                Py_DECREF(version_as_string);
+            }
+
+            Py_DECREF(version);
+        }
+
+        Py_DECREF(module);
+    }
+
+    PyErr_Clear();
+
+    /*
+     * Platform identifier from 'config.guess' program used
+     * with autoconf configure script. This is the value used
+     * in release package file name.
+     */
+
+    nro__set_hash_string(nr_per_process_globals.env,
+                         "Platform", NEWRELIC_PLATFORM);
+
+    /*
      * Gather together Python configuration information that is
      * usually exposed in the 'sys' module. We don't include
      * 'sys.path' as that can be different for each sub
@@ -75,7 +118,22 @@ static void newrelic_populate_environment(void)
                          "Python Compiler", Py_GetCompiler());
     nro__set_hash_string(nr_per_process_globals.env,
                          "Python Build Info", Py_GetBuildInfo());
-    
+
+    /*
+     * Size of Unicode character strings for this Python
+     * installation. These equate to 2 byte or 4 byte width
+     * Unicode characters.
+     */
+
+    if (PyUnicode_GetMax() == 65535) {
+        nro__set_hash_string(nr_per_process_globals.env,
+                             "Python Unicode Size", "ucs2");
+    }
+    else {
+        nro__set_hash_string(nr_per_process_globals.env,
+                             "Python Unicode Size", "ucs4");
+    }
+
     /*
      * Also try and obtain the options supplied to the
      * 'configure' script when Python was built. It may not be

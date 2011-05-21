@@ -67,6 +67,7 @@ sources = [
 ]
 
 define_macros = []
+define_macros.append(('NEWRELIC_PLATFORM', '"%s"' % platform))
 define_macros.append(('NEWRELIC_AGENT_LANGUAGE', '"python"'))
 define_macros.append(('NEWRELIC_PYTHON_AGENT_VERSION', '"%s"' % version))
 define_macros.append(('HAVE_CONFIG_H', '1'))

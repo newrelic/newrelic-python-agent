@@ -90,7 +90,7 @@ setup(
   author_email = "support@newrelic.com",
   license = copyright,
   url = "http://www.newrelic.com",
-  packages = ["newrelic"],
+  packages = ["newrelic", "newrelic.commands"],
   ext_modules = [extension],
   platforms = [platform],
 )

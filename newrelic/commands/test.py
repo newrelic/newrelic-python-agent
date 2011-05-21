@@ -1,5 +1,4 @@
-if __name__ == '__main__':
-
+def run(args):
     import time, os
     import newrelic.agent
 

@@ -20,7 +20,7 @@ If you have already installed the local daemon process and it is running,
 then you can quickly test that data can get through to the New Relic UI
 by running the command:
 
-  python -m newrelic.test
+  python -m newrelic.admin test
 
 In this directory you will then find a sample 'newrelic.ini' configuration
 file that can be used in conjunction with the Python agent. See the New
@@ -162,7 +162,7 @@ If you have already installed the local daemon process and it is running,
 then you can quickly test that data can get through to the New Relic UI
 by running the command:
 
-  python -m newrelic.test
+  python -m newrelic.admin test
 
 This command will run a small test harness which will attempt to report
 data to the account corresponding to the licence key which you configured

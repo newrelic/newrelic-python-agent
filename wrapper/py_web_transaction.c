@@ -269,15 +269,8 @@ static int NRWebTransaction_init(NRTransactionObject *self, PyObject *args,
 static PyObject *NRWebTransaction_header(NRTransactionObject *self,
                                          PyObject *args)
 {
-    const char *script_short_fragment = "<script>var NREUMQ=[];"
-            "NREUMQ.push([\"mark\",\"firstbyte\",new Date().getTime()]);"
-            "</script>";
-
-    const char *script_long_fragment = "<script>var NREUMQ=[];"
-            "NREUMQ.push([\"mark\",\"firstbyte\",new Date().getTime()]);"
-            "(function(){var d=document;var e=d.createElement(\"script\");"
-            "e.async=true;e.src=\"%s\";var s=d.getElementsByTagName("
-            "\"script\")[0];s.parentNode.insertBefore(e,s);})();"
+    const char *script_fragment = "<script>var NREUMQ=[];"
+            "NREUMQ.push([\"mark\",\"firstbyte\",new Date().getTime()])"
             "</script>";
 
     if (!self->transaction)
@@ -294,11 +287,7 @@ static PyObject *NRWebTransaction_header(NRTransactionObject *self,
 
     self->transaction->has_returned_browser_timing_header = 1;
 
-    if (!self->application->application->load_episodes_file)
-        return PyString_FromString(script_short_fragment);
-
-    return PyString_FromFormat(script_long_fragment,
-            self->application->application->episodes_url);
+    return PyString_FromString(script_fragment);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -306,7 +295,14 @@ static PyObject *NRWebTransaction_header(NRTransactionObject *self,
 static PyObject *NRWebTransaction_footer(NRTransactionObject *self,
                                          PyObject *args)
 {
-    const char *script_fragment = "<script>"
+    const char *script_short_fragment = "<script>"
+            "NREUMQ.push([\"nrf2\",\"%s\",\"%s\",%d,\"%s\",%ld,%ld,"
+            "new Date().getTime()])</script>";
+
+    const char *script_long_fragment = "<script>"
+            "(function(){var d=document;var e=d.createElement(\"script\");"
+            "e.async=true;e.src=\"%s\";var s=d.getElementsByTagName("
+            "\"script\")[0];s.parentNode.insertBefore(e,s);})();"
             "NREUMQ.push([\"nrf2\",\"%s\",\"%s\",%d,\"%s\",%ld,%ld,"
             "new Date().getTime()])</script>";
 
@@ -364,13 +360,25 @@ static PyObject *NRWebTransaction_footer(NRTransactionObject *self,
     queue_duration_usec = start_time_usec - queue_time_usec;
     total_duration_usec = stop_time_usec - start_time_usec;
 
-    result = PyString_FromFormat(script_fragment,
-            self->application->application->beacon,
-            self->application->application->browser_key,
-            self->application->application->application_id,
-            PyString_AsString(transaction_name),
-            (long)(queue_duration_usec/1000),
-            (long)(total_duration_usec/1000));
+    if (!self->application->application->load_episodes_file) {
+        result = PyString_FromFormat(script_short_fragment,
+                self->application->application->beacon,
+                self->application->application->browser_key,
+                self->application->application->application_id,
+                PyString_AsString(transaction_name),
+                (long)(queue_duration_usec/1000),
+                (long)(total_duration_usec/1000));
+    }
+    else {
+        result = PyString_FromFormat(script_long_fragment,
+                self->application->application->episodes_url,
+                self->application->application->beacon,
+                self->application->application->browser_key,
+                self->application->application->application_id,
+                PyString_AsString(transaction_name),
+                (long)(queue_duration_usec/1000),
+                (long)(total_duration_usec/1000));
+    }
 
     Py_DECREF(transaction_name);
 

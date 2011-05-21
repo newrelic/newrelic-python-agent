@@ -306,7 +306,7 @@ static PyObject *NRWebTransaction_header(NRTransactionObject *self,
 static PyObject *NRWebTransaction_footer(NRTransactionObject *self,
                                          PyObject *args)
 {
-    const char *script_fragment = "<script charset=\"utf-8\">"
+    const char *script_fragment = "<script>"
             "NREUMQ.push([\"nrf2\",\"%s\",\"%s\",%d,\"%s\",%ld,%ld,"
             "new Date().getTime()])</script>";
 

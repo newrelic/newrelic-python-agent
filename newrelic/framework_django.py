@@ -1,7 +1,7 @@
 from newrelic.agent import (FunctionTraceWrapper, OutFunctionWrapper,
         wrap_pre_function, wrap_post_function, wrap_function_trace,
         wrap_error_trace, callable_name, transaction, NameTransactionWrapper,
-        transaction, settings)
+        transaction, settings, ErrorTraceWrapper)
 
 def insert_rum(request, response):
     if not settings().browser_monitoring.auto_instrument:
@@ -118,10 +118,12 @@ def wrap_url_resolver_output(result):
         callback, args, kwargs = result
         wrapper = NameTransactionWrapper(callback, None, 'Django')
         wrapper = FunctionTraceWrapper(wrapper)
+        wrapper = ErrorTraceWrapper(wrapper)
         result = (wrapper, args, kwargs)
     else:
         wrapper = NameTransactionWrapper(result.func, None, 'Django')
         wrapper = FunctionTraceWrapper(wrapper)
+        wrapper = ErrorTraceWrapper(wrapper)
         result.func = wrapper
 
     return result

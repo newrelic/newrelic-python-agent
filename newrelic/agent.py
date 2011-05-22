@@ -165,23 +165,23 @@ for section in _config_object.sections():
                         hook = _import_hook(parts[0], parts[1])
                     register_import_hook(target, hook)
 
-_process_import_hook('django', 'newrelic.framework_django')
+_process_import_hook('django', 'newrelic.imports.framework.django')
 
-_process_import_hook('flask', 'newrelic.framework_flask')
+_process_import_hook('flask', 'newrelic.imports.framework.flask')
 
-_process_import_hook('gluon.compileapp', 'newrelic.framework_web2py')
-_process_import_hook('gluon.main', 'newrelic.framework_web2py')
+_process_import_hook('gluon.compileapp', 'newrelic.imports.framework.web2py')
+_process_import_hook('gluon.main', 'newrelic.imports.framework.web2py')
 
-_process_import_hook('cx_Oracle', 'newrelic.database_dbapi2')
-_process_import_hook('MySQLdb', 'newrelic.database_dbapi2')
-_process_import_hook('psycopg', 'newrelic.database_dbapi2')
-_process_import_hook('psycopg2', 'newrelic.database_dbapi2')
-_process_import_hook('pysqlite2', 'newrelic.database_dbapi2')
-_process_import_hook('sqlite3', 'newrelic.database_dbapi2')
+_process_import_hook('cx_Oracle', 'newrelic.imports.database.dbapi2')
+_process_import_hook('MySQLdb', 'newrelic.imports.database.dbapi2')
+_process_import_hook('psycopg', 'newrelic.imports.database.dbapi2')
+_process_import_hook('psycopg2', 'newrelic.imports.database.dbapi2')
+_process_import_hook('pysqlite2', 'newrelic.imports.database.dbapi2')
+_process_import_hook('sqlite3', 'newrelic.imports.database.dbapi2')
 
-_process_import_hook('memcache', 'newrelic.memcache_memcache')
-_process_import_hook('pylibmc', 'newrelic.memcache_pylibmc')
+_process_import_hook('memcache', 'newrelic.imports.memcache.memcache')
+_process_import_hook('pylibmc', 'newrelic.imports.memcache.pylibmc')
 
-_process_import_hook('jinja2', 'newrelic.template_jinja2')
+_process_import_hook('jinja2', 'newrelic.imports.template.jinja2')
 
-_process_import_hook('feedparser', 'newrelic.external_feedparser')
+_process_import_hook('feedparser', 'newrelic.imports.external.feedparser')

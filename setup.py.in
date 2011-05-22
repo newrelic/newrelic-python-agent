@@ -83,6 +83,17 @@ extension = Extension(
   include_dirs = ['.', 'php_agent'],
 )
 
+packages = [
+  "newrelic",
+  "newrelic.commands",
+  "newrelic.imports",
+  "newrelic.imports.database",
+  "newrelic.imports.external",
+  "newrelic.imports.framework",
+  "newrelic.imports.memcache",
+  "newrelic.imports.template",
+]
+
 setup(
   name = "newrelic",
   version = version,
@@ -91,7 +102,7 @@ setup(
   author_email = "support@newrelic.com",
   license = copyright,
   url = "http://www.newrelic.com",
-  packages = ["newrelic", "newrelic.commands"],
+  packages = packages,
   ext_modules = [extension],
   platforms = [platform],
 )

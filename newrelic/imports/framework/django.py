@@ -163,14 +163,19 @@ def instrument(module):
     # These are label as potentially non interesting so they
     # will be dropped from transaction traces with too many
     # nodes if they don't consume a lot of time.
+    #
+    # XXX These have been moved to the sample newrelic.ini
+    # configuration file. Ie., not regarding them as part of
+    # the core instrumentation. Being in configuration file a
+    # user can determine whether enabled or not.
 
-    wrap_function_trace('django.template', 'NodeList.render_node',
-            (lambda template, node, context: callable_name(node)),
-            None, interesting=False)
+    #wrap_function_trace('django.template', 'NodeList.render_node',
+    #        (lambda template, node, context: callable_name(node)),
+    #        None, interesting=False)
 
-    wrap_function_trace('django.template.debug', 'DebugNodeList.render_node',
-            (lambda template, node, context: callable_name(node)),
-            None, interesting=False)
+    #wrap_function_trace('django.template.debug', 'DebugNodeList.render_node',
+    #        (lambda template, node, context: callable_name(node)),
+    #        None, interesting=False)
 
     # Register template tags for RUM header/footer.
 

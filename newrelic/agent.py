@@ -185,3 +185,45 @@ _process_import_hook('pylibmc', 'newrelic.imports.memcache.pylibmc')
 _process_import_hook('jinja2', 'newrelic.imports.template.jinja2')
 
 _process_import_hook('feedparser', 'newrelic.imports.external.feedparser')
+
+# Setup function traces defined in configuration file.
+
+def _function_trace_import_hook(object_path, name, scope, interesting):
+    def _instrument(target):
+        wrap_function_trace(target, object_path, name, scope, interesting)
+    return _instrument
+
+for section in _config_object.sections():
+    if section.startswith('function-trace:'):
+        try:
+            enabled = _config_object.getboolean(section, 'enabled')
+        except ConfigParser.NoOptionError:
+            pass
+        else:
+            if enabled:
+                function = None
+                name = None
+                scope = 'Function'
+                interesting = True
+
+                if _config_object.has_option(section, 'function'):
+                    function = _config_object.get(section, 'function')
+                if _config_object.has_option(section, 'name'):
+                    name = _config_object.get(section, 'name')
+                if _config_object.has_option(section, 'scope'):
+                    scope = _config_object.get(section, 'scope')
+                if _config_object.has_option(section, 'interesting'):
+                    interesting = _config_object.getboolean(section,
+                                                            'interesting')
+
+                if function:
+                    parts = function.split(':')
+                    if len(parts) == 2:
+                        module, object_path = parts
+                        if name.startswith('lambda '):
+                            vars = { "callable_name": callable_name,
+                                     "import_module": import_module, }
+                            name = eval(name, vars)
+                        hook = _function_trace_import_hook(object_path, name,
+                                                           scope, interesting)
+                        register_import_hook(module, hook)

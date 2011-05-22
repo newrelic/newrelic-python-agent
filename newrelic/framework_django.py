@@ -1,7 +1,7 @@
 from newrelic.agent import (FunctionTraceWrapper, OutFunctionWrapper,
         wrap_pre_function, wrap_post_function, wrap_function_trace,
         wrap_error_trace, callable_name, transaction, NameTransactionWrapper,
-        transaction, settings, ErrorTraceWrapper)
+        transaction, settings, ErrorTraceWrapper, import_module)
 
 def insert_rum(request, response):
     if not settings().browser_monitoring.auto_instrument:
@@ -102,17 +102,15 @@ def wrap_middleware(handler, *args, **kwargs):
 
         handler._exception_middleware = exception_middleware
 
-    # Register template tags for RUM header/footer.
-
-    import django.template
-    library = django.template.Library()
-    library.simple_tag(newrelic_browser_timing_header)
-    library.simple_tag(newrelic_browser_timing_footer)
-    django.template.libraries['django.templatetags.newrelic'] = library
-
 def wrap_url_resolver_output(result):
     if result is None:
         return
+
+    # Note that adding an error trace wrapper means that if
+    # there are no exception middleware that render a response
+    # that error will be captured twice. In this case the
+    # duplicate should get discarded later as will be for the
+    # same exception type.
 
     if type(result) == type(()):
         callback, args, kwargs = result
@@ -155,19 +153,29 @@ def instrument(module):
     wrap_error_trace('django.core.urlresolvers',
             'get_callable')
 
-    from django.template import Template
-
-    if hasattr(Template, '_render'):
+    if module.VERSION[:2] >= (1, 3):
         wrap_function_trace('django.template', 'Template._render',
                 (lambda template, context: template.name), 'Template/Render')
     else:
         wrap_function_trace('django.template', 'Template.render',
                 (lambda template, context: template.name), 'Template/Render')
 
+    # These are label as potentially non interesting so they
+    # will be dropped from transaction traces with too many
+    # nodes if they don't consume a lot of time.
+
     wrap_function_trace('django.template', 'NodeList.render_node',
             (lambda template, node, context: callable_name(node)),
-            None, False)
+            None, interesting=False)
 
     wrap_function_trace('django.template.debug', 'DebugNodeList.render_node',
             (lambda template, node, context: callable_name(node)),
-            None, False)
+            None, interesting=False)
+
+    # Register template tags for RUM header/footer.
+
+    django_template = import_module('django.template')
+    library = django_template.Library()
+    library.simple_tag(newrelic_browser_timing_header)
+    library.simple_tag(newrelic_browser_timing_footer)
+    django_template.libraries['django.templatetags.newrelic'] = library

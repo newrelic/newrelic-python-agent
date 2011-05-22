@@ -131,10 +131,7 @@ sys.meta_path.insert(0, ImportHookFinder())
 
 def _import_hook(module, function):
     def _instrument(target):
-        object = __import__(module)
-        for name in module.split('.')[1:]:
-            object = getattr(object, name)
-        getattr(object, function)(target)
+        getattr(import_module(module), function)(target)
     return _instrument
 
 def _process_import_hook(target, module, function='instrument'):

@@ -1584,6 +1584,23 @@ static PyObject *newrelic_import_hook(PyObject *self, PyObject *args,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *newrelic_import_module(PyObject *self, PyObject *args,
+                                        PyObject *kwds)
+{
+    const char *name = NULL;
+
+    static char *kwlist[] = { "name", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s:import_module",
+                                     kwlist, &name)) {
+        return NULL;
+    }
+
+    return PyImport_ImportModule(name);
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *newrelic_shutdown(PyObject *self, PyObject *args)
 {
     static int shutdown = 0;
@@ -1694,6 +1711,8 @@ static PyMethodDef newrelic_methods[] = {
     { "register_import_hook", (PyCFunction)newrelic_register_import_hook,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "import_hook",        (PyCFunction)newrelic_import_hook,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
+    { "import_module",      (PyCFunction)newrelic_import_module,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { NULL, NULL }
 };

@@ -1,7 +1,8 @@
 import sys
 
 from newrelic.agent import (wrap_function_trace, wrap_object, transaction,
-         wrap_error_trace, wrap_out_function, wrap_name_transaction)
+         wrap_error_trace, wrap_out_function, wrap_name_transaction,
+         import_module)
 
 def name_models(environment):
     return '%s/%s Models' % (environment['request'].controller,
@@ -28,10 +29,10 @@ class capture_error(object):
     def __call__(self, request, response, session):
         current_transaction = transaction()
         if current_transaction:
-            from gluon.http import HTTP
+            gluon_http = import_module('gluon.http')
             try:
                 return self.__wrapped__(request, response, session)
-            except HTTP:
+            except gluon_http.HTTP:
                 raise
             except:
                 current_transaction.notice_error(*sys.exc_info())

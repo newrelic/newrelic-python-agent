@@ -30,6 +30,20 @@ def insert_rum(request, response):
             response.content = ''
             content = ''.join(parts)
             response.content = content
+    elif start == -1 and end != -1:
+        start = response.content.find('<body')
+        if start != -1 and start < end:
+            parts = []
+            parts.append(response.content[0:start])
+            parts.append('<head>')
+            parts.append(header)
+            parts.append('</head>')
+            parts.append(response.content[start:end])
+            parts.append(footer)
+            parts.append(response.content[end:])
+            response.content = ''
+            content = ''.join(parts)
+            response.content = content
     return response
 
 def newrelic_browser_timing_header():

@@ -16,15 +16,15 @@ def insert_rum(request, response):
     footer = t.browser_timing_footer()
     if not header or not footer:
         return response
-    start = response.content.find('<head>')
+    start = response.content.find('<head')
     end = response.content.rfind('</body>', -1024)
     if start != -1 and end != -1:
         start = response.content.find('>', start, start+1024)
         if start != -1 and start < end:
             parts = []
-            parts.append(response.content[0:start+6])
+            parts.append(response.content[0:start+1])
             parts.append(header)
-            parts.append(response.content[start+6:end])
+            parts.append(response.content[start+1:end])
             parts.append(footer)
             parts.append(response.content[end:])
             response.content = ''

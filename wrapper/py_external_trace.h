@@ -23,6 +23,7 @@ extern PyTypeObject NRExternalTrace_Type;
 typedef struct {
     PyObject_HEAD
     PyObject *wrapped_object;
+    PyObject *library;
     PyObject *url;
 } NRExternalTraceWrapperObject;
 
@@ -30,6 +31,7 @@ extern PyTypeObject NRExternalTraceWrapper_Type;
 
 typedef struct {
     PyObject_HEAD
+    PyObject *library;
     PyObject *url;
 } NRExternalTraceDecoratorObject;
 

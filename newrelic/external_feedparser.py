@@ -1,9 +1,4 @@
 from newrelic.agent import wrap_external_trace
-from urlparse import urlparse
 
-def format_path(url):
-    parts = urlparse(url)
-    return '%s/feedparser%s' % (parts[1], parts[2])
-    
 def instrument(module):
-    wrap_external_trace(module, 'parse', format_path)
+    wrap_external_trace(module, 'parse', 'feedparser', lambda url: url)

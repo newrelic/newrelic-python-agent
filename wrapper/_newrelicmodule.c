@@ -713,17 +713,24 @@ static PyObject *newrelic_wrap_database_trace(PyObject *self, PyObject *args,
 static PyObject *newrelic_external_trace(PyObject *self, PyObject *args,
                                          PyObject *kwds)
 {
+    PyObject *library = NULL;
     PyObject *url = NULL;
 
-    static char *kwlist[] = { "url", NULL };
+    static char *kwlist[] = { "library", "url", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:external_trace",
-                                     kwlist, &url)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO:external_trace",
+                                     kwlist, &library, &url)) {
+        return NULL;
+    }
+
+    if (!PyString_Check(library) && !PyUnicode_Check(library)) {
+        PyErr_Format(PyExc_TypeError, "library argument must be string or "
+                     "Unicode, found type '%s'", library->ob_type->tp_name);
         return NULL;
     }
 
     return PyObject_CallFunctionObjArgs((PyObject *)
-            &NRExternalTraceDecorator_Type, url, NULL);
+            &NRExternalTraceDecorator_Type, library, url, NULL);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -733,6 +740,7 @@ static PyObject *newrelic_wrap_external_trace(PyObject *self, PyObject *args,
 {
     PyObject *module = NULL;
     PyObject *object_name = NULL;
+    PyObject *library = NULL;
     PyObject *url = NULL;
 
     PyObject *wrapped_object = NULL;
@@ -743,16 +751,24 @@ static PyObject *newrelic_wrap_external_trace(PyObject *self, PyObject *args,
 
     PyObject *result = NULL;
 
-    static char *kwlist[] = { "module", "object_name", "url", NULL };
+    static char *kwlist[] = { "module", "object_name", "library",
+                              "url", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OSO:wrap_external_trace",
-                                     kwlist, &module, &object_name, &url)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OSOO:wrap_external_trace",
+                                     kwlist, &module, &object_name,
+                                     &library, &url)) {
         return NULL;
     }
 
     if (!PyModule_Check(module) && !PyString_Check(module)) {
         PyErr_SetString(PyExc_TypeError, "module reference must be "
                         "module or string");
+        return NULL;
+    }
+
+    if (!PyString_Check(library) && !PyUnicode_Check(library)) {
+        PyErr_Format(PyExc_TypeError, "library argument must be string or "
+                     "Unicode, found type '%s'", library->ob_type->tp_name);
         return NULL;
     }
 
@@ -764,7 +780,8 @@ static PyObject *newrelic_wrap_external_trace(PyObject *self, PyObject *args,
         return NULL;
 
     wrapper_object = PyObject_CallFunctionObjArgs((PyObject *)
-            &NRExternalTraceWrapper_Type, wrapped_object, url, NULL);
+            &NRExternalTraceWrapper_Type, wrapped_object, library,
+            url, NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object,
             attribute_name, wrapper_object);

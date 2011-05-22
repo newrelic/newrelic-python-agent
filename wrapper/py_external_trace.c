@@ -41,13 +41,20 @@ static int NRExternalTrace_init(NRExternalTraceObject *self, PyObject *args,
 {
     NRTransactionObject *transaction = NULL;
 
+    PyObject *library = NULL;
     PyObject *url = NULL;
 
-    static char *kwlist[] = { "transaction", "url", NULL };
+    static char *kwlist[] = { "transaction", "library", "url", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O:ExternalTrace",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!OO:ExternalTrace",
                                      kwlist, &NRTransaction_Type,
-                                     &transaction, &url)) {
+                                     &transaction, &library, &url)) {
+        return -1;
+    }
+
+    if (!PyString_Check(library) && !PyUnicode_Check(library)) {
+        PyErr_Format(PyExc_TypeError, "expected string or Unicode for "
+                     "library, found type '%s'", library->ob_type->tp_name);
         return -1;
     }
 
@@ -89,20 +96,131 @@ static int NRExternalTrace_init(NRExternalTraceObject *self, PyObject *args,
      */
 
     if (transaction->transaction) {
-        if (PyUnicode_Check(url)) {
-            PyObject *bytes = NULL;
+        PyObject *module = NULL;
 
-            bytes = PyUnicode_AsUTF8String(url);
-            self->transaction_trace =
-                    nr_web_transaction__allocate_external_node(
-                    transaction->transaction, PyString_AsString(bytes));
-            Py_DECREF(bytes);
+        PyObject *library_as_bytes = NULL;
+        PyObject *url_as_bytes = NULL;
+
+        PyObject *host_as_bytes = NULL;
+        PyObject *path_as_bytes = NULL;
+
+        const char *host_as_char = NULL;
+        const char *library_as_char = NULL;
+        const char *path_as_char = NULL;
+
+        int fragment_len = 0;
+        char *fragment = NULL;
+
+        if (PyUnicode_Check(library)) {
+            library_as_bytes = PyUnicode_AsUTF8String(library);
+            library_as_char = PyString_AsString(library_as_bytes);
+        }
+        else
+            library_as_char = PyString_AsString(library);
+
+        if (PyUnicode_Check(url)) {
+            url_as_bytes = PyUnicode_AsUTF8String(url);
         }
         else {
-            self->transaction_trace =
-                    nr_web_transaction__allocate_external_node(
-                    transaction->transaction, PyString_AsString(url));
+            Py_INCREF(url);
+            url_as_bytes = url;
         }
+
+        /*
+	 * We need to extract from the URL the host and the
+	 * path. For host we need to drop any username and
+	 * password but preserve the port. If there is a port we
+	 * use it, else we add back in port based on the scheme.
+	 * We also drop any query string arguments.
+         *
+         * XXX Use urlparse module to do this work for now.
+         * Later on we could implement as C code but lets make
+         * sure we get it correct first.
+         */
+
+        module = PyImport_ImportModule("urlparse");
+
+        if (module) {
+            PyObject *func = NULL;
+
+            func = PyObject_GetAttrString(module, "urlparse");
+
+            if (func) {
+                PyObject *result = NULL;
+
+                result = PyObject_CallFunctionObjArgs(func, url_as_bytes,
+                                                       NULL);
+
+                if (result) {
+                    const char *at = NULL;
+
+                    host_as_bytes = PyTuple_GetItem(result, 1);
+                    Py_INCREF(host_as_bytes);
+
+                    host_as_char = PyString_AsString(host_as_bytes);
+
+                    at = strchr(host_as_char, '@');
+                    if (at)
+                        host_as_char = at + 1;
+
+                    path_as_bytes = PyTuple_GetItem(result, 2);
+                    Py_INCREF(path_as_bytes);
+
+                    path_as_char = PyString_AsString(path_as_bytes);
+                }
+                else {
+                    host_as_char = "unknown";
+                    path_as_char = PyString_AsString(url_as_bytes);
+                }
+
+                Py_XDECREF(result);
+            }
+            else {
+                host_as_char = "unknown";
+                path_as_char = PyString_AsString(url_as_bytes);
+            }
+
+            Py_XDECREF(func);
+        }
+        else {
+            host_as_char = "unknown";
+            path_as_char = PyString_AsString(url_as_bytes);
+        }
+
+        PyErr_Clear();
+
+        /*
+         * Make sure we drop leading slashes from the path as
+         * we use that as the separater below.
+         */
+
+        while (*path_as_char == '/')
+            path_as_char++;
+
+        /*
+         * Now we join the parts back together in the form
+         * library/host/path.
+         */
+
+        fragment_len += strlen(host_as_char);
+        fragment_len += strlen(library_as_char);
+        fragment_len += strlen(path_as_char);
+        fragment_len += 3;
+
+        fragment = alloca(fragment_len);
+
+        sprintf(fragment, "%s/%s/%s", host_as_char, library_as_char,
+                path_as_char);
+
+        self->transaction_trace =
+                nr_web_transaction__allocate_external_node(
+                transaction->transaction, fragment);
+
+        Py_XDECREF(library_as_bytes);
+        Py_XDECREF(url_as_bytes);
+
+        Py_XDECREF(host_as_bytes);
+        Py_XDECREF(path_as_bytes);
     }
 
     return 0;
@@ -238,6 +356,7 @@ static PyObject *NRExternalTraceWrapper_new(PyTypeObject *type, PyObject *args,
         return NULL;
 
     self->wrapped_object = NULL;
+    self->library = NULL;
     self->url = NULL;
 
     return (PyObject *)self;
@@ -249,18 +368,24 @@ static int NRExternalTraceWrapper_init(NRExternalTraceWrapperObject *self,
                                        PyObject *args, PyObject *kwds)
 {
     PyObject *wrapped_object = NULL;
+    PyObject *library = NULL;
     PyObject *url = NULL;
 
-    static char *kwlist[] = { "wrapped", "url", NULL };
+    static char *kwlist[] = { "wrapped", "library", "url", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO:ExternalTraceWrapper",
-                                     kwlist, &wrapped_object, &url)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OOO:ExternalTraceWrapper",
+                                     kwlist, &wrapped_object, &library,
+                                     &url)) {
         return -1;
     }
 
     Py_INCREF(wrapped_object);
     Py_XDECREF(self->wrapped_object);
     self->wrapped_object = wrapped_object;
+
+    Py_INCREF(library);
+    Py_XDECREF(self->library);
+    self->library = library;
 
     Py_INCREF(url);
     Py_XDECREF(self->url);
@@ -280,6 +405,7 @@ static int NRExternalTraceWrapper_init(NRExternalTraceWrapperObject *self,
 static void NRExternalTraceWrapper_dealloc(NRExternalTraceWrapperObject *self)
 {
     Py_DECREF(self->wrapped_object);
+    Py_DECREF(self->library);
     Py_DECREF(self->url);
 
     Py_TYPE(self)->tp_free(self);
@@ -330,7 +456,8 @@ static PyObject *NRExternalTraceWrapper_call(
     }
 
     external_trace = PyObject_CallFunctionObjArgs((PyObject *)
-            &NRExternalTrace_Type, current_transaction, url, NULL);
+            &NRExternalTrace_Type, current_transaction, self->library,
+            url, NULL);
 
     Py_DECREF(url);
 
@@ -499,6 +626,7 @@ static PyObject *NRExternalTraceDecorator_new(PyTypeObject *type,
     if (!self)
         return NULL;
 
+    self->library = NULL;
     self->url = NULL;
 
     return (PyObject *)self;
@@ -509,14 +637,19 @@ static PyObject *NRExternalTraceDecorator_new(PyTypeObject *type,
 static int NRExternalTraceDecorator_init(NRExternalTraceDecoratorObject *self,
                                          PyObject *args, PyObject *kwds)
 {
+    PyObject *library = NULL;
     PyObject *url = NULL;
 
-    static char *kwlist[] = { "url", NULL };
+    static char *kwlist[] = { "library", "url", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:ExternalTraceDecorator",
-                                     kwlist, &url)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO:ExternalTraceDecorator",
+                                     kwlist, &library, &url)) {
         return -1;
     }
+
+    Py_INCREF(library);
+    Py_XDECREF(self->library);
+    self->library = library;
 
     Py_INCREF(url);
     Py_XDECREF(self->url);
@@ -530,6 +663,7 @@ static int NRExternalTraceDecorator_init(NRExternalTraceDecoratorObject *self,
 static void NRExternalTraceDecorator_dealloc(
         NRExternalTraceDecoratorObject *self)
 {
+    Py_DECREF(self->library);
     Py_DECREF(self->url);
 
     Py_TYPE(self)->tp_free(self);
@@ -551,7 +685,7 @@ static PyObject *NRExternalTraceDecorator_call(
 
     return PyObject_CallFunctionObjArgs(
             (PyObject *)&NRExternalTraceWrapper_Type,
-            wrapped_object, self->url, NULL);
+            wrapped_object, self->library, self->url, NULL);
 }
 
 /* ------------------------------------------------------------------------- */

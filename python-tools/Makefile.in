@@ -21,6 +21,8 @@ downloads :
 clean :
 	$(RM) .installed.cfg
 	rm -rf parts
+	$(RM) config.log config.status
+	rm -rf autom4te.cache
 
 distclean : clean
 	rm -rf virtualenv tools

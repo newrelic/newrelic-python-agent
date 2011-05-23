@@ -1,0 +1,16 @@
+AC_INIT
+
+AC_PREFIX_DEFAULT(parts)
+
+AC_ARG_WITH(python, AC_HELP_STRING([--with-python=NAME],
+            [name of the python executable [[python]]]),
+            [PYTHON="$with_python"])
+
+if test -z "${PYTHON}"; then
+    AC_PATH_PROGS(PYTHON, python, [python],
+                  [$PATH:/usr/local/bin])
+fi
+
+AC_SUBST(PYTHON)
+
+AC_OUTPUT(Makefile buildout.cfg)

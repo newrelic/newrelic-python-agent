@@ -24,7 +24,7 @@ except ValueError:
   print >> sys.stderr
   raise SystemExit(1)
 
-config_guess = os.path.join(script_directory, 'config.guess')
+config_guess = os.path.join(script_directory, 'scripts/config.guess')
 
 try:
   import subprocess
@@ -42,7 +42,7 @@ if package_platform != actual_platform:
   print >> sys.stderr
   raise SystemExit(1)
 
-target_directory = os.path.join(script_directory, package_name)
+target_directory = os.path.join(script_directory, 'agent', package_name)
 
 if not os.path.isdir(target_directory):
   print >> sys.stderr

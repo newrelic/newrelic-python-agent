@@ -19,4 +19,4 @@ Makefile
 *.pyc
 setup.py
 python-tools/buildout.cfg
-newrelic-python-*
+hudson-results

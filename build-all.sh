@@ -44,8 +44,20 @@ do
         ./configure --with-python=$TOOLSDIR/python-$i-$j/bin/python$i
         echo make install-destdir DESTDIR=$ROOTDIR/python-$i-$j
         make install-destdir DESTDIR=$ROOTDIR/python-$i-$j
+        STATUS=$?
+        if test '$STATUS' != '0'
+        then
+            echo "`basename $0`: *** Error $STATUS"
+            exit 1
+        fi
         echo make distclean
         make distclean
+        STATUS=$?
+        if test '$STATUS' != '0'
+        then
+            echo "`basename $0`: *** Error $STATUS"
+            exit 1
+        fi
     done
 done
 

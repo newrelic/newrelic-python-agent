@@ -6,12 +6,34 @@ Thanks for trying the New Relic python agent.
 (C) Copyright 2010-2011 New Relic Inc. All rights reserved.
 
 
+Note to BETA testers
+--------------------
+
+The package is currently incomplete. In particular it doesn't yet contain
+all the bits required to install the local daemon process. That will still
+need to be installed from the separate PHP agent package. For instructions
+on this see:
+
+  http://support.newrelic.com/help/kb/python/local-daemon-installation
+
+The remainder of the instructions for now talk about just the Python agent
+component as a result. Once the local daemon application is properly
+integrated into this package there will be a seperate 'install.sh' script
+to install the local daemon.
+
+Also note that the additional documentation referenced may not have been
+made public when you read this. If we know this is the case, we will have
+supplied you details from those which are relevant. Otherwise ask us which
+documentation you are interested in and we will supply it if we are able
+to at that time.
+
+
 If you don't read instructions
 ------------------------------
 
 To install the New Relic Python agent into your Python installation run:
 
-  python package.py install
+  python setup.py install
 
 If installing into a system wide Python installation remember to use the
 'sudo' command or run the command as 'root'.
@@ -22,10 +44,11 @@ by running the command:
 
   python -m newrelic.admin test
 
-In this directory you will then find a sample 'newrelic.ini' configuration
-file that can be used in conjunction with the Python agent. See the New
-Relic support site for details on how to integrate the Python agent into
-your web application and refer to the included configuration file.
+In the 'agent' subdirectory you will then find a sample 'newrelic.ini'
+configuration file that can be used in conjunction with the Python agent.
+See the New Relic support site for details on how to integrate the Python
+agent into your web application and refer to the included configuration
+file.
 
   http://support.newrelic.com/help/kb/python/new-relic-for-python
 
@@ -38,11 +61,12 @@ selected the appropriate tar ball file for your operating system platform.
 Which platform this specific release file was built for can be found listed
 in the 'PLATFORM' file contained in this directory.
 
-The 'package.py' script used to perform the installation will validate that
-this is the correct release file for your platform. If you are unsure
-whether this matches the operating system you are using and want to
-validate this yourself, you can run the 'config.guess' command located in
-this directory and compare it to that listed in the 'PLATFORM' file.
+The 'setup.py' script used to perform the installation of the Python agent
+will validate that this is the correct release file for your platform. If
+you are unsure whether this matches the operating system you are using and
+want to validate this yourself, you can run the 'config.guess' command
+located in the 'scripts' subdirectory and compare it to that listed in the
+'PLATFORM' file.
 
 Note that when comparing the result, you can ignore any operating system
 or kernel version listed at the end of the output from 'config.guess'.
@@ -73,8 +97,8 @@ primary difference is the width of characters stored within Unicode strings
 in the underlying implementation of Python.
 
 As a result, the actual package and extension module are located in
-subdirectories where each subdirectory is named according to the version
-of Python and the Unicode variant. For example:
+subdirectories of the 'agent' directory, where each subdirectory is named
+according to the version of Python and the Unicode variant. For example:
 
   python-2.6-ucs2
   python-2.6-ucs4
@@ -97,7 +121,7 @@ If the result is '65535' then it is configured for UCS2. If the result is
 Combining the version and Unicode variant you should select the appropriate
 copies of the 'newrelic' Python package and '_newrelic.so' extension module.
 
-The 'package.py' script used for installation will do this automatically for
+The 'setup.py' script used for installation will do this automatically for
 you and fail to run if you are attempting to use a Python version or Unicode
 variant for which no binaries have been provided.
 
@@ -111,7 +135,7 @@ Running the installation script
 -------------------------------
 
 The simplest way to install the Python agent package and extension module
-is to use the 'package.py' installation script. This script works the same
+is to use the 'setup.py' installation script. This script works the same
 as a traditional Python distutils 'setup.py' script as found in other Python
 packages, except that no source code is provided for the extension module.
 Instead binary versions of the different Python versions and Unicode variants
@@ -121,23 +145,24 @@ various subdirectories.
 To find out what commands distutils setup packages accept for the specific
 Python version being used, you can use the '--help-commands' option.
 
-  python package.py --help-commands
+  python setup.py --help-commands
 
 To find out the options that can then be used with specific commands, you
 can then use the '--help' option in conjunction with the specific command.
 
-  python package.py --help install
+  python setup.py --help install
 
 Because the script works the same as a traditional 'setup.py' script, you
 can install into a standard Python distribution, a Python virtual
 environment or any location as specified by supplying customised options
 to the install command.
 
-Do note however that when using options to specific a specific directory
+Do note however that when using options to specify a specific directory
 location for items to be installed, you must use an asbolute path and not
-a relative path. This is because the script will change the work directory
-to be inside of the subdirectory corresponding to the files to be installed.
-This will invalidate any relative paths used in command line options.
+a relative path. This is because the script will change the working
+directory to be inside of the subdirectory corresponding to the files to be
+installed. This will invalidate any relative paths used in command line
+options.
 
 For further information on how to use distutils installation scripts see
 the documentation at:
@@ -172,13 +197,13 @@ The name of the application in the New Relic UI which the data will be
 reported against is called "Python Agent Test". If the data shows up then
 all is okay. After a period the UI will regard that application as inactive
 and you can delete the application from the list of your applications using
-the tools drop down (press the small cog at end of application list entry).
+the tools drop down in the UI.
 
 If data doesn't appear to be getting through to the UI after five minutes
-then you should check the log file produce by the test which can be found
+then you should check the log file produced by the test which can be found
 at "/tmp/python-agent-test.log". When the test is run the verbosity of the
 log messages is turned up and various details about the actions of the
-agent will be recorded. Ensure you include this log to New Relic support if
+agent will be recorded. Ensure you provide this log to New Relic support if
 you try to obtain assistant in debugging why the agent isn't able to report
 data to the UI.
 
@@ -200,6 +225,6 @@ see the New Relic support site.
 
   http://support.newrelic.com/help/kb/python/new-relic-for-python
 
-A sample configuration file called 'newrelic.ini' can be found in this
-directory and can be used when you have integrated the Python agent into
-your code.
+A sample configuration file called 'newrelic.ini' can be found in the
+'agent' subdirectory and can be used when you have integrated the Python
+Agent into your code.

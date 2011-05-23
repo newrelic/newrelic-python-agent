@@ -186,6 +186,62 @@ _process_import_hook('jinja2', 'newrelic.imports.template.jinja2')
 
 _process_import_hook('feedparser', 'newrelic.imports.external.feedparser')
 
+# Setup database traces defined in configuration file.
+
+def _database_trace_import_hook(object_path, sql):
+    def _instrument(target):
+        wrap_database_trace(target, object_path, sql)
+    return _instrument
+
+for section in _config_object.sections():
+    if section.startswith('database-trace:'):
+        try:
+            enabled = _config_object.getboolean(section, 'enabled')
+            function = _config_object.get(section, 'function')
+            sql = _config_object.get(section, 'sql')
+        except ConfigParser.NoOptionError:
+            pass
+        else:
+            if enabled:
+                parts = function.split(':')
+                if len(parts) == 2:
+                    module, object_path = parts
+                    if sql.startswith('lambda '):
+                        vars = { "callable_name": callable_name,
+                                 "import_module": import_module, }
+                        sql = eval(sql, vars)
+                    hook = _database_trace_import_hook(object_path, sql)
+                    register_import_hook(module, hook)
+
+# Setup external traces defined in configuration file.
+
+def _external_trace_import_hook(object_path, library, url):
+    def _instrument(target):
+        wrap_external_trace(target, object_path, library, url)
+    return _instrument
+
+for section in _config_object.sections():
+    if section.startswith('external-trace:'):
+        try:
+            enabled = _config_object.getboolean(section, 'enabled')
+            function = _config_object.get(section, 'function')
+            library = _config_object.get(section, 'library')
+            url = _config_object.get(section, 'url')
+        except ConfigParser.NoOptionError:
+            pass
+        else:
+            if enabled:
+                parts = function.split(':')
+                if len(parts) == 2:
+                    module, object_path = parts
+                    if url.startswith('lambda '):
+                        vars = { "callable_name": callable_name,
+                                 "import_module": import_module, }
+                        url = eval(url, vars)
+                    hook = _external_trace_import_hook(object_path, library,
+                                                       url)
+                    register_import_hook(module, hook)
+
 # Setup function traces defined in configuration file.
 
 def _function_trace_import_hook(object_path, name, scope, interesting):
@@ -197,17 +253,15 @@ for section in _config_object.sections():
     if section.startswith('function-trace:'):
         try:
             enabled = _config_object.getboolean(section, 'enabled')
+            function = _config_object.get(section, 'function')
         except ConfigParser.NoOptionError:
             pass
         else:
             if enabled:
-                function = None
                 name = None
                 scope = 'Function'
                 interesting = True
 
-                if _config_object.has_option(section, 'function'):
-                    function = _config_object.get(section, 'function')
                 if _config_object.has_option(section, 'name'):
                     name = _config_object.get(section, 'name')
                 if _config_object.has_option(section, 'scope'):
@@ -216,14 +270,40 @@ for section in _config_object.sections():
                     interesting = _config_object.getboolean(section,
                                                             'interesting')
 
-                if function:
-                    parts = function.split(':')
-                    if len(parts) == 2:
-                        module, object_path = parts
-                        if name.startswith('lambda '):
-                            vars = { "callable_name": callable_name,
-                                     "import_module": import_module, }
-                            name = eval(name, vars)
-                        hook = _function_trace_import_hook(object_path, name,
-                                                           scope, interesting)
-                        register_import_hook(module, hook)
+                parts = function.split(':')
+                if len(parts) == 2:
+                    module, object_path = parts
+                    if name.startswith('lambda '):
+                        vars = { "callable_name": callable_name,
+                                 "import_module": import_module, }
+                        name = eval(name, vars)
+                    hook = _function_trace_import_hook(object_path, name,
+                                                       scope, interesting)
+                    register_import_hook(module, hook)
+
+# Setup memcache traces defined in configuration file.
+
+def _memcache_trace_import_hook(object_path, command):
+    def _instrument(target):
+        wrap_memcache_trace(target, object_path, command)
+    return _instrument
+
+for section in _config_object.sections():
+    if section.startswith('memcache-trace:'):
+        try:
+            enabled = _config_object.getboolean(section, 'enabled')
+            function = _config_object.get(section, 'function')
+            command = _config_object.get(section, 'command')
+        except ConfigParser.NoOptionError:
+            pass
+        else:
+            if enabled:
+                parts = function.split(':')
+                if len(parts) == 2:
+                    module, object_path = parts
+                    if command.startswith('lambda '):
+                        vars = { "callable_name": callable_name,
+                                 "import_module": import_module, }
+                        command = eval(command, vars)
+                    hook = _memcache_trace_import_hook(object_path, command)
+                    register_import_hook(module, hook)

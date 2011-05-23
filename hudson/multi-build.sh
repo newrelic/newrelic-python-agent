@@ -133,6 +133,7 @@ cp package/setup.py $ROOTDIR/setup.py
 cp php_agent/scripts/init.* $SCRIPTSDIR/
 cp php_agent/scripts/newrelic.xml $SCRIPTSDIR/
 cp php_agent/scripts/newrelic.sysconfig $SCRIPTSDIR/
+cp php_agent/scripts/newrelic.cfg.template $SCRIPTSDIR/
 
 # Copy the local daemon into place. If not building under hudson, grab
 # if from the parallel source checkout directory. If running under Hudson

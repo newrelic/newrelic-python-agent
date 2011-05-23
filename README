@@ -33,7 +33,7 @@ be obtained from:
 
     http://pypi.python.org/pypi/virtualenv
 
-Within the source code run:
+To install it, within the source code for the 'virtualenv' package run:
 
     python setup.py build
     sudo python setup.py install

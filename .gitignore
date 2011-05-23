@@ -8,8 +8,8 @@ python-tools/bin/
 python-tools/downloads/
 python-tools/eggs/
 python-tools/parts/
-python-tools/tools/
-python-tools/virtualenv
+python-tools/virtualenv-src/
+python-tools/virtualenv-env/
 php_agent
 config.h
 config.log

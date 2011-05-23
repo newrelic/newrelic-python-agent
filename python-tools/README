@@ -54,7 +54,7 @@ wanting to install the Python installations globally for use on the Hudson
 build boxes. Instead use '/usr/local/python'. This destination directory
 can be specified using the '--prefix' option.
 
-  ./configure --prefix=/usr/local/python
+    ./configure --prefix=/usr/local/python
 
 2. Set permissions on target installation directory.
 
@@ -69,14 +69,14 @@ process will need to be run as 'root'.
 Thus, if doing the build of the Python installations as 'hudson' user,
 setup the global location with it as the owner.
 
-  sudo mkdir /usr/local/python
-  sudo chown hudon /usr/local/python
+    sudo mkdir /usr/local/python
+    sudo chown hudon /usr/local/python
 
 3. Run the build/install process.
 
 To perform the build run:
 
-  make
+    make
 
 This one command will automatically download virtualenv source code and
 setup a Python environment into which a buildout system will be installed
@@ -90,7 +90,7 @@ buildout managing being used to manage the installation.
 
 4. To cleanup after a build:
 
-  make clean
+    make clean
 
 This will remove the local 'parts' directory if no global location had been
 specified for installation. Thus would remove any local Python installations.
@@ -99,7 +99,7 @@ It will not remove the global location if '--prefix' option were used.
 This command will not remove the cache directories for where source code
 has been downloaded to. If a full clean is required run:
 
-  make distclean
+    make distclean
 
 
 New Platforms
@@ -110,15 +110,15 @@ versions. This is controlled through separate buildout configuration files
 for each target platform. These are the files contained in this directory
 called:
 
-  i386-apple-darwin.cfg
-  i686-pc-linux-gnu.cfg
-  x86_64-unknown-linux-gnu.cfg
+    i386-apple-darwin.cfg
+    i686-pc-linux-gnu.cfg
+    x86_64-unknown-linux-gnu.cfg
 
 The name of the file is important, so if you are going to install a
 configuration for a new platform you should run the following command to
 work out what the filename should be.
 
-  echo `../config.guess | sed -e "s/[0-9.]*$$//"`.cfg
+    echo `../config.guess | sed -e "s/[0-9.]*$$//"`.cfg
 
 The 'config.guess' script is the script which typically is supplied with
 any autoconf generated build system which needs to uniquely identify the
@@ -135,32 +135,32 @@ as appropriate.
 The 'parts' variant within the 'buildout' section specifies the different
 rule sets for each Python version or variant to be installed. For example:
 
-  parts = python-2.4-ucs2-all
-          python-2.4-ucs4-all
-          python-2.5-ucs2-all
-          python-2.5-ucs4-all
-          python-2.6-ucs2-all
-          python-2.6-ucs4-all
-          python-2.7-ucs2-all
-          python-2.7-ucs4-all
+    parts = python-2.4-ucs2-all
+            python-2.4-ucs4-all
+            python-2.5-ucs2-all
+            python-2.5-ucs4-all
+            python-2.6-ucs2-all
+            python-2.6-ucs4-all
+            python-2.7-ucs2-all
+            python-2.7-ucs4-all
 
 The rules for each obviously then need to exist. These would be of the form:
 
-  [python-2.4-ucs2]
-  recipe = zc.recipe.cmmi
-  url = http://www.python.org/ftp/python/2.4.6/Python-2.4.6.tgz
-  bindir = ${buildout:parts-directory}/python-2.4-ucs2/bin
-  extra_options = --with-threads --enable-unicode=ucs2
+    [python-2.4-ucs2]
+    recipe = zc.recipe.cmmi
+    url = http://www.python.org/ftp/python/2.4.6/Python-2.4.6.tgz
+    bindir = ${buildout:parts-directory}/python-2.4-ucs2/bin
+    extra_options = --with-threads --enable-unicode=ucs2
 
-  [python-2.4-ucs2-virtualenv]
-  recipe = plone.recipe.command
-  command = (cd virtualenv-src;
-             ${python-2.4-ucs2:bindir}/python setup.py install)
+    [python-2.4-ucs2-virtualenv]
+    recipe = plone.recipe.command
+    command = (cd virtualenv-src;
+               ${python-2.4-ucs2:bindir}/python setup.py install)
 
-  [python-2.4-ucs2-all]
-  recipe =
-  parts = ${python-2.4-ucs2:recipe}
-          ${python-2.4-ucs2-virtualenv:recipe}
+    [python-2.4-ucs2-all]
+    recipe =
+    parts = ${python-2.4-ucs2:recipe}
+            ${python-2.4-ucs2-virtualenv:recipe}
 
 The 'url' attribute is what specifies where the source code is obtained from
 for that Python version. The 'extra_options' is what options should be used

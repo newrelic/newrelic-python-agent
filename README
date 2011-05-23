@@ -1,0 +1,137 @@
+Local Development
+=================
+
+Now that you have checked out the Python agent package, you are going to
+need a few tools to be able to build it if developing on your local
+machine. These are:
+
+1. A complete installation of Python, including header files etc. In
+   order to run unit tests, the Python installation must have been
+   installed with support for sqlite3 and zlib. If building Python from
+   source code it means that those packages must have been installed on
+   your operating system prior to building Python and the configuration
+   step for Python when it was built must have been able to find them.
+
+2. The corresponding C/C++ compiler that was used to install Python
+   so that extension modules can be built against the Python installation.
+
+3. The 'virtualenv' package for Python. This should be installed into
+   the Python installation being used. It is required to setup a Python
+   virtual environment when running unit tests.
+
+If running Ubuntu, to install the additional packages you need you should
+run the following apt-get commands.
+
+   sudo apt-get install g++
+   sudo apt-get install sqlite3 libsqlite3-dev
+   sudo apt-get install zlib1g-dev
+
+For MacOS X you simply need to install XCode.
+
+After that you can then install 'virtualenv'. The tar ball for that can
+be obtained from:
+
+    http://pypi.python.org/pypi/virtualenv
+
+Within the source code run:
+
+    python setup.py build
+    sudo python setup.py install
+
+If you want to test locally the scripts for building the Python agent for
+multiple Python versions/variants and creation of the tar balls, see further
+notes under following section on Hudson build boxes.
+
+
+Building The Agent
+==================
+
+To build the Python agent against Python installation found in your PATH
+you can run:
+
+    ./configure
+    make
+
+To install it into the same Python installation, run:
+
+    make install
+
+If this is a system wide Python installation rather than a personal
+installation or Python virtual environment, use 'sudo' as appropriate when
+doing the install.
+
+When finished you can clean up the directory by running:
+
+    make clean
+
+Note that when 'make' is run the first time to build the Python agent, it
+will automatically checkout from the GIT repository a copy of 'php_agent'
+into a subdirectory. For subsequent builds the existing checked out copy
+will be used but no updates will be pulled done from the master repository.
+Thus if you need any updates to the 'php_agent' code you will need to go
+into that directory and do a pull request. Alternatively, you can do a more
+complete clean of the directory by running:
+
+    make distclean
+
+This will remove the 'php_agent' directory completely along with any other
+files created from the virgin checkout. You will however need to rerun the
+'configure' command. Next time you run 'make' again though it will check
+out the 'php_agent' package again.
+
+Note that if you need to use an alternate Python installation than the one
+found in your PATH, then you can use the '--with-python' option to the
+'configure' command. For example:
+
+    ./configure --with-python=/usr/local/python-2.7/bin/python
+
+There is also the '--with-virtualenv' option to indicate where the
+'virtualenv' program got installed. Normally this will be in same 'bin'
+directory as the 'python' executable. As such, if '--with-python' is used
+the configure script will automatically look in the same 'bin' directory
+first so '--with-virtualenv' shouldn't usually be needed.
+
+
+Running The Unit Tests
+======================
+
+To run the unit tests you can run:
+
+    make unit-tests
+
+This will construct a Python virtual environment in the 'test-env'
+subdirectory and the Python agent package will be installed into that
+rather than into the Python install found by the 'configure' script. This
+avoids polluting your main Python installation with your development
+version of the Python agent just to be able to run tests.
+
+If you need to be able to run a specific unit test, then you can use the
+'python' executable from the 'test-env' Python virtual environment.
+
+    test-env/bin/python unit-tests/test_wsgi_applicaton.py -v
+
+
+Hudson Build Boxes
+==================
+
+For the Hudson build boxes we actually need numerous different Python
+installations and variants. To assist in setting these up there is a
+separate set of build scripts to be found in the 'python-tools' directory.
+Follow the instructions in 'python-tools/README' as to how to install
+all the required Python versions/variants for the platform. These can be
+installed globally, especially if setting up the Hudson build boxes to
+start with, or they can be built in place, in which case they will end up
+being installed in the 'python-tools/parts' directory.
+
+Which ever place all the different Python versions/variants are installed,
+you can use the '--with-python' option to the 'configure' script as above
+to select a specific one to be used for building the Python agent during
+development. For example:
+
+    ./configure --with-python=python-tools/parts/python-2.7-ucs4/bin/python
+
+
+Multiple Python Versions
+========================
+
+...

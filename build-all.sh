@@ -45,7 +45,7 @@ do
         echo make install-destdir DESTDIR=$ROOTDIR/python-$i-$j
         make install-destdir DESTDIR=$ROOTDIR/python-$i-$j
         STATUS=$?
-        if test '$STATUS' != '0'
+        if test "$STATUS" != "0"
         then
             echo "`basename $0`: *** Error $STATUS"
             exit 1
@@ -53,7 +53,7 @@ do
         echo make distclean
         make distclean
         STATUS=$?
-        if test '$STATUS' != '0'
+        if test "$STATUS" != "0"
         then
             echo "`basename $0`: *** Error $STATUS"
             exit 1

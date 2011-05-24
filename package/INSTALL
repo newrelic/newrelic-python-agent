@@ -105,12 +105,12 @@ selected the appropriate tar ball file for your operating system platform.
 Which platform this specific release file was built for can be found listed
 in the 'PLATFORM' file contained in this directory.
 
-The 'setup.py' script used to perform the installation of the Python agent
-will validate that this is the correct release file for your platform. If
-you are unsure whether this matches the operating system you are using and
-want to validate this yourself, you can run the 'config.guess' command
-located in the 'scripts' subdirectory and compare it to that listed in the
-'PLATFORM' file.
+The 'install.sh' and 'setup.py' script used to perform the installation of
+the Python agent will each validate that this is the correct release file
+for your platform. If you are unsure whether this matches the operating
+system you are using and want to validate this yourself, you can run the
+'config.guess' command located in the 'scripts' subdirectory and compare it
+to that listed in the 'PLATFORM' file.
 
 Note that when comparing the result, you can ignore any operating system
 or kernel version listed at the end of the output from 'config.guess'.
@@ -130,15 +130,16 @@ intentions to support the platform.
 What does this directory contain?
 ---------------------------------
 
-In this directory you will find one or more variants of the Python package
-'newrelic' and a corresponding binary extension module '_newrelic.so'.
+In this directory you will find the local daemon application binary, plus
+one or more variants of the Python package 'newrelic' and corresponding
+binary extension module '_newrelic.so'.
 
-As the extension module is a binary, it will only work on the specific
-platform it was compiled for. Further, it will only work with the specific
-version of Python it was compiled against. Complicating matters, Python may
-also be installed in slightly different incompatible configurations. The
-primary difference is the width of characters stored within Unicode strings
-in the underlying implementation of Python.
+As the Python extension module in particular is a binary, it will only work
+on the specific platform it was compiled for. Further, it will only work
+with the specific version of Python it was compiled against. Complicating
+matters, Python may also be installed in slightly different incompatible
+configurations. The primary difference is the width of characters stored
+within Unicode strings in the underlying implementation of Python.
 
 As a result, the actual package and extension module are located in
 subdirectories of the 'agent' directory, where each subdirectory is named
@@ -175,7 +176,7 @@ sending an email to 'support@newrelic.com' indicating what Python version
 and Unicode variant you require the Python agent for.
 
 
-Running the installation script
+Installing The Python Extension
 -------------------------------
 
 The simplest way to install the Python agent package and extension module

@@ -141,16 +141,13 @@ cp php_agent/scripts/newrelic.cfg.template $SCRIPTSDIR/
 
 if test x"$BUILD_NUMBER" = x"0"
 then
-    cp ../local_daemon/src/newrelic-daemon $DAEMONDIR/newrelic-daemon
-    STATUS=$?
-    if test "$STATUS" != "0"
+    if test -x ../local_daemon/src/newrelic-daemon
     then
-        echo "`basename $0`: *** Error $STATUS"
-        exit 1
+        cp ../local_daemon/src/newrelic-daemon $DAEMONDIR/newrelic-daemon
+        grep '#define NR_LOCAL_DAEMON_VERSION' \
+            ../local_daemon/src/version.c | \
+            sed -e 's/^.* "//' -e 's/".*$/.0/' > $DAEMONDIR/VERSION
     fi
-
-    grep '#define NR_LOCAL_DAEMON_VERSION' ../local_daemon/src/version.c | \
-        sed -e 's/^.* "//' -e 's/".*$/.0/' > $DAEMONDIR/VERSION
 else
     # XXX Grab from Hudson rsync server.
     true

@@ -7,10 +7,12 @@ machine. These are:
 
 1. A complete installation of Python, including header files etc. In
    order to run unit tests, the Python installation must have been
-   installed with support for sqlite3 and zlib. If building Python from
-   source code it means that those packages must have been installed on
-   your operating system prior to building Python and the configuration
-   step for Python when it was built must have been able to find them.
+   installed with support for sqlite3. If needing to debug local daemon
+   messages it is also convenient to have zlib to access decompression
+   library. If building Python from source code it means that those
+   packages must have been installed on your operating system prior to
+   building Python and the configuration step for Python when it was built
+   must have been able to find them.
 
 2. The corresponding C/C++ compiler that was used to install Python
    so that extension modules can be built against the Python installation.
@@ -67,7 +69,7 @@ When finished you can clean up the directory by running:
 Note that when 'make' is run the first time to build the Python agent, it
 will automatically checkout from the GIT repository a copy of 'php_agent'
 into a subdirectory. For subsequent builds the existing checked out copy
-will be used but no updates will be pulled done from the master repository.
+will be used but no updates will be pulled down from the master repository.
 Thus if you need any updates to the 'php_agent' code you will need to go
 into that directory and do a pull request. Alternatively, you can do a more
 complete clean of the directory by running:
@@ -131,7 +133,29 @@ development. For example:
     ./configure --with-python=python-tools/parts/python-2.7-ucs4/bin/python
 
 
-Multiple Python Versions
-========================
+Build For Multiple Versions
+===========================
 
-...
+To build the Python agent for multiple Python versions in one go, you can
+use the script:
+
+    hudson/build.sh
+
+If running this in local development environment, it expects that you have
+run the install script in 'python-tools' directory to install all the
+required Python versions for the platform into the local 'python-tools/parts'
+directory.
+
+When this same script is run under the Hudson server, it will expect the
+Python versions to be installed under '/usr/local/python'.
+
+The result of running this script will be placed in the 'hudson-results'
+sub directory. The directory created will be named according to the platform
+and release version. The directory will be tar and gzip as well into a file
+that can then be given out.
+
+When run in the local development environment, if the local daemon source
+code is checked out into a parallel directory to the Python agent, and the
+compiled newrelic-daemon application exists, that will be copied into the
+package created by this script. On the Hudson build servers, it will obtain
+the binary from the Hudson rsync server instead.

@@ -43,12 +43,33 @@ static PyObject *NRImportHookFinder_find_module(
     PyObject *registry = NULL;
     PyObject *module = NULL;
 
+    PyObject *fullname_as_ascii = NULL;
+
     static char *kwlist[] = { "fullname", "path", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!|O:find_module",
-                                     kwlist, &PyString_Type, &fullname,
-                                     &path)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O:find_module",
+                                     kwlist, &fullname, &path)) {
         return NULL;
+    }
+
+    if (!PyString_Check(fullname) && !PyUnicode_Check(fullname)) {
+        PyErr_Format(PyExc_TypeError, "expected string or Unicode "
+                        "for fullname, found type '%s'",
+                        fullname->ob_type->tp_name);
+        return NULL;
+    }
+
+    if (PyUnicode_Check(fullname)) {
+        /*
+	 * Strictly speaking we should always get a string
+	 * object here, but Django 1.3 is passing a Unicode
+	 * object instead.
+         */
+
+        fullname_as_ascii = PyUnicode_AsASCIIString(fullname);
+
+        if (!fullname_as_ascii)
+            return NULL;
     }
 
     registry = NRImport_GetImportHooks();
@@ -68,7 +89,12 @@ static PyObject *NRImportHookFinder_find_module(
 
     PyDict_SetItem(self->skip, fullname, Py_True);
 
-    module = PyImport_ImportModule(PyString_AsString(fullname));
+    if (fullname_as_ascii)
+        module = PyImport_ImportModule(PyString_AsString(fullname_as_ascii));
+    else
+        module = PyImport_ImportModule(PyString_AsString(fullname));
+
+    Py_XDECREF(fullname_as_ascii);
 
     if (!module) {
         PyErr_Clear();

@@ -6,6 +6,7 @@ def run(args):
     settings.app_name = 'Python Agent Test'
     settings.log_file = '/tmp/python-agent-test.log'
     settings.log_level = newrelic.agent.LOG_VERBOSEDEBUG
+    settings.transaction_tracer.transaction_threshold = 0
 
     try:
         os.unlink(settings.log_file)

@@ -63,6 +63,17 @@ class install_lib(install_data):
     self.install_dir = getattr(install_cmd, 'install_lib')
     return install_data.run(self)
 
+packages = [
+  "newrelic",
+  "newrelic.commands",
+  "newrelic.imports",
+  "newrelic.imports.database",
+  "newrelic.imports.external",
+  "newrelic.imports.framework",
+  "newrelic.imports.memcache",
+  "newrelic.imports.template",
+]
+
 setup(
   name = "newrelic",
   version = '.'.join(package_version.split('.')[:-1]),
@@ -71,7 +82,7 @@ setup(
   author_email = "support@newrelic.com",
   license = copyright,
   url = "http://www.newrelic.com",
-  packages = ["newrelic"],
+  packages = packages,
   data_files = [('', ['_newrelic.so'])],
   platforms = [package_platform],
   cmdclass = { 'install_data' : install_lib },

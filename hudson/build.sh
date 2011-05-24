@@ -128,7 +128,8 @@ cp package/setup.py $ROOTDIR/setup.py
 # Copy in the local daemon script files required for installation as
 # well as the installer itself.
 
-#cp php_agent/newrelic-install.sh $ROOTDIR/install.sh
+php_agent/shstrip.sh php_agent/newrelic-install.sh > $ROOTDIR/install.sh
+chmod 0555 $ROOTDIR/install.sh
 
 cp php_agent/scripts/init.* $SCRIPTSDIR/
 cp php_agent/scripts/newrelic.xml $SCRIPTSDIR/

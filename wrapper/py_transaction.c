@@ -554,13 +554,36 @@ static PyObject *NRTransaction_notice_error(
     if (type != Py_None && value != Py_None) {
         PyObject *item = NULL;
 
+        PyObject *class = NULL;
+        PyObject *name = NULL;
+
         settings = (NRSettingsObject *)NRSettings_Singleton();
 
-        /* Check whether this is an error type we should ignore. */
+        /*
+         * Check whether this is an error type we should ignore.
+         * Note that where the value is an instance type, the
+         * name has to be obtained from the associated class
+         * definition object.
+         */
 
-        item = PyDict_GetItemString(
-                settings->errors_settings->ignore_errors,
-                Py_TYPE(value)->tp_name);
+        if (PyInstance_Check(value)) {
+            class = PyObject_GetAttrString(value, "__class__");
+
+            if (class)
+                name = PyObject_GetAttrString(class, "__name__");
+
+            PyErr_Clear();
+        }
+
+        if (name) {
+            item = PyDict_GetItem(
+                    settings->errors_settings->ignore_errors, name);
+        }
+        else {
+            item = PyDict_GetItemString(
+                    settings->errors_settings->ignore_errors,
+                    Py_TYPE(value)->tp_name);
+        }
 
         if (!item) {
             error_message = NRUtilities_FormatObject(value);
@@ -569,38 +592,17 @@ static PyObject *NRTransaction_notice_error(
             if (!stack_trace)
                PyErr_Clear();
 
-            if (PyInstance_Check(value)) {
-                PyObject *class = NULL;
-                PyObject *name = NULL;
-
-                class = PyObject_GetAttrString(value, "__class__");
-
-                if (class)
-                    name = PyObject_GetAttrString(class, "__name__");
-
-                PyErr_Clear();
-
-                if (name) {
-                    record = nr_transaction_error__allocate(
-                            self->transaction, &(self->transaction_errors),
-                            "", 0, PyString_AsString(error_message),
-                            PyString_AsString(name), 0);
-                }
-                else
-                {
-                    record = nr_transaction_error__allocate(
-                            self->transaction, &(self->transaction_errors),
-                            "", 0, PyString_AsString(error_message),
-                            Py_TYPE(value)->tp_name, 0);
-                }
-
-                Py_XDECREF(class);
-                Py_XDECREF(name);
-            }
-            else {
+            if (name) {
                 record = nr_transaction_error__allocate(
-                        self->transaction, &(self->transaction_errors), "", 0,
-                        PyString_AsString(error_message),
+                        self->transaction, &(self->transaction_errors),
+                        "", 0, PyString_AsString(error_message),
+                        PyString_AsString(name), 0);
+            }
+            else
+            {
+                record = nr_transaction_error__allocate(
+                        self->transaction, &(self->transaction_errors),
+                        "", 0, PyString_AsString(error_message),
                         Py_TYPE(value)->tp_name, 0);
             }
 
@@ -647,6 +649,9 @@ static PyObject *NRTransaction_notice_error(
             Py_XDECREF(stack_trace);
             Py_DECREF(error_message);
         }
+        
+        Py_XDECREF(class);
+        Py_XDECREF(name);
     }
 
     Py_INCREF(Py_None);

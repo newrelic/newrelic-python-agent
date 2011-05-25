@@ -393,27 +393,31 @@ PyTypeObject NRImportHookDecorator_Type = {
 
 PyObject *NRImport_GetImportHooks(void)
 {
+    PyObject *modules = NULL;
     PyObject *module = NULL;
 
     PyObject *dict = NULL;
     PyObject *registry = NULL;
 
-    module = PyImport_ImportModule("newrelic");
+    modules = PyImport_GetModuleDict();
 
-    if (!module)
+
+    module = PyDict_GetItemString(modules, "newrelic.agent");
+
+    if (!module) {
+        PyErr_SetString(PyExc_RuntimeError, "can't find newrelic.agent");
         return NULL;
+    }
 
     dict = PyModule_GetDict(module);
 
     registry = PyDict_GetItemString(dict, "import_hooks");
 
     if (!registry) {
-        registry = PyDict_New();
+        registry = PyDict_New();       
         PyDict_SetItemString(dict, "import_hooks", registry);
         Py_DECREF(registry);
     }
-
-    Py_DECREF(module);
 
     return registry;
 }

@@ -14,12 +14,18 @@ settings.error_collector.ignore_errors = ['exceptions.NotImplementedError']
 
 application = _newrelic.application("UnitTests")
 
+class Error:
+    def __init__(self, message):
+        self.message = message
+    def __str__(self):
+        return self.message
+
 @_newrelic.error_trace()
 def function_1():
     raise RuntimeError("runtime_error 1")
 
 def function_2():
-    raise RuntimeError("runtime_error 2")
+    raise Error("runtime_error 2")
 
 @_newrelic.error_trace()
 def function_3():

@@ -569,10 +569,40 @@ static PyObject *NRTransaction_notice_error(
             if (!stack_trace)
                PyErr_Clear();
 
-            record = nr_transaction_error__allocate(
-                    self->transaction, &(self->transaction_errors), "", 0,
-                    PyString_AsString(error_message),
-                    Py_TYPE(value)->tp_name, 0);
+            if (PyInstance_Check(value)) {
+                PyObject *class = NULL;
+                PyObject *name = NULL;
+
+                class = PyObject_GetAttrString(value, "__class__");
+
+                if (class)
+                    name = PyObject_GetAttrString(class, "__name__");
+
+                PyErr_Clear();
+
+                if (name) {
+                    record = nr_transaction_error__allocate(
+                            self->transaction, &(self->transaction_errors),
+                            "", 0, PyString_AsString(error_message),
+                            PyString_AsString(name), 0);
+                }
+                else
+                {
+                    record = nr_transaction_error__allocate(
+                            self->transaction, &(self->transaction_errors),
+                            "", 0, PyString_AsString(error_message),
+                            Py_TYPE(value)->tp_name, 0);
+                }
+
+                Py_XDECREF(class);
+                Py_XDECREF(name);
+            }
+            else {
+                record = nr_transaction_error__allocate(
+                        self->transaction, &(self->transaction_errors), "", 0,
+                        PyString_AsString(error_message),
+                        Py_TYPE(value)->tp_name, 0);
+            }
 
             if (stack_trace) {
                 nro__set_hash_string(record->params, "stack_trace",

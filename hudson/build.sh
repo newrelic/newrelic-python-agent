@@ -61,7 +61,10 @@ test -f Makefile && make distclean
 # are to be installed. Remove any existing directory which corresponds
 # to the same build. Then create the new directory structure.
 
-ROOTDIR=hudson-results/newrelic-python-$VERSION.$BUILD_NUMBER-$PLATFORM
+RELEASE=newrelic-python-$VERSION.$BUILD_NUMBER-$PLATFORM
+
+BUILDDIR=hudson-results
+ROOTDIR=$BUILDDIR/$RELEASE
 
 AGENTDIR=$ROOTDIR/agent
 SCRIPTSDIR=$ROOTDIR/scripts
@@ -160,8 +163,8 @@ fi
 rm -f $ROOTDIR.tar
 rm -f $ROOTDIR.tar.gz
 
-tar cvf $ROOTDIR.tar $ROOTDIR
-gzip --best $ROOTDIR.tar
+(cd $BUILDDIR; tar cvf $RELEASE.tar $RELEASE)
+gzip --best $BUILDDIR/$RELEASE.tar
 
 # Display the results of the build.
 

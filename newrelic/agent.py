@@ -174,6 +174,8 @@ _process_import_hook('gluon.main', 'newrelic.imports.framework.web2py')
 
 _process_import_hook('cx_Oracle', 'newrelic.imports.database.cx_Oracle')
 _process_import_hook('MySQLdb', 'newrelic.imports.database.MySQLdb')
+_process_import_hook('postgresql.interface.proboscis.dbapi2',
+                     'newrelic.imports.database.proboscis')
 _process_import_hook('psycopg2', 'newrelic.imports.database.psycopg2')
 _process_import_hook('pysqlite2', 'newrelic.imports.database.sqlite3')
 _process_import_hook('sqlite3', 'newrelic.imports.database.sqlite3')

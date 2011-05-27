@@ -25,6 +25,7 @@ clean :
 	rm -rf autom4te.cache
 
 distclean : clean
+	rm -rf Makefile buildout.cfg
 	rm -rf virtualenv-src virtualenv-env
 	rm -rf bin develop-eggs eggs
 	rm -rf downloads

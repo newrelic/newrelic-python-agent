@@ -173,7 +173,9 @@ static int NRWebTransaction_init(NRTransactionObject *self, PyObject *args,
 	 * also check for that, but give priority to the
 	 * explicitly added header in case that header was added
 	 * in front end server to Apache instead although for that
-         * case they should be using X-Request-Start.
+         * case they should be using X-Request-Start which do not
+         * support here yet as PHP agent core doesn't have a way
+         * of tracking front end web server time.
          */
 
         self->transaction->http_x_request_start = 0;

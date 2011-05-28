@@ -1,4 +1,4 @@
 [buildout]
 parts-directory = @prefix@
 download-cache = downloads
-parts = 
+parts = @BUILD_ENVIRONMENT@-environment

@@ -13,4 +13,11 @@ fi
 
 AC_SUBST(PYTHON)
 
+AC_ARG_ENABLE(apache, AC_HELP_STRING([--enable-apache],
+              [enable build of Apache web hosting environment]),
+              [BUILD_ENVIRONMENT=apache],
+              [BUILD_ENVIRONMENT=hudson])
+
+AC_SUBST(BUILD_ENVIRONMENT)
+
 AC_OUTPUT(Makefile buildout.cfg)

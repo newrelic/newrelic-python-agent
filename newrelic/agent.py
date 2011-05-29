@@ -308,3 +308,39 @@ for section in _config_object.sections():
                         command = eval(command, vars)
                     hook = _memcache_trace_import_hook(object_path, command)
                     register_import_hook(module, hook)
+
+# Setup name transaction wrapper defined in configuration file.
+
+def _name_transaction_import_hook(object_path, name, scope):
+    def _instrument(target):
+        wrap_name_transaction(target, object_path, name, scope)
+    return _instrument
+
+for section in _config_object.sections():
+    if section.startswith('name-transaction:'):
+        try:
+            enabled = _config_object.getboolean(section, 'enabled')
+            function = _config_object.get(section, 'function')
+        except ConfigParser.NoOptionError:
+            pass
+        else:
+            if enabled:
+                name = None
+                scope = 'Function'
+
+                if _config_object.has_option(section, 'name'):
+                    name = _config_object.get(section, 'name')
+                if _config_object.has_option(section, 'scope'):
+                    scope = _config_object.get(section, 'scope')
+
+                parts = function.split(':')
+                if len(parts) == 2:
+                    module, object_path = parts
+                    if name.startswith('lambda '):
+                        vars = { "callable_name": callable_name,
+                                 "import_module": import_module, }
+                        name = eval(name, vars)
+                    hook = _name_transaction_import_hook(object_path, name,
+                                                         scope)
+                    register_import_hook(module, hook)
+

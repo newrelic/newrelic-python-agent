@@ -848,6 +848,13 @@ static PyObject *NRTransaction_notice_error(
         }
 
         if (!item) {
+#if 0
+            PyObject *dict = NULL;
+            PyObject *object = NULL;
+
+            PyObject *module = NULL;
+#endif
+
             error_message = NRUtilities_FormatObject(value);
             stack_trace = NRUtilities_FormatException(type, value, traceback);
 
@@ -881,6 +888,38 @@ static PyObject *NRTransaction_notice_error(
                 nro__set_hash_string(record->params, "source", "SOURCE #1\nSOURCE #2");
 #endif
             }
+
+#if 0
+            dict = PyDict_New();
+
+            object = PySys_GetObject("path");
+            PyDict_SetItemString(dict, "sys.path", object);
+
+            module = PyImport_ImportModule("os");
+
+            if (module) {
+                PyObject *environ = NULL;
+
+                environ = PyObject_GetAttrString(module, "environ");
+
+                if (environ) {
+                    object = PyDict_GetItemString(environ, "PYTHON_EGG_CACHE");
+                    if (object)
+                        PyDict_SetItemString(dict, "PYTHON_EGG_CACHE", object);
+                    Py_DECREF(environ);
+                }
+
+
+                PyErr_Clear();
+
+                Py_DECREF(module);
+            }
+
+            NRUtilities_MergeDictIntoParams(record->params,
+                                            "custom_parameters", dict);
+
+            Py_DECREF(dict);
+#endif
 
             if (params) {
                 NRUtilities_MergeDictIntoParams(record->params,

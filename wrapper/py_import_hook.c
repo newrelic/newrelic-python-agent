@@ -401,7 +401,6 @@ PyObject *NRImport_GetImportHooks(void)
 
     modules = PyImport_GetModuleDict();
 
-
     module = PyDict_GetItemString(modules, "newrelic.agent");
 
     if (!module) {

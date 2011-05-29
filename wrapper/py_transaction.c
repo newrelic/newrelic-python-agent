@@ -25,20 +25,277 @@
 /* ------------------------------------------------------------------------- */
 
 static int NRTransaction_tls_key = 0;
+static int NRTransaction_cls_key = 0;
 static nrthread_mutex_t NRTransaction_exit_mutex;
 
 /* ------------------------------------------------------------------------- */
 
 PyObject *NRTransaction_CurrentTransaction()
 {
+    PyObject *modules = NULL;
+    PyObject *module = NULL;
+
     PyObject *result = NULL;
 
     if (!NRTransaction_tls_key)
         return NULL;
 
-    result = (PyObject *)PyThread_get_key_value(NRTransaction_tls_key);
+    /*
+     * Have to check whether might be using greenlet
+     * coroutines first instead of normal threading.
+     */
+
+    modules = PyImport_GetModuleDict();
+
+    module = PyDict_GetItemString(modules, "greenlet");
+
+    if (module) {
+        PyObject *dict = NULL;
+        PyObject *func = NULL;
+
+        dict = PyModule_GetDict(module);
+
+        func = PyDict_GetItemString(dict, "getcurrent");
+
+        if (func) {
+            PyObject *current = NULL;
+
+            current = PyObject_CallFunctionObjArgs(func, NULL);
+
+            if (current) {
+                PyObject *storage = NULL;
+
+                storage = (PyObject *)PyThread_get_key_value(
+                        NRTransaction_cls_key);
+
+                if (storage) {
+                    PyObject *handle = NULL;
+
+                    handle = PyDict_GetItem(storage, current);
+
+                    result = (PyObject *)PyCObject_AsVoidPtr(handle);
+                }
+            }
+            else
+                PyErr_Clear();
+
+            Py_XDECREF(current);
+        }
+    }
+
+    /*
+     * If wasn't held in coroutine local storage then we
+     * need to look in the normal thread local storage.
+     */
+
+    if (!result)
+        result = (PyObject *)PyThread_get_key_value(NRTransaction_tls_key);
 
     return result;
+}
+
+/* ------------------------------------------------------------------------- */
+
+PyObject *NRTransaction_PushTransaction(PyObject *transaction)
+{
+    PyObject *modules = NULL;
+    PyObject *module = NULL;
+
+    /*
+     * Ensure that a transaction has already been setup for this
+     * thread. This means we preclude nested web transactions
+     * from occuring. In the case of where coroutines are being
+     * used, this situation still shouldn't occur and we will
+     * fall through to looking at the coroutine local storage
+     * instead.
+     */
+
+    if (PyThread_get_key_value(NRTransaction_tls_key)) {
+        PyErr_SetString(PyExc_RuntimeError, "thread local already set");
+        return NULL;
+    }
+
+    /*
+     * Check now whether we are running as a coroutine using the
+     * greenlet library extension instead of a normal thread.
+     */
+
+    modules = PyImport_GetModuleDict();
+
+    module = PyDict_GetItemString(modules, "greenlet");
+
+    if (module) {
+        PyObject *dict = NULL;
+        PyObject *func = NULL;
+
+        dict = PyModule_GetDict(module);
+
+        func = PyDict_GetItemString(dict, "getcurrent");
+
+        if (func) {
+            PyObject *current = NULL;
+
+            current = PyObject_CallFunctionObjArgs(func, NULL);
+
+            if (current) {
+                PyObject *storage = NULL;
+                PyObject *handle = NULL;
+
+                storage = (PyObject *)PyThread_get_key_value(
+                        NRTransaction_cls_key);
+
+                if (!storage) {
+                    storage = PyDict_New();
+                    PyThread_set_key_value(NRTransaction_cls_key, storage);
+                }
+                else {
+                    if (PyDict_GetItem(storage, current)) {
+                        PyErr_SetString(PyExc_RuntimeError,
+                                "coroutine local already set");
+
+                        Py_DECREF(current);
+                        Py_DECREF(module);
+
+                        return NULL;
+                    }
+                }
+
+                /*
+                 * We store the transaction in a C object as
+                 * we don't want a reference count as that
+                 * would prevent exit being called from
+                 * destructor of transaction if not called
+                 * prior to that put as should be the case.
+                 */
+
+                handle = PyCObject_FromVoidPtr(transaction, NULL);
+
+                PyDict_SetItem(storage, current, handle);
+
+                Py_DECREF(handle);
+
+                /*
+                 * NULL out transaction pointer so when we
+                 * fall through below we don't also store it
+                 * under normal thread local storage.
+                 */
+
+                transaction = NULL;
+            }
+            else
+                PyErr_Clear();
+
+            Py_XDECREF(current);
+        }
+    }
+
+    /*
+     * If not stored as coroutine local storage then store as
+     * normal thread local storage.
+     */
+
+    if (transaction)
+        PyThread_set_key_value(NRTransaction_tls_key, transaction);
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+/* ------------------------------------------------------------------------- */
+
+PyObject *NRTransaction_PopTransaction(PyObject *transaction)
+{
+    PyObject *modules = NULL;
+    PyObject *module = NULL;
+
+    PyObject *existing = NULL;
+
+    /*
+     * Have to check whether might be using greenlet
+     * coroutines first instead of normal threading.
+     */
+
+    modules = PyImport_GetModuleDict();
+
+    module = PyDict_GetItemString(modules, "greenlet");
+
+    if (module) {
+        PyObject *dict = NULL;
+        PyObject *func = NULL;
+
+        dict = PyModule_GetDict(module);
+
+        func = PyDict_GetItemString(dict, "getcurrent");
+
+        if (func) {
+            PyObject *current = NULL;
+
+            current = PyObject_CallFunctionObjArgs(func, NULL);
+
+            if (current) {
+                PyObject *storage = NULL;
+
+                storage = (PyObject *)PyThread_get_key_value(
+                        NRTransaction_cls_key);
+
+                if (storage) {
+                    PyObject *handle = NULL;
+
+                    handle = PyDict_GetItem(storage, current);
+
+                    existing = (PyObject *)PyCObject_AsVoidPtr(handle);
+
+                    if (existing != transaction) {
+                        PyErr_SetString(PyExc_RuntimeError,
+                                "coroutine local doesn't match");
+
+                        Py_DECREF(current);
+                        Py_DECREF(module);
+
+                        return NULL;
+                    }
+
+                    PyDict_DelItem(storage, current);
+
+                    /*
+                     * NULL out transaction pointer so when we
+                     * fall through below we don't also remove it
+                     * from normal thread local storage.
+                     */
+
+                    transaction = NULL;
+                }
+            }
+            else
+                PyErr_Clear();
+
+            Py_XDECREF(current);
+        }
+    }
+
+    /*
+     * If wasn't held in coroutine local storage then we
+     * need to clear it from the normal thread local storage.
+     */
+
+    if (transaction) {
+        existing = (PyObject *)PyThread_get_key_value(NRTransaction_tls_key);
+
+        if (!existing) {
+            PyErr_SetString(PyExc_RuntimeError, "thread local not set");
+            return NULL;
+        }
+
+        if (existing != transaction) {
+            PyErr_SetString(PyExc_RuntimeError, "thread local doesn't match");
+            return NULL;
+        }
+
+        PyThread_delete_key_value(NRTransaction_tls_key);
+    }
+
+    Py_INCREF(Py_None);
+    return Py_None;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -51,9 +308,9 @@ static PyObject *NRTransaction_new(PyTypeObject *type, PyObject *args,
     NRSettingsObject *settings = NULL;
 
     /*
-     * Initialise thread local storage if necessary. Do this
-     * here rather than init method as technically the latter
-     * may not be called.
+     * Initialise thread local storage and coroutine local
+     * storage if necessary. Do this here rather than init
+     * method as technically the latter may not be called.
      *
      * TODO Also initialise mutex for __exit__() function
      * used to get around thread safety issues in inner agent
@@ -62,6 +319,7 @@ static PyObject *NRTransaction_new(PyTypeObject *type, PyObject *args,
 
     if (!NRTransaction_tls_key) {
         NRTransaction_tls_key = PyThread_create_key();
+        NRTransaction_cls_key = PyThread_create_key();
 
         nrthread_mutex_init(&NRTransaction_exit_mutex, NULL);
     }
@@ -227,6 +485,8 @@ static PyObject *NRTransaction_enter(NRTransactionObject *self,
 {
     nr_node_header *save;
 
+    PyObject *result = NULL;
+
     if (!self->application) {
         PyErr_SetString(PyExc_TypeError, "transaction not initialized");
         return NULL;
@@ -251,12 +511,12 @@ static PyObject *NRTransaction_enter(NRTransactionObject *self,
      * need to have a handle to the original transaction.
      */
 
-    if (PyThread_get_key_value(NRTransaction_tls_key)) {
-        PyErr_SetString(PyExc_RuntimeError, "thread local already set");
-        return NULL;
-    }
+    result = NRTransaction_PushTransaction((PyObject *)self);
 
-    PyThread_set_key_value(NRTransaction_tls_key, self);
+    if (!result)
+        return NULL;
+
+    Py_DECREF(result);
 
     /*
      * If application was not enabled and so we are running
@@ -293,6 +553,8 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
     PyObject *value = NULL;
     PyObject *traceback = NULL;
 
+    PyObject *result = NULL;
+
     NRSettingsObject *settings = NULL;
 
     if (!PyArg_ParseTuple(args, "OOO:__exit__", &type, &value, &traceback))
@@ -308,12 +570,12 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
      * local storage.
      */
 
-    if (!PyThread_get_key_value(NRTransaction_tls_key)) {
-        PyErr_SetString(PyExc_RuntimeError, "thread local not set");
-        return NULL;
-    }
+    result = NRTransaction_PopTransaction((PyObject *)self);
 
-    PyThread_delete_key_value(NRTransaction_tls_key);
+    if (!result)
+        return NULL;
+
+    Py_DECREF(result);
 
     /*
      * If application was not enabled and so we are running

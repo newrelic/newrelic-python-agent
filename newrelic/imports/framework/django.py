@@ -62,7 +62,8 @@ def wrap_middleware(handler, *args, **kwargs):
     if hasattr(handler, '_request_middleware'):
         request_middleware = []
         for function in handler._request_middleware:
-            wrapper = FunctionTraceWrapper(function)
+            wrapper = NameTransactionWrapper(function, None, 'Django')
+            wrapper = FunctionTraceWrapper(wrapper)
             request_middleware.append(wrapper)
 
         handler._request_middleware = request_middleware
@@ -70,7 +71,8 @@ def wrap_middleware(handler, *args, **kwargs):
     if hasattr(handler, '_view_middleware'):
         view_middleware = []
         for function in handler._view_middleware:
-            wrapper = FunctionTraceWrapper(function)
+            wrapper = NameTransactionWrapper(function, None, 'Django')
+            wrapper = FunctionTraceWrapper(wrapper)
             view_middleware.append(wrapper)
 
         handler._view_middleware = view_middleware

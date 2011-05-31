@@ -175,6 +175,7 @@ _process_import_hook('gluon.main', 'newrelic.imports.framework.web2py')
 _process_import_hook('pylons.wsgiapp','newrelic.imports.framework.pylons')
 _process_import_hook('pylons.controllers.core',
                      'newrelic.imports.framework.pylons')
+_process_import_hook('pylons.templating', 'newrelic.imports.framework.pylons')
 
 _process_import_hook('cx_Oracle', 'newrelic.imports.database.dbapi2')
 _process_import_hook('MySQLdb', 'newrelic.imports.database.dbapi2')

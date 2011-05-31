@@ -37,3 +37,9 @@ def instrument(module):
         wrap_function_trace(module, 'WSGIController._perform_call',
                             (lambda self, func, args: callable_name(func)))
         wrap_object(module, 'WSGIController._perform_call', capture_error)
+
+    elif module.__name__ == 'pylons.templating':
+
+        wrap_function_trace(module, 'render_genshi')
+        wrap_function_trace(module, 'render_mako')
+        wrap_function_trace(module, 'render_jinja2')

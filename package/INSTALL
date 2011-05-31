@@ -38,9 +38,9 @@ To install the Python extension module into your Python installation run:
 If installing into a system wide Python installation remember to use the
 'sudo' command or run the command as 'root'.
 
-If you installed the local daemon process and it is running, then you can
-quickly test that data can get through to the New Relic UI by running the
-command:
+If you installed the local daemon process, it is running and you are
+using Python 2.5 or newer, then you can quickly test that data can get
+through to the New Relic UI by running the command:
 
     python -m newrelic.admin test
 
@@ -228,9 +228,9 @@ appropriate files for your Python installation.
 How can I test that the install is okay?
 ----------------------------------------
 
-If you have already installed the local daemon process and it is running,
-then you can quickly test that data can get through to the New Relic UI
-by running the command:
+If you have already installed the local daemon process, it is running
+and you are using Python 2.5 or newer, then you can quickly test that data
+can get through to the New Relic UI by running the command:
 
     python -m newrelic.admin test
 
@@ -257,6 +257,13 @@ agent needs to report data to the UI. The location of that log file may
 vary depending on the operating system being used. The actual location was
 listed in the output of the installer script when you installed the local
 daemon process.
+
+If you are using Python 2.4 the '-m' option to 'python' does not exist and
+instead you will need to run Python on the command line and within the
+interpreter enter:
+
+    import newrelic.commands.test
+    newrelic.commands.test.run([])
 
 For assistance if debugging any problems send email to "support@newrelic.com"
 including any log files, details of operating system, Python version etc.

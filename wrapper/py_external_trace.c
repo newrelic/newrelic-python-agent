@@ -461,6 +461,9 @@ static PyObject *NRExternalTraceWrapper_call(
 
     Py_DECREF(url);
 
+    if (!external_trace)
+        return NULL;
+
     /* Now call __enter__() on the context manager. */
 
     instance_method = PyObject_GetAttrString(external_trace, "__enter__");

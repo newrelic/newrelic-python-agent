@@ -334,6 +334,9 @@ static PyObject *NRMemcacheTraceWrapper_call(
 
     Py_DECREF(command);
 
+    if (!memcache_trace)
+        return NULL;
+
     /* Now call __enter__() on the context manager. */
 
     instance_method = PyObject_GetAttrString(memcache_trace, "__enter__");

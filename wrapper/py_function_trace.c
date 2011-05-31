@@ -379,6 +379,9 @@ static PyObject *NRFunctionTraceWrapper_call(
 
     Py_DECREF(name);
 
+    if (!function_trace)
+        return NULL;
+
     /* Now call __enter__() on the context manager. */
 
     instance_method = PyObject_GetAttrString(function_trace, "__enter__");

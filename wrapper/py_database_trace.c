@@ -384,6 +384,9 @@ static PyObject *NRDatabaseTraceWrapper_call(
 
     Py_DECREF(sql);
 
+    if (!database_trace)
+        return NULL;
+
     /* Now call __enter__() on the context manager. */
 
     instance_method = PyObject_GetAttrString(database_trace, "__enter__");

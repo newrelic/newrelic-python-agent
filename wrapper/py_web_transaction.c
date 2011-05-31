@@ -835,9 +835,8 @@ static PyObject *NRWSGIApplicationIterable_start(
     long status_as_int = 0;
     PyObject *status = NULL;
 
-    if (!PyArg_ParseTuple(args, "O!O!|O!:start_response", &PyString_Type,
-                          &status_line, &PyList_Type, &headers,
-                          &PyTuple_Type, &exc_info)) {
+    if (!PyArg_ParseTuple(args, "O!O!|O:start_response", &PyString_Type,
+                          &status_line, &PyList_Type, &headers, &exc_info)) {
         return NULL;
     }
 

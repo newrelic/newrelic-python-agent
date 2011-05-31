@@ -187,7 +187,7 @@ _process_import_hook('sqlite3.dbapi2', 'newrelic.imports.database.dbapi2')
 _process_import_hook('memcache', 'newrelic.imports.memcache.memcache')
 _process_import_hook('pylibmc', 'newrelic.imports.memcache.pylibmc')
 
-_process_import_hook('jinja2', 'newrelic.imports.template.jinja2')
+_process_import_hook('jinja2.environment', 'newrelic.imports.template.jinja2')
 
 _process_import_hook('mako.runtime', 'newrelic.imports.template.mako')
 

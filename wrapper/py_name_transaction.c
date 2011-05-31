@@ -47,14 +47,6 @@ static int NRNameTransactionWrapper_init(NRNameTransactionWrapperObject *self,
         return -1;
     }
 
-    if (!PyString_Check(name) && !PyUnicode_Check(name) &&
-        name != Py_None) {
-        PyErr_Format(PyExc_TypeError, "name argument must be string, "
-                     "Unicode, or None, found type '%s'",
-                     name->ob_type->tp_name);
-        return -1;
-    }
-
     if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
         scope != Py_None) {
         PyErr_Format(PyExc_TypeError, "scope argument must be string, "

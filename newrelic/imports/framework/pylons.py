@@ -5,6 +5,10 @@ from newrelic.agent import (wrap_name_transaction, wrap_function_trace,
                             wrap_error_trace, wrap_object, callable_name,
                             transaction, import_module)
 
+def name_controller(self, environ, start_response):
+    action = environ['pylons.routes_dict']['action']
+    return "%s.%s" % (callable_name(self), action)
+
 class capture_error(object):
     def __init__(self, wrapped):
         self.__wrapped__ = wrapped
@@ -31,8 +35,7 @@ def instrument(module):
 
     elif module.__name__ == 'pylons.controllers.core':
         wrap_name_transaction(module, 'WSGIController.__call__',
-                              (lambda self, environ, start_response:
-                              callable_name(self)), 'Pylons')
+                              name_controller, 'Pylons')
         wrap_function_trace(module, 'WSGIController.__call__')
         wrap_function_trace(module, 'WSGIController._perform_call',
                             (lambda self, func, args: callable_name(func)))

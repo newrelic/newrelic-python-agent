@@ -191,6 +191,8 @@ _process_import_hook('jinja2.environment', 'newrelic.imports.template.jinja2')
 
 _process_import_hook('mako.runtime', 'newrelic.imports.template.mako')
 
+_process_import_hook('genshi.template.base', 'newrelic.imports.template.genshi')
+
 _process_import_hook('feedparser', 'newrelic.imports.external.feedparser')
 
 # Setup database traces defined in configuration file.

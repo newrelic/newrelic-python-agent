@@ -196,6 +196,8 @@ _process_import_hook('genshi.template.base', 'newrelic.imports.template.genshi')
 
 _process_import_hook('feedparser', 'newrelic.imports.external.feedparser')
 
+_process_import_hook('xmlrpclib', 'newrelic.imports.external.xmlrpclib')
+
 # Setup database traces defined in configuration file.
 
 def _database_trace_import_hook(object_path, sql):

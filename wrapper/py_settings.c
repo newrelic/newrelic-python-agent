@@ -614,7 +614,7 @@ static PyGetSetDef NRBrowserSettings_getset[] = {
 
 PyTypeObject NRBrowserSettings_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "_newrelic.DebugSettings", /*tp_name*/
+    "_newrelic.BrowserSettings", /*tp_name*/
     sizeof(NRBrowserSettingsObject), /*tp_basicsize*/
     0,                      /*tp_itemsize*/
     /* methods */
@@ -764,7 +764,7 @@ static PyGetSetDef NRDaemonSettings_getset[] = {
 
 PyTypeObject NRDaemonSettings_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "_newrelic.DebugSettings", /*tp_name*/
+    "_newrelic.DaemonSettings", /*tp_name*/
     sizeof(NRDaemonSettingsObject), /*tp_basicsize*/
     0,                      /*tp_itemsize*/
     /* methods */

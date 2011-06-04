@@ -726,6 +726,18 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
             else
                 PyErr_Clear();
 
+            /*
+             * Make sure we always remove authorisation headers
+             * to ensure that logins and passwords not sent back.
+             */
+
+            PyDict_DelItemString(self->request_parameters,
+                                 "HTTP_AUTHORIZATION");
+            PyDict_DelItemString(self->request_parameters,
+                                 "HTTP_PROXY_AUTHORIZATION");
+
+            PyErr_Clear();
+
             NRUtilities_MergeDictIntoParams(self->transaction->params,
                                             "request_parameters",
                                             self->request_parameters);

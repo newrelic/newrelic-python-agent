@@ -1,7 +1,7 @@
 from newrelic.agent import (FunctionTraceWrapper, OutFunctionWrapper,
         wrap_pre_function, wrap_post_function, wrap_function_trace,
         wrap_error_trace, callable_name, transaction, NameTransactionWrapper,
-        transaction, settings, ErrorTraceWrapper, import_module)
+        transaction, settings, ErrorTraceWrapper)
 
 def insert_rum(request, response):
     if not settings().browser_monitoring.auto_instrument:
@@ -140,49 +140,32 @@ def wrap_uncaught_exception(handler, request, resolver, exc_info):
 
 def instrument(module):
 
-    wrap_post_function('django.core.handlers.base',
-            'BaseHandler.load_middleware',
-            wrap_middleware, run_once=True)
+    if module.__name__ == 'django.core.handlers.base':
+        wrap_post_function(module, 'BaseHandler.load_middleware',
+                wrap_middleware, run_once=True)
 
-    wrap_post_function('django.core.urlresolvers',
-            'RegexURLPattern.__init__',
-             wrap_url_resolver)
+    elif module.__name__ == 'django.core.handlers.wsgi':
+        wrap_pre_function(module, 'WSGIHandler.handle_uncaught_exception',
+                wrap_uncaught_exception)
 
-    wrap_pre_function('django.core.handlers.wsgi',
-            'WSGIHandler.handle_uncaught_exception',
-            wrap_uncaught_exception)
+    elif module.__name__ == 'django.core.urlresolvers':
+        wrap_post_function(module, 'RegexURLPattern.__init__',
+                 wrap_url_resolver)
+        wrap_error_trace(module, 'get_callable')
 
-    wrap_error_trace('django.core.urlresolvers',
-            'get_callable')
+    elif module.__name__ == 'django.template':
+        if hasattr(module.Template, '_render'):
+            wrap_function_trace(module, 'Template._render',
+                    (lambda template, context: template.name),
+                    'Template/Render')
+        else:
+            wrap_function_trace(module, 'Template.render',
+                    (lambda template, context: template.name),
+                    'Template/Render')
 
-    if module.VERSION[:2] >= (1, 3):
-        wrap_function_trace('django.template', 'Template._render',
-                (lambda template, context: template.name), 'Template/Render')
-    else:
-        wrap_function_trace('django.template', 'Template.render',
-                (lambda template, context: template.name), 'Template/Render')
+        # Register template tags for RUM header/footer.
 
-    # These are label as potentially non interesting so they
-    # will be dropped from transaction traces with too many
-    # nodes if they don't consume a lot of time.
-    #
-    # XXX These have been moved to the sample newrelic.ini
-    # configuration file. Ie., not regarding them as part of
-    # the core instrumentation. Being in configuration file a
-    # user can determine whether enabled or not.
-
-    #wrap_function_trace('django.template', 'NodeList.render_node',
-    #        (lambda template, node, context: callable_name(node)),
-    #        None, interesting=False)
-
-    #wrap_function_trace('django.template.debug', 'DebugNodeList.render_node',
-    #        (lambda template, node, context: callable_name(node)),
-    #        None, interesting=False)
-
-    # Register template tags for RUM header/footer.
-
-    django_template = import_module('django.template')
-    library = django_template.Library()
-    library.simple_tag(newrelic_browser_timing_header)
-    library.simple_tag(newrelic_browser_timing_footer)
-    django_template.libraries['django.templatetags.newrelic'] = library
+        library = module.Library()
+        library.simple_tag(newrelic_browser_timing_header)
+        library.simple_tag(newrelic_browser_timing_footer)
+        module.libraries['django.templatetags.newrelic'] = library

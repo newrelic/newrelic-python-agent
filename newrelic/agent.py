@@ -165,9 +165,17 @@ for section in _config_object.sections():
                         hook = _import_hook(parts[0], parts[1])
                     register_import_hook(target, hook)
 
-_process_import_hook('django', 'newrelic.imports.framework.django')
+_process_import_hook('django.core.handlers.base',
+                     'newrelic.imports.framework.django')
+_process_import_hook('django.core.urlresolvers',
+                     'newrelic.imports.framework.django')
+_process_import_hook('django.core.handlers.wsgi',
+                     'newrelic.imports.framework.django')
+_process_import_hook('django.template',
+                     'newrelic.imports.framework.django')
 
 _process_import_hook('flask', 'newrelic.imports.framework.flask')
+_process_import_hook('flask.app', 'newrelic.imports.framework.flask')
 
 _process_import_hook('gluon.compileapp', 'newrelic.imports.framework.web2py')
 _process_import_hook('gluon.main', 'newrelic.imports.framework.web2py')

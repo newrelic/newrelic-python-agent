@@ -18,11 +18,12 @@ def wrap_handle_exception(self, e):
 
 def instrument(module):
 
-    wrap_in_function('flask.app', 'Flask.add_url_rule',
-        wrap_add_url_rule_input)
+    if module.__name__ == 'flask.app':
+        wrap_in_function(module, 'Flask.add_url_rule',
+            wrap_add_url_rule_input)
+        wrap_pre_function(module, 'Flask.handle_exception',
+            wrap_handle_exception)
 
-    wrap_pre_function('flask.app', 'Flask.handle_exception',
-        wrap_handle_exception)
-
-    wrap_function_trace('flask', 'render_template')
-    wrap_function_trace('flask', 'render_template_string')
+    elif module.__name__ == 'flask':
+        wrap_function_trace(module, 'render_template')
+        wrap_function_trace(module, 'render_template_string')

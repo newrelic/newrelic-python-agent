@@ -173,6 +173,8 @@ _process_import_hook('django.core.handlers.wsgi',
                      'newrelic.imports.framework.django')
 _process_import_hook('django.template',
                      'newrelic.imports.framework.django')
+_process_import_hook('django.core.servers.basehttp',
+                     'newrelic.imports.framework.django')
 
 _process_import_hook('flask', 'newrelic.imports.framework.flask')
 _process_import_hook('flask.app', 'newrelic.imports.framework.flask')

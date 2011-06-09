@@ -1,7 +1,8 @@
 from newrelic.agent import (FunctionTraceWrapper, OutFunctionWrapper,
         wrap_pre_function, wrap_post_function, wrap_function_trace,
         wrap_error_trace, callable_name, transaction, NameTransactionWrapper,
-        transaction, settings, ErrorTraceWrapper)
+        transaction, settings, ErrorTraceWrapper, wrap_in_function,
+        WSGIApplicationWrapper)
 
 def insert_rum(request, response):
     if not settings().browser_monitoring.auto_instrument:
@@ -138,6 +139,9 @@ def wrap_uncaught_exception(handler, request, resolver, exc_info):
     if current_transaction:
         current_transaction.notice_error(*exc_info)
 
+def wrap_add_wsgi_application_input(self, application, **kwargs):
+    return ((self, WSGIApplicationWrapper(application)), kwargs)
+
 def instrument(module):
 
     if module.__name__ == 'django.core.handlers.base':
@@ -169,3 +173,10 @@ def instrument(module):
         library.simple_tag(newrelic_browser_timing_header)
         library.simple_tag(newrelic_browser_timing_footer)
         module.libraries['django.templatetags.newrelic'] = library
+
+    elif module.__name__ == 'django.core.servers.basehttp':
+
+        # Following allows 'runserver' to be used.
+
+        wrap_in_function(module, 'ServerHandler.run',
+            wrap_add_wsgi_application_input)

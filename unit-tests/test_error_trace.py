@@ -31,6 +31,10 @@ def function_2():
 def function_3():
     raise NotImplementedError("runtime_error 3")
 
+@_newrelic.error_trace(ignore_errors=['__main__.Error'])
+def function_4():
+    raise Error("runtime_error 4")
+
 class ErrorTraceTransactionTests(unittest.TestCase):
 
     def setUp(self):
@@ -80,6 +84,16 @@ class ErrorTraceTransactionTests(unittest.TestCase):
             time.sleep(0.5)
             try:
                 function_3()
+            except:
+                pass
+
+    def test_implicit_runtime_error_ignore_api(self):
+        environ = { "REQUEST_URI": "/error_trace_ignore_api" }
+        transaction = _newrelic.WebTransaction(application, environ)
+        with transaction:
+            time.sleep(0.5)
+            try:
+                function_4()
             except:
                 pass
 

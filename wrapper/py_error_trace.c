@@ -19,6 +19,7 @@ static PyObject *NRErrorTrace_new(PyTypeObject *type, PyObject *args,
         return NULL;
 
     self->parent_transaction = NULL;
+    self->ignore_errors = NULL;
 
     return (PyObject *)self;
 }
@@ -29,12 +30,13 @@ static int NRErrorTrace_init(NRErrorTraceObject *self, PyObject *args,
                                 PyObject *kwds)
 {
     NRTransactionObject *transaction = NULL;
+    PyObject *ignore_errors = Py_None;
 
-    static char *kwlist[] = { "transaction", NULL };
+    static char *kwlist[] = { "transaction", "ignore_errors", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!:ErrorTrace",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!|O:ErrorTrace",
                                      kwlist, &NRTransaction_Type,
-                                     &transaction)) {
+                                     &transaction, &ignore_errors)) {
         return -1;
     }
 
@@ -57,11 +59,26 @@ static int NRErrorTrace_init(NRErrorTraceObject *self, PyObject *args,
     }
 
     /*
+     * Errors to ignored must implement sequence protocol.
+     */
+
+    if (ignore_errors != Py_None && !PySequence_Check(ignore_errors)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "ignore_errors must be a sequence or None");
+        return -1;
+    }
+
+    Py_INCREF(ignore_errors);
+    Py_XDECREF(self->ignore_errors);
+    self->ignore_errors = ignore_errors;
+
+    /*
      * Keep reference to parent transaction to ensure that it
      * is not destroyed before any trace created against it.
      */
 
     Py_INCREF(transaction);
+    Py_XDECREF(self->parent_transaction);
     self->parent_transaction = transaction;
 
     return 0;
@@ -72,6 +89,7 @@ static int NRErrorTrace_init(NRErrorTraceObject *self, PyObject *args,
 static void NRErrorTrace_dealloc(NRErrorTraceObject *self)
 {
     Py_XDECREF(self->parent_transaction);
+    Py_XDECREF(self->ignore_errors);
 
     Py_TYPE(self)->tp_free(self);
 }
@@ -117,21 +135,75 @@ static PyObject *NRErrorTrace_exit(NRErrorTraceObject *self,
      */
 
     if (type != Py_None && value != Py_None && traceback != Py_None) {
-        PyObject *object = NULL;
+        PyObject *method = NULL;
+        PyObject *name = NULL;
 
-        object = PyObject_GetAttrString((PyObject *)self->parent_transaction,
-                                        "notice_error");
+        /*
+         * Check whether this is an error type we should ignore.
+         * Note that where the value is an instance type, the
+         * name has to be obtained from the associated class
+         * definition object. Only need do this of sequence of
+         * errors to ignore has been defined.
+         */
 
-        if (object) {
+        if (self->ignore_errors != Py_None) {
+            if (PyInstance_Check(value)) {
+                PyObject *module = NULL;
+                PyObject *class = NULL;
+                PyObject *object = NULL;
+
+                class = PyObject_GetAttrString(value, "__class__");
+
+                if (class) {
+                    module = PyObject_GetAttrString(class, "__module__");
+                    object = PyObject_GetAttrString(class, "__name__");
+
+                    if (module) {
+                        name = PyString_FromFormat("%s.%s",
+                                                   PyString_AsString(module),
+                                                   PyString_AsString(object));
+                    }
+                    else {
+                        Py_INCREF(object);
+                        name = object;
+                    }
+                }
+
+                PyErr_Clear();
+
+                Py_XDECREF(object);
+                Py_XDECREF(class);
+                Py_XDECREF(module);
+            }
+
+            if (!name)
+                name = PyString_FromString(Py_TYPE(value)->tp_name);
+
+            if (PySequence_Contains(self->ignore_errors, name) == 1) {
+                Py_DECREF(name);
+                name = NULL;
+            }
+
+            PyErr_Clear();
+        }
+
+        if (self->ignore_errors == Py_None || name) {
+            method = PyObject_GetAttrString(
+                    (PyObject *)self->parent_transaction, "notice_error");
+        }
+
+        if (method) {
             PyObject *args = NULL;
             PyObject *result = NULL;
 
             args = PyTuple_Pack(3, type, value, traceback);
-            result = PyObject_Call(object, args, NULL);
+            result = PyObject_Call(method, args, NULL);
 
             Py_DECREF(args);
-            Py_DECREF(object);
+            Py_DECREF(method);
             Py_XDECREF(result);
+
+            Py_XDECREF(name);
         }
     }
 
@@ -204,6 +276,7 @@ static PyObject *NRErrorTraceWrapper_new(PyTypeObject *type, PyObject *args,
         return NULL;
 
     self->wrapped_object = NULL;
+    self->ignore_errors = NULL;
 
     return (PyObject *)self;
 }
@@ -214,17 +287,29 @@ static int NRErrorTraceWrapper_init(NRErrorTraceWrapperObject *self,
                                        PyObject *args, PyObject *kwds)
 {
     PyObject *wrapped_object = NULL;
+    PyObject *ignore_errors = Py_None;
 
-    static char *kwlist[] = { "wrapped", NULL };
+    static char *kwlist[] = { "wrapped", "ignore_errors", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:ErrorTraceWrapper",
-                                     kwlist, &wrapped_object)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O:ErrorTraceWrapper",
+                                     kwlist, &wrapped_object,
+                                     &ignore_errors)) {
+        return -1;
+    }
+
+    if (ignore_errors != Py_None && !PySequence_Check(ignore_errors)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "ignore_errors must be a sequence or None");
         return -1;
     }
 
     Py_INCREF(wrapped_object);
     Py_XDECREF(self->wrapped_object);
     self->wrapped_object = wrapped_object;
+
+    Py_INCREF(ignore_errors);
+    Py_XDECREF(self->ignore_errors);
+    self->ignore_errors = ignore_errors;
 
     /*
      * TODO This should set __module__, __name__, __doc__ and
@@ -240,6 +325,7 @@ static int NRErrorTraceWrapper_init(NRErrorTraceWrapperObject *self,
 static void NRErrorTraceWrapper_dealloc(NRErrorTraceWrapperObject *self)
 {
     Py_XDECREF(self->wrapped_object);
+    Py_XDECREF(self->ignore_errors);
 
     Py_TYPE(self)->tp_free(self);
 }
@@ -271,7 +357,8 @@ static PyObject *NRErrorTraceWrapper_call(
     /* Create error trace context manager. */
 
     error_trace = PyObject_CallFunctionObjArgs((PyObject *)
-            &NRErrorTrace_Type, current_transaction, NULL);
+            &NRErrorTrace_Type, current_transaction,
+            self->ignore_errors, NULL);
 
     /* Now call __enter__() on the context manager. */
 
@@ -458,6 +545,8 @@ static PyObject *NRErrorTraceDecorator_new(PyTypeObject *type,
     if (!self)
         return NULL;
 
+    self->ignore_errors = NULL;
+
     return (PyObject *)self;
 }
 
@@ -466,12 +555,24 @@ static PyObject *NRErrorTraceDecorator_new(PyTypeObject *type,
 static int NRErrorTraceDecorator_init(NRErrorTraceDecoratorObject *self,
                                          PyObject *args, PyObject *kwds)
 {
-    static char *kwlist[] = { NULL };
+    PyObject *ignore_errors = NULL;
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, ":ErrorTraceDecorator",
-                                     kwlist)) {
+    static char *kwlist[] = { "ignore_errors", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O:ErrorTraceDecorator",
+                                     kwlist, &ignore_errors)) {
         return -1;
     }
+
+    if (ignore_errors != Py_None && !PySequence_Check(ignore_errors)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "ignore_errors must be a sequence or None");
+        return -1;
+    }
+
+    Py_INCREF(ignore_errors);
+    Py_XDECREF(self->ignore_errors);
+    self->ignore_errors = ignore_errors;
 
     return 0;
 }
@@ -481,6 +582,8 @@ static int NRErrorTraceDecorator_init(NRErrorTraceDecoratorObject *self,
 static void NRErrorTraceDecorator_dealloc(
         NRErrorTraceDecoratorObject *self)
 {
+    Py_XDECREF(self->ignore_errors);
+
     Py_TYPE(self)->tp_free(self);
 }
 
@@ -499,7 +602,8 @@ static PyObject *NRErrorTraceDecorator_call(
     }
 
     return PyObject_CallFunctionObjArgs(
-            (PyObject *)&NRErrorTraceWrapper_Type, wrapped_object, NULL);
+            (PyObject *)&NRErrorTraceWrapper_Type, wrapped_object,
+            self->ignore_errors, NULL);
 }
 
 /* ------------------------------------------------------------------------- */

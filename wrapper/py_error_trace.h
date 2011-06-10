@@ -14,6 +14,7 @@
 typedef struct {
     PyObject_HEAD
     NRTransactionObject *parent_transaction;
+    PyObject *ignore_errors;
 } NRErrorTraceObject;
 
 extern PyTypeObject NRErrorTrace_Type;
@@ -21,12 +22,14 @@ extern PyTypeObject NRErrorTrace_Type;
 typedef struct {
     PyObject_HEAD
     PyObject *wrapped_object;
+    PyObject *ignore_errors;
 } NRErrorTraceWrapperObject;
 
 extern PyTypeObject NRErrorTraceWrapper_Type;
 
 typedef struct {
     PyObject_HEAD
+    PyObject *ignore_errors;
 } NRErrorTraceDecoratorObject;
 
 extern PyTypeObject NRErrorTraceDecorator_Type;

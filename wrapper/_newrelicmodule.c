@@ -802,13 +802,17 @@ static PyObject *newrelic_wrap_external_trace(PyObject *self, PyObject *args,
 static PyObject *newrelic_error_trace(PyObject *self, PyObject *args,
                                       PyObject *kwds)
 {
-    static char *kwlist[] = { NULL };
+    PyObject *ignore_errors = Py_None;
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, ":error_trace", kwlist))
+    static char *kwlist[] = { "ignore_errors", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O:error_trace", kwlist,
+                                     &ignore_errors)) {
         return NULL;
+    }
 
     return PyObject_CallFunctionObjArgs((PyObject *)
-            &NRErrorTraceDecorator_Type, NULL);
+            &NRErrorTraceDecorator_Type, ignore_errors, NULL);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -825,12 +829,15 @@ static PyObject *newrelic_wrap_error_trace(PyObject *self, PyObject *args,
 
     PyObject *wrapper_object = NULL;
 
+    PyObject *ignore_errors = Py_None;
+
     PyObject *result = NULL;
 
-    static char *kwlist[] = { "module", "object_name", NULL };
+    static char *kwlist[] = { "module", "object_name", "ignore_errors", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OS:wrap_error_trace",
-                                     kwlist, &module, &object_name)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OS|O:wrap_error_trace",
+                                     kwlist, &module, &object_name,
+                                     &ignore_errors)) {
         return NULL;
     }
 
@@ -848,7 +855,7 @@ static PyObject *newrelic_wrap_error_trace(PyObject *self, PyObject *args,
         return NULL;
 
     wrapper_object = PyObject_CallFunctionObjArgs((PyObject *)
-            &NRErrorTraceWrapper_Type, wrapped_object, NULL);
+            &NRErrorTraceWrapper_Type, wrapped_object, ignore_errors, NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object,
             attribute_name, wrapper_object);

@@ -324,15 +324,16 @@ static PyObject *newrelic_callable_name(PyObject *self, PyObject *args,
                                         PyObject *kwds)
 {
     PyObject *object = NULL;
+    const char *separator = ":";
 
-    static char *kwlist[] = { "object", NULL };
+    static char *kwlist[] = { "object", "separator", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:callable_name",
-                                     kwlist, &object)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|s:callable_name",
+                                     kwlist, &object, &separator)) {
         return NULL;
     }
 
-    return NRUtilities_CallableName(object, NULL, NULL);
+    return NRUtilities_CallableName(object, NULL, NULL, separator);
 }
 
 /* ------------------------------------------------------------------------- */

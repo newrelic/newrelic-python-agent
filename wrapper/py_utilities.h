@@ -19,7 +19,8 @@ extern PyObject *NRUtilities_FormatException(PyObject *type, PyObject *value,
 
 extern PyObject *NRUtilities_CallableName(PyObject *wrapped,
                                           PyObject *wrapper,
-                                          PyObject *args);
+                                          PyObject *args,
+                                          const char *separator);
 
 extern PyObject *NRUtilities_ResolveObject(PyObject *module,
                                            PyObject *object_name,

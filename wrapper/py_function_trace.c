@@ -355,7 +355,7 @@ static PyObject *NRFunctionTraceWrapper_call(
 
     if (self->name == Py_None) {
         name = NRUtilities_CallableName(self->wrapped_object,
-                                        (PyObject *)self, args);
+                                        (PyObject *)self, args, ":");
     }
     else if (PyString_Check(self->name) || PyUnicode_Check(self->name)) {
         name = self->name;

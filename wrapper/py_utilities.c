@@ -77,7 +77,7 @@ PyObject *NRUtilities_FormatException(PyObject *type, PyObject *value,
 /* ------------------------------------------------------------------------- */
 
 PyObject *NRUtilities_CallableName(PyObject *wrapped, PyObject *wrapper,
-                                   PyObject *args)
+                                   PyObject *args, const char *separator)
 {
     PyObject *context = NULL;
 
@@ -91,8 +91,8 @@ PyObject *NRUtilities_CallableName(PyObject *wrapped, PyObject *wrapper,
     module_name = PyTuple_GetItem(context, 0);
     object_name = PyTuple_GetItem(context, 1);
 
-    result = PyString_FromFormat("%s:%s",
-            PyString_AsString(module_name),
+    result = PyString_FromFormat("%s%s%s",
+            PyString_AsString(module_name), separator,
             PyString_AsString(object_name));
 
     Py_DECREF(context);

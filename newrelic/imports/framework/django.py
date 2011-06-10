@@ -119,12 +119,14 @@ def wrap_url_resolver_output(result):
         callback, args, kwargs = result
         wrapper = NameTransactionWrapper(callback, None, 'Django')
         wrapper = FunctionTraceWrapper(wrapper)
-        wrapper = ErrorTraceWrapper(wrapper)
+        wrapper = ErrorTraceWrapper(wrapper,
+                                    ignore_errors=['django.http.Http404'])
         result = (wrapper, args, kwargs)
     else:
         wrapper = NameTransactionWrapper(result.func, None, 'Django')
         wrapper = FunctionTraceWrapper(wrapper)
-        wrapper = ErrorTraceWrapper(wrapper)
+        wrapper = ErrorTraceWrapper(wrapper,
+                                    ignore_errors=['django.http.Http404'])
         result.func = wrapper
 
     return result
@@ -155,7 +157,8 @@ def instrument(module):
     elif module.__name__ == 'django.core.urlresolvers':
         wrap_post_function(module, 'RegexURLPattern.__init__',
                  wrap_url_resolver)
-        wrap_error_trace(module, 'get_callable')
+        wrap_error_trace(module, 'get_callable',
+                 ignore_errors=['django.http.Http404'])
 
     elif module.__name__ == 'django.template':
         if hasattr(module.Template, '_render'):

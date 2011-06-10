@@ -828,7 +828,6 @@ static PyObject *NRTransaction_notice_error(
     if (type != Py_None && value != Py_None) {
         PyObject *item = NULL;
 
-        PyObject *class = NULL;
         PyObject *name = NULL;
 
         settings = (NRSettingsObject *)NRSettings_Singleton();
@@ -841,12 +840,32 @@ static PyObject *NRTransaction_notice_error(
          */
 
         if (PyInstance_Check(value)) {
+            PyObject *module = NULL;
+            PyObject *class = NULL;
+            PyObject *object = NULL;
+
             class = PyObject_GetAttrString(value, "__class__");
 
-            if (class)
-                name = PyObject_GetAttrString(class, "__name__");
+            if (class) {
+                module = PyObject_GetAttrString(class, "__module__");
+                object = PyObject_GetAttrString(class, "__name__");
+
+                if (module) {
+                    name = PyString_FromFormat("%s.%s",
+                                               PyString_AsString(module),
+                                               PyString_AsString(object));
+                }
+                else {
+                    Py_INCREF(object);
+                    name = object;
+                }
+            }
 
             PyErr_Clear();
+
+            Py_XDECREF(object);
+            Py_XDECREF(class);
+            Py_XDECREF(module);
         }
 
         if (name) {
@@ -963,7 +982,6 @@ static PyObject *NRTransaction_notice_error(
             Py_DECREF(error_message);
         }
         
-        Py_XDECREF(class);
         Py_XDECREF(name);
     }
 

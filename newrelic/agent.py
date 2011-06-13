@@ -365,3 +365,31 @@ for section in _config_object.sections():
                                                          scope)
                     register_import_hook(module, hook)
 
+# Setup error trace wrapper defined in configuration file.
+
+def _error_trace_import_hook(object_path, ignore_errors):
+    def _instrument(target):
+        wrap_error_trace(target, object_path, ignore_errors)
+    return _instrument
+
+for section in _config_object.sections():
+    if section.startswith('error-trace:'):
+        try:
+            enabled = _config_object.getboolean(section, 'enabled')
+            function = _config_object.get(section, 'function')
+        except ConfigParser.NoOptionError:
+            pass
+        else:
+            if enabled:
+                ignore_errors = []
+
+                if _config_object.has_option(section, 'ignore_errors'):
+                    ignore_errors = _config_object.get(section,
+                            'ignore_errors').split()
+
+                parts = function.split(':')
+                if len(parts) == 2:
+                    module, object_path = parts
+                    hook = _error_trace_import_hook(object_path, ignore_errors)
+                    register_import_hook(module, hook)
+

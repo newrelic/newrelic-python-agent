@@ -179,7 +179,9 @@ def instrument(module):
 
     elif module.__name__ == 'django.core.servers.basehttp':
 
-        # Following allows 'runserver' to be used.
+        # Allow 'runserver' to be used with Django <= 1.3.
+        # Later versions of Django use wsgiref server instead.
 
-        wrap_in_function(module, 'ServerHandler.run',
-            wrap_add_wsgi_application_input)
+        if hasattr(module.ServerHandler, 'run'):
+            wrap_in_function(module, 'ServerHandler.run',
+                    wrap_add_wsgi_application_input)

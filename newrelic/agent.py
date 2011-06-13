@@ -43,7 +43,7 @@ _settings = settings()
 
 _config_file = os.environ.get('NEWRELIC_CONFIG_FILE', None)
 _config_environment = os.environ.get('NEWRELIC_ENVIRONMENT', None)
-_config_object = ConfigParser.SafeConfigParser()
+_config_object = ConfigParser.RawConfigParser()
 
 def _process_setting(section, option, getter, mapper):
     try:

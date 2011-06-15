@@ -6,6 +6,8 @@
 
 #include "py_background_task.h"
 
+#include "py_web_transaction.h"
+
 #include "py_utilities.h"
 
 #include "globals.h"
@@ -265,6 +267,8 @@ static PyObject *NRBackgroundTaskWrapper_call(
 {
     PyObject *wrapped_result = NULL;
 
+    PyObject *current_transaction = NULL;
+
     PyObject *background_task = NULL;
 
     PyObject *instance_method = NULL;
@@ -273,7 +277,7 @@ static PyObject *NRBackgroundTaskWrapper_call(
 
     PyObject *name = NULL;
 
-    /* Create database trace context manager. */
+    /* Calculate name to be assigned to background task. */
 
     if (self->name == Py_None) {
         name = NRUtilities_CallableName(self->wrapped_object,
@@ -283,6 +287,48 @@ static PyObject *NRBackgroundTaskWrapper_call(
         name = self->name;
         Py_INCREF(name);
     }
+
+    /*
+     * Check to see if we are being called within the context
+     * of a web transaction. If we are, then rather than
+     * start a new transaction for a background task, we will
+     * just flag the current web transaction as a background
+     * task.
+     */
+
+    current_transaction = NRTransaction_CurrentTransaction();
+
+    if (current_transaction) {
+        if (Py_TYPE(current_transaction) == &NRWebTransaction_Type) {
+            PyObject *method = NULL;
+            PyObject *result = NULL;
+
+            PyObject_SetAttrString(current_transaction, "background_task",
+                                   Py_True);
+
+            method = PyObject_GetAttrString(current_transaction,
+                                            "name_transaction");
+
+            if (method) {
+                result = PyObject_CallFunctionObjArgs(method, name,
+                                                      self->scope, NULL);
+
+                if (!result)
+                    PyErr_WriteUnraisable(method);
+                else
+                    Py_DECREF(result);
+
+                Py_DECREF(method);
+                Py_DECREF(name);
+
+                return PyObject_Call(self->wrapped_object, args, kwds);
+            }
+
+            PyErr_Clear();
+        }
+    }
+
+    /* Create background task context manager. */
 
     background_task = PyObject_CallFunctionObjArgs((PyObject *)
             &NRBackgroundTask_Type, self->application, name,

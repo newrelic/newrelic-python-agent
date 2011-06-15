@@ -22,6 +22,11 @@ static int NRWebTransaction_init(NRTransactionObject *self, PyObject *args,
     PyObject *newargs = NULL;
     PyObject *object = NULL;
 
+    PyObject *module = NULL;
+    PyObject *dict = NULL;
+    PyObject *function = NULL;
+    PyObject *result = NULL;
+
     static char *kwlist[] = { "application", "environ", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O!:WebTransaction",
@@ -260,7 +265,58 @@ static int NRWebTransaction_init(NRTransactionObject *self, PyObject *args,
          * different to what it was at start of the request.
          */
 
+#if 0
+        /*
+         * XXX Not supposed to be doing this. Should only be
+         * copying a split up QUERY_STRING.
+         */
+
         PyDict_Update(self->request_parameters, environ);
+#endif
+
+        module = PyImport_ImportModule("urlparse");
+
+        if (module) {
+            dict = PyModule_GetDict(module);
+
+            function = PyDict_GetItemString(dict, "parse_qs");
+            Py_XINCREF(function);
+
+            Py_DECREF(module);
+        }
+
+        if (!function) {
+            module = PyImport_ImportModule("cgi");
+
+            if (module) {
+                dict = PyModule_GetDict(module);
+
+                function = PyDict_GetItemString(dict, "parse_qs");
+                Py_XINCREF(function);
+
+                Py_DECREF(module);
+            }
+        }
+
+        if (function) {
+            object = PyDict_GetItemString(environ, "QUERY_STRING");
+
+            if (object) {
+                result = PyObject_CallFunctionObjArgs(function, object,
+                                                      Py_True, NULL);
+
+                /* Shouldn't ever fail. */
+
+                if (result) {
+                    PyDict_Update(self->request_parameters, result);
+                    Py_DECREF(result);
+                }
+                else
+                    PyErr_Clear();
+            }
+        }
+
+        Py_XDECREF(function);
     }
 
     return 0;

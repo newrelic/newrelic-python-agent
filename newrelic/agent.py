@@ -238,9 +238,9 @@ for section in _config_object.sections():
 
 # Setup background task wrapper defined in configuration file.
 
-def _background_task_import_hook(object_path, name, scope):
+def _background_task_import_hook(object_path, application, name, scope):
     def _instrument(target):
-        wrap_background_task(target, object_path, name, scope)
+        wrap_background_task(target, object_path, application, name, scope)
     return _instrument
 
 for section in _config_object.sections():
@@ -252,9 +252,12 @@ for section in _config_object.sections():
             pass
         else:
             if enabled:
+                application = None
                 name = None
                 scope = 'Function'
 
+                if _config_object.has_option(section, 'application'):
+                    application = _config_object.get(section, 'application')
                 if _config_object.has_option(section, 'name'):
                     name = _config_object.get(section, 'name')
                 if _config_object.has_option(section, 'scope'):
@@ -263,12 +266,13 @@ for section in _config_object.sections():
                 parts = function.split(':')
                 if len(parts) == 2:
                     module, object_path = parts
-                    if name.startswith('lambda '):
+                    if name and name.startswith('lambda '):
                         vars = { "callable_name": callable_name,
                                  "import_module": import_module, }
                         name = eval(name, vars)
-                    hook = _background_task_import_hook(object_path, name,
-                                                        scope)
+                    hook = _background_task_import_hook(object_path,
+                                                        application,
+                                                        name, scope)
                     register_import_hook(module, hook)
 
 # Setup database traces defined in configuration file.

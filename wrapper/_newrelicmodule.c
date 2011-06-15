@@ -2009,8 +2009,6 @@ init_newrelic(void)
 
     nr_per_process_globals.nrdaemon.sockpath = nrstrdup("/tmp/.newrelic.sock");
     nr_per_process_globals.nrdaemon.sockfd = -1;
-    nr_per_process_globals.nrdaemon.timeout = 10;
-    nr_per_process_globals.nrdaemon.nonblock = 1;
     nr_per_process_globals.nrdaemon.buffer = NULL;
 
     /*

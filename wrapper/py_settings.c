@@ -714,42 +714,6 @@ static int NRDaemonSettings_set_socket_path(
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRDaemonSettings_get_socket_timeout(
-        NRDaemonSettingsObject *self, void *closure)
-{
-    return PyInt_FromLong(nr_per_process_globals.nrdaemon.timeout);
-}
-
-/* ------------------------------------------------------------------------- */
-
-static int NRDaemonSettings_set_socket_timeout(
-        NRDaemonSettingsObject *self, PyObject *value)
-{
-    if (value == NULL) {
-        PyErr_SetString(PyExc_TypeError,
-                        "can't delete socket_timeout attribute");
-        return -1;
-    }
-
-    if (!PyBool_Check(value)) {
-        PyErr_SetString(PyExc_TypeError,
-                        "expected bool for socket_timeout attribute");
-        return -1;
-    }
-
-    nr_per_process_globals.nrdaemon.timeout = PyInt_AsLong(value);
-
-    if (nr_per_process_globals.nrdaemon.timeout < 10)
-        nr_per_process_globals.nrdaemon.timeout = 10;
-
-    if (nr_per_process_globals.nrdaemon.timeout > 120)
-        nr_per_process_globals.nrdaemon.timeout = 120;
-
-    return 0;
-}
-
-/* ------------------------------------------------------------------------- */
-
 static PyMethodDef NRDaemonSettings_methods[] = {
     { NULL, NULL }
 };
@@ -757,8 +721,6 @@ static PyMethodDef NRDaemonSettings_methods[] = {
 static PyGetSetDef NRDaemonSettings_getset[] = {
     { "socket_path",        (getter)NRDaemonSettings_get_socket_path,
                             (setter)NRDaemonSettings_set_socket_path, 0 },
-    { "socket_timeout",     (getter)NRDaemonSettings_get_socket_timeout,
-                            (setter)NRDaemonSettings_set_socket_timeout, 0 },
     { NULL },
 };
 

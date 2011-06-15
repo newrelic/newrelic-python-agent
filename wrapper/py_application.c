@@ -14,6 +14,7 @@
 #include "genericobject.h"
 #include "harvest.h"
 #include "metric_table.h"
+#include "daemon_protocol.h"
 
 #include "nr_version.h"
 
@@ -184,6 +185,8 @@ static int NRApplication_init(NRApplicationObject *self, PyObject *args,
 {
     PyObject *name = NULL;
 
+    nrdaemon_t *dconn = &nr_per_process_globals.nrdaemon;
+
     static char *kwlist[] = { "name", NULL };
 
     /*
@@ -230,6 +233,14 @@ static int NRApplication_init(NRApplicationObject *self, PyObject *args,
      */
 
     nrthread_mutex_unlock(&self->application->lock);
+
+    /*
+     * Trigger attempt to get per application configuration from
+     * the servers via the local daemon as quick as possible.
+     */
+
+    nr__start_communication(dconn, self->application,
+                            nr_per_process_globals.env, 0);
 
     /*
      * Markup what version of the Python agent wrapper is being

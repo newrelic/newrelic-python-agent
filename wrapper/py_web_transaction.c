@@ -343,7 +343,7 @@ static PyObject *NRWebTransaction_header(NRTransactionObject *self,
     if (!self->application->application->episodes_url)
         return PyString_FromString("");
 
-    self->transaction->has_returned_browser_timing_header = 1;
+    self->transaction->has_autorum_browser_timing_header = 1;
 
     return PyString_FromString(script_fragment);
 }
@@ -386,7 +386,7 @@ static PyObject *NRWebTransaction_footer(NRTransactionObject *self,
     if (self->transaction->ignore)
         return PyString_FromString("");
 
-    if (!self->transaction->has_returned_browser_timing_header)
+    if (!self->transaction->has_autorum_browser_timing_header)
         return PyString_FromString("");
 
     if (!self->application->application->license_key ||

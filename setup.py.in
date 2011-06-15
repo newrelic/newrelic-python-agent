@@ -28,6 +28,7 @@ platform = re.sub('[0-9.]*$', '', platform)
 sources = [
   "php_agent/application.c",
   "php_agent/daemon_protocol.c",
+  "php_agent/dbgstack.c",
   "php_agent/genericobject.c",
   "php_agent/globals.c",
   "php_agent/harvest.c",

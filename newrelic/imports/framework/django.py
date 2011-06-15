@@ -37,40 +37,51 @@ def insert_rum(request, response):
     if not header or not footer:
         return response
 
+    # Make sure we flatten any content first as it could be
+    # stored as a list of strings. Do this by assigning back
+    # onto itself. This is done to avoid having multiple
+    # copies of the string in memory at the same time as we
+    # progress through steps below.
+
+    content = response.content
+    response.content = content
+
     # Insert the JavaScript. We require that there is a
     # <head> element in the HTML, otherwise we don't do
-    # it.
+    # it. When updating response content we null the
+    # original first to avoid multiple copies in memory
+    # when we recompose actual response from list of
+    # strings.
     #
     # XXX This needs to be updated to only insert after
     # any meta tags within the head section to avoid IE.
-    # problems. See tracker issue 154789. Could also look
-    # adding a head section if none exists.
+    # problems. See tracker issue 154789.
 
-    start = response.content.find('<head')
-    end = response.content.rfind('</body>', -1024)
+    start = content.find('<head')
+    end = content.rfind('</body>', -1024)
     if start != -1 and end != -1:
-        start = response.content.find('>', start, start+1024)
+        start = content.find('>', start, start+1024)
         if start != -1 and start < end:
             parts = []
-            parts.append(response.content[0:start+1])
+            parts.append(content[0:start+1])
             parts.append(header)
-            parts.append(response.content[start+1:end])
+            parts.append(content[start+1:end])
             parts.append(footer)
-            parts.append(response.content[end:])
+            parts.append(content[end:])
             response.content = ''
             content = ''.join(parts)
             response.content = content
     elif start == -1 and end != -1:
-        start = response.content.find('<body')
+        start = content.find('<body')
         if start != -1 and start < end:
             parts = []
-            parts.append(response.content[0:start])
+            parts.append(content[0:start])
             parts.append('<head>')
             parts.append(header)
             parts.append('</head>')
-            parts.append(response.content[start:end])
+            parts.append(content[start:end])
             parts.append(footer)
-            parts.append(response.content[end:])
+            parts.append(content[end:])
             response.content = ''
             content = ''.join(parts)
             response.content = content

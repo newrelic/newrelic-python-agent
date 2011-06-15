@@ -7,6 +7,7 @@ import _newrelic
 settings = _newrelic.settings()
 settings.log_file = "%s.log" % __file__
 settings.log_level = _newrelic.LOG_VERBOSEDEBUG
+settings.transaction_tracer.transaction_threshold = 0
 
 application = _newrelic.application("UnitTests")
 
@@ -108,6 +109,13 @@ class WebTransactionTests(unittest.TestCase):
         transaction.__enter__()
         del transaction
         self.assertEqual(_newrelic.transaction(), None)
+
+    def test_request_parameters(self):
+        environ = { "REQUEST_URI": "/request_parameters",
+                    "QUERY_STRING": "a=1&a=2&b=3&c" }
+        transaction = _newrelic.WebTransaction(application, environ)
+        with transaction:
+            pass
 
     def test_custom_parameters(self):
         environ = { "REQUEST_URI": "/custom_parameters" }

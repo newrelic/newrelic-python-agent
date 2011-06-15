@@ -6,6 +6,7 @@ settings = _newrelic.settings()
 settings.app_name = "UnitTests"
 settings.log_file = "%s.log" % __file__
 settings.log_level = _newrelic.LOG_VERBOSEDEBUG
+settings.transaction_tracer.transaction_threshold = 0
 
 _application = _newrelic.application("UnitTests")
 

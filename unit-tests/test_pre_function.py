@@ -9,6 +9,7 @@ import _newrelic
 settings = _newrelic.settings()
 settings.log_file = "%s.log" % __file__
 settings.log_level = _newrelic.LOG_VERBOSEDEBUG
+settings.transaction_tracer.transaction_threshold = 0
 
 _test_result = None
 _test_count = 0

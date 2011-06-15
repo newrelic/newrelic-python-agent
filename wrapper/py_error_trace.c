@@ -147,34 +147,32 @@ static PyObject *NRErrorTrace_exit(NRErrorTraceObject *self,
          */
 
         if (self->ignore_errors != Py_None) {
-            if (PyInstance_Check(value)) {
-                PyObject *module = NULL;
-                PyObject *class = NULL;
-                PyObject *object = NULL;
+            PyObject *module = NULL;
+            PyObject *class = NULL;
+            PyObject *object = NULL;
 
-                class = PyObject_GetAttrString(value, "__class__");
+            class = PyObject_GetAttrString(value, "__class__");
 
-                if (class) {
-                    module = PyObject_GetAttrString(class, "__module__");
-                    object = PyObject_GetAttrString(class, "__name__");
+            if (class) {
+                module = PyObject_GetAttrString(class, "__module__");
+                object = PyObject_GetAttrString(class, "__name__");
 
-                    if (module) {
-                        name = PyString_FromFormat("%s.%s",
-                                                   PyString_AsString(module),
-                                                   PyString_AsString(object));
-                    }
-                    else {
-                        Py_INCREF(object);
-                        name = object;
-                    }
+                if (module) {
+                    name = PyString_FromFormat("%s.%s",
+                                               PyString_AsString(module),
+                                               PyString_AsString(object));
                 }
-
-                PyErr_Clear();
-
-                Py_XDECREF(object);
-                Py_XDECREF(class);
-                Py_XDECREF(module);
+                else if (object) {
+                    Py_INCREF(object);
+                    name = object;
+                }
             }
+
+            PyErr_Clear();
+
+            Py_XDECREF(object);
+            Py_XDECREF(class);
+            Py_XDECREF(module);
 
             if (!name)
                 name = PyString_FromString(Py_TYPE(value)->tp_name);

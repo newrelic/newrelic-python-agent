@@ -2,7 +2,9 @@ from newrelic.agent import (FunctionTraceWrapper, OutFunctionWrapper,
         wrap_pre_function, wrap_post_function, wrap_function_trace,
         wrap_error_trace, callable_name, transaction, NameTransactionWrapper,
         transaction, settings, ErrorTraceWrapper, wrap_in_function,
-        WSGIApplicationWrapper)
+        WSGIApplicationWrapper, import_module, transaction)
+
+import types
 
 def insert_rum(request, response):
     if not settings().browser_monitoring.auto_instrument:
@@ -131,10 +133,47 @@ def wrap_url_resolver_output(result):
 
     return result
 
+def wrap_url_resolver_404_output(result):
+    if result is None:
+        return
+
+    callback, kwargs = result
+    wrapper = NameTransactionWrapper(callback, None, 'Django')
+    wrapper = FunctionTraceWrapper(wrapper)
+    result = (wrapper, kwargs)
+
+    return result
+
+class name_url_resolver_404(object):
+    def __init__(self, wrapped):
+        self.__wrapped__ = wrapped
+    def __get__(self, obj, objtype=None):
+        return types.MethodType(self, obj, objtype)
+    def __call__(self, *args, **kwargs):
+        current_transaction = transaction()
+        if current_transaction:
+            django_core_urlresolvers = import_module(
+                    'django.core.urlresolvers')
+            try:
+                return self.__wrapped__(*args, **kwargs)
+            except django_core_urlresolvers.Resolver404:
+                current_transaction.name_transaction('404', 'Function')
+                raise
+            except:
+                raise
+        else:
+            return self.__wrapped__(*args, **kwargs)
+
 def wrap_url_resolver(resolver, *args, **kwargs):
     function = resolver.resolve
-    wrapper = OutFunctionWrapper(function, wrap_url_resolver_output)
+    wrapper = NameTransactionWrapper(function, None, 'Django')
+    wrapper = name_url_resolver_404(wrapper)
+    wrapper = OutFunctionWrapper(wrapper, wrap_url_resolver_output)
     resolver.resolve = wrapper
+
+    function = resolver.resolve404
+    wrapper = OutFunctionWrapper(function, wrap_url_resolver_404_output)
+    resolver.resolve404 = wrapper
 
 def wrap_uncaught_exception(handler, request, resolver, exc_info):
     current_transaction = transaction()
@@ -155,7 +194,7 @@ def instrument(module):
                 wrap_uncaught_exception)
 
     elif module.__name__ == 'django.core.urlresolvers':
-        wrap_post_function(module, 'RegexURLPattern.__init__',
+        wrap_post_function(module, 'RegexURLResolver.__init__',
                  wrap_url_resolver)
         wrap_error_trace(module, 'get_callable',
                  ignore_errors=['django.http.Http404'])

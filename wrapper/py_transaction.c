@@ -102,7 +102,7 @@ PyObject *NRTransaction_PushTransaction(PyObject *transaction)
     PyObject *module = NULL;
 
     /*
-     * Ensure that a transaction has already been setup for this
+     * Ensure transaction has not already been setup for this
      * thread. This means we preclude nested web transactions
      * from occuring. In the case of where coroutines are being
      * used, this situation still shouldn't occur and we will

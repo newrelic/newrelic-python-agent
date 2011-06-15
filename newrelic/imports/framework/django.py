@@ -7,18 +7,45 @@ from newrelic.agent import (FunctionTraceWrapper, OutFunctionWrapper,
 import types
 
 def insert_rum(request, response):
+
+    # Only insert RUM JavaScript headers and footers if
+    # enabled locally in configuration file.
+
     if not settings().browser_monitoring.auto_instrument:
         return response
+
+    # Need to be running within a valid web transaction.
+
     t = transaction()
     if not t:
         return response
+
+    # Only possible if the content type is text/html.
+
     ctype = response.get('Content-Type', '').lower()
     if ctype != "text/html" and not ctype.startswith("text/html;"):
         return response
+
+    # No point continuing if header or footer is empty.
+    # This can occur if RUM is not enabled within the UI
+    # or notification about it being enabled in the UI
+    # has not been received yet as process only just
+    # started.
+
     header = t.browser_timing_header()
     footer = t.browser_timing_footer()
     if not header or not footer:
         return response
+
+    # Insert the JavaScript. We require that there is a
+    # <head> element in the HTML, otherwise we don't do
+    # it.
+    #
+    # XXX This needs to be updated to only insert after
+    # any meta tags within the head section to avoid IE.
+    # problems. See tracker issue 154789. Could also look
+    # adding a head section if none exists.
+
     start = response.content.find('<head')
     end = response.content.rfind('</body>', -1024)
     if start != -1 and end != -1:
@@ -47,6 +74,14 @@ def insert_rum(request, response):
             response.content = ''
             content = ''.join(parts)
             response.content = content
+
+    # By inserting content we are invalidating any ETag,
+    # so need to delete it. Can't assume we can
+    # regenerate it using CommonMiddleware as that may
+    # not have been the source of it.
+
+    del response['ETag']
+
     return response
 
 def newrelic_browser_timing_header():

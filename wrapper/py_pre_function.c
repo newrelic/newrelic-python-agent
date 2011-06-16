@@ -8,6 +8,8 @@
 
 #include "py_utilities.h"
 
+#include "structmember.h"
+
 /* ------------------------------------------------------------------------- */
 
 static PyObject *NRPreFunctionWrapper_new(PyTypeObject *type,
@@ -20,6 +22,7 @@ static PyObject *NRPreFunctionWrapper_new(PyTypeObject *type,
     if (!self)
         return NULL;
 
+    self->dict = NULL;
     self->wrapped_object = NULL;
     self->function_object = NULL;
     self->run_once = 0;
@@ -35,6 +38,8 @@ static int NRPreFunctionWrapper_init(NRPreFunctionWrapperObject *self,
     PyObject *wrapped_object = NULL;
     PyObject *function_object = NULL;
     PyObject *run_once = NULL;
+
+    PyObject *result = NULL;
 
     static char *kwlist[] = { "wrapped", "pre_function", "run_once", NULL };
 
@@ -54,11 +59,12 @@ static int NRPreFunctionWrapper_init(NRPreFunctionWrapperObject *self,
 
     self->run_once = (run_once == Py_True);
 
-    /*
-     * TODO This should set __module__, __name__, __doc__ and
-     * update __dict__ to preserve introspection capabilities.
-     * See @wraps in functools of recent Python versions.
-     */
+    result = NRUtilities_UpdateWrapper((PyObject *)self, wrapped_object);
+
+    if (!result)
+        return -1;
+
+    Py_DECREF(result);
 
     return 0;
 }
@@ -67,6 +73,7 @@ static int NRPreFunctionWrapper_init(NRPreFunctionWrapperObject *self,
 
 static void NRPreFunctionWrapper_dealloc(NRPreFunctionWrapperObject *self)
 {
+    Py_XDECREF(self->dict);
     Py_DECREF(self->wrapped_object);
     Py_XDECREF(self->function_object);
 
@@ -108,6 +115,39 @@ static PyObject *NRPreFunctionWrapper_get_wrapped(
 }
  
 /* ------------------------------------------------------------------------- */
+ 
+static PyObject *NRPreFunctionWrapper_get_dict(
+        NRPreFunctionWrapperObject *self)
+{
+    if (self->dict == NULL) {
+        self->dict = PyDict_New();
+        if (!self->dict)
+            return NULL;
+    }
+    Py_INCREF(self->dict);
+    return self->dict;
+}
+ 
+/* ------------------------------------------------------------------------- */
+
+static int NRPreFunctionWrapper_set_dict(
+        NRPreFunctionWrapperObject *self, PyObject *val)
+{
+    if (val == NULL) {
+        PyErr_SetString(PyExc_TypeError, "__dict__ may not be deleted");
+        return -1;
+    }
+    if (!PyDict_Check(val)) {
+        PyErr_SetString(PyExc_TypeError, "__dict__ must be a dictionary");
+        return -1;
+    }
+    Py_CLEAR(self->dict);
+    Py_INCREF(val);
+    self->dict = val;
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
 
 static PyObject *NRPreFunctionWrapper_descr_get(PyObject *function,
                                                 PyObject *object,
@@ -124,6 +164,8 @@ static PyObject *NRPreFunctionWrapper_descr_get(PyObject *function,
 static PyGetSetDef NRPreFunctionWrapper_getset[] = {
     { "__wrapped__",        (getter)NRPreFunctionWrapper_get_wrapped,
                             NULL, 0 },
+    { "__dict__",           (getter)NRPreFunctionWrapper_get_dict,
+                            (setter)NRPreFunctionWrapper_set_dict, 0 },
     { NULL },
 };
 
@@ -145,8 +187,8 @@ PyTypeObject NRPreFunctionWrapper_Type = {
     0,                      /*tp_hash*/
     (ternaryfunc)NRPreFunctionWrapper_call, /*tp_call*/
     0,                      /*tp_str*/
-    0,                      /*tp_getattro*/
-    0,                      /*tp_setattro*/
+    PyObject_GenericGetAttr, /*tp_getattro*/
+    PyObject_GenericSetAttr, /*tp_setattro*/
     0,                      /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT,     /*tp_flags*/
     0,                      /*tp_doc*/
@@ -163,7 +205,7 @@ PyTypeObject NRPreFunctionWrapper_Type = {
     0,                      /*tp_dict*/
     NRPreFunctionWrapper_descr_get, /*tp_descr_get*/
     0,                      /*tp_descr_set*/
-    0,                      /*tp_dictoffset*/
+    offsetof(NRPreFunctionWrapperObject, dict), /*tp_dictoffset*/
     (initproc)NRPreFunctionWrapper_init, /*tp_init*/
     0,                      /*tp_alloc*/
     NRPreFunctionWrapper_new, /*tp_new*/

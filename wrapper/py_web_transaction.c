@@ -260,6 +260,31 @@ static int NRWebTransaction_init(NRTransactionObject *self, PyObject *args,
         }
 
         /*
+         * Check whether web transaction being flagged as to be
+         * ignored for purposes of apdex. That is still count the
+         * transaction but don't use it in apdex metrics.
+         */
+
+        self->transaction->ignore_apdex = 0;
+
+        object = PyDict_GetItemString(environ, "newrelic.ignore_apdex");
+
+        if (object) {
+            if (PyBool_Check(object)) {
+                if (object == Py_True)
+                    self->transaction->ignore_apdex = 1;
+            }
+            else if (PyString_Check(object)) {
+                const char *value;
+
+                value = PyString_AsString(object);
+
+                if (!strcasecmp(value, "on"))
+                    self->transaction->ignore_apdex = 1;
+            }
+        }
+
+        /*
          * Create a copy of the WSGI environ for the request
          * parameters. We don't just reference the original
          * environ dictionary as WSGI middleware may change the

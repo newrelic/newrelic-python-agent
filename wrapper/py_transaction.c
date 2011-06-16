@@ -1118,6 +1118,59 @@ static int NRTransaction_set_ignore(NRTransactionObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRTransaction_get_ignore_apdex(NRTransactionObject *self,
+                                                void *closure)
+{
+    /*
+     * If the application was not enabled and so we are running
+     * as a dummy transaction then return that transaction is
+     * being ignored.
+     */
+
+    if (!self->transaction) {
+        Py_INCREF(Py_True);
+        return Py_True;
+    }
+
+    return PyBool_FromLong(self->transaction->ignore_apdex);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRTransaction_set_ignore_apdex(NRTransactionObject *self,
+                                          PyObject *value)
+{
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError,
+                "can't delete ignore_apdex attribute");
+        return -1;
+    }
+
+    if (!PyBool_Check(value)) {
+        PyErr_SetString(PyExc_TypeError,
+                "expected bool for ignore_apdex attribute");
+        return -1;
+    }
+
+    /*
+     * If the application was not enabled and so we are running
+     * as a dummy transaction then return without actually doing
+     * anything.
+     */
+
+    if (!self->transaction)
+        return 0;
+
+    if (value == Py_True)
+        self->transaction->ignore_apdex = 1;
+    else
+        self->transaction->ignore_apdex = 0;
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRTransaction_get_path(NRTransactionObject *self,
                                         void *closure)
 {
@@ -1318,6 +1371,8 @@ static PyGetSetDef NRTransaction_getset[] = {
                             NULL, 0 },
     { "ignore",             (getter)NRTransaction_get_ignore,
                             (setter)NRTransaction_set_ignore, 0 },
+    { "ignore_apdex",       (getter)NRTransaction_get_ignore_apdex,
+                            (setter)NRTransaction_set_ignore_apdex, 0 },
     { "path",               (getter)NRTransaction_get_path,
                             NULL, 0 },
     { "enabled",            (getter)NRTransaction_get_enabled,

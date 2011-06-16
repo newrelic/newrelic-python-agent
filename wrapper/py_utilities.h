@@ -35,6 +35,9 @@ extern PyObject *NRUtilities_ReplaceWithWrapper(PyObject *parent_object,
                                                 PyObject *attribute_name,
                                                 PyObject *wrapper_object);
 
+extern PyObject *NRUtilities_UpdateWrapper(PyObject *wrapper,
+                                           PyObject *wrapped);
+
 extern void NRUtilities_MergeDictIntoParams(nrobj_t array,
                                             const char *name,
                                             PyObject *dict);

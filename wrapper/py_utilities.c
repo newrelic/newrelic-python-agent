@@ -692,9 +692,6 @@ extern PyObject *NRUtilities_ConstructPath(PyObject *name, PyObject *scope)
         name_as_char = PyString_AsString(name);
     }
 
-    while (*name_as_char == '/')
-        name_as_char++;
-
     if (*name_as_char == '\0')
         name_as_char = "<unknown>";
 

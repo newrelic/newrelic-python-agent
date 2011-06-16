@@ -107,13 +107,43 @@ static int NRFunctionTrace_init(NRFunctionTraceObject *self, PyObject *args,
      */
 
     if (transaction->transaction) {
-        PyObject *bytes = NULL;
+        PyObject *name_as_bytes = NULL;
+        PyObject *scope_as_bytes = NULL;
 
-        bytes = NRUtilities_ConstructPath(name, scope);
+        const char *name_as_char = NULL;
+        const char *scope_as_char = NULL;
+
+        if (PyUnicode_Check(name)) {
+            name_as_bytes = PyUnicode_AsUTF8String(name);
+            name_as_char = PyString_AsString(name_as_bytes);
+        }
+        else {
+            Py_INCREF(name);
+            name_as_bytes = name;
+            name_as_char = PyString_AsString(name);
+        }
+
+        if (scope == Py_None) {
+            scope_as_bytes = PyString_FromString("Function");
+            scope_as_char = PyString_AsString(scope_as_bytes);
+        }
+        else if (PyUnicode_Check(scope)) {
+            scope_as_bytes = PyUnicode_AsUTF8String(scope);
+            scope_as_char = PyString_AsString(scope_as_bytes);
+        }
+        else {
+            Py_INCREF(scope);
+            scope_as_bytes = scope;
+            scope_as_char = PyString_AsString(scope);
+        }
+
         self->transaction_trace =
                 nr_web_transaction__allocate_function_node(
-                transaction->transaction, PyString_AsString(bytes), NULL);
-        Py_DECREF(bytes);
+                transaction->transaction, name_as_char, NULL,
+                scope_as_char);
+
+        Py_DECREF(name_as_bytes);
+        Py_DECREF(scope_as_bytes);
 
         if (interesting == Py_True)
             self->interesting = 1;

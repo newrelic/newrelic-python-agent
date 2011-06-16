@@ -7,7 +7,7 @@ from newrelic.agent import (FunctionTraceWrapper, wrap_in_function,
 def wrap_add_url_rule_input(self, rule, endpoint=None, view_func=None,
         **options):
     if view_func is not None:
-        view_func = NameTransactionWrapper(view_func, None, 'Flask')
+        view_func = NameTransactionWrapper(view_func)
         view_func = FunctionTraceWrapper(view_func)
     return ((self, rule, endpoint, view_func), options)
 

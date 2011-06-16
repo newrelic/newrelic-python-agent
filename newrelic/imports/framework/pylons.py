@@ -35,7 +35,7 @@ def instrument(module):
 
     elif module.__name__ == 'pylons.controllers.core':
         wrap_name_transaction(module, 'WSGIController.__call__',
-                              name_controller, 'Pylons')
+                              name_controller)
         wrap_function_trace(module, 'WSGIController.__call__')
         wrap_function_trace(module, 'WSGIController._perform_call',
                             (lambda self, func, args: callable_name(func)))

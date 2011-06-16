@@ -12,6 +12,8 @@
 
 #include "globals.h"
 
+#include "structmember.h"
+
 /* ------------------------------------------------------------------------- */
 
 static int NRBackgroundTask_init(NRTransactionObject *self, PyObject *args,
@@ -151,6 +153,7 @@ static PyObject *NRBackgroundTaskWrapper_new(PyTypeObject *type, PyObject *args,
     if (!self)
         return NULL;
 
+    self->dict = NULL;
     self->wrapped_object = NULL;
     self->application = NULL;
     self->name = NULL;
@@ -169,6 +172,8 @@ static int NRBackgroundTaskWrapper_init(NRBackgroundTaskWrapperObject *self,
     PyObject *application = Py_None;
     PyObject *name = Py_None;
     PyObject *scope = Py_None;
+
+    PyObject *wrapper = NULL;
 
     static char *kwlist[] = { "wrapped", "application", "name",
                               "scope", NULL };
@@ -236,11 +241,14 @@ static int NRBackgroundTaskWrapper_init(NRBackgroundTaskWrapperObject *self,
     Py_XDECREF(self->scope);
     self->scope = scope;
 
-    /*
-     * TODO This should set __module__, __name__, __doc__ and
-     * update __dict__ to preserve introspection capabilities.
-     * See @wraps in functools of recent Python versions.
-     */
+    /* Perform equivalent of functools.wraps(). */
+
+    wrapper = NRUtilities_UpdateWrapper((PyObject *)self, wrapped_object);
+
+    if (!wrapper)
+        return -1;
+
+    Py_DECREF(wrapper);
 
     Py_DECREF(application);
 
@@ -251,6 +259,8 @@ static int NRBackgroundTaskWrapper_init(NRBackgroundTaskWrapperObject *self,
 
 static void NRBackgroundTaskWrapper_dealloc(NRBackgroundTaskWrapperObject *self)
 {
+    Py_XDECREF(self->dict);
+
     Py_XDECREF(self->wrapped_object);
 
     Py_XDECREF(self->application);
@@ -418,22 +428,6 @@ static PyObject *NRBackgroundTaskWrapper_call(
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRBackgroundTaskWrapper_get_name(
-        NRBackgroundTaskWrapperObject *self, void *closure)
-{
-    return PyObject_GetAttrString(self->wrapped_object, "__name__");
-}
-
-/* ------------------------------------------------------------------------- */
-
-static PyObject *NRBackgroundTaskWrapper_get_module(
-        NRBackgroundTaskWrapperObject *self, void *closure)
-{
-    return PyObject_GetAttrString(self->wrapped_object, "__module__");
-}
-
-/* ------------------------------------------------------------------------- */
-
 static PyObject *NRBackgroundTaskWrapper_get_wrapped(
         NRBackgroundTaskWrapperObject *self, void *closure)
 {
@@ -441,6 +435,39 @@ static PyObject *NRBackgroundTaskWrapper_get_wrapped(
     return self->wrapped_object;
 }
  
+/* ------------------------------------------------------------------------- */
+ 
+static PyObject *NRBackgroundTaskWrapper_get_dict(
+        NRBackgroundTaskWrapperObject *self)
+{
+    if (self->dict == NULL) {
+        self->dict = PyDict_New();
+        if (!self->dict)
+            return NULL;
+    }
+    Py_INCREF(self->dict);
+    return self->dict;
+}
+ 
+/* ------------------------------------------------------------------------- */
+
+static int NRBackgroundTaskWrapper_set_dict(
+        NRBackgroundTaskWrapperObject *self, PyObject *val)
+{
+    if (val == NULL) {
+        PyErr_SetString(PyExc_TypeError, "__dict__ may not be deleted");
+        return -1;
+    }
+    if (!PyDict_Check(val)) {
+        PyErr_SetString(PyExc_TypeError, "__dict__ must be a dictionary");
+        return -1;
+    }
+    Py_CLEAR(self->dict);
+    Py_INCREF(val);
+    self->dict = val;
+    return 0;
+}
+
 /* ------------------------------------------------------------------------- */
 
 static PyObject *NRBackgroundTaskWrapper_descr_get(PyObject *function,
@@ -456,12 +483,10 @@ static PyObject *NRBackgroundTaskWrapper_descr_get(PyObject *function,
 /* ------------------------------------------------------------------------- */
 
 static PyGetSetDef NRBackgroundTaskWrapper_getset[] = {
-    { "__name__",           (getter)NRBackgroundTaskWrapper_get_name,
-                            NULL, 0 },
-    { "__module__",         (getter)NRBackgroundTaskWrapper_get_module,
-                            NULL, 0 },
     { "__wrapped__",        (getter)NRBackgroundTaskWrapper_get_wrapped,
                             NULL, 0 },
+    { "__dict__",           (getter)NRBackgroundTaskWrapper_get_dict,
+                            (setter)NRBackgroundTaskWrapper_set_dict, 0 },
     { NULL },
 };
 
@@ -483,8 +508,8 @@ PyTypeObject NRBackgroundTaskWrapper_Type = {
     0,                      /*tp_hash*/
     (ternaryfunc)NRBackgroundTaskWrapper_call, /*tp_call*/
     0,                      /*tp_str*/
-    0,                      /*tp_getattro*/
-    0,                      /*tp_setattro*/
+    PyObject_GenericGetAttr, /*tp_getattro*/
+    PyObject_GenericSetAttr, /*tp_setattro*/
     0,                      /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT,     /*tp_flags*/
     0,                      /*tp_doc*/
@@ -501,7 +526,7 @@ PyTypeObject NRBackgroundTaskWrapper_Type = {
     0,                      /*tp_dict*/
     NRBackgroundTaskWrapper_descr_get, /*tp_descr_get*/
     0,                      /*tp_descr_set*/
-    0,                      /*tp_dictoffset*/
+    offsetof(NRBackgroundTaskWrapperObject, dict), /*tp_dictoffset*/
     (initproc)NRBackgroundTaskWrapper_init, /*tp_init*/
     0,                      /*tp_alloc*/
     NRBackgroundTaskWrapper_new, /*tp_new*/

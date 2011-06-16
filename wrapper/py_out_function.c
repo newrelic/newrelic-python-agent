@@ -8,6 +8,8 @@
 
 #include "py_utilities.h"
 
+#include "structmember.h"
+
 /* ------------------------------------------------------------------------- */
 
 static PyObject *NROutFunctionWrapper_new(PyTypeObject *type, PyObject *args,
@@ -20,6 +22,7 @@ static PyObject *NROutFunctionWrapper_new(PyTypeObject *type, PyObject *args,
     if (!self)
         return NULL;
 
+    self->dict = NULL;
     self->wrapped_object = NULL;
     self->function_object = NULL;
 
@@ -33,6 +36,8 @@ static int NROutFunctionWrapper_init(NROutFunctionWrapperObject *self,
 {
     PyObject *wrapped_object = NULL;
     PyObject *function_object = Py_None;
+
+    PyObject *wrapper = NULL;
 
     static char *kwlist[] = { "wrapped", "function", NULL };
 
@@ -50,11 +55,14 @@ static int NROutFunctionWrapper_init(NROutFunctionWrapperObject *self,
     Py_XDECREF(self->function_object);
     self->function_object = function_object;
 
-    /*
-     * TODO This should set __module__, __name__, __doc__ and
-     * update __dict__ to preserve introspection capabilities.
-     * See @wraps in functools of recent Python versions.
-     */
+    /* Perform equivalent of functools.wraps(). */
+
+    wrapper = NRUtilities_UpdateWrapper((PyObject *)self, wrapped_object);
+
+    if (!wrapper)
+        return -1;
+
+    Py_DECREF(wrapper);
 
     return 0;
 }
@@ -63,6 +71,8 @@ static int NROutFunctionWrapper_init(NROutFunctionWrapperObject *self,
 
 static void NROutFunctionWrapper_dealloc(NROutFunctionWrapperObject *self)
 {
+    Py_XDECREF(self->dict);
+
     Py_DECREF(self->wrapped_object);
     Py_XDECREF(self->function_object);
 
@@ -103,6 +113,39 @@ static PyObject *NROutFunctionWrapper_get_wrapped(
     Py_INCREF(self->wrapped_object);
     return self->wrapped_object;
 }
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NROutFunctionWrapper_get_dict(
+        NROutFunctionWrapperObject *self)
+{
+    if (self->dict == NULL) {
+        self->dict = PyDict_New();
+        if (!self->dict)
+            return NULL;
+    }
+    Py_INCREF(self->dict);
+    return self->dict;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NROutFunctionWrapper_set_dict(
+        NROutFunctionWrapperObject *self, PyObject *val)
+{
+    if (val == NULL) {
+        PyErr_SetString(PyExc_TypeError, "__dict__ may not be deleted");
+        return -1;
+    }
+    if (!PyDict_Check(val)) {
+        PyErr_SetString(PyExc_TypeError, "__dict__ must be a dictionary");
+        return -1;
+    }
+    Py_CLEAR(self->dict);
+    Py_INCREF(val);
+    self->dict = val;
+    return 0;
+}
  
 /* ------------------------------------------------------------------------- */
 
@@ -121,6 +164,8 @@ static PyObject *NROutFunctionWrapper_descr_get(PyObject *function,
 static PyGetSetDef NROutFunctionWrapper_getset[] = {
     { "__wrapped__",        (getter)NROutFunctionWrapper_get_wrapped,
                             NULL, 0 },
+    { "__dict__",           (getter)NROutFunctionWrapper_get_dict,
+                            (setter)NROutFunctionWrapper_set_dict, 0 },
     { NULL },
 };
 
@@ -142,8 +187,8 @@ PyTypeObject NROutFunctionWrapper_Type = {
     0,                      /*tp_hash*/
     (ternaryfunc)NROutFunctionWrapper_call, /*tp_call*/
     0,                      /*tp_str*/
-    0,                      /*tp_getattro*/
-    0,                      /*tp_setattro*/
+    PyObject_GenericGetAttr, /*tp_getattro*/
+    PyObject_GenericSetAttr, /*tp_setattro*/
     0,                      /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT,     /*tp_flags*/
     0,                      /*tp_doc*/
@@ -160,7 +205,7 @@ PyTypeObject NROutFunctionWrapper_Type = {
     0,                      /*tp_dict*/
     NROutFunctionWrapper_descr_get, /*tp_descr_get*/
     0,                      /*tp_descr_set*/
-    0,                      /*tp_dictoffset*/
+    offsetof(NROutFunctionWrapperObject, dict), /*tp_dictoffset*/
     (initproc)NROutFunctionWrapper_init, /*tp_init*/
     0,                      /*tp_alloc*/
     NROutFunctionWrapper_new, /*tp_new*/

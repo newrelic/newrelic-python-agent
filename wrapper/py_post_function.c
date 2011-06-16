@@ -8,6 +8,8 @@
 
 #include "py_utilities.h"
 
+#include "structmember.h"
+
 /* ------------------------------------------------------------------------- */
 
 static PyObject *NRPostFunctionWrapper_new(PyTypeObject *type, PyObject *args,
@@ -20,6 +22,7 @@ static PyObject *NRPostFunctionWrapper_new(PyTypeObject *type, PyObject *args,
     if (!self)
         return NULL;
 
+    self->dict = NULL;
     self->wrapped_object = NULL;
     self->function_object = NULL;
     self->run_once = 0;
@@ -35,6 +38,8 @@ static int NRPostFunctionWrapper_init(NRPostFunctionWrapperObject *self,
     PyObject *wrapped_object = NULL;
     PyObject *function_object = NULL;
     PyObject *run_once = NULL;
+
+    PyObject *wrapper = NULL;
 
     static char *kwlist[] = { "wrapped", "post_function", "run_once", NULL };
 
@@ -54,11 +59,14 @@ static int NRPostFunctionWrapper_init(NRPostFunctionWrapperObject *self,
 
     self->run_once = (run_once == Py_True);
 
-    /*
-     * TODO This should set __module__, __name__, __doc__ and
-     * update __dict__ to preserve introspection capabilities.
-     * See @wraps in functools of recent Python versions.
-     */
+    /* Perform equivalent of functools.wraps(). */
+
+    wrapper = NRUtilities_UpdateWrapper((PyObject *)self, wrapped_object);
+
+    if (!wrapper)
+        return -1;
+
+    Py_DECREF(wrapper);
 
     return 0;
 }
@@ -67,6 +75,8 @@ static int NRPostFunctionWrapper_init(NRPostFunctionWrapperObject *self,
 
 static void NRPostFunctionWrapper_dealloc(NRPostFunctionWrapperObject *self)
 {
+    Py_XDECREF(self->dict);
+
     Py_DECREF(self->wrapped_object);
     Py_XDECREF(self->function_object);
 
@@ -135,6 +145,39 @@ static PyObject *NRPostFunctionWrapper_get_wrapped(
     Py_INCREF(self->wrapped_object);
     return self->wrapped_object;
 }
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRPostFunctionWrapper_get_dict(
+        NRPostFunctionWrapperObject *self)
+{
+    if (self->dict == NULL) {
+        self->dict = PyDict_New();
+        if (!self->dict)
+            return NULL;
+    }
+    Py_INCREF(self->dict);
+    return self->dict;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRPostFunctionWrapper_set_dict(
+        NRPostFunctionWrapperObject *self, PyObject *val)
+{
+    if (val == NULL) {
+        PyErr_SetString(PyExc_TypeError, "__dict__ may not be deleted");
+        return -1;
+    }
+    if (!PyDict_Check(val)) {
+        PyErr_SetString(PyExc_TypeError, "__dict__ must be a dictionary");
+        return -1;
+    }
+    Py_CLEAR(self->dict);
+    Py_INCREF(val);
+    self->dict = val;
+    return 0;
+}
  
 /* ------------------------------------------------------------------------- */
 
@@ -153,6 +196,8 @@ static PyObject *NRPostFunctionWrapper_descr_get(PyObject *function,
 static PyGetSetDef NRPostFunctionWrapper_getset[] = {
     { "__wrapped__",        (getter)NRPostFunctionWrapper_get_wrapped,
                             NULL, 0 },
+    { "__dict__",           (getter)NRPostFunctionWrapper_get_dict,
+                            (setter)NRPostFunctionWrapper_set_dict, 0 },
     { NULL },
 };
 
@@ -174,8 +219,8 @@ PyTypeObject NRPostFunctionWrapper_Type = {
     0,                      /*tp_hash*/
     (ternaryfunc)NRPostFunctionWrapper_call, /*tp_call*/
     0,                      /*tp_str*/
-    0,                      /*tp_getattro*/
-    0,                      /*tp_setattro*/
+    PyObject_GenericGetAttr, /*tp_getattro*/
+    PyObject_GenericSetAttr, /*tp_setattro*/
     0,                      /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT,     /*tp_flags*/
     0,                      /*tp_doc*/
@@ -192,7 +237,7 @@ PyTypeObject NRPostFunctionWrapper_Type = {
     0,                      /*tp_dict*/
     NRPostFunctionWrapper_descr_get, /*tp_descr_get*/
     0,                      /*tp_descr_set*/
-    0,                      /*tp_dictoffset*/
+    offsetof(NRPostFunctionWrapperObject, dict), /*tp_dictoffset*/
     (initproc)NRPostFunctionWrapper_init, /*tp_init*/
     0,                      /*tp_alloc*/
     NRPostFunctionWrapper_new, /*tp_new*/

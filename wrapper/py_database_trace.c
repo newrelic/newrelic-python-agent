@@ -13,6 +13,8 @@
 #include "genericobject.h"
 #include "web_transaction.h"
 
+#include "structmember.h"
+
 /* ------------------------------------------------------------------------- */
 
 static PyObject *NRDatabaseTrace_new(PyTypeObject *type, PyObject *args,
@@ -287,6 +289,7 @@ static PyObject *NRDatabaseTraceWrapper_new(PyTypeObject *type, PyObject *args,
     if (!self)
         return NULL;
 
+    self->dict = NULL;
     self->wrapped_object = NULL;
     self->sql = NULL;
 
@@ -300,6 +303,8 @@ static int NRDatabaseTraceWrapper_init(NRDatabaseTraceWrapperObject *self,
 {
     PyObject *wrapped_object = NULL;
     PyObject *sql = NULL;
+
+    PyObject *wrapper = NULL;
 
     static char *kwlist[] = { "wrapped", "sql", NULL };
 
@@ -316,11 +321,14 @@ static int NRDatabaseTraceWrapper_init(NRDatabaseTraceWrapperObject *self,
     Py_XDECREF(self->sql);
     self->sql = sql;
 
-    /*
-     * TODO This should set __module__, __name__, __doc__ and
-     * update __dict__ to preserve introspection capabilities.
-     * See @wraps in functools of recent Python versions.
-     */
+    /* Perform equivalent of functools.wraps(). */
+
+    wrapper = NRUtilities_UpdateWrapper((PyObject *)self, wrapped_object);
+
+    if (!wrapper)
+        return -1;
+
+    Py_DECREF(wrapper);
 
     return 0;
 }
@@ -329,6 +337,8 @@ static int NRDatabaseTraceWrapper_init(NRDatabaseTraceWrapperObject *self,
 
 static void NRDatabaseTraceWrapper_dealloc(NRDatabaseTraceWrapperObject *self)
 {
+    Py_XDECREF(self->dict);
+
     Py_DECREF(self->wrapped_object);
     Py_DECREF(self->sql);
 
@@ -475,6 +485,39 @@ static PyObject *NRDatabaseTraceWrapper_get_wrapped(
     Py_INCREF(self->wrapped_object);
     return self->wrapped_object;
 }
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRDatabaseTraceWrapper_get_dict(
+        NRDatabaseTraceWrapperObject *self)
+{
+    if (self->dict == NULL) {
+        self->dict = PyDict_New();
+        if (!self->dict)
+            return NULL;
+    }
+    Py_INCREF(self->dict);
+    return self->dict;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRDatabaseTraceWrapper_set_dict(
+        NRDatabaseTraceWrapperObject *self, PyObject *val)
+{
+    if (val == NULL) {
+        PyErr_SetString(PyExc_TypeError, "__dict__ may not be deleted");
+        return -1;
+    }
+    if (!PyDict_Check(val)) {
+        PyErr_SetString(PyExc_TypeError, "__dict__ must be a dictionary");
+        return -1;
+    }
+    Py_CLEAR(self->dict);
+    Py_INCREF(val);
+    self->dict = val;
+    return 0;
+}
  
 /* ------------------------------------------------------------------------- */
 
@@ -493,6 +536,8 @@ static PyObject *NRDatabaseTraceWrapper_descr_get(PyObject *function,
 static PyGetSetDef NRDatabaseTraceWrapper_getset[] = {
     { "__wrapped__",        (getter)NRDatabaseTraceWrapper_get_wrapped,
                             NULL, 0 },
+    { "__dict__",           (getter)NRDatabaseTraceWrapper_get_dict,
+                            (setter)NRDatabaseTraceWrapper_set_dict, 0 },
     { NULL },
 };
 
@@ -514,8 +559,8 @@ PyTypeObject NRDatabaseTraceWrapper_Type = {
     0,                      /*tp_hash*/
     (ternaryfunc)NRDatabaseTraceWrapper_call, /*tp_call*/
     0,                      /*tp_str*/
-    0,                      /*tp_getattro*/
-    0,                      /*tp_setattro*/
+    PyObject_GenericGetAttr, /*tp_getattro*/
+    PyObject_GenericSetAttr, /*tp_setattro*/
     0,                      /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT,     /*tp_flags*/
     0,                      /*tp_doc*/
@@ -532,7 +577,7 @@ PyTypeObject NRDatabaseTraceWrapper_Type = {
     0,                      /*tp_dict*/
     NRDatabaseTraceWrapper_descr_get, /*tp_descr_get*/
     0,                      /*tp_descr_set*/
-    0,                      /*tp_dictoffset*/
+    offsetof(NRDatabaseTraceWrapperObject, dict), /*tp_dictoffset*/
     (initproc)NRDatabaseTraceWrapper_init, /*tp_init*/
     0,                      /*tp_alloc*/
     NRDatabaseTraceWrapper_new, /*tp_new*/

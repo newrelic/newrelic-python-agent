@@ -10,6 +10,8 @@
 
 #include "globals.h"
 
+#include "structmember.h"
+
 /* ------------------------------------------------------------------------- */
 
 static PyObject *NRNameTransactionWrapper_new(PyTypeObject *type,
@@ -23,6 +25,7 @@ static PyObject *NRNameTransactionWrapper_new(PyTypeObject *type,
     if (!self)
         return NULL;
 
+    self->dict = NULL;
     self->wrapped_object = NULL;
     self->name = NULL;
     self->scope = NULL;
@@ -39,6 +42,8 @@ static int NRNameTransactionWrapper_init(NRNameTransactionWrapperObject *self,
 
     PyObject *name = Py_None;
     PyObject *scope = Py_None;
+
+    PyObject *wrapper = NULL;
 
     static char *kwlist[] = { "wrapped", "name", "scope", NULL };
 
@@ -67,11 +72,14 @@ static int NRNameTransactionWrapper_init(NRNameTransactionWrapperObject *self,
     Py_XDECREF(self->scope);
     self->scope = scope;
 
-    /*
-     * TODO This should set __module__, __name__, __doc__ and
-     * update __dict__ to preserve introspection capabilities.
-     * See @wraps in functools of recent Python versions.
-     */
+    /* Perform equivalent of functools.wraps(). */
+
+    wrapper = NRUtilities_UpdateWrapper((PyObject *)self, wrapped_object);
+
+    if (!wrapper)
+        return -1;
+
+    Py_DECREF(wrapper);
 
     return 0;
 }
@@ -81,6 +89,8 @@ static int NRNameTransactionWrapper_init(NRNameTransactionWrapperObject *self,
 static void NRNameTransactionWrapper_dealloc(
         NRNameTransactionWrapperObject *self)
 {
+    Py_XDECREF(self->dict);
+
     Py_XDECREF(self->wrapped_object);
 
     Py_XDECREF(self->name);
@@ -151,29 +161,46 @@ static PyObject *NRNameTransactionWrapper_call(
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRNameTransactionWrapper_get_name(
-        NRNameTransactionWrapperObject *self, void *closure)
-{
-    return PyObject_GetAttrString(self->wrapped_object, "__name__");
-}
-
-/* ------------------------------------------------------------------------- */
-
-static PyObject *NRNameTransactionWrapper_get_module(
-        NRNameTransactionWrapperObject *self, void *closure)
-{
-    return PyObject_GetAttrString(self->wrapped_object, "__module__");
-}
-
-/* ------------------------------------------------------------------------- */
-
 static PyObject *NRNameTransactionWrapper_get_wrapped(
         NRNameTransactionWrapperObject *self, void *closure)
 {
     Py_INCREF(self->wrapped_object);
     return self->wrapped_object;
 }
- 
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRNameTransactionWrapper_get_dict(
+        NRNameTransactionWrapperObject *self)
+{
+    if (self->dict == NULL) {
+        self->dict = PyDict_New();
+        if (!self->dict)
+            return NULL;
+    }
+    Py_INCREF(self->dict);
+    return self->dict;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRNameTransactionWrapper_set_dict(
+        NRNameTransactionWrapperObject *self, PyObject *val)
+{
+    if (val == NULL) {
+        PyErr_SetString(PyExc_TypeError, "__dict__ may not be deleted");
+        return -1;
+    }
+    if (!PyDict_Check(val)) {
+        PyErr_SetString(PyExc_TypeError, "__dict__ must be a dictionary");
+        return -1;
+    }
+    Py_CLEAR(self->dict);
+    Py_INCREF(val);
+    self->dict = val;
+    return 0;
+}
+
 /* ------------------------------------------------------------------------- */
 
 static PyObject *NRNameTransactionWrapper_descr_get(PyObject *function,
@@ -189,12 +216,10 @@ static PyObject *NRNameTransactionWrapper_descr_get(PyObject *function,
 /* ------------------------------------------------------------------------- */
 
 static PyGetSetDef NRNameTransactionWrapper_getset[] = {
-    { "__name__",           (getter)NRNameTransactionWrapper_get_name,
-                            NULL, 0 },
-    { "__module__",         (getter)NRNameTransactionWrapper_get_module,
-                            NULL, 0 },
     { "__wrapped__",        (getter)NRNameTransactionWrapper_get_wrapped,
                             NULL, 0 },
+    { "__dict__",           (getter)NRNameTransactionWrapper_get_dict,
+                            (setter)NRNameTransactionWrapper_set_dict, 0 },
     { NULL },
 };
 
@@ -216,8 +241,8 @@ PyTypeObject NRNameTransactionWrapper_Type = {
     0,                      /*tp_hash*/
     (ternaryfunc)NRNameTransactionWrapper_call, /*tp_call*/
     0,                      /*tp_str*/
-    0,                      /*tp_getattro*/
-    0,                      /*tp_setattro*/
+    PyObject_GenericGetAttr, /*tp_getattro*/
+    PyObject_GenericSetAttr, /*tp_setattro*/
     0,                      /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT,     /*tp_flags*/
     0,                      /*tp_doc*/
@@ -234,7 +259,7 @@ PyTypeObject NRNameTransactionWrapper_Type = {
     0,                      /*tp_dict*/
     NRNameTransactionWrapper_descr_get, /*tp_descr_get*/
     0,                      /*tp_descr_set*/
-    0,                      /*tp_dictoffset*/
+    offsetof(NRNameTransactionWrapperObject, dict), /*tp_dictoffset*/
     (initproc)NRNameTransactionWrapper_init, /*tp_init*/
     0,                      /*tp_alloc*/
     NRNameTransactionWrapper_new, /*tp_new*/

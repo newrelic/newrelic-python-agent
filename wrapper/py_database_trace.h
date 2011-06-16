@@ -22,6 +22,7 @@ extern PyTypeObject NRDatabaseTrace_Type;
 
 typedef struct {
     PyObject_HEAD
+    PyObject *dict;
     PyObject *wrapped_object;
     PyObject *sql;
 } NRDatabaseTraceWrapperObject;

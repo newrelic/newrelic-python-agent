@@ -6,9 +6,13 @@
 
 #include "py_external_trace.h"
 
+#include "py_utilities.h"
+
 #include "globals.h"
 
 #include "web_transaction.h"
+
+#include "structmember.h"
 
 /* ------------------------------------------------------------------------- */
 
@@ -355,6 +359,7 @@ static PyObject *NRExternalTraceWrapper_new(PyTypeObject *type, PyObject *args,
     if (!self)
         return NULL;
 
+    self->dict = NULL;
     self->wrapped_object = NULL;
     self->library = NULL;
     self->url = NULL;
@@ -370,6 +375,8 @@ static int NRExternalTraceWrapper_init(NRExternalTraceWrapperObject *self,
     PyObject *wrapped_object = NULL;
     PyObject *library = NULL;
     PyObject *url = NULL;
+
+    PyObject *wrapper = NULL;
 
     static char *kwlist[] = { "wrapped", "library", "url", NULL };
 
@@ -391,11 +398,14 @@ static int NRExternalTraceWrapper_init(NRExternalTraceWrapperObject *self,
     Py_XDECREF(self->url);
     self->url = url;
 
-    /*
-     * TODO This should set __module__, __name__, __doc__ and
-     * update __dict__ to preserve introspection capabilities.
-     * See @wraps in functools of recent Python versions.
-     */
+    /* Perform equivalent of functools.wraps(). */
+
+    wrapper = NRUtilities_UpdateWrapper((PyObject *)self, wrapped_object);
+
+    if (!wrapper)
+        return -1;
+
+    Py_DECREF(wrapper);
 
     return 0;
 }
@@ -404,6 +414,8 @@ static int NRExternalTraceWrapper_init(NRExternalTraceWrapperObject *self,
 
 static void NRExternalTraceWrapper_dealloc(NRExternalTraceWrapperObject *self)
 {
+    Py_XDECREF(self->dict);
+
     Py_DECREF(self->wrapped_object);
     Py_DECREF(self->library);
     Py_DECREF(self->url);
@@ -552,6 +564,39 @@ static PyObject *NRExternalTraceWrapper_get_wrapped(
     Py_INCREF(self->wrapped_object);
     return self->wrapped_object;
 }
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRExternalTraceWrapper_get_dict(
+        NRExternalTraceWrapperObject *self)
+{
+    if (self->dict == NULL) {
+        self->dict = PyDict_New();
+        if (!self->dict)
+            return NULL;
+    }
+    Py_INCREF(self->dict);
+    return self->dict;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRExternalTraceWrapper_set_dict(
+        NRExternalTraceWrapperObject *self, PyObject *val)
+{
+    if (val == NULL) {
+        PyErr_SetString(PyExc_TypeError, "__dict__ may not be deleted");
+        return -1;
+    }
+    if (!PyDict_Check(val)) {
+        PyErr_SetString(PyExc_TypeError, "__dict__ must be a dictionary");
+        return -1;
+    }
+    Py_CLEAR(self->dict);
+    Py_INCREF(val);
+    self->dict = val;
+    return 0;
+}
  
 /* ------------------------------------------------------------------------- */
 
@@ -570,6 +615,8 @@ static PyObject *NRExternalTraceWrapper_descr_get(PyObject *function,
 static PyGetSetDef NRExternalTraceWrapper_getset[] = {
     { "__wrapped__",        (getter)NRExternalTraceWrapper_get_wrapped,
                             NULL, 0 },
+    { "__dict__",           (getter)NRExternalTraceWrapper_get_dict,
+                            (setter)NRExternalTraceWrapper_set_dict, 0 },
     { NULL },
 };
 
@@ -591,8 +638,8 @@ PyTypeObject NRExternalTraceWrapper_Type = {
     0,                      /*tp_hash*/
     (ternaryfunc)NRExternalTraceWrapper_call, /*tp_call*/
     0,                      /*tp_str*/
-    0,                      /*tp_getattro*/
-    0,                      /*tp_setattro*/
+    PyObject_GenericGetAttr, /*tp_getattro*/
+    PyObject_GenericSetAttr, /*tp_setattro*/
     0,                      /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT,     /*tp_flags*/
     0,                      /*tp_doc*/
@@ -609,7 +656,7 @@ PyTypeObject NRExternalTraceWrapper_Type = {
     0,                      /*tp_dict*/
     NRExternalTraceWrapper_descr_get, /*tp_descr_get*/
     0,                      /*tp_descr_set*/
-    0,                      /*tp_dictoffset*/
+    offsetof(NRExternalTraceWrapperObject, dict), /*tp_dictoffset*/
     (initproc)NRExternalTraceWrapper_init, /*tp_init*/
     0,                      /*tp_alloc*/
     NRExternalTraceWrapper_new, /*tp_new*/

@@ -39,7 +39,7 @@ static int NRPreFunctionWrapper_init(NRPreFunctionWrapperObject *self,
     PyObject *function_object = NULL;
     PyObject *run_once = NULL;
 
-    PyObject *result = NULL;
+    PyObject *wrapper = NULL;
 
     static char *kwlist[] = { "wrapped", "pre_function", "run_once", NULL };
 
@@ -59,12 +59,14 @@ static int NRPreFunctionWrapper_init(NRPreFunctionWrapperObject *self,
 
     self->run_once = (run_once == Py_True);
 
-    result = NRUtilities_UpdateWrapper((PyObject *)self, wrapped_object);
+    /* Perform equivalent of functools.wraps(). */
 
-    if (!result)
+    wrapper = NRUtilities_UpdateWrapper((PyObject *)self, wrapped_object);
+
+    if (!wrapper)
         return -1;
 
-    Py_DECREF(result);
+    Py_DECREF(wrapper);
 
     return 0;
 }
@@ -74,6 +76,7 @@ static int NRPreFunctionWrapper_init(NRPreFunctionWrapperObject *self,
 static void NRPreFunctionWrapper_dealloc(NRPreFunctionWrapperObject *self)
 {
     Py_XDECREF(self->dict);
+
     Py_DECREF(self->wrapped_object);
     Py_XDECREF(self->function_object);
 
@@ -113,9 +116,9 @@ static PyObject *NRPreFunctionWrapper_get_wrapped(
     Py_INCREF(self->wrapped_object);
     return self->wrapped_object;
 }
- 
+
 /* ------------------------------------------------------------------------- */
- 
+
 static PyObject *NRPreFunctionWrapper_get_dict(
         NRPreFunctionWrapperObject *self)
 {
@@ -127,7 +130,7 @@ static PyObject *NRPreFunctionWrapper_get_dict(
     Py_INCREF(self->dict);
     return self->dict;
 }
- 
+
 /* ------------------------------------------------------------------------- */
 
 static int NRPreFunctionWrapper_set_dict(

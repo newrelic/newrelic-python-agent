@@ -21,6 +21,7 @@ extern PyTypeObject NRErrorTrace_Type;
 
 typedef struct {
     PyObject_HEAD
+    PyObject *dict;
     PyObject *wrapped_object;
     PyObject *ignore_errors;
 } NRErrorTraceWrapperObject;

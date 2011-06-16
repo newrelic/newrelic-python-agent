@@ -23,6 +23,7 @@ extern PyTypeObject NRFunctionTrace_Type;
 
 typedef struct {
     PyObject_HEAD
+    PyObject *dict;
     PyObject *wrapped_object;
     PyObject *name;
     PyObject *scope;

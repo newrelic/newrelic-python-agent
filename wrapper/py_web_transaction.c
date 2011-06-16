@@ -10,6 +10,8 @@
 
 #include "py_utilities.h"
 
+#include "structmember.h"
+
 /* ------------------------------------------------------------------------- */
 
 static int NRWebTransaction_init(NRTransactionObject *self, PyObject *args,
@@ -414,7 +416,7 @@ static PyObject *NRWebTransaction_footer(NRTransactionObject *self,
 
     if (!queue_time_usec)
         queue_time_usec = start_time_usec;
-        
+
     queue_duration_usec = start_time_usec - queue_time_usec;
     total_duration_usec = stop_time_usec - start_time_usec;
 
@@ -975,6 +977,7 @@ static PyObject *NRWSGIApplicationWrapper_new(
     if (!self)
         return NULL;
 
+    self->dict = NULL;
     self->wrapped_object = NULL;
     self->application = NULL;
 
@@ -989,6 +992,8 @@ static int NRWSGIApplicationWrapper_init(
     PyObject *wrapped_object = NULL;
 
     PyObject *application = Py_None;
+
+    PyObject *wrapper = NULL;
 
     static char *kwlist[] = { "wrapped", "application", NULL };
 
@@ -1032,11 +1037,14 @@ static int NRWSGIApplicationWrapper_init(
     Py_XDECREF(self->application);
     self->application = application;
 
-    /*
-     * TODO This should set __module__, __name__, __doc__ and
-     * update __dict__ to preserve introspection capabilities.
-     * See @wraps in functools of recent Python versions.
-     */
+    /* Perform equivalent of functools.wraps(). */
+
+    wrapper = NRUtilities_UpdateWrapper((PyObject *)self, wrapped_object);
+
+    if (!wrapper)
+        return -1;
+
+    Py_DECREF(wrapper);
 
     Py_DECREF(application);
 
@@ -1048,6 +1056,8 @@ static int NRWSGIApplicationWrapper_init(
 static void NRWSGIApplicationWrapper_dealloc(
         NRWSGIApplicationWrapperObject *self)
 {
+    Py_XDECREF(self->dict);
+
     Py_XDECREF(self->wrapped_object);
 
     Py_XDECREF(self->application);
@@ -1067,29 +1077,46 @@ static PyObject *NRWSGIApplicationWrapper_call(
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRWSGIApplicationWrapper_get_name(
-        NRWSGIApplicationWrapperObject *self, void *closure)
-{
-    return PyObject_GetAttrString(self->wrapped_object, "__name__");
-}
-
-/* ------------------------------------------------------------------------- */
-
-static PyObject *NRWSGIApplicationWrapper_get_module(
-        NRWSGIApplicationWrapperObject *self, void *closure)
-{
-    return PyObject_GetAttrString(self->wrapped_object, "__module__");
-}
-
-/* ------------------------------------------------------------------------- */
-
 static PyObject *NRWSGIApplicationWrapper_get_wrapped(
         NRWSGIApplicationWrapperObject *self, void *closure)
 {
     Py_INCREF(self->wrapped_object);
     return self->wrapped_object;
 }
- 
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRWSGIApplicationWrapper_get_dict(
+        NRWSGIApplicationWrapperObject *self)
+{
+    if (self->dict == NULL) {
+        self->dict = PyDict_New();
+        if (!self->dict)
+            return NULL;
+    }
+    Py_INCREF(self->dict);
+    return self->dict;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRWSGIApplicationWrapper_set_dict(
+        NRWSGIApplicationWrapperObject *self, PyObject *val)
+{
+    if (val == NULL) {
+        PyErr_SetString(PyExc_TypeError, "__dict__ may not be deleted");
+        return -1;
+    }
+    if (!PyDict_Check(val)) {
+        PyErr_SetString(PyExc_TypeError, "__dict__ must be a dictionary");
+        return -1;
+    }
+    Py_CLEAR(self->dict);
+    Py_INCREF(val);
+    self->dict = val;
+    return 0;
+}
+
 /* ------------------------------------------------------------------------- */
 
 static PyObject *NRWSGIApplicationWrapper_descr_get(PyObject *function,
@@ -1105,12 +1132,10 @@ static PyObject *NRWSGIApplicationWrapper_descr_get(PyObject *function,
 /* ------------------------------------------------------------------------- */
 
 static PyGetSetDef NRWSGIApplicationWrapper_getset[] = {
-    { "__name__",           (getter)NRWSGIApplicationWrapper_get_name,
-                            NULL, 0 },
-    { "__module__",         (getter)NRWSGIApplicationWrapper_get_module,
-                            NULL, 0 },
     { "__wrapped__",        (getter)NRWSGIApplicationWrapper_get_wrapped,
                             NULL, 0 },
+    { "__dict__",           (getter)NRWSGIApplicationWrapper_get_dict,
+                            (setter)NRWSGIApplicationWrapper_set_dict, 0 },
     { NULL },
 };
 
@@ -1132,8 +1157,8 @@ PyTypeObject NRWSGIApplicationWrapper_Type = {
     0,                      /*tp_hash*/
     (ternaryfunc)NRWSGIApplicationWrapper_call, /*tp_call*/
     0,                      /*tp_str*/
-    0,                      /*tp_getattro*/
-    0,                      /*tp_setattro*/
+    PyObject_GenericGetAttr, /*tp_getattro*/
+    PyObject_GenericSetAttr, /*tp_setattro*/
     0,                      /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT,     /*tp_flags*/
     0,                      /*tp_doc*/
@@ -1150,7 +1175,7 @@ PyTypeObject NRWSGIApplicationWrapper_Type = {
     0,                      /*tp_dict*/
     NRWSGIApplicationWrapper_descr_get, /*tp_descr_get*/
     0,                      /*tp_descr_set*/
-    0,                      /*tp_dictoffset*/
+    offsetof(NRWSGIApplicationWrapperObject, dict), /*tp_dictoffset*/
     (initproc)NRWSGIApplicationWrapper_init, /*tp_init*/
     0,                      /*tp_alloc*/
     NRWSGIApplicationWrapper_new, /*tp_new*/

@@ -8,6 +8,8 @@
 
 #include "py_utilities.h"
 
+#include "structmember.h"
+
 /* ------------------------------------------------------------------------- */
 
 static PyObject *NRInFunctionWrapper_new(PyTypeObject *type, PyObject *args,
@@ -20,6 +22,7 @@ static PyObject *NRInFunctionWrapper_new(PyTypeObject *type, PyObject *args,
     if (!self)
         return NULL;
 
+    self->dict = NULL;
     self->wrapped_object = NULL;
     self->function_object = NULL;
 
@@ -33,6 +36,8 @@ static int NRInFunctionWrapper_init(NRInFunctionWrapperObject *self,
 {
     PyObject *wrapped_object = NULL;
     PyObject *function_object = Py_None;
+
+    PyObject *wrapper = NULL;
 
     static char *kwlist[] = { "wrapped", "function", NULL };
 
@@ -50,11 +55,14 @@ static int NRInFunctionWrapper_init(NRInFunctionWrapperObject *self,
     Py_XDECREF(self->function_object);
     self->function_object = function_object;
 
-    /*
-     * TODO This should set __module__, __name__, __doc__ and
-     * update __dict__ to preserve introspection capabilities.
-     * See @wraps in functools of recent Python versions.
-     */
+    /* Perform equivalent of functools.wraps(). */
+
+    wrapper = NRUtilities_UpdateWrapper((PyObject *)self, wrapped_object);
+
+    if (!wrapper)
+        return -1;
+
+    Py_DECREF(wrapper);
 
     return 0;
 }
@@ -63,6 +71,8 @@ static int NRInFunctionWrapper_init(NRInFunctionWrapperObject *self,
 
 static void NRInFunctionWrapper_dealloc(NRInFunctionWrapperObject *self)
 {
+    Py_XDECREF(self->dict);
+
     Py_DECREF(self->wrapped_object);
     Py_XDECREF(self->function_object);
 
@@ -143,6 +153,39 @@ static PyObject *NRInFunctionWrapper_get_wrapped(
     Py_INCREF(self->wrapped_object);
     return self->wrapped_object;
 }
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRInFunctionWrapper_get_dict(
+        NRInFunctionWrapperObject *self)
+{
+    if (self->dict == NULL) {
+        self->dict = PyDict_New();
+        if (!self->dict)
+            return NULL;
+    }
+    Py_INCREF(self->dict);
+    return self->dict;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRInFunctionWrapper_set_dict(
+        NRInFunctionWrapperObject *self, PyObject *val)
+{
+    if (val == NULL) {
+        PyErr_SetString(PyExc_TypeError, "__dict__ may not be deleted");
+        return -1;
+    }
+    if (!PyDict_Check(val)) {
+        PyErr_SetString(PyExc_TypeError, "__dict__ must be a dictionary");
+        return -1;
+    }
+    Py_CLEAR(self->dict);
+    Py_INCREF(val);
+    self->dict = val;
+    return 0;
+}
  
 /* ------------------------------------------------------------------------- */
 
@@ -161,6 +204,8 @@ static PyObject *NRInFunctionWrapper_descr_get(PyObject *function,
 static PyGetSetDef NRInFunctionWrapper_getset[] = {
     { "__wrapped__",        (getter)NRInFunctionWrapper_get_wrapped,
                             NULL, 0 },
+    { "__dict__",           (getter)NRInFunctionWrapper_get_dict,
+                            (setter)NRInFunctionWrapper_set_dict, 0 },
     { NULL },
 };
 
@@ -182,8 +227,8 @@ PyTypeObject NRInFunctionWrapper_Type = {
     0,                      /*tp_hash*/
     (ternaryfunc)NRInFunctionWrapper_call, /*tp_call*/
     0,                      /*tp_str*/
-    0,                      /*tp_getattro*/
-    0,                      /*tp_setattro*/
+    PyObject_GenericGetAttr, /*tp_getattro*/
+    PyObject_GenericSetAttr, /*tp_setattro*/
     0,                      /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT,     /*tp_flags*/
     0,                      /*tp_doc*/
@@ -200,7 +245,7 @@ PyTypeObject NRInFunctionWrapper_Type = {
     0,                      /*tp_dict*/
     NRInFunctionWrapper_descr_get, /*tp_descr_get*/
     0,                      /*tp_descr_set*/
-    0,                      /*tp_dictoffset*/
+    offsetof(NRInFunctionWrapperObject, dict), /*tp_dictoffset*/
     (initproc)NRInFunctionWrapper_init, /*tp_init*/
     0,                      /*tp_alloc*/
     NRInFunctionWrapper_new, /*tp_new*/

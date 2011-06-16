@@ -498,13 +498,6 @@ static PyObject *newrelic_background_task(PyObject *self, PyObject *args,
         return NULL;
     }
 
-    if (!PyString_Check(name) && !PyUnicode_Check(name) &&
-        name != Py_None) {
-        PyErr_Format(PyExc_TypeError, "name argument must be string, Unicode, "
-                     "or None, found type '%s'", name->ob_type->tp_name);
-        return NULL;
-    }
-
     if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
         scope != Py_None) {
         PyErr_Format(PyExc_TypeError, "scope argument must be string, Unicode, "
@@ -558,13 +551,6 @@ static PyObject *newrelic_wrap_background_task(PyObject *self, PyObject *args,
     if (!PyModule_Check(module) && !PyString_Check(module)) {
         PyErr_SetString(PyExc_TypeError, "module reference must be "
                         "module or string");
-        return NULL;
-    }
-
-    if (!PyString_Check(name) && !PyUnicode_Check(name) &&
-        name != Py_None) {
-        PyErr_Format(PyExc_TypeError, "name argument must be string, Unicode, "
-                     "or None, found type '%s'", name->ob_type->tp_name);
         return NULL;
     }
 

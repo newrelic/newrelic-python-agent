@@ -184,13 +184,6 @@ static int NRBackgroundTaskWrapper_init(NRBackgroundTaskWrapperObject *self,
         return -1;
     }
 
-    if (!PyString_Check(name) && !PyUnicode_Check(name) &&
-        name != Py_None) {
-        PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
-                     "or None, found type '%s'", name->ob_type->tp_name);
-        return -1;
-    }
-
     if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
         scope != Py_None) {
         PyErr_Format(PyExc_TypeError, "expected string, Unicode or None "
@@ -293,9 +286,20 @@ static PyObject *NRBackgroundTaskWrapper_call(
         name = NRUtilities_CallableName(self->wrapped_object,
                                         (PyObject *)self, args, ":");
     }
-    else {
+    else if (PyString_Check(self->name) || PyUnicode_Check(self->name)) {
         name = self->name;
         Py_INCREF(name);
+    }
+    else {
+        /*
+         * Name if actually a callable function to provide the
+         * name based on arguments supplied to wrapped function.
+         */
+
+        name = PyObject_Call(self->name, args, kwds);
+
+        if (!name)
+            return NULL;
     }
 
     /*
@@ -576,13 +580,6 @@ static int NRBackgroundTaskDecorator_init(
         PyErr_Format(PyExc_TypeError, "application argument must be None, "
                      "str, unicode, or application object, found type '%s'",
                      application->ob_type->tp_name);
-        return -1;
-    }
-
-    if (!PyString_Check(name) && !PyUnicode_Check(name) &&
-        name != Py_None) {
-        PyErr_Format(PyExc_TypeError, "name argument must be str, unicode, "
-                     "or None, found type '%s'", name->ob_type->tp_name);
         return -1;
     }
 

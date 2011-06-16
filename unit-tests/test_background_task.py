@@ -24,6 +24,10 @@ def _test_function_nn_1():
 def _test_function_da_1():
     time.sleep(0.1)
 
+@_newrelic.background_task(name=lambda x: x)
+def _test_function_nl_1(arg):
+    time.sleep(0.1)
+
 class BackgroundTaskTests(unittest.TestCase):
 
     def setUp(self):
@@ -130,6 +134,9 @@ class BackgroundTaskTests(unittest.TestCase):
 
     def test_background_task_decorator_default(self):
         _test_function_da_1()
+
+    def test_background_task_name_lambda(self):
+        _test_function_nl_1('name_lambda')
 
 if __name__ == '__main__':
     unittest.main()

@@ -66,9 +66,9 @@ static void newrelic_populate_environment(void)
 
             if (version_as_string) {
                 nro__set_hash_string(nr_per_process_globals.env,
-                                     "WSGI Server Name", "Apache/mod_wsgi");
+                                     "Dispatcher", "Apache/mod_wsgi");
                 nro__set_hash_string(nr_per_process_globals.env,
-                                     "WSGI Server Version",
+                                     "Dispatcher Version",
                                      PyString_AsString(version_as_string));
 
                 Py_DECREF(version_as_string);

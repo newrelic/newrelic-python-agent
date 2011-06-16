@@ -82,7 +82,7 @@ static int NRBackgroundTask_init(NRTransactionObject *self, PyObject *args,
         PyObject *bytes = NULL;
 
         bytes = NRUtilities_ConstructPath(name, scope);
-        self->transaction->path_type = NR_PATH_TYPE_CUSTOM;
+        self->transaction->path_type = NR_PATH_TYPE_RAW;
         self->transaction->path = nrstrdup(PyString_AsString(bytes));
         Py_DECREF(bytes);
 

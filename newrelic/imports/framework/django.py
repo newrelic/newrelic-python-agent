@@ -111,7 +111,7 @@ def wrap_middleware(handler, *args, **kwargs):
     if hasattr(handler, '_request_middleware'):
         request_middleware = []
         for function in handler._request_middleware:
-            wrapper = NameTransactionWrapper(function, None, 'Django')
+            wrapper = NameTransactionWrapper(function)
             wrapper = FunctionTraceWrapper(wrapper)
             request_middleware.append(wrapper)
 
@@ -120,7 +120,7 @@ def wrap_middleware(handler, *args, **kwargs):
     if hasattr(handler, '_view_middleware'):
         view_middleware = []
         for function in handler._view_middleware:
-            wrapper = NameTransactionWrapper(function, None, 'Django')
+            wrapper = NameTransactionWrapper(function)
             wrapper = FunctionTraceWrapper(wrapper)
             view_middleware.append(wrapper)
 
@@ -165,13 +165,13 @@ def wrap_url_resolver_output(result):
 
     if type(result) == type(()):
         callback, args, kwargs = result
-        wrapper = NameTransactionWrapper(callback, None, 'Django')
+        wrapper = NameTransactionWrapper(callback)
         wrapper = FunctionTraceWrapper(wrapper)
         wrapper = ErrorTraceWrapper(wrapper,
                                     ignore_errors=['django.http.Http404'])
         result = (wrapper, args, kwargs)
     else:
-        wrapper = NameTransactionWrapper(result.func, None, 'Django')
+        wrapper = NameTransactionWrapper(result.func, None)
         wrapper = FunctionTraceWrapper(wrapper)
         wrapper = ErrorTraceWrapper(wrapper,
                                     ignore_errors=['django.http.Http404'])
@@ -184,7 +184,7 @@ def wrap_url_resolver_404_output(result):
         return
 
     callback, kwargs = result
-    wrapper = NameTransactionWrapper(callback, None, 'Django')
+    wrapper = NameTransactionWrapper(callback)
     wrapper = FunctionTraceWrapper(wrapper)
     result = (wrapper, kwargs)
 
@@ -212,7 +212,7 @@ class name_url_resolver_404(object):
 
 def wrap_url_resolver(resolver, *args, **kwargs):
     function = resolver.resolve
-    wrapper = NameTransactionWrapper(function, None, 'Django')
+    wrapper = NameTransactionWrapper(function)
     wrapper = name_url_resolver_404(wrapper)
     wrapper = OutFunctionWrapper(wrapper, wrap_url_resolver_output)
     resolver.resolve = wrapper

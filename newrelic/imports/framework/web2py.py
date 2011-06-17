@@ -5,14 +5,14 @@ from newrelic.agent import (wrap_function_trace, wrap_object, transaction,
          import_module)
 
 def name_models(environment):
-    return '%s/%s Models' % (environment['request'].controller,
+    return '%s/%s' % (environment['request'].controller,
             environment['request'].function)
 
 def name_controller(controller, function, environment):
-    return '%s/%s Controller' % (controller, function)
+    return '%s/%s' % (controller, function)
 
 def name_view(environment):
-    return '%s/%s View' % (environment['request'].controller,
+    return '%s/%s' % (environment['request'].controller,
             environment['request'].function)
 
 def name_restricted(code, environment={}, layer='Unknown'):
@@ -43,9 +43,12 @@ class capture_error(object):
 def instrument(module):
 
     if module.__name__ == 'gluon.compileapp':
-        wrap_function_trace(module, 'run_models_in', name_models)
-        wrap_function_trace(module, 'run_controller_in', name_controller)
-        wrap_function_trace(module, 'run_view_in', name_view)
+        wrap_function_trace(module, 'run_models_in', name_models,
+                            'Custom/Models')
+        wrap_function_trace(module, 'run_controller_in', name_controller,
+                            'Custom/Controller')
+        wrap_function_trace(module, 'run_view_in', name_view,
+                            'Custom/View')
 
         wrap_function_trace(module, 'restricted', name_restricted,
                             'Script/Execute')

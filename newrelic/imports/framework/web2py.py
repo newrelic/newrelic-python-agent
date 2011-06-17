@@ -21,6 +21,10 @@ def name_restricted(code, environment={}, layer='Unknown'):
         return layer[len(folder):]
     return layer
 
+def name_transaction(environment):
+    return '%s::%s' % (environment['request'].application,
+                       environment['response'].view)
+
 class capture_error(object):
     def __init__(self, wrapped):
         self.__wrapped__ = wrapped
@@ -53,8 +57,8 @@ def instrument(module):
         wrap_function_trace(module, 'restricted', name_restricted,
                             'Script/Execute')
 
-        wrap_name_transaction(module, 'run_models_in',
-                lambda environment: environment['response'].view)
+        wrap_name_transaction(module, 'run_models_in', name_transaction,
+                              'Custom')
 
     elif module.__name__ == 'gluon.main':
         wrap_object(module, 'serve_controller', capture_error)

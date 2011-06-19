@@ -118,12 +118,6 @@ static PyObject *NRNameTransactionWrapper_call(
         PyObject *method = NULL;
         PyObject *result = NULL;
 
-        method = PyObject_GetAttrString(current_transaction,
-                                        "name_transaction");
-
-        if (!method)
-            return NULL;
-
         /* Create function trace context manager. */
 
         if (self->name == Py_None) {
@@ -146,6 +140,14 @@ static PyObject *NRNameTransactionWrapper_call(
                 return NULL;
         }
 
+        method = PyObject_GetAttrString(current_transaction,
+                                        "name_transaction");
+
+        if (!method) {
+            Py_DECREF(name);
+            return NULL;
+        }
+
         result = PyObject_CallFunctionObjArgs(method, name,
                                               self->scope, NULL);
 
@@ -154,6 +156,8 @@ static PyObject *NRNameTransactionWrapper_call(
 
         if (!result)
             return NULL;
+
+        Py_DECREF(result);
     }
 
     return PyObject_Call(self->wrapped_object, args, kwds);

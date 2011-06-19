@@ -2,7 +2,7 @@ from newrelic.agent import (FunctionTraceWrapper, OutFunctionWrapper,
         wrap_pre_function, wrap_post_function, wrap_function_trace,
         wrap_error_trace, callable_name, transaction, NameTransactionWrapper,
         transaction, settings, ErrorTraceWrapper, wrap_in_function,
-        WSGIApplicationWrapper, import_module, transaction)
+        WSGIApplicationWrapper, import_module, transaction, update_wrapper)
 
 import types
 
@@ -193,6 +193,7 @@ def wrap_url_resolver_404_output(result):
 class name_url_resolver_404(object):
     def __init__(self, wrapped):
         self.__wrapped__ = wrapped
+        update_wrapper(self, wrapped)
     def __get__(self, obj, objtype=None):
         return types.MethodType(self, obj, objtype)
     def __call__(self, *args, **kwargs):
@@ -203,7 +204,7 @@ class name_url_resolver_404(object):
             try:
                 return self.__wrapped__(*args, **kwargs)
             except django_core_urlresolvers.Resolver404:
-                current_transaction.name_transaction('404', 'Function')
+                current_transaction.name_transaction('404', 'Uri')
                 raise
             except:
                 raise

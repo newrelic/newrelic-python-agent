@@ -1,11 +1,13 @@
 import sys
 import types
 
-from newrelic.agent import (transaction, wrap_object, ExternalTrace)
+from newrelic.agent import (transaction, wrap_object, ExternalTrace,
+        update_wrapper)
 
 class capture_external_trace(object):
     def __init__(self, wrapped):
         self.__wrapped__ = wrapped
+        update_wrapper(self, wrapped)
     def __get__(self, obj, objtype=None):
         return types.MethodType(self, obj, objtype)
     def __call__(self, url):

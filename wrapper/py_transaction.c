@@ -175,6 +175,13 @@ PyObject *NRTransaction_PushTransaction(PyObject *transaction)
                 Py_DECREF(handle);
 
                 /*
+                 * Set flag in transaction so we know that we
+                 * are using coroutines for this transaction.
+                 */
+
+                ((NRTransactionObject *)transaction)->coroutines = 1;
+
+                /*
                  * NULL out transaction pointer so when we
                  * fall through below we don't also store it
                  * under normal thread local storage.
@@ -351,6 +358,8 @@ static PyObject *NRTransaction_new(PyTypeObject *type, PyObject *args,
 
     self->ignored_params = PyObject_CallFunctionObjArgs(
                 (PyObject *)&PyList_Type, settings->ignored_params, NULL);
+
+    self->coroutines = 0;
 
     Py_DECREF(settings);
 
@@ -1203,6 +1212,20 @@ static PyObject *NRTransaction_get_enabled(NRTransactionObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRTransaction_get_coroutines(NRTransactionObject *self,
+                                              void *closure)
+{
+    if (self->coroutines) {
+        Py_INCREF(Py_True);
+        return Py_True;
+    }
+
+    Py_INCREF(Py_False);
+    return Py_False;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRTransaction_get_background_task(NRTransactionObject *self,
                                                    void *closure)
 {
@@ -1376,6 +1399,8 @@ static PyGetSetDef NRTransaction_getset[] = {
     { "path",               (getter)NRTransaction_get_path,
                             NULL, 0 },
     { "enabled",            (getter)NRTransaction_get_enabled,
+                            NULL, 0 },
+    { "coroutines",         (getter)NRTransaction_get_coroutines,
                             NULL, 0 },
     { "background_task",    (getter)NRTransaction_get_background_task,
                             NULL, 0 },

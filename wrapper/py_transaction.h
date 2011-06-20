@@ -26,6 +26,7 @@ typedef struct {
     int path_frozen;
     int capture_params;
     PyObject *ignored_params;
+    int coroutines;
 } NRTransactionObject;
 
 extern PyTypeObject NRTransaction_Type;

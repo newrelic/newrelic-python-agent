@@ -23,6 +23,8 @@
 #include "py_post_function.h"
 #include "py_pre_function.h"
 
+#include "py_object_wrapper.h"
+
 #include "py_import_hook.h"
 
 #include "py_utilities.h"
@@ -1837,6 +1839,8 @@ init_newrelic(void)
         return;
     if (PyType_Ready(&NRImportHookDecorator_Type) < 0)
         return;
+    if (PyType_Ready(&NRObjectWrapper_Type) < 0)
+        return;
 
     /* Initialise type objects. */
 
@@ -1936,6 +1940,9 @@ init_newrelic(void)
     Py_INCREF(&NRImportHookFinder_Type);
     PyModule_AddObject(module, "ImportHookFinder",
                        (PyObject *)&NRImportHookFinder_Type);
+    Py_INCREF(&NRObjectWrapper_Type);
+    PyModule_AddObject(module, "ObjectWrapper",
+                       (PyObject *)&NRObjectWrapper_Type);
 
     /* Initialise module constants. */
 

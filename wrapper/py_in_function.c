@@ -73,7 +73,7 @@ static void NRInFunctionWrapper_dealloc(NRInFunctionWrapperObject *self)
 {
     Py_XDECREF(self->dict);
 
-    Py_DECREF(self->wrapped_object);
+    Py_XDECREF(self->wrapped_object);
     Py_XDECREF(self->function_object);
 
     Py_TYPE(self)->tp_free(self);

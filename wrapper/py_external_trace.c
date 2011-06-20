@@ -416,9 +416,9 @@ static void NRExternalTraceWrapper_dealloc(NRExternalTraceWrapperObject *self)
 {
     Py_XDECREF(self->dict);
 
-    Py_DECREF(self->wrapped_object);
-    Py_DECREF(self->library);
-    Py_DECREF(self->url);
+    Py_XDECREF(self->wrapped_object);
+    Py_XDECREF(self->library);
+    Py_XDECREF(self->url);
 
     Py_TYPE(self)->tp_free(self);
 }

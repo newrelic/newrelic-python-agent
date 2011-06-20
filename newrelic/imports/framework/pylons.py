@@ -3,18 +3,13 @@ import types
 
 from newrelic.agent import (wrap_name_transaction, wrap_function_trace,
                             wrap_error_trace, wrap_object, callable_name,
-                            transaction, import_module, update_wrapper)
+                            transaction, import_module, ObjectWrapper)
 
 def name_controller(self, environ, start_response):
     action = environ['pylons.routes_dict']['action']
     return "%s.%s" % (callable_name(self), action)
 
-class capture_error(object):
-    def __init__(self, wrapped):
-        self.__wrapped__ = wrapped
-        update_wrapper(self, wrapped)
-    def __get__(self, obj, objtype=None):
-        return types.MethodType(self, obj, objtype)
+class capture_error(ObjectWrapper):
     def __call__(self, controller, func, args):
         current_transaction = transaction()
         if current_transaction:

@@ -1,25 +1,19 @@
 import types
 
 from newrelic.agent import (wrap_object, transaction, FunctionTraceWrapper,
-                            update_wrapper)
+                            ObjectWrapper)
 
-class stream_wrapper(object):
+class stream_wrapper(ObjectWrapper):
     def __init__(self, stream, filepath):
-        self.__wrapped__ = stream
+        ObjectWrapper.__init__(self, stream)
         self.__filepath = filepath
-        update_wrapper(self, stream)
     def __getattr__(self, name):
         if name == 'render':
             return FunctionTraceWrapper(getattr(self.__wrapped__, name),
                     self.__filepath, 'Template/Render')
         return getattr(self.__wrapped__, name)
 
-class wrap_template(object):
-    def __init__(self, wrapped):
-        self.__wrapped__ = wrapped
-        update_wrapper(self, wrapped)
-    def __get__(self, obj, objtype=None):
-        return types.MethodType(self, obj, objtype)
+class wrap_template(ObjectWrapper):
     def __call__(self, *args, **kwargs):
         current_transaction = transaction()
         if current_transaction:

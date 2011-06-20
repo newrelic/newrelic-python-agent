@@ -2,14 +2,9 @@ import sys
 import types
 
 from newrelic.agent import (transaction, wrap_object, ExternalTrace,
-        update_wrapper)
+        ObjectWrapper)
 
-class capture_external_trace(object):
-    def __init__(self, wrapped):
-        self.__wrapped__ = wrapped
-        update_wrapper(self, wrapped)
-    def __get__(self, obj, objtype=None):
-        return types.MethodType(self, obj, objtype)
+class capture_external_trace(ObjectWrapper):
     def __call__(self, url):
         if url.split(':')[0].lower() in ['http', 'https', 'ftp']:
             current_transaction = transaction()

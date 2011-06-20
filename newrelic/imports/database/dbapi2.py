@@ -1,11 +1,8 @@
 import newrelic.agent
 
-from newrelic.agent import (DatabaseTraceWrapper, update_wrapper)
+from newrelic.agent import (DatabaseTraceWrapper, ObjectWrapper)
 
-class CursorWrapper(object):
-    def __init__(self, cursor):
-        self.__wrapped__ = cursor
-        update_wrapper(self, cursor)
+class CursorWrapper(ObjectWrapper):
     def __getattr__(self, name):
         if name == 'execute':
             return DatabaseTraceWrapper(getattr(self.__wrapped__, name),
@@ -15,26 +12,17 @@ class CursorWrapper(object):
                     (lambda sql, seq_of_parameters=[]: sql))
         return getattr(self.__wrapped__, name)
 
-class CursorFactory(object):
-    def __init__(self, function):
-        self.__wrapped__ = function
-        update_wrapper(self, function)
+class CursorFactory(ObjectWrapper):
     def __call__(self, *args, **kwargs):
         return CursorWrapper(self.__wrapped__(*args, **kwargs))
 
-class ConnectionWrapper(object):
-    def __init__(self, connection):
-        self.__wrapped__ = connection
-        update_wrapper(self, connection)
+class ConnectionWrapper(ObjectWrapper):
     def __getattr__(self, name):
         if name == 'cursor':
             return CursorFactory(self.__wrapped__.cursor)
         return getattr(self.__wrapped__, name)
 
-class ConnectionFactory(object):
-    def __init__(self, function):
-        self.__wrapped__ = function
-        update_wrapper(self, function)
+class ConnectionFactory(ObjectWrapper):
     def __call__(self, *args, **kwargs):
         return ConnectionWrapper(self.__wrapped__(*args, **kwargs))
 

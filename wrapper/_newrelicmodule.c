@@ -1597,24 +1597,6 @@ static PyObject *newrelic_import_module(PyObject *self, PyObject *args,
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *newrelic_update_wrapper(PyObject *self, PyObject *args,
-                                         PyObject *kwds)
-{
-    PyObject *wrapper = NULL;
-    PyObject *wrapped = NULL;
-
-    static char *kwlist[] = { "wrapper", "wrapped", NULL };
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OO:update_wrapper",
-                                     kwlist, &wrapper, &wrapped)) {
-        return NULL;
-    }
-
-    return NRUtilities_UpdateWrapper(wrapper, wrapped);
-}
-
-/* ------------------------------------------------------------------------- */
-
 static PyObject *newrelic_shutdown(PyObject *self, PyObject *args)
 {
     static int shutdown = 0;
@@ -1727,8 +1709,6 @@ static PyMethodDef newrelic_methods[] = {
     { "import_hook",        (PyCFunction)newrelic_import_hook,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "import_module",      (PyCFunction)newrelic_import_module,
-                            METH_VARARGS|METH_KEYWORDS, 0 },
-    { "update_wrapper",     (PyCFunction)newrelic_update_wrapper,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { NULL, NULL }
 };

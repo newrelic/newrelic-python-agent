@@ -58,6 +58,7 @@ sources = [
   "wrapper/py_in_function.c",
   "wrapper/py_memcache_trace.c",
   "wrapper/py_name_transaction.c",
+  "wrapper/py_object_wrapper.c",
   "wrapper/py_out_function.c",
   "wrapper/py_post_function.c",
   "wrapper/py_pre_function.c",

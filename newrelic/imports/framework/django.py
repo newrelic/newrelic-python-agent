@@ -1,12 +1,21 @@
-from newrelic.agent import (FunctionTraceWrapper, OutFunctionWrapper,
-        wrap_pre_function, wrap_post_function, wrap_function_trace,
-        wrap_error_trace, callable_name, transaction, NameTransactionWrapper,
-        transaction, settings, ErrorTraceWrapper, wrap_in_function,
-        WSGIApplicationWrapper, import_module, transaction, update_wrapper)
+from newrelic.agent import (
+        import_module,
+        settings,
+        transaction,
+        wrap_function_trace,
+        wrap_in_function,
+        wrap_out_function,
+        wrap_post_function,
+        wrap_pre_function,
+        wrap_error_trace,
+        ErrorTraceWrapper,
+        FunctionTraceWrapper,
+        NameTransactionWrapper,
+        ObjectWrapper,
+        OutFunctionWrapper,
+        WSGIApplicationWrapper)
 
-import types
-
-def insert_rum(request, response):
+def response_middleware_browser_monitoring(request, response):
 
     # Only insert RUM JavaScript headers and footers if
     # enabled locally in configuration file.
@@ -16,8 +25,8 @@ def insert_rum(request, response):
 
     # Need to be running within a valid web transaction.
 
-    t = transaction()
-    if not t:
+    txn = transaction()
+    if not txn:
         return response
 
     # Only possible if the content type is text/html.
@@ -32,8 +41,8 @@ def insert_rum(request, response):
     # has not been received yet as process only just
     # started.
 
-    header = t.browser_timing_header()
-    footer = t.browser_timing_footer()
+    header = txn.browser_timing_header()
+    footer = txn.browser_timing_footer()
     if not header or not footer:
         return response
 
@@ -96,26 +105,49 @@ def insert_rum(request, response):
     return response
 
 def newrelic_browser_timing_header():
-    t = transaction()
-    if not t:
+    txn = transaction()
+    if not txn:
         return ""
-    return t.browser_timing_header()
+    return txn.browser_timing_header()
 
 def newrelic_browser_timing_footer():
-    t = transaction()
-    if not t:
+    txn = transaction()
+    if not txn:
         return ""
-    return t.browser_timing_footer()
+    return txn.browser_timing_footer()
 
-def wrap_middleware(handler, *args, **kwargs):
+def post_BaseHandler_load_middleware(handler, *args, **kwargs):
+
+    # This gets executed after the first time that the
+    # load_middleware() method of BaseHandler is called.
+    # It only gets executed once as don't want to do all
+    # this on every time it is called.
+
+    # First go through all the request middleware and
+    # wrap them. Do this to record time within the
+    # middleware, but also to bind web transaction name
+    # based on middleware name. We need to do the latter
+    # even though we bind name again later as the request
+    # middleware can return a response immediately.
+
     if hasattr(handler, '_request_middleware'):
         request_middleware = []
         for function in handler._request_middleware:
             wrapper = NameTransactionWrapper(function)
             wrapper = FunctionTraceWrapper(wrapper)
             request_middleware.append(wrapper)
-
         handler._request_middleware = request_middleware
+
+    # Now go through all the view middleware and wrap
+    # them also. Do this to record time within the
+    # middleware, but again to bind web transaction name
+    # based on middleware name. We need to do the latter
+    # even though we bind name again later as the view
+    # middleware can return a response immediately even
+    # by that point a view handler has been chosen. When
+    # this occurs the view handler is never actually
+    # called and so use the view middleware name for web
+    # transaction name.
 
     if hasattr(handler, '_view_middleware'):
         view_middleware = []
@@ -123,16 +155,30 @@ def wrap_middleware(handler, *args, **kwargs):
             wrapper = NameTransactionWrapper(function)
             wrapper = FunctionTraceWrapper(wrapper)
             view_middleware.append(wrapper)
-
         handler._view_middleware = view_middleware
+
+    # Now go through all the template response
+    # middleware and wrap them also. Do this to record
+    # time within the middleware. We don't bind web
+    # transaction name to the template response
+    # middleware name as this gets executed after view
+    # handler and we want to preserve the view handler
+    # name as web transaction name. Note that template
+    # response middleware don't exist in older versions
+    # of Django but we only wrap them if the list of
+    # template response middleware exists, so is okay.
 
     if hasattr(handler, '_template_response_middleware'):
         template_response_middleware = []
         for function in handler._template_response_middleware:
             wrapper = FunctionTraceWrapper(function)
             template_response_middleware.append(wrapper)
-
         handler._template_response_middleware = template_response_middleware
+
+    # Now go through all the response middleware and
+    # wrap them also. Do this to record time within the
+    # middleware. Again, we preserve the web transaction
+    # name as that for the view handler.
 
     if hasattr(handler, '_response_middleware'):
         response_middleware = []
@@ -141,122 +187,242 @@ def wrap_middleware(handler, *args, **kwargs):
             response_middleware.append(wrapper)
         handler._response_middleware = response_middleware
 
-        # Insert middleware for inserting RUM header/footer.
-
-        handler._response_middleware.insert(0, insert_rum)
+    # Now go through all the exception middleware and
+    # wrap them also. Do this to record time within the
+    # middleware and name the web transaction. We do
+    # the latter to highlight when an exception has
+    # occurred and been processed by the the exception
+    # middleware otherwise they bind to the name for
+    # the view handler still and don't show out as well.
 
     if hasattr(handler, '_exception_middleware'):
         exception_middleware = []
         for function in handler._exception_middleware:
-            wrapper = FunctionTraceWrapper(function)
+            wrapper = NameTransactionWrapper(function)
+            wrapper = FunctionTraceWrapper(wrapper)
             exception_middleware.append(wrapper)
-
         handler._exception_middleware = exception_middleware
 
-def wrap_url_resolver_output(result):
-    if result is None:
-        return
+    # Insert response middleware for automatically
+    # inserting end user monitoring header and footer.
 
-    # Note that adding an error trace wrapper means that if
-    # there are no exception middleware that render a response
-    # that error will be captured twice. In this case the
-    # duplicate should get discarded later as will be for the
-    # same exception type.
+    if hasattr(handler, '_response_middleware'):
+        handler._response_middleware.insert(0,
+                response_middleware_browser_monitoring)
 
-    if type(result) == type(()):
-        callback, args, kwargs = result
-        wrapper = NameTransactionWrapper(callback)
-        wrapper = FunctionTraceWrapper(wrapper)
-        wrapper = ErrorTraceWrapper(wrapper,
-                                    ignore_errors=['django.http.Http404'])
-        result = (wrapper, args, kwargs)
-    else:
-        wrapper = NameTransactionWrapper(result.func, None)
-        wrapper = FunctionTraceWrapper(wrapper)
-        wrapper = ErrorTraceWrapper(wrapper,
-                                    ignore_errors=['django.http.Http404'])
-        result.func = wrapper
-
-    return result
-
-def wrap_url_resolver_404_output(result):
-    if result is None:
-        return
-
-    callback, kwargs = result
-    wrapper = NameTransactionWrapper(callback)
-    wrapper = FunctionTraceWrapper(wrapper)
-    result = (wrapper, kwargs)
-
-    return result
-
-class name_url_resolver_404(object):
-    def __init__(self, wrapped):
-        self.__wrapped__ = wrapped
-        update_wrapper(self, wrapped)
-    def __get__(self, obj, objtype=None):
-        return types.MethodType(self, obj, objtype)
+class name_RegexURLResolver_resolve_Resolver404(ObjectWrapper):
     def __call__(self, *args, **kwargs):
-        current_transaction = transaction()
-        if current_transaction:
-            django_core_urlresolvers = import_module(
-                    'django.core.urlresolvers')
+
+	# Captures a Resolver404 exception and names the
+	# web transaction as a generic 404 with scope
+	# 'Uri'. This is to avoid problem of metric
+	# explosion on URLs which didn't actually map to
+	# a valid resource. If there is a 404 handler then
+        # this will get overriden again later so this is
+        # just a default for where not 404 handler.
+
+        txn = transaction()
+        if txn:
+            Resolver404 = import_module(
+                    'django.core.urlresolvers').Resolver404
             try:
-                return self.__wrapped__(*args, **kwargs)
-            except django_core_urlresolvers.Resolver404:
-                current_transaction.name_transaction('404', 'Uri')
+                return self.wrapped(*args, **kwargs)
+            except Resolver404:
+                txn.name_transaction('404', scope='Uri')
                 raise
             except:
                 raise
         else:
-            return self.__wrapped__(*args, **kwargs)
+            return self.wrapped(*args, **kwargs)
 
-def wrap_url_resolver(resolver, *args, **kwargs):
-    function = resolver.resolve
-    wrapper = NameTransactionWrapper(function)
-    wrapper = name_url_resolver_404(wrapper)
-    wrapper = OutFunctionWrapper(wrapper, wrap_url_resolver_output)
-    resolver.resolve = wrapper
+def out_RegexURLResolver_resolve(result):
 
-    function = resolver.resolve404
-    wrapper = OutFunctionWrapper(function, wrap_url_resolver_404_output)
-    resolver.resolve404 = wrapper
+    # The resolve() method is what returns the view
+    # handler to be executed for a specific request. The
+    # format of the data structure which is returned has
+    # changed across Django versions so need to adapt
+    # automatically to which format of data is used.
 
-def wrap_uncaught_exception(handler, request, resolver, exc_info):
-    current_transaction = transaction()
-    if current_transaction:
-        current_transaction.notice_error(*exc_info)
+    if result is None:
+        return result
 
-def wrap_add_wsgi_application_input(self, application, **kwargs):
+    txn = transaction()
+    if not txn:
+        return result
+
+    # We wrap the actual view handler callback to use
+    # its name to name the web transaction, for timing
+    # the call and capturing exceptions. We also have
+    # special case where we name web transaction as a
+    # generic 404 where we get a Resolver404 exception.
+    # For the case of where there is no exception
+    # middleware the exception will be captured and
+    # recorded a second time by the uncaught exception
+    # handler. We can't though rely on just catching
+    # here it though, as the uncaught exception handler
+    # is also used to look out for exceptions in
+    # subsequent middleware as well. So can't avoid
+    # capturing it twice. The duplicate error will at
+    # some point be ignored as the exception type and
+    # description will be the same so ultimately doesn't
+    # matter. We ignore Http404 exceptions here as we
+    # don't want top capture as error details a
+    # legitimate response from a view handler indicating
+    # that the resource mapped by the URL did not exist.
+
+    if type(result) == type(()):
+        callback, callback_args, callback_kwargs = result
+        wrapper = NameTransactionWrapper(callback)
+        wrapper = FunctionTraceWrapper(wrapper)
+        wrapper = ErrorTraceWrapper(wrapper,
+                ignore_errors=['django.http.Http404'])
+        wrapper = name_RegexURLResolver_resolve_Resolver404(wrapper)
+        result = (wrapper, callback_args, callback_kwargs)
+    else:
+        wrapper = NameTransactionWrapper(result.func, None)
+        wrapper = FunctionTraceWrapper(wrapper)
+        wrapper = ErrorTraceWrapper(wrapper,
+                ignore_errors=['django.http.Http404'])
+        wrapper = name_RegexURLResolver_resolve_Resolver404(wrapper)
+        result.func = wrapper
+
+    return result
+
+def out_RegexURLResolver_resolve404(result):
+
+    # The resolve404() method is what returns a handler
+    # for 404 responses from view handler or middleware.
+
+    if result is None:
+        return
+
+    txn = transaction()
+    if not txn:
+        return result
+
+    # We wrap the actual handler callback to use its
+    # name to name the web transaction and for timing.
+    # We don't need to wrap it to capture errors as any
+    # errors from this handler always get handled by the
+    # uncaught exception handler.
+
+    callback, param_dict = result
+    wrapper = NameTransactionWrapper(callback)
+    wrapper = FunctionTraceWrapper(wrapper)
+    result = (wrapper, param_dict)
+
+    return result
+
+def pre_WSGIHandler_handle_uncaught_exception(handler, request,
+            resolver, exc_info):
+
+    # Record the exception details passed into the
+    # function against the current transaction object.
+
+    txn = transaction()
+    if txn:
+        txn.notice_error(*exc_info)
+
+def name_Template_render(template, context):
+    
+    # Use the name of the template as held by the
+    # template object itself. This should be a relative
+    # path with the template loader uniquely associated
+    # it with a specific template library. Therefore do
+    # not need to worry about making it absolute as
+    # meaning should be known in the context of the
+    # specific Django site.
+
+    return template.name
+
+def in_ServerHandler_run(self, application, **kwargs):
+
+    # Wrap the WSGI application argument on the way in
+    # so that run() method gets the wrapped instance.
+
     return ((self, WSGIApplicationWrapper(application)), kwargs)
 
 def instrument(module):
 
     if module.__name__ == 'django.core.handlers.base':
+
+	# Attach a post function to load_middleware() method of
+	# BaseHandler so that we can iterate over the various
+	# middleware and wrap them all with a function trace.
+	# The load_middleware() function can be called more than
+        # once with it returning if it doesn't need to do anything.
+        # We only want to do the wrapping once though so the post
+        # function is flagged to only run once.
+
         wrap_post_function(module, 'BaseHandler.load_middleware',
-                wrap_middleware, run_once=True)
+                post_BaseHandler_load_middleware, run_once=True)
 
     elif module.__name__ == 'django.core.handlers.wsgi':
+
+	# Attach a pre function to handle_uncaught_exception()
+	# of WSGIHandler so that can capture exception details
+	# of any exception which wasn't caught and dealt with by
+	# an exception middleware. The handle_uncaught_exception()
+	# function produces a 500 error response page and
+	# otherwise suppresses the exception, so last chance to
+        # do this as exception will not propogate up to the WSGI
+        # application.
+
         wrap_pre_function(module, 'WSGIHandler.handle_uncaught_exception',
-                wrap_uncaught_exception)
+                pre_WSGIHandler_handle_uncaught_exception)
 
     elif module.__name__ == 'django.core.urlresolvers':
-        wrap_post_function(module, 'RegexURLResolver.__init__',
-                 wrap_url_resolver)
+
+	# Wrap method which maps a string version of a function
+	# name as used in urls.py patter so can capture any
+	# exception which is raised during that process.
+	# Normally Django captures import errors at this point
+	# and then reraises a ViewDoesNotExist exception with
+	# details of the original error and traceback being
+	# lost. We thus intercept it here so can capture that
+	# traceback which is otherwise lost. Although we ignore
+	# a Http404 exception here, it probably is never the
+	# case that one can be raised by get_callable().
+
         wrap_error_trace(module, 'get_callable',
-                 ignore_errors=['django.http.Http404'])
+                ignore_errors=['django.http.Http404'])
+
+        # Wrap methods which resolves a request to a view
+        # handler. This can be called against a resolver
+        # initialised against a custom URL conf associated
+        # with a specific request, of a resolver which uses
+        # the default URL conf.
+
+        wrap_out_function(module, 'RegexURLResolver.resolve',
+                out_RegexURLResolver_resolve)
+
+        wrap_out_function(module, 'RegexURLResolver.resolve404',
+                out_RegexURLResolver_resolve404)
 
     elif module.__name__ == 'django.template':
+
+        # Wrap methods for rendering of Django templates. The
+        # name of the method changed in between Django versions
+        # so need to check for which one we have. The name of
+        # the function trace node is taken from the name of the
+        # template. An explicit scope is given so can recognise
+        # this as template rendering time.
+
         if hasattr(module.Template, '_render'):
             wrap_function_trace(module, 'Template._render',
-                    (lambda template, context: template.name),
-                    'Template/Render')
+                    name=name_Template_render, scope='Template/Render')
         else:
             wrap_function_trace(module, 'Template.render',
-                    (lambda template, context: template.name),
-                    'Template/Render')
+                    name=name_Template_render, scope='Template/Render')
 
         # Register template tags for RUM header/footer.
+        #
+        # XXX This needs to be separated out into a Django
+        # application and no longer added automaticaly. Instead
+        # would be up to user to add a New Relic application
+        # into INSTALLED_APPS to get access to the template tag
+        # library for browser monitoring. Note that these don't
+        # have to be installed for auto RUM to work.
 
         library = module.Library()
         library.simple_tag(newrelic_browser_timing_header)
@@ -266,8 +432,10 @@ def instrument(module):
     elif module.__name__ == 'django.core.servers.basehttp':
 
         # Allow 'runserver' to be used with Django <= 1.3.
-        # Later versions of Django use wsgiref server instead.
+        # Later versions of Django use wsgiref server instead
+        # which will be dealt with via instrumentation of the
+        # wsgiref module instead.
 
         if hasattr(module.ServerHandler, 'run'):
             wrap_in_function(module, 'ServerHandler.run',
-                    wrap_add_wsgi_application_input)
+                    in_ServerHandler_run)

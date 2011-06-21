@@ -84,6 +84,11 @@ static PyObject *NRObjectWrapper_call(NRObjectWrapperObject *self,
 static PyObject *NRObjectWrapper_get_wrapped(
         NRObjectWrapperObject *self, void *closure)
 {
+    if (!self->wrapped_object) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
     Py_INCREF(self->wrapped_object);
     return self->wrapped_object;
 }

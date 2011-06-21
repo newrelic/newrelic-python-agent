@@ -597,7 +597,16 @@ static int NRExternalTraceWrapper_set_dict(
     self->dict = val;
     return 0;
 }
- 
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRExternalTraceWrapper_get_marker(
+        NRExternalTraceWrapperObject *self, void *closure)
+{
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
 /* ------------------------------------------------------------------------- */
 
 static PyObject *NRExternalTraceWrapper_descr_get(PyObject *function,
@@ -613,10 +622,12 @@ static PyObject *NRExternalTraceWrapper_descr_get(PyObject *function,
 /* ------------------------------------------------------------------------- */
 
 static PyGetSetDef NRExternalTraceWrapper_getset[] = {
-    { "__wrapped__",        (getter)NRExternalTraceWrapper_get_wrapped,
+    { "wrapped",            (getter)NRExternalTraceWrapper_get_wrapped,
                             NULL, 0 },
     { "__dict__",           (getter)NRExternalTraceWrapper_get_dict,
                             (setter)NRExternalTraceWrapper_set_dict, 0 },
+    { "__newrelic_wrapper__", (getter)NRExternalTraceWrapper_get_marker,
+                            NULL, 0 },
     { NULL },
 };
 

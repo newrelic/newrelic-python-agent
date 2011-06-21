@@ -217,6 +217,7 @@ PyObject *NRUtilities_ObjectContext(PyObject *wrapped, PyObject *wrapper,
 
     PyObject *target = NULL;
     PyObject *object = NULL;
+    PyObject *marker = NULL;
 
     PyObject *attribute_name = NULL;
 
@@ -224,25 +225,36 @@ PyObject *NRUtilities_ObjectContext(PyObject *wrapped, PyObject *wrapper,
 
     /*
      * We need to deal with case where we may have wrapped a
-     * wrapper. In that case we need to check for the
-     * __wrapped__ attribute and follow the chain of these to
-     * get to the inner most object which isn't marked as being
-     * a wrapper.
-     *
-     * TODO Should we perhaps only follow __wrapped__ for our
-     * own wrapper objects given that convention of using a
-     * wrapped attribute exists for Python 3.2+.
+     * wrapper. In that case we need to follow the chain of
+     * wrapped objects. We only do this for our own wrapper
+     * objects marked by the __newrelic_wrapper__ attribute.
      */
 
     target = wrapped;
     Py_INCREF(target);
 
-    object = PyObject_GetAttrString(target, "__wrapped__");
+    marker = PyObject_GetAttrString(target, "__newrelic_wrapper__");
 
-    while (object) {
-        Py_DECREF(target);
-        target = object;
-        object = PyObject_GetAttrString(target, "__wrapped__");
+    if (marker) {
+        Py_DECREF(marker);
+
+        object = PyObject_GetAttrString(target, "wrapped");
+
+        while (object) {
+            Py_DECREF(target);
+            target = object;
+
+            marker = PyObject_GetAttrString(target, "__newrelic_wrapper__");
+
+            if (!marker) {
+                object = NULL;
+                break;
+            }
+
+            Py_DECREF(marker);
+
+            object = PyObject_GetAttrString(target, "wrapped");
+        }
     }
 
     PyErr_Clear();

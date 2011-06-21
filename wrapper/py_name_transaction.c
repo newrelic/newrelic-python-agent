@@ -207,6 +207,15 @@ static int NRNameTransactionWrapper_set_dict(
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRNameTransactionWrapper_get_marker(
+        NRNameTransactionWrapperObject *self, void *closure)
+{
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRNameTransactionWrapper_descr_get(PyObject *function,
                                                   PyObject *object,
                                                   PyObject *type)
@@ -220,10 +229,12 @@ static PyObject *NRNameTransactionWrapper_descr_get(PyObject *function,
 /* ------------------------------------------------------------------------- */
 
 static PyGetSetDef NRNameTransactionWrapper_getset[] = {
-    { "__wrapped__",        (getter)NRNameTransactionWrapper_get_wrapped,
+    { "wrapped",            (getter)NRNameTransactionWrapper_get_wrapped,
                             NULL, 0 },
     { "__dict__",           (getter)NRNameTransactionWrapper_get_dict,
                             (setter)NRNameTransactionWrapper_set_dict, 0 },
+    { "__newrelic_wrapper__", (getter)NRNameTransactionWrapper_get_marker,
+                            NULL, 0 },
     { NULL },
 };
 

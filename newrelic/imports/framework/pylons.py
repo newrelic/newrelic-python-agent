@@ -15,14 +15,14 @@ class capture_error(ObjectWrapper):
         if current_transaction:
             webob_exc = import_module('webob.exc')
             try:
-                return self.__wrapped__(controller, func, args)
+                return self.wrapped(controller, func, args)
             except webob_exc.HTTPException:
                 raise
             except:
                 current_transaction.notice_error(*sys.exc_info())
                 raise
         else:
-            return self.__wrapped__(controller, func, args)
+            return self.wrapped(controller, func, args)
 
 def instrument(module):
 

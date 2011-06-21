@@ -9,18 +9,18 @@ class stream_wrapper(ObjectWrapper):
         self.__filepath = filepath
     def __getattr__(self, name):
         if name == 'render':
-            return FunctionTraceWrapper(getattr(self.__wrapped__, name),
+            return FunctionTraceWrapper(getattr(self.wrapped, name),
                     self.__filepath, 'Template/Render')
-        return getattr(self.__wrapped__, name)
+        return getattr(self.wrapped, name)
 
 class wrap_template(ObjectWrapper):
     def __call__(self, *args, **kwargs):
         current_transaction = transaction()
         if current_transaction:
-            return stream_wrapper(self.__wrapped__(*args, **kwargs),
+            return stream_wrapper(self.wrapped(*args, **kwargs),
                                   args[0].filepath)
         else:
-            return self.__wrapped__(*args, **kwargs)
+            return self.wrapped(*args, **kwargs)
 
 def instrument(module):
 

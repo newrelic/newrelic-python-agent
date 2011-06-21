@@ -9,8 +9,8 @@ from _newrelic import *
 
 class FunctionProfile(object):
     def __init__(self, depth):
-        self.__function_traces = []
-        self.__depth = depth
+        self.function_traces = []
+        self.depth = depth
     def __call__(self, frame, event, arg):
         if event not in ['call', 'c_call', 'return', 'c_return']:
             return
@@ -25,12 +25,12 @@ class FunctionProfile(object):
         func_filename = co.co_filename
 
         if event in ['call', 'c_call']:
-            if len(self.__function_traces) >= self.__depth:
-                self.__function_traces.append(None)
+            if len(self.function_traces) >= self.depth:
+                self.function_traces.append(None)
                 return
 
             if event == 'call':
-                if len(self.__function_traces) == self.__depth-1:
+                if len(self.function_traces) == self.depth-1:
                     name = "%s/%s/%s/%s+" % (func_filename, func_line_no,
                                             event, func_name)
                 else:
@@ -42,31 +42,31 @@ class FunctionProfile(object):
             function_trace = FunctionTrace(current_transaction, name,
                                            "Python/Profile", interesting=False)
             function_trace.__enter__()
-            self.__function_traces.append(function_trace)
+            self.function_traces.append(function_trace)
 
         elif event in ['return', 'c_return']:
-            function_trace = self.__function_traces.pop()
+            function_trace = self.function_traces.pop()
             if function_trace:
-                function_trace.__exit__(None, None, None)
+                function_trace.exit__(None, None, None)
 
 class FunctionProfileWrapper(ObjectWrapper):
     def __init__(self, wrapped, depth=5):
         ObjectWrapper.__init__(self, wrapped)
-        self.__depth = depth
+        self.depth = depth
     def __call__(self, *args, **kwargs):
         current_transaction = transaction()
         if not current_transaction:
-            return self.__wrapped__(*args, **kwargs)
+            return self.wrapped(*args, **kwargs)
         if current_transaction.coroutines:
-            return self.__wrapped__(*args, **kwargs)
+            return self.wrapped(*args, **kwargs)
         if not hasattr(sys, 'getprofile'):
-            return self.__wrapped__(*args, **kwargs)
+            return self.wrapped(*args, **kwargs)
         profiler = sys.getprofile()
         if profiler:
-            return self.__wrapped__(*args, **kwargs)
-        sys.setprofile(FunctionProfile(self.__depth))
+            return self.wrapped(*args, **kwargs)
+        sys.setprofile(FunctionProfile(self.depth))
         try:
-            return self.__wrapped__(*args, **kwargs)
+            return self.wrapped(*args, **kwargs)
         finally:
             sys.setprofile(profiler)
 

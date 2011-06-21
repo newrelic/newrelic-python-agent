@@ -48,13 +48,22 @@
 
 static void newrelic_populate_environment(void)
 {
+    PyObject *modules = NULL;
     PyObject *module = NULL;
+
+    int dispatcher_detected = 0;
 
     /*
      * Try and identify the hosting mechanism being used.
+     *
+     * First up try and detect mod_wsgi. Do this by seeing if
+     * the "mod_wsgi" module is preloaded into the interpreter
+     * and that 'version' attribute exists within it.
      */
 
-    module = PyImport_ImportModule("mod_wsgi");
+    modules = PyImport_GetModuleDict();
+
+    module = PyDict_GetItemString(modules, "mod_wsgi");
 
     if (module) {
         PyObject *version = NULL;
@@ -74,15 +83,28 @@ static void newrelic_populate_environment(void)
                                      PyString_AsString(version_as_string));
 
                 Py_DECREF(version_as_string);
+
+                dispatcher_detected = 1;
             }
 
             Py_DECREF(version);
         }
-
-        Py_DECREF(module);
     }
 
     PyErr_Clear();
+
+    /*
+     * Now try to detect if uWSGI being used. It appears to
+     * override the program name as understood by Python to
+     * be the string uWSGI.
+     */
+
+    if (!dispatcher_detected) {
+        if (strcmp(Py_GetProgramName(), "uWSGI") == 0) {
+            nro__set_hash_string(nr_per_process_globals.env,
+                                 "Dispatcher", "uWSGI");
+        }
+    }
 
     /*
      * Platform identifier from 'config.guess' program used

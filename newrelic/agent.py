@@ -5,6 +5,77 @@ import ConfigParser
 
 from _newrelic import *
 
+# Temporary Python implementation of function profiler as proof of concept.
+
+class FunctionProfile(object):
+    def __init__(self, depth):
+        self.__function_traces = []
+        self.__depth = depth
+    def __call__(self, frame, event, arg):
+        if event not in ['call', 'c_call', 'return', 'c_return']:
+            return
+
+        current_transaction = transaction()
+        if not current_transaction:
+            return
+
+        co = frame.f_code
+        func_name = co.co_name
+        func_line_no = frame.f_lineno
+        func_filename = co.co_filename
+
+        if event in ['call', 'c_call']:
+            if len(self.__function_traces) >= self.__depth:
+                self.__function_traces.append(None)
+                return
+
+            if event == 'call':
+                if len(self.__function_traces) == self.__depth-1:
+                    name = "%s/%s/%s/%s+" % (func_filename, func_line_no,
+                                            event, func_name)
+                else:
+                    name = "%s/%s/%s/%s" % (func_filename, func_line_no,
+                                            event, func_name)
+            else:
+                name = "%s/%s/%s/?" % (func_filename, func_line_no, event)
+
+            function_trace = FunctionTrace(current_transaction, name,
+                                           "Python/Profile", interesting=False)
+            function_trace.__enter__()
+            self.__function_traces.append(function_trace)
+
+        elif event in ['return', 'c_return']:
+            function_trace = self.__function_traces.pop()
+            if function_trace:
+                function_trace.__exit__(None, None, None)
+
+class FunctionProfileWrapper(ObjectWrapper):
+    def __init__(self, wrapped, depth=5):
+        ObjectWrapper.__init__(self, wrapped)
+        self.__depth = depth
+    def __call__(self, *args, **kwargs):
+        if not hasattr(sys, 'getprofile'):
+            return self.__wrapped__(*args, **kwargs)
+        profiler = sys.getprofile()
+        if profiler:
+            return self.__wrapped__(*args, **kwargs)
+        sys.setprofile(FunctionProfile(self.__depth))
+        try:
+            return self.__wrapped__(*args, **kwargs)
+        finally:
+            sys.setprofile(profiler)
+
+def function_profile(depth=5):
+    def decorator(wrapped):
+        return FunctionProfileWrapper(wrapped, depth)
+    return decorator
+
+def wrap_function_profile(module, object_name, depth=5):
+    (parent_object, attribute_name, object) = resolve_object(
+            module, object_name)
+    setattr(parent_object, attribute_name, FunctionProfileWrapper(
+            object, depth))
+
 # Read in and apply agent configuration.
 
 _LOG_LEVEL = {
@@ -456,5 +527,32 @@ for section in _config_object.sections():
                 if len(parts) == 2:
                     module, object_path = parts
                     hook = _error_trace_import_hook(object_path, ignore_errors)
+                    register_import_hook(module, hook)
+
+# Setup function profiler defined in configuration file.
+
+def _function_profile_import_hook(object_path, depth):
+    def _instrument(target):
+        wrap_function_profile(target, object_path, depth)
+    return _instrument
+
+for section in _config_object.sections():
+    if section.startswith('function-profile:'):
+        try:
+            enabled = _config_object.getboolean(section, 'enabled')
+            function = _config_object.get(section, 'function')
+        except ConfigParser.NoOptionError:
+            pass
+        else:
+            if enabled:
+                depth = 5
+
+                if _config_object.has_option(section, 'depth'):
+                    depth = _config_object.getint(section, 'depth')
+
+                parts = function.split(':')
+                if len(parts) == 2:
+                    module, object_path = parts
+                    hook = _function_profile_import_hook(object_path, depth)
                     register_import_hook(module, hook)
 

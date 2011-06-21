@@ -54,6 +54,11 @@ class FunctionProfileWrapper(ObjectWrapper):
         ObjectWrapper.__init__(self, wrapped)
         self.__depth = depth
     def __call__(self, *args, **kwargs):
+        current_transaction = transaction()
+        if not current_transaction:
+            return self.__wrapped__(*args, **kwargs)
+        if current_transaction.coroutines:
+            return self.__wrapped__(*args, **kwargs)
         if not hasattr(sys, 'getprofile'):
             return self.__wrapped__(*args, **kwargs)
         profiler = sys.getprofile()

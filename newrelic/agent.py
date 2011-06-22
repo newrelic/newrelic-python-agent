@@ -8,8 +8,9 @@ from _newrelic import *
 # Temporary Python implementation of function profiler as proof of concept.
 
 class FunctionProfile(object):
-    def __init__(self, depth):
+    def __init__(self, interesting, depth):
         self.function_traces = []
+        self.interesting = interesting
         self.depth = depth
     def __call__(self, frame, event, arg):
         if event not in ['call', 'c_call', 'return', 'c_return']:
@@ -39,8 +40,9 @@ class FunctionProfile(object):
             else:
                 name = "%s/%s/%s/?" % (func_filename, func_line_no, event)
 
-            function_trace = FunctionTrace(current_transaction, name,
-                                           "Python/Profile", interesting=False)
+            function_trace = FunctionTrace(current_transaction, name=name,
+                                           scope="Python/Profile",
+                                           interesting=self.interesting)
             function_trace.__enter__()
             self.function_traces.append(function_trace)
 
@@ -50,8 +52,9 @@ class FunctionProfile(object):
                 function_trace.__exit__(None, None, None)
 
 class FunctionProfileWrapper(ObjectWrapper):
-    def __init__(self, wrapped, depth=5):
+    def __init__(self, wrapped, interesting=False, depth=5):
         ObjectWrapper.__init__(self, wrapped)
+        self.interesting = interesting
         self.depth = depth
     def __call__(self, *args, **kwargs):
         current_transaction = transaction()
@@ -64,22 +67,22 @@ class FunctionProfileWrapper(ObjectWrapper):
         profiler = sys.getprofile()
         if profiler:
             return self.wrapped(*args, **kwargs)
-        sys.setprofile(FunctionProfile(self.depth))
+        sys.setprofile(FunctionProfile(self.interesting, self.depth))
         try:
             return self.wrapped(*args, **kwargs)
         finally:
             sys.setprofile(profiler)
 
-def function_profile(depth=5):
+def function_profile(interesting=False, depth=5):
     def decorator(wrapped):
-        return FunctionProfileWrapper(wrapped, depth)
+        return FunctionProfileWrapper(wrapped, interesting, depth)
     return decorator
 
-def wrap_function_profile(module, object_name, depth=5):
+def wrap_function_profile(module, object_name, interesting=False, depth=5):
     (parent_object, attribute_name, object) = resolve_object(
             module, object_name)
     setattr(parent_object, attribute_name, FunctionProfileWrapper(
-            object, depth))
+            object, interesting, depth))
 
 # Read in and apply agent configuration.
 
@@ -536,9 +539,9 @@ for section in _config_object.sections():
 
 # Setup function profiler defined in configuration file.
 
-def _function_profile_import_hook(object_path, depth):
+def _function_profile_import_hook(object_path, interesting, depth):
     def _instrument(target):
-        wrap_function_profile(target, object_path, depth)
+        wrap_function_profile(target, object_path, interesting, depth)
     return _instrument
 
 for section in _config_object.sections():
@@ -550,14 +553,19 @@ for section in _config_object.sections():
             pass
         else:
             if enabled:
+                interesting = False
                 depth = 5
 
+                if _config_object.has_option(section, 'interesting'):
+                    interesting = _config_object.getboolean(section,
+                                                            'interesting')
                 if _config_object.has_option(section, 'depth'):
                     depth = _config_object.getint(section, 'depth')
 
                 parts = function.split(':')
                 if len(parts) == 2:
                     module, object_path = parts
-                    hook = _function_profile_import_hook(object_path, depth)
+                    hook = _function_profile_import_hook(object_path,
+                                                         interesting, depth)
                     register_import_hook(module, hook)
 

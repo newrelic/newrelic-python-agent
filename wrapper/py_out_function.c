@@ -146,6 +146,15 @@ static int NROutFunctionWrapper_set_dict(
     self->dict = val;
     return 0;
 }
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NROutFunctionWrapper_get_marker(
+        NROutFunctionWrapperObject *self, void *closure)
+{
+    Py_INCREF(Py_None);
+    return Py_None;
+}
  
 /* ------------------------------------------------------------------------- */
 
@@ -162,10 +171,12 @@ static PyObject *NROutFunctionWrapper_descr_get(PyObject *function,
 /* ------------------------------------------------------------------------- */
 
 static PyGetSetDef NROutFunctionWrapper_getset[] = {
-    { "__wrapped__",        (getter)NROutFunctionWrapper_get_wrapped,
+    { "wrapped",            (getter)NROutFunctionWrapper_get_wrapped,
                             NULL, 0 },
     { "__dict__",           (getter)NROutFunctionWrapper_get_dict,
                             (setter)NROutFunctionWrapper_set_dict, 0 },
+    { "__newrelic_wrapper__", (getter)NROutFunctionWrapper_get_marker,
+                            NULL, 0 },
     { NULL },
 };
 

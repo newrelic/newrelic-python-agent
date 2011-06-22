@@ -152,6 +152,15 @@ static int NRPreFunctionWrapper_set_dict(
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRPreFunctionWrapper_get_marker(
+        NRPreFunctionWrapperObject *self, void *closure)
+{
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRPreFunctionWrapper_descr_get(PyObject *function,
                                                 PyObject *object,
                                                 PyObject *type)
@@ -165,10 +174,12 @@ static PyObject *NRPreFunctionWrapper_descr_get(PyObject *function,
 /* ------------------------------------------------------------------------- */
 
 static PyGetSetDef NRPreFunctionWrapper_getset[] = {
-    { "__wrapped__",        (getter)NRPreFunctionWrapper_get_wrapped,
+    { "wrapped",            (getter)NRPreFunctionWrapper_get_wrapped,
                             NULL, 0 },
     { "__dict__",           (getter)NRPreFunctionWrapper_get_dict,
                             (setter)NRPreFunctionWrapper_set_dict, 0 },
+    { "__newrelic_wrapper__", (getter)NRPreFunctionWrapper_get_marker,
+                            NULL, 0 },
     { NULL },
 };
 

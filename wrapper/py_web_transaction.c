@@ -1144,6 +1144,15 @@ static int NRWSGIApplicationWrapper_set_dict(
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRWSGIApplicationWrapper_get_marker(
+        NRWSGIApplicationWrapperObject *self, void *closure)
+{
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRWSGIApplicationWrapper_descr_get(PyObject *function,
                                                   PyObject *object,
                                                   PyObject *type)
@@ -1157,10 +1166,12 @@ static PyObject *NRWSGIApplicationWrapper_descr_get(PyObject *function,
 /* ------------------------------------------------------------------------- */
 
 static PyGetSetDef NRWSGIApplicationWrapper_getset[] = {
-    { "__wrapped__",        (getter)NRWSGIApplicationWrapper_get_wrapped,
+    { "wrapped",            (getter)NRWSGIApplicationWrapper_get_wrapped,
                             NULL, 0 },
     { "__dict__",           (getter)NRWSGIApplicationWrapper_get_dict,
                             (setter)NRWSGIApplicationWrapper_set_dict, 0 },
+    { "__newrelic_wrapper__", (getter)NRWSGIApplicationWrapper_get_marker,
+                            NULL, 0 },
     { NULL },
 };
 

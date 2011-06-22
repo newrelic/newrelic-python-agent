@@ -474,6 +474,15 @@ static int NRBackgroundTaskWrapper_set_dict(
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRBackgroundTaskWrapper_get_marker(
+        NRBackgroundTaskWrapperObject *self, void *closure)
+{
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRBackgroundTaskWrapper_descr_get(PyObject *function,
                                                   PyObject *object,
                                                   PyObject *type)
@@ -487,10 +496,12 @@ static PyObject *NRBackgroundTaskWrapper_descr_get(PyObject *function,
 /* ------------------------------------------------------------------------- */
 
 static PyGetSetDef NRBackgroundTaskWrapper_getset[] = {
-    { "__wrapped__",        (getter)NRBackgroundTaskWrapper_get_wrapped,
+    { "wrapped",            (getter)NRBackgroundTaskWrapper_get_wrapped,
                             NULL, 0 },
     { "__dict__",           (getter)NRBackgroundTaskWrapper_get_dict,
                             (setter)NRBackgroundTaskWrapper_set_dict, 0 },
+    { "__newrelic_wrapper__", (getter)NRBackgroundTaskWrapper_get_marker,
+                            NULL, 0 },
     { NULL },
 };
 

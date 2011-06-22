@@ -25,20 +25,22 @@ class FunctionProfile(object):
         func_line_no = frame.f_lineno
         func_filename = co.co_filename
 
+        caller = frame.f_back
+        caller_line_no = caller.f_lineno
+        caller_filename = caller.f_code.co_filename
+
         if event in ['call', 'c_call']:
             if len(self.function_traces) >= self.depth:
                 self.function_traces.append(None)
                 return
 
             if event == 'call':
-                if len(self.function_traces) == self.depth-1:
-                    name = "%s/%s/%s/%s+" % (func_filename, func_line_no,
-                                            event, func_name)
-                else:
-                    name = "%s/%s/%s/%s" % (func_filename, func_line_no,
-                                            event, func_name)
+                name = 'Call to %s() on line %s of %s from line %s of %s' % \
+                        (func_name, func_line_no, func_filename,
+                        caller_line_no, caller_filename)
             else:
-                name = "%s/%s/%s/?" % (func_filename, func_line_no, event)
+                name = 'Call to ???() from line %s of %s' % \
+                        (func_line_no, func_filename)
 
             function_trace = FunctionTrace(current_transaction, name=name,
                                            scope="Python/Profile",

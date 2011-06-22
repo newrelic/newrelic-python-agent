@@ -380,6 +380,7 @@ static PyObject *NRFunctionTraceWrapper_call(
     PyObject *method_result = NULL;
 
     PyObject *name = NULL;
+    PyObject *scope = NULL;
 
     /*
      * If there is no current transaction then we can call
@@ -413,11 +414,34 @@ static PyObject *NRFunctionTraceWrapper_call(
             return NULL;
     }
 
+    if (self->scope == Py_None) {
+        Py_INCREF(self->scope);
+        scope = self->scope;
+    }
+    else if (PyString_Check(self->scope) || PyUnicode_Check(self->scope)) {
+        scope = self->scope;
+        Py_INCREF(scope);
+    }
+    else {
+        /*
+         * Scope if actually a callable function to provide the
+         * scope based on arguments supplied to wrapped function.
+         */
+
+        scope = PyObject_Call(self->scope, args, kwds);
+
+        if (!scope) {
+            Py_DECREF(name);
+            return NULL;
+        }
+    }
+
     function_trace = PyObject_CallFunctionObjArgs((PyObject *)
             &NRFunctionTrace_Type, current_transaction, name,
-            self->scope, self->interesting ? Py_True : Py_False, NULL);
+            scope, self->interesting ? Py_True : Py_False, NULL);
 
     Py_DECREF(name);
+    Py_DECREF(scope);
 
     if (!function_trace)
         return NULL;

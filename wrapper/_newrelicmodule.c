@@ -897,13 +897,6 @@ static PyObject *newrelic_function_trace(PyObject *self, PyObject *args,
         return NULL;
     }
 
-    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
-        scope != Py_None) {
-        PyErr_Format(PyExc_TypeError, "scope argument must be string, Unicode, "
-                     "or None, found type '%s'", scope->ob_type->tp_name);
-        return NULL;
-    }
-
     return PyObject_CallFunctionObjArgs((PyObject *)
             &NRFunctionTraceDecorator_Type, name, scope, interesting, NULL);
 }
@@ -941,13 +934,6 @@ static PyObject *newrelic_wrap_function_trace(PyObject *self, PyObject *args,
     if (!PyModule_Check(module) && !PyString_Check(module)) {
         PyErr_SetString(PyExc_TypeError, "module reference must be "
                         "module or string");
-        return NULL;
-    }
-
-    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
-        scope != Py_None) {
-        PyErr_Format(PyExc_TypeError, "scope argument must be string, Unicode, "
-                     "or None, found type '%s'", scope->ob_type->tp_name);
         return NULL;
     }
 

@@ -52,14 +52,6 @@ static int NRNameTransactionWrapper_init(NRNameTransactionWrapperObject *self,
         return -1;
     }
 
-    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
-        scope != Py_None) {
-        PyErr_Format(PyExc_TypeError, "scope argument must be string, "
-                     "Unicode, or None, found type '%s'",
-                     scope->ob_type->tp_name);
-        return -1;
-    }
-
     Py_INCREF(wrapped_object);
     Py_XDECREF(self->wrapped_object);
     self->wrapped_object = wrapped_object;
@@ -105,7 +97,9 @@ static PyObject *NRNameTransactionWrapper_call(
         NRNameTransactionWrapperObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *current_transaction = NULL;
+
     PyObject *name = NULL;
+    PyObject *scope = NULL;
 
     /*
      * If there is no current transaction then we can call
@@ -140,19 +134,42 @@ static PyObject *NRNameTransactionWrapper_call(
                 return NULL;
         }
 
+        if (self->scope == Py_None) {
+            Py_INCREF(Py_None);
+            scope = Py_None;
+        }
+        else if (PyString_Check(self->scope) || PyUnicode_Check(self->scope)) {
+            scope = self->scope;
+            Py_INCREF(scope);
+        }
+        else {
+            /*
+             * Scope if actually a callable function to provide the
+             * scope based on arguments supplied to wrapped function.
+             */
+
+            scope = PyObject_Call(self->scope, args, kwds);
+
+            if (!scope) {
+                Py_DECREF(name);
+                return NULL;
+            }
+        }
+
         method = PyObject_GetAttrString(current_transaction,
                                         "name_transaction");
 
         if (!method) {
+            Py_DECREF(scope);
             Py_DECREF(name);
             return NULL;
         }
 
-        result = PyObject_CallFunctionObjArgs(method, name,
-                                              self->scope, NULL);
+        result = PyObject_CallFunctionObjArgs(method, name, scope, NULL);
 
         Py_DECREF(method);
         Py_DECREF(name);
+        Py_DECREF(scope);
 
         if (!result)
             return NULL;
@@ -313,20 +330,6 @@ static int NRNameTransactionDecorator_init(
     if (!PyArg_ParseTupleAndKeywords(args, kwds,
                                      "|OO:NameTransactionDecorator",
                                      kwlist, &name, &scope)) {
-        return -1;
-    }
-
-    if (!PyString_Check(name) && !PyUnicode_Check(name) &&
-        name != Py_None) {
-        PyErr_Format(PyExc_TypeError, "name argument must be string, Unicode, "
-                     "or None, found type '%s'", name->ob_type->tp_name);
-        return -1;
-    }
-
-    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
-        scope != Py_None) {
-        PyErr_Format(PyExc_TypeError, "scope argument must be string, Unicode, "
-                     "or None, found type '%s'", scope->ob_type->tp_name);
         return -1;
     }
 

@@ -279,6 +279,7 @@ static PyObject *NRBackgroundTaskWrapper_call(
     PyObject *method_result = NULL;
 
     PyObject *name = NULL;
+    PyObject *scope = NULL;
 
     /* Calculate name to be assigned to background task. */
 
@@ -300,6 +301,28 @@ static PyObject *NRBackgroundTaskWrapper_call(
 
         if (!name)
             return NULL;
+    }
+
+    if (self->scope == Py_None) {
+        Py_INCREF(scope);
+        scope = Py_None;
+    }
+    else if (PyString_Check(self->scope) || PyUnicode_Check(self->scope)) {
+        scope = self->scope;
+        Py_INCREF(scope);
+    }
+    else {
+        /*
+         * Scope if actually a callable function to provide the
+         * scope based on arguments supplied to wrapped function.
+         */
+
+        scope = PyObject_Call(self->scope, args, kwds);
+
+        if (!scope) {
+            Py_DECREF(scope);
+            return NULL;
+        }
     }
 
     /*
@@ -325,7 +348,7 @@ static PyObject *NRBackgroundTaskWrapper_call(
 
             if (method) {
                 result = PyObject_CallFunctionObjArgs(method, name,
-                                                      self->scope, NULL);
+                                                      scope, NULL);
 
                 if (!result)
                     PyErr_WriteUnraisable(method);
@@ -333,6 +356,7 @@ static PyObject *NRBackgroundTaskWrapper_call(
                     Py_DECREF(result);
 
                 Py_DECREF(method);
+                Py_DECREF(scope);
                 Py_DECREF(name);
 
                 return PyObject_Call(self->wrapped_object, args, kwds);
@@ -346,9 +370,10 @@ static PyObject *NRBackgroundTaskWrapper_call(
 
     background_task = PyObject_CallFunctionObjArgs((PyObject *)
             &NRBackgroundTask_Type, self->application, name,
-            self->scope, NULL);
+            scope, NULL);
 
     Py_DECREF(name);
+    Py_DECREF(scope);
 
     /* Now call __enter__() on the context manager. */
 
@@ -591,13 +616,6 @@ static int NRBackgroundTaskDecorator_init(
         PyErr_Format(PyExc_TypeError, "application argument must be None, "
                      "str, unicode, or application object, found type '%s'",
                      application->ob_type->tp_name);
-        return -1;
-    }
-
-    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
-        scope != Py_None) {
-        PyErr_Format(PyExc_TypeError, "scope argument must be str, unicode, "
-                     "or None, found type '%s'", scope->ob_type->tp_name);
         return -1;
     }
 

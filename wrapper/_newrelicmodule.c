@@ -522,13 +522,6 @@ static PyObject *newrelic_background_task(PyObject *self, PyObject *args,
         return NULL;
     }
 
-    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
-        scope != Py_None) {
-        PyErr_Format(PyExc_TypeError, "scope argument must be string, Unicode, "
-                     "or None, found type '%s'", scope->ob_type->tp_name);
-        return NULL;
-    }
-
     if (application != Py_None &&
         Py_TYPE(application) != &NRApplication_Type &&
         !PyString_Check(application) && !PyUnicode_Check(application)) {
@@ -575,13 +568,6 @@ static PyObject *newrelic_wrap_background_task(PyObject *self, PyObject *args,
     if (!PyModule_Check(module) && !PyString_Check(module)) {
         PyErr_SetString(PyExc_TypeError, "module reference must be "
                         "module or string");
-        return NULL;
-    }
-
-    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
-        scope != Py_None) {
-        PyErr_Format(PyExc_TypeError, "scope argument must be string, Unicode, "
-                     "or None, found type '%s'", scope->ob_type->tp_name);
         return NULL;
     }
 
@@ -1074,19 +1060,12 @@ static PyObject *newrelic_name_transaction(PyObject *self, PyObject *args,
     static char *kwlist[] = { "name", "scope", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OO:name_transaction",
-                                     kwlist, &name)) {
-        return NULL;
-    }
-
-    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
-        scope != Py_None) {
-        PyErr_Format(PyExc_TypeError, "scope argument must be string, Unicode, "
-                     "or None, found type '%s'", scope->ob_type->tp_name);
+                                     kwlist, &name, &scope)) {
         return NULL;
     }
 
     return PyObject_CallFunctionObjArgs((PyObject *)
-            &NRNameTransactionDecorator_Type, name, NULL);
+            &NRNameTransactionDecorator_Type, name, scope, NULL);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1120,13 +1099,6 @@ static PyObject *newrelic_wrap_name_transaction(PyObject *self, PyObject *args,
     if (!PyModule_Check(module) && !PyString_Check(module)) {
         PyErr_SetString(PyExc_TypeError, "module reference must be "
                         "module or string");
-        return NULL;
-    }
-
-    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
-        scope != Py_None) {
-        PyErr_Format(PyExc_TypeError, "scope argument must be string, Unicode, "
-                     "or None, found type '%s'", scope->ob_type->tp_name);
         return NULL;
     }
 

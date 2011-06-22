@@ -47,7 +47,7 @@ class FunctionProfile(object):
         elif event in ['return', 'c_return']:
             function_trace = self.function_traces.pop()
             if function_trace:
-                function_trace.exit__(None, None, None)
+                function_trace.__exit__(None, None, None)
 
 class FunctionProfileWrapper(ObjectWrapper):
     def __init__(self, wrapped, depth=5):

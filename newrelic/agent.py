@@ -258,8 +258,29 @@ _process_import_hook('django.core.servers.basehttp',
 _process_import_hook('flask', 'newrelic.imports.framework.flask')
 _process_import_hook('flask.app', 'newrelic.imports.framework.flask')
 
-_process_import_hook('gluon.compileapp', 'newrelic.imports.framework.web2py')
-_process_import_hook('gluon.main', 'newrelic.imports.framework.web2py')
+_process_import_hook('gluon.compileapp',
+                     'newrelic.imports.framework.web2py',
+                     'instrument_gluon_compileapp')
+_process_import_hook('gluon.restricted',
+                     'newrelic.imports.framework.web2py',
+                     'instrument_gluon_restricted')
+_process_import_hook('gluon.main',
+                     'newrelic.imports.framework.web2py',
+                     'instrument_gluon_main')
+_process_import_hook('gluon.template',
+                     'newrelic.imports.framework.web2py',
+                     'instrument_gluon_template')
+_process_import_hook('gluon.tools',
+                     'newrelic.imports.framework.web2py',
+                     'instrument_gluon_tools')
+_process_import_hook('gluon.http',
+                     'newrelic.imports.framework.web2py',
+                     'instrument_gluon_http')
+
+_process_import_hook('gluon.contrib.feedparser',
+                     'newrelic.imports.external.feedparser')
+_process_import_hook('gluon.contrib.memcache.memcache',
+                     'newrelic.imports.memcache.memcache')
 
 _process_import_hook('pylons.wsgiapp','newrelic.imports.framework.pylons')
 _process_import_hook('pylons.controllers.core',

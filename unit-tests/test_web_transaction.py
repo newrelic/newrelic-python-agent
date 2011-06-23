@@ -69,7 +69,7 @@ class WebTransactionTests(unittest.TestCase):
             transaction.name_transaction(path, scope)
             self.assertTrue(transaction.enabled)
             self.assertEqual(_newrelic.transaction(), transaction)
-            self.assertEqual(transaction.path, scope+path)
+            self.assertEqual(transaction.path, scope+'/'+path)
 
     def test_background_web_transaction(self):
         environ = { "REQUEST_URI": "DUMMY" }

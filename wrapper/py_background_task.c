@@ -304,12 +304,12 @@ static PyObject *NRBackgroundTaskWrapper_call(
     }
 
     if (self->scope == Py_None) {
-        Py_INCREF(scope);
+        Py_INCREF(Py_None);
         scope = Py_None;
     }
     else if (PyString_Check(self->scope) || PyUnicode_Check(self->scope)) {
+        Py_INCREF(self->scope);
         scope = self->scope;
-        Py_INCREF(scope);
     }
     else {
         /*

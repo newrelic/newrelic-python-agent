@@ -419,8 +419,8 @@ static PyObject *NRFunctionTraceWrapper_call(
         scope = self->scope;
     }
     else if (PyString_Check(self->scope) || PyUnicode_Check(self->scope)) {
+        Py_INCREF(self->scope);
         scope = self->scope;
-        Py_INCREF(scope);
     }
     else {
         /*

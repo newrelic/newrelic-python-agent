@@ -462,7 +462,7 @@ for section in _config_object.sections():
                 parts = function.split(':')
                 if len(parts) == 2:
                     module, object_path = parts
-                    if name.startswith('lambda '):
+                    if name and name.startswith('lambda '):
                         vars = { "callable_name": callable_name,
                                  "import_module": import_module, }
                         name = eval(name, vars)
@@ -524,7 +524,7 @@ for section in _config_object.sections():
                 parts = function.split(':')
                 if len(parts) == 2:
                     module, object_path = parts
-                    if name.startswith('lambda '):
+                    if name and name.startswith('lambda '):
                         vars = { "callable_name": callable_name,
                                  "import_module": import_module, }
                         name = eval(name, vars)

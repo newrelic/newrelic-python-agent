@@ -75,7 +75,7 @@ class PreFunctionTests(unittest.TestCase):
         o1 = _test_function_1
         o2 = _newrelic.wrap_pre_function(__name__, '_test_function_1',
                                          _pre_function)
-        self.assertEqual(o1, o2.__wrapped__)
+        self.assertEqual(o1, o2.wrapped)
 
         global _test_result
         _test_result = None
@@ -104,7 +104,7 @@ class PreFunctionTests(unittest.TestCase):
         o1 = _test_class_1._test_function
         o2 = _newrelic.wrap_pre_function(__name__,
                 '_test_class_1._test_function', _pre_function)
-        self.assertEqual(o1, o2.__wrapped__)
+        self.assertEqual(o1, o2.wrapped)
 
         global _test_result
         _test_result = None
@@ -125,7 +125,7 @@ class PreFunctionTests(unittest.TestCase):
         o1 = _test_class_2._test_function
         o2 = _newrelic.wrap_pre_function(__name__,
                 '_test_class_2._test_function', _pre_function)
-        self.assertEqual(o1, o2.__wrapped__)
+        self.assertEqual(o1, o2.wrapped)
 
         global _test_result
         _test_result = None
@@ -146,7 +146,7 @@ class PreFunctionTests(unittest.TestCase):
         o1 = sqlite3.Cursor.execute
         o2 = _newrelic.wrap_pre_function('sqlite3', 'Cursor.execute',
                                          _pre_function)
-        self.assertEqual(o1, o2.__wrapped__)
+        self.assertEqual(o1, o2.wrapped)
 
         global _test_result
         _test_result = None
@@ -173,7 +173,7 @@ class PreFunctionTests(unittest.TestCase):
         o1 = _test_function_2
         o2 = _newrelic.wrap_pre_function(__name__, '_test_function_2',
                                          _pre_function, run_once=True)
-        self.assertEqual(o1, o2.__wrapped__)
+        self.assertEqual(o1, o2.wrapped)
 
         global _test_result
         _test_result = None

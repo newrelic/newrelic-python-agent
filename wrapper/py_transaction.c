@@ -419,6 +419,19 @@ static int NRTransaction_init(NRTransactionObject *self, PyObject *args,
         self->transaction->path_type = NR_PATH_TYPE_UNKNOWN;
         self->transaction->path = NULL;
         self->transaction->realpath = NULL;
+
+        /*
+	 * If we have not connected to the local daemon as yet
+	 * then we mark the transaction as ignored because we
+	 * will not have the proper server side configuration
+	 * settings available to determine how to handle the
+	 * transaction.
+         */
+
+        nrthread_mutex_lock (&application->application->lock);
+        if (application->application->agent_run_id == 0)
+            self->transaction->ignore = 1;
+        nrthread_mutex_unlock (&application->application->lock);
     }
 
     return 0;

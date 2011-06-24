@@ -377,6 +377,10 @@ static int NRTransaction_init(NRTransactionObject *self, PyObject *args,
 
     PyObject *enabled = NULL;
 
+    nrdaemon_t *dconn = &nr_per_process_globals.nrdaemon;
+
+    int retry_connection = 0;
+
     static char *kwlist[] = { "application", "enabled", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!|O!:Transaction",
@@ -392,6 +396,22 @@ static int NRTransaction_init(NRTransactionObject *self, PyObject *args,
     if (self->application) {
         PyErr_SetString(PyExc_TypeError, "transaction already initialized");
         return -1;
+    }
+
+    /*
+     * We already tried to initiate the connection when the
+     * application object was created. If that did not connect
+     * then we try and restart the connection at this point.
+     */
+
+    nrthread_mutex_lock (&application->application->lock);
+    if (application->application->agent_run_id == 0)
+        retry_connection = 1;
+    nrthread_mutex_unlock (&application->application->lock);
+
+    if (retry_connection) {
+        nr__start_communication(dconn, application->application,
+                nr_per_process_globals.env, 0);
     }
 
     /*

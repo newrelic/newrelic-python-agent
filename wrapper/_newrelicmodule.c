@@ -1984,6 +1984,8 @@ init_newrelic(void)
     nr_per_process_globals.nrdaemon.sockfd = -1;
     nr_per_process_globals.nrdaemon.buffer = NULL;
 
+    nr_per_process_globals.sync_startup = 0;
+
     /*
      * Initialise default whether request parameters are
      * captured. This is only a default and can be overridden by

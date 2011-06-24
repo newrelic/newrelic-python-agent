@@ -714,6 +714,39 @@ static int NRDaemonSettings_set_socket_path(
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRDaemonSettings_get_sync_startup(
+        NRDaemonSettingsObject *self, void *closure)
+{
+    return PyBool_FromLong(nr_per_process_globals.sync_startup);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRDaemonSettings_set_sync_startup(NRDaemonSettingsObject *self,
+                                             PyObject *value)
+{
+    if (value == NULL) {
+        PyErr_SetString(PyExc_TypeError,
+                "can't delete synchronous_startup attribute");
+        return -1;
+    }
+
+    if (!PyBool_Check(value)) {
+        PyErr_SetString(PyExc_TypeError,
+                "expected bool for synchronous_startup attribute");
+        return -1;
+    }
+
+    if (value == Py_True)
+        nr_per_process_globals.sync_startup = 1;
+    else
+        nr_per_process_globals.sync_startup = 0;
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyMethodDef NRDaemonSettings_methods[] = {
     { NULL, NULL }
 };
@@ -721,6 +754,8 @@ static PyMethodDef NRDaemonSettings_methods[] = {
 static PyGetSetDef NRDaemonSettings_getset[] = {
     { "socket_path",        (getter)NRDaemonSettings_get_socket_path,
                             (setter)NRDaemonSettings_set_socket_path, 0 },
+    { "synchronous_startup", (getter)NRDaemonSettings_get_sync_startup,
+                            (setter)NRDaemonSettings_set_sync_startup, 0 },
     { NULL },
 };
 

@@ -182,6 +182,8 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'local_daemon.socket_path',
                      'get', None)
+    _process_setting(section, 'local_daemon.synchronous_startup',
+                     'getboolean', None)
     _process_setting(section, 'debug.dump_metric_table',
                      'getboolean', None)
     _process_setting(section, 'debug.sql_statement_parsing',

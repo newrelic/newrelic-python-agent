@@ -29,7 +29,8 @@ typedef struct {
     PyObject_HEAD
     PyObject *dict;
     PyObject *application;
-    PyObject *wrapped_object;
+    PyObject *next_object;
+    PyObject *last_object;
 } NRWSGIApplicationWrapperObject;
 
 extern PyTypeObject NRWSGIApplicationWrapper_Type;

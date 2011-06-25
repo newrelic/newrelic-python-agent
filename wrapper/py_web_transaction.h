@@ -28,9 +28,9 @@ extern PyTypeObject NRWSGIApplicationIterable_Type;
 typedef struct {
     PyObject_HEAD
     PyObject *dict;
-    PyObject *application;
     PyObject *next_object;
     PyObject *last_object;
+    PyObject *application;
 } NRWSGIApplicationWrapperObject;
 
 extern PyTypeObject NRWSGIApplicationWrapper_Type;

@@ -23,7 +23,8 @@ static PyObject *NRPostFunctionWrapper_new(PyTypeObject *type, PyObject *args,
         return NULL;
 
     self->dict = NULL;
-    self->wrapped_object = NULL;
+    self->next_object = NULL;
+    self->last_object = NULL;
     self->function_object = NULL;
     self->run_once = 0;
 
@@ -39,7 +40,7 @@ static int NRPostFunctionWrapper_init(NRPostFunctionWrapperObject *self,
     PyObject *function_object = NULL;
     PyObject *run_once = NULL;
 
-    PyObject *wrapper = NULL;
+    PyObject *object = NULL;
 
     static char *kwlist[] = { "wrapped", "post_function", "run_once", NULL };
 
@@ -50,23 +51,46 @@ static int NRPostFunctionWrapper_init(NRPostFunctionWrapperObject *self,
     }
 
     Py_INCREF(wrapped_object);
-    Py_XDECREF(self->wrapped_object);
-    self->wrapped_object = wrapped_object;
+
+    Py_XDECREF(self->dict);
+    Py_XDECREF(self->next_object);
+    Py_XDECREF(self->last_object);
+
+    self->next_object = wrapped_object;
+    self->last_object = NULL;
+
+    object = PyObject_GetAttrString(wrapped_object, "__newrelic__");
+
+    if (object) {
+        Py_DECREF(object);
+
+        object = PyObject_GetAttrString(wrapped_object, "__last_object__");
+
+        if (object)
+            self->last_object = object;
+        else
+            PyErr_Clear();
+    }
+    else
+        PyErr_Clear();
+
+    if (!self->last_object) {
+        Py_INCREF(wrapped_object);
+        self->last_object = wrapped_object;
+    }
+
+    object = PyObject_GetAttrString(self->last_object, "__dict__");
+
+    if (object)
+        self->dict = object;
+    else
+        PyErr_Clear();
 
     Py_INCREF(function_object);
     Py_XDECREF(self->function_object);
     self->function_object = function_object;
 
     self->run_once = (run_once == Py_True);
-
-    /* Perform equivalent of functools.wraps(). */
-
-    wrapper = NRUtilities_UpdateWrapper((PyObject *)self, wrapped_object);
-
-    if (!wrapper)
-        return -1;
-
-    Py_DECREF(wrapper);
 
     return 0;
 }
@@ -77,7 +101,9 @@ static void NRPostFunctionWrapper_dealloc(NRPostFunctionWrapperObject *self)
 {
     Py_XDECREF(self->dict);
 
-    Py_XDECREF(self->wrapped_object);
+    Py_XDECREF(self->next_object);
+    Py_XDECREF(self->last_object);
+
     Py_XDECREF(self->function_object);
 
     Py_TYPE(self)->tp_free(self);
@@ -94,7 +120,7 @@ static PyObject *NRPostFunctionWrapper_call(NRPostFunctionWrapperObject *self,
     PyObject *value = NULL;
     PyObject *traceback = NULL;
 
-    wrapped_result = PyObject_Call(self->wrapped_object, args, kwds);
+    wrapped_result = PyObject_Call(self->next_object, args, kwds);
 
     /*
      * TODO Should the post function even be called if an error
@@ -139,44 +165,30 @@ static PyObject *NRPostFunctionWrapper_call(NRPostFunctionWrapperObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRPostFunctionWrapper_get_wrapped(
+static PyObject *NRPostFunctionWrapper_get_next(
         NRPostFunctionWrapperObject *self, void *closure)
 {
-    Py_INCREF(self->wrapped_object);
-    return self->wrapped_object;
+    if (!self->next_object) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
+    Py_INCREF(self->next_object);
+    return self->next_object;
 }
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRPostFunctionWrapper_get_dict(
-        NRPostFunctionWrapperObject *self)
+static PyObject *NRPostFunctionWrapper_get_last(
+        NRPostFunctionWrapperObject *self, void *closure)
 {
-    if (self->dict == NULL) {
-        self->dict = PyDict_New();
-        if (!self->dict)
-            return NULL;
+    if (!self->last_object) {
+        Py_INCREF(Py_None);
+        return Py_None;
     }
-    Py_INCREF(self->dict);
-    return self->dict;
-}
 
-/* ------------------------------------------------------------------------- */
-
-static int NRPostFunctionWrapper_set_dict(
-        NRPostFunctionWrapperObject *self, PyObject *val)
-{
-    if (val == NULL) {
-        PyErr_SetString(PyExc_TypeError, "__dict__ may not be deleted");
-        return -1;
-    }
-    if (!PyDict_Check(val)) {
-        PyErr_SetString(PyExc_TypeError, "__dict__ must be a dictionary");
-        return -1;
-    }
-    Py_CLEAR(self->dict);
-    Py_INCREF(val);
-    self->dict = val;
-    return 0;
+    Py_INCREF(self->last_object);
+    return self->last_object;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -187,12 +199,110 @@ static PyObject *NRPostFunctionWrapper_get_marker(
     Py_INCREF(Py_None);
     return Py_None;
 }
- 
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRPostFunctionWrapper_get_module(
+        NRPostFunctionWrapperObject *self)
+{
+    if (!self->last_object) {
+      PyErr_SetString(PyExc_ValueError,
+              "object wrapper has not been initialised");
+      return NULL;
+    }
+
+    return PyObject_GetAttrString(self->last_object, "__module__");
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRPostFunctionWrapper_get_name(
+        NRPostFunctionWrapperObject *self)
+{
+    if (!self->last_object) {
+      PyErr_SetString(PyExc_ValueError,
+              "object wrapper has not been initialised");
+      return NULL;
+    }
+
+    return PyObject_GetAttrString(self->last_object, "__name__");
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRPostFunctionWrapper_get_doc(
+        NRPostFunctionWrapperObject *self)
+{
+    if (!self->last_object) {
+      PyErr_SetString(PyExc_ValueError,
+              "object wrapper has not been initialised");
+      return NULL;
+    }
+
+    return PyObject_GetAttrString(self->last_object, "__doc__");
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRPostFunctionWrapper_get_dict(
+        NRPostFunctionWrapperObject *self)
+{
+    if (!self->last_object) {
+      PyErr_SetString(PyExc_ValueError,
+              "object wrapper has not been initialised");
+      return NULL;
+    }
+
+    if (self->dict) {
+        Py_INCREF(self->dict);
+        return self->dict;
+    }
+
+    return PyObject_GetAttrString(self->last_object, "__dict__");
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRPostFunctionWrapper_getattro(
+        NRPostFunctionWrapperObject *self, PyObject *name)
+{
+    PyObject *object = NULL;
+
+    if (!self->last_object) {
+      PyErr_SetString(PyExc_ValueError,
+              "object wrapper has not been initialised");
+      return NULL;
+    }
+
+    object = PyObject_GenericGetAttr((PyObject *)self, name);
+
+    if (object)
+        return object;
+
+    PyErr_Clear();
+
+    return PyObject_GetAttr(self->last_object, name);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRPostFunctionWrapper_setattro(
+        NRPostFunctionWrapperObject *self, PyObject *name, PyObject *value)
+{
+    if (!self->last_object) {
+      PyErr_SetString(PyExc_ValueError,
+              "object wrapper has not been initialised");
+      return -1;
+    }
+
+    return PyObject_SetAttr(self->last_object, name, value);
+}
+
 /* ------------------------------------------------------------------------- */
 
 static PyObject *NRPostFunctionWrapper_descr_get(PyObject *function,
-                                                 PyObject *object,
-                                                 PyObject *type)
+                                                PyObject *object,
+                                                PyObject *type)
 {
     if (object == Py_None)
         object = NULL;
@@ -203,11 +313,19 @@ static PyObject *NRPostFunctionWrapper_descr_get(PyObject *function,
 /* ------------------------------------------------------------------------- */
 
 static PyGetSetDef NRPostFunctionWrapper_getset[] = {
-    { "wrapped",            (getter)NRPostFunctionWrapper_get_wrapped,
+    { "__next_object__",    (getter)NRPostFunctionWrapper_get_next,
+                            NULL, 0 },
+    { "__last_object__",    (getter)NRPostFunctionWrapper_get_last,
+                            NULL, 0 },
+    { "__newrelic__",       (getter)NRPostFunctionWrapper_get_marker,
+                            NULL, 0 },
+    { "__module__",         (getter)NRPostFunctionWrapper_get_module,
+                            NULL, 0 },
+    { "__name__",           (getter)NRPostFunctionWrapper_get_name,
+                            NULL, 0 },
+    { "__doc__",            (getter)NRPostFunctionWrapper_get_doc,
                             NULL, 0 },
     { "__dict__",           (getter)NRPostFunctionWrapper_get_dict,
-                            (setter)NRPostFunctionWrapper_set_dict, 0 },
-    { "__newrelic_wrapper__", (getter)NRPostFunctionWrapper_get_marker,
                             NULL, 0 },
     { NULL },
 };
@@ -230,8 +348,8 @@ PyTypeObject NRPostFunctionWrapper_Type = {
     0,                      /*tp_hash*/
     (ternaryfunc)NRPostFunctionWrapper_call, /*tp_call*/
     0,                      /*tp_str*/
-    PyObject_GenericGetAttr, /*tp_getattro*/
-    PyObject_GenericSetAttr, /*tp_setattro*/
+    (getattrofunc)NRPostFunctionWrapper_getattro, /*tp_getattro*/
+    (setattrofunc)NRPostFunctionWrapper_setattro, /*tp_setattro*/
     0,                      /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT,     /*tp_flags*/
     0,                      /*tp_doc*/

@@ -3,24 +3,20 @@ import newrelic.agent
 from newrelic.agent import (DatabaseTraceWrapper, ObjectWrapper)
 
 class CursorWrapper(ObjectWrapper):
-    def __getattr__(self, name):
-        if name == 'execute':
-            return DatabaseTraceWrapper(getattr(self.__last_object__, name),
-                    (lambda sql, parameters=(): sql))
-        elif name == 'executemany':
-            return DatabaseTraceWrapper(getattr(self.__last_object__, name),
-                    (lambda sql, seq_of_parameters=[]: sql))
-        return getattr(self.__last_object__, name)
+    def execute(self, *args, **kwargs):
+        return DatabaseTraceWrapper(self.__last_object__.execute,
+                (lambda sql, parameters=(): sql))(*args, **kwargs)
+    def executemany(self, *args, **kwargs): 
+        return DatabaseTraceWrapper(self.__last_object__.executemany,
+                (lambda sql, seq_of_parameters=[]: sql))(*args, **kwargs)
 
 class CursorFactory(ObjectWrapper):
     def __call__(self, *args, **kwargs):
         return CursorWrapper(self.__next_object__(*args, **kwargs))
 
 class ConnectionWrapper(ObjectWrapper):
-    def __getattr__(self, name):
-        if name == 'cursor':
-            return CursorFactory(self.__last_object__.cursor)
-        return getattr(self.__last_object__, name)
+    def cursor(self, *args, **kwargs):
+        return CursorFactory(self.__last_object__.cursor)(*args, **kwargs)
 
 class ConnectionFactory(ObjectWrapper):
     def __call__(self, *args, **kwargs):

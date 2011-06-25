@@ -7,11 +7,9 @@ class stream_wrapper(ObjectWrapper):
     def __init__(self, stream, filepath):
         ObjectWrapper.__init__(self, stream)
         self.__filepath = filepath
-    def __getattr__(self, name):
-        if name == 'render':
-            return FunctionTraceWrapper(getattr(self.__last_object__, name),
-                    self.__filepath, 'Template/Render')
-        return getattr(self.__last_object__, name)
+    def render(self, *args, **kwargs):
+        return FunctionTraceWrapper(self.__last_object__.render,
+                self.__filepath, 'Template/Render')(*args, **kwargs)
 
 class wrap_template(ObjectWrapper):
     def __call__(self, *args, **kwargs):

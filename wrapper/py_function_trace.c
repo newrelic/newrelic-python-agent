@@ -359,7 +359,6 @@ static int NRFunctionTraceWrapper_init(NRFunctionTraceWrapperObject *self,
     else
         PyErr_Clear();
 
-
     Py_INCREF(name);
     Py_XDECREF(self->name);
     self->name = name;

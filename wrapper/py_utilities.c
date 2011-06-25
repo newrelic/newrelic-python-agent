@@ -432,60 +432,6 @@ PyObject *NRUtilities_ReplaceWithWrapper(PyObject *parent_object,
 
 /* ------------------------------------------------------------------------- */
 
-extern PyObject *NRUtilities_UpdateWrapper(PyObject *wrapper,
-                                           PyObject *wrapped)
-{
-    PyObject *value = NULL;
-    PyObject *dict = NULL;
-
-    value = PyObject_GetAttrString(wrapped, "__module__");
-
-    if (value) {
-        PyObject_SetAttrString(wrapper, "__module__", value);
-        Py_DECREF(value);
-    }
-    else
-        PyErr_Clear();
-
-    value = PyObject_GetAttrString(wrapped, "__name__");
-
-    if (value) {
-        PyObject_SetAttrString(wrapper, "__name__", value);
-        Py_DECREF(value);
-    }
-    else
-        PyErr_Clear();
-
-    value = PyObject_GetAttrString(wrapped, "__doc__");
-
-    if (value) {
-        PyObject_SetAttrString(wrapper, "__doc__", value);
-        Py_DECREF(value);
-    }
-    else
-        PyErr_Clear();
-
-    dict = PyObject_GetAttrString(wrapper, "__dict__");
-
-    if (dict) {
-        value = PyObject_GetAttrString(wrapped, "__dict__");
-
-        if (value) {
-            PyDict_Update(dict, value);
-            Py_DECREF(value);
-        }
-
-        Py_DECREF(dict);
-    }
-
-    PyErr_Clear();
-
-    Py_INCREF(wrapper);
-    return wrapper;
-}
-
-/* ------------------------------------------------------------------------- */
-
 void NRUtilities_MergeDictIntoParams(nrobj_t array, const char *name,
                                      PyObject *dict)
 {

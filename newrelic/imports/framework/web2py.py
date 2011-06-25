@@ -99,14 +99,14 @@ def instrument_gluon_main(module):
             if txn:
                 HTTP = import_module('gluon.http').HTTP
                 try:
-                    return self.wrapped(request, response, session)
+                    return self.__next_object__(request, response, session)
                 except HTTP, e:
                     raise
                 except:
                     txn.notice_error(*sys.exc_info())
                     raise
             else:
-                return self.wrapped(request, response, session)
+                return self.__next_object__(request, response, session)
 
     wrap_object(module, 'serve_controller', error_serve_controller)
 

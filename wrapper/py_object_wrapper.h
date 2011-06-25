@@ -14,7 +14,8 @@
 typedef struct {
     PyObject_HEAD
     PyObject *dict;
-    PyObject *wrapped_object;
+    PyObject *next_object;
+    PyObject *last_object;
 } NRObjectWrapperObject;
 
 extern PyTypeObject NRObjectWrapper_Type;

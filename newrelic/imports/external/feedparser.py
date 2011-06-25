@@ -12,16 +12,16 @@ class capture_external_trace(ObjectWrapper):
                 trace = ExternalTrace(current_transaction, 'feedparser', url)
                 try:
                     context_manager = trace.__enter__()
-                    return self.wrapped(url)
+                    return self.__next_object__(url)
                 except:
                     context_manager.__exit__(*sys.exc_info())
                     raise
                 finally:
                     context_manager.__exit__(None, None, None)
             else:
-                return self.wrapped(url)
+                return self.__next_object__(url)
         else:
-            return self.wrapped(url)
+            return self.__next_object__(url)
 
 def instrument(module):
     wrap_object(module, 'parse', capture_external_trace)

@@ -226,14 +226,14 @@ class name_RegexURLResolver_resolve_Resolver404(ObjectWrapper):
             Resolver404 = import_module(
                     'django.core.urlresolvers').Resolver404
             try:
-                return self.wrapped(*args, **kwargs)
+                return self.__next_object__(*args, **kwargs)
             except Resolver404:
                 txn.name_transaction('404', scope='Uri')
                 raise
             except:
                 raise
         else:
-            return self.wrapped(*args, **kwargs)
+            return self.__next_object__(*args, **kwargs)
 
 def out_RegexURLResolver_resolve(result):
 

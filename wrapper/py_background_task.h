@@ -16,8 +16,9 @@ extern PyTypeObject NRBackgroundTask_Type;
 typedef struct {
     PyObject_HEAD
     PyObject *dict;
+    PyObject *next_object;
+    PyObject *last_object;
     PyObject *application;
-    PyObject *wrapped_object;
     PyObject *name;
     PyObject *scope;
 } NRBackgroundTaskWrapperObject;

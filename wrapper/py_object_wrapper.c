@@ -53,6 +53,7 @@ static int NRObjectWrapper_init(NRObjectWrapperObject *self,
 
     self->next_object = wrapped_object;
     self->last_object = NULL;
+    self->dict = NULL;
 
     object = PyObject_GetAttrString(wrapped_object, "__newrelic__");
 

@@ -68,7 +68,7 @@ class OutFunctionTests(unittest.TestCase):
         o1 = _test_function_1
         o2 = _newrelic.wrap_out_function(__name__, '_test_function_1',
                                           _out_function)
-        self.assertEqual(o1, o2.wrapped)
+        self.assertEqual(o1, o2.__last_object__)
 
         global _test_result
         _test_result = None
@@ -97,7 +97,7 @@ class OutFunctionTests(unittest.TestCase):
         o1 = _test_class_1._test_function
         o2 = _newrelic.wrap_out_function(__name__,
                 '_test_class_1._test_function', _out_function)
-        self.assertEqual(o1, o2.wrapped)
+        self.assertEqual(o1, o2.__last_object__)
 
         global _test_result
         _test_result = None
@@ -118,7 +118,7 @@ class OutFunctionTests(unittest.TestCase):
         o1 = _test_class_2._test_function
         o2 = _newrelic.wrap_out_function(__name__,
                 '_test_class_2._test_function', _out_function)
-        self.assertEqual(o1, o2.wrapped)
+        self.assertEqual(o1, o2.__last_object__)
 
         global _test_result
         _test_result = None
@@ -139,7 +139,7 @@ class OutFunctionTests(unittest.TestCase):
         o1 = sqlite3.Cursor.execute
         o2 = _newrelic.wrap_out_function('sqlite3', 'Cursor.execute',
                                          _out_function)
-        self.assertEqual(o1, o2.wrapped)
+        self.assertEqual(o1, o2.__last_object__)
 
         global _test_result
         _test_result = None

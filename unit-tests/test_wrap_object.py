@@ -15,13 +15,13 @@ def _function(*args, **kwargs):
 
 class _wrapper(object):
    def __init__(self, wrapped):
-       self._wrapped = wrapped
+       self.wrapped = wrapped
    def __get__(self, obj, objtype=None):
        return types.MethodType(self, obj, objtype)
    def __call__(self, *args, **kwargs):
        global _function_args
        _function_args = (args, kwargs)
-       return self._wrapped(*args, **kwargs)
+       return self.wrapped(*args, **kwargs)
 
 class ApplicationTests(unittest.TestCase):
 

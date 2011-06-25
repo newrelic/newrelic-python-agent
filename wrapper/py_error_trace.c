@@ -278,7 +278,8 @@ static PyObject *NRErrorTraceWrapper_new(PyTypeObject *type, PyObject *args,
         return NULL;
 
     self->dict = NULL;
-    self->wrapped_object = NULL;
+    self->next_object = NULL;
+    self->last_object = NULL;
     self->ignore_errors = NULL;
 
     return (PyObject *)self;
@@ -292,7 +293,7 @@ static int NRErrorTraceWrapper_init(NRErrorTraceWrapperObject *self,
     PyObject *wrapped_object = NULL;
     PyObject *ignore_errors = Py_None;
 
-    PyObject *wrapper = NULL;
+    PyObject *object = NULL;
 
     static char *kwlist[] = { "wrapped", "ignore_errors", NULL };
 
@@ -309,21 +310,44 @@ static int NRErrorTraceWrapper_init(NRErrorTraceWrapperObject *self,
     }
 
     Py_INCREF(wrapped_object);
-    Py_XDECREF(self->wrapped_object);
-    self->wrapped_object = wrapped_object;
+
+    Py_XDECREF(self->dict);
+    Py_XDECREF(self->next_object);
+    Py_XDECREF(self->last_object);
+
+    self->next_object = wrapped_object;
+    self->last_object = NULL;
+
+    object = PyObject_GetAttrString(wrapped_object, "__newrelic__");
+
+    if (object) {
+        Py_DECREF(object);
+
+        object = PyObject_GetAttrString(wrapped_object, "__last_object__");
+
+        if (object)
+            self->last_object = object;
+        else
+            PyErr_Clear();
+    }
+    else
+        PyErr_Clear();
+
+    if (!self->last_object) {
+        Py_INCREF(wrapped_object);
+        self->last_object = wrapped_object;
+    }
+
+    object = PyObject_GetAttrString(self->last_object, "__dict__");
+
+    if (object)
+        self->dict = object;
+    else
+        PyErr_Clear();
 
     Py_INCREF(ignore_errors);
     Py_XDECREF(self->ignore_errors);
     self->ignore_errors = ignore_errors;
-
-    /* Perform equivalent of functools.wraps(). */
-
-    wrapper = NRUtilities_UpdateWrapper((PyObject *)self, wrapped_object);
-
-    if (!wrapper)
-        return -1;
-
-    Py_DECREF(wrapper);
 
     return 0;
 }
@@ -334,7 +358,9 @@ static void NRErrorTraceWrapper_dealloc(NRErrorTraceWrapperObject *self)
 {
     Py_XDECREF(self->dict);
 
-    Py_XDECREF(self->wrapped_object);
+    Py_XDECREF(self->next_object);
+    Py_XDECREF(self->last_object);
+
     Py_XDECREF(self->ignore_errors);
 
     Py_TYPE(self)->tp_free(self);
@@ -362,7 +388,7 @@ static PyObject *NRErrorTraceWrapper_call(
     current_transaction = NRTransaction_CurrentTransaction();
 
     if (!current_transaction)
-        return PyObject_Call(self->wrapped_object, args, kwds);
+        return PyObject_Call(self->next_object, args, kwds);
 
     /* Create error trace context manager. */
 
@@ -390,7 +416,7 @@ static PyObject *NRErrorTraceWrapper_call(
      * position and keyword arguments.
      */
 
-    wrapped_result = PyObject_Call(self->wrapped_object, args, kwds);
+    wrapped_result = PyObject_Call(self->next_object, args, kwds);
 
     /*
      * Now call __exit__() on the context manager. If the call
@@ -452,44 +478,30 @@ static PyObject *NRErrorTraceWrapper_call(
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRErrorTraceWrapper_get_wrapped(
+static PyObject *NRErrorTraceWrapper_get_next(
         NRErrorTraceWrapperObject *self, void *closure)
 {
-    Py_INCREF(self->wrapped_object);
-    return self->wrapped_object;
+    if (!self->next_object) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
+    Py_INCREF(self->next_object);
+    return self->next_object;
 }
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRErrorTraceWrapper_get_dict(
-        NRErrorTraceWrapperObject *self)
+static PyObject *NRErrorTraceWrapper_get_last(
+        NRErrorTraceWrapperObject *self, void *closure)
 {
-    if (self->dict == NULL) {
-        self->dict = PyDict_New();
-        if (!self->dict)
-            return NULL;
+    if (!self->last_object) {
+        Py_INCREF(Py_None);
+        return Py_None;
     }
-    Py_INCREF(self->dict);
-    return self->dict;
-}
 
-/* ------------------------------------------------------------------------- */
-
-static int NRErrorTraceWrapper_set_dict(
-        NRErrorTraceWrapperObject *self, PyObject *val)
-{
-    if (val == NULL) {
-        PyErr_SetString(PyExc_TypeError, "__dict__ may not be deleted");
-        return -1;
-    }
-    if (!PyDict_Check(val)) {
-        PyErr_SetString(PyExc_TypeError, "__dict__ must be a dictionary");
-        return -1;
-    }
-    Py_CLEAR(self->dict);
-    Py_INCREF(val);
-    self->dict = val;
-    return 0;
+    Py_INCREF(self->last_object);
+    return self->last_object;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -500,12 +512,110 @@ static PyObject *NRErrorTraceWrapper_get_marker(
     Py_INCREF(Py_None);
     return Py_None;
 }
- 
+
 /* ------------------------------------------------------------------------- */
- 
+
+static PyObject *NRErrorTraceWrapper_get_module(
+        NRErrorTraceWrapperObject *self)
+{
+    if (!self->last_object) {
+      PyErr_SetString(PyExc_ValueError,
+              "object wrapper has not been initialised");
+      return NULL;
+    }
+
+    return PyObject_GetAttrString(self->last_object, "__module__");
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRErrorTraceWrapper_get_name(
+        NRErrorTraceWrapperObject *self)
+{
+    if (!self->last_object) {
+      PyErr_SetString(PyExc_ValueError,
+              "object wrapper has not been initialised");
+      return NULL;
+    }
+
+    return PyObject_GetAttrString(self->last_object, "__name__");
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRErrorTraceWrapper_get_doc(
+        NRErrorTraceWrapperObject *self)
+{
+    if (!self->last_object) {
+      PyErr_SetString(PyExc_ValueError,
+              "object wrapper has not been initialised");
+      return NULL;
+    }
+
+    return PyObject_GetAttrString(self->last_object, "__doc__");
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRErrorTraceWrapper_get_dict(
+        NRErrorTraceWrapperObject *self)
+{
+    if (!self->last_object) {
+      PyErr_SetString(PyExc_ValueError,
+              "object wrapper has not been initialised");
+      return NULL;
+    }
+
+    if (self->dict) {
+        Py_INCREF(self->dict);
+        return self->dict;
+    }
+
+    return PyObject_GetAttrString(self->last_object, "__dict__");
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRErrorTraceWrapper_getattro(
+        NRErrorTraceWrapperObject *self, PyObject *name)
+{
+    PyObject *object = NULL;
+
+    if (!self->last_object) {
+      PyErr_SetString(PyExc_ValueError,
+              "object wrapper has not been initialised");
+      return NULL;
+    }
+
+    object = PyObject_GenericGetAttr((PyObject *)self, name);
+
+    if (object)
+        return object;
+
+    PyErr_Clear();
+
+    return PyObject_GetAttr(self->last_object, name);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static int NRErrorTraceWrapper_setattro(
+        NRErrorTraceWrapperObject *self, PyObject *name, PyObject *value)
+{
+    if (!self->last_object) {
+      PyErr_SetString(PyExc_ValueError,
+              "object wrapper has not been initialised");
+      return -1;
+    }
+
+    return PyObject_SetAttr(self->last_object, name, value);
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRErrorTraceWrapper_descr_get(PyObject *function,
-                                                  PyObject *object,
-                                                  PyObject *type)
+                                                PyObject *object,
+                                                PyObject *type)
 {
     if (object == Py_None)
         object = NULL;
@@ -516,11 +626,19 @@ static PyObject *NRErrorTraceWrapper_descr_get(PyObject *function,
 /* ------------------------------------------------------------------------- */
 
 static PyGetSetDef NRErrorTraceWrapper_getset[] = {
-    { "wrapped",            (getter)NRErrorTraceWrapper_get_wrapped,
+    { "__next_object__",    (getter)NRErrorTraceWrapper_get_next,
+                            NULL, 0 },
+    { "__last_object__",    (getter)NRErrorTraceWrapper_get_last,
+                            NULL, 0 },
+    { "__newrelic__",       (getter)NRErrorTraceWrapper_get_marker,
+                            NULL, 0 },
+    { "__module__",         (getter)NRErrorTraceWrapper_get_module,
+                            NULL, 0 },
+    { "__name__",           (getter)NRErrorTraceWrapper_get_name,
+                            NULL, 0 },
+    { "__doc__",            (getter)NRErrorTraceWrapper_get_doc,
                             NULL, 0 },
     { "__dict__",           (getter)NRErrorTraceWrapper_get_dict,
-                            (setter)NRErrorTraceWrapper_set_dict, 0 },
-    { "__newrelic_wrapper__", (getter)NRErrorTraceWrapper_get_marker,
                             NULL, 0 },
     { NULL },
 };
@@ -543,8 +661,8 @@ PyTypeObject NRErrorTraceWrapper_Type = {
     0,                      /*tp_hash*/
     (ternaryfunc)NRErrorTraceWrapper_call, /*tp_call*/
     0,                      /*tp_str*/
-    PyObject_GenericGetAttr, /*tp_getattro*/
-    PyObject_GenericSetAttr, /*tp_setattro*/
+    (getattrofunc)NRErrorTraceWrapper_getattro, /*tp_getattro*/
+    (setattrofunc)NRErrorTraceWrapper_setattro, /*tp_setattro*/
     0,                      /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT,     /*tp_flags*/
     0,                      /*tp_doc*/

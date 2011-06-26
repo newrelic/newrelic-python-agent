@@ -225,35 +225,25 @@ PyObject *NRUtilities_ObjectContext(PyObject *wrapped, PyObject *wrapper,
 
     /*
      * We need to deal with case where we may have wrapped a
-     * wrapper. In that case we need to follow the chain of
-     * wrapped objects. We only do this for our own wrapper
-     * objects marked by the __newrelic_wrapper__ attribute.
+     * wrapper. For this we grab __last_object__ attribute from
+     * the wrapper object. We only do this for our own wrapper
+     * objects marked by the __newrelic__ attribute.
      */
 
+    Py_INCREF(wrapped);
     target = wrapped;
-    Py_INCREF(target);
 
-    marker = PyObject_GetAttrString(target, "__newrelic_wrapper__");
+    marker = PyObject_GetAttrString(target, "__newrelic__");
 
     if (marker) {
         Py_DECREF(marker);
 
-        object = PyObject_GetAttrString(target, "wrapped");
+        object = PyObject_GetAttrString(target, "__last_object__");
 
-        while (object) {
+        if (object) {
+            Py_INCREF(object);
             Py_DECREF(target);
             target = object;
-
-            marker = PyObject_GetAttrString(target, "__newrelic_wrapper__");
-
-            if (!marker) {
-                object = NULL;
-                break;
-            }
-
-            Py_DECREF(marker);
-
-            object = PyObject_GetAttrString(target, "wrapped");
         }
     }
 
@@ -282,16 +272,13 @@ PyObject *NRUtilities_ObjectContext(PyObject *wrapped, PyObject *wrapper,
                    method_object = PyObject_GetAttr(class_object, object_name);
                    if (method_object && PyMethod_Check(method_object) &&
                        ((PyMethodObject *)method_object)->im_func == wrapper) {
+                       Py_INCREF(method_object);
+                       Py_XDECREF(object);
                        object = method_object;
                    }
                 }
             }
         }
-
-        /*
-	 * XXX This DECREF's method_object but then it is used
-	 * below via object variable.
-         */
 
         Py_XDECREF(class_object);
         Py_XDECREF(method_object);
@@ -335,16 +322,19 @@ PyObject *NRUtilities_ObjectContext(PyObject *wrapped, PyObject *wrapper,
     PyErr_Clear();
 
     if (!module_name || !PyString_Check(module_name)) {
+        Py_XDECREF(module_name);
         module_name = PyString_FromString("<unknown>");
         attribute_name = PyString_FromString("<unknown>");
         result = PyTuple_Pack(2, module_name, attribute_name);
     }
     else if (class_name && !PyString_Check(class_name)) {
+        Py_XDECREF(module_name);
         module_name = PyString_FromString("<unknown>");
         attribute_name = PyString_FromString("<unknown>");
         result = PyTuple_Pack(2, module_name, attribute_name);
     }
     else if (object_name && !PyString_Check(object_name)) {
+        Py_XDECREF(module_name);
         module_name = PyString_FromString("<unknown>");
         attribute_name = PyString_FromString("<unknown>");
         result = PyTuple_Pack(2, module_name, attribute_name);

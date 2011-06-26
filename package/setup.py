@@ -1,6 +1,8 @@
 import os, sys, string, re
-from distutils.core import setup
-from distutils.command.install_data import install_data
+
+import distutils.core
+import distutils.command.install_data
+import distutils.command.install
 
 copyright = '(C) Copyright 2010-2011 New Relic Inc. All rights reserved.'
 
@@ -57,11 +59,19 @@ print
 
 os.chdir(target_directory)
 
-class install_lib(install_data):
+class install_override(distutils.command.install.install):
   def run(self):
     install_cmd = self.get_finalized_command('install')
+    install_cmd.force = True
     self.install_dir = getattr(install_cmd, 'install_lib')
-    return install_data.run(self)
+    return distutils.command.install.install.run(self)
+
+class install_data_override(distutils.command.install_data.install_data):
+  def run(self):
+    install_cmd = self.get_finalized_command('install')
+    install_cmd.force = True
+    self.install_dir = getattr(install_cmd, 'install_lib')
+    return distutils.command.install_data.install_data.run(self)
 
 packages = [
   "newrelic",
@@ -75,7 +85,7 @@ packages = [
   "newrelic.deploy",
 ]
 
-setup(
+distutils.core.setup(
   name = "newrelic",
   version = '.'.join(package_version.split('.')[:-1]),
   description = "Python agent for New Relic",
@@ -86,5 +96,6 @@ setup(
   packages = packages,
   data_files = [('', ['_newrelic.so'])],
   platforms = [package_platform],
-  cmdclass = { 'install_data' : install_lib },
+  cmdclass = { 'install_data' : install_data_override,
+               'install' : install_override },
 )

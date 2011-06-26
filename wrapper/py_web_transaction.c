@@ -1092,11 +1092,8 @@ static int NRWSGIApplicationWrapper_init(
     else
         PyErr_Clear();
 
-    Py_INCREF(application);
     Py_XDECREF(self->application);
     self->application = application;
-
-    Py_DECREF(application);
 
     return 0;
 }

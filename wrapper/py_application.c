@@ -235,14 +235,6 @@ static int NRApplication_init(NRApplicationObject *self, PyObject *args,
     nrthread_mutex_unlock(&self->application->lock);
 
     /*
-     * Trigger attempt to get per application configuration from
-     * the servers via the local daemon as quick as possible.
-     */
-
-    nr__start_communication(dconn, self->application,
-                            nr_per_process_globals.env, 0);
-
-    /*
      * Markup what version of the Python agent wrapper is being
      * used. This displays in the agent configuration in the
      * RPM GUI.
@@ -252,6 +244,14 @@ static int NRApplication_init(NRApplicationObject *self, PyObject *args,
             "binding.language", "Python");
     nro__set_hash_string(self->application->appconfig,
             "binding.version", NEWRELIC_PYTHON_AGENT_VERSION);
+
+    /*
+     * Trigger attempt to get per application configuration from
+     * the servers via the local daemon as quick as possible.
+     */
+
+    nr__start_communication(dconn, self->application,
+                            nr_per_process_globals.env, 0);
 
     return 0;
 }

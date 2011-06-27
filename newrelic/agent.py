@@ -205,7 +205,7 @@ if _config_file:
             _settings.environment = _config_environment
             _process_configuration('newrelic:%s' % _config_environment)
         for option, value in _config_global_settings:
-            log(LOG_DEBUG, "agent config %s=%s" % (option, repr(value)))
+            log(LOG_INFO, "agent config %s=%s" % (option, repr(value)))
     else:
         assert _settings.config_file == _config_file
         assert _settings.environment == _config_environment
@@ -216,7 +216,7 @@ sys.meta_path.insert(0, ImportHookFinder())
 
 def _import_hook(module, function):
     def _instrument(target):
-        log(LOG_DEBUG, "execute import-hook %s" % ((target,
+        log(LOG_INFO, "execute import-hook %s" % ((target,
                 module, function),))
         getattr(import_module(module), function)(target)
     return _instrument
@@ -231,7 +231,7 @@ def _process_import_hook(target, module, function='instrument'):
             pass
     if enabled and not _config_object.has_option(section, 'execute'):
         register_import_hook(target, _import_hook(module, function))
-        log(LOG_DEBUG, "register import-hook %s" % ((target,
+        log(LOG_INFO, "register import-hook %s" % ((target,
                 module, function),))
 
 for section in _config_object.sections():
@@ -254,7 +254,7 @@ for section in _config_object.sections():
                         function = parts[1]
                     register_import_hook(target, _import_hook(
                             module, function))
-                    log(LOG_DEBUG, "register import-hook %s" % ((target,
+                    log(LOG_INFO, "register import-hook %s" % ((target,
                             module, function),))
 
 _process_import_hook('django.core.handlers.base',
@@ -325,7 +325,7 @@ _process_import_hook('xmlrpclib', 'newrelic.imports.external.xmlrpclib')
 
 def _wsgi_application_import_hook(object_path, application):
     def _instrument(target):
-        log(LOG_DEBUG, "wrap wsgi-application %s" % ((object_path,
+        log(LOG_INFO, "wrap wsgi-application %s" % ((object_path,
                 application),))
         wrap_wsgi_application(target, object_path, application)
     return _instrument
@@ -350,14 +350,14 @@ for section in _config_object.sections():
                     hook = _wsgi_application_import_hook(object_path,
                                                          application)
                     register_import_hook(module, hook)
-                    log(LOG_DEBUG, "register wsgi-application %s" % ((module,
+                    log(LOG_INFO, "register wsgi-application %s" % ((module,
                             object_path, application),))
 
 # Setup background task wrapper defined in configuration file.
 
 def _background_task_import_hook(object_path, application, name, scope):
     def _instrument(target):
-        log(LOG_DEBUG, "wrap background-task %s" % ((object_path,
+        log(LOG_INFO, "wrap background-task %s" % ((object_path,
                 application, name, scope),))
         wrap_background_task(target, object_path, application, name, scope)
     return _instrument
@@ -393,14 +393,14 @@ for section in _config_object.sections():
                                                         application,
                                                         name, scope)
                     register_import_hook(module, hook)
-                    log(LOG_DEBUG, "register background-task %s" % ((module,
+                    log(LOG_INFO, "register background-task %s" % ((module,
                             object_path, application, name, scope),))
 
 # Setup database traces defined in configuration file.
 
 def _database_trace_import_hook(object_path, sql):
     def _instrument(target):
-        log(LOG_DEBUG, "wrap database-trace %s" % ((object_path, sql),))
+        log(LOG_INFO, "wrap database-trace %s" % ((object_path, sql),))
         wrap_database_trace(target, object_path, sql)
     return _instrument
 
@@ -423,14 +423,14 @@ for section in _config_object.sections():
                         sql = eval(sql, vars)
                     hook = _database_trace_import_hook(object_path, sql)
                     register_import_hook(module, hook)
-                    log(LOG_DEBUG, "register database-trace %s" % ((module,
+                    log(LOG_INFO, "register database-trace %s" % ((module,
                             object_path, sql),))
 
 # Setup external traces defined in configuration file.
 
 def _external_trace_import_hook(object_path, library, url):
     def _instrument(target):
-        log(LOG_DEBUG, "wrap external-trace %s" % ((object_path,
+        log(LOG_INFO, "wrap external-trace %s" % ((object_path,
                 library, url),))
         wrap_external_trace(target, object_path, library, url)
     return _instrument
@@ -456,14 +456,14 @@ for section in _config_object.sections():
                     hook = _external_trace_import_hook(object_path, library,
                                                        url)
                     register_import_hook(module, hook)
-                    log(LOG_DEBUG, "register external-trace %s" % ((module,
+                    log(LOG_INFO, "register external-trace %s" % ((module,
                             object_path, library, url),))
 
 # Setup function traces defined in configuration file.
 
 def _function_trace_import_hook(object_path, name, scope, interesting):
     def _instrument(target):
-        log(LOG_DEBUG, "wrap function-trace %s" % ((object_path,
+        log(LOG_INFO, "wrap function-trace %s" % ((object_path,
                 name, scope, interesting),))
         wrap_function_trace(target, object_path, name, scope, interesting)
     return _instrument
@@ -499,14 +499,14 @@ for section in _config_object.sections():
                     hook = _function_trace_import_hook(object_path, name,
                                                        scope, interesting)
                     register_import_hook(module, hook)
-                    log(LOG_DEBUG, "register function-trace %s" % ((module,
+                    log(LOG_INFO, "register function-trace %s" % ((module,
                             object_path, name, scope, interesting),))
 
 # Setup memcache traces defined in configuration file.
 
 def _memcache_trace_import_hook(object_path, command):
     def _instrument(target):
-        log(LOG_DEBUG, "wrap memcache-trace %s" % ((object_path, command),))
+        log(LOG_INFO, "wrap memcache-trace %s" % ((object_path, command),))
         wrap_memcache_trace(target, object_path, command)
     return _instrument
 
@@ -529,14 +529,14 @@ for section in _config_object.sections():
                         command = eval(command, vars)
                     hook = _memcache_trace_import_hook(object_path, command)
                     register_import_hook(module, hook)
-                    log(LOG_DEBUG, "register memcache-trace %s" % ((module,
+                    log(LOG_INFO, "register memcache-trace %s" % ((module,
                             object_path, command),))
 
 # Setup name transaction wrapper defined in configuration file.
 
 def _name_transaction_import_hook(object_path, name, scope):
     def _instrument(target):
-        log(LOG_DEBUG, "wrap name-transaction %s" % ((object_path,
+        log(LOG_INFO, "wrap name-transaction %s" % ((object_path,
                 name, scope),))
         wrap_name_transaction(target, object_path, name, scope)
     return _instrument
@@ -568,14 +568,14 @@ for section in _config_object.sections():
                     hook = _name_transaction_import_hook(object_path, name,
                                                          scope)
                     register_import_hook(module, hook)
-                    log(LOG_DEBUG, "register name-transaction %s" % ((module,
+                    log(LOG_INFO, "register name-transaction %s" % ((module,
                             object_path, name, scope),))
 
 # Setup error trace wrapper defined in configuration file.
 
 def _error_trace_import_hook(object_path, ignore_errors):
     def _instrument(target):
-        log(LOG_DEBUG, "wrap error-trace %s" % ((object_path,
+        log(LOG_INFO, "wrap error-trace %s" % ((object_path,
                 ignore_errors),))
         wrap_error_trace(target, object_path, ignore_errors)
     return _instrument
@@ -600,14 +600,14 @@ for section in _config_object.sections():
                     module, object_path = parts
                     hook = _error_trace_import_hook(object_path, ignore_errors)
                     register_import_hook(module, hook)
-                    log(LOG_DEBUG, "register error-trace %s" % ((module,
+                    log(LOG_INFO, "register error-trace %s" % ((module,
                             object_path, ignore_errors),))
 
 # Setup function profiler defined in configuration file.
 
 def _function_profile_import_hook(object_path, interesting, depth):
     def _instrument(target):
-        log(LOG_DEBUG, "wrap function-profile %s" % ((object_path,
+        log(LOG_INFO, "wrap function-profile %s" % ((object_path,
                 interesting, depth),))
         wrap_function_profile(target, object_path, interesting, depth)
     return _instrument
@@ -636,6 +636,6 @@ for section in _config_object.sections():
                     hook = _function_profile_import_hook(object_path,
                                                          interesting, depth)
                     register_import_hook(module, hook)
-                    log(LOG_DEBUG, "register function-profile %s" % ((module,
+                    log(LOG_INFO, "register function-profile %s" % ((module,
                             object_path, interesting, depth),))
 

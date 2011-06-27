@@ -865,12 +865,33 @@ static PyObject *NRTransaction_notice_error(
         return NULL;
     }
 
-    /* Only continue if the error collector is enabled. */
+    /*
+     * If the application was not enabled and so we are running
+     * as a dummy transaction then return without actually doing
+     * anything.
+     */
+
+    if (!self->transaction) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
+    /*
+     * Only continue if the error collector is enabled and back
+     * end server application says we should collect errors.
+     */
 
     if (!nr_per_process_globals.errors_enabled) {
         Py_INCREF(Py_None);
         return Py_None;
     }
+
+    if (!self->application->application->collect_errors) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
+    /* Capture details if valid exception. */
 
     if (type != Py_None && value != Py_None) {
         PyObject *item = NULL;

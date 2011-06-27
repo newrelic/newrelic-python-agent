@@ -404,10 +404,10 @@ static int NRTransaction_init(NRTransactionObject *self, PyObject *args,
      * then we try and restart the connection at this point.
      */
 
-    nrthread_mutex_lock (&application->application->lock);
+    nrthread_mutex_lock(&application->application->lock);
     if (application->application->agent_run_id == 0)
         retry_connection = 1;
-    nrthread_mutex_unlock (&application->application->lock);
+    nrthread_mutex_unlock(&application->application->lock);
 
     if (retry_connection) {
         nr__start_communication(dconn, application->application,
@@ -448,10 +448,10 @@ static int NRTransaction_init(NRTransactionObject *self, PyObject *args,
 	 * transaction.
          */
 
-        nrthread_mutex_lock (&application->application->lock);
+        nrthread_mutex_lock(&application->application->lock);
         if (application->application->agent_run_id == 0)
             self->transaction->ignore = 1;
-        nrthread_mutex_unlock (&application->application->lock);
+        nrthread_mutex_unlock(&application->application->lock);
     }
 
     return 0;

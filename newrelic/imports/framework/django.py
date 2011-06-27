@@ -1,3 +1,5 @@
+import sys
+
 from newrelic.agent import (
         import_module,
         settings,
@@ -223,8 +225,8 @@ class name_RegexURLResolver_resolve_Resolver404(ObjectWrapper):
 
         txn = transaction()
         if txn:
-            Resolver404 = import_module(
-                    'django.core.urlresolvers').Resolver404
+            Resolver404 = sys.modules[
+                    'django.core.urlresolvers'].Resolver404
             try:
                 return self.__next_object__(*args, **kwargs)
             except Resolver404:

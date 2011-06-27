@@ -418,7 +418,7 @@ static void NRErrorsSettings_dealloc(NRErrorsSettingsObject *self)
 static PyObject *NRErrorsSettings_get_enabled(NRErrorsSettingsObject *self,
                                               void *closure)
 {
-    return PyBool_FromLong(nr_per_process_globals.tt_enabled);
+    return PyBool_FromLong(nr_per_process_globals.errors_enabled);
 }
 
 /* ------------------------------------------------------------------------- */

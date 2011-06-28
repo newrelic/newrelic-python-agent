@@ -5,7 +5,8 @@ import ConfigParser
 
 import _newrelic
 
-__all__ = [ 'load_configuration', 'config_file', 'config_environment' ]
+__all__ = [ 'load_configuration', 'config_file', 'config_environment',
+           'config_object', 'settings_object' ]
 
 # Names of configuration file and deployment environment. This
 # will be overridden by the load_configuration() function when
@@ -20,11 +21,12 @@ config_environment = None
 settings_object = _newrelic.settings()
 
 # Use the raw config parser as we want to avoid interpolation
-# within values. This avoids problems when writing lambdas with
-# in the actual configuration file for options which value can
-# be dynamically calculated at time wrapper is executed. This
-# configuration object can be used by instrumentation modules
-# to look up customised settings defined in configuration file.
+# within values. This avoids problems when writing lambdas
+# within the actual configuration file for options which value
+# can be dynamically calculated at time wrapper is executed.
+# This configuration object can be used by the instrumentation
+# modules to look up customised settings defined in the loaded
+# configuration file.
 
 config_object = ConfigParser.RawConfigParser()
 
@@ -99,6 +101,7 @@ def _process_setting(section, option, getter, mapper):
         raise _newrelic.ConfigurationError('Invalid configuration entry '
                 'with name %s and value %s. Check agent log file for '
                 'further details.' % (repr(option), repr(value)))
+
     else:
 	# The getter parsed the value okay but want to
 	# pass this through a mapping function to change
@@ -255,8 +258,8 @@ def load_configuration(file=None, environment=None):
 
     _process_configuration('newrelic')
 
-    # And any overrides specified with a section
-    # corresponding to a specific deployment environment.
+    # And any overrides specified with a section corresponding
+    # to a specific deployment environment.
 
     if environment:
         settings_object.config_environment = environment

@@ -1,10 +1,11 @@
 import sys
 import os
 
-# Import all the magic into this namespace.
-
 from _newrelic import *
 from newrelic.profile import *
+
+import newrelic.config
+import newrelic.patch
 
 # If the configuration file hasn't been read in previously by
 # the newrelic.config module having being imported first and
@@ -14,11 +15,10 @@ from newrelic.profile import *
 # and the name of deployment environment type from the process
 # environment variables.
 
-import newrelic.config
-
 if not newrelic.config.config_file:
     newrelic.config.load_configuration()
 
-import newrelic.patch
+# Setup all the instrumentation hooks for builtin defaults and
+# what has also been defined within the configuration file.
 
 newrelic.patch.setup_instrumentation()

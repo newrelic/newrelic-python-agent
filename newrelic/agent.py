@@ -86,7 +86,10 @@ def wrap_function_profile(module, object_name, interesting=False, depth=5):
     setattr(parent_object, attribute_name, FunctionProfileWrapper(
             object, interesting, depth))
 
-# Read in and apply agent configuration.
+# Read in and apply agent configuration from the configuration
+# file. Before we do that though we need to define some mapping
+# functions to convert raw values into internal types expected
+# by the internal configuration settings object.
 
 _LOG_LEVEL = {
     'ERROR' : LOG_ERROR,
@@ -120,19 +123,48 @@ def _map_record_sql(s):
 def _map_ignore_errors(s):
     return s.split()
 
+# This is the actual internal settings object. Options which
+# are read from the configuration file will be applied to this.
+
 _settings = settings()
+
+# Grab location of configuration file and name of environment
+# name from environment variables. If configuration file is
+# not defined the internal defaults will be use instead allowing
+# everything to still work.
 
 _config_file = os.environ.get('NEWRELIC_CONFIG_FILE', None)
 _config_environment = os.environ.get('NEWRELIC_ENVIRONMENT', None)
+
+# We use the raw config parser as we want to avoid interpolation
+# within values. This avoids problems when writing lambdas with
+# in the actual configuration file for options which value can
+# be dynamically calculated at time wrapper is executed.
+
 _config_object = ConfigParser.RawConfigParser()
+
+# Cache of the parsed global settings found in the configuration
+# file. We cache these so can dump them out to the log file once
+# all the settings have been read.
+
 _config_global_settings = []
+
+# Processing of a single setting from configuration file.
 
 def _process_setting(section, option, getter, mapper):
     try:
+	# The type of a value is dictated by the getter
+	# function supplied.
+
         value = getattr(_config_object, getter)(section, option)
+
     except ConfigParser.NoOptionError:
         pass
+
     except:
+	# Get here and the getter must have failed to
+	# decode the value for the option.
+
         value = _config_object.get(section, option)
 
         log(LOG_ERROR, 'Configuration Error')
@@ -147,10 +179,20 @@ def _process_setting(section, option, getter, mapper):
                 'name %s and value %s. Check agent log file for '
                 'further details.' % (repr(option), repr(value)))
     else:
+	# The getter parsed the value okay but want to
+	# pass this through a mapping function to change
+	# it to internal value suitable for internal
+	# settings object. This is usually one where the
+        # value was a string.
+
         try:
             if mapper:
                 value = mapper(value)
+
         except:
+	    # Get here and value wasn't within the restricted
+	    # range of values as defined by mapping function.
+
             log(LOG_ERROR, 'Configuration Error')
             log(LOG_ERROR, 'Section = %s' % repr(section))
             log(LOG_ERROR, 'Option = %s' % repr(option))
@@ -162,9 +204,15 @@ def _process_setting(section, option, getter, mapper):
             raise ConfigurationError('Invalid configuration entry with '
                     'name %s and value %s. Check agent log file for '
                     'further details.' % (repr(option), repr(value)))
+
         else:
+	    # Now need to apply the option from the
+	    # configuration file to the internal settings
+	    # object. Walk the object path and assign it.
+
             target = _settings
             parts = string.splitfields(option, '.', 1) 
+
             while True:
                 if len(parts) == 1:
                     setattr(target, parts[0], value)
@@ -172,20 +220,19 @@ def _process_setting(section, option, getter, mapper):
                 else:
                     target = getattr(target, parts[0])
                     parts = string.splitfields(parts[1], '.', 1)
+
+	    # Cache the configuration so can be dumped out to
+	    # log file when whole main configuraiton has been
+	    # processed. This ensures that the log file and log
+	    # level entries have been set.
+
             _config_global_settings.append((option, value))
 
+# Processing of all the settings for specified section except
+# for log file and log level which are applied separately to
+# ensure they are set as soon as possible.
+
 def _process_configuration(section):
-
-    # Must process log file entry first so that errors with
-    # the remainder will get logged if log file is defined.
-
-    _process_setting(section, 'log_file',
-                     'get', None)
-    _process_setting(section, 'log_level',
-                     'get', _map_log_level)
-
-    # Order of other available options doesn't matter.
-
     _process_setting(section, 'app_name',
                      'get', None)
     _process_setting(section, 'monitor_mode',
@@ -221,21 +268,60 @@ def _process_configuration(section):
     _process_setting(section, 'debug.sql_statement_parsing',
                      'getboolean', None)
 
+# Process then configuration file if one was specified via the
+# environment variable.
+
 if _config_file:
     if not _config_object.read([_config_file]):
-        raise IOError('unable to open file %s' % _config_file)
+        log(LOG_ERROR, 'Configuration File Does Not Exist')
+        log(LOG_ERROR, 'File = %s' % repr(_config_file))
+
+        raise ConfigurationError('Unable to open configuration file %s. '
+                 'Check agent log file for further details.' % _config_file)
 
     # Although we have read the configuration here, only process
-    # it if this hasn't already been done previously.
+    # it if this hasn't already been done previously. This should
+    # not ever occur unless user code trys to trigger reloading
+    # of the configuration file. Decide later if want to provide
+    # way of reading configuration file again if it has changed.
+    # If allow this, can only reprocess the main global settings.
 
     if _settings.config_file is None:
         _settings.config_file = _config_file
+
+        # Must process log file entries first so that errors with
+        # the remainder will get logged if log file is defined.
+
+        _process_setting('newrelic', 'log_file',
+                         'get', None)
+        _process_setting('newrelic', 'log_level',
+                         'get', _map_log_level)
+
+        if _config_environment:
+            _process_setting('newrelic:%s' % _config_environment,
+                             'log_file', 'get', None)
+            _process_setting('newrelic:%s' % _config_environment ,
+                             'log_level', 'get', _map_log_level)
+
+	# Now process the remainder of the global configuration
+	# settings.
+
         _process_configuration('newrelic')
+
+	# And any overrides specified with a section
+	# corresponding to a specific deployment environment.
+
         if _config_environment:
             _settings.environment = _config_environment
             _process_configuration('newrelic:%s' % _config_environment)
+
+        # Log details of the configuration options which were
+        # read and the values they have as would be applied
+        # against the internal settings object.
+
         for option, value in _config_global_settings:
             log(LOG_INFO, "agent config %s=%s" % (option, repr(value)))
+
     else:
         assert _settings.config_file == _config_file
         assert _settings.environment == _config_environment

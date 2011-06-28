@@ -38,7 +38,7 @@ static int NRLogFile_init(NRLogFileObject *self, PyObject *args,
 
     static char *kwlist[] = { "level", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "i:LogFile",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|i:LogFile",
                                      kwlist, &level)) {
         return -1;
     }
@@ -369,6 +369,55 @@ PyTypeObject NRLogFile_Type = {
     0,                      /*tp_free*/
     0,                      /*tp_is_gc*/
 };
+
+/* ------------------------------------------------------------------------- */
+
+extern PyObject *NRLogFile_LogException(PyObject *etype, PyObject *value,
+                                        PyObject *tb, PyObject *limit,
+                                        PyObject *file)
+{
+    PyObject *log_file = NULL;
+
+    PyObject *module = NULL;
+    PyObject *dict = NULL;
+    PyObject *function = NULL;
+
+    PyObject *result = NULL;
+
+    module = PyImport_ImportModule("traceback");
+
+    if (!module)
+        return NULL;
+
+    dict = PyModule_GetDict(module);
+
+    function = PyDict_GetItemString(dict, "print_exception");
+
+    if (!function) {
+        Py_DECREF(module);
+        return NULL;
+    }
+
+    if (file == Py_None) {
+        log_file = PyObject_CallFunctionObjArgs(
+                (PyObject *)&NRLogFile_Type, NULL);
+
+        if (!log_file)
+            return NULL;
+
+        file = log_file;
+    }
+
+    result = PyObject_CallFunctionObjArgs(function, etype, value, tb,
+            limit, file, NULL);
+
+    Py_XDECREF(log_file);
+
+    Py_DECREF(module);
+    Py_DECREF(function);
+
+    return result;
+}
 
 /* ------------------------------------------------------------------------- */
 

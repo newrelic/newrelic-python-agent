@@ -23,6 +23,12 @@ extern PyTypeObject NRLogFile_Type;
 
 /* ------------------------------------------------------------------------- */
 
+extern PyObject *NRLogFile_LogException(PyObject *etype, PyObject *value,
+                                        PyObject *tb, PyObject *limit,
+                                        PyObject *file);
+
+/* ------------------------------------------------------------------------- */
+
 #endif
 
 /*

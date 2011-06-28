@@ -303,6 +303,28 @@ static PyObject *newrelic_log(PyObject *self, PyObject *args, PyObject *kwds)
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *newrelic_log_exception(PyObject *self, PyObject *args,
+        PyObject *kwds)
+{
+    PyObject *etype = NULL;
+    PyObject *value = NULL;
+    PyObject *tb = NULL;
+    PyObject *limit = Py_None;
+    PyObject *file = Py_None;
+
+    static char *kwlist[] = { "etype", "value", "tb", "limit", "file", NULL };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "OOO|OO:log_exception",
+                                     kwlist, &etype, &value, &tb,
+                                     &limit, &file)) {
+        return NULL;
+    }
+
+    return NRLogFile_LogException(etype, value, tb, limit, file);
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *newrelic_harvest(PyObject *self, PyObject *args,
                                   PyObject *kwds)
 {
@@ -1624,6 +1646,8 @@ static PyMethodDef newrelic_methods[] = {
     { "settings",           (PyCFunction)newrelic_settings,
                             METH_NOARGS, 0 },
     { "log",                (PyCFunction)newrelic_log,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
+    { "log_exception",      (PyCFunction)newrelic_log_exception,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "harvest",            (PyCFunction)newrelic_harvest,
                             METH_VARARGS|METH_KEYWORDS, 0 },

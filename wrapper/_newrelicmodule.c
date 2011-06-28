@@ -28,6 +28,7 @@
 #include "py_import_hook.h"
 
 #include "py_utilities.h"
+#include "py_exceptions.h"
 #include "py_log_file.h"
 
 #include "globals.h"
@@ -1829,11 +1830,26 @@ init_newrelic(void)
     if (PyType_Ready(&NRObjectWrapper_Type) < 0)
         return;
 
-    /* Initialise type objects. */
+    /* Initialise exception type objects. */
+
+    NRExc_ConfigurationError = PyErr_NewException(
+            "_newrelic.ConfigurationError", NULL, NULL);
+    NRExc_InstrumentationError = PyErr_NewException(
+            "_newrelic.InstrumentationError", NULL, NULL);
+
+    /* Make public type objects. */
+
+    Py_INCREF(NRExc_ConfigurationError);
+    PyModule_AddObject(module, "ConfigurationError",
+                       NRExc_ConfigurationError);
+    Py_INCREF(NRExc_InstrumentationError);
+    PyModule_AddObject(module, "InstrumentationError",
+                       NRExc_InstrumentationError);
 
     Py_INCREF(&NRLogFile_Type);
     PyModule_AddObject(module, "LogFile",
                        (PyObject *)&NRLogFile_Type);
+
     Py_INCREF(&NRBackgroundTask_Type);
     PyModule_AddObject(module, "BackgroundTask",
                        (PyObject *)&NRBackgroundTask_Type);
@@ -1843,6 +1859,7 @@ init_newrelic(void)
     Py_INCREF(&NRBackgroundTaskWrapper_Type);
     PyModule_AddObject(module, "BackgroundTaskWrapper",
                        (PyObject *)&NRBackgroundTaskWrapper_Type);
+
     Py_INCREF(&NRDatabaseTrace_Type);
     PyModule_AddObject(module, "DatabaseTrace",
                        (PyObject *)&NRDatabaseTrace_Type);
@@ -1852,6 +1869,7 @@ init_newrelic(void)
     Py_INCREF(&NRDatabaseTraceWrapper_Type);
     PyModule_AddObject(module, "DatabaseTraceWrapper",
                        (PyObject *)&NRDatabaseTraceWrapper_Type);
+
     Py_INCREF(&NRErrorTrace_Type);
     PyModule_AddObject(module, "ErrorTrace",
                        (PyObject *)&NRErrorTrace_Type);
@@ -1861,6 +1879,7 @@ init_newrelic(void)
     Py_INCREF(&NRErrorTraceWrapper_Type);
     PyModule_AddObject(module, "ErrorTraceWrapper",
                        (PyObject *)&NRErrorTraceWrapper_Type);
+
     Py_INCREF(&NRExternalTrace_Type);
     PyModule_AddObject(module, "ExternalTrace",
                        (PyObject *)&NRExternalTrace_Type);
@@ -1870,6 +1889,7 @@ init_newrelic(void)
     Py_INCREF(&NRExternalTraceWrapper_Type);
     PyModule_AddObject(module, "ExternalTraceWrapper",
                        (PyObject *)&NRExternalTraceWrapper_Type);
+
     Py_INCREF(&NRFunctionTrace_Type);
     PyModule_AddObject(module, "FunctionTrace",
                        (PyObject *)&NRFunctionTrace_Type);
@@ -1879,6 +1899,7 @@ init_newrelic(void)
     Py_INCREF(&NRFunctionTraceWrapper_Type);
     PyModule_AddObject(module, "FunctionTraceWrapper",
                        (PyObject *)&NRFunctionTraceWrapper_Type);
+
     Py_INCREF(&NRMemcacheTrace_Type);
     PyModule_AddObject(module, "MemcacheTrace",
                        (PyObject *)&NRMemcacheTrace_Type);
@@ -1888,12 +1909,14 @@ init_newrelic(void)
     Py_INCREF(&NRMemcacheTraceWrapper_Type);
     PyModule_AddObject(module, "MemcacheTraceWrapper",
                        (PyObject *)&NRMemcacheTraceWrapper_Type);
+
     Py_INCREF(&NRNameTransactionDecorator_Type);
     PyModule_AddObject(module, "NameTransactionDecorator",
                        (PyObject *)&NRNameTransactionDecorator_Type);
     Py_INCREF(&NRNameTransactionWrapper_Type);
     PyModule_AddObject(module, "NameTransactionWrapper",
                        (PyObject *)&NRNameTransactionWrapper_Type);
+
     Py_INCREF(&NRWebTransaction_Type);
     PyModule_AddObject(module, "WebTransaction",
                        (PyObject *)&NRWebTransaction_Type);
@@ -1903,33 +1926,39 @@ init_newrelic(void)
     Py_INCREF(&NRWSGIApplicationWrapper_Type);
     PyModule_AddObject(module, "WSGIApplicationWrapper",
                        (PyObject *)&NRWSGIApplicationWrapper_Type);
+
     Py_INCREF(&NRInFunctionDecorator_Type);
     PyModule_AddObject(module, "InFunctionDecorator",
                        (PyObject *)&NRInFunctionDecorator_Type);
     Py_INCREF(&NRInFunctionWrapper_Type);
     PyModule_AddObject(module, "InFunctionWrapper",
                        (PyObject *)&NRInFunctionWrapper_Type);
+
     Py_INCREF(&NROutFunctionDecorator_Type);
     PyModule_AddObject(module, "OutFunctionDecorator",
                        (PyObject *)&NROutFunctionDecorator_Type);
     Py_INCREF(&NROutFunctionWrapper_Type);
     PyModule_AddObject(module, "OutFunctionWrapper",
                        (PyObject *)&NROutFunctionWrapper_Type);
+
     Py_INCREF(&NRPostFunctionDecorator_Type);
     PyModule_AddObject(module, "PostFunctionDecorator",
                        (PyObject *)&NRPostFunctionDecorator_Type);
     Py_INCREF(&NRPostFunctionWrapper_Type);
     PyModule_AddObject(module, "PostFunctionWrapper",
                        (PyObject *)&NRPostFunctionWrapper_Type);
+
     Py_INCREF(&NRPreFunctionDecorator_Type);
     PyModule_AddObject(module, "PreFunctionDecorator",
                        (PyObject *)&NRPreFunctionDecorator_Type);
     Py_INCREF(&NRPreFunctionWrapper_Type);
     PyModule_AddObject(module, "PreFunctionWrapper",
                        (PyObject *)&NRPreFunctionWrapper_Type);
+
     Py_INCREF(&NRImportHookFinder_Type);
     PyModule_AddObject(module, "ImportHookFinder",
                        (PyObject *)&NRImportHookFinder_Type);
+
     Py_INCREF(&NRObjectWrapper_Type);
     PyModule_AddObject(module, "ObjectWrapper",
                        (PyObject *)&NRObjectWrapper_Type);

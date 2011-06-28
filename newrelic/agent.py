@@ -135,7 +135,7 @@ def _process_setting(section, option, getter, mapper):
     except:
         value = _config_object.get(section, option)
 
-        log(LOG_ERROR, 'Configuration Error - Type Error.')
+        log(LOG_ERROR, 'Configuration Error')
         log(LOG_ERROR, 'Section = %s' % repr(section))
         log(LOG_ERROR, 'Option = %s' % repr(option))
         log(LOG_ERROR, 'Value = %s' % repr(value))
@@ -151,7 +151,7 @@ def _process_setting(section, option, getter, mapper):
             if mapper:
                 value = mapper(value)
         except:
-            log(LOG_ERROR, 'Configuration Error - Value Error')
+            log(LOG_ERROR, 'Configuration Error')
             log(LOG_ERROR, 'Section = %s' % repr(section))
             log(LOG_ERROR, 'Option = %s' % repr(option))
             log(LOG_ERROR, 'Value = %s' % repr(value))

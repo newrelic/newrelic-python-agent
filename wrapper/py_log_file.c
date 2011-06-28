@@ -402,11 +402,15 @@ extern PyObject *NRLogFile_LogException(PyObject *etype, PyObject *value,
         log_file = PyObject_CallFunctionObjArgs(
                 (PyObject *)&NRLogFile_Type, NULL);
 
-        if (!log_file)
+        if (!log_file) {
+            Py_DECREF(module);
             return NULL;
+        }
 
         file = log_file;
     }
+
+    Py_INCREF(function);
 
     result = PyObject_CallFunctionObjArgs(function, etype, value, tb,
             limit, file, NULL);

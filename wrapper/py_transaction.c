@@ -811,8 +811,8 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
             application->pending_harvest->metrics);
     nr__merge_errors_from_to(&self->transaction_errors,
             &application->pending_harvest->errors);
-    nr__replace_pointers_in_errors (application->pending_harvest->errors);
-    nr_metric_table__clear (self->transaction->in_progress_metrics);
+    nr__replace_pointers_in_errors(application->pending_harvest->errors);
+    nr_metric_table__clear(self->transaction->in_progress_metrics);
 
     if (!keep_wt)
         nr_web_transaction__destroy(self->transaction);

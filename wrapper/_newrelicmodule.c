@@ -28,6 +28,7 @@
 #include "py_import_hook.h"
 
 #include "py_utilities.h"
+#include "py_log_file.h"
 
 #include "globals.h"
 #include "logging.h"
@@ -1713,6 +1714,8 @@ init_newrelic(void)
 
     /* Initialise type objects. */
 
+    if (PyType_Ready(&NRLogFile_Type) < 0)
+        return;
     if (PyType_Ready(&NRApplication_Type) < 0)
         return;
     if (PyType_Ready(&NRBackgroundTask_Type) < 0)
@@ -1804,6 +1807,9 @@ init_newrelic(void)
 
     /* Initialise type objects. */
 
+    Py_INCREF(&NRLogFile_Type);
+    PyModule_AddObject(module, "LogFile",
+                       (PyObject *)&NRLogFile_Type);
     Py_INCREF(&NRBackgroundTask_Type);
     PyModule_AddObject(module, "BackgroundTask",
                        (PyObject *)&NRBackgroundTask_Type);

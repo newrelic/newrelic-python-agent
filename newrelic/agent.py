@@ -132,13 +132,36 @@ def _process_setting(section, option, getter, mapper):
         value = getattr(_config_object, getter)(section, option)
     except ConfigParser.NoOptionError:
         pass
+    except:
+        value = _config_object.get(section, option)
+
+        log(LOG_ERROR, 'Configuration Error - Type Error.')
+        log(LOG_ERROR, 'Section = %s' % repr(section))
+        log(LOG_ERROR, 'Option = %s' % repr(option))
+        log(LOG_ERROR, 'Value = %s' % repr(value))
+        log(LOG_ERROR, 'Parser = %s' % repr(getter))
+
+        log_exception(*sys.exc_info())
+
+        raise ConfigurationError('Invalid configuration entry with '
+                'name %s and value %s. Check agent log file for '
+                'further details.' % (repr(option), repr(value)))
     else:
         try:
             if mapper:
                 value = mapper(value)
         except:
-            raise ValueError('Invalid configuration entry with name '
-                               '"%s" and value "%s".' % (option, value))
+            log(LOG_ERROR, 'Configuration Error - Value Error')
+            log(LOG_ERROR, 'Section = %s' % repr(section))
+            log(LOG_ERROR, 'Option = %s' % repr(option))
+            log(LOG_ERROR, 'Value = %s' % repr(value))
+            log(LOG_ERROR, 'Parser = %s' % repr(getter))
+
+            log_exception(*sys.exc_info())
+
+            raise ConfigurationError('Invalid configuration entry with '
+                    'name %s and value %s. Check agent log file for '
+                    'further details.' % (repr(option), repr(value)))
         else:
             target = _settings
             parts = string.splitfields(option, '.', 1) 
@@ -152,14 +175,21 @@ def _process_setting(section, option, getter, mapper):
             _config_global_settings.append((option, value))
 
 def _process_configuration(section):
-    _process_setting(section, 'app_name',
-                     'get', None)
-    _process_setting(section, 'monitor_mode',
-                     'getboolean', None)
+
+    # Must process log file entry first so that errors with
+    # the remainder will get logged if log file is defined.
+
     _process_setting(section, 'log_file',
                      'get', None)
     _process_setting(section, 'log_level',
                      'get', _map_log_level)
+
+    # Order of other available options doesn't matter.
+
+    _process_setting(section, 'app_name',
+                     'get', None)
+    _process_setting(section, 'monitor_mode',
+                     'getboolean', None)
     _process_setting(section, 'capture_params',
                      'getboolean', None)
     _process_setting(section, 'ignored_params',

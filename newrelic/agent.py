@@ -90,8 +90,8 @@ def wrap_function_profile(module, object_name, interesting=False, depth=5):
 
 _LOG_LEVEL = {
     'ERROR' : LOG_ERROR,
-    'INFO' : LOG_INFO,
     'WARNING': LOG_WARNING,
+    'INFO' : LOG_INFO,
     'VERBOSE' : LOG_VERBOSE,
     'DEBUG' : LOG_DEBUG,
     'VERBOSEDEBUG': LOG_VERBOSEDEBUG,

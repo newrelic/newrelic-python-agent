@@ -24,8 +24,9 @@ def _raise_instrumentation_error(type, locals):
 
     _newrelic.log_exception(*sys.exc_info())
 
-    raise _newrelic.InstrumentationError('Failure when instrumenting code. '
-            'Check New Relic agent log file for further details.')
+    if not newrelic.config.config_ignore_errors:
+        raise _newrelic.InstrumentationError('Failure when instrumenting code. '
+                'Check New Relic agent log file for further details.')
 
 def _raise_configuration_error(section, options):
     options = config_object.options(section)

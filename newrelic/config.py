@@ -189,9 +189,9 @@ def load_configuration(file=None, environment=None, ignore_errors=True):
     if not file:
         file = os.environ.get('NEWRELIC_CONFIG_FILE', None)
         environment = os.environ.get('NEWRELIC_ENVIRONMENT', None)
-        errors = os.environ.get('NEWRELIC_CONFIG_ERRORS', 'ignore')
+        errors = os.environ.get('NEWRELIC_EXCEPTIONS', '')
 
-        if errors.lower() == 'abort':
+        if errors.lower() == 'raise':
             config_ignore_errors = False
         else:
             config_ignore_errors = True

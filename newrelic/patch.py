@@ -1,4 +1,5 @@
 import sys
+import string
 import ConfigParser
 
 import _newrelic
@@ -23,9 +24,8 @@ def _module_import_hook(module, function):
             newrelic.utils.importlib.import_object(module, function)(target)
 
         except:
-
             _newrelic.log(_newrelic.LOG_ERROR, 'INSTRUMENTATION ERROR')
-            _newrelic.log(_newrelic.LOG_ERROR, 'Action = import-hook'
+            _newrelic.log(_newrelic.LOG_ERROR, 'Action = import-hook')
             _newrelic.log(_newrelic.LOG_ERROR, 'Module = %s' % repr(target))
             _newrelic.log(_newrelic.LOG_ERROR, 'Execute = %s:%s' % (
                     module, function))
@@ -41,30 +41,59 @@ def _module_import_hook(module, function):
 
 def _process_module_configuration():
     for section in newrelic.config.config_object.sections():
-        if section.startswith('import-hook:'):
-            target = section.split(':')[1]
+        if not section.startswith('import-hook:'):
+            continue
+
+        target = string.splitfields(section, ':', 1)[1]
+
+        try:
+            enabled = newrelic.config.config_object.getboolean(
+                    section, 'enabled')
+
+        except ConfigParser.NoOptionError:
+            pass
+
+        except:
+            value = newrelic.config.config_object.get(section, 'enabled')
+
+            _newrelic.log(_newrelic.LOG_ERROR, 'CONFIGURATION ERROR')
+            _newrelic.log(_newrelic.LOG_ERROR, 'Section = %s' % repr(section))
+            _newrelic.log(_newrelic.LOG_ERROR, 'Option = %s' % repr('enabled'))
+            _newrelic.log(_newrelic.LOG_ERROR, 'Value = %s' % repr(value))
+            _newrelic.log(_newrelic.LOG_ERROR, 'Parser = %s' %
+                    repr(newrelic.config.config_object.getboolean))
+
+            _newrelic.log_exception(*sys.exc_info())
+
+            if not newrelic.config.config_ignore_errors:
+                raise _newrelic.ConfigurationError('Invalid configuration '
+                        'entry with name %s and value %s. Check New Relic '
+                        'agent log file for further details.' %
+                        (repr('enabled'), repr(value)))
+
+        else:
+            if not enabled:
+                continue
+
             try:
-                enabled = newrelic.config.config_object.getboolean(
-                        section, 'enabled')
+                parts = string.splitfields(
+                        newrelic.config.config_object.get(
+                        section, 'execute'), ':', 1)
+
             except ConfigParser.NoOptionError:
                 pass
+
             else:
-                if enabled:
-                    try:
-                        parts = newrelic.config.config_object.get(
-                                section, 'execute').split(':')
-                    except ConfigParser.NoOptionError:
-                        pass
-                    else:
-                        module = parts[0]
-                        function = 'instrument'
-                        if len(parts) != 1:
-                            function = parts[1]
-                        _newrelic.register_import_hook(target,
-                                _module_import_hook(module, function))
-                        _newrelic.log(_newrelic.LOG_INFO,
-                                "register module %s" % ((target,
-                                module, function),))
+                module = parts[0]
+                function = 'instrument'
+                if len(parts) != 1:
+                    function = parts[1]
+
+                _newrelic.log(_newrelic.LOG_INFO, "register module %s" %
+                        ((target, module, function),))
+
+                _newrelic.register_import_hook(target,
+                        _module_import_hook(module, function))
 
 # Setup wsgi application wrapper defined in configuration file.
 
@@ -395,18 +424,49 @@ def _process_function_profile_configuration():
 
 def _process_module_definition(target, module, function='instrument'):
     enabled = True
+    execute = None
+
     section = 'import-hook:%s' % target
+
     if newrelic.config.config_object.has_section(section):
         try:
             enabled = newrelic.config.config_object.getboolean(
                     section, 'enabled')
+
         except ConfigParser.NoOptionError:
             pass
-    if enabled and not newrelic.config.config_object.has_option(
-            section, 'execute'):
-        _newrelic.register_import_hook(target, _module_import_hook(module, function))
-        _newrelic.log(_newrelic.LOG_INFO, "register import-hook %s" % ((target,
-                module, function),))
+
+        except:
+            value = newrelic.config.config_object.get(section, 'enabled')
+
+            _newrelic.log(_newrelic.LOG_ERROR, 'CONFIGURATION ERROR')
+            _newrelic.log(_newrelic.LOG_ERROR, 'Section = %s' % repr(section))
+            _newrelic.log(_newrelic.LOG_ERROR, 'Option = %s' % repr('enabled'))
+            _newrelic.log(_newrelic.LOG_ERROR, 'Value = %s' % repr(value))
+            _newrelic.log(_newrelic.LOG_ERROR, 'Parser = %s' %
+                    repr(newrelic.config.config_object.getboolean))
+
+            _newrelic.log_exception(*sys.exc_info())
+
+            if not newrelic.config.config_ignore_errors:
+                raise _newrelic.ConfigurationError('Invalid configuration '
+                        'entry with name %s and value %s. Check New Relic '
+                        'agent log file for further details.' %
+                        (repr('enabled'), repr(value)))
+
+        try:
+            execute = newrelic.config.config_object.get(
+                    section, 'execute')
+
+        except ConfigParser.NoOptionError:
+            pass
+
+    if enabled and not execute:
+        _newrelic.log(_newrelic.LOG_INFO, "register import-hook %s" %
+                ((target, module, function),))
+
+        _newrelic.register_import_hook(target,
+                _module_import_hook(module, function))
 
 def _process_module_builtin_defaults():
     _process_module_definition('django.core.handlers.base',

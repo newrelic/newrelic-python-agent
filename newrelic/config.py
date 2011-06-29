@@ -256,3 +256,8 @@ def load_configuration(file=None, environment=None, ignore_errors=True):
     for option, value in _config_global_settings:
         _newrelic.log(_newrelic.LOG_INFO, "agent config %s=%s" %
                 (option, repr(value)))
+
+def filter_app_factory(app, global_conf, config_file, environment=None):
+    load_configuration(config_file, environment)
+    import newrelic.agent
+    return newrelic.agent.WSGIApplicationWrapper(app)

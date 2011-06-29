@@ -2,7 +2,7 @@ import sys
 import os
 
 from _newrelic import *
-from newrelic.profile import *
+from newrelic.tools.profile import *
 
 import newrelic.config
 import newrelic.patch

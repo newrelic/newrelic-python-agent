@@ -97,6 +97,8 @@ packages = [
   "newrelic.imports.memcache",
   "newrelic.imports.template",
   "newrelic.deploy",
+  "newrelic.tools",
+  "newrelic.utils",
 ]
 
 setup(

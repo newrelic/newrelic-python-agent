@@ -11,9 +11,9 @@ __all__ = [ 'FunctionProfile', 'FunctionProfileWrapper', 'function_profile',
 # transaction.
 #
 # Don't use this submodule directly, use the names listed above which
-# are import automatically into the 'newrelic.agent' submodule. It is
+# are imported automatically into the 'newrelic.agent' submodule. It is
 # those names which will persist if this is retained and moved into a C
-# code implementation.
+# code implementation. No guarantees this feature will be kept though.
 #
 # Note that this is currently triggering a time calculation bug within
 # the core agent library code in some circumstances.

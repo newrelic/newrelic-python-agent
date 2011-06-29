@@ -82,7 +82,8 @@ packages = [
   "newrelic.imports.framework",
   "newrelic.imports.memcache",
   "newrelic.imports.template",
-  "newrelic.deploy",
+  "newrelic.tools",
+  "newrelic.utils",
 ]
 
 distutils.core.setup(

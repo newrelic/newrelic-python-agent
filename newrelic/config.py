@@ -90,7 +90,7 @@ def _process_setting(section, option, getter, mapper):
 
         value = config_object.get(section, option)
 
-        _newrelic.log(_newrelic.LOG_ERROR, 'Configuration Error')
+        _newrelic.log(_newrelic.LOG_ERROR, 'CONFIGURATION ERROR')
         _newrelic.log(_newrelic.LOG_ERROR, 'Section = %s' % repr(section))
         _newrelic.log(_newrelic.LOG_ERROR, 'Option = %s' % repr(option))
         _newrelic.log(_newrelic.LOG_ERROR, 'Value = %s' % repr(value))
@@ -99,8 +99,8 @@ def _process_setting(section, option, getter, mapper):
         _newrelic.log_exception(*sys.exc_info())
 
         raise _newrelic.ConfigurationError('Invalid configuration entry '
-                'with name %s and value %s. Check agent log file for '
-                'further details.' % (repr(option), repr(value)))
+                'with name %s and value %s. Check New Relic agent log '
+                'file for further details.' % (repr(option), repr(value)))
 
     else:
 	# The getter parsed the value okay but want to
@@ -117,7 +117,7 @@ def _process_setting(section, option, getter, mapper):
 	    # Get here and value wasn't within the restricted
 	    # range of values as defined by mapping function.
 
-            _newrelic.log(_newrelic.LOG_ERROR, 'Configuration Error')
+            _newrelic.log(_newrelic.LOG_ERROR, 'CONFIGURATION ERROR')
             _newrelic.log(_newrelic.LOG_ERROR, 'Section = %s' % repr(section))
             _newrelic.log(_newrelic.LOG_ERROR, 'Option = %s' % repr(option))
             _newrelic.log(_newrelic.LOG_ERROR, 'Value = %s' % repr(value))
@@ -126,8 +126,8 @@ def _process_setting(section, option, getter, mapper):
             _newrelic.log_exception(*sys.exc_info())
 
             raise _newrelic.ConfigurationError('Invalid configuration entry '
-                    'with name %s and value %s. Check agent log file for '
-                    'further details.' % (repr(option), repr(value)))
+                    'with name %s and value %s. Check New Relic agent log '
+                    'file for further details.' % (repr(option), repr(value)))
 
         else:
 	    # Now need to apply the option from the

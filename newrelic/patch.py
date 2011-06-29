@@ -96,7 +96,7 @@ def _process_module_configuration():
 def _wsgi_application_import_hook(object_path, application):
     def _instrument(target):
         _newrelic.log(_newrelic.LOG_INFO, "wrap wsgi-application %s" %
-                ((object_path, application),))
+                ((target, object_path, application),))
 
         try:
             _newrelic.wrap_wsgi_application(target, object_path, application)
@@ -145,7 +145,7 @@ def _process_wsgi_application_configuration():
 def _background_task_import_hook(object_path, application, name, scope):
     def _instrument(target):
         _newrelic.log(_newrelic.LOG_INFO, "wrap background-task %s" %
-                ((object_path, application, name, scope),))
+                ((target, object_path, application, name, scope),))
 
         try:
             _newrelic.wrap_background_task(target, object_path,
@@ -205,7 +205,7 @@ def _process_background_task_configuration():
 def _database_trace_import_hook(object_path, sql):
     def _instrument(target):
         _newrelic.log(_newrelic.LOG_INFO, "wrap database-trace %s" %
-                ((object_path, sql),))
+                ((target, object_path, sql),))
 
         try:
             _newrelic.wrap_database_trace(target, object_path, sql)
@@ -254,7 +254,7 @@ def _process_database_trace_configuration():
 def _external_trace_import_hook(object_path, library, url):
     def _instrument(target):
         _newrelic.log(_newrelic.LOG_INFO, "wrap external-trace %s" %
-                ((object_path, library, url),))
+                ((target, object_path, library, url),))
 
         try:
             _newrelic.wrap_external_trace(target, object_path, library, url)
@@ -304,7 +304,7 @@ def _process_external_trace_configuration():
 def _function_trace_import_hook(object_path, name, scope, interesting):
     def _instrument(target):
         _newrelic.log(_newrelic.LOG_INFO, "wrap function-trace %s" %
-                ((object_path, name, scope, interesting),))
+                ((target, object_path, name, scope, interesting),))
 
         try:
             _newrelic.wrap_function_trace(target, object_path, name,
@@ -364,7 +364,7 @@ def _process_function_trace_configuration():
 def _memcache_trace_import_hook(object_path, command):
     def _instrument(target):
         _newrelic.log(_newrelic.LOG_INFO, "wrap memcache-trace %s" %
-                ((object_path, command),))
+                ((target, object_path, command),))
 
         try:
             _newrelic.wrap_memcache_trace(target, object_path, command)
@@ -413,7 +413,7 @@ def _process_memcache_trace_configuration():
 def _name_transaction_import_hook(object_path, name, scope):
     def _instrument(target):
         _newrelic.log(_newrelic.LOG_INFO, "wrap name-transaction %s" %
-                ((object_path, name, scope),))
+                ((target, object_path, name, scope),))
 
         try:
             _newrelic.wrap_name_transaction(target, object_path, name, scope)
@@ -469,7 +469,7 @@ def _process_name_transaction_configuration():
 def _error_trace_import_hook(object_path, ignore_errors):
     def _instrument(target):
         _newrelic.log(_newrelic.LOG_INFO, "wrap error-trace %s" %
-                ((object_path, ignore_errors),))
+                ((target, object_path, ignore_errors),))
 
         try:
             _newrelic.wrap_error_trace(target, object_path, ignore_errors)
@@ -518,7 +518,7 @@ def _process_error_trace_configuration():
 def _function_profile_import_hook(object_path, interesting, depth):
     def _instrument(target):
         _newrelic.log(_newrelic.LOG_INFO, "wrap function-profile %s" %
-                ((object_path, interesting, depth),))
+                ((target, object_path, interesting, depth),))
 
         try:
             newrelic.tools.profile.wrap_function_profile(target,

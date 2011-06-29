@@ -50,7 +50,6 @@ def _module_import_hook(module, function):
 
         try:
             newrelic.utils.importlib.import_object(module, function)(target)
-
         except:
             _raise_instrumentation_error('import-hook', locals())
 
@@ -63,14 +62,10 @@ def _process_module_configuration():
 
         enabled = False
 
-        target = string.splitfields(section, ':', 1)[1]
-
         try:
             enabled = config_object.getboolean(section, 'enabled')
-
         except ConfigParser.NoOptionError:
-            continue
-
+            pass
         except:
             _raise_configuration_error(section)
 
@@ -79,22 +74,21 @@ def _process_module_configuration():
 
         try:
             execute = config_object.get(section, 'execute')
-
-        except ConfigParser.NoOptionError:
-            pass
-
-        else:
-            parts = string.splitfields(execute, ':', 1)
-            module = parts[0]
+            fields = string.splitfields(execute, ':', 1)
+            module = fields[0]
             function = 'instrument'
-            if len(parts) != 1:
-                function = parts[1]
+            if len(fields) != 1:
+                function = fields[1]
+
+            target = string.splitfields(section, ':', 1)[1]
 
             _newrelic.log(_newrelic.LOG_INFO, "register module %s" %
                     ((target, module, function),))
 
             hook = _module_import_hook(module, function)
             _newrelic.register_import_hook(target, hook)
+        except:
+            _raise_configuration_error(section)
 
 # Setup wsgi application wrapper defined in configuration file.
 
@@ -105,17 +99,8 @@ def _wsgi_application_import_hook(object_path, application):
 
         try:
             _newrelic.wrap_wsgi_application(target, object_path, application)
-
         except:
-            _newrelic.log(_newrelic.LOG_ERROR, 'INSTRUMENTATION ERROR')
-            _newrelic.log(_newrelic.LOG_ERROR, 'Action = wsgi-application')
-            _newrelic.log(_newrelic.LOG_ERROR, 'Locals = %s' % locals())
-
-            _newrelic.log_exception(*sys.exc_info())
-
-            raise _newrelic.InstrumentationError('Error wrapping WSGI '
-                    'application "%s:%s". Check New Relic agent log file '
-                    'for further details.' % (target, object_path))
+            _raise_instrumentation_error('wsgi-application', locals())
 
     return _instrument
 
@@ -124,63 +109,35 @@ def _process_wsgi_application_configuration():
         if not section.startswith('wsgi-application:'):
             continue
 
+        enabled = False
+
         try:
             enabled = config_object.getboolean(section, 'enabled')
-            function = config_object.get(section, 'function')
-
         except ConfigParser.NoOptionError:
-            continue
-
+            pass
         except:
-            value = config_object.get(section, 'enabled')
-
-            _newrelic.log(_newrelic.LOG_ERROR, 'CONFIGURATION ERROR')
-            _newrelic.log(_newrelic.LOG_ERROR, 'Section = %s' % section)
-            _newrelic.log(_newrelic.LOG_ERROR, 'Option = enabled')
-            _newrelic.log(_newrelic.LOG_ERROR, 'Value = %s' % value)
-
-            _newrelic.log_exception(*sys.exc_info())
-
-            if not newrelic.config.config_ignore_errors:
-                raise _newrelic.ConfigurationError('Invalid configuration '
-                        'entry with name "enabled" and value "%s". Check New '
-                        'Relic agent log file for further details.' % value)
-
-            continue
+            _raise_configuration_error(section)
 
         if not enabled:
             continue
 
         try:
+            function = config_object.get(section, 'function')
             (module, object_path) = string.splitfields(function, ':', 1)
 
+            application = None
+
+            if config_object.has_option(section, 'application'):
+                application = config_object.get(section, 'application')
+
+            _newrelic.log(_newrelic.LOG_INFO,
+                    "register wsgi-application %s" % ((module,
+                    object_path, application),))
+
+            hook = _wsgi_application_import_hook(object_path, application)
+            _newrelic.register_import_hook(module, hook)
         except:
-            _newrelic.log(_newrelic.LOG_ERROR, 'CONFIGURATION ERROR')
-            _newrelic.log(_newrelic.LOG_ERROR, 'Section = %s' % section)
-            _newrelic.log(_newrelic.LOG_ERROR, 'Option = function')
-            _newrelic.log(_newrelic.LOG_ERROR, 'Value = %s' % function)
-
-            _newrelic.log_exception(*sys.exc_info())
-
-            if not newrelic.config.config_ignore_errors:
-                raise _newrelic.ConfigurationError('Invalid configuration '
-                        'entry with name "function" and value "%s". Check '
-                        'New Relic agent log file for further details.' %
-                        function)
-
-            continue
-
-        application = None
-
-        if config_object.has_option(section, 'application'):
-            application = config_object.get(section, 'application')
-
-        _newrelic.log(_newrelic.LOG_INFO,
-                "register wsgi-application %s" % ((module,
-                object_path, application),))
-
-        hook = _wsgi_application_import_hook(object_path, application)
-        _newrelic.register_import_hook(module, hook)
+            _raise_configuration_error(section)
 
 # Setup background task wrapper defined in configuration file.
 
@@ -192,18 +149,8 @@ def _background_task_import_hook(object_path, application, name, scope):
         try:
             _newrelic.wrap_background_task(target, object_path,
                     application, name, scope)
-
         except:
-            _newrelic.log(_newrelic.LOG_ERROR, 'INSTRUMENTATION ERROR')
-            _newrelic.log(_newrelic.LOG_ERROR, 'Action = background-task')
-            _newrelic.log(_newrelic.LOG_ERROR, 'Locals = %s' % locals())
-
-
-            _newrelic.log_exception(*sys.exc_info())
-
-            raise _newrelic.InstrumentationError('Error wrapping background '
-                    'task "%s:%s". Check New Relic agent log file '
-                    'for further details.' % (target, object_path))
+            _raise_instrumentation_error('background-task', locals())
 
     return _instrument
 
@@ -212,92 +159,45 @@ def _process_background_task_configuration():
         if not section.startswith('background-task:'):
             continue
 
+        enabled = False
+
         try:
             enabled = config_object.getboolean(section, 'enabled')
-            function = config_object.get(section, 'function')
-
         except ConfigParser.NoOptionError:
             pass
-
         except:
-            value = config_object.get(section, 'enabled')
-
-            _newrelic.log(_newrelic.LOG_ERROR, 'CONFIGURATION ERROR')
-            _newrelic.log(_newrelic.LOG_ERROR, 'Section = %s' % section)
-            _newrelic.log(_newrelic.LOG_ERROR, 'Option = enabled')
-            _newrelic.log(_newrelic.LOG_ERROR, 'Value = %s' % value)
-
-            _newrelic.log_exception(*sys.exc_info())
-
-            if not newrelic.config.config_ignore_errors:
-                raise _newrelic.ConfigurationError('Invalid configuration '
-                        'entry with name "enabled" and value "%s". Check New '
-                        'Relic agent log file for further details.' % value)
-
-            continue
+            _raise_configuration_error(section)
 
         if not enabled:
             continue
 
         try:
+            function = config_object.get(section, 'function')
             (module, object_path) = string.splitfields(function, ':', 1)
 
-        except:
-            _newrelic.log(_newrelic.LOG_ERROR, 'CONFIGURATION ERROR')
-            _newrelic.log(_newrelic.LOG_ERROR, 'Section = %s' % section)
-            _newrelic.log(_newrelic.LOG_ERROR, 'Option = function')
-            _newrelic.log(_newrelic.LOG_ERROR, 'Value = %s' % function)
+            application = None
+            name = None
+            scope = 'Function'
 
-            _newrelic.log_exception(*sys.exc_info())
+            if config_object.has_option(section, 'application'):
+                application = config_object.get(section, 'application')
+            if config_object.has_option(section, 'name'):
+                name = config_object.get(section, 'name')
+            if config_object.has_option(section, 'scope'):
+                scope = config_object.get(section, 'scope')
 
-            if not newrelic.config.config_ignore_errors:
-                raise _newrelic.ConfigurationError('Invalid configuration '
-                        'entry with name "function" and value "%s". Check '
-                        'New Relic agent log file for further details.' %
-                        function)
-
-            continue
-
-        application = None
-        name = None
-        scope = 'Function'
-
-        if config_object.has_option(section, 'application'):
-            application = config_object.get(section, 'application')
-        if config_object.has_option(section, 'name'):
-            name = config_object.get(section, 'name')
-        if config_object.has_option(section, 'scope'):
-            scope = config_object.get(section, 'scope')
-
-        if name and name.startswith('lambda '):
-            vars = { "callable_name": _newrelic.callable_name,
-                     "import_module": newrelic.utils.importlib.import_module,
-                     "import_object": newrelic.utils.importlib.import_object, }
-            try:
+            if name and name.startswith('lambda '):
+                vars = { "callable_name": _newrelic.callable_name }
                 name = eval(name, vars)
 
-            except:
-                _newrelic.log(_newrelic.LOG_ERROR, 'CONFIGURATION ERROR')
-                _newrelic.log(_newrelic.LOG_ERROR, 'Section = %s' % section)
-                _newrelic.log(_newrelic.LOG_ERROR, 'Option = name')
-                _newrelic.log(_newrelic.LOG_ERROR, 'Value = %s' % name)
+            _newrelic.log(_newrelic.LOG_INFO, "register background-task %s" %
+                    ((module, object_path, application, name, scope),))
 
-                _newrelic.log_exception(*sys.exc_info())
-
-                if not newrelic.config.config_ignore_errors:
-                    raise _newrelic.ConfigurationError('Invalid configuration '
-                            'entry with name "name" and value "%s". Check '
-                            'New Relic agent log file for further details.' %
-                            name)
-
-                continue
-
-        _newrelic.log(_newrelic.LOG_INFO, "register background-task %s" %
-                ((module, object_path, application, name, scope),))
-
-        hook = _background_task_import_hook(object_path,
-                application, name, scope)
-        _newrelic.register_import_hook(module, hook)
+            hook = _background_task_import_hook(object_path,
+                  application, name, scope)
+            _newrelic.register_import_hook(module, hook)
+        except:
+            _raise_configuration_error(section)
 
 # Setup database traces defined in configuration file.
 
@@ -308,18 +208,8 @@ def _database_trace_import_hook(object_path, sql):
 
         try:
             _newrelic.wrap_database_trace(target, object_path, sql)
-
         except:
-            _newrelic.log(_newrelic.LOG_ERROR, 'INSTRUMENTATION ERROR')
-            _newrelic.log(_newrelic.LOG_ERROR, 'Action = database-trace')
-            _newrelic.log(_newrelic.LOG_ERROR, 'Locals = %s' % locals())
-
-
-            _newrelic.log_exception(*sys.exc_info())
-
-            raise _newrelic.InstrumentationError('Error wrapping database '
-                    'trace "%s:%s". Check New Relic agent log file '
-                    'for further details.' % (target, object_path))
+            _raise_instrumentation_error('database-trace', locals())
 
     return _instrument
 
@@ -328,308 +218,379 @@ def _process_database_trace_configuration():
         if not section.startswith('database-trace:'):
             continue
 
+        enabled = False
+
         try:
             enabled = config_object.getboolean(section, 'enabled')
-            function = config_object.get(section, 'function')
-            sql = config_object.get(section, 'sql')
-
         except ConfigParser.NoOptionError:
             pass
-
         except:
-            options = config_object.options(section)
+            _raise_configuration_error(section)
 
-            _newrelic.log(_newrelic.LOG_ERROR, 'CONFIGURATION ERROR')
-            _newrelic.log(_newrelic.LOG_ERROR, 'Section = %s' % section)
-            _newrelic.log(_newrelic.LOG_ERROR, 'Options = %s' % options)
-
-            _newrelic.log_exception(*sys.exc_info())
-
-            if not newrelic.config.config_ignore_errors:
-                raise _newrelic.ConfigurationError('Invalid configuration '
-                        'for section "%s". Check New Relic agent log file '
-                        'for further details.' % section)
-
+        if not enabled:
             continue
 
-        else:
-            if enabled:
-                parts = function.split(':')
-                if len(parts) == 2:
-                    module, object_path = parts
-                    if sql.startswith('lambda '):
-                        vars = { "callable_name": _newrelic.callable_name,
-                                 "import_module": _newrelic.import_module, }
-                        sql = eval(sql, vars)
-                    hook = _database_trace_import_hook(object_path, sql)
-                    _newrelic.register_import_hook(module, hook)
-                    _newrelic.log(_newrelic.LOG_INFO, "register database-trace %s" % ((module,
-                            object_path, sql),))
+        try:
+            function = config_object.get(section, 'function')
+            (module, object_path) = string.splitfields(function, ':', 1)
+
+            sql = config_object.get(section, 'sql')
+
+            if sql.startswith('lambda '):
+                vars = { "callable_name": _newrelic.callable_name }
+                sql = eval(sql, vars)
+
+            _newrelic.log(_newrelic.LOG_INFO, "register database-trace %s" %
+                    ((module, object_path, sql),))
+
+            hook = _database_trace_import_hook(object_path, sql)
+            _newrelic.register_import_hook(module, hook)
+        except:
+            _raise_configuration_error(section)
 
 # Setup external traces defined in configuration file.
 
 def _external_trace_import_hook(object_path, library, url):
     def _instrument(target):
-        _newrelic.log(_newrelic.LOG_INFO, "wrap external-trace %s" % ((object_path,
-                library, url),))
-        _newrelic.wrap_external_trace(target, object_path, library, url)
+        _newrelic.log(_newrelic.LOG_INFO, "wrap external-trace %s" %
+                ((object_path, library, url),))
+
+        try:
+            _newrelic.wrap_external_trace(target, object_path, library, url)
+        except:
+            _raise_instrumentation_error('external-trace', locals())
+
     return _instrument
 
 def _process_external_trace_configuration():
     for section in config_object.sections():
-        if section.startswith('external-trace:'):
-            try:
-                enabled = config_object.getboolean(section, 'enabled')
-                function = config_object.get(section, 'function')
-                library = config_object.get(section, 'library')
-                url = config_object.get(section, 'url')
-            except ConfigParser.NoOptionError:
-                pass
-            else:
-                if enabled:
-                    parts = function.split(':')
-                    if len(parts) == 2:
-                        module, object_path = parts
-                        if url.startswith('lambda '):
-                            vars = { "callable_name": _newrelic.callable_name,
-                                     "import_module": _newrelic.import_module, }
-                            url = eval(url, vars)
-                        hook = _external_trace_import_hook(object_path, library,
-                                                           url)
-                        _newrelic.register_import_hook(module, hook)
-                        _newrelic.log(_newrelic.LOG_INFO, "register external-trace %s" % ((module,
-                                object_path, library, url),))
+        if not section.startswith('external-trace:'):
+            continue
+
+        enabled = False
+
+        try:
+            enabled = config_object.getboolean(section, 'enabled')
+        except ConfigParser.NoOptionError:
+            pass
+        except:
+            _raise_configuration_error(section)
+
+        if not enabled:
+            continue
+
+        try:
+            function = config_object.get(section, 'function')
+            (module, object_path) = string.splitfields(function, ':', 1)
+
+            library = config_object.get(section, 'library')
+            url = config_object.get(section, 'url')
+
+            if url.startswith('lambda '):
+                vars = { "callable_name": _newrelic.callable_name }
+                url = eval(url, vars)
+
+            _newrelic.log(_newrelic.LOG_INFO, "register external-trace %s" %
+                    ((module, object_path, library, url),))
+
+            hook = _external_trace_import_hook(object_path, library, url)
+            _newrelic.register_import_hook(module, hook)
+        except:
+            _raise_configuration_error(section)
 
 # Setup function traces defined in configuration file.
 
 def _function_trace_import_hook(object_path, name, scope, interesting):
     def _instrument(target):
-        _newrelic.log(_newrelic.LOG_INFO, "wrap function-trace %s" % ((object_path,
-                name, scope, interesting),))
-        _newrelic.wrap_function_trace(target, object_path, name, scope, interesting)
+        _newrelic.log(_newrelic.LOG_INFO, "wrap function-trace %s" %
+                ((object_path, name, scope, interesting),))
+
+        try:
+            _newrelic.wrap_function_trace(target, object_path, name,
+                    scope, interesting)
+        except:
+            _raise_instrumentation_error('function-trace', locals())
+
     return _instrument
 
 def _process_function_trace_configuration():
     for section in config_object.sections():
-        if section.startswith('function-trace:'):
-            try:
-                enabled = config_object.getboolean(section, 'enabled')
-                function = config_object.get(section, 'function')
-            except ConfigParser.NoOptionError:
-                pass
-            else:
-                if enabled:
-                    name = None
-                    scope = 'Function'
-                    interesting = True
+        if not section.startswith('function-trace:'):
+            continue
 
-                    if config_object.has_option(section, 'name'):
-                        name = config_object.get(section, 'name')
-                    if config_object.has_option(section, 'scope'):
-                        scope = config_object.get(section, 'scope')
-                    if config_object.has_option(section, 'interesting'):
-                        interesting = config_object.getboolean(section,
-                                                                'interesting')
+        enabled = False
 
-                    parts = function.split(':')
-                    if len(parts) == 2:
-                        module, object_path = parts
-                        if name and name.startswith('lambda '):
-                            vars = { "callable_name": _newrelic.callable_name,
-                                     "import_module": _newrelic.import_module, }
-                            name = eval(name, vars)
-                        hook = _function_trace_import_hook(object_path, name,
-                                                           scope, interesting)
-                        _newrelic.register_import_hook(module, hook)
-                        _newrelic.log(_newrelic.LOG_INFO, "register function-trace %s" % ((module,
-                                object_path, name, scope, interesting),))
+        try:
+            enabled = config_object.getboolean(section, 'enabled')
+        except ConfigParser.NoOptionError:
+            pass
+        except:
+            _raise_configuration_error(section)
+
+        if not enabled:
+            continue
+
+        try:
+            function = config_object.get(section, 'function')
+            (module, object_path) = string.splitfields(function, ':', 1)
+
+            name = None
+            scope = 'Function'
+            interesting = True
+
+            if config_object.has_option(section, 'name'):
+                name = config_object.get(section, 'name')
+            if config_object.has_option(section, 'scope'):
+                scope = config_object.get(section, 'scope')
+            if config_object.has_option(section, 'interesting'):
+                interesting = config_object.getboolean(section, 'interesting')
+
+            if name and name.startswith('lambda '):
+                vars = { "callable_name": _newrelic.callable_name }
+                name = eval(name, vars)
+
+            _newrelic.log(_newrelic.LOG_INFO, "register function-trace %s" %
+                    ((module, object_path, name, scope, interesting),))
+
+            hook = _function_trace_import_hook(object_path, name,
+                                               scope, interesting)
+            _newrelic.register_import_hook(module, hook)
+        except:
+            _raise_configuration_error(section)
 
 # Setup memcache traces defined in configuration file.
 
 def _memcache_trace_import_hook(object_path, command):
     def _instrument(target):
-        _newrelic.log(_newrelic.LOG_INFO, "wrap memcache-trace %s" % ((object_path, command),))
-        _newrelic.wrap_memcache_trace(target, object_path, command)
+        _newrelic.log(_newrelic.LOG_INFO, "wrap memcache-trace %s" %
+                ((object_path, command),))
+
+        try:
+            _newrelic.wrap_memcache_trace(target, object_path, command)
+        except:
+            _raise_instrumentation_error('memcache-trace', locals())
+
     return _instrument
 
 def _process_memcache_trace_configuration():
     for section in config_object.sections():
-        if section.startswith('memcache-trace:'):
-            try:
-                enabled = config_object.getboolean(section, 'enabled')
-                function = config_object.get(section, 'function')
-                command = config_object.get(section, 'command')
-            except ConfigParser.NoOptionError:
-                pass
-            else:
-                if enabled:
-                    parts = function.split(':')
-                    if len(parts) == 2:
-                        module, object_path = parts
-                        if command.startswith('lambda '):
-                            vars = { "callable_name": _newrelic.callable_name,
-                                     "import_module": _newrelic.import_module, }
-                            command = eval(command, vars)
-                        hook = _memcache_trace_import_hook(object_path, command)
-                        _newrelic.register_import_hook(module, hook)
-                        _newrelic.log(_newrelic.LOG_INFO, "register memcache-trace %s" % ((module,
-                                object_path, command),))
+        if not section.startswith('memcache-trace:'):
+            continue
+
+        enabled = False
+
+        try:
+            enabled = config_object.getboolean(section, 'enabled')
+        except ConfigParser.NoOptionError:
+            pass
+        except:
+            _raise_configuration_error(section)
+
+        if not enabled:
+            continue
+
+        try:
+            function = config_object.get(section, 'function')
+            (module, object_path) = string.splitfields(function, ':', 1)
+
+            command = config_object.get(section, 'command')
+
+            if command.startswith('lambda '):
+                vars = { "callable_name": _newrelic.callable_name }
+                command = eval(command, vars)
+
+            _newrelic.log(_newrelic.LOG_INFO, "register memcache-trace %s" %
+                    ((module, object_path, command),))
+
+            hook = _memcache_trace_import_hook(object_path, command)
+            _newrelic.register_import_hook(module, hook)
+        except:
+            _raise_configuration_error(section)
 
 # Setup name transaction wrapper defined in configuration file.
 
 def _name_transaction_import_hook(object_path, name, scope):
     def _instrument(target):
-        _newrelic.log(_newrelic.LOG_INFO, "wrap name-transaction %s" % ((object_path,
-                name, scope),))
-        _newrelic.wrap_name_transaction(target, object_path, name, scope)
+        _newrelic.log(_newrelic.LOG_INFO, "wrap name-transaction %s" %
+                ((object_path, name, scope),))
+
+        try:
+            _newrelic.wrap_name_transaction(target, object_path, name, scope)
+        except:
+            _raise_instrumentation_error('name-transaction', locals())
+
     return _instrument
 
 def _process_name_transaction_configuration():
     for section in config_object.sections():
-        if section.startswith('name-transaction:'):
-            try:
-                enabled = config_object.getboolean(section, 'enabled')
-                function = config_object.get(section, 'function')
-            except ConfigParser.NoOptionError:
-                pass
-            else:
-                if enabled:
-                    name = None
-                    scope = 'Function'
+        if not section.startswith('name-transaction:'):
+            continue
 
-                    if config_object.has_option(section, 'name'):
-                        name = config_object.get(section, 'name')
-                    if config_object.has_option(section, 'scope'):
-                        scope = config_object.get(section, 'scope')
+        enabled = False
 
-                    parts = function.split(':')
-                    if len(parts) == 2:
-                        module, object_path = parts
-                        if name and name.startswith('lambda '):
-                            vars = { "callable_name": _newrelic.callable_name,
-                                     "import_module": _newrelic.import_module, }
-                            name = eval(name, vars)
-                        hook = _name_transaction_import_hook(object_path, name,
-                                                             scope)
-                        _newrelic.register_import_hook(module, hook)
-                        _newrelic.log(_newrelic.LOG_INFO, "register name-transaction %s" % ((module,
-                                object_path, name, scope),))
+        try:
+            enabled = config_object.getboolean(section, 'enabled')
+        except ConfigParser.NoOptionError:
+            pass
+        except:
+            _raise_configuration_error(section)
+
+        if not enabled:
+            continue
+
+        try:
+            function = config_object.get(section, 'function')
+            (module, object_path) = string.splitfields(function, ':', 1)
+
+            name = None
+            scope = 'Function'
+
+            if config_object.has_option(section, 'name'):
+                name = config_object.get(section, 'name')
+            if config_object.has_option(section, 'scope'):
+                scope = config_object.get(section, 'scope')
+
+            if name and name.startswith('lambda '):
+                vars = { "callable_name": _newrelic.callable_name }
+                name = eval(name, vars)
+
+            _newrelic.log(_newrelic.LOG_INFO, "register name-transaction %s" %
+                    ((module, object_path, name, scope),))
+
+            hook = _name_transaction_import_hook(object_path, name,
+                                                 scope)
+            _newrelic.register_import_hook(module, hook)
+        except:
+            _raise_configuration_error(section)
 
 # Setup error trace wrapper defined in configuration file.
 
 def _error_trace_import_hook(object_path, ignore_errors):
     def _instrument(target):
-        _newrelic.log(_newrelic.LOG_INFO, "wrap error-trace %s" % ((object_path,
-                ignore_errors),))
-        _newrelic.wrap_error_trace(target, object_path, ignore_errors)
+        _newrelic.log(_newrelic.LOG_INFO, "wrap error-trace %s" %
+                ((object_path, ignore_errors),))
+
+        try:
+            _newrelic.wrap_error_trace(target, object_path, ignore_errors)
+        except:
+            _raise_instrumentation_error('error-trace', locals())
+
     return _instrument
 
 def _process_error_trace_configuration():
     for section in config_object.sections():
-        if section.startswith('error-trace:'):
-            try:
-                enabled = config_object.getboolean(section, 'enabled')
-                function = config_object.get(section, 'function')
-            except ConfigParser.NoOptionError:
-                pass
-            else:
-                if enabled:
-                    ignore_errors = []
+        if not section.startswith('error-trace:'):
+            continue
 
-                    if config_object.has_option(section, 'ignore_errors'):
-                        ignore_errors = config_object.get(section,
-                                'ignore_errors').split()
+        enabled = False
 
-                    parts = function.split(':')
-                    if len(parts) == 2:
-                        module, object_path = parts
-                        hook = _error_trace_import_hook(object_path, ignore_errors)
-                        _newrelic.register_import_hook(module, hook)
-                        _newrelic.log(_newrelic.LOG_INFO, "register error-trace %s" % ((module,
-                              object_path, ignore_errors),))
+        try:
+            enabled = config_object.getboolean(section, 'enabled')
+        except ConfigParser.NoOptionError:
+            pass
+        except:
+            _raise_configuration_error(section)
+
+        if not enabled:
+            continue
+
+        try:
+            function = config_object.get(section, 'function')
+            (module, object_path) = string.splitfields(function, ':', 1)
+
+            ignore_errors = []
+
+            if config_object.has_option(section, 'ignore_errors'):
+                ignore_errors = config_object.get(section,
+                        'ignore_errors').split()
+
+            _newrelic.log(_newrelic.LOG_INFO, "register error-trace %s" %
+                  ((module, object_path, ignore_errors),))
+
+            hook = _error_trace_import_hook(object_path, ignore_errors)
+            _newrelic.register_import_hook(module, hook)
+        except:
+            _raise_configuration_error(section)
 
 # Setup function profiler defined in configuration file.
 
 def _function_profile_import_hook(object_path, interesting, depth):
     def _instrument(target):
-        _newrelic.log(_newrelic.LOG_INFO, "wrap function-profile %s" % ((object_path,
-                interesting, depth),))
-        newrelic.tools.profile.wrap_function_profile(target, object_path, interesting, depth)
+        _newrelic.log(_newrelic.LOG_INFO, "wrap function-profile %s" %
+                ((object_path, interesting, depth),))
+
+        try:
+            newrelic.tools.profile.wrap_function_profile(target,
+                    object_path, interesting, depth)
+        except:
+            _raise_instrumentation_error('function-profile', locals())
+
     return _instrument
 
 def _process_function_profile_configuration():
     for section in config_object.sections():
-        if section.startswith('function-profile:'):
-            try:
-                enabled = config_object.getboolean(section, 'enabled')
-                function = config_object.get(section, 'function')
-            except ConfigParser.NoOptionError:
-                pass
-            else:
-                if enabled:
-                    interesting = False
-                    depth = 5
+        if not section.startswith('function-profile:'):
+            continue
 
-                    if config_object.has_option(section, 'interesting'):
-                        interesting = config_object.getboolean(section,
-                                                                'interesting')
-                    if config_object.has_option(section, 'depth'):
-                        depth = config_object.getint(section, 'depth')
+        enabled = False
 
-                    parts = function.split(':')
-                    if len(parts) == 2:
-                        module, object_path = parts
-                        hook = _function_profile_import_hook(object_path,
-                                                             interesting, depth)
-                        _newrelic.register_import_hook(module, hook)
-                        _newrelic.log(_newrelic.LOG_INFO, "register function-profile %s" % ((module,
-                                object_path, interesting, depth),))
+        try:
+            enabled = config_object.getboolean(section, 'enabled')
+        except ConfigParser.NoOptionError:
+            pass
+        except:
+            _raise_configuration_error(section)
+
+        if not enabled:
+            continue
+
+        try:
+            function = config_object.get(section, 'function')
+            (module, object_path) = string.splitfields(function, ':', 1)
+
+            interesting = False
+            depth = 5
+
+            if config_object.has_option(section, 'interesting'):
+                interesting = config_object.getboolean(section,
+                                                        'interesting')
+            if config_object.has_option(section, 'depth'):
+                depth = config_object.getint(section, 'depth')
+
+            _newrelic.log(_newrelic.LOG_INFO, "register function-profile %s" %
+                    ((module, object_path, interesting, depth),))
+
+            hook = _function_profile_import_hook(object_path,
+                                                 interesting, depth)
+            _newrelic.register_import_hook(module, hook)
+        except:
+            _raise_configuration_error(section)
 
 def _process_module_definition(target, module, function='instrument'):
     enabled = True
     execute = None
 
-    section = 'import-hook:%s' % target
+    try:
+        section = 'import-hook:%s' % target
+        if config_object.has_section(section):
+            enabled = config_object.getboolean(section, 'enabled')
+    except ConfigParser.NoOptionError:
+        pass
+    except:
+        _raise_configuration_error(section)
 
-    if config_object.has_section(section):
-        try:
-            enabled = config_object.getboolean(
-                    section, 'enabled')
+    try:
+        if config_object.has_option(section, 'execute'):
+            execute = config_object.get(section, 'execute')
 
-        except ConfigParser.NoOptionError:
-            pass
+        if enabled and not execute:
+            _newrelic.log(_newrelic.LOG_INFO, "register module %s" %
+                    ((target, module, function),))
 
-        except:
-            value = config_object.get(section, 'enabled')
-
-            _newrelic.log(_newrelic.LOG_ERROR, 'CONFIGURATION ERROR')
-            _newrelic.log(_newrelic.LOG_ERROR, 'Section = %s' % repr(section))
-            _newrelic.log(_newrelic.LOG_ERROR, 'Option = %s' % repr('enabled'))
-            _newrelic.log(_newrelic.LOG_ERROR, 'Value = %s' % repr(value))
-            _newrelic.log(_newrelic.LOG_ERROR, 'Parser = %s' %
-                    repr(config_object.getboolean))
-
-            _newrelic.log_exception(*sys.exc_info())
-
-            if not newrelic.config.config_ignore_errors:
-                raise _newrelic.ConfigurationError('Invalid configuration '
-                        'entry with name %s and value %s. Check New Relic '
-                        'agent log file for further details.' %
-                        (repr('enabled'), repr(value)))
-
-        try:
-            execute = config_object.get(
-                    section, 'execute')
-
-        except ConfigParser.NoOptionError:
-            pass
-
-    if enabled and not execute:
-        _newrelic.log(_newrelic.LOG_INFO, "register import-hook %s" %
-                ((target, module, function),))
-
-        _newrelic.register_import_hook(target,
-                _module_import_hook(module, function))
+            _newrelic.register_import_hook(target,
+                    _module_import_hook(module, function))
+    except:
+        _raise_configuration_error(section)
 
 def _process_module_builtin_defaults():
     _process_module_definition('django.core.handlers.base',

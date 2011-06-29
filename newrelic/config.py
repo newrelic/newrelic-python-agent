@@ -108,15 +108,15 @@ def _process_setting(section, option, getter, mapper):
         # object. Walk the object path and assign it.
 
         target = settings_object
-        parts = string.splitfields(option, '.', 1) 
+        fields = string.splitfields(option, '.', 1) 
 
         while True:
-            if len(parts) == 1:
-                setattr(target, parts[0], value)
+            if len(fields) == 1:
+                setattr(target, fields[0], value)
                 break
             else:
-                target = getattr(target, parts[0])
-                parts = string.splitfields(parts[1], '.', 1)
+                target = getattr(target, fields[0])
+                fields = string.splitfields(fields[1], '.', 1)
 
         # Cache the configuration so can be dumped out to
         # log file when whole main configuraiton has been
@@ -254,7 +254,7 @@ def load_configuration(file=None, environment=None, ignore_errors=True):
     # against the internal settings object.
 
     for option, value in _config_global_settings:
-        _newrelic.log(_newrelic.LOG_INFO, "agent config %s=%s" %
+        _newrelic.log(_newrelic.LOG_INFO, "agent config %s = %s" %
                 (option, repr(value)))
 
 def filter_app_factory(app, global_conf, config_file, environment=None):

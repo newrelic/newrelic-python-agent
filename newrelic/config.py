@@ -75,6 +75,18 @@ _config_global_settings = []
 
 # Processing of a single setting from configuration file.
 
+def _raise_configuration_error(section, option):
+    _newrelic.log(_newrelic.LOG_ERROR, 'CONFIGURATION ERROR')
+    _newrelic.log(_newrelic.LOG_ERROR, 'Section = %s' % section)
+    _newrelic.log(_newrelic.LOG_ERROR, 'Option = %s' % option)
+
+    _newrelic.log_exception(*sys.exc_info())
+
+    if not newrelic.config.config_ignore_errors:
+        raise _newrelic.ConfigurationError('Invalid configuration '
+                'for option "%s" in section "%s". Check New Relic '
+                'agent log file for further details.' % (option, section))
+
 def _process_setting(section, option, getter, mapper):
     try:
 	# The type of a value is dictated by the getter
@@ -82,80 +94,42 @@ def _process_setting(section, option, getter, mapper):
 
         value = getattr(config_object, getter)(section, option)
 
-    except ConfigParser.NoOptionError:
-        pass
-
-    except:
-	# Get here and the getter must have failed to
-	# decode the value for the option.
-
-        value = config_object.get(section, option)
-
-        _newrelic.log(_newrelic.LOG_ERROR, 'CONFIGURATION ERROR')
-        _newrelic.log(_newrelic.LOG_ERROR, 'Section = %s' % repr(section))
-        _newrelic.log(_newrelic.LOG_ERROR, 'Option = %s' % repr(option))
-        _newrelic.log(_newrelic.LOG_ERROR, 'Value = %s' % repr(value))
-        _newrelic.log(_newrelic.LOG_ERROR, 'Parser = %s' % repr(getter))
-
-        _newrelic.log_exception(*sys.exc_info())
-
-        if not config_ignore_errors:
-            raise _newrelic.ConfigurationError('Invalid configuration '
-                    'entry with name %s and value %s. Check New Relic '
-                    'agent log file for further details.' % (repr(option),
-                    repr(value)))
-
-    else:
 	# The getter parsed the value okay but want to
 	# pass this through a mapping function to change
 	# it to internal value suitable for internal
 	# settings object. This is usually one where the
         # value was a string.
 
-        try:
-            if mapper:
-                value = mapper(value)
+        if mapper:
+            value = mapper(value)
 
-        except:
-	    # Get here and value wasn't within the restricted
-	    # range of values as defined by mapping function.
+        # Now need to apply the option from the
+        # configuration file to the internal settings
+        # object. Walk the object path and assign it.
 
-            _newrelic.log(_newrelic.LOG_ERROR, 'CONFIGURATION ERROR')
-            _newrelic.log(_newrelic.LOG_ERROR, 'Section = %s' % repr(section))
-            _newrelic.log(_newrelic.LOG_ERROR, 'Option = %s' % repr(option))
-            _newrelic.log(_newrelic.LOG_ERROR, 'Value = %s' % repr(value))
-            _newrelic.log(_newrelic.LOG_ERROR, 'Parser = %s' % repr(getter))
+        target = settings_object
+        parts = string.splitfields(option, '.', 1) 
 
-            _newrelic.log_exception(*sys.exc_info())
+        while True:
+            if len(parts) == 1:
+                setattr(target, parts[0], value)
+                break
+            else:
+                target = getattr(target, parts[0])
+                parts = string.splitfields(parts[1], '.', 1)
 
-            if not config_ignore_errors:
-                raise _newrelic.ConfigurationError('Invalid configuration '
-                        'entry with name %s and value %s. Check New Relic '
-                        'agent log file for further details.' % (repr(option),
-                        repr(value)))
+        # Cache the configuration so can be dumped out to
+        # log file when whole main configuraiton has been
+        # processed. This ensures that the log file and log
+        # level entries have been set.
 
-        else:
-	    # Now need to apply the option from the
-	    # configuration file to the internal settings
-	    # object. Walk the object path and assign it.
+        _config_global_settings.append((option, value))
 
-            target = settings_object
-            parts = string.splitfields(option, '.', 1) 
+    except ConfigParser.NoOptionError:
+        pass
 
-            while True:
-                if len(parts) == 1:
-                    setattr(target, parts[0], value)
-                    break
-                else:
-                    target = getattr(target, parts[0])
-                    parts = string.splitfields(parts[1], '.', 1)
-
-	    # Cache the configuration so can be dumped out to
-	    # log file when whole main configuraiton has been
-	    # processed. This ensures that the log file and log
-	    # level entries have been set.
-
-            _config_global_settings.append((option, value))
+    except:
+        _raise_configuration_error(section, option)
 
 # Processing of all the settings for specified section except
 # for log file and log level which are applied separately to

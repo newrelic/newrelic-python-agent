@@ -2,37 +2,44 @@ import sys
 import ConfigParser
 
 import _newrelic
-import newrelic.profile
 import newrelic.config
+import newrelic.tools.profile
+import newrelic.utils.importlib
 
-# Setup instrumentation mechanism by installing import hook which
-# implements post import hooks for triggering
+# Register import hook which implements post import hooks for
+# triggering of callbacks to monkey patch modules before import
+# returns them to caller.
 
 sys.meta_path.insert(0, _newrelic.ImportHookFinder())
 
-def _import_hook(module, function):
+# Registration of module import hooks defined in configuration file.
+
+def _module_import_hook(module, function):
     def _instrument(target):
-        _newrelic.log(_newrelic.LOG_INFO, "execute import-hook %s" %
+        _newrelic.log(_newrelic.LOG_INFO, "instrument module %s" %
                 ((target, module, function),))
-        getattr(_newrelic.import_module(module), function)(target)
+
+        try:
+            newrelic.utils.importlib.import_object(module, function)(target)
+
+        except:
+
+            _newrelic.log(_newrelic.LOG_ERROR, 'INSTRUMENTATION ERROR')
+            _newrelic.log(_newrelic.LOG_ERROR, 'Action = import-hook'
+            _newrelic.log(_newrelic.LOG_ERROR, 'Module = %s' % repr(target))
+            _newrelic.log(_newrelic.LOG_ERROR, 'Execute = %s:%s' % (
+                    module, function))
+
+            _newrelic.log_exception(*sys.exc_info())
+
+            raise _newrelic.InstrumentationError('Error executing '
+                    'instrumentation function "%s:%s" for module %s. Check '
+                    'New Relic agent log file for further details.' % (module,
+                    function, repr(target)))
+
     return _instrument
 
-def _process_import_hook(target, module, function='instrument'):
-    enabled = True
-    section = 'import-hook:%s' % target
-    if newrelic.config.config_object.has_section(section):
-        try:
-            enabled = newrelic.config.config_object.getboolean(
-                    section, 'enabled')
-        except ConfigParser.NoOptionError:
-            pass
-    if enabled and not newrelic.config.config_object.has_option(
-            section, 'execute'):
-        _newrelic.register_import_hook(target, _import_hook(module, function))
-        _newrelic.log(_newrelic.LOG_INFO, "register import-hook %s" % ((target,
-                module, function),))
-
-def _process_import_hook_configuration():
+def _process_module_configuration():
     for section in newrelic.config.config_object.sections():
         if section.startswith('import-hook:'):
             target = section.split(':')[1]
@@ -53,76 +60,11 @@ def _process_import_hook_configuration():
                         function = 'instrument'
                         if len(parts) != 1:
                             function = parts[1]
-                        _newrelic.register_import_hook(target, _import_hook(
-                                module, function))
+                        _newrelic.register_import_hook(target,
+                                _module_import_hook(module, function))
                         _newrelic.log(_newrelic.LOG_INFO,
-                                "register import-hook %s" % ((target,
+                                "register module %s" % ((target,
                                 module, function),))
-
-def _process_import_hook_builtin_defaults():
-    _process_import_hook('django.core.handlers.base',
-                         'newrelic.imports.framework.django')
-    _process_import_hook('django.core.urlresolvers',
-                         'newrelic.imports.framework.django')
-    _process_import_hook('django.core.handlers.wsgi',
-                         'newrelic.imports.framework.django')
-    _process_import_hook('django.template',
-                         'newrelic.imports.framework.django')
-    _process_import_hook('django.core.servers.basehttp',
-                         'newrelic.imports.framework.django')
-
-    _process_import_hook('flask', 'newrelic.imports.framework.flask')
-    _process_import_hook('flask.app', 'newrelic.imports.framework.flask')
-
-    _process_import_hook('gluon.compileapp',
-                         'newrelic.imports.framework.web2py',
-                         'instrument_gluon_compileapp')
-    _process_import_hook('gluon.restricted',
-                         'newrelic.imports.framework.web2py',
-                         'instrument_gluon_restricted')
-    _process_import_hook('gluon.main',
-                         'newrelic.imports.framework.web2py',
-                         'instrument_gluon_main')
-    _process_import_hook('gluon.template',
-                         'newrelic.imports.framework.web2py',
-                         'instrument_gluon_template')
-    _process_import_hook('gluon.tools',
-                         'newrelic.imports.framework.web2py',
-                         'instrument_gluon_tools')
-    _process_import_hook('gluon.http',
-                         'newrelic.imports.framework.web2py',
-                         'instrument_gluon_http')
-
-    _process_import_hook('gluon.contrib.feedparser',
-                         'newrelic.imports.external.feedparser')
-    _process_import_hook('gluon.contrib.memcache.memcache',
-                         'newrelic.imports.memcache.memcache')
-
-    _process_import_hook('pylons.wsgiapp','newrelic.imports.framework.pylons')
-    _process_import_hook('pylons.controllers.core',
-                         'newrelic.imports.framework.pylons')
-    _process_import_hook('pylons.templating', 'newrelic.imports.framework.pylons')
-
-    _process_import_hook('cx_Oracle', 'newrelic.imports.database.dbapi2')
-    _process_import_hook('MySQLdb', 'newrelic.imports.database.dbapi2')
-    _process_import_hook('postgresql.interface.proboscis.dbapi2',
-                         'newrelic.imports.database.dbapi2')
-    _process_import_hook('psycopg2', 'newrelic.imports.database.dbapi2')
-    _process_import_hook('pysqlite2.dbapi2', 'newrelic.imports.database.dbapi2')
-    _process_import_hook('sqlite3.dbapi2', 'newrelic.imports.database.dbapi2')
-
-    _process_import_hook('memcache', 'newrelic.imports.memcache.memcache')
-    _process_import_hook('pylibmc', 'newrelic.imports.memcache.pylibmc')
-
-    _process_import_hook('jinja2.environment', 'newrelic.imports.template.jinja2')
-
-    _process_import_hook('mako.runtime', 'newrelic.imports.template.mako')
-
-    _process_import_hook('genshi.template.base', 'newrelic.imports.template.genshi')
-
-    _process_import_hook('feedparser', 'newrelic.imports.external.feedparser')
-
-    _process_import_hook('xmlrpclib', 'newrelic.imports.external.xmlrpclib')
 
 # Setup wsgi application wrapper defined in configuration file.
 
@@ -420,7 +362,7 @@ def _function_profile_import_hook(object_path, interesting, depth):
     def _instrument(target):
         _newrelic.log(_newrelic.LOG_INFO, "wrap function-profile %s" % ((object_path,
                 interesting, depth),))
-        newrelic.profile.wrap_function_profile(target, object_path, interesting, depth)
+        newrelic.tools.profile.wrap_function_profile(target, object_path, interesting, depth)
     return _instrument
 
 def _process_function_profile_configuration():
@@ -451,15 +393,116 @@ def _process_function_profile_configuration():
                         _newrelic.log(_newrelic.LOG_INFO, "register function-profile %s" % ((module,
                                 object_path, interesting, depth),))
 
+def _process_module_definition(target, module, function='instrument'):
+    enabled = True
+    section = 'import-hook:%s' % target
+    if newrelic.config.config_object.has_section(section):
+        try:
+            enabled = newrelic.config.config_object.getboolean(
+                    section, 'enabled')
+        except ConfigParser.NoOptionError:
+            pass
+    if enabled and not newrelic.config.config_object.has_option(
+            section, 'execute'):
+        _newrelic.register_import_hook(target, _module_import_hook(module, function))
+        _newrelic.log(_newrelic.LOG_INFO, "register import-hook %s" % ((target,
+                module, function),))
+
+def _process_module_builtin_defaults():
+    _process_module_definition('django.core.handlers.base',
+            'newrelic.imports.framework.django')
+    _process_module_definition('django.core.urlresolvers',
+            'newrelic.imports.framework.django')
+    _process_module_definition('django.core.handlers.wsgi',
+            'newrelic.imports.framework.django')
+    _process_module_definition('django.template',
+            'newrelic.imports.framework.django')
+    _process_module_definition('django.core.servers.basehttp',
+            'newrelic.imports.framework.django')
+
+    _process_module_definition('flask',
+            'newrelic.imports.framework.flask')
+    _process_module_definition('flask.app',
+            'newrelic.imports.framework.flask')
+
+    _process_module_definition('gluon.compileapp',
+            'newrelic.imports.framework.web2py',
+            'instrument_gluon_compileapp')
+    _process_module_definition('gluon.restricted',
+            'newrelic.imports.framework.web2py',
+            'instrument_gluon_restricted')
+    _process_module_definition('gluon.main',
+            'newrelic.imports.framework.web2py',
+            'instrument_gluon_main')
+    _process_module_definition('gluon.template',
+            'newrelic.imports.framework.web2py',
+            'instrument_gluon_template')
+    _process_module_definition('gluon.tools',
+            'newrelic.imports.framework.web2py',
+            'instrument_gluon_tools')
+    _process_module_definition('gluon.http',
+            'newrelic.imports.framework.web2py',
+            'instrument_gluon_http')
+
+    _process_module_definition('gluon.contrib.feedparser',
+            'newrelic.imports.external.feedparser')
+    _process_module_definition('gluon.contrib.memcache.memcache',
+            'newrelic.imports.memcache.memcache')
+
+    _process_module_definition('pylons.wsgiapp',
+            'newrelic.imports.framework.pylons')
+    _process_module_definition('pylons.controllers.core',
+            'newrelic.imports.framework.pylons')
+    _process_module_definition('pylons.templating',
+            'newrelic.imports.framework.pylons')
+
+    _process_module_definition('cx_Oracle',
+            'newrelic.imports.database.dbapi2')
+    _process_module_definition('MySQLdb',
+            'newrelic.imports.database.dbapi2')
+    _process_module_definition('postgresql.interface.proboscis.dbapi2',
+            'newrelic.imports.database.dbapi2')
+    _process_module_definition('psycopg2',
+            'newrelic.imports.database.dbapi2')
+    _process_module_definition('pysqlite2.dbapi2',
+            'newrelic.imports.database.dbapi2')
+    _process_module_definition('sqlite3.dbapi2',
+            'newrelic.imports.database.dbapi2')
+
+    _process_module_definition('memcache',
+            'newrelic.imports.memcache.memcache')
+    _process_module_definition('pylibmc',
+            'newrelic.imports.memcache.pylibmc')
+
+    _process_module_definition('jinja2.environment',
+            'newrelic.imports.template.jinja2')
+
+    _process_module_definition('mako.runtime',
+            'newrelic.imports.template.mako')
+
+    _process_module_definition('genshi.template.base',
+            'newrelic.imports.template.genshi')
+
+    _process_module_definition('feedparser',
+            'newrelic.imports.external.feedparser')
+
+    _process_module_definition('xmlrpclib',
+            'newrelic.imports.external.xmlrpclib')
+
 def setup_instrumentation():
-    _process_import_hook_configuration()
-    _process_import_hook_builtin_defaults()
+    _process_module_configuration()
+    _process_module_builtin_defaults()
+
     _process_wsgi_application_configuration()
     _process_background_task_configuration()
+
     _process_database_trace_configuration()
     _process_external_trace_configuration()
     _process_function_trace_configuration()
     _process_memcache_trace_configuration()
+
     _process_name_transaction_configuration()
+
     _process_error_trace_configuration()
+
     _process_function_profile_configuration()

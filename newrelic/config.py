@@ -14,6 +14,7 @@ __all__ = [ 'load_configuration', 'config_file', 'config_environment',
 
 config_file = None
 config_environment = None
+config_ignore_errors = True
 
 # This is the actual internal settings object. Options which
 # are read from the configuration file will be applied to this.
@@ -98,9 +99,11 @@ def _process_setting(section, option, getter, mapper):
 
         _newrelic.log_exception(*sys.exc_info())
 
-        raise _newrelic.ConfigurationError('Invalid configuration entry '
-                'with name %s and value %s. Check New Relic agent log '
-                'file for further details.' % (repr(option), repr(value)))
+        if not config_ignore_errors:
+            raise _newrelic.ConfigurationError('Invalid configuration '
+                    'entry with name %s and value %s. Check New Relic '
+                    'agent log file for further details.' % (repr(option),
+                    repr(value)))
 
     else:
 	# The getter parsed the value okay but want to
@@ -125,9 +128,11 @@ def _process_setting(section, option, getter, mapper):
 
             _newrelic.log_exception(*sys.exc_info())
 
-            raise _newrelic.ConfigurationError('Invalid configuration entry '
-                    'with name %s and value %s. Check New Relic agent log '
-                    'file for further details.' % (repr(option), repr(value)))
+            if not config_ignore_errors:
+                raise _newrelic.ConfigurationError('Invalid configuration '
+                        'entry with name %s and value %s. Check New Relic '
+                        'agent log file for further details.' % (repr(option),
+                        repr(value)))
 
         else:
 	    # Now need to apply the option from the
@@ -195,10 +200,11 @@ def _process_configuration(section):
 # Loading of configuration from specified file and for specified
 # deployment environment.
 
-def load_configuration(file=None, environment=None):
+def load_configuration(file=None, environment=None, ignore_errors=True):
 
     global config_file
     global config_environment
+    global config_ignore_errors
 
     # If no file is specified then attempt to determine name of
     # the config file from environment variable. Same for the
@@ -209,6 +215,7 @@ def load_configuration(file=None, environment=None):
     if not file:
         file = os.environ.get('NEWRELIC_CONFIG_FILE', None)
         environment = os.environ.get('NEWRELIC_ENVIRONMENT', None)
+        errors = os.environ.get('NEWRELIC_CONFIG_ERRORS', 'ignore')
 
     if not file:
         return
@@ -229,6 +236,9 @@ def load_configuration(file=None, environment=None):
 
     config_file = file
     config_environment = environment
+
+    if errors.lower() == 'abort':
+        config_ignore_errors = False
 
     # Now read in the configuration file. Cache the config file
     # name in internal settings object as indication of succeeding.

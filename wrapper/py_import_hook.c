@@ -194,7 +194,7 @@ static PyObject *NRImportHookLoader_load_module(
 
     static char *kwlist[] = { "fullname", NULL };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:find_module",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:load_module",
                                      kwlist, &fullname)) {
         return NULL;
     }

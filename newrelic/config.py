@@ -191,6 +191,11 @@ def load_configuration(file=None, environment=None, ignore_errors=True):
         environment = os.environ.get('NEWRELIC_ENVIRONMENT', None)
         errors = os.environ.get('NEWRELIC_CONFIG_ERRORS', 'ignore')
 
+        if errors.lower() == 'abort':
+            config_ignore_errors = False
+        else:
+            config_ignore_errors = True
+
     if not file:
         return
 
@@ -210,9 +215,6 @@ def load_configuration(file=None, environment=None, ignore_errors=True):
 
     config_file = file
     config_environment = environment
-
-    if errors.lower() == 'abort':
-        config_ignore_errors = False
 
     # Now read in the configuration file. Cache the config file
     # name in internal settings object as indication of succeeding.

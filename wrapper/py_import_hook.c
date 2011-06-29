@@ -96,11 +96,8 @@ static PyObject *NRImportHookFinder_find_module(
 
     Py_XDECREF(fullname_as_ascii);
 
-    if (!module) {
-        PyErr_Clear();
-        Py_INCREF(Py_None);
-        return Py_None;
-    }
+    if (!module)
+        return NULL;
 
     PyDict_DelItem(self->skip, fullname);
 

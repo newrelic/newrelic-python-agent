@@ -1,5 +1,7 @@
 def run(args):
-    import time, os
+    import os
+    import time
+
     import newrelic.agent
 
     settings = newrelic.agent.settings()
@@ -7,6 +9,8 @@ def run(args):
     settings.log_file = '/tmp/python-agent-test.log'
     settings.log_level = newrelic.agent.LOG_VERBOSEDEBUG
     settings.transaction_tracer.transaction_threshold = 0
+
+    newrelic.agent.initialize()
 
     try:
         os.unlink(settings.log_file)

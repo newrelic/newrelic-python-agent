@@ -64,9 +64,8 @@ more approriate.
 Next modify the WSGI application script file or module which holds your WSGI
 application entry point and add at the beginning:
 
-    import os
-    os.environ['NEWRELIC_CONFIG_FILE'] = '/some/path/newrelic.ini'
     import newrelic.agent
+    newrelic.agent.initialize('/some/path/newrelic.ini')
 
 replacing '/some/path/newrelic.ini' with the actual location of the copy
 of the configuration file which you made.

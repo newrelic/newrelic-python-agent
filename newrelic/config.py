@@ -82,17 +82,31 @@ def _map_ignore_errors(s):
 
 # Processing of a single setting from configuration file.
 
-def _raise_configuration_error(section, option):
+def _raise_configuration_error(section, option=None):
     _newrelic.log(_newrelic.LOG_ERROR, 'CONFIGURATION ERROR')
     _newrelic.log(_newrelic.LOG_ERROR, 'Section = %s' % section)
-    _newrelic.log(_newrelic.LOG_ERROR, 'Option = %s' % option)
 
-    _newrelic.log_exception(*sys.exc_info())
+    if option is None:
+        options = _config_object.options(section)
 
-    if not _ignore_errors:
-        raise _newrelic.ConfigurationError('Invalid configuration '
-                'for option "%s" in section "%s". Check New Relic '
-                'agent log file for further details.' % (option, section))
+        _newrelic.log(_newrelic.LOG_ERROR, 'Options = %s' % options)
+
+        _newrelic.log_exception(*sys.exc_info())
+
+        if not _ignore_errors:
+            raise _newrelic.ConfigurationError('Invalid configuration '
+                    'for section "%s". Check New Relic agent log file '
+                    'for further details.' % section)
+
+    else:
+        _newrelic.log(_newrelic.LOG_ERROR, 'Option = %s' % option)
+
+        _newrelic.log_exception(*sys.exc_info())
+
+        if not _ignore_errors:
+            raise _newrelic.ConfigurationError('Invalid configuration '
+                    'for option "%s" in section "%s". Check New Relic '
+                    'agent log file for further details.' % (option, section))
 
 def _process_setting(section, option, getter, mapper):
     try:
@@ -275,20 +289,6 @@ def _raise_instrumentation_error(type, locals):
     if not _ignore_errors:
         raise _newrelic.InstrumentationError('Failure when instrumenting code. '
                 'Check New Relic agent log file for further details.')
-
-def _raise_configuration_error(section, options):
-    options = _config_object.options(section)
-
-    _newrelic.log(_newrelic.LOG_ERROR, 'CONFIGURATION ERROR')
-    _newrelic.log(_newrelic.LOG_ERROR, 'Section = %s' % section)
-    _newrelic.log(_newrelic.LOG_ERROR, 'Options = %s' % options)
-
-    _newrelic.log_exception(*sys.exc_info())
-
-    if not _ignore_errors:
-        raise _newrelic.ConfigurationError('Invalid configuration '
-                'for section "%s". Check New Relic agent log file '
-                'for further details.' % section)
 
 # Registration of module import hooks defined in configuration file.
 

@@ -715,11 +715,17 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
                 settings->tracer_settings->transaction_threshold;
     }
 
-#if 0
-    nrthread_mutex_lock(&application->lock);
-#endif
-
     nr__switch_to_application(application);
+
+    /*
+     * Must lock application here as the harvest thread uses
+     * application lock when wanting to add sampler data to
+     * the pending harvest metrics. Have to do this after the
+     * switch to application or compound broken thread behaviour
+     * in switching to application.
+     */
+
+    nrthread_mutex_lock(&application->lock);
 
     /*
      * XXX Can't release GIL here as trying to acquire it on
@@ -821,9 +827,7 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
     Py_END_ALLOW_THREADS
 #endif
 
-#if 0
     nrthread_mutex_unlock(&application->lock);
-#endif
 
     nrthread_mutex_unlock(&NRTransaction_exit_mutex);
 

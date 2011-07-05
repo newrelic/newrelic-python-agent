@@ -651,6 +651,7 @@ host_alias
 target_alias
 PYTHON
 VIRTUALENV
+ENABLE_AGENT_DEBUG
 build
 build_cpu
 build_vendor
@@ -1251,6 +1252,11 @@ if test -n "$ac_init_help"; then
 
   cat <<\_ACEOF
 
+Optional Features:
+  --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
+  --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --enable-debug          enable internal agent debugging
+
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
@@ -1805,6 +1811,16 @@ done
 test -n "$VIRTUALENV" || VIRTUALENV="virtualenv"
 
 fi
+
+
+
+# Check whether --enable-debug was given.
+if test "${enable_debug+set}" = set; then
+  enableval=$enable_debug; ENABLE_AGENT_DEBUG=$enableval
+else
+  ENABLE_AGENT_DEBUG=no
+fi
+
 
 
 
@@ -4529,6 +4545,7 @@ host_alias!$host_alias$ac_delim
 target_alias!$target_alias$ac_delim
 PYTHON!$PYTHON$ac_delim
 VIRTUALENV!$VIRTUALENV$ac_delim
+ENABLE_AGENT_DEBUG!$ENABLE_AGENT_DEBUG$ac_delim
 build!$build$ac_delim
 build_cpu!$build_cpu$ac_delim
 build_vendor!$build_vendor$ac_delim
@@ -4552,7 +4569,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 60; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 61; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

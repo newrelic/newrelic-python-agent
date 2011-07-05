@@ -22,6 +22,13 @@ fi
 
 AC_SUBST(VIRTUALENV)
 
+AC_ARG_ENABLE(debug, AC_HELP_STRING([--enable-debug],
+            [enable internal agent debugging]),
+            [ENABLE_AGENT_DEBUG=$enableval],
+            [ENABLE_AGENT_DEBUG=no])
+
+AC_SUBST(ENABLE_AGENT_DEBUG)
+
 AC_CANONICAL_HOST
 
 AC_CHECK_FUNC(backtrace_symbols_fd, [AC_DEFINE(HAVE_STACK_BACKTRACE, 1, [Whether you can do a backtrace])])

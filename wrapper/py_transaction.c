@@ -823,6 +823,15 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
     if (!keep_wt)
         nr_web_transaction__destroy(self->transaction);
 
+#ifdef NR_AGENT_DEBUG
+    nr__log(LOG_VERBOSEDEBUG, "pending_harvest->metrics->number = %d",
+            application->pending_harvest->metrics->number);
+    nr__log(LOG_VERBOSEDEBUG, "pending_harvest->slow_transactions = %d",
+            !!application->pending_harvest->slow_transactions);
+    nr__log(LOG_VERBOSEDEBUG, "pending_harvest->errors = %d",
+            !!application->pending_harvest->errors);
+#endif
+
 #if 0
     Py_END_ALLOW_THREADS
 #endif

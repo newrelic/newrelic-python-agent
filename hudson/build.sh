@@ -84,8 +84,8 @@ for i in $PYTHON_VERSIONS
 do
     for j in $UNICODE_VARIANTS
     do
-        echo ./configure --with-python=$TOOLSDIR/python-$i-$j/bin/python$i
-        ./configure --with-python=$TOOLSDIR/python-$i-$j/bin/python$i
+        echo ./configure --with-python=$TOOLSDIR/python-$i-$j/bin/python$i "$@"
+        ./configure --with-python=$TOOLSDIR/python-$i-$j/bin/python$i "$@"
         echo make hudson-install DESTDIR=$AGENTDIR/python-$i-$j
         make hudson-install DESTDIR=$AGENTDIR/python-$i-$j
         STATUS=$?

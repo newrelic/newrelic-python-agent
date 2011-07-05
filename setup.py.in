@@ -80,6 +80,9 @@ define_macros.append(('NR_BUILD_@PLATFORM@', '1'))
 if sys.version_info[:2] < (2, 5):
     define_macros.append(('Py_ssize_t', 'int'))
 
+if "@ENABLE_AGENT_DEBUG@" == "yes":
+    define_macros.append(('NR_AGENT_DEBUG', '1'))
+
 extension = Extension(
   name = "_newrelic",
   sources = sources,

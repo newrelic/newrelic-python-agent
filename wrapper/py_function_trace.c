@@ -292,6 +292,8 @@ static PyObject *NRFunctionTraceWrapper_new(PyTypeObject *type, PyObject *args,
         return NULL;
 
     self->dict = NULL;
+    self->descr_object = NULL;
+    self->self_object = NULL;
     self->next_object = NULL;
     self->last_object = NULL;
     self->name = NULL;
@@ -324,6 +326,12 @@ static int NRFunctionTraceWrapper_init(NRFunctionTraceWrapperObject *self,
     }
 
     Py_INCREF(wrapped_object);
+
+    Py_XDECREF(self->descr_object);
+    Py_XDECREF(self->self_object);
+
+    self->descr_object = NULL;
+    self->self_object = NULL;
 
     Py_XDECREF(self->dict);
     Py_XDECREF(self->next_object);
@@ -382,6 +390,9 @@ static void NRFunctionTraceWrapper_dealloc(NRFunctionTraceWrapperObject *self)
 {
     Py_XDECREF(self->dict);
 
+    Py_XDECREF(self->descr_object);
+    Py_XDECREF(self->self_object);
+
     Py_XDECREF(self->next_object);
     Py_XDECREF(self->last_object);
 
@@ -415,8 +426,12 @@ static PyObject *NRFunctionTraceWrapper_call(
 
     current_transaction = NRTransaction_CurrentTransaction();
 
-    if (!current_transaction)
-        return PyObject_Call(self->next_object, args, kwds);
+    if (!current_transaction) {
+        if (self->descr_object)
+            return PyObject_Call(self->descr_object, args, kwds);
+        else
+            return PyObject_Call(self->next_object, args, kwds);
+    }
 
     /* Create function trace context manager. */
 
@@ -434,7 +449,38 @@ static PyObject *NRFunctionTraceWrapper_call(
          * name based on arguments supplied to wrapped function.
          */
 
-        name = PyObject_Call(self->name, args, kwds);
+        if (self->descr_object) {
+            PyObject *newargs = NULL;
+
+            int i = 0;
+
+            /*
+	     * Where calling via a descriptor object, we
+	     * need to reconstruct the arguments such
+	     * that the original object self reference
+	     * is included once more.
+             */
+
+            newargs = PyTuple_New(PyTuple_Size(args)+1);
+
+            Py_INCREF(self->self_object);
+            PyTuple_SetItem(newargs, 0, self->self_object);
+
+            for (i=0; i<PyTuple_Size(args); i++) {
+                PyObject *item = NULL;
+
+                item = PyTuple_GetItem(args, i);
+                Py_INCREF(item);
+                PyTuple_SetItem(newargs, i+1, item);
+            }
+
+            name = PyObject_Call(self->name, newargs, kwds);
+
+            Py_DECREF(newargs);
+        }
+        else {
+            name = PyObject_Call(self->name, args, kwds);
+        }
 
         if (!name)
             return NULL;
@@ -492,7 +538,10 @@ static PyObject *NRFunctionTraceWrapper_call(
      * position and keyword arguments.
      */
 
-    wrapped_result = PyObject_Call(self->next_object, args, kwds);
+    if (self->descr_object)
+        wrapped_result = PyObject_Call(self->descr_object, args, kwds);
+    else
+        wrapped_result = PyObject_Call(self->next_object, args, kwds);
 
     /*
      * Now call __exit__() on the context manager. If the call
@@ -689,14 +738,73 @@ static int NRFunctionTraceWrapper_setattro(
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRFunctionTraceWrapper_descr_get(PyObject *function,
-                                                  PyObject *object,
-                                                  PyObject *type)
+static PyObject *NRFunctionTraceWrapper_descr_get(
+        NRFunctionTraceWrapperObject *self, PyObject *object, PyObject *type)
 {
-    if (object == Py_None)
-        object = NULL;
+    PyObject *method = NULL;
 
-    return PyMethod_New(function, object, type);
+    if (object == Py_None) {
+        Py_INCREF(self);
+        return (PyObject *)self;
+    }
+
+    method = PyObject_GetAttrString(self->next_object, "__get__");
+
+    if (method) {
+        PyObject *descr = NULL;
+
+        NRFunctionTraceWrapperObject *result;
+
+        descr = PyObject_CallFunctionObjArgs(method, object, type, NULL);
+
+        /*
+         * We are circumventing new/init here for object but
+         * easier than duplicating all the code to create a
+         * special descriptor version of wrapper.
+         */
+
+        result = (NRFunctionTraceWrapperObject *)
+                (&NRFunctionTraceWrapper_Type)->tp_alloc(
+                &NRFunctionTraceWrapper_Type, 0);
+
+        if (!result)
+            return NULL;
+
+        Py_XINCREF(self->dict);
+        result->dict = self->dict;
+
+        Py_XINCREF(descr);
+        result->descr_object = descr;
+
+        Py_XINCREF(object);
+        result->self_object = object;
+
+        Py_XINCREF(self->next_object);
+        result->next_object = self->next_object;
+
+        Py_XINCREF(self->last_object);
+        result->last_object = self->last_object;
+
+        Py_XINCREF(self->name);
+        result->name = self->name;
+
+        Py_XINCREF(self->scope);
+        result->scope = self->scope;
+
+        result->interesting = self->interesting;
+
+        Py_DECREF(descr);
+        Py_DECREF(method);
+
+        return (PyObject *)result;
+    }
+    else {
+        PyErr_Clear();
+
+        Py_INCREF(self);
+        return (PyObject *)self;
+    }
+
 }
 
 /* ------------------------------------------------------------------------- */
@@ -753,7 +861,7 @@ PyTypeObject NRFunctionTraceWrapper_Type = {
     NRFunctionTraceWrapper_getset, /*tp_getset*/
     0,                      /*tp_base*/
     0,                      /*tp_dict*/
-    NRFunctionTraceWrapper_descr_get, /*tp_descr_get*/
+    (descrgetfunc)NRFunctionTraceWrapper_descr_get, /*tp_descr_get*/
     0,                      /*tp_descr_set*/
     offsetof(NRFunctionTraceWrapperObject, dict), /*tp_dictoffset*/
     (initproc)NRFunctionTraceWrapper_init, /*tp_init*/

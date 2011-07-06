@@ -274,7 +274,7 @@ def _load_configuration(config_file=None, environment=None,
     # against the internal settings object.
 
     for option, value in _cache_object:
-        _newrelic.log(_newrelic.LOG_INFO, "agent config %s = %s" %
+        _newrelic.log(_newrelic.LOG_DEBUG, "agent config %s = %s" %
                 (option, repr(value)))
 
 # Generic error reporting functions.
@@ -294,7 +294,7 @@ def _raise_instrumentation_error(type, locals):
 
 def _module_import_hook(module, function):
     def _instrument(target):
-        _newrelic.log(_newrelic.LOG_INFO, "instrument module %s" %
+        _newrelic.log(_newrelic.LOG_DEBUG, "instrument module %s" %
                 ((target, module, function),))
 
         try:
@@ -331,7 +331,7 @@ def _process_module_configuration():
 
             target = string.splitfields(section, ':', 1)[1]
 
-            _newrelic.log(_newrelic.LOG_INFO, "register module %s" %
+            _newrelic.log(_newrelic.LOG_DEBUG, "register module %s" %
                     ((target, module, function),))
 
             hook = _module_import_hook(module, function)
@@ -343,7 +343,7 @@ def _process_module_configuration():
 
 def _wsgi_application_import_hook(object_path, application):
     def _instrument(target):
-        _newrelic.log(_newrelic.LOG_INFO, "wrap wsgi-application %s" %
+        _newrelic.log(_newrelic.LOG_DEBUG, "wrap wsgi-application %s" %
                 ((target, object_path, application),))
 
         try:
@@ -379,7 +379,7 @@ def _process_wsgi_application_configuration():
             if _config_object.has_option(section, 'application'):
                 application = _config_object.get(section, 'application')
 
-            _newrelic.log(_newrelic.LOG_INFO,
+            _newrelic.log(_newrelic.LOG_DEBUG,
                     "register wsgi-application %s" % ((module,
                     object_path, application),))
 
@@ -392,7 +392,7 @@ def _process_wsgi_application_configuration():
 
 def _background_task_import_hook(object_path, application, name, scope):
     def _instrument(target):
-        _newrelic.log(_newrelic.LOG_INFO, "wrap background-task %s" %
+        _newrelic.log(_newrelic.LOG_DEBUG, "wrap background-task %s" %
                 ((target, object_path, application, name, scope),))
 
         try:
@@ -439,7 +439,7 @@ def _process_background_task_configuration():
                 vars = { "callable_name": _newrelic.callable_name }
                 name = eval(name, vars)
 
-            _newrelic.log(_newrelic.LOG_INFO, "register background-task %s" %
+            _newrelic.log(_newrelic.LOG_DEBUG, "register background-task %s" %
                     ((module, object_path, application, name, scope),))
 
             hook = _background_task_import_hook(object_path,
@@ -452,7 +452,7 @@ def _process_background_task_configuration():
 
 def _database_trace_import_hook(object_path, sql):
     def _instrument(target):
-        _newrelic.log(_newrelic.LOG_INFO, "wrap database-trace %s" %
+        _newrelic.log(_newrelic.LOG_DEBUG, "wrap database-trace %s" %
                 ((target, object_path, sql),))
 
         try:
@@ -489,7 +489,7 @@ def _process_database_trace_configuration():
                 vars = { "callable_name": _newrelic.callable_name }
                 sql = eval(sql, vars)
 
-            _newrelic.log(_newrelic.LOG_INFO, "register database-trace %s" %
+            _newrelic.log(_newrelic.LOG_DEBUG, "register database-trace %s" %
                     ((module, object_path, sql),))
 
             hook = _database_trace_import_hook(object_path, sql)
@@ -501,7 +501,7 @@ def _process_database_trace_configuration():
 
 def _external_trace_import_hook(object_path, library, url):
     def _instrument(target):
-        _newrelic.log(_newrelic.LOG_INFO, "wrap external-trace %s" %
+        _newrelic.log(_newrelic.LOG_DEBUG, "wrap external-trace %s" %
                 ((target, object_path, library, url),))
 
         try:
@@ -539,7 +539,7 @@ def _process_external_trace_configuration():
                 vars = { "callable_name": _newrelic.callable_name }
                 url = eval(url, vars)
 
-            _newrelic.log(_newrelic.LOG_INFO, "register external-trace %s" %
+            _newrelic.log(_newrelic.LOG_DEBUG, "register external-trace %s" %
                     ((module, object_path, library, url),))
 
             hook = _external_trace_import_hook(object_path, library, url)
@@ -551,7 +551,7 @@ def _process_external_trace_configuration():
 
 def _function_trace_import_hook(object_path, name, scope, interesting):
     def _instrument(target):
-        _newrelic.log(_newrelic.LOG_INFO, "wrap function-trace %s" %
+        _newrelic.log(_newrelic.LOG_DEBUG, "wrap function-trace %s" %
                 ((target, object_path, name, scope, interesting),))
 
         try:
@@ -598,7 +598,7 @@ def _process_function_trace_configuration():
                 vars = { "callable_name": _newrelic.callable_name }
                 name = eval(name, vars)
 
-            _newrelic.log(_newrelic.LOG_INFO, "register function-trace %s" %
+            _newrelic.log(_newrelic.LOG_DEBUG, "register function-trace %s" %
                     ((module, object_path, name, scope, interesting),))
 
             hook = _function_trace_import_hook(object_path, name,
@@ -611,7 +611,7 @@ def _process_function_trace_configuration():
 
 def _memcache_trace_import_hook(object_path, command):
     def _instrument(target):
-        _newrelic.log(_newrelic.LOG_INFO, "wrap memcache-trace %s" %
+        _newrelic.log(_newrelic.LOG_DEBUG, "wrap memcache-trace %s" %
                 ((target, object_path, command),))
 
         try:
@@ -648,7 +648,7 @@ def _process_memcache_trace_configuration():
                 vars = { "callable_name": _newrelic.callable_name }
                 command = eval(command, vars)
 
-            _newrelic.log(_newrelic.LOG_INFO, "register memcache-trace %s" %
+            _newrelic.log(_newrelic.LOG_DEBUG, "register memcache-trace %s" %
                     ((module, object_path, command),))
 
             hook = _memcache_trace_import_hook(object_path, command)
@@ -660,7 +660,7 @@ def _process_memcache_trace_configuration():
 
 def _name_transaction_import_hook(object_path, name, scope):
     def _instrument(target):
-        _newrelic.log(_newrelic.LOG_INFO, "wrap name-transaction %s" %
+        _newrelic.log(_newrelic.LOG_DEBUG, "wrap name-transaction %s" %
                 ((target, object_path, name, scope),))
 
         try:
@@ -703,7 +703,7 @@ def _process_name_transaction_configuration():
                 vars = { "callable_name": _newrelic.callable_name }
                 name = eval(name, vars)
 
-            _newrelic.log(_newrelic.LOG_INFO, "register name-transaction %s" %
+            _newrelic.log(_newrelic.LOG_DEBUG, "register name-transaction %s" %
                     ((module, object_path, name, scope),))
 
             hook = _name_transaction_import_hook(object_path, name,
@@ -716,7 +716,7 @@ def _process_name_transaction_configuration():
 
 def _error_trace_import_hook(object_path, ignore_errors):
     def _instrument(target):
-        _newrelic.log(_newrelic.LOG_INFO, "wrap error-trace %s" %
+        _newrelic.log(_newrelic.LOG_DEBUG, "wrap error-trace %s" %
                 ((target, object_path, ignore_errors),))
 
         try:
@@ -753,7 +753,7 @@ def _process_error_trace_configuration():
                 ignore_errors = _config_object.get(section,
                         'ignore_errors').split()
 
-            _newrelic.log(_newrelic.LOG_INFO, "register error-trace %s" %
+            _newrelic.log(_newrelic.LOG_DEBUG, "register error-trace %s" %
                   ((module, object_path, ignore_errors),))
 
             hook = _error_trace_import_hook(object_path, ignore_errors)
@@ -765,7 +765,7 @@ def _process_error_trace_configuration():
 
 def _function_profile_import_hook(object_path, interesting, depth):
     def _instrument(target):
-        _newrelic.log(_newrelic.LOG_INFO, "wrap function-profile %s" %
+        _newrelic.log(_newrelic.LOG_DEBUG, "wrap function-profile %s" %
                 ((target, object_path, interesting, depth),))
 
         try:
@@ -806,7 +806,7 @@ def _process_function_profile_configuration():
             if _config_object.has_option(section, 'depth'):
                 depth = _config_object.getint(section, 'depth')
 
-            _newrelic.log(_newrelic.LOG_INFO, "register function-profile %s" %
+            _newrelic.log(_newrelic.LOG_DEBUG, "register function-profile %s" %
                     ((module, object_path, interesting, depth),))
 
             hook = _function_profile_import_hook(object_path,
@@ -833,7 +833,7 @@ def _process_module_definition(target, module, function='instrument'):
             execute = _config_object.get(section, 'execute')
 
         if enabled and not execute:
-            _newrelic.log(_newrelic.LOG_INFO, "register module %s" %
+            _newrelic.log(_newrelic.LOG_DEBUG, "register module %s" %
                     ((target, module, function),))
 
             _newrelic.register_import_hook(target,

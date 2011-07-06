@@ -9,6 +9,7 @@
 #include "py_application.h"
 
 #include "globals.h"
+#include "logging.h"
 
 #include "application.h"
 #include "genericobject.h"
@@ -69,6 +70,9 @@ PyObject *NRApplication_Singleton(PyObject *args, PyObject *kwds)
      */
 
     if (!NRApplication_instances) {
+#ifdef NR_AGENT_DEBUG
+        nr__log(LOG_VERBOSEDEBUG, "start harvest thread");
+#endif
         nr__create_harvest_thread();
         NRApplication_instances = PyDict_New();
     }
@@ -108,6 +112,11 @@ PyObject *NRApplication_Singleton(PyObject *args, PyObject *kwds)
      * Otherwise we will need to create a new application object
      * instance, store it in the dictionary and then return it.
      */
+
+#ifdef NR_AGENT_DEBUG
+    nr__log(LOG_VERBOSEDEBUG, "create application %s",
+            PyString_AsString(name_as_bytes));
+#endif
 
     result = PyObject_CallFunctionObjArgs((PyObject *)&NRApplication_Type,
             name_as_bytes, NULL);

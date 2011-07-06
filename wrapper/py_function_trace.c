@@ -755,7 +755,21 @@ static PyObject *NRFunctionTraceWrapper_descr_get(
 
         NRFunctionTraceWrapperObject *result;
 
+        /*
+	 * When wrapper used around a class method, object is
+	 * passed as NULL. Don't know what else to do but in
+	 * turn pass it as None because if pass NULL then it is
+	 * actually terminates the argument list and it returns
+	 * NULL with no error set.
+         */
+
+        if (!object)
+            object = Py_None;
+
         descr = PyObject_CallFunctionObjArgs(method, object, type, NULL);
+
+        if (!descr)
+            return NULL;
 
         /*
          * We are circumventing new/init here for object but
@@ -793,7 +807,7 @@ static PyObject *NRFunctionTraceWrapper_descr_get(
 
         result->interesting = self->interesting;
 
-        Py_DECREF(descr);
+        Py_XDECREF(descr);
         Py_DECREF(method);
 
         return (PyObject *)result;

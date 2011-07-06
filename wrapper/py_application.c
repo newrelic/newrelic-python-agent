@@ -48,12 +48,7 @@ PyObject *NRApplication_Singleton(PyObject *args, PyObject *kwds)
     }
 
     /*
-     * If this is the first application object instance being
-     * created, we need to initialise the harvest thread. This
-     * is only done here when first application object created
-     * so that we allow for global settings to be first set.
-     *
-     * In addition to starting the harvest thread, we also
+     * If this is the first application object instance we
      * create a global dictionary to hold all application object
      * instances keyed by name. Application object instances
      * will be cached in this dictionary and successive calls to
@@ -69,13 +64,8 @@ PyObject *NRApplication_Singleton(PyObject *args, PyObject *kwds)
      * sharing should be okay.
      */
 
-    if (!NRApplication_instances) {
-#ifdef NR_AGENT_DEBUG
-        nr__log(LOG_VERBOSEDEBUG, "start harvest thread");
-#endif
-        nr__create_harvest_thread();
+    if (!NRApplication_instances)
         NRApplication_instances = PyDict_New();
-    }
 
     /*
      * The name can be optional. Where specified need to convert
@@ -259,8 +249,10 @@ static int NRApplication_init(NRApplicationObject *self, PyObject *args,
      * the servers via the local daemon as quick as possible.
      */
 
+#if 0
     nr__start_communication(dconn, self->application,
                             nr_per_process_globals.env, 0);
+#endif
 
     return 0;
 }

@@ -316,8 +316,9 @@ static PyObject *NRTransaction_new(PyTypeObject *type, PyObject *args,
 
     /*
      * Initialise thread local storage and coroutine local
-     * storage if necessary. Do this here rather than init
-     * method as technically the latter may not be called.
+     * storage if necessary. Startup the harvest thread. Do this
+     * here rather than init method as technically the latter
+     * may not be called.
      *
      * TODO Also initialise mutex for __exit__() function
      * used to get around thread safety issues in inner agent
@@ -329,6 +330,11 @@ static PyObject *NRTransaction_new(PyTypeObject *type, PyObject *args,
         NRTransaction_cls_key = PyThread_create_key();
 
         nrthread_mutex_init(&NRTransaction_exit_mutex, NULL);
+
+#ifdef NR_AGENT_DEBUG
+        nr__log(LOG_VERBOSEDEBUG, "start harvest thread");
+#endif
+        nr__create_harvest_thread();
     }
 
     /*

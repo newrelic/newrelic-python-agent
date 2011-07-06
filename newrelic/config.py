@@ -234,6 +234,15 @@ def _load_configuration(config_file=None, environment=None,
     _environment = environment
     _ignore_errors = ignore_errors
 
+    # If no configuration file then nothing more to be done.
+
+    if not config_file:
+        _newrelic.log(_newrelic.LOG_DEBUG, "no agent configuration file")
+        return
+
+    _newrelic.log(_newrelic.LOG_DEBUG, "agent configuration file was %s",
+            config_file)
+
     # Now read in the configuration file. Cache the config file
     # name in internal settings object as indication of succeeding.
 

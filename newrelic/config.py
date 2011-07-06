@@ -240,7 +240,7 @@ def _load_configuration(config_file=None, environment=None,
         _newrelic.log(_newrelic.LOG_DEBUG, "no agent configuration file")
         return
 
-    _newrelic.log(_newrelic.LOG_DEBUG, "agent configuration file was %s",
+    _newrelic.log(_newrelic.LOG_DEBUG, "agent configuration file was %s" %
             config_file)
 
     # Now read in the configuration file. Cache the config file

@@ -330,7 +330,9 @@ static PyObject *NRTransaction_new(PyTypeObject *type, PyObject *args,
         NRTransaction_cls_key = PyThread_create_key();
 
         nrthread_mutex_init(&NRTransaction_exit_mutex, NULL);
+    }
 
+    if (nr_per_process_globals.harvest_thread_valid == 0) {
 #ifdef NR_AGENT_DEBUG
         nr__log(LOG_VERBOSEDEBUG, "start harvest thread");
 #endif
@@ -404,11 +406,7 @@ static int NRTransaction_init(NRTransactionObject *self, PyObject *args,
         return -1;
     }
 
-    /*
-     * We already tried to initiate the connection when the
-     * application object was created. If that did not connect
-     * then we try and restart the connection at this point.
-     */
+    /* Trigger start for application if not already running. */
 
     nrthread_mutex_lock(&application->application->lock);
     if (application->application->agent_run_id == 0)

@@ -10,12 +10,12 @@ def run(args):
     settings.log_level = newrelic.agent.LOG_VERBOSEDEBUG
     settings.transaction_tracer.transaction_threshold = 0
 
-    newrelic.agent.initialize()
-
     try:
         os.unlink(settings.log_file)
     except:
         pass
+
+    newrelic.agent.initialize()
 
     @newrelic.agent.function_trace()
     def _function1():
@@ -85,9 +85,32 @@ def run(args):
     print 'the test not reporting data to the New Relic UI.'
     print
 
+    newrelic.agent.log(newrelic.agent.LOG_DEBUG, 'register application')
+
+    application = newrelic.agent.application()
+
+    status = application.activate()
+
+    newrelic.agent.log(newrelic.agent.LOG_DEBUG, 'running = %s' % status)
+
+    if not application.running:
+        for i in range(10):
+            newrelic.agent.log(newrelic.agent.LOG_DEBUG, 'retry #%d' % (i+1))
+            application.activate()
+            time.sleep(1.0)
+            if application.running:
+                break
+
+    if not application.running:
+        raise RuntimeError('Unable to register application for test, '
+                           'check that the local daemon process is running '
+                           'and is configured properly.')
+
+    newrelic.agent.log(newrelic.agent.LOG_DEBUG, 'run the actual test')
+
     _environ = { 'SCRIPT_NAME': '', 'PATH_INFO': '/test' }
 
     iterable = _application(_environ, _start_response)
     iterable.close()
 
-    _background_task()
+    #_background_task()

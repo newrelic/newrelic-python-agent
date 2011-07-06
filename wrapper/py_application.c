@@ -115,31 +115,6 @@ PyObject *NRApplication_Singleton(PyObject *args, PyObject *kwds)
 
     Py_DECREF(name_as_bytes);
 
-    /*
-     * Force a harvest to be performed at this point. This will
-     * ensure early notification is received by the local daemon
-     * agent and details of the application passed on with the
-     * application then being registered with the RPM server.
-     * This hopefully allows local daemon to get back a response
-     * from the RPM server in time for first true metrics
-     * harvest. If it doesn't then the metrics data from the
-     * first harvest can be lost because of the local daemon
-     * agent not yet having received from the RPM server the
-     * configuration options for this specific application. This
-     * can be a problem with short lived processes. See issue
-     * https://www.pivotaltracker.com/projects/???????.
-     */
-
-#if 0
-    /*
-     * XXX Don't force a harvest now as local daemon is supposed
-     * to be making a greater effort to ensure that metric data
-     * is not lost.
-     */
-
-    nr__harvest_thread_body(name);
-#endif
-
     return result;
 }
 
@@ -183,8 +158,6 @@ static int NRApplication_init(NRApplicationObject *self, PyObject *args,
                               PyObject *kwds)
 {
     PyObject *name = NULL;
-
-    nrdaemon_t *dconn = &nr_per_process_globals.nrdaemon;
 
     static char *kwlist[] = { "name", NULL };
 
@@ -244,16 +217,6 @@ static int NRApplication_init(NRApplicationObject *self, PyObject *args,
     nro__set_hash_string(self->application->appconfig,
             "binding.version", NEWRELIC_PYTHON_AGENT_VERSION);
 
-    /*
-     * Trigger attempt to get per application configuration from
-     * the servers via the local daemon as quick as possible.
-     */
-
-#if 0
-    nr__start_communication(dconn, self->application,
-                            nr_per_process_globals.env, 0);
-#endif
-
     return 0;
 }
 
@@ -311,11 +274,72 @@ static int NRApplication_set_enabled(NRApplicationObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRApplication_get_running(NRApplicationObject *self,
+                                           void *closure)
+{
+    return PyBool_FromLong(self->application->agent_run_id);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRApplication_activate(NRApplicationObject *self,
+                                        PyObject *args, PyObject *kwds)
+{
+    nrdaemon_t *dconn = &nr_per_process_globals.nrdaemon;
+
+    int retry_connection = 0;
+
+    int active = 1;
+
+    static char *kwlist[] = { NULL };
+
+    if (!self->application) {
+        PyErr_SetString(PyExc_TypeError, "application not initialized");
+        return NULL;
+    }
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, ":activate", kwlist))
+        return NULL;
+
+    /* Start harvest thread if not already running. */
+
+    if (nr_per_process_globals.harvest_thread_valid == 0) {
+#ifdef NR_AGENT_DEBUG
+        nr__log(LOG_VERBOSEDEBUG, "start harvest thread");
+#endif
+        nr__create_harvest_thread();
+
+        active = 0;
+    }
+
+    /* Trigger start for application if not already running. */
+
+    nrthread_mutex_lock(&self->application->lock);
+    if (self->application->agent_run_id == 0)
+        retry_connection = 1;
+    nrthread_mutex_unlock(&self->application->lock);
+
+    if (retry_connection) {
+        nr__start_communication(dconn, self->application,
+                nr_per_process_globals.env, 0);
+
+        active = 0;
+    }
+
+    return PyBool_FromLong(active);
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRApplication_record_metric(NRApplicationObject *self,
                                              PyObject *args, PyObject *kwds)
 {
     PyObject *name = NULL;
     double value = 0.0;
+
+    nrdaemon_t *dconn = &nr_per_process_globals.nrdaemon;
+
+    int retry_connection = 0;
 
     static char *kwlist[] = { "name", "value", NULL };
 
@@ -336,36 +360,60 @@ static PyObject *NRApplication_record_metric(NRApplicationObject *self,
         return NULL;
     }
 
+    /* Start harvest thread if not already running. */
+
+    if (nr_per_process_globals.harvest_thread_valid == 0) {
+#ifdef NR_AGENT_DEBUG
+        nr__log(LOG_VERBOSEDEBUG, "start harvest thread");
+#endif
+        nr__create_harvest_thread();
+    }
+
+    /* Trigger start for application if not already running. */
+
+    nrthread_mutex_lock(&self->application->lock);
+    if (self->application->agent_run_id == 0)
+        retry_connection = 1;
+    nrthread_mutex_unlock(&self->application->lock);
+
+    if (retry_connection) {
+        nr__start_communication(dconn, self->application,
+                nr_per_process_globals.env, 0);
+    }
+
     /*
      * Don't record any custom metrics if the application has
-     * been disabled.
+     * been disabled or startup for application with local
+     * daemon not completed.
      */
 
-    if (self->enabled) {
-        nrthread_mutex_lock(&self->application->lock);
+    nrthread_mutex_lock(&self->application->lock);
 
-        if (PyUnicode_Check(name)) {
-            PyObject *name_as_bytes = NULL;
+    if (self->application->agent_run_id != 0) {
+        if (self->enabled) {
+            if (PyUnicode_Check(name)) {
+                PyObject *name_as_bytes = NULL;
 
-            name_as_bytes = PyUnicode_AsUTF8String(name);
+                name_as_bytes = PyUnicode_AsUTF8String(name);
 
-            if (!name_as_bytes)
-                return NULL;
+                if (!name_as_bytes)
+                    return NULL;
 
-            nr_metric_table__force_add_metric_double(
-                    self->application->pending_harvest->metrics,
-                    PyString_AsString(name_as_bytes), NULL, value);
+                nr_metric_table__force_add_metric_double(
+                        self->application->pending_harvest->metrics,
+                        PyString_AsString(name_as_bytes), NULL, value);
 
-            Py_DECREF(name_as_bytes);
+                Py_DECREF(name_as_bytes);
+            }
+            else {
+                nr_metric_table__force_add_metric_double(
+                        self->application->pending_harvest->metrics,
+                        PyString_AsString(name), NULL, value);
+            }
         }
-        else {
-            nr_metric_table__force_add_metric_double(
-                    self->application->pending_harvest->metrics,
-                    PyString_AsString(name), NULL, value);
-        }
-
-        nrthread_mutex_unlock(&self->application->lock);
     }
+
+    nrthread_mutex_unlock(&self->application->lock);
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -374,6 +422,8 @@ static PyObject *NRApplication_record_metric(NRApplicationObject *self,
 /* ------------------------------------------------------------------------- */
 
 static PyMethodDef NRApplication_methods[] = {
+    { "activate",           (PyCFunction)NRApplication_activate,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
     { "record_metric",      (PyCFunction)NRApplication_record_metric,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { NULL, NULL}
@@ -384,6 +434,8 @@ static PyGetSetDef NRApplication_getset[] = {
                             NULL, 0 },
     { "enabled",            (getter)NRApplication_get_enabled,
                             (setter)NRApplication_set_enabled, 0 },
+    { "running",            (getter)NRApplication_get_running,
+                            NULL, 0 },
     { NULL },
 };
 

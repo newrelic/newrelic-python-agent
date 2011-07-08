@@ -743,10 +743,12 @@ static PyObject *NRFunctionTraceWrapper_descr_get(
 {
     PyObject *method = NULL;
 
+#if 0
     if (object == Py_None) {
         Py_INCREF(self);
         return (PyObject *)self;
     }
+#endif
 
     method = PyObject_GetAttrString(self->next_object, "__get__");
 

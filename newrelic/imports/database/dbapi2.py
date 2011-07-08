@@ -3,6 +3,8 @@ import newrelic.agent
 from newrelic.agent import (DatabaseTraceWrapper, ObjectWrapper)
 
 class CursorWrapper(ObjectWrapper):
+    def __iter__(self):
+        return iter(self.__next_object__)
     def execute(self, *args, **kwargs):
         return DatabaseTraceWrapper(self.__last_object__.execute,
                 (lambda sql, parameters=(): sql))(*args, **kwargs)
@@ -16,7 +18,7 @@ class CursorFactory(ObjectWrapper):
 
 class ConnectionWrapper(ObjectWrapper):
     def cursor(self, *args, **kwargs):
-        return CursorFactory(self.__last_object__.cursor)(*args, **kwargs)
+        return CursorFactory(self.__next_object__.cursor)(*args, **kwargs)
 
 class ConnectionFactory(ObjectWrapper):
     def __call__(self, *args, **kwargs):

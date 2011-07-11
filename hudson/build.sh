@@ -12,7 +12,7 @@ if test x"$BUILD_NUMBER" = x""
 then
     TOOLSDIR=python-tools/parts
 else
-    TOOLSDIR=/usr/local/python
+    TOOLSDIR=$HOME/python-tools
 fi
 
 # Work out what platform we are and what Python versions/variants we

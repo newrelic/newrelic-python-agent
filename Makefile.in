@@ -1,5 +1,6 @@
 PYTHON = @PYTHON@
 VIRTUALENV = @VIRTUALENV@
+GIT = @GIT@
 
 all : php_agent
 	$(PYTHON) setup.py build
@@ -22,14 +23,14 @@ distclean : clean
 	$(RM) Makefile
 	$(RM) setup.py
 	rm -rf test-env
-	-(cd php_agent && git clean -fdx)
+	-(cd php_agent && $(GIT) clean -fdx)
 
 realclean : distclean
 	rm -rf php_agent
 	rm -rf hudson-results
 
 php_agent :
-	git clone --branch pythonagent repo.newrelic.com:/git/php_agent.git
+	$(GIT) clone --branch pythonagent repo.newrelic.com:/git/php_agent.git
 
 install-testing : test-env all
 	test-env/bin/python setup.py install

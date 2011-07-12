@@ -29,7 +29,7 @@ realclean : distclean
 	rm -rf newrelic-python-*
 
 php_agent :
-	git clone repo.newrelic.com:/git/php_agent.git
+	git clone --branch pythonagent repo.newrelic.com:/git/php_agent.git
 
 install-testing : test-env all
 	test-env/bin/python setup.py install

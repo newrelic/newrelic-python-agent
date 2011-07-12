@@ -46,9 +46,9 @@ esac
 
 if test x"$BUILD_NUMBER" = x""
 then
-    test -f Makefile && make realclean
-else
     test -f Makefile && make distclean
+else
+    test -f Makefile && make realclean
 fi
 
 # Everything is keyed off the version number in the 'VERSION' file.

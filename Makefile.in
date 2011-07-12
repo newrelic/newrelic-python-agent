@@ -23,7 +23,7 @@ distclean : clean
 	$(RM) Makefile
 	$(RM) setup.py
 	rm -rf test-env
-	-(cd php_agent && $(GIT) clean -fdx)
+	-(test -d php_agent && cd php_agent && $(GIT) clean -fdx)
 
 realclean : distclean
 	rm -rf php_agent

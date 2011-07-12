@@ -24,7 +24,7 @@ AC_SUBST(VIRTUALENV)
 
 if test -z "${GIT}"; then
     AC_PATH_PROGS(GIT, git, [git],
-                  [`dirname $GIT`:$PATH:/usr/local/bin:/usr/local/git/bin])
+                  [$PATH:/usr/local/bin:/usr/local/git/bin])
 fi
 
 AC_SUBST(GIT)

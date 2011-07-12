@@ -119,7 +119,7 @@ done
 # built for as well as one which flags what version of the agent this is.
 
 echo $PLATFORM > $ROOTDIR/PLATFORM
-echo $VERSION.$BUILD_NUMBER > $AGENTDIR/VERSION
+echo $VERSION.$BUILD_NUMBER > $ROOTDIR/VERSION
 
 # Copy in licence file and installation instructions, plus the sample
 # configuration file to be used with the Python agent.

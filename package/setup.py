@@ -14,17 +14,11 @@ script_directory = os.path.dirname(__file__)
 if not script_directory:
   script_directory = os.getcwd()
 
-release_name = os.path.basename(script_directory)
+version_file = os.path.join(script_directory, 'VERSION')
+platform_file = os.path.join(script_directory, 'PLATFORM')
 
-release_fields = string.splitfields(release_name, '-', 3)
-
-try:
-  package_version, package_platform = release_fields[-2:]
-except ValueError:
-  print >> sys.stderr
-  print >> sys.stderr, 'Package corrupted, did you rename the directory?'
-  print >> sys.stderr
-  raise SystemExit(1)
+package_version = open(version_file).read().strip()
+package_platform = open(platform_file).read().strip()
 
 config_guess = os.path.join(script_directory, 'scripts/config.guess')
 
@@ -93,7 +87,9 @@ distutils.core.setup(
   license = copyright,
   url = "http://www.newrelic.com",
   packages = packages,
-  data_files = [('', ['_newrelic.so'])],
+  data_files = [('', ['newrelic-%s/_newrelic.so' % package_version])],
+  package_dir = { 'newrelic': 'newrelic-%s/newrelic' % package_version },
+  extra_path = ("newrelic", "newrelic-%s" % package_version),
   platforms = [package_platform],
   cmdclass = { 'install_data' : install_data_override,
                'install' : install_override },

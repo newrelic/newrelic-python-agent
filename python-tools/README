@@ -70,7 +70,7 @@ Thus, if doing the build of the Python installations as 'hudson' user,
 setup the global location with it as the owner.
 
     sudo mkdir /usr/local/python
-    sudo chown hudon /usr/local/python
+    sudo chown hudson /usr/local/python
 
 3. Run the build/install process.
 
@@ -165,7 +165,7 @@ The rules for each obviously then need to exist. These would be of the form:
 The 'url' attribute is what specifies where the source code is obtained from
 for that Python version. The 'extra_options' is what options should be used
 to the 'configure' script in the Python source code when it is being built
-and installed. You don't need to specific a '--prefix' option as 'buildout'
+and installed. You don't need to specify a '--prefix' option as 'buildout'
 will do that automatically.
 
 For 'extra_options', threading should always be enabled. It is not important

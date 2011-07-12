@@ -39,6 +39,18 @@ case $PLATFORM in
         ;;
 esac
 
+# Clean up checkout directory if there was the results of a prior build
+# still there. If running under hudson do a real clean to blow away the
+# checkout of the PHP agent code and start from scratch in case what we
+# are checking out changes, ie., different branch or tag.
+
+if test x"$BUILD_NUMBER" = x""
+then
+    test -f Makefile && make realclean
+else
+    test -f Makefile && make distclean
+fi
+
 # Everything is keyed off the version number in the 'VERSION' file.
 # This is even what is builtin to the compiled agent. The final
 # release file though gets a build number stuck on the end from the
@@ -51,11 +63,6 @@ if test -z "$BUILD_NUMBER"
 then
     BUILD_NUMBER=0
 fi
-
-# Clean up checkout directory if there was the results of a prior build
-# still there.
-
-test -f Makefile && make distclean
 
 # Define the destination for builds and where the agent specific parts
 # are to be installed. Remove any existing directory which corresponds
@@ -155,6 +162,7 @@ then
 else
     # XXX Grab from Hudson rsync server.
     true
+    /data/hudson/jobs/Local_Daemon_Matrix/configurations/axis-label/centos5-32/builds/242/archive/hudson-results/
 fi
 
 # Remove any tar balls which correspond to the same build and then build

@@ -3,8 +3,6 @@ import newrelic.agent
 from newrelic.agent import (DatabaseTraceWrapper, ObjectWrapper)
 
 class CursorWrapper(ObjectWrapper):
-    def __iter__(self):
-        return iter(self.__next_object__)
     def execute(self, *args, **kwargs):
         return DatabaseTraceWrapper(self.__last_object__.execute,
                 (lambda sql, parameters=(): sql))(*args, **kwargs)

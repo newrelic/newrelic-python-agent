@@ -241,6 +241,19 @@ static int NRObjectWrapper_setattro(
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRObjectWrapper_iter(NRObjectWrapperObject *self)
+{
+    if (!self->last_object) {
+      PyErr_SetString(PyExc_ValueError,
+              "object wrapper has not been initialised");
+      return NULL;
+    }
+
+    return PyObject_GetIter(self->next_object);
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRObjectWrapper_descr_get(PyObject *function,
                                                 PyObject *object,
                                                 PyObject *type)
@@ -299,7 +312,7 @@ PyTypeObject NRObjectWrapper_Type = {
     0,                      /*tp_clear*/
     0,                      /*tp_richcompare*/
     0,                      /*tp_weaklistoffset*/
-    0,                      /*tp_iter*/
+    (getiterfunc)NRObjectWrapper_iter, /*tp_iter*/
     0,                      /*tp_iternext*/
     0,                      /*tp_methods*/
     0,                      /*tp_members*/

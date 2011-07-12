@@ -7,8 +7,11 @@ config_vars = sysconfig._config_vars
 config_vars['CFLAGS'] = config_vars['CFLAGS'].replace(' -Os ', ' ')
 config_vars['OPT'] = config_vars['OPT'].replace(' -Os ', ' ')
 
-version = open('VERSION').read().strip()
+base_version = open('VERSION').read().strip()
+build_number = os.environ.get('HUDSON_BUILD_NUMBER', '0')
 copyright = '(C) Copyright 2010-2011 New Relic Inc. All rights reserved.'
+
+version = "%s.%s" % (base_version, build_number)
 
 script_directory = os.path.dirname(__file__)
 if not script_directory:
@@ -112,4 +115,5 @@ setup(
   packages = packages,
   ext_modules = [extension],
   platforms = [platform],
+  extra_path = ("newrelic", "newrelic-%s" % version),
 )

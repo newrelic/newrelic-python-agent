@@ -64,6 +64,9 @@ then
     BUILD_NUMBER=0
 fi
 
+HUDSON_BUILD_NUMBER=$BUILD_NUMBER
+export HUDSON_BUILD_NUMBER
+
 # Define the destination for builds and where the agent specific parts
 # are to be installed. Remove any existing directory which corresponds
 # to the same build. Then create the new directory structure.

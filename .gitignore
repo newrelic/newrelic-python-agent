@@ -12,6 +12,8 @@
 /test-env
 /unit-tests/test_*.py.log
 /load-tests/test_*.py.log
+
+/hudson-downloads
 /hudson-results
 
 /python-tools/.installed.cfg

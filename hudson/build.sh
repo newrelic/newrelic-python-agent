@@ -28,14 +28,20 @@ case $PLATFORM in
     i386-apple-darwin)
         PYTHON_VERSIONS='2.6 2.7'
         UNICODE_VARIANTS='ucs2 ucs4'
+        DAEMON_PLATFORM='macos106-64'
+        DAEMON_EXECUTABLE='newrelic-daemon.universal'
         ;;
     i686-pc-linux-gnu)
         PYTHON_VERSIONS='2.4 2.5 2.6 2.7'
         UNICODE_VARIANTS='ucs2 ucs4'
+        DAEMON_PLATFORM='centos5-32'
+        DAEMON_EXECUTABLE='newrelic-daemon.x86'
         ;;
     x86_64-unknown-linux-gnu)
         PYTHON_VERSIONS='2.4 2.5 2.6 2.7'
         UNICODE_VARIANTS='ucs2 ucs4'
+        DAEMON_PLATFORM='centos5-64'
+        DAEMON_EXECUTABLE='newrelic-daemon.x64'
         ;;
 esac
 
@@ -153,6 +159,10 @@ cp php_agent/scripts/newrelic.cfg.template $SCRIPTSDIR/
 # if from the parallel source checkout directory. If running under Hudson
 # then we need to grab it from the Hudson rsync server.
 
+HUDSON_RSYNC_SERVER='hudson@hudson.newrelic.com'
+HUDSON_RSYNC_DAEMON_FILES="/data/hudson/jobs/Local_Daemon_Matrix/configurations/axis-label/${DAEMON_PLATFORM}/lastStable/archive/hudson-results/*"
+HUDSON_RYSNC_DOWNLOADS="hudson-downloads"
+
 if test x"$BUILD_NUMBER" = x"0"
 then
     if test -x ../local_daemon/src/newrelic-daemon
@@ -163,9 +173,19 @@ then
             sed -e 's/^.* "//' -e 's/".*$/.0/' > $DAEMONDIR/VERSION
     fi
 else
-    # XXX Grab from Hudson rsync server.
-    true
-    /data/hudson/jobs/Local_Daemon_Matrix/configurations/axis-label/centos5-32/builds/242/archive/hudson-results/
+    echo rm -fr "${HUDSON_RYSNC_DOWNLOADS}"
+    mkdir "${HUDSON_RYSNC_DOWNLOADS}"
+
+    rsync -rvz "${HUDSON_RSYNC_SERVER}:${HUDSON_RSYNC_DAEMON_FILES}" \
+        "${HUDSON_RYSNC_DOWNLOADS}/"
+
+    cp ${HUDSON_RYSNC_DOWNLOADS}/${DAEMON_EXECUTABLE} \
+        $DAEMONDIR/newrelic-daemon
+
+    . ${HUDSON_RYSNC_DOWNLOADS}/daemonversion.sh
+    echo ${daemonversion} > $DAEMONDIR/VERSION
+
+    echo rm -fr "${HUDSON_RYSNC_DOWNLOADS}"
 fi
 
 # Remove any tar balls which correspond to the same build and then build

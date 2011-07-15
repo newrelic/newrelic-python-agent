@@ -46,15 +46,15 @@ case $PLATFORM in
 esac
 
 # Clean up checkout directory if there was the results of a prior build
-# still there. If running under hudson do a real clean to blow away the
-# checkout of the PHP agent code and start from scratch in case what we
-# are checking out changes, ie., different branch or tag.
+# still there. If running under hudson blow away the checkout of the PHP
+# agent code and start from scratch to ensure we get head of master.
 
 if test x"$BUILD_NUMBER" = x""
 then
     test -f Makefile && make distclean
 else
     test -f Makefile && make realclean
+    test -d php_agent && rm -rf php_agent
 fi
 
 # Everything is keyed off the version number in the 'VERSION' file.

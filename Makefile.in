@@ -30,7 +30,7 @@ realclean : distclean
 	rm -rf hudson-results
 
 php_agent :
-	$(GIT) clone --branch pythonagent repo.newrelic.com:/git/php_agent.git
+	$(GIT) clone repo.newrelic.com:/git/php_agent.git
 
 install-testing : test-env all
 	test-env/bin/python setup.py install

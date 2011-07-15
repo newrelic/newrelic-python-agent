@@ -25,6 +25,9 @@ static PyObject *NRTracerSettings_new(PyTypeObject *type, PyObject *args,
 
     self->transaction_threshold = 0;
     self->transaction_threshold_is_apdex_f = 1;
+    self->slow_sql_stacktrace = 500 * 1000;
+    self->tt_enabled = 1;
+    self->tt_recordsql = NR_TRANSACTION_TRACE_RECORDSQL_OBFUSCATED;
 
     return (PyObject *)self;
 }
@@ -41,7 +44,7 @@ static void NRTracerSettings_dealloc(NRTracerSettingsObject *self)
 static PyObject *NRTracerSettings_get_enabled(NRTracerSettingsObject *self,
                                               void *closure)
 {
-    return PyBool_FromLong(nr_per_process_globals.tt_enabled);
+    return PyBool_FromLong(self->tt_enabled);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -61,9 +64,9 @@ static int NRTracerSettings_set_enabled(NRTracerSettingsObject *self,
     }
 
     if (value == Py_True)
-        nr_per_process_globals.tt_enabled = 1;
+        self->tt_enabled = 1;
     else
-        nr_per_process_globals.tt_enabled = 0;
+        self->tt_enabled = 0;
 
     return 0;
 }
@@ -176,7 +179,7 @@ static int NRTracerSettings_set_threshold(NRTracerSettingsObject *self,
 static PyObject *NRTracerSettings_get_record_sql(NRTracerSettingsObject *self,
                                                  void *closure)
 {
-    return PyInt_FromLong(nr_per_process_globals.tt_recordsql);
+    return PyInt_FromLong(self->tt_recordsql);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -195,7 +198,7 @@ static int NRTracerSettings_set_record_sql(NRTracerSettingsObject *self,
         return -1;
     }
 
-    nr_per_process_globals.tt_recordsql = PyInt_AsLong(value);
+    self->tt_recordsql = PyInt_AsLong(value);
 
     return 0;
 }
@@ -205,8 +208,7 @@ static int NRTracerSettings_set_record_sql(NRTracerSettingsObject *self,
 static PyObject *NRTracerSettings_get_sql_threshold(
         NRTracerSettingsObject *self, void *closure)
 {
-    return PyFloat_FromDouble((double)
-            nr_per_process_globals.slow_sql_stacktrace/1000000.0);
+    return PyFloat_FromDouble((double)self->slow_sql_stacktrace/1000000.0);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -227,16 +229,14 @@ static int NRTracerSettings_set_sql_threshold(NRTracerSettingsObject *self,
     }
 
     if (PyFloat_Check(value)) {
-        nr_per_process_globals.slow_sql_stacktrace =
-                PyFloat_AsDouble(value) * 1000000;
+        self->slow_sql_stacktrace = PyFloat_AsDouble(value) * 1000000;
     }
     else {
-        nr_per_process_globals.slow_sql_stacktrace =
-                PyInt_AsLong(value) * 1000000;
+        self->slow_sql_stacktrace = PyInt_AsLong(value) * 1000000;
     }
 
-    if (nr_per_process_globals.slow_sql_stacktrace < 0)
-        nr_per_process_globals.slow_sql_stacktrace = -1;
+    if (self->slow_sql_stacktrace < 0)
+        self->slow_sql_stacktrace = -1;
 
     return 0;
 }
@@ -400,6 +400,7 @@ static PyObject *NRErrorsSettings_new(PyTypeObject *type, PyObject *args,
         return NULL;
 
     self->ignore_errors = PyDict_New();
+    self->errors_enabled = 1;
 
     return (PyObject *)self;
 }
@@ -418,7 +419,7 @@ static void NRErrorsSettings_dealloc(NRErrorsSettingsObject *self)
 static PyObject *NRErrorsSettings_get_enabled(NRErrorsSettingsObject *self,
                                               void *closure)
 {
-    return PyBool_FromLong(nr_per_process_globals.errors_enabled);
+    return PyBool_FromLong(self->errors_enabled);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -438,9 +439,9 @@ static int NRErrorsSettings_set_enabled(NRErrorsSettingsObject *self,
     }
 
     if (value == Py_True)
-        nr_per_process_globals.errors_enabled = 1;
+        self->errors_enabled = 1;
     else
-        nr_per_process_globals.errors_enabled = 0;
+        self->errors_enabled = 0;
 
     return 0;
 }
@@ -668,6 +669,8 @@ static PyObject *NRDaemonSettings_new(PyTypeObject *type, PyObject *args,
     if (!self)
         return NULL;
 
+    self->sync_startup = 0;
+
     return (PyObject *)self;
 }
 
@@ -717,7 +720,7 @@ static int NRDaemonSettings_set_socket_path(
 static PyObject *NRDaemonSettings_get_sync_startup(
         NRDaemonSettingsObject *self, void *closure)
 {
-    return PyBool_FromLong(nr_per_process_globals.sync_startup);
+    return PyBool_FromLong(self->sync_startup);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -738,9 +741,9 @@ static int NRDaemonSettings_set_sync_startup(NRDaemonSettingsObject *self,
     }
 
     if (value == Py_True)
-        nr_per_process_globals.sync_startup = 1;
+        self->sync_startup = 1;
     else
-        nr_per_process_globals.sync_startup = 0;
+        self->sync_startup = 0;
 
     return 0;
 }
@@ -1011,7 +1014,10 @@ static PyObject *NRSettings_new(PyTypeObject *type, PyObject *args,
             PyObject_CallFunctionObjArgs(
             (PyObject *)&NRDebugSettings_Type, NULL);
 
+    self->app_name = nrstrdup("Python Application");
+
     self->monitor_mode = 1;
+    self->capture_params = 1;
     self->ignored_params = PyList_New(0);
 
     return (PyObject *)self;
@@ -1021,6 +1027,9 @@ static PyObject *NRSettings_new(PyTypeObject *type, PyObject *args,
 
 static void NRSettings_dealloc(NRSettingsObject *self)
 {
+    if (self->app_name)
+        nrfree(self->app_name);
+
     Py_DECREF(self->config_file);
     Py_DECREF(self->environment);
 
@@ -1118,8 +1127,8 @@ static int NRSettings_set_environment(NRSettingsObject *self, PyObject *value)
 
 static PyObject *NRSettings_get_app_name(NRSettingsObject *self, void *closure)
 {
-    if (nr_per_process_globals.appname)
-        return PyString_FromString(nr_per_process_globals.appname);
+    if (self->app_name)
+        return PyString_FromString(self->app_name);
 
     Py_INCREF(Py_None);
     return Py_None;
@@ -1140,8 +1149,8 @@ static int NRSettings_set_app_name(NRSettingsObject *self, PyObject *value)
         return -1;
     }
 
-    if (nr_per_process_globals.appname)
-        nrfree(nr_per_process_globals.appname);
+    if (self->app_name)
+        nrfree(self->app_name);
 
     if (PyUnicode_Check(value)) {
         PyObject *bytes = NULL;
@@ -1151,12 +1160,12 @@ static int NRSettings_set_app_name(NRSettingsObject *self, PyObject *value)
         if (!bytes)
             return -1;
 
-        nr_per_process_globals.appname = nrstrdup(PyString_AsString(bytes));
+        self->app_name = nrstrdup(PyString_AsString(bytes));
 
         Py_DECREF(bytes);
     }
     else
-        nr_per_process_globals.appname = nrstrdup(PyString_AsString(value));
+        self->app_name = nrstrdup(PyString_AsString(value));
 
     return 0;
 }
@@ -1273,7 +1282,7 @@ static int NRSettings_set_log_level(NRSettingsObject *self, PyObject *value)
 static PyObject *NRSettings_get_capture_params(NRSettingsObject *self,
                                                void *closure)
 {
-    return PyInt_FromLong(nr_per_process_globals.enable_params);
+    return PyBool_FromLong(self->capture_params);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1293,9 +1302,9 @@ static int NRSettings_set_capture_params(NRSettingsObject *self,
     }
 
     if (value == Py_True)
-        nr_per_process_globals.enable_params = 1;
+        self->capture_params = 1;
     else
-        nr_per_process_globals.enable_params = 0;
+        self->capture_params = 0;
 
     return 0;
 }

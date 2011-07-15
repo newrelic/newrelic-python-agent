@@ -8,6 +8,7 @@
 
 #include "globals.h"
 
+#include "py_settings.h"
 #include "py_utilities.h"
 
 #include "structmember.h"
@@ -1040,8 +1041,12 @@ static int NRWSGIApplicationWrapper_init(
     if (Py_TYPE(application) != &NRApplication_Type) {
         PyObject *func_args;
 
+        NRSettingsObject *settings = NULL;
+
+        settings = (NRSettingsObject *)NRSettings_Singleton();
+
         if (application == Py_None) {
-            application = PyString_FromString(nr_per_process_globals.appname);
+            application = PyString_FromString(settings->app_name);
             func_args = PyTuple_Pack(1, application);
             Py_DECREF(application);
         }

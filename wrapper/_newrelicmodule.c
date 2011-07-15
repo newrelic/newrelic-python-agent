@@ -2008,14 +2008,6 @@ init_newrelic(void)
     nrthread_mutex_init(&(nr_per_process_globals.nrdaemon.lock), NULL);
 
     /*
-     * Application name initialisation. This is only a default
-     * and can be overridden by configuration file or in user
-     * code at point decorator or wrapper applied.
-     */
-
-    nr_per_process_globals.appname = nrstrdup("Python Application");
-
-    /*
      * Logging initialisation in daemon client code is PHP
      * specific so set reasonable defaults here instead.
      * Initially there will be no log file and set level to be
@@ -2043,17 +2035,6 @@ init_newrelic(void)
     nr_per_process_globals.nrdaemon.sockfd = -1;
     nr_per_process_globals.nrdaemon.buffer = NULL;
 
-    nr_per_process_globals.sync_startup = 0;
-
-    /*
-     * Initialise default whether request parameters are
-     * captured. This is only a default and can be overridden by
-     * configuration file or in user code. When enabled specific
-     * request parameters can still be excluded.
-     */
-
-    nr_per_process_globals.enable_params = 1;
-
     /*
      * Initialise metrics table. The limit of number of metrics
      * collected per harvest file can be overriden via the
@@ -2066,31 +2047,6 @@ init_newrelic(void)
     nr_per_process_globals.metric_limit = 2000;
 
     nr__initialize_overflow_metric();
-
-    /*
-     * Initialise transaction, errors and sql tracing defaults.
-     * Transaction tracing is on by default and can be
-     * overridden via the settings object at any time and will
-     * apply on the next harvest cycle.
-     *
-     * TODO These need to be able to be overridden on per
-     * request basis via WSGI environ dictionary. The globals
-     * may not need to use PHP variables if only PHP wrapper
-     * refers to them. Only problem is that PHP agent isn't
-     * properly thread safe and relies on fact that per request
-     * variable stashed into a global.
-     */
-
-    nr_per_process_globals.errors_enabled = 1;
-
-    nr_per_process_globals.tt_enabled = 1;
-    nr_per_process_globals.tt_threshold_is_apdex_f = 1;
-    nr_initialize_global_tt_threshold_from_apdex(NULL);
-
-    nr_per_process_globals.tt_recordsql =
-            NR_TRANSACTION_TRACE_RECORDSQL_OBFUSCATED;
-
-    nr_per_process_globals.slow_sql_stacktrace = 500 * 1000;
 
     /*
      * XXX Following metrics settings only available as string

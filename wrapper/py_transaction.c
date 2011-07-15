@@ -26,7 +26,6 @@
 
 static int NRTransaction_tls_key = 0;
 static int NRTransaction_cls_key = 0;
-static nrthread_mutex_t NRTransaction_exit_mutex;
 
 /* ------------------------------------------------------------------------- */
 
@@ -319,17 +318,11 @@ static PyObject *NRTransaction_new(PyTypeObject *type, PyObject *args,
      * storage if necessary. Startup the harvest thread. Do this
      * here rather than init method as technically the latter
      * may not be called.
-     *
-     * TODO Also initialise mutex for __exit__() function
-     * used to get around thread safety issues in inner agent
-     * code. See https://www.pivotaltracker.com/projects/154789.
      */
 
     if (!NRTransaction_tls_key) {
         NRTransaction_tls_key = PyThread_create_key();
         NRTransaction_cls_key = PyThread_create_key();
-
-        nrthread_mutex_init(&NRTransaction_exit_mutex, NULL);
     }
 
     if (nr_per_process_globals.harvest_thread_valid == 0) {
@@ -349,6 +342,8 @@ static PyObject *NRTransaction_new(PyTypeObject *type, PyObject *args,
     if (!self)
         return NULL;
 
+    settings = (NRSettingsObject *)NRSettings_Singleton();
+
     self->application = NULL;
     self->transaction = NULL;
     self->transaction_errors = NULL;
@@ -360,9 +355,7 @@ static PyObject *NRTransaction_new(PyTypeObject *type, PyObject *args,
     self->request_parameters = PyDict_New();
     self->custom_parameters = PyDict_New();
 
-    self->capture_params = nr_per_process_globals.enable_params;
-
-    settings = (NRSettingsObject *)NRSettings_Singleton();
+    self->capture_params = settings->capture_params;
 
     self->ignored_params = PyObject_CallFunctionObjArgs(
                 (PyObject *)&PyList_Type, settings->ignored_params, NULL);
@@ -408,6 +401,8 @@ static int NRTransaction_init(NRTransactionObject *self, PyObject *args,
 
     /* Trigger start for application if not already running. */
 
+    settings = (NRSettingsObject *)NRSettings_Singleton();
+
     nrthread_mutex_lock(&application->application->lock);
     if (application->application->agent_run_id == 0)
         retry_connection = 1;
@@ -415,7 +410,8 @@ static int NRTransaction_init(NRTransactionObject *self, PyObject *args,
 
     if (retry_connection) {
         nr__start_communication(dconn, application->application,
-                nr_per_process_globals.env, 0);
+                nr_per_process_globals.env,
+                settings->daemon_settings->sync_startup);
     }
 
     /*
@@ -434,15 +430,19 @@ static int NRTransaction_init(NRTransactionObject *self, PyObject *args,
     self->application = application;
     Py_INCREF(self->application);
 
-    settings = (NRSettingsObject *)NRSettings_Singleton();
-
     if (settings->monitor_mode &&
         (enabled == Py_True || (!enabled && application->enabled))) {
-        self->transaction = nr_web_transaction__allocate();
+        self->transaction = nr_web_transaction__allocate(
+                application->application);
 
         self->transaction->path_type = NR_PATH_TYPE_UNKNOWN;
         self->transaction->path = NULL;
         self->transaction->realpath = NULL;
+
+        self->opts.tt_enabled = settings->tracer_settings->tt_enabled;
+        self->opts.tt_recordsql = settings->tracer_settings->tt_recordsql;
+
+        self->transaction->opts = &self->opts;
 
         /*
 	 * If we have not connected to the local daemon as yet
@@ -667,59 +667,22 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
     nr_node_header__record_stoptime_and_pop_current(
             (nr_node_header *)self->transaction, NULL);
 
-    /*
-     * TODO Switching what the current application is here is a
-     * PITA. The following harvest function should accept the
-     * application as a parameter rather than internally
-     * consulting the global variable referencing the current
-     * application. See more details on Pivotal Tracker at
-     * https://www.pivotaltracker.com/story/show/8953159. We use
-     * a local mutex to prevent multiple threads running
-     * through this critical section at this point. We release
-     * the Python GIL at this point just in case inner agent
-     * code were ever to take a long time or changed in some
-     * way that it may block because of forced socket operations.
-     * If that can never occur and processing of transaction
-     * is always quick, then could just use Python GIL for the
-     * purposes of excluding multiple threads from this section.
-     */
-
     application = self->application->application;
-
-    nrthread_mutex_lock(&NRTransaction_exit_mutex);
-
-    /*
-     * TODO The use of a global for transaction threshold in
-     * PHP agent core is broken for multithreaded applications.
-     * The problem being that the global needs to be switched
-     * on each request to correspond to the value for the
-     * associated application if apdex_f calculation being used
-     * or fallback to integer value supplied in configuration
-     * file if not. See more details on Pivotal Tracker at
-     * https://www.pivotaltracker.com/story/show/12771611.
-     * Note have have this workaround before lock application
-     * because setting threshold from apdex against a specific
-     * application grabs the application lock. If do it after
-     * we have grabbed application lock it will deadlock as the
-     * lock isn't recursive.
-     */
 
     settings = (NRSettingsObject *)NRSettings_Singleton();
 
+    /*
+     * XXX This needs to be against transaction. See
+     * https://www.pivotaltracker.com/story/show/15762051
+     */
+
     if (settings->tracer_settings->transaction_threshold_is_apdex_f) {
-        nr_per_process_globals.tt_threshold_is_apdex_f = 1;
-#if 0
-        /* Done in nr__switch_to_application(). */
-        nr_initialize_global_tt_threshold_from_apdex(application);
-#endif
+        application->tt_threshold = application->apdex_t * 4;
     }
     else {
-        nr_per_process_globals.tt_threshold_is_apdex_f = 0;
-        nr_per_process_globals.tt_threshold =
+        application->tt_threshold =
                 settings->tracer_settings->transaction_threshold;
     }
-
-    nr__switch_to_application(application);
 
     /*
      * Must lock application here as the harvest thread uses
@@ -731,22 +694,12 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
 
     nrthread_mutex_lock(&application->lock);
 
-    /*
-     * XXX Can't release GIL here as trying to acquire it on
-     * exit could deadlock where another thread is trying to
-     * lock the exit mutex lock above.
-     */
-
-#if 0
     Py_BEGIN_ALLOW_THREADS
-#endif
 
     keep_wt = nr__distill_web_transaction_into_harvest_data(
             self->transaction);
 
-#if 0
     Py_END_ALLOW_THREADS
-#endif
 
     /*
      * Only add request parameters and custom parameters into
@@ -813,9 +766,7 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
      * but then supressed within the code.
      */
 
-#if 0
     Py_BEGIN_ALLOW_THREADS
-#endif
 
     nr_transaction_error__process_errors(self->transaction_errors,
             application->pending_harvest->metrics);
@@ -836,13 +787,9 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
             !!application->pending_harvest->errors);
 #endif
 
-#if 0
     Py_END_ALLOW_THREADS
-#endif
 
     nrthread_mutex_unlock(&application->lock);
-
-    nrthread_mutex_unlock(&NRTransaction_exit_mutex);
 
     self->transaction_state = NR_TRANSACTION_STATE_STOPPED;
 
@@ -898,7 +845,9 @@ static PyObject *NRTransaction_notice_error(
      * end server application says we should collect errors.
      */
 
-    if (!nr_per_process_globals.errors_enabled) {
+    settings = (NRSettingsObject *)NRSettings_Singleton();
+
+    if (!settings->errors_settings->errors_enabled) {
         Py_INCREF(Py_None);
         return Py_None;
     }
@@ -914,8 +863,6 @@ static PyObject *NRTransaction_notice_error(
         PyObject *item = NULL;
 
         PyObject *name = NULL;
-
-        settings = (NRSettingsObject *)NRSettings_Singleton();
 
         /*
          * Check whether this is an error type we should ignore.
@@ -1119,11 +1066,6 @@ static PyObject *NRTransaction_name_transaction(
         Py_INCREF(Py_None);
         return Py_None;
     }
-
-    /*
-     * XXX No ability in PHP agent core yet to override scope so
-     * we just append to a custom prefix.
-     */
 
     nrfree(self->transaction->path);
 

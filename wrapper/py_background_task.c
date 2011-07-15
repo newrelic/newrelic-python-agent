@@ -205,7 +205,7 @@ static int NRBackgroundTaskWrapper_init(NRBackgroundTaskWrapperObject *self,
         PyObject *func_args;
 
         if (application == Py_None) {
-            application = PyString_FromString(nr_per_process_globals.appname);
+            application = PyString_FromString("Python Application");
             func_args = PyTuple_Pack(1, application);
             Py_DECREF(application);
         }

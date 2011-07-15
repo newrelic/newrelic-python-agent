@@ -15,12 +15,16 @@ typedef struct {
     PyObject_HEAD
     int64_t transaction_threshold;
     int transaction_threshold_is_apdex_f;
+    int64_t slow_sql_stacktrace;
+    int tt_enabled;
+    int tt_recordsql;
 } NRTracerSettingsObject;
 
 extern PyTypeObject NRTracerSettings_Type;
 
 typedef struct {
     PyObject_HEAD
+    int errors_enabled;
     PyObject *ignore_errors;
 } NRErrorsSettingsObject;
 
@@ -35,6 +39,7 @@ extern PyTypeObject NRBrowserSettings_Type;
 
 typedef struct {
     PyObject_HEAD
+    int sync_startup;
 } NRDaemonSettingsObject;
 
 extern PyTypeObject NRDaemonSettings_Type;
@@ -55,6 +60,8 @@ typedef struct {
     NRDaemonSettingsObject *daemon_settings;
     NRDebugSettingsObject *debug_settings;
     int monitor_mode;
+    char *app_name;
+    int capture_params;
     PyObject *ignored_params;
 } NRSettingsObject;
 

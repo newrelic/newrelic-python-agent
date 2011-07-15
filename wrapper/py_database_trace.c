@@ -6,6 +6,7 @@
 
 #include "py_database_trace.h"
 
+#include "py_settings.h"
 #include "py_utilities.h"
 
 #include "globals.h"
@@ -147,6 +148,8 @@ static PyObject *NRDatabaseTrace_exit(NRDatabaseTraceObject *self,
     nr_web_transaction *transaction;
     nr_transaction_node *transaction_trace;
 
+    NRSettingsObject *settings = NULL;
+
     transaction_trace = self->transaction_trace;
 
     if (!transaction_trace) {
@@ -171,11 +174,13 @@ static PyObject *NRDatabaseTrace_exit(NRDatabaseTraceObject *self,
 
     /* Record stack trace if this was a slow sql transaction. */
 
+    settings = (NRSettingsObject *)NRSettings_Singleton();
+
     if (!nr_node_header__delete_if_not_slow_enough(
             (nr_node_header *)transaction_trace, 1, transaction)) {
-        if (nr_per_process_globals.slow_sql_stacktrace >= 0) {
+        if (settings->tracer_settings->slow_sql_stacktrace >= 0) {
             if (transaction_trace->header.times.duration >
-                nr_per_process_globals.slow_sql_stacktrace) {
+                settings->tracer_settings->slow_sql_stacktrace) {
 
                 PyObject *stack_trace = NULL;
 

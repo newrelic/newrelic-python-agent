@@ -8,6 +8,8 @@
 
 #include "py_application.h"
 
+#include "py_settings.h"
+
 #include "globals.h"
 #include "logging.h"
 
@@ -81,7 +83,7 @@ PyObject *NRApplication_Singleton(PyObject *args, PyObject *kwds)
         name_as_bytes = PyUnicode_AsUTF8String(name);
     }
     else {
-        name_as_bytes = PyString_FromString(nr_per_process_globals.appname);
+        name_as_bytes = PyString_FromString("Python Application");
     }
 
     /*
@@ -287,19 +289,23 @@ static PyObject *NRApplication_activate(NRApplicationObject *self,
 {
     nrdaemon_t *dconn = &nr_per_process_globals.nrdaemon;
 
+    PyObject *sync_startup = Py_False;
+
     int retry_connection = 0;
 
     int active = 1;
 
-    static char *kwlist[] = { NULL };
+    static char *kwlist[] = { "wait", NULL };
 
     if (!self->application) {
         PyErr_SetString(PyExc_TypeError, "application not initialized");
         return NULL;
     }
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, ":activate", kwlist))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O!:activate", kwlist,
+            &PyBool_Type, &sync_startup)) {
         return NULL;
+    }
 
     /* Start harvest thread if not already running. */
 
@@ -321,7 +327,7 @@ static PyObject *NRApplication_activate(NRApplicationObject *self,
 
     if (retry_connection) {
         nr__start_communication(dconn, self->application,
-                nr_per_process_globals.env, 0);
+                nr_per_process_globals.env, (sync_startup == Py_True));
 
         active = 0;
     }
@@ -338,6 +344,8 @@ static PyObject *NRApplication_record_metric(NRApplicationObject *self,
     double value = 0.0;
 
     nrdaemon_t *dconn = &nr_per_process_globals.nrdaemon;
+
+    NRSettingsObject *settings = NULL;
 
     int retry_connection = 0;
 
@@ -371,6 +379,8 @@ static PyObject *NRApplication_record_metric(NRApplicationObject *self,
 
     /* Trigger start for application if not already running. */
 
+    settings = (NRSettingsObject *)NRSettings_Singleton();
+
     nrthread_mutex_lock(&self->application->lock);
     if (self->application->agent_run_id == 0)
         retry_connection = 1;
@@ -378,7 +388,8 @@ static PyObject *NRApplication_record_metric(NRApplicationObject *self,
 
     if (retry_connection) {
         nr__start_communication(dconn, self->application,
-                nr_per_process_globals.env, 0);
+                nr_per_process_globals.env,
+                settings->daemon_settings->sync_startup);
     }
 
     /*

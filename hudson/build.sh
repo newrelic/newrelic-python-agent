@@ -159,7 +159,13 @@ cp php_agent/scripts/newrelic.cfg.template $SCRIPTSDIR/
 # if from the parallel source checkout directory. If running under Hudson
 # then we need to grab it from the Hudson rsync server.
 
-HUDSON_RSYNC_SERVER='hudson@hudson.newrelic.com'
+if test x"$BUILD_NUMBER" = x"0"
+then
+    HUDSON_RSYNC_SERVER='hudson@hudson.newrelic.com'
+else
+    HUDSON_RSYNC_SERVER='hudson.newrelic.com'
+fi
+
 HUDSON_RSYNC_DAEMON_FILES="/data/hudson/jobs/Local_Daemon_Matrix/configurations/axis-label/${DAEMON_PLATFORM}/lastStable/archive/hudson-results/*"
 HUDSON_RYSNC_DOWNLOADS="hudson-downloads"
 

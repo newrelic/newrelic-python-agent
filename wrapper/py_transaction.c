@@ -772,6 +772,12 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
 
 #ifdef NR_AGENT_DEBUG
     nr__log(LOG_VERBOSEDEBUG, "keep_wt = %d", keep_wt);
+
+    nr__log(LOG_VERBOSEDEBUG, "ignore = %d", self->transaction->ignore);
+
+    nr__log(LOG_VERBOSEDEBUG, "app.collect_traces = %d",
+            self->transaction->app->collect_traces);
+
     nr__log(LOG_VERBOSEDEBUG, "header.times.duration = %d",
             self->transaction->header.times.duration);
     nr__log(LOG_VERBOSEDEBUG, "opts.tt_threshold = %lld",

@@ -279,7 +279,13 @@ static int NRApplication_set_enabled(NRApplicationObject *self,
 static PyObject *NRApplication_get_running(NRApplicationObject *self,
                                            void *closure)
 {
-    return PyBool_FromLong(self->application->agent_run_id);
+    int result = 0;
+
+    nrthread_mutex_lock(&self->application->lock);
+    result = self->application->agent_run_id != 0;
+    nrthread_mutex_unlock(&self->application->lock);
+
+    return PyBool_FromLong(result);
 }
 
 /* ------------------------------------------------------------------------- */

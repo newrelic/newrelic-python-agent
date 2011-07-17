@@ -770,17 +770,23 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
     nr__replace_pointers_in_errors(application->pending_harvest->errors);
     nr_metric_table__clear(self->transaction->in_progress_metrics);
 
-    if (!keep_wt)
-        nr_web_transaction__destroy(self->transaction);
-
 #ifdef NR_AGENT_DEBUG
+    nr__log(LOG_VERBOSEDEBUG, "keep_wt = %d", keep_wt);
+    nr__log(LOG_VERBOSEDEBUG, "header.times.duration = %d",
+            self->transaction->header.times.duration);
+    nr__log(LOG_VERBOSEDEBUG, "opts.tt_threshold = %lld",
+            self->transaction->opts->tt_threshold);
+
     nr__log(LOG_VERBOSEDEBUG, "pending_harvest->metrics->number = %d",
-            application->pending_harvest->metrics->number);
+          application->pending_harvest->metrics->number);
     nr__log(LOG_VERBOSEDEBUG, "pending_harvest->slow_transactions = %d",
             !!application->pending_harvest->slow_transactions);
     nr__log(LOG_VERBOSEDEBUG, "pending_harvest->errors = %d",
             !!application->pending_harvest->errors);
 #endif
+
+    if (!keep_wt)
+        nr_web_transaction__destroy(self->transaction);
 
     Py_END_ALLOW_THREADS
 

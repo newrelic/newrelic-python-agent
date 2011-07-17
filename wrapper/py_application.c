@@ -83,7 +83,13 @@ PyObject *NRApplication_Singleton(PyObject *args, PyObject *kwds)
         name_as_bytes = PyUnicode_AsUTF8String(name);
     }
     else {
-        name_as_bytes = PyString_FromString("Python Application");
+        NRSettingsObject *settings = NULL;
+
+        settings = (NRSettingsObject *)NRSettings_Singleton();
+
+        name_as_bytes = PyString_FromString(settings->app_name);
+
+        Py_DECREF(settings);
     }
 
     /*

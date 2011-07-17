@@ -689,12 +689,16 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
 
     nrthread_mutex_lock(&application->lock);
 
+#if 0
     Py_BEGIN_ALLOW_THREADS
+#endif
 
     keep_wt = nr__distill_web_transaction_into_harvest_data(
             self->transaction);
 
+#if 0
     Py_END_ALLOW_THREADS
+#endif
 
     /*
      * Only add request parameters and custom parameters into
@@ -761,7 +765,9 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
      * but then supressed within the code.
      */
 
+#if 0
     Py_BEGIN_ALLOW_THREADS
+#endif
 
     nr_transaction_error__process_errors(self->transaction_errors,
             application->pending_harvest->metrics);
@@ -794,7 +800,9 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
     if (!keep_wt)
         nr_web_transaction__destroy(self->transaction);
 
+#if 0
     Py_END_ALLOW_THREADS
+#endif
 
     nrthread_mutex_unlock(&application->lock);
 

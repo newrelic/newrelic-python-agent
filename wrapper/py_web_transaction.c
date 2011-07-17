@@ -1055,6 +1055,8 @@ static int NRWSGIApplicationWrapper_init(
 
         application = NRApplication_Singleton(func_args, NULL);
 
+        Py_DECREF(settings);
+
         Py_DECREF(func_args);
     }
     else

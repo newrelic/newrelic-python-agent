@@ -442,6 +442,16 @@ static int NRTransaction_init(NRTransactionObject *self, PyObject *args,
         self->opts.tt_enabled = settings->tracer_settings->tt_enabled;
         self->opts.tt_recordsql = settings->tracer_settings->tt_recordsql;
 
+        if (settings->tracer_settings->transaction_threshold_is_apdex_f) {
+            self->opts.tt_threshold_is_apdex_f = 1;
+            self->opts.tt_threshold = application->application->apdex_t * 4;
+        }
+        else {
+            self->opts.tt_threshold_is_apdex_f = 0;
+            self->opts.tt_threshold =
+                    settings->tracer_settings->transaction_threshold;
+        }
+
         self->transaction->opts = &self->opts;
 
         /*
@@ -457,6 +467,8 @@ static int NRTransaction_init(NRTransactionObject *self, PyObject *args,
             self->transaction->ignore = 1;
         nrthread_mutex_unlock(&application->application->lock);
     }
+
+    Py_DECREF(settings);
 
     return 0;
 }
@@ -601,8 +613,6 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
 
     PyObject *result = NULL;
 
-    NRSettingsObject *settings = NULL;
-
     if (!PyArg_ParseTuple(args, "OOO:__exit__", &type, &value, &traceback))
         return NULL;
 
@@ -668,21 +678,6 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
             (nr_node_header *)self->transaction, NULL);
 
     application = self->application->application;
-
-    settings = (NRSettingsObject *)NRSettings_Singleton();
-
-    /*
-     * XXX This needs to be against transaction. See
-     * https://www.pivotaltracker.com/story/show/15762051
-     */
-
-    if (settings->tracer_settings->transaction_threshold_is_apdex_f) {
-        application->tt_threshold = application->apdex_t * 4;
-    }
-    else {
-        application->tt_threshold =
-                settings->tracer_settings->transaction_threshold;
-    }
 
     /*
      * Must lock application here as the harvest thread uses
@@ -793,8 +788,6 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
 
     self->transaction_state = NR_TRANSACTION_STATE_STOPPED;
 
-    Py_DECREF(settings);
-
     Py_INCREF(Py_None);
     return Py_None;
 }
@@ -848,11 +841,15 @@ static PyObject *NRTransaction_notice_error(
     settings = (NRSettingsObject *)NRSettings_Singleton();
 
     if (!settings->errors_settings->errors_enabled) {
+        Py_DECREF(settings);
+
         Py_INCREF(Py_None);
         return Py_None;
     }
 
     if (!self->application->application->collect_errors) {
+        Py_DECREF(settings);
+
         Py_INCREF(Py_None);
         return Py_None;
     }
@@ -1016,6 +1013,8 @@ static PyObject *NRTransaction_notice_error(
         
         Py_XDECREF(name);
     }
+
+    Py_DECREF(settings);
 
     Py_INCREF(Py_None);
     return Py_None;

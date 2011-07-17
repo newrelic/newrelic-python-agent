@@ -91,8 +91,6 @@ def run(args):
 
     status = application.activate(wait=True)
 
-    newrelic.agent.log(newrelic.agent.LOG_DEBUG, 'running = %s' % status)
-
     if not application.running:
         raise RuntimeError('Unable to register application for test, '
                            'check that the local daemon process is running '

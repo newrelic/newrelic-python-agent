@@ -89,17 +89,9 @@ def run(args):
 
     application = newrelic.agent.application()
 
-    status = application.activate()
+    status = application.activate(wait=True)
 
     newrelic.agent.log(newrelic.agent.LOG_DEBUG, 'running = %s' % status)
-
-    if not application.running:
-        for i in range(10):
-            newrelic.agent.log(newrelic.agent.LOG_DEBUG, 'retry #%d' % (i+1))
-            application.activate()
-            time.sleep(1.0)
-            if application.running:
-                break
 
     if not application.running:
         raise RuntimeError('Unable to register application for test, '

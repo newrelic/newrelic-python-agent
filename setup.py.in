@@ -76,7 +76,8 @@ sources = [
 define_macros = []
 define_macros.append(('NEWRELIC_PLATFORM', '"%s"' % platform))
 define_macros.append(('NEWRELIC_AGENT_LANGUAGE', '"python"'))
-define_macros.append(('NEWRELIC_PYTHON_AGENT_VERSION', '"%s"' % version))
+define_macros.append(('NEWRELIC_AGENT_VERSION', '"%s"' % base_version))
+define_macros.append(('NEWRELIC_AGENT_LONG_VERSION', '"%s"' % version))
 define_macros.append(('HAVE_CONFIG_H', '1'))
 define_macros.append(('NR_BUILD_@PLATFORM@', '1'))
 
@@ -106,7 +107,7 @@ packages = [
 
 setup(
   name = "newrelic",
-  version = version,
+  version = base_version,
   description = "Python agent for New Relic",
   author = "New Relic",
   author_email = "support@newrelic.com",

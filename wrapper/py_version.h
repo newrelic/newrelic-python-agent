@@ -7,7 +7,7 @@
 
 /* ------------------------------------------------------------------------- */
 
-#ifndef NEWRELIC_PYTHON_AGENT_VERSION
+#ifndef NEWRELIC_AGENT_VERSION
 #error Sorry, Python agent version number does not appear to have been defined.
 #endif
 

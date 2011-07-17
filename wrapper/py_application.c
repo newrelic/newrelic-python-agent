@@ -221,9 +221,12 @@ static int NRApplication_init(NRApplicationObject *self, PyObject *args,
      */
 
     nro__set_hash_string(self->application->appconfig,
+            "library.version", NEWRELIC_AGENT_LIBRARY_VERSION);
+
+    nro__set_hash_string(self->application->appconfig,
             "binding.language", "Python");
     nro__set_hash_string(self->application->appconfig,
-            "binding.version", NEWRELIC_PYTHON_AGENT_VERSION);
+            "binding.version", NEWRELIC_AGENT_LONG_VERSION);
 
     return 0;
 }

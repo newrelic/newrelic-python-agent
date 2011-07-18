@@ -150,6 +150,17 @@ static PyObject *NRApplication_new(PyTypeObject *type, PyObject *args,
     self->application = NULL;
 
     /*
+     * An application initially represents an agent instance.
+     * When additional names are added as secondaries it has the
+     * affect of creating an agent cluster whereby metrics data
+     * will be sent to the primary application as well as the
+     * secondaries. Any server side configuration is sourced
+     * from the primary application.
+     */
+
+    self->secondaries = PyDict_New();
+
+    /*
      * Monitoring of an application is enabled by default. If
      * this needs to be disabled, can be done by assigning the
      * 'enabled' attribute after creation.
@@ -166,6 +177,8 @@ static int NRApplication_init(NRApplicationObject *self, PyObject *args,
                               PyObject *kwds)
 {
     PyObject *name = NULL;
+
+    const char **names = NULL;
 
     static char *kwlist[] = { "name", NULL };
 
@@ -196,23 +209,27 @@ static int NRApplication_init(NRApplicationObject *self, PyObject *args,
     }
 
     /*
-     * Cache reference to the internal agent client application
-     * object instance. Will need the latter when initiating a
-     * web transaction or background task against this
-     * application instance as need to pass that to those
-     * objects to work around thread safety issue in PHP agent
-     * code when multithreading used.
+     * Cache a reference to the internal agent client
+     * application object instance. Internal agent code leaves
+     * the application specific lock locked and so need to
+     * unlock it.
      */
 
-    self->application = nr__find_or_create_application(
-            PyString_AsString(name));
+    names = (const char **)nrcalloc(1, sizeof(char *));
+    names[0] = PyString_AsString(name);
 
-    /*
-     * Internal agent code leaves the application specific lock
-     * locked and so need to unlock it.
-     */
+    self->application = nr__find_or_create_application(names, 1);
 
     nrthread_mutex_unlock(&self->application->lock);
+
+    /*
+     * Any secondary application names, creating a cluster agent
+     * will only be added later. We will thus need to go back and
+     * update the application names associated with application
+     * at that time.
+     */
+
+    PyDict_Clear(self->secondaries);
 
     /*
      * Markup what version of the Python agent wrapper is being
@@ -235,7 +252,15 @@ static int NRApplication_init(NRApplicationObject *self, PyObject *args,
 
 static void NRApplication_dealloc(NRApplicationObject *self)
 {
+    /*
+     * The destructor should never be required as
+     * instances are always held in global dictionary
+     * for subsequent lookup.
+     */
+
     Py_TYPE(self)->tp_free(self);
+
+    Py_DECREF(self->secondaries);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -249,6 +274,19 @@ static PyObject *NRApplication_get_name(NRApplicationObject *self,
     }
 
     return PyString_FromString(self->application->appname);
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRApplication_get_secondaries(NRApplicationObject *self,
+                                               void *closure)
+{
+    if (!self->application) {
+        PyErr_SetString(PyExc_TypeError, "application not initialized");
+        return NULL;
+    }
+
+    return PyDict_Keys(self->secondaries);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -352,6 +390,112 @@ static PyObject *NRApplication_activate(NRApplicationObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRApplication_shutdown(NRApplicationObject *self,
+                                        PyObject *args, PyObject *kwds)
+{
+    nrdaemon_t *dconn = &nr_per_process_globals.nrdaemon;
+
+    static char *kwlist[] = { NULL };
+
+    if (!self->application) {
+        PyErr_SetString(PyExc_TypeError, "application not initialized");
+        return NULL;
+    }
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, ":shutdown", kwlist))
+        return NULL;
+
+    nr__stop_communication(dconn, self->application);
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+/* ------------------------------------------------------------------------- */
+
+static PyObject *NRApplication_map_to_secondary(NRApplicationObject *self,
+                                                PyObject *args, PyObject *kwds)
+{
+    PyObject *name = NULL;
+
+    PyObject *name_as_bytes = NULL;
+
+    PyObject *keys = NULL;
+
+    PyObject *iter = NULL;
+    PyObject *item = NULL;
+
+    int i = 0;
+
+    static char *kwlist[] = { "name", NULL };
+
+    if (!self->application) {
+        PyErr_SetString(PyExc_TypeError, "application not initialized");
+        return NULL;
+    }
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:map_to_secondary",
+                                     kwlist, &name)) {
+        return NULL;
+    }
+
+    if (!PyString_Check(name) && !PyUnicode_Check(name)) {
+        PyErr_Format(PyExc_TypeError, "expected string or Unicode "
+                        "for secondary application name, found type '%s'",
+                        name->ob_type->tp_name);
+        return NULL;
+    }
+
+    if (PyUnicode_Check(name)) {
+        name_as_bytes = PyUnicode_AsUTF8String(name);
+    }
+    else {
+        Py_INCREF(name);
+        name_as_bytes = name;
+    }
+
+    /*
+     * Add name to list of secondaries. The collector enforces
+     * a limit on the number. Currently that is 3, but do not
+     * enforce that here.
+     */
+
+    PyDict_SetItem(self->secondaries, name_as_bytes, Py_True);
+
+    /*
+     * Update the list of all application names against the
+     * application object.
+     */
+
+    for (i=1; i<self->application->nappnames; i++)
+        nrfree(self->application->appnames[i]);
+
+    nrfree(self->application->appnames);
+
+    self->application->nappnames = PyDict_Size(self->secondaries)+1;
+    self->application->appnames = (char **)nrcalloc(
+            self->application->nappnames, sizeof(char *));
+
+    self->application->appnames[0] = nrstrdup(self->application->appname);
+
+    keys = PyDict_Keys(self->secondaries);
+    iter = PyObject_GetIter(keys);
+
+    i = 1;
+    while ((item = PyIter_Next(iter)))
+        self->application->appnames[i++] = nrstrdup(PyString_AsString(item));
+
+    Py_DECREF(iter);
+    Py_DECREF(keys);
+
+    Py_DECREF(name_as_bytes);
+
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRApplication_record_metric(NRApplicationObject *self,
                                              PyObject *args, PyObject *kwds)
 {
@@ -450,6 +594,10 @@ static PyObject *NRApplication_record_metric(NRApplicationObject *self,
 static PyMethodDef NRApplication_methods[] = {
     { "activate",           (PyCFunction)NRApplication_activate,
                             METH_VARARGS|METH_KEYWORDS, 0 },
+    { "shutdown",           (PyCFunction)NRApplication_shutdown,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
+    { "map_to_secondary",   (PyCFunction)NRApplication_map_to_secondary,
+                            METH_VARARGS|METH_KEYWORDS, 0 },
     { "record_metric",      (PyCFunction)NRApplication_record_metric,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { NULL, NULL}
@@ -457,6 +605,8 @@ static PyMethodDef NRApplication_methods[] = {
 
 static PyGetSetDef NRApplication_getset[] = {
     { "name",               (getter)NRApplication_get_name,
+                            NULL, 0 },
+    { "secondaries",        (getter)NRApplication_get_secondaries,
                             NULL, 0 },
     { "enabled",            (getter)NRApplication_get_enabled,
                             (setter)NRApplication_set_enabled, 0 },

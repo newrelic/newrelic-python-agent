@@ -66,6 +66,9 @@ _RECORD_SQL = {
 def _map_log_level(s):
     return _LOG_LEVEL[s.upper()]
 
+def _map_app_name(s):
+    return s.split(';')[0].strip() or "Python Application"
+
 def _map_ignored_params(s):
     return s.split()
 
@@ -158,7 +161,7 @@ def _process_setting(section, option, getter, mapper):
 
 def _process_configuration(section):
     _process_setting(section, 'app_name',
-                     'get', None)
+                     'get', _map_app_name)
     _process_setting(section, 'monitor_mode',
                      'getboolean', None)
     _process_setting(section, 'capture_params',
@@ -285,6 +288,47 @@ def _load_configuration(config_file=None, environment=None,
     for option, value in _cache_object:
         _newrelic.log(_newrelic.LOG_DEBUG, "agent config %s = %s" %
                 (option, repr(value)))
+
+    # Now do special processing to handle the case where the
+    # application name was actually a semicolon separated list
+    # of names. In this case the first application name is the
+    # primary and the others are secondaries forming an agent
+    # cluster. What we need to do is explicitly retrieve the
+    # application object for the primary application name and
+    # map the secondary names against it. When activating the
+    # application the secondary names will be sent along there
+    # by setting up the cluster in core application database
+    # if the mapping doesn't already exist.
+
+    def _process_app_name(section):
+        try:
+            value = _config_object.get(section, 'app_name')
+        except ConfigParser.NoOptionError:
+            return False
+        else:
+            name = value.split(';')[0] or 'Python Application'
+
+            secondaries = []
+            for altname in value.split(';')[1:]:
+                altname = altname.strip()
+                if altname:
+                    secondaries.append(altname)
+
+            if secondaries:
+                application = _newrelic.application(name)
+                for altname in secondaries:
+                    _newrelic.log(_newrelic.LOG_DEBUG, "map cluster "
+                            "%s" % ((name, altname),))
+                    application.map_to_secondary(altname)
+
+            return True
+
+    if environment:
+        if not _process_app_name('newrelic:%s' % environment):
+            _process_app_name('newrelic')
+    else:
+        _process_app_name('newrelic')
+                                           
 
 # Generic error reporting functions.
 

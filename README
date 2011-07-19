@@ -93,6 +93,11 @@ directory as the 'python' executable. As such, if '--with-python' is used
 the configure script will automatically look in the same 'bin' directory
 first so '--with-virtualenv' shouldn't usually be needed.
 
+During the development and BETA test phase additional debug output can be
+enabled by supplying the '--enable-debug' to the 'configure' script. The
+additonal debug will generally only show up when 'vebosedebug' is selected
+as log level in agent configuration.
+
 
 Running The Unit Tests
 ======================
@@ -126,9 +131,9 @@ start with, or they can be built in place, in which case they will end up
 being installed in the 'python-tools/parts' directory.
 
 Which ever place all the different Python versions/variants are installed,
-you can use the '--with-python' option to the 'configure' script as above
-to select a specific one to be used for building the Python agent during
-development. For example:
+you can use the '--with-python' option to the 'configure' script in this
+directory as described above to select a specific one to be used for
+building the Python agent during development. For example:
 
     ./configure --with-python=python-tools/parts/python-2.7-ucs4/bin/python
 
@@ -147,7 +152,8 @@ required Python versions for the platform into the local 'python-tools/parts'
 directory.
 
 When this same script is run under the Hudson server, it will expect the
-Python versions to be installed under '/usr/local/python'.
+Python versions to be installed under the 'python-tools' subdirectory of the
+home directory of the 'hudson' build account.
 
 The result of running this script will be placed in the 'hudson-results'
 sub directory. The directory created will be named according to the platform
@@ -159,3 +165,9 @@ code is checked out into a parallel directory to the Python agent, and the
 compiled newrelic-daemon application exists, that will be copied into the
 package created by this script. On the Hudson build servers, it will obtain
 the binary from the Hudson rsync server instead.
+
+During the development and BETA test phase additional debug output can be
+enabled by supplying the '--enable-debug' to the 'hudson/build.sh' script.
+Any such options supplied will be passed automatically along to the
+'configure' script each time it is run for each version of Python the package
+is being build against.

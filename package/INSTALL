@@ -57,7 +57,7 @@ the user your web application runs as can write to.
 
 While editing the 'newrelic.ini' configuration file, also modify the name
 your application data will be reported as to the New Relic UI to something
-more approriate.
+more approriate. The current default is:
 
     app_name = Python Application
 
@@ -248,7 +248,7 @@ then you should check the log file produced by the test which can be found
 at "/tmp/python-agent-test.log". When the test is run the verbosity of the
 log messages is turned up and various details about the actions of the
 agent will be recorded. Ensure you provide this log to New Relic support if
-you try to obtain assistant in debugging why the agent isn't able to report
+you try to obtain assistance in debugging why the agent isn't able to report
 data to the UI.
 
 You can also check the log file produced by the local daemon via which the

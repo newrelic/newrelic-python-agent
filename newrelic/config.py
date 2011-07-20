@@ -969,6 +969,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('genshi.template.base',
             'newrelic.imports.template.genshi')
 
+    _process_module_definition('urllib',
+            'newrelic.imports.external.urllib')
+
     _process_module_definition('feedparser',
             'newrelic.imports.external.feedparser')
 

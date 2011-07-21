@@ -57,21 +57,24 @@ def response_middleware_browser_monitoring(request, response):
     content = response.content
     response.content = content
 
-    # Insert the JavaScript. We require that there is a
-    # <head> element in the HTML, otherwise we don't do
-    # it. When updating response content we null the
-    # original first to avoid multiple copies in memory
-    # when we recompose actual response from list of
-    # strings.
+    # Insert the JavaScript. If there is no <head> element we
+    # insert our own containing the JavaScript. If we detect
+    # possibility of IE compatibility mode then we insert
+    # JavaScript at end of the <head> element. In other cases
+    # insert at the start of the <head> element.
     #
-    # XXX This needs to be updated to only insert after
-    # any meta tags within the head section to avoid IE.
-    # problems. See tracker issue 154789.
+    # When updating response content we null the original first
+    # to avoid multiple copies in memory when we recompose the
+    # actual response from list of strings.
 
     start = content.find('<head')
     end = content.rfind('</body>', -1024)
     if start != -1 and end != -1:
-        start = content.find('>', start, start+1024)
+        offset = content.find('</head>', start)
+        if content.find('X-UA-Compatible', offset) == -1:
+            start = content.find('>', start, start+1024)
+        elif offset != -1:
+            start = offset - 1
         if start != -1 and start < end:
             parts = []
             parts.append(content[0:start+1])

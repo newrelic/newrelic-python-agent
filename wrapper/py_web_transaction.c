@@ -382,15 +382,20 @@ static PyObject *NRWebTransaction_footer(NRTransactionObject *self,
                                          PyObject *args)
 {
     const char *script_short_fragment = "<script type=\"text/javascript\">"
-            "NREUMQ.push([\"nrf2\",\"%s\",\"%s\",%d,\"%s\",%ld,%ld,"
-            "new Date().getTime()])</script>";
+            "if(!NREUMQ.f)NREUMQ.f=function(){NREUMQ.push([\"load\","
+            "new Date().getTime()]);if(NREUMQ.a)NREUMQ.a();};if("
+            "window.onload!==NREUMQ.f){NREUMQ.a=window.onload;"
+            "window.onload=NREUMQ.f;};NREUMQ.push([\"nrf2\",\"%s\",\"%s\","
+            "%d,\"%s\",%ld,%ld,new Date().getTime()])</script>";
 
     const char *script_long_fragment = "<script type=\"text/javascript\">"
-            "(function(){var d=document;var e=d.createElement(\"script\");"
+            "if(!NREUMQ.f)NREUMQ.f=function(){NREUMQ.push([\"load\","
+            "new Date().getTime()]);var e=document.createElement(\"script\");"
             "e.type=\"text/javascript\";e.async=true;e.src=\"%s\";"
-            "var s=d.getElementsByTagName(\"script\")[0];"
-            "s.parentNode.insertBefore(e,s);})();NREUMQ.push([\"nrf2\","
-            "\"%s\",\"%s\",%d,\"%s\",%ld,%ld,new Date().getTime()])</script>";
+            "document.body.appendChild(e);if(NREUMQ.a)NREUMQ.a();};"
+            "if(window.onload!==NREUMQ.f){NREUMQ.a=window.onload;"
+            "window.onload=NREUMQ.f;};NREUMQ.push([\"nrf2\",\"%s\",\"%s\","
+            "%d,\"%s\",%ld,%ld,new Date().getTime()])</script>";
 
     struct timeval t;
 

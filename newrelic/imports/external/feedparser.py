@@ -16,7 +16,7 @@ class capture_external_trace(ObjectWrapper):
                 except:
                     context_manager.__exit__(*sys.exc_info())
                     raise
-                finally:
+                else:
                     context_manager.__exit__(None, None, None)
             else:
                 return self.__next_object__(url)

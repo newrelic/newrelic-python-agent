@@ -10,14 +10,14 @@ class capture_external_trace(ObjectWrapper):
             current_transaction = transaction()
             if current_transaction:
                 trace = ExternalTrace(current_transaction, 'feedparser', url)
+                context_manager = trace.__enter__()
                 try:
-                    context_manager = trace.__enter__()
-                    return self.__next_object__(url)
+                    result = self.__next_object__(url)
                 except:
                     context_manager.__exit__(*sys.exc_info())
                     raise
-                else:
-                    context_manager.__exit__(None, None, None)
+                context_manager.__exit__(None, None, None)
+                return result
             else:
                 return self.__next_object__(url)
         else:

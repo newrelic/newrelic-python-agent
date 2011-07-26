@@ -70,6 +70,7 @@ class install_data_override(distutils.command.install_data.install_data):
 packages = [
   "newrelic",
   "newrelic.commands",
+  "newrelic.core",
   "newrelic.imports",
   "newrelic.imports.database",
   "newrelic.imports.external",

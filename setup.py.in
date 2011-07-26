@@ -97,6 +97,7 @@ extension = Extension(
 packages = [
   "newrelic",
   "newrelic.commands",
+  "newrelic.core",
   "newrelic.imports",
   "newrelic.imports.database",
   "newrelic.imports.external",

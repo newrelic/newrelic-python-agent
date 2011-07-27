@@ -160,7 +160,9 @@ cp php_agent/scripts/newrelic.cfg.template $SCRIPTSDIR/
 # then we need to grab it from the Hudson rsync server.
 
 HUDSON_RSYNC_SERVER='hudson@hudson.newrelic.com'
-HUDSON_RSYNC_DAEMON_FILES="/data/hudson/jobs/Local_Daemon_Matrix/configurations/axis-label/${DAEMON_PLATFORM}/lastStable/archive/hudson-results/*"
+#HUDSON_RSYNC_DAEMON_FILES="/data/hudson/jobs/Local_Daemon_Matrix/configurations/axis-label/${DAEMON_PLATFORM}/lastStable/archive/hudson-results/*"
+# XXX Hard wire it to this specific build of local daemon.
+HUDSON_RSYNC_DAEMON_FILES="/data/hudson/jobs/Local_Daemon_Matrix/configurations/axis-label/${DAEMON_PLATFORM}/builds/246/archive/hudson-results/*"
 HUDSON_RYSNC_DOWNLOADS="hudson-downloads"
 
 if test x"$BUILD_NUMBER" = x"0"

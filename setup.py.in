@@ -97,6 +97,7 @@ extension = Extension(
 packages = [
   "newrelic",
   "newrelic.api",
+  "newrelic.core",
   "newrelic.hooks",
   "newrelic.scripts",
 ]

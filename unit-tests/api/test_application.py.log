@@ -1,0 +1,20 @@
+2011-07-27 17:52:01 (47317/main) Debug: STARTING - test_create
+2011-07-27 17:52:01 (47317/main) VerboseDebug: create application UnitTests
+2011-07-27 17:52:01 (47317/main) Debug: STOPPING - test_create
+2011-07-27 17:52:01 (47317/main) Debug: STARTING - test_enabled
+2011-07-27 17:52:01 (47317/main) Debug: STOPPING - test_enabled
+2011-07-27 17:52:01 (47317/main) Debug: STARTING - test_singleton
+2011-07-27 17:52:01 (47317/main) Debug: STOPPING - test_singleton
+2011-07-27 17:52:01 (47317/main) Debug: harvest (shutdown) 1 applications
+2011-07-27 17:52:01 (47317/main) VerboseDebug: application 'UnitTests' not connected - not harvesting
+2011-07-27 17:52:01 (47317/main) Debug: destroying harvest thread
+2011-07-27 17:54:45 (47420/main) Debug: STARTING - test_create
+2011-07-27 17:54:45 (47420/main) VerboseDebug: create application UnitTests
+2011-07-27 17:54:45 (47420/main) Debug: STOPPING - test_create
+2011-07-27 17:54:45 (47420/main) Debug: STARTING - test_enabled
+2011-07-27 17:54:45 (47420/main) Debug: STOPPING - test_enabled
+2011-07-27 17:54:45 (47420/main) Debug: STARTING - test_singleton
+2011-07-27 17:54:45 (47420/main) Debug: STOPPING - test_singleton
+2011-07-27 17:54:45 (47420/main) Debug: harvest (shutdown) 1 applications
+2011-07-27 17:54:45 (47420/main) VerboseDebug: application 'UnitTests' not connected - not harvesting
+2011-07-27 17:54:45 (47420/main) Debug: destroying harvest thread

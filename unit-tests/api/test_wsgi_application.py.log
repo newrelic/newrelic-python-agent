@@ -1,0 +1,236 @@
+2011-07-27 17:52:18 (47332/main) VerboseDebug: create application UnitTests
+2011-07-27 17:52:18 (47332/main) Debug: STARTING - test_wsgiapp_class
+2011-07-27 17:52:18 (47332/main) VerboseDebug: start harvest thread
+2011-07-27 17:52:18 (47332/main) Debug: creating harvest thread
+2011-07-27 17:52:18 (47332/main) Debug: connecting to /tmp/.newrelic.sock
+2011-07-27 17:52:18 (47332/main) Verbose: [UnitTests] sending "start"..
+2011-07-27 17:52:18 (47332/main) VerboseDebug: wrote 1638 bytes to daemon
+2011-07-27 17:52:18 (47332/main) VerboseDebug: read 271 bytes from daemon
+2011-07-27 17:52:18 (47332/main) VerboseDebug: config: level=0x0[] file=0x0[]
+2011-07-27 17:52:18 (47332/main) VerboseDebug: turning off RUM because of zero in: 0x0, 0x0, 0x0, 0, 0x101100660
+2011-07-27 17:52:18 (47332/main) Debug: collect_traces=1, collect_errors=1, agent_run_id=0x4e28fc7400000004, apdex_t=0.5 daemon_fd=10
+2011-07-27 17:52:18 (47332/main) Verbose: ..start sent -> ok
+2011-07-27 17:52:18 (47332/main) Debug: [UnitTests] start command successful
+2011-07-27 17:52:18 (47332/main) VerboseDebug: keep_wt = 1
+2011-07-27 17:52:18 (47332/main) VerboseDebug: ignore = 0
+2011-07-27 17:52:18 (47332/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:52:18 (47332/main) VerboseDebug: header.times.duration = 11
+2011-07-27 17:52:18 (47332/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:52:18 (47332/main) VerboseDebug: pending_harvest->metrics->number = 5
+2011-07-27 17:52:18 (47332/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:52:18 (47332/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:52:18 (47332/main) Debug: STOPPING - test_wsgiapp_class
+2011-07-27 17:52:18 (47332/main) Debug: STARTING - test_wsgiapp_class_decorator
+2011-07-27 17:52:18 (47332/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:52:18 (47332/main) VerboseDebug: ignore = 0
+2011-07-27 17:52:18 (47332/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:52:18 (47332/main) VerboseDebug: header.times.duration = 6
+2011-07-27 17:52:18 (47332/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:52:18 (47332/main) VerboseDebug: pending_harvest->metrics->number = 7
+2011-07-27 17:52:18 (47332/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:52:18 (47332/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:52:18 (47332/main) Debug: STOPPING - test_wsgiapp_class_decorator
+2011-07-27 17:52:18 (47332/main) Debug: STARTING - test_wsgiapp_function
+2011-07-27 17:52:18 (47332/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:52:18 (47332/main) VerboseDebug: ignore = 0
+2011-07-27 17:52:18 (47332/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:52:18 (47332/main) VerboseDebug: header.times.duration = 8
+2011-07-27 17:52:18 (47332/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:52:18 (47332/main) VerboseDebug: pending_harvest->metrics->number = 9
+2011-07-27 17:52:18 (47332/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:52:18 (47332/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:52:18 (47332/main) Debug: STOPPING - test_wsgiapp_function
+2011-07-27 17:52:18 (47332/main) Debug: STARTING - test_wsgiapp_function_decorator
+2011-07-27 17:52:18 (47332/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:52:18 (47332/main) VerboseDebug: ignore = 0
+2011-07-27 17:52:18 (47332/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:52:18 (47332/main) VerboseDebug: header.times.duration = 8
+2011-07-27 17:52:18 (47332/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:52:18 (47332/main) VerboseDebug: pending_harvest->metrics->number = 11
+2011-07-27 17:52:18 (47332/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:52:18 (47332/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:52:18 (47332/main) Debug: STOPPING - test_wsgiapp_function_decorator
+2011-07-27 17:52:18 (47332/main) Debug: STARTING - test_wsgiapp_function_decorator_default
+2011-07-27 17:52:18 (47332/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:52:18 (47332/main) VerboseDebug: ignore = 0
+2011-07-27 17:52:18 (47332/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:52:18 (47332/main) VerboseDebug: header.times.duration = 8
+2011-07-27 17:52:18 (47332/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:52:18 (47332/main) VerboseDebug: pending_harvest->metrics->number = 13
+2011-07-27 17:52:18 (47332/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:52:18 (47332/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:52:18 (47332/main) Debug: STOPPING - test_wsgiapp_function_decorator_default
+2011-07-27 17:52:18 (47332/main) Debug: STARTING - test_wsgiapp_function_error
+2011-07-27 17:52:18 (47332/main) VerboseDebug: keep_wt = 1
+2011-07-27 17:52:18 (47332/main) VerboseDebug: ignore = 0
+2011-07-27 17:52:18 (47332/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:52:18 (47332/main) VerboseDebug: header.times.duration = 271
+2011-07-27 17:52:18 (47332/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:52:18 (47332/main) VerboseDebug: pending_harvest->metrics->number = 16
+2011-07-27 17:52:18 (47332/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:52:18 (47332/main) VerboseDebug: pending_harvest->errors = 1
+2011-07-27 17:52:18 (47332/main) Debug: STOPPING - test_wsgiapp_function_error
+2011-07-27 17:52:18 (47332/main) Debug: STARTING - test_wsgiapp_method
+2011-07-27 17:52:18 (47332/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:52:18 (47332/main) VerboseDebug: ignore = 0
+2011-07-27 17:52:18 (47332/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:52:18 (47332/main) VerboseDebug: header.times.duration = 8
+2011-07-27 17:52:18 (47332/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:52:18 (47332/main) VerboseDebug: pending_harvest->metrics->number = 18
+2011-07-27 17:52:18 (47332/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:52:18 (47332/main) VerboseDebug: pending_harvest->errors = 1
+2011-07-27 17:52:18 (47332/main) Debug: STOPPING - test_wsgiapp_method
+2011-07-27 17:52:18 (47332/main) Debug: STARTING - test_wsgiapp_method_decorator
+2011-07-27 17:52:18 (47332/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:52:18 (47332/main) VerboseDebug: ignore = 0
+2011-07-27 17:52:18 (47332/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:52:18 (47332/main) VerboseDebug: header.times.duration = 9
+2011-07-27 17:52:18 (47332/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:52:18 (47332/main) VerboseDebug: pending_harvest->metrics->number = 20
+2011-07-27 17:52:18 (47332/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:52:18 (47332/main) VerboseDebug: pending_harvest->errors = 1
+2011-07-27 17:52:18 (47332/main) Debug: STOPPING - test_wsgiapp_method_decorator
+2011-07-27 17:52:18 (47332/main) Debug: harvest (shutdown) 1 applications
+2011-07-27 17:52:18 (47332/main) VerboseDebug: harvesting application 'UnitTests'
+2011-07-27 17:52:18 (47332/main) Verbose: [UnitTests] harvesting 22 metrics
+2011-07-27 17:52:18 (47332/main) VerboseDebug: sending metrics for agent_run_id=0x4e28fc7400000004
+2011-07-27 17:52:18 (47332/main) Verbose: sending "metric_data"..
+2011-07-27 17:52:18 (47332/main) VerboseDebug: wrote 2177 bytes to daemon
+2011-07-27 17:52:18 (47332/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:52:18 (47332/main) Verbose: ..metrics sent -> ok
+2011-07-27 17:52:18 (47332/main) Verbose: [UnitTests] harvesting 1 TTs
+2011-07-27 17:52:18 (47332/main) Verbose: sending "tt"..
+2011-07-27 17:52:18 (47332/main) Verbose: ..TT(WebTransaction/Uri/wsgiapp_function_error)
+2011-07-27 17:52:18 (47332/main) VerboseDebug: wrote 217 bytes to daemon
+2011-07-27 17:52:18 (47332/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:52:18 (47332/main) Verbose: ..tt sent -> ok
+2011-07-27 17:52:18 (47332/main) Verbose: [UnitTests] harvesting 1 errors
+2011-07-27 17:52:18 (47332/main) Verbose: sending "error"..
+2011-07-27 17:52:18 (47332/main) VerboseDebug: wrote 420 bytes to daemon
+2011-07-27 17:52:18 (47332/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:52:18 (47332/main) Verbose: ..error sent -> ok
+2011-07-27 17:52:18 (47332/main) Verbose: sending "stop"..
+2011-07-27 17:52:18 (47332/main) VerboseDebug: stopping agent_run_id=0x4e28fc7400000004
+2011-07-27 17:52:18 (47332/main) VerboseDebug: wrote 22 bytes to daemon
+2011-07-27 17:52:18 (47332/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:52:18 (47332/main) Verbose: ..stop sent -> ok
+2011-07-27 17:52:18 (47332/main) Debug: closed daemon connection
+2011-07-27 17:52:18 (47332/main) Debug: destroying harvest thread
+2011-07-27 17:55:02 (47436/main) VerboseDebug: create application UnitTests
+2011-07-27 17:55:02 (47436/main) Debug: STARTING - test_wsgiapp_class
+2011-07-27 17:55:02 (47436/main) VerboseDebug: start harvest thread
+2011-07-27 17:55:02 (47436/main) Debug: creating harvest thread
+2011-07-27 17:55:02 (47436/main) Debug: connecting to /tmp/.newrelic.sock
+2011-07-27 17:55:02 (47436/main) Verbose: [UnitTests] sending "start"..
+2011-07-27 17:55:02 (47436/main) VerboseDebug: wrote 1638 bytes to daemon
+2011-07-27 17:55:02 (47436/main) VerboseDebug: read 271 bytes from daemon
+2011-07-27 17:55:02 (47436/main) VerboseDebug: config: level=0x0[] file=0x0[]
+2011-07-27 17:55:02 (47436/main) VerboseDebug: turning off RUM because of zero in: 0x0, 0x0, 0x0, 0, 0x101000660
+2011-07-27 17:55:02 (47436/main) Debug: collect_traces=1, collect_errors=1, agent_run_id=0x4e28fc7400000004, apdex_t=0.5 daemon_fd=10
+2011-07-27 17:55:02 (47436/main) Verbose: ..start sent -> ok
+2011-07-27 17:55:02 (47436/main) Debug: [UnitTests] start command successful
+2011-07-27 17:55:02 (47436/main) VerboseDebug: keep_wt = 1
+2011-07-27 17:55:02 (47436/main) VerboseDebug: ignore = 0
+2011-07-27 17:55:02 (47436/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:55:02 (47436/main) VerboseDebug: header.times.duration = 17
+2011-07-27 17:55:02 (47436/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:55:02 (47436/main) VerboseDebug: pending_harvest->metrics->number = 5
+2011-07-27 17:55:02 (47436/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:55:02 (47436/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:55:02 (47436/main) Debug: STOPPING - test_wsgiapp_class
+2011-07-27 17:55:02 (47436/main) Debug: STARTING - test_wsgiapp_class_decorator
+2011-07-27 17:55:02 (47436/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:55:02 (47436/main) VerboseDebug: ignore = 0
+2011-07-27 17:55:02 (47436/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:55:02 (47436/main) VerboseDebug: header.times.duration = 8
+2011-07-27 17:55:02 (47436/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:55:02 (47436/main) VerboseDebug: pending_harvest->metrics->number = 7
+2011-07-27 17:55:02 (47436/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:55:02 (47436/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:55:02 (47436/main) Debug: STOPPING - test_wsgiapp_class_decorator
+2011-07-27 17:55:02 (47436/main) Debug: STARTING - test_wsgiapp_function
+2011-07-27 17:55:02 (47436/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:55:02 (47436/main) VerboseDebug: ignore = 0
+2011-07-27 17:55:02 (47436/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:55:02 (47436/main) VerboseDebug: header.times.duration = 11
+2011-07-27 17:55:02 (47436/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:55:02 (47436/main) VerboseDebug: pending_harvest->metrics->number = 9
+2011-07-27 17:55:02 (47436/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:55:02 (47436/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:55:02 (47436/main) Debug: STOPPING - test_wsgiapp_function
+2011-07-27 17:55:02 (47436/main) Debug: STARTING - test_wsgiapp_function_decorator
+2011-07-27 17:55:02 (47436/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:55:02 (47436/main) VerboseDebug: ignore = 0
+2011-07-27 17:55:02 (47436/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:55:02 (47436/main) VerboseDebug: header.times.duration = 8
+2011-07-27 17:55:02 (47436/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:55:02 (47436/main) VerboseDebug: pending_harvest->metrics->number = 11
+2011-07-27 17:55:02 (47436/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:55:02 (47436/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:55:02 (47436/main) Debug: STOPPING - test_wsgiapp_function_decorator
+2011-07-27 17:55:02 (47436/main) Debug: STARTING - test_wsgiapp_function_decorator_default
+2011-07-27 17:55:02 (47436/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:55:02 (47436/main) VerboseDebug: ignore = 0
+2011-07-27 17:55:02 (47436/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:55:02 (47436/main) VerboseDebug: header.times.duration = 9
+2011-07-27 17:55:02 (47436/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:55:02 (47436/main) VerboseDebug: pending_harvest->metrics->number = 13
+2011-07-27 17:55:02 (47436/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:55:02 (47436/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:55:02 (47436/main) Debug: STOPPING - test_wsgiapp_function_decorator_default
+2011-07-27 17:55:02 (47436/main) Debug: STARTING - test_wsgiapp_function_error
+2011-07-27 17:55:02 (47436/main) VerboseDebug: keep_wt = 1
+2011-07-27 17:55:02 (47436/main) VerboseDebug: ignore = 0
+2011-07-27 17:55:02 (47436/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:55:02 (47436/main) VerboseDebug: header.times.duration = 311
+2011-07-27 17:55:02 (47436/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:55:02 (47436/main) VerboseDebug: pending_harvest->metrics->number = 16
+2011-07-27 17:55:02 (47436/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:55:02 (47436/main) VerboseDebug: pending_harvest->errors = 1
+2011-07-27 17:55:02 (47436/main) Debug: STOPPING - test_wsgiapp_function_error
+2011-07-27 17:55:02 (47436/main) Debug: STARTING - test_wsgiapp_method
+2011-07-27 17:55:02 (47436/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:55:02 (47436/main) VerboseDebug: ignore = 0
+2011-07-27 17:55:02 (47436/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:55:02 (47436/main) VerboseDebug: header.times.duration = 9
+2011-07-27 17:55:02 (47436/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:55:02 (47436/main) VerboseDebug: pending_harvest->metrics->number = 18
+2011-07-27 17:55:02 (47436/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:55:02 (47436/main) VerboseDebug: pending_harvest->errors = 1
+2011-07-27 17:55:02 (47436/main) Debug: STOPPING - test_wsgiapp_method
+2011-07-27 17:55:02 (47436/main) Debug: STARTING - test_wsgiapp_method_decorator
+2011-07-27 17:55:02 (47436/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:55:02 (47436/main) VerboseDebug: ignore = 0
+2011-07-27 17:55:02 (47436/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:55:02 (47436/main) VerboseDebug: header.times.duration = 9
+2011-07-27 17:55:02 (47436/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:55:02 (47436/main) VerboseDebug: pending_harvest->metrics->number = 20
+2011-07-27 17:55:02 (47436/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:55:02 (47436/main) VerboseDebug: pending_harvest->errors = 1
+2011-07-27 17:55:02 (47436/main) Debug: STOPPING - test_wsgiapp_method_decorator
+2011-07-27 17:55:02 (47436/main) Debug: harvest (shutdown) 1 applications
+2011-07-27 17:55:02 (47436/main) VerboseDebug: harvesting application 'UnitTests'
+2011-07-27 17:55:02 (47436/main) Verbose: [UnitTests] harvesting 22 metrics
+2011-07-27 17:55:02 (47436/main) VerboseDebug: sending metrics for agent_run_id=0x4e28fc7400000004
+2011-07-27 17:55:02 (47436/main) Verbose: sending "metric_data"..
+2011-07-27 17:55:02 (47436/main) VerboseDebug: wrote 2177 bytes to daemon
+2011-07-27 17:55:02 (47436/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:55:02 (47436/main) Verbose: ..metrics sent -> ok
+2011-07-27 17:55:02 (47436/main) Verbose: [UnitTests] harvesting 1 TTs
+2011-07-27 17:55:02 (47436/main) Verbose: sending "tt"..
+2011-07-27 17:55:02 (47436/main) Verbose: ..TT(WebTransaction/Uri/wsgiapp_function_error)
+2011-07-27 17:55:02 (47436/main) VerboseDebug: wrote 217 bytes to daemon
+2011-07-27 17:55:02 (47436/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:55:02 (47436/main) Verbose: ..tt sent -> ok
+2011-07-27 17:55:02 (47436/main) Verbose: [UnitTests] harvesting 1 errors
+2011-07-27 17:55:02 (47436/main) Verbose: sending "error"..
+2011-07-27 17:55:02 (47436/main) VerboseDebug: wrote 420 bytes to daemon
+2011-07-27 17:55:02 (47436/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:55:02 (47436/main) Verbose: ..error sent -> ok
+2011-07-27 17:55:02 (47436/main) Verbose: sending "stop"..
+2011-07-27 17:55:02 (47436/main) VerboseDebug: stopping agent_run_id=0x4e28fc7400000004
+2011-07-27 17:55:02 (47436/main) VerboseDebug: wrote 22 bytes to daemon
+2011-07-27 17:55:02 (47436/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:55:02 (47436/main) Verbose: ..stop sent -> ok
+2011-07-27 17:55:02 (47436/main) Debug: closed daemon connection
+2011-07-27 17:55:02 (47436/main) Debug: destroying harvest thread

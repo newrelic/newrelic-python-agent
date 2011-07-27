@@ -1,0 +1,396 @@
+2011-07-27 17:52:01 (47318/main) VerboseDebug: create application UnitTests
+2011-07-27 17:52:02 (47318/main) Debug: STARTING - test_application_disabled
+2011-07-27 17:52:02 (47318/main) VerboseDebug: start harvest thread
+2011-07-27 17:52:02 (47318/main) Debug: creating harvest thread
+2011-07-27 17:52:02 (47318/main) Debug: connecting to /tmp/.newrelic.sock
+2011-07-27 17:52:02 (47318/main) Verbose: [UnitTests] sending "start"..
+2011-07-27 17:52:02 (47318/main) VerboseDebug: wrote 1638 bytes to daemon
+2011-07-27 17:52:02 (47318/main) VerboseDebug: read 83 bytes from daemon
+2011-07-27 17:52:02 (47318/main) VerboseDebug: config: level=0x0[] file=0x0[]
+2011-07-27 17:52:02 (47318/main) Debug: daemon_fd=11
+2011-07-27 17:52:02 (47318/main) Verbose: ..start sent -> no RPM info -> ok
+2011-07-27 17:52:02 (47318/main) Debug: [UnitTests] start command pending
+2011-07-27 17:52:02 (47318/main) Debug: STOPPING - test_application_disabled
+2011-07-27 17:52:02 (47318/main) Debug: STARTING - test_background_task
+2011-07-27 17:52:02 (47318/main) Verbose: [UnitTests] sending "start"..
+2011-07-27 17:52:02 (47318/main) VerboseDebug: wrote 1638 bytes to daemon
+2011-07-27 17:52:02 (47318/main) VerboseDebug: read 83 bytes from daemon
+2011-07-27 17:52:02 (47318/main) Debug: daemon_fd=11
+2011-07-27 17:52:02 (47318/main) Verbose: ..start sent -> no RPM info -> ok
+2011-07-27 17:52:02 (47318/main) Debug: [UnitTests] start command pending
+2011-07-27 17:52:03 (47318/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:52:03 (47318/main) VerboseDebug: ignore = 1
+2011-07-27 17:52:03 (47318/main) VerboseDebug: app.collect_traces = 0
+2011-07-27 17:52:03 (47318/main) VerboseDebug: header.times.duration = 1000174
+2011-07-27 17:52:03 (47318/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:52:03 (47318/main) VerboseDebug: pending_harvest->metrics->number = 0
+2011-07-27 17:52:03 (47318/main) VerboseDebug: pending_harvest->slow_transactions = 0
+2011-07-27 17:52:03 (47318/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:52:03 (47318/main) Debug: STOPPING - test_background_task
+2011-07-27 17:52:03 (47318/main) Debug: STARTING - test_background_task_decorator
+2011-07-27 17:52:03 (47318/main) Verbose: [UnitTests] sending "start"..
+2011-07-27 17:52:03 (47318/main) VerboseDebug: wrote 1638 bytes to daemon
+2011-07-27 17:52:03 (47318/main) VerboseDebug: read 271 bytes from daemon
+2011-07-27 17:52:03 (47318/main) VerboseDebug: turning off RUM because of zero in: 0x0, 0x0, 0x0, 0, 0x10022a060
+2011-07-27 17:52:03 (47318/main) Debug: collect_traces=1, collect_errors=1, agent_run_id=0x4e28fc7400000004, apdex_t=0.5 daemon_fd=11
+2011-07-27 17:52:03 (47318/main) Verbose: ..start sent -> ok
+2011-07-27 17:52:03 (47318/main) Debug: [UnitTests] start command successful
+2011-07-27 17:52:03 (47318/main) VerboseDebug: keep_wt = 1
+2011-07-27 17:52:03 (47318/main) VerboseDebug: ignore = 0
+2011-07-27 17:52:03 (47318/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:52:03 (47318/main) VerboseDebug: header.times.duration = 100132
+2011-07-27 17:52:03 (47318/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:52:03 (47318/main) VerboseDebug: pending_harvest->metrics->number = 2
+2011-07-27 17:52:03 (47318/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:52:03 (47318/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:52:03 (47318/main) Debug: STOPPING - test_background_task_decorator
+2011-07-27 17:52:03 (47318/main) Debug: STARTING - test_background_task_decorator_default
+2011-07-27 17:52:03 (47318/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:52:03 (47318/main) VerboseDebug: ignore = 0
+2011-07-27 17:52:03 (47318/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:52:03 (47318/main) VerboseDebug: header.times.duration = 100058
+2011-07-27 17:52:03 (47318/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:52:03 (47318/main) VerboseDebug: pending_harvest->metrics->number = 3
+2011-07-27 17:52:03 (47318/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:52:03 (47318/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:52:03 (47318/main) Debug: STOPPING - test_background_task_decorator_default
+2011-07-27 17:52:03 (47318/main) Debug: STARTING - test_background_task_name_lambda
+2011-07-27 17:52:03 (47318/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:52:03 (47318/main) VerboseDebug: ignore = 0
+2011-07-27 17:52:03 (47318/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:52:03 (47318/main) VerboseDebug: header.times.duration = 100058
+2011-07-27 17:52:03 (47318/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:52:03 (47318/main) VerboseDebug: pending_harvest->metrics->number = 4
+2011-07-27 17:52:03 (47318/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:52:03 (47318/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:52:03 (47318/main) Debug: STOPPING - test_background_task_name_lambda
+2011-07-27 17:52:03 (47318/main) Debug: STARTING - test_background_task_named_decorator
+2011-07-27 17:52:04 (47318/main) VerboseDebug: keep_wt = 1
+2011-07-27 17:52:04 (47318/main) VerboseDebug: ignore = 0
+2011-07-27 17:52:04 (47318/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:52:04 (47318/main) VerboseDebug: header.times.duration = 1000161
+2011-07-27 17:52:04 (47318/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:52:04 (47318/main) VerboseDebug: pending_harvest->metrics->number = 5
+2011-07-27 17:52:04 (47318/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:52:04 (47318/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:52:04 (47318/main) Debug: STOPPING - test_background_task_named_decorator
+2011-07-27 17:52:04 (47318/main) Debug: STARTING - test_custom_parameters
+2011-07-27 17:52:04 (47318/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:52:04 (47318/main) VerboseDebug: ignore = 0
+2011-07-27 17:52:04 (47318/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:52:04 (47318/main) VerboseDebug: header.times.duration = 8
+2011-07-27 17:52:04 (47318/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:52:04 (47318/main) VerboseDebug: pending_harvest->metrics->number = 6
+2011-07-27 17:52:04 (47318/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:52:04 (47318/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:52:04 (47318/main) Debug: STOPPING - test_custom_parameters
+2011-07-27 17:52:04 (47318/main) Debug: STARTING - test_exit_on_delete
+2011-07-27 17:52:04 (47318/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:52:04 (47318/main) VerboseDebug: ignore = 0
+2011-07-27 17:52:04 (47318/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:52:04 (47318/main) VerboseDebug: header.times.duration = 2
+2011-07-27 17:52:04 (47318/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:52:04 (47318/main) VerboseDebug: pending_harvest->metrics->number = 7
+2011-07-27 17:52:04 (47318/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:52:04 (47318/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:52:04 (47318/main) Debug: STOPPING - test_exit_on_delete
+2011-07-27 17:52:04 (47318/main) Debug: STARTING - test_explicit_runtime_error
+2011-07-27 17:52:04 (47318/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:52:04 (47318/main) VerboseDebug: ignore = 0
+2011-07-27 17:52:04 (47318/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:52:04 (47318/main) VerboseDebug: header.times.duration = 831
+2011-07-27 17:52:04 (47318/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:52:04 (47318/main) VerboseDebug: pending_harvest->metrics->number = 8
+2011-07-27 17:52:04 (47318/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:52:04 (47318/main) VerboseDebug: pending_harvest->errors = 1
+2011-07-27 17:52:04 (47318/main) Debug: STOPPING - test_explicit_runtime_error
+2011-07-27 17:52:04 (47318/main) Debug: STARTING - test_ignore_background_task
+2011-07-27 17:52:04 (47318/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:52:04 (47318/main) VerboseDebug: ignore = 1
+2011-07-27 17:52:04 (47318/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:52:04 (47318/main) VerboseDebug: header.times.duration = 10
+2011-07-27 17:52:04 (47318/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:52:04 (47318/main) VerboseDebug: pending_harvest->metrics->number = 8
+2011-07-27 17:52:04 (47318/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:52:04 (47318/main) VerboseDebug: pending_harvest->errors = 1
+2011-07-27 17:52:04 (47318/main) Debug: STOPPING - test_ignore_background_task
+2011-07-27 17:52:04 (47318/main) Debug: STARTING - test_implicit_runtime_error
+2011-07-27 17:52:04 (47318/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:52:04 (47318/main) VerboseDebug: ignore = 0
+2011-07-27 17:52:04 (47318/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:52:04 (47318/main) VerboseDebug: header.times.duration = 53
+2011-07-27 17:52:04 (47318/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:52:04 (47318/main) VerboseDebug: pending_harvest->metrics->number = 9
+2011-07-27 17:52:04 (47318/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:52:04 (47318/main) VerboseDebug: pending_harvest->errors = 1
+2011-07-27 17:52:04 (47318/main) Debug: STOPPING - test_implicit_runtime_error
+2011-07-27 17:52:04 (47318/main) Debug: STARTING - test_inactive
+2011-07-27 17:52:04 (47318/main) Debug: STOPPING - test_inactive
+2011-07-27 17:52:04 (47318/main) Debug: STARTING - test_named_background_task
+2011-07-27 17:52:04 (47318/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:52:04 (47318/main) VerboseDebug: ignore = 0
+2011-07-27 17:52:04 (47318/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:52:04 (47318/main) VerboseDebug: header.times.duration = 9
+2011-07-27 17:52:04 (47318/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:52:04 (47318/main) VerboseDebug: pending_harvest->metrics->number = 10
+2011-07-27 17:52:04 (47318/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:52:04 (47318/main) VerboseDebug: pending_harvest->errors = 1
+2011-07-27 17:52:04 (47318/main) Debug: STOPPING - test_named_background_task
+2011-07-27 17:52:04 (47318/main) Debug: harvest (shutdown) 1 applications
+2011-07-27 17:52:04 (47318/main) VerboseDebug: harvesting application 'UnitTests'
+2011-07-27 17:52:04 (47318/main) Verbose: [UnitTests] harvesting 12 metrics
+2011-07-27 17:52:04 (47318/main) VerboseDebug: sending metrics for agent_run_id=0x4e28fc7400000004
+2011-07-27 17:52:04 (47318/main) Verbose: sending "metric_data"..
+2011-07-27 17:52:04 (47318/main) VerboseDebug: wrote 1311 bytes to daemon
+2011-07-27 17:52:04 (47318/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:52:04 (47318/main) Verbose: ..metrics sent -> ok
+2011-07-27 17:52:04 (47318/main) Verbose: [UnitTests] harvesting 1 TTs
+2011-07-27 17:52:04 (47318/main) Verbose: sending "tt"..
+2011-07-27 17:52:04 (47318/main) Verbose: ..TT(OtherTransaction/Function/_test_function_1)
+2011-07-27 17:52:04 (47318/main) VerboseDebug: wrote 221 bytes to daemon
+2011-07-27 17:52:04 (47318/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:52:04 (47318/main) Verbose: ..tt sent -> ok
+2011-07-27 17:52:04 (47318/main) Verbose: [UnitTests] harvesting 11 errors
+2011-07-27 17:52:04 (47318/main) Verbose: sending "error"..
+2011-07-27 17:52:04 (47318/main) VerboseDebug: wrote 355 bytes to daemon
+2011-07-27 17:52:04 (47318/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:52:04 (47318/main) Verbose: ..error sent -> ok
+2011-07-27 17:52:04 (47318/main) Verbose: sending "error"..
+2011-07-27 17:52:04 (47318/main) VerboseDebug: wrote 365 bytes to daemon
+2011-07-27 17:52:04 (47318/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:52:04 (47318/main) Verbose: ..error sent -> ok
+2011-07-27 17:52:04 (47318/main) Verbose: sending "error"..
+2011-07-27 17:52:04 (47318/main) VerboseDebug: wrote 365 bytes to daemon
+2011-07-27 17:52:04 (47318/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:52:04 (47318/main) Verbose: ..error sent -> ok
+2011-07-27 17:52:04 (47318/main) Verbose: sending "error"..
+2011-07-27 17:52:04 (47318/main) VerboseDebug: wrote 365 bytes to daemon
+2011-07-27 17:52:04 (47318/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:52:04 (47318/main) Verbose: ..error sent -> ok
+2011-07-27 17:52:04 (47318/main) Verbose: sending "error"..
+2011-07-27 17:52:04 (47318/main) VerboseDebug: wrote 365 bytes to daemon
+2011-07-27 17:52:04 (47318/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:52:04 (47318/main) Verbose: ..error sent -> ok
+2011-07-27 17:52:04 (47318/main) Verbose: sending "error"..
+2011-07-27 17:52:04 (47318/main) VerboseDebug: wrote 365 bytes to daemon
+2011-07-27 17:52:04 (47318/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:52:04 (47318/main) Verbose: ..error sent -> ok
+2011-07-27 17:52:04 (47318/main) Verbose: sending "error"..
+2011-07-27 17:52:04 (47318/main) VerboseDebug: wrote 365 bytes to daemon
+2011-07-27 17:52:04 (47318/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:52:04 (47318/main) Verbose: ..error sent -> ok
+2011-07-27 17:52:04 (47318/main) Verbose: sending "error"..
+2011-07-27 17:52:04 (47318/main) VerboseDebug: wrote 365 bytes to daemon
+2011-07-27 17:52:04 (47318/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:52:04 (47318/main) Verbose: ..error sent -> ok
+2011-07-27 17:52:04 (47318/main) Verbose: sending "error"..
+2011-07-27 17:52:04 (47318/main) VerboseDebug: wrote 365 bytes to daemon
+2011-07-27 17:52:04 (47318/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:52:04 (47318/main) Verbose: ..error sent -> ok
+2011-07-27 17:52:04 (47318/main) Verbose: sending "error"..
+2011-07-27 17:52:04 (47318/main) VerboseDebug: wrote 365 bytes to daemon
+2011-07-27 17:52:04 (47318/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:52:04 (47318/main) Verbose: ..error sent -> ok
+2011-07-27 17:52:04 (47318/main) Verbose: sending "error"..
+2011-07-27 17:52:04 (47318/main) VerboseDebug: wrote 365 bytes to daemon
+2011-07-27 17:52:04 (47318/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:52:04 (47318/main) Verbose: ..error sent -> ok
+2011-07-27 17:52:04 (47318/main) Verbose: sending "stop"..
+2011-07-27 17:52:04 (47318/main) VerboseDebug: stopping agent_run_id=0x4e28fc7400000004
+2011-07-27 17:52:04 (47318/main) VerboseDebug: wrote 22 bytes to daemon
+2011-07-27 17:52:04 (47318/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:52:04 (47318/main) Verbose: ..stop sent -> ok
+2011-07-27 17:52:04 (47318/main) Debug: closed daemon connection
+2011-07-27 17:52:04 (47318/main) Debug: destroying harvest thread
+2011-07-27 17:54:45 (47421/main) VerboseDebug: create application UnitTests
+2011-07-27 17:54:45 (47421/main) Debug: STARTING - test_application_disabled
+2011-07-27 17:54:45 (47421/main) VerboseDebug: start harvest thread
+2011-07-27 17:54:45 (47421/main) Debug: creating harvest thread
+2011-07-27 17:54:45 (47421/main) Debug: connecting to /tmp/.newrelic.sock
+2011-07-27 17:54:45 (47421/main) Verbose: [UnitTests] sending "start"..
+2011-07-27 17:54:45 (47421/main) VerboseDebug: wrote 1638 bytes to daemon
+2011-07-27 17:54:45 (47421/main) VerboseDebug: read 271 bytes from daemon
+2011-07-27 17:54:45 (47421/main) VerboseDebug: config: level=0x0[] file=0x0[]
+2011-07-27 17:54:45 (47421/main) VerboseDebug: turning off RUM because of zero in: 0x0, 0x0, 0x0, 0, 0x1010008e0
+2011-07-27 17:54:45 (47421/main) Debug: collect_traces=1, collect_errors=1, agent_run_id=0x4e28fc7400000004, apdex_t=0.5 daemon_fd=10
+2011-07-27 17:54:46 (47421/main) Verbose: ..start sent -> ok
+2011-07-27 17:54:46 (47421/main) Debug: [UnitTests] start command successful
+2011-07-27 17:54:46 (47421/main) Debug: STOPPING - test_application_disabled
+2011-07-27 17:54:46 (47421/main) Debug: STARTING - test_background_task
+2011-07-27 17:54:47 (47421/main) VerboseDebug: keep_wt = 1
+2011-07-27 17:54:47 (47421/main) VerboseDebug: ignore = 0
+2011-07-27 17:54:47 (47421/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:54:47 (47421/main) VerboseDebug: header.times.duration = 1000182
+2011-07-27 17:54:47 (47421/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:54:47 (47421/main) VerboseDebug: pending_harvest->metrics->number = 2
+2011-07-27 17:54:47 (47421/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:54:47 (47421/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:54:47 (47421/main) Debug: STOPPING - test_background_task
+2011-07-27 17:54:47 (47421/main) Debug: STARTING - test_background_task_decorator
+2011-07-27 17:54:47 (47421/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:54:47 (47421/main) VerboseDebug: ignore = 0
+2011-07-27 17:54:47 (47421/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:54:47 (47421/main) VerboseDebug: header.times.duration = 100101
+2011-07-27 17:54:47 (47421/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:54:47 (47421/main) VerboseDebug: pending_harvest->metrics->number = 3
+2011-07-27 17:54:47 (47421/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:54:47 (47421/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:54:47 (47421/main) Debug: STOPPING - test_background_task_decorator
+2011-07-27 17:54:47 (47421/main) Debug: STARTING - test_background_task_decorator_default
+2011-07-27 17:54:47 (47421/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:54:47 (47421/main) VerboseDebug: ignore = 0
+2011-07-27 17:54:47 (47421/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:54:47 (47421/main) VerboseDebug: header.times.duration = 100057
+2011-07-27 17:54:47 (47421/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:54:47 (47421/main) VerboseDebug: pending_harvest->metrics->number = 4
+2011-07-27 17:54:47 (47421/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:54:47 (47421/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:54:47 (47421/main) Debug: STOPPING - test_background_task_decorator_default
+2011-07-27 17:54:47 (47421/main) Debug: STARTING - test_background_task_name_lambda
+2011-07-27 17:54:47 (47421/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:54:47 (47421/main) VerboseDebug: ignore = 0
+2011-07-27 17:54:47 (47421/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:54:47 (47421/main) VerboseDebug: header.times.duration = 100224
+2011-07-27 17:54:47 (47421/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:54:47 (47421/main) VerboseDebug: pending_harvest->metrics->number = 5
+2011-07-27 17:54:47 (47421/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:54:47 (47421/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:54:47 (47421/main) Debug: STOPPING - test_background_task_name_lambda
+2011-07-27 17:54:47 (47421/main) Debug: STARTING - test_background_task_named_decorator
+2011-07-27 17:54:48 (47421/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:54:48 (47421/main) VerboseDebug: ignore = 0
+2011-07-27 17:54:48 (47421/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:54:48 (47421/main) VerboseDebug: header.times.duration = 1000174
+2011-07-27 17:54:48 (47421/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:54:48 (47421/main) VerboseDebug: pending_harvest->metrics->number = 6
+2011-07-27 17:54:48 (47421/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:54:48 (47421/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:54:48 (47421/main) Debug: STOPPING - test_background_task_named_decorator
+2011-07-27 17:54:48 (47421/main) Debug: STARTING - test_custom_parameters
+2011-07-27 17:54:48 (47421/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:54:48 (47421/main) VerboseDebug: ignore = 0
+2011-07-27 17:54:48 (47421/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:54:48 (47421/main) VerboseDebug: header.times.duration = 9
+2011-07-27 17:54:48 (47421/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:54:48 (47421/main) VerboseDebug: pending_harvest->metrics->number = 7
+2011-07-27 17:54:48 (47421/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:54:48 (47421/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:54:48 (47421/main) Debug: STOPPING - test_custom_parameters
+2011-07-27 17:54:48 (47421/main) Debug: STARTING - test_exit_on_delete
+2011-07-27 17:54:48 (47421/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:54:48 (47421/main) VerboseDebug: ignore = 0
+2011-07-27 17:54:48 (47421/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:54:48 (47421/main) VerboseDebug: header.times.duration = 2
+2011-07-27 17:54:48 (47421/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:54:48 (47421/main) VerboseDebug: pending_harvest->metrics->number = 8
+2011-07-27 17:54:48 (47421/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:54:48 (47421/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:54:48 (47421/main) Debug: STOPPING - test_exit_on_delete
+2011-07-27 17:54:48 (47421/main) Debug: STARTING - test_explicit_runtime_error
+2011-07-27 17:54:48 (47421/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:54:48 (47421/main) VerboseDebug: ignore = 0
+2011-07-27 17:54:48 (47421/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:54:48 (47421/main) VerboseDebug: header.times.duration = 783
+2011-07-27 17:54:48 (47421/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:54:48 (47421/main) VerboseDebug: pending_harvest->metrics->number = 9
+2011-07-27 17:54:48 (47421/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:54:48 (47421/main) VerboseDebug: pending_harvest->errors = 1
+2011-07-27 17:54:48 (47421/main) Debug: STOPPING - test_explicit_runtime_error
+2011-07-27 17:54:48 (47421/main) Debug: STARTING - test_ignore_background_task
+2011-07-27 17:54:48 (47421/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:54:48 (47421/main) VerboseDebug: ignore = 1
+2011-07-27 17:54:48 (47421/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:54:48 (47421/main) VerboseDebug: header.times.duration = 10
+2011-07-27 17:54:48 (47421/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:54:48 (47421/main) VerboseDebug: pending_harvest->metrics->number = 9
+2011-07-27 17:54:48 (47421/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:54:48 (47421/main) VerboseDebug: pending_harvest->errors = 1
+2011-07-27 17:54:48 (47421/main) Debug: STOPPING - test_ignore_background_task
+2011-07-27 17:54:48 (47421/main) Debug: STARTING - test_implicit_runtime_error
+2011-07-27 17:54:48 (47421/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:54:48 (47421/main) VerboseDebug: ignore = 0
+2011-07-27 17:54:48 (47421/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:54:48 (47421/main) VerboseDebug: header.times.duration = 53
+2011-07-27 17:54:48 (47421/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:54:48 (47421/main) VerboseDebug: pending_harvest->metrics->number = 10
+2011-07-27 17:54:48 (47421/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:54:48 (47421/main) VerboseDebug: pending_harvest->errors = 1
+2011-07-27 17:54:48 (47421/main) Debug: STOPPING - test_implicit_runtime_error
+2011-07-27 17:54:48 (47421/main) Debug: STARTING - test_inactive
+2011-07-27 17:54:48 (47421/main) Debug: STOPPING - test_inactive
+2011-07-27 17:54:48 (47421/main) Debug: STARTING - test_named_background_task
+2011-07-27 17:54:48 (47421/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:54:48 (47421/main) VerboseDebug: ignore = 0
+2011-07-27 17:54:48 (47421/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:54:48 (47421/main) VerboseDebug: header.times.duration = 9
+2011-07-27 17:54:48 (47421/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:54:48 (47421/main) VerboseDebug: pending_harvest->metrics->number = 11
+2011-07-27 17:54:48 (47421/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:54:48 (47421/main) VerboseDebug: pending_harvest->errors = 1
+2011-07-27 17:54:48 (47421/main) Debug: STOPPING - test_named_background_task
+2011-07-27 17:54:48 (47421/main) Debug: harvest (shutdown) 1 applications
+2011-07-27 17:54:48 (47421/main) VerboseDebug: harvesting application 'UnitTests'
+2011-07-27 17:54:48 (47421/main) Verbose: [UnitTests] harvesting 13 metrics
+2011-07-27 17:54:48 (47421/main) VerboseDebug: sending metrics for agent_run_id=0x4e28fc7400000004
+2011-07-27 17:54:48 (47421/main) Verbose: sending "metric_data"..
+2011-07-27 17:54:48 (47421/main) VerboseDebug: wrote 1420 bytes to daemon
+2011-07-27 17:54:48 (47421/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:54:48 (47421/main) Verbose: ..metrics sent -> ok
+2011-07-27 17:54:48 (47421/main) Verbose: [UnitTests] harvesting 1 TTs
+2011-07-27 17:54:48 (47421/main) Verbose: sending "tt"..
+2011-07-27 17:54:48 (47421/main) Verbose: ..TT(OtherTransaction/Function/background_task)
+2011-07-27 17:54:48 (47421/main) VerboseDebug: wrote 218 bytes to daemon
+2011-07-27 17:54:48 (47421/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:54:48 (47421/main) Verbose: ..tt sent -> ok
+2011-07-27 17:54:48 (47421/main) Verbose: [UnitTests] harvesting 11 errors
+2011-07-27 17:54:48 (47421/main) Verbose: sending "error"..
+2011-07-27 17:54:48 (47421/main) VerboseDebug: wrote 355 bytes to daemon
+2011-07-27 17:54:48 (47421/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:54:48 (47421/main) Verbose: ..error sent -> ok
+2011-07-27 17:54:48 (47421/main) Verbose: sending "error"..
+2011-07-27 17:54:48 (47421/main) VerboseDebug: wrote 365 bytes to daemon
+2011-07-27 17:54:48 (47421/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:54:48 (47421/main) Verbose: ..error sent -> ok
+2011-07-27 17:54:48 (47421/main) Verbose: sending "error"..
+2011-07-27 17:54:48 (47421/main) VerboseDebug: wrote 365 bytes to daemon
+2011-07-27 17:54:48 (47421/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:54:48 (47421/main) Verbose: ..error sent -> ok
+2011-07-27 17:54:48 (47421/main) Verbose: sending "error"..
+2011-07-27 17:54:48 (47421/main) VerboseDebug: wrote 365 bytes to daemon
+2011-07-27 17:54:48 (47421/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:54:48 (47421/main) Verbose: ..error sent -> ok
+2011-07-27 17:54:48 (47421/main) Verbose: sending "error"..
+2011-07-27 17:54:48 (47421/main) VerboseDebug: wrote 365 bytes to daemon
+2011-07-27 17:54:48 (47421/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:54:48 (47421/main) Verbose: ..error sent -> ok
+2011-07-27 17:54:48 (47421/main) Verbose: sending "error"..
+2011-07-27 17:54:48 (47421/main) VerboseDebug: wrote 365 bytes to daemon
+2011-07-27 17:54:48 (47421/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:54:48 (47421/main) Verbose: ..error sent -> ok
+2011-07-27 17:54:48 (47421/main) Verbose: sending "error"..
+2011-07-27 17:54:48 (47421/main) VerboseDebug: wrote 365 bytes to daemon
+2011-07-27 17:54:48 (47421/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:54:48 (47421/main) Verbose: ..error sent -> ok
+2011-07-27 17:54:48 (47421/main) Verbose: sending "error"..
+2011-07-27 17:54:48 (47421/main) VerboseDebug: wrote 365 bytes to daemon
+2011-07-27 17:54:48 (47421/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:54:48 (47421/main) Verbose: ..error sent -> ok
+2011-07-27 17:54:48 (47421/main) Verbose: sending "error"..
+2011-07-27 17:54:48 (47421/main) VerboseDebug: wrote 365 bytes to daemon
+2011-07-27 17:54:48 (47421/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:54:48 (47421/main) Verbose: ..error sent -> ok
+2011-07-27 17:54:48 (47421/main) Verbose: sending "error"..
+2011-07-27 17:54:48 (47421/main) VerboseDebug: wrote 365 bytes to daemon
+2011-07-27 17:54:48 (47421/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:54:48 (47421/main) Verbose: ..error sent -> ok
+2011-07-27 17:54:48 (47421/main) Verbose: sending "error"..
+2011-07-27 17:54:48 (47421/main) VerboseDebug: wrote 365 bytes to daemon
+2011-07-27 17:54:48 (47421/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:54:48 (47421/main) Verbose: ..error sent -> ok
+2011-07-27 17:54:48 (47421/main) Verbose: sending "stop"..
+2011-07-27 17:54:48 (47421/main) VerboseDebug: stopping agent_run_id=0x4e28fc7400000004
+2011-07-27 17:54:48 (47421/main) VerboseDebug: wrote 22 bytes to daemon
+2011-07-27 17:54:48 (47421/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:54:48 (47421/main) Verbose: ..stop sent -> ok
+2011-07-27 17:54:48 (47421/main) Debug: closed daemon connection
+2011-07-27 17:54:48 (47421/main) Debug: destroying harvest thread

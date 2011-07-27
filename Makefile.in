@@ -38,9 +38,18 @@ install-testing : test-env all
 	test-env/bin/python setup.py install
 
 .PHONY: unit-tests
+.PHONY: unit-tests/api
+.PHONY: unit-tests/core
 
-unit-tests : test-env install-testing
-	@for test in unit-tests/*.py; do test-env/bin/python $$test -v; done
+unit-tests/api : test-env install-testing
+	@for test in unit-tests/api/*.py; \
+	    do test-env/bin/python $$test -v; done
+
+unit-tests/core : test-env install-testing
+	@for test in unit-tests/core/*.py; \
+	    do test-env/bin/python $$test -v; done
+
+unit-tests : unit-tests/api unit-tests/core
 
 .PHONY: load-tests
 

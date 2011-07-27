@@ -1,0 +1,162 @@
+2011-07-27 17:52:10 (47323/main) VerboseDebug: create application UnitTests
+2011-07-27 17:52:10 (47323/main) Debug: STARTING - test_function_trace
+2011-07-27 17:52:10 (47323/main) VerboseDebug: start harvest thread
+2011-07-27 17:52:10 (47323/main) Debug: creating harvest thread
+2011-07-27 17:52:10 (47323/main) Debug: connecting to /tmp/.newrelic.sock
+2011-07-27 17:52:10 (47323/main) Verbose: [UnitTests] sending "start"..
+2011-07-27 17:52:10 (47323/main) VerboseDebug: wrote 1638 bytes to daemon
+2011-07-27 17:52:10 (47323/main) VerboseDebug: read 271 bytes from daemon
+2011-07-27 17:52:10 (47323/main) VerboseDebug: config: level=0x0[] file=0x0[]
+2011-07-27 17:52:10 (47323/main) VerboseDebug: turning off RUM because of zero in: 0x0, 0x0, 0x0, 0, 0x101100660
+2011-07-27 17:52:10 (47323/main) Debug: collect_traces=1, collect_errors=1, agent_run_id=0x4e28fc7400000004, apdex_t=0.5 daemon_fd=10
+2011-07-27 17:52:10 (47323/main) Verbose: ..start sent -> ok
+2011-07-27 17:52:10 (47323/main) Debug: [UnitTests] start command successful
+2011-07-27 17:52:11 (47323/main) VerboseDebug: keep_wt = 1
+2011-07-27 17:52:11 (47323/main) VerboseDebug: ignore = 0
+2011-07-27 17:52:11 (47323/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:52:11 (47323/main) VerboseDebug: header.times.duration = 1300955
+2011-07-27 17:52:11 (47323/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:52:11 (47323/main) VerboseDebug: pending_harvest->metrics->number = 11
+2011-07-27 17:52:11 (47323/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:52:11 (47323/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:52:11 (47323/main) Debug: STOPPING - test_function_trace
+2011-07-27 17:52:11 (47323/main) Debug: STARTING - test_function_trace_decorator
+2011-07-27 17:52:12 (47323/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:52:12 (47323/main) VerboseDebug: ignore = 0
+2011-07-27 17:52:12 (47323/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:52:12 (47323/main) VerboseDebug: header.times.duration = 1200196
+2011-07-27 17:52:12 (47323/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:52:12 (47323/main) VerboseDebug: pending_harvest->metrics->number = 14
+2011-07-27 17:52:12 (47323/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:52:12 (47323/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:52:12 (47323/main) Debug: STOPPING - test_function_trace_decorator
+2011-07-27 17:52:12 (47323/main) Debug: STARTING - test_function_trace_decorator_error
+2011-07-27 17:52:13 (47323/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:52:13 (47323/main) VerboseDebug: ignore = 0
+2011-07-27 17:52:13 (47323/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:52:13 (47323/main) VerboseDebug: header.times.duration = 1000113
+2011-07-27 17:52:13 (47323/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:52:13 (47323/main) VerboseDebug: pending_harvest->metrics->number = 17
+2011-07-27 17:52:13 (47323/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:52:13 (47323/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:52:13 (47323/main) Debug: STOPPING - test_function_trace_decorator_error
+2011-07-27 17:52:13 (47323/main) Debug: STARTING - test_function_trace_decorator_no_name
+2011-07-27 17:52:14 (47323/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:52:14 (47323/main) VerboseDebug: ignore = 0
+2011-07-27 17:52:14 (47323/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:52:14 (47323/main) VerboseDebug: header.times.duration = 800823
+2011-07-27 17:52:14 (47323/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:52:14 (47323/main) VerboseDebug: pending_harvest->metrics->number = 24
+2011-07-27 17:52:14 (47323/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:52:14 (47323/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:52:14 (47323/main) Debug: STOPPING - test_function_trace_decorator_no_name
+2011-07-27 17:52:14 (47323/main) Debug: STARTING - test_transaction_not_running
+2011-07-27 17:52:14 (47323/main) Debug: STOPPING - test_transaction_not_running
+2011-07-27 17:52:14 (47323/main) Debug: harvest (shutdown) 1 applications
+2011-07-27 17:52:14 (47323/main) VerboseDebug: harvesting application 'UnitTests'
+2011-07-27 17:52:14 (47323/main) Verbose: [UnitTests] harvesting 26 metrics
+2011-07-27 17:52:14 (47323/main) VerboseDebug: sending metrics for agent_run_id=0x4e28fc7400000004
+2011-07-27 17:52:14 (47323/main) Verbose: sending "metric_data"..
+2011-07-27 17:52:14 (47323/main) VerboseDebug: wrote 3089 bytes to daemon
+2011-07-27 17:52:14 (47323/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:52:14 (47323/main) Verbose: ..metrics sent -> ok
+2011-07-27 17:52:14 (47323/main) Verbose: [UnitTests] harvesting 1 TTs
+2011-07-27 17:52:14 (47323/main) Verbose: sending "tt"..
+2011-07-27 17:52:14 (47323/main) Verbose: ..TT(WebTransaction/Uri/function_trace)
+2011-07-27 17:52:14 (47323/main) Verbose: ....(Function/function-1)
+2011-07-27 17:52:14 (47323/main) Verbose: ......(Function/function-1-1)
+2011-07-27 17:52:14 (47323/main) Verbose: ......(Function/function-1-2)
+2011-07-27 17:52:14 (47323/main) Verbose: ....(Function/function-2)
+2011-07-27 17:52:14 (47323/main) Verbose: ......(Function/function-2-1)
+2011-07-27 17:52:14 (47323/main) Verbose: ........(Function/function-2-1-1)
+2011-07-27 17:52:14 (47323/main) VerboseDebug: wrote 485 bytes to daemon
+2011-07-27 17:52:14 (47323/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:52:14 (47323/main) Verbose: ..tt sent -> ok
+2011-07-27 17:52:14 (47323/main) Verbose: sending "stop"..
+2011-07-27 17:52:14 (47323/main) VerboseDebug: stopping agent_run_id=0x4e28fc7400000004
+2011-07-27 17:52:14 (47323/main) VerboseDebug: wrote 22 bytes to daemon
+2011-07-27 17:52:14 (47323/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:52:14 (47323/main) Verbose: ..stop sent -> ok
+2011-07-27 17:52:14 (47323/main) Debug: closed daemon connection
+2011-07-27 17:52:14 (47323/main) Debug: destroying harvest thread
+2011-07-27 17:54:54 (47426/main) VerboseDebug: create application UnitTests
+2011-07-27 17:54:54 (47426/main) Debug: STARTING - test_function_trace
+2011-07-27 17:54:54 (47426/main) VerboseDebug: start harvest thread
+2011-07-27 17:54:54 (47426/main) Debug: creating harvest thread
+2011-07-27 17:54:54 (47426/main) Debug: connecting to /tmp/.newrelic.sock
+2011-07-27 17:54:54 (47426/main) Verbose: [UnitTests] sending "start"..
+2011-07-27 17:54:54 (47426/main) VerboseDebug: wrote 1638 bytes to daemon
+2011-07-27 17:54:54 (47426/main) VerboseDebug: read 271 bytes from daemon
+2011-07-27 17:54:54 (47426/main) VerboseDebug: config: level=0x0[] file=0x0[]
+2011-07-27 17:54:54 (47426/main) VerboseDebug: turning off RUM because of zero in: 0x0, 0x0, 0x0, 0, 0x101100660
+2011-07-27 17:54:54 (47426/main) Debug: collect_traces=1, collect_errors=1, agent_run_id=0x4e28fc7400000004, apdex_t=0.5 daemon_fd=10
+2011-07-27 17:54:54 (47426/main) Verbose: ..start sent -> ok
+2011-07-27 17:54:54 (47426/main) Debug: [UnitTests] start command successful
+2011-07-27 17:54:55 (47426/main) VerboseDebug: keep_wt = 1
+2011-07-27 17:54:55 (47426/main) VerboseDebug: ignore = 0
+2011-07-27 17:54:55 (47426/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:54:55 (47426/main) VerboseDebug: header.times.duration = 1301635
+2011-07-27 17:54:55 (47426/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:54:55 (47426/main) VerboseDebug: pending_harvest->metrics->number = 11
+2011-07-27 17:54:55 (47426/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:54:55 (47426/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:54:55 (47426/main) Debug: STOPPING - test_function_trace
+2011-07-27 17:54:55 (47426/main) Debug: STARTING - test_function_trace_decorator
+2011-07-27 17:54:56 (47426/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:54:56 (47426/main) VerboseDebug: ignore = 0
+2011-07-27 17:54:56 (47426/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:54:56 (47426/main) VerboseDebug: header.times.duration = 1200383
+2011-07-27 17:54:56 (47426/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:54:56 (47426/main) VerboseDebug: pending_harvest->metrics->number = 14
+2011-07-27 17:54:56 (47426/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:54:56 (47426/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:54:56 (47426/main) Debug: STOPPING - test_function_trace_decorator
+2011-07-27 17:54:56 (47426/main) Debug: STARTING - test_function_trace_decorator_error
+2011-07-27 17:54:57 (47426/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:54:57 (47426/main) VerboseDebug: ignore = 0
+2011-07-27 17:54:57 (47426/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:54:57 (47426/main) VerboseDebug: header.times.duration = 1000074
+2011-07-27 17:54:57 (47426/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:54:57 (47426/main) VerboseDebug: pending_harvest->metrics->number = 17
+2011-07-27 17:54:57 (47426/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:54:57 (47426/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:54:57 (47426/main) Debug: STOPPING - test_function_trace_decorator_error
+2011-07-27 17:54:57 (47426/main) Debug: STARTING - test_function_trace_decorator_no_name
+2011-07-27 17:54:58 (47426/main) VerboseDebug: keep_wt = 0
+2011-07-27 17:54:58 (47426/main) VerboseDebug: ignore = 0
+2011-07-27 17:54:58 (47426/main) VerboseDebug: app.collect_traces = 1
+2011-07-27 17:54:58 (47426/main) VerboseDebug: header.times.duration = 801085
+2011-07-27 17:54:58 (47426/main) VerboseDebug: opts.tt_threshold = 0
+2011-07-27 17:54:58 (47426/main) VerboseDebug: pending_harvest->metrics->number = 24
+2011-07-27 17:54:58 (47426/main) VerboseDebug: pending_harvest->slow_transactions = 1
+2011-07-27 17:54:58 (47426/main) VerboseDebug: pending_harvest->errors = 0
+2011-07-27 17:54:58 (47426/main) Debug: STOPPING - test_function_trace_decorator_no_name
+2011-07-27 17:54:58 (47426/main) Debug: STARTING - test_transaction_not_running
+2011-07-27 17:54:58 (47426/main) Debug: STOPPING - test_transaction_not_running
+2011-07-27 17:54:58 (47426/main) Debug: harvest (shutdown) 1 applications
+2011-07-27 17:54:58 (47426/main) VerboseDebug: harvesting application 'UnitTests'
+2011-07-27 17:54:58 (47426/main) Verbose: [UnitTests] harvesting 26 metrics
+2011-07-27 17:54:58 (47426/main) VerboseDebug: sending metrics for agent_run_id=0x4e28fc7400000004
+2011-07-27 17:54:58 (47426/main) Verbose: sending "metric_data"..
+2011-07-27 17:54:58 (47426/main) VerboseDebug: wrote 3089 bytes to daemon
+2011-07-27 17:54:58 (47426/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:54:58 (47426/main) Verbose: ..metrics sent -> ok
+2011-07-27 17:54:58 (47426/main) Verbose: [UnitTests] harvesting 1 TTs
+2011-07-27 17:54:58 (47426/main) Verbose: sending "tt"..
+2011-07-27 17:54:58 (47426/main) Verbose: ..TT(WebTransaction/Uri/function_trace)
+2011-07-27 17:54:58 (47426/main) Verbose: ....(Function/function-1)
+2011-07-27 17:54:58 (47426/main) Verbose: ......(Function/function-1-1)
+2011-07-27 17:54:58 (47426/main) Verbose: ......(Function/function-1-2)
+2011-07-27 17:54:58 (47426/main) Verbose: ....(Function/function-2)
+2011-07-27 17:54:58 (47426/main) Verbose: ......(Function/function-2-1)
+2011-07-27 17:54:58 (47426/main) Verbose: ........(Function/function-2-1-1)
+2011-07-27 17:54:58 (47426/main) VerboseDebug: wrote 485 bytes to daemon
+2011-07-27 17:54:58 (47426/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:54:58 (47426/main) Verbose: ..tt sent -> ok
+2011-07-27 17:54:58 (47426/main) Verbose: sending "stop"..
+2011-07-27 17:54:58 (47426/main) VerboseDebug: stopping agent_run_id=0x4e28fc7400000004
+2011-07-27 17:54:58 (47426/main) VerboseDebug: wrote 22 bytes to daemon
+2011-07-27 17:54:58 (47426/main) VerboseDebug: read 62 bytes from daemon
+2011-07-27 17:54:58 (47426/main) Verbose: ..stop sent -> ok
+2011-07-27 17:54:58 (47426/main) Debug: closed daemon connection
+2011-07-27 17:54:58 (47426/main) Debug: destroying harvest thread

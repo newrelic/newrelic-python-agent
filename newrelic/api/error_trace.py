@@ -13,7 +13,7 @@ ErrorTrace = _newrelic.ErrorTrace
 
 class ErrorTraceWrapper(object):
 
-    def __init__(self, wrapped, ignore_errors=()):
+    def __init__(self, wrapped, ignore_errors=[]):
         if type(wrapped) == types.TupleType:
             (instance, wrapped) = wrapped
         else:
@@ -42,7 +42,7 @@ class ErrorTraceWrapper(object):
 
         try:
             success = True
-            manager = ErrorTrace(transaction, self.ignore_errors)
+            manager = ErrorTrace(transaction, self._nr_ignore_errors)
             manager.__enter__()
             try:
                 return self._nr_next_object(*args, **kwargs)
@@ -54,12 +54,12 @@ class ErrorTraceWrapper(object):
             if success:
                 manager.__exit__(None, None, None)
 
-def error_trace(ignore_errors=()):
+def error_trace(ignore_errors=[]):
     def decorator(wrapped):
         return ErrorTraceWrapper(wrapped, ignore_errors)
     return decorator
 
-def wrap_error_trace(module, ignore_errors=()):
+def wrap_error_trace(module, object_path, ignore_errors=[]):
     newrelic.api.object_wrapper.wrap_object(module, object_path,
             ErrorTraceWrapper, (ignore_errors, ))
 

@@ -13,13 +13,14 @@ class FunctionTraceWrapper(newrelic.api.trace_wrapper.TraceWrapper):
 
     def __init__(self, wrapped, name=None, scope=None, interesting=True):
         newrelic.api.trace_wrapper.TraceWrapper.__init__(self,
-                _newrelic.FunctionTrace, wrapped, name, scope, interesting)
+                FunctionTrace, wrapped, name, scope, interesting)
 
     def tracer_args(self, args, kwargs):
         (name, scope, interesting) = self._nr_tracer_args
 
         if name is None:
-            name = _newrelic.callable_name(self._nr_next_object)
+            name = newrelic.api.object_wrapper.callable_name(
+                    self._nr_next_object)
         elif not isinstance(name, basestring):
             name = name(*args, **kwargs)
         if scope is not None and not isinstance(scope, basestring):

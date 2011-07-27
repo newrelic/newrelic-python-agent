@@ -13,7 +13,7 @@ class ExternalTraceWrapper(newrelic.api.trace_wrapper.TraceWrapper):
 
     def __init__(self, wrapped, library, url):
         newrelic.api.trace_wrapper.TraceWrapper.__init__(self,
-                _newrelic.ExternalTrace, wrapped, library, url)
+                ExternalTrace, wrapped, library, url)
 
     def tracer_args(self, args, kwargs):
         (library, url) = self._nr_tracer_args

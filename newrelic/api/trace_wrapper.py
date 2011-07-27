@@ -4,6 +4,7 @@ import inspect
 
 import _newrelic
 
+import newrelic.api.transaction
 import newrelic.api.object_wrapper
 
 class TraceWrapper(object):
@@ -35,7 +36,7 @@ class TraceWrapper(object):
         return self._nr_tracer_args
 
     def __call__(self, *args, **kwargs):
-        transaction = _newrelic.transaction()
+        transaction = newrelic.api.transaction.transaction()
         if not transaction:
             return self._nr_next_object(*args, **kwargs)
 

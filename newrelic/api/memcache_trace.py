@@ -13,7 +13,7 @@ class MemcacheTraceWrapper(newrelic.api.trace_wrapper.TraceWrapper):
 
     def __init__(self, wrapped, command):
         newrelic.api.trace_wrapper.TraceWrapper.__init__(self,
-                _newrelic.MemcacheTrace, wrapped, command)
+                MemcacheTrace, wrapped, command)
 
     def tracer_args(self, args, kwargs):
         (command,) = self._nr_tracer_args

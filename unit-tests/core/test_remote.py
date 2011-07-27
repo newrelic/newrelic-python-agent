@@ -6,6 +6,7 @@ Created on Jul 26, 2011
 '''
 import unittest
 from newrelic.core.remote import JsonRemote
+from newrelic.core.exceptions import ForceRestartException
 
 class JsonRemoteTest(unittest.TestCase):
     
@@ -25,9 +26,23 @@ class JsonRemoteTest(unittest.TestCase):
     def test_remote_invoke(self):
         remote = JsonRemote("d67afc830dab717fd163bfcb0b8b88423e9a1a3b", "staging-collector.newrelic.com", 80)
         conn = remote.create_connection()
-        print remote.invoke_remote(conn, "get_redirect_host", None)
+        redirect_host = remote.invoke_remote(conn, "get_redirect_host", None)
         conn.close()
+        self.assertEqual("staging-collector-1.newrelic.com", redirect_host)
 
+    def test_parse_response_exception_invalid(self):
+        remote = JsonRemote("license", "staging", 80)
+        try:
+            remote.parse_response("{\"exception\":{}}")
+        except Exception as ex:
+            self.assertTrue(str(ex).index("Unknown exception") == 0, ex)
+            
+    def test_parse_response_exception_restart(self):
+        remote = JsonRemote("license", "staging", 80)
+        try:
+            remote.parse_response("{\"exception\":{\"error_type\":\"ForceRestartException\",\"message\":\"restart\"}}")
+        except ForceRestartException as ex:
+            self.assertEqual("restart", str(ex))
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

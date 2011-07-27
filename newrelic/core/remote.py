@@ -5,6 +5,7 @@ Created on Jul 26, 2011
 '''
 import json
 import httplib
+from newrelic.core.exceptions import raise_newrelic_exception
 
 class JsonRemote(object):
     '''
@@ -36,16 +37,22 @@ class JsonRemote(object):
         conn.connect()
         return conn
     
+    def raise_exception(self, ex):
+        # REVIEW 
+        if "error_type" in ex and "message" in ex:
+            raise_newrelic_exception(ex["error_type"], ex["message"])            
+            
+        raise Exception("Unknown exception: " + str(ex))
+    
     def parse_response(self, str):
         res = json.loads(str)
         
-        print str
-        print res
-        ex = res["exception"]
-        if ex is not None:
-            raise "" # FIXME
+        if "exception" in res:
+            self.raise_exception(res["exception"])            
+        if "return_value" in res:
+            return res["return_value"]
         
-        return res["return_value"]
+        raise Exception("Unexpected response format: " + str)
         
         
     def invoke_remote(self, connection, method, agent_run_id = None, *args):
@@ -61,9 +68,11 @@ class JsonRemote(object):
         if response.status is httplib.OK:
             reply = response.read()
             try:
-                return parse_response(reply)
-            except:
-                pass
+                return self.parse_response(reply)
+            except Exception as ex:
+                raise Exception("Json load failed error:", ex.message, ex)
+        else:
+            raise Exception("not ok")
         
     
     def remote_method_uri(self, method, agent_run_id = None):

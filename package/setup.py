@@ -69,14 +69,9 @@ class install_data_override(distutils.command.install_data.install_data):
 
 packages = [
   "newrelic",
-  "newrelic.commands",
-  "newrelic.core",
-  "newrelic.imports",
-  "newrelic.imports.database",
-  "newrelic.imports.external",
-  "newrelic.imports.framework",
-  "newrelic.imports.memcache",
-  "newrelic.imports.template",
+  "newrelic.api",
+  "newrelic.hooks",
+  "newrelic.scripts",
 ]
 
 distutils.core.setup(

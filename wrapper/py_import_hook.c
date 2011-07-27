@@ -398,10 +398,10 @@ PyObject *NRImport_GetImportHooks(void)
 
     modules = PyImport_GetModuleDict();
 
-    module = PyDict_GetItemString(modules, "newrelic.agent");
+    module = PyDict_GetItemString(modules, "newrelic.config");
 
     if (!module) {
-        PyErr_SetString(PyExc_RuntimeError, "can't find newrelic.agent");
+        PyErr_SetString(PyExc_RuntimeError, "can't find newrelic.config");
         return NULL;
     }
 

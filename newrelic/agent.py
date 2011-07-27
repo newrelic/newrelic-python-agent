@@ -1,21 +1,14 @@
 import os
 
-from _newrelic import *
+import newrelic.api.web_transaction
+import newrelic.api.background_task
 
-# To allow for transition while
+import newrelic.config
 
-_agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
+initialize = newrelic.config.initialize
 
-if _agent_mode in ('ungud', 'julunggul'):
-    from newrelic.core.object_wrapper import *
-    from newrelic.core.trace_wrapper import *
-    from newrelic.core.external_trace import *
-    from newrelic.core.function_trace import *
-    from newrelic.core.database_trace import *
-    from newrelic.core.memcache_trace import *
-
-from newrelic.config import *
-from newrelic.profile import *
+wsgi_application = newrelic.api.web_transaction.wsgi_application
+background_task = newrelic.api.background_task.background_task
 
 # Setting from environment variables is only provided for backward
 # compatibity with early Python agent BETA versions. This will be

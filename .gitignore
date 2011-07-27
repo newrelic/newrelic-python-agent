@@ -10,8 +10,8 @@
 
 /build
 /test-env
-/unit-tests/test_*.py.log
-/load-tests/test_*.py.log
+/unit-tests/*/test_*.py.log
+/load-tests/*/test_*.py.log
 
 /hudson-downloads
 /hudson-results

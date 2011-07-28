@@ -37,7 +37,7 @@ class JsonRemoteTest(unittest.TestCase):
     def test_remote_invoke(self):
         remote = JsonRemote("d67afc830dab717fd163bfcb0b8b88423e9a1a3b", "staging-collector.newrelic.com", 80)
         conn = remote.create_connection()
-        redirect_host = remote.invoke_remote(conn, "get_redirect_host", None)
+        redirect_host = remote.invoke_remote(conn, "get_redirect_host", True, None)
         conn.close()
         self.assertEqual("staging-collector-1.newrelic.com", redirect_host)
 

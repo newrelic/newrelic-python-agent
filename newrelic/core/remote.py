@@ -3,13 +3,14 @@ Created on Jul 26, 2011
 
 @author: sdaubin
 '''
-import json,httplib,os,socket
+import json,httplib,os,socket,string
 from newrelic.core.exceptions import raise_newrelic_exception
 
 class NewRelicService(object):
-    def __init__(self, remote):
+    def __init__(self, remote,app_names=["FIXME Python test"]):
         self._remote = remote
         self._agent_run_id = None
+        self._app_names = app_names
 
     def get_agent_run_id(self):
         return self._agent_run_id
@@ -24,7 +25,7 @@ class NewRelicService(object):
             try:
                 conn = self._remote.create_connection()
                 try:
-                    self._remote.invoke_remote(conn, "shutdown", self._agent_run_id)
+                    self._remote.invoke_remote(conn, "shutdown", True, self._agent_run_id)
                 finally:
                     conn.close()
 
@@ -38,24 +39,24 @@ class NewRelicService(object):
     def connect(self):
         conn = self._remote.create_connection()
         try:
-            redirect_host = self._remote.invoke_remote(conn, "get_redirect_host", None)
+            redirect_host = self._remote.invoke_remote(conn, "get_redirect_host", True, None)
             
             if redirect_host is not None:
                 self._remote.host = redirect_host
                 print "Collector redirection to %s" % redirect_host
     
-            self.parse_connect_response(self._remote.invoke_remote(conn, "connect", None, self.get_start_options()))
+            self.parse_connect_response(self._remote.invoke_remote(conn, "connect", True, None, self.get_start_options()))
         finally:
             conn.close()
             
-    def get_app_name(self):
-        return "FIXME Python test"
+    def get_app_names(self):
+        return self._app_names
         
     def get_identifier(self):
-        return self.get_app_name()
+        return string.join(self.get_app_names(),',')
         
     def get_start_options(self):
-        options = {"pid":os.getpid(),"language":"python","host":socket.gethostname(),"app_name":[self.get_app_name()],"identifier":self.get_identifier(),"agent_version":self.agent_version()}
+        options = {"pid":os.getpid(),"language":"python","host":socket.gethostname(),"app_name":self.get_app_names(),"identifier":self.get_identifier(),"agent_version":self.agent_version()}
         '''
         # FIXME 
             if (agent.Config.BootstrapConfig.ServiceConfig.SendEnvironmentInfo) {
@@ -69,6 +70,13 @@ class NewRelicService(object):
     def parse_connect_response(self, response):
         if "agent_run_id" in response:
             self._agent_run_id = response["agent_run_id"]
+        else:
+            raise Exception("The connect response did not include an agent run id: %s", str(response))
+        
+        if "data_report_period" in response:
+            self._data_report_period = response["data_report_period"] * 1000
+        else:
+            raise Exception("The connect response did not contain a data report period")
     
     agent_run_id = property(get_agent_run_id, None, None, "The agent run id")
     
@@ -91,11 +99,11 @@ class JsonRemote(object):
         self._license_key = license_key
 
     def get_host(self):
-        return self.__host
+        return self._host
 
 
     def set_host(self, value):
-        self.__host = value
+        self._host = value
 
         
     def create_connection(self):
@@ -126,7 +134,7 @@ class JsonRemote(object):
         raise Exception("Unexpected response format: %s" % str)
         
         
-    def invoke_remote(self, connection, method, agent_run_id = None, *args):
+    def invoke_remote(self, connection, method, compress = True, agent_run_id = None, *args):
         json_data = json.dumps(args)
         url = self.remote_method_uri(method, agent_run_id)
         

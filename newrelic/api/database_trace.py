@@ -1,7 +1,11 @@
 import os
+import sys
+import types
+import inspect
 
 import _newrelic
 
+import newrelic.api.transaction
 import newrelic.api.object_wrapper
 import newrelic.api.trace_wrapper
 
@@ -9,19 +13,56 @@ _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
 DatabaseTrace = _newrelic.DatabaseTrace
 
-class DatabaseTraceWrapper(newrelic.api.trace_wrapper.TraceWrapper):
+class DatabaseTraceWrapper(object):
 
     def __init__(self, wrapped, sql):
-        newrelic.api.trace_wrapper.TraceWrapper.__init__(self,
-                DatabaseTrace, wrapped, sql)
+        if type(wrapped) == types.TupleType:
+            (instance, wrapped) = wrapped
+        else:
+            instance = None
 
-    def tracer_args(self, args, kwargs):
-        (sql,) = self._nr_tracer_args
+        newrelic.api.object_wrapper.update_wrapper(self, wrapped)
 
-        if not isinstance(sql, basestring):
-            sql = sql(*args, **kwargs)
+        self._nr_instance = instance
+        self._nr_next_object = wrapped
 
-        return (sql,)
+        if not hasattr(self, '_nr_last_object'):
+            self._nr_last_object = wrapped
+
+        self._nr_sql = sql
+
+    def __get__(self, instance, klass):
+        if instance is None:
+            return self
+        descriptor = self._nr_next_object.__get__(instance, klass)
+        return self.__class__((instance, descriptor), self._nr_sql)
+
+    def __call__(self, *args, **kwargs):
+        transaction = newrelic.api.transaction.transaction()
+        if not transaction:
+            return self._nr_next_object(*args, **kwargs)
+
+        if not isinstance(self._nr_sql, basestring):
+            if self._nr_instance and inspect.ismethod(self._nr_next_object):
+                sql = self._nr_sql(*((self._nr_instance,)+args), **kwargs)
+            else:
+                sql = self._nr_sql(*args, **kwargs)
+        else:
+            sql = self._nr_sql
+
+        try:
+            success = True
+            manager = DatabaseTrace(transaction, sql)
+            manager.__enter__()
+            try:
+                return self._nr_next_object(*args, **kwargs)
+            except:
+                success = False
+                if not manager.__exit__(*sys.exc_info()):
+                    raise
+        finally:
+            if success:
+                manager.__exit__(None, None, None)
 
 def database_trace(sql):
     def decorator(wrapped):

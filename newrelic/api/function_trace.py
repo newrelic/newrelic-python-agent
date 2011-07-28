@@ -1,7 +1,11 @@
 import os
+import sys
+import types
+import inspect
 
 import _newrelic
 
+import newrelic.api.transaction
 import newrelic.api.object_wrapper
 import newrelic.api.trace_wrapper
 
@@ -9,24 +13,67 @@ _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
 FunctionTrace = _newrelic.FunctionTrace
 
-class FunctionTraceWrapper(newrelic.api.trace_wrapper.TraceWrapper):
+class FunctionTraceWrapper(object):
 
-    def __init__(self, wrapped, name=None, scope=None, interesting=True):
-        newrelic.api.trace_wrapper.TraceWrapper.__init__(self,
-                FunctionTrace, wrapped, name, scope, interesting)
+    def __init__(self, wrapped, name=None, scope=None):
+        if type(wrapped) == types.TupleType:
+            (instance, wrapped) = wrapped
+        else:
+            instance = None
 
-    def tracer_args(self, args, kwargs):
-        (name, scope, interesting) = self._nr_tracer_args
+        newrelic.api.object_wrapper.update_wrapper(self, wrapped)
 
-        if name is None:
+        self._nr_instance = instance
+        self._nr_next_object = wrapped
+
+        if not hasattr(self, '_nr_last_object'):
+            self._nr_last_object = wrapped
+
+        self._nr_name = name
+        self._nr_scope = scope
+
+    def __get__(self, instance, klass):
+        if instance is None:
+            return self
+        descriptor = self._nr_next_object.__get__(instance, klass)
+        return self.__class__((instance, descriptor), self._nr_name,
+                              self._nr_scope)
+
+    def __call__(self, *args, **kwargs):
+        transaction = newrelic.api.transaction.transaction()
+        if not transaction:
+            return self._nr_next_object(*args, **kwargs)
+
+        if self._nr_name is None:
             name = newrelic.api.object_wrapper.callable_name(
                     self._nr_next_object)
-        elif not isinstance(name, basestring):
-            name = name(*args, **kwargs)
-        if scope is not None and not isinstance(scope, basestring):
-            scope = scope(*args, **kwargs)
+        elif not isinstance(self._nr_name, basestring):
+            if self._nr_instance and inspect.ismethod(self._nr_next_object):
+                name = self._nr_name(*((self._nr_instance,)+args), **kwargs)
+            else:
+                name = self._nr_name(*args, **kwargs)
 
-        return (name, scope, interesting)
+        if self._nr_scope is not None and not isinstance(scope, basestring):
+            if self._nr_instance and inspect.ismethod(self._nr_next_object):
+                scope = self._nr_scope(*((self._nr_instance,)+args), **kwargs)
+            else:
+                scope = self._nr_scope(*args, **kwargs)
+        else:
+            scope = self._nr_scope
+
+        try:
+            success = True
+            manager = FunctionTrace(transaction, name, scope)
+            manager.__enter__()
+            try:
+                return self._nr_next_object(*args, **kwargs)
+            except:
+                success = False
+                if not manager.__exit__(*sys.exc_info()):
+                    raise
+        finally:
+            if success:
+                manager.__exit__(None, None, None)
 
 def function_trace(name=None, scope=None, interesting=True):
     def decorator(wrapped):

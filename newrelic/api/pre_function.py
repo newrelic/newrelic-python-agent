@@ -1,5 +1,55 @@
+import os
+import sys
+import types
+import inspect
+
 import _newrelic
 
-PreFunctionWrapper = _newrelic.PreFunctionWrapper
-pre_function = _newrelic.pre_function
-wrap_pre_function = _newrelic.wrap_pre_function
+import newrelic.api.object_wrapper
+
+_agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
+
+class PreFunctionWrapper(object):
+
+    def __init__(self, wrapped, function):
+        if type(wrapped) == types.TupleType:
+            (instance, wrapped) = wrapped
+        else:
+            instance = None
+
+        newrelic.api.object_wrapper.update_wrapper(self, wrapped)
+
+        self._nr_instance = instance
+        self._nr_next_object = wrapped
+
+        if not hasattr(self, '_nr_last_object'):
+            self._nr_last_object = wrapped
+
+        self._nr_function = function
+
+    def __get__(self, instance, klass):
+        if instance is None:
+            return self
+        descriptor = self._nr_next_object.__get__(instance, klass)
+        return self.__class__((instance, descriptor), self._nr_function)
+
+    def __call__(self, *args, **kwargs):
+        if self._nr_instance and inspect.ismethod(self._nr_next_object):
+            self._nr_function(*((self._nr_instance,)+args), **kwargs)
+        else:
+            self._nr_function(*args, **kwargs)
+        return self._nr_next_object(*args, **kwargs)
+
+def pre_function(function):
+    def decorator(wrapped):
+        return PreFunctionWrapper(wrapped, function)
+    return decorator
+
+def wrap_pre_function(module, object_path, function):
+    newrelic.api.object_wrapper.wrap_object(module, object_path,
+            PreFunctionWrapper, (function,))
+
+if not _agent_mode in ('ungud', 'julunggul'):
+    PreFunctionWrapper = _newrelic.PreFunctionWrapper
+    pre_function = _newrelic.pre_function
+    wrap_pre_function = _newrelic.wrap_pre_function

@@ -14,7 +14,7 @@ FunctionTrace = _newrelic.FunctionTrace
 
 class FunctionTraceWrapper(object):
 
-    def __init__(self, wrapped, name=None, scope=None):
+    def __init__(self, wrapped, name=None, scope=None, interesting=True):
         if type(wrapped) == types.TupleType:
             (instance, wrapped) = wrapped
         else:
@@ -30,13 +30,14 @@ class FunctionTraceWrapper(object):
 
         self._nr_name = name
         self._nr_scope = scope
+        self._nr_interesting = interesting
 
     def __get__(self, instance, klass):
         if instance is None:
             return self
         descriptor = self._nr_next_object.__get__(instance, klass)
         return self.__class__((instance, descriptor), self._nr_name,
-                              self._nr_scope)
+                              self._nr_scope, self._nr_interesting)
 
     def __call__(self, *args, **kwargs):
         transaction = newrelic.api.transaction.transaction()
@@ -52,7 +53,8 @@ class FunctionTraceWrapper(object):
             else:
                 name = self._nr_name(*args, **kwargs)
 
-        if self._nr_scope is not None and not isinstance(scope, basestring):
+        if self._nr_scope is not None and not isinstance(
+                self._nr_scope, basestring):
             if self._nr_instance and inspect.ismethod(self._nr_next_object):
                 scope = self._nr_scope(*((self._nr_instance,)+args), **kwargs)
             else:

@@ -1,7 +1,11 @@
 import os
+import sys
+import types
+import inspect
 
 import _newrelic
 
+import newrelic.api.transaction
 import newrelic.api.object_wrapper
 import newrelic.api.trace_wrapper
 
@@ -9,19 +13,57 @@ _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
 MemcacheTrace = _newrelic.MemcacheTrace
 
-class MemcacheTraceWrapper(newrelic.api.trace_wrapper.TraceWrapper):
+class MemcacheTraceWrapper(object):
 
     def __init__(self, wrapped, command):
-        newrelic.api.trace_wrapper.TraceWrapper.__init__(self,
-                MemcacheTrace, wrapped, command)
+        if type(wrapped) == types.TupleType:
+            (instance, wrapped) = wrapped
+        else:
+            instance = None
 
-    def tracer_args(self, args, kwargs):
-        (command,) = self._nr_tracer_args
+        newrelic.api.object_wrapper.update_wrapper(self, wrapped)
 
-        if not isinstance(command, basestring):
-            command = command(*args, **kwargs)
+        self._nr_instance = instance
+        self._nr_next_object = wrapped
 
-        return (command,)
+        if not hasattr(self, '_nr_last_object'):
+            self._nr_last_object = wrapped
+
+        self._nr_command = command
+
+    def __get__(self, instance, klass):
+        if instance is None:
+            return self
+        descriptor = self._nr_next_object.__get__(instance, klass)
+        return self.__class__((instance, descriptor), self._nr_command)
+
+    def __call__(self, *args, **kwargs):
+        transaction = newrelic.api.transaction.transaction()
+        if not transaction:
+            return self._nr_next_object(*args, **kwargs)
+
+        if not isinstance(self._nr_command, basestring):
+            if self._nr_instance and inspect.ismethod(self._nr_next_object):
+                command = self._nr_command(*((self._nr_instance,)+args),
+                                           **kwargs)
+            else:
+                command = self._nr_command(*args, **kwargs)
+        else:
+            command = self._nr_command
+
+        try:
+            success = True
+            manager = MemcacheTrace(transaction, command)
+            manager.__enter__()
+            try:
+                return self._nr_next_object(*args, **kwargs)
+            except:
+                success = False
+                if not manager.__exit__(*sys.exc_info()):
+                    raise
+        finally:
+            if success:
+                manager.__exit__(None, None, None)
 
 def memcache_trace(command):
     def decorator(wrapped):

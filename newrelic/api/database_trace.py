@@ -7,7 +7,6 @@ import _newrelic
 
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
-import newrelic.api.trace_wrapper
 
 _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 

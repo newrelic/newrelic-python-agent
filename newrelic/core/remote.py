@@ -3,9 +3,57 @@ Created on Jul 26, 2011
 
 @author: sdaubin
 '''
-import json
-import httplib
+import json,httplib,os,socket
 from newrelic.core.exceptions import raise_newrelic_exception
+
+class NewRelicService(object):
+    def __init__(self, remote):
+        self._remote = remote
+        self._agent_run_id = None
+
+    def get_agent_run_id(self):
+        return self._agent_run_id
+
+        
+    def agent_version(self):
+        #FIXME move this
+        return "0.9.0"
+        
+    def connect(self):
+        conn = self._remote.create_connection()
+        redirect_host = self._remote.invoke_remote(conn, "get_redirect_host", None)
+        
+        if redirect_host is not None:
+            self._remote.host = redirect_host
+            print "Collector redirection to " + redirect_host
+
+        self.parse_connect_response(self._remote.invoke_remote(conn, "connect", None, self.get_start_options()))
+        
+    def get_app_name(self):
+        return "FIXME Python test"
+        
+    def get_identifier(self):
+        return self.get_app_name()
+        
+    def get_start_options(self):
+        options = {"pid":os.getpid(),"language":"python","host":socket.gethostname(),"app_name":[self.get_app_name()],"identifier":self.get_identifier(),"agent_version":self.agent_version()}
+        '''
+        # FIXME 
+            if (agent.Config.BootstrapConfig.ServiceConfig.SendEnvironmentInfo) {
+                map.Add("environment", agent.Environment);
+                map.Add("settings", agent.Config);
+            }
+        '''
+
+        return options
+    
+    def parse_connect_response(self, response):
+        if "agent_run_id" in response:
+            self._agent_run_id = response["agent_run_id"]
+    
+    agent_run_id = property(get_agent_run_id, None, None, "The agent run id")
+    
+    
 
 class JsonRemote(object):
     '''
@@ -42,17 +90,21 @@ class JsonRemote(object):
         if "error_type" in ex and "message" in ex:
             raise_newrelic_exception(ex["error_type"], ex["message"])            
             
-        raise Exception("Unknown exception: " + str(ex))
+        raise Exception("Unknown exception: %s" % str(ex))
     
     def parse_response(self, str):
-        res = json.loads(str)
+        try:
+            res = json.loads(str)
+        except Exception as ex:
+            # FIXME log json
+            raise Exception("Json load failed error:", ex.message, ex)
         
         if "exception" in res:
             self.raise_exception(res["exception"])            
         if "return_value" in res:
             return res["return_value"]
         
-        raise Exception("Unexpected response format: " + str)
+        raise Exception("Unexpected response format: %s" % str)
         
         
     def invoke_remote(self, connection, method, agent_run_id = None, *args):
@@ -70,15 +122,16 @@ class JsonRemote(object):
             try:
                 return self.parse_response(reply)
             except Exception as ex:
-                raise Exception("Json load failed error:", ex.message, ex)
+                print json_data
+                raise ex
         else:
-            raise Exception("not ok")
+            raise Exception("%s failed: status code %i" % (method, response.status))
         
     
     def remote_method_uri(self, method, agent_run_id = None):
-        uri = "/agent_listener/" + str(self.PROTOCOL_VERSION) + "/" + self._license_key + "/" + method + "?marshal_format=json"
+        uri = "/agent_listener/%i/%s/%s?marshal_format=json" % (self.PROTOCOL_VERSION,self._license_key,method)
         if agent_run_id is not None:
-            uri += "&run_id=" + str(agent_run_id)
+            uri += "&run_id=%i" % agent_run_id
         return uri
     
     host = property(get_host, set_host, None, "The New Relic service host")

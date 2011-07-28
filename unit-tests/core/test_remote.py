@@ -5,8 +5,17 @@ Created on Jul 26, 2011
 @author: sdaubin
 '''
 import unittest
-from newrelic.core.remote import JsonRemote
+from newrelic.core.remote import JsonRemote,NewRelicService
 from newrelic.core.exceptions import ForceRestartException
+
+class NewRelicServiceTest(unittest.TestCase):
+        
+    def test_connect(self):
+        remote = JsonRemote("d67afc830dab717fd163bfcb0b8b88423e9a1a3b", "staging-collector.newrelic.com", 80)
+        service = NewRelicService(remote)
+        self.assertEqual(None, service.agent_run_id)
+        service.connect()
+        self.assertNotEqual(None, service.agent_run_id)
 
 class JsonRemoteTest(unittest.TestCase):
     

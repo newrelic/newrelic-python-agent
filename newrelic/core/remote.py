@@ -19,16 +19,35 @@ class NewRelicService(object):
         #FIXME move this
         return "0.9.0"
         
+    def shutdown(self):
+        if self.agent_run_id is not None:
+            try:
+                conn = self._remote.create_connection()
+                try:
+                    self._remote.invoke_remote(conn, "shutdown", self._agent_run_id)
+                finally:
+                    conn.close()
+
+            except Exception as ex:
+                #FIXME log
+                print ex
+                pass
+            self._agent_run_id = None
+            
+        
     def connect(self):
         conn = self._remote.create_connection()
-        redirect_host = self._remote.invoke_remote(conn, "get_redirect_host", None)
-        
-        if redirect_host is not None:
-            self._remote.host = redirect_host
-            print "Collector redirection to " + redirect_host
-
-        self.parse_connect_response(self._remote.invoke_remote(conn, "connect", None, self.get_start_options()))
-        
+        try:
+            redirect_host = self._remote.invoke_remote(conn, "get_redirect_host", None)
+            
+            if redirect_host is not None:
+                self._remote.host = redirect_host
+                print "Collector redirection to %s" % redirect_host
+    
+            self.parse_connect_response(self._remote.invoke_remote(conn, "connect", None, self.get_start_options()))
+        finally:
+            conn.close()
+            
     def get_app_name(self):
         return "FIXME Python test"
         

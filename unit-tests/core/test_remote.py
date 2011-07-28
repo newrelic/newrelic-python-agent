@@ -16,6 +16,8 @@ class NewRelicServiceTest(unittest.TestCase):
         self.assertEqual(None, service.agent_run_id)
         service.connect()
         self.assertNotEqual(None, service.agent_run_id)
+        service.shutdown()
+        self.assertEqual(None, service.agent_run_id)
 
 class JsonRemoteTest(unittest.TestCase):
     

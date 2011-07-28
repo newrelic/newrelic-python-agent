@@ -14,7 +14,8 @@ hudson-install : all
 
 clean :
 	rm -rf build
-	rm -f unit-tests/test_*.py.log
+	rm -f unit-tests/*/test_*.py.log
+	rm -f load-tests/test_*.py.log
 	$(RM) config.log config.status
 	rm -rf autom4te.cache
 

@@ -1,4 +1,5 @@
 import sys
+import threading
 
 import newrelic.api.settings
 import newrelic.api.transaction
@@ -117,99 +118,120 @@ def newrelic_browser_timing_footer():
         return ""
     return txn.browser_timing_footer()
 
+post_BaseHandler_load_middleware_lock = threading.Lock()
+
 def post_BaseHandler_load_middleware(handler, *args, **kwargs):
 
-    # This gets executed after the first time that the
-    # load_middleware() method of BaseHandler is called.
-    # It only gets executed once as don't want to do all
-    # this on every time it is called.
+    global post_BaseHandler_load_middleware_lock
 
-    # First go through all the request middleware and
-    # wrap them. Do this to record time within the
-    # middleware, but also to bind web transaction name
-    # based on middleware name. We need to do the latter
-    # even though we bind name again later as the request
-    # middleware can return a response immediately.
+    if not post_BaseHandler_load_middleware_lock:
+        return
 
-    if hasattr(handler, '_request_middleware'):
-        request_middleware = []
-        for function in handler._request_middleware:
-            wrapper = newrelic.api.name_transaction.NameTransactionWrapper(function)
-            wrapper = newrelic.api.function_trace.FunctionTraceWrapper(wrapper)
-            request_middleware.append(wrapper)
-        handler._request_middleware = request_middleware
+    lock = post_BaseHandler_load_middleware_lock
 
-    # Now go through all the view middleware and wrap
-    # them also. Do this to record time within the
-    # middleware, but again to bind web transaction name
-    # based on middleware name. We need to do the latter
-    # even though we bind name again later as the view
-    # middleware can return a response immediately even
-    # by that point a view handler has been chosen. When
-    # this occurs the view handler is never actually
-    # called and so use the view middleware name for web
-    # transaction name.
+    lock.acquire()
 
-    if hasattr(handler, '_view_middleware'):
-        view_middleware = []
-        for function in handler._view_middleware:
-            wrapper = newrelic.api.name_transaction.NameTransactionWrapper(function)
-            wrapper = newrelic.api.function_trace.FunctionTraceWrapper(wrapper)
-            view_middleware.append(wrapper)
-        handler._view_middleware = view_middleware
+    if not post_BaseHandler_load_middleware_lock:
+        lock.release()
+        return
 
-    # Now go through all the template response
-    # middleware and wrap them also. Do this to record
-    # time within the middleware. We don't bind web
-    # transaction name to the template response
-    # middleware name as this gets executed after view
-    # handler and we want to preserve the view handler
-    # name as web transaction name. Note that template
-    # response middleware don't exist in older versions
-    # of Django but we only wrap them if the list of
-    # template response middleware exists, so is okay.
+    post_BaseHandler_load_middleware_lock = None
 
-    if hasattr(handler, '_template_response_middleware'):
-        template_response_middleware = []
-        for function in handler._template_response_middleware:
-            wrapper = newrelic.api.function_trace.FunctionTraceWrapper(function)
-            template_response_middleware.append(wrapper)
-        handler._template_response_middleware = template_response_middleware
+    try:
+        # This gets executed after the first time that the
+        # load_middleware() method of BaseHandler is called.
+        # It only gets executed once as don't want to do all
+        # this on every time it is called.
 
-    # Now go through all the response middleware and
-    # wrap them also. Do this to record time within the
-    # middleware. Again, we preserve the web transaction
-    # name as that for the view handler.
+        # First go through all the request middleware and
+        # wrap them. Do this to record time within the
+        # middleware, but also to bind web transaction name
+        # based on middleware name. We need to do the latter
+        # even though we bind name again later as the request
+        # middleware can return a response immediately.
 
-    if hasattr(handler, '_response_middleware'):
-        response_middleware = []
-        for function in handler._response_middleware:
-            wrapper = newrelic.api.function_trace.FunctionTraceWrapper(function)
-            response_middleware.append(wrapper)
-        handler._response_middleware = response_middleware
+        if hasattr(handler, '_request_middleware'):
+            request_middleware = []
+            for function in handler._request_middleware:
+                wrapper = newrelic.api.name_transaction.NameTransactionWrapper(function)
+                wrapper = newrelic.api.function_trace.FunctionTraceWrapper(wrapper)
+                request_middleware.append(wrapper)
+            handler._request_middleware = request_middleware
 
-    # Now go through all the exception middleware and
-    # wrap them also. Do this to record time within the
-    # middleware and name the web transaction. We do
-    # the latter to highlight when an exception has
-    # occurred and been processed by the the exception
-    # middleware otherwise they bind to the name for
-    # the view handler still and don't show out as well.
+        # Now go through all the view middleware and wrap
+        # them also. Do this to record time within the
+        # middleware, but again to bind web transaction name
+        # based on middleware name. We need to do the latter
+        # even though we bind name again later as the view
+        # middleware can return a response immediately even
+        # by that point a view handler has been chosen. When
+        # this occurs the view handler is never actually
+        # called and so use the view middleware name for web
+        # transaction name.
 
-    if hasattr(handler, '_exception_middleware'):
-        exception_middleware = []
-        for function in handler._exception_middleware:
-            wrapper = newrelic.api.name_transaction.NameTransactionWrapper(function)
-            wrapper = newrelic.api.function_trace.FunctionTraceWrapper(wrapper)
-            exception_middleware.append(wrapper)
-        handler._exception_middleware = exception_middleware
+        if hasattr(handler, '_view_middleware'):
+            view_middleware = []
+            for function in handler._view_middleware:
+                wrapper = newrelic.api.name_transaction.NameTransactionWrapper(function)
+                wrapper = newrelic.api.function_trace.FunctionTraceWrapper(wrapper)
+                view_middleware.append(wrapper)
+            handler._view_middleware = view_middleware
 
-    # Insert response middleware for automatically
-    # inserting end user monitoring header and footer.
+        # Now go through all the template response
+        # middleware and wrap them also. Do this to record
+        # time within the middleware. We don't bind web
+        # transaction name to the template response
+        # middleware name as this gets executed after view
+        # handler and we want to preserve the view handler
+        # name as web transaction name. Note that template
+        # response middleware don't exist in older versions
+        # of Django but we only wrap them if the list of
+        # template response middleware exists, so is okay.
 
-    if hasattr(handler, '_response_middleware'):
-        handler._response_middleware.insert(0,
-                response_middleware_browser_monitoring)
+        if hasattr(handler, '_template_response_middleware'):
+            template_response_middleware = []
+            for function in handler._template_response_middleware:
+                wrapper = newrelic.api.function_trace.FunctionTraceWrapper(function)
+                template_response_middleware.append(wrapper)
+            handler._template_response_middleware = template_response_middleware
+
+        # Now go through all the response middleware and
+        # wrap them also. Do this to record time within the
+        # middleware. Again, we preserve the web transaction
+        # name as that for the view handler.
+
+        if hasattr(handler, '_response_middleware'):
+            response_middleware = []
+            for function in handler._response_middleware:
+                wrapper = newrelic.api.function_trace.FunctionTraceWrapper(function)
+                response_middleware.append(wrapper)
+            handler._response_middleware = response_middleware
+
+        # Now go through all the exception middleware and
+        # wrap them also. Do this to record time within the
+        # middleware and name the web transaction. We do
+        # the latter to highlight when an exception has
+        # occurred and been processed by the the exception
+        # middleware otherwise they bind to the name for
+        # the view handler still and don't show out as well.
+
+        if hasattr(handler, '_exception_middleware'):
+            exception_middleware = []
+            for function in handler._exception_middleware:
+                wrapper = newrelic.api.name_transaction.NameTransactionWrapper(function)
+                wrapper = newrelic.api.function_trace.FunctionTraceWrapper(wrapper)
+                exception_middleware.append(wrapper)
+            handler._exception_middleware = exception_middleware
+
+        # Insert response middleware for automatically
+        # inserting end user monitoring header and footer.
+
+        if hasattr(handler, '_response_middleware'):
+            handler._response_middleware.insert(0,
+                    response_middleware_browser_monitoring)
+
+    finally:
+        lock.release()
 
 class name_RegexURLResolver_resolve_Resolver404(newrelic.api.object_wrapper.ObjectWrapper):
     def __call__(self, *args, **kwargs):
@@ -357,7 +379,7 @@ def instrument(module):
 
         newrelic.api.post_function.wrap_post_function(
                 module, 'BaseHandler.load_middleware',
-                post_BaseHandler_load_middleware, run_once=True)
+                post_BaseHandler_load_middleware)
 
     elif module.__name__ == 'django.core.handlers.wsgi':
 

@@ -5,12 +5,17 @@ Created on Jul 26, 2011
 '''
 import json,httplib,os,socket,string
 from newrelic.core.exceptions import raise_newrelic_exception
+from newrelic.core.config import create_configuration
 
 class NewRelicService(object):
     def __init__(self, remote,app_names=["FIXME Python test"]):
         self._remote = remote
         self._agent_run_id = None
         self._app_names = app_names
+        self._configuration = None
+
+    def get_configuration(self):
+        return self._configuration
 
     def get_agent_run_id(self):
         return self._agent_run_id
@@ -34,7 +39,9 @@ class NewRelicService(object):
                 print ex
                 pass
             self._agent_run_id = None
-            
+        
+    def connected(self):
+        return self._agent_run_id is not None    
         
     def connect(self):
         conn = self._remote.create_connection()
@@ -73,12 +80,16 @@ class NewRelicService(object):
         else:
             raise Exception("The connect response did not include an agent run id: %s", str(response))
         
+        # Remove this.  we always report once a minute
         if "data_report_period" in response:
-            self._data_report_period = response["data_report_period"] * 1000
+            self._data_report_period = response["data_report_period"]
         else:
             raise Exception("The connect response did not contain a data report period")
+        
+        self._configuration = create_configuration(response)
     
     agent_run_id = property(get_agent_run_id, None, None, "The agent run id")
+    configuration = property(get_configuration, None, None, None)
     
     
 

@@ -24,10 +24,17 @@ def _initialize_config():
 
 class Agent(object):
     def __init__(self,config):
-        self._remote = JsonRemote(config.license_key, config.host, config.port) 
+        self._remote = JsonRemote(config.license_key, config.host, config.port)
+        
+        from newrelic.core.harvest import start_harvest_thread
+        start_harvest_thread(60)
 
     def get_remote(self):
         return self._remote
+    
+    def shutdown(self):
+        from newrelic.core.harvest import stop_harvest_thread
+        stop_harvest_thread()
 
     remote = property(get_remote, None, None, None)
     

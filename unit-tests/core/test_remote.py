@@ -16,6 +16,7 @@ class NewRelicServiceTest(unittest.TestCase):
         self.assertEqual(None, service.agent_run_id)
         service.connect()
         self.assertNotEqual(None, service.agent_run_id)
+        self.assertTrue(service.connected())
         service.shutdown()
         self.assertEqual(None, service.agent_run_id)
 

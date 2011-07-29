@@ -40,10 +40,10 @@ class ApdexStats(BaseStats):
     def record_frustrating(self):
         self._frustrating += 1
         
-    def record_time_in_millis(self, time):
-        if time <= self._apdex_setting.apdex_t:
+    def record(self, time_in_seconds):
+        if time_in_seconds <= self._apdex_setting.apdex_t:
             self._satisying += 1
-        elif time <= self._apdex_setting.apdex_f:
+        elif time_in_seconds <= self._apdex_setting.apdex_f:
             self._tolerating += 1
         else:
             self._frustrating += 1
@@ -88,15 +88,15 @@ class TimeStats(BaseStats):
         self._min_call_time = 0
         self._max_call_time = 0
         
-    def record(self, call_time_in_millis, exclusive_call_time_in_millis):
-        if self._call_count is 0 or self._min_call_time > call_time_in_millis:
-            self._min_call_time = call_time_in_millis
-        if self._max_call_time < call_time_in_millis:
-            self._max_call_time = call_time_in_millis
+    def record(self, call_time_in_seconds, exclusive_call_time_in_seconds):
+        if self._call_count is 0 or self._min_call_time > call_time_in_seconds:
+            self._min_call_time = call_time_in_seconds
+        if self._max_call_time < call_time_in_seconds:
+            self._max_call_time = call_time_in_seconds
 
         self._call_count += 1
-        self._total_call_time += call_time_in_millis
-        self._total_exclusive_call_time += exclusive_call_time_in_millis
+        self._total_call_time += call_time_in_seconds
+        self._total_exclusive_call_time += exclusive_call_time_in_seconds
             
     def has_data(self):
         return self._call_count > 0

@@ -4,7 +4,7 @@ Created on Jul 28, 2011
 @author: sdaubin
 '''
 
-import threading,Queue
+import threading
 
 def repeat(event, every, action): 
     while True: 

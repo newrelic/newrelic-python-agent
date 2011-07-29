@@ -6,61 +6,62 @@ Created on Jul 25, 2011
 from newrelic.core.stats import TimeStats
 from newrelic.core.stats import ApdexStats
 from newrelic.core.stats import StatsDict
-from newrelic.core.apdex import ApdexSetting
+from newrelic.core.config import create_configuration
 import unittest
+import collections
 
 class ApdexStatsTest(unittest.TestCase):
     
-    def test_record_time_in_millis(self):
-        apdex = ApdexSetting(50)
+    def test_record(self):
+        apdex = create_configuration()
         s = ApdexStats(apdex)
         
-        s.record_time_in_millis(40)
-        s.record_time_in_millis(50)
-        s.record_time_in_millis(51)
+        s.record(0.4)
+        s.record(0.50)
+        s.record(0.51)
         
         self.assertEqual(2, s.satisfying)
         self.assertEqual(1, s.tolerating)
         self.assertEqual(0, s.frustrating)
         
-        s.record_time_in_millis(200)
-        s.record_time_in_millis(201)
+        s.record(2.0)
+        s.record(2.01)
         
         self.assertEqual(2, s.tolerating)
         self.assertEqual(1, s.frustrating)
 
     def test_clone(self):
-        apdex = ApdexSetting(50)
+        apdex = create_configuration({"apdex_t":50})
         s = ApdexStats(apdex)
         s = s.clone()
         
-        s.record_time_in_millis(40)
-        s.record_time_in_millis(50)
-        s.record_time_in_millis(51)
+        s.record(40)
+        s.record(50)
+        s.record(51)
         
         self.assertEqual(2, s.satisfying)
         self.assertEqual(1, s.tolerating)
         self.assertEqual(0, s.frustrating)
         
         s2 = s.clone()
-        s2.record_time_in_millis(75)
+        s2.record(75)
         
         self.assertEqual(2, s2.tolerating)
         self.assertEqual(1, s.tolerating)
         
     def test_merge(self):
-        apdex = ApdexSetting(50)
+        apdex = create_configuration({"apdex_t":50})
         s1 = ApdexStats(apdex)
         
-        s1.record_time_in_millis(40)
+        s1.record(40)
         s2 = s1.clone();
         
-        s1.record_time_in_millis(50)
-        s1.record_time_in_millis(51)
+        s1.record(50)
+        s1.record(51)
         
-        s2.record_time_in_millis(251)
-        s2.record_time_in_millis(88)
-        s2.record_time_in_millis(12)
+        s2.record(251)
+        s2.record(88)
+        s2.record(12)
         
         s1.merge(s2)
         
@@ -132,11 +133,11 @@ class StatsDictTest(unittest.TestCase):
 
 
     def test_get_apdex_stats(self):        
-        d = StatsDict(ApdexSetting(1000))
+        d = StatsDict(create_configuration({"apdex_t":1}))
         s = d.get_apdex_stats("test")
         
-        s.record_time_in_millis(555)
-        s.record_time_in_millis(1023)
+        s.record(0.555)
+        s.record(1.023)
         
         s2 = d.get_apdex_stats("test")
         self.assertEqual(s,s2)

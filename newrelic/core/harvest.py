@@ -21,7 +21,11 @@ def register_harvest_listener(listener):
 
 def unregister_harvest_listener(listener):
     global _harvest_listeners
-    _harvest_listeners.remove(listener)    
+    _harvest_listeners.remove(listener)
+    
+def clear_harvest_listeners():
+    global _harvest_listeners
+    _harvest_listeners[:] = []
 
 def start_harvest_thread(frequency_in_seconds):
     global _harvest_thread
@@ -39,7 +43,8 @@ def start_harvest_thread(frequency_in_seconds):
     _harvest_thread, _harvest_event = schedule_repeating_task("New Relic Harvest Timer",_harvest, frequency_in_seconds)
     
     _harvest_work_thread = QueueProcessingThread("New Relic Harvest Processing Thread",_harvest_work_queue)
-    
+    _harvest_work_thread.start()
+
     return _harvest_thread.is_alive()
     
 def _harvest():
@@ -61,7 +66,7 @@ def _do_harvest():
         connection = r.create_connection()
         try:
             for listener in _harvest_listeners:
-                listener.harvest(connection,r)
+                listener.harvest(connection)
         finally:
             connection.close()
     except Exception as ex:
@@ -74,6 +79,7 @@ def harvest_count():
 def stop_harvest_thread():
     global _harvest_thread
     global _harvest_event
+    global _harvest_count
 
     if _harvest_event:
         print "Stopping harvest thread"
@@ -84,5 +90,8 @@ def stop_harvest_thread():
         _harvest_event = None
         _harvest_thread = None
         return not alive
+    else:
+        # clean up for unit tests
+        _harvest_count = 0
 
     return False

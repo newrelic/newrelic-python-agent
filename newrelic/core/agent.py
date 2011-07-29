@@ -26,10 +26,11 @@ def _initialize_config():
 
 class Agent(object):
     def __init__(self,config):
+        print "Starting the New Relic agent"
         self._remote = JsonRemote(config.license_key, config.host, config.port)
-        self._harvester = Harvester(self._remote,60)
         
         app = Application(self._remote, ["Python Test"])
+        self._harvester = Harvester(self._remote,60)
         self._harvester.register_harvest_listener(app)
 
     def get_remote(self):

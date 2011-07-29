@@ -34,7 +34,7 @@ class Harvester(object):
         if self._harvest_thread:
             self._harvest_count += 1
     
-        self._harvest_work_queue.put(self._do_harvest,False,1)
+        self._harvest_work_queue.put_nowait(self._do_harvest)
         
     '''
     Create a New Relic service connection and call harvest() on all of the harvest listeners.  This is

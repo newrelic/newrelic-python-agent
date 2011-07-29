@@ -56,6 +56,8 @@ class NewRelicService(object):
         finally:
             conn.close()
             
+        return self.connected()
+            
     def get_app_names(self):
         return self._app_names
         

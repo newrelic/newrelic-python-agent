@@ -142,6 +142,20 @@ class StatsDictTest(unittest.TestCase):
         s2 = d.get_apdex_stats("test")
         self.assertEqual(s,s2)
         
+    def test_metric_data(self):
+        from newrelic.core.metric import new_metric
+        d = StatsDict(create_configuration({"apdex_t":1}))
+        s = d.get_time_stats(new_metric("foo"))
+        s.record(0.12,0.12)
+        s = d.get_time_stats(new_metric("bar"))
+        s.record(0.34,0.34)
+        
+        metric_ids = {}
+        md = d.metric_data(metric_ids)
+        self.assertEqual(2, len(md))
+        
+        self.assertEqual(new_metric("foo").to_json(),md[0][0])
+        self.assertEqual(new_metric("bar").to_json(),md[1][0])
         
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

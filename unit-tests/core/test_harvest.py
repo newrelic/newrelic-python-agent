@@ -6,8 +6,7 @@ Created on Jul 28, 2011
 import unittest
 import time
 import newrelic.core.harvest
-from newrelic.core.harvest import start_harvest_thread, harvest_count,_harvest,\
-    stop_harvest_thread, register_harvest_listener,clear_harvest_listeners
+from newrelic.core.harvest import Harvester
 
 class HarvestListener(object):
     def __init__(self):
@@ -30,42 +29,30 @@ class MockRemote(object):
 class TestHarvest(unittest.TestCase):
     def setUp(self):
         unittest.TestCase.setUp(self)
-        stop_harvest_thread()
-        clear_harvest_listeners()
 
-    def test_stop_nonrunning_thread(self):
-        self.assertFalse(stop_harvest_thread())
 
     def test_start_thread(self):
-        self.assertEqual(0, harvest_count())
+        h = Harvester(None, 200)
         try:
-            self.assertTrue(start_harvest_thread(200))
-            self.assertEqual(0, harvest_count())
+            self.assertEqual(0, h.harvest_count)
         finally:
-            self.assertTrue(stop_harvest_thread())
+            self.assertTrue(h.stop())
             
-        self.assertEqual(0, harvest_count())
+        self.assertEqual(0, h.harvest_count)
 
     def test_start_thread_and_harvest(self):
-        # mock out the agent remote
-        from newrelic.core.agent import newrelic_agent
-        a = newrelic_agent()
-        a._remote = MockRemote()
-        
-        self.assertEqual(0, harvest_count())
         l = HarvestListener()
-        self.assertFalse(l.okay)        
+        self.assertFalse(l.okay)
+        h = Harvester(MockRemote(),0.5)
         try:
-            register_harvest_listener(l)
-            self.assertTrue(start_harvest_thread(0.5))
-            self.assertFalse(start_harvest_thread(200))
-            self.assertEqual(0, harvest_count())
+            h.register_harvest_listener(l)
+            self.assertEqual(0, h.harvest_count)
             time.sleep(2)
         finally:
-            self.assertTrue(stop_harvest_thread())
+            self.assertTrue(h.stop())
             
         self.assertTrue(l.okay)
-        self.assertTrue(harvest_count() > 0)
+        self.assertTrue(h.harvest_count > 0)
         
         
         

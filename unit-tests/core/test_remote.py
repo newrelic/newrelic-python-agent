@@ -12,11 +12,14 @@ class NewRelicServiceTest(unittest.TestCase):
         
     def test_connect(self):
         remote = JsonRemote("d67afc830dab717fd163bfcb0b8b88423e9a1a3b", "staging-collector.newrelic.com", 80)
-        service = NewRelicService(remote)
+        service = NewRelicService(remote,app_names=["Python Unit Test1"])
         self.assertEqual(None, service.agent_run_id)
         service.connect()
         self.assertNotEqual(None, service.agent_run_id)
         self.assertTrue(service.connected())
+        print service.configuration
+        print service.configuration.server_settings
+#        self.assertEqual(0.777, service.configuration.transaction_tracer.transaction_threshold)
         service.shutdown()
         self.assertEqual(None, service.agent_run_id)
 

@@ -76,15 +76,12 @@ class NewRelicService(object):
     
     def parse_connect_response(self, response):
         if "agent_run_id" in response:
-            self._agent_run_id = response["agent_run_id"]
+            self._agent_run_id = response.pop("agent_run_id")
         else:
             raise Exception("The connect response did not include an agent run id: %s", str(response))
         
-        # Remove this.  we always report once a minute
-        if "data_report_period" in response:
-            self._data_report_period = response["data_report_period"]
-        else:
-            raise Exception("The connect response did not contain a data report period")
+        # we're hardcoded to a 1 minute harvest
+        response.pop("data_report_period")
         
         self._configuration = create_configuration(response)
     

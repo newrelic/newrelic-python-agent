@@ -5,6 +5,8 @@ Created on Jul 27, 2011
 '''
 import collections
 from newrelic.core.remote import JsonRemote
+from newrelic.core.harvest import Harvester
+from newrelic.core.application import Application
 
 _newrelic_agent = None
 
@@ -25,16 +27,16 @@ def _initialize_config():
 class Agent(object):
     def __init__(self,config):
         self._remote = JsonRemote(config.license_key, config.host, config.port)
+        self._harvester = Harvester(self._remote,60)
         
-        from newrelic.core.harvest import start_harvest_thread
-        start_harvest_thread(60)
+        app = Application(self._remote, ["Python Test"])
+        self._harvester.register_harvest_listener(app)
 
     def get_remote(self):
         return self._remote
     
     def shutdown(self):
-        from newrelic.core.harvest import stop_harvest_thread
-        stop_harvest_thread()
+        self._harvester.stop_harvest_thread()
 
     remote = property(get_remote, None, None, None)
     

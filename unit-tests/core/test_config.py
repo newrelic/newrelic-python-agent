@@ -17,6 +17,7 @@ class TestAgentConfig(unittest.TestCase):
     def test_apdex_t(self):
         c = create_configuration({"apdex_t":0.666})
         self.assertTrue(0.666,c.apdex_t)
+        self.assertTrue(0.666*4,c.apdex_f)
 
 
 class TestTransactionTracerConfig(unittest.TestCase):

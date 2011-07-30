@@ -101,7 +101,7 @@ class NewRelicService(object):
         
     def invoke_remote(self, connection, method, compress = True, agent_run_id = None, *args):
         try:
-            self._remote.invoke_remote(connection, method, compress, agent_run_id, args)
+            return self._remote.invoke_remote(connection, method, compress, agent_run_id, *args)
         except ForceShutdownException as ex:
             self._agent_run_id = None
             raise ex

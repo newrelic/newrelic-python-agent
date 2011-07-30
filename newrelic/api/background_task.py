@@ -68,16 +68,15 @@ class BackgroundTaskWrapper(object):
 	# of a web transaction. If we are, then rather than
 	# start a new transaction for a background task, we will
 	# just flag the current web transaction as a background
-	# task.
+	# task. If nested in another background task, then we
+        # don't do anything and just called the wrapped function.
 
         if transaction:
             if (type(transaction) ==
-                   newrelic.api.web_transaction.WebTransaction):
+                    newrelic.api.web_transaction.WebTransaction):
 
                 transaction.background_task = True
                 transaction.name_transaction(name, scope)
-
-                return self._nr_next_object(*args, **kwargs)
 
             return self._nr_next_object(*args, **kwargs)
 

@@ -19,9 +19,18 @@ class NewRelicServiceTest(unittest.TestCase):
         self.assertTrue(service.connected())
         print service.configuration
         print service.configuration.server_settings
-#        self.assertEqual(0.777, service.configuration.transaction_tracer.transaction_threshold)
+        self.assertEqual(0.777, service.configuration.transaction_tracer.transaction_threshold)
         service.shutdown()
         self.assertEqual(None, service.agent_run_id)
+        
+    def test_send_metric_data(self):
+        remote = JsonRemote("d67afc830dab717fd163bfcb0b8b88423e9a1a3b", "staging-collector.newrelic.com", 80)
+        service = NewRelicService(remote,app_names=["Python Unit Test1"])
+        conn = remote.create_connection()
+        service.connect(conn)
+        metric_data = [[{"name":"foo"},[1,1,1,1,1,1]]]
+        service.send_metric_data(conn, metric_data)
+        conn.close()
 
 class JsonRemoteTest(unittest.TestCase):
     

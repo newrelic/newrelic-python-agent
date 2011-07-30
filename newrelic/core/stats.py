@@ -89,7 +89,9 @@ class TimeStats(BaseStats):
         self._max_call_time = 0
         self._sos = 0
         
-    def record(self, call_time_in_seconds, exclusive_call_time_in_seconds):
+    def record(self, call_time_in_seconds, exclusive_call_time_in_seconds=None):
+        if not exclusive_call_time_in_seconds:
+            exclusive_call_time_in_seconds = call_time_in_seconds
         if self._call_count is 0 or self._min_call_time > call_time_in_seconds:
             self._min_call_time = call_time_in_seconds
         if self._max_call_time < call_time_in_seconds:

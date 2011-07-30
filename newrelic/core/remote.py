@@ -3,8 +3,8 @@ Created on Jul 26, 2011
 
 @author: sdaubin
 '''
-import json,httplib,os,socket,string
-from newrelic.core.exceptions import raise_newrelic_exception
+import json,httplib,os,socket,string,time
+from newrelic.core.exceptions import raise_newrelic_exception,ForceRestartException,ForceShutdownException
 from newrelic.core.config import create_configuration
 
 class NewRelicService(object):
@@ -13,6 +13,7 @@ class NewRelicService(object):
         self._agent_run_id = None
         self._app_names = app_names
         self._configuration = None
+        self._metric_data_time = time.time()
 
     def get_configuration(self):
         return self._configuration
@@ -30,7 +31,7 @@ class NewRelicService(object):
             try:
                 conn = self._remote.create_connection()
                 try:
-                    self._remote.invoke_remote(conn, "shutdown", True, self._agent_run_id)
+                    self.invoke_remote(conn, "shutdown", True, self._agent_run_id)
                 finally:
                     conn.close()
 
@@ -43,20 +44,31 @@ class NewRelicService(object):
     def connected(self):
         return self._agent_run_id is not None    
         
-    def connect(self):
-        conn = self._remote.create_connection()
+    def connect(self,conn=None):
+        create_conn = conn is None
+        if create_conn:
+            conn = self._remote.create_connection()
         try:
-            redirect_host = self._remote.invoke_remote(conn, "get_redirect_host", True, None)
+            redirect_host = self.invoke_remote(conn, "get_redirect_host", True, None)
             
             if redirect_host is not None:
                 self._remote.host = redirect_host
                 print "Collector redirection to %s" % redirect_host
     
-            self.parse_connect_response(self._remote.invoke_remote(conn, "connect", True, None, self.get_start_options()))
+            self.parse_connect_response(self.invoke_remote(conn, "connect", True, None, self.get_start_options()))
         finally:
-            conn.close()
+            if create_conn:
+                conn.close()
             
         return self.connected()
+    
+    def send_metric_data(self,conn,metric_data):
+        if not self.connected():
+            raise "Not connected"
+        now = time.time()
+        res = self.invoke_remote(conn,"metric_data",True,self._agent_run_id,self._agent_run_id,self._metric_data_time,now,metric_data)
+        self._metric_data_time = now
+        return res         
             
     def get_app_names(self):
         return self._app_names
@@ -86,6 +98,16 @@ class NewRelicService(object):
         response.pop("data_report_period")
         
         self._configuration = create_configuration(response)
+        
+    def invoke_remote(self, connection, method, compress = True, agent_run_id = None, *args):
+        try:
+            self._remote.invoke_remote(connection, method, compress, agent_run_id, args)
+        except ForceShutdownException as ex:
+            self._agent_run_id = None
+            raise ex
+        except ForceRestartException as ex:
+            self._agent_run_id = None
+            raise ex            
     
     agent_run_id = property(get_agent_run_id, None, None, "The agent run id")
     configuration = property(get_configuration, None, None, None)

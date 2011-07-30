@@ -64,7 +64,8 @@ class FunctionTraceWrapper(object):
 
         try:
             success = True
-            manager = FunctionTrace(transaction, name, scope)
+            manager = FunctionTrace(transaction, name, scope,
+                                    self._nr_interesting)
             manager.__enter__()
             try:
                 return self._nr_next_object(*args, **kwargs)

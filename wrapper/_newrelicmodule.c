@@ -1850,6 +1850,10 @@ init_newrelic(void)
     PyModule_AddObject(module, "LogFile",
                        (PyObject *)&NRLogFile_Type);
 
+    Py_INCREF(&NRApplication_Type);
+    PyModule_AddObject(module, "Application",
+                       (PyObject *)&NRApplication_Type);
+
     Py_INCREF(&NRBackgroundTask_Type);
     PyModule_AddObject(module, "BackgroundTask",
                        (PyObject *)&NRBackgroundTask_Type);

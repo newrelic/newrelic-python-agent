@@ -1130,6 +1130,19 @@ static void NRWSGIApplicationWrapper_dealloc(
 static PyObject *NRWSGIApplicationWrapper_call(
         NRWSGIApplicationWrapperObject *self, PyObject *args, PyObject *kwds)
 {
+    PyObject *current_transaction = NULL;
+
+    /*
+     * If we are being called from inside context of an active
+     * transaction we just called the wrapped function and don't
+     * otherwise do anything.
+     */
+
+    current_transaction = NRTransaction_CurrentTransaction();
+
+    if (current_transaction)
+        return PyObject_Call(self->next_object, args, kwds);
+
     return PyObject_CallFunctionObjArgs((PyObject *)
             &NRWSGIApplicationIterable_Type, self->application,
             self->next_object, args, NULL);

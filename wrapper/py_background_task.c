@@ -357,11 +357,13 @@ static PyObject *NRBackgroundTaskWrapper_call(
     }
 
     /*
-     * Check to see if we are being called within the context
-     * of a web transaction. If we are, then rather than
-     * start a new transaction for a background task, we will
-     * just flag the current web transaction as a background
-     * task.
+     * Check to see if we are being called within the context of
+     * a web transaction. If we are, then we will just flag the
+     * current web transaction as a background task if not
+     * already marked as such and name the web transaction as
+     * well. In any case, if nested in another transaction be it
+     * a web transaction or background task, then we don't do
+     * anything else and just called the wrapped function.
      */
 
     current_transaction = NRTransaction_CurrentTransaction();
@@ -371,26 +373,53 @@ static PyObject *NRBackgroundTaskWrapper_call(
             PyObject *method = NULL;
             PyObject *result = NULL;
 
-            PyObject_SetAttrString(current_transaction, "background_task",
-                                   Py_True);
+            PyObject *flag = NULL;
 
-            method = PyObject_GetAttrString(current_transaction,
-                                            "name_transaction");
+            flag = PyObject_GetAttrString(current_transaction,
+                                          "background_task");
 
-            if (method) {
-                result = PyObject_CallFunctionObjArgs(method, name,
-                                                      scope, NULL);
+            if (flag) {
+                if (flag == Py_False) {
+                    PyObject_SetAttrString(current_transaction,
+                                           "background_task",
+                                           Py_True);
 
-                if (!result)
-                    PyErr_WriteUnraisable(method);
-                else
-                    Py_DECREF(result);
+                    method = PyObject_GetAttrString(current_transaction,
+                                                    "name_transaction");
 
-                Py_DECREF(method);
-                Py_DECREF(scope);
-                Py_DECREF(name);
+                    if (method) {
+                        result = PyObject_CallFunctionObjArgs(method, name,
+                                                              scope, NULL);
 
-                return PyObject_Call(self->next_object, args, kwds);
+                        if (!result)
+                            PyErr_WriteUnraisable(method);
+                        else
+                            Py_DECREF(result);
+
+                        Py_DECREF(method);
+                        Py_DECREF(scope);
+                        Py_DECREF(name);
+                        Py_DECREF(flag);
+
+                        return PyObject_Call(self->next_object, args, kwds);
+                    }
+                    else {
+                        PyErr_Clear();
+
+                        Py_DECREF(scope);
+                        Py_DECREF(name);
+                        Py_DECREF(flag);
+
+                        return PyObject_Call(self->next_object, args, kwds);
+                    }
+                }
+                else {
+                    Py_DECREF(scope);
+                    Py_DECREF(name);
+                    Py_DECREF(flag);
+
+                    return PyObject_Call(self->next_object, args, kwds);
+                }
             }
 
             PyErr_Clear();

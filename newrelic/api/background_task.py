@@ -65,18 +65,21 @@ class BackgroundTaskWrapper(object):
             scope = self._nr_scope
 
 	# Check to see if we are being called within the context
-	# of a web transaction. If we are, then rather than
-	# start a new transaction for a background task, we will
-	# just flag the current web transaction as a background
-	# task. If nested in another background task, then we
-        # don't do anything and just called the wrapped function.
+	# of a web transaction. If we are, then we will just
+	# flag the current web transaction as a background task
+	# if not already marked as such and name the web
+	# transaction as well. In any case, if nested in another
+	# transaction be it a web transaction or background
+	# task, then we don't do anything else and just called
+	# the wrapped function.
 
         if transaction:
             if (type(transaction) ==
                     newrelic.api.web_transaction.WebTransaction):
 
-                transaction.background_task = True
-                transaction.name_transaction(name, scope)
+                if not transaction.background_task:
+                    transaction.background_task = True
+                    transaction.name_transaction(name, scope)
 
             return self._nr_next_object(*args, **kwargs)
 

@@ -1,7 +1,11 @@
+import os
 import sys
+import types
 import inspect
 
 import _newrelic
+
+_agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
 # From Python 3.X. In older Python versions it fails if attributes do
 # not exist and don't maintain a __wrapped__ attribute.
@@ -61,6 +65,49 @@ def wrap_object(module, name, factory, args=()):
     (parent, attribute, original) = resolve_path(module, name)
     apply_patch(parent, attribute, factory(original, *args))
 
-callable_name = _newrelic.callable_name
+def object_context(object):
+    mname = inspect.getmodule(object).__name__
+
+    cname = ''
+    fname = ''
+
+    if inspect.isclass(object) or type(object) == types.TypeType:
+        cname = object.__name__
+        fname = ''
+    elif inspect.ismethod(object):
+        if object.im_self and hasattr(object.im_self, '__name__'):
+            cname = object.im_self.__name__
+        else:
+            cname = object.im_class.__name__
+        fname = object.__name__
+    elif inspect.isfunction(object):
+        cname = ''
+        fname = object.__name__
+    elif type(object) == types.InstanceType:
+        cname = object.__class__.__name__
+        fname = ''
+    elif hasattr(object, '__class__'):
+        cname = object.__class__.__name__
+        fname = ''
+
+    path = ''
+
+    if cname:
+        path = cname
+
+    if fname:
+        if path:
+            path += '.'
+        path += fname
+
+    return (mname, path)
+
+def callable_name(object, separator=':'):
+    (module, path) = object_context(object)
+    return "%s%s%s" % (module, separator, path)
 
 ObjectWrapper = _newrelic.ObjectWrapper
+
+if not _agent_mode in ('ungud', 'julunggul'):
+    object_context = _newrelic.object_context
+    callable_name = _newrelic.callable_name

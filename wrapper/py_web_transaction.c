@@ -243,7 +243,7 @@ static int NRWebTransaction_init(NRTransactionObject *self, PyObject *args,
 
         self->transaction->ignore = 0;
 
-        object = PyDict_GetItemString(environ, "newrelic.ignore_transaction");
+        object = PyDict_GetItemString(environ, "newrelic.ignore");
 
         if (object) {
             if (PyBool_Check(object)) {

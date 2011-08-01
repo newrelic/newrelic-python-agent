@@ -42,6 +42,12 @@ class Application(object):
     def add_to_cluster(self, name):
         self._clusters[name] = True
 
+    def activate(self):
+        pass
+
+    def shutdown(self):
+        pass
+
 def application(name):
     return Application._instance(name)
 

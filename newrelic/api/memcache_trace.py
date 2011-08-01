@@ -10,7 +10,7 @@ _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
 class MemcacheTrace(object):
 
-    def __init__(self, command):
+    def __init__(self, transaction, command):
         pass
 
     def __enter__(self):

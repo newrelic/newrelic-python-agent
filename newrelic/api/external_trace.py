@@ -10,7 +10,7 @@ _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
 class ExternalTrace(object):
 
-    def __init__(self, library, url):
+    def __init__(self, transaction, library, url):
         pass
 
     def __enter__(self):

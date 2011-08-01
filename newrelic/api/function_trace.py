@@ -10,7 +10,7 @@ _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
 class FunctionTrace(object):
 
-    def __init__(self, name=None, scope=None, interesting=True):
+    def __init__(self, transaction, name=None, scope=None, interesting=True):
         pass
 
     def __enter__(self):

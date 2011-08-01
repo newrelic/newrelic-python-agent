@@ -9,7 +9,7 @@ _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
 class ErrorTrace(object):
 
-    def __init__(self, ignore_errors):
+    def __init__(self, transaction, ignore_errors):
         pass
 
     def __enter__(self):

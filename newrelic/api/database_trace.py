@@ -10,7 +10,7 @@ _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
 class DatabaseTrace(object):
 
-    def __init__(self, sql):
+    def __init__(self, transaction, sql):
         pass
 
     def __enter__(self):

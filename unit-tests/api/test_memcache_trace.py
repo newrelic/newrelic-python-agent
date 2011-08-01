@@ -2,51 +2,61 @@ import unittest
 import time
 import sys
 
-import _newrelic
+import newrelic.api.settings
+import newrelic.api.log_file
+import newrelic.api.application
+import newrelic.api.web_transaction
+import newrelic.api.memcache_trace
 
-settings = _newrelic.settings()
+settings = newrelic.api.settings.settings()
 settings.log_file = "%s.log" % __file__
-settings.log_level = _newrelic.LOG_VERBOSEDEBUG
+settings.log_level = newrelic.api.log_file.LOG_VERBOSEDEBUG
 settings.transaction_tracer.transaction_threshold = 0
 
-application = _newrelic.application("UnitTests")
+application = newrelic.api.application.application("UnitTests")
 
-#@_newrelic.memcache_trace(command="get")
+#@newrelic.api.memcache_trace.memcache_trace(command="get")
 def _test_function_1(command):
     time.sleep(1.0)
-_test_function_1 = _newrelic.memcache_trace(command="get")(_test_function_1)
+_test_function_1 = newrelic.api.memcache_trace.memcache_trace(command="get")(
+        _test_function_1)
 
 class MemcacheTraceTests(unittest.TestCase):
 
     def setUp(self):
-        _newrelic.log(_newrelic.LOG_DEBUG, "STARTING - %s" %
-                      self._testMethodName)
+        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
+                "STARTING - %s" % self._testMethodName)
 
     def tearDown(self):
-        _newrelic.log(_newrelic.LOG_DEBUG, "STOPPING - %s" %
-                      self._testMethodName)
+        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
+                "STOPPING - %s" % self._testMethodName)
 
     def test_memcache_trace(self):
         environ = { "REQUEST_URI": "/memcache_trace" }
-        transaction = _newrelic.WebTransaction(application, environ)
+        transaction = newrelic.api.web_transaction.WebTransaction(
+                application, environ)
         with transaction:
             time.sleep(0.1)
-            with _newrelic.MemcacheTrace(transaction, "get"):
+            with newrelic.api.memcache_trace.MemcacheTrace(
+                    transaction, "get"):
                 time.sleep(0.1)
             time.sleep(0.1)
 
     def test_transaction_not_running(self):
         environ = { "REQUEST_URI": "/transaction_not_running" }
-        transaction = _newrelic.WebTransaction(application, environ)
+        transaction = newrelic.api.web_transaction.WebTransaction(
+                application, environ)
         try:
-            with _newrelic.MemcacheTrace(transaction, "get"):
+            with newrelic.api.memcache_trace.MemcacheTrace(
+                    transaction, "get"):
                 time.sleep(0.1)
         except RuntimeError:
             pass
 
     def test_memcache_trace_decorator(self):
         environ = { "REQUEST_URI": "/memcache_trace_decorator" }
-        transaction = _newrelic.WebTransaction(application, environ)
+        transaction = newrelic.api.web_transaction.WebTransaction(
+                application, environ)
         with transaction:
             time.sleep(0.1)
             _test_function_1("set")
@@ -54,7 +64,8 @@ class MemcacheTraceTests(unittest.TestCase):
 
     def test_memcache_trace_decorator_error(self):
         environ = { "REQUEST_URI": "/memcache_trace_decorator_error" }
-        transaction = _newrelic.WebTransaction(application, environ)
+        transaction = newrelic.api.web_transaction.WebTransaction(
+                application, environ)
         with transaction:
             try:
                 _test_function_1("set", None)

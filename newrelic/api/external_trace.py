@@ -3,14 +3,25 @@ import sys
 import types
 import inspect
 
-import _newrelic
-
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
 
 _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
-ExternalTrace = _newrelic.ExternalTrace
+class ExternalTrace(object):
+
+    def __init__(self, library, url):
+        pass
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc, value, tb):
+        pass
+
+if _agent_mode not in ('julunggul',):
+    import _newrelic
+    ExternalTrace = _newrelic.ExternalTrace
 
 class ExternalTraceWrapper(object):
 
@@ -75,6 +86,7 @@ def wrap_external_trace(module, object_path, library, url):
             ExternalTraceWrapper, (library, url))
 
 if not _agent_mode in ('ungud', 'julunggul'):
+    import _newrelic
     ExternalTraceWrapper = _newrelic.ExternalTraceWrapper
     external_trace = _newrelic.external_trace
     wrap_external_trace = _newrelic.wrap_external_trace

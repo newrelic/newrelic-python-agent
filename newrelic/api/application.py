@@ -48,6 +48,9 @@ class Application(object):
     def shutdown(self):
         pass
 
+    def record_metric(self, name, value):
+        pass
+
 def application(name):
     return Application._instance(name)
 

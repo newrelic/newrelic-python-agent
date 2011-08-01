@@ -23,6 +23,8 @@ static PyObject *NRInFunctionWrapper_new(PyTypeObject *type, PyObject *args,
         return NULL;
 
     self->dict = NULL;
+    self->descr_object = NULL;
+    self->self_object = NULL;
     self->next_object = NULL;
     self->last_object = NULL;
     self->function_object = NULL;
@@ -49,6 +51,12 @@ static int NRInFunctionWrapper_init(NRInFunctionWrapperObject *self,
     }
 
     Py_INCREF(wrapped_object);
+
+    Py_XDECREF(self->descr_object);
+    Py_XDECREF(self->self_object);
+
+    self->descr_object = NULL;
+    self->self_object = NULL;
 
     Py_XDECREF(self->dict);
     Py_XDECREF(self->next_object);
@@ -98,6 +106,9 @@ static void NRInFunctionWrapper_dealloc(NRInFunctionWrapperObject *self)
 {
     Py_XDECREF(self->dict);
 
+    Py_XDECREF(self->descr_object);
+    Py_XDECREF(self->self_object);
+
     Py_XDECREF(self->next_object);
     Py_XDECREF(self->last_object);
 
@@ -118,7 +129,40 @@ static PyObject *NRInFunctionWrapper_call(NRInFunctionWrapperObject *self,
     if (self->function_object != Py_None) {
         PyObject *function_result = NULL;
 
-        function_result = PyObject_Call(self->function_object, args, kwds);
+        if (self->descr_object) {
+            PyObject *newargs = NULL;
+
+            int i = 0;
+
+            /*
+	     * Where calling via a descriptor object, we
+	     * need to reconstruct the arguments such
+	     * that the original object self reference
+	     * is included once more.
+             */
+
+            newargs = PyTuple_New(PyTuple_Size(args)+1);
+
+            Py_INCREF(self->self_object);
+            PyTuple_SetItem(newargs, 0, self->self_object);
+
+            for (i=0; i<PyTuple_Size(args); i++) {
+                PyObject *item = NULL;
+
+                item = PyTuple_GetItem(args, i);
+                Py_INCREF(item);
+                PyTuple_SetItem(newargs, i+1, item);
+            }
+
+            function_result = PyObject_Call(self->function_object,
+                    newargs, kwds);
+
+            Py_DECREF(newargs);
+        }
+        else {
+            function_result = PyObject_Call(self->function_object,
+                    args, kwds);
+        }
 
         if (!function_result)
             return NULL;
@@ -163,8 +207,14 @@ static PyObject *NRInFunctionWrapper_call(NRInFunctionWrapperObject *self,
         wrapped_kwds = kwds;
     }
 
-    wrapped_result = PyObject_Call(self->next_object, wrapped_args,
-                     wrapped_kwds);
+    if (self->descr_object) {
+        wrapped_result = PyObject_Call(self->descr_object,
+                wrapped_args, wrapped_kwds);
+    }
+    else {
+        wrapped_result = PyObject_Call(self->next_object,
+                wrapped_args, wrapped_kwds);
+    }
 
     Py_DECREF(wrapped_args);
     Py_XDECREF(wrapped_kwds);
@@ -309,14 +359,83 @@ static int NRInFunctionWrapper_setattro(
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRInFunctionWrapper_descr_get(PyObject *function,
-                                                PyObject *object,
-                                                PyObject *type)
+static PyObject *NRInFunctionWrapper_descr_get(
+        NRInFunctionWrapperObject *self, PyObject *object, PyObject *type)
 {
-    if (object == Py_None)
-        object = NULL;
+    PyObject *method = NULL;
 
-    return PyMethod_New(function, object, type);
+#if 0
+    if (object == Py_None) {
+        Py_INCREF(self);
+        return (PyObject *)self;
+    }
+#endif
+
+    method = PyObject_GetAttrString(self->next_object, "__get__");
+
+    if (method) {
+        PyObject *descr = NULL;
+
+        NRInFunctionWrapperObject *result;
+
+        /*
+	 * When wrapper used around a class method, object is
+	 * passed as NULL. Don't know what else to do but in
+	 * turn pass it as None because if pass NULL then it is
+	 * actually terminates the argument list and it returns
+	 * NULL with no error set.
+         */
+
+        if (!object)
+            object = Py_None;
+
+        descr = PyObject_CallFunctionObjArgs(method, object, type, NULL);
+
+        if (!descr)
+            return NULL;
+
+        /*
+         * We are circumventing new/init here for object but
+         * easier than duplicating all the code to create a
+         * special descriptor version of wrapper.
+         */
+
+        result = (NRInFunctionWrapperObject *)
+                (&NRInFunctionWrapper_Type)->tp_alloc(
+                &NRInFunctionWrapper_Type, 0);
+
+        if (!result)
+            return NULL;
+
+        Py_XINCREF(self->dict);
+        result->dict = self->dict;
+
+        Py_XINCREF(descr);
+        result->descr_object = descr;
+
+        Py_XINCREF(object);
+        result->self_object = object;
+
+        Py_XINCREF(self->next_object);
+        result->next_object = self->next_object;
+
+        Py_XINCREF(self->last_object);
+        result->last_object = self->last_object;
+
+        Py_XINCREF(self->function_object);
+        result->function_object = self->function_object;
+
+        Py_XDECREF(descr);
+        Py_DECREF(method);
+
+        return (PyObject *)result;
+    }
+    else {
+        PyErr_Clear();
+
+        Py_INCREF(self);
+        return (PyObject *)self;
+    }
 }
 
 /* ------------------------------------------------------------------------- */
@@ -373,7 +492,7 @@ PyTypeObject NRInFunctionWrapper_Type = {
     NRInFunctionWrapper_getset, /*tp_getset*/
     0,                      /*tp_base*/
     0,                      /*tp_dict*/
-    NRInFunctionWrapper_descr_get, /*tp_descr_get*/
+    (descrgetfunc)NRInFunctionWrapper_descr_get, /*tp_descr_get*/
     0,                      /*tp_descr_set*/
     offsetof(NRInFunctionWrapperObject, dict), /*tp_dictoffset*/
     (initproc)NRInFunctionWrapper_init, /*tp_init*/

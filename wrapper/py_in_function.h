@@ -14,6 +14,8 @@
 typedef struct {
     PyObject_HEAD
     PyObject *dict;
+    PyObject *descr_object;
+    PyObject *self_object;
     PyObject *next_object;
     PyObject *last_object;
     PyObject *function_object;

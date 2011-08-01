@@ -11,7 +11,7 @@ def wrap_add_url_rule_input(self, rule, endpoint=None, view_func=None,
     if view_func is not None:
         view_func = newrelic.api.name_transaction.NameTransactionWrapper(view_func)
         view_func = newrelic.api.function_trace.FunctionTraceWrapper(view_func)
-    return ((self, rule, endpoint, view_func), options)
+    return ((rule, endpoint, view_func), options)
 
 def wrap_handle_exception(self, e):
     current_transaction = newrelic.api.transaction.transaction()

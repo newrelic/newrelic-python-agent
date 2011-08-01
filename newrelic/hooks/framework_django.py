@@ -363,7 +363,7 @@ def in_ServerHandler_run(self, application, **kwargs):
     # Wrap the WSGI application argument on the way in
     # so that run() method gets the wrapped instance.
 
-    return ((self, newrelic.api.web_transaction.WSGIApplicationWrapper(application)), kwargs)
+    return ((newrelic.api.web_transaction.WSGIApplicationWrapper(application)), kwargs)
 
 def instrument(module):
 

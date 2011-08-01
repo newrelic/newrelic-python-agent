@@ -8,8 +8,8 @@ import os,time,multiprocessing
 
 from newrelic.core.metric import Metric 
 
-CPU_USER_TIME = Metric("CPU/User Time","")
-CPU_USER_UTILIZATION = Metric("CPU/User/Utilization","")
+CPU_USER_TIME = Metric(u"CPU/User Time",u"")
+CPU_USER_UTILIZATION = Metric(u"CPU/User/Utilization",u"")
 
 '''
 CPU times are not sampled

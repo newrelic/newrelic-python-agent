@@ -4,7 +4,7 @@ Created on Jul 27, 2011
 @author: sdaubin
 '''
 import collections
-from newrelic.core.remote import JsonRemote
+from newrelic.core.remote import JSONRemote
 from newrelic.core.harvest import Harvester
 from newrelic.core.application import Application
 
@@ -27,11 +27,24 @@ def _initialize_config():
 class Agent(object):
     def __init__(self,config):
         print "Starting the New Relic agent"
-        self._remote = JsonRemote(config.license_key, config.host, config.port)
+        self._remote = JSONRemote(config.license_key, config.host, config.port)
         
-        app = Application(self._remote, ["Python Test"])
+        self._applications = []
         self._harvester = Harvester(self._remote,60)
+        self.add_application(Application(self._remote, ["Python Test"]))
+
+    def add_application(self,app):
+        self._applications.append(app)
         self._harvester.register_harvest_listener(app)
+        
+    def get_applications(self):
+        return self.__applications
+
+            
+    def stop(self):
+        for app in self._applications:
+            app.stop()
+        self._harvester.stop()
 
     def get_remote(self):
         return self._remote
@@ -40,4 +53,5 @@ class Agent(object):
         self._harvester.stop_harvest_thread()
 
     remote = property(get_remote, None, None, None)
+    applications = property(get_applications, None, None, None)
     

@@ -6,6 +6,7 @@ Created on Jul 26, 2011
 import json,httplib,os,socket,string,time
 from newrelic.core.exceptions import raise_newrelic_exception,ForceRestartException,ForceShutdownException
 from newrelic.core.config import create_configuration
+from newrelic.core import environment
 
 class NewRelicService(object):
     def __init__(self, remote,app_names=["FIXME Python test"]):
@@ -77,7 +78,7 @@ class NewRelicService(object):
         return string.join(self.get_app_names(),',')
         
     def get_start_options(self):
-        options = {"pid":os.getpid(),"language":"python","host":socket.gethostname(),"app_name":self.get_app_names(),"identifier":self.get_identifier(),"agent_version":self.agent_version()}
+        options = {"pid":os.getpid(),"language":"python","host":socket.gethostname(),"app_name":self.get_app_names(),"identifier":self.get_identifier(),"agent_version":self.agent_version(),"environment":environment.environment_settings()}
         '''
         # FIXME 
             if (agent.Config.BootstrapConfig.ServiceConfig.SendEnvironmentInfo) {
@@ -112,9 +113,25 @@ class NewRelicService(object):
     agent_run_id = property(get_agent_run_id, None, None, "The agent run id")
     configuration = property(get_configuration, None, None, None)
     
+class NRJSONEncoder(json.JSONEncoder):
+    def default(self, o):
+        try:
+            iterable = iter(o)
+        except TypeError:
+            pass
+        else:
+            return list(iterable)
+        return json.JSONEncoder.default(self, o)
     
+    def iterencode(self, obj, _one_shot=False):
+        if hasattr(obj, '_asdict'):
+            gen = json.JSONEncoder.iterencode(self, obj._asdict(), _one_shot=False)
+        else:
+            gen = json.JSONEncoder.iterencode(self, obj, _one_shot)
+        for chunk in gen:
+            yield chunk
 
-class JsonRemote(object):
+class JSONRemote(object):
     '''
     classdocs
     '''
@@ -129,6 +146,7 @@ class JsonRemote(object):
         self._port = port
         self._protocol = "http://"
         self._license_key = license_key
+        self._encoder = NRJSONEncoder()
 
     def get_host(self):
         return self._host
@@ -167,7 +185,7 @@ class JsonRemote(object):
         
         
     def invoke_remote(self, connection, method, compress = True, agent_run_id = None, *args):
-        json_data = json.dumps(args)
+        json_data = self._encoder.encode(args)
         url = self.remote_method_uri(method, agent_run_id)
         
         headers = {"Content-Encoding" : "identity" } # FIXME deflate

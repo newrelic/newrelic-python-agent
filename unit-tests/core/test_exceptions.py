@@ -24,6 +24,12 @@ class ExceptionTest(unittest.TestCase):
             raise raise_newrelic_exception("ForceShutdownException", "shutdown")
         except ForceShutdownException as ex:
             self.assertEqual("shutdown", str(ex))
+            
+    def test_runtime_error(self):
+        try:
+            raise raise_newrelic_exception("RuntimeError", "bad")
+        except RuntimeError as ex:
+            self.assertEqual("bad", str(ex))
 
 
 class RestartExceptionTest(unittest.TestCase):

@@ -4,6 +4,7 @@ Created on Jul 25, 2011
 @author: sdaubin
 '''
 
+# supclasses should be iterable
 class BaseStats(object):
     '''
     classdocs
@@ -21,11 +22,21 @@ class BaseStats(object):
     def merge(self, other_stats):
         pass # Override me in derived class
 
-    def to_json(self):
-        pass # Override me in derived class
-
     def clone(self):
         pass # Override me in derived class
+    
+    def _json_data(self):
+        pass # Override me in derived class
+    
+    # iterable methods
+    def __iter__(self):
+        return self._json_data().__iter__()
+
+    def __len__(self):
+        return 6 # stats return 6 data values
+
+    def __getitem__(self, v):
+        return self._json_data[v]
     
 class ApdexStats(BaseStats):
     def __init__(self, apdex_setting):
@@ -56,7 +67,7 @@ class ApdexStats(BaseStats):
         self._tolerating += other_stats._tolerating
         self._frustrating += other_stats._frustrating
 
-    def to_json(self):
+    def _json_data(self):
         return [self._satisying,self._tolerating,self.frustrating,0,0,0]
 
     def clone(self):
@@ -113,7 +124,7 @@ class TimeStats(BaseStats):
         self._min_call_time = min(self._min_call_time, other_stats._min_call_time)
         self._max_call_time = max(self._max_call_time, other_stats._max_call_time)
 
-    def to_json(self):
+    def _json_data(self):
         return [self._call_count,self._total_call_time,self._total_exclusive_call_time,
                 self._min_call_time,self._max_call_time,self._sos]
 
@@ -126,6 +137,7 @@ class TimeStats(BaseStats):
         s._sos = self._sos
         s._total_exclusive_call_time = self._total_exclusive_call_time
         return s
+    
        
     '''
     Accessors
@@ -189,8 +201,9 @@ class StatsDict(dict):
             if k in metric_ids:
                 k = metric_ids[k]
             else:
-                k = k.to_json()
-            md.append([k,v.to_json()])
+                # FIXME fix this Graham
+                k = k._asdict()
+            md.append([k,v])
         return md
     
         

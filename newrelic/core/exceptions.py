@@ -20,10 +20,6 @@ class PostTooBigException(Exception):
     def __init__(self, msg):
         super(PostTooBigException,self).__init__(msg)
         
-class RuntimeError(Exception):
-    def __init__(self, msg):
-        super(RuntimeError,self).__init__(msg)
-        
         
 def raise_newrelic_exception(ex_type, message):
     exceptions = {}

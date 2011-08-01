@@ -7,8 +7,9 @@ from newrelic.core.stats import TimeStats
 from newrelic.core.stats import ApdexStats
 from newrelic.core.stats import StatsDict
 from newrelic.core.config import create_configuration
-import unittest
-import collections
+from newrelic.core.metric import new_metric,Metric
+from newrelic.core.remote import NRJSONEncoder
+import unittest,collections,json
 
 class ApdexStatsTest(unittest.TestCase):
     
@@ -129,6 +130,14 @@ class TimeStatsTest(unittest.TestCase):
         self.assertEqual(5,s1.min_call_time)
         self.assertEqual(34,s1.max_call_time)  
         
+    def test_json(self):
+        s1 = TimeStats()
+        s1.record(5,5)
+        s1.record(33,30)
+        
+        s = json.dumps(s1,cls=NRJSONEncoder)
+        self.assertEquals("[2, 38, 35, 5, 33, 1114]",s)
+        
 class StatsDictTest(unittest.TestCase):
 
 
@@ -143,7 +152,6 @@ class StatsDictTest(unittest.TestCase):
         self.assertEqual(s,s2)
         
     def test_metric_data(self):
-        from newrelic.core.metric import new_metric
         d = StatsDict(create_configuration({"apdex_t":1}))
         s = d.get_time_stats(new_metric("foo"))
         s.record(0.12,0.12)
@@ -154,9 +162,23 @@ class StatsDictTest(unittest.TestCase):
         md = d.metric_data(metric_ids)
         self.assertEqual(2, len(md))
         
-        self.assertEqual(new_metric("foo").to_json(),md[0][0])
-        self.assertEqual(new_metric("bar").to_json(),md[1][0])
+        self.assertEqual(new_metric("foo")._asdict(),md[0][0])
+        self.assertEqual(new_metric("bar")._asdict(),md[1][0])
         
+        s = json.dumps(md,cls=NRJSONEncoder)
+        self.assertEqual("[[{\"name\": \"foo\", \"scope\": \"\"}, [1, 0.12, 0.12, 0.12, 0.12, 0.0144]], [{\"name\": \"bar\", \"scope\": \"\"}, [1, 0.34, 0.34, 0.34, 0.34, 0.11560000000000002]]]",s)
+        
+    def test_metric_data_with_ids(self):
+        d = StatsDict(create_configuration({"apdex_t":1}))
+        s = d.get_time_stats(Metric(u"foo",u""))
+        s.record(0.12,0.12)
+        
+        metric_ids = {new_metric(u"foo"):12}
+        md = d.metric_data(metric_ids)
+        self.assertEqual(1, len(md))
+        
+        self.assertEqual(12,md[0][0])
+                
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

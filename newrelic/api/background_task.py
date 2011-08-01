@@ -27,6 +27,10 @@ class BackgroundTask(newrelic.api.transaction.Transaction):
         if not self.enabled:
             return
 
+        # Name the web transaction from supplied values.
+
+        self.name_transaction(name, scope)
+
 if _agent_mode not in ('julunggul',):
     import _newrelic
     BackgroundTask = _newrelic.BackgroundTask
@@ -72,6 +76,8 @@ class BackgroundTaskWrapper(object):
                 name = self._nr_name(*((self._nr_instance,)+args), **kwargs)
             else:
                 name = self._nr_name(*args, **kwargs)
+        else:
+            name = self._nr_name
 
         if self._nr_scope is not None and not isinstance(
                 self._nr_scope, basestring):
@@ -105,7 +111,7 @@ class BackgroundTaskWrapper(object):
 
         try:
             success = True
-            manager = BackgroundTask(application, name, scope)
+            manager = BackgroundTask(self._nr_application, name, scope)
             manager.__enter__()
             try:
                 return self._nr_next_object(*args, **kwargs)

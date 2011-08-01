@@ -49,11 +49,14 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         if script_name is not None or path_info is not None:
             if path_info is None:
-                self._path = script_name
+                path = script_name
             elif script_name is None:
-                self._path = path_info
+                path = path_info
             else:
-                self._path = script_name + path_info
+                path = script_name + path_info
+
+            self._path = path
+            self._path_type = newrelic.api.transaction.PATH_TYPE_URI
 
         else:
             request_uri = environ.get('REQUEST_URI', None)

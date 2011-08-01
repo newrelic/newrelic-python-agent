@@ -6,9 +6,13 @@ import newrelic.api.settings
 
 _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
-PENDING = 0
-RUNNING = 1
-STOPPED = 2
+STATE_PENDING = 0
+STATE_RUNNING = 1
+STATE_STOPPED = 2
+
+PATH_TYPE_UNKNOWN = 0
+PATH_TYPE_RAW = 1
+PATH_TYPE_URI = 2
 
 class Transaction(object):
 
@@ -55,9 +59,10 @@ class Transaction(object):
     def __init__(self, application, enabled=None):
         self._application = application
 
-        self._state = PENDING
+        self._state = STATE_PENDING
 
         self._path = '<unknown>'
+        self._path_type = PATH_TYPE_UNKNOWN
 
         self.custom_parameters = {}
         self.request_parameters = {}
@@ -79,17 +84,17 @@ class Transaction(object):
                 self.enabled = True
 
     def __del__(self):
-        if self._state == RUNNING:
+        if self._state == STATE_RUNNING:
             self.__exit__(None, None, None)
 
     def __enter__(self):
         self._push_transaction(self)
-        self._state = RUNNING
+        self._state = STATE_RUNNING
 
     def __exit__(self, exc, value, tb):
-        if self._state != RUNNING:
+        if self._state != STATE_RUNNING:
             return
-        self._state = STOPPED
+        self._state = STATE_STOPPED
         self._pop_transaction(self)
 
     @property
@@ -106,6 +111,7 @@ class Transaction(object):
 
     def name_transaction(self, name, prefix='Function'):
         self._path = "%s/%s" % (prefix, name)
+        self._path_type = PATH_TYPE_RAW
 
     def notice_error(self, exc, value, tb, params={}):
         pass

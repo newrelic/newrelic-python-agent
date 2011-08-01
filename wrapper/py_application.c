@@ -151,14 +151,12 @@ static PyObject *NRApplication_new(PyTypeObject *type, PyObject *args,
 
     /*
      * An application initially represents an agent instance.
-     * When additional names are added as secondaries it has the
-     * affect of creating an agent cluster whereby metrics data
-     * will be sent to the primary application as well as the
-     * secondaries. Any server side configuration is sourced
-     * from the primary application.
+     * The application can be associated with a agent cluster.
+     * Any server side configuration is sourced from the primary
+     * application.
      */
 
-    self->secondaries = PyDict_New();
+    self->clusters = PyDict_New();
 
     /*
      * Monitoring of an application is enabled by default. If
@@ -229,7 +227,7 @@ static int NRApplication_init(NRApplicationObject *self, PyObject *args,
      * at that time.
      */
 
-    PyDict_Clear(self->secondaries);
+    PyDict_Clear(self->clusters);
 
     /*
      * Markup what version of the Python agent wrapper is being
@@ -260,7 +258,7 @@ static void NRApplication_dealloc(NRApplicationObject *self)
 
     Py_TYPE(self)->tp_free(self);
 
-    Py_DECREF(self->secondaries);
+    Py_DECREF(self->clusters);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -278,15 +276,15 @@ static PyObject *NRApplication_get_name(NRApplicationObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRApplication_get_secondaries(NRApplicationObject *self,
-                                               void *closure)
+static PyObject *NRApplication_get_clusters(NRApplicationObject *self,
+                                            void *closure)
 {
     if (!self->application) {
         PyErr_SetString(PyExc_TypeError, "application not initialized");
         return NULL;
     }
 
-    return PyDict_Keys(self->secondaries);
+    return PyDict_Keys(self->clusters);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -455,12 +453,12 @@ static PyObject *NRApplication_add_to_cluster(NRApplicationObject *self,
     }
 
     /*
-     * Add name to list of secondaries. The collector enforces
-     * a limit on the number. Currently that is 3, but do not
-     * enforce that here.
+     * Add to cluster. The collector enforces a limit on the
+     * number. Currently that is 3, but do not enforce that
+     * here.
      */
 
-    PyDict_SetItem(self->secondaries, name_as_bytes, Py_True);
+    PyDict_SetItem(self->clusters, name_as_bytes, Py_True);
 
     /*
      * Update the list of all application names against the
@@ -472,13 +470,13 @@ static PyObject *NRApplication_add_to_cluster(NRApplicationObject *self,
 
     nrfree(self->application->appnames);
 
-    self->application->nappnames = PyDict_Size(self->secondaries)+1;
+    self->application->nappnames = PyDict_Size(self->clusters)+1;
     self->application->appnames = (char **)nrcalloc(
             self->application->nappnames, sizeof(char *));
 
     self->application->appnames[0] = nrstrdup(self->application->appname);
 
-    keys = PyDict_Keys(self->secondaries);
+    keys = PyDict_Keys(self->clusters);
     iter = PyObject_GetIter(keys);
 
     i = 1;
@@ -606,7 +604,7 @@ static PyMethodDef NRApplication_methods[] = {
 static PyGetSetDef NRApplication_getset[] = {
     { "name",               (getter)NRApplication_get_name,
                             NULL, 0 },
-    { "secondaries",        (getter)NRApplication_get_secondaries,
+    { "clusters",           (getter)NRApplication_get_clusters,
                             NULL, 0 },
     { "enabled",            (getter)NRApplication_get_enabled,
                             (setter)NRApplication_set_enabled, 0 },

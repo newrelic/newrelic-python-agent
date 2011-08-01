@@ -312,13 +312,13 @@ def _load_configuration(config_file=None, environment=None,
     # Now do special processing to handle the case where the
     # application name was actually a semicolon separated list
     # of names. In this case the first application name is the
-    # primary and the others are secondaries forming an agent
-    # cluster. What we need to do is explicitly retrieve the
-    # application object for the primary application name and
-    # map the secondary names against it. When activating the
-    # application the secondary names will be sent along there
-    # by setting up the cluster in core application database
-    # if the mapping doesn't already exist.
+    # primary and the others are cluster agents the application
+    # also reports to. What we need to do is explicitly retrieve
+    # the application object for the primary application name
+    # and add it to the name cluster. When activating the
+    # application the cluster names will be sent along to the
+    # core application where the clusters will be created if the
+    # do not exist.
 
     def _process_app_name(section):
         try:
@@ -328,15 +328,15 @@ def _load_configuration(config_file=None, environment=None,
         else:
             name = value.split(';')[0] or 'Python Application'
 
-            secondaries = []
+            clusters = []
             for altname in value.split(';')[1:]:
                 altname = altname.strip()
                 if altname:
-                    secondaries.append(altname)
+                    clusters.append(altname)
 
-            if secondaries:
+            if clusters:
                 application = newrelic.api.application.application(name)
-                for altname in secondaries:
+                for altname in clusters:
                     newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
                                               "map cluster %s" %
                                               ((name, altname),))

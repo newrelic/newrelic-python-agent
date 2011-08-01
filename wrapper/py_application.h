@@ -16,7 +16,7 @@
 typedef struct {
     PyObject_HEAD
     nrapp_t *application;
-    PyObject *secondaries;
+    PyObject *clusters;
     int enabled;
 } NRApplicationObject;
 

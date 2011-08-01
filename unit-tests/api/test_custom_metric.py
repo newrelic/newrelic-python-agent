@@ -3,24 +3,26 @@
 import unittest
 import math
 
-import _newrelic
+import newrelic.api.settings
+import newrelic.api.log_file
+import newrelic.api.application
 
-settings = _newrelic.settings()
+settings = newrelic.api.settings.settings()
 settings.log_file = "%s.log" % __file__
-settings.log_level = _newrelic.LOG_VERBOSEDEBUG
+settings.log_level = newrelic.api.log_file.LOG_VERBOSEDEBUG
 settings.transaction_tracer.transaction_threshold = 0
 
-application = _newrelic.application("UnitTests")
+application = newrelic.api.application.application("UnitTests")
 
 class CustomMetricTests(unittest.TestCase):
 
     def setUp(self):
-        _newrelic.log(_newrelic.LOG_DEBUG, "STARTING - %s" %
-                      self._testMethodName)
+        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
+                "STARTING - %s" % self._testMethodName)
 
     def tearDown(self):
-        _newrelic.log(_newrelic.LOG_DEBUG, "STOPPING - %s" %
-                      self._testMethodName)
+        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
+                "STOPPING - %s" % self._testMethodName)
 
     def test_int(self):
         for i in range(100):

@@ -3,15 +3,33 @@ import sys
 import types
 import inspect
 
-import _newrelic
-
 import newrelic.api.transaction
 import newrelic.api.web_transaction
 import newrelic.api.object_wrapper
 
 _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
-BackgroundTask = _newrelic.BackgroundTask
+class BackgroundTask(newrelic.api.transaction.Transaction):
+
+    def __init__(self, application, name, scope=None):
+
+        # Initialise the common transaction base class.
+
+        newrelic.api.transaction.Transaction.__init__(self, application)
+
+        # Mark this as a background task even if disabled.
+
+        self.background_task = True
+
+	# Bail out if the transaction is running in a
+	# disabled state.
+
+        if not self.enabled:
+            return
+
+if _agent_mode not in ('julunggul',):
+    import _newrelic
+    BackgroundTask = _newrelic.BackgroundTask
 
 class BackgroundTaskWrapper(object):
 
@@ -110,6 +128,7 @@ def wrap_background_task(module, object_path, application=None, name=None,
             BackgroundTaskWrapper, (application, name, scope))
 
 if not _agent_mode in ('ungud', 'julunggul'):
+    import _newrelic
     background_task = _newrelic.background_task
     wrap_background_task = _newrelic.wrap_background_task
     BackgroundTaskWrapper = _newrelic.BackgroundTaskWrapper

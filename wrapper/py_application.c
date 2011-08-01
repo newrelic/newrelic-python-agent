@@ -413,8 +413,8 @@ static PyObject *NRApplication_shutdown(NRApplicationObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRApplication_map_to_secondary(NRApplicationObject *self,
-                                                PyObject *args, PyObject *kwds)
+static PyObject *NRApplication_add_to_cluster(NRApplicationObject *self,
+                                              PyObject *args, PyObject *kwds)
 {
     PyObject *name = NULL;
 
@@ -434,7 +434,7 @@ static PyObject *NRApplication_map_to_secondary(NRApplicationObject *self,
         return NULL;
     }
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:map_to_secondary",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:add_to_cluster",
                                      kwlist, &name)) {
         return NULL;
     }
@@ -596,7 +596,7 @@ static PyMethodDef NRApplication_methods[] = {
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "shutdown",           (PyCFunction)NRApplication_shutdown,
                             METH_VARARGS|METH_KEYWORDS, 0 },
-    { "map_to_secondary",   (PyCFunction)NRApplication_map_to_secondary,
+    { "add_to_cluster",     (PyCFunction)NRApplication_add_to_cluster,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "record_metric",      (PyCFunction)NRApplication_record_metric,
                             METH_VARARGS|METH_KEYWORDS, 0 },

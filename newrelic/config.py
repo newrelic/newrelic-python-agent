@@ -340,7 +340,7 @@ def _load_configuration(config_file=None, environment=None,
                     newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
                                               "map cluster %s" %
                                               ((name, altname),))
-                    application.map_to_secondary(altname)
+                    application.add_to_cluster(altname)
 
             return True
 

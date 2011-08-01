@@ -63,6 +63,8 @@ class FunctionTraceWrapper(object):
                 name = self._nr_name(*((self._nr_instance,)+args), **kwargs)
             else:
                 name = self._nr_name(*args, **kwargs)
+        else:
+            name = self._nr_name
 
         if self._nr_scope is not None and not isinstance(
                 self._nr_scope, basestring):

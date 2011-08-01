@@ -1,28 +1,30 @@
 import unittest
 
-import _newrelic
+import newrelic.api.settings
+import newrelic.api.log_file
+import newrelic.api.application
 
-settings = _newrelic.settings()
+settings = newrelic.api.settings.settings()
 settings.log_file = "%s.log" % __file__
-settings.log_level = _newrelic.LOG_VERBOSEDEBUG
+settings.log_level = newrelic.api.log_file.LOG_VERBOSEDEBUG
 settings.transaction_tracer.transaction_threshold = 0
 
 class ApplicationTests(unittest.TestCase):
 
     def setUp(self):
-        _newrelic.log(_newrelic.LOG_DEBUG, "STARTING - %s" %
-                      self._testMethodName)
+        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
+                "STARTING - %s" % self._testMethodName)
 
     def tearDown(self):
-        _newrelic.log(_newrelic.LOG_DEBUG, "STOPPING - %s" %
-                      self._testMethodName)
+        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
+                "STOPPING - %s" % self._testMethodName)
 
     def test_create(self):
-        application = _newrelic.application("UnitTests")
+        application = newrelic.api.application.application("UnitTests")
         self.assertEqual(application.name, "UnitTests")
 
     def test_enabled(self):
-        application = _newrelic.application("UnitTests")
+        application = newrelic.api.application.application("UnitTests")
         self.assertTrue(application.enabled)
         application.enabled = False
         self.assertFalse(application.enabled)
@@ -30,8 +32,8 @@ class ApplicationTests(unittest.TestCase):
         self.assertTrue(application.enabled)
 
     def test_singleton(self):
-        application1 = _newrelic.application("UnitTests")
-        application2 = _newrelic.application("UnitTests")
+        application1 = newrelic.api.application.application("UnitTests")
+        application2 = newrelic.api.application.application("UnitTests")
         self.assertEqual(id(application1), id(application2))
 
 if __name__ == '__main__':

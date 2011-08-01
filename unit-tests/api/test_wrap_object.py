@@ -1,11 +1,13 @@
 import unittest
 import types
 
-import _newrelic
+import newrelic.api.settings
+import newrelic.api.log_file
+import newrelic.api.object_wrapper
 
-settings = _newrelic.settings()
+settings = newrelic.api.settings.settings()
 settings.log_file = "%s.log" % __file__
-settings.log_level = _newrelic.LOG_VERBOSEDEBUG
+settings.log_level = newrelic.api.log_file.LOG_VERBOSEDEBUG
 settings.transaction_tracer.transaction_threshold = 0
 
 _function_args = None
@@ -26,15 +28,16 @@ class _wrapper(object):
 class ApplicationTests(unittest.TestCase):
 
     def setUp(self):
-        _newrelic.log(_newrelic.LOG_DEBUG, "STARTING - %s" %
-                      self._testMethodName)
+        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
+                "STARTING - %s" % self._testMethodName)
 
     def tearDown(self):
-        _newrelic.log(_newrelic.LOG_DEBUG, "STOPPING - %s" %
-                      self._testMethodName)
+        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
+                "STOPPING - %s" % self._testMethodName)
 
     def test_wrap_object(self):
-        _newrelic.wrap_object(__name__, '_function', _wrapper)
+        newrelic.api.object_wrapper.wrap_object(
+                __name__, '_function', _wrapper)
         args = (1, 2, 3)
         kwargs = { "one": 1, "two": 2, "three": 3 }
         result = _function(*args, **kwargs)

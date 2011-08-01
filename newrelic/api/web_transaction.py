@@ -14,12 +14,15 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
 	# The web transaction can be enabled/disabled by
 	# the value of the variable "newrelic.enabled"
-	# in the WSGI environ dictionary.
+	# in the WSGI environ dictionary. We need to check
+        # this before initialising the transaction as needs
+        # to be passed in base class constructor. The
+        # default is None, which would then result in the
+        # base class making the decision based on whether
+        # application or agent as a whole are enabled.
 
-        enabled = environ.get('newrelic.enabled', None)
-
-        if isinstance(enabled, basestring):
-            enabled = not enabled.lower() in ['off', 'false', '0']
+        enabled = self._environ_setting(
+                environ, 'newrelic.enabled', None)
 
         # Initialise the common transaction base class.
 
@@ -58,42 +61,24 @@ class WebTransaction(newrelic.api.transaction.Transaction):
             if request_uri is not None:
                 self._path = request_uri
 
-	# The web transaction can be flagged as being a
-	# background task by the value of the variable
-	# "newrelic.background_task" in the WSGI environ
-	# dictionary.
+        # Check for override settings from WSGI environ.
 
-        flag = environ.get('newrelic.background_task', False)
+        self.background_task = self._environ_setting(
+                environ, 'newrelic.background_task', False)
+        self.ignore = self._environ_setting(
+                environ, 'newrelic.ignore', False)
+        self.ignore_apdex = self._environ_setting(
+                environ, 'newrelic.ignore_apdex', False)
 
-        if isinstance(flag, basestring):
-            flag = flag.lower() in ['on', 'true', '1']
-
-        self.background_task = flag
-
-	# The web transaction can be flagged such that
-	# it should be ignored by the value of the
-	# variable "newrelic.ignore" in the WSGI environ
-        # dictionary.
-
-        flag = environ.get('newrelic.ignore', False)
-
-        if isinstance(flag, basestring):
-            flag = flag.lower() in ['on', 'true', '1']
-
-        self.ignore = flag
-
-	# The web transaction can be flagged such that
-	# it should be ignored for the purposes of apdex
-	# calculation by the value of the variable
-	# "newrelic.ignore_apdex" in the WSGI environ
-	# dictionary.
-
-        flag = environ.get('newrelic.ignore_apdex', False)
-
-        if isinstance(flag, basestring):
-            flag = flag.lower() in ['on', 'true', '1']
-
-        self.ignore_apdex = flag
+    def _environ_setting(self, environ, name, default=False):
+        flag = environ.get(name, default)
+        if default is None or default:
+            if isinstance(flag, basestring):
+                flag = not flag.lower() in ['off', 'false', '0']
+        else:
+            if isinstance(flag, basestring):
+                flag = flag.lower() in ['on', 'true', '1']
+        return flag
 
     def browser_timing_header(self):
         return ''

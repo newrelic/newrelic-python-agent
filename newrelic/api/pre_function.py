@@ -3,8 +3,6 @@ import sys
 import types
 import inspect
 
-import _newrelic
-
 import newrelic.api.object_wrapper
 
 _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
@@ -50,6 +48,7 @@ def wrap_pre_function(module, object_path, function):
             PreFunctionWrapper, (function,))
 
 if not _agent_mode in ('ungud', 'julunggul'):
+    import _newrelic
     PreFunctionWrapper = _newrelic.PreFunctionWrapper
     pre_function = _newrelic.pre_function
     wrap_pre_function = _newrelic.wrap_pre_function

@@ -2,22 +2,57 @@ import os
 import sys
 import types
 import inspect
+import time
+import collections
 
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
 
 _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
+MemcacheNode = collections.namedtuple('FunctionNode',
+        ['command', 'children', 'start_time', 'end_time'])
+
 class MemcacheTrace(object):
 
     def __init__(self, transaction, command):
-        pass
+        self._transaction = transaction
+
+        self._command = command
+
+        self._enabled = False
+
+        self._children = []
+
+        self._start_time = 0.0
+        self._end_time = 0.0
 
     def __enter__(self):
-        pass
+        if not self._transaction.active:
+            return
+
+        self._enabled = True
+
+        self._start_time = time.time()
+
+        self._transaction._node_stack.append(self)
 
     def __exit__(self, exc, value, tb):
-        pass
+        if not self._enabled:
+            return
+
+        self._end_time = time.time()
+
+        node = self._transaction._node_stack.pop()
+        assert(node == self)
+
+        parent = self._transaction._node_stack[-1]
+
+        parent._children.append(MemcacheNode(command=self._command,
+                children=self._children, start_time=self._start_time,
+                end_time=self._end_time))
+
+        self._children = []
 
 if _agent_mode not in ('julunggul',):
     import _newrelic

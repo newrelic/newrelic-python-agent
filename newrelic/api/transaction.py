@@ -1,6 +1,8 @@
 import os
+import time
 import weakref
 import threading
+import collections
 
 import newrelic.api.settings
 
@@ -14,6 +16,14 @@ PATH_TYPE_UNKNOWN = 0
 PATH_TYPE_RAW = 1
 PATH_TYPE_URI = 2
 
+TransactionNode = collections.namedtuple('TransactionNode',
+        ['name', 'children', 'queue_start', 'start_time', 'end_time'])
+
+class DummyTransaction(object):
+
+    def __init__(self):
+        self._children = []
+
 class Transaction(object):
 
     _local = threading.local()
@@ -24,7 +34,7 @@ class Transaction(object):
             return cls._local.current()
 
     @classmethod
-    def _push_transaction(cls, transaction):
+    def _save_transaction(cls, transaction):
         if hasattr(cls._local, 'current'):
             raise RuntimeError('transaction already active')
 
@@ -38,7 +48,7 @@ class Transaction(object):
         cls._local.current = weakref.ref(transaction)
 
     @classmethod
-    def _pop_transaction(cls, transaction):
+    def _drop_transaction(cls, transaction):
         if not hasattr(cls._local, 'current'):
             raise RuntimeError('no activate transaction')
 
@@ -63,6 +73,13 @@ class Transaction(object):
 
         self._path = '<unknown>'
         self._path_type = PATH_TYPE_UNKNOWN
+        
+        self._node_stack = collections.deque()
+        self._children = []
+
+        self._queue_start = 0.0
+        self._start_time = 0.0
+        self._end_time = 0.0
 
         self.custom_parameters = {}
         self.request_parameters = {}
@@ -88,18 +105,78 @@ class Transaction(object):
             self.__exit__(None, None, None)
 
     def __enter__(self):
-        self._push_transaction(self)
+
+        assert(self._state == STATE_PENDING)
+
+	# Mark as started and cache transaction in
+	# thread/coroutine local storage so that it can
+	# be accessed from anywhere in the context of
+	# the transaction.
+
         self._state = STATE_RUNNING
+        self._save_transaction(self)
+
+        # Record the start time for transaction.
+
+        self._start_time = time.time()
+
+	# We need to push an object onto the top of the
+	# node stack so that children can reach back and
+	# add themselves as children to the parent. We
+	# can't use ourself though as we then end up
+	# with a reference count cycle which will cause
+	# the destructor to never be called if the
+	# __exit__() function is never called. We
+	# instead push on to the top of the node stack a
+	# dummy root transaction object and when done we
+	# will just grab what we need from that.
+
+        self._node_stack.append(DummyTransaction())
 
     def __exit__(self, exc, value, tb):
         if self._state != STATE_RUNNING:
             return
+
+        if exc is not None and value is not None and tb is not None:
+            self.notice_error(exc, value, tb)
+
+        # Record the end time for transaction.
+
+        self._end_time = time.time()
+
+	# Mark as stopped and drop the transaction from
+	# thread/coroutine local storage.
+
+        self._drop_transaction(self)
         self._state = STATE_STOPPED
-        self._pop_transaction(self)
+
+        children = self._node_stack.pop()._children
+
+	# XXX This mess is because trying to keep some
+	# compatibility with what C code was doing.
+	# Unfortunately it was doing silly things to get
+	# around issues with PHP agent. We will fix this
+	# soon by changing C code to something more sane
+	# so can keep same tests during transition. :-(
+
+        if self._path_type == PATH_TYPE_URI:
+            name = 'Uri/%s' % self._path
+        elif self._path_type == PATH_TYPE_RAW:
+            name = self._path
+        else:
+            name = 'Uri/<unknown>'
+
+        nodes = TransactionNode(name=name, children=children,
+                queue_start=self._queue_start, start_time=self._start_time,
+                end_time=self._end_time)
 
     @property
     def state(self):
         return self._state
+
+    @property
+    def active(self):
+        return self.enabled and self._state == STATE_RUNNING
 
     @property
     def application(self):
@@ -109,7 +186,9 @@ class Transaction(object):
     def path(self):
         return self._path
 
-    def name_transaction(self, name, prefix='Function'):
+    def name_transaction(self, name, prefix=None):
+        if prefix is None:
+            prefix = 'Function'
         self._path = "%s/%s" % (prefix, name)
         self._path_type = PATH_TYPE_RAW
 

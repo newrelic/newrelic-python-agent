@@ -2,6 +2,8 @@ import os
 import sys
 import types
 import inspect
+import urlparse
+import cgi
 
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
@@ -63,6 +65,53 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
             if request_uri is not None:
                 self._path = request_uri
+
+	# See if the WSGI environ dictionary includes
+	# the special 'X-Queue-Start' HTTP header. This
+	# header is an optional header that can be set
+	# within the underlying web server or WSGI
+	# server to indicate when the current request
+	# was first received and ready to be processed.
+	# The difference between this time and when
+	# application starts processing the request is
+	# the queue time and represents how long spent
+	# in any explicit request queuing system, or how
+	# long waiting in connecting state against
+	# listener sockets where request needs to be
+	# proxied between any processes within the
+	# application server.
+	#
+	# Note that mod_wsgi 4.0 sets its own distinct
+	# variable called mod_wsgi.queue_start so that
+	# not necessary to enable and use mod_headers to
+	# add X-Queue-Start. So also check for that, but
+	# give priority to the explicitly added header
+	# in case that header was added in front end
+	# server to Apache instead although for that
+	# case they should be using X-Request-Start
+	# which do not support here yet as PHP agent
+	# core doesn't have a way of tracking front end
+	# web server time.
+
+        value = environ.get('HTTP_X_QUEUE_START', None)
+
+        if value and isinstance(value, basestring):
+            if value.startswith('t='):
+                try:
+                    self._queue_start = int(value[2:])/1000000.0
+                except:
+                    pass
+
+        # Capture query request string parameters.
+
+        value = environ.get('QUERY_STRING', None)
+
+        if value:
+            try:
+                params = urlparse.parse_qs(value)
+            except:
+                params = cgi.parse_qs(value)
+            self.request_parameters.update(params)
 
         # Check for override settings from WSGI environ.
 

@@ -2,22 +2,65 @@ import os
 import sys
 import types
 import inspect
+import time
+import collections
 
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
 
 _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
+FunctionNode = collections.namedtuple('FunctionNode',
+        ['name', 'children', 'start_time', 'end_time'])
+
 class FunctionTrace(object):
 
-    def __init__(self, transaction, name=None, scope=None, interesting=True):
-        pass
+    def __init__(self, transaction, name=None, group=None, interesting=True):
+        self._transaction = transaction
+
+        self._name = name
+        self._group = group
+
+        self._interesting = interesting
+
+        self._enabled = False
+
+        self._children = []
+
+        self._start_time = 0.0
+        self._end_time = 0.0
 
     def __enter__(self):
-        pass
+        if not self._transaction.active:
+            return
+
+        self._enabled = True
+
+        self._start_time = time.time()
+
+        self._transaction._node_stack.append(self)
 
     def __exit__(self, exc, value, tb):
-        pass
+        if not self._enabled:
+            return
+
+        self._end_time = time.time()
+
+        node = self._transaction._node_stack.pop()
+        assert(node == self)
+
+        parent = self._transaction._node_stack[-1]
+
+        if self._group:
+            name = '%s/%s' % (self._group, self._name)
+        else:
+            name = self._name
+
+        parent._children.append(FunctionNode(name=name,
+                children=self._children, start_time=self._start_time,
+                end_time=self._end_time))
+
+        self._children = []
 
 if _agent_mode not in ('julunggul',):
     import _newrelic
@@ -25,7 +68,7 @@ if _agent_mode not in ('julunggul',):
 
 class FunctionTraceWrapper(object):
 
-    def __init__(self, wrapped, name=None, scope=None, interesting=True):
+    def __init__(self, wrapped, name=None, group=None, interesting=True):
         if type(wrapped) == types.TupleType:
             (instance, wrapped) = wrapped
         else:
@@ -40,7 +83,7 @@ class FunctionTraceWrapper(object):
             self._nr_last_object = wrapped
 
         self._nr_name = name
-        self._nr_scope = scope
+        self._nr_group = group
         self._nr_interesting = interesting
 
     def __get__(self, instance, klass):
@@ -48,7 +91,7 @@ class FunctionTraceWrapper(object):
             return self
         descriptor = self._nr_next_object.__get__(instance, klass)
         return self.__class__((instance, descriptor), self._nr_name,
-                              self._nr_scope, self._nr_interesting)
+                              self._nr_group, self._nr_interesting)
 
     def __call__(self, *args, **kwargs):
         transaction = newrelic.api.transaction.transaction()
@@ -66,18 +109,18 @@ class FunctionTraceWrapper(object):
         else:
             name = self._nr_name
 
-        if self._nr_scope is not None and not isinstance(
-                self._nr_scope, basestring):
+        if self._nr_group is not None and not isinstance(
+                self._nr_group, basestring):
             if self._nr_instance and inspect.ismethod(self._nr_next_object):
-                scope = self._nr_scope(*((self._nr_instance,)+args), **kwargs)
+                group = self._nr_group(*((self._nr_instance,)+args), **kwargs)
             else:
-                scope = self._nr_scope(*args, **kwargs)
+                group = self._nr_group(*args, **kwargs)
         else:
-            scope = self._nr_scope
+            group = self._nr_group
 
         try:
             success = True
-            manager = FunctionTrace(transaction, name, scope,
+            manager = FunctionTrace(transaction, name, group,
                                     self._nr_interesting)
             manager.__enter__()
             try:
@@ -90,15 +133,15 @@ class FunctionTraceWrapper(object):
             if success:
                 manager.__exit__(None, None, None)
 
-def function_trace(name=None, scope=None, interesting=True):
+def function_trace(name=None, group=None, interesting=True):
     def decorator(wrapped):
-        return FunctionTraceWrapper(wrapped, name, scope, interesting)
+        return FunctionTraceWrapper(wrapped, name, group, interesting)
     return decorator
 
-def wrap_function_trace(module, object_path, name=None, scope=None,
+def wrap_function_trace(module, object_path, name=None, group=None,
         interesting=True):
     newrelic.api.object_wrapper.wrap_object(module, object_path,
-            FunctionTraceWrapper, (name, scope, interesting))
+            FunctionTraceWrapper, (name, group, interesting))
 
 if not _agent_mode in ('ungud', 'julunggul'):
     import _newrelic

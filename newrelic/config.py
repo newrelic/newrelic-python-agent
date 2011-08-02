@@ -473,15 +473,15 @@ def _process_wsgi_application_configuration():
 
 # Setup background task wrapper defined in configuration file.
 
-def _background_task_import_hook(object_path, application, name, scope):
+def _background_task_import_hook(object_path, application, name, group):
     def _instrument(target):
         newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
                 "wrap background-task %s" %
-                ((target, object_path, application, name, scope),))
+                ((target, object_path, application, name, group),))
 
         try:
             newrelic.api.background_task.wrap_background_task(
-                    target, object_path, application, name, scope)
+                    target, object_path, application, name, group)
         except:
             _raise_instrumentation_error('background-task', locals())
 
@@ -510,14 +510,14 @@ def _process_background_task_configuration():
 
             application = None
             name = None
-            scope = 'Function'
+            group = 'Function'
 
             if _config_object.has_option(section, 'application'):
                 application = _config_object.get(section, 'application')
             if _config_object.has_option(section, 'name'):
                 name = _config_object.get(section, 'name')
-            if _config_object.has_option(section, 'scope'):
-                scope = _config_object.get(section, 'scope')
+            if _config_object.has_option(section, 'group'):
+                group = _config_object.get(section, 'group')
 
             if name and name.startswith('lambda '):
                 vars = { "callable_name":
@@ -526,10 +526,10 @@ def _process_background_task_configuration():
 
             newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
                     "register background-task %s" %
-                    ((module, object_path, application, name, scope),))
+                    ((module, object_path, application, name, group),))
 
             hook = _background_task_import_hook(object_path,
-                  application, name, scope)
+                  application, name, group)
             newrelic.api.import_hook.register_import_hook(module, hook)
         except:
             _raise_configuration_error(section)
@@ -642,15 +642,15 @@ def _process_external_trace_configuration():
 
 # Setup function traces defined in configuration file.
 
-def _function_trace_import_hook(object_path, name, scope, interesting):
+def _function_trace_import_hook(object_path, name, group, interesting):
     def _instrument(target):
         newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
                 "wrap function-trace %s" %
-                ((target, object_path, name, scope, interesting),))
+                ((target, object_path, name, group, interesting),))
 
         try:
             newrelic.api.function_trace.wrap_function_trace(
-                    target, object_path, name, scope, interesting)
+                    target, object_path, name, group, interesting)
         except:
             _raise_instrumentation_error('function-trace', locals())
 
@@ -678,13 +678,13 @@ def _process_function_trace_configuration():
             (module, object_path) = string.splitfields(function, ':', 1)
 
             name = None
-            scope = 'Function'
+            group = 'Function'
             interesting = True
 
             if _config_object.has_option(section, 'name'):
                 name = _config_object.get(section, 'name')
-            if _config_object.has_option(section, 'scope'):
-                scope = _config_object.get(section, 'scope')
+            if _config_object.has_option(section, 'group'):
+                group = _config_object.get(section, 'group')
             if _config_object.has_option(section, 'interesting'):
                 interesting = _config_object.getboolean(section, 'interesting')
 
@@ -695,10 +695,10 @@ def _process_function_trace_configuration():
 
             newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
                     "register function-trace %s" %
-                    ((module, object_path, name, scope, interesting),))
+                    ((module, object_path, name, group, interesting),))
 
             hook = _function_trace_import_hook(object_path, name,
-                                               scope, interesting)
+                                               group, interesting)
             newrelic.api.import_hook.register_import_hook(module, hook)
         except:
             _raise_configuration_error(section)
@@ -758,15 +758,15 @@ def _process_memcache_trace_configuration():
 
 # Setup name transaction wrapper defined in configuration file.
 
-def _name_transaction_import_hook(object_path, name, scope):
+def _name_transaction_import_hook(object_path, name, group):
     def _instrument(target):
         newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
                 "wrap name-transaction %s" %
-                ((target, object_path, name, scope),))
+                ((target, object_path, name, group),))
 
         try:
             newrelic.api.name_transaction.wrap_name_transaction(
-                    target, object_path, name, scope)
+                    target, object_path, name, group)
         except:
             _raise_instrumentation_error('name-transaction', locals())
 
@@ -794,12 +794,12 @@ def _process_name_transaction_configuration():
             (module, object_path) = string.splitfields(function, ':', 1)
 
             name = None
-            scope = 'Function'
+            group = 'Function'
 
             if _config_object.has_option(section, 'name'):
                 name = _config_object.get(section, 'name')
-            if _config_object.has_option(section, 'scope'):
-                scope = _config_object.get(section, 'scope')
+            if _config_object.has_option(section, 'group'):
+                group = _config_object.get(section, 'group')
 
             if name and name.startswith('lambda '):
                 vars = { "callable_name":
@@ -808,10 +808,10 @@ def _process_name_transaction_configuration():
 
             newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
                     "register name-transaction %s" %
-                    ((module, object_path, name, scope),))
+                    ((module, object_path, name, group),))
 
             hook = _name_transaction_import_hook(object_path, name,
-                                                 scope)
+                                                 group)
             newrelic.api.import_hook.register_import_hook(module, hook)
         except:
             _raise_configuration_error(section)

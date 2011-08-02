@@ -38,6 +38,8 @@ class ExternalTrace(object):
 
         self._transaction._node_stack.append(self)
 
+        return self
+
     def __exit__(self, exc, value, tb):
         if not self._enabled:
             return

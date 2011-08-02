@@ -13,7 +13,7 @@ class ErrorTrace(object):
         pass
 
     def __enter__(self):
-        pass
+        return self
 
     def __exit__(self, exc, value, tb):
         pass

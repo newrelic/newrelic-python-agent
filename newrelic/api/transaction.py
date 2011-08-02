@@ -133,6 +133,8 @@ class Transaction(object):
 
         self._node_stack.append(DummyTransaction())
 
+        return self
+
     def __exit__(self, exc, value, tb):
         if self._state != STATE_RUNNING:
             return

@@ -41,7 +41,7 @@ class Agent(object):
         """
         Returns a dictionary of applications keyed off the application name. 
         """
-        return self.__applications
+        return self._applications
 
             
     def stop(self):

@@ -40,6 +40,9 @@ class Application(object):
     def stop(self):
         self._work_thread.stop()
         
+    def get_configuration(self):
+        return self._service.configuration
+        
     def connect(self):
         print "Connecting to the New Relic service"
         connected = self._service.connect()
@@ -101,3 +104,5 @@ class Application(object):
         finally:
             if not success:
                 self.merge_stats(stats)
+                
+    configuration = property(get_configuration, None, None, None)

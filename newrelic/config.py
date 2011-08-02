@@ -112,7 +112,7 @@ def _raise_configuration_error(section, option=None):
         newrelic.api.log_file.log_exception(*sys.exc_info())
 
         if not _ignore_errors:
-            raise newrelic.api.exceptionsConfigurationError(
+            raise newrelic.api.exceptions.ConfigurationError(
                     'Invalid configuration for section "%s". '
                     'Check New Relic agent log file for further '
                     'details.' % section)

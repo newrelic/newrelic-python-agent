@@ -15,7 +15,7 @@ def instrument_gluon_compileapp(module):
     # in executing a request after URL has been mapped
     # to a specific view. The name given to the web
     # transaction is combination of the application name
-    # and view path. Marked with scope of 'Custom' as we
+    # and view path. Marked with group of 'Custom' as we
     # have defined the formatting.
 
     def name_transaction_run_models_in(environment):
@@ -23,13 +23,13 @@ def instrument_gluon_compileapp(module):
                 environment['response'].view)
 
     newrelic.api.name_transaction.wrap_name_transaction(module, 'run_models_in',
-            name=name_transaction_run_models_in, scope='Custom')
+            name=name_transaction_run_models_in, group='Custom')
 
     # Wrap functions which coordinate the execution of
     # the separate models, controller and view phases of
     # the request handling. This is done for timing how
     # long taken within these phases of request
-    # handling. Use use a 'Custom' scope qualified by
+    # handling. Use use a 'Custom' group qualified by
     # the phase.
 
     def name_function_run_models_in(environment):
@@ -37,27 +37,27 @@ def instrument_gluon_compileapp(module):
                 environment['request'].function)
 
     newrelic.api.function_trace.wrap_function_trace(module, 'run_models_in',
-            name=name_function_run_models_in, scope='Custom/Models')
+            name=name_function_run_models_in, group='Custom/Models')
 
     def name_function_run_controller_in(controller, function, environment):
         return '%s/%s' % (controller, function)
 
     newrelic.api.function_trace.wrap_function_trace(module, 'run_controller_in',
-            name=name_function_run_controller_in, scope='Custom/Controller')
+            name=name_function_run_controller_in, group='Custom/Controller')
 
     def name_function_run_view_in(environment):
         return '%s/%s' % (environment['request'].controller,
                 environment['request'].function)
 
     newrelic.api.function_trace.wrap_function_trace(module, 'run_view_in',
-            name=name_function_run_view_in, scope='Custom/View')
+            name=name_function_run_view_in, group='Custom/View')
 
 def instrument_gluon_restricted(module):
 
     # Wrap function which executes all the compiled
     # Python code files. The name used corresponds to
     # path of the resource within the context of the
-    # application directory. The scope used is either
+    # application directory. The group used is either
     # 'Script/Execute' or 'Template/Render' based on
     # whether we can work out whether code object
     # corresponded to compiled template file or not.
@@ -69,14 +69,14 @@ def instrument_gluon_restricted(module):
                 return layer[len(folder):]
         return layer
 
-    def scope_function_restricted(code, environment={}, layer='Unknown'):
+    def group_function_restricted(code, environment={}, layer='Unknown'):
         parts = layer.split('.')
         if parts[-1] in ['html'] or parts[-2:] in [['html','pyc']] :
             return 'Template/Render'
         return 'Script/Execute'
 
     newrelic.api.function_trace.wrap_function_trace(module, 'restricted',
-            name=name_function_restricted, scope=scope_function_restricted)
+            name=name_function_restricted, group=group_function_restricted)
 
 def instrument_gluon_main(module):
 
@@ -111,7 +111,7 @@ def instrument_gluon_template(module):
 
     # Wrap parsing/compilation of template files, using
     # the name of the template relative to the context
-    # of the application it is contained in. Use a scope
+    # of the application it is contained in. Use a group
     # of 'Template/Compile'. Rendering of template is
     # picked up when executing the code object created
     # from this compilation step.
@@ -126,7 +126,7 @@ def instrument_gluon_template(module):
             return '%s/%s' % (path, filename)
 
     newrelic.api.function_trace.wrap_function_trace(module, 'parse_template',
-            name=name_function_parse_template, scope='Template/Compile')
+            name=name_function_parse_template, group='Template/Compile')
 
 def instrument_gluon_tools(module):
 

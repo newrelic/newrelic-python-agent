@@ -75,13 +75,13 @@ class WebTransactionTests(unittest.TestCase):
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
-            scope = "Function"
+            group = "Function"
             path = "/named_web_transaction"
-            transaction.name_transaction(path, scope)
+            transaction.name_transaction(path, group)
             self.assertTrue(transaction.enabled)
             self.assertEqual(newrelic.api.transaction.transaction(),
                     transaction)
-            self.assertEqual(transaction.path, scope+'/'+path)
+            self.assertEqual(transaction.path, group+'/'+path)
 
     def test_background_web_transaction(self):
         environ = { "REQUEST_URI": "DUMMY" }
@@ -260,7 +260,7 @@ class WebTransactionTests(unittest.TestCase):
         now = time.time()
         ts = int((now-0.2) * 1000000)
         environ = { "REQUEST_URI": "/queue_start",
-                    "HTTP_X_NEWRELIC_QUEUE_START": "t=%d" % ts }
+                    "HTTP_X_QUEUE_START": "t=%d" % ts }
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:

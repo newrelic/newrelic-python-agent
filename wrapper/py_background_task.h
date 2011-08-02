@@ -20,7 +20,7 @@ typedef struct {
     PyObject *last_object;
     PyObject *application;
     PyObject *name;
-    PyObject *scope;
+    PyObject *group;
 } NRBackgroundTaskWrapperObject;
 
 extern PyTypeObject NRBackgroundTaskWrapper_Type;
@@ -29,7 +29,7 @@ typedef struct {
     PyObject_HEAD
     PyObject *application;
     PyObject *name;
-    PyObject *scope;
+    PyObject *group;
 } NRBackgroundTaskDecoratorObject;
 
 extern PyTypeObject NRBackgroundTaskDecorator_Type;

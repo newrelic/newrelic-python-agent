@@ -29,7 +29,7 @@ static PyObject *NRNameTransactionWrapper_new(PyTypeObject *type,
     self->next_object = NULL;
     self->last_object = NULL;
     self->name = NULL;
-    self->scope = NULL;
+    self->group = NULL;
 
     return (PyObject *)self;
 }
@@ -42,14 +42,14 @@ static int NRNameTransactionWrapper_init(NRNameTransactionWrapperObject *self,
     PyObject *wrapped_object = NULL;
 
     PyObject *name = Py_None;
-    PyObject *scope = Py_None;
+    PyObject *group = Py_None;
 
     PyObject *object = NULL;
 
-    static char *kwlist[] = { "wrapped", "name", "scope", NULL };
+    static char *kwlist[] = { "wrapped", "name", "group", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|OO:NameTransactionWrapper",
-                                     kwlist, &wrapped_object, &name, &scope)) {
+                                     kwlist, &wrapped_object, &name, &group)) {
         return -1;
     }
 
@@ -94,9 +94,9 @@ static int NRNameTransactionWrapper_init(NRNameTransactionWrapperObject *self,
     Py_XDECREF(self->name);
     self->name = name;
 
-    Py_INCREF(scope);
-    Py_XDECREF(self->scope);
-    self->scope = scope;
+    Py_INCREF(group);
+    Py_XDECREF(self->group);
+    self->group = group;
 
     return 0;
 }
@@ -112,7 +112,7 @@ static void NRNameTransactionWrapper_dealloc(
     Py_XDECREF(self->last_object);
 
     Py_XDECREF(self->name);
-    Py_XDECREF(self->scope);
+    Py_XDECREF(self->group);
 
     Py_TYPE(self)->tp_free(self);
 }
@@ -125,7 +125,7 @@ static PyObject *NRNameTransactionWrapper_call(
     PyObject *current_transaction = NULL;
 
     PyObject *name = NULL;
-    PyObject *scope = NULL;
+    PyObject *group = NULL;
 
     /*
      * If there is no current transaction then we can call
@@ -160,23 +160,23 @@ static PyObject *NRNameTransactionWrapper_call(
                 return NULL;
         }
 
-        if (self->scope == Py_None) {
+        if (self->group == Py_None) {
             Py_INCREF(Py_None);
-            scope = Py_None;
+            group = Py_None;
         }
-        else if (PyString_Check(self->scope) || PyUnicode_Check(self->scope)) {
-            Py_INCREF(self->scope);
-            scope = self->scope;
+        else if (PyString_Check(self->group) || PyUnicode_Check(self->group)) {
+            Py_INCREF(self->group);
+            group = self->group;
         }
         else {
             /*
-             * Scope if actually a callable function to provide the
-             * scope based on arguments supplied to wrapped function.
+             * Group if actually a callable function to provide the
+             * group based on arguments supplied to wrapped function.
              */
 
-            scope = PyObject_Call(self->scope, args, kwds);
+            group = PyObject_Call(self->group, args, kwds);
 
-            if (!scope) {
+            if (!group) {
                 Py_DECREF(name);
                 return NULL;
             }
@@ -186,16 +186,16 @@ static PyObject *NRNameTransactionWrapper_call(
                                         "name_transaction");
 
         if (!method) {
-            Py_DECREF(scope);
+            Py_DECREF(group);
             Py_DECREF(name);
             return NULL;
         }
 
-        result = PyObject_CallFunctionObjArgs(method, name, scope, NULL);
+        result = PyObject_CallFunctionObjArgs(method, name, group, NULL);
 
         Py_DECREF(method);
         Py_DECREF(name);
-        Py_DECREF(scope);
+        Py_DECREF(group);
 
         if (!result)
             return NULL;
@@ -430,7 +430,7 @@ static PyObject *NRNameTransactionDecorator_new(PyTypeObject *type,
         return NULL;
 
     self->name = NULL;
-    self->scope = NULL;
+    self->group = NULL;
 
     return (PyObject *)self;
 }
@@ -441,13 +441,13 @@ static int NRNameTransactionDecorator_init(
         NRNameTransactionDecoratorObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *name = Py_None;
-    PyObject *scope = Py_None;
+    PyObject *group = Py_None;
 
-    static char *kwlist[] = { "name", "scope", NULL };
+    static char *kwlist[] = { "name", "group", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds,
                                      "|OO:NameTransactionDecorator",
-                                     kwlist, &name, &scope)) {
+                                     kwlist, &name, &group)) {
         return -1;
     }
 
@@ -455,9 +455,9 @@ static int NRNameTransactionDecorator_init(
     Py_XDECREF(self->name);
     self->name = name;
 
-    Py_INCREF(scope);
-    Py_XDECREF(self->scope);
-    self->scope = scope;
+    Py_INCREF(group);
+    Py_XDECREF(self->group);
+    self->group = group;
 
     return 0;
 }
@@ -468,7 +468,7 @@ static void NRNameTransactionDecorator_dealloc(
         NRNameTransactionDecoratorObject *self)
 {
     Py_XDECREF(self->name);
-    Py_XDECREF(self->scope);
+    Py_XDECREF(self->group);
 
     Py_TYPE(self)->tp_free(self);
 }
@@ -490,7 +490,7 @@ static PyObject *NRNameTransactionDecorator_call(
 
     return PyObject_CallFunctionObjArgs(
             (PyObject *)&NRNameTransactionWrapper_Type,
-            wrapped_object, self->name, self->scope, NULL);
+            wrapped_object, self->name, self->group, NULL);
 }
 
 /* ------------------------------------------------------------------------- */

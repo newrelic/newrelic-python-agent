@@ -22,15 +22,15 @@ static int NRBackgroundTask_init(NRTransactionObject *self, PyObject *args,
 {
     NRApplicationObject *application = NULL;
     PyObject *name = NULL;
-    PyObject *scope = Py_None;
+    PyObject *group = Py_None;
 
     PyObject *newargs = NULL;
 
-    static char *kwlist[] = { "application", "name", "scope", NULL };
+    static char *kwlist[] = { "application", "name", "group", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O!O|O:BackgroundTask",
                                      kwlist, &NRApplication_Type,
-                                     &application, &name, &scope)) {
+                                     &application, &name, &group)) {
         return -1;
     }
 
@@ -40,10 +40,10 @@ static int NRBackgroundTask_init(NRTransactionObject *self, PyObject *args,
         return -1;
     }
 
-    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
-        scope != Py_None) {
+    if (!PyString_Check(group) && !PyUnicode_Check(group) &&
+        group != Py_None) {
         PyErr_Format(PyExc_TypeError, "expected string, Unicode or None "
-                     "for scope, found type '%s'", scope->ob_type->tp_name);
+                     "for group, found type '%s'", group->ob_type->tp_name);
         return -1;
     }
 
@@ -82,7 +82,7 @@ static int NRBackgroundTask_init(NRTransactionObject *self, PyObject *args,
     if (self->transaction) {
         PyObject *bytes = NULL;
 
-        bytes = NRUtilities_ConstructPath(name, scope);
+        bytes = NRUtilities_ConstructPath(name, group);
         self->transaction->path_type = NR_PATH_TYPE_RAW;
         self->transaction->path = nrstrdup(PyString_AsString(bytes));
         Py_DECREF(bytes);
@@ -159,7 +159,7 @@ static PyObject *NRBackgroundTaskWrapper_new(PyTypeObject *type, PyObject *args,
     self->last_object = NULL;
     self->application = NULL;
     self->name = NULL;
-    self->scope = NULL;
+    self->group = NULL;
 
     return (PyObject *)self;
 }
@@ -173,23 +173,23 @@ static int NRBackgroundTaskWrapper_init(NRBackgroundTaskWrapperObject *self,
 
     PyObject *application = Py_None;
     PyObject *name = Py_None;
-    PyObject *scope = Py_None;
+    PyObject *group = Py_None;
 
     PyObject *object = NULL;
 
     static char *kwlist[] = { "wrapped", "application", "name",
-                              "scope", NULL };
+                              "group", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|OOO:BackgroundTaskWrapper",
                                      kwlist, &wrapped_object, &application,
-                                     &name, &scope)) {
+                                     &name, &group)) {
         return -1;
     }
 
-    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
-        scope != Py_None) {
+    if (!PyString_Check(group) && !PyUnicode_Check(group) &&
+        group != Py_None) {
         PyErr_Format(PyExc_TypeError, "expected string, Unicode or None "
-                     "for scope, found type '%s'", scope->ob_type->tp_name);
+                     "for group, found type '%s'", group->ob_type->tp_name);
         return -1;
     }
 
@@ -269,9 +269,9 @@ static int NRBackgroundTaskWrapper_init(NRBackgroundTaskWrapperObject *self,
     Py_XDECREF(self->name);
     self->name = name;
 
-    Py_INCREF(scope);
-    Py_XDECREF(self->scope);
-    self->scope = scope;
+    Py_INCREF(group);
+    Py_XDECREF(self->group);
+    self->group = group;
 
     Py_DECREF(application);
 
@@ -289,7 +289,7 @@ static void NRBackgroundTaskWrapper_dealloc(NRBackgroundTaskWrapperObject *self)
 
     Py_XDECREF(self->application);
     Py_XDECREF(self->name);
-    Py_XDECREF(self->scope);
+    Py_XDECREF(self->group);
 
     Py_TYPE(self)->tp_free(self);
 }
@@ -310,7 +310,7 @@ static PyObject *NRBackgroundTaskWrapper_call(
     PyObject *method_result = NULL;
 
     PyObject *name = NULL;
-    PyObject *scope = NULL;
+    PyObject *group = NULL;
 
     /* Calculate name to be assigned to background task. */
 
@@ -334,24 +334,24 @@ static PyObject *NRBackgroundTaskWrapper_call(
             return NULL;
     }
 
-    if (self->scope == Py_None) {
+    if (self->group == Py_None) {
         Py_INCREF(Py_None);
-        scope = Py_None;
+        group = Py_None;
     }
-    else if (PyString_Check(self->scope) || PyUnicode_Check(self->scope)) {
-        Py_INCREF(self->scope);
-        scope = self->scope;
+    else if (PyString_Check(self->group) || PyUnicode_Check(self->group)) {
+        Py_INCREF(self->group);
+        group = self->group;
     }
     else {
         /*
-         * Scope if actually a callable function to provide the
-         * scope based on arguments supplied to wrapped function.
+         * Group if actually a callable function to provide the
+         * group based on arguments supplied to wrapped function.
          */
 
-        scope = PyObject_Call(self->scope, args, kwds);
+        group = PyObject_Call(self->group, args, kwds);
 
-        if (!scope) {
-            Py_DECREF(scope);
+        if (!group) {
+            Py_DECREF(group);
             return NULL;
         }
     }
@@ -389,7 +389,7 @@ static PyObject *NRBackgroundTaskWrapper_call(
 
                     if (method) {
                         result = PyObject_CallFunctionObjArgs(method, name,
-                                                              scope, NULL);
+                                                              group, NULL);
 
                         if (!result)
                             PyErr_WriteUnraisable(method);
@@ -397,7 +397,7 @@ static PyObject *NRBackgroundTaskWrapper_call(
                             Py_DECREF(result);
 
                         Py_DECREF(method);
-                        Py_DECREF(scope);
+                        Py_DECREF(group);
                         Py_DECREF(name);
                         Py_DECREF(flag);
 
@@ -406,7 +406,7 @@ static PyObject *NRBackgroundTaskWrapper_call(
                     else {
                         PyErr_Clear();
 
-                        Py_DECREF(scope);
+                        Py_DECREF(group);
                         Py_DECREF(name);
                         Py_DECREF(flag);
 
@@ -414,7 +414,7 @@ static PyObject *NRBackgroundTaskWrapper_call(
                     }
                 }
                 else {
-                    Py_DECREF(scope);
+                    Py_DECREF(group);
                     Py_DECREF(name);
                     Py_DECREF(flag);
 
@@ -430,10 +430,10 @@ static PyObject *NRBackgroundTaskWrapper_call(
 
     background_task = PyObject_CallFunctionObjArgs((PyObject *)
             &NRBackgroundTask_Type, self->application, name,
-            scope, NULL);
+            group, NULL);
 
     Py_DECREF(name);
-    Py_DECREF(scope);
+    Py_DECREF(group);
 
     /* Now call __enter__() on the context manager. */
 
@@ -740,7 +740,7 @@ static PyObject *NRBackgroundTaskDecorator_new(PyTypeObject *type,
 
     self->application = NULL;
     self->name = NULL;
-    self->scope = NULL;
+    self->group = NULL;
 
     return (PyObject *)self;
 }
@@ -752,13 +752,13 @@ static int NRBackgroundTaskDecorator_init(
 {
     PyObject *application = Py_None;
     PyObject *name = Py_None;
-    PyObject *scope = Py_None;
+    PyObject *group = Py_None;
 
-    static char *kwlist[] = { "application", "name", "scope", NULL };
+    static char *kwlist[] = { "application", "name", "group", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds,
                                      "|OOO:BackgroundTaskDecorator",
-                                     kwlist, &application, &name, &scope)) {
+                                     kwlist, &application, &name, &group)) {
         return -1;
     }
 
@@ -779,9 +779,9 @@ static int NRBackgroundTaskDecorator_init(
     Py_XDECREF(self->name);
     self->name = name;
 
-    Py_INCREF(scope);
-    Py_XDECREF(self->scope);
-    self->scope = scope;
+    Py_INCREF(group);
+    Py_XDECREF(self->group);
+    self->group = group;
 
     return 0;
 }
@@ -793,7 +793,7 @@ static void NRBackgroundTaskDecorator_dealloc(
 {
     Py_XDECREF(self->application);
     Py_XDECREF(self->name);
-    Py_XDECREF(self->scope);
+    Py_XDECREF(self->group);
 
     Py_TYPE(self)->tp_free(self);
 }
@@ -814,7 +814,7 @@ static PyObject *NRBackgroundTaskDecorator_call(
 
     return PyObject_CallFunctionObjArgs(
             (PyObject *)&NRBackgroundTaskWrapper_Type,
-            wrapped_object, self->application, self->name, self->scope, NULL);
+            wrapped_object, self->application, self->name, self->group, NULL);
 }
 
 /* ------------------------------------------------------------------------- */

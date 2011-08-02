@@ -1048,12 +1048,12 @@ static PyObject *NRTransaction_name_transaction(
     PyObject *bytes = NULL;
 
     PyObject *name = NULL;
-    PyObject *scope = Py_None;
+    PyObject *group = Py_None;
 
-    static char *kwlist[] = { "name", "scope", NULL };
+    static char *kwlist[] = { "name", "group", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|O:name_transaction",
-                                     kwlist, &name, &scope)) {
+                                     kwlist, &name, &group)) {
         return NULL;
     }
 
@@ -1088,7 +1088,7 @@ static PyObject *NRTransaction_name_transaction(
 
     nrfree(self->transaction->path);
 
-    bytes = NRUtilities_ConstructPath(name, scope);
+    bytes = NRUtilities_ConstructPath(name, group);
     self->transaction->path_type = NR_PATH_TYPE_RAW;
     self->transaction->path = nrstrdup(PyString_AsString(bytes));
     Py_DECREF(bytes);

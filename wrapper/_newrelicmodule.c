@@ -537,12 +537,12 @@ static PyObject *newrelic_background_task(PyObject *self, PyObject *args,
 {
     PyObject *application = Py_None;
     PyObject *name = Py_None;
-    PyObject *scope = Py_None;
+    PyObject *group = Py_None;
 
-    static char *kwlist[] = { "application", "name", "scope", NULL };
+    static char *kwlist[] = { "application", "name", "group", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OOO:background_task",
-                                     kwlist, &application, &name, &scope)) {
+                                     kwlist, &application, &name, &group)) {
         return NULL;
     }
 
@@ -556,7 +556,7 @@ static PyObject *newrelic_background_task(PyObject *self, PyObject *args,
     }
 
     return PyObject_CallFunctionObjArgs((PyObject *)
-            &NRBackgroundTaskDecorator_Type, application, name, scope, NULL);
+            &NRBackgroundTaskDecorator_Type, application, name, group, NULL);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -569,7 +569,7 @@ static PyObject *newrelic_wrap_background_task(PyObject *self, PyObject *args,
 
     PyObject *application = Py_None;
     PyObject *name = Py_None;
-    PyObject *scope = Py_None;
+    PyObject *group = Py_None;
 
     PyObject *wrapped_object = NULL;
     PyObject *parent_object = NULL;
@@ -580,12 +580,12 @@ static PyObject *newrelic_wrap_background_task(PyObject *self, PyObject *args,
     PyObject *result = NULL;
 
     static char *kwlist[] = { "module", "object_name", "application",
-                              "name", "scope", NULL };
+                              "name", "group", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds,
                                      "OS|OOO:wrap_background_task",
                                      kwlist, &module, &object_name,
-                                     &application, &name, &scope)) {
+                                     &application, &name, &group)) {
         return NULL;
     }
 
@@ -641,7 +641,7 @@ static PyObject *newrelic_wrap_background_task(PyObject *self, PyObject *args,
 
     wrapper_object = PyObject_CallFunctionObjArgs((PyObject *)
             &NRBackgroundTaskWrapper_Type, wrapped_object, application,
-            name, scope, NULL);
+            name, group, NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object,
             attribute_name, wrapper_object);
@@ -896,19 +896,19 @@ static PyObject *newrelic_function_trace(PyObject *self, PyObject *args,
                                          PyObject *kwds)
 {
     PyObject *name = Py_None;
-    PyObject *scope = Py_None;
+    PyObject *group = Py_None;
     PyObject *interesting = Py_True;
 
-    static char *kwlist[] = { "name", "scope", "interesting", NULL };
+    static char *kwlist[] = { "name", "group", "interesting", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OOO!:function_trace",
-                                     kwlist, &name, &scope, &PyBool_Type,
+                                     kwlist, &name, &group, &PyBool_Type,
                                      &interesting)) {
         return NULL;
     }
 
     return PyObject_CallFunctionObjArgs((PyObject *)
-            &NRFunctionTraceDecorator_Type, name, scope, interesting, NULL);
+            &NRFunctionTraceDecorator_Type, name, group, interesting, NULL);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -920,7 +920,7 @@ static PyObject *newrelic_wrap_function_trace(PyObject *self, PyObject *args,
     PyObject *object_name = NULL;
 
     PyObject *name = Py_None;
-    PyObject *scope = Py_None;
+    PyObject *group = Py_None;
     PyObject *interesting = Py_True;
 
     PyObject *wrapped_object = NULL;
@@ -931,13 +931,13 @@ static PyObject *newrelic_wrap_function_trace(PyObject *self, PyObject *args,
 
     PyObject *result = NULL;
 
-    static char *kwlist[] = { "module", "object_name", "name", "scope",
+    static char *kwlist[] = { "module", "object_name", "name", "group",
                               "interesting", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds,
                                      "OS|OOO!:wrap_function_trace",
                                      kwlist, &module, &object_name, &name,
-                                     &scope, &PyBool_Type, &interesting)) {
+                                     &group, &PyBool_Type, &interesting)) {
         return NULL;
     }
 
@@ -984,7 +984,7 @@ static PyObject *newrelic_wrap_function_trace(PyObject *self, PyObject *args,
 
     wrapper_object = PyObject_CallFunctionObjArgs((PyObject *)
             &NRFunctionTraceWrapper_Type, wrapped_object, name,
-            scope, interesting, NULL);
+            group, interesting, NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object,
             attribute_name, wrapper_object);
@@ -1079,17 +1079,17 @@ static PyObject *newrelic_name_transaction(PyObject *self, PyObject *args,
                                            PyObject *kwds)
 {
     PyObject *name = Py_None;
-    PyObject *scope = Py_None;
+    PyObject *group = Py_None;
 
-    static char *kwlist[] = { "name", "scope", NULL };
+    static char *kwlist[] = { "name", "group", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|OO:name_transaction",
-                                     kwlist, &name, &scope)) {
+                                     kwlist, &name, &group)) {
         return NULL;
     }
 
     return PyObject_CallFunctionObjArgs((PyObject *)
-            &NRNameTransactionDecorator_Type, name, scope, NULL);
+            &NRNameTransactionDecorator_Type, name, group, NULL);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1101,7 +1101,7 @@ static PyObject *newrelic_wrap_name_transaction(PyObject *self, PyObject *args,
     PyObject *object_name = NULL;
 
     PyObject *name = Py_None;
-    PyObject *scope = Py_None;
+    PyObject *group = Py_None;
 
     PyObject *wrapped_object = NULL;
     PyObject *parent_object = NULL;
@@ -1111,12 +1111,12 @@ static PyObject *newrelic_wrap_name_transaction(PyObject *self, PyObject *args,
 
     PyObject *result = NULL;
 
-    static char *kwlist[] = { "module", "object_name", "name", "scope", NULL };
+    static char *kwlist[] = { "module", "object_name", "name", "group", NULL };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds,
                                      "OS|OO:wrap_name_transaction",
                                      kwlist, &module, &object_name,
-                                     &name, &scope)) {
+                                     &name, &group)) {
         return NULL;
     }
 
@@ -1163,7 +1163,7 @@ static PyObject *newrelic_wrap_name_transaction(PyObject *self, PyObject *args,
 
     wrapper_object = PyObject_CallFunctionObjArgs((PyObject *)
             &NRNameTransactionWrapper_Type, wrapped_object, name,
-            scope, NULL);
+            group, NULL);
 
     result = NRUtilities_ReplaceWithWrapper(parent_object,
             attribute_name, wrapper_object);

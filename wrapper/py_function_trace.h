@@ -29,7 +29,7 @@ typedef struct {
     PyObject *next_object;
     PyObject *last_object;
     PyObject *name;
-    PyObject *scope;
+    PyObject *group;
     int interesting;
 } NRFunctionTraceWrapperObject;
 
@@ -38,7 +38,7 @@ extern PyTypeObject NRFunctionTraceWrapper_Type;
 typedef struct {
     PyObject_HEAD
     PyObject *name;
-    PyObject *scope;
+    PyObject *group;
     int interesting;
 } NRFunctionTraceDecoratorObject;
 

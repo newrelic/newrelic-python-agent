@@ -46,7 +46,7 @@ extern PyObject *NRUtilities_ObfuscateTransactionName(const char *name,
 
 extern PyObject *NRUtilities_FormatObject(PyObject *object);
 
-extern PyObject *NRUtilities_ConstructPath(PyObject *name, PyObject *scope);
+extern PyObject *NRUtilities_ConstructPath(PyObject *name, PyObject *group);
 
 /* ------------------------------------------------------------------------- */
 

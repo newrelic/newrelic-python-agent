@@ -607,13 +607,13 @@ PyObject *NRUtilities_FormatObject(PyObject *object)
 
 /* ------------------------------------------------------------------------- */
 
-extern PyObject *NRUtilities_ConstructPath(PyObject *name, PyObject *scope)
+extern PyObject *NRUtilities_ConstructPath(PyObject *name, PyObject *group)
 {
     PyObject *name_as_bytes = NULL;
-    PyObject *scope_as_bytes = NULL;
+    PyObject *group_as_bytes = NULL;
 
     const char *name_as_char = NULL;
-    const char *scope_as_char = NULL;
+    const char *group_as_char = NULL;
 
     PyObject *result = NULL;
 
@@ -623,10 +623,10 @@ extern PyObject *NRUtilities_ConstructPath(PyObject *name, PyObject *scope)
         return NULL;
     }
 
-    if (!PyString_Check(scope) && !PyUnicode_Check(scope) &&
-        scope != Py_None) {
+    if (!PyString_Check(group) && !PyUnicode_Check(group) &&
+        group != Py_None) {
         PyErr_Format(PyExc_TypeError, "expected string, Unicode or None for "
-                     "scope, found type '%s'", scope->ob_type->tp_name);
+                     "group, found type '%s'", group->ob_type->tp_name);
         return NULL;
     }
 
@@ -643,31 +643,31 @@ extern PyObject *NRUtilities_ConstructPath(PyObject *name, PyObject *scope)
     if (*name_as_char == '\0')
         name_as_char = "<unknown>";
 
-    if (scope != Py_None) {
-        if (PyUnicode_Check(scope)) {
-            scope_as_bytes = PyUnicode_AsUTF8String(scope);
-            scope_as_char = PyString_AsString(scope_as_bytes);
+    if (group != Py_None) {
+        if (PyUnicode_Check(group)) {
+            group_as_bytes = PyUnicode_AsUTF8String(group);
+            group_as_char = PyString_AsString(group_as_bytes);
         }
         else {
-            Py_INCREF(scope);
-            scope_as_bytes = scope;
-            scope_as_char = PyString_AsString(scope);
+            Py_INCREF(group);
+            group_as_bytes = group;
+            group_as_char = PyString_AsString(group);
         }
 
-        while (*scope_as_char == '/')
-            scope_as_char++;
+        while (*group_as_char == '/')
+            group_as_char++;
 
-        if (*scope_as_char == '\0')
-            scope_as_char = NULL;
+        if (*group_as_char == '\0')
+            group_as_char = NULL;
     }
 
-    if (scope_as_char)
-        result = PyString_FromFormat("%s/%s", scope_as_char, name_as_char);
+    if (group_as_char)
+        result = PyString_FromFormat("%s/%s", group_as_char, name_as_char);
     else
         result = PyString_FromFormat("Function/%s", name_as_char);
 
     Py_XDECREF(name_as_bytes);
-    Py_XDECREF(scope_as_bytes);
+    Py_XDECREF(group_as_bytes);
 
     return result;
 }

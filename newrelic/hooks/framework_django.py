@@ -237,7 +237,7 @@ class name_RegexURLResolver_resolve_Resolver404(newrelic.api.object_wrapper.Obje
     def __call__(self, *args, **kwargs):
 
 	# Captures a Resolver404 exception and names the
-	# web transaction as a generic 404 with scope
+	# web transaction as a generic 404 with group
 	# 'Uri'. This is to avoid problem of metric
 	# explosion on URLs which didn't actually map to
 	# a valid resource. If there is a 404 handler then
@@ -251,7 +251,7 @@ class name_RegexURLResolver_resolve_Resolver404(newrelic.api.object_wrapper.Obje
             try:
                 return self.__next_object__(*args, **kwargs)
             except Resolver404:
-                txn.name_transaction('404', scope='Uri')
+                txn.name_transaction('404', group='Uri')
                 raise
             except:
                 raise
@@ -432,17 +432,17 @@ def instrument(module):
         # name of the method changed in between Django versions
         # so need to check for which one we have. The name of
         # the function trace node is taken from the name of the
-        # template. An explicit scope is given so can recognise
+        # template. An explicit group is given so can recognise
         # this as template rendering time.
 
         if hasattr(module.Template, '_render'):
             newrelic.api.function_trace.wrap_function_trace(
                     module, 'Template._render',
-                    name=name_Template_render, scope='Template/Render')
+                    name=name_Template_render, group='Template/Render')
         else:
             newrelic.api.function_trace.wrap_function_trace(
                     module, 'Template.render',
-                    name=name_Template_render, scope='Template/Render')
+                    name=name_Template_render, group='Template/Render')
 
         # Register template tags for RUM header/footer.
         #

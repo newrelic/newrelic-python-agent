@@ -31,7 +31,6 @@ class Agent(object):
         
         self._applications = {}
         self._harvester = Harvester(self._remote,60)
-        self.add_application(Application(self._remote, ["Python Test"]))
 
     def add_application(self,app):
         self._applications[app.primary_name()] = app

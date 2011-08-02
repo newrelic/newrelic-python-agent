@@ -11,7 +11,7 @@ _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
 class BackgroundTask(newrelic.api.transaction.Transaction):
 
-    def __init__(self, application, name, scope=None):
+    def __init__(self, application, name, group=None):
 
         # Initialise the common transaction base class.
 
@@ -29,7 +29,7 @@ class BackgroundTask(newrelic.api.transaction.Transaction):
 
         # Name the web transaction from supplied values.
 
-        self.name_transaction(name, scope)
+        self.name_transaction(name, group)
 
 if _agent_mode not in ('julunggul',):
     import _newrelic
@@ -37,7 +37,7 @@ if _agent_mode not in ('julunggul',):
 
 class BackgroundTaskWrapper(object):
 
-    def __init__(self, wrapped, application=None, name=None, scope=None):
+    def __init__(self, wrapped, application=None, name=None, group=None):
         if type(wrapped) == types.TupleType:
             (instance, wrapped) = wrapped
         else:
@@ -56,14 +56,14 @@ class BackgroundTaskWrapper(object):
 
         self._nr_application = application
         self._nr_name = name
-        self._nr_scope = scope
+        self._nr_group = group
 
     def __get__(self, instance, klass):
         if instance is None:
             return self
         descriptor = self._nr_next_object.__get__(instance, klass)
         return self.__class__((instance, descriptor), self._nr_application,
-                              self._nr_name, self._nr_scope)
+                              self._nr_name, self._nr_group)
 
     def __call__(self, *args, **kwargs):
         transaction = newrelic.api.transaction.transaction()
@@ -79,14 +79,14 @@ class BackgroundTaskWrapper(object):
         else:
             name = self._nr_name
 
-        if self._nr_scope is not None and not isinstance(
-                self._nr_scope, basestring):
+        if self._nr_group is not None and not isinstance(
+                self._nr_group, basestring):
             if self._nr_instance and inspect.ismethod(self._nr_next_object):
-                scope = self._nr_scope(*((self._nr_instance,)+args), **kwargs)
+                group = self._nr_group(*((self._nr_instance,)+args), **kwargs)
             else:
-                scope = self._nr_scope(*args, **kwargs)
+                group = self._nr_group(*args, **kwargs)
         else:
-            scope = self._nr_scope
+            group = self._nr_group
 
 	# Check to see if we are being called within the context
 	# of a web transaction. If we are, then we will just
@@ -103,7 +103,7 @@ class BackgroundTaskWrapper(object):
 
                 if not transaction.background_task:
                     transaction.background_task = True
-                    transaction.name_transaction(name, scope)
+                    transaction.name_transaction(name, group)
 
             return self._nr_next_object(*args, **kwargs)
 
@@ -111,7 +111,7 @@ class BackgroundTaskWrapper(object):
 
         try:
             success = True
-            manager = BackgroundTask(self._nr_application, name, scope)
+            manager = BackgroundTask(self._nr_application, name, group)
             manager.__enter__()
             try:
                 return self._nr_next_object(*args, **kwargs)
@@ -123,15 +123,15 @@ class BackgroundTaskWrapper(object):
             if success:
                 manager.__exit__(None, None, None)
 
-def background_task(application=None, name=None, scope=None):
+def background_task(application=None, name=None, group=None):
     def decorator(wrapped):
-        return BackgroundTaskWrapper(wrapped, application, name, scope)
+        return BackgroundTaskWrapper(wrapped, application, name, group)
     return decorator
 
 def wrap_background_task(module, object_path, application=None, name=None,
-                         scope=None):
+                         group=None):
     newrelic.api.object_wrapper.wrap_object(module, object_path,
-            BackgroundTaskWrapper, (application, name, scope))
+            BackgroundTaskWrapper, (application, name, group))
 
 if not _agent_mode in ('ungud', 'julunggul'):
     import _newrelic

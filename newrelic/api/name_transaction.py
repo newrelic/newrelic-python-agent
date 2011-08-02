@@ -9,7 +9,7 @@ _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
 class NameTransactionWrapper(object):
 
-    def __init__(self, wrapped, name=None, scope=None):
+    def __init__(self, wrapped, name=None, group=None):
         if type(wrapped) == types.TupleType:
             (instance, wrapped) = wrapped
         else:
@@ -24,14 +24,14 @@ class NameTransactionWrapper(object):
             self._nr_last_object = wrapped
 
         self._nr_name = name
-        self._nr_scope = scope
+        self._nr_group = group
 
     def __get__(self, instance, klass):
         if instance is None:
             return self
         descriptor = self._nr_next_object.__get__(instance, klass)
         return self.__class__((instance, descriptor),
-                self._nr_name, self._nr_scope)
+                self._nr_name, self._nr_group)
 
     def __call__(self, *args, **kwargs):
         transaction = newrelic.api.transaction.transaction()
@@ -49,24 +49,24 @@ class NameTransactionWrapper(object):
         elif not isinstance(self._nr_name, basestring):
             name = self._nr_name(*fnargs, **kwargs)
 
-        if self._nr_scope is not None and not isinstance(
-                self._nr_scope, basestring):
-            scope = self.nr_scope(*fnargs, **kwargs)
+        if self._nr_group is not None and not isinstance(
+                self._nr_group, basestring):
+            group = self.nr_group(*fnargs, **kwargs)
         else:
-            scope = self._nr_scope
+            group = self._nr_group
 
-        transaction.name_transaction(name, scope)
+        transaction.name_transaction(name, group)
 
         return self._nr_next_object(*args, **kwargs)
 
-def name_transaction(name=None, scope=None):
+def name_transaction(name=None, group=None):
     def decorator(wrapped):
-        return NameTransactionWrapper(wrapped, name, scope)
+        return NameTransactionWrapper(wrapped, name, group)
     return decorator
 
-def wrap_name_transaction(module, object_path, name=None, scope=None):
+def wrap_name_transaction(module, object_path, name=None, group=None):
     newrelic.api.object_wrapper.wrap_object(module, object_path,
-            NameTransactionWrapper, (name, scope))
+            NameTransactionWrapper, (name, group))
 
 if not _agent_mode in ('ungud', 'julunggul'):
     import _newrelic

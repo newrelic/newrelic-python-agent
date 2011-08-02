@@ -50,7 +50,7 @@ class FunctionProfile(object):
                         (func_line_no, func_filename)
 
             function_trace = newrelic.api.function_trace.FunctionTrace(
-                    transaction, name=name, scope="Python/Profile",
+                    transaction, name=name, group="Python/Profile",
                     interesting=self.interesting)
             function_trace.__enter__()
             self.function_traces.append(function_trace)

@@ -30,6 +30,7 @@ class Application(object):
         self._service = NewRelicService(remote, app_names)
         self._stats_lock = threading.Lock()
         self._stats_dict = None
+        # we could pull this queue and its processor up to the agent
         self._work_queue = Queue.Queue(10)
         self._work_thread = QueueProcessingThread(("New Relic Worker Thread (%s)" % str(app_names)),self._work_queue)
         self._work_thread.start()
@@ -70,6 +71,9 @@ class Application(object):
         if stats is not None:
             print "Recording CPU metrics"
             self._cpu_times.record(stats)
+            
+    def primary_name(self):
+        return self._app_names[0]
 
     def parse_metric_response(self,res):
         print "Metric data response: %s" % str(res)

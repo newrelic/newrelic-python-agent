@@ -29,22 +29,26 @@ class Agent(object):
         print "Starting the New Relic agent"
         self._remote = JSONRemote(config.license_key, config.host, config.port)
         
-        self._applications = []
+        self._applications = {}
         self._harvester = Harvester(self._remote,60)
         self.add_application(Application(self._remote, ["Python Test"]))
 
     def add_application(self,app):
-        self._applications.append(app)
+        self._applications[app.primary_name()] = app
         self._harvester.register_harvest_listener(app)
-        
+            
     def get_applications(self):
+        """
+        Returns a dictionary of applications keyed off the application name. 
+        """
         return self.__applications
 
             
     def stop(self):
-        for app in self._applications:
+        for app in self._applications.itervalues():
             app.stop()
         self._harvester.stop()
+        self._applications.clear()
 
     def get_remote(self):
         return self._remote

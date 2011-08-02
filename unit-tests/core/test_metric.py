@@ -35,7 +35,7 @@ class TestMetric(unittest.TestCase):
         
     def test_json(self):
         m = metric.new_metric(u"foo")
-        s = json.dumps(m, cls=NRJSONEncoder)
+        s = json.dumps(m._asdict())
         self.assertEqual("{\"name\": \"foo\", \"scope\": \"\"}", s)
         print s
 

@@ -63,6 +63,12 @@ class NewRelicService(object):
             
         return self.connected()
     
+    def send_error_data(self,conn,error_data):
+        if not self.connected():
+            raise "Not connected"
+        res = self.invoke_remote(conn,"error_data",True,self._agent_run_id,self._agent_run_id,error_data)
+        return res         
+    
     def send_metric_data(self,conn,metric_data):
         if not self.connected():
             raise "Not connected"
@@ -123,6 +129,7 @@ class NRJSONEncoder(json.JSONEncoder):
             return list(iterable)
         return json.JSONEncoder.default(self, o)
     
+'''
     def iterencode(self, obj, _one_shot=False):
         if hasattr(obj, '_asdict'):
             gen = json.JSONEncoder.iterencode(self, obj._asdict(), _one_shot=False)
@@ -130,6 +137,7 @@ class NRJSONEncoder(json.JSONEncoder):
             gen = json.JSONEncoder.iterencode(self, obj, _one_shot)
         for chunk in gen:
             yield chunk
+'''
 
 class JSONRemote(object):
     '''

@@ -7,6 +7,7 @@ Created on Jul 26, 2011
 import unittest
 from newrelic.core.remote import JSONRemote,NewRelicService
 from newrelic.core.exceptions import ForceRestartException
+from newrelic.core.error_collector import TracedError,error_parameters
 
 class NewRelicServiceTest(unittest.TestCase):
         
@@ -27,9 +28,19 @@ class NewRelicServiceTest(unittest.TestCase):
         remote = JSONRemote("d67afc830dab717fd163bfcb0b8b88423e9a1a3b", "staging-collector.newrelic.com", 80)
         service = NewRelicService(remote,app_names=["Python Unit Test1"])
         conn = remote.create_connection()
-        service.connect(conn)
+        self.assertTrue(service.connect(conn))
         metric_data = [[{"name":"foo"},[1,1,1,1,1,1]]]
         service.send_metric_data(conn, metric_data)
+        conn.close()
+        
+    def test_send_error_data(self):
+        remote = JSONRemote("d67afc830dab717fd163bfcb0b8b88423e9a1a3b", "staging-collector.newrelic.com", 80)
+        service = NewRelicService(remote,app_names=["Python Unit Test1"])
+        conn = remote.create_connection()
+        self.assertTrue(service.connect(conn))
+        params = error_parameters("/test",["foo","bar"],{"test":"true"},{"custom":"true"}) #,{"Http Headers":{"User-Agent":"Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)"}})
+        service.send_error_data(conn, [TracedError(start_time=0,path="/WebTransaction/Uri/test",message='This is an error',type='RuntimeError',
+                            parameters=params)])
         conn.close()
 
 class JSONRemoteTest(unittest.TestCase):

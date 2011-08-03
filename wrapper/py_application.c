@@ -321,8 +321,8 @@ static int NRApplication_set_enabled(NRApplicationObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRApplication_get_running(NRApplicationObject *self,
-                                           void *closure)
+static PyObject *NRApplication_get_active(NRApplicationObject *self,
+                                          void *closure)
 {
     int result = 0;
 
@@ -608,7 +608,7 @@ static PyGetSetDef NRApplication_getset[] = {
                             NULL, 0 },
     { "enabled",            (getter)NRApplication_get_enabled,
                             (setter)NRApplication_set_enabled, 0 },
-    { "running",            (getter)NRApplication_get_running,
+    { "active",             (getter)NRApplication_get_active,
                             NULL, 0 },
     { NULL },
 };

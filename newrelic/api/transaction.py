@@ -4,7 +4,7 @@ import weakref
 import threading
 import collections
 
-import newrelic.api.settings
+import newrelic.core.config
 
 _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
@@ -94,9 +94,9 @@ class Transaction(object):
         self.ignored_params = []
         self.response_code = 0
 
-        settings = newrelic.api.settings.settings()
+        global_settings = newrelic.core.config.global_settings()
 
-        if settings.monitor_mode:
+        if global_settings.monitor_mode:
             if enabled or (enabled is None and application.enabled):
                 self.enabled = True
 

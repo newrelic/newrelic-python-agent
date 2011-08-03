@@ -289,6 +289,20 @@ static PyObject *NRApplication_get_clusters(NRApplicationObject *self,
 
 /* ------------------------------------------------------------------------- */
 
+static PyObject *NRApplication_get_settings(NRApplicationObject *self,
+                                            void *closure)
+{
+    /*
+     * There is only one global settings object across the whole
+     * process and not one per application per interpreter, so
+     * just return that.
+     */
+
+    return NRSettings_Singleton();
+}
+
+/* ------------------------------------------------------------------------- */
+
 static PyObject *NRApplication_get_enabled(NRApplicationObject *self,
                                            void *closure)
 {
@@ -603,6 +617,8 @@ static PyMethodDef NRApplication_methods[] = {
 
 static PyGetSetDef NRApplication_getset[] = {
     { "name",               (getter)NRApplication_get_name,
+                            NULL, 0 },
+    { "settings",           (getter)NRApplication_get_settings,
                             NULL, 0 },
     { "clusters",           (getter)NRApplication_get_clusters,
                             NULL, 0 },

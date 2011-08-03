@@ -1119,20 +1119,6 @@ static PyObject *NRTransaction_get_application(NRTransactionObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRTransaction_get_settings(NRTransactionObject *self,
-                                            void *closure)
-{
-    /*
-     * There is only one global settings object across the whole
-     * process and not one per application per interpreter, so
-     * just return that.
-     */
-
-    return NRSettings_Singleton();
-}
-
-/* ------------------------------------------------------------------------- */
-
 static PyObject *NRTransaction_get_ignore(NRTransactionObject *self,
                                           void *closure)
 {
@@ -1448,8 +1434,6 @@ static PyMethodDef NRTransaction_methods[] = {
 
 static PyGetSetDef NRTransaction_getset[] = {
     { "application",        (getter)NRTransaction_get_application,
-                            NULL, 0 },
-    { "settings",           (getter)NRTransaction_get_settings,
                             NULL, 0 },
     { "ignore",             (getter)NRTransaction_get_ignore,
                             (setter)NRTransaction_set_ignore, 0 },

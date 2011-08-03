@@ -6,6 +6,10 @@ _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
 settings = newrelic.core.config.settings
 
+RECORDSQL_OFF = 'off'
+RECORDSQL_RAW = 'raw'
+RECORDSQL_OBFUSCATED = 'obfuscated'
+
 if _agent_mode not in ('julunggul',):
     import _newrelic
     settings = _newrelic.settings

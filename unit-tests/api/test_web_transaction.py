@@ -178,8 +178,7 @@ class WebTransactionTests(unittest.TestCase):
                 application, environ)
         with transaction:
             self.assertFalse(transaction.enabled)
-            self.assertEqual(newrelic.api.transaction.transaction(),
-                    transaction)
+            self.assertEqual(newrelic.api.transaction.transaction(), None)
         application.enabled = True
 
     def test_environ_enabled_bool(self):
@@ -201,8 +200,7 @@ class WebTransactionTests(unittest.TestCase):
                 application, environ)
         with transaction:
             self.assertFalse(transaction.enabled)
-            self.assertEqual(newrelic.api.transaction.transaction(),
-                    transaction)
+            self.assertEqual(newrelic.api.transaction.transaction(), None)
 
     def test_environ_enabled_string(self):
         application.enabled = False
@@ -223,8 +221,7 @@ class WebTransactionTests(unittest.TestCase):
                 application, environ)
         with transaction:
             self.assertFalse(transaction.enabled)
-            self.assertEqual(newrelic.api.transaction.transaction(),
-                    transaction)
+            self.assertEqual(newrelic.api.transaction.transaction(), None)
 
     def test_ignore_web_transaction(self):
         environ = { "REQUEST_URI": "/ignore_web_transaction" }

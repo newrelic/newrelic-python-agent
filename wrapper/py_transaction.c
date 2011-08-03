@@ -560,6 +560,17 @@ static PyObject *NRTransaction_enter(NRTransactionObject *self,
         return NULL;
     }
 
+    /*
+     * If application was not enabled and so we are running
+     * as a dummy transaction then return without actually
+     * doing anything.
+     */
+
+    if (!self->transaction) {
+        Py_INCREF(self);
+        return (PyObject *)self;
+    }
+
     self->transaction_state = NR_TRANSACTION_STATE_RUNNING;
 
     /*
@@ -575,17 +586,6 @@ static PyObject *NRTransaction_enter(NRTransactionObject *self,
         return NULL;
 
     Py_DECREF(result);
-
-    /*
-     * If application was not enabled and so we are running
-     * as a dummy transaction then return without actually
-     * doing anything.
-     */
-
-    if (!self->transaction) {
-        Py_INCREF(self);
-        return (PyObject *)self;
-    }
 
     /*
      * Start timing for the current transaction.
@@ -615,6 +615,17 @@ static PyObject *NRTransaction_exit(NRTransactionObject *self,
 
     if (!PyArg_ParseTuple(args, "OOO:__exit__", &type, &value, &traceback))
         return NULL;
+
+    /*
+     * If application was not enabled and so we are running
+     * as a dummy transaction then return without actually
+     * doing anything.
+     */
+
+    if (!self->transaction) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
 
     if (self->transaction_state != NR_TRANSACTION_STATE_RUNNING) {
         PyErr_SetString(PyExc_RuntimeError, "transaction not active");

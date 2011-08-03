@@ -1443,6 +1443,9 @@ static PyGetSetDef NRTransaction_getset[] = {
                             NULL, 0 },
     { "enabled",            (getter)NRTransaction_get_enabled,
                             NULL, 0 },
+    /* Alias active to enabled for now, although not strictly correct. */
+    { "active",             (getter)NRTransaction_get_enabled,
+                            NULL, 0 },
     { "coroutines",         (getter)NRTransaction_get_coroutines,
                             NULL, 0 },
     { "background_task",    (getter)NRTransaction_get_background_task,

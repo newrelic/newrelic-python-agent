@@ -69,7 +69,7 @@ class FunctionProfileWrapper(newrelic.api.object_wrapper.ObjectWrapper):
 
     def __call__(self, *args, **kwargs):
         transaction = newrelic.api.transaction.transaction()
-        if not transaction:
+        if not transaction or not transaction.active:
             return self.__next_object__(*args, **kwargs)
         if transaction.coroutines:
             return self.__next_object__(*args, **kwargs)

@@ -86,7 +86,7 @@ class DatabaseTraceWrapper(object):
 
     def __call__(self, *args, **kwargs):
         transaction = newrelic.api.transaction.transaction()
-        if not transaction:
+        if not transaction or not transaction.active:
             return self._nr_next_object(*args, **kwargs)
 
         if not isinstance(self._nr_sql, basestring):

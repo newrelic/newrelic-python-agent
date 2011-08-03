@@ -1,7 +1,7 @@
 import os
 import threading
 
-import _newrelic
+import newrelic.core.config
 
 _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
@@ -36,8 +36,14 @@ class Application(object):
         return self._clusters.keys()
 
     @property
-    def running(self):
-        return True
+    def settings(self):
+        # XXX For now return global settings.
+        #return newrelic.core.config.application_settings(self._name)
+        return newrelic.core.config.global_settings()
+
+    @property
+    def active(self):
+        return self.settings is not None
 
     def add_to_cluster(self, name):
         self._clusters[name] = True

@@ -69,6 +69,7 @@ class Transaction(object):
     def __init__(self, application, enabled=None):
         self._application = application
 
+        self._active = False
         self._state = STATE_PENDING
 
         self._path = '<unknown>'
@@ -108,20 +109,31 @@ class Transaction(object):
 
         assert(self._state == STATE_PENDING)
 
-	# Mark as started and cache transaction in
-	# thread/coroutine local storage so that it can
-	# be accessed from anywhere in the context of
-	# the transaction.
-
-        self._state = STATE_RUNNING
-        self._save_transaction(self)
-
-	# Bail out if the transaction is running in a
-	# disabled state.
-        
+        # Bail out if the transaction is not enabled.
 
         if not self.enabled:
             return
+
+	# Cache transaction in thread/coroutine local
+	# storage so that it can be accessed from
+	# anywhere in the context of the transaction.
+        # This is done even though transaction will
+        # not collect data because application is not
+        # active.
+
+        self._save_transaction(self)
+
+	# Bail out if the application isn't marked as
+	# active.
+
+        if not self.application.active:
+            return
+
+	# Mark transaction as active and update state
+        # used to validate correct usage of class.
+
+        self._active = True
+        self._state = STATE_RUNNING
 
         # Record the start time for transaction.
 
@@ -144,17 +156,7 @@ class Transaction(object):
 
     def __exit__(self, exc, value, tb):
 
-        if self._state != STATE_RUNNING:
-            return
-
-	# Bail out if the transaction is running in a
-	# disabled state. Still need to mark as stopped
-	# and drop the transaction from thread/coroutine
-	# local storage.
-
-        if not self.enabled:
-            self._drop_transaction(self)
-            self._state = STATE_STOPPED
+        if not self._active:
             return
 
         # Record error if one was registered.
@@ -170,7 +172,9 @@ class Transaction(object):
 	# thread/coroutine local storage.
 
         self._drop_transaction(self)
+
         self._state = STATE_STOPPED
+        self._active = False
 
         children = self._node_stack.pop()._children
 
@@ -192,13 +196,15 @@ class Transaction(object):
                 queue_start=self._queue_start, start_time=self._start_time,
                 end_time=self._end_time)
 
+        #print 'NODES', nodes
+
     @property
     def state(self):
         return self._state
 
     @property
     def active(self):
-        return self.enabled and self._state == STATE_RUNNING
+        return self._active
 
     @property
     def application(self):
@@ -213,7 +219,7 @@ class Transaction(object):
 	# Bail out if the transaction is running in a
 	# disabled state.
 
-        if not self.enabled:
+        if not self.active:
             return
 
         if prefix is None:
@@ -226,7 +232,7 @@ class Transaction(object):
 	# Bail out if the transaction is running in a
 	# disabled state.
 
-        if not self.enabled:
+        if not self.active:
             return
 
         # Has to be an error to be logged.

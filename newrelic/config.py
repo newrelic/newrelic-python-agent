@@ -180,6 +180,20 @@ def _process_setting(section, option, getter, mapper):
 def _process_configuration(section):
     _process_setting(section, 'app_name',
                      'get', _map_app_name)
+    _process_setting(section, 'license_key',
+                     'get', None)
+    _process_setting(section, 'host',
+                     'get', None)
+    _process_setting(section, 'port',
+                     'getint', None)
+    _process_setting(section, 'proxy_host',
+                     'get', None)
+    _process_setting(section, 'proxy_port',
+                     'getint', None)
+    _process_setting(section, 'proxy_user',
+                     'get', None)
+    _process_setting(section, 'proxy_pass',
+                     'get', None)
     _process_setting(section, 'monitor_mode',
                      'getboolean', None)
     _process_setting(section, 'capture_params',

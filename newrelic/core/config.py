@@ -22,8 +22,20 @@ class Settings(object):
 
 _settings = Settings()
 
+_settings.license_key = None
+
+_settings.host = 'collector.newrelic.com'
+_settings.port = 80
+
+_settings.proxy_host = None
+_settings.proxy_port = None
+_settings.proxy_user = None
+_settings.proxy_pass = None
+
 _settings.app_name = 'Python Application'
+
 _settings.monitor_mode = True
+
 _settings.apdex_t = 0.5
 _settings.capture_params = True
 _settings.ignored_params = []

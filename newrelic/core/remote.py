@@ -5,7 +5,7 @@ Created on Jul 26, 2011
 '''
 import json,httplib,os,socket,string,time
 from newrelic.core.exceptions import raise_newrelic_exception,ForceRestartException,ForceShutdownException
-from newrelic.core.config import create_configuration
+from newrelic.core.config import create_settings_snapshot
 from newrelic.core import environment
 
 class NewRelicService(object):
@@ -104,7 +104,7 @@ class NewRelicService(object):
         # we're hardcoded to a 1 minute harvest
         response.pop("data_report_period")
         
-        self._configuration = create_configuration(response)
+        self._configuration = create_settings_snapshot(response)
         
     def invoke_remote(self, connection, method, compress = True, agent_run_id = None, *args):
         try:

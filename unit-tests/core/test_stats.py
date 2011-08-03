@@ -6,7 +6,7 @@ Created on Jul 25, 2011
 from newrelic.core.stats import TimeStats
 from newrelic.core.stats import ApdexStats
 from newrelic.core.stats import StatsDict
-from newrelic.core.config import create_configuration
+from newrelic.core.config import create_settings_snapshot
 from newrelic.core.metric import new_metric,Metric
 from newrelic.core.remote import NRJSONEncoder
 import unittest,collections,json
@@ -14,7 +14,7 @@ import unittest,collections,json
 class ApdexStatsTest(unittest.TestCase):
     
     def test_record(self):
-        apdex = create_configuration()
+        apdex = create_settings_snapshot()
         s = ApdexStats(apdex)
         
         s.record(0.4)
@@ -32,7 +32,7 @@ class ApdexStatsTest(unittest.TestCase):
         self.assertEqual(1, s.frustrating)
 
     def test_clone(self):
-        apdex = create_configuration({"apdex_t":50})
+        apdex = create_settings_snapshot({"apdex_t":50})
         s = ApdexStats(apdex)
         s = s.clone()
         
@@ -51,7 +51,7 @@ class ApdexStatsTest(unittest.TestCase):
         self.assertEqual(1, s.tolerating)
         
     def test_merge(self):
-        apdex = create_configuration({"apdex_t":50})
+        apdex = create_settings_snapshot({"apdex_t":50})
         s1 = ApdexStats(apdex)
         
         s1.record(40)
@@ -142,7 +142,7 @@ class StatsDictTest(unittest.TestCase):
 
 
     def test_get_apdex_stats(self):        
-        d = StatsDict(create_configuration({"apdex_t":1}))
+        d = StatsDict(create_settings_snapshot({"apdex_t":1}))
         s = d.get_apdex_stats("test")
         
         s.record(0.555)
@@ -152,7 +152,7 @@ class StatsDictTest(unittest.TestCase):
         self.assertEqual(s,s2)
         
     def test_metric_data(self):
-        d = StatsDict(create_configuration({"apdex_t":1}))
+        d = StatsDict(create_settings_snapshot({"apdex_t":1}))
         s = d.get_time_stats(new_metric("foo"))
         s.record(0.12,0.12)
         s = d.get_time_stats(new_metric("bar"))
@@ -169,7 +169,7 @@ class StatsDictTest(unittest.TestCase):
         self.assertEqual("[[{\"name\": \"foo\", \"scope\": \"\"}, [1, 0.12, 0.12, 0.12, 0.12, 0.0144]], [{\"name\": \"bar\", \"scope\": \"\"}, [1, 0.34, 0.34, 0.34, 0.34, 0.11560000000000002]]]",s)
         
     def test_metric_data_with_ids(self):
-        d = StatsDict(create_configuration({"apdex_t":1}))
+        d = StatsDict(create_settings_snapshot({"apdex_t":1}))
         s = d.get_time_stats(Metric(u"foo",u""))
         s.record(0.12,0.12)
         

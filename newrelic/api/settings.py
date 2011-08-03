@@ -1,7 +1,14 @@
-import _newrelic
+import os
 
-settings = _newrelic.settings
+import newrelic.core.config
 
-RECORDSQL_OFF = _newrelic.RECORDSQL_OFF
-RECORDSQL_RAW = _newrelic.RECORDSQL_RAW
-RECORDSQL_OBFUSCATED = _newrelic.RECORDSQL_OBFUSCATED
+_agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
+
+settings = newrelic.core.config.settings
+
+if _agent_mode not in ('julunggul',):
+    import _newrelic
+    settings = _newrelic.settings
+    RECORDSQL_OFF = _newrelic.RECORDSQL_OFF
+    RECORDSQL_RAW = _newrelic.RECORDSQL_RAW
+    RECORDSQL_OBFUSCATED = _newrelic.RECORDSQL_OBFUSCATED

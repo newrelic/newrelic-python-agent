@@ -19,7 +19,7 @@ class NewRelicServiceTest(unittest.TestCase):
         self.assertNotEqual(None, service.agent_run_id)
         self.assertTrue(service.connected())
         print service.configuration
-        print service.configuration.server_settings
+        #print service.configuration.server_settings
         self.assertEqual(0.777, service.configuration.transaction_tracer.transaction_threshold)
         service.shutdown()
         self.assertEqual(None, service.agent_run_id)

@@ -3,7 +3,9 @@ Created on Jul 27, 2011
 
 @author: sdaubin
 '''
-import collections
+
+import newrelic.core.config
+
 from newrelic.core.remote import JSONRemote
 from newrelic.core.harvest import Harvester
 from newrelic.core.application import Application
@@ -16,13 +18,9 @@ def newrelic_agent():
     if _newrelic_agent:
         return _newrelic_agent
     else:
-        _newrelic_agent = Agent(_initialize_config())
+        global_settings = newrelic.core.config.global_settings()
+        _newrelic_agent = Agent(global_settings)
         return _newrelic_agent
-
-def _initialize_config():
-    # FIXME implement
-    Config = collections.namedtuple('Config', ['license_key', 'host','port'])
-    return Config("license","host",80)
 
 class Agent(object):
     def __init__(self,config):

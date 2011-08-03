@@ -4,7 +4,7 @@ import newrelic.core.config
 
 _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
-settings = newrelic.core.config.settings
+settings = newrelic.core.config.global_settings
 
 RECORDSQL_OFF = 'off'
 RECORDSQL_RAW = 'raw'

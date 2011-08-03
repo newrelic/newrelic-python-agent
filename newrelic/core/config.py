@@ -74,7 +74,7 @@ class DebugSettings(Settings): pass
 _settings.debug = DebugSettings()
 _settings.debug.local_settings_overrides = []
 
-def settings():
+def global_settings():
     """This returns the default global settings. Generally only used
     directly in test scripts and test harnesses or when applying global
     settings from agent configuration file. Making changes to the settings
@@ -83,7 +83,7 @@ def settings():
     the settings are obtained from the core application a snapshot of these
     settings will be taken.
 
-    >>> global_settings = settings()
+    >>> global_settings = global_settings()
     >>> global_settings.browser_monitoring.auto_instrument = False
     >>> global_settings.browser_monitoring.auto_instrument
     False
@@ -98,7 +98,7 @@ def apply_config_setting(settings_object, name, value):
     >>> name = 'browser_monitoring.auto_instrument'
     >>> value = False
     >>>
-    >>> global_settings = settings()
+    >>> global_settings = global_settings()
     >>> _apply_config_setting(global_settings, name, value)
 
     """
@@ -117,7 +117,7 @@ def fetch_config_setting(settings_object, name):
 
     >>> name = 'browser_monitoring.auto_instrument'
     >>>
-    >>> global_settings = settings()
+    >>> global_settings = global_settings()
     >>> _fetch_config_setting(global_settings, name)
     'browser_monitoring.auto_instrument'
 

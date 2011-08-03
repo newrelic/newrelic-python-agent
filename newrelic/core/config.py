@@ -27,14 +27,14 @@ _settings.monitor_mode = True
 _settings.apdex_t = 0.5
 _settings.capture_params = True
 _settings.ignored_params = []
-_settings.sampling_rate = 0 # XXX What is this for?
+_settings.sampling_rate = 0
 
 class TransactionTracerSettings(Settings): pass
 
 _settings.transaction_tracer = TransactionTracerSettings()
 _settings.transaction_tracer.enabled = True
-_settings.transaction_tracer.transaction_threshold = "apdex_f"
-_settings.transaction_tracer.record_sql = "obfuscated"
+_settings.transaction_tracer.transaction_threshold = 'apdex_f'
+_settings.transaction_tracer.record_sql = 'obfuscated'
 _settings.transaction_tracer.stack_trace_threshold = 0.5
 
 class ErrorCollectorSettings(Settings): pass

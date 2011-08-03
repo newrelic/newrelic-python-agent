@@ -3,9 +3,17 @@ Created on Jul 26, 2011
 
 @author: sdaubin
 '''
-import json,httplib,os,socket,string,time
+
+import os
+import json
+import httplib
+import socket
+import string
+import time
+
+import newrelic.core.config
+
 from newrelic.core.exceptions import raise_newrelic_exception,ForceRestartException,ForceShutdownException
-from newrelic.core.config import create_settings_snapshot
 from newrelic.core import environment
 
 class NewRelicService(object):
@@ -40,6 +48,12 @@ class NewRelicService(object):
                 #FIXME log
                 print ex
                 pass
+
+            # FIXME Need to resolve app naming issue.
+            name = self._app_names[0]
+            newrelic.core.config.drop_application_settings(name)
+            self._configuration = None
+
             self._agent_run_id = None
         
     def connected(self):
@@ -103,8 +117,12 @@ class NewRelicService(object):
         
         # we're hardcoded to a 1 minute harvest
         response.pop("data_report_period")
-        
-        self._configuration = create_settings_snapshot(response)
+
+        # FIXME Need to resolve app naming issue.
+        name = self._app_names[0]
+        settings = newrelic.core.config.create_settings_snapshot(response)
+        newrelic.core.config.save_application_settings(name, settings)
+        self._configuration = settings
         
     def invoke_remote(self, connection, method, compress = True, agent_run_id = None, *args):
         try:

@@ -9,7 +9,7 @@ from newrelic.core.agent import Agent, newrelic_agent
 
 import newrelic.core.config
 
-_settings = newrelic.core.config.settings()
+_settings = newrelic.core.config.global_settings()
 
 _settings.host = 'staging-collector.newrelic.com'
 _settings.port = 80

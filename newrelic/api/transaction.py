@@ -116,6 +116,13 @@ class Transaction(object):
         self._state = STATE_RUNNING
         self._save_transaction(self)
 
+	# Bail out if the transaction is running in a
+	# disabled state.
+        
+
+        if not self.enabled:
+            return
+
         # Record the start time for transaction.
 
         self._start_time = time.time()
@@ -136,8 +143,21 @@ class Transaction(object):
         return self
 
     def __exit__(self, exc, value, tb):
+
         if self._state != STATE_RUNNING:
             return
+
+	# Bail out if the transaction is running in a
+	# disabled state. Still need to mark as stopped
+	# and drop the transaction from thread/coroutine
+	# local storage.
+
+        if not self.enabled:
+            self._drop_transaction(self)
+            self._state = STATE_STOPPED
+            return
+
+        # Record error if one was registered.
 
         if exc is not None and value is not None and tb is not None:
             self.notice_error(exc, value, tb)
@@ -189,13 +209,35 @@ class Transaction(object):
         return self._path
 
     def name_transaction(self, name, prefix=None):
+
+	# Bail out if the transaction is running in a
+	# disabled state.
+
+        if not self.enabled:
+            return
+
         if prefix is None:
             prefix = 'Function'
         self._path = "%s/%s" % (prefix, name)
         self._path_type = PATH_TYPE_RAW
 
     def notice_error(self, exc, value, tb, params={}):
-        pass
+
+	# Bail out if the transaction is running in a
+	# disabled state.
+
+        if not self.enabled:
+            return
+
+        # Has to be an error to be logged.
+
+        if exc is None or value is None or tb is None:
+            return
+
+        # XXX Need to ignore if listed to be ignore in
+        # global settings.
+
+        # XXX Need to capture error into list of errors.
 
 def transaction():
     return Transaction._current_transaction()

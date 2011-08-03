@@ -10,13 +10,36 @@ _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 class ErrorTrace(object):
 
     def __init__(self, transaction, ignore_errors):
-        pass
+        self._transaction = transaction
+        self._ignore_errors = ignore_errors
+
+        self._enabled = False
 
     def __enter__(self):
+        if not self._transaction.active:
+            return
+
+        self._enabled = True
+
         return self
 
     def __exit__(self, exc, value, tb):
-        pass
+        if not self._enabled:
+            return
+
+        if hasattr(exc, '__class__'):
+            module = exc.__class__.__module__
+            name = exc.__class__.__name__
+
+            if module:
+                path = '%s.%s' % (module, name)
+            else:
+                path = name
+
+            if path in self._ignore_errors:
+                return
+
+        self._transaction.notice_error(exc, value, tb)
 
 if _agent_mode not in ('julunggul',):
     import _newrelic

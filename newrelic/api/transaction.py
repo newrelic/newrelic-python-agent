@@ -72,8 +72,8 @@ class Transaction(object):
     def __init__(self, application, enabled=None):
         self._application = application
 
-        self._active = False
         self._state = STATE_PENDING
+        self._settings = None
 
         self._group = None
         self._name = None
@@ -130,15 +130,22 @@ class Transaction(object):
         self._save_transaction(self)
 
 	# Bail out if the application isn't marked as
-	# active.
+	# active. An application isn't active if we
+	# cannot retrieve a settings object for it. We
+	# cache the settings object so we know it will
+	# not dissapear during the life of the
+	# transaction and so can be used by anything
+	# executing within the context of the
+	# transaction.
 
-        if not self.application.active:
+        self._settings = self._application.settings
+
+        if not self._settings:
             return
 
 	# Mark transaction as active and update state
         # used to validate correct usage of class.
 
-        self._active = True
         self._state = STATE_RUNNING
 
         # Record the start time for transaction.
@@ -162,7 +169,7 @@ class Transaction(object):
 
     def __exit__(self, exc, value, tb):
 
-        if not self._active:
+        if not self._settings:
             return
 
         # Record error if one was registered.
@@ -180,7 +187,6 @@ class Transaction(object):
         self._drop_transaction(self)
 
         self._state = STATE_STOPPED
-        self._active = False
 
         children = self._node_stack.pop()._children
 
@@ -226,13 +232,22 @@ class Transaction(object):
 
         print 'NODES', nodes
 
+        # Clear settings as we are all done and don't
+        # need it anymore.
+
+        self._settings = None
+
     @property
     def state(self):
         return self._state
 
     @property
+    def settings(self):
+        return self._settings
+
+    @property
     def active(self):
-        return self._active
+        return self._settings is not None
 
     @property
     def application(self):
@@ -258,6 +273,11 @@ class Transaction(object):
             return '%s/%s' % (self._group, name)
 
     def name_transaction(self, name, group=None):
+
+	# Always perform this operation even if the
+	# transaction is not active at the time as will
+	# be called from constructor.
+
         if group is None:
             group = 'Function'
 
@@ -266,10 +286,9 @@ class Transaction(object):
 
     def notice_error(self, exc, value, tb, params={}):
 
-	# Bail out if the transaction is running in a
-	# disabled state.
+	# Bail out if the transaction is not active.
 
-        if not self.active:
+        if not self._settings:
             return
 
         # Has to be an error to be logged.

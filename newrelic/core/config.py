@@ -76,6 +76,7 @@ _settings.browser_monitoring.auto_instrument = True
 
 _settings.transaction_name.limit = 500
 
+_settings.debug.ignore_server_settings = False
 _settings.debug.local_settings_overrides = []
 
 def global_settings():

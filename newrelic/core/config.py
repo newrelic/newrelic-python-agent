@@ -18,7 +18,7 @@ import copy
 
 # The Settings objects and the global default settings. We created a
 # distinct type for each category of settings so that an error when
-# accessing a non existant settings is more descriptive and identifies
+# accessing a non existant setting is more descriptive and identifies
 # the category of settings.
 
 class Settings(object):
@@ -65,6 +65,7 @@ _settings.transaction_tracer.record_sql = 'obfuscated'
 _settings.transaction_tracer.stack_trace_threshold = 0.5
 
 _settings.error_collector.enabled = True
+_settings.error_collector.capture_source = False
 _settings.error_collector.ignore_errors = []
 
 _settings.browser_monitoring.auto_instrument = True

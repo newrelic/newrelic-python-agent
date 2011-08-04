@@ -11,7 +11,7 @@ import newrelic.api.object_wrapper
 _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
 ExternalNode = collections.namedtuple('ExternalNode',
-        ['library', 'url', 'children', 'start_time', 'end_time'])
+        ['library', 'url', 'children', 'start_time', 'end_time', 'duration'])
 
 class ExternalTrace(object):
 
@@ -45,6 +45,7 @@ class ExternalTrace(object):
             return
 
         self._end_time = time.time()
+        self._duration = self._end_time - self._start_time
 
         node = self._transaction._node_stack.pop()
         assert(node == self)
@@ -53,7 +54,8 @@ class ExternalTrace(object):
 
         parent._children.append(ExternalNode(library=self._library,
                 url=self._url, children=self._children,
-                start_time=self._start_time, end_time=self._end_time))
+                start_time=self._start_time, end_time=self._end_time,
+                duration=self._duration))
 
         self._children = []
 

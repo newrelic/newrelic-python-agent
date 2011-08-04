@@ -37,6 +37,15 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         if not self.enabled:
             return
 
+        # Check for override settings from WSGI environ.
+
+        self.background_task = self._environ_setting(
+                environ, 'newrelic.background_task', False)
+        self.ignore = self._environ_setting(
+                environ, 'newrelic.ignore', False)
+        self.ignore_apdex = self._environ_setting(
+                environ, 'newrelic.ignore_apdex', False)
+
 	# Extract from the WSGI environ dictionary
 	# details of the URL path. This will be set as
 	# default path for the web transaction. This can
@@ -46,8 +55,11 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 	# due to use of REST style URL concepts or
 	# otherwise.
 
+        request_uri = environ.get('REQUEST_URI', None)
         script_name = environ.get('SCRIPT_NAME', None)
         path_info = environ.get('PATH_INFO', None)
+
+        self._request_uri = request_uri
 
         if script_name is not None or path_info is not None:
             if path_info is None:
@@ -57,14 +69,13 @@ class WebTransaction(newrelic.api.transaction.Transaction):
             else:
                 path = script_name + path_info
 
-            self._path = path
-            self._path_type = newrelic.api.transaction.PATH_TYPE_URI
+            self.name_transaction(path, 'Uri')
 
+            if self._request_uri is None:
+                self._request_uri = path
         else:
-            request_uri = environ.get('REQUEST_URI', None)
-
             if request_uri is not None:
-                self._path = request_uri
+                self.name_transaction(request_uri, 'Uri')
 
 	# See if the WSGI environ dictionary includes
 	# the special 'X-Queue-Start' HTTP header. This
@@ -112,15 +123,6 @@ class WebTransaction(newrelic.api.transaction.Transaction):
             except:
                 params = cgi.parse_qs(value)
             self.request_parameters.update(params)
-
-        # Check for override settings from WSGI environ.
-
-        self.background_task = self._environ_setting(
-                environ, 'newrelic.background_task', False)
-        self.ignore = self._environ_setting(
-                environ, 'newrelic.ignore', False)
-        self.ignore_apdex = self._environ_setting(
-                environ, 'newrelic.ignore_apdex', False)
 
     def _environ_setting(self, environ, name, default=False):
         flag = environ.get(name, default)

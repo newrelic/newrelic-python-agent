@@ -3,6 +3,7 @@ import time
 import weakref
 import threading
 import collections
+import traceback
 
 import newrelic.core.config
 
@@ -12,12 +13,14 @@ STATE_PENDING = 0
 STATE_RUNNING = 1
 STATE_STOPPED = 2
 
-PATH_TYPE_UNKNOWN = 0
-PATH_TYPE_RAW = 1
-PATH_TYPE_URI = 2
+TransactionNode = collections.namedtuple('TransactionNode', ['type',
+         'group', 'name', 'request_uri', 'response_code', 'request_params',
+         'custom_params', 'queue_start', 'start_time', 'end_time',
+         'duration', 'exclusive', 'children', 'errors'])
 
-TransactionNode = collections.namedtuple('TransactionNode',
-        ['name', 'children', 'queue_start', 'start_time', 'end_time'])
+ErrorNode = collections.namedtuple('ErrorNode', ['type', 'message',
+         'stack_trace', 'custom_params', 'file_name', 'line_number',
+         'source'])
 
 class DummyTransaction(object):
 
@@ -72,15 +75,18 @@ class Transaction(object):
         self._active = False
         self._state = STATE_PENDING
 
-        self._path = '<unknown>'
-        self._path_type = PATH_TYPE_UNKNOWN
-        
+        self._group = None
+        self._name = None
+
         self._node_stack = collections.deque()
-        self._children = []
+
+        self._request_uri = None
 
         self._queue_start = 0.0
         self._start_time = 0.0
         self._end_time = 0.0
+
+        self._errors = []
 
         self.custom_parameters = {}
         self.request_parameters = {}
@@ -178,25 +184,47 @@ class Transaction(object):
 
         children = self._node_stack.pop()._children
 
-	# XXX This mess is because trying to keep some
-	# compatibility with what C code was doing.
-	# Unfortunately it was doing silly things to get
-	# around issues with PHP agent. We will fix this
-	# soon by changing C code to something more sane
-	# so can keep same tests during transition. :-(
+        # Derive generated values from the raw data.
 
-        if self._path_type == PATH_TYPE_URI:
-            name = 'Uri/%s' % self._path
-        elif self._path_type == PATH_TYPE_RAW:
-            name = self._path
+        duration = self._end_time - self._start_time
+
+        exclusive = duration
+        for node in children:
+            exclusive -= node.duration
+        exclusive = max(0, exclusive)
+
+	# Construct final root node of transaction trace.
+
+        if self.background_task:
+            type = 'OtherTransaction'
         else:
-            name = 'Uri/<unknown>'
+            type = 'WebTransaction'
 
-        nodes = TransactionNode(name=name, children=children,
-                queue_start=self._queue_start, start_time=self._start_time,
-                end_time=self._end_time)
+        group = self._group
 
-        #print 'NODES', nodes
+        if group is None:
+            if self.background_task:
+                group = 'Python'
+            else:
+                group = 'Uri'
+
+        nodes = TransactionNode(
+                type=type,
+                group=group,
+                name=self._name,
+                request_uri=self._request_uri,
+                response_code=self.response_code,
+                request_params=self.request_parameters,
+                custom_params=self.custom_parameters,
+                queue_start=self._queue_start,
+                start_time=self._start_time,
+                end_time=self._end_time,
+                duration=duration,
+                exclusive=exclusive,
+                children=children,
+                errors=self._errors)
+
+        print 'NODES', nodes
 
     @property
     def state(self):
@@ -211,21 +239,30 @@ class Transaction(object):
         return self._application
 
     @property
+    def name(self):
+        return self._name
+
+    @property
+    def group(self):
+        return self._group
+
+    @property
     def path(self):
-        return self._path
+        """For backwards compatibility with unit tests."""
+        name = self._name
+        if name is None:
+            name = '<unknown>'
+        if self._group in ['Uri', None]:
+            return name
+        else:
+            return '%s/%s' % (self._group, name)
 
-    def name_transaction(self, name, prefix=None):
+    def name_transaction(self, name, group=None):
+        if group is None:
+            group = 'Function'
 
-	# Bail out if the transaction is running in a
-	# disabled state.
-
-        if not self.active:
-            return
-
-        if prefix is None:
-            prefix = 'Function'
-        self._path = "%s/%s" % (prefix, name)
-        self._path_type = PATH_TYPE_RAW
+        self._group = group
+        self._name = name
 
     def notice_error(self, exc, value, tb, params={}):
 
@@ -241,9 +278,19 @@ class Transaction(object):
             return
 
         # XXX Need to ignore if listed to be ignore in
-        # global settings.
+        # settings.
 
-        # XXX Need to capture error into list of errors.
+	# XXX Need to capture source if enabled in
+	# settings.
+
+        type = exc.__name__
+        message = value
+        stack_trace = traceback.format_exception(exc, value, tb)
+
+        self._errors.append(ErrorNode(type=exc.__name__, message=str(value),
+                stack_trace=traceback.format_exception(exc, value, tb),
+                custom_params=params, file_name=None, line_number=None,
+                source=None))
 
 def transaction():
     return Transaction._current_transaction()

@@ -4,6 +4,7 @@ import types
 import inspect
 import time
 import collections
+import traceback
 
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
@@ -11,7 +12,8 @@ import newrelic.api.object_wrapper
 _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
 DatabaseNode = collections.namedtuple('DatabaseNode',
-        ['sql', 'children', 'start_time', 'end_time'])
+        ['sql', 'children', 'start_time', 'end_time', 'duration',
+        'stack_trace'])
 
 class DatabaseTrace(object):
 
@@ -44,6 +46,7 @@ class DatabaseTrace(object):
             return
 
         self._end_time = time.time()
+        self._duration = self._end_time - self._start_time
 
         node = self._transaction._node_stack.pop()
         assert(node == self)
@@ -52,7 +55,8 @@ class DatabaseTrace(object):
 
         parent._children.append(DatabaseNode(sql=self._sql,
                 children=self._children, start_time=self._start_time,
-                end_time=self._end_time))
+                end_time=self._end_time, duration=self._duration,
+                stack_trace=traceback.format_stack()))
 
         self._children = []
 

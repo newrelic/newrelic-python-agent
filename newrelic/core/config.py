@@ -42,6 +42,7 @@ _settings.debug = DebugSettings()
 
 _settings.license_key = None
 
+_settings.ssl = False
 _settings.host = 'collector.newrelic.com'
 _settings.port = 80
 
@@ -53,6 +54,9 @@ _settings.proxy_pass = None
 _settings.app_name = 'Python Application'
 
 _settings.monitor_mode = True
+
+_settings.collect_errors = True
+_settings.collect_traces = True
 
 _settings.apdex_t = 0.5
 _settings.capture_params = True

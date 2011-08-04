@@ -42,7 +42,7 @@ class Application(object):
 
     @property
     def settings(self):
-        if self._agent.settings().debug.ignore_server_settings:
+        if self._agent.settings().debug.ignore_all_server_settings:
             return self._agent.settings()
         return self._agent.settings(self._name)
 

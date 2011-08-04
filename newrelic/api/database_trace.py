@@ -46,17 +46,25 @@ class DatabaseTrace(object):
             return
 
         self._end_time = time.time()
-        self._duration = self._end_time - self._start_time
+
+        duration = self._end_time - self._start_time
 
         node = self._transaction._node_stack.pop()
         assert(node == self)
+
+        stack_trace = None
+
+        transaction_tracer = self._transaction.settings.transaction_tracer
+
+        if duration >= transaction_tracer.stack_trace_threshold:
+            stack_trace = traceback.format_stack()
 
         parent = self._transaction._node_stack[-1]
 
         parent._children.append(DatabaseNode(sql=self._sql,
                 children=self._children, start_time=self._start_time,
-                end_time=self._end_time, duration=self._duration,
-                stack_trace=traceback.format_stack()))
+                end_time=self._end_time, duration=duration,
+                stack_trace=stack_trace))
 
         self._children = []
 

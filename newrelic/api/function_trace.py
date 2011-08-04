@@ -11,7 +11,8 @@ import newrelic.api.object_wrapper
 _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
 FunctionNode = collections.namedtuple('FunctionNode',
-        ['group', 'name', 'children', 'start_time', 'end_time', 'duration'])
+        ['group', 'name', 'children', 'start_time', 'end_time',
+        'duration', 'exclusive'])
 
 class FunctionTrace(object):
 
@@ -47,7 +48,13 @@ class FunctionTrace(object):
             return
 
         self._end_time = time.time()
-        self._duration = self._end_time - self._start_time
+
+        duration = self._end_time - self._start_time
+
+        exclusive = duration
+        for node in self._children:
+            exclusive -= node.duration
+        exclusive = max(0, exclusive)
 
         node = self._transaction._node_stack.pop()
         assert(node == self)
@@ -61,7 +68,8 @@ class FunctionTrace(object):
 
         parent._children.append(FunctionNode(group=group, name=self._name,
                 children=self._children, start_time=self._start_time,
-                end_time=self._end_time, duration=self._duration))
+                end_time=self._end_time, duration=duration,
+                exclusive=exclusive))
 
         self._children = []
 

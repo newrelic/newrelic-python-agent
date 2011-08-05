@@ -70,7 +70,7 @@ def my_external():
 def my_memcache():
     time.sleep(0.1)
 
-@newrelic.api.function_trace.function_trace()
+@newrelic.api.function_trace.function_trace(group='Template/Render')
 def my_function_1():
     time.sleep(0.1)
     try:

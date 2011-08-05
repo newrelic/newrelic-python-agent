@@ -31,11 +31,11 @@ class AgentTest(unittest.TestCase):
         # the application as checks that not active first.
 
         name = _settings.app_name
-        application_settings = agent.settings(name)
+        application_settings = agent.application_settings(name)
         self.assertEqual(application_settings, None)
-        agent.activate(name)
+        agent.activate_application(name)
         for i in range(10):
-            application_settings = agent.settings(name)
+            application_settings = agent.application_settings(name)
             if application_settings:
                 break
             time.sleep(0.5)

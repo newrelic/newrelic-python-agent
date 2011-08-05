@@ -151,12 +151,12 @@ static PyObject *NRApplication_new(PyTypeObject *type, PyObject *args,
 
     /*
      * An application initially represents an agent instance.
-     * The application can be associated with a agent cluster.
-     * Any server side configuration is sourced from the primary
-     * application.
+     * The application can be associated with other applications
+     * as far as where data is being reported. Any server side
+     * configuration is sourced from the primary application.
      */
 
-    self->clusters = PyDict_New();
+    self->linked = PyDict_New();
 
     /*
      * Monitoring of an application is enabled by default. If
@@ -221,13 +221,12 @@ static int NRApplication_init(NRApplicationObject *self, PyObject *args,
     nrthread_mutex_unlock(&self->application->lock);
 
     /*
-     * Any secondary application names, creating a cluster agent
-     * will only be added later. We will thus need to go back and
-     * update the application names associated with application
-     * at that time.
+     * Any linked application names, will only be added later.
+     * We will thus need to go back and update the application
+     * names associated with application at that time.
      */
 
-    PyDict_Clear(self->clusters);
+    PyDict_Clear(self->linked);
 
     /*
      * Markup what version of the Python agent wrapper is being
@@ -258,7 +257,7 @@ static void NRApplication_dealloc(NRApplicationObject *self)
 
     Py_TYPE(self)->tp_free(self);
 
-    Py_DECREF(self->clusters);
+    Py_DECREF(self->linked);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -276,7 +275,7 @@ static PyObject *NRApplication_get_name(NRApplicationObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRApplication_get_clusters(NRApplicationObject *self,
+static PyObject *NRApplication_get_linked(NRApplicationObject *self,
                                             void *closure)
 {
     if (!self->application) {
@@ -284,7 +283,7 @@ static PyObject *NRApplication_get_clusters(NRApplicationObject *self,
         return NULL;
     }
 
-    return PyDict_Keys(self->clusters);
+    return PyDict_Keys(self->linked);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -425,8 +424,8 @@ static PyObject *NRApplication_shutdown(NRApplicationObject *self,
 
 /* ------------------------------------------------------------------------- */
 
-static PyObject *NRApplication_add_to_cluster(NRApplicationObject *self,
-                                              PyObject *args, PyObject *kwds)
+static PyObject *NRApplication_link_to(NRApplicationObject *self,
+                                       PyObject *args, PyObject *kwds)
 {
     PyObject *name = NULL;
 
@@ -446,7 +445,7 @@ static PyObject *NRApplication_add_to_cluster(NRApplicationObject *self,
         return NULL;
     }
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:add_to_cluster",
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O:link_to",
                                      kwlist, &name)) {
         return NULL;
     }
@@ -467,12 +466,12 @@ static PyObject *NRApplication_add_to_cluster(NRApplicationObject *self,
     }
 
     /*
-     * Add to cluster. The collector enforces a limit on the
-     * number. Currently that is 3, but do not enforce that
+     * Link to other application. The collector enforces a limit on
+     * the number. Currently that is 3, but do not enforce that
      * here.
      */
 
-    PyDict_SetItem(self->clusters, name_as_bytes, Py_True);
+    PyDict_SetItem(self->linked, name_as_bytes, Py_True);
 
     /*
      * Update the list of all application names against the
@@ -484,13 +483,13 @@ static PyObject *NRApplication_add_to_cluster(NRApplicationObject *self,
 
     nrfree(self->application->appnames);
 
-    self->application->nappnames = PyDict_Size(self->clusters)+1;
+    self->application->nappnames = PyDict_Size(self->linked)+1;
     self->application->appnames = (char **)nrcalloc(
             self->application->nappnames, sizeof(char *));
 
     self->application->appnames[0] = nrstrdup(self->application->appname);
 
-    keys = PyDict_Keys(self->clusters);
+    keys = PyDict_Keys(self->linked);
     iter = PyObject_GetIter(keys);
 
     i = 1;
@@ -608,7 +607,7 @@ static PyMethodDef NRApplication_methods[] = {
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "shutdown",           (PyCFunction)NRApplication_shutdown,
                             METH_VARARGS|METH_KEYWORDS, 0 },
-    { "add_to_cluster",     (PyCFunction)NRApplication_add_to_cluster,
+    { "link_to_application", (PyCFunction)NRApplication_link_to,
                             METH_VARARGS|METH_KEYWORDS, 0 },
     { "record_metric",      (PyCFunction)NRApplication_record_metric,
                             METH_VARARGS|METH_KEYWORDS, 0 },
@@ -620,7 +619,7 @@ static PyGetSetDef NRApplication_getset[] = {
                             NULL, 0 },
     { "settings",           (getter)NRApplication_get_settings,
                             NULL, 0 },
-    { "clusters",           (getter)NRApplication_get_clusters,
+    { "linked_applications", (getter)NRApplication_get_linked,
                             NULL, 0 },
     { "enabled",            (getter)NRApplication_get_enabled,
                             (setter)NRApplication_set_enabled, 0 },

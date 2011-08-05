@@ -18,19 +18,15 @@ class Application(object):
     '''
 
 
-    def __init__(self, remote, name, clusters):
+    def __init__(self, remote, app_name, linked_applications=[]):
         '''
         Constructor
         '''
 
-	# FIXME What is the appropriate term for these
-	# secondary application names to report as other
-	# than clusters. Want to maintain them as a
-	# distinct item from primary name.
+        self._app_name = app_name
+        self._linked_applications = sorted(set(linked_applications))
 
-        self._name = name
-        self._clusters = sorted(set(clusters))
-        self._app_names = [name] + clusters
+        self._app_names = [app_name] + linked_applications
 
         # _metric_ids is always accessed from the harvest thread, so it requires no synchronization
         self._metric_ids = {}
@@ -47,11 +43,11 @@ class Application(object):
 
     @property
     def name(self):
-        return self._name
+        return self._app_name
 
     @property
-    def clusters(self):
-        return self._cluster
+    def linked_applications(self):
+        return self._linked_applications
 
     def stop(self):
         self._work_thread.stop()
@@ -85,6 +81,11 @@ class Application(object):
             stats = self._stats_dict
             self._stats_dict = StatsDict(self._service.configuration)
             return stats
+
+    def record_metric(self, name, value):
+        # FIXME This is where base metric needs to be queued up.
+
+        print 'METRIC', name, value
 
     def record_cpu_stats(self,stats):
         if stats is not None:

@@ -3,15 +3,13 @@ import sys
 import types
 import inspect
 import time
-import collections
+
+import newrelic.core.transaction
 
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
 
 _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
-
-MemcacheNode = collections.namedtuple('FunctionNode',
-        ['command', 'children', 'start_time', 'end_time', 'duration'])
 
 class MemcacheTrace(object):
 
@@ -44,16 +42,28 @@ class MemcacheTrace(object):
             return
 
         self._end_time = time.time()
-        self._duration = self._end_time - self._start_time
 
-        node = self._transaction._node_stack.pop()
-        assert(node == self)
+        duration = self._end_time - self._start_time
+
+        exclusive = duration
+        for child in self._children:
+            exclusive -= child.duration
+        exclusive = max(0, exclusive)
+
+        root = self._transaction._node_stack.pop()
+        assert(root == self)
 
         parent = self._transaction._node_stack[-1]
 
-        parent._children.append(MemcacheNode(command=self._command,
-                children=self._children, start_time=self._start_time,
-                end_time=self._end_time, duration=self._duration))
+        node = newrelic.core.transaction.MemcacheNode(
+                command=self._command,
+                children=self._children,
+                start_time=self._start_time,
+                end_time=self._end_time,
+                duration=duration,
+                exclusive=exclusive)
+
+        parent._children.append(node)
 
         self._children = []
 

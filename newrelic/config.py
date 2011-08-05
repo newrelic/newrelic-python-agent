@@ -326,12 +326,12 @@ def _load_configuration(config_file=None, environment=None,
     # Now do special processing to handle the case where the
     # application name was actually a semicolon separated list
     # of names. In this case the first application name is the
-    # primary and the others are cluster agents the application
+    # primary and the others are linked applications the application
     # also reports to. What we need to do is explicitly retrieve
     # the application object for the primary application name
-    # and add it to the name cluster. When activating the
-    # application the cluster names will be sent along to the
-    # core application where the clusters will be created if the
+    # and link it with the other applications. When activating the
+    # application the linked names will be sent along to the
+    # core application where the association will be created if the
     # do not exist.
 
     def _process_app_name(section):
@@ -342,19 +342,19 @@ def _load_configuration(config_file=None, environment=None,
         else:
             name = value.split(';')[0] or 'Python Application'
 
-            clusters = []
+            linked = []
             for altname in value.split(';')[1:]:
                 altname = altname.strip()
                 if altname:
-                    clusters.append(altname)
+                    linked.append(altname)
 
-            if clusters:
+            if linked:
                 application = newrelic.api.application.application(name)
-                for altname in clusters:
+                for altname in linked:
                     newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                                              "map cluster %s" %
+                                              "link to %s" %
                                               ((name, altname),))
-                    application.add_to_cluster(altname)
+                    application.link_to(altname)
 
             return True
 

@@ -3,16 +3,13 @@ import sys
 import types
 import inspect
 import time
-import collections
+
+import newrelic.core.transaction
 
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
 
 _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
-
-FunctionNode = collections.namedtuple('FunctionNode',
-        ['group', 'name', 'children', 'start_time', 'end_time',
-        'duration', 'exclusive'])
 
 class FunctionTrace(object):
 
@@ -52,12 +49,12 @@ class FunctionTrace(object):
         duration = self._end_time - self._start_time
 
         exclusive = duration
-        for node in self._children:
-            exclusive -= node.duration
+        for child in self._children:
+            exclusive -= child.duration
         exclusive = max(0, exclusive)
 
-        node = self._transaction._node_stack.pop()
-        assert(node == self)
+        root = self._transaction._node_stack.pop()
+        assert(root == self)
 
         parent = self._transaction._node_stack[-1]
 
@@ -66,10 +63,16 @@ class FunctionTrace(object):
         if group is None:
             group = 'Function'
 
-        parent._children.append(FunctionNode(group=group, name=self._name,
-                children=self._children, start_time=self._start_time,
-                end_time=self._end_time, duration=duration,
-                exclusive=exclusive))
+        node = newrelic.core.transaction.FunctionNode(
+                group=group,
+                name=self._name,
+                children=self._children,
+                start_time=self._start_time,
+                end_time=self._end_time,
+                duration=duration,
+                exclusive=exclusive)
+
+        parent._children.append(node)
 
         self._children = []
 

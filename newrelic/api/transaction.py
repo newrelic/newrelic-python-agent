@@ -2,8 +2,10 @@ import os
 import time
 import weakref
 import threading
-import collections
 import traceback
+import collections
+
+import newrelic.core.transaction
 
 import newrelic.core.config
 
@@ -12,15 +14,6 @@ _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 STATE_PENDING = 0
 STATE_RUNNING = 1
 STATE_STOPPED = 2
-
-TransactionNode = collections.namedtuple('TransactionNode', ['type',
-         'group', 'name', 'request_uri', 'response_code', 'request_params',
-         'custom_params', 'queue_start', 'start_time', 'end_time',
-         'duration', 'exclusive', 'children', 'errors'])
-
-ErrorNode = collections.namedtuple('ErrorNode', ['type', 'message',
-         'stack_trace', 'custom_params', 'file_name', 'line_number',
-         'source'])
 
 class DummyTransaction(object):
 
@@ -201,8 +194,8 @@ class Transaction(object):
         duration = self._end_time - self._start_time
 
         exclusive = duration
-        for node in children:
-            exclusive -= node.duration
+        for child in children:
+            exclusive -= child.duration
         exclusive = max(0, exclusive)
 
 	# Construct final root node of transaction trace.
@@ -220,7 +213,7 @@ class Transaction(object):
             else:
                 group = 'Uri'
 
-        nodes = TransactionNode(
+        node = newrelic.core.transaction.TransactionNode(
                 type=type,
                 group=group,
                 name=self._name,
@@ -241,7 +234,7 @@ class Transaction(object):
 
         self._settings = None
 
-        self._application.record_transaction(nodes)
+        self._application.record_transaction(node)
 
     @property
     def state(self):
@@ -312,10 +305,16 @@ class Transaction(object):
         message = value
         stack_trace = traceback.format_exception(exc, value, tb)
 
-        self._errors.append(ErrorNode(type=exc.__name__, message=str(value),
+        node = newrelic.core.transaction.ErrorNode(
+                type=exc.__name__,
+                message=str(value),
                 stack_trace=traceback.format_exception(exc, value, tb),
-                custom_params=params, file_name=None, line_number=None,
-                source=None))
+                custom_params=params,
+                file_name=None,
+                line_number=None,
+                source=None)
+
+        self._errors.append(node)
 
 def transaction():
     return Transaction._current_transaction()

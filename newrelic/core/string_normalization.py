@@ -20,11 +20,8 @@ class Normalizer:
         sorted_rules = sorted(self.rules, key=lambda rule: rule.order)
         for rule in sorted_rules:
             if rule.each_segment:
-                result_list = []
-                for segment in result.split('/'):
-                    if segment == '':
-                        continue
-                    result_list.append(self.apply_rule(rule, segment))
+                result_list = [self.apply_rule(rule, segment) 
+                               for segment in result.split('/')[1:]]
                 result = '/' + ('/').join(result_list)
             else:
                 result = self.apply_rule(rule, result)        

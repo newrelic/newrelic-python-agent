@@ -1,8 +1,7 @@
 import unittest
-from newrelic.core.transaction_name import *
+from newrelic.core.string_normalization import *
 
-class TestTransaction(unittest.TestCase):
-
+class TestStringNormalization(unittest.TestCase):
     def setUp(self):
         self.rule = NormalizationRule(match = "[0-9]+", 
                                       replacement = "*", 
@@ -11,6 +10,7 @@ class TestTransaction(unittest.TestCase):
                                       terminate_chain = True, 
                                       each_segment = False, 
                                       replace_all = True)
+        self.test_url = "/wallabies/ArticleDetails/tabid/1515/ArticleID/3773/Default.aspx"
         
 
     def test_normalization_rule_should_initialize(self):
@@ -37,7 +37,7 @@ class TestTransaction(unittest.TestCase):
 
     def test_rule_with_replace_all_and_no_each_segment(self):
         normalizer = Normalizer(self.rule)
-        result = normalizer.normalize("/wallabies/ArticleDetails/tabid/1515/ArticleID/3773/Default.aspx")
+        result = normalizer.normalize(self.test_url)
         self.assertEqual("/wallabies/ArticleDetails/tabid/*/ArticleID/*/Default.aspx",
                          result)
 
@@ -50,7 +50,7 @@ class TestTransaction(unittest.TestCase):
                                  each_segment = False, 
                                  replace_all = False)        
         normalizer = Normalizer(rule)
-        result = normalizer.normalize("/wallabies/ArticleDetails/tabid/1515/ArticleID/3773/Default.aspx")
+        result = normalizer.normalize(self.test_url)
         self.assertEqual("/wallabies/ArticleDetails/tabid/*/ArticleID/3773/Default.aspx",
                          result)
 
@@ -71,7 +71,7 @@ class TestTransaction(unittest.TestCase):
                                   each_segment = False, 
                                   replace_all = True)
         normalizer = Normalizer(rule1, rule0)
-        result = normalizer.normalize("/wallabies/ArticleDetails/tabid/1515/ArticleID/3773/Default.aspx")
+        result = normalizer.normalize(self.test_url)
         self.assertEqual("/wallabies/ArticleDetails/tabid/bar/ArticleID/bar/Default.aspx",
                          result)
 
@@ -84,13 +84,23 @@ class TestTransaction(unittest.TestCase):
                                  each_segment = True, 
                                  replace_all = True)
         normalizer = Normalizer(rule)
-        result = normalizer.normalize("/wallabies/ArticleDetails/tabid/1515/ArticleID/3773/Default.aspx")
+        result = normalizer.normalize(self.test_url)
         self.assertEqual("/X/X/X/X/X/X/X", result)
 
 
     def test_rule_with_back_substition(self):
-        pass
-    
+        rule = NormalizationRule(match = "([0-9].*)",
+                                 replacement = "\\1X",
+                                 ignore = False, 
+                                 order = 0,
+                                 terminate_chain = False, 
+                                 each_segment = True, 
+                                 replace_all = True)
+        normalizer = Normalizer(rule)
+        result = normalizer.normalize(self.test_url)
+        self.assertEqual("/wallabies/ArticleDetails/tabid/1515X/ArticleID/3773X/Default.aspx", 
+                         result)
+
     def test_rules_with_terminate_chain(self):
         pass
 

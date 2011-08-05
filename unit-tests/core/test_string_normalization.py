@@ -101,18 +101,55 @@ class TestStringNormalization(unittest.TestCase):
         self.assertEqual("/wallabies/ArticleDetails/tabid/1515X/ArticleID/3773X/Default.aspx", 
                          result)
 
-    def test_rules_with_terminate_chain(self):
-        pass
+    def test_rules_with_terminate_chain_with_match(self):
+        rule0 = NormalizationRule(match = "[0-9]+", 
+                                  replacement = "foo", 
+                                  ignore = False, 
+                                  order = 0,
+                                  terminate_chain = True, 
+                                  each_segment = False, 
+                                  replace_all = True)
+        rule1 = NormalizationRule(match = "foo", 
+                                  replacement = "bar",
+                                  ignore = False, 
+                                  order = 1,
+                                  terminate_chain = False, 
+                                  each_segment = False, 
+                                  replace_all = True)
+        normalizer = Normalizer(rule1, rule0)
+        result = normalizer.normalize(self.test_url)
+        self.assertEqual("/wallabies/ArticleDetails/tabid/foo/ArticleID/foo/Default.aspx",
+                         result)
 
-    def test_rule_with_ignore(self):
-        pass
+    def test_rules_with_terminate_chain_without_match(self):
+        rule0 = NormalizationRule(match = "python_is_seriously_awesome", 
+                                  replacement = "foo", 
+                                  ignore = False, 
+                                  order = 0,
+                                  terminate_chain = True, 
+                                  each_segment = False, 
+                                  replace_all = True)
+        rule1 = NormalizationRule(match = "1515", 
+                                  replacement = "bar",
+                                  ignore = False, 
+                                  order = 1,
+                                  terminate_chain = False, 
+                                  each_segment = False, 
+                                  replace_all = True)
+        normalizer = Normalizer(rule1, rule0)
+        result = normalizer.normalize(self.test_url)
+        self.assertEqual("/wallabies/ArticleDetails/tabid/bar/ArticleID/3773/Default.aspx",
+                         result)
 
     def test_normalizer_should_apply_black_list_after_default_name_limit(self):
         pass
 
     def test_normalizer_should_accpet_name_limit_from_configuration(self):
         pass
-        
+
+    def test_rule_with_ignore(self):
+        pass
+
 
 if __name__ == "__main__":
     unittest.main()

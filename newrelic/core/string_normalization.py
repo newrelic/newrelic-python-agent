@@ -16,19 +16,30 @@ class Normalizer:
         self.rules = rules
 
     def normalize(self, string):
-        result = string
+        final_string = string
         sorted_rules = sorted(self.rules, key=lambda rule: rule.order)
         for rule in sorted_rules:
+
+            string_before_rule = final_string
+            
             if rule.each_segment:
                 result_list = [self.apply_rule(rule, segment) 
-                               for segment in result.split('/')[1:]]
-                result = '/' + ('/').join(result_list)
+                               for segment in final_string.split('/')[1:]]
+                final_string = '/' + ('/').join(result_list)
             else:
-                result = self.apply_rule(rule, result)        
-        return result
+                final_string = self.apply_rule(rule, final_string)
+
+            if self._rule_was_applied(string_before_rule, final_string) and rule.terminate_chain:
+                break
+        return final_string
 
     def apply_rule(self, rule, string):
         max = 1
         if rule.replace_all:
             max = 0
         return re.sub(rule.match, rule.replacement, string, max)
+
+    def _rule_was_applied(self, string_before_rule, final_string):
+        return (string_before_rule != final_string) 
+
+        

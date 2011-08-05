@@ -115,7 +115,7 @@ version of the Python agent just to be able to run tests.
 If you need to be able to run a specific unit test, then you can use the
 'python' executable from the 'test-env' Python virtual environment.
 
-    test-env/bin/python unit-tests/test_wsgi_applicaton.py -v
+    test-env/bin/python unit-tests/api/test_wsgi_applicaton.py -v
 
 
 Hudson Build Boxes

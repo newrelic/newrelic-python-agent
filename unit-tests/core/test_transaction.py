@@ -17,6 +17,7 @@ import newrelic.api.log_file
 import newrelic.api.transaction
 
 import newrelic.api.web_transaction
+import newrelic.api.background_task
 
 import newrelic.api.database_trace
 import newrelic.api.external_trace
@@ -44,7 +45,7 @@ settings.license_key = 'd67afc830dab717fd163bfcb0b8b88423e9a1a3b'
 
 settings.app_name = 'Python Unit Test1'
 
-settings.log_file = "%s.log" % __file__
+settings.log_file = '%s.log' % __file__
 settings.log_level = newrelic.api.log_file.LOG_VERBOSEDEBUG
 
 settings.transaction_tracer.transaction_threshold = 0
@@ -116,7 +117,15 @@ def my_function():
     my_function_3()
 
 @newrelic.api.web_transaction.wsgi_application()
-def application(environ, start_response):
+def handler(environ, start_response):
+
+    name = environ.get('test.name', None)
+    group = environ.get('test.group', None)
+
+    if name is not None:
+        transaction = newrelic.api.transaction.transaction()
+        if transaction and transaction.active:
+            transaction.name_transaction(name, group)
 
     my_function()
 
@@ -129,6 +138,16 @@ def application(environ, start_response):
 
     return [output]
 
+@newrelic.api.background_task.background_task()
+def task(name=None, group=None):
+
+    if name is not None:
+        transaction = newrelic.api.transaction.transaction()
+        if transaction and transaction.active:
+            transaction.name_transaction(name, group)
+
+    my_function()
+
 class TransactionTests(unittest.TestCase):
 
     # Note that you can only have a single test in this file
@@ -137,11 +156,11 @@ class TransactionTests(unittest.TestCase):
 
     def setUp(self):
         newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                "STARTING - %s" % self._testMethodName)
+                'STARTING - %s' % self._testMethodName)
 
     def tearDown(self):
         newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                "STOPPING - %s" % self._testMethodName)
+                'STOPPING - %s' % self._testMethodName)
 
     def test_transaction(self):
 
@@ -180,8 +199,15 @@ class TransactionTests(unittest.TestCase):
 
         def start_response(status, headers): pass
 
-        environ = { "REQUEST_URI": "/request_uri?key=value" }
-        application(environ, start_response).close()
+        environ = { 'REQUEST_URI': '/request_uri?key=value' }
+        handler(environ, start_response).close()
+
+        environ = { 'REQUEST_URI': '/request_uri?key=value',
+                'test.name': __file__, 'test.group': 'Script/Execute', }
+        handler(environ, start_response).close()
+
+        task()
+        task(name=__file__, group='Script/Execute')
 
 if __name__ == '__main__':
     unittest.main()

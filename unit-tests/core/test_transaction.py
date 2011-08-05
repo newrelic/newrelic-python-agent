@@ -29,11 +29,12 @@ import newrelic.api.name_transaction
 import newrelic.agent
 
 # Hardwire settings for test script rather than agent configuration file
-# as is easier then work with. We override transaction and database
-# trace thresholds so everything is collected. To that the extent that
-# old logging system is still used in the code, possibly nothing at this
-# point, anything will end up in log file in same directory as this
-# script where name is the files name with '.log' appended.
+# as is easier to work with in test script. We override transaction and
+# database trace thresholds so everything is collected. To the extent
+# that the old logging system is still used in the code, possibly
+# nothing at this point, anything will end up in log file in same
+# directory as this script where name is this files name with '.log'
+# appended.
 
 settings = newrelic.api.settings.settings()
 
@@ -145,7 +146,7 @@ class TransactionTests(unittest.TestCase):
     def test_transaction(self):
 
         # Initialise higher level instrumentation layers. Not
-        # that they will be use in this test for now.
+        # that they will be used in this test for now.
 
         newrelic.agent.initialize()
 

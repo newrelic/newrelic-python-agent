@@ -141,15 +141,5 @@ class TestStringNormalization(unittest.TestCase):
         self.assertEqual("/wallabies/ArticleDetails/tabid/bar/ArticleID/3773/Default.aspx",
                          result)
 
-    def test_normalizer_should_apply_black_list_after_default_name_limit(self):
-        pass
-
-    def test_normalizer_should_accpet_name_limit_from_configuration(self):
-        pass
-
-    def test_rule_with_ignore(self):
-        pass
-
-
 if __name__ == "__main__":
     unittest.main()

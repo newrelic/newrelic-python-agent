@@ -81,6 +81,7 @@ class Transaction(object):
         self._end_time = 0.0
 
         self._errors = []
+        self._slow_sql = []
 
         self.custom_parameters = {}
         self.request_parameters = {}
@@ -226,8 +227,10 @@ class Transaction(object):
                 end_time=self._end_time,
                 duration=duration,
                 exclusive=exclusive,
-                children=children,
-                errors=self._errors)
+                children=tuple(children),
+                errors=tuple(self._errors),
+                slow_sql=tuple(self._slow_sql),
+                ignore_apdex=self.ignore_apdex)
 
         # Clear settings as we are all done and don't
         # need it anymore.

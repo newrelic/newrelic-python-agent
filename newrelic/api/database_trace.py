@@ -76,6 +76,9 @@ class DatabaseTrace(object):
 
         parent._children.append(node)
 
+        if duration >= transaction_tracer.stack_trace_threshold:
+            self._transaction._slow_sql.append(node)
+
         self._children = []
 
 if _agent_mode not in ('julunggul',):

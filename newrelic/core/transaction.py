@@ -83,7 +83,8 @@ MemcacheNode = collections.namedtuple('MemcacheNode',
 TransactionNode = collections.namedtuple('TransactionNode',
         ['type', 'group', 'name', 'request_uri', 'response_code',
         'request_params', 'custom_params', 'queue_start', 'start_time',
-        'end_time', 'duration', 'exclusive', 'children', 'errors'])
+        'end_time', 'duration', 'exclusive', 'children', 'errors',
+        'slow_sql', 'ignore_apdex'])
         
 ErrorNode = collections.namedtuple('ErrorNode',
         ['type', 'message', 'stack_trace', 'custom_params',

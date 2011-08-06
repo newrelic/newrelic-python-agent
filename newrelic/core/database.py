@@ -9,27 +9,19 @@ This is where we'll implement the sql obfuscator, explain plan running, sql trac
 '''
 
 import re
+from newrelic.core.string_normalization import *
 
 def obfuscator(database_type="postgresql"):
+    numeric              = NormalizationRule(r'\d+', "?")
+    single_quoted_string = NormalizationRule(r"'(.*?[^\\'])??'(?!')", "?")
+    double_quoted_string = NormalizationRule(r'"(.*?[^\\"])??"(?!")', "?")
+
     if database_type == "mysql":
-        return MysqlObfuscator()
+        return SqlObfuscator(numeric, single_quoted_string,
+                             double_quoted_string)
     elif database_type == "postgresql":
-        return PostgresqlObfuscator()
+        return SqlObfuscator(numeric, single_quoted_string)
 
-class SqlObfuscator:
-    def numeric(self, sql):
-        return re.sub(r'\d+', "?", sql)
-
-    def single_quoted_string(self, sql):
-        return re.sub(r"'(.*?[^\\'])??'(?!')", "?", sql)
-
-    def double_quoted_string(self, sql):
-        return re.sub(r'"(.*?[^\\"])??"(?!")', "?", sql)
-
-class PostgresqlObfuscator(SqlObfuscator):
+class SqlObfuscator(Normalizer):
     def obfuscate(self, sql):
-        return self.single_quoted_string(self.numeric(sql))
-
-class MysqlObfuscator(SqlObfuscator):
-    def obfuscate(self, sql):
-        return self.double_quoted_string(self.single_quoted_string(self.numeric(sql)))
+        return self.normalize(sql)

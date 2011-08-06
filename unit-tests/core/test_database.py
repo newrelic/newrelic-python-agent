@@ -7,17 +7,8 @@ import unittest
 from newrelic.core import database
 
 class TestDatabase(unittest.TestCase):
-
     def setUp(self):
         self.obfuscator = database.obfuscator("postgresql")
-
-    def test_obfuscator_returns_class_for_given_database_type(self):
-        self.assertEqual("MysqlObfuscator", 
-                         database.obfuscator("mysql").__class__.__name__)
-        self.assertEqual("PostgresqlObfuscator", 
-                         database.obfuscator("postgresql").__class__.__name__)
-        self.assertEqual("PostgresqlObfuscator", 
-                         database.obfuscator().__class__.__name__)
 
     def test_obfuscator_obfuscates_numeric_literals(self):
         select = "SELECT * FROM table WHERE table.column = 1 AND 2 = 3"

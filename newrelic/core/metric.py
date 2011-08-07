@@ -9,4 +9,4 @@ import collections
 def new_metric(name, scope=u""):
     return Metric(name,scope)
 
-Metric = collections.namedtuple('BaseMetric', [u'name',u'scope'])
+Metric = collections.namedtuple('Metric', ['name', 'scope'])

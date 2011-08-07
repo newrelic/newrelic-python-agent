@@ -17,7 +17,7 @@ class ErrorTrace(object):
 
     def __enter__(self):
         if not self._transaction.active:
-            return
+            return self
 
         self._enabled = True
 

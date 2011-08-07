@@ -5,12 +5,12 @@ Created on Jul 28, 2011
 '''
 from newrelic.core.remote import NewRelicService
 from newrelic.core.stats import StatsDict
-from newrelic.core.metric import new_metric
+from newrelic.core.metric import Metric
 from newrelic.core.samplers import CPUTimes
 import Queue,threading
 from newrelic.core.nr_threading import QueueProcessingThread
 
-INSTANCE_REPORTING_METRIC = new_metric(u"Instance/Reporting")
+INSTANCE_REPORTING_METRIC = Metric(u"Instance/Reporting", "")
 
 class Application(object):
     '''
@@ -87,6 +87,48 @@ class Application(object):
 
         print 'METRIC', name, value
 
+    def record_transaction(self, data):
+
+	# FIXME The application object perhaps needs to maintain an
+	# activation counter. This would be incremented after each
+	# connect to core application and updated server side
+	# configuration available. The counter number should then be
+	# pushed into the application specific settings object and the
+	# higher level instrumentation layer should then supply the
+	# counter value in the TransactionNode root object for the raw
+	# transaction data. That way the code here could make a decision
+	# whether the data should be thrown away as it relates to a
+	# transaction that started when the application was previously
+	# active, but got restarted in between then and when the
+	# transaction completed. If we don't do this then we could push
+	# through transaction data accumulated based on an old set of
+	# application specific configuration settings. This may not be
+	# an issue given in most cases the server side configuration
+	# wouldn't change but should be considered. No harm in adding
+	# the counter even if not ultimately needed. The core
+	# application could even be what doles out the counter or
+	# identifying value for that configuration snapshot and record
+	# it against the agent run details stored in core application
+	# database rather than it be generated internally using a
+	# counter. The value could change on each request or only
+	# increment when server side sees a change in server side
+	# application configuration. If only changes when configuration
+	# changes, wouldn't matter then that request started with one
+	# configuration and finished after application had been
+	# restarted.
+
+        print 'TRANSACTION', data
+
+        for metric in data.apdex_metrics():
+            print 'APDEX', metric
+            self._stats_dict.get_apdex_stats((metric.name,
+                    metric.scope)).merge(metric)
+
+        for metric in data.time_metrics():
+            print 'TIME', metric
+            self._stats_dict.get_time_stats((metric.name,
+                    metric.scope)).record(metric.duration, metric.exclusive)
+
     def record_cpu_stats(self,stats):
         if stats is not None:
             print "Recording CPU metrics"
@@ -97,7 +139,7 @@ class Application(object):
         return
         # FIXME this code isn't working for some reason
         for m in res:
-            metric = new_metric(m[0]["name"],m[0]["scope"])
+            metric = Metric(m[0]["name"],m[0]["scope"])
             self._metric_ids[metric] = m[1]
         print self._metric_ids
 

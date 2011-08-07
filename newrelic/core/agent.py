@@ -217,7 +217,7 @@ class Agent(object):
         if application is None:
             return
 
-        newrelic.core.transaction.process_raw_transaction(application, data)
+        application.record_transaction(data)
 
     # FIXME The following for managing running state of harvester and
     # applications should probably support the concept of a manually

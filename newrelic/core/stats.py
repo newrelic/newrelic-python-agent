@@ -43,7 +43,7 @@ class ApdexStats(BaseStats):
         '''
         Constructor
         '''
-        self._satisying = 0
+        self._satisfying = 0
         self._tolerating = 0
         self._frustrating = 0
         self._apdex_setting = apdex_setting
@@ -53,32 +53,32 @@ class ApdexStats(BaseStats):
         
     def record(self, time_in_seconds):
         if time_in_seconds <= self._apdex_setting.apdex_t:
-            self._satisying += 1
+            self._satisfying += 1
         elif time_in_seconds <= self._apdex_setting.apdex_f:
             self._tolerating += 1
         else:
             self._frustrating += 1
             
     def has_data(self):
-        return self._satisying > 0 or self._tolerating > 0 or self._frustrating > 0
+        return self._satisfying > 0 or self._tolerating > 0 or self._frustrating > 0
 
     def merge(self, other_stats):
-        self._satisying += other_stats._satisying
-        self._tolerating += other_stats._tolerating
-        self._frustrating += other_stats._frustrating
+        self._satisfying += other_stats.satisfying
+        self._tolerating += other_stats.tolerating
+        self._frustrating += other_stats.frustrating
 
     def _json_data(self):
-        return [self._satisying,self._tolerating,self.frustrating,0,0,0]
+        return [self._satisfying,self._tolerating,self.frustrating,0,0,0]
 
     def clone(self):
         s = ApdexStats(self._apdex_setting)
-        s._satisying = self._satisying
+        s._satisfying = self._satisfying
         s._tolerating = self._tolerating
         s._frustrating = self._frustrating
         return s
             
     def get_satisfying(self):
-        return self._satisying    
+        return self._satisfying    
     def get_tolerating(self):
         return self._tolerating
     def get_frustrating(self):

@@ -230,6 +230,7 @@ class Transaction(object):
                 children=tuple(children),
                 errors=tuple(self._errors),
                 slow_sql=tuple(self._slow_sql),
+                apdex_t=self._settings.apdex_t,
                 ignore_apdex=self.ignore_apdex)
 
         # Clear settings as we are all done and don't

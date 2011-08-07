@@ -1,12 +1,13 @@
-'''
-Created on Jul 26, 2011
-
-@author: sdaubin
-'''
-
 import collections
 
-def new_metric(name, scope=u""):
-    return Metric(name,scope)
-
 Metric = collections.namedtuple('Metric', ['name', 'scope'])
+
+ApdexMetric = collections.namedtuple('ApdexMetric',
+        ['name', 'scope', 'overflow', 'forced', 'satisfying', 'tolerating',
+        'frustrating'])
+
+TimeMetric = collections.namedtuple('TimeMetric',
+        ['name', 'scope', 'overflow', 'forced', 'duration', 'exclusive'])
+
+ValueMetric = collections.namedtuple('ValueMetric',
+        ['name', 'scope', 'overflow', 'forced', 'value'])

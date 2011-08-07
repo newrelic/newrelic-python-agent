@@ -354,7 +354,7 @@ def _load_configuration(config_file=None, environment=None,
                     newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
                                               "link to %s" %
                                               ((name, altname),))
-                    application.link_to(altname)
+                    application.link_to_application(altname)
 
             return True
 

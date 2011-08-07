@@ -62,25 +62,184 @@ The rule for construction the metric path for a function trace node is:
 """
 
 import collections
+import itertools
 
 import newrelic.core.metric
 
-DatabaseNode = collections.namedtuple('DatabaseNode',
+_DatabaseNode = collections.namedtuple('_DatabaseNode',
         ['database_module', 'connect_params', 'sql', 'children',
         'start_time', 'end_time', 'duration', 'exclusive',
         'stack_trace'])
 
-ExternalNode = collections.namedtuple('ExternalNode',
+class DatabaseNode(_DatabaseNode):
+
+    def time_metrics(self, root, parent):
+        """Return a generator yielding the timed metrics for this
+        database node as well as all the child nodes.
+
+        """
+
+        yield newrelic.core.metric.TimeMetric(name='Database/all',
+            scope='', overflow='', forced=True, duration=self.duration,
+            exclusive=0.0)
+
+        if root.type == 'WebTransaction':
+            yield newrelic.core.metric.TimeMetric(name='Database/allWeb',
+                scope='', overflow='', forced=True, duration=self.duration,
+                exclusive=0.0)
+        else:
+            yield newrelic.core.metric.TimeMetric(name='Database/allOther',
+                scope='', overflow='', forced=True, duration=self.duration,
+                exclusive=0.0)
+
+	# TODO Need to fill out the remainder of the database
+	# metrics but to do that need a mini parser to extract
+	# the type of SQL operation and the table name. Need to
+        # remember to do the scope metrics as well.
+
+        # Now for the children.
+
+	# TODO Should children of this node be output. If they
+	# are then exclusive needs to be included in above. The
+	# PHP agent wasn't doing that and why profile tracing
+	# was giving off results as had children to what PHP
+	# agent regarded as leaf nodes.
+
+        #for child in self.children:
+        #    for metric in child.time_metrics(root, self):
+        #        yield metric
+
+_ExternalNode = collections.namedtuple('_ExternalNode',
         ['library', 'url', 'children', 'start_time', 'end_time',
         'duration', 'exclusive'])
 
-FunctionNode = collections.namedtuple('FunctionNode',
+class ExternalNode(_ExternalNode):
+
+    def time_metrics(self, root, parent):
+        """Return a generator yielding the timed metrics for this
+        external node as well as all the child nodes.
+
+        """
+
+        yield newrelic.core.metric.TimeMetric(name='External/all',
+            scope='', overflow='', forced=True, duration=self.duration,
+            exclusive=0.0)
+
+        if root.type == 'WebTransaction':
+            yield newrelic.core.metric.TimeMetric(name='External/allWeb',
+                scope='', overflow='', forced=True, duration=self.duration,
+                exclusive=0.0)
+        else:
+            yield newrelic.core.metric.TimeMetric(name='External/allOther',
+                scope='', overflow='', forced=True, duration=self.duration,
+                exclusive=0.0)
+
+	# TODO Is it correct that 'all' is appended here. The
+	# PHP agent always adds it, but then it gets displayed
+	# in the UI as if it is part of the URL. Tend to think
+	# it is a bug in the PHP agent that it is appended to
+        # the metric path.
+
+        name = 'External/%s/%s/all' % (self.library, self.url)
+        overflow = 'External/*'
+
+        yield newrelic.core.metric.TimeMetric(name=name, scope='',
+                overflow=overflow, forced=False, duration=self.duration,
+                exclusive=0.0)
+
+        scope = root.path
+
+        yield newrelic.core.metric.TimeMetric(name=name, scope=scope,
+                overflow=overflow, forced=False, duration=self.duration,
+                exclusive=0.0)
+
+        # Now for the children.
+
+	# TODO Should children of this node be output. If they
+	# are then exclusive needs to be included in above. The
+	# PHP agent wasn't doing that and why profile tracing
+	# was giving off results as had children to what PHP
+	# agent regarded as leaf nodes.
+
+        #for child in self.children:
+        #    for metric in child.time_metrics(root, self):
+        #        yield metric
+
+_FunctionNode = collections.namedtuple('_FunctionNode',
         ['group', 'name', 'children', 'start_time', 'end_time',
         'duration', 'exclusive'])
 
-MemcacheNode = collections.namedtuple('MemcacheNode',
+class FunctionNode(_FunctionNode):
+
+    def time_metrics(self, root, parent):
+        """Return a generator yielding the timed metrics for this
+        function node as well as all the child nodes.
+
+        """
+
+        name = '%s/%s' % (self.group, self.name)
+        overflow = '%s/*' % self.group
+        scope = root.path
+
+        yield newrelic.core.metric.TimeMetric(name=name, scope=scope,
+                overflow=overflow, forced=False, duration=self.duration,
+                exclusive=0.0)
+
+        # Now for the children.
+
+        for child in self.children:
+            for metric in child.time_metrics(root, self):
+                yield metric
+
+_MemcacheNode = collections.namedtuple('_MemcacheNode',
         ['command', 'children', 'start_time', 'end_time', 'duration',
         'exclusive'])
+
+class MemcacheNode(_MemcacheNode):
+
+    def time_metrics(self, root, parent):
+        """Return a generator yielding the timed metrics for this
+        memcache node as well as all the child nodes.
+
+        """
+
+        yield newrelic.core.metric.TimeMetric(name='Memcache/all',
+            scope='', overflow='', forced=True, duration=self.duration,
+            exclusive=0.0)
+
+        if root.type == 'WebTransaction':
+            yield newrelic.core.metric.TimeMetric(name='Memcache/allWeb',
+                scope='', overflow='', forced=True, duration=self.duration,
+                exclusive=0.0)
+        else:
+            yield newrelic.core.metric.TimeMetric(name='Memcache/allOther',
+                scope='', overflow='', forced=True, duration=self.duration,
+                exclusive=0.0)
+
+        name = 'Memcache/%s' % self.command
+        overflow = 'External/*'
+
+        yield newrelic.core.metric.TimeMetric(name=name, scope='',
+                overflow=overflow, forced=False, duration=self.duration,
+                exclusive=0.0)
+
+        scope = root.path
+
+        yield newrelic.core.metric.TimeMetric(name=name, scope=scope,
+                overflow=overflow, forced=False, duration=self.duration,
+                exclusive=0.0)
+
+        # Now for the children.
+
+	# TODO Should children of this node be output. If they
+	# are then exclusive needs to be included in above. The
+	# PHP agent wasn't doing that and why profile tracing
+	# was giving off results as had children to what PHP
+	# agent regarded as leaf nodes.
+
+        #for child in self.children:
+        #    for metric in child.time_metrics(root, self):
+        #        yield metric
 
 ErrorNode = collections.namedtuple('ErrorNode',
         ['type', 'message', 'stack_trace', 'custom_params',
@@ -102,8 +261,22 @@ class TransactionNode(_TransactionNode):
 
     """
 
+    def __init__(self, *args, **kwargs):
+        _TransactionNode.__init__(self, *args, **kwargs)
+        self._path = None
+
+    @property
+    def path(self):
+        if not self._path is None:
+            return self._path
+        return self.metric_name()
+
     def metric_name(self, type=None):
+
         type = type or self.type
+
+        if type == 'WebTransaction' and not self._path is None:
+            return self._path
 
 	# Stripping the leading slash on the request URL held by
 	# name when type is 'Uri' is to keep compatibility with
@@ -116,10 +289,14 @@ class TransactionNode(_TransactionNode):
         else:
             path = '%s/%s/%s' % (self.type, self.group, self.name)
 
+        if type == 'WebTransaction':
+            self._path = path
+
         return path
 
     def time_metrics(self):
-        """Return a generator yielding the timed metrics for this node.
+        """Return a generator yielding the timed metrics for the
+        top level web transaction as well as all the child nodes.
 
         """
 
@@ -147,7 +324,7 @@ class TransactionNode(_TransactionNode):
 
             yield newrelic.core.metric.TimeMetric(name='HttpDispatcher',
                     scope='', overflow=None, forced=False,
-                    duration=self.duration, exclusive=0)
+                    duration=self.duration, exclusive=0.0)
 
             # Upstream queue time within any web server front end.
 
@@ -158,18 +335,18 @@ class TransactionNode(_TransactionNode):
             # tracking time through multiple front ends.
 
             if self.queue_start != 0:
-                queue_wait = self.start_time = self.queue_start
+                queue_wait = self.start_time - self.queue_start
                 if queue_wait < 0:
                     queue_wait = 0
 
                 yield newrelic.core.metric.TimeMetric(
                         name='WebFrontend/QueueTime', scope='',
                         overflow=None, forced=True, duration=queue_wait,
-                        exclusive=0)
+                        exclusive=0.0)
 
 	# Generate the full transaction metric.
 
-        name = self.metric_name()
+        name = self.path
 
         yield newrelic.core.metric.TimeMetric(name=name, scope=None,
                 overflow=None, forced=True, duration=self.duration,
@@ -185,6 +362,12 @@ class TransactionNode(_TransactionNode):
         yield newrelic.core.metric.TimeMetric(name=rollup, scope=None,
                 overflow=None, forced=True, duration=self.duration,
                 exclusive=self.exclusive)
+
+        # Now for the children.
+
+        for child in self.children:
+            for metric in child.time_metrics(self, self):
+                yield metric
 
     def apdex_metrics(self):
         """Return a generator yielding the apdex metrics for this node.
@@ -225,6 +408,10 @@ class TransactionNode(_TransactionNode):
         # need to specific an overflow metric for case where
         # too many metrics have been generated and want to
         # stick remainder in a bucket.
+
+        # FIXME Something not right here as missing detail in
+        # apdex chart of overview tab when looking at specific
+        # web transaction.
 
 	# TODO Should the apdex metric path only include the
 	# first segment of group? That is, only the top level

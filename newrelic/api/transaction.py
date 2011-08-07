@@ -141,7 +141,7 @@ class Transaction(object):
         self._settings = self._application.settings
 
         if not self._settings:
-            #self._application.activate()
+            self._application.activate()
             return self
 
         # Record the start time for transaction.

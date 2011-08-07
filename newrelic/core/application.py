@@ -117,15 +117,11 @@ class Application(object):
 	# configuration and finished after application had been
 	# restarted.
 
-        print 'TRANSACTION', data
-
         for metric in data.apdex_metrics():
-            print 'APDEX', metric
             self._stats_dict.get_apdex_stats(Metric(metric.name,
                     metric.scope)).merge(metric)
 
         for metric in data.time_metrics():
-            print 'TIME', metric
             self._stats_dict.get_time_stats(Metric(metric.name,
                     metric.scope)).record(metric.duration, metric.exclusive)
 

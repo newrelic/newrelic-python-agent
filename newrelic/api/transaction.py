@@ -113,7 +113,7 @@ class Transaction(object):
         # Bail out if the transaction is not enabled.
 
         if not self.enabled:
-            return
+            return self
 
 	# Cache transaction in thread/coroutine local
 	# storage so that it can be accessed from
@@ -142,7 +142,7 @@ class Transaction(object):
 
         if not self._settings:
             #self._application.activate()
-            return
+            return self
 
         # Record the start time for transaction.
 

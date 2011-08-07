@@ -121,13 +121,19 @@ class Application(object):
 
         for metric in data.apdex_metrics():
             print 'APDEX', metric
-            self._stats_dict.get_apdex_stats((metric.name,
+            self._stats_dict.get_apdex_stats(Metric(metric.name,
                     metric.scope)).merge(metric)
 
         for metric in data.time_metrics():
             print 'TIME', metric
-            self._stats_dict.get_time_stats((metric.name,
+            self._stats_dict.get_time_stats(Metric(metric.name,
                     metric.scope)).record(metric.duration, metric.exclusive)
+
+        # FIXME Force harvest on each request for now as otherwise
+        # doesn't appear to be running.
+
+        connection = self._remote.create_connection()
+        self.harvest(connection)
 
     def record_cpu_stats(self,stats):
         if stats is not None:

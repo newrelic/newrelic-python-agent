@@ -113,6 +113,15 @@ class WebTransaction(newrelic.api.transaction.Transaction):
                 except:
                     pass
 
+        if self._queue_start == 0.0:
+            value = environ.get('mod_wsgi.queue_start', None)
+
+            if value and isinstance(value, basestring):
+                try:
+                    self._queue_start = int(value)/1000000.0
+                except:
+                    pass
+
         # Capture query request string parameters.
 
         value = environ.get('QUERY_STRING', None)

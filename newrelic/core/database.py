@@ -12,9 +12,9 @@ import re
 from newrelic.core.string_normalization import *
 
 def obfuscator(database_type="postgresql"):
-    numeric              = NormalizationRule(r'\d+', "?")
-    single_quoted_string = NormalizationRule(r"'(.*?[^\\'])??'(?!')", "?")
-    double_quoted_string = NormalizationRule(r'"(.*?[^\\"])??"(?!")', "?")
+    numeric              = DefaultNormalizationRule._replace(match=r'\d+', replacement="?")
+    single_quoted_string = DefaultNormalizationRule._replace(match=r"'(.*?[^\\'])??'(?!')", replacement="?")
+    double_quoted_string = DefaultNormalizationRule._replace(match=r'"(.*?[^\\"])??"(?!")', replacement="?")
 
     if database_type == "mysql":
         return SqlObfuscator(numeric, single_quoted_string,

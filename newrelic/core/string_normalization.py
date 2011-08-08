@@ -1,17 +1,12 @@
 import re
+import collections
 
-class NormalizationRule:
-    def __init__(self, match, replacement, ignore=False, order=0,
-                 terminate_chain=False, each_segment=False, replace_all=True):
-        self.match = match
-        self.replacement = replacement
-        self.ignore = ignore
-        self.order = order
-        self.terminate_chain = terminate_chain
-        self.each_segment = each_segment
-        self.replace_all = replace_all
-        self.matched = False
+_NormalizationRule = collections.namedtuple('_NormalizationRule', 
+                                            ['match', 'replacement', 'ignore',
+                                             'order', 'terminate_chain',
+                                             'each_segment', 'replace_all'])
 
+class NormalizationRule(_NormalizationRule):
     def apply(self, string):
         max = 1
         if self.replace_all:
@@ -19,6 +14,12 @@ class NormalizationRule:
         result = re.sub(self.match, self.replacement, string, max)
         self.matched = (result != string)
         return result
+
+DefaultNormalizationRule = NormalizationRule(match=None, replacement=None, 
+                                             ignore=False, order=0, 
+                                             terminate_chain=False, 
+                                             each_segment=False,
+                                             replace_all=True)
 
 class Normalizer:
     def __init__(self, *rules):

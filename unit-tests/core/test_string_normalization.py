@@ -141,5 +141,18 @@ class TestStringNormalization(unittest.TestCase):
         self.assertEqual("/wallabies/ArticleDetails/tabid/bar/ArticleID/3773/Default.aspx",
                          result)
 
+    def test_normalizer_reports_if_ignore_rule_was_applied(self):
+        rule = NormalizationRule(match = "[0-9]+", 
+                                  replacement = "foo", 
+                                  ignore = True, 
+                                  order = 0,
+                                  terminate_chain = False, 
+                                  each_segment = False, 
+                                  replace_all = True)
+        normalizer = Normalizer(rule)
+        result = normalizer.normalize(self.test_url)
+        
+        self.assertTrue(normalizer.applied_ignore_rule())
+
 if __name__ == "__main__":
     unittest.main()

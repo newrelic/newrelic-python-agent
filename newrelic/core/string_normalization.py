@@ -37,3 +37,7 @@ class Normalizer:
 
             if rule.matched and rule.terminate_chain: break
         return final_string
+
+    def applied_ignore_rule(self):
+        return reduce(lambda x,y: x.ignore or y.ignore, 
+                      [rule for rule in self.rules if rule.matched])

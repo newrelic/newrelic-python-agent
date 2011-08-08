@@ -299,26 +299,34 @@ class Transaction(object):
         if exc is None or value is None or tb is None:
             return
 
-        # XXX Need to ignore if listed to be ignore in
-        # settings.
-
 	# XXX Need to capture source if enabled in
 	# settings.
 
-        type = exc.__name__
-        message = value
-        stack_trace = traceback.format_exception(exc, value, tb)
+        module = exc.__class__.__module__
+        name = exc.__class__.__name__
 
-        node = newrelic.core.transaction.ErrorNode(
-                type=exc.__name__,
-                message=str(value),
-                stack_trace=traceback.format_exception(exc, value, tb),
-                custom_params=params,
-                file_name=None,
-                line_number=None,
-                source=None)
+        if module:
+            path = '%s.%s' % (module, name)
+        else:
+            path = name
 
-        self._errors.append(node)
+        ignore_errors = self._settings.error_collector.ignore_errors
+
+        if not path in ignore_errors:
+            type = exc.__name__
+            message = value
+            stack_trace = traceback.format_exception(exc, value, tb)
+
+            node = newrelic.core.transaction.ErrorNode(
+                    type=exc.__name__,
+                    message=str(value),
+                    stack_trace=traceback.format_exception(exc, value, tb),
+                    custom_params=params,
+                    file_name=None,
+                    line_number=None,
+                    source=None)
+
+            self._errors.append(node)
 
 def transaction():
     return Transaction._current_transaction()

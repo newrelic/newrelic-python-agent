@@ -150,7 +150,7 @@ class Application(object):
 
         for metric in data.apdex_metrics():
             self._stats_dict.get_apdex_stats(Metric(metric.name,
-                    metric.scope)).merge(metric)
+                    None)).merge(metric)
 
         for metric in data.time_metrics():
             self._stats_dict.get_time_stats(Metric(metric.name,

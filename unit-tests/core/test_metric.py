@@ -36,9 +36,11 @@ class TestMetric(unittest.TestCase):
     def test_json(self):
         m = metric.new_metric(u"foo")
         s = json.dumps(m._asdict())
-        self.assertEqual("{\"name\": \"foo\", \"scope\": \"\"}", s)
+        h = json.loads(s)
+        self.assertEqual("foo", h["name"])
+        self.assertEqual("", h["scope"])
+        self.assertEqual(2, len(h.keys()))
         print s
 
 if __name__ == "__main__":
-    #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

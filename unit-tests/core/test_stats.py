@@ -166,8 +166,15 @@ class StatsDictTest(unittest.TestCase):
         self.assertEqual(new_metric("bar")._asdict(),md[1][0])
         
         s = json.dumps(md,cls=NRJSONEncoder)
-        self.assertEqual("[[{\"name\": \"foo\", \"scope\": \"\"}, [1, 0.12, 0.12, 0.12, 0.12, 0.0144]], [{\"name\": \"bar\", \"scope\": \"\"}, [1, 0.34, 0.34, 0.34, 0.34, 0.11560000000000002]]]",s)
-        
+        h = json.loads(s)
+        self.assertEqual("foo", h[0][0]["name"])
+        self.assertEqual("", h[0][0]["scope"])
+        self.assertEqual([1, 0.12, 0.12, 0.12, 0.12, 0.0144], h[0][1])
+        self.assertEqual("bar", h[1][0]["name"])
+        self.assertEqual("", h[1][0]["scope"])
+        self.assertEqual([1, 0.34, 0.34, 0.34, 0.34, 0.11560000000000002], 
+                         h[1][1])
+
     def test_metric_data_with_ids(self):
         d = StatsDict(create_settings_snapshot({"apdex_t":1}))
         s = d.get_time_stats(Metric(u"foo",u""))
@@ -180,5 +187,4 @@ class StatsDictTest(unittest.TestCase):
         self.assertEqual(12,md[0][0])
                 
 if __name__ == "__main__":
-    #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

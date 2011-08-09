@@ -270,10 +270,15 @@ class TransactionNode(_TransactionNode):
         return self.metric_name()
 
     def metric_name(self, type=None):
-
         type = type or self.type
 
-        if type == 'WebTransaction' and not self._path is None:
+	# We cache the resultant path when the type specified is
+        # WebTransaction as it will be used a lot for scoped
+        # metrics. This is accessed via 'path' property. For
+        # Apdex which is the other case we just calculate it
+        # as is only required once.
+
+        if type == 'WebTransaction' and self._path is not None:
             return self._path
 
         # Stripping the leading slash on the request URL held by
@@ -283,9 +288,9 @@ class TransactionNode(_TransactionNode):
         # leading slash may be significant in that situation.
 
         if self.group == 'Uri' and self.name[:1] == '/':
-            path = '%s/%s%s' % (self.type, self.group, self.name)
+            path = '%s/%s%s' % (type, self.group, self.name)
         else:
-            path = '%s/%s/%s' % (self.type, self.group, self.name)
+            path = '%s/%s/%s' % (type, self.group, self.name)
 
         if type == 'WebTransaction':
             self._path = path

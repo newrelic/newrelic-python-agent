@@ -99,15 +99,9 @@ class DatabaseNode(_DatabaseNode):
 
         # Now for the children.
 
-	# TODO Should children of this node be output. If they
-	# are then exclusive needs to be included in above. The
-	# PHP agent wasn't doing that and why profile tracing
-	# was giving off results as had children to what PHP
-	# agent regarded as leaf nodes.
-
-        #for child in self.children:
-        #    for metric in child.time_metrics(root, self):
-        #        yield metric
+        for child in self.children:
+            for metric in child.time_metrics(root, self):
+                yield metric
 
 _ExternalNode = collections.namedtuple('_ExternalNode',
         ['library', 'url', 'children', 'start_time', 'end_time',
@@ -155,15 +149,9 @@ class ExternalNode(_ExternalNode):
 
         # Now for the children.
 
-	# TODO Should children of this node be output. If they
-	# are then exclusive needs to be included in above. The
-	# PHP agent wasn't doing that and why profile tracing
-	# was giving off results as had children to what PHP
-	# agent regarded as leaf nodes.
-
-        #for child in self.children:
-        #    for metric in child.time_metrics(root, self):
-        #        yield metric
+        for child in self.children:
+            for metric in child.time_metrics(root, self):
+                yield metric
 
 _FunctionNode = collections.namedtuple('_FunctionNode',
         ['group', 'name', 'children', 'start_time', 'end_time',
@@ -231,15 +219,9 @@ class MemcacheNode(_MemcacheNode):
 
         # Now for the children.
 
-	# TODO Should children of this node be output. If they
-	# are then exclusive needs to be included in above. The
-	# PHP agent wasn't doing that and why profile tracing
-	# was giving off results as had children to what PHP
-	# agent regarded as leaf nodes.
-
-        #for child in self.children:
-        #    for metric in child.time_metrics(root, self):
-        #        yield metric
+        for child in self.children:
+            for metric in child.time_metrics(root, self):
+                yield metric
 
 ErrorNode = collections.namedtuple('ErrorNode',
         ['type', 'message', 'stack_trace', 'custom_params',

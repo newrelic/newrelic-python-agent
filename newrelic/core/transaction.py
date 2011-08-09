@@ -351,7 +351,7 @@ class TransactionNode(_TransactionNode):
 
         name = self.path
 
-        yield newrelic.core.metric.TimeMetric(name=name, scope=None,
+        yield newrelic.core.metric.TimeMetric(name=name, scope='',
                 overflow=None, forced=True, duration=self.duration,
                 exclusive=self.exclusive)
 
@@ -362,7 +362,7 @@ class TransactionNode(_TransactionNode):
         else:
             rollup = self.type
 
-        yield newrelic.core.metric.TimeMetric(name=rollup, scope=None,
+        yield newrelic.core.metric.TimeMetric(name=rollup, scope='',
                 overflow=None, forced=True, duration=self.duration,
                 exclusive=self.exclusive)
 

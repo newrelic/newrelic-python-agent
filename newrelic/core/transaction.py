@@ -93,9 +93,9 @@ class DatabaseNode(_DatabaseNode):
                 scope='', overflow=None, forced=True, duration=self.duration,
                 exclusive=0.0)
 
-	# TODO Need to fill out the remainder of the database
-	# metrics but to do that need a mini parser to extract
-	# the type of SQL operation and the table name. Need to
+        # TODO Need to fill out the remainder of the database
+        # metrics but to do that need a mini parser to extract
+        # the type of SQL operation and the table name. Need to
         # remember to do the scope metrics as well.
 
         # Now for the children.
@@ -129,9 +129,9 @@ class ExternalNode(_ExternalNode):
                 scope='', overflow=None, forced=True, duration=self.duration,
                 exclusive=0.0)
 
-	# Split the parts out of the URL. Can't use attribute
-	# style access and instead must use tuple style access
-	# as attribute access only added in Python 2.5.
+        # Split the parts out of the URL. Can't use attribute
+        # style access and instead must use tuple style access
+        # as attribute access only added in Python 2.5.
 
         parts = urlparse.urlparse(self.url)
 
@@ -270,11 +270,11 @@ class TransactionNode(_TransactionNode):
         if type == 'WebTransaction' and not self._path is None:
             return self._path
 
-	# Stripping the leading slash on the request URL held by
-	# name when type is 'Uri' is to keep compatibility with
-	# PHP agent and also possibly other agents. Leading
-	# slash it not deleted for other category groups as the
-	# leading slash may be significant in that situation.
+        # Stripping the leading slash on the request URL held by
+        # name when type is 'Uri' is to keep compatibility with
+        # PHP agent and also possibly other agents. Leading
+        # slash it not deleted for other category groups as the
+        # leading slash may be significant in that situation.
 
         if self.group == 'Uri' and self.name[:1] == '/':
             path = '%s/%s%s' % (self.type, self.group, self.name)
@@ -292,20 +292,20 @@ class TransactionNode(_TransactionNode):
 
         """
 
-	# TODO What to do about a transaction where the name is
-	# None. In the PHP agent it replaces it with an
-	# underscore for timed metrics and continues. For an
-	# apdex metric the PHP agent ignores it however. For now
-	# we just ignore it.
+        # TODO What to do about a transaction where the name is
+        # None. In the PHP agent it replaces it with an
+        # underscore for timed metrics and continues. For an
+        # apdex metric the PHP agent ignores it however. For now
+        # we just ignore it.
 
         if not self.name:
             return
 
         if self.type == 'WebTransaction':
-	    # Report time taken by request dispatcher. We don't
-	    # know upstream time distinct from actual request
-	    # time so can't report time exclusively in the
-	    # dispatcher.
+            # Report time taken by request dispatcher. We don't
+            # know upstream time distinct from actual request
+            # time so can't report time exclusively in the
+            # dispatcher.
 
             # TODO Technically could work this out with the
             # modifications in Apache/mod_wsgi to mark start of
@@ -336,7 +336,7 @@ class TransactionNode(_TransactionNode):
                         overflow=None, forced=True, duration=queue_wait,
                         exclusive=0.0)
 
-	# Generate the full transaction metric.
+        # Generate the full transaction metric.
 
         name = self.path
 
@@ -377,10 +377,10 @@ class TransactionNode(_TransactionNode):
         if self.type != 'WebTransaction':
             return
 
-	# The magic calculations based on apdex_t. The apdex_t
-	# is based on what was in place at the start of the
-	# transaction. This could have changed between that
-	# point in the request and now.
+        # The magic calculations based on apdex_t. The apdex_t
+        # is based on what was in place at the start of the
+        # transaction. This could have changed between that
+        # point in the request and now.
 
         satisfying = 0
         tolerating = 0
@@ -405,9 +405,9 @@ class TransactionNode(_TransactionNode):
         # apdex chart of overview tab when looking at specific
         # web transaction.
 
-	# TODO Should the apdex metric path only include the
-	# first segment of group? That is, only the top level
-	# category and not any sub categories.
+        # TODO Should the apdex metric path only include the
+        # first segment of group? That is, only the top level
+        # category and not any sub categories.
 
         name = self.metric_name('Apdex')
         overflow = 'Apdex/%s/*' % self.group

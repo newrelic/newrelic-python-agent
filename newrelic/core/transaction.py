@@ -217,7 +217,7 @@ class MemcacheNode(_MemcacheNode):
                 exclusive=0.0)
 
         name = 'Memcache/%s' % self.command
-        overflow = 'External/*'
+        overflow = 'Memcache/*'
 
         yield newrelic.core.metric.TimeMetric(name=name, scope='',
                 overflow=overflow, forced=False, duration=self.duration,

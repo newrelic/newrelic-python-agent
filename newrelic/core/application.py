@@ -89,33 +89,64 @@ class Application(object):
 
     def record_transaction(self, data):
 
-	# FIXME The application object perhaps needs to maintain an
-	# activation counter. This would be incremented after each
-	# connect to core application and updated server side
-	# configuration available. The counter number should then be
-	# pushed into the application specific settings object and the
-	# higher level instrumentation layer should then supply the
-	# counter value in the TransactionNode root object for the raw
-	# transaction data. That way the code here could make a decision
-	# whether the data should be thrown away as it relates to a
-	# transaction that started when the application was previously
-	# active, but got restarted in between then and when the
-	# transaction completed. If we don't do this then we could push
-	# through transaction data accumulated based on an old set of
-	# application specific configuration settings. This may not be
-	# an issue given in most cases the server side configuration
-	# wouldn't change but should be considered. No harm in adding
-	# the counter even if not ultimately needed. The core
-	# application could even be what doles out the counter or
-	# identifying value for that configuration snapshot and record
-	# it against the agent run details stored in core application
-	# database rather than it be generated internally using a
-	# counter. The value could change on each request or only
-	# increment when server side sees a change in server side
-	# application configuration. If only changes when configuration
-	# changes, wouldn't matter then that request started with one
-	# configuration and finished after application had been
-	# restarted.
+        # FIXME The application object perhaps needs to maintain an
+        # activation counter. This would be incremented after each
+        # connect to core application and updated server side
+        # configuration available. The counter number should then be
+        # pushed into the application specific settings object and the
+        # higher level instrumentation layer should then supply the
+        # counter value in the TransactionNode root object for the raw
+        # transaction data. That way the code here could make a decision
+        # whether the data should be thrown away as it relates to a
+        # transaction that started when the application was previously
+        # active, but got restarted in between then and when the
+        # transaction completed. If we don't do this then we could push
+        # through transaction data accumulated based on an old set of
+        # application specific configuration settings. This may not be
+        # an issue given in most cases the server side configuration
+        # wouldn't change but should be considered. No harm in adding
+        # the counter even if not ultimately needed. The core
+        # application could even be what doles out the counter or
+        # identifying value for that configuration snapshot and record
+        # it against the agent run details stored in core application
+        # database rather than it be generated internally using a
+        # counter. The value could change on each request or only
+        # increment when server side sees a change in server side
+        # application configuration. If only changes when configuration
+        # changes, wouldn't matter then that request started with one
+        # configuration and finished after application had been
+        # restarted.
+
+        # FIXME There is no thread locking in stats classes at this
+        # point. Locking on each update is going to be inefficient. May
+        # be better for add a method to stats class which accepts the
+        # generator and have it lock once and update from generator.
+        # Other option is accumulate into separate stats instance and
+        # then merge that once with locking in the merge function.
+        #
+        # What complicates this is how we handle metric explosion for
+        # nodes in a trace. PHP agent was using the overflow metric
+        # after certain number of nodes reached, so time order. Saxon
+        # has indicated alternate way of sorting metrics based on
+        # duration and only keep the top ones with the rest going into
+        # the overflow. Either way, the overflow metric as specified
+        # now is needed. If have to sort though, means that have to
+        # exhaust the generator and accumulate all metrics, which will
+        # chew up a lot more memory. Use of geneator still pontential
+        # means is more efficient than just accumulating everything in
+        # a list ot begin with and then sort list. The means of doing
+        # it is quite easy though as can do:
+        #
+        #     metrics = sorted(data.apdex_metrics(), key=lambda x: x.duration)
+        #
+        # and metrics will list of all metrics sorted based on duration.
+        # The list will still contain metrics which are forced or don't
+        # have an overflow, for which default probably needs to be
+        # generated, so need to special case them as we go through them
+        # and keep count of those we can discard and when they reach
+        # limit then can start using overflow. The algorithm is exactly
+        # the same though regardless of whether sort them first. Quite
+        # easy to support both approaches through configuration initially.
 
         for metric in data.apdex_metrics():
             self._stats_dict.get_apdex_stats(Metric(metric.name,

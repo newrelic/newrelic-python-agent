@@ -14,9 +14,9 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
     def __init__(self, application, environ):
 
-	# The web transaction can be enabled/disabled by
-	# the value of the variable "newrelic.enabled"
-	# in the WSGI environ dictionary. We need to check
+        # The web transaction can be enabled/disabled by
+        # the value of the variable "newrelic.enabled"
+        # in the WSGI environ dictionary. We need to check
         # this before initialising the transaction as needs
         # to be passed in base class constructor. The
         # default is None, which would then result in the
@@ -31,8 +31,8 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         newrelic.api.transaction.Transaction.__init__(self,
                 application, enabled)
 
-	# Bail out if the transaction is running in a
-	# disabled state.
+        # Bail out if the transaction is running in a
+        # disabled state.
 
         if not self.enabled:
             return
@@ -46,14 +46,14 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         self.ignore_apdex = self._environ_setting(
                 environ, 'newrelic.ignore_apdex', False)
 
-	# Extract from the WSGI environ dictionary
-	# details of the URL path. This will be set as
-	# default path for the web transaction. This can
-	# be overridden by framework to be more specific
-	# to avoid metrics explosion problem resulting
-	# from too many distinct URLs for same resource
-	# due to use of REST style URL concepts or
-	# otherwise.
+        # Extract from the WSGI environ dictionary
+        # details of the URL path. This will be set as
+        # default path for the web transaction. This can
+        # be overridden by framework to be more specific
+        # to avoid metrics explosion problem resulting
+        # from too many distinct URLs for same resource
+        # due to use of REST style URL concepts or
+        # otherwise.
 
         request_uri = environ.get('REQUEST_URI', None)
         script_name = environ.get('SCRIPT_NAME', None)
@@ -75,34 +75,42 @@ class WebTransaction(newrelic.api.transaction.Transaction):
                 self._request_uri = path
         else:
             if request_uri is not None:
+                # Need to make sure we drop off any query string
+                # arguments on the path if we have to fallback
+                # to using the original REQUEST_URI. Can't use
+                # attribute access on result as only support for
+                # Python 2.5+.
+
+                request_uri = urlparse.urlparse(request_uri)[2]
+
                 self.name_transaction(request_uri, 'Uri')
 
-	# See if the WSGI environ dictionary includes
-	# the special 'X-Queue-Start' HTTP header. This
-	# header is an optional header that can be set
-	# within the underlying web server or WSGI
-	# server to indicate when the current request
-	# was first received and ready to be processed.
-	# The difference between this time and when
-	# application starts processing the request is
-	# the queue time and represents how long spent
-	# in any explicit request queuing system, or how
-	# long waiting in connecting state against
-	# listener sockets where request needs to be
-	# proxied between any processes within the
-	# application server.
-	#
-	# Note that mod_wsgi 4.0 sets its own distinct
-	# variable called mod_wsgi.queue_start so that
-	# not necessary to enable and use mod_headers to
-	# add X-Queue-Start. So also check for that, but
-	# give priority to the explicitly added header
-	# in case that header was added in front end
-	# server to Apache instead although for that
-	# case they should be using X-Request-Start
-	# which do not support here yet as PHP agent
-	# core doesn't have a way of tracking front end
-	# web server time.
+        # See if the WSGI environ dictionary includes
+        # the special 'X-Queue-Start' HTTP header. This
+        # header is an optional header that can be set
+        # within the underlying web server or WSGI
+        # server to indicate when the current request
+        # was first received and ready to be processed.
+        # The difference between this time and when
+        # application starts processing the request is
+        # the queue time and represents how long spent
+        # in any explicit request queuing system, or how
+        # long waiting in connecting state against
+        # listener sockets where request needs to be
+        # proxied between any processes within the
+        # application server.
+        #
+        # Note that mod_wsgi 4.0 sets its own distinct
+        # variable called mod_wsgi.queue_start so that
+        # not necessary to enable and use mod_headers to
+        # add X-Queue-Start. So also check for that, but
+        # give priority to the explicitly added header
+        # in case that header was added in front end
+        # server to Apache instead although for that
+        # case they should be using X-Request-Start
+        # which do not support here yet as PHP agent
+        # core doesn't have a way of tracking front end
+        # web server time.
 
         value = environ.get('HTTP_X_QUEUE_START', None)
 
@@ -203,10 +211,10 @@ class WSGIApplicationWrapper(object):
     def __call__(self, environ, start_response):
         transaction = newrelic.api.transaction.transaction()
 
-	# Check to see if we are being called within the
-	# context of any sort of transaction. If we are,
-	# then we don't bother doing anything and just
-	# call the wrapped function.
+        # Check to see if we are being called within the
+        # context of any sort of transaction. If we are,
+        # then we don't bother doing anything and just
+        # call the wrapped function.
 
         if transaction:
             return self._nr_next_object(environ, start_response)

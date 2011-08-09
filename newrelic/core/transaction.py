@@ -254,7 +254,13 @@ class TransactionNode(_TransactionNode):
     """
 
     def __init__(self, *args, **kwargs):
-        _TransactionNode.__init__(self, *args, **kwargs)
+	# We don't actually need to call the base class
+	# constructor the class created by namedtuple overrides
+	# __new__ and that is what is initialising the class
+	# with all the attributes. In the derived class
+	# constructor we just need to set up any additional
+	# variables of our own.
+
         self._path = None
 
     @property

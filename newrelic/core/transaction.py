@@ -63,6 +63,7 @@ The rule for construction the metric path for a function trace node is:
 
 import collections
 import itertools
+import urlparse
 
 import newrelic.core.metric
 
@@ -128,13 +129,22 @@ class ExternalNode(_ExternalNode):
                 scope='', overflow=None, forced=True, duration=self.duration,
                 exclusive=0.0)
 
-	# TODO Is it correct that 'all' is appended here. The
-	# PHP agent always adds it, but then it gets displayed
-	# in the UI as if it is part of the URL. Tend to think
-	# it is a bug in the PHP agent that it is appended to
-        # the metric path.
+	# Split the parts out of the URL. Can't use attribute
+	# style access and instead must use tuple style access
+	# as attribute access only added in Python 2.5.
 
-        name = 'External/%s/%s/all' % (self.library, self.url)
+        parts = urlparse.urlparse(self.url)
+
+        host = parts[1] or 'unknown'
+        path = parts[2]
+
+        name = 'External/%s/all' % host
+
+        yield newrelic.core.metric.TimeMetric(name=name, scope='',
+                overflow=None, forced=False, duration=self.duration,
+                exclusive=0.0)
+
+        name = 'External/%s/%s%s' % (host, self.library, path)
         overflow = 'External/*'
 
         yield newrelic.core.metric.TimeMetric(name=name, scope='',

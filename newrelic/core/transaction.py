@@ -423,12 +423,12 @@ class TransactionNode(_TransactionNode):
         name = self.metric_name('Apdex')
         overflow = 'Apdex/%s/*' % self.group
 
-        yield newrelic.core.metric.ApdexMetric(name=name, scope='',
+        yield newrelic.core.metric.ApdexMetric(name=name,
                 overflow=overflow, forced=False, satisfying=satisfying,
                 tolerating=tolerating, frustrating=frustrating)
 
         # Generate the rollup metric.
 
-        yield newrelic.core.metric.ApdexMetric(name='Apdex', scope='',
+        yield newrelic.core.metric.ApdexMetric(name='Apdex',
                 overflow=None, forced=True, satisfying=satisfying,
                 tolerating=tolerating, frustrating=frustrating)

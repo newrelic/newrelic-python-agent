@@ -3,7 +3,7 @@ import collections
 Metric = collections.namedtuple('Metric', ['name', 'scope'])
 
 ApdexMetric = collections.namedtuple('ApdexMetric',
-        ['name', 'scope', 'overflow', 'forced', 'satisfying', 'tolerating',
+        ['name', 'overflow', 'forced', 'satisfying', 'tolerating',
         'frustrating'])
 
 TimeMetric = collections.namedtuple('TimeMetric',

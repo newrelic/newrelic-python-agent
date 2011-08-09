@@ -80,16 +80,16 @@ class DatabaseNode(_DatabaseNode):
         """
 
         yield newrelic.core.metric.TimeMetric(name='Database/all',
-            scope='', overflow='', forced=True, duration=self.duration,
+            scope='', overflow=None, forced=True, duration=self.duration,
             exclusive=0.0)
 
         if root.type == 'WebTransaction':
             yield newrelic.core.metric.TimeMetric(name='Database/allWeb',
-                scope='', overflow='', forced=True, duration=self.duration,
+                scope='', overflow=None, forced=True, duration=self.duration,
                 exclusive=0.0)
         else:
             yield newrelic.core.metric.TimeMetric(name='Database/allOther',
-                scope='', overflow='', forced=True, duration=self.duration,
+                scope='', overflow=None, forced=True, duration=self.duration,
                 exclusive=0.0)
 
 	# TODO Need to fill out the remainder of the database
@@ -122,16 +122,16 @@ class ExternalNode(_ExternalNode):
         """
 
         yield newrelic.core.metric.TimeMetric(name='External/all',
-            scope='', overflow='', forced=True, duration=self.duration,
+            scope='', overflow=None, forced=True, duration=self.duration,
             exclusive=0.0)
 
         if root.type == 'WebTransaction':
             yield newrelic.core.metric.TimeMetric(name='External/allWeb',
-                scope='', overflow='', forced=True, duration=self.duration,
+                scope='', overflow=None, forced=True, duration=self.duration,
                 exclusive=0.0)
         else:
             yield newrelic.core.metric.TimeMetric(name='External/allOther',
-                scope='', overflow='', forced=True, duration=self.duration,
+                scope='', overflow=None, forced=True, duration=self.duration,
                 exclusive=0.0)
 
 	# TODO Is it correct that 'all' is appended here. The
@@ -204,16 +204,16 @@ class MemcacheNode(_MemcacheNode):
         """
 
         yield newrelic.core.metric.TimeMetric(name='Memcache/all',
-            scope='', overflow='', forced=True, duration=self.duration,
+            scope='', overflow=None, forced=True, duration=self.duration,
             exclusive=0.0)
 
         if root.type == 'WebTransaction':
             yield newrelic.core.metric.TimeMetric(name='Memcache/allWeb',
-                scope='', overflow='', forced=True, duration=self.duration,
+                scope='', overflow=None, forced=True, duration=self.duration,
                 exclusive=0.0)
         else:
             yield newrelic.core.metric.TimeMetric(name='Memcache/allOther',
-                scope='', overflow='', forced=True, duration=self.duration,
+                scope='', overflow=None, forced=True, duration=self.duration,
                 exclusive=0.0)
 
         name = 'Memcache/%s' % self.command

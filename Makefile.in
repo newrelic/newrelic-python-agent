@@ -6,7 +6,7 @@ all : php_agent
 	$(PYTHON) setup.py build
 
 install : all
-	$(PYTHON) setup.py install
+	$(PYTHON) setup.py install --force
 
 hudson-install : all
 	$(PYTHON) setup.py install \

@@ -6,6 +6,7 @@ import time
 import traceback
 
 import newrelic.core.transaction
+import newrelic.core.database_node
 
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
@@ -63,7 +64,7 @@ class DatabaseTrace(object):
 
         parent = self._transaction._node_stack[-1]
 
-        node = newrelic.core.transaction.DatabaseNode(
+        node = newrelic.core.database_node.DatabaseNode(
                 database_module=None,
                 connect_params=None,
                 sql=self._sql,

@@ -4,7 +4,7 @@ import types
 import inspect
 import time
 
-import newrelic.core.transaction
+import newrelic.core.external_node
 
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
@@ -56,7 +56,7 @@ class ExternalTrace(object):
 
         parent = self._transaction._node_stack[-1]
 
-        node = newrelic.core.transaction.ExternalNode(
+        node = newrelic.core.external_node.ExternalNode(
                 library=self._library,
                 url=self._url,
                 children=self._children,

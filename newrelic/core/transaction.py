@@ -67,43 +67,6 @@ import urlparse
 
 import newrelic.core.metric
 
-_DatabaseNode = collections.namedtuple('_DatabaseNode',
-        ['database_module', 'connect_params', 'sql', 'children',
-        'start_time', 'end_time', 'duration', 'exclusive',
-        'stack_trace'])
-
-class DatabaseNode(_DatabaseNode):
-
-    def time_metrics(self, root, parent):
-        """Return a generator yielding the timed metrics for this
-        database node as well as all the child nodes.
-
-        """
-
-        yield newrelic.core.metric.TimeMetric(name='Database/all',
-            scope='', overflow=None, forced=True, duration=self.duration,
-            exclusive=0.0)
-
-        if root.type == 'WebTransaction':
-            yield newrelic.core.metric.TimeMetric(name='Database/allWeb',
-                scope='', overflow=None, forced=True, duration=self.duration,
-                exclusive=0.0)
-        else:
-            yield newrelic.core.metric.TimeMetric(name='Database/allOther',
-                scope='', overflow=None, forced=True, duration=self.duration,
-                exclusive=0.0)
-
-        # TODO Need to fill out the remainder of the database
-        # metrics but to do that need a mini parser to extract
-        # the type of SQL operation and the table name. Need to
-        # remember to do the scope metrics as well.
-
-        # Now for the children.
-
-        for child in self.children:
-            for metric in child.time_metrics(root, self):
-                yield metric
-
 _ExternalNode = collections.namedtuple('_ExternalNode',
         ['library', 'url', 'children', 'start_time', 'end_time',
         'duration', 'exclusive'])

@@ -3,6 +3,9 @@ Created on Jul 28, 2011
 
 @author: sdaubin
 '''
+
+import atexit
+
 from newrelic.core.remote import NewRelicService
 from newrelic.core.stats import StatsDict
 from newrelic.core.metric import Metric
@@ -40,6 +43,17 @@ class Application(object):
         self._work_thread.start()
         self._work_queue.put_nowait(self.connect)
         self._cpu_times = CPUTimes()
+
+        # Force harvesting of metrics on process shutdown. Required
+        # as various Python web application hosting mechanisms can
+        # restart processes on regular basis and in worst case with
+        # CGI/WSGI process, on every request.
+
+        # TODO Note that need to look at possibilities that forcing
+        # harvest will hang and whether some timeout mechanism will
+        # be needed, otherwise process shutdown may be delayed.
+
+        atexit.register(self.force_harvest)
 
     @property
     def name(self):
@@ -156,12 +170,6 @@ class Application(object):
             self._stats_dict.get_time_stats(Metric(metric.name,
                     metric.scope)).record(metric.duration, metric.exclusive)
 
-        # FIXME Force harvest on each request for now as otherwise
-        # doesn't appear to be running.
-
-        connection = self._remote.create_connection()
-        self.harvest(connection)
-
     def record_cpu_stats(self,stats):
         if stats is not None:
             print "Recording CPU metrics"
@@ -175,6 +183,10 @@ class Application(object):
             metric = Metric(m[0]["name"],m[0]["scope"])
             self._metric_ids[metric] = m[1]
         print self._metric_ids
+
+    def force_harvest(self):
+        connection = self._remote.create_connection()
+        self.harvest(connection)
 
     def harvest(self,connection):
         print "Harvesting"

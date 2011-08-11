@@ -72,6 +72,9 @@ packages = [
   "newrelic.api",
   "newrelic.core",
   "newrelic.hooks",
+  "newrelic.lib",
+  "newrelic.lib.sqlparse",
+  "newrelic.lib.sqlparse.engine",
   "newrelic.scripts",
 ]
 

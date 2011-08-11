@@ -88,7 +88,11 @@ class SqlParser:
         elif self.operation == 'call':
             self.operation = 'ExecuteProcedure'
             token = self._find_table_token_for(newrelic.lib.sqlparse.tokens.Keyword, 'CALL')
-        return self._format_table_token(token)
+        else:
+            token = None
+
+        if token is not None:
+            return self._format_table_token(token)
 
     def _get_first_identifier_after(self, idx):
         for token in self.stmt.tokens[idx:]:

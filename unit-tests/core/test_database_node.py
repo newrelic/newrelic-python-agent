@@ -110,3 +110,18 @@ select * from dude
         select_node = self.database_node._replace(sql=sql)
         self.assertEqual("Database/stuff/show",
                          select_node.metric_name())
+
+    def test_metric_name_commit(self):
+        sql = "commit"
+        parsed_sql = newrelic.core.database_node.SqlParser(sql)
+        self.assertEqual(None, parsed_sql.table)
+        self.assertEqual('commit', parsed_sql.operation)
+
+    def test_metric_name_rollback(self):
+        sql = "rollback"
+        parsed_sql = newrelic.core.database_node.SqlParser(sql)
+        self.assertEqual(None, parsed_sql.table)
+        self.assertEqual('rollback', parsed_sql.operation)
+
+if __name__ == '__main__':
+    unittest.main()

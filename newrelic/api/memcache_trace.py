@@ -4,7 +4,7 @@ import types
 import inspect
 import time
 
-import newrelic.core.transaction
+import newrelic.core.memcache_node
 
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
@@ -55,7 +55,7 @@ class MemcacheTrace(object):
 
         parent = self._transaction._node_stack[-1]
 
-        node = newrelic.core.transaction.MemcacheNode(
+        node = newrelic.core.memcache_node.MemcacheNode(
                 command=self._command,
                 children=self._children,
                 start_time=self._start_time,

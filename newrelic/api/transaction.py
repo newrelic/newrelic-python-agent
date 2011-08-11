@@ -5,7 +5,8 @@ import threading
 import traceback
 import collections
 
-import newrelic.core.transaction
+import newrelic.core.transaction_node
+import newrelic.core.error_node
 
 import newrelic.core.config
 
@@ -317,7 +318,7 @@ class Transaction(object):
             message = value
             stack_trace = traceback.format_exception(exc, value, tb)
 
-            node = newrelic.core.transaction.ErrorNode(
+            node = newrelic.core.error_node.ErrorNode(
                     type=exc.__name__,
                     message=str(value),
                     stack_trace=traceback.format_exception(exc, value, tb),

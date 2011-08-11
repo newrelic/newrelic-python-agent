@@ -4,7 +4,7 @@ import types
 import inspect
 import time
 
-import newrelic.core.transaction
+import newrelic.core.function_node
 
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
@@ -63,7 +63,7 @@ class FunctionTrace(object):
         if group is None:
             group = 'Function'
 
-        node = newrelic.core.transaction.FunctionNode(
+        node = newrelic.core.function_node.FunctionNode(
                 group=group,
                 name=self._name,
                 children=self._children,

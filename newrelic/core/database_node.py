@@ -14,7 +14,13 @@ _DatabaseNode = collections.namedtuple('_DatabaseNode',
         'stack_trace'])
 
 class DatabaseNode(_DatabaseNode):
-    def metric_name(self, type=None):
+
+    def metric_name(self):
+        # FIXME This isn't actually useful as a standalone
+        # method as we need to generate different numbers of
+        # metrics based on whether table could be derived or
+        # when not what the operation is. See below.
+
         parsed_sql = SqlParser(self.sql)
         return "Database/%s/%s" % (parsed_sql.table, parsed_sql.operation)
 
@@ -37,10 +43,55 @@ class DatabaseNode(_DatabaseNode):
                 scope='', overflow=None, forced=True, duration=self.duration,
                 exclusive=None)
 
-        # TODO Need to fill out the remainder of the database
-        # metrics but to do that need a mini parser to extract
-        # the type of SQL operation and the table name. Need to
-        # remember to do the scope metrics as well.
+        parsed_sql = SqlParser(self.sql)
+
+        # FIXME The follow is what PHP agent was doing, but it may
+        # not sync up with what is now actually required. As example,
+        # the 'show' operation in PHP agent doesn't generate a full
+        # path with a table name, yet get_table() in SQL parser
+        # does appear to generate one. Also, the SQL parser has
+        # special cases for 'set', 'create' and 'call' as well.
+
+        if parsed_sql.operation in ('select', 'update', 'insert', 'delete'):
+            name = 'Database/%s/%s' % (parsed_sql.table, parsed_sql.operation)
+            overflow = 'Database/*/%s' % parsed_sql.operation
+            scope = root.path
+
+            yield newrelic.core.metric.TimeMetric(name=name, scope='',
+                    overflow=overflow, forced=False, duration=self.duration,
+                    exclusive=None)
+
+            yield newrelic.core.metric.TimeMetric(name=name, scope=scope,
+                    overflow=overflow, forced=False, duration=self.duration,
+                    exclusive=None)
+
+            name = 'Database/%s' % parsed_sql.operation
+
+            yield newrelic.core.metric.TimeMetric(name=name,
+                scope='', overflow=None, forced=True, duration=self.duration,
+                exclusive=None)
+
+        elif parsed_sql.operation in ('show',):
+            name = 'Database/%s' % parsed_sql.operation
+
+            yield newrelic.core.metric.TimeMetric(name=name,
+                scope='', overflow=None, forced=True, duration=self.duration,
+                exclusive=None)
+
+        else:
+            yield newrelic.core.metric.TimeMetric(name='Database/other',
+                scope='', overflow=None, forced=True, duration=self.duration,
+                exclusive=None)
+
+            yield newrelic.core.metric.TimeMetric(name='Database/other/sql',
+                scope='', overflow=None, forced=True, duration=self.duration,
+                exclusive=None)
+
+            scope = root.path
+
+            yield newrelic.core.metric.TimeMetric(name='Database/other/sql',
+                scope='', overflow=None, forced=True, duration=self.duration,
+                exclusive=None)
 
         # Now for the children.
 

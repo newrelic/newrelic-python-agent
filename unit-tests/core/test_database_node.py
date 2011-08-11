@@ -111,17 +111,35 @@ select * from dude
         self.assertEqual("Database/stuff/show",
                          select_node.metric_name())
 
-    def test_metric_name_commit(self):
+    def test_sql_parser_commit(self):
         sql = "commit"
         parsed_sql = newrelic.core.database_node.SqlParser(sql)
         self.assertEqual(None, parsed_sql.table)
         self.assertEqual('commit', parsed_sql.operation)
 
-    def test_metric_name_rollback(self):
+    def test_sql_parser_rollback(self):
         sql = "rollback"
         parsed_sql = newrelic.core.database_node.SqlParser(sql)
         self.assertEqual(None, parsed_sql.table)
         self.assertEqual('rollback', parsed_sql.operation)
+
+    def test_sql_parser_empty_string(self):
+        sql = ""
+        parsed_sql = newrelic.core.database_node.SqlParser(sql)
+        self.assertEqual(None, parsed_sql.table)
+        self.assertEqual(None, parsed_sql.operation)
+
+    def test_sql_parser_garbage(self):
+        sql = "xxx"
+        parsed_sql = newrelic.core.database_node.SqlParser(sql)
+        self.assertEqual(None, parsed_sql.table)
+        self.assertEqual(None, parsed_sql.operation)
+
+    def test_sql_parser_incomplete_sql(self):
+        sql = "select"
+        parsed_sql = newrelic.core.database_node.SqlParser(sql)
+        self.assertEqual(None, parsed_sql.table)
+        self.assertEqual(None, parsed_sql.operation)
 
 if __name__ == '__main__':
     unittest.main()

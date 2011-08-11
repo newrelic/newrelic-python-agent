@@ -22,7 +22,7 @@ class FunctionNode(_FunctionNode):
 
         yield newrelic.core.metric.TimeMetric(name=name, scope=scope,
                 overflow=overflow, forced=False, duration=self.duration,
-                exclusive=0.0)
+                exclusive=None)
 
         # Now for the children.
 

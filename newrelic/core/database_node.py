@@ -26,16 +26,16 @@ class DatabaseNode(_DatabaseNode):
 
         yield newrelic.core.metric.TimeMetric(name='Database/all',
             scope='', overflow=None, forced=True, duration=self.duration,
-            exclusive=0.0)
+            exclusive=None)
 
         if root.type == 'WebTransaction':
             yield newrelic.core.metric.TimeMetric(name='Database/allWeb',
                 scope='', overflow=None, forced=True, duration=self.duration,
-                exclusive=0.0)
+                exclusive=None)
         else:
             yield newrelic.core.metric.TimeMetric(name='Database/allOther',
                 scope='', overflow=None, forced=True, duration=self.duration,
-                exclusive=0.0)
+                exclusive=None)
 
         # TODO Need to fill out the remainder of the database
         # metrics but to do that need a mini parser to extract

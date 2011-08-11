@@ -157,7 +157,7 @@ class TransactionNode(_TransactionNode):
 
             yield newrelic.core.metric.TimeMetric(name='HttpDispatcher',
                     scope='', overflow=None, forced=False,
-                    duration=self.duration, exclusive=0.0)
+                    duration=self.duration, exclusive=None)
 
             # Upstream queue time within any web server front end.
 
@@ -175,7 +175,7 @@ class TransactionNode(_TransactionNode):
                 yield newrelic.core.metric.TimeMetric(
                         name='WebFrontend/QueueTime', scope='',
                         overflow=None, forced=True, duration=queue_wait,
-                        exclusive=0.0)
+                        exclusive=None)
 
         # Generate the full transaction metric.
 

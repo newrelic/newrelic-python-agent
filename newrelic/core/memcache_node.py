@@ -18,29 +18,29 @@ class MemcacheNode(_MemcacheNode):
 
         yield newrelic.core.metric.TimeMetric(name='Memcache/all',
             scope='', overflow=None, forced=True, duration=self.duration,
-            exclusive=0.0)
+            exclusive=None)
 
         if root.type == 'WebTransaction':
             yield newrelic.core.metric.TimeMetric(name='Memcache/allWeb',
                 scope='', overflow=None, forced=True, duration=self.duration,
-                exclusive=0.0)
+                exclusive=None)
         else:
             yield newrelic.core.metric.TimeMetric(name='Memcache/allOther',
                 scope='', overflow=None, forced=True, duration=self.duration,
-                exclusive=0.0)
+                exclusive=None)
 
         name = 'Memcache/%s' % self.command
         overflow = 'Memcache/*'
 
         yield newrelic.core.metric.TimeMetric(name=name, scope='',
                 overflow=overflow, forced=False, duration=self.duration,
-                exclusive=0.0)
+                exclusive=None)
 
         scope = root.path
 
         yield newrelic.core.metric.TimeMetric(name=name, scope=scope,
                 overflow=overflow, forced=False, duration=self.duration,
-                exclusive=0.0)
+                exclusive=None)
 
         # Now for the children.
 

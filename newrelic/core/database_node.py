@@ -24,6 +24,20 @@ class DatabaseNode(_DatabaseNode):
         parsed_sql = SqlParser(self.sql)
         return "Database/%s/%s" % (parsed_sql.table, parsed_sql.operation)
 
+    def parsed_sql(self):
+        # FIXME The SqlParser class doesn't cope well with badly
+        # formed input data, so need to catch exceptions here.
+
+        try:
+            parsed_sql = SqlParser(self.sql)
+            table = parsed_sql.table
+            operation = parsed_sql.operation
+        except:
+            table = None
+            operation = None
+
+        return table, operation
+
     def time_metrics(self, root, parent):
         """Return a generator yielding the timed metrics for this
         database node as well as all the child nodes.
@@ -43,8 +57,6 @@ class DatabaseNode(_DatabaseNode):
                 scope='', overflow=None, forced=True, duration=self.duration,
                 exclusive=None)
 
-        parsed_sql = SqlParser(self.sql)
-
         # FIXME The follow is what PHP agent was doing, but it may
         # not sync up with what is now actually required. As example,
         # the 'show' operation in PHP agent doesn't generate a full
@@ -52,9 +64,11 @@ class DatabaseNode(_DatabaseNode):
         # does appear to generate one. Also, the SQL parser has
         # special cases for 'set', 'create' and 'call' as well.
 
-        if parsed_sql.operation in ('select', 'update', 'insert', 'delete'):
-            name = 'Database/%s/%s' % (parsed_sql.table, parsed_sql.operation)
-            overflow = 'Database/*/%s' % parsed_sql.operation
+        table, operation = self.parsed_sql()
+
+        if operation in ('select', 'update', 'insert', 'delete'):
+            name = 'Database/%s/%s' % (table, operation)
+            overflow = 'Database/*/%s' % operation
             scope = root.path
 
             yield newrelic.core.metric.TimeMetric(name=name, scope='',
@@ -65,14 +79,14 @@ class DatabaseNode(_DatabaseNode):
                     overflow=overflow, forced=False, duration=self.duration,
                     exclusive=None)
 
-            name = 'Database/%s' % parsed_sql.operation
+            name = 'Database/%s' % operation
 
             yield newrelic.core.metric.TimeMetric(name=name,
                 scope='', overflow=None, forced=True, duration=self.duration,
                 exclusive=None)
 
-        elif parsed_sql.operation in ('show',):
-            name = 'Database/%s' % parsed_sql.operation
+        elif operation in ('show',):
+            name = 'Database/%s' % operation
 
             yield newrelic.core.metric.TimeMetric(name=name,
                 scope='', overflow=None, forced=True, duration=self.duration,

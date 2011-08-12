@@ -98,15 +98,7 @@ class NewRelicService(object):
         return string.join(self.get_app_names(),',')
         
     def get_start_options(self):
-        options = {"pid":os.getpid(),"language":"python","host":socket.gethostname(),"app_name":self.get_app_names(),"identifier":self.get_identifier(),"agent_version":self.agent_version(),"environment":environment.environment_settings()}
-        '''
-        # FIXME 
-            if (agent.Config.BootstrapConfig.ServiceConfig.SendEnvironmentInfo) {
-                map.Add("environment", agent.Environment);
-                map.Add("settings", agent.Config);
-            }
-        '''
-
+        options = {"pid":os.getpid(),"language":"python","host":socket.gethostname(),"app_name":self.get_app_names(),"identifier":self.get_identifier(),"agent_version":self.agent_version(),"environment":environment.environment_settings(),"settings":newrelic.core.config.global_settings_dump() }
         return options
     
     def parse_connect_response(self, response):

@@ -97,6 +97,41 @@ def global_settings():
 
     return _settings
 
+def global_settings_dump():
+    """This returns dictionary of global settings flattened into a single
+    key namespace rather than nested hierarchy. This is used to send the
+    global settings configuration back to core application.
+
+    """
+
+    def dump_settings(settings, name, object):
+        for key, value in object.__dict__.items():
+            if isinstance(value, Settings):
+                if name:
+                    dump_settings(settings, '%s.%s' % (name, key), value)
+                else:
+                    dump_settings(settings, key, value)
+            else:
+                if name:
+                    settings['%s.%s' % (name, key)] = value
+                else:
+                    settings[key] = value
+
+        return settings
+
+    settings = dump_settings({}, None, _settings)
+
+    # Strip out any sensitive settings as can be sent unencrypted.
+    # The license key is being sent already, but no point sending
+    # it again.
+
+    del settings['license_key']
+
+    del settings['proxy_user']
+    del settings['proxy_pass']
+
+    return settings
+
 # A cache of the application settings objects. This is the settings
 # objects created when a snapshot of global default settings is created
 # and overlaid with server side settings received from the core

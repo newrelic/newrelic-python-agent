@@ -66,6 +66,7 @@ import itertools
 import urlparse
 
 import newrelic.core.metric
+import newrelic.core.error_collector
 
 _TransactionNode = collections.namedtuple('_TransactionNode',
         ['type', 'group', 'name', 'request_uri', 'response_code',
@@ -84,25 +85,25 @@ class TransactionNode(_TransactionNode):
     """
 
     def __init__(self, *args, **kwargs):
-	# We don't actually need to call the base class
-	# constructor the class created by namedtuple overrides
-	# __new__ and that is what is initialising the class
-	# with all the attributes. In the derived class
-	# constructor we just need to set up any additional
-	# variables of our own.
+        # We don't actually need to call the base class
+        # constructor the class created by namedtuple overrides
+        # __new__ and that is what is initialising the class
+        # with all the attributes. In the derived class
+        # constructor we just need to set up any additional
+        # variables of our own.
 
         self._path = None
 
     @property
     def path(self):
-        if not self._path is None:
+        if self._path is not None:
             return self._path
         return self.metric_name()
 
     def metric_name(self, type=None):
         type = type or self.type
 
-	# We cache the resultant path when the type specified is
+        # We cache the resultant path when the type specified is
         # WebTransaction as it will be used a lot for scoped
         # metrics. This is accessed via 'path' property. For
         # Apdex which is the other case we just calculate it
@@ -155,6 +156,12 @@ class TransactionNode(_TransactionNode):
             # and how the exclusive component would appear in
             # the overview graphs.
 
+            # TODO The PHP agent doesn't mark this as forced but
+            # possibly it should be. Would always be included in
+            # PHP agent as comes first in the metrics generated
+            # for a request and wouldn't get removed when metric
+            # limit reached.
+
             yield newrelic.core.metric.TimeMetric(name='HttpDispatcher',
                     scope='', overflow=None, forced=False,
                     duration=self.duration, exclusive=None)
@@ -195,6 +202,13 @@ class TransactionNode(_TransactionNode):
         yield newrelic.core.metric.TimeMetric(name=rollup, scope='',
                 overflow=None, forced=True, duration=self.duration,
                 exclusive=self.exclusive)
+
+        # Generate metric indicating if errors present.
+
+        if self.errors:
+            yield newrelic.core.metric.TimeMetric(name='Errors/all',
+                    scope='', overflow=None, forced=True, duration=0.0,
+                    exclusive=None)
 
         # Now for the children.
 
@@ -262,3 +276,33 @@ class TransactionNode(_TransactionNode):
         yield newrelic.core.metric.ApdexMetric(name='Apdex',
                 overflow=None, forced=True, satisfying=satisfying,
                 tolerating=tolerating, frustrating=frustrating)
+
+    def error_details(self):
+        """Return a generator yielding the details for each unique error
+        captured during this transaction.
+
+        """
+
+        # TODO There is no attempt so far to eliminate duplicates.
+        # Duplicates could be eliminated based on exception type
+        # and message or exception type and file name/line number
+        # presuming the latter are available. Right now the file
+        # name and line number aren't captured so can't rely on it.
+
+        # TODO There are no constraints in place on what keys/values
+        # can be in params dictionaries. Need to convert values to
+        # strings at some point.
+
+        for error in self.errors:
+            params = {}
+            params["request_uri"] = self.request_uri
+            params["stack_trace"] = error.stack_trace
+            if self.request_params:
+                params["request_params"] = request_params
+            if error.custom_params:
+                params["custom_params"] = error.custom_params
+
+            yield newrelic.core.error_collector.TracedError(
+                    start_time=0, path=self.path, message=error.message,
+                    type=error.type, parameters=params)
+

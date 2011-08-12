@@ -5,12 +5,13 @@ Created on Jul 28, 2011
 '''
 
 import atexit
+import threading
+import Queue
 
 from newrelic.core.remote import NewRelicService
 from newrelic.core.stats import StatsDict
 from newrelic.core.metric import Metric
 from newrelic.core.samplers import CPUTimes
-import Queue,threading
 from newrelic.core.nr_threading import QueueProcessingThread
 
 INSTANCE_REPORTING_METRIC = Metric(u"Instance/Reporting", "")
@@ -19,7 +20,6 @@ class Application(object):
     '''
     classdocs
     '''
-
 
     def __init__(self, remote, app_name, linked_applications=[]):
         '''
@@ -35,8 +35,12 @@ class Application(object):
         self._metric_ids = {}
         self._remote = remote
         self._service = NewRelicService(remote, self._app_names)
+
         self._stats_lock = threading.Lock()
+
         self._stats_dict = None
+        self._stats_errors = []
+
         # we could pull this queue and its processor up to the agent
         self._work_queue = Queue.Queue(10)
         self._work_thread = QueueProcessingThread(("New Relic Worker Thread (%s)" % str(self._app_names)),self._work_queue)
@@ -74,6 +78,7 @@ class Application(object):
         connected = self._service.connect()
         if connected:
             self._stats_dict = StatsDict(self._service.configuration)
+            self._stats_errors = []
             print "Connected to the New Relic service"
 
         return connected
@@ -90,11 +95,12 @@ class Application(object):
             self._stats_lock.release()
 
     def _harvest_and_reset_stats(self):
-        # FIXME lock
         if self._stats_dict is not None:
             stats = self._stats_dict
+            errors = self._stats_errors
             self._stats_dict = StatsDict(self._service.configuration)
-            return stats
+            self._stats_errors = []
+            return stats, errors
 
     def record_metric(self, name, value):
         # FIXME This is where base metric needs to be queued up.
@@ -162,13 +168,26 @@ class Application(object):
         # the same though regardless of whether sort them first. Quite
         # easy to support both approaches through configuration initially.
 
-        for metric in data.apdex_metrics():
-            self._stats_dict.get_apdex_stats(Metric(metric.name,
-                    None)).merge(metric)
+        try:
+            self._stats_lock.acquire()
 
-        for metric in data.time_metrics():
-            self._stats_dict.get_time_stats(Metric(metric.name,
-                    metric.scope)).record(metric.duration, metric.exclusive)
+            if self._stats_dict is None:
+                return
+
+            for metric in data.apdex_metrics():
+                self._stats_dict.get_apdex_stats(Metric(metric.name,
+                        None)).merge(metric)
+
+            for metric in data.time_metrics():
+                self._stats_dict.get_time_stats(Metric(metric.name,
+                        metric.scope)).record(metric.duration,
+                        metric.exclusive)
+
+            errors = list(data.error_details())
+            self._stats_errors.extend(data.error_details())
+
+        finally:
+            self._stats_lock.release()
 
     def record_cpu_stats(self,stats):
         if stats is not None:
@@ -192,7 +211,7 @@ class Application(object):
         print "Harvesting"
         try:
             self._stats_lock.acquire()
-            stats = self._harvest_and_reset_stats()
+            stats, errors = self._harvest_and_reset_stats()
         finally:
             self._stats_lock.release()
         self.record_cpu_stats(stats)
@@ -202,6 +221,8 @@ class Application(object):
         try:
             if self._service.connected():
                 self.parse_metric_response(self._service.send_metric_data(connection,stats.metric_data(self._metric_ids)))
+                if errors:
+                    self._service.send_error_data(connection, errors)
         finally:
             if not success:
                 self.merge_stats(stats)

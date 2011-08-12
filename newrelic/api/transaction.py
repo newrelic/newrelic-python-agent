@@ -303,8 +303,8 @@ class Transaction(object):
 	# XXX Need to capture source if enabled in
 	# settings.
 
-        module = exc.__class__.__module__
-        name = exc.__class__.__name__
+        module = value.__class__.__module__
+        name = value.__class__.__name__
 
         if module:
             path = '%s.%s' % (module, name)

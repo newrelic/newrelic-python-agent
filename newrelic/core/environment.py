@@ -1,19 +1,104 @@
-'''
-Created on Aug 1, 2011
+"""This module provides functions to collect information about the operating
+system, Python and hosting environment.
 
-@author: sdaubin
-'''
+"""
+
+import sys
+import os
 import platform
 
 def environment_settings():
-    """ Returns an array of arrays of environment settings
+    """Returns an array of arrays of environment settings
+
     """
+
     env = []
     
-    append_setting(env, "OS",platform.system())
-    append_setting(env, "OS version", platform.release())
-    
-    return env
+    # System information.
 
-def append_setting(env,key,value):
-    env.append([key,value])
+    env.append(('Arch', platform.machine()))
+    env.append(('OS', platform.system()))
+    env.append(('OS version', platform.release()))
+
+    # Python information.
+
+    env.append(('Python Program Name', sys.argv[0]))
+
+    env.append(('Python Executable', sys.executable))
+
+    env.append(('Python Home', os.environ.get('PYTHONHOME', '')))
+    env.append(('Python Path', os.environ.get('PYTHONPATH', '')))
+
+    env.append(('Python Prefix', sys.prefix))
+    env.append(('Python Exec Prefix', sys.exec_prefix))
+
+    # TODO May be too sensitive and UI truncates information.
+
+    #env.append(('Python Module Path', str(sys.path)))
+
+    env.append(('Python Version', sys.version))
+    env.append(('Python Platform', sys.platform))
+
+    env.append(('Python Max Unicode', sys.maxunicode))
+
+    try:
+	# This may fail if using package Python and the
+	# developer package for Python isn't also installed.
+
+        import distutils.sysconfig
+
+        # TODO The UI truncates information.
+
+        args = distutils.sysconfig.get_config_var('CONFIG_ARGS')
+        #env.append(('Python Config Args', args))
+
+    except:
+        pass
+
+    # Dispatcher information.
+
+    dispatcher = []
+
+    if not dispatcher and 'mod_wsgi' in sys.modules:
+        dispatcher.append(('Dispatcher', 'Apache/mod_wsgi'))
+        mod_wsgi = sys.modules['mod_wsgi']
+        if hasattr(mod_wsgi, 'version'):
+            dispatcher.append(('Dispatcher Version', str(mod_wsgi.version)))
+
+    if not dispatcher and 'uwsgi' in sys.modules:
+        dispatcher.append(('Dispatcher', 'uWSGI'))
+        uwsgi = sys.modules['uwsgi']
+        if hasattr(uwsgi, 'version'):
+            dispatcher.append(('Dispatcher Version', uwsgi.version))
+
+    if not dispatcher and 'gunicorn' in sys.modules:
+        dispatcher.append(('Dispatcher', 'gunicorn'))
+        gunicorn = sys.modules['gunicorn']
+        if hasattr(mod_wsgi, 'version'):
+            dispatcher.append(('Dispatcher Version', str(gunicorn.version)))
+
+    env.extend(dispatcher)
+
+    # Module information.
+
+    # TODO This produces too much. Can be over 1000 modules for a Django
+    # application. Try restricting it to just top level modules and no
+    # sub modules in packages, plus drop any builtin modules. Bit hard
+    # to restrict it further because hard under virtual environments to
+    # try and identify what modules may be part of the actual Python
+    # installation and perhaps dropped.
+
+    #env.append(('Plugin List', list(sys.modules.keys())))
+
+    #env.append(('Plugin List', filter(
+    #        lambda x: x.find('.') == -1, sys.modules.keys())))
+
+    plugins = []
+
+    for name, module in sys.modules.items():
+        if name.find('.') == -1 and hasattr(module, '__file__'):
+            plugins.append(name)
+
+    env.append(('Plugin List', plugins))
+
+    return env

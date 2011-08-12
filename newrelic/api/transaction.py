@@ -35,12 +35,12 @@ class Transaction(object):
         if hasattr(cls._local, 'current'):
             raise RuntimeError('transaction already active')
 
-	# Cache the transaction using a weakref so that
-	# the transaction can still be deleted and the
-	# destructor can call __exit__() if necessary if
-	# transaction still running. If don't use a
-	# weakref then will have a object reference
-	# cycle and transaction will never be destroyed.
+        # Cache the transaction using a weakref so that
+        # the transaction can still be deleted and the
+        # destructor can call __exit__() if necessary if
+        # transaction still running. If don't use a
+        # weakref then will have a object reference
+        # cycle and transaction will never be destroyed.
 
         cls._local.current = weakref.ref(transaction)
 
@@ -51,12 +51,12 @@ class Transaction(object):
 
         current = cls._local.current()
 
-	# If the reference returned from the weakref is
-	# None, then can only assume that __exit__()
-	# wasn't called on transaction prior to it being
-	# deleted. In that case we don't raise an
-	# exception and just remove the cache weakref
-	# object for the current thread.
+        # If the reference returned from the weakref is
+        # None, then can only assume that __exit__()
+        # wasn't called on transaction prior to it being
+        # deleted. In that case we don't raise an
+        # exception and just remove the cache weakref
+        # object for the current thread.
 
         if current and transaction != current:
             raise RuntimeError('not the current transaction')
@@ -116,28 +116,28 @@ class Transaction(object):
         if not self.enabled:
             return self
 
-	# Cache transaction in thread/coroutine local
-	# storage so that it can be accessed from
-	# anywhere in the context of the transaction.
+        # Cache transaction in thread/coroutine local
+        # storage so that it can be accessed from
+        # anywhere in the context of the transaction.
         # This is done even though transaction will
         # not collect data because application is not
         # active.
 
         self._save_transaction(self)
 
-	# Mark transaction as active and update state
+        # Mark transaction as active and update state
         # used to validate correct usage of class.
 
         self._state = STATE_RUNNING
 
-	# Bail out if the application isn't marked as
-	# active. An application isn't active if we
-	# cannot retrieve a settings object for it. If
-	# not activate we try and activate it. We cache
-	# the settings object so we know it will not
-	# dissapear during the life of the transaction
-	# and so can be used by anything executing
-	# within the context of the transaction.
+        # Bail out if the application isn't marked as
+        # active. An application isn't active if we
+        # cannot retrieve a settings object for it. If
+        # not activate we try and activate it. We cache
+        # the settings object so we know it will not
+        # dissapear during the life of the transaction
+        # and so can be used by anything executing
+        # within the context of the transaction.
 
         self._settings = self._application.settings
 
@@ -149,16 +149,16 @@ class Transaction(object):
 
         self._start_time = time.time()
 
-	# We need to push an object onto the top of the
-	# node stack so that children can reach back and
-	# add themselves as children to the parent. We
-	# can't use ourself though as we then end up
-	# with a reference count cycle which will cause
-	# the destructor to never be called if the
-	# __exit__() function is never called. We
-	# instead push on to the top of the node stack a
-	# dummy root transaction object and when done we
-	# will just grab what we need from that.
+        # We need to push an object onto the top of the
+        # node stack so that children can reach back and
+        # add themselves as children to the parent. We
+        # can't use ourself though as we then end up
+        # with a reference count cycle which will cause
+        # the destructor to never be called if the
+        # __exit__() function is never called. We
+        # instead push on to the top of the node stack a
+        # dummy root transaction object and when done we
+        # will just grab what we need from that.
 
         self._node_stack.append(DummyTransaction())
 
@@ -171,8 +171,8 @@ class Transaction(object):
         if not self.enabled:
             return
 
-	# Mark as stopped and drop the transaction from
-	# thread/coroutine local storage.
+        # Mark as stopped and drop the transaction from
+        # thread/coroutine local storage.
 
         self._state = STATE_STOPPED
         self._drop_transaction(self)
@@ -200,7 +200,7 @@ class Transaction(object):
             exclusive -= child.duration
         exclusive = max(0, exclusive)
 
-	# Construct final root node of transaction trace.
+        # Construct final root node of transaction trace.
 
         if self.background_task:
             type = 'OtherTransaction'
@@ -278,9 +278,9 @@ class Transaction(object):
 
     def name_transaction(self, name, group=None):
 
-	# Always perform this operation even if the
-	# transaction is not active at the time as will
-	# be called from constructor.
+        # Always perform this operation even if the
+        # transaction is not active at the time as will
+        # be called from constructor.
 
         if group is None:
             group = 'Function'
@@ -290,7 +290,7 @@ class Transaction(object):
 
     def notice_error(self, exc, value, tb, params={}):
 
-	# Bail out if the transaction is not active.
+        # Bail out if the transaction is not active.
 
         if not self._settings:
             return
@@ -300,8 +300,8 @@ class Transaction(object):
         if exc is None or value is None or tb is None:
             return
 
-	# XXX Need to capture source if enabled in
-	# settings.
+        # XXX Need to capture source if enabled in
+        # settings.
 
         module = value.__class__.__module__
         name = value.__class__.__name__
@@ -326,6 +326,15 @@ class Transaction(object):
                     file_name=None,
                     line_number=None,
                     source=None)
+
+            # TODO Errors are recorded in time order. If
+            # there are two exceptions of same time and
+            # different message, the UI displays the
+            # first one. In the PHP agent it was
+            # recording the errors in reverse time order
+            # and so the UI displayed the last one. What
+            # is the the official order in which they
+            # should be sent.
 
             self._errors.append(node)
 

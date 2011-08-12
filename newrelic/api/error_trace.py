@@ -27,17 +27,19 @@ class ErrorTrace(object):
         if not self._enabled:
             return
 
-        if hasattr(exc, '__class__'):
-            module = exc.__class__.__module__
-            name = exc.__class__.__name__
+        if exc is None or value is None or tb is None:
+            return
 
-            if module:
-                path = '%s.%s' % (module, name)
-            else:
-                path = name
+        module = value.__class__.__module__
+        name = value.__class__.__name__
 
-            if self._ignore_errors and path in self._ignore_errors:
-                return
+        if module:
+            path = '%s.%s' % (module, name)
+        else:
+            path = name
+
+        if self._ignore_errors and path in self._ignore_errors:
+            return
 
         self._transaction.notice_error(exc, value, tb)
 

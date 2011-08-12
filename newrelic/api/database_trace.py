@@ -5,7 +5,6 @@ import inspect
 import time
 import traceback
 
-import newrelic.core.transaction
 import newrelic.core.database_node
 
 import newrelic.api.transaction

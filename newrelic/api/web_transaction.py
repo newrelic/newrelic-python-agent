@@ -61,6 +61,15 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         self._request_uri = request_uri
 
+        if self._request_uri is not None:
+            # Need to make sure we drop off any query string
+            # arguments on the path if we have to fallback
+            # to using the original REQUEST_URI. Can't use
+            # attribute access on result as only support for
+            # Python 2.5+.
+
+            self._request_uri = urlparse.urlparse(self._request_uri)[2]
+
         if script_name is not None or path_info is not None:
             if path_info is None:
                 path = script_name
@@ -74,16 +83,8 @@ class WebTransaction(newrelic.api.transaction.Transaction):
             if self._request_uri is None:
                 self._request_uri = path
         else:
-            if request_uri is not None:
-                # Need to make sure we drop off any query string
-                # arguments on the path if we have to fallback
-                # to using the original REQUEST_URI. Can't use
-                # attribute access on result as only support for
-                # Python 2.5+.
-
-                request_uri = urlparse.urlparse(request_uri)[2]
-
-                self.name_transaction(request_uri, 'Uri')
+            if self._request_uri is not None:
+                self.name_transaction(self._request_uri, 'Uri')
 
         # See if the WSGI environ dictionary includes
         # the special 'X-Queue-Start' HTTP header. This

@@ -215,7 +215,7 @@ class Transaction(object):
             else:
                 group = 'Uri'
 
-        node = newrelic.core.transaction.TransactionNode(
+        node = newrelic.core.transaction_node.TransactionNode(
                 type=type,
                 group=group,
                 name=self._name,

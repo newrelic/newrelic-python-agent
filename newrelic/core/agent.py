@@ -9,7 +9,6 @@ import newrelic.core.config
 import newrelic.core.remote
 import newrelic.core.harvest
 import newrelic.core.application
-import newrelic.core.transaction
 
 class Agent(object):
 

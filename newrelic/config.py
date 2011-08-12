@@ -356,6 +356,17 @@ def _load_configuration(config_file=None, environment=None,
                                               ((name, altname),))
                     application.link_to_application(altname)
 
+                # Add linked applications into global settings
+                # configuration so sent back to core application.
+
+                # FIXME Do this is a try/except for now as will
+                # fail when using C version of agent code.
+
+                try:
+                    _settings.linked_applications = linked
+                except:
+                    pass
+
             return True
 
     if environment:

@@ -73,11 +73,6 @@ def my_memcache():
 @newrelic.api.function_trace.function_trace(group='Template/Render')
 def my_function_1():
     time.sleep(0.1)
-    try:
-        my_error()
-    except:
-        pass
-    time.sleep(0.1)
 
 @newrelic.api.function_trace.function_trace()
 def my_function_2():
@@ -91,13 +86,18 @@ def my_function_2():
 def my_function_3():
     time.sleep(0.1)
     transaction = newrelic.api.transaction.transaction()
+
     if transaction and transaction.active:
         transaction.application.record_metric('metric-int', 1)
         transaction.application.record_metric('metric-float', 1.0)
         transaction.custom_parameters['custom-string'] = '1'
         transaction.custom_parameters['custom-int'] = 1
         transaction.custom_parameters['custom-float'] = 1.0
-        transaction.custom_parameters['custom-list'] = [1.0]
+        transaction.custom_parameters['custom-list'] = [1.0, 1.1]
+        transaction.custom_parameters['custom-tuple'] = (1.0, 1.1)
+        transaction.custom_parameters['custom-dict'] = {'K1.0': 'V1.0',
+                                                        'V1.1': 'V1.1'}
+        #transaction.custom_parameters['custom-object'] = my_function_2
         try:
             raise RuntimeError('error-2')
         except:
@@ -105,8 +105,17 @@ def my_function_3():
             params['error-string'] = '1'
             params['error-int'] = 1
             params['error-float'] = 1.0
-            params['error-list'] = [1.0]
+            params['error-list'] = [1.0, 1.1]
+            params['error-tuple'] = (1.0, 1.1)
+            params['error-dict'] = {'K1.0': 'V1.0', 'K1.1': 'V1.1'}
+            #params['error-object'] = my_function_2
             transaction.notice_error(*sys.exc_info(), params=params)
+
+    try:
+        my_error()
+    except:
+        pass
+
     time.sleep(0.1)
 
 @newrelic.api.function_trace.function_trace()

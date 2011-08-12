@@ -101,6 +101,7 @@ class Application(object):
             self._stats_dict = StatsDict(self._service.configuration)
             self._stats_errors = []
             return stats, errors
+        return None, None
 
     def record_metric(self, name, value):
         # FIXME This is where base metric needs to be queued up.
@@ -214,6 +215,10 @@ class Application(object):
             stats, errors = self._harvest_and_reset_stats()
         finally:
             self._stats_lock.release()
+
+        if stats is None:
+            return
+
         self.record_cpu_stats(stats)
         stats.get_time_stats(INSTANCE_REPORTING_METRIC).record(0)
         print stats

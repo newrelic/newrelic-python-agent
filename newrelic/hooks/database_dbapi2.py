@@ -23,25 +23,11 @@ def instrument(module):
         def cursor(self, *args, **kwargs):
             return CursorFactory(self.__next_object__.cursor)(*args, **kwargs)
         def commit(self, *args, **kwargs):
-            #return newrelic.api.function_trace.FunctionTraceWrapper(
-            #    self.__next_object__.commit, name='%s:%s' %
-            #    (module.__name__, '%s.commit' %
-            #     self.__next_object__.__class__.__name__))(*args, **kwargs)
             return newrelic.api.database_trace.DatabaseTraceWrapper(
                 self.__next_object__.commit, sql='COMMIT')(*args, **kwargs)
-            #return newrelic.api.external_trace.ExternalTraceWrapper(
-            #    self.__next_object__.commit, library=module.__name__,
-            #    url='dbapi2://database/COMMIT')(*args, **kwargs)
         def rollback(self, *args, **kwargs):
-            #return newrelic.api.function_trace.FunctionTraceWrapper(
-            #    self.__next_object__.rollback, name='%s:%s' %
-            #    (module.__name__, '%s.rollback' %
-            #     self.__next_object__.__class__.__name__))(*args, **kwargs)
             return newrelic.api.database_trace.DatabaseTraceWrapper(
                 self.__next_object__.rollback, sql='ROLLBACK')(*args, **kwargs)
-            #return newrelic.api.external_trace.ExternalTraceWrapper(
-            #    self.__next_object__.rollback, library=module.__name__,
-            #    url='dbapi2://database/ROLLBACK')(*args, **kwargs)
 
     class ConnectionFactory(newrelic.api.object_wrapper.ObjectWrapper):
         def __call__(self, *args, **kwargs):
@@ -49,7 +35,5 @@ def instrument(module):
 
     newrelic.api.function_trace.wrap_function_trace(module, 'connect',
             name='%s:%s' % (module.__name__, 'connect'))
-    #newrelic.api.external_trace.wrap_external_trace(module, 'connect',
-    #         library=module.__name__, url='dbapi2://database/CONNECT')
 
     module.connect = ConnectionFactory(module.connect)

@@ -7,6 +7,7 @@ import newrelic.core.metric
 import newrelic.lib.sqlparse
 import newrelic.lib.sqlparse.sql
 import newrelic.lib.sqlparse.tokens
+import newrelic.core.trace_node
 
 _DatabaseNode = collections.namedtuple('_DatabaseNode',
         ['database_module', 'connect_params', 'sql', 'children',
@@ -27,6 +28,9 @@ class DatabaseNode(_DatabaseNode):
     def parsed_sql(self):
         # FIXME The SqlParser class doesn't cope well with badly
         # formed input data, so need to catch exceptions here.
+
+        # FIXME The output from this should be cached as used
+        # in multiple places.
 
         try:
             parsed_sql = SqlParser(self.sql)
@@ -112,6 +116,33 @@ class DatabaseNode(_DatabaseNode):
         for child in self.children:
             for metric in child.time_metrics(root, self):
                 yield metric
+
+    def trace_node(self, root):
+
+        table, operation = self.parsed_sql()
+
+        # TODO Verify that these are the correct names to use.
+
+        if operation in ('select', 'update', 'insert', 'delete'):
+            name = 'Database/%s/%s' % (table, operation)
+        elif operation in ('show',):
+            name = 'Database/%s' % operation
+        else:
+            name = 'Database/other/sql'
+
+        start_time = newrelic.core.trace_node.node_start_time(root, self)
+        end_time = newrelic.core.trace_node.node_end_time(root, self)
+        children = [child.trace_node(root) for child in self.children]
+
+        # TODO Need to obfuscate the SQL here as necessary.
+
+        params = { 'sql': self.sql }
+
+        if self.stack_trace:
+            params['backtrace'] = self.stack_trace
+
+        return newrelic.core.trace_node.TraceNode(start_time=start_time,
+                end_time=end_time, name=name, params=params, children=children)
 
 class SqlParser:
     def __init__(self, sql):

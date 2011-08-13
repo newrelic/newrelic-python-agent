@@ -7,6 +7,9 @@ Created on Jul 28, 2011
 import atexit
 import threading
 import Queue
+import json
+import zlib
+import base64
 
 from newrelic.core.remote import NewRelicService
 from newrelic.core.stats import StatsDict
@@ -40,6 +43,7 @@ class Application(object):
 
         self._stats_dict = None
         self._stats_errors = []
+        self._stats_slow_transaction = None
 
         # we could pull this queue and its processor up to the agent
         self._work_queue = Queue.Queue(10)
@@ -79,6 +83,7 @@ class Application(object):
         if connected:
             self._stats_dict = StatsDict(self._service.configuration)
             self._stats_errors = []
+            self._stats_slow_transaction = None
             print "Connected to the New Relic service"
 
         return connected
@@ -98,10 +103,12 @@ class Application(object):
         if self._stats_dict is not None:
             stats = self._stats_dict
             errors = self._stats_errors
+            slow_transaction = self._stats_slow_transaction
             self._stats_dict = StatsDict(self._service.configuration)
             self._stats_errors = []
-            return stats, errors
-        return None, None
+            self._stats_slow_transaction = None
+            return stats, errors, slow_transaction
+        return None, None, None
 
     def record_metric(self, name, value):
         # FIXME This is where base metric needs to be queued up.
@@ -187,6 +194,15 @@ class Application(object):
             errors = list(data.error_details())
             self._stats_errors.extend(data.error_details())
 
+            # FIXME This is not considering transaction threshold.
+            # What are conditions for tracking multiple is it always
+            # just one.
+
+            if self._stats_slow_transaction is None:
+                self._stats_slow_transaction = data
+            elif data.duration >= self._stats_slow_transaction.duration:
+                self._stats_slow_transaction = data
+
         finally:
             self._stats_lock.release()
 
@@ -212,7 +228,7 @@ class Application(object):
         print "Harvesting"
         try:
             self._stats_lock.acquire()
-            stats, errors = self._harvest_and_reset_stats()
+            stats, errors, slow_transaction = self._harvest_and_reset_stats()
         finally:
             self._stats_lock.release()
 
@@ -228,6 +244,21 @@ class Application(object):
                 self.parse_metric_response(self._service.send_metric_data(connection,stats.metric_data(self._metric_ids)))
                 if errors:
                     self._service.send_error_data(connection, errors)
+
+                # FIXME This needs to be cleaned up. It is just to get
+                # it working.
+
+                if slow_transaction:
+                    transaction_trace = slow_transaction.transaction_trace()
+                    compressed_data = base64.encodestring(
+                            zlib.compress(json.dumps(transaction_trace)))
+                    trace_data = [[transaction_trace.root.start_time,
+                            transaction_trace.root.end_time,
+                            slow_transaction.path,
+                            slow_transaction.request_uri,
+                            compressed_data]]
+
+                    self._service.send_trace_data(connection, trace_data)
         finally:
             if not success:
                 self.merge_stats(stats)

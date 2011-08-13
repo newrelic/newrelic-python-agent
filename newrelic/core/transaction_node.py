@@ -10,6 +10,7 @@ import urlparse
 
 import newrelic.core.metric
 import newrelic.core.error_collector
+import newrelic.core.trace_node
 
 _TransactionNode = collections.namedtuple('_TransactionNode',
         ['type', 'group', 'name', 'request_uri', 'response_code',
@@ -249,3 +250,34 @@ class TransactionNode(_TransactionNode):
                     start_time=0, path=self.path, message=error.message,
                     type=error.type, parameters=params)
 
+    def trace_node(self, root):
+
+        name = self.path
+
+        start_time = newrelic.core.trace_node.node_start_time(root, self)
+        end_time = newrelic.core.trace_node.node_end_time(root, self)
+        children = [child.trace_node(root) for child in self.children]
+
+        params = {}
+
+        return newrelic.core.trace_node.TraceNode(start_time=start_time,
+                end_time=end_time, name=name, params=params, children=children)
+
+    def transaction_trace(self):
+
+        start_time = newrelic.core.trace_node.root_start_time(self)
+        request_params = self.request_params or None
+        custom_params = self.custom_params or None
+        trace_node = self.trace_node(self)
+
+	# There is an additional trace node labelled as 'ROOT'
+	# that needs to be inserted below the root node object
+        # which is returned. It inherits the start and end time
+        # from the actual top node for the transaction.
+
+        root = newrelic.core.trace_node.TraceNode(trace_node[0],
+                trace_node[1], 'ROOT', {}, [trace_node])
+
+        return newrelic.core.trace_node.RootNode(start_time=start_time,
+                request_params=request_params, custom_params=custom_params,
+                root=root)

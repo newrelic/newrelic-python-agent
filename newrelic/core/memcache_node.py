@@ -3,6 +3,7 @@ import itertools
 import urlparse
 
 import newrelic.core.metric
+import newrelic.core.trace_node
 
 _MemcacheNode = collections.namedtuple('_MemcacheNode',
         ['command', 'children', 'start_time', 'end_time', 'duration',
@@ -47,3 +48,16 @@ class MemcacheNode(_MemcacheNode):
         for child in self.children:
             for metric in child.time_metrics(root, self):
                 yield metric
+
+    def trace_node(self, root):
+
+        name = 'Memcache/%s' % self.command
+
+        start_time = newrelic.core.trace_node.node_start_time(root, self)
+        end_time = newrelic.core.trace_node.node_end_time(root, self)
+        children = [child.trace_node(root) for child in self.children]
+
+        params = None
+
+        return newrelic.core.trace_node.TraceNode(start_time=start_time,
+                end_time=end_time, name=name, params=params, children=children)

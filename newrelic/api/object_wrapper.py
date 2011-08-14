@@ -71,6 +71,9 @@ def object_context(object):
     cname = ''
     fname = ''
 
+    if hasattr(object, '_nr_last_object'):
+        object = object._nr_last_object
+
     if inspect.isclass(object) or type(object) == types.TypeType:
         cname = object.__name__
         fname = ''

@@ -29,7 +29,6 @@ def initialize():
 
             if settings.log_file:
                 handler = logging.FileHandler(settings.log_file)
-                #handler.setLevel(settings.log_level)
 
                 formatter = logging.Formatter(_LOG_FORMAT)
                 handler.setFormatter(formatter)

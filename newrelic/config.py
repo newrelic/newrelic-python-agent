@@ -945,7 +945,7 @@ def _process_function_profile_configuration():
 
             hook = _function_profile_import_hook(object_path,
                                                  interesting, depth)
-            newrelic.api.register_import_hook(module, hook)
+            newrelic.api.import_hook.register_import_hook(module, hook)
         except:
             _raise_configuration_error(section)
 

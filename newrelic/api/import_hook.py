@@ -2,8 +2,6 @@ import os
 import sys
 import imp
 
-import _newrelic
-
 _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
 _import_hooks = {}
@@ -122,6 +120,7 @@ def import_module(name):
     return sys.modules[name]
 
 if not _agent_mode in ('ungud', 'julunggul'):
+    import _newrelic
     register_import_hook = _newrelic.register_import_hook
     import_hook = _newrelic.import_hook
     import_module = _newrelic.import_module

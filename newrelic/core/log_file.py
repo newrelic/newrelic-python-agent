@@ -36,8 +36,8 @@ def initialize():
                 _agent_logger.addHandler(handler)
                 _agent_logger.setLevel(settings.log_level)
 
-                _agent_logger.info('New Relic log file is "%s"' %
-                                   settings.log_file)
+                _agent_logger.debug('Initializing Python agent logging.')
+                _agent_logger.debug('Log file "%s".' % settings.log_file)
             else:
                 handler = _NullHandler()
 

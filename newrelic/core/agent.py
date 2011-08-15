@@ -3,6 +3,7 @@ interacting with the agent core.
 
 """
 
+import logging
 import threading
 
 import newrelic.core.log_file
@@ -10,6 +11,8 @@ import newrelic.core.config
 import newrelic.core.remote
 import newrelic.core.harvest
 import newrelic.core.application
+
+_logger = logging.getLogger('newrelic.core')
 
 class Agent(object):
 
@@ -74,6 +77,8 @@ class Agent(object):
         Agent._lock.acquire()
         try:
             if not Agent._instance:
+                _logger.debug('Creating instance of Python agent.')
+
                 settings = newrelic.core.config.global_settings()
                 Agent._instance = Agent(settings)
             return Agent._instance
@@ -99,6 +104,8 @@ class Agent(object):
         proxy_user = config.proxy_user
         proxy_pass = config.proxy_pass
 
+        _logger.debug('Initializing Python agent.')
+
         if proxy_host:
             # FIXME Need to implement proxy support.
             raise NotImplemented('no support for proxy')
@@ -107,7 +114,6 @@ class Agent(object):
                 # FIXME Need to implement SSL support.
                 raise NotImplemented('no support for ssl')
             else:
-                print "Starting the New Relic agent"
                 self._remote = newrelic.core.remote.JSONRemote(
                         config.license_key, config.host, config.port)
 
@@ -137,6 +143,9 @@ class Agent(object):
 
         """
 
+        # FIXME Can do away with the cache in config module and
+        # just grab this from the core application object.
+
         return newrelic.core.config.application_settings(app_name)
 
     def activate_application(self, app_name, linked_applications=[]):
@@ -150,11 +159,12 @@ class Agent(object):
 	to which data should also be reported in addition to the primary
 	application.
 
+        """
+
 	# FIXME To make testing easier, need to be able to supply an
 	# argument indicating want to wait for application to be
 	# activated. This could be indefinite wait, or be a time value.
-
-        """
+        # Should be able to do this based on a thread condition variable.
 
         linked_applications = sorted(set(linked_applications))
 

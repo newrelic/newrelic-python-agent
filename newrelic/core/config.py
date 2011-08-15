@@ -7,10 +7,6 @@ server side core application. Finally, to allow for local testing and
 debugging, for selected override configuration settings, we will apply back
 the global defaults or those from local agent configuration.
 
-TODO - Still need to incorporate into here a version of existing code used
-to read in agent configuration file with C version of agent. But then, could
-leave all the code dealing with reading of configuration file where is.
-
 """
 
 import string
@@ -148,6 +144,8 @@ def global_settings_dump():
 # application name alone and not the list of application names which
 # includes the names of additional applications when reporting to a
 # cluster.
+
+# FIXME Don't need this as can grab it from the core application object.
 
 _application_settings = {}
 

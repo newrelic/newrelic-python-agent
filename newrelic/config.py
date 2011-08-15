@@ -1086,7 +1086,7 @@ def _setup_instrumentation():
 
     _process_error_trace_configuration()
 
-    #_process_function_profile_configuration()
+    _process_function_profile_configuration()
 
 def initialize(config_file=None, environment=None, ignore_errors=True):
     _load_configuration(config_file, environment, ignore_errors)

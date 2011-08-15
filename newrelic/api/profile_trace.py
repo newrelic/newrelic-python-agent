@@ -93,7 +93,6 @@ class ProfileTraceWrapper(object):
                               self._nr_group, self._nr_interesting)
 
     def __call__(self, *args, **kwargs):
-        print 'FUNCTION-PROFILE'
         transaction = newrelic.api.transaction.transaction()
         if not transaction or not transaction.active:
             return self._nr_next_object(*args, **kwargs)
@@ -121,6 +120,5 @@ def function_profile(interesting=False, depth=5):
     return decorator
 
 def wrap_function_profile(module, object_path, interesting=False, depth=5):
-    print 'CALL wrap_function_profile'
     newrelic.api.object_wrapper.wrap_object(module, object_path,
             ProfileTraceWrapper, (interesting, depth))

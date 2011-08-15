@@ -3,6 +3,8 @@ import sys
 import string
 import ConfigParser
 
+import newrelic.core.log_file
+
 import newrelic.api.settings
 import newrelic.api.log_file
 import newrelic.api.import_hook
@@ -301,6 +303,11 @@ def _load_configuration(config_file=None, environment=None,
                          'log_file', 'get', None)
         _process_setting('newrelic:%s' % environment ,
                          'log_level', 'get', _map_log_level)
+
+    # Force initialisation of the logging system now that we
+    # have the log file and log level.
+
+    newrelic.core.log_file.initialize()
 
     # Now process the remainder of the global configuration
     # settings.

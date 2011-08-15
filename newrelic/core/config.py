@@ -40,6 +40,9 @@ _settings.transaction_name = TransactionNameSettings()
 _settings.rum = RumSettings()
 _settings.debug = DebugSettings()
 
+_settings.log_file = None
+_settings.log_level = 0
+
 _settings.license_key = None
 
 _settings.ssl = False

@@ -5,6 +5,7 @@ interacting with the agent core.
 
 import threading
 
+import newrelic.core.log_file
 import newrelic.core.config
 import newrelic.core.remote
 import newrelic.core.harvest
@@ -59,6 +60,16 @@ class Agent(object):
         agent object instance.
 
         """
+
+        if Agent._instance:
+            return Agent._instance
+
+	# Just in case that the main initialisation function
+	# wasn't called to read in a configuration file and as
+	# such the logging system was not initialised already,
+	# we trigger initialisation again here.
+
+        newrelic.core.log_file.initialize()
 
         Agent._lock.acquire()
         try:

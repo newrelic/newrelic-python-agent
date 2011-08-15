@@ -1,37 +1,42 @@
-import newrelic.api.object_wrapper
 import newrelic.api.database_trace
 import newrelic.api.function_trace
 import newrelic.api.external_trace
 
 def instrument(module):
 
-    class CursorWrapper(newrelic.api.object_wrapper.ObjectWrapper):
+    class CursorWrapper(object):
+        def __init__(self, cursor):
+            self.__cursor = cursor
         def execute(self, *args, **kwargs):
             return newrelic.api.database_trace.DatabaseTraceWrapper(
-                    self.__last_object__.execute,
+                    self.__cursor.execute,
                     (lambda sql, parameters=(): sql))(*args, **kwargs)
         def executemany(self, *args, **kwargs): 
             return newrelic.api.database_trace.DatabaseTraceWrapper(
-                    self.__last_object__.executemany,
+                    self.__cursor.executemany,
                     (lambda sql, seq_of_parameters=[]: sql))(*args, **kwargs)
+        def __getattr__(self, name):
+            return getattr(self.__cursor, name)
 
-    class CursorFactory(newrelic.api.object_wrapper.ObjectWrapper):
-        def __call__(self, *args, **kwargs):
-            return CursorWrapper(self.__next_object__(*args, **kwargs))
-
-    class ConnectionWrapper(newrelic.api.object_wrapper.ObjectWrapper):
+    class ConnectionWrapper(object):
+        def __init__(self, connection):
+            self.__connection = connection
         def cursor(self, *args, **kwargs):
-            return CursorFactory(self.__next_object__.cursor)(*args, **kwargs)
+            return CursorWrapper(self.__connection.cursor(*args, **kwargs))
         def commit(self, *args, **kwargs):
             return newrelic.api.database_trace.DatabaseTraceWrapper(
-                self.__next_object__.commit, sql='COMMIT')(*args, **kwargs)
+                self.__connection.commit, sql='COMMIT')(*args, **kwargs)
         def rollback(self, *args, **kwargs):
             return newrelic.api.database_trace.DatabaseTraceWrapper(
-                self.__next_object__.rollback, sql='ROLLBACK')(*args, **kwargs)
+                self.__connection.rollback, sql='ROLLBACK')(*args, **kwargs)
+        def __getattr__(self, name):
+            return getattr(self.__connection, name)
 
-    class ConnectionFactory(newrelic.api.object_wrapper.ObjectWrapper):
+    class ConnectionFactory(object):
+        def __init__(self, connect):
+            self.__connect = connect
         def __call__(self, *args, **kwargs):
-            return ConnectionWrapper(self.__next_object__(*args, **kwargs))
+            return ConnectionWrapper(self.__connect(*args, **kwargs))
 
     newrelic.api.function_trace.wrap_function_trace(module, 'connect',
             name='%s:%s' % (module.__name__, 'connect'))

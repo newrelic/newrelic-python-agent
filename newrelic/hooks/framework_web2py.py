@@ -89,20 +89,24 @@ def instrument_gluon_main(module):
     # where we want to name the web transactions as
     # such, we pick that up later.
 
-    class error_serve_controller(newrelic.api.object_wrapper.ObjectWrapper):
+    class error_serve_controller(object):
+        def __init__(self, wrapped):
+            self.__wrapped = wrapped
         def __call__(self, request, response, session):
             txn = newrelic.api.transaction.transaction()
             if txn:
                 HTTP = newrelic.api.import_hook.import_module('gluon.http').HTTP
                 try:
-                    return self.__next_object__(request, response, session)
+                    return self.__wrapped(request, response, session)
                 except HTTP, e:
                     raise
                 except:
                     txn.notice_error(*sys.exc_info())
                     raise
             else:
-                return self.__next_object__(request, response, session)
+                return self.__wrapped(request, response, session)
+        def __getattr__(self, name):
+            return getattr(self.__wrapped, name)
 
     newrelic.api.object_wrapper.wrap_object(
             module, 'serve_controller', error_serve_controller)

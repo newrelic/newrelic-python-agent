@@ -10,7 +10,6 @@ import newrelic.api.pre_function
 import newrelic.api.post_function
 import newrelic.api.error_trace
 import newrelic.api.name_transaction
-import newrelic.api.object_wrapper
 import newrelic.api.web_transaction
 
 def response_middleware_browser_monitoring(request, response):
@@ -102,7 +101,7 @@ def response_middleware_browser_monitoring(request, response):
     # regenerate it using CommonMiddleware as that may
     # not have been the source of it.
 
-    del response['ETag']
+    #del response['ETag']
 
     return response
 
@@ -233,7 +232,9 @@ def post_BaseHandler_load_middleware(handler, *args, **kwargs):
     finally:
         lock.release()
 
-class name_RegexURLResolver_resolve_Resolver404(newrelic.api.object_wrapper.ObjectWrapper):
+class name_RegexURLResolver_resolve_Resolver404(object):
+    def __init__(self, wrapped):
+        self.__wrapped = wrapped
     def __call__(self, *args, **kwargs):
 
 	# Captures a Resolver404 exception and names the
@@ -249,14 +250,16 @@ class name_RegexURLResolver_resolve_Resolver404(newrelic.api.object_wrapper.Obje
             Resolver404 = sys.modules[
                     'django.core.urlresolvers'].Resolver404
             try:
-                return self.__next_object__(*args, **kwargs)
+                return self.__wrapped(*args, **kwargs)
             except Resolver404:
                 txn.name_transaction('404', group='Uri')
                 raise
             except:
                 raise
         else:
-            return self.__next_object__(*args, **kwargs)
+            return self.__wrapped(*args, **kwargs)
+    def __getattr__(self, name):
+        return getattr(self.__wrapped, name)
 
 def out_RegexURLResolver_resolve(result):
 

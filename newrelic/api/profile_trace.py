@@ -1,4 +1,5 @@
 import sys
+import types
 
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
@@ -36,7 +37,11 @@ class FunctionProfile(object):
         caller_line_no = caller.f_lineno
         caller_filename = caller.f_code.co_filename
 
-        if event in ['call', 'c_call']:
+        # FIXME Doesn't work for C calls. Don't appear to get the
+        # correct number of return events.
+
+        #if event in ['call', 'c_call']:
+        if event in ['call']:
             if len(self.function_traces) >= self.depth:
                 self.function_traces.append(None)
                 return
@@ -55,40 +60,67 @@ class FunctionProfile(object):
             function_trace.__enter__()
             self.function_traces.append(function_trace)
 
-        elif event in ['return', 'c_return']:
+        #elif event in ['return', 'c_return']:
+        elif event in ['return']:
             function_trace = self.function_traces.pop()
             if function_trace:
                 function_trace.__exit__(None, None, None)
 
-class FunctionProfileWrapper(newrelic.api.object_wrapper.ObjectWrapper):
+class ProfileTraceWrapper(object):
 
     def __init__(self, wrapped, interesting=False, depth=5):
-        newrelic.api.object_wrapper.ObjectWrapper.__init__(self, wrapped)
-        self.interesting = interesting
-        self.depth = depth
+        if type(wrapped) == types.TupleType:
+            (instance, wrapped) = wrapped
+        else:
+            instance = None
+
+        newrelic.api.object_wrapper.update_wrapper(self, wrapped)
+
+        self._nr_instance = instance
+        self._nr_next_object = wrapped
+
+        if not hasattr(self, '_nr_last_object'):
+            self._nr_last_object = wrapped
+
+        self._nr_interesting = interesting
+        self._nr_depth = depth
+
+    def __get__(self, instance, klass):
+        if instance is None:
+            return self
+        descriptor = self._nr_next_object.__get__(instance, klass)
+        return self.__class__((instance, descriptor), self._nr_name,
+                              self._nr_group, self._nr_interesting)
 
     def __call__(self, *args, **kwargs):
+        print 'FUNCTION-PROFILE'
         transaction = newrelic.api.transaction.transaction()
         if not transaction or not transaction.active:
-            return self.__next_object__(*args, **kwargs)
-        if transaction.coroutines:
-            return self.__next_object__(*args, **kwargs)
+            return self._nr_next_object(*args, **kwargs)
+
+        #if transaction.coroutines:
+        #    return self._nr_next_object(*args, **kwargs)
         if not hasattr(sys, 'getprofile'):
-            return self.__next_object__(*args, **kwargs)
+            return self._nr_next_object(*args, **kwargs)
+
         profiler = sys.getprofile()
+
         if profiler:
-            return self.__next_object__(*args, **kwargs)
-        sys.setprofile(FunctionProfile(self.interesting, self.depth))
+            return self._nr_next_object(*args, **kwargs)
+
+        sys.setprofile(FunctionProfile(self._nr_interesting, self._nr_depth))
+
         try:
-            return self.__next_object__(*args, **kwargs)
+            return self._nr_next_object(*args, **kwargs)
         finally:
             sys.setprofile(profiler)
 
 def function_profile(interesting=False, depth=5):
     def decorator(wrapped):
-        return FunctionProfileWrapper(wrapped, interesting, depth)
+        return ProfileTraceWrapper(wrapped, interesting, depth)
     return decorator
 
 def wrap_function_profile(module, object_path, interesting=False, depth=5):
+    print 'CALL wrap_function_profile'
     newrelic.api.object_wrapper.wrap_object(module, object_path,
-            FunctionProfileWrapper, (interesting, depth))
+            ProfileTraceWrapper, (interesting, depth))

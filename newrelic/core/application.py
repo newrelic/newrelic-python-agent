@@ -191,6 +191,9 @@ class Application(object):
                         metric.scope)).record(metric.duration,
                         metric.exclusive)
 
+            # FIXME  Need to work out to what extent errors are
+            # discarded if similar errors already exist.
+
             self._stats_errors.extend(data.error_details())
 
             # FIXME This is not considering transaction threshold.
@@ -234,10 +237,14 @@ class Application(object):
         self.record_cpu_stats(stats)
         stats.get_time_stats(INSTANCE_REPORTING_METRIC).record(0)
         print stats
+
+        # FIXME Success flag never set but still check in finally.
+
         success = False
         try:
             if self._service.connected():
                 self.parse_metric_response(self._service.send_metric_data(connection,stats.metric_data(self._metric_ids)))
+
                 if errors:
                     self._service.send_error_data(connection, errors)
 
@@ -257,6 +264,10 @@ class Application(object):
                     self._service.send_trace_data(connection, trace_data)
         finally:
             if not success:
+                # FIXME Need to remerge errors and slow transactions.
+                # What history of errors should be retained. If we keep
+                # all then memory will grow.
+
                 self.merge_stats(stats)
 
     configuration = property(get_configuration, None, None, None)

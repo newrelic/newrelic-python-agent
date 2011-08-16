@@ -10,7 +10,7 @@ TimeMetric = collections.namedtuple('TimeMetric',
         ['name', 'scope', 'overflow', 'forced', 'duration', 'exclusive'])
 
 ValueMetric = collections.namedtuple('ValueMetric',
-        ['name', 'scope', 'overflow', 'forced', 'value'])
+        ['name', 'value'])
 
 # NOTE: currently used only for tests
 def new_metric(name, scope=""):

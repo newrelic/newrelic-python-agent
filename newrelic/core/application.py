@@ -212,12 +212,9 @@ class Application(object):
             self._cpu_times.record(stats)
 
     def parse_metric_response(self,res):
-        print "Metric data response: %s" % str(res)
-        return
-        # FIXME this code isn't working for some reason
-        for m in res:
-            metric = Metric(m[0]["name"],m[0]["scope"])
-            self._metric_ids[metric] = m[1]
+        for key, value in res:
+            metric = Metric(key["name"],key["scope"])
+            self._metric_ids[metric] = value
         print self._metric_ids
 
     def force_harvest(self):

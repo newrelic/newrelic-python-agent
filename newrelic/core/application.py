@@ -191,7 +191,6 @@ class Application(object):
                         metric.scope)).record(metric.duration,
                         metric.exclusive)
 
-            errors = list(data.error_details())
             self._stats_errors.extend(data.error_details())
 
             # FIXME This is not considering transaction threshold.

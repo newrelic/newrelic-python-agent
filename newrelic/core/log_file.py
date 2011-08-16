@@ -1,3 +1,10 @@
+"""This module sets up use of the Python logging module by the agent. As we
+don't want to rely exclusively on user having configured the logging module
+themselves to capture any logged output we attach our own log file when
+enabled from agent configuration.
+
+"""
+
 import logging
 import threading
 
@@ -32,6 +39,15 @@ def initialize():
 
                 formatter = logging.Formatter(_LOG_FORMAT)
                 handler.setFormatter(formatter)
+
+		# TODO Have to check how log levels play out
+		# when user also capturing in own log file. We
+		# may not be able to set level on 'newrelic'
+		# logger as that may be only place for user to
+		# override it. We may need to separately set it
+		# on each of our nested loggers, ie.,
+		# 'newrelic.core', 'newrelic.api' and
+		# 'newrelic.config'.
 
                 _agent_logger.addHandler(handler)
                 _agent_logger.setLevel(settings.log_level)

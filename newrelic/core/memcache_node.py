@@ -47,6 +47,11 @@ class MemcacheNode(_MemcacheNode):
 
         # Now for the children.
 
+	# TODO Above exclusive times don't take into
+	# consideration children if any existed. Still need to
+	# work out how such children to this nodes is meant to
+	# work.
+
         for child in self.children:
             for metric in child.time_metrics(root, self):
                 yield metric

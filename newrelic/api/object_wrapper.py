@@ -72,6 +72,9 @@ def object_context(object):
     if hasattr(object, '_nr_last_object'):
         object = object._nr_last_object
 
+    # FIXME This will die if used on methods of Python objects
+    # implemented in C.
+
     if inspect.isclass(object) or type(object) == types.TypeType:
         cname = object.__name__
         fname = ''

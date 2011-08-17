@@ -1,8 +1,4 @@
-'''
-Created on Jul 25, 2011
-
-@author: sdaubin
-'''
+import copy
 
 # supclasses should be iterable
 class BaseStats(object):
@@ -70,6 +66,9 @@ class ApdexStats(BaseStats):
     def _json_data(self):
         return [self._satisfying,self._tolerating,self.frustrating,0,0,0]
 
+    def __repr__(self):
+        return str(self._json_data())
+
     def clone(self):
         s = ApdexStats(self._apdex_setting)
         s._satisfying = self._satisfying
@@ -78,7 +77,7 @@ class ApdexStats(BaseStats):
         return s
 
     def get_satisfying(self):
-        return self._satisfying    
+        return self._satisfying
     def get_tolerating(self):
         return self._tolerating
     def get_frustrating(self):
@@ -87,6 +86,7 @@ class ApdexStats(BaseStats):
     satisfying = property(get_satisfying)
     tolerating = property(get_tolerating)
     frustrating = property(get_frustrating)
+
 
 class TimeStats(BaseStats):
     def __init__(self):
@@ -128,6 +128,9 @@ class TimeStats(BaseStats):
         return [self._call_count,self._total_call_time,self._total_exclusive_call_time,
                 self._min_call_time,self._max_call_time,self._sos]
 
+    def __repr__(self):
+        return str(self._json_data())
+
     def clone(self):
         s = TimeStats()
         s._call_count = self._call_count
@@ -141,13 +144,13 @@ class TimeStats(BaseStats):
 
     '''
     Accessors
-    '''     
+    '''
     def get_max_call_time(self):
         return self._max_call_time
     def get_min_call_time(self):
-        return self._min_call_time        
+        return self._min_call_time
     def get_total_call_time(self):
-        return self._total_call_time     
+        return self._total_call_time
     def get_total_exclusive_call_time(self):
         return self._total_exclusive_call_time
     def get_call_count(self):
@@ -161,7 +164,6 @@ class TimeStats(BaseStats):
     min_call_time = property(get_min_call_time)
     total_call_time = property(get_total_call_time)
     total_exclusive_call_time = property(get_total_exclusive_call_time)
-
 
 class StatsDict(dict):
     def __init__(self, apdex_settings):
@@ -188,7 +190,8 @@ class StatsDict(dict):
         for k,v in other_stats_dict.iteritems():
             s = self.get(k)
             if s is None:
-                self[k] = v.clone()
+                #self[k] = v.clone()
+                self[k] = copy.copy(v)
             else:
                 s.merge(v)
 

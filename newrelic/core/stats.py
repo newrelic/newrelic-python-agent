@@ -1,5 +1,9 @@
 import copy
 
+# XXX This file is no longer being used. See 'stats_engine.py' instead.
+# File kept here for reference for time being if issues come up with new
+# stats engine implementation.
+
 # supclasses should be iterable
 class BaseStats(object):
     '''

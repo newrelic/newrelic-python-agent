@@ -45,9 +45,7 @@ class Application(object):
         self._work_thread.start()
         self._work_queue.put_nowait(self.connect)
 
-        self._samplers = []
-        self._samplers.append(newrelic.core.samplers.CPUSampler())
-        self._samplers.append(newrelic.core.samplers.MemorySampler())
+        self._samplers = newrelic.core.samplers.create_samplers()
 
         # Force harvesting of metrics on process shutdown. Required
         # as various Python web application hosting mechanisms can

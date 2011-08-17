@@ -4,6 +4,24 @@ import sys
 
 import newrelic.core.metric
 
+_samplers = []
+
+def register_sampler(klass, args=()):
+    """Register sampler to be associated with application objects.
+    The class types and args to be used to constructor when created
+    need to be supplied.
+
+    """
+
+    _samplers.append((klass, args))
+
+def create_samplers():
+    """Return a list of instances of all the registered samplers.
+
+    """
+
+    return [klass(*args) for klass, args in _samplers]
+
 def _cpu_count():
     """Return the number of processors host hardware provides.
 
@@ -17,7 +35,7 @@ def _cpu_count():
     try:
         import multiprocessing
         return multiprocessing.cpu_count()
-    except (ImportError,NotImplementedError):
+    except (ImportError, NotImplementedError):
         pass
 
     # POSIX Systems.
@@ -26,7 +44,7 @@ def _cpu_count():
         res = int(os.sysconf('SC_NPROCESSORS_ONLN'))
         if res > 0:
             return res
-    except (AttributeError,ValueError):
+    except (AttributeError, ValueError):
         pass
 
     # Fallback to indicating only a single processor.
@@ -61,6 +79,8 @@ class CPUSampler(object):
         yield newrelic.core.metric.ValueMetric(
                 name='CPU/User/Utilization', value=utilization)
 
+register_sampler(CPUSampler)
+
 def _memory_used():
     """Returns the amount of resident memory in use in MBs.
 
@@ -87,3 +107,5 @@ class MemorySampler(object):
     def value_metrics(self):
         yield newrelic.core.metric.ValueMetric(
                 name='Memory/Physical', value=_memory_used())
+
+register_sampler(MemorySampler)

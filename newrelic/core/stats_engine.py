@@ -79,15 +79,15 @@ class TimeStats(list):
     def merge_metric(self, metric):
         """Merge data from a time or value metric object."""
 
-        if type(metric) is newrelic.core.metric.ValueMetric:
-            duration = metric.value
-            exclusive = metric.value
-        else:
+        if hasattr(metric, 'duration') and hasattr(metric, 'exclusive'):
             duration = metric.duration
             exclusive = metric.exclusive
 
             if exclusive is None:
                 exclusive = duration
+        else:
+            duration = metric.value
+            exclusive = metric.value
 
         self[1] += duration
         self[2] += exclusive
@@ -285,6 +285,56 @@ class StatsEngine(object):
 
         """
 
+        # FIXME The application object perhaps needs to maintain an
+        # activation counter. This would be incremented after each
+        # connect to core application and updated server side
+        # configuration available. The counter number should then be
+        # pushed into the application specific settings object and the
+        # higher level instrumentation layer should then supply the
+        # counter value in the TransactionNode root object for the raw
+        # transaction data. That way the code here could make a decision
+        # whether the data should be thrown away as it relates to a
+        # transaction that started when the application was previously
+        # active, but got restarted in between then and when the
+        # transaction completed. If we don't do this then we could push
+        # through transaction data accumulated based on an old set of
+        # application specific configuration settings. This may not be
+        # an issue given in most cases the server side configuration
+        # wouldn't change but should be considered. No harm in adding
+        # the counter even if not ultimately needed. The core
+        # application could even be what doles out the counter or
+        # identifying value for that configuration snapshot and record
+        # it against the agent run details stored in core application
+        # database rather than it be generated internally using a
+        # counter. The value could change on each request or only
+        # increment when server side sees a change in server side
+        # application configuration. If only changes when configuration
+        # changes, wouldn't matter then that request started with one
+        # configuration and finished after application had been
+        # restarted.
+
+	# FIXME Still need to deal with metric clamping. Saxon has
+	# indicated alternate way of sorting metrics based on duration
+	# and only keep the top ones with the rest going into the
+	# overflow. Either way, the overflow metric as specified now is
+	# needed. If have to sort though, means that have to exhaust the
+	# generator and accumulate all metrics, which will chew up a lot
+	# more memory. Use of geneator still pontential means is more
+	# efficient than just accumulating everything in a list ot begin
+	# with and then sort list. The means of doing it is quite easy
+	# though as can do:
+        #
+        #     metrics = sorted(data.apdex_metrics(), key=lambda x: x.duration)
+        #
+        # and metrics will list of all metrics sorted based on duration.
+        # The list will still contain metrics which are forced or don't
+        # have an overflow, for which default probably needs to be
+        # generated, so need to special case them as we go through them
+        # and keep count of those we can discard and when they reach
+        # limit then can start using overflow. The algorithm is exactly
+        # the same though regardless of whether sort them first. Quite
+        # easy to support both approaches through configuration initially.
+
         if not self.__settings:
             return
 
@@ -393,6 +443,8 @@ class StatsEngine(object):
 	# Merge back data into any new data which has been
 	# accumulated.
 
+        # FIXME Should all metrics always be merged back in?
+
         for key, other in snapshot.__stats_table.iteritems():
             stats = self.__stats_table.get(key)
             if not stats:
@@ -403,12 +455,14 @@ class StatsEngine(object):
         # Insert original error details at start of any new
         # ones to maintain time based order.
 
-        self.__transactions_errors[:0] = snapshot.transaction_errors
+        # FIXME Should all accumulated errors be retained.
+
+        self.__transaction_errors[:0] = snapshot.transaction_errors
 
         # Restore original slow transaction if slower than
         # any newer slow transaction.
 
-        transaction = snapshot.__slow_transaction.duration
+        transaction = snapshot.__slow_transaction
 
         if self.slow_transaction is None:
             self.__slow_transaction = transaction

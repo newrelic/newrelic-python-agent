@@ -4,9 +4,12 @@ Created on Jul 28, 2011
 @author: sdaubin
 '''
 
+import sys
+import logging
 import Queue
 from newrelic.core.nr_threading import schedule_repeating_task,QueueProcessingThread
 
+_logger = logging.getLogger('newrelic.core.harvest')
 
 class Harvester(object):
     def __init__(self,remote,frequency_in_seconds):
@@ -48,8 +51,8 @@ class Harvester(object):
                     listener.harvest(connection)
             finally:
                 connection.close()
-        except Exception as ex:
-            print ex
+        except:
+            _logger.error('Failed to harvest data.', exc_info=sys.exc_info())
         
     def get_harvest_count(self):
         return self._harvest_count

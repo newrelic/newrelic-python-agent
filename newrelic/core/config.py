@@ -62,6 +62,12 @@ _settings.capture_params = True
 _settings.ignored_params = []
 _settings.sampling_rate = 0
 
+_settings.beacon = None
+_settings.application_id = None
+_settings.browser_key = None
+_settings.episodes_url = None
+_settings.episodes_file = None
+
 _settings.transaction_tracer.enabled = True
 _settings.transaction_tracer.transaction_threshold = 'apdex_f'
 _settings.transaction_tracer.record_sql = 'obfuscated'

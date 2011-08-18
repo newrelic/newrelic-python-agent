@@ -4,11 +4,45 @@ import types
 import inspect
 import urlparse
 import cgi
+import base64
+import time
 
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
 
 _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
+
+_rum_header_fragment = """
+<script type="text/javascript">
+var NREUMQ=[];NREUMQ.push(["mark","firstbyte",
+new Date().getTime()])</script>
+"""
+
+_rum_footer_short_fragment = """
+<script type="text/javascript">
+if(!NREUMQ.f)NREUMQ.f=function(){NREUMQ.push(["load",
+new Date().getTime()]);if(NREUMQ.a)NREUMQ.a();};if(
+window.onload!==NREUMQ.f){NREUMQ.a=window.onload;
+window.onload=NREUMQ.f;};NREUMQ.push(["nrf2","%s","%s",
+%d,"%s",%d,%d,new Date().getTime()])</script>
+"""
+
+_rum_footer_long_fragment = """
+<script type="text/javascript">
+if(!NREUMQ.f)NREUMQ.f=function(){NREUMQ.push(["load",
+new Date().getTime()]);var e=document.createElement("script");
+e.type="text/javascript";e.async=true;e.src="%s";
+document.body.appendChild(e);if(NREUMQ.a)NREUMQ.a();};
+if(window.onload!==NREUMQ.f){NREUMQ.a=window.onload;
+window.onload=NREUMQ.f;};NREUMQ.push(["nrf2","%s","%s",
+%d,"%s",%d,%d,new Date().getTime()])</script>
+"""
+
+def _obfuscate_transaction_name(name, key):
+    s = []
+    for i in range(len(name)):
+        s.append(chr(ord(name[i]) ^ ord(key[i%13])))
+    return base64.b64encode(''.join(s))
 
 class WebTransaction(newrelic.api.transaction.Transaction):
 
@@ -142,6 +176,10 @@ class WebTransaction(newrelic.api.transaction.Transaction):
                 params = cgi.parse_qs(value)
             self.request_parameters.update(params)
 
+        # Flags for tracking whether RUM header inserted.
+
+        self._rum_header = False
+
     def _environ_setting(self, environ, name, default=False):
         flag = environ.get(name, default)
         if default is None or default:
@@ -153,10 +191,79 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         return flag
 
     def browser_timing_header(self):
-        return ''
+        if not self.enabled:
+            return ''
+
+        if self._state != newrelic.api.transaction.STATE_RUNNING:
+            return ''
+
+        if self.ignore:
+            return ''
+
+        if not self._settings:
+            return ''
+
+        if not self._settings.browser_monitoring.auto_instrument:
+            return ''
+
+        if not self._settings.episodes_url:
+            return ''
+
+        if not self._settings.license_key:
+            return ''
+
+        if len(self._settings.license_key) < 13:
+            return ''
+
+        self._rum_header = True
+
+        return _rum_header_fragment
 
     def browser_timing_footer(self):
-        return ''
+        if not self.enabled:
+            return ''
+
+        if self._state != newrelic.api.transaction.STATE_RUNNING:
+            return ''
+
+        if self.ignore:
+            return ''
+
+        if not self._rum_header:
+            return ''
+
+        # FIXME Need to freeze name properly.
+
+        name = _obfuscate_transaction_name(self.frozen_path,
+                self._settings.license_key)
+
+        queue_start = self._queue_start or self._start_time
+        start_time = self._start_time
+        end_time = time.time()
+
+        queue_duration = int((start_time - queue_start) * 1000)
+        request_duration = int((end_time - start_time) * 1000)
+
+        # FIXME Check whether meant to be checking file or URL.
+
+	# Settings will have values as Unicode strings and the
+	# result here will be Unicode so need to convert back to
+	# normal string. Using str() and default encoding should
+	# be fine as should all be ASCII anyway.
+
+        if not self._settings.episodes_file:
+            return str(_rum_footer_short_fragment % (
+                    self._settings.beacon,
+                    self._settings.browser_key,
+                    self._settings.application_id,
+                    name, queue_duration, request_duration))
+        else:
+            return str(_rum_footer_long_fragment % (
+                    self._settings.episodes_url,
+                    self._settings.beacon,
+                    self._settings.browser_key,
+                    self._settings.application_id,
+                    name, queue_duration, request_duration))
 
 if _agent_mode not in ('julunggul',):
     import _newrelic

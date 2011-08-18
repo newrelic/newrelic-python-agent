@@ -73,6 +73,8 @@ class Transaction(object):
         self._group = None
         self._name = None
 
+        self._frozen_path = None
+
         self._node_stack = collections.deque()
 
         self._request_uri = None
@@ -238,8 +240,29 @@ class Transaction(object):
         # need it anymore.
 
         self._settings = None
+        self._enabled = False
 
         self._application.record_transaction(node)
+
+    @property
+    def frozen_path(self):
+        if self._frozen_path is not None:
+            return self._frozen_path
+
+        # Stripping the leading slash on the request URL held by
+        # name when type is 'Uri' is to keep compatibility with
+        # PHP agent and also possibly other agents. Leading
+        # slash it not deleted for other category groups as the
+        # leading slash may be significant in that situation.
+
+        if self._group == 'Uri' and self._name[:1] == '/':
+            path = '%s/%s%s' % (type, self._group, self._name)
+        else:
+            path = '%s/%s/%s' % (type, self._group, self._name)
+
+        self._frozen_path = path
+
+        return path
 
     @property
     def state(self):

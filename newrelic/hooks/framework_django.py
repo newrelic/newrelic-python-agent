@@ -11,6 +11,7 @@ import newrelic.api.post_function
 import newrelic.api.error_trace
 import newrelic.api.name_transaction
 import newrelic.api.web_transaction
+import newrelic.api.object_wrapper
 
 def response_middleware_browser_monitoring(request, response):
 
@@ -223,11 +224,32 @@ def post_BaseHandler_load_middleware(handler, *args, **kwargs):
             handler._exception_middleware = exception_middleware
 
         # Insert response middleware for automatically
-        # inserting end user monitoring header and footer.
+        # inserting end user monitoring header and
+        # footer. We need to be careful we insert this.
+        # We want to insert it before middleware which
+        # changes the content type such a compression
+        # middleware, but it has to go after caching
+        # middleware as otherwise the header/footer will
+        # be captured in the cache. If the header/footer
+        # end up in a cached page, when serving up the
+        # cached page later then we will add
+        # header/footer a second time.
+
+        _content_type_modifying_middleware = [
+            'django.middleware.gzip:GZipMiddleware.process_response'
+        ]
 
         if hasattr(handler, '_response_middleware'):
-            handler._response_middleware.insert(0,
-                    response_middleware_browser_monitoring)
+            for i in range(len(handler._response_middleware)):
+                middleware = handler._response_middleware[i]
+                name = newrelic.api.object_wrapper.callable_name(middleware)
+                if name in _content_type_modifying_middleware:
+                    handler._response_middleware.insert(i,
+                            response_middleware_browser_monitoring)
+                    break
+            else:
+                handler._response_middleware.append(
+                      response_middleware_browser_monitoring)
 
     finally:
         lock.release()
@@ -237,11 +259,11 @@ class name_RegexURLResolver_resolve_Resolver404(object):
         self.__wrapped = wrapped
     def __call__(self, *args, **kwargs):
 
-	# Captures a Resolver404 exception and names the
-	# web transaction as a generic 404 with group
-	# 'Uri'. This is to avoid problem of metric
-	# explosion on URLs which didn't actually map to
-	# a valid resource. If there is a 404 handler then
+        # Captures a Resolver404 exception and names the
+        # web transaction as a generic 404 with group
+        # 'Uri'. This is to avoid problem of metric
+        # explosion on URLs which didn't actually map to
+        # a valid resource. If there is a 404 handler then
         # this will get overriden again later so this is
         # just a default for where not 404 handler.
 
@@ -372,10 +394,10 @@ def instrument(module):
 
     if module.__name__ == 'django.core.handlers.base':
 
-	# Attach a post function to load_middleware() method of
-	# BaseHandler so that we can iterate over the various
-	# middleware and wrap them all with a function trace.
-	# The load_middleware() function can be called more than
+        # Attach a post function to load_middleware() method of
+        # BaseHandler so that we can iterate over the various
+        # middleware and wrap them all with a function trace.
+        # The load_middleware() function can be called more than
         # once with it returning if it doesn't need to do anything.
         # We only want to do the wrapping once though so the post
         # function is flagged to only run once.
@@ -386,12 +408,12 @@ def instrument(module):
 
     elif module.__name__ == 'django.core.handlers.wsgi':
 
-	# Attach a pre function to handle_uncaught_exception()
-	# of WSGIHandler so that can capture exception details
-	# of any exception which wasn't caught and dealt with by
-	# an exception middleware. The handle_uncaught_exception()
-	# function produces a 500 error response page and
-	# otherwise suppresses the exception, so last chance to
+        # Attach a pre function to handle_uncaught_exception()
+        # of WSGIHandler so that can capture exception details
+        # of any exception which wasn't caught and dealt with by
+        # an exception middleware. The handle_uncaught_exception()
+        # function produces a 500 error response page and
+        # otherwise suppresses the exception, so last chance to
         # do this as exception will not propogate up to the WSGI
         # application.
 
@@ -401,16 +423,16 @@ def instrument(module):
 
     elif module.__name__ == 'django.core.urlresolvers':
 
-	# Wrap method which maps a string version of a function
-	# name as used in urls.py patter so can capture any
-	# exception which is raised during that process.
-	# Normally Django captures import errors at this point
-	# and then reraises a ViewDoesNotExist exception with
-	# details of the original error and traceback being
-	# lost. We thus intercept it here so can capture that
-	# traceback which is otherwise lost. Although we ignore
-	# a Http404 exception here, it probably is never the
-	# case that one can be raised by get_callable().
+        # Wrap method which maps a string version of a function
+        # name as used in urls.py patter so can capture any
+        # exception which is raised during that process.
+        # Normally Django captures import errors at this point
+        # and then reraises a ViewDoesNotExist exception with
+        # details of the original error and traceback being
+        # lost. We thus intercept it here so can capture that
+        # traceback which is otherwise lost. Although we ignore
+        # a Http404 exception here, it probably is never the
+        # case that one can be raised by get_callable().
 
         newrelic.api.error_trace.wrap_error_trace(module, 'get_callable',
                 ignore_errors=['django.http.Http404'])

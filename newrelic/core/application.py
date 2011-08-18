@@ -28,11 +28,8 @@ class Application(object):
 
         self._app_name = app_name
         self._linked_applications = sorted(set(linked_applications))
-
         self._app_names = [app_name] + linked_applications
 
-        # _metric_ids is always accessed from the harvest thread, so it requires no synchronization
-        self._metric_ids = {}
         self._remote = remote
         self._service = NewRelicService(remote, self._app_names)
 
@@ -87,7 +84,7 @@ class Application(object):
 
         return connected
 
-    def record_value_metric(self, name, value):
+    def record_metric(self, name, value):
         try:
             self._stats_lock.acquire()
             self._stats_engine.record_value_metric(

@@ -12,7 +12,7 @@ import newrelic.core.remote
 import newrelic.core.harvest
 import newrelic.core.application
 
-_logger = logging.getLogger('newrelic.core')
+_logger = logging.getLogger('newrelic.core.agent')
 
 class Agent(object):
 
@@ -205,7 +205,7 @@ class Agent(object):
 
         return self._applications.get(app_name, None)
 
-    def record_value_metric(self, app_name, name, value):
+    def record_metric(self, app_name, name, value):
 	"""Records a basic metric for the named application. If there has
 	been no prior request to activate the application, the metric is
 	discarded.
@@ -219,7 +219,7 @@ class Agent(object):
         if application is None:
             return
 
-        application.record_value_metric(name, value)
+        application.record_metric(name, value)
 
     def record_transaction(self, app_name, data):
         """Processes the raw transaction data, generating and recording

@@ -19,30 +19,30 @@ class Harvester(object):
         self._harvest_work_queue = Queue.Queue(10)
         print "Starting harvest thread"
         self._harvest_thread, self._harvest_event = schedule_repeating_task("New Relic Harvest Timer",self._harvest, frequency_in_seconds)
-        
+
         self._harvest_work_thread = QueueProcessingThread("New Relic Harvest Processing Thread",self._harvest_work_queue)
         self._harvest_work_thread.start()
-    
+
     def register_harvest_listener(self,listener):
         self._harvest_listeners.append(listener)
-    
+
     def unregister_harvest_listener(self,listener):
         self._harvest_listeners.remove(listener)
-        
+
     def clear_harvest_listeners(self):
         self._harvest_listeners[:] = []
-            
+
     def _harvest(self):
-        
+
         if self._harvest_thread:
             self._harvest_count += 1
-    
+
         self._harvest_work_queue.put_nowait(self._do_harvest)
-        
+
     '''
     Create a New Relic service connection and call harvest() on all of the harvest listeners.  This is
-    called on the harvest processing thread. 
-    '''    
+    called on the harvest processing thread.
+    '''
     def _do_harvest(self):
         try:
             connection = self._remote.create_connection()
@@ -53,12 +53,12 @@ class Harvester(object):
                 connection.close()
         except:
             _logger.error('Failed to harvest data.', exc_info=sys.exc_info())
-        
+
     def get_harvest_count(self):
         return self._harvest_count
-        
+
     def stop(self):
-    
+
         if self._harvest_event:
             print "Stopping harvest thread"
             self._harvest_event.set()
@@ -71,7 +71,7 @@ class Harvester(object):
         else:
             # clean up for unit tests
             self._harvest_count = 0
-    
+
         return False
-    
-    harvest_count = property(get_harvest_count) 
+
+    harvest_count = property(get_harvest_count)

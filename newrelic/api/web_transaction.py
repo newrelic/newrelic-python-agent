@@ -12,31 +12,25 @@ import newrelic.api.object_wrapper
 
 _agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
-_rum_header_fragment = """
-<script type="text/javascript">
-var NREUMQ=[];NREUMQ.push(["mark","firstbyte",
-new Date().getTime()])</script>
-"""
+_rum_header_fragment = '<script type="text/javascript">' \
+        'var NREUMQ=[];NREUMQ.push(["mark","firstbyte",' \
+        'new Date().getTime()])</script>'
 
-_rum_footer_short_fragment = """
-<script type="text/javascript">
-if(!NREUMQ.f)NREUMQ.f=function(){NREUMQ.push(["load",
-new Date().getTime()]);if(NREUMQ.a)NREUMQ.a();};if(
-window.onload!==NREUMQ.f){NREUMQ.a=window.onload;
-window.onload=NREUMQ.f;};NREUMQ.push(["nrf2","%s","%s",
-%d,"%s",%d,%d,new Date().getTime()])</script>
-"""
+_rum_footer_short_fragment = '<script type="text/javascript">' \
+        'if(!NREUMQ.f)NREUMQ.f=function(){NREUMQ.push(["load",' \
+        'new Date().getTime()]);if(NREUMQ.a)NREUMQ.a();};if(' \
+        'window.onload!==NREUMQ.f){NREUMQ.a=window.onload;' \
+        'window.onload=NREUMQ.f;};NREUMQ.push(["nrf2","%s","%s",' \
+        '%d,"%s",%d,%d,new Date().getTime()])</script>'
 
-_rum_footer_long_fragment = """
-<script type="text/javascript">
-if(!NREUMQ.f)NREUMQ.f=function(){NREUMQ.push(["load",
-new Date().getTime()]);var e=document.createElement("script");
-e.type="text/javascript";e.async=true;e.src="%s";
-document.body.appendChild(e);if(NREUMQ.a)NREUMQ.a();};
-if(window.onload!==NREUMQ.f){NREUMQ.a=window.onload;
-window.onload=NREUMQ.f;};NREUMQ.push(["nrf2","%s","%s",
-%d,"%s",%d,%d,new Date().getTime()])</script>
-"""
+_rum_footer_long_fragment = '<script type="text/javascript">' \
+        'if(!NREUMQ.f)NREUMQ.f=function(){NREUMQ.push(["load",' \
+        'new Date().getTime()]);var e=document.createElement("script");' \
+        'e.type="text/javascript";e.async=true;e.src="%s";' \
+        'document.body.appendChild(e);if(NREUMQ.a)NREUMQ.a();};' \
+        'if(window.onload!==NREUMQ.f){NREUMQ.a=window.onload;' \
+        'window.onload=NREUMQ.f;};NREUMQ.push(["nrf2","%s","%s",' \
+        '%d,"%s",%d,%d,new Date().getTime()])</script>'
 
 def _obfuscate_transaction_name(name, key):
     s = []

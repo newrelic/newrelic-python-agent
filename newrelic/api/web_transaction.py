@@ -6,6 +6,7 @@ import urlparse
 import cgi
 import base64
 import time
+import string
 
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
@@ -322,8 +323,27 @@ class WSGIApplicationWrapper(object):
             return self._nr_next_object(environ, start_response)
 
         # Otherwise treat it as top level transaction.
+        # We have to though look first to see whether the
+        # application name has been overridden through
+        # the WSGI environ dictionary.
+
+        app_name = environ.get('newrelic.app_name')
+
+        if app_name:
+            if app_name.find(';') != -1:
+                app_names = [string.strip(n) for n in app_name.split(';')]
+                app_name = app_names[0]
+                application = newrelic.api.application.application(app_name)
+                for altname in app_names[1:]:
+                    application.link_to_application(altname)
+            else:
+                application = newrelic.api.application.application(app_name)
+        else:
+            application = self._nr_application
+
+        # Now start recording the actual web transaction.
  
-        transaction = WebTransaction(self._nr_application, environ)
+        transaction = WebTransaction(application, environ)
         transaction.__enter__()
  
         def _start_response(status, response_headers, *args):

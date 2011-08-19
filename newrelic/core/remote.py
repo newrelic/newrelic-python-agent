@@ -11,6 +11,7 @@ import socket
 import string
 import time
 
+import newrelic
 import newrelic.core.config
 
 from newrelic.core.exceptions import raise_newrelic_exception,ForceRestartException,ForceShutdownException
@@ -32,8 +33,7 @@ class NewRelicService(object):
 
 
     def agent_version(self):
-        #FIXME move this
-        return "0.9.0"
+        return newrelic.version
 
     def shutdown(self):
         if self.agent_run_id is not None:

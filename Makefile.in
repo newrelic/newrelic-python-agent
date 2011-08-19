@@ -1,15 +1,14 @@
 PYTHON = @PYTHON@
 VIRTUALENV = @VIRTUALENV@
-GIT = @GIT@
 
-all : php_agent
+all :
 	$(PYTHON) setup.py build
 
 install : all
 	$(PYTHON) setup.py install --force
 
 hudson-install : all
-	$(PYTHON) setup.py install \
+	$(PYTHON) setup.py install --no-compile \
 	  --install-platlib=${DESTDIR} --install-purelib=${DESTDIR}
 
 clean :
@@ -20,20 +19,12 @@ clean :
 	rm -rf autom4te.cache
 
 distclean : clean
-	$(RM) config.h
 	$(RM) Makefile
 	$(RM) setup.py
 	rm -rf test-env
-	-(test -d php_agent && cd php_agent && $(GIT) clean -fdx)
 
 realclean : distclean
-	rm -rf php_agent
 	rm -rf hudson-results
-
-php_agent :
-	$(GIT) clone repo.newrelic.com:/git/php_agent.git
-	# XXX We hard wire check out to this specific PHP agent tag.
-	(cd php_agent; $(GIT) checkout v2.1.3.164)
 
 install-testing : test-env all
 	test-env/bin/python setup.py install

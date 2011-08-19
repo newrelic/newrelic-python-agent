@@ -1,13 +1,9 @@
 from distutils.core import setup, Extension
 import sys, os, re
 
-from distutils import sysconfig
-dummy = sysconfig.get_config_vars('CFLAGS', 'OPT')
-config_vars = sysconfig._config_vars
-config_vars['CFLAGS'] = config_vars['CFLAGS'].replace(' -Os ', ' ')
-config_vars['OPT'] = config_vars['OPT'].replace(' -Os ', ' ')
+import newrelic.version
 
-base_version = open('VERSION').read().strip()
+base_version = newrelic.version.version
 build_number = os.environ.get('HUDSON_BUILD_NUMBER', '0')
 copyright = '(C) Copyright 2010-2011 New Relic Inc. All rights reserved.'
 
@@ -18,81 +14,6 @@ if not script_directory:
   script_directory = os.getcwd()
 
 config_guess = os.path.join(script_directory, 'config.guess')
-
-try:
-  import subprocess
-  platform = subprocess.Popen(config_guess,
-      stdout=subprocess.PIPE).stdout.read().strip()
-except:
-  platform = os.popen4(config_guess)[1].read().strip()
-
-platform = re.sub('[0-9.]*$', '', platform)
-
-sources = [
-  "php_agent/application.c",
-  "php_agent/daemon_protocol.c",
-  "php_agent/dbgstack.c",
-  "php_agent/genericobject.c",
-  "php_agent/globals.c",
-  "php_agent/harvest.c",
-  "php_agent/logging.c",
-  "php_agent/metric_table.c",
-  "php_agent/nrbuffer.c",
-  "php_agent/nrthread.c",
-  "php_agent/samplers.c",
-  "php_agent/stringpool.c",
-  "php_agent/utils.c",
-  "php_agent/web_transaction.c",
-  "php_agent/wt_error.c",
-  "php_agent/wt_external.c",
-  "php_agent/wt_function.c",
-  "php_agent/wt_memcache.c",
-  "php_agent/wt_params.c",
-  "php_agent/wt_sql.c",
-  "php_agent/wt_utils.c",
-  "wrapper/_newrelicmodule.c",
-  "wrapper/py_application.c",
-  "wrapper/py_background_task.c",
-  "wrapper/py_database_trace.c",
-  "wrapper/py_error_trace.c",
-  "wrapper/py_exceptions.c",
-  "wrapper/py_external_trace.c",
-  "wrapper/py_function_trace.c",
-  "wrapper/py_import_hook.c",
-  "wrapper/py_in_function.c",
-  "wrapper/py_log_file.c",
-  "wrapper/py_memcache_trace.c",
-  "wrapper/py_name_transaction.c",
-  "wrapper/py_object_wrapper.c",
-  "wrapper/py_out_function.c",
-  "wrapper/py_post_function.c",
-  "wrapper/py_pre_function.c",
-  "wrapper/py_settings.c",
-  "wrapper/py_transaction.c",
-  "wrapper/py_utilities.c",
-  "wrapper/py_web_transaction.c",
-]
-
-define_macros = []
-define_macros.append(('NEWRELIC_PLATFORM', '"%s"' % platform))
-define_macros.append(('NEWRELIC_AGENT_LANGUAGE', '"python"'))
-define_macros.append(('NEWRELIC_AGENT_VERSION', '"%s"' % base_version))
-define_macros.append(('NEWRELIC_AGENT_LONG_VERSION', '"%s"' % version))
-define_macros.append(('HAVE_CONFIG_H', '1'))
-define_macros.append(('NR_BUILD_@PLATFORM@', '1'))
-
-if sys.version_info[:2] < (2, 5):
-    define_macros.append(('Py_ssize_t', 'int'))
-
-if "@ENABLE_AGENT_DEBUG@" == "yes":
-    define_macros.append(('NR_AGENT_DEBUG', '1'))
-
-extension = Extension(
-  name = "_newrelic",
-  sources = sources,
-  define_macros = define_macros,
-  include_dirs = ['.', 'php_agent'],
-)
 
 packages = [
   "newrelic",
@@ -114,7 +35,5 @@ setup(
   license = copyright,
   url = "http://www.newrelic.com",
   packages = packages,
-  #ext_modules = [extension],
-  platforms = [platform],
   extra_path = ("newrelic", "newrelic-%s" % version),
 )

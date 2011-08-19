@@ -1,19 +1,13 @@
-from distutils.core import setup, Extension
-import sys, os, re
+import sys
+import os
 
-import newrelic.version
+from distutils.core import setup
 
-base_version = newrelic.version.version
-build_number = os.environ.get('HUDSON_BUILD_NUMBER', '0')
 copyright = '(C) Copyright 2010-2011 New Relic Inc. All rights reserved.'
 
-version = "%s.%s" % (base_version, build_number)
-
-script_directory = os.path.dirname(__file__)
-if not script_directory:
-  script_directory = os.getcwd()
-
-config_guess = os.path.join(script_directory, 'config.guess')
+import newrelic.version
+build_number = os.environ.get('HUDSON_BUILD_NUMBER', '0')
+package_version = "%s.%s" % (newrelic.version.version, build_number)
 
 packages = [
   "newrelic",
@@ -28,12 +22,12 @@ packages = [
 
 setup(
   name = "newrelic",
-  version = base_version,
+  version = package_version,
   description = "Python agent for New Relic",
   author = "New Relic",
   author_email = "support@newrelic.com",
   license = copyright,
   url = "http://www.newrelic.com",
   packages = packages,
-  extra_path = ("newrelic", "newrelic-%s" % version),
+  extra_path = ("newrelic", "newrelic-%s" % package_version),
 )

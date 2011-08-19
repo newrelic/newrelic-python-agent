@@ -1,6 +1,7 @@
-import os, sys, string, re
+import sys
+import os
 
-import setuptools
+from setuptools import setup
 
 copyright = '(C) Copyright 2010-2011 New Relic Inc. All rights reserved.'
 
@@ -13,6 +14,7 @@ if not script_directory:
 
 version_file = os.path.join(script_directory, 'VERSION')
 package_version = open(version_file).read().strip()
+package_directory = 'newrelic-%s' % package_version
 
 packages = [
   "newrelic",
@@ -25,9 +27,7 @@ packages = [
   "newrelic.scripts",
 ]
 
-package_directory = 'newrelic-%s' % package_version
-
-setuptools.setup(
+setup(
   name = "newrelic",
   version = package_version,
   description = "Python agent for New Relic",

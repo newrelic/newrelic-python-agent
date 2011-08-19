@@ -1,11 +1,8 @@
-import os
 import sys
 import types
 
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
-
-_agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
 class ErrorTrace(object):
 
@@ -42,10 +39,6 @@ class ErrorTrace(object):
             return
 
         self._transaction.notice_error(exc, value, tb)
-
-if _agent_mode not in ('julunggul',):
-    import _newrelic
-    ErrorTrace = _newrelic.ErrorTrace
 
 class ErrorTraceWrapper(object):
 
@@ -98,9 +91,3 @@ def error_trace(ignore_errors=None):
 def wrap_error_trace(module, object_path, ignore_errors=None):
     newrelic.api.object_wrapper.wrap_object(module, object_path,
             ErrorTraceWrapper, (ignore_errors, ))
-
-if not _agent_mode in ('ungud', 'julunggul'):
-    import _newrelic
-    ErrorTraceWrapper = _newrelic.ErrorTraceWrapper
-    error_trace = _newrelic.error_trace
-    wrap_error_trace = _newrelic.wrap_error_trace

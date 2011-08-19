@@ -1,11 +1,8 @@
-import os
 import types
 import inspect
 
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
-
-_agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
 class NameTransactionWrapper(object):
 
@@ -67,9 +64,3 @@ def name_transaction(name=None, group=None):
 def wrap_name_transaction(module, object_path, name=None, group=None):
     newrelic.api.object_wrapper.wrap_object(module, object_path,
             NameTransactionWrapper, (name, group))
-
-if not _agent_mode in ('ungud', 'julunggul'):
-    import _newrelic
-    NameTransactionWrapper = _newrelic.NameTransactionWrapper
-    name_transaction = _newrelic.name_transaction
-    wrap_name_transaction = _newrelic.wrap_name_transaction

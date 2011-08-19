@@ -114,7 +114,7 @@ setup(
   license = copyright,
   url = "http://www.newrelic.com",
   packages = packages,
-  ext_modules = [extension],
+  #ext_modules = [extension],
   platforms = [platform],
   extra_path = ("newrelic", "newrelic-%s" % version),
 )

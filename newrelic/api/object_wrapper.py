@@ -1,9 +1,6 @@
-import os
 import sys
 import types
 import inspect
-
-_agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
 # From Python 3.X. In older Python versions it fails if attributes do
 # not exist and don't maintain a __wrapped__ attribute.
@@ -109,12 +106,3 @@ def object_context(object):
 def callable_name(object, separator=':'):
     (module, path) = object_context(object)
     return "%s%s%s" % (module, separator, path)
-
-if not _agent_mode in ('ungud', 'julunggul'):
-    import _newrelic
-    object_context = _newrelic.object_context
-    callable_name = _newrelic.callable_name
-
-if not _agent_mode in ('julunggul',):
-    import _newrelic
-    ObjectWrapper = _newrelic.ObjectWrapper

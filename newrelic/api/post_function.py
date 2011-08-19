@@ -1,11 +1,8 @@
-import os
 import sys
 import types
 import inspect
 
 import newrelic.api.object_wrapper
-
-_agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
 class PostFunctionWrapper(object):
 
@@ -47,9 +44,3 @@ def post_function(function):
 def wrap_post_function(module, object_path, function):
     newrelic.api.object_wrapper.wrap_object(module, object_path,
             PostFunctionWrapper, (function,))
-
-if not _agent_mode in ('ungud', 'julunggul'):
-    import _newrelic
-    PostFunctionWrapper = _newrelic.PostFunctionWrapper
-    post_function = _newrelic.post_function
-    wrap_post_function = _newrelic.wrap_post_function

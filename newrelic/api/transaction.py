@@ -1,4 +1,3 @@
-import os
 import time
 import weakref
 import threading
@@ -9,8 +8,6 @@ import newrelic.core.transaction_node
 import newrelic.core.error_node
 
 import newrelic.core.config
-
-_agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
 STATE_PENDING = 0
 STATE_RUNNING = 1
@@ -363,7 +360,3 @@ class Transaction(object):
 
 def transaction():
     return Transaction._current_transaction()
-
-if _agent_mode not in ('julunggul',):
-    import _newrelic
-    transaction = _newrelic.transaction

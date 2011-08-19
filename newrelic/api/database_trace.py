@@ -1,4 +1,3 @@
-import os
 import sys
 import types
 import inspect
@@ -9,8 +8,6 @@ import newrelic.core.database_node
 
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
-
-_agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
 class DatabaseTrace(object):
 
@@ -81,10 +78,6 @@ class DatabaseTrace(object):
 
         self._children = []
 
-if _agent_mode not in ('julunggul',):
-    import _newrelic
-    DatabaseTrace = _newrelic.DatabaseTrace
-
 class DatabaseTraceWrapper(object):
 
     def __init__(self, wrapped, sql):
@@ -144,9 +137,3 @@ def database_trace(sql):
 def wrap_database_trace(module, object_path, sql):
     newrelic.api.object_wrapper.wrap_object(module, object_path,
             DatabaseTraceWrapper, (sql,))
-
-if not _agent_mode in ('ungud', 'julunggul'):
-    import _newrelic
-    DatabaseTraceWrapper = _newrelic.DatabaseTraceWrapper
-    database_trace = _newrelic.database_trace
-    wrap_database_trace = _newrelic.wrap_database_trace

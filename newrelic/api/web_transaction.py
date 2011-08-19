@@ -1,4 +1,3 @@
-import os
 import sys
 import types
 import inspect
@@ -10,8 +9,6 @@ import string
 
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
-
-_agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
 _rum_header_fragment = '<script type="text/javascript">' \
         'var NREUMQ=[];NREUMQ.push(["mark","firstbyte",' \
@@ -260,10 +257,6 @@ class WebTransaction(newrelic.api.transaction.Transaction):
                     self._settings.application_id,
                     name, queue_duration, request_duration))
 
-if _agent_mode not in ('julunggul',):
-    import _newrelic
-    WebTransaction = _newrelic.WebTransaction
-
 class _WSGIApplicationIterable(object):
  
     def __init__(self, transaction, generator):
@@ -366,9 +359,3 @@ def wsgi_application(application=None):
 def wrap_wsgi_application(module, object_path, application=None):
     newrelic.api.object_wrapper.wrap_object(module, object_path,
             WSGIApplicationWrapper, (application, ))
-
-if _agent_mode not in ('ungud', 'julunggul'):
-    import _newrelic
-    wsgi_application = _newrelic.wsgi_application
-    wrap_wsgi_application = _newrelic.wrap_wsgi_application
-    WSGIApplicationWrapper = _newrelic.WSGIApplicationWrapper

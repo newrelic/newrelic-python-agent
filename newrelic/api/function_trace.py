@@ -1,4 +1,3 @@
-import os
 import sys
 import types
 import inspect
@@ -8,8 +7,6 @@ import newrelic.core.function_node
 
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
-
-_agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
 class FunctionTrace(object):
 
@@ -75,10 +72,6 @@ class FunctionTrace(object):
         parent._children.append(node)
 
         self._children = []
-
-if _agent_mode not in ('julunggul',):
-    import _newrelic
-    FunctionTrace = _newrelic.FunctionTrace
 
 class FunctionTraceWrapper(object):
 
@@ -156,9 +149,3 @@ def wrap_function_trace(module, object_path, name=None, group=None,
         interesting=True):
     newrelic.api.object_wrapper.wrap_object(module, object_path,
             FunctionTraceWrapper, (name, group, interesting))
-
-if not _agent_mode in ('ungud', 'julunggul'):
-    import _newrelic
-    FunctionTraceWrapper = _newrelic.FunctionTraceWrapper
-    function_trace = _newrelic.function_trace
-    wrap_function_trace = _newrelic.wrap_function_trace

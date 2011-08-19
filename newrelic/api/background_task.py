@@ -1,4 +1,3 @@
-import os
 import sys
 import types
 import inspect
@@ -6,8 +5,6 @@ import inspect
 import newrelic.api.transaction
 import newrelic.api.web_transaction
 import newrelic.api.object_wrapper
-
-_agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
 class BackgroundTask(newrelic.api.transaction.Transaction):
 
@@ -30,10 +27,6 @@ class BackgroundTask(newrelic.api.transaction.Transaction):
         # Name the web transaction from supplied values.
 
         self.name_transaction(name, group)
-
-if _agent_mode not in ('julunggul',):
-    import _newrelic
-    BackgroundTask = _newrelic.BackgroundTask
 
 class BackgroundTaskWrapper(object):
 
@@ -132,9 +125,3 @@ def wrap_background_task(module, object_path, application=None, name=None,
                          group=None):
     newrelic.api.object_wrapper.wrap_object(module, object_path,
             BackgroundTaskWrapper, (application, name, group))
-
-if not _agent_mode in ('ungud', 'julunggul'):
-    import _newrelic
-    background_task = _newrelic.background_task
-    wrap_background_task = _newrelic.wrap_background_task
-    BackgroundTaskWrapper = _newrelic.BackgroundTaskWrapper

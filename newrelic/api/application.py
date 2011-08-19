@@ -1,10 +1,7 @@
-import os
 import threading
 
 import newrelic.core.config
 import newrelic.core.agent
-
-_agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
 class Application(object):
 
@@ -70,8 +67,3 @@ class Application(object):
 
 def application(name):
     return Application._instance(name)
-
-if _agent_mode not in ('julunggul',):
-    import _newrelic
-    application = _newrelic.application
-    Application = _newrelic.Application

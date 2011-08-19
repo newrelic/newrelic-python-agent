@@ -1,4 +1,3 @@
-import os
 import sys
 import types
 import inspect
@@ -8,8 +7,6 @@ import newrelic.core.memcache_node
 
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
-
-_agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
 class MemcacheTrace(object):
 
@@ -66,10 +63,6 @@ class MemcacheTrace(object):
         parent._children.append(node)
 
         self._children = []
-
-if _agent_mode not in ('julunggul',):
-    import _newrelic
-    MemcacheTrace = _newrelic.MemcacheTrace
 
 class MemcacheTraceWrapper(object):
 
@@ -131,9 +124,3 @@ def memcache_trace(command):
 def wrap_memcache_trace(module, object_path, command):
     newrelic.api.object_wrapper.wrap_object(module, object_path,
             MemcacheTraceWrapper, (command,))
-
-if not _agent_mode in ('ungud', 'julunggul'):
-    import _newrelic
-    MemcacheTraceWrapper = _newrelic.MemcacheTraceWrapper
-    memcache_trace = _newrelic.memcache_trace
-    wrap_memcache_trace = _newrelic.wrap_memcache_trace

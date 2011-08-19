@@ -1,11 +1,8 @@
-import os
 import sys
 import types
 import inspect
 
 import newrelic.api.object_wrapper
-
-_agent_mode = os.environ.get('NEWRELIC_AGENT_MODE', '').lower()
 
 class InFunctionWrapper(object):
 
@@ -47,9 +44,3 @@ def in_function(function):
 def wrap_in_function(module, object_path, function):
     newrelic.api.object_wrapper.wrap_object(module, object_path,
             InFunctionWrapper, (function, ))
-
-if not _agent_mode in ('ungud', 'julunggul'):
-    import _newrelic
-    InFunctionWrapper = _newrelic.InFunctionWrapper
-    in_function = _newrelic.in_function
-    wrap_in_function = _newrelic.wrap_in_function

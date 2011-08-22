@@ -143,10 +143,10 @@ class Agent(object):
 
         """
 
-        # FIXME Can do away with the cache in config module and
-        # just grab this from the core application object.
+        application = self._applications.get(app_name)
 
-        return newrelic.core.config.application_settings(app_name)
+        if application:
+            return application.configuration
 
     def activate_application(self, app_name, linked_applications=[]):
 	"""Initiates activation for the named application if this has

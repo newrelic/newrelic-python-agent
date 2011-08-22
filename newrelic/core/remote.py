@@ -25,7 +25,8 @@ class NewRelicService(object):
         self._configuration = None
         self._metric_data_time = time.time()
 
-    def get_configuration(self):
+    @property
+    def configuration(self):
         return self._configuration
 
     def get_agent_run_id(self):
@@ -51,7 +52,6 @@ class NewRelicService(object):
 
             # FIXME Need to resolve app naming issue.
             name = self._app_names[0]
-            newrelic.core.config.drop_application_settings(name)
             self._configuration = None
 
             self._agent_run_id = None
@@ -119,7 +119,6 @@ class NewRelicService(object):
         # FIXME Need to resolve app naming issue.
         name = self._app_names[0]
         settings = newrelic.core.config.create_settings_snapshot(response)
-        newrelic.core.config.save_application_settings(name, settings)
         self._configuration = settings
 
     def invoke_remote(self, connection, method, compress = True, agent_run_id = None, *args):
@@ -133,7 +132,6 @@ class NewRelicService(object):
             raise ex
 
     agent_run_id = property(get_agent_run_id, None, None, "The agent run id")
-    configuration = property(get_configuration, None, None, None)
 
 class NRJSONEncoder(json.JSONEncoder):
     def default(self, o):

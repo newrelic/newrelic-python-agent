@@ -137,54 +137,6 @@ def global_settings_dump():
 
     return settings
 
-# A cache of the application settings objects. This is the settings
-# objects created when a snapshot of global default settings is created
-# and overlaid with server side settings received from the core
-# application. It must be saved here explicitly when created and then
-# dropped from the cache when any connection to the core application for
-# the reporting application has been lost or an internal restart is
-# triggered. This is necessary as the presence of the application
-# configuration object is used by the higher instrumentation layer to
-# determine if the reporting application is active and whether any metrics
-# should be collected. Note that the name used as key should be the
-# application name alone and not the list of application names which
-# includes the names of additional applications when reporting to a
-# cluster.
-
-# FIXME Don't need this as can grab it from the core application object.
-
-_application_settings = {}
-
-def application_settings(name):
-    """Return a application settings object or None if there is no
-    established connection for the reporting application with the core
-    application.
-
-    """
-
-    return _application_settings.get(name, None)
-
-def save_application_settings(name, settings_object):
-    """Save the application settings object. Any prior cached settings will
-    be replaced, although by rights there should never be a prior cached
-    entry as it should have been dropped if a prior established connection
-    for the reporting application with the core application has been lost
-    or a forced internal restart of the agent was triggered.
-
-    """
-
-    _application_settings[name] = settings_object
-
-def drop_application_settings(name):
-    """Drop the application settings object. This would be done if a prior
-    established connection for the reporting application with the core
-    application had been lost or a forced internal restart of the agent was
-    triggered.
-
-    """
-
-    del _application_settings[name]
-
 # Creation of an application settings object from global default settings
 # and any server side configuration settings.
 

@@ -34,6 +34,11 @@ def response_middleware_browser_monitoring(request, response):
     if ctype != "text/html" and not ctype.startswith("text/html;"):
         return response
 
+    # Don't risk it if content encoding already set.
+
+    if response.has_header('Content-Encoding'):
+        return response
+
     # No point continuing if header or footer is empty.
     # This can occur if RUM is not enabled within the UI
     # or notification about it being enabled in the UI

@@ -5,9 +5,10 @@ from distutils.core import setup
 
 copyright = '(C) Copyright 2010-2011 New Relic Inc. All rights reserved.'
 
-import newrelic.version
+import newrelic
+
 build_number = os.environ.get('HUDSON_BUILD_NUMBER', '0')
-package_version = "%s.%s" % (newrelic.version.version, build_number)
+package_version = "%s.%s" % (newrelic.version, build_number)
 
 packages = [
   "newrelic",

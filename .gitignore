@@ -7,6 +7,10 @@
 /Makefile
 
 /build
+/dist
+
+/newrelic.egg-info
+
 /test-env
 /unit-tests/*/test_*.py.log
 /load-tests/test_*.py.log

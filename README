@@ -5,19 +5,9 @@ Now that you have checked out the Python agent package, you are going to
 need a few tools to be able to build it if developing on your local
 machine. These are:
 
-1. A complete installation of Python, including header files etc. In
-   order to run unit tests, the Python installation must have been
-   installed with support for sqlite3. If needing to debug local daemon
-   messages it is also convenient to have zlib to access decompression
-   library. If building Python from source code it means that those
-   packages must have been installed on your operating system prior to
-   building Python and the configuration step for Python when it was built
-   must have been able to find them.
+1. A complete installation of Python including sqlite and zlib support.
 
-2. The corresponding C/C++ compiler that was used to install Python
-   so that extension modules can be built against the Python installation.
-
-3. The 'virtualenv' package for Python. This should be installed into
+2. The 'virtualenv' package for Python. This should be installed into
    the Python installation being used. It is required to setup a Python
    virtual environment when running unit tests.
 
@@ -66,20 +56,12 @@ When finished you can clean up the directory by running:
 
     make clean
 
-Note that when 'make' is run the first time to build the Python agent, it
-will automatically checkout from the GIT repository a copy of 'php_agent'
-into a subdirectory. For subsequent builds the existing checked out copy
-will be used but no updates will be pulled down from the master repository.
-Thus if you need any updates to the 'php_agent' code you will need to go
-into that directory and do a pull request. Alternatively, you can do a more
-complete clean of the directory by running:
+You can do a more complete clean of the directory by running:
 
     make distclean
 
-This will remove the 'php_agent' directory completely along with any other
-files created from the virgin checkout. You will however need to rerun the
-'configure' command. Next time you run 'make' again though it will check
-out the 'php_agent' package again.
+This will remove files created from the virgin checkout. You will however
+need to rerun the 'configure' command.
 
 Note that if you need to use an alternate Python installation than the one
 found in your PATH, then you can use the '--with-python' option to the
@@ -93,10 +75,17 @@ directory as the 'python' executable. As such, if '--with-python' is used
 the configure script will automatically look in the same 'bin' directory
 first so '--with-virtualenv' shouldn't usually be needed.
 
-During the development and BETA test phase additional debug output can be
-enabled by supplying the '--enable-debug' to the 'configure' script. The
-additonal debug will generally only show up when 'vebosedebug' is selected
-as log level in agent configuration.
+
+Setting The Agent Version
+=========================
+
+The agent version is keyed off the version attribute in the file:
+
+    newrelic/__init__.py
+
+The final release package built as explained below will also incorporate
+the Hudson build number. If built on a local system, the build number of
+'0' will be used.
 
 
 Running The Unit Tests
@@ -121,14 +110,15 @@ If you need to be able to run a specific unit test, then you can use the
 Hudson Build Boxes
 ==================
 
-For the Hudson build boxes we actually need numerous different Python
-installations and variants. To assist in setting these up there is a
-separate set of build scripts to be found in the 'python-tools' directory.
-Follow the instructions in 'python-tools/README' as to how to install
-all the required Python versions/variants for the platform. These can be
-installed globally, especially if setting up the Hudson build boxes to
-start with, or they can be built in place, in which case they will end up
-being installed in the 'python-tools/parts' directory.
+For the Hudson build boxes we want to always be using the same version of
+Python, but also may need alternate Python installations and variants for
+automated unit testing. To assist in setting these up there is a separate
+set of build scripts to be found in the 'python-tools' directory. Follow
+the instructions in 'python-tools/README' as to how to install all the
+required Python versions/variants for the platform. These can be installed
+globally, especially if setting up the Hudson build boxes to start with, or
+they can be built in place, in which case they will end up being installed
+in the 'python-tools/parts' directory.
 
 Which ever place all the different Python versions/variants are installed,
 you can use the '--with-python' option to the 'configure' script in this
@@ -138,36 +128,23 @@ building the Python agent during development. For example:
     ./configure --with-python=python-tools/parts/python-2.7-ucs4/bin/python
 
 
-Build For Multiple Versions
-===========================
+Build Release Package
+=====================
 
-To build the Python agent for multiple Python versions in one go, you can
-use the script:
+To build the Python agent for release use the script:
 
-    hudson/build.sh
+    build.sh
 
 If running this in local development environment, it expects that you have
-run the install script in 'python-tools' directory to install all the
-required Python versions for the platform into the local 'python-tools/parts'
-directory.
+run the install script in 'python-tools' directory to install at least the
+primary required Python version for the platform into the local
+'python-tools/parts' directory.
 
 When this same script is run under the Hudson server, it will expect the
 Python versions to be installed under the 'python-tools' subdirectory of the
 home directory of the 'hudson' build account.
 
-The result of running this script will be placed in the 'hudson-results'
-sub directory. The directory created will be named according to the platform
-and release version. The directory will be tar and gzip as well into a file
-that can then be given out.
-
-When run in the local development environment, if the local daemon source
-code is checked out into a parallel directory to the Python agent, and the
-compiled newrelic-daemon application exists, that will be copied into the
-package created by this script. On the Hudson build servers, it will obtain
-the binary from the Hudson rsync server instead.
-
-During the development and BETA test phase additional debug output can be
-enabled by supplying the '--enable-debug' to the 'hudson/build.sh' script.
-Any such options supplied will be passed automatically along to the
-'configure' script each time it is run for each version of Python the package
-is being build against.
+The result of running this script will be placed in the 'package' sub
+directory. The directory created will be named according to the release
+version. The directory will be tar'd and gzip'd as well into a file that
+can then be given out.

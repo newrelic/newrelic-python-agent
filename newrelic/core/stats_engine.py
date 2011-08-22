@@ -285,6 +285,9 @@ class StatsEngine(object):
 
         """
 
+        if not self.__settings:
+            return
+
         # FIXME The application object perhaps needs to maintain an
         # activation counter. This would be incremented after each
         # connect to core application and updated server side
@@ -313,6 +316,9 @@ class StatsEngine(object):
         # configuration and finished after application had been
         # restarted.
 
+        # Record the apdex and time metrics generated from the
+        # transaction.
+
 	# FIXME Still need to deal with metric clamping. Saxon has
 	# indicated alternate way of sorting metrics based on duration
 	# and only keep the top ones with the rest going into the
@@ -334,15 +340,6 @@ class StatsEngine(object):
         # limit then can start using overflow. The algorithm is exactly
         # the same though regardless of whether sort them first. Quite
         # easy to support both approaches through configuration initially.
-
-        if not self.__settings:
-            return
-
-        # Record the apdex and time metrics generated from the
-        # transaction.
-
-        # FIXME Not dealing with metric clamping and overflow
-        # metrics as yet.
 
         self.record_apdex_metrics(transaction.apdex_metrics())
         self.record_time_metrics(transaction.time_metrics())

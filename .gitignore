@@ -1,7 +1,6 @@
 *.swp
 *.pyc
 
-/config.h
 /config.log
 /config.status
 /autom4te.cache
@@ -12,7 +11,6 @@
 /unit-tests/*/test_*.py.log
 /load-tests/test_*.py.log
 
-/hudson-downloads
 /hudson-results
 
 /python-tools/.installed.cfg
@@ -28,5 +26,3 @@
 /python-tools/autom4te.cache
 /python-tools/Makefile
 /python-tools/buildout.cfg
-
-/php_agent

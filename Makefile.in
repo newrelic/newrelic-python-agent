@@ -20,7 +20,6 @@ clean :
 
 distclean : clean
 	$(RM) Makefile
-	$(RM) setup.py
 	rm -rf test-env
 
 realclean : distclean

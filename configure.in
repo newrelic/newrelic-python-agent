@@ -22,4 +22,4 @@ fi
 
 AC_SUBST(VIRTUALENV)
 
-AC_OUTPUT(Makefile setup.py)
+AC_OUTPUT(Makefile)

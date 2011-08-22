@@ -65,5 +65,5 @@ class Application(object):
         if self.active:
             self._agent.record_transaction(self._name, data)
 
-def application(name):
+def application(name=None):
     return Application._instance(name)

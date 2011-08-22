@@ -11,7 +11,7 @@
 /unit-tests/*/test_*.py.log
 /load-tests/test_*.py.log
 
-/hudson-results
+/package
 
 /python-tools/.installed.cfg
 /python-tools/bin/

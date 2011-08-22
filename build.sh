@@ -66,7 +66,7 @@ export HUDSON_BUILD_NUMBER
 
 RELEASE=newrelic-python-$VERSION.$BUILD_NUMBER
 
-BUILDDIR=hudson-results
+BUILDDIR=package
 ROOTDIR=$BUILDDIR/$RELEASE
 
 test -d $ROOTDIR && rm -rf $ROOTDIR

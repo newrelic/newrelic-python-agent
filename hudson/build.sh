@@ -44,12 +44,13 @@ esac
 
 test -f Makefile && make distclean
 
-# Everything is keyed off version number from 'newrelic.version.py'
+# Everything is keyed off version number from 'newrelic/__init__.py'
 # file. The final release file though gets a build number stuck on the
 # end from the Hudson server though. If we aren't running under the
 # Hudson server then use a build number of '0'.
 
-VERSION=`cat newrelic/version.py | sed -e "s/.*'\(.*\)'.*/\1/"`
+VERSION=`cat newrelic/__init__.py | \
+            grep '^version' | sed -e "s/.*'\(.*\)'.*/\1/"`
 
 if test -z "$BUILD_NUMBER"
 then

@@ -52,7 +52,7 @@ class Harvester(object):
             finally:
                 connection.close()
         except:
-            _logger.error('Failed to harvest data.', exc_info=sys.exc_info())
+            _logger.exception('Failed to harvest data.')
 
     def get_harvest_count(self):
         return self._harvest_count

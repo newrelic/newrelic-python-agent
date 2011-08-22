@@ -161,12 +161,11 @@ class Application(object):
                     self._service.send_trace_data(connection, trace_data)
 
         except:
-            _logger.error('Data harvest failed.', exc_info=sys.exc_info())
+            _logger.exception('Data harvest failed.')
 
         finally:
             if not success:
                 try:
                     self._stats_engine.merge_snapshot(stats)
                 except:
-                    _logger.error('Failed to remerge harvest data.',
-                            exc_info=sys.exc_info())
+                  _logger.exception('Failed to remerge harvest data.')

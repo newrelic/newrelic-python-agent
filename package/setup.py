@@ -5,15 +5,13 @@ from setuptools import setup
 
 copyright = '(C) Copyright 2010-2011 New Relic Inc. All rights reserved.'
 
-python_version = '%d.%d' % sys.version_info[:2]
-package_name = 'python-%s' % python_version
-
 script_directory = os.path.dirname(__file__)
 if not script_directory:
   script_directory = os.getcwd()
 
 version_file = os.path.join(script_directory, 'VERSION')
 package_version = open(version_file).read().strip()
+
 package_directory = 'newrelic-%s' % package_version
 
 packages = [

@@ -22,57 +22,71 @@ If you don't read instructions
 If you don't want to read through the complete instructions here and on the
 New Relic support site, you should at least read the following section.
 
-To get the New Relic Python agent working you need to install two parts.
-These are a local daemon process and a Python extension module.
+To get the New Relic Python agent working you need to perform three steps.
 
-To install the local daemon process run:
+    1. Install the New Relic Python package.
+    2. Copy and edit the Python agent configuration file.
+    3. Modify the main WSGI script or module for your application.
 
-    sudo ./install.sh
-
-and enter details about your licence key when requested.
-
-To install the Python extension module into your Python installation run:
+To install the Python package into your Python installation run:
 
     python setup.py install
 
 If installing into a system wide Python installation remember to use the
-'sudo' command or run the command as 'root'.
+"sudo" command or run the command as "root".
 
-If you installed the local daemon process, it is running and you are
-using Python 2.5 or newer, then you can quickly test that data can get
-through to the New Relic UI by running the command:
+If you are using pip you can instead do:
 
-    python -m newrelic.admin test
+    pip install http://host/path/to/newrelic-python-A.B.C.D.tar.gz
 
-In the 'agent' subdirectory you will then find a sample 'newrelic.ini'
-configuration file that can be used in conjunction with the Python agent.
+replacing the URL with the actual location of the package. This method
+can also be used in conjunction with a pip requirements files.
 
-Copy the 'newrelic.ini' configuration file to a directory where your Python
-web applicaton is located. Modify the configuration and uncomment the line:
+In the same directory as these instructions, you will now find a sample
+"newrelic.ini" configuration file that can be used in conjunction with the
+Python agent.
+
+Copy the "newrelic.ini" configuration file to a directory where your Python
+web applicaton is located.
+
+Modify the configuration and first and replace the string:
+
+    *** REPLACE ME ***
+
+associated with the "license_key" entry with the license key for your New
+Relic account. You can find this in the "Support" tab when you are logged
+into your account.
+
+Next, uncomment the line:
 
     log_file = /tmp/newrelic-python-agent.log
 
-setting the location of the log file to somewhere more appropriate but which
-the user your web application runs as can write to.
+setting the location of the log file to somewhere more appropriate but
+which the user your web application runs as can write to. Note that if
+running under Apache/mod_wsgi your application may be running as the
+Apache user which usually has restricted access. You may need to set up a
+special directory owned by the Apache user where the log file can be
+placed.
 
-While editing the 'newrelic.ini' configuration file, also modify the name
-your application data will be reported as to the New Relic UI to something
-more approriate. The current default is:
+Finally, modify the name your application data will be reported as to the
+New Relic UI to something more approriate. The current default is:
 
     app_name = Python Application
 
-Next modify the WSGI application script file or module which holds your WSGI
-application entry point and add at the beginning:
+Having modified the agent configuration file, you need to next modify the
+WSGI application script file or module which holds your WSGI application
+entry point and add at the beginning:
 
     import newrelic.agent
     newrelic.agent.initialize('/some/path/newrelic.ini')
 
-replacing '/some/path/newrelic.ini' with the actual location of the copy
-of the configuration file which you made.
+replacing "/some/path/newrelic.ini" with the actual location of the copy
+of the configuration file which you made and edited. Ths configuration file
+must be readable by the user that your web application runs as.
 
-If you have installed the Python extension into a Python virtual environment
-the above lines must be added after you have setup 'sys.path' to find your
-virtual environment.  
+If you have installed the New Relic Python package into a Python virtual
+environment the above lines must be added after you have setup "sys.path"
+to find your virtual environment.
 
 Within the same WSGI application file, you then need to add a wrapper around
 the actual WSGI application entry point. If the WSGI application entry point
@@ -99,143 +113,44 @@ see below for further instructions.
 What platform can this be used on?
 ----------------------------------
 
-When you downloaded the release file from New Relic you should have
-selected the appropriate tar ball file for your operating system platform.
-Which platform this specific release file was built for can be found listed
-in the 'PLATFORM' file contained in this directory.
-
-The 'install.sh' and 'setup.py' script used to perform the installation of
-the Python agent will each validate that this is the correct release file
-for your platform. If you are unsure whether this matches the operating
-system you are using and want to validate this yourself, you can run the
-'config.guess' command located in the 'scripts' subdirectory and compare it
-to that listed in the 'PLATFORM' file.
-
-Note that when comparing the result, you can ignore any operating system
-or kernel version listed at the end of the output from 'config.guess'.
-
-If you find that we don't provide a release file for your platform you
-should contact New Relic support by sending an email to 'support@newrelic.com'
-indicating what the platform string is produced by 'config.guess' as well
-as telling us the name of the operating system, whether is it 32 bit or 64
-bit and any other relevant information. The output from running the command:
-
-    uname -a
-
-would also be most helpful. We can then indicate whether there are
-intentions to support the platform.
+The New Relic Python package is pure Python code and should be able to run
+on any UNIX based platform. It may work on Windows but this hasn't been
+tested at this point and is not supported.
 
 
-What does this directory contain?
+What Python version can this be used with?
+------------------------------------------
+
+At the present time Python 2.6 or 2.7 is required.
+
+
+Do I have to install the package?
 ---------------------------------
 
-In this directory you will find the local daemon application binary, plus
-one or more variants of the Python package 'newrelic' and corresponding
-binary extension module '_newrelic.so'.
-
-As the Python extension module in particular is a binary, it will only work
-on the specific platform it was compiled for. Further, it will only work
-with the specific version of Python it was compiled against. Complicating
-matters, Python may also be installed in slightly different incompatible
-configurations. The primary difference is the width of characters stored
-within Unicode strings in the underlying implementation of Python.
-
-As a result, the actual package and extension module are located in
-subdirectories of the 'agent' directory, where each subdirectory is named
-according to the version of Python and the Unicode variant. For example:
-
-    python-2.6-ucs2
-    python-2.6-ucs4
-    python-2.7-ucs2
-    python-2.7-ucs4
-
-Which version of Python you are using can be determined by running the
-command:
-
-    python -V
-
-Whether your Python installation has been configured as UCS2 or UCS4 can be
-determined by running the command:
-
-    python -c 'import sys; print sys.maxunicode'
-
-If the result is '65535' then it is configured for UCS2. If the result is
-'1114111' then it is configured for UCS4.
-
-Combining the version and Unicode variant you should select the appropriate
-copies of the 'newrelic' Python package and '_newrelic.so' extension module.
-
-The 'setup.py' script used for installation will do this automatically for
-you and fail to run if you are attempting to use a Python version or Unicode
-variant for which no binaries have been provided.
-
-If this is the case and we haven't provided a variant corresponding to the
-Python installation you are using, you should contact New Relic support by
-sending an email to 'support@newrelic.com' indicating what Python version
-and Unicode variant you require the Python agent for.
-
-
-Installing The Python Extension
--------------------------------
-
-The simplest way to install the Python agent package and extension module
-is to use the 'setup.py' installation script. This script works the same
-as a traditional Python distutils 'setup.py' script as found in other Python
-packages, except that no source code is provided for the extension module.
-Instead binary versions of the different Python versions and Unicode variants
-are provided and it will select the correct version automatically from the
-various subdirectories.
-
-To find out what commands distutils setup packages accept for the specific
-Python version being used, you can use the '--help-commands' option.
-
-    python setup.py --help-commands
-
-To find out the options that can then be used with specific commands, you
-can then use the '--help' option in conjunction with the specific command.
-
-    python setup.py --help install
-
-Because the script works the same as a traditional 'setup.py' script, you
-can install into a standard Python distribution, a Python virtual
-environment or any location as specified by supplying customised options
-to the install command.
-
-Do note however that when using options to specify a specific directory
-location for items to be installed, you must use an asbolute path and not
-a relative path. This is because the script will change the working
-directory to be inside of the subdirectory corresponding to the files to be
-installed. This will invalidate any relative paths used in command line
-options.
-
-For further information on how to use distutils installation scripts see
-the documentation at:
-
-    http://docs.python.org/install/index.html
-
-
-Do I have to use the installation script?
------------------------------------------
-
-No you don't. The subdirectories are laid out such that you could leave the
-unpacked directories in place and instead point "PYTHONPATH", "sys.path", a
+No you don't. The directory is laid out such that you could leave the
+unpacked directory in place and instead point "PYTHONPATH", "sys.path", a
 ".pth" file or a specific WSGI hosting mechanisms configuration option for
-setting the Python module search path, at the subdirectory containing the
-appropriate files for your Python installation.
+setting the Python module search path, at the sub directory of this package
+named "newrelic-A.B.C.D" where "A.B.C.D" is the version of this package.
 
 
 How can I test that the install is okay?
 ----------------------------------------
 
-If you have already installed the local daemon process, it is running
-and you are using Python 2.5 or newer, then you can quickly test that data
-can get through to the New Relic UI by running the command:
+XXX The command line test functionality is currently broken and will not
+work.
 
-    python -m newrelic.admin test
+You can quickly test that data can get through to the New Relic UI by
+running the command:
+
+    python -m newrelic.admin test /some/path/newrelic.ini
+
+The path "/some/path/newrelic.ini" should be replaced with the location
+of the copy of the agent configuration file you made and edited.
 
 This command will run a small test harness which will attempt to report
-data to the account corresponding to the licence key which you configured
-when you setup the local daemon process.
+data to the account corresponding to the license key which you configured
+into the agent configuration file.
 
 The name of the application in the New Relic UI which the data will be
 reported against is called "Python Agent Test". If the data shows up then
@@ -251,13 +166,7 @@ agent will be recorded. Ensure you provide this log to New Relic support if
 you try to obtain assistance in debugging why the agent isn't able to report
 data to the UI.
 
-You can also check the log file produced by the local daemon via which the
-agent needs to report data to the UI. The location of that log file may
-vary depending on the operating system being used. The actual location was
-listed in the output of the installer script when you installed the local
-daemon process.
-
-If you are using Python 2.4 the '-m' option to 'python' does not exist and
+If you are using Python 2.4 the "-m" option to "python" does not exist and
 instead you will need to run Python on the command line and within the
 interpreter enter:
 
@@ -268,14 +177,14 @@ For assistance if debugging any problems send email to "support@newrelic.com"
 including any log files, details of operating system, Python version etc.
 
 
-How do I make use of the Python agent?
---------------------------------------
+I don't use a WSGI script file or module?
+-----------------------------------------
 
-For details on how to integrate the Python agent into your web application
-see the New Relic support site.
+Not all WSGI hosting mechanisms expose the WSGI application object so it
+can be easily wrapped with the New Relic WSGI application wrapper.
+
+For further details on how to integrate the Python agent into your web
+application when using these other WSGI hosting mechanisms see the New
+Relic support site.
 
     http://support.newrelic.com/help/kb/python/new-relic-for-python
-
-A sample configuration file called 'newrelic.ini' can be found in the
-'agent' subdirectory and can be used when you have integrated the Python
-Agent into your code.

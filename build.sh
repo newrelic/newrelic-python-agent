@@ -114,6 +114,11 @@ cp newrelic.ini $ROOTDIR/newrelic.ini
 
 cp setup.py $ROOTDIR/setup.py
 
+# Copy in the agent check script used to install the Python agent into
+# the desired Python installation.
+
+cp check.py $ROOTDIR/check.py
+
 # Remove any tar balls which correspond to the same build and then build
 # fresh tar balls.
 

@@ -71,7 +71,7 @@ class Application(object):
         return self._service.configuration
 
     def connect(self):
-        print "Connecting to the New Relic service"
+        _logger.debug("Connecting to the New Relic service.")
         connected = self._service.connect()
         if connected:
             # TODO Is it right that stats are thrown away all the time.
@@ -80,7 +80,7 @@ class Application(object):
 
             self._stats_engine.reset_stats(self._service.configuration)
 
-            print "Connected to the New Relic service"
+            _logger.debug("Connected to the New Relic service.")
 
         return connected
 
@@ -104,7 +104,7 @@ class Application(object):
         self.harvest(connection)
 
     def harvest(self,connection):
-        print "Harvesting"
+        _logger.debug("Harvesting.")
         try:
             self._stats_lock.acquire()
             stats = self._stats_engine.create_snapshot()

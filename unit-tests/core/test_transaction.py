@@ -2,6 +2,7 @@ import os
 import sys
 import unittest
 import time
+import logging
 
 # Need to enable code into full on pure Python mode. Need this for now
 # as by default runs in C code module. The code name is 'julunggul'
@@ -12,7 +13,6 @@ os.environ['NEWRELIC_AGENT_MODE'] = 'julunggul'
 import newrelic.core.agent
 
 import newrelic.api.settings
-import newrelic.api.log_file
 
 import newrelic.api.transaction
 
@@ -28,6 +28,8 @@ import newrelic.api.error_trace
 import newrelic.api.name_transaction
 
 import newrelic.agent
+
+_logger = logging.getLogger('newrelic')
 
 # Hardwire settings for test script rather than agent configuration file
 # as is easier to work with in test script. We override transaction and
@@ -46,7 +48,7 @@ settings.license_key = 'd67afc830dab717fd163bfcb0b8b88423e9a1a3b'
 settings.app_name = 'Python Unit Test1'
 
 settings.log_file = '%s.log' % __file__
-settings.log_level = newrelic.api.log_file.LOG_VERBOSEDEBUG
+settings.log_level = logging.DEBUG
 
 settings.transaction_tracer.transaction_threshold = 0
 settings.transaction_tracer.stack_trace_threshold = 0
@@ -164,12 +166,10 @@ class TransactionTests(unittest.TestCase):
     # nothing has been run before.
 
     def setUp(self):
-        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                'STARTING - %s' % self._testMethodName)
+        _logger.debug('STARTING - %s' % self._testMethodName)
 
     def tearDown(self):
-        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                'STOPPING - %s' % self._testMethodName)
+        _logger.debug('STOPPING - %s' % self._testMethodName)
 
     def test_transaction(self):
 

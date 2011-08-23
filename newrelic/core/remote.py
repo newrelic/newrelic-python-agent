@@ -10,12 +10,15 @@ import httplib
 import socket
 import string
 import time
+import logging
 
 import newrelic
 import newrelic.core.config
 
 from newrelic.core.exceptions import raise_newrelic_exception,ForceRestartException,ForceShutdownException
 from newrelic.core import environment
+
+_logger = logging.getLogger('newrelic.remote')
 
 class NewRelicService(object):
     def __init__(self, remote,app_names=["FIXME Python test"]):
@@ -47,7 +50,8 @@ class NewRelicService(object):
 
             except Exception as ex:
                 #FIXME log
-                print ex
+                _logger.error('Error on agent shutdown.')
+                _logger.exception('Exception Details.')
                 pass
 
             # FIXME Need to resolve app naming issue.
@@ -68,7 +72,7 @@ class NewRelicService(object):
 
             if redirect_host is not None:
                 self._remote.host = redirect_host
-                print "Collector redirection to %s" % redirect_host
+                _logger.info("Collector redirection to %s" % redirect_host)
 
             self.parse_connect_response(self.invoke_remote(conn, "connect", True, None, self.get_start_options()))
         finally:
@@ -221,7 +225,10 @@ class JSONRemote(object):
             try:
                 return self.parse_response(reply)
             except Exception as ex:
-                print json_data
+                _logger.error('Error parsing JSON response.')
+                _logger.exception('Exception Details.')
+                _logger.debug('JSON Response')
+                _logger.debug(json_data)
                 raise ex
         else:
             raise Exception("%s failed: status code %i" % (method, response.status))

@@ -11,52 +11,51 @@ import threading
 import newrelic.core.config
 
 _lock = threading.Lock()
-_agent_logger = None
-_agent_handler = None
 
 class _NullHandler(logging.Handler):
     def emit(self, record):
         pass
 
+_agent_logger = None
+_agent_logger = logging.getLogger('newrelic')
+_agent_logger.addHandler(_NullHandler())
+
 _LOG_FORMAT = '%(asctime)s (%(process)d/%(threadName)s) ' \
               '%(name)s %(levelname)s - %(message)s'
 
-def initialize():
-    global _agent_logger
+_initialized = False
 
-    if _agent_logger:
+def initialize():
+    global _initialized
+
+    if _initialized:
         return
 
     _lock.acquire()
     try:
-        if not _agent_logger:
-            _agent_logger = logging.getLogger('newrelic')
+        settings = newrelic.core.config.global_settings()
 
-            settings = newrelic.core.config.global_settings()
+        if settings.log_file:
+            handler = logging.FileHandler(settings.log_file)
 
-            if settings.log_file:
-                handler = logging.FileHandler(settings.log_file)
+            formatter = logging.Formatter(_LOG_FORMAT)
+            handler.setFormatter(formatter)
 
-                formatter = logging.Formatter(_LOG_FORMAT)
-                handler.setFormatter(formatter)
+            # TODO Have to check how log levels play out
+            # when user also capturing in own log file. We
+            # may not be able to set level on 'newrelic'
+            # logger as that may be only place for user to
+            # override it. We may need to separately set it
+            # on each of our nested loggers, ie.,
+            # 'newrelic.core', 'newrelic.api' and
+            # 'newrelic.config'.
 
-		# TODO Have to check how log levels play out
-		# when user also capturing in own log file. We
-		# may not be able to set level on 'newrelic'
-		# logger as that may be only place for user to
-		# override it. We may need to separately set it
-		# on each of our nested loggers, ie.,
-		# 'newrelic.core', 'newrelic.api' and
-		# 'newrelic.config'.
+            _agent_logger.addHandler(handler)
+            _agent_logger.setLevel(settings.log_level)
 
-                _agent_logger.addHandler(handler)
-                _agent_logger.setLevel(settings.log_level)
-
-                _agent_logger.debug('Initializing Python agent logging.')
-                _agent_logger.debug('Log file "%s".' % settings.log_file)
-            else:
-                handler = _NullHandler()
-
-                _agent_logger.addHandler(handler)
+            _agent_logger.debug('Initializing Python agent logging.')
+            _agent_logger.debug('Log file "%s".' % settings.log_file)
     finally:
         _lock.release()
+
+    _initialized = True

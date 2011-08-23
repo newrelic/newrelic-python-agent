@@ -2,11 +2,11 @@ import os
 import sys
 import string
 import ConfigParser
+import logging
 
 import newrelic.core.log_file
 
 import newrelic.api.settings
-import newrelic.api.log_file
 import newrelic.api.import_hook
 import newrelic.api.exceptions
 import newrelic.api.web_transaction
@@ -22,6 +22,8 @@ import newrelic.api.object_wrapper
 import newrelic.api.application
 
 __all__ = [ 'initialize', 'filter_app_factory' ]
+
+_logger = logging.getLogger('newrelic.config')
 
 # Register our importer which implements post import hooks for
 # triggering of callbacks to monkey patch modules before import
@@ -63,12 +65,12 @@ _cache_object = []
 # internal configuration settings object.
 
 _LOG_LEVEL = {
-    'ERROR' : newrelic.api.log_file.LOG_ERROR,
-    'WARNING': newrelic.api.log_file.LOG_WARNING,
-    'INFO' : newrelic.api.log_file.LOG_INFO,
-    'VERBOSE' : newrelic.api.log_file.LOG_VERBOSE,
-    'DEBUG' : newrelic.api.log_file.LOG_DEBUG,
-    'VERBOSEDEBUG': newrelic.api.log_file.LOG_VERBOSEDEBUG,
+    'ERROR' : logging.ERROR,
+    'WARNING': logging.WARNING,
+    'INFO' : logging.INFO,
+    'VERBOSE' : logging.INFO,
+    'DEBUG' : logging.DEBUG,
+    'VERBOSEDEBUG': logging.DEBUG,
 }
 
 _RECORD_SQL = {
@@ -100,18 +102,14 @@ def _map_ignore_errors(s):
 # Processing of a single setting from configuration file.
 
 def _raise_configuration_error(section, option=None):
-    newrelic.api.log_file.log(newrelic.api.log_file.LOG_ERROR,
-                              'CONFIGURATION ERROR')
-    newrelic.api.log_file.log(newrelic.api.log_file.LOG_ERROR,
-                              'Section = %s' % section)
+    _logger.error('CONFIGURATION ERROR')
+    _logger.error('Section = %s' % section)
 
     if option is None:
         options = _config_object.options(section)
 
-        newrelic.api.log_file.log(newrelic.api.log_file.LOG_ERROR,
-                                  'Options = %s' % options)
-
-        newrelic.api.log_file.log_exception(*sys.exc_info())
+        _logger.error('Options = %s' % options)
+        _logger.exception('Exception Details')
 
         if not _ignore_errors:
             raise newrelic.api.exceptions.ConfigurationError(
@@ -120,10 +118,8 @@ def _raise_configuration_error(section, option=None):
                     'details.' % section)
 
     else:
-        newrelic.api.log_file.log(newrelic.api.log_file.LOG_ERROR,
-                                  'Option = %s' % option)
-
-        newrelic.api.log_file.log_exception(*sys.exc_info())
+        _logger.error('Option = %s' % option)
+        _logger.exception('Exception Details')
 
         if not _ignore_errors:
             raise newrelic.api.exceptions.ConfigurationError(
@@ -236,7 +232,7 @@ def _process_configuration(section):
 _configuration_done = False
 
 def _load_configuration(config_file=None, environment=None,
-        ignore_errors=True):
+        ignore_errors=True, log_file=None, log_level=None):
 
     global _configuration_done
 
@@ -274,12 +270,10 @@ def _load_configuration(config_file=None, environment=None,
     # If no configuration file then nothing more to be done.
 
     if not config_file:
-        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                                  "no agent configuration file")
+        _logger.debug("no agent configuration file")
         return
 
-    newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                              "agent configuration file was %s" % config_file)
+    _logger.debug("agent configuration file was %s" % config_file)
 
     # Now read in the configuration file. Cache the config file
     # name in internal settings object as indication of succeeding.
@@ -293,16 +287,24 @@ def _load_configuration(config_file=None, environment=None,
     # Must process log file entries first so that errors with
     # the remainder will get logged if log file is defined.
 
-    _process_setting('newrelic', 'log_file',
-                     'get', None)
-    _process_setting('newrelic', 'log_level',
-                     'get', _map_log_level)
+    _process_setting('newrelic', 'log_file', 'get', None)
 
     if environment:
         _process_setting('newrelic:%s' % environment,
                          'log_file', 'get', None)
+
+    if log_file is not None:
+        _settings.log_file = log_file
+
+    _process_setting('newrelic', 'log_level', 'get', _map_log_level)
+
+    if environment:
         _process_setting('newrelic:%s' % environment ,
                          'log_level', 'get', _map_log_level)
+
+    if log_level is not None:
+        _settings.log_level = log_level
+
 
     # Force initialisation of the logging system now that we
     # have the log file and log level.
@@ -326,9 +328,7 @@ def _load_configuration(config_file=None, environment=None,
     # against the internal settings object.
 
     for option, value in _cache_object:
-        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                                  "agent config %s = %s" %
-                                  (option, repr(value)))
+        _logger.debug("agent config %s = %s" % (option, repr(value)))
 
     # Now do special processing to handle the case where the
     # application name was actually a semicolon separated list
@@ -358,9 +358,7 @@ def _load_configuration(config_file=None, environment=None,
             if linked:
                 application = newrelic.api.application.application(name)
                 for altname in linked:
-                    newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                                              "link to %s" %
-                                              ((name, altname),))
+                    _logger.debug("link to %s" % ((name, altname),))
                     application.link_to_application(altname)
 
                 # Add linked applications into global settings
@@ -386,14 +384,10 @@ def _load_configuration(config_file=None, environment=None,
 # Generic error reporting functions.
 
 def _raise_instrumentation_error(type, locals):
-    newrelic.api.log_file.log(newrelic.api.log_file.LOG_ERROR,
-                              'INSTRUMENTATION ERROR')
-    newrelic.api.log_file.log(newrelic.api.log_file.LOG_ERROR,
-                              'Type = %s' % type)
-    newrelic.api.log_file.log(newrelic.api.log_file.LOG_ERROR,
-                              'Locals = %s' % locals)
-
-    newrelic.api.log_file.log_exception(*sys.exc_info())
+    _logger.error('INSTRUMENTATION ERROR')
+    _logger.error('Type = %s' % type)
+    _logger.error('Locals = %s' % locals)
+    _logger.exception('Exception Details')
 
     if not _ignore_errors:
         raise newrelic.api.exceptions.InstrumentationError(
@@ -404,9 +398,8 @@ def _raise_instrumentation_error(type, locals):
 
 def _module_import_hook(module, function):
     def _instrument(target):
-        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                                  "instrument module %s" %
-                                  ((target, module, function),))
+        _logger.debug("instrument module %s" %
+                ((target, module, function),))
 
         try:
             getattr(newrelic.api.import_hook.import_module(module),
@@ -443,9 +436,8 @@ def _process_module_configuration():
 
             target = string.splitfields(section, ':', 1)[1]
 
-            newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                                      "register module %s" %
-                                      ((target, module, function),))
+            _logger.debug("register module %s" %
+                    ((target, module, function),))
 
             hook = _module_import_hook(module, function)
             newrelic.api.import_hook.register_import_hook(target, hook)
@@ -456,9 +448,8 @@ def _process_module_configuration():
 
 def _wsgi_application_import_hook(object_path, application):
     def _instrument(target):
-        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                                  "wrap wsgi-application %s" %
-                                  ((target, object_path, application),))
+        _logger.debug("wrap wsgi-application %s" %
+                ((target, object_path, application),))
 
         try:
             newrelic.api.web_transaction.wrap_wsgi_application(
@@ -494,9 +485,8 @@ def _process_wsgi_application_configuration():
             if _config_object.has_option(section, 'application'):
                 application = _config_object.get(section, 'application')
 
-            newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                    "register wsgi-application %s" % ((module,
-                    object_path, application),))
+            _logger.debug("register wsgi-application %s" %
+                    ((module, object_path, application),))
 
             hook = _wsgi_application_import_hook(object_path, application)
             newrelic.api.import_hook.register_import_hook(module, hook)
@@ -507,8 +497,7 @@ def _process_wsgi_application_configuration():
 
 def _background_task_import_hook(object_path, application, name, group):
     def _instrument(target):
-        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                "wrap background-task %s" %
+        _logger.debug("wrap background-task %s" %
                 ((target, object_path, application, name, group),))
 
         try:
@@ -556,8 +545,7 @@ def _process_background_task_configuration():
                          newrelic.api.object_wrapper.callable_name }
                 name = eval(name, vars)
 
-            newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                    "register background-task %s" %
+            _logger.debug("register background-task %s" %
                     ((module, object_path, application, name, group),))
 
             hook = _background_task_import_hook(object_path,
@@ -570,8 +558,8 @@ def _process_background_task_configuration():
 
 def _database_trace_import_hook(object_path, sql):
     def _instrument(target):
-        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                "wrap database-trace %s" % ((target, object_path, sql),))
+        _logger.debug("wrap database-trace %s" %
+                ((target, object_path, sql),))
 
         try:
             newrelic.api.database_trace.wrap_database_trace(
@@ -609,8 +597,7 @@ def _process_database_trace_configuration():
                          newrelic.api.object_wrapper.callable_name }
                 sql = eval(sql, vars)
 
-            newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                    "register database-trace %s" %
+            _logger.debug("register database-trace %s" %
                     ((module, object_path, sql),))
 
             hook = _database_trace_import_hook(object_path, sql)
@@ -622,8 +609,7 @@ def _process_database_trace_configuration():
 
 def _external_trace_import_hook(object_path, library, url):
     def _instrument(target):
-        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                "wrap external-trace %s" %
+        _logger.debug("wrap external-trace %s" %
                 ((target, object_path, library, url),))
 
         try:
@@ -663,8 +649,7 @@ def _process_external_trace_configuration():
                           newrelic.api.object_wrapper.callable_name }
                 url = eval(url, vars)
 
-            newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                    "register external-trace %s" %
+            _logger.debug("register external-trace %s" %
                     ((module, object_path, library, url),))
 
             hook = _external_trace_import_hook(object_path, library, url)
@@ -676,8 +661,7 @@ def _process_external_trace_configuration():
 
 def _function_trace_import_hook(object_path, name, group, interesting):
     def _instrument(target):
-        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                "wrap function-trace %s" %
+        _logger.debug("wrap function-trace %s" %
                 ((target, object_path, name, group, interesting),))
 
         try:
@@ -725,8 +709,7 @@ def _process_function_trace_configuration():
                          newrelic.api.object_wrapper.callable_name }
                 name = eval(name, vars)
 
-            newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                    "register function-trace %s" %
+            _logger.debug("register function-trace %s" %
                     ((module, object_path, name, group, interesting),))
 
             hook = _function_trace_import_hook(object_path, name,
@@ -739,8 +722,7 @@ def _process_function_trace_configuration():
 
 def _memcache_trace_import_hook(object_path, command):
     def _instrument(target):
-        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                "wrap memcache-trace %s" %
+        _logger.debug("wrap memcache-trace %s" %
                 ((target, object_path, command),))
 
         try:
@@ -779,8 +761,7 @@ def _process_memcache_trace_configuration():
                          newrelic.api.object_wrapper.callable_name }
                 command = eval(command, vars)
 
-            newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                    "register memcache-trace %s" %
+            _logger.debug("register memcache-trace %s" %
                     ((module, object_path, command),))
 
             hook = _memcache_trace_import_hook(object_path, command)
@@ -792,8 +773,7 @@ def _process_memcache_trace_configuration():
 
 def _name_transaction_import_hook(object_path, name, group):
     def _instrument(target):
-        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                "wrap name-transaction %s" %
+        _logger.debug("wrap name-transaction %s" %
                 ((target, object_path, name, group),))
 
         try:
@@ -838,8 +818,7 @@ def _process_name_transaction_configuration():
                          newrelic.api.object_wrapper.callable_name }
                 name = eval(name, vars)
 
-            newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                    "register name-transaction %s" %
+            _logger.debug("register name-transaction %s" %
                     ((module, object_path, name, group),))
 
             hook = _name_transaction_import_hook(object_path, name,
@@ -852,8 +831,7 @@ def _process_name_transaction_configuration():
 
 def _error_trace_import_hook(object_path, ignore_errors):
     def _instrument(target):
-        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                "wrap error-trace %s" %
+        _logger.debug("wrap error-trace %s" %
                 ((target, object_path, ignore_errors),))
 
         try:
@@ -891,8 +869,7 @@ def _process_error_trace_configuration():
                 ignore_errors = _config_object.get(section,
                         'ignore_errors').split()
 
-            newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                  "register error-trace %s" %
+            _logger.debug("register error-trace %s" %
                   ((module, object_path, ignore_errors),))
 
             hook = _error_trace_import_hook(object_path, ignore_errors)
@@ -904,8 +881,7 @@ def _process_error_trace_configuration():
 
 def _function_profile_import_hook(object_path, interesting, depth):
     def _instrument(target):
-        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                "wrap function-profile %s" %
+        _logger.debug("wrap function-profile %s" %
                 ((target, object_path, interesting, depth),))
 
         try:
@@ -946,8 +922,7 @@ def _process_function_profile_configuration():
             if _config_object.has_option(section, 'depth'):
                 depth = _config_object.getint(section, 'depth')
 
-            newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                    "register function-profile %s" %
+            _logger.debug("register function-profile %s" %
                     ((module, object_path, interesting, depth),))
 
             hook = _function_profile_import_hook(object_path,
@@ -974,8 +949,7 @@ def _process_module_definition(target, module, function='instrument'):
             execute = _config_object.get(section, 'execute')
 
         if enabled and not execute:
-            newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                    "register module %s" %
+            _logger.debug("register module %s" %
                     ((target, module, function),))
 
             newrelic.api.import_hook.register_import_hook(target,
@@ -1095,8 +1069,10 @@ def _setup_instrumentation():
 
     _process_function_profile_configuration()
 
-def initialize(config_file=None, environment=None, ignore_errors=True):
-    _load_configuration(config_file, environment, ignore_errors)
+def initialize(config_file=None, environment=None, ignore_errors=True,
+            log_file=None, log_level=None):
+    _load_configuration(config_file, environment, ignore_errors,
+            log_file, log_level)
     _setup_instrumentation()
 
 def filter_app_factory(app, global_conf, config_file, environment=None):

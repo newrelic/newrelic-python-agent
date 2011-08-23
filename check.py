@@ -8,7 +8,6 @@ if len(sys.argv) != 2:
     print >> sys.stderr, 'Usage: python check.py newrelic.ini'
 
 from newrelic.api.settings import *
-from newrelic.api.log_file import *
 from newrelic.api.function_trace import *
 from newrelic.api.error_trace import *
 from newrelic.api.web_transaction import *
@@ -18,17 +17,25 @@ from newrelic.api.application import *
 from newrelic.config import *
 from newrelic.agent import *
 
+import newrelic.core.log_file
+
 _settings = settings()
 
 _settings.log_file = '/tmp/python-agent-test.log'
-_settings.log_level = LOG_VERBOSEDEBUG
+_settings.log_level = logging.DEBUG
 
 try:
     os.unlink(_settings.log_file)
 except:
     pass
 
-initialize(sys.argv[1])
+newrelic.core.log_file.initialize()
+
+_logger = logging.getLogger('newrelic')
+_logger.debug('Starting agent validation.')
+
+initialize(sys.argv[1], ignore_errors=False,
+           log_file=_settings.log_file, log_level=_settings.log_level)
 
 _settings.app_name = 'Python Agent Test'
 _settings.transaction_tracer.transaction_threshold = 0
@@ -101,7 +108,7 @@ print 'support if requesting help with resolving any issues with'
 print 'the test not reporting data to the New Relic UI.'
 print
 
-log(LOG_DEBUG, 'register application')
+_logger.debug('Register test application.')
 
 _application = application()
 
@@ -115,7 +122,7 @@ if not _application.running:
                        'and is configured properly.')
 """
 
-log(LOG_DEBUG, 'run the actual test')
+_logger.debug('Run the validation test.')
 
 _environ = { 'SCRIPT_NAME': '', 'PATH_INFO': '/test' }
 

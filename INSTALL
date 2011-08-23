@@ -62,26 +62,33 @@ Next, uncomment the line:
     log_file = /tmp/newrelic-python-agent.log
 
 setting the location of the log file to somewhere more appropriate but
-which the user your web application runs as can write to. Note that if
-running under Apache/mod_wsgi your application may be running as the
-Apache user which usually has restricted access. You may need to set up a
-special directory owned by the Apache user where the log file can be
-placed.
+where the user your web application runs as can write to.
+
+Note that if running under Apache/mod_wsgi your application may be running
+as the Apache user which usually has restricted access. You may need to set
+up a special directory owned by the Apache user where the log file can be
+placed. The path should always be an absolute path.
 
 Finally, modify the name your application data will be reported as to the
 New Relic UI to something more approriate. The current default is:
 
     app_name = Python Application
 
-Having modified the agent configuration file, you need to next modify the
-WSGI application script file or module which holds your WSGI application
-entry point and add at the beginning:
+Before you continue, you can now if you wish validate that the package is
+installed properly and that details in the configuation file are correct by
+doing a command line test. See more detailed instructions for this in later
+section of this file.
+
+Having modified the agent configuration file and optionally validated it by
+running the command line test, you need to next modify the WSGI application
+script file or module which holds your WSGI application entry point and add
+at the beginning:
 
     import newrelic.agent
     newrelic.agent.initialize('/some/path/newrelic.ini')
 
 replacing "/some/path/newrelic.ini" with the actual location of the copy
-of the configuration file which you made and edited. Ths configuration file
+of the configuration file which you made and edited. This configuration file
 must be readable by the user that your web application runs as.
 
 If you have installed the New Relic Python package into a Python virtual
@@ -137,16 +144,15 @@ named "newrelic-A.B.C.D" where "A.B.C.D" is the version of this package.
 How can I test that the install is okay?
 ----------------------------------------
 
-XXX The command line test functionality is currently broken and will not
-work.
-
 You can quickly test that data can get through to the New Relic UI by
 running the command:
 
-    python -m newrelic.admin test /some/path/newrelic.ini
+    python check.py /some/path/newrelic.ini
 
 The path "/some/path/newrelic.ini" should be replaced with the location
-of the copy of the agent configuration file you made and edited.
+of the copy of the agent configuration file you made and edited. The
+'python' binary being run should be that for the Python installation you
+installed the New Relic Python package into.
 
 This command will run a small test harness which will attempt to report
 data to the account corresponding to the license key which you configured
@@ -159,19 +165,9 @@ and you can delete the application from the list of your applications using
 the tools drop down in the UI.
 
 If data doesn't appear to be getting through to the UI after five minutes
-then you should check the log file produced by the test which can be found
-at "/tmp/python-agent-test.log". When the test is run the verbosity of the
-log messages is turned up and various details about the actions of the
-agent will be recorded. Ensure you provide this log to New Relic support if
-you try to obtain assistance in debugging why the agent isn't able to report
-data to the UI.
-
-If you are using Python 2.4 the "-m" option to "python" does not exist and
-instead you will need to run Python on the command line and within the
-interpreter enter:
-
-    import newrelic.commands.test
-    newrelic.commands.test.run([])
+then you should check the log file produced. Ensure you provide this log to
+New Relic support if you try to obtain assistance in debugging why the
+agent isn't able to report data to the UI.
 
 For assistance if debugging any problems send email to "support@newrelic.com"
 including any log files, details of operating system, Python version etc.

@@ -17,7 +17,7 @@ class Harvester(object):
         self._harvest_count = 0
         self._remote = remote
         self._harvest_work_queue = Queue.Queue(10)
-        print "Starting harvest thread"
+        _logger.debug("Starting harvest thread.")
         self._harvest_thread, self._harvest_event = schedule_repeating_task("New Relic Harvest Timer",self._harvest, frequency_in_seconds)
 
         self._harvest_work_thread = QueueProcessingThread("New Relic Harvest Processing Thread",self._harvest_work_queue)
@@ -60,7 +60,7 @@ class Harvester(object):
     def stop(self):
 
         if self._harvest_event:
-            print "Stopping harvest thread"
+            _logger.debug("Stopping harvest thread.")
             self._harvest_event.set()
             self._harvest_thread.join()
             self._harvest_work_thread.stop()

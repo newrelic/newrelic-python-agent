@@ -107,7 +107,7 @@ echo $VERSION.$BUILD_NUMBER > $ROOTDIR/VERSION
 
 #cp php_agent/LICENSE.txt $ROOTDIR/LICENSE
 cp INSTALL $ROOTDIR/INSTALL
-cp newrelic.ini $AGENTDIR/newrelic.ini
+cp newrelic.ini $ROOTDIR/newrelic.ini
 
 # Copy in the installation script used to install the Python agent into
 # the desired Python installation.

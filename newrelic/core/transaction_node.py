@@ -13,7 +13,7 @@ import newrelic.core.error_collector
 import newrelic.core.trace_node
 
 _TransactionNode = collections.namedtuple('_TransactionNode',
-        ['type', 'group', 'name', 'request_uri', 'response_code',
+        ['settings', 'type', 'group', 'name', 'request_uri', 'response_code',
         'request_params', 'custom_params', 'queue_start', 'start_time',
         'end_time', 'duration', 'exclusive', 'children', 'errors',
         'slow_sql', 'apdex_t', 'ignore_apdex'])

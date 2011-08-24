@@ -25,3 +25,14 @@ def obfuscator(database_type="postgresql"):
 class SqlObfuscator(Normalizer):
     def obfuscate(self, sql):
         return self.normalize(sql)
+
+
+
+
+def obfuscate_sql(module, sql):
+    # FIXME Need to implement a mapping table for module.__name__ to
+    # the appropriate obfuscator. Note that module can be None, in which
+    # case maybe we should try and automatically attempt to derive
+    # the type somehow instead. For now use postgresql.
+
+    return obfuscator().obfuscate(sql)

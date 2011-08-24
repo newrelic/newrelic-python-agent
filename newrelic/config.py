@@ -1005,6 +1005,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('pylons.templating',
             'newrelic.hooks.framework_pylons')
 
+    _process_module_definition('bottle',
+            'newrelic.hooks.framework_bottle')
+
     _process_module_definition('cx_Oracle',
             'newrelic.hooks.database_dbapi2')
     _process_module_definition('MySQLdb',

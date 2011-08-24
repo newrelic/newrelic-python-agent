@@ -133,6 +133,7 @@ class StatsEngine(object):
         self.__stats_table = {}
         self.__slow_transaction = None
         self.__transaction_errors = []
+        self.__sql_traces = []
         self.__metric_ids = {}
 
     @property
@@ -151,7 +152,14 @@ class StatsEngine(object):
 
         """
 
-        return self.__transaction_errors
+    @property
+    def sql_traces(self):
+	"""Returns a reference to a list containing any sql traces
+	collected during the reporting period.
+
+        """
+
+        return self.__sql_traces
 
     @property
     def metric_ids(self):
@@ -288,6 +296,9 @@ class StatsEngine(object):
         if not self.__settings:
             return
 
+        error_collector = self.__settings.error_collector
+        transaction_tracer = self.__settings.transaction_tracer
+
         # FIXME The application object perhaps needs to maintain an
         # activation counter. This would be incremented after each
         # connect to core application and updated server side
@@ -346,16 +357,25 @@ class StatsEngine(object):
 
         # Capture any errors if error collection is enabled.
 
-        error_collector = self.__settings.error_collector
-
         if error_collector.enabled:
             self.__transaction_errors.extend(transaction.error_details())
 
-	# Remember as slowest transaction of transaction tracer
+        # Capture any sql traces if transaction tracer enabled.
+
+        # FIXME What needs to be done here to convert the sql
+        # nodes of the transaction into form to be held by the
+        # sql_traces attribute ready for sending to the core
+        # application. Assumed for moment that is sequence of
+        # dictionary objects like for error details and can just
+        # add them into the end of the list.
+
+        if transaction_tracer.enabled:
+            self.__sql_traces.extend(transaction.sql_traces())
+
+	# Remember as slowest transaction if transaction tracer
 	# is enabled, it is over the threshold and slower than
 	# any existing transaction.
 
-        transaction_tracer = self.__settings.transaction_tracer
         threshold = transaction_tracer.transaction_threshold
 
         if transaction_tracer.enabled:
@@ -398,6 +418,7 @@ class StatsEngine(object):
         self.__stats_table = {}
         self.__slow_transaction = None
         self.__transaction_errors = []
+        self.__sql_traces = []
         self.__metric_ids = {}
 
     def create_snapshot(self):
@@ -424,6 +445,7 @@ class StatsEngine(object):
         self.__stats_table = {}
         self.__slow_transaction = None
         self.__transaction_errors = []
+        self.__sql_traces = []
 
         return stats
 
@@ -455,6 +477,13 @@ class StatsEngine(object):
         # FIXME Should all accumulated errors be retained.
 
         self.__transaction_errors[:0] = snapshot.transaction_errors
+
+        # Insert original sql traces at start of any new
+        # ones to maintain time based order.
+
+        # FIXME Should all accumulated sql traces be retained.
+
+        self.__sql_traces[:0] = snapshot.sql_traces
 
         # Restore original slow transaction if slower than
         # any newer slow transaction.

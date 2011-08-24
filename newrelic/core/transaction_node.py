@@ -200,10 +200,6 @@ class TransactionNode(_TransactionNode):
         # too many metrics have been generated and want to
         # stick remainder in a bucket.
 
-        # FIXME Something not right here as missing detail in
-        # apdex chart of overview tab when looking at specific
-        # web transaction.
-
         # TODO Should the apdex metric path only include the
         # first segment of group? That is, only the top level
         # category and not any sub categories.

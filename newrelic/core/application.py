@@ -143,6 +143,17 @@ class Application(object):
                     self._service.send_error_data(
                             connection, stats.transaction_errors)
 
+                # FIXME This may not be right as we may need to
+                # massage the format of the sql data if it needs
+                # to be compressed. Also need to find out if
+                # returns a table of IDs like metric IDs but for
+                # the SQL queries or some other response.
+
+                #sql_traces = stats.sql_traces
+                #if sql_traces:
+                #    self._service.send_sql_data(
+                #            connection, stats.sql_traces)
+
                 # FIXME This needs to be cleaned up. It is just to get
                 # it working. What part of code should be responsible
                 # for doing compressing and final packaging of message.

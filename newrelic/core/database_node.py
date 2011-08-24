@@ -8,11 +8,12 @@ import newrelic.lib.sqlparse
 import newrelic.lib.sqlparse.sql
 import newrelic.lib.sqlparse.tokens
 import newrelic.core.trace_node
+import newrelic.core.database_utils
 
 _DatabaseNode = collections.namedtuple('_DatabaseNode',
-        ['database_module', 'connect_params', 'sql', 'children',
+        ['module', 'connect_params', 'sql', 'children',
         'start_time', 'end_time', 'duration', 'exclusive',
-        'stack_trace'])
+        'stack_trace', 'sql_format'])
 
 class DatabaseNode(_DatabaseNode):
 
@@ -41,6 +42,14 @@ class DatabaseNode(_DatabaseNode):
             operation = None
 
         return table, operation
+
+    @property
+    def formatted_sql(self):
+        # FIXME Could cache the result.
+        if self.sql_format == 'obfuscated':
+            return newrelic.core.database_utils.obfuscate_sql(
+                    self.module, self.sql)
+        return self.sql
 
     def time_metrics(self, root, parent):
         """Return a generator yielding the timed metrics for this
@@ -122,11 +131,37 @@ class DatabaseNode(_DatabaseNode):
             for metric in child.time_metrics(root, self):
                 yield metric
 
+    def sql_trace_node(self, root):
+
+        table, operation = self.parsed_sql()
+
+        # TODO Verify that these are the correct names to use.
+        # Could possibly cache this if necessary.
+
+        if operation in ('select', 'update', 'insert', 'delete'):
+            name = 'Database/%s/%s' % (table, operation)
+        elif operation in ('show',):
+            name = 'Database/%s' % operation
+        else:
+            name = 'Database/other/sql'
+
+        duration = self.duration
+
+        sql = self.formatted_sql
+
+        # FIXME This is where we need to generate the data structure,
+        # likely a dictionary for holding single sql trace. Believe
+        # that node needs to hold the metric name, duration and sql
+        # but not sure how each is identified. Could even be a tuple.
+
+        # yield ?????
+
     def trace_node(self, root):
 
         table, operation = self.parsed_sql()
 
         # TODO Verify that these are the correct names to use.
+        # Could possibly cache this if necessary.
 
         if operation in ('select', 'update', 'insert', 'delete'):
             name = 'Database/%s/%s' % (table, operation)
@@ -139,15 +174,17 @@ class DatabaseNode(_DatabaseNode):
         end_time = newrelic.core.trace_node.node_end_time(root, self)
         children = [child.trace_node(root) for child in self.children]
 
-        # TODO Need to obfuscate the SQL here as necessary.
-
-        params = { 'sql': self.sql }
+        params = { 'sql': self.formatted_sql }
 
         if self.stack_trace:
             params['backtrace'] = self.stack_trace
 
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children)
+
+# FIXME The SQL parser needs to move to database_utils module. It needs
+# to internally detect exceptions caused by bad input and propogate it
+# back up. Should instead return None for values can't calculate.
 
 class SqlParser:
     def __init__(self, sql):

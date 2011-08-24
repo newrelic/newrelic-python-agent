@@ -60,8 +60,11 @@ class DatabaseTrace(object):
 
         parent = self._transaction._node_stack[-1]
 
+        settings = self._transaction.settings
+        sql_format = settings.transaction_tracer.record_sql
+
         node = newrelic.core.database_node.DatabaseNode(
-                database_module=None,
+                module=None,
                 connect_params=None,
                 sql=self._sql,
                 children=self._children,
@@ -69,7 +72,8 @@ class DatabaseTrace(object):
                 end_time=self._end_time,
                 duration=duration,
                 exclusive=exclusive,
-                stack_trace=stack_trace)
+                stack_trace=stack_trace,
+                sql_format=sql_format)
 
         parent._children.append(node)
 

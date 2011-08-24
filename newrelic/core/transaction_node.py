@@ -246,6 +246,15 @@ class TransactionNode(_TransactionNode):
                     start_time=0, path=self.path, message=error.message,
                     type=error.type, parameters=params)
 
+    def sql_traces(self):
+        """Return a generator yielding the details for each slow sql
+        trace capture during this transaction.
+
+        """
+
+        for node in self.slow_sql:
+            yield node.sql_trace_node(self)
+
     def trace_node(self, root):
 
         name = self.path

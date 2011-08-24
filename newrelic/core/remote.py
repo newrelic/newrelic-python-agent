@@ -93,6 +93,12 @@ class NewRelicService(object):
         res = self.invoke_remote(conn,"transaction_sample_data",True,self._agent_run_id,self._agent_run_id,trace_data)
         return res
 
+    def send_sql_data(self,conn,sql_data):
+        if not self.connected():
+            raise "Not connected"
+        res = self.invoke_remote(conn,"sql_trace_data",True,self._agent_run_id,self._agent_run_id,sql_data)
+        return res
+
     def send_metric_data(self,conn,metric_data):
         if not self.connected():
             raise "Not connected"

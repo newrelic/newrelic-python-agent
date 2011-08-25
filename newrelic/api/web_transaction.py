@@ -104,13 +104,13 @@ class WebTransaction(newrelic.api.transaction.Transaction):
             else:
                 path = script_name + path_info
 
-            self.name_transaction(path, 'Uri')
+            self.name_transaction(path, 'Uri', priority=1)
 
             if self._request_uri is None:
                 self._request_uri = path
         else:
             if self._request_uri is not None:
-                self.name_transaction(self._request_uri, 'Uri')
+                self.name_transaction(self._request_uri, 'Uri', priority=1)
 
         # See if the WSGI environ dictionary includes
         # the special 'X-Queue-Start' HTTP header. This
@@ -224,9 +224,11 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         if not self._rum_header:
             return ''
 
-        # FIXME Need to freeze name properly.
+        # Make sure we freeze the path.
 
-        name = _obfuscate_transaction_name(self.frozen_path,
+        self.freeze_path()
+
+        name = _obfuscate_transaction_name(self.path,
                 self._settings.license_key)
 
         queue_start = self._queue_start or self._start_time

@@ -67,6 +67,7 @@ class Transaction(object):
         self._state = STATE_PENDING
         self._settings = None
 
+        self._priority = 0
         self._group = None
         self._name = None
 
@@ -200,6 +201,10 @@ class Transaction(object):
         exclusive = max(0, exclusive)
 
         # Construct final root node of transaction trace.
+        # Freeze path in case not already done. This will
+        # construct out path.
+
+        self.freeze_path()
 
         if self.background_task:
             type = 'OtherTransaction'
@@ -216,7 +221,7 @@ class Transaction(object):
 
         node = newrelic.core.transaction_node.TransactionNode(
                 settings=self._settings,
-                path=self.frozen_path,
+                path=self.path,
                 type=type,
                 group=group,
                 name=self._name,
@@ -269,18 +274,7 @@ class Transaction(object):
 
     @property
     def path(self):
-        """For backwards compatibility with unit tests."""
-        name = self._name
-        if name is None:
-            name = '<unknown>'
-        if self._group in ['Uri', None]:
-            return name
-        else:
-            return '%s/%s' % (self._group, name)
-
-    @property
-    def frozen_path(self):
-        if self._frozen_path is not None:
+        if self._frozen_path:
             return self._frozen_path
 
         if self.background_task:
@@ -288,26 +282,51 @@ class Transaction(object):
         else:
             type = 'WebTransaction'
 
+        group = self._group
+
+        if group is None:
+            if self.background_task:
+                group = 'Python'
+            else:
+                group = 'Uri'
+
+        name = self._name
+        
+        if name is None:
+            name = '<undefined>'
+
         # Stripping the leading slash on the request URL held by
         # name when type is 'Uri' is to keep compatibility with
         # PHP agent and also possibly other agents. Leading
         # slash it not deleted for other category groups as the
         # leading slash may be significant in that situation.
 
-        if self._group == 'Uri' and self._name[:1] == '/':
-            path = '%s/%s%s' % (type, self._group, self._name)
+        if self._group == 'Uri' and name[:1] == '/':
+            path = '%s/%s%s' % (type, group, name)
         else:
-            path = '%s/%s/%s' % (type, self._group, self._name)
-
-        self._frozen_path = path
+            path = '%s/%s/%s' % (type, group, name)
 
         return path
 
-    def name_transaction(self, name, group=None):
+    def freeze_path(self):
+        if self._frozen_path is None:
+            self._priority = None
+            self._frozen_path = self.path
 
-        # Always perform this operation even if the
-        # transaction is not active at the time as will
-        # be called from constructor.
+    def name_transaction(self, name, group=None, priority=None):
+
+	# Always perform this operation even if the transaction
+	# is not active at the time as will be called from
+	# constructor. If path has been frozen do not allow
+	# name/group to be overridden. New priority then must be
+	# same or greater than existing priority. If no priority
+	# always override the existing name/group if not frozen.
+
+        if self._priority is None:
+            return
+
+        if priority is not None and priority < self._priority:
+            return
 
         if group is None:
             group = 'Function'

@@ -26,7 +26,7 @@ class BackgroundTask(newrelic.api.transaction.Transaction):
 
         # Name the web transaction from supplied values.
 
-        self.name_transaction(name, group)
+        self.name_transaction(name, group, priority=1)
 
 class BackgroundTaskWrapper(object):
 

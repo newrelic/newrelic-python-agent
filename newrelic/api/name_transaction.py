@@ -6,7 +6,7 @@ import newrelic.api.object_wrapper
 
 class NameTransactionWrapper(object):
 
-    def __init__(self, wrapped, name=None, group=None):
+    def __init__(self, wrapped, name=None, group=None, priority=None):
         if type(wrapped) == types.TupleType:
             (instance, wrapped) = wrapped
         else:
@@ -22,13 +22,14 @@ class NameTransactionWrapper(object):
 
         self._nr_name = name
         self._nr_group = group
+        self._nr_priority = priority
 
     def __get__(self, instance, klass):
         if instance is None:
             return self
         descriptor = self._nr_next_object.__get__(instance, klass)
         return self.__class__((instance, descriptor),
-                self._nr_name, self._nr_group)
+                self._nr_name, self._nr_group, self._nr_priority)
 
     def __call__(self, *args, **kwargs):
         transaction = newrelic.api.transaction.transaction()
@@ -52,15 +53,16 @@ class NameTransactionWrapper(object):
         else:
             group = self._nr_group
 
-        transaction.name_transaction(name, group)
+        transaction.name_transaction(name, group, self._nr_priority)
 
         return self._nr_next_object(*args, **kwargs)
 
-def name_transaction(name=None, group=None):
+def name_transaction(name=None, group=None, priority=None):
     def decorator(wrapped):
-        return NameTransactionWrapper(wrapped, name, group)
+        return NameTransactionWrapper(wrapped, name, group, priority)
     return decorator
 
-def wrap_name_transaction(module, object_path, name=None, group=None):
+def wrap_name_transaction(module, object_path, name=None, group=None,
+                          priority=None):
     newrelic.api.object_wrapper.wrap_object(module, object_path,
-            NameTransactionWrapper, (name, group))
+            NameTransactionWrapper, (name, group, priority))

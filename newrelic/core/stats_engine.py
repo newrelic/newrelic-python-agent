@@ -152,6 +152,8 @@ class StatsEngine(object):
 
         """
 
+        return self.__transaction_errors
+
     @property
     def sql_traces(self):
 	"""Returns a reference to a list containing any sql traces

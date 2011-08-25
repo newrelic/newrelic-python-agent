@@ -239,6 +239,14 @@ class Agent(object):
 
         application.record_transaction(data)
 
+    def normalize_name(self, app_name, name):
+
+        application = self._applications.get(app_name, None)
+        if application is None:
+            return name
+
+        application.normalize_name(name)
+
     # FIXME The following for managing running state of harvester and
     # applications should probably support the concept of a manually
     # triggered restart. Have to think about the case where a fork of

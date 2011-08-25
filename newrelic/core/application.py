@@ -13,6 +13,7 @@ from newrelic.core.nr_threading import QueueProcessingThread
 import newrelic.core.metric
 import newrelic.core.stats_engine
 import newrelic.core.samplers
+import newrelic.core.string_normalization
 
 _logger = logging.getLogger('newrelic.core.application')
 
@@ -35,6 +36,7 @@ class Application(object):
 
         self._stats_lock = threading.Lock()
         self._stats_engine = newrelic.core.stats_engine.StatsEngine()
+        self._rules_engine = None
 
         # we could pull this queue and its processor up to the agent
         self._work_queue = Queue.Queue(10)
@@ -79,10 +81,34 @@ class Application(object):
             # requested a restart?
 
             self._stats_engine.reset_stats(self._service.configuration)
+            try:
+                self.setup_rules_engine(self._service.configuration.url_rules)
+            except:
+                _logger.exception('No URL rules in configuration.')
 
             _logger.debug("Connected to the New Relic service.")
 
         return connected
+
+    def setup_rules_engine(self, rules):
+        ruleset = []
+        try:
+            for item in rules:
+                kwargs = {}
+                for name in map(str, item.keys()):
+                    kwargs[name] = str(item[name])
+                rule = newrelic.core.string_normalization.NormalizationRule(
+                        **kwargs)
+                ruleset.append(rule)
+            self._rules_engine = newrelic.core.string_normalization.Normalizer(*ruleset)
+        except:
+            _logger.exception('Failed to create url rule.')
+
+    def normalize_name(self, name):
+        #if not self._rules_engine:
+        #    return name
+        #return self._rules_engine.normalize(name)
+        return name
 
     def record_metric(self, name, value):
         try:

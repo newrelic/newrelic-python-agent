@@ -108,6 +108,8 @@ class Application(object):
         try:
             self._stats_lock.acquire()
             stats = self._stats_engine.create_snapshot()
+        except:
+            _logger.exception('Failed to create snapshot of stats.')
         finally:
             self._stats_lock.release()
 
@@ -179,4 +181,4 @@ class Application(object):
                 try:
                     self._stats_engine.merge_snapshot(stats)
                 except:
-                  _logger.exception('Failed to remerge harvest data.')
+                    _logger.exception('Failed to remerge harvest data.')

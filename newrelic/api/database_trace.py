@@ -11,10 +11,11 @@ import newrelic.api.object_wrapper
 
 class DatabaseTrace(object):
 
-    def __init__(self, transaction, sql):
+    def __init__(self, transaction, sql, dbapi=None):
         self._transaction = transaction
 
         self._sql = sql
+        self._dbapi = dbapi
 
         self._enabled = False
 
@@ -64,7 +65,7 @@ class DatabaseTrace(object):
         sql_format = settings.transaction_tracer.record_sql
 
         node = newrelic.core.database_node.DatabaseNode(
-                module=None,
+                dbapi=self._dbapi,
                 connect_params=None,
                 sql=self._sql,
                 children=self._children,
@@ -84,7 +85,7 @@ class DatabaseTrace(object):
 
 class DatabaseTraceWrapper(object):
 
-    def __init__(self, wrapped, sql):
+    def __init__(self, wrapped, sql, dbapi=None):
         if type(wrapped) == types.TupleType:
             (instance, wrapped) = wrapped
         else:
@@ -99,12 +100,14 @@ class DatabaseTraceWrapper(object):
             self._nr_last_object = wrapped
 
         self._nr_sql = sql
+        self._nr_dbapi = dbapi
 
     def __get__(self, instance, klass):
         if instance is None:
             return self
         descriptor = self._nr_next_object.__get__(instance, klass)
-        return self.__class__((instance, descriptor), self._nr_sql)
+        return self.__class__((instance, descriptor), self._nr_sql,
+                              self._nr_dbapi)
 
     def __call__(self, *args, **kwargs):
         transaction = newrelic.api.transaction.transaction()
@@ -121,7 +124,7 @@ class DatabaseTraceWrapper(object):
 
         try:
             success = True
-            manager = DatabaseTrace(transaction, sql)
+            manager = DatabaseTrace(transaction, sql, self._nr_dbapi)
             manager.__enter__()
             try:
                 return self._nr_next_object(*args, **kwargs)
@@ -133,11 +136,11 @@ class DatabaseTraceWrapper(object):
             if success:
                 manager.__exit__(None, None, None)
 
-def database_trace(sql):
+def database_trace(sql, dbapi2=None):
     def decorator(wrapped):
-        return DatabaseTraceWrapper(wrapped, sql)
+        return DatabaseTraceWrapper(wrapped, sql, dbapi2=None)
     return decorator
 
-def wrap_database_trace(module, object_path, sql):
+def wrap_database_trace(module, object_path, sql, dbapi=None):
     newrelic.api.object_wrapper.wrap_object(module, object_path,
-            DatabaseTraceWrapper, (sql,))
+            DatabaseTraceWrapper, (sql, dbapi))

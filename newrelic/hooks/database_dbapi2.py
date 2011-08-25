@@ -10,11 +10,13 @@ def instrument(module):
         def execute(self, *args, **kwargs):
             return newrelic.api.database_trace.DatabaseTraceWrapper(
                     self.__cursor.execute,
-                    (lambda sql, parameters=(): sql))(*args, **kwargs)
+                    (lambda sql, parameters=(): sql),
+                    module)(*args, **kwargs)
         def executemany(self, *args, **kwargs): 
             return newrelic.api.database_trace.DatabaseTraceWrapper(
                     self.__cursor.executemany,
-                    (lambda sql, seq_of_parameters=[]: sql))(*args, **kwargs)
+                    (lambda sql, seq_of_parameters=[]: sql),
+                    module)(*args, **kwargs)
         def __getattr__(self, name):
             return getattr(self.__cursor, name)
 
@@ -25,10 +27,12 @@ def instrument(module):
             return CursorWrapper(self.__connection.cursor(*args, **kwargs))
         def commit(self, *args, **kwargs):
             return newrelic.api.database_trace.DatabaseTraceWrapper(
-                self.__connection.commit, sql='COMMIT')(*args, **kwargs)
+                self.__connection.commit, 'COMMIT',
+                module)(*args, **kwargs)
         def rollback(self, *args, **kwargs):
             return newrelic.api.database_trace.DatabaseTraceWrapper(
-                self.__connection.rollback, sql='ROLLBACK')(*args, **kwargs)
+                self.__connection.rollback, 'ROLLBACK',
+                module)(*args, **kwargs)
         def __getattr__(self, name):
             return getattr(self.__connection, name)
 

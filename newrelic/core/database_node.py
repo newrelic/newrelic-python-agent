@@ -11,7 +11,7 @@ import newrelic.core.trace_node
 import newrelic.core.database_utils
 
 _DatabaseNode = collections.namedtuple('_DatabaseNode',
-        ['module', 'connect_params', 'sql', 'children',
+        ['dbapi', 'connect_params', 'sql', 'children',
         'start_time', 'end_time', 'duration', 'exclusive',
         'stack_trace', 'sql_format'])
 
@@ -48,7 +48,7 @@ class DatabaseNode(_DatabaseNode):
         # FIXME Could cache the result.
         if self.sql_format == 'obfuscated':
             return newrelic.core.database_utils.obfuscate_sql(
-                    self.module, self.sql)
+                    self.dbapi, self.sql)
         return self.sql
 
     def time_metrics(self, root, parent):

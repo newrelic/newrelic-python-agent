@@ -27,12 +27,23 @@ class SqlObfuscator(Normalizer):
         return self.normalize(sql)
 
 
+# MySQL - `table.name`
+# Oracle - "table.name"
+# PostgreSQL - "table.name"
+# SQLite - "table.name"
 
+NORMALIZER_DEFAULT = 'postgresql'
 
-def obfuscate_sql(module, sql):
-    # FIXME Need to implement a mapping table for module.__name__ to
-    # the appropriate obfuscator. Note that module can be None, in which
-    # case maybe we should try and automatically attempt to derive
-    # the type somehow instead. For now use postgresql.
+NORMALIZER_SCHEME = {
+  'cx_Oracle' : NORMALIZER_DEFAULT,
+  'MySQLdb': 'mysql',
+  'postgresql.interface.proboscis.dbapi2': 'postgresql',
+  'psycopg2': 'postgresql',
+  'pysqlite2.dbapi2': NORMALIZER_DEFAULT,
+  'sqlite3.dbapi2': NORMALIZER_DEFAULT,
+}
 
-    return obfuscator().obfuscate(sql)
+def obfuscate_sql(dbapi, sql):
+    name = dbapi and dbapi.__name__ or None
+    scheme = NORMALIZER_SCHEME.get(name, NORMALIZER_DEFAULT)
+    return obfuscator(scheme).obfuscate(sql)

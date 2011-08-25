@@ -24,10 +24,10 @@ _any_quotes_re = re.compile(_any_quotes_pattern)
 #
 # Is important to take word boundaries into consideration so we
 # do not match numbers which are used on the end of identifiers.
-# These probably could be combine into one expression but clearer
-# if we described them separately.
+# Technically this will not match numbers on the start of
+# identifiers even though leading digits on identifiers aren't
+# valid anyway. As it shouldn't occur, shouldn't be an issue.
 
-_float_re = re.compile(r'(\b[0-9]+\.([0-9]+\b)?|\.[0-9]+\b)')
 _int_re = re.compile(r'\b\d+\b')
 
 def obfuscate_sql(name, sql):
@@ -50,13 +50,10 @@ def obfuscate_sql(name, sql):
     else:
         sql = _single_quotes_re.sub('?', sql)
 
-    # Now we want to replace floating point literal values.
-    # Need to do this before integers or we will get strange
-    # results.
-
-    sql = _float_re.sub('?', sql)
-
-    # Finally replace straight integer values.
+    # Finally replace straight integer values. This will pick
+    # up integers by themselves but also as part of floating
+    # point numbers. Because of word boundary checks in pattern
+    # will not match numbers within identifier names.
 
     sql = _int_re.sub('?', sql)
 

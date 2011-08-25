@@ -31,5 +31,10 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual("SELECT * FROM table1 WHERE table2.column3 = ? AND ? = ?",
                          obfuscate_sql('pyscopg2', select))
 
+    def test_obfuscator_does_not_obfuscate_integer_word_boundaries(self):
+        select = "A1 #2 ,3 .4 (5) =6 <7 :8 /9 B0C"
+        self.assertEqual("A1 #? ,? .? (?) =? <? :? /? B0C",
+                         obfuscate_sql('pyscopg2', select))
+
 if __name__ == "__main__":
     unittest.main()

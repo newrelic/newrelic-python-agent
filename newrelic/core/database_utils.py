@@ -34,7 +34,7 @@ def obfuscate_sql(name, sql):
     """Returns obfuscated version of the sql. The quoting
     convention is determined by looking at the name of the
     database module supplied. Obfuscation consists of replacing
-    literal strings, floats and integers.
+    literal strings and integers.
 
     """
 

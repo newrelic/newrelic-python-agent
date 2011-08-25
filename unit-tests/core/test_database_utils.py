@@ -1,39 +1,35 @@
-'''
-Created on Jul 27, 2011
-
-@author: sdaubin
-'''
 import unittest
-from newrelic.core import database
+
+from newrelic.core.database_utils import obfuscate_sql
 
 class TestDatabase(unittest.TestCase):
-    def setUp(self):
-        self.obfuscator = database.obfuscator("postgresql")
-
     def test_obfuscator_obfuscates_numeric_literals(self):
         select = "SELECT * FROM table WHERE table.column = 1 AND 2 = 3"
         self.assertEqual("SELECT * FROM table WHERE table.column = ? AND ? = ?",
-                         self.obfuscator.obfuscate(select))
+                         obfuscate_sql('pyscopg2', select))
         insert = "INSERT INTO table VALUES (1,2, 3 ,  4)"
         self.assertEqual("INSERT INTO table VALUES (?,?, ? ,  ?)",
-                         self.obfuscator.obfuscate(insert))
+                         obfuscate_sql('psycopg2', insert))
 
     def test_obfuscator_obfuscates_string_literals(self):
         insert = "INSERT INTO X values('', 'jim''s ssn',0, 1 , 'jim''s son''s son')"
         self.assertEqual("INSERT INTO X values(?, ?,?, ? , ?)",
-                         self.obfuscator.obfuscate(insert))
+                         obfuscate_sql('psycopg2', insert))
 
     def test_obfuscator_does_not_obfuscate_table_or_column_names(self):
         select = 'SELECT "table"."column" FROM "table" WHERE "table"."column" = \'value\' LIMIT 1'
         self.assertEqual('SELECT "table"."column" FROM "table" WHERE "table"."column" = ? LIMIT ?',
-                         self.obfuscator.obfuscate(select))
+                         obfuscate_sql('psycopg2', select))
 
     def test_mysql_obfuscation(self):
-        obfuscator = database.obfuscator("mysql")
         select = 'SELECT `table`.`column` FROM `table` WHERE `table`.`column` = \'value\' AND `table`.`other_column` = "other value" LIMIT 1'
         self.assertEqual('SELECT `table`.`column` FROM `table` WHERE `table`.`column` = ? AND `table`.`other_column` = ? LIMIT ?',
-                         obfuscator.obfuscate(select))
+                         obfuscate_sql('MySQLdb', select))
+
+    def test_obfuscator_does_not_obfuscate_trailing_integers(self):
+        select = "SELECT * FROM table1 WHERE table2.column3 = 1 AND 2 = 3"
+        self.assertEqual("SELECT * FROM table1 WHERE table2.column3 = ? AND ? = ?",
+                         obfuscate_sql('pyscopg2', select))
 
 if __name__ == "__main__":
-    #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

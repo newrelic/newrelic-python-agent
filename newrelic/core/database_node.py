@@ -47,8 +47,9 @@ class DatabaseNode(_DatabaseNode):
     def formatted_sql(self):
         # FIXME Could cache the result.
         if self.sql_format == 'obfuscated':
+            name = self.dbapi and self.dbapi.__name__ or None 
             return newrelic.core.database_utils.obfuscate_sql(
-                    self.dbapi, self.sql)
+                    name, self.sql)
         return self.sql
 
     def time_metrics(self, root, parent):

@@ -13,10 +13,10 @@ import newrelic.core.error_collector
 import newrelic.core.trace_node
 
 _TransactionNode = collections.namedtuple('_TransactionNode',
-        ['settings', 'type', 'group', 'name', 'request_uri', 'response_code',
-        'request_params', 'custom_params', 'queue_start', 'start_time',
-        'end_time', 'duration', 'exclusive', 'children', 'errors',
-        'slow_sql', 'apdex_t', 'ignore_apdex'])
+        ['settings', 'path', 'type', 'group', 'name', 'request_uri',
+        'response_code', 'request_params', 'custom_params', 'queue_start',
+        'start_time', 'end_time', 'duration', 'exclusive', 'children',
+        'errors', 'slow_sql', 'apdex_t', 'ignore_apdex'])
 
 class TransactionNode(_TransactionNode):
 
@@ -27,50 +27,6 @@ class TransactionNode(_TransactionNode):
     requests are available directly in the 'slow_sql' attribute.
 
     """
-
-    def __init__(self, *args, **kwargs):
-        # We don't actually need to call the base class
-        # constructor the class created by namedtuple overrides
-        # __new__ and that is what is initialising the class
-        # with all the attributes. In the derived class
-        # constructor we just need to set up any additional
-        # variables of our own.
-
-        self._path = None
-
-    @property
-    def path(self):
-        if self._path is not None:
-            return self._path
-        return self.metric_name()
-
-    def metric_name(self, type=None):
-        type = type or self.type
-
-        # We cache the resultant path when the type specified is
-        # WebTransaction as it will be used a lot for scoped
-        # metrics. This is accessed via 'path' property. For
-        # Apdex which is the other case we just calculate it
-        # as is only required once.
-
-        if type == 'WebTransaction' and self._path is not None:
-            return self._path
-
-        # Stripping the leading slash on the request URL held by
-        # name when type is 'Uri' is to keep compatibility with
-        # PHP agent and also possibly other agents. Leading
-        # slash it not deleted for other category groups as the
-        # leading slash may be significant in that situation.
-
-        if self.group == 'Uri' and self.name[:1] == '/':
-            path = '%s/%s%s' % (type, self.group, self.name)
-        else:
-            path = '%s/%s/%s' % (type, self.group, self.name)
-
-        if type == 'WebTransaction':
-            self._path = path
-
-        return path
 
     def time_metrics(self):
         """Return a generator yielding the timed metrics for the
@@ -204,7 +160,11 @@ class TransactionNode(_TransactionNode):
         # first segment of group? That is, only the top level
         # category and not any sub categories.
 
-        name = self.metric_name('Apdex')
+        if self.group == 'Uri' and self.name[:1] == '/':
+            name = 'Apdex/%s%s' % (self.group, self.name)
+        else:
+            name = 'Apdex/%s/%s' % (self.group, self.name)
+
         overflow = 'Apdex/%s/*' % self.group
 
         yield newrelic.core.metric.ApdexMetric(name=name,

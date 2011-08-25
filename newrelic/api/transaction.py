@@ -216,6 +216,7 @@ class Transaction(object):
 
         node = newrelic.core.transaction_node.TransactionNode(
                 settings=self._settings,
+                path=self.frozen_path,
                 type=type,
                 group=group,
                 name=self._name,
@@ -241,26 +242,6 @@ class Transaction(object):
         self._enabled = False
 
         self._application.record_transaction(node)
-
-    @property
-    def frozen_path(self):
-        if self._frozen_path is not None:
-            return self._frozen_path
-
-        # Stripping the leading slash on the request URL held by
-        # name when type is 'Uri' is to keep compatibility with
-        # PHP agent and also possibly other agents. Leading
-        # slash it not deleted for other category groups as the
-        # leading slash may be significant in that situation.
-
-        if self._group == 'Uri' and self._name[:1] == '/':
-            path = '%s/%s%s' % (type, self._group, self._name)
-        else:
-            path = '%s/%s/%s' % (type, self._group, self._name)
-
-        self._frozen_path = path
-
-        return path
 
     @property
     def state(self):
@@ -296,6 +277,31 @@ class Transaction(object):
             return name
         else:
             return '%s/%s' % (self._group, name)
+
+    @property
+    def frozen_path(self):
+        if self._frozen_path is not None:
+            return self._frozen_path
+
+        if self.background_task:
+            type = 'OtherTransaction'
+        else:
+            type = 'WebTransaction'
+
+        # Stripping the leading slash on the request URL held by
+        # name when type is 'Uri' is to keep compatibility with
+        # PHP agent and also possibly other agents. Leading
+        # slash it not deleted for other category groups as the
+        # leading slash may be significant in that situation.
+
+        if self._group == 'Uri' and self._name[:1] == '/':
+            path = '%s/%s%s' % (type, self._group, self._name)
+        else:
+            path = '%s/%s/%s' % (type, self._group, self._name)
+
+        self._frozen_path = path
+
+        return path
 
     def name_transaction(self, name, group=None):
 

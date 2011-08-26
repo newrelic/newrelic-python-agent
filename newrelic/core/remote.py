@@ -64,10 +64,14 @@ class NewRelicService(object):
         return self._agent_run_id is not None
 
     def connect(self,conn=None):
+        _logger.info("Service connection.")
         create_conn = conn is None
-        if create_conn:
-            conn = self._remote.create_connection()
+        _logger.info("Connection required %s." % create_conn)
         try:
+            if create_conn:
+                _logger.info("Creating new connection.")
+                conn = self._remote.create_connection()
+                _logger.info("Got new connection.")
             redirect_host = self.invoke_remote(conn, "get_redirect_host", True, None)
 
             if redirect_host is not None:
@@ -75,6 +79,8 @@ class NewRelicService(object):
                 _logger.info("Collector redirection to %s" % redirect_host)
 
             self.parse_connect_response(self.invoke_remote(conn, "connect", True, None, self.get_start_options()))
+        except:
+            _logger.exception('Failed to connect to core application.')
         finally:
             if create_conn:
                 conn.close()
@@ -190,8 +196,14 @@ class JSONRemote(object):
 
     def create_connection(self):
         # FIXME add ssl support
-        conn = httplib.HTTPConnection(self._host, self._port)
-        conn.connect()
+        _logger.debug("Attempt connection to %s:%d" %(self._host, self._port))
+        try:
+            conn = httplib.HTTPConnection(self._host, self._port)
+            _logger.debug("Created object.")
+            conn.connect()
+            _logger.debug("Connected to %s:%d" %(self._host, self._port))
+        except:
+            _logger.exception('Connection failed')
         return conn
 
     def raise_exception(self, ex):

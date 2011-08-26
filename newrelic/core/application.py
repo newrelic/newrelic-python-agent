@@ -73,22 +73,26 @@ class Application(object):
         return self._service.configuration
 
     def connect(self):
-        _logger.debug("Connecting to the New Relic service.")
-        connected = self._service.connect()
-        if connected:
-            # TODO Is it right that stats are thrown away all the time.
-            # What is meant to happen to stats went core application
-            # requested a restart?
+        try:
+            _logger.debug("Connecting to the New Relic service.")
+            connected = self._service.connect()
+            _logger.debug("Connection status is %s." % connected)
+            if connected:
+                # TODO Is it right that stats are thrown away all the time.
+                # What is meant to happen to stats went core application
+                # requested a restart?
 
-            self._stats_engine.reset_stats(self._service.configuration)
-            try:
-                self.setup_rules_engine(self._service.configuration.url_rules)
-            except:
-                _logger.exception('No URL rules in configuration.')
+                self._stats_engine.reset_stats(self._service.configuration)
+                try:
+                    self.setup_rules_engine(self._service.configuration.url_rules)
+                except:
+                    _logger.exception('No URL rules in configuration.')
 
-            _logger.debug("Connected to the New Relic service.")
+                _logger.debug("Connected to the New Relic service.")
 
-        return connected
+            return connected
+        except:
+            _logger.exception('Failed connection startup.')
 
     def setup_rules_engine(self, rules):
         ruleset = []

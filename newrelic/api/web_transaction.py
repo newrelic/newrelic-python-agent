@@ -295,9 +295,6 @@ class WSGIApplicationWrapper(object):
         if not hasattr(self, '_nr_last_object'):
             self._nr_last_object = wrapped
 
-        if type(application) != newrelic.api.application.Application:
-            application = newrelic.api.application.application(application)
-
         self._nr_application = application
 
     def __get__(self, instance, klass):
@@ -335,6 +332,11 @@ class WSGIApplicationWrapper(object):
                 application = newrelic.api.application.application(app_name)
         else:
             application = self._nr_application
+
+            # FIXME Should this allow for multiple apps if a string.
+
+            if type(application) != newrelic.api.application.Application:
+                application = newrelic.api.application.application(application)
 
         # Now start recording the actual web transaction.
  

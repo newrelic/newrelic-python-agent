@@ -413,6 +413,13 @@ def instrument(module):
 
     elif module.__name__ == 'django.core.handlers.wsgi':
 
+        # Wrap the WSGI application entry point. If this is also
+        # wrapped from the WSGI script file or by the WSGI
+        # hosting mechanism then those will take precedence.
+
+        newrelic.api.web_transaction.wrap_wsgi_application(
+                module, 'WSGIHandler.__call__')
+
         # Attach a pre function to handle_uncaught_exception()
         # of WSGIHandler so that can capture exception details
         # of any exception which wasn't caught and dealt with by

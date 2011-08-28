@@ -160,7 +160,7 @@ class TransactionNode(_TransactionNode):
         # first segment of group? That is, only the top level
         # category and not any sub categories.
 
-        if self.group == 'Uri' and self.name[:1] == '/':
+        if self.group in ['Uri', 'NormalizedUri'] and self.name[:1] == '/':
             name = 'Apdex/%s%s' % (self.group, self.name)
         else:
             name = 'Apdex/%s/%s' % (self.group, self.name)

@@ -67,7 +67,8 @@ class Application(object):
 
     def normalize_name(self, name):
         if self.active:
-            self._agent.normalize_name(self._name, name)
+            return self._agent.normalize_name(self._name, name)
+        return name
 
 def application(name=None):
     return Application._instance(name)

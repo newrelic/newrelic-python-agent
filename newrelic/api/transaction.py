@@ -301,7 +301,7 @@ class Transaction(object):
         # slash it not deleted for other category groups as the
         # leading slash may be significant in that situation.
 
-        if self._group == 'Uri' and name[:1] == '/':
+        if self._group in ['Uri', 'NormalizedUri'] and name[:1] == '/':
             path = '%s/%s%s' % (type, group, name)
         else:
             path = '%s/%s/%s' % (type, group, name)
@@ -311,6 +311,13 @@ class Transaction(object):
     def freeze_path(self):
         if self._frozen_path is None:
             self._priority = None
+
+            if self._group == 'Uri':
+                name = self._application.normalize_name(self._name)
+                if self._name != name:
+                    self._group = 'NormalizedUri'
+                    self._name = name
+
             self._frozen_path = self.path
 
     def name_transaction(self, name, group=None, priority=None):

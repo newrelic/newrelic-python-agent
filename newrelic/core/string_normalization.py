@@ -1,6 +1,10 @@
 import re
 import collections
 
+# XXX This file is no longer being used. See 'rules_engine.py' instead.
+# File kept here for reference for time being if issues come up with new
+# rules engine implementation.
+
 _NormalizationRule = collections.namedtuple('_NormalizationRule',
         ['match_expression', 'replacement', 'ignore', 'eval_order',
         'terminate_chain', 'each_segment', 'replace_all'])

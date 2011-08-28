@@ -12,8 +12,8 @@ from newrelic.core.nr_threading import QueueProcessingThread
 
 import newrelic.core.metric
 import newrelic.core.stats_engine
+import newrelic.core.rules_engine
 import newrelic.core.samplers
-import newrelic.core.string_normalization
 
 _logger = logging.getLogger('newrelic.core.application')
 
@@ -83,10 +83,8 @@ class Application(object):
                 # requested a restart?
 
                 self._stats_engine.reset_stats(self._service.configuration)
-                try:
-                    self.setup_rules_engine(self._service.configuration.url_rules)
-                except:
-                    _logger.exception('No URL rules in configuration.')
+                self._rules_engine = newrelic.core.rules_engine.RulesEngine(
+                        self._service.configuration.url_rules)
 
                 _logger.debug("Connected to the New Relic service.")
 
@@ -109,10 +107,12 @@ class Application(object):
             _logger.exception('Failed to create url rule.')
 
     def normalize_name(self, name):
-        #if not self._rules_engine:
-        #    return name
-        #return self._rules_engine.normalize(name)
-        return name
+        try:
+            if not self._rules_engine:
+                return name
+            return self._rules_engine.normalize(name)
+        except:
+            _logger.exception('Name normalization failed.')
 
     def record_metric(self, name, value):
         try:

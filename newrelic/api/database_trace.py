@@ -136,9 +136,9 @@ class DatabaseTraceWrapper(object):
             if success:
                 manager.__exit__(None, None, None)
 
-def database_trace(sql, dbapi2=None):
+def database_trace(sql, dbapi=None):
     def decorator(wrapped):
-        return DatabaseTraceWrapper(wrapped, sql, dbapi2=None)
+        return DatabaseTraceWrapper(wrapped, sql, dbapi=None)
     return decorator
 
 def wrap_database_trace(module, object_path, sql, dbapi=None):

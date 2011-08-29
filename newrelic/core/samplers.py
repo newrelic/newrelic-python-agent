@@ -86,15 +86,51 @@ def _memory_used():
 
     """
 
-    # FIXME Not all systems use getrusage() or what they set
-    # struct member to differs. Need to fill out appropriate
-    # methods here for different platforms.
+    # FIXME  Need to fill out appropriate methods here for
+    # different platforms.
+
+    # For Linux use the proc filesystem. Use 'statm' as easier
+    # to parse than 'status' file.
+    #
+    #   /proc/[number]/statm
+    #          Provides information about memory usage, measured in pages.
+    #          The columns are:
+    #
+    #              size       total program size
+    #                         (same as VmSize in /proc/[number]/status)
+    #              resident   resident set size
+    #                         (same as VmRSS in /proc/[number]/status)
+    #              share      shared pages (from shared mappings)
+    #              text       text (code)
+    #              lib        library (unused in Linux 2.6)
+    #              data       data + stack
+    #              dt         dirty pages (unused in Linux 2.6)
+
+    if sys.platform == 'linux2':
+        pid = os.getpid()
+        statm = '/proc/%d/statm' % pid
+        fp = None
+
+        try:
+            fp = open(statm, 'r')
+            return float(fp.read().split()[1]) / 1024
+        except:
+            pass
+        finally:
+            if fp:
+                fp.close()
+
+    # Fallback to trying to use getrusage(). The units returned
+    # can differ based on platform. Assume 1024 byte blocks as
+    # default.
 
     try:
         import resource
         rusage = resource.getrusage(resource.RUSAGE_SELF)
         if sys.platform == 'darwin':
             return float(rusage.ru_maxrss) / (1024*1024)
+        else:
+            return float(rusage.ru_maxrss) / 1024
     except:
         pass
 

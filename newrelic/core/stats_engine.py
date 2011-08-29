@@ -208,9 +208,9 @@ class StatsEngine(object):
         stats.merge_metric(metric)
 
     def record_apdex_metrics(self, metrics):
-	"""Record the apdex metrics supplied by the iterable, merging
-	the data with any data from prior apdex metrics with the same
-        name.
+	"""Record the apdex metrics supplied by the iterable for a
+	single transaction, merging the data with any data from prior
+	apdex metrics with the same name.
 
         """
 
@@ -220,9 +220,11 @@ class StatsEngine(object):
         for metric in metrics:
             self.record_apdex_metric(metric)
 
-    def record_time_metric(self, metric):
+    def record_time_metric(self, metric, overflow=False):
 	"""Record a single time metric, merging the data with any data
-	from prior time metrics with the same name and scope.
+	from prior time metrics with the same name and scope. When
+        overflow is true then the overflow metric name is used rather
+        than the original metric name.
 
         """
 
@@ -232,25 +234,70 @@ class StatsEngine(object):
 	# Scope is forced to be empty string if None as
 	# scope of None is reserved for apdex metrics.
 
-        key = (metric.name, metric.scope or '')
+        if overflow:
+            key = (metric.overflow, metric.scope or '')
+        else:
+            key = (metric.name, metric.scope or '')
         stats = self.__stats_table.get(key)
         if stats is None:
             stats = TimeStats()
             self.__stats_table[key] = stats
         stats.merge_metric(metric)
 
-    def record_time_metrics(self, metrics):
-	"""Record the time metrics supplied by the iterable, merging
-	the data with any data from prior time metrics with the same
-        name and scope.
+    def record_time_metrics(self, metrics, threshold, minimum, maximum):
+	"""Record the time metrics supplied by the iterable for a single
+	transaction, merging the data with any data from prior time
+	metrics with the same name and scope. For metrics which are not
+	being forced and which define an overflow metric, a minimum
+	number of unique metrics will be reported. This will be those with
+	longest exclusive time. Beyond that mininum number of unique
+	metrics, subsequent metrics will be distinctly reported if they
+	have exclusive time greater than the threshold, stopping when a
+	maximum number of unique metrics have been recorded. After that the
+	metrics will be reported against any defined overflow metric name
+	instead.
 
         """
 
         if not self.__settings:
             return
 
-        for metric in metrics:
-            self.record_time_metric(metric)
+        if threshold:
+            metrics = reversed(sorted(metrics, key=lambda x: x.exclusive))
+
+            include = set()
+
+            # Metric types we should never rollup into overflow.
+
+            exclude = set(['Database', 'External', 'MemCache'])
+
+            for metric in metrics:
+                overflow = False
+
+                if metric.name.split('/')[0] not in exclude:
+
+                    if not metric.forced and metric.overflow:
+
+                        if (metric.name, metric.scope) in include:
+                            pass
+
+                        elif len(include) < minimum:
+                            pass
+
+                        elif maximum > 0 and len(include) > maximum:
+                            overflow = True
+
+                        elif metric.exclusive < threshold:
+                            overflow = True
+
+                if not overflow:
+                    include.add((metric.name, metric.scope))
+
+                self.record_time_metric(metric, overflow=overflow)
+
+        else:
+            for metric in metrics:
+                self.record_time_metric(metric)
 
     def record_value_metric(self, metric):
 	"""Record a single value metric, merging the data with any data
@@ -300,6 +347,7 @@ class StatsEngine(object):
 
         error_collector = self.__settings.error_collector
         transaction_tracer = self.__settings.transaction_tracer
+        transaction_metrics = self.__settings.transaction_metrics
 
         # FIXME The application object perhaps needs to maintain an
         # activation counter. This would be incremented after each
@@ -329,33 +377,31 @@ class StatsEngine(object):
         # configuration and finished after application had been
         # restarted.
 
-        # Record the apdex and time metrics generated from the
-        # transaction.
-
-	# FIXME Still need to deal with metric clamping. Saxon has
-	# indicated alternate way of sorting metrics based on duration
-	# and only keep the top ones with the rest going into the
-	# overflow. Either way, the overflow metric as specified now is
-	# needed. If have to sort though, means that have to exhaust the
-	# generator and accumulate all metrics, which will chew up a lot
-	# more memory. Use of geneator still pontential means is more
-	# efficient than just accumulating everything in a list ot begin
-	# with and then sort list. The means of doing it is quite easy
-	# though as can do:
-        #
-        #     metrics = sorted(data.apdex_metrics(), key=lambda x: x.duration)
-        #
-        # and metrics will list of all metrics sorted based on duration.
-        # The list will still contain metrics which are forced or don't
-        # have an overflow, for which default probably needs to be
-        # generated, so need to special case them as we go through them
-        # and keep count of those we can discard and when they reach
-        # limit then can start using overflow. The algorithm is exactly
-        # the same though regardless of whether sort them first. Quite
-        # easy to support both approaches through configuration initially.
+	# Record the apdex and time metrics generated from the
+	# transaction. Whether time metrics are reported as distinct
+	# metrics or into a rollup is in part controlled via settings
+	# for minimum number of unique metrics to be reported and thence
+	# whether over a time threshold calculated as percentage of
+	# overall request time, up to a maximum number of unique
+	# metrics. This is intended to limit how many metrics are
+	# reported for each transaction and try and cutdown on an
+	# explosion of unique metric names. The limits and thresholds
+	# are applied after the metrics are reverse sorted based on
+	# exclusive times for each metric. This ensures that the metrics
+	# with greatest exclusive time are retained over those with
+	# lesser time. Such metrics get reported into the performance
+        # breakdown tab for specific web transactions.
 
         self.record_apdex_metrics(transaction.apdex_metrics())
-        self.record_time_metrics(transaction.time_metrics())
+
+        minimum = transaction_metrics.overflow_minimum
+        maximum = transaction_metrics.overflow_maximum
+
+        threshold = transaction_metrics.overflow_threshold
+        threshold = threshold * transaction.duration
+
+        self.record_time_metrics(transaction.time_metrics(),
+                threshold, minimum, maximum)
 
         # Capture any errors if error collection is enabled.
 

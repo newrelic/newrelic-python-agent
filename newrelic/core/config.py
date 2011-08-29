@@ -25,6 +25,7 @@ class TransactionTracerSettings(Settings): pass
 class ErrorCollectorSettings(Settings): pass
 class BrowserMonitorSettings(Settings): pass
 class TransactionNameSettings(Settings): pass
+class TransactionMetricsSettings(Settings): pass
 class RumSettings(Settings): pass
 class DebugSettings(Settings): pass
 
@@ -33,6 +34,7 @@ _settings.transaction_tracer = TransactionTracerSettings()
 _settings.error_collector = ErrorCollectorSettings()
 _settings.browser_monitoring = BrowserMonitorSettings()
 _settings.transaction_name = TransactionNameSettings()
+_settings.transaction_metrics = TransactionMetricsSettings()
 _settings.rum = RumSettings()
 _settings.debug = DebugSettings()
 
@@ -80,6 +82,10 @@ _settings.error_collector.ignore_errors = []
 _settings.browser_monitoring.auto_instrument = True
 
 _settings.transaction_name.limit = 500
+
+_settings.transaction_metrics.overflow_minimum = 5
+_settings.transaction_metrics.overflow_maximum = 10
+_settings.transaction_metrics.overflow_threshold = 0.05
 
 _settings.debug.ignore_all_server_settings = False
 _settings.debug.local_settings_overrides = []

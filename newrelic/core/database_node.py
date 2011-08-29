@@ -60,16 +60,16 @@ class DatabaseNode(_DatabaseNode):
 
         yield newrelic.core.metric.TimeMetric(name='Database/all',
             scope='', overflow=None, forced=True, duration=self.duration,
-            exclusive=None)
+            exclusive=self.exclusive)
 
         if root.type == 'WebTransaction':
             yield newrelic.core.metric.TimeMetric(name='Database/allWeb',
                 scope='', overflow=None, forced=True, duration=self.duration,
-                exclusive=None)
+                exclusive=self.exclusive)
         else:
             yield newrelic.core.metric.TimeMetric(name='Database/allOther',
                 scope='', overflow=None, forced=True, duration=self.duration,
-                exclusive=None)
+                exclusive=self.exclusive)
 
         # FIXME The follow is what PHP agent was doing, but it may
         # not sync up with what is now actually required. As example,
@@ -87,39 +87,39 @@ class DatabaseNode(_DatabaseNode):
 
             yield newrelic.core.metric.TimeMetric(name=name, scope='',
                     overflow=overflow, forced=False, duration=self.duration,
-                    exclusive=None)
+                    exclusive=self.exclusive)
 
             yield newrelic.core.metric.TimeMetric(name=name, scope=scope,
                     overflow=overflow, forced=False, duration=self.duration,
-                    exclusive=None)
+                    exclusive=self.exclusive)
 
             name = 'Database/%s' % operation
 
             yield newrelic.core.metric.TimeMetric(name=name,
                 scope='', overflow=None, forced=True, duration=self.duration,
-                exclusive=None)
+                exclusive=self.exclusive)
 
         elif operation in ('show',):
             name = 'Database/%s' % operation
 
             yield newrelic.core.metric.TimeMetric(name=name,
                 scope='', overflow=None, forced=True, duration=self.duration,
-                exclusive=None)
+                exclusive=self.exclusive)
 
         else:
             yield newrelic.core.metric.TimeMetric(name='Database/other',
                 scope='', overflow=None, forced=True, duration=self.duration,
-                exclusive=None)
+                exclusive=self.exclusive)
 
             yield newrelic.core.metric.TimeMetric(name='Database/other/sql',
                 scope='', overflow=None, forced=True, duration=self.duration,
-                exclusive=None)
+                exclusive=self.exclusive)
 
             scope = root.path
 
             yield newrelic.core.metric.TimeMetric(name='Database/other/sql',
                 scope='', overflow=None, forced=True, duration=self.duration,
-                exclusive=None)
+                exclusive=self.exclusive)
 
         # Now for the children.
 

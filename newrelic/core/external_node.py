@@ -19,16 +19,16 @@ class ExternalNode(_ExternalNode):
 
         yield newrelic.core.metric.TimeMetric(name='External/all',
             scope='', overflow=None, forced=True, duration=self.duration,
-            exclusive=None)
+            exclusive=self.exclusive)
 
         if root.type == 'WebTransaction':
             yield newrelic.core.metric.TimeMetric(name='External/allWeb',
                 scope='', overflow=None, forced=True, duration=self.duration,
-                exclusive=None)
+                exclusive=self.exclusive)
         else:
             yield newrelic.core.metric.TimeMetric(name='External/allOther',
                 scope='', overflow=None, forced=True, duration=self.duration,
-                exclusive=None)
+                exclusive=self.exclusive)
 
         # Split the parts out of the URL. Can't use attribute
         # style access and instead must use tuple style access
@@ -43,20 +43,20 @@ class ExternalNode(_ExternalNode):
 
         yield newrelic.core.metric.TimeMetric(name=name, scope='',
                 overflow=None, forced=False, duration=self.duration,
-                exclusive=None)
+                exclusive=self.exclusive)
 
         name = 'External/%s/%s%s' % (host, self.library, path)
         overflow = 'External/*'
 
         yield newrelic.core.metric.TimeMetric(name=name, scope='',
                 overflow=overflow, forced=False, duration=self.duration,
-                exclusive=None)
+                exclusive=self.exclusive)
 
         scope = root.path
 
         yield newrelic.core.metric.TimeMetric(name=name, scope=scope,
                 overflow=overflow, forced=False, duration=self.duration,
-                exclusive=None)
+                exclusive=self.exclusive)
 
         # Now for the children.
 

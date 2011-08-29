@@ -62,8 +62,12 @@ class TransactionNode(_TransactionNode):
             # for a request and wouldn't get removed when metric
             # limit reached.
 
+            #yield newrelic.core.metric.TimeMetric(name='HttpDispatcher',
+            #        scope='', overflow=None, forced=False,
+            #        duration=self.duration, exclusive=None)
+
             yield newrelic.core.metric.TimeMetric(name='HttpDispatcher',
-                    scope='', overflow=None, forced=False,
+                    scope='', overflow=None, forced=True,
                     duration=self.duration, exclusive=None)
 
             # Upstream queue time within any web server front end.

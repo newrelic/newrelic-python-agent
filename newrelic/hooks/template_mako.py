@@ -1,7 +1,7 @@
 import newrelic.api.function_trace
 
 def name_template_render(template, *args, **kwargs):
-    return template.filename or  '--template--'
+    return template.filename or  '<template>'
 
 def instrument(module):
 

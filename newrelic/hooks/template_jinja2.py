@@ -5,7 +5,7 @@ def name_template_render(self, *args, **kwargs):
 
 def name_template_compile(self, source, name=None, filename=None, raw=False,
             defer_init=False):
-    return name or '--template--'
+    return name or '<template>'
 
 def instrument(module):
 

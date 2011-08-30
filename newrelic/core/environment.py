@@ -74,8 +74,8 @@ def environment_settings():
     if not dispatcher and 'gunicorn' in sys.modules:
         dispatcher.append(('Dispatcher', 'gunicorn'))
         gunicorn = sys.modules['gunicorn']
-        if hasattr(gunicorn, 'version'):
-            dispatcher.append(('Dispatcher Version', str(gunicorn.version)))
+        if hasattr(gunicorn, '__version__'):
+            dispatcher.append(('Dispatcher Version', gunicorn.__version__))
 
     env.extend(dispatcher)
 

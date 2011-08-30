@@ -10,14 +10,12 @@ class NormalizationRule(_NormalizationRule):
     def __init__(self, *args, **kwargs):
         self.match_expression_re = re.compile(self.match_expression)
 
-    def match(self, string):
-        max = 1
+    def apply(self, string):
+        count = 1
         if self.replace_all:
-            max = 0
+            count = 0
 
-        result = self.match_expression_re.sub(self.replacement, string, max)
-
-        return (result != string, result)
+        return self.match_expression_re.sub(self.replacement, string, count)
 
 class RulesEngine(object):
 
@@ -58,8 +56,8 @@ class RulesEngine(object):
                     rule_segments = []
 
                 for segment in segments:
-                    rule_matched, rule_segment = rule.match(segment)
-                    matched = matched or rule_matched
+                    rule_segment = rule.apply(segment)
+                    matched = matched or (rule_sement != segment)
                     rule_segments.append(rule_segment)
 
                 if matched:

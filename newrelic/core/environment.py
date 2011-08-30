@@ -60,8 +60,11 @@ def environment_settings():
     dispatcher = []
 
     if not dispatcher and 'mod_wsgi' in sys.modules:
-        dispatcher.append(('Dispatcher', 'Apache/mod_wsgi'))
         mod_wsgi = sys.modules['mod_wsgi']
+        if mod_wsgi.process_group == '':
+            dispatcher.append(('Dispatcher', 'Apache/mod_wsgi (embedded)'))
+        else:
+            dispatcher.append(('Dispatcher', 'Apache/mod_wsgi (daemon)'))
         if hasattr(mod_wsgi, 'version'):
             dispatcher.append(('Dispatcher Version', str(mod_wsgi.version)))
 
@@ -72,7 +75,12 @@ def environment_settings():
             dispatcher.append(('Dispatcher Version', uwsgi.version))
 
     if not dispatcher and 'gunicorn' in sys.modules:
-        dispatcher.append(('Dispatcher', 'gunicorn'))
+        if 'gunicorn.workers.ggevent' in sys.modules:
+            dispatcher.append(('Dispatcher', 'gunicorn (gevent)'))
+        elif 'gunicorn.workers.geventlet' in sys.modules:
+            dispatcher.append(('Dispatcher', 'gunicorn (eventlet)'))
+        else:
+            dispatcher.append(('Dispatcher', 'gunicorn'))
         gunicorn = sys.modules['gunicorn']
         if hasattr(gunicorn, '__version__'):
             dispatcher.append(('Dispatcher Version', gunicorn.__version__))

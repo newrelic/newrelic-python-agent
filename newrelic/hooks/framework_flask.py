@@ -5,6 +5,7 @@ import newrelic.api.function_trace
 import newrelic.api.in_function
 import newrelic.api.pre_function
 import newrelic.api.name_transaction
+import newrelic.api.web_transaction
 
 def wrap_add_url_rule_input(self, rule, endpoint=None, view_func=None,
         **options):
@@ -21,12 +22,14 @@ def wrap_handle_exception(self, e):
 def instrument(module):
 
     if module.__name__ == 'flask.app':
+        newrelic.api.web_transaction.wrap_wsgi_application(
+                module, 'Flask.wsgi_app')
         newrelic.api.in_function.wrap_in_function(
                 module, 'Flask.add_url_rule', wrap_add_url_rule_input)
         newrelic.api.pre_function.wrap_pre_function(
                 module, 'Flask.handle_exception', wrap_handle_exception)
 
-    elif module.__name__ == 'flask':
+    elif module.__name__ == 'flask.templating':
         newrelic.api.function_trace.wrap_function_trace(
                 module, 'render_template')
         newrelic.api.function_trace.wrap_function_trace(

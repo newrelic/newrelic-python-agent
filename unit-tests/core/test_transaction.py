@@ -4,12 +4,6 @@ import unittest
 import time
 import logging
 
-# Need to enable code into full on pure Python mode. Need this for now
-# as by default runs in C code module. The code name is 'julunggul'
-# which is Australia aboriginal word for rainbow snake goddess. :-)
-
-os.environ['NEWRELIC_AGENT_MODE'] = 'julunggul'
-
 import newrelic.core.agent
 
 import newrelic.api.settings

@@ -1,29 +1,66 @@
 import unittest
 import time
 import sys
+import logging
 
 import newrelic.api.settings
-import newrelic.api.log_file
 import newrelic.api.application
 import newrelic.api.transaction
 import newrelic.api.web_transaction
 
+import newrelic.agent
+
+_logger = logging.getLogger('newrelic')
+
 settings = newrelic.api.settings.settings()
-settings.log_file = "%s.log" % __file__
-settings.log_level = newrelic.api.log_file.LOG_VERBOSEDEBUG
+
+settings.host = 'staging-collector.newrelic.com'
+settings.port = 80
+settings.license_key = 'd67afc830dab717fd163bfcb0b8b88423e9a1a3b'
+
+settings.app_name = 'Python Unit Test1'
+
+settings.log_file = '%s.log' % __file__
+settings.log_level = logging.DEBUG
+
 settings.transaction_tracer.transaction_threshold = 0
 
-application = newrelic.api.application.application("UnitTests")
+# Initialise higher level instrumentation layers. Not
+# that they will be used in this test for now.
+
+newrelic.agent.initialize()
+
+# Want to force agent initialisation and connection so
+# we know that data will actually get through to core
+# and not lost because application not activated. We
+# really need a way of saying to the agent that want to
+# wait, either indefinitely or for a set period, when
+# activating the application. Will make this easier.
+
+import newrelic.core.agent
+
+agent = newrelic.core.agent.agent()
+
+name = settings.app_name
+application_settings = agent.application_settings(name)
+
+agent.activate_application(name)
+
+for i in range(10):
+    application_settings = agent.application_settings(name)
+    if application_settings:
+        break
+    time.sleep(0.5)
+
+application = newrelic.api.application.application(settings.app_name)
 
 class WebTransactionTests(unittest.TestCase):
 
     def setUp(self):
-        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                "STARTING - %s" % self._testMethodName)
+        _logger.debug('STARTING - %s' % self._testMethodName)
 
     def tearDown(self):
-        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                "STOPPING - %s" % self._testMethodName)
+        _logger.debug('STOPPING - %s' % self._testMethodName)
 
     def test_inactive(self):
         self.assertEqual(newrelic.api.transaction.transaction(), None)
@@ -34,7 +71,8 @@ class WebTransactionTests(unittest.TestCase):
                 application, environ)
         with transaction:
             self.assertTrue(transaction.enabled)
-            self.assertEqual(transaction.path, environ["REQUEST_URI"])
+            self.assertEqual(transaction.path,
+                    'WebTransaction/Uri' + environ["REQUEST_URI"])
             self.assertEqual(newrelic.api.transaction.transaction(),
                     transaction)
             self.assertFalse(transaction.background_task)
@@ -45,14 +83,16 @@ class WebTransactionTests(unittest.TestCase):
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
-            self.assertEqual(transaction.path, environ["SCRIPT_NAME"])
+            self.assertEqual(transaction.path,
+                 'WebTransaction/Uri' + environ["SCRIPT_NAME"])
 
     def test_path_info_web_transaction(self):
         environ = { "PATH_INFO": "/path_info_web_transaction" }
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
-            self.assertEqual(transaction.path, environ["PATH_INFO"])
+            self.assertEqual(transaction.path,
+                'WebTransaction/Uri' + environ["PATH_INFO"])
 
     def test_script_name_path_info_web_transaction(self):
         environ = { "SCRIPT_NAME": "/script_name_",
@@ -60,15 +100,17 @@ class WebTransactionTests(unittest.TestCase):
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
-            self.assertEqual(transaction.path, environ["SCRIPT_NAME"] + \
-                             environ["PATH_INFO"])
+            self.assertEqual(transaction.path,
+                   "WebTransaction/Uri" + environ["SCRIPT_NAME"] +
+                   environ["PATH_INFO"])
 
     def test_no_path_web_transaction(self):
         environ = {}
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
-            self.assertEqual(transaction.path, "<unknown>")
+            self.assertEqual(transaction.path,
+                "WebTransaction/Uri/<undefined>")
 
     def test_named_web_transaction(self):
         environ = { "REQUEST_URI": "DUMMY" }
@@ -81,7 +123,8 @@ class WebTransactionTests(unittest.TestCase):
             self.assertTrue(transaction.enabled)
             self.assertEqual(newrelic.api.transaction.transaction(),
                     transaction)
-            self.assertEqual(transaction.path, group+'/'+path)
+            self.assertEqual(transaction.path,
+                    'WebTransaction/'+group+'/'+path)
 
     def test_background_web_transaction(self):
         environ = { "REQUEST_URI": "DUMMY" }

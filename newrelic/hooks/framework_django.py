@@ -481,6 +481,16 @@ def instrument(module):
                     module, 'Template.render',
                     name=name_Template_render, group='Template/Render')
 
+        # Wrap methods for rendering of nodes within Django
+        # templates.
+
+        def name_NodeList_render_node(self, node, context):
+            return newrelic.api.object_wrapper.callable_name(node)
+
+        newrelic.api.function_trace.wrap_function_trace(
+                module, 'NodeList.render_node',
+                name=name_NodeList_render_node, group='Function')
+
         # Register template tags for RUM header/footer.
         #
         # XXX This needs to be separated out into a Django
@@ -494,6 +504,18 @@ def instrument(module):
         library.simple_tag(newrelic_browser_timing_header)
         library.simple_tag(newrelic_browser_timing_footer)
         module.libraries['django.templatetags.newrelic'] = library
+
+    elif module.__name__ == 'django.template':
+
+        # Wrap methods for rendering of nodes within Django
+        # templates.
+
+        def name_DebugNodeList_render_node(self, node, context):
+            return newrelic.api.object_wrapper.callable_name(node)
+
+        newrelic.api.function_trace.wrap_function_trace(
+                module, 'DebugNodeList.render_node',
+                name=name_DebugNodeList_render_node, group='Function')
 
     elif module.__name__ == 'django.core.servers.basehttp':
 

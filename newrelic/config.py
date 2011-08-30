@@ -129,15 +129,15 @@ def _raise_configuration_error(section, option=None):
 
 def _process_setting(section, option, getter, mapper):
     try:
-	# The type of a value is dictated by the getter
-	# function supplied.
+        # The type of a value is dictated by the getter
+        # function supplied.
 
         value = getattr(_config_object, getter)(section, option)
 
-	# The getter parsed the value okay but want to
-	# pass this through a mapping function to change
-	# it to internal value suitable for internal
-	# settings object. This is usually one where the
+        # The getter parsed the value okay but want to
+        # pass this through a mapping function to change
+        # it to internal value suitable for internal
+        # settings object. This is usually one where the
         # value was a string.
 
         if mapper:
@@ -693,6 +693,14 @@ def _process_function_trace_configuration():
             function = _config_object.get(section, 'function')
             (module, object_path) = string.splitfields(function, ':', 1)
 
+            # FIXME Temporary work around to exclude Django stuff
+            # that was given as example in early agent configuration
+            # file but now being included by default.
+
+            if function in ['django.template:NodeList.render_node',
+                    'django.template.debug:DebugNodeList.render_node']:
+                  continue
+
             name = None
             group = 'Function'
             interesting = True
@@ -965,6 +973,8 @@ def _process_module_builtin_defaults():
     _process_module_definition('django.core.handlers.wsgi',
             'newrelic.hooks.framework_django')
     _process_module_definition('django.template',
+            'newrelic.hooks.framework_django')
+    _process_module_definition('django.template.debug',
             'newrelic.hooks.framework_django')
     _process_module_definition('django.core.servers.basehttp',
             'newrelic.hooks.framework_django')

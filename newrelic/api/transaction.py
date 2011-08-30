@@ -1,3 +1,4 @@
+import sys
 import time
 import weakref
 import threading
@@ -20,49 +21,51 @@ class DummyTransaction(object):
 
 class Transaction(object):
 
-    _local = threading.local()
+    _transactions = weakref.WeakValueDictionary()
+
+    @classmethod
+    def _current_thread(cls):
+        greenlet = sys.modules.get('greenlet')
+
+        if greenlet:
+            try:
+                return greenlet.getcurrent()
+            except:
+                pass
+
+        return threading.currentThread()
 
     @classmethod
     def _current_transaction(cls):
-        if hasattr(cls._local, 'current'):
-            return cls._local.current()
+        thread = cls._current_thread()
+        return cls._transactions.get(thread)
 
     @classmethod
     def _save_transaction(cls, transaction):
-        if hasattr(cls._local, 'current'):
+        thread = cls._current_thread()
+        if thread in cls._transactions:
             raise RuntimeError('transaction already active')
 
-        # Cache the transaction using a weakref so that
-        # the transaction can still be deleted and the
-        # destructor can call __exit__() if necessary if
-        # transaction still running. If don't use a
-        # weakref then will have a object reference
-        # cycle and transaction will never be destroyed.
-
-        cls._local.current = weakref.ref(transaction)
+        cls._transactions[thread] = transaction
 
     @classmethod
     def _drop_transaction(cls, transaction):
-        if not hasattr(cls._local, 'current'):
+        thread = cls._current_thread()
+        if not thread in cls._transactions:
             raise RuntimeError('no activate transaction')
 
-        current = cls._local.current()
+        current = cls._transactions.get(thread)
 
-        # If the reference returned from the weakref is
-        # None, then can only assume that __exit__()
-        # wasn't called on transaction prior to it being
-        # deleted. In that case we don't raise an
-        # exception and just remove the cache weakref
-        # object for the current thread.
-
-        if current and transaction != current:
+        if transaction != current:
             raise RuntimeError('not the current transaction')
 
-        del cls._local.current
+        del cls._transactions[thread]
 
     def __init__(self, application, enabled=None):
 
         self._application = application
+
+        self._dead = False
 
         self._state = STATE_PENDING
         self._settings = None
@@ -104,6 +107,7 @@ class Transaction(object):
                 self.enabled = True
 
     def __del__(self):
+        self._dead = True
         if self._state == STATE_RUNNING:
             self.__exit__(None, None, None)
 
@@ -175,7 +179,9 @@ class Transaction(object):
         # thread/coroutine local storage.
 
         self._state = STATE_STOPPED
-        self._drop_transaction(self)
+
+        if not self._dead:
+            self._drop_transaction(self)
 
         if not self._settings:
             return
@@ -322,12 +328,12 @@ class Transaction(object):
 
     def name_transaction(self, name, group=None, priority=None):
 
-	# Always perform this operation even if the transaction
-	# is not active at the time as will be called from
-	# constructor. If path has been frozen do not allow
-	# name/group to be overridden. New priority then must be
-	# same or greater than existing priority. If no priority
-	# always override the existing name/group if not frozen.
+        # Always perform this operation even if the transaction
+        # is not active at the time as will be called from
+        # constructor. If path has been frozen do not allow
+        # name/group to be overridden. New priority then must be
+        # same or greater than existing priority. If no priority
+        # always override the existing name/group if not frozen.
 
         if self._priority is None:
             return

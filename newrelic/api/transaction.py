@@ -21,6 +21,27 @@ class DummyTransaction(object):
 
 class Transaction(object):
 
+    _requests = 0
+    _requests_lock = threading.Lock()
+
+    @classmethod
+    def _start_request(cls):
+        cls._requests_lock.acquire()
+        try:
+            cls._requests += 1
+            return cls._requests
+        finally:
+            cls._requests_lock.release()
+
+    @classmethod
+    def _stop_request(cls):
+        cls._requests_lock.acquire()
+        try:
+            cls._requests -= 1
+            return cls._requests
+        finally:
+            cls._requests_lock.release()
+
     _transactions = weakref.WeakValueDictionary()
 
     @classmethod
@@ -152,6 +173,14 @@ class Transaction(object):
             self._application.activate()
             return self
 
+        # Record number of concurrent transactions.
+
+        requests = self._start_request()
+
+        self._application.record_metric(
+                'Supportability/Agent/Transaction/Concurrent',
+                requests)
+
         # Record the start time for transaction.
 
         self._start_time = time.time()
@@ -197,6 +226,8 @@ class Transaction(object):
         # Record the end time for transaction.
 
         self._end_time = time.time()
+
+        self._stop_request()
 
         children = self._node_stack.pop()._children
 

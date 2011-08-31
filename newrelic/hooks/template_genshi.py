@@ -19,16 +19,16 @@ class stream_wrapper(object):
 
 class wrap_template(object):
     def __init__(self, wrapped):
-        self.__wrapped = wrapped
+        self._nr_next_object = wrapped
     def __call__(self, *args, **kwargs):
         current_transaction = newrelic.api.transaction.transaction()
         if current_transaction:
-            return stream_wrapper(self.__wrapped(*args, **kwargs),
+            return stream_wrapper(self._nr_next_object(*args, **kwargs),
                                   args[0].filepath)
         else:
-            return self.__wrapped(*args, **kwargs)
+            return self._nr_next_object(*args, **kwargs)
     def __getattr__(self, name):
-        return getattr(self.__wrapped, name)
+        return getattr(self._nr_next_object, name)
 
 def instrument(module):
 

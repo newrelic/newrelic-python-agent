@@ -14,22 +14,22 @@ def name_controller(self, environ, start_response):
 
 class capture_error(object):
     def __init__(self, wrapped):
-        self.__wrapped = wrapped
+        self._nr_next_object = wrapped
     def __call__(self, controller, func, args):
         current_transaction = newrelic.api.transaction.transaction()
         if current_transaction:
             webob_exc = newrelic.api.import_hook.import_module('webob.exc')
             try:
-                return self.__wrapped(controller, func, args)
+                return self._nr_next_object(controller, func, args)
             except webob_exc.HTTPException:
                 raise
             except:
                 current_transaction.notice_error(*sys.exc_info())
                 raise
         else:
-            return self.__wrapped(controller, func, args)
+            return self._nr_next_object(controller, func, args)
     def __getattr__(self, name):
-        return getattr(self.__wrapped, name)
+        return getattr(self._nr_next_object, name)
 
 def instrument(module):
 

@@ -261,7 +261,7 @@ def post_BaseHandler_load_middleware(handler, *args, **kwargs):
 
 class name_RegexURLResolver_resolve_Resolver404(object):
     def __init__(self, wrapped):
-        self.__wrapped = wrapped
+        self._nr_next_object = wrapped
     def __call__(self, *args, **kwargs):
 
         # Captures a Resolver404 exception and names the
@@ -277,16 +277,16 @@ class name_RegexURLResolver_resolve_Resolver404(object):
             Resolver404 = sys.modules[
                     'django.core.urlresolvers'].Resolver404
             try:
-                return self.__wrapped(*args, **kwargs)
+                return self._nr_next_object(*args, **kwargs)
             except Resolver404:
                 txn.name_transaction('404', group='Uri')
                 raise
             except:
                 raise
         else:
-            return self.__wrapped(*args, **kwargs)
+            return self._nr_next_object(*args, **kwargs)
     def __getattr__(self, name):
-        return getattr(self.__wrapped, name)
+        return getattr(self._nr_next_object, name)
 
 def out_RegexURLResolver_resolve(result):
 

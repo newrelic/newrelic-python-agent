@@ -91,22 +91,22 @@ def instrument_gluon_main(module):
 
     class error_serve_controller(object):
         def __init__(self, wrapped):
-            self.__wrapped = wrapped
+            self._nr_next_object = wrapped
         def __call__(self, request, response, session):
             txn = newrelic.api.transaction.transaction()
             if txn:
                 HTTP = newrelic.api.import_hook.import_module('gluon.http').HTTP
                 try:
-                    return self.__wrapped(request, response, session)
+                    return self._nr_next_object(request, response, session)
                 except HTTP, e:
                     raise
                 except:
                     txn.notice_error(*sys.exc_info())
                     raise
             else:
-                return self.__wrapped(request, response, session)
+                return self._nr_next_object(request, response, session)
         def __getattr__(self, name):
-            return getattr(self.__wrapped, name)
+            return getattr(self._nr_next_object, name)
 
     newrelic.api.object_wrapper.wrap_object(
             module, 'serve_controller', error_serve_controller)

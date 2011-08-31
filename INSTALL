@@ -49,7 +49,7 @@ Python agent.
 Copy the "newrelic.ini" configuration file to a directory where your Python
 web applicaton is located.
 
-Modify the configuration and first and replace the string:
+Modify the configuration and first replace the string:
 
     *** REPLACE ME ***
 

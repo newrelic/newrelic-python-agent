@@ -522,16 +522,20 @@ class StatsEngine(object):
         # Insert original error details at start of any new
         # ones to maintain time based order.
 
-        # FIXME Should all accumulated errors be retained.
+        # FIXME Should all accumulated errors be retained
+        # or should they be aged out. For now throw away
+        # the older ones for period that reporting failed.
 
-        self.__transaction_errors[:0] = snapshot.transaction_errors
+        #self.__transaction_errors[:0] = snapshot.transaction_errors
 
         # Insert original sql traces at start of any new
         # ones to maintain time based order.
 
-        # FIXME Should all accumulated sql traces be retained.
+        # FIXME Should all accumulated sql traces be retained
+        # or should they be aged out. For now throw away
+        # the older ones for period that reporting failed.
 
-        self.__sql_traces[:0] = snapshot.sql_traces
+        #self.__sql_traces[:0] = snapshot.sql_traces
 
         # Restore original slow transaction if slower than
         # any newer slow transaction.

@@ -202,7 +202,7 @@ def update_dynamic_settings(settings_object):
 
     transaction_tracer = settings_object.transaction_tracer
 
-    if transaction_tracer.transaction_threshold == 'apdex_f':
+    if transaction_tracer.transaction_threshold is None:
         transaction_tracer.transaction_threshold = settings_object.apdex_f
 
 def create_settings_snapshot(server_side_config={}):

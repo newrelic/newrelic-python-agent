@@ -73,6 +73,9 @@ class FunctionTrace(object):
 
         self._children = []
 
+        self._transaction._build_count += 1
+        self._transaction._build_time += (time.time() - self._end_time)
+
 class FunctionTraceWrapper(object):
 
     def __init__(self, wrapped, name=None, group=None, interesting=True):

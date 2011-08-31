@@ -64,6 +64,9 @@ class MemcacheTrace(object):
 
         self._children = []
 
+        self._transaction._build_count += 1
+        self._transaction._build_time += (time.time() - self._end_time)
+
 class MemcacheTraceWrapper(object):
 
     def __init__(self, wrapped, command):

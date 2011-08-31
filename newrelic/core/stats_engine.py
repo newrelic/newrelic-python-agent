@@ -58,8 +58,8 @@ class TimeStats(list):
     call_count = property(operator.itemgetter(0))
     total_call_time = property(operator.itemgetter(1))
     total_exclusive_call_time = property(operator.itemgetter(2))
-    max_call_time = property(operator.itemgetter(3))
-    min_call_time = property(operator.itemgetter(4))
+    min_call_time = property(operator.itemgetter(3))
+    max_call_time = property(operator.itemgetter(4))
     sum_of_squares = property(operator.itemgetter(5))
 
     def merge_stats(self, other):
@@ -67,8 +67,8 @@ class TimeStats(list):
 
         self[1] += other[1]
         self[2] += other[2]
-        self[3] = max(self[3], other[3])
-        self[4] = self[0] and min(self[4], other[4]) or other[4]
+        self[3] = self[0] and min(self[3], other[3]) or other[3]
+        self[4] = max(self[4], other[4])
         self[5] += other[5]
 
 	# Must update the call count last as update of the
@@ -91,8 +91,8 @@ class TimeStats(list):
 
         self[1] += duration
         self[2] += exclusive
-        self[3] = max(self[3], duration)
-        self[4] = self[0] and min(self[4], duration) or duration
+        self[3] = self[0] and min(self[3], duration) or duration
+        self[4] = max(self[4], duration)
         self[5] += duration ** 2
 
 	# Must update the call count last as update of the

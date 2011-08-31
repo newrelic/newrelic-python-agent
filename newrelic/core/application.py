@@ -6,6 +6,7 @@ import zlib
 import base64
 import sys
 import logging
+import time
 
 from newrelic.core.remote import NewRelicService
 from newrelic.core.nr_threading import QueueProcessingThread
@@ -124,9 +125,15 @@ class Application(object):
 
     def record_transaction(self, data):
         try:
+            start = time.time()
             self._stats_lock.acquire()
             self._stats_engine.record_transaction(data)
         finally:
+            duration = time.time() - start
+            self._stats_engine.record_value_metric(
+                    newrelic.core.metric.ValueMetric(
+                    name='Supportability/Agent/Transaction/RecordingTime',
+                    value=duration))
             self._stats_lock.release()
 
     def force_harvest(self):

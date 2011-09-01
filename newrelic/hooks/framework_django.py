@@ -261,7 +261,18 @@ def post_BaseHandler_load_middleware(handler, *args, **kwargs):
 
 class name_RegexURLResolver_resolve_Resolver404(object):
     def __init__(self, wrapped):
+
+        # FIXME For some reason this object is getting wrapped
+        # with a function trace when it should be wrapping it
+        # internally. Add the next/last object magic so its
+        # name doesn't appear, but means wrapped shows twice
+        # in transaction trace.
+
+        newrelic.api.object_wrapper.update_wrapper(self, wrapped)
         self._nr_next_object = wrapped
+        if not hasattr(self, '_nr_last_object'):
+            self._nr_last_object = wrapped
+
     def __call__(self, *args, **kwargs):
 
         # Captures a Resolver404 exception and names the

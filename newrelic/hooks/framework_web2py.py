@@ -91,7 +91,10 @@ def instrument_gluon_main(module):
 
     class error_serve_controller(object):
         def __init__(self, wrapped):
+            newrelic.api.object_wrapper.update_wrapper(self, wrapped)
             self._nr_next_object = wrapped
+            if not hasattr(self, '_nr_last_object'):
+                self._nr_last_object = wrapped
         def __call__(self, request, response, session):
             txn = newrelic.api.transaction.transaction()
             if txn:

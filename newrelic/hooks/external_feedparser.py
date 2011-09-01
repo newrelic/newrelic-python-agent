@@ -7,7 +7,10 @@ import newrelic.api.external_trace
 
 class capture_external_trace(object):
     def __init__(self, wrapped):
+        newrelic.api.object_wrapper.update_wrapper(self, wrapped)
         self._nr_next_object = wrapped
+        if not hasattr(self, '_nr_last_object'):
+            self._nr_last_object = wrapped
     def __call__(self, url):
         if url.split(':')[0].lower() in ['http', 'https', 'ftp']:
             current_transaction = newrelic.api.transaction.transaction()

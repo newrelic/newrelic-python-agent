@@ -14,7 +14,10 @@ def name_controller(self, environ, start_response):
 
 class capture_error(object):
     def __init__(self, wrapped):
+        newrelic.api.object_wrapper.update_wrapper(self, wrapped)
         self._nr_next_object = wrapped
+        if not hasattr(self, '_nr_last_object'):
+            self._nr_last_object = wrapped
     def __call__(self, controller, func, args):
         current_transaction = newrelic.api.transaction.transaction()
         if current_transaction:

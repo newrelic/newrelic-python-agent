@@ -57,7 +57,7 @@ class RulesEngine(object):
 
                 for segment in segments:
                     rule_segment = rule.apply(segment)
-                    matched = matched or (rule_sement != segment)
+                    matched = matched or (rule_segment != segment)
                     rule_segments.append(rule_segment)
 
                 if matched:

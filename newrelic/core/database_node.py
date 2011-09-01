@@ -33,6 +33,8 @@ class DatabaseNode(_DatabaseNode):
         # FIXME The output from this should be cached as used
         # in multiple places.
 
+        return 'dummy', 'select'
+
         try:
             parsed_sql = SqlParser(self.sql)
             table = parsed_sql.table

@@ -199,7 +199,8 @@ class Application(object):
 
                 slow_transaction = stats.slow_transaction
                 if stats.slow_transaction:
-                    transaction_trace = slow_transaction.transaction_trace()
+                    transaction_trace = slow_transaction.transaction_trace(
+                            stats)
                     compressed_data = base64.encodestring(
                             zlib.compress(json.dumps(transaction_trace)))
                     trace_data = [[transaction_trace.root.start_time,

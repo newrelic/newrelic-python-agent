@@ -9,6 +9,7 @@ import operator
 import copy
 
 import newrelic.core.metric
+import newrelic.core.database_utils
 
 class ApdexStats(list):
 
@@ -135,6 +136,7 @@ class StatsEngine(object):
         self.__transaction_errors = []
         self.__sql_traces = []
         self.__metric_ids = {}
+        self.__sql_table = {}
 
     @property
     def slow_transaction(self):
@@ -392,7 +394,7 @@ class StatsEngine(object):
 	# lesser time. Such metrics get reported into the performance
         # breakdown tab for specific web transactions.
 
-        self.record_apdex_metrics(transaction.apdex_metrics())
+        self.record_apdex_metrics(transaction.apdex_metrics(self))
 
         minimum = transaction_metrics.overflow_minimum
         maximum = transaction_metrics.overflow_maximum
@@ -400,7 +402,7 @@ class StatsEngine(object):
         threshold = transaction_metrics.overflow_threshold
         threshold = threshold * transaction.duration
 
-        self.record_time_metrics(transaction.time_metrics(),
+        self.record_time_metrics(transaction.time_metrics(self),
                 threshold, minimum, maximum)
 
         # Capture any errors if error collection is enabled.
@@ -418,7 +420,7 @@ class StatsEngine(object):
         # add them into the end of the list.
 
         if transaction_tracer.enabled:
-            self.__sql_traces.extend(transaction.sql_traces())
+            self.__sql_traces.extend(transaction.sql_traces(self))
 
 	# Remember as slowest transaction if transaction tracer
 	# is enabled, it is over the threshold and slower than
@@ -468,6 +470,7 @@ class StatsEngine(object):
         self.__transaction_errors = []
         self.__sql_traces = []
         self.__metric_ids = {}
+        self.__sql_table = {}
 
     def create_snapshot(self):
 	"""Creates a snapshot of the accumulated statistics, error
@@ -546,3 +549,10 @@ class StatsEngine(object):
             self.__slow_transaction = transaction
         elif transaction.duration > self.slow_transaction.duration:
             self.__slow_transaction = transaction
+
+    def parsed_sql(self, sql):
+        if sql in self.__sql_table:
+            return self.__sql_table[sql]
+        result = newrelic.core.database_utils.parsed_sql(sql)
+        self.__sql_table[sql] = result
+        return result

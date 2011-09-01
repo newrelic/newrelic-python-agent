@@ -28,7 +28,7 @@ class TransactionNode(_TransactionNode):
 
     """
 
-    def time_metrics(self):
+    def time_metrics(self, stats):
         """Return a generator yielding the timed metrics for the
         top level web transaction as well as all the child nodes.
 
@@ -117,10 +117,10 @@ class TransactionNode(_TransactionNode):
         # Now for the children.
 
         for child in self.children:
-            for metric in child.time_metrics(self, self):
+            for metric in child.time_metrics(stats, self, self):
                 yield metric
 
-    def apdex_metrics(self):
+    def apdex_metrics(self, stats):
         """Return a generator yielding the apdex metrics for this node.
 
         """
@@ -210,34 +210,34 @@ class TransactionNode(_TransactionNode):
                     start_time=0, path=self.path, message=error.message,
                     type=error.type, parameters=params)
 
-    def sql_traces(self):
+    def sql_traces(self, stats):
         """Return a generator yielding the details for each slow sql
         trace capture during this transaction.
 
         """
 
         for node in self.slow_sql:
-            yield node.sql_trace_node(self)
+            yield node.sql_trace_node(stats, self)
 
-    def trace_node(self, root):
+    def trace_node(self, stats, root):
 
         name = self.path
 
         start_time = newrelic.core.trace_node.node_start_time(root, self)
         end_time = newrelic.core.trace_node.node_end_time(root, self)
-        children = [child.trace_node(root) for child in self.children]
+        children = [child.trace_node(stats, root) for child in self.children]
 
         params = {}
 
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children)
 
-    def transaction_trace(self):
+    def transaction_trace(self, stats):
 
         start_time = newrelic.core.trace_node.root_start_time(self)
         request_params = self.request_params or None
         custom_params = self.custom_params or None
-        trace_node = self.trace_node(self)
+        trace_node = self.trace_node(stats, self)
 
 	# There is an additional trace node labelled as 'ROOT'
 	# that needs to be inserted below the root node object

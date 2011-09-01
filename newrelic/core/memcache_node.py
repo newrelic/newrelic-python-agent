@@ -11,7 +11,7 @@ _MemcacheNode = collections.namedtuple('_MemcacheNode',
 
 class MemcacheNode(_MemcacheNode):
 
-    def time_metrics(self, root, parent):
+    def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
         memcache node as well as all the child nodes.
 
@@ -53,10 +53,10 @@ class MemcacheNode(_MemcacheNode):
 	# work.
 
         for child in self.children:
-            for metric in child.time_metrics(root, self):
+            for metric in child.time_metrics(stats, root, self):
                 yield metric
 
-    def trace_node(self, root):
+    def trace_node(self, stats, root):
 
         # Note that it is 'MemCache' here and not 'Memcache'.
 
@@ -64,7 +64,7 @@ class MemcacheNode(_MemcacheNode):
 
         start_time = newrelic.core.trace_node.node_start_time(root, self)
         end_time = newrelic.core.trace_node.node_end_time(root, self)
-        children = [child.trace_node(root) for child in self.children]
+        children = [child.trace_node(stats, root) for child in self.children]
 
         params = None
 

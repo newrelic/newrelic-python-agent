@@ -11,7 +11,7 @@ _ExternalNode = collections.namedtuple('_ExternalNode',
 
 class ExternalNode(_ExternalNode):
 
-    def time_metrics(self, root, parent):
+    def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
         external node as well as all the child nodes.
 
@@ -66,10 +66,10 @@ class ExternalNode(_ExternalNode):
 	# work.
 
         for child in self.children:
-            for metric in child.time_metrics(root, self):
+            for metric in child.time_metrics(stats, root, self):
                 yield metric
 
-    def trace_node(self, root):
+    def trace_node(self, stats, root):
 
         # FIXME This duplicates what is done above. Need to cache.
 
@@ -82,7 +82,7 @@ class ExternalNode(_ExternalNode):
 
         start_time = newrelic.core.trace_node.node_start_time(root, self)
         end_time = newrelic.core.trace_node.node_end_time(root, self)
-        children = [child.trace_node(root) for child in self.children]
+        children = [child.trace_node(stats, root) for child in self.children]
 
         params = None
 

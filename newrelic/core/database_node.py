@@ -4,9 +4,6 @@ import urlparse
 import re
 
 import newrelic.core.metric
-import newrelic.lib.sqlparse
-import newrelic.lib.sqlparse.sql
-import newrelic.lib.sqlparse.tokens
 import newrelic.core.trace_node
 import newrelic.core.database_utils
 
@@ -17,34 +14,6 @@ _DatabaseNode = collections.namedtuple('_DatabaseNode',
 
 class DatabaseNode(_DatabaseNode):
 
-    def metric_name(self):
-        # FIXME This isn't actually useful as a standalone
-        # method as we need to generate different numbers of
-        # metrics based on whether table could be derived or
-        # when not what the operation is. See below.
-
-        parsed_sql = SqlParser(self.sql)
-        return "Database/%s/%s" % (parsed_sql.table, parsed_sql.operation)
-
-    def parsed_sql(self):
-        # FIXME The SqlParser class doesn't cope well with badly
-        # formed input data, so need to catch exceptions here.
-
-        # FIXME The output from this should be cached as used
-        # in multiple places.
-
-        return 'dummy', 'select'
-
-        try:
-            parsed_sql = SqlParser(self.sql)
-            table = parsed_sql.table
-            operation = parsed_sql.operation
-        except:
-            table = None
-            operation = None
-
-        return table, operation
-
     @property
     def formatted_sql(self):
         # FIXME Could cache the result.
@@ -54,7 +23,7 @@ class DatabaseNode(_DatabaseNode):
                     name, self.sql)
         return self.sql
 
-    def time_metrics(self, root, parent):
+    def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
         database node as well as all the child nodes.
 
@@ -80,7 +49,7 @@ class DatabaseNode(_DatabaseNode):
         # does appear to generate one. Also, the SQL parser has
         # special cases for 'set', 'create' and 'call' as well.
 
-        table, operation = self.parsed_sql()
+        table, operation = stats.parsed_sql(self.sql)
 
         if operation in ('select', 'update', 'insert', 'delete'):
             name = 'Database/%s/%s' % (table, operation)
@@ -131,12 +100,12 @@ class DatabaseNode(_DatabaseNode):
 	# work.
 
         for child in self.children:
-            for metric in child.time_metrics(root, self):
+            for metric in child.time_metrics(stats, root, self):
                 yield metric
 
-    def sql_trace_node(self, root):
+    def sql_trace_node(self, stats, root):
 
-        table, operation = self.parsed_sql()
+        table, operation = stats.parsed_sql(self.sql)
 
         # TODO Verify that these are the correct names to use.
         # Could possibly cache this if necessary.
@@ -159,9 +128,9 @@ class DatabaseNode(_DatabaseNode):
 
         # yield ?????
 
-    def trace_node(self, root):
+    def trace_node(self, stats, root):
 
-        table, operation = self.parsed_sql()
+        table, operation = stats.parsed_sql(self.sql)
 
         # TODO Verify that these are the correct names to use.
         # Could possibly cache this if necessary.
@@ -175,7 +144,7 @@ class DatabaseNode(_DatabaseNode):
 
         start_time = newrelic.core.trace_node.node_start_time(root, self)
         end_time = newrelic.core.trace_node.node_end_time(root, self)
-        children = [child.trace_node(root) for child in self.children]
+        children = [child.trace_node(stats, root) for child in self.children]
 
         params = { 'sql': self.formatted_sql }
 
@@ -184,79 +153,3 @@ class DatabaseNode(_DatabaseNode):
 
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children)
-
-# FIXME The SQL parser needs to move to database_utils module. It needs
-# to internally detect exceptions caused by bad input and propogate it
-# back up. Should instead return None for values can't calculate.
-
-class SqlParser:
-    def __init__(self, sql):
-        self.stmt = newrelic.lib.sqlparse.parse(sql)[0]
-        self.operation = self.get_operation()
-        self.table = self.get_table()
-
-    def get_operation(self):
-        ddl = self.stmt.token_next_by_type(0, 
-                     newrelic.lib.sqlparse.tokens.Keyword.DDL)
-        dml = self.stmt.token_next_by_type(0, 
-                     newrelic.lib.sqlparse.tokens.Keyword.DML)
-        if ddl and not dml:
-            return ddl.value.lower()
-        elif dml and not ddl:
-            return dml.value.lower()
-        elif ddl and dml:
-            if self.stmt.token_index(ddl) < self.stmt.token_index(dml):
-                return ddl.value.lower()
-            else:
-                return dml.value.lower()
-        else:
-            keyword = self.stmt.token_next_by_type(0, 
-                     newrelic.lib.sqlparse.tokens.Keyword)
-            return keyword.value.lower()
-
-    def get_table(self):
-        if self.operation == 'select' or self.operation == 'delete':
-            token = self._find_table_token_for(newrelic.lib.sqlparse.tokens.Keyword, 'FROM')
-        elif self.operation == 'update':
-            token = self._find_table_token_for(newrelic.lib.sqlparse.tokens.Keyword.DML, 'UPDATE')
-        elif self.operation == 'set' or self.operation == 'show':
-            token = self._find_table_token_for(newrelic.lib.sqlparse.tokens.Keyword, self.operation.upper())
-        elif self.operation == 'insert':
-            token = self._find_table_token_for(newrelic.lib.sqlparse.tokens.Keyword, 'INTO')
-        elif self.operation == 'create':
-            idx = self._find_idx_for(newrelic.lib.sqlparse.tokens.Keyword.DDL, 'CREATE') 
-            token = self.stmt.token_next_by_type(idx + 1, newrelic.lib.sqlparse.tokens.Keyword)
-        elif self.operation == 'call':
-            self.operation = 'ExecuteProcedure'
-            token = self._find_table_token_for(newrelic.lib.sqlparse.tokens.Keyword, 'CALL')
-        else:
-            token = None
-
-        if token is not None:
-            return self._format_table_token(token)
-
-    def _get_first_identifier_after(self, idx):
-        for token in self.stmt.tokens[idx:]:
-            if token.__class__.__name__ == 'Identifier':
-                return token
-            elif token.__class__.__name__ == 'IdentifierList':
-                first_table_token = token.get_identifiers()[0]
-                return first_table_token
-            elif token.__class__.__name__ == 'Function':
-                return token
-
-    def _format_table_token(self, token):
-        table_name = re.sub('[",`,\[,\]]*', '', token.to_unicode()).lower()
-        if token.__class__.__name__ == 'Function':
-            return re.sub('\(.*', '', table_name)
-        return table_name
-
-    def _find_idx_for(self, ttype, match):
-        node = self.stmt.token_next_match(0, ttype, match)
-        return self.stmt.token_index(node)
-        
-
-    def _find_table_token_for(self, ttype, match):
-        idx = self._find_idx_for(ttype, match)
-        return self._get_first_identifier_after(idx)
-        

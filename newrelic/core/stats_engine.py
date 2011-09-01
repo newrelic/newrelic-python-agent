@@ -136,7 +136,8 @@ class StatsEngine(object):
         self.__transaction_errors = []
         self.__sql_traces = []
         self.__metric_ids = {}
-        self.__sql_table = {}
+        self.__sql_parsed = {}
+        self.__sql_obfuscated = {}
 
     @property
     def slow_transaction(self):
@@ -470,7 +471,7 @@ class StatsEngine(object):
         self.__transaction_errors = []
         self.__sql_traces = []
         self.__metric_ids = {}
-        self.__sql_table = {}
+        self.__sql_parsed = {}
 
     def create_snapshot(self):
 	"""Creates a snapshot of the accumulated statistics, error
@@ -551,8 +552,19 @@ class StatsEngine(object):
             self.__slow_transaction = transaction
 
     def parsed_sql(self, sql):
-        if sql in self.__sql_table:
-            return self.__sql_table[sql]
+        if sql in self.__sql_parsed:
+            return self.__sql_parsed[sql]
         result = newrelic.core.database_utils.parsed_sql(sql)
-        self.__sql_table[sql] = result
+        self.__sql_parsed[sql] = result
+        return result
+
+    def formatted_sql(self, dbapi, format, sql):
+        if format != 'obfuscated':
+            return sql
+        name = dbapi and dbapi.__name__ or None 
+        key = (name, sql)
+        if key in self.__sql_obfuscated:
+            return self.__sql_obfuscated[key]
+        result = newrelic.core.database_utils.obfuscate_sql(name, sql)
+        self.__sql_obfuscated[key] = result
         return result

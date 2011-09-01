@@ -119,7 +119,7 @@ class DatabaseNode(_DatabaseNode):
 
         duration = self.duration
 
-        sql = self.formatted_sql
+        sql = stats.formatted_sql(self.dbapi, self.sql_format, self.sql)
 
         # FIXME This is where we need to generate the data structure,
         # likely a dictionary for holding single sql trace. Believe
@@ -146,7 +146,9 @@ class DatabaseNode(_DatabaseNode):
         end_time = newrelic.core.trace_node.node_end_time(root, self)
         children = [child.trace_node(stats, root) for child in self.children]
 
-        params = { 'sql': self.formatted_sql }
+        sql = stats.formatted_sql(self.dbapi, self.sql_format, self.sql)
+
+        params = { 'sql': sql }
 
         if self.stack_trace:
             params['backtrace'] = self.stack_trace

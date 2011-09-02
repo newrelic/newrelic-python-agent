@@ -472,6 +472,7 @@ class StatsEngine(object):
         self.__sql_traces = []
         self.__metric_ids = {}
         self.__sql_parsed = {}
+        self.__sql_obfuscated = {}
 
     def create_snapshot(self):
 	"""Creates a snapshot of the accumulated statistics, error
@@ -498,6 +499,8 @@ class StatsEngine(object):
         self.__slow_transaction = None
         self.__transaction_errors = []
         self.__sql_traces = []
+        self.__sql_parsed = {}
+        self.__sql_obfuscated = {}
 
         return stats
 

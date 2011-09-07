@@ -516,7 +516,7 @@ def instrument(module):
         library.simple_tag(newrelic_browser_timing_footer)
         module.libraries['django.templatetags.newrelic'] = library
 
-    elif module.__name__ == 'django.template':
+    elif module.__name__ == 'django.template.debug':
 
         # Wrap methods for rendering of nodes within Django
         # templates.

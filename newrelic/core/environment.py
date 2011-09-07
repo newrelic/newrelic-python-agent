@@ -85,6 +85,11 @@ def environment_settings():
         if hasattr(gunicorn, '__version__'):
             dispatcher.append(('Dispatcher Version', gunicorn.__version__))
 
+    if not dispatcher and 'tornado' in sys.modules:
+        dispatcher.append(('Dispatcher', 'tornado'))
+        tornado = sys.modules['tornado']
+        dispatcher.append(('Dispatcher Version', str(tornado.version_info)))
+
     env.extend(dispatcher)
 
     # Module information.

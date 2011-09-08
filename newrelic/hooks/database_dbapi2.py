@@ -7,6 +7,8 @@ def instrument(module):
     class CursorWrapper(object):
         def __init__(self, cursor):
             self.__cursor = cursor
+        def __iter__(self):
+            return iter(self.__cursor)
         def execute(self, *args, **kwargs):
             return newrelic.api.database_trace.DatabaseTraceWrapper(
                     self.__cursor.execute,

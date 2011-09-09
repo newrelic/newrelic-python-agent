@@ -158,8 +158,10 @@ def post_BaseHandler_load_middleware(handler, *args, **kwargs):
         if hasattr(handler, '_request_middleware'):
             request_middleware = []
             for function in handler._request_middleware:
-                wrapper = newrelic.api.name_transaction.NameTransactionWrapper(function)
-                wrapper = newrelic.api.function_trace.FunctionTraceWrapper(wrapper)
+                wrapper = newrelic.api.name_transaction.NameTransactionWrapper(
+                        function, priority=1)
+                wrapper = newrelic.api.function_trace.FunctionTraceWrapper(
+                        wrapper)
                 request_middleware.append(wrapper)
             handler._request_middleware = request_middleware
 
@@ -177,8 +179,10 @@ def post_BaseHandler_load_middleware(handler, *args, **kwargs):
         if hasattr(handler, '_view_middleware'):
             view_middleware = []
             for function in handler._view_middleware:
-                wrapper = newrelic.api.name_transaction.NameTransactionWrapper(function)
-                wrapper = newrelic.api.function_trace.FunctionTraceWrapper(wrapper)
+                wrapper = newrelic.api.name_transaction.NameTransactionWrapper(
+                        function, priority=1)
+                wrapper = newrelic.api.function_trace.FunctionTraceWrapper(
+                        wrapper)
                 view_middleware.append(wrapper)
             handler._view_middleware = view_middleware
 
@@ -196,7 +200,8 @@ def post_BaseHandler_load_middleware(handler, *args, **kwargs):
         if hasattr(handler, '_template_response_middleware'):
             template_response_middleware = []
             for function in handler._template_response_middleware:
-                wrapper = newrelic.api.function_trace.FunctionTraceWrapper(function)
+                wrapper = newrelic.api.function_trace.FunctionTraceWrapper(
+                        function)
                 template_response_middleware.append(wrapper)
             handler._template_response_middleware = template_response_middleware
 
@@ -208,7 +213,8 @@ def post_BaseHandler_load_middleware(handler, *args, **kwargs):
         if hasattr(handler, '_response_middleware'):
             response_middleware = []
             for function in handler._response_middleware:
-                wrapper = newrelic.api.function_trace.FunctionTraceWrapper(function)
+                wrapper = newrelic.api.function_trace.FunctionTraceWrapper(
+                        function)
                 response_middleware.append(wrapper)
             handler._response_middleware = response_middleware
 
@@ -223,8 +229,10 @@ def post_BaseHandler_load_middleware(handler, *args, **kwargs):
         if hasattr(handler, '_exception_middleware'):
             exception_middleware = []
             for function in handler._exception_middleware:
-                wrapper = newrelic.api.name_transaction.NameTransactionWrapper(function)
-                wrapper = newrelic.api.function_trace.FunctionTraceWrapper(wrapper)
+                wrapper = newrelic.api.name_transaction.NameTransactionWrapper(
+                        function, priority=1)
+                wrapper = newrelic.api.function_trace.FunctionTraceWrapper(
+                        wrapper)
                 exception_middleware.append(wrapper)
             handler._exception_middleware = exception_middleware
 
@@ -336,14 +344,16 @@ def out_RegexURLResolver_resolve(result):
 
     if type(result) == type(()):
         callback, callback_args, callback_kwargs = result
-        wrapper = newrelic.api.name_transaction.NameTransactionWrapper(callback)
+        wrapper = newrelic.api.name_transaction.NameTransactionWrapper(
+              callback, priority=2)
         wrapper = newrelic.api.function_trace.FunctionTraceWrapper(wrapper)
         wrapper = newrelic.api.error_trace.ErrorTraceWrapper(wrapper,
                 ignore_errors=['django.http.Http404'])
         wrapper = name_RegexURLResolver_resolve_Resolver404(wrapper)
         result = (wrapper, callback_args, callback_kwargs)
     else:
-        wrapper = newrelic.api.name_transaction.NameTransactionWrapper(result.func, None)
+        wrapper = newrelic.api.name_transaction.NameTransactionWrapper(
+              result.func, priority=2)
         wrapper = newrelic.api.function_trace.FunctionTraceWrapper(wrapper)
         wrapper = newrelic.api.error_trace.ErrorTraceWrapper(wrapper,
                 ignore_errors=['django.http.Http404'])
@@ -404,7 +414,8 @@ def in_ServerHandler_run(self, application, **kwargs):
     # Wrap the WSGI application argument on the way in
     # so that run() method gets the wrapped instance.
 
-    return ((newrelic.api.web_transaction.WSGIApplicationWrapper(application)), kwargs)
+    return ((newrelic.api.web_transaction.WSGIApplicationWrapper(
+            application)), kwargs)
 
 def instrument(module):
 

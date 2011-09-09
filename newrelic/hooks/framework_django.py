@@ -495,12 +495,37 @@ def instrument(module):
         # Wrap methods for rendering of nodes within Django
         # templates.
 
-        def name_NodeList_render_node(self, node, context):
-            return newrelic.api.object_wrapper.callable_name(node)
+        #def name_NodeList_render_node(self, node, context):
+        #    return newrelic.api.object_wrapper.callable_name(node)
+        #
+        #newrelic.api.function_trace.wrap_function_trace(
+        #        module, 'NodeList.render_node',
+        #        name=name_NodeList_render_node, group='Function')
 
-        newrelic.api.function_trace.wrap_function_trace(
-                module, 'NodeList.render_node',
-                name=name_NodeList_render_node, group='Function')
+        class name_NodeList_render_node(object):
+            def __init__(self, wrapped):
+                self.__wrapped = wrapped
+            def __get__(self, instance, klass):
+                if instance is None:
+                    return self
+                descriptor = self.__wrapped.__get__(instance, klass)
+                return self.__class__(descriptor)
+            def __call__(self, node, *args, **kwargs):
+                transaction = newrelic.api.transaction.transaction()
+                if transaction:
+                    name = newrelic.api.object_wrapper.callable_name(node)
+                    if name == 'django.template.loader_tags:BlockNode':
+                        with newrelic.api.function_trace.FunctionTrace(
+                                transaction, name=node.name,
+                                group='Template/Block'):
+                            return self.__wrapped(node, *args, **kwargs)
+                    else:
+                        return self.__wrapped(node, *args, **kwargs)
+                else:
+                    return self.__wrapped(node, *args, **kwargs)
+
+        newrelic.api.object_wrapper.wrap_object(module,
+                'NodeList.render_node', name_NodeList_render_node)
 
         # Register template tags for RUM header/footer.
         #
@@ -521,12 +546,37 @@ def instrument(module):
         # Wrap methods for rendering of nodes within Django
         # templates.
 
-        def name_DebugNodeList_render_node(self, node, context):
-            return newrelic.api.object_wrapper.callable_name(node)
+        #def name_DebugNodeList_render_node(self, node, context):
+        #    return newrelic.api.object_wrapper.callable_name(node)
+        #
+        #newrelic.api.function_trace.wrap_function_trace(
+        #        module, 'DebugNodeList.render_node',
+        #        name=name_DebugNodeList_render_node, group='Function')
 
-        newrelic.api.function_trace.wrap_function_trace(
-                module, 'DebugNodeList.render_node',
-                name=name_DebugNodeList_render_node, group='Function')
+        class name_DebugNodeList_render_node(object):
+            def __init__(self, wrapped):
+                self.__wrapped = wrapped
+            def __get__(self, instance, klass):
+                if instance is None:
+                    return self
+                descriptor = self.__wrapped.__get__(instance, klass)
+                return self.__class__(descriptor)
+            def __call__(self, node, *args, **kwargs):
+                transaction = newrelic.api.transaction.transaction()
+                if transaction:
+                    name = newrelic.api.object_wrapper.callable_name(node)
+                    if name == 'django.template.loader_tags:BlockNode':
+                        with newrelic.api.function_trace.FunctionTrace(
+                                transaction, name=node.name,
+                                group='Template/Block'):
+                            return self.__wrapped(node, *args, **kwargs)
+                    else:
+                        return self.__wrapped(node, *args, **kwargs)
+                else:
+                    return self.__wrapped(node, *args, **kwargs)
+
+        newrelic.api.object_wrapper.wrap_object(module,
+                'DebugNodeList.render_node', name_DebugNodeList_render_node)
 
     elif module.__name__ == 'django.core.servers.basehttp':
 

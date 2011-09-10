@@ -1,5 +1,6 @@
 include INSTALL
-include LICENSE
 include VERSION
 include check.py
 include newrelic/newrelic.ini
+include newrelic/LICENSE
+include newrelic/lib/sqlparse/LICENSE

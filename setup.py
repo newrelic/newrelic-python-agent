@@ -59,5 +59,6 @@ setup(
   package_dir = { 'newrelic': '%s/newrelic' % package_directory },
   package_data = { 'newrelic': ['newrelic.ini', 'LICENSE',
                                 'lib/sqlparse/LICENSE'] },
-  extra_path = ("newrelic", "newrelic-%s" % package_version),
+  extra_path = ( "newrelic", "newrelic-%s" % package_version ),
+  scripts = [ 'scripts/newrelic-admin' ],
 )

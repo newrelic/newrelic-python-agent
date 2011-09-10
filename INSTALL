@@ -1,9 +1,12 @@
-New Relic Python Agent
-======================
+Installation Instructions
+=========================
 
-Thanks for trying the New Relic Python agent.
+This file provides a brief set of installation instructions for the Python
+agent. Also see the New Relic support site at:
 
-(C) Copyright 2010-2011 New Relic Inc. All rights reserved.
+    http://support.newrelic.com/help/kb/python/new-relic-for-python
+
+for additional information.
 
 
 Note to BETA testers
@@ -25,7 +28,7 @@ New Relic support site, you should at least read the following section.
 To get the New Relic Python agent working you need to perform three steps.
 
     1. Install the New Relic Python package.
-    2. Copy and edit the Python agent configuration file.
+    2. Generate and edit the Python agent configuration file.
     3. Modify the main WSGI script or module for your application.
 
 To install the Python package into your Python installation run:
@@ -39,29 +42,36 @@ If you are using pip you can instead do:
 
     pip install http://host/path/to/newrelic-python-A.B.C.D.tar.gz
 
-replacing the URL with the actual location of the package. This method
-can also be used in conjunction with a pip requirements files.
+replacing the URL with the actual location of the package from our download
+server. This method can also be used in conjunction with a pip requirements
+files.
 
-In the "newrelic" sub directory, you will now find a sample "newrelic.ini"
-configuration file that can be used in conjunction with the Python agent.
+You now need to generate the agent configuration file. To do this, run the
+command:
 
-Copy the "newrelic.ini" configuration file to a directory where your Python
-web applicaton is located.
+    newrelic-admin generate-config LICENSE-KEY newrelic.ini
 
-Modify the configuration and first replace the string:
+When you run this command, replace the argument "LICENSE-KEY" with your
+actual license key for your New Relic account. You can find this in the
+"Support" tab when you are logged into your account.
 
-    *** REPLACE ME ***
+The final argument is the name of an output file to save the result to.
+Here we have used "newrelic.ini" and it should be written to the directory
+you run the command.
 
-associated with the "license_key" entry with the license key for your New
-Relic account. You can find this in the "Support" tab when you are logged
-into your account.
+The "newrelic-admin" command itself should have been installed into the
+"bin" directory associated with your Python installation. That is, the same
+directory where the "python" executable should be located.
 
-Next, uncomment the line:
+As necessary, move the generated "newrelic.ini" configuration file to a
+directory where your Python web applicaton is located.
+
+Now modify the configuration file and first uncomment the line:
 
     log_file = /tmp/newrelic-python-agent.log
 
-setting the location of the log file to somewhere more appropriate but
-where the user your web application runs as can write to.
+and then change the location of the log file to somewhere more appropriate
+but where the user your web application runs as can write to.
 
 Note that if running under Apache/mod_wsgi your application may be running
 as the Apache user which usually has restricted access. You may need to set
@@ -73,10 +83,15 @@ New Relic UI to something more approriate. The current default is:
 
     app_name = Python Application
 
-Before you continue, you can now if you wish validate that the package is
-installed properly and that details in the configuation file are correct by
-doing a command line test. See more detailed instructions for this in later
-section of this file.
+Before you continue, now validate that the package is installed properly
+and that details in the configuation file are correct by doing a command
+line test. This is done by running the command:
+
+    newrelic-admin validate-config newrelic.ini
+
+The final argument should be the path to the agent configuration file you
+just created and edited. See more detailed instructions for this validation
+step in a later section of this file.
 
 Having modified the agent configuration file and optionally validated it by
 running the command line test, you need to next modify the WSGI application
@@ -130,28 +145,18 @@ What Python version can this be used with?
 At the present time Python 2.6 or 2.7 is required.
 
 
-Do I have to install the package?
----------------------------------
-
-No you don't. The directory is laid out such that you could leave the
-unpacked directory in place and instead point "PYTHONPATH", "sys.path", a
-".pth" file or a specific WSGI hosting mechanisms configuration option for
-setting the Python module search path, at the sub directory of this package
-named "newrelic-A.B.C.D" where "A.B.C.D" is the version of this package.
-
-
 How can I test that the install is okay?
 ----------------------------------------
 
 You can quickly test that data can get through to the New Relic UI by
 running the command:
 
-    python check.py /some/path/newrelic.ini
+    newrelic-admin validate-config /some/path/newrelic.ini
 
-The path "/some/path/newrelic.ini" should be replaced with the location
-of the copy of the agent configuration file you made and edited. The
-'python' binary being run should be that for the Python installation you
-installed the New Relic Python package into.
+The path "/some/path/newrelic.ini" should be replaced with the location of
+the agent configuration file you created and edited. The "newrelic-admin"
+command should be that for the Python installation you installed the New
+Relic Python package into.
 
 This command will run a small test harness which will attempt to report
 data to the account corresponding to the license key which you configured

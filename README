@@ -5,7 +5,6 @@ Thanks for trying the New Relic Python agent.
 
 (C) Copyright 2010-2011 New Relic Inc. All rights reserved.
 
-The software may be used pursuant to the licenses as can be found in the
-file 'newrelic/LICENSE'.
-
 See the 'INSTALL' file for installation instructions.
+
+See the 'newrelic/LICENSE' file for the licenses covering this software.

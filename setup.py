@@ -12,17 +12,11 @@ script_directory = os.path.dirname(__file__)
 if not script_directory:
     script_directory = os.getcwd()
 
-config_file = os.path.join(script_directory, 'setup.cfg')
+develop_file = os.path.join(script_directory, 'DEVELOP')
 version_file = os.path.join(script_directory, 'VERSION')
 license_file = os.path.join(script_directory, 'LICENSE')
 
-if os.path.exists(config_file):
-    # Installing from release package.
-
-    package_version = open(version_file, 'r').read().strip()
-    package_directory = '.'
-
-else:
+if os.path.exists(develop_file):
     # Building from source repository.
 
     import newrelic
@@ -34,6 +28,13 @@ else:
     version_file_fds = open(version_file, 'w')
     print >> version_file_fds, package_version
     version_file_fds.close()
+
+else:
+    # Installing from release package.
+
+    package_version = open(version_file, 'r').read().strip()
+    package_directory = '.'
+
 
 packages = [
   "newrelic",

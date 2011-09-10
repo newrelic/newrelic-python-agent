@@ -11,7 +11,7 @@
 
 /VERSION
 
-/newrelic_python.egg-info
+/newrelic.egg-info
 
 /test-env
 /unit-tests/*/test_*.py.log

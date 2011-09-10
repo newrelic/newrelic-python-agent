@@ -5,7 +5,6 @@ try:
     from setuptools import setup
 except:
     from distutils.core import setup
-from distutils.core import setup
 
 copyright = '(C) Copyright 2010-2011 New Relic Inc. All rights reserved.'
 
@@ -13,19 +12,21 @@ script_directory = os.path.dirname(__file__)
 if not script_directory:
     script_directory = os.getcwd()
 
+config_file = os.path.join(script_directory, 'setup.cfg')
 version_file = os.path.join(script_directory, 'VERSION')
-pkg_info_file = os.path.join(script_directory, 'PKG-INFO')
+license_file = os.path.join(script_directory, 'LICENSE')
 
-if os.path.exists(pkg_info_file):
-    # Being executed from released package.
+if os.path.exists(config_file):
+    # Installing from release package.
 
-    package_version = open(version_file).read().strip()
-    package_directory = 'newrelic-%s' % package_version
+    package_version = open(version_file, 'r').read().strip()
+    package_directory = '.'
 
 else:
-    # Being executed from repository package.
+    # Building from source repository.
 
     import newrelic
+
     build_number = os.environ.get('BUILD_NUMBER', '0')
     package_version = "%s.%s" % (newrelic.version, build_number)
     package_directory = '.'
@@ -46,7 +47,7 @@ packages = [
 ]
 
 setup(
-  name = "newrelic-python",
+  name = "newrelic",
   version = package_version,
   description = "Python agent for New Relic",
   author = "New Relic",

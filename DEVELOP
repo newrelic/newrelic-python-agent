@@ -1,0 +1,150 @@
+Local Development
+=================
+
+Now that you have checked out the Python agent package, you are going to
+need a few tools to be able to build it if developing on your local
+machine. These are:
+
+1. A complete installation of Python including sqlite and zlib support.
+
+2. The 'virtualenv' package for Python. This should be installed into
+   the Python installation being used. It is required to setup a Python
+   virtual environment when running unit tests.
+
+If running Ubuntu, to install the additional packages you need you should
+run the following apt-get commands.
+
+   sudo apt-get install g++
+   sudo apt-get install sqlite3 libsqlite3-dev
+   sudo apt-get install zlib1g-dev
+
+For MacOS X you simply need to install XCode.
+
+After that you can then install 'virtualenv'. The tar ball for that can
+be obtained from:
+
+    http://pypi.python.org/pypi/virtualenv
+
+To install it, within the source code for the 'virtualenv' package run:
+
+    python setup.py build
+    sudo python setup.py install
+
+If you want to test locally the scripts for building the Python agent for
+multiple Python versions/variants and creation of the tar balls, see further
+notes under following section on Hudson build boxes.
+
+
+Building The Agent
+==================
+
+To build the Python agent against Python installation found in your PATH
+you can run:
+
+    ./configure
+    make
+
+To install it into the same Python installation, run:
+
+    make install
+
+If this is a system wide Python installation rather than a personal
+installation or Python virtual environment, use 'sudo' as appropriate when
+doing the install.
+
+When finished you can clean up the directory by running:
+
+    make clean
+
+You can do a more complete clean of the directory by running:
+
+    make distclean
+
+This will remove files created from the virgin checkout. You will however
+need to rerun the 'configure' command.
+
+Note that if you need to use an alternate Python installation than the one
+found in your PATH, then you can use the '--with-python' option to the
+'configure' command. For example:
+
+    ./configure --with-python=/usr/local/python-2.7/bin/python
+
+There is also the '--with-virtualenv' option to indicate where the
+'virtualenv' program got installed. Normally this will be in same 'bin'
+directory as the 'python' executable. As such, if '--with-python' is used
+the configure script will automatically look in the same 'bin' directory
+first so '--with-virtualenv' shouldn't usually be needed.
+
+
+Setting The Agent Version
+=========================
+
+The agent version is keyed off the version attribute in the file:
+
+    newrelic/__init__.py
+
+The final release package built as explained below will also incorporate
+the Hudson build number. If built on a local system, the build number of
+'0' will be used.
+
+
+Running The Unit Tests
+======================
+
+To run the unit tests you can run:
+
+    make unit-tests
+
+This will construct a Python virtual environment in the 'test-env'
+subdirectory and the Python agent package will be installed into that
+rather than into the Python install found by the 'configure' script. This
+avoids polluting your main Python installation with your development
+version of the Python agent just to be able to run tests.
+
+If you need to be able to run a specific unit test, then you can use the
+'python' executable from the 'test-env' Python virtual environment.
+
+    test-env/bin/python unit-tests/api/test_wsgi_applicaton.py -v
+
+
+Hudson Build Boxes
+==================
+
+For the Hudson build boxes we want to always be using the same version of
+Python, but also may need alternate Python installations and variants for
+automated unit testing. To assist in setting these up there is a separate
+set of build scripts to be found in the 'python-tools' directory. Follow
+the instructions in 'python-tools/README' as to how to install all the
+required Python versions/variants for the platform. These can be installed
+globally, especially if setting up the Hudson build boxes to start with, or
+they can be built in place, in which case they will end up being installed
+in the 'python-tools/parts' directory.
+
+Which ever place all the different Python versions/variants are installed,
+you can use the '--with-python' option to the 'configure' script in this
+directory as described above to select a specific one to be used for
+building the Python agent during development. For example:
+
+    ./configure --with-python=python-tools/parts/python-2.7-ucs4/bin/python
+
+
+Build Release Package
+=====================
+
+To build the Python agent for release use the script:
+
+    build.sh
+
+If running this in local development environment, it expects that you have
+run the install script in 'python-tools' directory to install at least the
+primary required Python version for the platform into the local
+'python-tools/parts' directory.
+
+When this same script is run under the Hudson server, it will expect the
+Python versions to be installed under the 'python-tools' subdirectory of the
+home directory of the 'hudson' build account.
+
+The result of running this script will be placed in the 'package' sub
+directory. The directory created will be named according to the release
+version. The directory will be tar'd and gzip'd as well into a file that
+can then be given out.

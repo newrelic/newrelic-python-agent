@@ -1,4 +1,3 @@
-exclude README
 include INSTALL
 include LICENSE
 include VERSION

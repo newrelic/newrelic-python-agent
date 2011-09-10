@@ -134,7 +134,7 @@ The name of the file is important, so if you are going to install a
 configuration for a new platform you should run the following command to
 work out what the filename should be.
 
-    echo `../config.guess | sed -e "s/[0-9.]*$$//"`.cfg
+    echo `config.guess | sed -e "s/[0-9.]*$$//"`.cfg
 
 The 'config.guess' script is the script which typically is supplied with
 any autoconf generated build system which needs to uniquely identify the

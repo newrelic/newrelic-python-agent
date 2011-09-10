@@ -10,10 +10,6 @@ install : all
 sdist : all
 	$(PYTHON) setup.py sdist
 
-hudson-install : all
-	$(PYTHON) setup.py install --no-compile \
-	  --install-platlib=${DESTDIR} --install-purelib=${DESTDIR}
-
 clean :
 	rm -rf dist
 	rm -rf build
@@ -31,7 +27,7 @@ realclean : distclean
 	rm -rf package
 
 install-testing : test-env all
-	test-env/bin/python setup.py install
+	test-env/bin/python setup.py install --force
 
 .PHONY: unit-tests
 .PHONY: unit-tests/api

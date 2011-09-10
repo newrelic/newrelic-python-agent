@@ -42,9 +42,8 @@ If you are using pip you can instead do:
 replacing the URL with the actual location of the package. This method
 can also be used in conjunction with a pip requirements files.
 
-In the same directory as these instructions, you will now find a sample
-"newrelic.ini" configuration file that can be used in conjunction with the
-Python agent.
+In the "newrelic" sub directory, you will now find a sample "newrelic.ini"
+configuration file that can be used in conjunction with the Python agent.
 
 Copy the "newrelic.ini" configuration file to a directory where your Python
 web applicaton is located.

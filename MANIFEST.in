@@ -2,4 +2,4 @@ include INSTALL
 include LICENSE
 include VERSION
 include check.py
-include newrelic.ini
+include newrelic/newrelic.ini

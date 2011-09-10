@@ -57,5 +57,6 @@ setup(
   url = "http://www.newrelic.com",
   packages = packages,
   package_dir = { 'newrelic': '%s/newrelic' % package_directory },
+  package_data = { 'newrelic': ['newrelic.ini'] },
   extra_path = ("newrelic", "newrelic-%s" % package_version),
 )

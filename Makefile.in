@@ -7,23 +7,28 @@ all :
 install : all
 	$(PYTHON) setup.py install --force
 
+sdist : all
+	$(PYTHON) setup.py sdist
+
 hudson-install : all
 	$(PYTHON) setup.py install --no-compile \
 	  --install-platlib=${DESTDIR} --install-purelib=${DESTDIR}
 
 clean :
+	rm -rf dist
 	rm -rf build
-	rm -f unit-tests/*/test_*.py.log
-	rm -f load-tests/test_*.py.log
-	$(RM) config.log config.status
+	rm -rf *.egg-info
 	rm -rf autom4te.cache
+	$(RM) unit-tests/*/test_*.py.log
+	$(RM) load-tests/test_*.py.log
+	$(RM) config.log config.status
 
 distclean : clean
 	$(RM) Makefile
 	rm -rf test-env
 
 realclean : distclean
-	rm -rf hudson-results
+	rm -rf package
 
 install-testing : test-env all
 	test-env/bin/python setup.py install

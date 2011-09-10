@@ -2,13 +2,10 @@ import sys
 import os
 
 try:
-    # Try and use setuptools first. This is
-    # needed if we are being run from pip.
-
     from setuptools import setup
-
 except:
     from distutils.core import setup
+from distutils.core import setup
 
 copyright = '(C) Copyright 2010-2011 New Relic Inc. All rights reserved.'
 
@@ -17,8 +14,9 @@ if not script_directory:
     script_directory = os.getcwd()
 
 version_file = os.path.join(script_directory, 'VERSION')
+pkg_info_file = os.path.join(script_directory, 'PKG-INFO')
 
-if os.path.exists(version_file):
+if os.path.exists(pkg_info_file):
     # Being executed from released package.
 
     package_version = open(version_file).read().strip()
@@ -28,9 +26,13 @@ else:
     # Being executed from repository package.
 
     import newrelic
-    build_number = os.environ.get('HUDSON_BUILD_NUMBER', '0')
+    build_number = os.environ.get('BUILD_NUMBER', '0')
     package_version = "%s.%s" % (newrelic.version, build_number)
     package_directory = '.'
+
+    version_file_fds = open(version_file, 'w')
+    print >> version_file_fds, package_version
+    version_file_fds.close()
 
 packages = [
   "newrelic",
@@ -44,7 +46,7 @@ packages = [
 ]
 
 setup(
-  name = "newrelic",
+  name = "newrelic-python",
   version = package_version,
   description = "Python agent for New Relic",
   author = "New Relic",

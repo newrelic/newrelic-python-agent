@@ -9,13 +9,13 @@
 /build
 /dist
 
-/newrelic.egg-info
+/VERSION
+
+/newrelic_python.egg-info
 
 /test-env
 /unit-tests/*/test_*.py.log
 /load-tests/test_*.py.log
-
-/package
 
 /python-tools/.installed.cfg
 /python-tools/bin/

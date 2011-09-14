@@ -9,6 +9,8 @@ the global defaults or those from local agent configuration.
 
 """
 
+import os
+import logging
 import string
 import copy
 
@@ -38,8 +40,8 @@ _settings.transaction_metrics = TransactionMetricsSettings()
 _settings.rum = RumSettings()
 _settings.debug = DebugSettings()
 
-_settings.log_file = None
-_settings.log_level = 0
+_settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
+_settings.log_level = logging.INFO
 
 _settings.license_key = None
 

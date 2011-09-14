@@ -1,10 +1,13 @@
 """This module sets up use of the Python logging module by the agent. As we
 don't want to rely exclusively on user having configured the logging module
 themselves to capture any logged output we attach our own log file when
-enabled from agent configuration.
+enabled from agent configuration. We also provide ability to fallback to
+using stdout or stderr.
 
 """
 
+import os
+import sys
 import logging
 import threading
 
@@ -23,6 +26,12 @@ _agent_logger.addHandler(_NullHandler())
 _LOG_FORMAT = '%(asctime)s (%(process)d/%(threadName)s) ' \
               '%(name)s %(levelname)s - %(message)s'
 
+
+class FallbackStreamHandler(logging.StreamHandler):
+    def emit(self, record):
+        if len(logging.root.handlers) == 0:
+            return logging.StreamHandler.emit(self, record)
+
 _initialized = False
 
 def initialize():
@@ -35,7 +44,23 @@ def initialize():
     try:
         settings = newrelic.core.config.global_settings()
 
-        if settings.log_file:
+        if settings.log_file == 'stdout':
+            handler = FallbackStreamHandler(sys.stdout)
+
+            _agent_logger.addHandler(handler)
+            _agent_logger.setLevel(settings.log_level)
+
+            _agent_logger.debug('Initializing Python agent stdout logging.')
+
+        elif settings.log_file == 'stderr':
+            handler = FallbackStreamHandler(sys.stderr)
+
+            _agent_logger.addHandler(handler)
+            _agent_logger.setLevel(settings.log_level)
+
+            _agent_logger.debug('Initializing Python agent stderr logging.')
+
+        elif settings.log_file:
             handler = logging.FileHandler(settings.log_file)
 
             formatter = logging.Formatter(_LOG_FORMAT)
@@ -55,6 +80,7 @@ def initialize():
 
             _agent_logger.debug('Initializing Python agent logging.')
             _agent_logger.debug('Log file "%s".' % settings.log_file)
+
     finally:
         _lock.release()
 

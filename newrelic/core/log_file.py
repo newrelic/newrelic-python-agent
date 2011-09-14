@@ -47,6 +47,9 @@ def initialize():
         if settings.log_file == 'stdout':
             handler = FallbackStreamHandler(sys.stdout)
 
+            formatter = logging.Formatter(_LOG_FORMAT)
+            handler.setFormatter(formatter)
+
             _agent_logger.addHandler(handler)
             _agent_logger.setLevel(settings.log_level)
 
@@ -54,6 +57,9 @@ def initialize():
 
         elif settings.log_file == 'stderr':
             handler = FallbackStreamHandler(sys.stderr)
+
+            formatter = logging.Formatter(_LOG_FORMAT)
+            handler.setFormatter(formatter)
 
             _agent_logger.addHandler(handler)
             _agent_logger.setLevel(settings.log_level)
@@ -65,15 +71,6 @@ def initialize():
 
             formatter = logging.Formatter(_LOG_FORMAT)
             handler.setFormatter(formatter)
-
-            # TODO Have to check how log levels play out
-            # when user also capturing in own log file. We
-            # may not be able to set level on 'newrelic'
-            # logger as that may be only place for user to
-            # override it. We may need to separately set it
-            # on each of our nested loggers, ie.,
-            # 'newrelic.core', 'newrelic.api' and
-            # 'newrelic.config'.
 
             _agent_logger.addHandler(handler)
             _agent_logger.setLevel(settings.log_level)

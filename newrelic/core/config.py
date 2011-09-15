@@ -41,9 +41,24 @@ _settings.rum = RumSettings()
 _settings.debug = DebugSettings()
 
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
-_settings.log_level = logging.INFO
 
-_settings.license_key = None
+_LOG_LEVEL = {
+    'ERROR' : logging.ERROR,
+    'WARNING': logging.WARNING,
+    'INFO' : logging.INFO,
+    'VERBOSE' : logging.INFO,
+    'DEBUG' : logging.DEBUG,
+    'VERBOSEDEBUG': logging.DEBUG,
+}
+
+_settings.log_level = os.environ.get('NEW_RELIC_LOG_LEVEL', 'INFO').upper()
+
+if _settings.log_level in _LOG_LEVEL:
+    _settings.log_level = _LOG_LEVEL[_settings.log_level]
+else:
+    _settings.log_level = logging.INFO
+
+_settings.license_key = os.environ.get('NEW_RELIC_LICENSE_KEY', None)
 
 _settings.ssl = False
 _settings.host = 'collector.newrelic.com'
@@ -54,7 +69,7 @@ _settings.proxy_port = None
 _settings.proxy_user = None
 _settings.proxy_pass = None
 
-_settings.app_name = 'Python Application'
+_settings.app_name = os.environ.get('NEW_RELIC_APP_NAME', 'Python Application')
 
 _settings.monitor_mode = True
 

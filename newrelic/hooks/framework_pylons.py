@@ -14,25 +14,35 @@ def name_controller(self, environ, start_response):
 
 class capture_error(object):
     def __init__(self, wrapped):
-        newrelic.api.object_wrapper.update_wrapper(self, wrapped)
-        self._nr_next_object = wrapped
-        if not hasattr(self, '_nr_last_object'):
-            self._nr_last_object = wrapped
-    def __call__(self, controller, func, args):
+        if type(wrapped) == types.TupleType:
+            (instance, wrapped) = wrapped
+        else:
+            instance = None
+        self.__instance = instance
+        self.__wrapped = wrapped
+
+    def __get__(self, instance, klass):
+        if instance is None:
+            return self
+        descriptor = self.__wrapped.__get__(instance, klass)
+        return self.__class__((instance, descriptor))
+
+    def __call__(self, *args, **kwargs):
         current_transaction = newrelic.api.transaction.transaction()
         if current_transaction:
             webob_exc = newrelic.api.import_hook.import_module('webob.exc')
             try:
-                return self._nr_next_object(controller, func, args)
+                return self.__wrapped(*args, **kwargs)
             except webob_exc.HTTPException:
                 raise
             except:
                 current_transaction.notice_error(*sys.exc_info())
                 raise
         else:
-            return self._nr_next_object(controller, func, args)
+            return self.__wrapped(*args, **kwargs)
+
     def __getattr__(self, name):
-        return getattr(self._nr_next_object, name)
+        return getattr(self.__wrapped, name)
 
 def instrument(module):
 
@@ -44,9 +54,13 @@ def instrument(module):
                 module, 'WSGIController.__call__', name_controller)
         newrelic.api.function_trace.wrap_function_trace(
                 module, 'WSGIController.__call__')
+
+        def name_WSGIController_perform_call(self, func, args):
+            return newrelic.api.object_wrapper.callable_name(func)
+
         newrelic.api.function_trace.wrap_function_trace(
                 module, 'WSGIController._perform_call',
-                (lambda self, func, args: newrelic.api.object_wrapper.callable_name(func)))
+                name_WSGIController_perform_call)
         newrelic.api.object_wrapper.wrap_object(
                 module, 'WSGIController._perform_call', capture_error)
 

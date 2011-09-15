@@ -1,7 +1,5 @@
 import types
 
-from newrelic.api import (wrap_object, transaction, FunctionTraceWrapper)
-
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
 import newrelic.api.function_trace
@@ -19,19 +17,29 @@ class stream_wrapper(object):
 
 class wrap_template(object):
     def __init__(self, wrapped):
-        newrelic.api.object_wrapper.update_wrapper(self, wrapped)
-        self._nr_next_object = wrapped
-        if not hasattr(self, '_nr_last_object'):
-            self._nr_last_object = wrapped
+        if type(wrapped) == types.TupleType:
+            (instance, wrapped) = wrapped
+        else:
+            instance = None
+        self.__instance = instance
+        self.__wrapped = wrapped
+
+    def __get__(self, instance, klass):
+        if instance is None:
+            return self
+        descriptor = self.__wrapped.__get__(instance, klass)
+        return self.__class__((instance, descriptor))
+
     def __call__(self, *args, **kwargs):
         current_transaction = newrelic.api.transaction.transaction()
-        if current_transaction:
-            return stream_wrapper(self._nr_next_object(*args, **kwargs),
-                                  args[0].filepath)
+        if current_transaction and self.__instance:
+            return stream_wrapper(self.__wrapped(*args, **kwargs),
+                                  self.__instance.filepath)
         else:
-            return self._nr_next_object(*args, **kwargs)
+            return self.__wrapped(*args, **kwargs)
+
     def __getattr__(self, name):
-        return getattr(self._nr_next_object, name)
+        return getattr(self.__wrapped, name)
 
 def instrument(module):
 

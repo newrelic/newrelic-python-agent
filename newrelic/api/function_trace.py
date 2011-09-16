@@ -143,6 +143,9 @@ class FunctionTraceWrapper(object):
             if success:
                 manager.__exit__(None, None, None)
 
+        #with FunctionTrace(transaction, name, group, self._nr_interesting):
+        #    return self._nr_next_object(*args, **kwargs)
+
 def function_trace(name=None, group=None, interesting=True):
     def decorator(wrapped):
         return FunctionTraceWrapper(wrapped, name, group, interesting)

@@ -978,6 +978,8 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.framework_django')
     _process_module_definition('django.core.servers.basehttp',
             'newrelic.hooks.framework_django')
+    _process_module_definition('django.template.loader_tags',
+            'newrelic.hooks.framework_django')
 
     _process_module_definition('flask.app',
             'newrelic.hooks.framework_flask')

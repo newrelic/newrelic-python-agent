@@ -388,6 +388,9 @@ class Transaction(object):
         if group is None:
             group = 'Function'
 
+        if priority is not None:
+            self._priority = priority
+
         self._group = group
         self._name = name
 

@@ -40,7 +40,7 @@ If installing into a system wide Python installation remember to use the
 
 If you are using pip you can instead do:
 
-    pip install http://host/path/to/newrelic-python-A.B.C.D.tar.gz
+    pip install http://host/path/to/newrelic-A.B.C.D.tar.gz
 
 replacing the URL with the actual location of the package from our download
 server. This method can also be used in conjunction with a pip requirements

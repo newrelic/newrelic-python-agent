@@ -30,10 +30,6 @@ then
     exit 1
 fi
 
-# Rename the generated tar ball to match naming convention.
-
-mv dist/newrelic-`cat VERSION`.tar.gz dist/newrelic-python-`cat VERSION`.tar.gz
-
 # Display the results of the build.
 
 echo

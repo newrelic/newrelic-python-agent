@@ -342,128 +342,75 @@ def wrap_view_handler(function):
 
     return function
 
-class name_RegexURLResolver_resolve_Resolver404(object):
+class ResolverWrapper(object):
+
+    # Wrapper to be applied to the URL resolver.  Captures a
+    # Resolver404 exception and names the web transaction as a
+    # generic 404 with group 'Uri'. This is to avoid problem of
+    # metric explosion on URLs which didn't actually map to a
+    # valid resource. If there is a 404 handler then this will
+    # get overriden again later so this is just a default for
+    # where no 404 handler. If resolver returns valid result
+    # then wrap the view handler returned. The type of the
+    # result changes across Django versions so need to check and
+    # adapt as necessary.
+
     def __init__(self, wrapped):
+        self.__wrapped = wrapped
 
-        # FIXME For some reason this object is getting wrapped
-        # with a function trace when it should be wrapping it
-        # internally. Add the next/last object magic so its
-        # name doesn't appear, but means wrapped shows twice
-        # in transaction trace.
+    def __getattr__(self, name):
+        return getattr(self.__wrapped, name)
 
-        newrelic.api.object_wrapper.update_wrapper(self, wrapped)
-        self._nr_next_object = wrapped
-        if not hasattr(self, '_nr_last_object'):
-            self._nr_last_object = wrapped
+    def __get__(self, instance, klass):
+        if instance is None:
+            return self
+        descriptor = self.__wrapped.__get__(instance, klass)
+        return self.__class__(descriptor)
 
     def __call__(self, *args, **kwargs):
-
-        # Captures a Resolver404 exception and names the
-        # web transaction as a generic 404 with group
-        # 'Uri'. This is to avoid problem of metric
-        # explosion on URLs which didn't actually map to
-        # a valid resource. If there is a 404 handler then
-        # this will get overriden again later so this is
-        # just a default for where not 404 handler.
-
         transaction = newrelic.api.transaction.transaction()
         if transaction and transaction.active:
             Resolver404 = sys.modules[
                     'django.core.urlresolvers'].Resolver404
             try:
-                return self._nr_next_object(*args, **kwargs)
+                result = self.__wrapped(*args, **kwargs)
+                if type(result) == type(()):
+                    callback, callback_args, callback_kwargs = result
+                    result = (wrap_view_handler(callback),
+                            callback_args, callback_kwargs)
+                else:
+                    result.func = wrap_view_handler(result.func)
+                return result
             except Resolver404:
-                transaction.name_transaction('404', group='Uri')
-                raise
-            except:
+                transaction.name_transaction('404', group='Uri',
+                        priority=2)
                 raise
         else:
-            return self._nr_next_object(*args, **kwargs)
+            return self.__wrapped(*args, **kwargs)
+
+class Resolver404Wrapper(object):
+
+    # Wrapper to be applied to the URL resolver for 404 lookups.
+
+    def __init__(self, wrapped):
+        self.__wrapped = wrapped
+
     def __getattr__(self, name):
-        return getattr(self._nr_next_object, name)
+        return getattr(self.__wrapped, name)
 
-def out_RegexURLResolver_resolve(result):
+    def __get__(self, instance, klass):
+        if instance is None:
+            return self
+        descriptor = self.__wrapped.__get__(instance, klass)
+        return self.__class__(descriptor)
 
-    # The resolve() method is what returns the view
-    # handler to be executed for a specific request. The
-    # format of the data structure which is returned has
-    # changed across Django versions so need to adapt
-    # automatically to which format of data is used.
-
-    if result is None:
-        return result
-
-    transaction = newrelic.api.transaction.transaction()
-    if not transaction:
-        return result
-
-    # We wrap the actual view handler callback to use
-    # its name to name the web transaction, for timing
-    # the call and capturing exceptions. We also have
-    # special case where we name web transaction as a
-    # generic 404 where we get a Resolver404 exception.
-    # For the case of where there is no exception
-    # middleware the exception will be captured and
-    # recorded a second time by the uncaught exception
-    # handler. We can't though rely on just catching
-    # here it though, as the uncaught exception handler
-    # is also used to look out for exceptions in
-    # subsequent middleware as well. So can't avoid
-    # capturing it twice. The duplicate error will at
-    # some point be ignored as the exception type and
-    # description will be the same so ultimately doesn't
-    # matter. We ignore Http404 exceptions here as we
-    # don't want top capture as error details a
-    # legitimate response from a view handler indicating
-    # that the resource mapped by the URL did not exist.
-
-    if type(result) == type(()):
-        callback, callback_args, callback_kwargs = result
-        #wrapper = newrelic.api.name_transaction.NameTransactionWrapper(
-        #      callback, priority=3)
-        #wrapper = newrelic.api.function_trace.FunctionTraceWrapper(wrapper)
-        #wrapper = newrelic.api.error_trace.ErrorTraceWrapper(wrapper,
-        #        ignore_errors=['django.http.Http404'])
-        #wrapper = name_RegexURLResolver_resolve_Resolver404(wrapper)
-        #result = (wrapper, callback_args, callback_kwargs)
-        result = (wrap_view_handler(callback), callback_args, callback_kwargs)
-    else:
-        #wrapper = newrelic.api.name_transaction.NameTransactionWrapper(
-        #      result.func, priority=3)
-        #wrapper = newrelic.api.function_trace.FunctionTraceWrapper(wrapper)
-        #wrapper = newrelic.api.error_trace.ErrorTraceWrapper(wrapper,
-        #        ignore_errors=['django.http.Http404'])
-        #wrapper = name_RegexURLResolver_resolve_Resolver404(wrapper)
-        #result.func = wrapper
-        result.func = wrap_view_handler(result.func)
-
-    return result
-
-def out_RegexURLResolver_resolve404(result):
-
-    # The resolve404() method is what returns a handler
-    # for 404 responses from view handler or middleware.
-
-    if result is None:
-        return
-
-    transaction = newrelic.api.transaction.transaction()
-    if not transaction:
-        return result
-
-    # We wrap the actual handler callback to use its
-    # name to name the web transaction and for timing.
-    # We don't need to wrap it to capture errors as any
-    # errors from this handler always get handled by the
-    # uncaught exception handler.
-
-    callback, param_dict = result
-    wrapper = newrelic.api.name_transaction.NameTransactionWrapper(callback,
-                                                                   priority=2)
-    wrapper = newrelic.api.function_trace.FunctionTraceWrapper(wrapper)
-    result = (wrapper, param_dict)
-
-    return result
+    def __call__(self, *args, **kwargs):
+        transaction = newrelic.api.transaction.transaction()
+        if transaction and transaction.active:
+            callback, param_dict = self.__wrapped(*args, **kwargs)
+            return (wrap_view_handler(callback), param_dict)
+        else:
+            return self.__wrapped(*args, **kwargs)
 
 def instrument_django_core_urlresolvers(module):
 
@@ -478,22 +425,19 @@ def instrument_django_core_urlresolvers(module):
     # a Http404 exception here, it probably is never the
     # case that one can be raised by get_callable().
 
-    newrelic.api.error_trace.wrap_error_trace(module, 'get_callable',
-            ignore_errors=['django.http.Http404'])
+    newrelic.api.error_trace.wrap_error_trace(module,
+            'get_callable', ignore_errors=['django.http.Http404'])
 
-    # Wrap methods which resolves a request to a view
-    # handler. This can be called against a resolver
-    # initialised against a custom URL conf associated
-    # with a specific request, of a resolver which uses
-    # the default URL conf.
+    # Wrap methods which resolves a request to a view handler.
+    # This can be called against a resolver initialised against
+    # a custom URL conf associated with a specific request, or a
+    # resolver which uses the default URL conf.
 
-    newrelic.api.out_function.wrap_out_function(
-            module, 'RegexURLResolver.resolve',
-            out_RegexURLResolver_resolve)
+    newrelic.api.object_wrapper.wrap_object(module,
+            'RegexURLResolver.resolve', ResolverWrapper)
 
-    newrelic.api.out_function.wrap_out_function(
-            module, 'RegexURLResolver.resolve404',
-            out_RegexURLResolver_resolve404)
+    newrelic.api.object_wrapper.wrap_object(module,
+            'RegexURLResolver.resolve404', Resolver404Wrapper)
 
 def instrument_django_template(module):
 

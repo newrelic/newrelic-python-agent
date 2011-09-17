@@ -394,7 +394,7 @@ class Transaction(object):
         self._group = group
         self._name = name
 
-    def notice_error(self, exc, value, tb, params={}):
+    def notice_error(self, exc, value, tb, params={}, ignore_errors=[]):
 
         # Bail out if the transaction is not active.
 
@@ -413,36 +413,35 @@ class Transaction(object):
         name = value.__class__.__name__
 
         if module:
-            path = '%s.%s' % (module, name)
+            fullname = '%s.%s' % (module, name)
         else:
-            path = name
+            fullname = name
 
-        ignore_errors = self._settings.error_collector.ignore_errors
+        if fullname in ignore_errors:
+            return
 
-        if not path in ignore_errors:
-            type = exc.__name__
-            message = value
-            stack_trace = traceback.format_exception(exc, value, tb)
+        if fullname in self._settings.error_collector.ignore_errors:
+            return
 
-            node = newrelic.core.error_node.ErrorNode(
-                    type=exc.__name__,
-                    message=str(value),
-                    stack_trace=traceback.format_exception(exc, value, tb),
-                    custom_params=params,
-                    file_name=None,
-                    line_number=None,
-                    source=None)
+        node = newrelic.core.error_node.ErrorNode(
+                type=exc.__name__,
+                message=str(value),
+                stack_trace=traceback.format_exception(exc, value, tb),
+                custom_params=params,
+                file_name=None,
+                line_number=None,
+                source=None)
 
-            # TODO Errors are recorded in time order. If
-            # there are two exceptions of same time and
-            # different message, the UI displays the
-            # first one. In the PHP agent it was
-            # recording the errors in reverse time order
-            # and so the UI displayed the last one. What
-            # is the the official order in which they
-            # should be sent.
+        # TODO Errors are recorded in time order. If
+        # there are two exceptions of same time and
+        # different message, the UI displays the
+        # first one. In the PHP agent it was
+        # recording the errors in reverse time order
+        # and so the UI displayed the last one. What
+        # is the the official order in which they
+        # should be sent.
 
-            self._errors.append(node)
+        self._errors.append(node)
 
 def transaction():
     return Transaction._current_transaction()

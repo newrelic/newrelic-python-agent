@@ -125,10 +125,10 @@ class FunctionTraceWrapper(object):
         else:
             group = self._nr_group
 
+        """
         try:
             success = True
-            manager = FunctionTrace(transaction, name, group,
-                                    self._nr_interesting)
+            manager = FunctionTrace(transaction, name, group)
             manager.__enter__()
             try:
                 return self._nr_next_object(*args, **kwargs)
@@ -140,8 +140,7 @@ class FunctionTraceWrapper(object):
             if success:
                 manager.__exit__(None, None, None)
 
-        #with FunctionTrace(transaction, name, group, self._nr_interesting):
-        #    return self._nr_next_object(*args, **kwargs)
+        """
 
         with FunctionTrace(transaction, name, group):
             return self._nr_next_object(*args, **kwargs)

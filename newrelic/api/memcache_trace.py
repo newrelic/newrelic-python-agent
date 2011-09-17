@@ -105,6 +105,7 @@ class MemcacheTraceWrapper(object):
         else:
             command = self._nr_command
 
+        """
         try:
             success = True
             manager = MemcacheTrace(transaction, command)
@@ -118,6 +119,10 @@ class MemcacheTraceWrapper(object):
         finally:
             if success:
                 manager.__exit__(None, None, None)
+        """
+
+        with MemcacheTrace(transaction, command):
+            return self._nr_next_object(*args, **kwargs)
 
 def memcache_trace(command):
     def decorator(wrapped):

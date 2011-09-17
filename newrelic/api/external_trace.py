@@ -107,6 +107,7 @@ class ExternalTraceWrapper(object):
         else:
             url = self._nr_url
 
+        """
         try:
             success = True
             manager = ExternalTrace(transaction, self._nr_library, url)
@@ -120,6 +121,10 @@ class ExternalTraceWrapper(object):
         finally:
             if success:
                 manager.__exit__(None, None, None)
+        """
+
+        with ExternalTrace(transaction, self._nr_library, url):
+            return self._nr_next_object(*args, **kwargs)
 
 def external_trace(library, url):
     def decorator(wrapped):

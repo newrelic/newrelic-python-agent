@@ -125,6 +125,7 @@ class DatabaseTraceWrapper(object):
         else:
             sql = self._nr_sql
 
+        """
         try:
             success = True
             manager = DatabaseTrace(transaction, sql, self._nr_dbapi)
@@ -138,6 +139,10 @@ class DatabaseTraceWrapper(object):
         finally:
             if success:
                 manager.__exit__(None, None, None)
+        """
+
+        with DatabaseTrace(transaction, sql, self._nr_dbapi):
+            return self._nr_next_object(*args, **kwargs)
 
 def database_trace(sql, dbapi=None):
     def decorator(wrapped):

@@ -104,14 +104,14 @@ def object_context(object):
     return (mname, path)
 
 def callable_name(object, separator=':'):
-    #if hasattr(object, '_nr_object_path'):
-    #    name = object._nr_object_path
-    #    if name is not None:
-    #        return name
+    if hasattr(object, '_nr_object_path'):
+        name = object._nr_object_path
+        if name is not None:
+            return name
     (module, path) = object_context(object)
     name = "%s%s%s" % (module, separator, path)
-    #try:
-    #    object._nr_object_path = name
-    #except:
-    #    pass
+    try:
+        object._nr_object_path = name
+    except:
+        pass
     return name

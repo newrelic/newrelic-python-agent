@@ -659,14 +659,14 @@ def _process_external_trace_configuration():
 
 # Setup function traces defined in configuration file.
 
-def _function_trace_import_hook(object_path, name, group, interesting):
+def _function_trace_import_hook(object_path, name, group):
     def _instrument(target):
         _logger.debug("wrap function-trace %s" %
-                ((target, object_path, name, group, interesting),))
+                ((target, object_path, name, group),))
 
         try:
             newrelic.api.function_trace.wrap_function_trace(
-                    target, object_path, name, group, interesting)
+                    target, object_path, name, group)
         except:
             _raise_instrumentation_error('function-trace', locals())
 
@@ -703,14 +703,11 @@ def _process_function_trace_configuration():
 
             name = None
             group = 'Function'
-            interesting = True
 
             if _config_object.has_option(section, 'name'):
                 name = _config_object.get(section, 'name')
             if _config_object.has_option(section, 'group'):
                 group = _config_object.get(section, 'group')
-            if _config_object.has_option(section, 'interesting'):
-                interesting = _config_object.getboolean(section, 'interesting')
 
             if name and name.startswith('lambda '):
                 vars = { "callable_name":
@@ -718,10 +715,9 @@ def _process_function_trace_configuration():
                 name = eval(name, vars)
 
             _logger.debug("register function-trace %s" %
-                    ((module, object_path, name, group, interesting),))
+                    ((module, object_path, name, group),))
 
-            hook = _function_trace_import_hook(object_path, name,
-                                               group, interesting)
+            hook = _function_trace_import_hook(object_path, name, group)
             newrelic.api.import_hook.register_import_hook(module, hook)
         except:
             _raise_configuration_error(section)
@@ -887,14 +883,14 @@ def _process_error_trace_configuration():
 
 # Setup function profiler defined in configuration file.
 
-def _function_profile_import_hook(object_path, interesting, depth):
+def _function_profile_import_hook(object_path, depth):
     def _instrument(target):
         _logger.debug("wrap function-profile %s" %
-                ((target, object_path, interesting, depth),))
+                ((target, object_path, depth),))
 
         try:
             newrelic.api.profile_trace.wrap_function_profile(target,
-                    object_path, interesting, depth)
+                    object_path, depth)
         except:
             _raise_instrumentation_error('function-profile', locals())
 
@@ -921,20 +917,15 @@ def _process_function_profile_configuration():
             function = _config_object.get(section, 'function')
             (module, object_path) = string.splitfields(function, ':', 1)
 
-            interesting = False
             depth = 5
 
-            if _config_object.has_option(section, 'interesting'):
-                interesting = _config_object.getboolean(section,
-                                                        'interesting')
             if _config_object.has_option(section, 'depth'):
                 depth = _config_object.getint(section, 'depth')
 
             _logger.debug("register function-profile %s" %
-                    ((module, object_path, interesting, depth),))
+                    ((module, object_path, depth),))
 
-            hook = _function_profile_import_hook(object_path,
-                                                 interesting, depth)
+            hook = _function_profile_import_hook(object_path, depth)
             newrelic.api.import_hook.register_import_hook(module, hook)
         except:
             _raise_configuration_error(section)

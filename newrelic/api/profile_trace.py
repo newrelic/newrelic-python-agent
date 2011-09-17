@@ -15,9 +15,8 @@ import newrelic.api.function_trace
 
 class FunctionProfile(object):
 
-    def __init__(self, interesting, depth):
+    def __init__(self, depth):
         self.function_traces = []
-        self.interesting = interesting
         self.depth = depth
 
     def __call__(self, frame, event, arg):
@@ -55,8 +54,7 @@ class FunctionProfile(object):
                         (func_line_no, func_filename)
 
             function_trace = newrelic.api.function_trace.FunctionTrace(
-                    transaction, name=name, group="Python/Profile",
-                    interesting=self.interesting)
+                    transaction, name=name, group="Python/Profile")
             function_trace.__enter__()
             self.function_traces.append(function_trace)
 
@@ -68,7 +66,7 @@ class FunctionProfile(object):
 
 class ProfileTraceWrapper(object):
 
-    def __init__(self, wrapped, interesting=False, depth=5):
+    def __init__(self, wrapped, depth=5):
         if type(wrapped) == types.TupleType:
             (instance, wrapped) = wrapped
         else:
@@ -82,7 +80,6 @@ class ProfileTraceWrapper(object):
         if not hasattr(self, '_nr_last_object'):
             self._nr_last_object = wrapped
 
-        self._nr_interesting = interesting
         self._nr_depth = depth
 
     def __get__(self, instance, klass):
@@ -90,7 +87,7 @@ class ProfileTraceWrapper(object):
             return self
         descriptor = self._nr_next_object.__get__(instance, klass)
         return self.__class__((instance, descriptor), self._nr_name,
-                              self._nr_group, self._nr_interesting)
+                              self._nr_group)
 
     def __call__(self, *args, **kwargs):
         transaction = newrelic.api.transaction.transaction()
@@ -107,18 +104,18 @@ class ProfileTraceWrapper(object):
         if profiler:
             return self._nr_next_object(*args, **kwargs)
 
-        sys.setprofile(FunctionProfile(self._nr_interesting, self._nr_depth))
+        sys.setprofile(FunctionProfile(self._nr_depth))
 
         try:
             return self._nr_next_object(*args, **kwargs)
         finally:
             sys.setprofile(profiler)
 
-def function_profile(interesting=False, depth=5):
+def function_profile(depth=5):
     def decorator(wrapped):
-        return ProfileTraceWrapper(wrapped, interesting, depth)
+        return ProfileTraceWrapper(wrapped, depth)
     return decorator
 
-def wrap_function_profile(module, object_path, interesting=False, depth=5):
+def wrap_function_profile(module, object_path, depth=5):
     newrelic.api.object_wrapper.wrap_object(module, object_path,
-            ProfileTraceWrapper, (interesting, depth))
+            ProfileTraceWrapper, (depth,))

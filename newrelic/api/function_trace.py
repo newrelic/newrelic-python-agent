@@ -10,13 +10,11 @@ import newrelic.api.object_wrapper
 
 class FunctionTrace(object):
 
-    def __init__(self, transaction, name=None, group=None, interesting=True):
+    def __init__(self, transaction, name=None, group=None):
         self._transaction = transaction
 
         self._name = name
         self._group = group
-
-        self._interesting = interesting
 
         self._enabled = False
 
@@ -78,7 +76,7 @@ class FunctionTrace(object):
 
 class FunctionTraceWrapper(object):
 
-    def __init__(self, wrapped, name=None, group=None, interesting=True):
+    def __init__(self, wrapped, name=None, group=None):
         if type(wrapped) == types.TupleType:
             (instance, wrapped) = wrapped
         else:
@@ -94,14 +92,13 @@ class FunctionTraceWrapper(object):
 
         self._nr_name = name
         self._nr_group = group
-        self._nr_interesting = interesting
 
     def __get__(self, instance, klass):
         if instance is None:
             return self
         descriptor = self._nr_next_object.__get__(instance, klass)
         return self.__class__((instance, descriptor), self._nr_name,
-                              self._nr_group, self._nr_interesting)
+                              self._nr_group)
 
     def __call__(self, *args, **kwargs):
         transaction = newrelic.api.transaction.transaction()
@@ -146,12 +143,14 @@ class FunctionTraceWrapper(object):
         #with FunctionTrace(transaction, name, group, self._nr_interesting):
         #    return self._nr_next_object(*args, **kwargs)
 
-def function_trace(name=None, group=None, interesting=True):
+        with FunctionTrace(transaction, name, group):
+            return self._nr_next_object(*args, **kwargs)
+
+def function_trace(name=None, group=None):
     def decorator(wrapped):
-        return FunctionTraceWrapper(wrapped, name, group, interesting)
+        return FunctionTraceWrapper(wrapped, name, group)
     return decorator
 
-def wrap_function_trace(module, object_path, name=None, group=None,
-        interesting=True):
+def wrap_function_trace(module, object_path, name=None, group=None):
     newrelic.api.object_wrapper.wrap_object(module, object_path,
-            FunctionTraceWrapper, (name, group, interesting))
+            FunctionTraceWrapper, (name, group))

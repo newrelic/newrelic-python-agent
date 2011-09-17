@@ -2,7 +2,6 @@ import sys
 import types
 import threading
 
-import newrelic.api.settings
 import newrelic.api.transaction
 import newrelic.api.function_trace
 import newrelic.api.in_function
@@ -14,24 +13,28 @@ import newrelic.api.name_transaction
 import newrelic.api.web_transaction
 import newrelic.api.object_wrapper
 
-def response_middleware_browser_monitoring(request, response):
+# Response middleware for automatically inserting RUM header and
+# footer into HTML response returned by application
 
-    # Only insert RUM JavaScript headers and footers if
-    # enabled locally in configuration file.
-
-    settings = newrelic.api.settings.settings()
-    if not settings.browser_monitoring.auto_instrument:
-        return response
+def browser_timing_middleware(request, response):
 
     # Need to be running within a valid web transaction.
 
-    txn = newrelic.api.transaction.transaction()
-    if not txn:
+    transaction = newrelic.api.transaction.transaction()
+
+    if not transaction or not transaction.active:
+        return response
+
+    # Only insert RUM JavaScript headers and footers if enabled
+    # in configuration.
+
+    if not transaction.settings.browser_monitoring.auto_instrument:
         return response
 
     # Only possible if the content type is text/html.
 
     ctype = response.get('Content-Type', '').lower()
+
     if ctype != "text/html" and not ctype.startswith("text/html;"):
         return response
 
@@ -40,22 +43,20 @@ def response_middleware_browser_monitoring(request, response):
     if response.has_header('Content-Encoding'):
         return response
 
-    # No point continuing if header or footer is empty.
-    # This can occur if RUM is not enabled within the UI
-    # or notification about it being enabled in the UI
-    # has not been received yet as process only just
-    # started.
+    # No point continuing if header or footer is empty. This can
+    # occur if RUM is not enabled within the UI.
 
-    header = txn.browser_timing_header()
-    footer = txn.browser_timing_footer()
+    header = transaction.browser_timing_header()
+    footer = transaction.browser_timing_footer()
+
     if not header or not footer:
         return response
 
     # Make sure we flatten any content first as it could be
-    # stored as a list of strings. Do this by assigning back
-    # onto itself. This is done to avoid having multiple
-    # copies of the string in memory at the same time as we
-    # progress through steps below.
+    # stored as a list of strings in the response object. We
+    # assign it back to the response object to avoid having
+    # multiple copies of the string in memory at the same time
+    # as we progress through steps below.
 
     content = response.content
     response.content = content
@@ -103,194 +104,243 @@ def response_middleware_browser_monitoring(request, response):
             content = ''.join(parts)
             response.content = content
 
-    # By inserting content we are invalidating any ETag,
-    # so need to delete it. Can't assume we can
-    # regenerate it using CommonMiddleware as that may
-    # not have been the source of it.
-
-    #del response['ETag']
-
     return response
 
+def register_browser_timing_middleware(middleware):
+
+    # Inserts our middleware for inserting the RUM header and
+    # footer into the list of middleware. Must check for certain
+    # types of middleware which modify content as must always
+    # come before them. Otherwise is added last so that comes
+    # after any caching middleware. If don't do that then the
+    # inserted header and footer will end up being cached and
+    # then when served up from cache we would add a second
+    # header and footer, something we don't want.
+
+    content_type_modifying_middleware = [
+        'django.middleware.gzip:GZipMiddleware.process_response'
+    ]
+
+    for i in range(len(middleware)):
+        function = middleware[i]
+        name = newrelic.api.object_wrapper.callable_name(function)
+        if name in content_type_modifying_middleware:
+            middleware.insert(i, browser_timing_middleware)
+            break
+    else:
+        middleware.append(browser_timing_middleware)
+
+# Template tag functions for manually inserting RUM header and
+# footer into HTML response. A template tag library for
+# 'newrelic' will be automatically inserted into set of tag
+# libraries when performing step to instrument the middleware.
+
 def newrelic_browser_timing_header():
-    txn = newrelic.api.transaction.transaction()
-    if not txn:
+    transaction = newrelic.api.transaction.transaction()
+    if not transaction:
         return ""
-    return txn.browser_timing_header()
+    return transaction.browser_timing_header()
 
 def newrelic_browser_timing_footer():
-    txn = newrelic.api.transaction.transaction()
-    if not txn:
+    transaction = newrelic.api.transaction.transaction()
+    if not transaction:
         return ""
-    return txn.browser_timing_footer()
+    return transaction.browser_timing_footer()
 
-post_BaseHandler_load_middleware_lock = threading.Lock()
+# Addition of instrumentation for middleware. Can only do this
+# after Django itself has constructed the list of middleware. We
+# also insert the RUM middleware into the response middleware.
 
-def post_BaseHandler_load_middleware(handler, *args, **kwargs):
+middleware_instrumentation_lock = threading.Lock()
 
-    global post_BaseHandler_load_middleware_lock
+class MiddlewareWrapper(object):
 
-    if not post_BaseHandler_load_middleware_lock:
+    # Wrapper to be applied to all the middleware. Records the
+    # time spent in the middleware as separate function node and
+    # also attempts to name the web transaction after the name
+    # of the middleware with success being determined by the
+    # priority.
+
+    def __init__(self, wrapped, priority):
+        self.__name = newrelic.api.object_wrapper.callable_name(wrapped)
+        self.__wrapped = wrapped
+        self.__priority = priority
+
+    def __get__(self, instance, klass):
+        if instance is None:
+            return self
+        descriptor = self.__wrapped.__get__(instance, klass)
+        return self.__class__(descriptor, self.__priority)
+
+    def __getattr__(self, name):
+        return getattr(self.__wrapped, name)
+
+    def __call__(self, *args, **kwargs):
+        transaction = newrelic.api.transaction.transaction()
+        if transaction and transaction.active:
+            transaction.name_transaction(self.__name,
+                    priority=self.__priority)
+            with newrelic.api.function_trace.FunctionTrace(
+                    transaction, name=self.__name):
+                return self.__wrapped(*args, **kwargs)
+        else:
+            return self.__wrapped(*args, **kwargs)
+
+def wrap_middleware(middleware, priority):
+    return [MiddlewareWrapper(function, priority) for function in middleware]
+
+def insert_and_wrap_middleware(handler, *args, **kwargs):
+
+    # Use lock to control access by single thread but also as
+    # flag to indicate if done the initialisation. Lock will be
+    # None if have already done this.
+
+    global middleware_instrumentation_lock
+
+    if not middleware_instrumentation_lock:
         return
 
-    lock = post_BaseHandler_load_middleware_lock
+    lock = middleware_instrumentation_lock
 
     lock.acquire()
 
-    if not post_BaseHandler_load_middleware_lock:
+    # Check again in case two threads grab lock at same time.
+
+    if not middleware_instrumentation_lock:
         lock.release()
         return
 
-    post_BaseHandler_load_middleware_lock = None
+    # Set lock to None so we know have done the initialisation.
+
+    middleware_instrumentation_lock = None
 
     try:
-        # This gets executed after the first time that the
-        # load_middleware() method of BaseHandler is called.
-        # It only gets executed once as don't want to do all
-        # this on every time it is called.
+        # For response middleware, need to add in middleware for
+        # automatically inserting RUM header and footer. This is
+        # done first which means it gets wrapped and timed as
+        # well. Will therefore show in traces however that may
+        # be beneficial as highlights we are doing some magic
+        # and can see if it is taking too long on large
+        # responses.
 
-        class wrap_middleware(object):
-            def __init__(self, wrapped, priority=1):
-                self.__wrapped = wrapped
-                self.__priority = priority
-            def __get__(self, instance, klass):
-                if instance is None:
-                    return self
-                descriptor = self.__wrapped.__get__(instance, klass)
-                return self.__class__(descriptor, self.__priority)
-            def __call__(self, *args, **kwargs):
-                transaction = newrelic.api.transaction.transaction()
-                if transaction:
-                    name = newrelic.api.object_wrapper.callable_name(
-                            self.__wrapped)
-                    transaction.name_transaction(name, self.__priority)
-                    with newrelic.api.function_trace.FunctionTrace(
-                            transaction, name=name):
-                        return self.__wrapped(*args, **kwargs)
-                else:
-                    return self.__wrapped(*args, **kwargs)
+        if hasattr(handler, '_response_middleware'):
+            register_browser_timing_middleware(handler._response_middleware)
 
-        # First go through all the request middleware and
-        # wrap them. Do this to record time within the
-        # middleware, but also to bind web transaction name
-        # based on middleware name. We need to do the latter
-        # even though we bind name again later as the request
-        # middleware can return a response immediately.
+        # Now wrap the middleware to undertake timing and name
+        # the web transaction. The naming is done as lower
+        # priority than that for view handler so view handler
+        # name always takes precedence.
 
         if hasattr(handler, '_request_middleware'):
-            request_middleware = []
-            for function in handler._request_middleware:
-                #wrapper = newrelic.api.name_transaction.NameTransactionWrapper(
-                #        function, priority=1)
-                #wrapper = newrelic.api.function_trace.FunctionTraceWrapper(
-                #        wrapper)
-                #request_middleware.append(wrapper)
-                request_middleware.append(wrap_middleware(function))
-            handler._request_middleware = request_middleware
-
-        # Now go through all the view middleware and wrap
-        # them also. Do this to record time within the
-        # middleware, but again to bind web transaction name
-        # based on middleware name. We need to do the latter
-        # even though we bind name again later as the view
-        # middleware can return a response immediately even
-        # by that point a view handler has been chosen. When
-        # this occurs the view handler is never actually
-        # called and so use the view middleware name for web
-        # transaction name.
+            handler._request_middleware = wrap_middleware(
+                    handler._request_middleware, priority=2)
 
         if hasattr(handler, '_view_middleware'):
-            view_middleware = []
-            for function in handler._view_middleware:
-                #wrapper = newrelic.api.name_transaction.NameTransactionWrapper(
-                #        function, priority=1)
-                #wrapper = newrelic.api.function_trace.FunctionTraceWrapper(
-                #        wrapper)
-                #view_middleware.append(wrapper)
-                view_middleware.append(wrap_middleware(function))
-            handler._view_middleware = view_middleware
-
-        # Now go through all the template response
-        # middleware and wrap them also. Do this to record
-        # time within the middleware. We don't bind web
-        # transaction name to the template response
-        # middleware name as this gets executed after view
-        # handler and we want to preserve the view handler
-        # name as web transaction name. Note that template
-        # response middleware don't exist in older versions
-        # of Django but we only wrap them if the list of
-        # template response middleware exists, so is okay.
+            handler._view_middleware = wrap_middleware(
+                    handler._view_middleware, priority=2)
 
         if hasattr(handler, '_template_response_middleware'):
-            template_response_middleware = []
-            for function in handler._template_response_middleware:
-                wrapper = newrelic.api.function_trace.FunctionTraceWrapper(
-                        function)
-                template_response_middleware.append(wrapper)
-            handler._template_response_middleware = template_response_middleware
-
-        # Now go through all the response middleware and
-        # wrap them also. Do this to record time within the
-        # middleware. Again, we preserve the web transaction
-        # name as that for the view handler.
+            handler._template_response_middleware = wrap_middleware(
+                  handler._template_response_middleware, priority=2)
 
         if hasattr(handler, '_response_middleware'):
-            response_middleware = []
-            for function in handler._response_middleware:
-                wrapper = newrelic.api.function_trace.FunctionTraceWrapper(
-                        function)
-                response_middleware.append(wrapper)
-            handler._response_middleware = response_middleware
-
-        # Now go through all the exception middleware and
-        # wrap them also. Do this to record time within the
-        # middleware and name the web transaction. We do
-        # the latter to highlight when an exception has
-        # occurred and been processed by the the exception
-        # middleware otherwise they bind to the name for
-        # the view handler still and don't show out as well.
+            handler._response_middleware = wrap_middleware(
+                    handler._response_middleware, priority=1)
 
         if hasattr(handler, '_exception_middleware'):
-            exception_middleware = []
-            for function in handler._exception_middleware:
-                #wrapper = newrelic.api.name_transaction.NameTransactionWrapper(
-                #        function, priority=1)
-                #wrapper = newrelic.api.function_trace.FunctionTraceWrapper(
-                #        wrapper)
-                #exception_middleware.append(wrapper)
-                exception_middleware.append(wrap_middleware(function))
-            handler._exception_middleware = exception_middleware
-
-        # Insert response middleware for automatically
-        # inserting end user monitoring header and
-        # footer. We need to be careful we insert this.
-        # We want to insert it before middleware which
-        # changes the content type such a compression
-        # middleware, but it has to go after caching
-        # middleware as otherwise the header/footer will
-        # be captured in the cache. If the header/footer
-        # end up in a cached page, when serving up the
-        # cached page later then we will add
-        # header/footer a second time.
-
-        _content_type_modifying_middleware = [
-            'django.middleware.gzip:GZipMiddleware.process_response'
-        ]
-
-        if hasattr(handler, '_response_middleware'):
-            for i in range(len(handler._response_middleware)):
-                middleware = handler._response_middleware[i]
-                name = newrelic.api.object_wrapper.callable_name(middleware)
-                if name in _content_type_modifying_middleware:
-                    handler._response_middleware.insert(i,
-                            response_middleware_browser_monitoring)
-                    break
-            else:
-                handler._response_middleware.append(
-                      response_middleware_browser_monitoring)
+            handler._exception_middleware = wrap_middleware(
+                    handler._exception_middleware, priority=1)
 
     finally:
         lock.release()
+
+# Post import hooks for modules.
+
+def instrument_django_core_handlers_base(module):
+
+    # Attach a post function to load_middleware() method of
+    # BaseHandler to trigger insertion of browser timing
+    # middleware and wrapping of middleware for timing etc.
+
+    newrelic.api.post_function.wrap_post_function(
+            module, 'BaseHandler.load_middleware',
+            insert_and_wrap_middleware)
+
+def instrument_django_core_handlers_wsgi(module):
+
+    # Wrap the WSGI application entry point. If this is also
+    # wrapped from the WSGI script file or by the WSGI hosting
+    # mechanism then those will take precedence.
+
+    newrelic.api.web_transaction.wrap_wsgi_application(
+            module, 'WSGIHandler.__call__')
+
+    # Attach a pre function to handle_uncaught_exception() of
+    # WSGIHandler so that can capture exception details of any
+    # exception which wasn't caught and dealt with by an
+    # exception middleware. The handle_uncaught_exception()
+    # function produces a 500 error response page and otherwise
+    # suppresses the exception, so last chance to do this as
+    # exception will not propogate up to the WSGI application.
+
+    def uncaught_exception(handler, request, resolver, exc_info):
+
+        # Record the exception details passed into the
+        # function against the current transaction object.
+
+        transaction = newrelic.api.transaction.transaction()
+        if transaction and transaction.active:
+            transaction.notice_error(*exc_info)
+
+    newrelic.api.pre_function.wrap_pre_function(
+            module, 'WSGIHandler.handle_uncaught_exception',
+            uncaught_exception)
+
+class ViewHandlerWrapper(object):
+
+    # Wrapper to be applied to all the view handler. Records the
+    # time spent in the view handler as separate function node,
+    # names the web transaction after the name of the view
+    # handler and captures errors.
+
+    def __init__(self, wrapped):
+        self.__name = newrelic.api.object_wrapper.callable_name(wrapped)
+        self.__wrapped = wrapped
+
+    def __getattr__(self, name):
+        return getattr(self.__wrapped, name)
+
+    def __get__(self, instance, klass):
+        if instance is None:
+            return self
+        descriptor = self.__wrapped.__get__(instance, klass)
+        return self.__class__(descriptor)
+
+    def __call__(self, *args, **kwargs):
+        transaction = newrelic.api.transaction.transaction()
+        if transaction and transaction.active:
+            transaction.name_transaction(self.__name, priority=3)
+            with newrelic.api.function_trace.FunctionTrace(
+                    transaction, name=self.__name):
+                try:
+                    return self.__wrapped(*args, **kwargs)
+                except:
+                    transaction.notice_error(*sys.exc_info(),
+                            ignore_errors=['django.http.Http404'])
+                    raise
+        else:
+            return self.__wrapped(*args, **kwargs)
+
+def wrap_view_handler(function):
+
+    # Ensure we don't wrap the view handler more than once. This
+    # looks like it may occur in cases where the resolver is
+    # called recursively.
+
+    if type(function) is not ViewHandlerWrapper:
+        return ViewHandlerWrapper(function)
+
+    return function
 
 class name_RegexURLResolver_resolve_Resolver404(object):
     def __init__(self, wrapped):
@@ -316,14 +366,14 @@ class name_RegexURLResolver_resolve_Resolver404(object):
         # this will get overriden again later so this is
         # just a default for where not 404 handler.
 
-        txn = newrelic.api.transaction.transaction()
-        if txn:
+        transaction = newrelic.api.transaction.transaction()
+        if transaction and transaction.active:
             Resolver404 = sys.modules[
                     'django.core.urlresolvers'].Resolver404
             try:
                 return self._nr_next_object(*args, **kwargs)
             except Resolver404:
-                txn.name_transaction('404', group='Uri')
+                transaction.name_transaction('404', group='Uri')
                 raise
             except:
                 raise
@@ -343,8 +393,8 @@ def out_RegexURLResolver_resolve(result):
     if result is None:
         return result
 
-    txn = newrelic.api.transaction.transaction()
-    if not txn:
+    transaction = newrelic.api.transaction.transaction()
+    if not transaction:
         return result
 
     # We wrap the actual view handler callback to use
@@ -367,70 +417,25 @@ def out_RegexURLResolver_resolve(result):
     # legitimate response from a view handler indicating
     # that the resource mapped by the URL did not exist.
 
-    Resolver404 = sys.modules['django.core.urlresolvers'].Resolver404
-
-    class wrap_handler(object):
-        def __init__(self, wrapped):
-            self.__wrapped = wrapped
-
-        def __getattr__(self, name):
-            return getattr(self.__wrapped, name)
-
-        def __get__(self, instance, klass):
-            if instance is None:
-                return self
-            descriptor = self.__wrapped.__get__(instance, klass)
-            return self.__class__(descriptor)
-
-        def notice_error(self, transaction, exc, value, tb):
-            module = value.__class__.__module__
-            name = value.__class__.__name__
-            if module:
-                path = '%s.%s' % (module, name)
-            else:
-                path = name
-            if path in ['django.http.Http404']:
-                return
-            transaction.notice_error(exc, value, tb)
-
-        def __call__(self, *args, **kwargs):
-            transaction = newrelic.api.transaction.transaction()
-            if transaction:
-                name = newrelic.api.object_wrapper.callable_name(
-                        self.__wrapped)
-                transaction.name_transaction(name, priority=2)
-                with newrelic.api.function_trace.FunctionTrace(
-                        transaction, name=name):
-                    try:
-                        return self.__wrapped(*args, **kwargs)
-                    except Resolver404:
-                        transaction.name_transaction('404', group='Uri')
-                        raise
-                    except:
-                        self.notice_error(transaction, *sys.exc_info())
-                        raise
-            else:
-                return self.__wrapped(*args, **kwargs)
-
     if type(result) == type(()):
         callback, callback_args, callback_kwargs = result
         #wrapper = newrelic.api.name_transaction.NameTransactionWrapper(
-        #      callback, priority=2)
+        #      callback, priority=3)
         #wrapper = newrelic.api.function_trace.FunctionTraceWrapper(wrapper)
         #wrapper = newrelic.api.error_trace.ErrorTraceWrapper(wrapper,
         #        ignore_errors=['django.http.Http404'])
         #wrapper = name_RegexURLResolver_resolve_Resolver404(wrapper)
         #result = (wrapper, callback_args, callback_kwargs)
-        result = (wrap_handler(callback), callback_args, callback_kwargs)
+        result = (wrap_view_handler(callback), callback_args, callback_kwargs)
     else:
         #wrapper = newrelic.api.name_transaction.NameTransactionWrapper(
-        #      result.func, priority=2)
+        #      result.func, priority=3)
         #wrapper = newrelic.api.function_trace.FunctionTraceWrapper(wrapper)
         #wrapper = newrelic.api.error_trace.ErrorTraceWrapper(wrapper,
         #        ignore_errors=['django.http.Http404'])
         #wrapper = name_RegexURLResolver_resolve_Resolver404(wrapper)
         #result.func = wrapper
-        result.func = wrap_handler(callback)
+        result.func = wrap_view_handler(result.func)
 
     return result
 
@@ -442,8 +447,8 @@ def out_RegexURLResolver_resolve404(result):
     if result is None:
         return
 
-    txn = newrelic.api.transaction.transaction()
-    if not txn:
+    transaction = newrelic.api.transaction.transaction()
+    if not transaction:
         return result
 
     # We wrap the actual handler callback to use its
@@ -453,249 +458,142 @@ def out_RegexURLResolver_resolve404(result):
     # uncaught exception handler.
 
     callback, param_dict = result
-    wrapper = newrelic.api.name_transaction.NameTransactionWrapper(callback)
+    wrapper = newrelic.api.name_transaction.NameTransactionWrapper(callback,
+                                                                   priority=2)
     wrapper = newrelic.api.function_trace.FunctionTraceWrapper(wrapper)
     result = (wrapper, param_dict)
 
     return result
 
-def pre_WSGIHandler_handle_uncaught_exception(handler, request,
-            resolver, exc_info):
+def instrument_django_core_urlresolvers(module):
 
-    # Record the exception details passed into the
-    # function against the current transaction object.
+    # Wrap method which maps a string version of a function
+    # name as used in urls.py pattern so can capture any
+    # exception which is raised during that process.
+    # Normally Django captures import errors at this point
+    # and then reraises a ViewDoesNotExist exception with
+    # details of the original error and traceback being
+    # lost. We thus intercept it here so can capture that
+    # traceback which is otherwise lost. Although we ignore
+    # a Http404 exception here, it probably is never the
+    # case that one can be raised by get_callable().
 
-    txn = newrelic.api.transaction.transaction()
-    if txn:
-        txn.notice_error(*exc_info)
+    newrelic.api.error_trace.wrap_error_trace(module, 'get_callable',
+            ignore_errors=['django.http.Http404'])
 
-def name_Template_render(template, context):
-    
-    # Use the name of the template as held by the
-    # template object itself. This should be a relative
-    # path with the template loader uniquely associated
-    # it with a specific template library. Therefore do
-    # not need to worry about making it absolute as
-    # meaning should be known in the context of the
-    # specific Django site.
+    # Wrap methods which resolves a request to a view
+    # handler. This can be called against a resolver
+    # initialised against a custom URL conf associated
+    # with a specific request, of a resolver which uses
+    # the default URL conf.
 
-    return template.name
+    newrelic.api.out_function.wrap_out_function(
+            module, 'RegexURLResolver.resolve',
+            out_RegexURLResolver_resolve)
 
-def in_ServerHandler_run(self, application, **kwargs):
+    newrelic.api.out_function.wrap_out_function(
+            module, 'RegexURLResolver.resolve404',
+            out_RegexURLResolver_resolve404)
 
-    # Wrap the WSGI application argument on the way in
-    # so that run() method gets the wrapped instance.
+def instrument_django_template(module):
 
-    return ((newrelic.api.web_transaction.WSGIApplicationWrapper(
-            application)), kwargs)
+    # Wrap methods for rendering of Django templates. The name
+    # of the method changed in between Django versions so need
+    # to check for which one we have. The name of the function
+    # trace node is taken from the name of the template. This
+    # should be a relative path with the template loader
+    # uniquely associating it with a specific template library.
+    # Therefore do not need to worry about making it absolute as
+    # meaning should be known in the context of the specific
+    # Django site.
 
-def instrument(module):
+    def template_name(template, *args):
+        return template.name
 
-    if module.__name__ == 'django.core.handlers.base':
+    if hasattr(module.Template, '_render'):
+        newrelic.api.function_trace.wrap_function_trace(
+                module, 'Template._render',
+                name=template_name, group='Template/Render')
+    else:
+        newrelic.api.function_trace.wrap_function_trace(
+                module, 'Template.render',
+                name=template_name, group='Template/Render')
 
-        # Attach a post function to load_middleware() method of
-        # BaseHandler so that we can iterate over the various
-        # middleware and wrap them all with a function trace.
-        # The load_middleware() function can be called more than
-        # once with it returning if it doesn't need to do anything.
-        # We only want to do the wrapping once though so the post
-        # function is flagged to only run once.
+    # Register template tags used for manual insertion of RUM
+    # header and footer.
+    #
+    # TODO This perhaps could be separated out into a Django
+    # application and no longer added automaticaly. Instead
+    # would be up to user to add a New Relic application into
+    # INSTALLED_APPS to get access to the template tag library
+    # for browser monitoring. Note that these don't have to be
+    # installed for auto RUM to work.
 
-        newrelic.api.post_function.wrap_post_function(
-                module, 'BaseHandler.load_middleware',
-                post_BaseHandler_load_middleware)
+    library = module.Library()
+    library.simple_tag(newrelic_browser_timing_header)
+    library.simple_tag(newrelic_browser_timing_footer)
 
-    elif module.__name__ == 'django.core.handlers.wsgi':
+    module.libraries['django.templatetags.newrelic'] = library
 
-        # Wrap the WSGI application entry point. If this is also
-        # wrapped from the WSGI script file or by the WSGI
-        # hosting mechanism then those will take precedence.
+def instrument_django_template_loader_tags(module):
 
-        newrelic.api.web_transaction.wrap_wsgi_application(
-                module, 'WSGIHandler.__call__')
+    # Wrap template block node for timing, naming the node after
+    # the block name as defined in the template rather than
+    # function name.
 
-        # Attach a pre function to handle_uncaught_exception()
-        # of WSGIHandler so that can capture exception details
-        # of any exception which wasn't caught and dealt with by
-        # an exception middleware. The handle_uncaught_exception()
-        # function produces a 500 error response page and
-        # otherwise suppresses the exception, so last chance to
-        # do this as exception will not propogate up to the WSGI
-        # application.
+    class TemplateBlockWrapper(object):
 
-        newrelic.api.pre_function.wrap_pre_function(
-                module, 'WSGIHandler.handle_uncaught_exception',
-                pre_WSGIHandler_handle_uncaught_exception)
+        def __init__(self, wrapped):
+            if type(wrapped) == types.TupleType:
+                (instance, wrapped) = wrapped
+            else:
+                instance = None
+            self.__instance = instance
+            self.__wrapped = wrapped
 
-    elif module.__name__ == 'django.core.urlresolvers':
+        def __getattr__(self, name):
+            return getattr(self.__wrapped, name)
 
-        # Wrap method which maps a string version of a function
-        # name as used in urls.py pattern so can capture any
-        # exception which is raised during that process.
-        # Normally Django captures import errors at this point
-        # and then reraises a ViewDoesNotExist exception with
-        # details of the original error and traceback being
-        # lost. We thus intercept it here so can capture that
-        # traceback which is otherwise lost. Although we ignore
-        # a Http404 exception here, it probably is never the
-        # case that one can be raised by get_callable().
+        def __get__(self, instance, klass):
+            if instance is None:
+                return self
+            descriptor = self.__wrapped.__get__(instance, klass)
+            return self.__class__((instance, descriptor))
 
-        newrelic.api.error_trace.wrap_error_trace(module, 'get_callable',
-                ignore_errors=['django.http.Http404'])
-
-        # Wrap methods which resolves a request to a view
-        # handler. This can be called against a resolver
-        # initialised against a custom URL conf associated
-        # with a specific request, of a resolver which uses
-        # the default URL conf.
-
-        newrelic.api.out_function.wrap_out_function(
-                module, 'RegexURLResolver.resolve',
-                out_RegexURLResolver_resolve)
-
-        newrelic.api.out_function.wrap_out_function(
-                module, 'RegexURLResolver.resolve404',
-                out_RegexURLResolver_resolve404)
-
-    elif module.__name__ == 'django.template':
-
-        # Wrap methods for rendering of Django templates. The
-        # name of the method changed in between Django versions
-        # so need to check for which one we have. The name of
-        # the function trace node is taken from the name of the
-        # template. An explicit group is given so can recognise
-        # this as template rendering time.
-
-        if hasattr(module.Template, '_render'):
-            newrelic.api.function_trace.wrap_function_trace(
-                    module, 'Template._render',
-                    name=name_Template_render, group='Template/Render')
-        else:
-            newrelic.api.function_trace.wrap_function_trace(
-                    module, 'Template.render',
-                    name=name_Template_render, group='Template/Render')
-
-        # Wrap methods for rendering of nodes within Django
-        # templates.
-
-        #def name_NodeList_render_node(self, node, context):
-        #    return newrelic.api.object_wrapper.callable_name(node)
-        #
-        #newrelic.api.function_trace.wrap_function_trace(
-        #        module, 'NodeList.render_node',
-        #        name=name_NodeList_render_node, group='Function')
-
-        class name_NodeList_render_node(object):
-            def __init__(self, wrapped):
-                self.__wrapped = wrapped
-            def __get__(self, instance, klass):
-                if instance is None:
-                    return self
-                descriptor = self.__wrapped.__get__(instance, klass)
-                return self.__class__(descriptor)
-            def __call__(self, node, *args, **kwargs):
-                transaction = newrelic.api.transaction.transaction()
-                if transaction:
-                    name = newrelic.api.object_wrapper.callable_name(node)
-                    if name == 'django.template.loader_tags:BlockNode':
-                        with newrelic.api.function_trace.FunctionTrace(
-                                transaction, name=node.name,
-                                group='Template/Block'):
-                            return self.__wrapped(node, *args, **kwargs)
-                    else:
-                        return self.__wrapped(node, *args, **kwargs)
-                else:
-                    return self.__wrapped(node, *args, **kwargs)
-
-        #newrelic.api.object_wrapper.wrap_object(module,
-        #        'NodeList.render_node', name_NodeList_render_node)
-
-        # Register template tags for RUM header/footer.
-        #
-        # XXX This needs to be separated out into a Django
-        # application and no longer added automaticaly. Instead
-        # would be up to user to add a New Relic application
-        # into INSTALLED_APPS to get access to the template tag
-        # library for browser monitoring. Note that these don't
-        # have to be installed for auto RUM to work.
-
-        library = module.Library()
-        library.simple_tag(newrelic_browser_timing_header)
-        library.simple_tag(newrelic_browser_timing_footer)
-        module.libraries['django.templatetags.newrelic'] = library
-
-    elif module.__name__ == 'django.template.loader_tags':
-
-        class name_BlockNode_render(object):
-            def __init__(self, wrapped):
-                if type(wrapped) == types.TupleType:
-                    (instance, wrapped) = wrapped
-                else:
-                    instance = None
-                self.__instance = instance
-                self.__wrapped = wrapped
-            def __get__(self, instance, klass):
-                if instance is None:
-                    return self
-                descriptor = self.__wrapped.__get__(instance, klass)
-                return self.__class__((instance, descriptor))
-            def __call__(self, *args, **kwargs):
-                transaction = newrelic.api.transaction.transaction()
-                if transaction:
-                    with newrelic.api.function_trace.FunctionTrace(
-                            transaction, name=self.__instance.name,
-                            group='Template/Block'):
-                        return self.__wrapped(*args, **kwargs)
-                else:
+        def __call__(self, *args, **kwargs):
+            transaction = newrelic.api.transaction.transaction()
+            if transaction and transaction.active:
+                with newrelic.api.function_trace.FunctionTrace(
+                        transaction, name=self.__instance.name,
+                        group='Template/Block'):
                     return self.__wrapped(*args, **kwargs)
+            else:
+                return self.__wrapped(*args, **kwargs)
 
-        newrelic.api.object_wrapper.wrap_object(module,
-                'BlockNode.render', name_BlockNode_render)
+    newrelic.api.object_wrapper.wrap_object(module,
+            'BlockNode.render', TemplateBlockWrapper)
 
-    elif module.__name__ == 'django.template.debug':
+def instrument_django_core_servers_basehttp(module):
 
-        # Wrap methods for rendering of nodes within Django
-        # templates.
+    # Allow 'runserver' to be used with Django <= 1.3. To do
+    # this we wrap the WSGI application argument on the way in
+    # so that the run() method gets the wrapped instance.
+    # Although this works, if anyone wants to use it, they will
+    # first need to patch Django as explained in the ticket:
+    #
+    #   https://code.djangoproject.com/ticket/16241
+    #
+    # as the Django 'runserver' is not WSGI compliant due to a
+    # bug in its handling of errors when writing response.
+    #
+    # TODO Later versions of Django use the wsgiref server
+    # instead which will likely need to be dealt with via
+    # instrumentation of the wsgiref module or some other means.
 
-        #def name_DebugNodeList_render_node(self, node, context):
-        #    return newrelic.api.object_wrapper.callable_name(node)
-        #
-        #newrelic.api.function_trace.wrap_function_trace(
-        #        module, 'DebugNodeList.render_node',
-        #        name=name_DebugNodeList_render_node, group='Function')
+    def wrap_wsgi_application_entry_point(self, application, **kwargs):
+        return ((newrelic.api.web_transaction.WSGIApplicationWrapper(
+                application)), kwargs)
 
-        class name_DebugNodeList_render_node(object):
-            def __init__(self, wrapped):
-                self.__wrapped = wrapped
-            def __get__(self, instance, klass):
-                if instance is None:
-                    return self
-                descriptor = self.__wrapped.__get__(instance, klass)
-                return self.__class__(descriptor)
-            def __call__(self, node, *args, **kwargs):
-                transaction = newrelic.api.transaction.transaction()
-                if transaction:
-                    name = newrelic.api.object_wrapper.callable_name(node)
-                    if name == 'django.template.loader_tags:BlockNode':
-                        with newrelic.api.function_trace.FunctionTrace(
-                                transaction, name=node.name,
-                                group='Template/Block'):
-                            return self.__wrapped(node, *args, **kwargs)
-                    else:
-                        return self.__wrapped(node, *args, **kwargs)
-                else:
-                    return self.__wrapped(node, *args, **kwargs)
-
-        newrelic.api.object_wrapper.wrap_object(module,
-                'DebugNodeList.render_node', name_DebugNodeList_render_node)
-
-    elif module.__name__ == 'django.core.servers.basehttp':
-
-        # Allow 'runserver' to be used with Django <= 1.3.
-        # Later versions of Django use wsgiref server instead
-        # which will be dealt with via instrumentation of the
-        # wsgiref module instead.
-
-        if hasattr(module.ServerHandler, 'run'):
-            newrelic.api.in_function.wrap_in_function(
-                    module, 'ServerHandler.run', in_ServerHandler_run)
+    if hasattr(module.ServerHandler, 'run'):
+        newrelic.api.in_function.wrap_in_function(module,
+                'ServerHandler.run', wrap_wsgi_application_entry_point)

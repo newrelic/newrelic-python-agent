@@ -967,19 +967,23 @@ def _process_module_definition(target, module, function='instrument'):
 
 def _process_module_builtin_defaults():
     _process_module_definition('django.core.handlers.base',
-            'newrelic.hooks.framework_django')
-    _process_module_definition('django.core.urlresolvers',
-            'newrelic.hooks.framework_django')
+            'newrelic.hooks.framework_django',
+            'instrument_django_core_handlers_base')
     _process_module_definition('django.core.handlers.wsgi',
-            'newrelic.hooks.framework_django')
+            'newrelic.hooks.framework_django',
+            'instrument_django_core_handlers_wsgi')
+    _process_module_definition('django.core.urlresolvers',
+            'newrelic.hooks.framework_django',
+            'instrument_django_core_urlresolvers')
     _process_module_definition('django.template',
-            'newrelic.hooks.framework_django')
-    _process_module_definition('django.template.debug',
-            'newrelic.hooks.framework_django')
-    _process_module_definition('django.core.servers.basehttp',
-            'newrelic.hooks.framework_django')
+            'newrelic.hooks.framework_django',
+            'instrument_django_template')
     _process_module_definition('django.template.loader_tags',
-            'newrelic.hooks.framework_django')
+            'newrelic.hooks.framework_django',
+            'instrument_django_template_loader_tags')
+    _process_module_definition('django.core.servers.basehttp',
+            'newrelic.hooks.framework_django',
+            'instrument_django_core_servers_basehttp')
 
     _process_module_definition('flask.app',
             'newrelic.hooks.framework_flask')

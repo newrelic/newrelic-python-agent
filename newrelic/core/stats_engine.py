@@ -553,7 +553,8 @@ class StatsEngine(object):
 
         if self.slow_transaction is None:
             self.__slow_transaction = transaction
-        elif transaction.duration > self.slow_transaction.duration:
+        elif transaction is not None and \
+                transaction.duration > self.slow_transaction.duration:
             self.__slow_transaction = transaction
 
     def parsed_sql(self, sql):

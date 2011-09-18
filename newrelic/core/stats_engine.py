@@ -506,7 +506,24 @@ class StatsEngine(object):
 
         return stats
 
-    def merge_snapshot(self, snapshot):
+    def create_workarea(self):
+	"""Creates and returns a new empty stats engine object but where
+	the settings, tables of parsed SQL and obfuscated SQL are shared
+	with this instance. This would be used to distill stats from a
+        single web transaction before then merging it back into the parent
+        under a thread lock.
+
+	"""
+
+        stats = StatsEngine()
+
+        stats.__settings = self.__settings
+        stats.__sql_parsed = self.__sql_parsed
+        stats.__sql_obfuscated = self.__sql_obfuscated
+
+        return stats
+
+    def merge_stats(self, snapshot, collect_traces=True, collect_errors=True):
         """Merges back all the data from a snapshot. This would be done
         if the sending of the metric data from the harvest failed and
         wanted to keep accumulating it for subsequent harvest. If failure
@@ -535,7 +552,8 @@ class StatsEngine(object):
         # or should they be aged out. For now throw away
         # the older ones for period that reporting failed.
 
-        #self.__transaction_errors[:0] = snapshot.transaction_errors
+        if collect_errors:
+            self.__transaction_errors[:0] = snapshot.transaction_errors
 
         # Insert original sql traces at start of any new
         # ones to maintain time based order.
@@ -544,18 +562,20 @@ class StatsEngine(object):
         # or should they be aged out. For now throw away
         # the older ones for period that reporting failed.
 
-        #self.__sql_traces[:0] = snapshot.sql_traces
+        #if collect_traces:
+        #    self.__sql_traces[:0] = snapshot.sql_traces
 
         # Restore original slow transaction if slower than
         # any newer slow transaction.
 
-        transaction = snapshot.__slow_transaction
+        if collect_traces:
+            transaction = snapshot.__slow_transaction
 
-        if self.slow_transaction is None:
-            self.__slow_transaction = transaction
-        elif transaction is not None and \
-                transaction.duration > self.slow_transaction.duration:
-            self.__slow_transaction = transaction
+            if self.slow_transaction is None:
+                self.__slow_transaction = transaction
+            elif transaction is not None and \
+                    transaction.duration > self.slow_transaction.duration:
+                self.__slow_transaction = transaction
 
     def parsed_sql(self, sql):
         if sql in self.__sql_parsed:

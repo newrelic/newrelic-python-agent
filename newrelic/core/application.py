@@ -136,15 +136,37 @@ class Application(object):
 
     def record_transaction(self, data):
         try:
-            start = time.time()
+            start1 = time.time()
+
+	    # We accumulate stats into a workarea and only then
+	    # merge it into the main one under a thread lock. Do
+	    # this to ensure that the process of generating the
+	    # metrics into the stats don't unecessarily lock out
+	    # another thread.
+
+            stats = self._stats_engine.create_workarea()
+            stats.record_transaction(data)
+
+            duration1 = time.time() - start1
+
             self._stats_lock.acquire()
-            self._stats_engine.record_transaction(data)
+            self._stats_engine.merge_stats(stats)
+        except:
+            _logger.exception('Recording transaction failed.')
         finally:
-            duration = time.time() - start
+            duration2 = time.time() - start1
+            self._stats_engine.record_value_metric(
+                    newrelic.core.metric.ValueMetric(
+                    name='Supportability/Agent/Transaction/BuildTime',
+                    value=duration1))
+            self._stats_engine.record_value_metric(
+                    newrelic.core.metric.ValueMetric(
+                    name='Supportability/Agent/Transaction/MergeTime',
+                    value=duration2-duration1))
             self._stats_engine.record_value_metric(
                     newrelic.core.metric.ValueMetric(
                     name='Supportability/Agent/Transaction/RecordingTime',
-                    value=duration))
+                    value=duration2))
             self._stats_lock.release()
 
     def force_harvest(self):
@@ -177,7 +199,7 @@ class Application(object):
             self._stats_custom_lock.release()
 
         if stats_custom:
-            stats.merge_snapshot(stats_custom)
+            stats.merge_stats(stats_custom)
 
         for sampler in self._samplers:
             for metric in sampler.value_metrics():
@@ -245,6 +267,6 @@ class Application(object):
         finally:
             if not success:
                 try:
-                    self._stats_engine.merge_snapshot(stats)
+                    self._stats_engine.merge_stats(stats, collect_errors=False)
                 except:
                     _logger.exception('Failed to remerge harvest data.')

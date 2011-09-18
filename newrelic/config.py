@@ -1037,7 +1037,11 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.template_jinja2')
 
     _process_module_definition('mako.runtime',
-            'newrelic.hooks.template_mako')
+            'newrelic.hooks.template_mako',
+            'instrument_mako_runtime')
+    _process_module_definition('mako.template',
+            'newrelic.hooks.template_mako',
+            'instrument_mako_template')
 
     _process_module_definition('genshi.template.base',
             'newrelic.hooks.template_genshi')

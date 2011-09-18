@@ -37,6 +37,8 @@ class Application(object):
 
         self._stats_lock = threading.Lock()
         self._stats_engine = newrelic.core.stats_engine.StatsEngine()
+        self._stats_custom_lock = threading.Lock()
+        self._stats_custom_engine = newrelic.core.stats_engine.StatsEngine()
         self._rules_engine = None
 
         # we could pull this queue and its processor up to the agent
@@ -83,7 +85,16 @@ class Application(object):
                 # What is meant to happen to stats went core application
                 # requested a restart?
 
-                self._stats_engine.reset_stats(self._service.configuration)
+                # FIXME Could then stats engine objects simply be replaced.
+
+                with self._stats_lock:
+                    self._stats_engine.reset_stats(
+                            self._service.configuration)
+
+                with self._stats_custom_lock:
+                    self._stats_custom_engine.reset_stats(
+                            self._service.configuration)
+
                 self._rules_engine = newrelic.core.rules_engine.RulesEngine(
                         self._service.configuration.url_rules)
 
@@ -117,11 +128,11 @@ class Application(object):
 
     def record_metric(self, name, value):
         try:
-            self._stats_lock.acquire()
-            self._stats_engine.record_value_metric(
+            self._stats_custom_lock.acquire()
+            self._stats_custom_engine.record_value_metric(
                     newrelic.core.metric.ValueMetric(name=name, value=value))
         finally:
-            self._stats_lock.release()
+            self._stats_custom_lock.release()
 
     def record_transaction(self, data):
         try:
@@ -142,6 +153,10 @@ class Application(object):
 
     def harvest(self,connection):
         _logger.debug("Harvesting.")
+
+        stats = None
+        stats_custom = None
+
         try:
             self._stats_lock.acquire()
             stats = self._stats_engine.create_snapshot()
@@ -152,6 +167,17 @@ class Application(object):
 
         if stats is None:
             return
+
+        try:
+            self._stats_custom_lock.acquire()
+            stats_custom = self._stats_custom_engine.create_snapshot()
+        except:
+            _logger.exception('Failed to create snapshot of custom stats.')
+        finally:
+            self._stats_custom_lock.release()
+
+        if stats_custom:
+            stats.merge_snapshot(stats_custom)
 
         for sampler in self._samplers:
             for metric in sampler.value_metrics():

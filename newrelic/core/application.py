@@ -177,10 +177,11 @@ class Application(object):
 
                 self._stats_engine.update_metric_ids(metric_ids)
 
-                transaction_errors = stats.transaction_errors
-                if transaction_errors:
-                    self._service.send_error_data(
-                            connection, stats.transaction_errors)
+                if self._service.configuration.collect_errors:
+                    transaction_errors = stats.transaction_errors
+                    if transaction_errors:
+                        self._service.send_error_data(
+                                connection, stats.transaction_errors)
 
                 # FIXME This may not be right as we may need to
                 # massage the format of the sql data if it needs
@@ -197,19 +198,20 @@ class Application(object):
                 # it working. What part of code should be responsible
                 # for doing compressing and final packaging of message.
 
-                slow_transaction = stats.slow_transaction
-                if stats.slow_transaction:
-                    transaction_trace = slow_transaction.transaction_trace(
-                            stats)
-                    compressed_data = base64.encodestring(
-                            zlib.compress(json.dumps(transaction_trace)))
-                    trace_data = [[transaction_trace.root.start_time,
-                            transaction_trace.root.end_time,
-                            stats.slow_transaction.path,
-                            stats.slow_transaction.request_uri,
-                            compressed_data]]
+                if self._service.configuration.collect_traces:
+                    slow_transaction = stats.slow_transaction
+                    if stats.slow_transaction:
+                        transaction_trace = slow_transaction.transaction_trace(
+                                stats)
+                        compressed_data = base64.encodestring(
+                                zlib.compress(json.dumps(transaction_trace)))
+                        trace_data = [[transaction_trace.root.start_time,
+                                transaction_trace.root.end_time,
+                                stats.slow_transaction.path,
+                                stats.slow_transaction.request_uri,
+                                compressed_data]]
 
-                    self._service.send_trace_data(connection, trace_data)
+                        self._service.send_trace_data(connection, trace_data)
 
         except:
             _logger.exception('Data harvest failed.')

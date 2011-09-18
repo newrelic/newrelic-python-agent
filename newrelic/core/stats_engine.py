@@ -348,9 +348,11 @@ class StatsEngine(object):
         if not self.__settings:
             return
 
-        error_collector = self.__settings.error_collector
-        transaction_tracer = self.__settings.transaction_tracer
-        transaction_metrics = self.__settings.transaction_metrics
+        settings = self.__settings
+
+        error_collector = settings.error_collector
+        transaction_tracer = settings.transaction_tracer
+        transaction_metrics = settings.transaction_metrics
 
         # FIXME The application object perhaps needs to maintain an
         # activation counter. This would be incremented after each
@@ -408,7 +410,7 @@ class StatsEngine(object):
 
         # Capture any errors if error collection is enabled.
 
-        if error_collector.enabled:
+        if error_collector.enabled and settings.collect_errors:
             self.__transaction_errors.extend(transaction.error_details())
 
         # Capture any sql traces if transaction tracer enabled.
@@ -420,7 +422,7 @@ class StatsEngine(object):
         # dictionary objects like for error details and can just
         # add them into the end of the list.
 
-        if transaction_tracer.enabled:
+        if transaction_tracer.enabled and settings.collect_traces:
             self.__sql_traces.extend(transaction.sql_traces(self))
 
 	# Remember as slowest transaction if transaction tracer
@@ -429,7 +431,7 @@ class StatsEngine(object):
 
         threshold = transaction_tracer.transaction_threshold
 
-        if transaction_tracer.enabled:
+        if transaction_tracer.enabled and settings.collect_traces:
             if transaction.duration >= threshold:
                 if self.__slow_transaction is None:
                     self.__slow_transaction = transaction

@@ -396,9 +396,16 @@ class Transaction(object):
 
     def notice_error(self, exc, value, tb, params={}, ignore_errors=[]):
 
-        # Bail out if the transaction is not active.
+        # Bail out if the transaction is not active or
+        # collection of errors not enabled.
 
         if not self._settings:
+            return
+
+        settings = self._settings
+        error_collector = settings.error_collector
+
+        if not error_collector.enabled or not settings.collect_errors:
             return
 
         # Has to be an error to be logged.
@@ -420,7 +427,7 @@ class Transaction(object):
         if fullname in ignore_errors:
             return
 
-        if fullname in self._settings.error_collector.ignore_errors:
+        if fullname in error_collector.ignore_errors:
             return
 
         node = newrelic.core.error_node.ErrorNode(

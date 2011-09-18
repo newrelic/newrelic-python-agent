@@ -54,10 +54,12 @@ class DatabaseTrace(object):
 
         stack_trace = None
 
-        transaction_tracer = self._transaction.settings.transaction_tracer
+        settings = self._transaction.settings
+        transaction_tracer = settings.transaction_tracer
 
-        if duration >= transaction_tracer.stack_trace_threshold:
-            stack_trace = traceback.format_stack()
+        if transaction_tracer.enabled and settings.collect_traces:
+            if duration >= transaction_tracer.stack_trace_threshold:
+                stack_trace = traceback.format_stack()
 
         parent = self._transaction._node_stack[-1]
 
@@ -78,8 +80,9 @@ class DatabaseTrace(object):
 
         parent._children.append(node)
 
-        if duration >= transaction_tracer.stack_trace_threshold:
-            self._transaction._slow_sql.append(node)
+        if transaction_tracer.enabled and settings.collect_traces:
+            if duration >= transaction_tracer.stack_trace_threshold:
+                self._transaction._slow_sql.append(node)
 
         self._children = []
 

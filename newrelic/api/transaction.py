@@ -21,26 +21,27 @@ class DummyTransaction(object):
 
 class Transaction(object):
 
-    _requests = 0
     _requests_lock = threading.Lock()
+    _requests_time = 0.0
+    _requests = 0
 
     @classmethod
     def _start_request(cls):
-        cls._requests_lock.acquire()
-        try:
+        with cls._requests_lock:
+            now = time.time()
+            value = (cls._requests * (now - cls._requests_time)) / 60.0
+            cls._requests_time = now
             cls._requests += 1
-            return cls._requests
-        finally:
-            cls._requests_lock.release()
+            return (cls._requests, value)
 
     @classmethod
     def _stop_request(cls):
-        cls._requests_lock.acquire()
-        try:
+        with cls._requests_lock:
+            now = time.time()
+            value = (cls._requests * (now - cls._requests_time)) / 60.0
+            cls._requests_time = now
             cls._requests -= 1
-            return cls._requests
-        finally:
-            cls._requests_lock.release()
+            return (cls._requests, value)
 
     _transactions = weakref.WeakValueDictionary()
 
@@ -173,17 +174,19 @@ class Transaction(object):
             self._application.activate()
             return self
 
-        # Record number of concurrent transactions.
-
-        requests = self._start_request()
-
-        self._application.record_metric(
-                'Supportability/Agent/Transaction/Concurrent',
-                requests)
-
         # Record the start time for transaction.
 
         self._start_time = time.time()
+
+        # Record some custom metrics about number of
+        # concurrent requests and utilisation.
+
+        values = self._start_request()
+
+        self._application.record_metric(
+                'Supportability/Agent/Transaction/Concurrent', values[0])
+        self._application.record_metric(
+                'Supportability/Agent/Transaction/Utilization', values[1])
 
         # We need to push an object onto the top of the
         # node stack so that children can reach back and
@@ -226,8 +229,6 @@ class Transaction(object):
         # Record the end time for transaction.
 
         self._end_time = time.time()
-
-        self._stop_request()
 
         children = self._node_stack.pop()._children
 
@@ -297,6 +298,16 @@ class Transaction(object):
                 self._build_time)
 
         self._application.record_transaction(node)
+
+        # Record some custom metrics about number of
+        # concurrent requests and utilisation.
+
+        values = self._stop_request()
+
+        self._application.record_metric(
+                'Supportability/Agent/Transaction/Concurrent', values[0])
+        self._application.record_metric(
+                'Supportability/Agent/Transaction/Utilization', values[1])
 
     @property
     def state(self):

@@ -74,17 +74,6 @@ def environment_settings():
         if hasattr(uwsgi, 'version'):
             dispatcher.append(('Dispatcher Version', uwsgi.version))
 
-    if not dispatcher and 'gunicorn' in sys.modules:
-        if 'gunicorn.workers.ggevent' in sys.modules:
-            dispatcher.append(('Dispatcher', 'gunicorn (gevent)'))
-        elif 'gunicorn.workers.geventlet' in sys.modules:
-            dispatcher.append(('Dispatcher', 'gunicorn (eventlet)'))
-        else:
-            dispatcher.append(('Dispatcher', 'gunicorn'))
-        gunicorn = sys.modules['gunicorn']
-        if hasattr(gunicorn, '__version__'):
-            dispatcher.append(('Dispatcher Version', gunicorn.__version__))
-
     if not dispatcher and 'flup.server.fcgi' in sys.modules:
         dispatcher.append(('Dispatcher', 'flup (fastcgi)'))
 
@@ -110,6 +99,17 @@ def environment_settings():
         dispatcher.append(('Dispatcher', 'tornado'))
         tornado = sys.modules['tornado']
         dispatcher.append(('Dispatcher Version', str(tornado.version_info)))
+
+    if not dispatcher and 'gunicorn' in sys.modules:
+        if 'gunicorn.workers.ggevent' in sys.modules:
+            dispatcher.append(('Dispatcher', 'gunicorn (gevent)'))
+        elif 'gunicorn.workers.geventlet' in sys.modules:
+            dispatcher.append(('Dispatcher', 'gunicorn (eventlet)'))
+        else:
+            dispatcher.append(('Dispatcher', 'gunicorn'))
+        gunicorn = sys.modules['gunicorn']
+        if hasattr(gunicorn, '__version__'):
+            dispatcher.append(('Dispatcher Version', gunicorn.__version__))
 
     env.extend(dispatcher)
 

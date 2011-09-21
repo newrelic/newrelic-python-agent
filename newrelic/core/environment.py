@@ -85,6 +85,27 @@ def environment_settings():
         if hasattr(gunicorn, '__version__'):
             dispatcher.append(('Dispatcher Version', gunicorn.__version__))
 
+    if not dispatcher and 'flup.server.fcgi' in sys.modules:
+        dispatcher.append(('Dispatcher', 'flup (fastcgi)'))
+
+    if not dispatcher and 'flup.server.fcgi_fork' in sys.modules:
+        dispatcher.append(('Dispatcher', 'flup (fastcgi-fork)'))
+
+    if not dispatcher and 'flup.server.scgi' in sys.modules:
+        dispatcher.append(('Dispatcher', 'flup (scgi)'))
+
+    if not dispatcher and 'flup.server.scgi_fork' in sys.modules:
+        dispatcher.append(('Dispatcher', 'flup (scgi-fork)'))
+
+    if not dispatcher and 'flup.server.ajp' in sys.modules:
+        dispatcher.append(('Dispatcher', 'flup (ajp)'))
+
+    if not dispatcher and 'flup.server.ajp_fork' in sys.modules:
+        dispatcher.append(('Dispatcher', 'flup (ajp-fork)'))
+
+    if not dispatcher and 'flup.server.cgi' in sys.modules:
+        dispatcher.append(('Dispatcher', 'flup (cgi)'))
+
     if not dispatcher and 'tornado' in sys.modules:
         dispatcher.append(('Dispatcher', 'tornado'))
         tornado = sys.modules['tornado']

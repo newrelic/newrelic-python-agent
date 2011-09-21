@@ -10,17 +10,24 @@ class Application(object):
 
     @staticmethod
     def _instance(name):
-        Application._lock.acquire()
-        try:
-            if name is None:
-                name = newrelic.core.config.global_settings().app_name
-            instance = Application._instances.get(name, None)
-            if not instance:
-                instance = Application(name)
-                Application._instances[name] = instance
-            return instance
-        finally:
-            Application._lock.release()
+        if name is None:
+            name = newrelic.core.config.global_settings().app_name
+
+        # Try first without lock. If we find it we can return.
+
+        instance = Application._instances.get(name, None)
+
+        if not instance:
+            with Application._lock:
+                # Now try again with lock so that only one gets
+                # to create and add it.
+
+                instance = Application._instances.get(name, None)
+                if not instance:
+                    instance = Application(name)
+                    Application._instances[name] = instance
+
+        return instance
 
     def __init__(self, name):
         self._name = name

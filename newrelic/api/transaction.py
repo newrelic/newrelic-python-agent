@@ -441,11 +441,17 @@ class Transaction(object):
         if fullname in error_collector.ignore_errors:
             return
 
+        if params:
+            custom_params = dict(self.custom_parameters)
+            custom_params.update(params)
+        else:
+            custom_params = self.custom_parameters
+
         node = newrelic.core.error_node.ErrorNode(
                 type=exc.__name__,
                 message=str(value),
                 stack_trace=traceback.format_exception(exc, value, tb),
-                custom_params=params,
+                custom_params=custom_params,
                 file_name=None,
                 line_number=None,
                 source=None)

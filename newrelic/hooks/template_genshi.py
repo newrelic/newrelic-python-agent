@@ -14,6 +14,8 @@ class stream_wrapper(object):
                 'Template/Render')(*args, **kwargs)
     def __getattr__(self, name):
         return getattr(self.__stream, name)
+    def __iter__(self):
+        return iter(self.__stream)
 
 class wrap_template(object):
     def __init__(self, wrapped):

@@ -22,6 +22,14 @@ def instrument(module):
         def __getattr__(self, name):
             return getattr(self.__cursor, name)
 
+        def get_row_factory(self):
+            return getattr(self.__cursor, 'row_factory')
+
+        def set_row_factory(self, value):
+            setattr(self.__cursor, 'row_factory', value)
+
+        row_factory = property(get_row_factory, set_row_factory)
+
     class ConnectionWrapper(object):
         def __init__(self, connection):
             self.__connection = connection

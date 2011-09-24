@@ -75,25 +75,25 @@ def environment_settings():
             dispatcher.append(('Dispatcher Version', uwsgi.version))
 
     if not dispatcher and 'flup.server.fcgi' in sys.modules:
-        dispatcher.append(('Dispatcher', 'flup (fastcgi)'))
+        dispatcher.append(('Dispatcher', 'flup/fastcgi (threaded)'))
 
     if not dispatcher and 'flup.server.fcgi_fork' in sys.modules:
-        dispatcher.append(('Dispatcher', 'flup (fastcgi-fork)'))
+        dispatcher.append(('Dispatcher', 'flup/fastcgi (prefork))'))
 
     if not dispatcher and 'flup.server.scgi' in sys.modules:
-        dispatcher.append(('Dispatcher', 'flup (scgi)'))
+        dispatcher.append(('Dispatcher', 'flup/scgi (threaded)'))
 
     if not dispatcher and 'flup.server.scgi_fork' in sys.modules:
-        dispatcher.append(('Dispatcher', 'flup (scgi-fork)'))
+        dispatcher.append(('Dispatcher', 'flup/scgi (prefork)'))
 
     if not dispatcher and 'flup.server.ajp' in sys.modules:
-        dispatcher.append(('Dispatcher', 'flup (ajp)'))
+        dispatcher.append(('Dispatcher', 'flup/ajp (threaded)'))
 
     if not dispatcher and 'flup.server.ajp_fork' in sys.modules:
-        dispatcher.append(('Dispatcher', 'flup (ajp-fork)'))
+        dispatcher.append(('Dispatcher', 'flup/ajp (forking)'))
 
     if not dispatcher and 'flup.server.cgi' in sys.modules:
-        dispatcher.append(('Dispatcher', 'flup (cgi)'))
+        dispatcher.append(('Dispatcher', 'flup/cgi'))
 
     if not dispatcher and 'tornado' in sys.modules:
         dispatcher.append(('Dispatcher', 'tornado'))

@@ -30,9 +30,7 @@ class MemcacheNode(_MemcacheNode):
                 scope='', overflow=None, forced=True, duration=self.duration,
                 exclusive=self.exclusive)
 
-        # Note that it is 'MemCache' here and not 'Memcache'.
-
-        name = 'MemCache/%s' % self.command
+        name = 'Memcache/%s' % self.command
         overflow = 'Memcache/*'
 
         yield newrelic.core.metric.TimeMetric(name=name, scope='',
@@ -58,9 +56,7 @@ class MemcacheNode(_MemcacheNode):
 
     def trace_node(self, stats, root):
 
-        # Note that it is 'MemCache' here and not 'Memcache'.
-
-        name = 'MemCache/%s' % self.command
+        name = 'Memcache/%s' % self.command
 
         start_time = newrelic.core.trace_node.node_start_time(root, self)
         end_time = newrelic.core.trace_node.node_end_time(root, self)

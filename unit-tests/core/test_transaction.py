@@ -37,9 +37,9 @@ settings = newrelic.api.settings.settings()
 
 settings.host = 'staging-collector.newrelic.com'
 settings.port = 80
-settings.license_key = 'd67afc830dab717fd163bfcb0b8b88423e9a1a3b'
+settings.license_key = '84325f47e9dec80613e262be4236088a9983d501'
 
-settings.app_name = 'Python Unit Test1'
+settings.app_name = 'Python Agent Test'
 
 settings.log_file = '%s.log' % __file__
 settings.log_level = logging.DEBUG

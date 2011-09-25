@@ -6,7 +6,7 @@ import newrelic.api.object_wrapper
 
 class ErrorTrace(object):
 
-    def __init__(self, transaction, ignore_errors):
+    def __init__(self, transaction, ignore_errors=None):
         self._transaction = transaction
         self._ignore_errors = ignore_errors
 

@@ -21,13 +21,10 @@ def instrument(module):
                     module)(*args, **kwargs)
         def __getattr__(self, name):
             return getattr(self.__cursor, name)
-
         def get_row_factory(self):
             return getattr(self.__cursor, 'row_factory')
-
         def set_row_factory(self, value):
             setattr(self.__cursor, 'row_factory', value)
-
         row_factory = property(get_row_factory, set_row_factory)
 
     class ConnectionWrapper(object):
@@ -45,6 +42,11 @@ def instrument(module):
                 module)(*args, **kwargs)
         def __getattr__(self, name):
             return getattr(self.__connection, name)
+        def get_row_factory(self):
+            return getattr(self.__connection, 'row_factory')
+        def set_row_factory(self, value):
+            setattr(self.__connection, 'row_factory', value)
+        row_factory = property(get_row_factory, set_row_factory)
 
     class ConnectionFactory(object):
         def __init__(self, connect):

@@ -1015,6 +1015,16 @@ def _process_module_builtin_defaults():
     _process_module_definition('bottle',
             'newrelic.hooks.framework_bottle')
 
+    _process_module_definition('cherrypy._cpdispatch',
+            'newrelic.hooks.framework_cherrypy',
+            'instrument_cherrypy_cpdispatch')
+    _process_module_definition('cherrypy._cpwsgi',
+            'newrelic.hooks.framework_cherrypy',
+            'instrument_cherrypy_cpwsgi')
+    _process_module_definition('cherrypy._cptree',
+            'newrelic.hooks.framework_cherrypy',
+            'instrument_cherrypy_cptree')
+
     _process_module_definition('cx_Oracle',
             'newrelic.hooks.database_dbapi2')
     _process_module_definition('MySQLdb',

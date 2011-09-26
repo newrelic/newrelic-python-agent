@@ -1066,6 +1066,10 @@ def _process_module_builtin_defaults():
     _process_module_definition('xmlrpclib',
             'newrelic.hooks.external_xmlrpclib')
 
+    _process_module_definition('piston.resource',
+            'newrelic.hooks.component_piston',
+            'instrument_piston_resource')
+
 _instrumentation_done = False
 
 def _setup_instrumentation():

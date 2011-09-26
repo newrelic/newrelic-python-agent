@@ -107,9 +107,10 @@ class TransactionNode(_TransactionNode):
                 overflow=None, forced=True, duration=self.duration,
                 exclusive=self.exclusive)
 
-        # Generate metric indicating if errors present.
+	# Generate metric indicating if errors present. Only do
+	# this for web transactions and not anything else.
 
-        if self.errors:
+        if self.type == 'WebTransaction' and self.errors:
             yield newrelic.core.metric.TimeMetric(name='Errors/all',
                     scope='', overflow=None, forced=True, duration=0.0,
                     exclusive=None)

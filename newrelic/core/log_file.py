@@ -67,17 +67,31 @@ def initialize():
             _agent_logger.debug('Initializing Python agent stderr logging.')
 
         elif settings.log_file:
-            handler = logging.FileHandler(settings.log_file)
+            try:
+                handler = logging.FileHandler(settings.log_file)
 
-            formatter = logging.Formatter(_LOG_FORMAT)
-            handler.setFormatter(formatter)
+                formatter = logging.Formatter(_LOG_FORMAT)
+                handler.setFormatter(formatter)
 
-            _agent_logger.addHandler(handler)
-            _agent_logger.setLevel(settings.log_level)
+                _agent_logger.addHandler(handler)
+                _agent_logger.setLevel(settings.log_level)
 
-            _agent_logger.debug('Initializing Python agent logging.')
-            _agent_logger.debug('Log file "%s".' % settings.log_file)
+                _agent_logger.debug('Initializing Python agent logging.')
+                _agent_logger.debug('Log file "%s".' % settings.log_file)
 
+            except:
+                handler = FallbackStreamHandler(sys.stderr)
+
+                formatter = logging.Formatter(_LOG_FORMAT)
+                handler.setFormatter(formatter)
+
+                _agent_logger.addHandler(handler)
+                _agent_logger.setLevel(settings.log_level)
+
+                _agent_logger.exception('Unable to create log file "%s".' %
+                                        settings.log_file)
+
+                _agent_logger.debug('Initializing Python agent stderr logging.')
     finally:
         _lock.release()
 

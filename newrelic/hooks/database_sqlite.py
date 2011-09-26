@@ -19,8 +19,18 @@ def instrument(module):
                     self.__cursor.executemany,
                     (lambda sql, seq_of_parameters=[]: sql),
                     module)(*args, **kwargs)
+        def executescript(self, *args, **kwargs): 
+            return newrelic.api.database_trace.DatabaseTraceWrapper(
+                    self.__cursor.executemany,
+                    (lambda sql_script: sql_script),
+                    module)(*args, **kwargs)
         def __getattr__(self, name):
             return getattr(self.__cursor, name)
+        def get_row_factory(self):
+            return getattr(self.__cursor, 'row_factory')
+        def set_row_factory(self, value):
+            setattr(self.__cursor, 'row_factory', value)
+        row_factory = property(get_row_factory, set_row_factory)
 
     class ConnectionWrapper(object):
         def __init__(self, connection):
@@ -35,8 +45,28 @@ def instrument(module):
             return newrelic.api.database_trace.DatabaseTraceWrapper(
                 self.__connection.rollback, 'ROLLBACK',
                 module)(*args, **kwargs)
+        def execute(self, *args, **kwargs):
+            return newrelic.api.database_trace.DatabaseTraceWrapper(
+                    self.__connection.execute,
+                    (lambda sql, parameters=(): sql),
+                    module)(*args, **kwargs)
+        def executemany(self, *args, **kwargs): 
+            return newrelic.api.database_trace.DatabaseTraceWrapper(
+                    self.__connection.executemany,
+                    (lambda sql, seq_of_parameters=[]: sql),
+                    module)(*args, **kwargs)
+        def executescript(self, *args, **kwargs): 
+            return newrelic.api.database_trace.DatabaseTraceWrapper(
+                    self.__connection.executemany,
+                    (lambda sql_script: sql_script),
+                    module)(*args, **kwargs)
         def __getattr__(self, name):
             return getattr(self.__connection, name)
+        def get_row_factory(self):
+            return getattr(self.__connection, 'row_factory')
+        def set_row_factory(self, value):
+            setattr(self.__connection, 'row_factory', value)
+        row_factory = property(get_row_factory, set_row_factory)
 
     class ConnectionFactory(object):
         def __init__(self, connect):

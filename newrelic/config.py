@@ -1033,10 +1033,11 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.database_dbapi2')
     _process_module_definition('psycopg2',
             'newrelic.hooks.database_dbapi2')
+
     _process_module_definition('pysqlite2.dbapi2',
-            'newrelic.hooks.database_dbapi2')
+            'newrelic.hooks.database_sqlite')
     _process_module_definition('sqlite3.dbapi2',
-            'newrelic.hooks.database_dbapi2')
+            'newrelic.hooks.database_sqlite')
 
     _process_module_definition('memcache',
             'newrelic.hooks.memcache_memcache')

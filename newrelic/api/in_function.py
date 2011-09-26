@@ -31,7 +31,7 @@ class InFunctionWrapper(object):
     def __call__(self, *args, **kwargs):
         if self._nr_instance and inspect.ismethod(self._nr_next_object):
             (wrapped_args, wrapped_kwargs) = self._nr_function(
-                    *((self._nr_instance,)+args), **kwargs)
+                    self._nr_instance, *args, **kwargs)
         else:
             (wrapped_args, wrapped_kwargs) = self._nr_function(*args, **kwargs)
         return self._nr_next_object(*wrapped_args, **wrapped_kwargs)

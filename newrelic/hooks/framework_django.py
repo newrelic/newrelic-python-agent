@@ -536,7 +536,7 @@ def instrument_django_core_servers_basehttp(module):
 
     def wrap_wsgi_application_entry_point(self, application, **kwargs):
         return ((newrelic.api.web_transaction.WSGIApplicationWrapper(
-                application)), kwargs)
+                application),), kwargs)
 
     if hasattr(module.ServerHandler, 'run'):
         newrelic.api.in_function.wrap_in_function(module,

@@ -107,22 +107,6 @@ class ExternalTraceWrapper(object):
         else:
             url = self._nr_url
 
-        """
-        try:
-            success = True
-            manager = ExternalTrace(transaction, self._nr_library, url)
-            manager.__enter__()
-            try:
-                return self._nr_next_object(*args, **kwargs)
-            except:
-                success = False
-                if not manager.__exit__(*sys.exc_info()):
-                    raise
-        finally:
-            if success:
-                manager.__exit__(None, None, None)
-        """
-
         with ExternalTrace(transaction, self._nr_library, url):
             return self._nr_next_object(*args, **kwargs)
 

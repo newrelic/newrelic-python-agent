@@ -125,23 +125,6 @@ class FunctionTraceWrapper(object):
         else:
             group = self._nr_group
 
-        """
-        try:
-            success = True
-            manager = FunctionTrace(transaction, name, group)
-            manager.__enter__()
-            try:
-                return self._nr_next_object(*args, **kwargs)
-            except:
-                success = False
-                if not manager.__exit__(*sys.exc_info()):
-                    raise
-        finally:
-            if success:
-                manager.__exit__(None, None, None)
-
-        """
-
         with FunctionTrace(transaction, name, group):
             return self._nr_next_object(*args, **kwargs)
 

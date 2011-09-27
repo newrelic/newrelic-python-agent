@@ -168,9 +168,9 @@ class Transaction(object):
 
         values = self._start_request()
 
-        self._application.record_metric(
+        self.record_metric(
                 'Supportability/Agent/Transaction/Concurrent', values[0])
-        self._application.record_metric(
+        self.record_metric(
                 'Supportability/Agent/Transaction/Utilization', values[1])
 
         # We need to push an object onto the top of the
@@ -279,10 +279,11 @@ class Transaction(object):
 
         values = self._stop_request()
 
-        self._application.record_metric(
+        self.record_metric(
                 'Supportability/Agent/Transaction/Concurrent', values[0])
-        self._application.record_metric(
+        self.record_metric(
                 'Supportability/Agent/Transaction/Utilization', values[1])
+
         if self._value_metrics:
             self._application.record_metrics(self._value_metrics)
 

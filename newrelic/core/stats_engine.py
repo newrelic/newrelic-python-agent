@@ -272,7 +272,7 @@ class StatsEngine(object):
 
             # Metric types we should never rollup into overflow.
 
-            exclude = set(['Database', 'External', 'MemCache'])
+            exclude = set(['Database', 'External', 'Memcache'])
 
             for metric in metrics:
                 overflow = False

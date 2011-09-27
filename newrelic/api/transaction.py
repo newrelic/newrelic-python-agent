@@ -3,7 +3,6 @@ import time
 import weakref
 import threading
 import traceback
-import collections
 
 import newrelic.core.transaction_node
 import newrelic.core.error_node
@@ -98,7 +97,7 @@ class Transaction(object):
 
         self._frozen_path = None
 
-        self._node_stack = collections.deque()
+        self._node_stack = []
 
         self._request_uri = None
 

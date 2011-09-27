@@ -159,14 +159,20 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         # Capture query request string parameters.
 
-        value = environ.get('QUERY_STRING', None)
+        if self._settings.capture_params:
+            value = environ.get('QUERY_STRING', None)
 
-        if value:
-            try:
-                params = urlparse.parse_qs(value)
-            except:
-                params = cgi.parse_qs(value)
-            self.request_parameters.update(params)
+            if value:
+                try:
+                    params = urlparse.parse_qs(value)
+                except:
+                    params = cgi.parse_qs(value)
+
+                if self._settings.ignored_params:
+                    for name in self._settings.ignored_params:
+                        del params[name]
+
+                self.request_parameters.update(params)
 
         # Flags for tracking whether RUM header inserted.
 

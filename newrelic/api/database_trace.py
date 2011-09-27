@@ -12,12 +12,12 @@ import newrelic.api.object_wrapper
 class DatabaseTrace(object):
 
     def __init__(self, transaction, sql, dbapi=None):
+        assert transaction is not None
+
         self._transaction = transaction
 
         self._sql = sql
         self._dbapi = dbapi
-
-        self._enabled = False
 
         self._children = []
 
@@ -25,11 +25,6 @@ class DatabaseTrace(object):
         self._end_time = 0.0
 
     def __enter__(self):
-        if not self._transaction:
-            return self
-
-        self._enabled = True
-
         self._start_time = time.time()
 
         self._transaction._node_stack.append(self)
@@ -37,9 +32,6 @@ class DatabaseTrace(object):
         return self
 
     def __exit__(self, exc, value, tb):
-        if not self._enabled:
-            return
-
         self._end_time = time.time()
 
         duration = self._end_time - self._start_time

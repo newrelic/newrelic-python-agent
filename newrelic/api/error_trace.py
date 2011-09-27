@@ -7,23 +7,15 @@ import newrelic.api.object_wrapper
 class ErrorTrace(object):
 
     def __init__(self, transaction, ignore_errors=None):
+        assert transaction is not None
+
         self._transaction = transaction
         self._ignore_errors = ignore_errors
 
-        self._enabled = False
-
     def __enter__(self):
-        if not self._transaction:
-            return self
-
-        self._enabled = True
-
         return self
 
     def __exit__(self, exc, value, tb):
-        if not self._enabled:
-            return
-
         if exc is None or value is None or tb is None:
             return
 

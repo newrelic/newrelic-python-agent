@@ -36,6 +36,16 @@ def _obfuscate_transaction_name(name, key):
         s.append(chr(ord(name[i]) ^ ord(key[i%13])))
     return base64.b64encode(''.join(s))
 
+def _lookup_environ_setting(environ, name, default=False):
+    flag = environ.get(name, default)
+    if default is None or default:
+        if isinstance(flag, basestring):
+            flag = not flag.lower() in ['off', 'false', '0']
+    else:
+        if isinstance(flag, basestring):
+            flag = flag.lower() in ['on', 'true', '1']
+    return flag
+
 class WebTransaction(newrelic.api.transaction.Transaction):
 
     def __init__(self, application, environ):
@@ -49,7 +59,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         # base class making the decision based on whether
         # application or agent as a whole are enabled.
 
-        enabled = self._environ_setting(
+        enabled = _lookup_environ_setting(
                 environ, 'newrelic.enabled', None)
 
         # Initialise the common transaction base class.
@@ -65,11 +75,11 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         # Check for override settings from WSGI environ.
 
-        self.background_task = self._environ_setting(
+        self.background_task = _lookup_environ_setting(
                 environ, 'newrelic.background_task', False)
-        self.ignore = self._environ_setting(
+        self.ignore = _lookup_environ_setting(
                 environ, 'newrelic.ignore', False)
-        self.ignore_apdex = self._environ_setting(
+        self.ignore_apdex = _lookup_environ_setting(
                 environ, 'newrelic.ignore_apdex', False)
 
         # Extract from the WSGI environ dictionary
@@ -177,16 +187,6 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         # Flags for tracking whether RUM header inserted.
 
         self._rum_header = False
-
-    def _environ_setting(self, environ, name, default=False):
-        flag = environ.get(name, default)
-        if default is None or default:
-            if isinstance(flag, basestring):
-                flag = not flag.lower() in ['off', 'false', '0']
-        else:
-            if isinstance(flag, basestring):
-                flag = flag.lower() in ['on', 'true', '1']
-        return flag
 
     def browser_timing_header(self):
         if not self.enabled:

@@ -129,7 +129,11 @@ class Transaction(object):
 
         if global_settings.monitor_mode:
             if enabled or (enabled is None and application.enabled):
-                self.enabled = True
+                self._settings = self._application.settings
+                if not self._settings:
+                    self._application.activate()
+                else:
+                    self.enabled = True
 
     def __del__(self):
         self._dead = True
@@ -145,34 +149,16 @@ class Transaction(object):
         if not self.enabled:
             return self
 
-        # Cache transaction in thread/coroutine local
-        # storage so that it can be accessed from
-        # anywhere in the context of the transaction.
-        # This is done even though transaction will
-        # not collect data because application is not
-        # active.
-
-        self._save_transaction(self)
-
         # Mark transaction as active and update state
         # used to validate correct usage of class.
 
         self._state = STATE_RUNNING
 
-        # Bail out if the application isn't marked as
-        # active. An application isn't active if we
-        # cannot retrieve a settings object for it. If
-        # not activate we try and activate it. We cache
-        # the settings object so we know it will not
-        # dissapear during the life of the transaction
-        # and so can be used by anything executing
-        # within the context of the transaction.
+        # Cache transaction in thread/coroutine local
+        # storage so that it can be accessed from
+        # anywhere in the context of the transaction.
 
-        self._settings = self._application.settings
-
-        if not self._settings:
-            self._application.activate()
-            return self
+        self._save_transaction(self)
 
         # Record the start time for transaction.
 
@@ -215,11 +201,11 @@ class Transaction(object):
 
         self._state = STATE_STOPPED
 
-        if not self._dead:
-            self._drop_transaction(self)
-
         if not self._settings:
             return
+
+        if not self._dead:
+            self._drop_transaction(self)
 
         # Record error if one was registered.
 

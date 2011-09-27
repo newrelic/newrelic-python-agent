@@ -125,6 +125,8 @@ class Transaction(object):
         self.ignored_params = []
         self.response_code = 0
 
+        self._value_metrics = []
+
         global_settings = newrelic.core.config.global_settings()
 
         if global_settings.monitor_mode:
@@ -294,6 +296,8 @@ class Transaction(object):
                 'Supportability/Agent/Transaction/Concurrent', values[0])
         self._application.record_metric(
                 'Supportability/Agent/Transaction/Utilization', values[1])
+        if self._value_metrics:
+            self._application.record_metrics(self._value_metrics)
 
     @property
     def state(self):
@@ -452,6 +456,9 @@ class Transaction(object):
         # should be sent.
 
         self._errors.append(node)
+
+    def record_metric(self, name, value):
+        self._value_metrics.append((name, value))
 
 def transaction():
     return Transaction._current_transaction()

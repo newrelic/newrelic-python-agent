@@ -31,7 +31,7 @@ class PostFunctionWrapper(object):
     def __call__(self, *args, **kwargs):
         result = self._nr_next_object(*args, **kwargs)
         if self._nr_instance and inspect.ismethod(self._nr_next_object):
-            self._nr_function(*((self._nr_instance,)+args), **kwargs)
+            self._nr_function(self._nr_instance, *args, **kwargs)
         else:
             self._nr_function(*args, **kwargs)
         return result

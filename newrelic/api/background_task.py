@@ -66,7 +66,7 @@ class BackgroundTaskWrapper(object):
                     self._nr_next_object)
         elif not isinstance(self._nr_name, basestring):
             if self._nr_instance and inspect.ismethod(self._nr_next_object):
-                name = self._nr_name(*((self._nr_instance,)+args), **kwargs)
+                name = self._nr_name(self._nr_instance, *args, **kwargs)
             else:
                 name = self._nr_name(*args, **kwargs)
         else:
@@ -75,7 +75,7 @@ class BackgroundTaskWrapper(object):
         if self._nr_group is not None and not isinstance(
                 self._nr_group, basestring):
             if self._nr_instance and inspect.ismethod(self._nr_next_object):
-                group = self._nr_group(*((self._nr_instance,)+args), **kwargs)
+                group = self._nr_group(self._nr_instance, *args, **kwargs)
             else:
                 group = self._nr_group(*args, **kwargs)
         else:

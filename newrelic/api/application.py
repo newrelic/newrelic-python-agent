@@ -68,6 +68,10 @@ class Application(object):
         if self.active:
             self._agent.record_metric(self._name, name, value)
 
+    def record_metrics(self, metrics):
+        if self.active and metrics:
+            self._agent.record_metrics(self._name, metrics)
+
     def record_transaction(self, data):
         if self.active:
             self._agent.record_transaction(self._name, data)

@@ -134,6 +134,16 @@ class Application(object):
         finally:
             self._stats_custom_lock.release()
 
+    def record_metrics(self, metrics):
+        try:
+            self._stats_custom_lock.acquire()
+            for name, value in metrics:
+                self._stats_custom_engine.record_value_metric(
+                        newrelic.core.metric.ValueMetric(name=name,
+                        value=value))
+        finally:
+            self._stats_custom_lock.release()
+
     def record_transaction(self, data):
         try:
             start1 = time.time()

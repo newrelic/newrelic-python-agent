@@ -221,6 +221,23 @@ class Agent(object):
 
         application.record_metric(name, value)
 
+    def record_metrics(self, app_name, metrics):
+	"""Records the metrics for the named application. If there has
+	been no prior request to activate the application, the metric is
+	discarded. The metrics should be an iterable yielding tuples
+        consisting of the name and value.
+
+        """
+
+	# FIXME Are base metrics ignored if the application is not in
+	# the activated state when received or are they accumulated?
+
+        application = self._applications.get(app_name, None)
+        if application is None:
+            return
+
+        application.record_metrics(metrics)
+
     def record_transaction(self, app_name, data):
         """Processes the raw transaction data, generating and recording
 	appropriate metrics against the named application. If there has

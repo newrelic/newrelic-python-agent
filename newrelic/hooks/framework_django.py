@@ -22,7 +22,7 @@ def browser_timing_middleware(request, response):
 
     transaction = newrelic.api.transaction.transaction()
 
-    if not transaction or not transaction.active:
+    if not transaction:
         return response
 
     # Only insert RUM JavaScript headers and footers if enabled
@@ -177,7 +177,7 @@ class MiddlewareWrapper(object):
 
     def __call__(self, *args, **kwargs):
         transaction = newrelic.api.transaction.transaction()
-        if transaction and transaction.active:
+        if transaction:
             transaction.name_transaction(self.__name,
                     priority=self.__priority)
             with newrelic.api.function_trace.FunctionTrace(
@@ -289,7 +289,7 @@ def instrument_django_core_handlers_wsgi(module):
         # function against the current transaction object.
 
         transaction = newrelic.api.transaction.transaction()
-        if transaction and transaction.active:
+        if transaction:
             transaction.notice_error(*exc_info)
 
     newrelic.api.pre_function.wrap_pre_function(
@@ -318,7 +318,7 @@ class ViewHandlerWrapper(object):
 
     def __call__(self, *args, **kwargs):
         transaction = newrelic.api.transaction.transaction()
-        if transaction and transaction.active:
+        if transaction:
             transaction.name_transaction(self.__name, priority=3)
             with newrelic.api.function_trace.FunctionTrace(
                     transaction, name=self.__name):
@@ -369,7 +369,7 @@ class ResolverWrapper(object):
 
     def __call__(self, *args, **kwargs):
         transaction = newrelic.api.transaction.transaction()
-        if transaction and transaction.active:
+        if transaction:
             Resolver404 = sys.modules[
                     'django.core.urlresolvers'].Resolver404
             try:
@@ -406,7 +406,7 @@ class Resolver404Wrapper(object):
 
     def __call__(self, *args, **kwargs):
         transaction = newrelic.api.transaction.transaction()
-        if transaction and transaction.active:
+        if transaction:
             callback, param_dict = self.__wrapped(*args, **kwargs)
             return (wrap_view_handler(callback), param_dict)
         else:
@@ -506,7 +506,7 @@ def instrument_django_template_loader_tags(module):
 
         def __call__(self, *args, **kwargs):
             transaction = newrelic.api.transaction.transaction()
-            if transaction and transaction.active:
+            if transaction:
                 with newrelic.api.function_trace.FunctionTrace(
                         transaction, name=self.__instance.name,
                         group='Template/Block'):

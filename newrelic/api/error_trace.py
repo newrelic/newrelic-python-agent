@@ -13,7 +13,7 @@ class ErrorTrace(object):
         self._enabled = False
 
     def __enter__(self):
-        if not self._transaction.active:
+        if not self._transaction:
             return self
 
         self._enabled = True
@@ -66,7 +66,7 @@ class ErrorTraceWrapper(object):
 
     def __call__(self, *args, **kwargs):
         transaction = newrelic.api.transaction.transaction()
-        if not transaction or not transaction.active:
+        if not transaction:
             return self._nr_next_object(*args, **kwargs)
 
         try:

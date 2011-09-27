@@ -33,7 +33,7 @@ class NameTransactionWrapper(object):
 
     def __call__(self, *args, **kwargs):
         transaction = newrelic.api.transaction.transaction()
-        if not transaction or not transaction.active:
+        if not transaction:
             return self._nr_next_object(*args, **kwargs)
 
         if self._nr_instance and inspect.ismethod(self._nr_next_object):

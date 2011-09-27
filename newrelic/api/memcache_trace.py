@@ -23,7 +23,7 @@ class MemcacheTrace(object):
         self._end_time = 0.0
 
     def __enter__(self):
-        if not self._transaction.active:
+        if not self._transaction:
             return self
 
         self._enabled = True
@@ -93,7 +93,7 @@ class MemcacheTraceWrapper(object):
 
     def __call__(self, *args, **kwargs):
         transaction = newrelic.api.transaction.transaction()
-        if not transaction or not transaction.active:
+        if not transaction:
             return self._nr_next_object(*args, **kwargs)
 
         if not isinstance(self._nr_command, basestring):

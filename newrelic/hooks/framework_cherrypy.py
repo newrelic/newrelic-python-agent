@@ -24,7 +24,7 @@ class HandlerWrapper(object):
 
     def __call__(self, *args, **kwargs):
         transaction = newrelic.api.transaction.transaction()
-        if transaction and transaction.active:
+        if transaction:
             transaction.name_transaction(name=self.__name, priority=2)
             with newrelic.api.error_trace.ErrorTrace(transaction):
                 with newrelic.api.function_trace.FunctionTrace(
@@ -72,7 +72,7 @@ class ResolverWrapper(object):
 
     def __call__(self, *args, **kwargs):
         transaction = newrelic.api.transaction.transaction()
-        if transaction and transaction.active:
+        if transaction:
             try:
                 obj, vpath = self.__wrapped(*args, **kwargs)
                 if obj:

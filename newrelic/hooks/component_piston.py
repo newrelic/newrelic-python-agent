@@ -22,7 +22,7 @@ class MethodWrapper(object):
 
     def __call__(self, *args, **kwargs):
         transaction = newrelic.api.transaction.transaction()
-        if transaction and transaction.active:
+        if transaction:
             transaction.name_transaction(self.__name,
                     priority=self.__priority)
             with newrelic.api.function_trace.FunctionTrace(

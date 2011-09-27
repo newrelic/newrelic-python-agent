@@ -98,7 +98,7 @@ class MemcacheTraceWrapper(object):
 
         if not isinstance(self._nr_command, basestring):
             if self._nr_instance and inspect.ismethod(self._nr_next_object):
-                command = self._nr_command(*((self._nr_instance,)+args),
+                command = self._nr_command(self._nr_instance, *args,
                                            **kwargs)
             else:
                 command = self._nr_command(*args, **kwargs)

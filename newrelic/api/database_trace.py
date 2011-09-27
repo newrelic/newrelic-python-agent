@@ -122,7 +122,7 @@ class DatabaseTraceWrapper(object):
 
         if not isinstance(self._nr_sql, basestring):
             if self._nr_instance and inspect.ismethod(self._nr_next_object):
-                sql = self._nr_sql(*((self._nr_instance,)+args), **kwargs)
+                sql = self._nr_sql(self._nr_instance, *args, **kwargs)
             else:
                 sql = self._nr_sql(*args, **kwargs)
         else:

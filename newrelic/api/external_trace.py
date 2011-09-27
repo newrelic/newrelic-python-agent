@@ -101,7 +101,7 @@ class ExternalTraceWrapper(object):
 
         if not isinstance(self._nr_url, basestring):
             if self._nr_instance and inspect.ismethod(self._nr_next_object):
-                url = self._nr_url(*((self._nr_instance,)+args), **kwargs)
+                url = self._nr_url(self._nr_instance, *args, **kwargs)
             else:
                 url = self._nr_url(*args, **kwargs)
         else:

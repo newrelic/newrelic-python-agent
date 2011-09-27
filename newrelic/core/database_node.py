@@ -14,15 +14,6 @@ _DatabaseNode = collections.namedtuple('_DatabaseNode',
 
 class DatabaseNode(_DatabaseNode):
 
-    @property
-    def formatted_sql(self):
-        # FIXME Could cache the result.
-        if self.sql_format == 'obfuscated':
-            name = self.dbapi and self.dbapi.__name__ or None 
-            return newrelic.core.database_utils.obfuscate_sql(
-                    name, self.sql)
-        return self.sql
-
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
         database node as well as all the child nodes.

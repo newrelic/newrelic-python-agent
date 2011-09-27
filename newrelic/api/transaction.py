@@ -106,9 +106,6 @@ class Transaction(object):
         self._start_time = 0.0
         self._end_time = 0.0
 
-        self._build_count = 0
-        self._build_time = 0.0
-
         self._errors = []
         self._slow_sql = []
 
@@ -274,16 +271,6 @@ class Transaction(object):
 
         self._settings = None
         self._enabled = False
-
-        self._build_count += 1
-        self._build_time += (time.time() - self._end_time)
-
-        self._application.record_metric(
-                'Supportability/Agent/Transaction/ConstructionCount',
-                self._build_count)
-        self._application.record_metric(
-                'Supportability/Agent/Transaction/ConstructionTime',
-                self._build_time)
 
         self._application.record_transaction(node)
 

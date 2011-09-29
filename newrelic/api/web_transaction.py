@@ -182,7 +182,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
                     for name in self._settings.ignored_params:
                         del params[name]
 
-                self.request_parameters.update(params)
+                self._request_params.update(params)
 
         # Flags for tracking whether RUM header inserted.
 

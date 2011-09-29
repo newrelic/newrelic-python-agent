@@ -108,8 +108,8 @@ class Transaction(object):
         self._errors = []
         self._slow_sql = []
 
-        self.custom_parameters = {}
-        self.request_parameters = {}
+        self._custom_params = {}
+        self._request_params = {}
 
         self.background_task = False
 
@@ -253,8 +253,8 @@ class Transaction(object):
                 name=self._name,
                 request_uri=self._request_uri,
                 response_code=self.response_code,
-                request_params=self.request_parameters,
-                custom_params=self.custom_parameters,
+                request_params=self._request_params,
+                custom_params=self._custom_params,
                 queue_start=self.queue_start,
                 start_time=self.start_time,
                 end_time=self.end_time,
@@ -416,10 +416,10 @@ class Transaction(object):
             return
 
         if params:
-            custom_params = dict(self.custom_parameters)
+            custom_params = dict(self._custom_params)
             custom_params.update(params)
         else:
-            custom_params = self.custom_parameters
+            custom_params = self._custom_params
 
         try:
             message = str(value)
@@ -483,6 +483,13 @@ class Transaction(object):
 
         self.end_time = time.time()
         self.stopped = True
+
+    def add_custom_parameter(self, name, value):
+        self._custom_params[name] = value
+
+    def add_custom_parameters(self, items):
+        for name, value in items:
+            self._custom_params[name] = value
 
 def transaction():
     current = Transaction._current_transaction()

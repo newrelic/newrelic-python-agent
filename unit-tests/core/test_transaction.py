@@ -90,14 +90,14 @@ def my_function_3():
     if transaction:
         transaction.application.record_metric('metric-int', 1)
         transaction.application.record_metric('metric-float', 1.0)
-        transaction.custom_parameters['custom-string'] = '1'
-        transaction.custom_parameters['custom-int'] = 1
-        transaction.custom_parameters['custom-float'] = 1.0
-        transaction.custom_parameters['custom-list'] = [1.0, 1.1]
-        transaction.custom_parameters['custom-tuple'] = (1.0, 1.1)
-        transaction.custom_parameters['custom-dict'] = {'K1.0': 'V1.0',
-                                                        'V1.1': 'V1.1'}
-        #transaction.custom_parameters['custom-object'] = my_function_2
+        transaction.add_custom_parameter('custom-string', '1')
+        transaction.add_custom_parameter('custom-int', 1)
+        transaction.add_custom_parameter('custom-float', 1.0)
+        transaction.add_custom_parameter('custom-list', [1.0, 1.1])
+        transaction.add_custom_parameter('custom-tuple', (1.0, 1.1))
+        transaction.add_custom_parameter('custom-dict', {'K1.0': 'V1.0',
+                                                        'V1.1': 'V1.1'})
+        #transaction.add_custom_parameter('custom-object', my_function_2)
         try:
             raise RuntimeError('error-2')
         except:

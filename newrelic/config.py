@@ -1102,7 +1102,9 @@ def initialize(config_file=None, environment=None, ignore_errors=True,
             log_file=None, log_level=None):
     _load_configuration(config_file, environment, ignore_errors,
             log_file, log_level)
-    _setup_instrumentation()
+
+    if _settings.monitor_mode: 
+        _setup_instrumentation()
 
 def filter_app_factory(app, global_conf, config_file, environment=None):
     initialize(config_file, environment)

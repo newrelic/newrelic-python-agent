@@ -122,7 +122,10 @@ class Agent(object):
         # FIXME Should harvest period be a configuration
         # parameter.
 
-        self._harvester = newrelic.core.harvest.Harvester(self._remote, 60)
+        if config.monitor_mode:
+            self._harvester = newrelic.core.harvest.Harvester(self._remote, 60)
+        else:
+            self._harvester = None
 
     def global_settings(self):
 	"""Returns the global default settings object. If access is
@@ -160,6 +163,9 @@ class Agent(object):
 	application.
 
         """
+
+        if not self._harvester:
+            return
 
 	# FIXME To make testing easier, need to be able to supply an
 	# argument indicating want to wait for application to be
@@ -275,12 +281,18 @@ class Agent(object):
     # rather than handle specific web requests.
 
     def stop(self):
+        if not self._harvester:
+            return
+
         for app in self._applications.itervalues():
             app.stop()
         self._harvester.stop()
         self._applications.clear()
 
     def shutdown(self):
+        if not self._harvester:
+            return
+
         self._harvester.stop_harvest_thread()
 
 def agent():

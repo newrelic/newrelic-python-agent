@@ -61,10 +61,13 @@ def environment_settings():
 
     if not dispatcher and 'mod_wsgi' in sys.modules:
         mod_wsgi = sys.modules['mod_wsgi']
-        if mod_wsgi.process_group == '':
-            dispatcher.append(('Dispatcher', 'Apache/mod_wsgi (embedded)'))
+        if hasattr(mod_wsgi, 'process_group'):
+            if mod_wsgi.process_group == '':
+                dispatcher.append(('Dispatcher', 'Apache/mod_wsgi (embedded)'))
+            else:
+                dispatcher.append(('Dispatcher', 'Apache/mod_wsgi (daemon)'))
         else:
-            dispatcher.append(('Dispatcher', 'Apache/mod_wsgi (daemon)'))
+            dispatcher.append(('Dispatcher', 'Apache/mod_wsgi'))
         if hasattr(mod_wsgi, 'version'):
             dispatcher.append(('Dispatcher Version', str(mod_wsgi.version)))
 

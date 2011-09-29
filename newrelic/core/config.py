@@ -82,7 +82,8 @@ _settings.capture_params = True
 _settings.ignored_params = []
 
 _settings.capture_environ = True
-_settings.include_environ = [ 'HTTP_USER_AGENT', 'HTTP_REFERRER' ]
+_settings.include_environ = [ 'REQUEST_METHOD', 'HTTP_USER_AGENT',
+                              'HTTP_REFERRER' ]
 
 _settings.sampling_rate = 0
 

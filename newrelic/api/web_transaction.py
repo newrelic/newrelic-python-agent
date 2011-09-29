@@ -232,7 +232,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         # Make sure we freeze the path.
 
-        self.freeze_path()
+        self._freeze_path()
 
         name = _obfuscate_transaction_name(self.path,
                 self._settings.license_key)

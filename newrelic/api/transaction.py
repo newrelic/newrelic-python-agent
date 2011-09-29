@@ -229,7 +229,7 @@ class Transaction(object):
         # Freeze path in case not already done. This will
         # construct out path.
 
-        self.freeze_path()
+        self._freeze_path()
 
         if self.background_task:
             type = 'OtherTransaction'
@@ -346,7 +346,7 @@ class Transaction(object):
 
         return path
 
-    def freeze_path(self):
+    def _freeze_path(self):
         if self._frozen_path is None:
             self._priority = None
 

@@ -146,8 +146,6 @@ class Application(object):
 
     def record_transaction(self, data):
         try:
-            start1 = time.time()
-
 	    # We accumulate stats into a workarea and only then
 	    # merge it into the main one under a thread lock. Do
 	    # this to ensure that the process of generating the
@@ -157,26 +155,11 @@ class Application(object):
             stats = self._stats_engine.create_workarea()
             stats.record_transaction(data)
 
-            duration1 = time.time() - start1
-
             self._stats_lock.acquire()
             self._stats_engine.merge_stats(stats)
         except:
             _logger.exception('Recording transaction failed.')
         finally:
-            duration2 = time.time() - start1
-            self._stats_engine.record_value_metric(
-                    newrelic.core.metric.ValueMetric(
-                    name='Supportability/Agent/Transaction/BuildTime',
-                    value=duration1))
-            self._stats_engine.record_value_metric(
-                    newrelic.core.metric.ValueMetric(
-                    name='Supportability/Agent/Transaction/MergeTime',
-                    value=duration2-duration1))
-            self._stats_engine.record_value_metric(
-                    newrelic.core.metric.ValueMetric(
-                    name='Supportability/Agent/Transaction/RecordingTime',
-                    value=duration2))
             self._stats_lock.release()
 
     def force_harvest(self):

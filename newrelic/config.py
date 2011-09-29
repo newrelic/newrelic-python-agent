@@ -88,6 +88,9 @@ def _map_app_name(s):
 def _map_ignored_params(s):
     return s.split()
 
+def _map_include_environ(s):
+    return s.split()
+
 def _map_transaction_threshold(s):
     if s == 'apdex_f':
         return None
@@ -198,6 +201,10 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'ignored_params',
                      'get', _map_ignored_params)
+    _process_setting(section, 'capture_environ',
+                     'getboolean', None)
+    _process_setting(section, 'include_environ',
+                     'get', _map_include_environ)
     _process_setting(section, 'transaction_tracer.enabled',
                      'getboolean', None)
     _process_setting(section, 'transaction_tracer.transaction_threshold',

@@ -178,11 +178,18 @@ class WebTransaction(newrelic.api.transaction.Transaction):
                 except:
                     params = cgi.parse_qs(value)
 
-                if self._settings.ignored_params:
-                    for name in self._settings.ignored_params:
+                for name in self._settings.ignored_params:
+                    if name in params:
                         del params[name]
 
                 self._request_params.update(params)
+
+        # Capture WSGI request environ dictionary values.
+
+        if self._settings.capture_environ:
+            for name in self._settings.include_environ:
+                if name in environ:
+                    self._custom_params[name] = environ[name]
 
         # Flags for tracking whether RUM header inserted.
 

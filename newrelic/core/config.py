@@ -61,8 +61,8 @@ else:
 _settings.license_key = os.environ.get('NEW_RELIC_LICENSE_KEY', None)
 
 _settings.ssl = False
-_settings.host = 'collector.newrelic.com'
-_settings.port = 80
+_settings.host = os.environ.get('NEW_RELIC_HOST', 'collector.newrelic.com')
+_settings.port = int(os.environ.get('NEW_RELIC_PORT', '80'))
 
 _settings.proxy_host = None
 _settings.proxy_port = None
@@ -77,8 +77,13 @@ _settings.collect_errors = True
 _settings.collect_traces = True
 
 _settings.apdex_t = 0.5
+
 _settings.capture_params = True
 _settings.ignored_params = []
+
+_settings.capture_environ = True
+_settings.include_environ = [ 'HTTP_USER_AGENT', 'HTTP_REFERRER' ]
+
 _settings.sampling_rate = 0
 
 _settings.beacon = None

@@ -245,6 +245,9 @@ class Transaction(object):
             else:
                 group = 'Uri'
 
+        if self.response_code != 0:
+            self._custom_params['STATUS'] = str(self.response_code)
+
         node = newrelic.core.transaction_node.TransactionNode(
                 settings=self._settings,
                 path=self.path,

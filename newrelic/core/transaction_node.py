@@ -16,7 +16,7 @@ _TransactionNode = collections.namedtuple('_TransactionNode',
         ['settings', 'path', 'type', 'group', 'name', 'request_uri',
         'response_code', 'request_params', 'custom_params', 'queue_start',
         'start_time', 'end_time', 'duration', 'exclusive', 'children',
-        'errors', 'slow_sql', 'apdex_t', 'ignore_apdex'])
+        'errors', 'slow_sql', 'apdex_t', 'ignore_apdex', 'custom_metrics'])
 
 class TransactionNode(_TransactionNode):
 
@@ -181,6 +181,15 @@ class TransactionNode(_TransactionNode):
         yield newrelic.core.metric.ApdexMetric(name='Apdex',
                 overflow=None, forced=True, satisfying=satisfying,
                 tolerating=tolerating, frustrating=frustrating)
+
+    def value_metrics(self, stats):
+        """Return a generator yielding any custom metrics recorded
+        against this transaction.
+
+        """
+
+        for name, value in self.custom_metrics:
+            yield newrelic.core.metric.ValueMetric(name=name, value=value)
 
     def error_details(self):
         """Return a generator yielding the details for each unique error

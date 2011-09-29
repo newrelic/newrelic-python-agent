@@ -382,7 +382,7 @@ class StatsEngine(object):
         # configuration and finished after application had been
         # restarted.
 
-	# Record the apdex and time metrics generated from the
+	# Record the apdex, value and time metrics generated from the
 	# transaction. Whether time metrics are reported as distinct
 	# metrics or into a rollup is in part controlled via settings
 	# for minimum number of unique metrics to be reported and thence
@@ -398,6 +398,8 @@ class StatsEngine(object):
         # breakdown tab for specific web transactions.
 
         self.record_apdex_metrics(transaction.apdex_metrics(self))
+
+        self.record_value_metrics(transaction.value_metrics(self))
 
         minimum = transaction_metrics.overflow_minimum
         maximum = transaction_metrics.overflow_maximum

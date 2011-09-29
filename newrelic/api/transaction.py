@@ -121,7 +121,7 @@ class Transaction(object):
         self.ignored_params = []
         self.response_code = 0
 
-        self._value_metrics = []
+        self._custom_metrics = []
 
         global_settings = newrelic.core.config.global_settings()
 
@@ -226,6 +226,16 @@ class Transaction(object):
             exclusive -= child.duration
         exclusive = max(0, exclusive)
 
+        # Record some custom metrics about number of
+        # concurrent requests and utilisation.
+
+        values = self._stop_request()
+
+        self.record_metric(
+                'Supportability/Agent/Transaction/Concurrent', values[0])
+        self.record_metric(
+                'Supportability/Agent/Transaction/Utilization', values[1])
+
         # Construct final root node of transaction trace.
         # Freeze path in case not already done. This will
         # construct out path.
@@ -267,7 +277,8 @@ class Transaction(object):
                 errors=tuple(self._errors),
                 slow_sql=tuple(self._slow_sql),
                 apdex_t=self._settings.apdex_t,
-                ignore_apdex=self.ignore_apdex)
+                ignore_apdex=self.ignore_apdex,
+                custom_metrics=self._custom_metrics)
 
         # Clear settings as we are all done and don't
         # need it anymore.
@@ -276,19 +287,6 @@ class Transaction(object):
         self.enabled = False
 
         self._application.record_transaction(node)
-
-        # Record some custom metrics about number of
-        # concurrent requests and utilisation.
-
-        values = self._stop_request()
-
-        self.record_metric(
-                'Supportability/Agent/Transaction/Concurrent', values[0])
-        self.record_metric(
-                'Supportability/Agent/Transaction/Utilization', values[1])
-
-        if self._value_metrics:
-            self._application.record_metrics(self._value_metrics)
 
     @property
     def state(self):
@@ -454,7 +452,7 @@ class Transaction(object):
         self._errors.append(node)
 
     def record_metric(self, name, value):
-        self._value_metrics.append((name, value))
+        self._custom_metrics.append((name, value))
 
     def _push_current(self, node):
         self._node_stack.append(node)

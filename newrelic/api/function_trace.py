@@ -6,62 +6,18 @@ import time
 import newrelic.core.function_node
 
 import newrelic.api.transaction
+import newrelic.api.time_trace
 import newrelic.api.object_wrapper
 
-class FunctionTrace(object):
+class FunctionTrace(newrelic.api.time_trace.TimeTrace):
 
-    def __init__(self, transaction, name=None, group=None):
-        assert transaction is not None
+    node = newrelic.core.function_node.FunctionNode
 
-        self._transaction = transaction
+    def __init__(self, transaction, name, group=None):
+        super(FunctionTrace, self).__init__(transaction)
 
-        self._name = name
-        self._group = group
-
-        self._children = []
-
-        self._start_time = 0.0
-        self._end_time = 0.0
-
-    def __enter__(self):
-        self._start_time = time.time()
-
-        self._transaction._node_stack.append(self)
-
-        return self
-
-    def __exit__(self, exc, value, tb):
-        self._end_time = time.time()
-
-        duration = self._end_time - self._start_time
-
-        exclusive = duration
-        for child in self._children:
-            exclusive -= child.duration
-        exclusive = max(0, exclusive)
-
-        root = self._transaction._node_stack.pop()
-        assert(root == self)
-
-        parent = self._transaction._node_stack[-1]
-
-        group = self._group
-
-        if group is None:
-            group = 'Function'
-
-        node = newrelic.core.function_node.FunctionNode(
-                group=group,
-                name=self._name,
-                children=self._children,
-                start_time=self._start_time,
-                end_time=self._end_time,
-                duration=duration,
-                exclusive=exclusive)
-
-        parent._children.append(node)
-
-        self._children = []
+        self.name = name
+        self.group = group or 'Function'
 
 class FunctionTraceWrapper(object):
 

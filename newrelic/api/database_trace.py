@@ -7,76 +7,32 @@ import traceback
 import newrelic.core.database_node
 
 import newrelic.api.transaction
+import newrelic.api.time_trace
 import newrelic.api.object_wrapper
 
-class DatabaseTrace(object):
+class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
+
+    node = newrelic.core.database_node.DatabaseNode
 
     def __init__(self, transaction, sql, dbapi=None):
-        assert transaction is not None
+        super(DatabaseTrace, self).__init__(transaction)
 
-        self._transaction = transaction
+        self.sql = sql
+        self.dbapi = dbapi
 
-        self._sql = sql
-        self._dbapi = dbapi
+        self.connect_params = None
 
-        self._children = []
+    def finalize(self):
+        self.stack_trace = None
 
-        self._start_time = 0.0
-        self._end_time = 0.0
-
-    def __enter__(self):
-        self._start_time = time.time()
-
-        self._transaction._node_stack.append(self)
-
-        return self
-
-    def __exit__(self, exc, value, tb):
-        self._end_time = time.time()
-
-        duration = self._end_time - self._start_time
-
-        exclusive = duration
-        for child in self._children:
-            exclusive -= child.duration
-        exclusive = max(0, exclusive)
-
-        root = self._transaction._node_stack.pop()
-        assert(root == self)
-
-        stack_trace = None
-
-        settings = self._transaction.settings
+        settings = self.transaction.settings
         transaction_tracer = settings.transaction_tracer
 
         if transaction_tracer.enabled and settings.collect_traces:
-            if duration >= transaction_tracer.stack_trace_threshold:
-                stack_trace = traceback.format_stack()
+            if self.duration >= transaction_tracer.stack_trace_threshold:
+                self.stack_trace = traceback.format_stack()
 
-        parent = self._transaction._node_stack[-1]
-
-        settings = self._transaction.settings
-        sql_format = settings.transaction_tracer.record_sql
-
-        node = newrelic.core.database_node.DatabaseNode(
-                dbapi=self._dbapi,
-                connect_params=None,
-                sql=self._sql,
-                children=self._children,
-                start_time=self._start_time,
-                end_time=self._end_time,
-                duration=duration,
-                exclusive=exclusive,
-                stack_trace=stack_trace,
-                sql_format=sql_format)
-
-        parent._children.append(node)
-
-        if transaction_tracer.enabled and settings.collect_traces:
-            if duration >= transaction_tracer.stack_trace_threshold:
-                self._transaction._slow_sql.append(node)
-
-        self._children = []
+        self.sql_format = transaction_tracer.record_sql
 
 class DatabaseTraceWrapper(object):
 

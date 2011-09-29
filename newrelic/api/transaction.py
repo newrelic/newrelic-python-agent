@@ -4,19 +4,16 @@ import weakref
 import threading
 import traceback
 
+import newrelic.core.config
+
 import newrelic.core.transaction_node
 import newrelic.core.error_node
 
-import newrelic.core.config
+import newrelic.api.time_trace
 
 STATE_PENDING = 0
 STATE_RUNNING = 1
 STATE_STOPPED = 2
-
-class DummyTransaction(object):
-
-    def __init__(self):
-        self._children = []
 
 class Transaction(object):
 
@@ -180,10 +177,10 @@ class Transaction(object):
         # the destructor to never be called if the
         # __exit__() function is never called. We
         # instead push on to the top of the node stack a
-        # dummy root transaction object and when done we
-        # will just grab what we need from that.
+        # dummy time trace object and when done we will
+        # just grab what we need from that.
 
-        self._node_stack.append(DummyTransaction())
+        self._node_stack.append(newrelic.api.time_trace.TimeTrace(None))
 
         return self
 
@@ -214,7 +211,7 @@ class Transaction(object):
 
         self._end_time = time.time()
 
-        children = self._node_stack.pop()._children
+        children = self._node_stack.pop().children
 
         # Derive generated values from the raw data.
 
@@ -446,6 +443,24 @@ class Transaction(object):
 
     def record_metric(self, name, value):
         self._value_metrics.append((name, value))
+
+    def _push_current(self, node):
+        self._node_stack.append(node)
+
+    def _pop_current(self, node):
+        last = self._node_stack.pop()
+        assert last == node
+        parent = self._node_stack[-1]
+        return parent
+
+    def _process_node(self, node):
+        pass
+
+        # TODO Need to incorporate slow SQL tracking.
+
+        #if transaction_tracer.enabled and settings.collect_traces:
+        #    if duration >= transaction_tracer.stack_trace_threshold:
+        #        self.transaction._slow_sql.append(node)
 
 def transaction():
     return Transaction._current_transaction()

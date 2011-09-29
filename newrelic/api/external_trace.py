@@ -6,56 +6,18 @@ import time
 import newrelic.core.external_node
 
 import newrelic.api.transaction
+import newrelic.api.time_trace
 import newrelic.api.object_wrapper
 
-class ExternalTrace(object):
+class ExternalTrace(newrelic.api.time_trace.TimeTrace):
+
+    node = newrelic.core.external_node.ExternalNode
 
     def __init__(self, transaction, library, url):
-        assert transaction is not None
+        super(ExternalTrace, self).__init__(transaction)
 
-        self._transaction = transaction
-
-        self._library = library
-        self._url = url
-
-        self._children = []
-
-        self._start_time = 0.0
-        self._end_time = 0.0
-
-    def __enter__(self):
-        self._start_time = time.time()
-
-        self._transaction._node_stack.append(self)
-
-        return self
-
-    def __exit__(self, exc, value, tb):
-        self._end_time = time.time()
-
-        duration = self._end_time - self._start_time
-
-        exclusive = duration
-        for child in self._children:
-            exclusive -= child.duration
-        exclusive = max(0, exclusive)
-
-        root = self._transaction._node_stack.pop()
-        assert(root == self)
-
-        parent = self._transaction._node_stack[-1]
-
-        node = newrelic.core.external_node.ExternalNode(
-                library=self._library,
-                url=self._url,
-                children=self._children,
-                start_time=self._start_time,
-                end_time=self._end_time,
-                duration=duration, exclusive=exclusive)
-
-        parent._children.append(node)
-
-        self._children = []
+        self.library = library
+        self.url = url
 
 class ExternalTraceWrapper(object):
 

@@ -357,7 +357,10 @@ class WSGIApplicationWrapper(object):
         transaction.__enter__()
  
         def _start_response(status, response_headers, *args):
-            transaction.response_code = int(status.split(' ')[0])
+            try:
+                transaction.response_code = int(status.split(' ')[0])
+            except:
+                pass
             return start_response(status, response_headers, *args)
  
         try:

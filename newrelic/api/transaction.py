@@ -98,9 +98,12 @@ class Transaction(object):
 
         self._request_uri = None
 
-        self._queue_start = 0.0
-        self._start_time = 0.0
-        self._end_time = 0.0
+        self.queue_start = 0.0
+
+        self.start_time = 0.0
+        self.end_time = 0.0
+
+        self.stopped = False
 
         self._errors = []
         self._slow_sql = []
@@ -157,7 +160,7 @@ class Transaction(object):
 
         # Record the start time for transaction.
 
-        self._start_time = time.time()
+        self.start_time = time.time()
 
         # Record some custom metrics about number of
         # concurrent requests and utilisation.
@@ -209,13 +212,14 @@ class Transaction(object):
 
         # Record the end time for transaction.
 
-        self._end_time = time.time()
+        if not self.stopped:
+            self.end_time = time.time()
 
         children = self._node_stack.pop().children
 
         # Derive generated values from the raw data.
 
-        duration = self._end_time - self._start_time
+        duration = self.end_time - self.start_time
 
         exclusive = duration
         for child in children:
@@ -251,9 +255,9 @@ class Transaction(object):
                 response_code=self.response_code,
                 request_params=self.request_parameters,
                 custom_params=self.custom_parameters,
-                queue_start=self._queue_start,
-                start_time=self._start_time,
-                end_time=self._end_time,
+                queue_start=self.queue_start,
+                start_time=self.start_time,
+                end_time=self.end_time,
                 duration=duration,
                 exclusive=exclusive,
                 children=tuple(children),
@@ -266,7 +270,7 @@ class Transaction(object):
         # need it anymore.
 
         self._settings = None
-        self._enabled = False
+        self.enabled = False
 
         self._application.record_transaction(node)
 
@@ -467,5 +471,21 @@ class Transaction(object):
         #    if duration >= transaction_tracer.stack_trace_threshold:
         #        self.transaction._slow_sql.append(node)
 
+    def stop_recording(self):
+        if not self.enabled:
+            return
+
+        if self.stopped:
+            return
+
+        if self.end_time:
+            return
+
+        self.end_time = time.time()
+        self.stopped = True
+
 def transaction():
-    return Transaction._current_transaction()
+    current = Transaction._current_transaction()
+    if current and current.stopped:
+        return None
+    return current

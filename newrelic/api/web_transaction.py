@@ -154,16 +154,16 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         if value and isinstance(value, basestring):
             if value.startswith('t='):
                 try:
-                    self._queue_start = int(value[2:])/1000000.0
+                    self.queue_start = int(value[2:])/1000000.0
                 except:
                     pass
 
-        if self._queue_start == 0.0:
+        if self.queue_start == 0.0:
             value = environ.get('mod_wsgi.queue_start', None)
 
             if value and isinstance(value, basestring):
                 try:
-                    self._queue_start = int(value)/1000000.0
+                    self.queue_start = int(value)/1000000.0
                 except:
                     pass
 
@@ -237,8 +237,8 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         name = _obfuscate_transaction_name(self.path,
                 self._settings.license_key)
 
-        queue_start = self._queue_start or self._start_time
-        start_time = self._start_time
+        queue_start = self.queue_start or self.start_time
+        start_time = self.start_time
         end_time = time.time()
 
         queue_duration = int((start_time - queue_start) * 1000)

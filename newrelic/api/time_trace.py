@@ -9,13 +9,22 @@ class TimeTrace(object):
         self.children = []
 
     def __enter__(self):
-        assert self.transaction is not None
+        if not self.transaction:
+            return
+
         self.start_time = time.time()
         self.transaction._push_current(self)
         return self
 
     def __exit__(self, exc, value, tb):
-        self.end_time = time.time()
+        if not self.transaction:
+            return
+
+        if self.transaction.stopped:
+            self.end_time = self.transaction.end_time
+        else:
+            self.end_time = time.time()
+
         self.duration = self.end_time - self.start_time
         self.duration = max(0, self.duration)
 

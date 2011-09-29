@@ -135,6 +135,9 @@ def handler(environ, start_response):
 
     name = environ.get('test.name', None)
     group = environ.get('test.group', None)
+    type = environ.get('test.type', None)
+
+    transaction = None
 
     if name is not None:
         transaction = newrelic.api.transaction.transaction()
@@ -149,6 +152,14 @@ def handler(environ, start_response):
     response_headers = [('Content-type', 'text/plain'),
                         ('Content-Length', str(len(output)))]
     start_response(status, response_headers)
+
+    if type == 'stop_recording' and transaction:
+        with newrelic.api.function_trace.FunctionTrace(transaction, 'abort'):
+            time.sleep(5.0)
+            transaction.stop_recording()
+            transaction = newrelic.api.transaction.transaction()
+            with newrelic.api.function_trace.FunctionTrace(transaction, 'dead'):
+                time.sleep(5.0)
 
     return [output]
 
@@ -216,6 +227,11 @@ class TransactionTests(unittest.TestCase):
 
         environ = { 'REQUEST_URI': '/request_uri?key=value',
                 'test.name': __file__, 'test.group': 'Script/Execute', }
+        handler(environ, start_response).close()
+
+        environ = { 'REQUEST_URI': '/request_uri?key=value&abort=1',
+                'test.name': __file__, 'test.group': 'Script/Execute',
+                'test.type': 'stop_recording' }
         handler(environ, start_response).close()
 
         task()

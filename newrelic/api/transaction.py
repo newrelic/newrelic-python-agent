@@ -417,9 +417,18 @@ class Transaction(object):
         else:
             custom_params = self.custom_parameters
 
+        try:
+            message = str(value)
+        except Exception:
+            try:
+                # Assume JSON encoding can handle unicode.
+                message = unicode(value)
+            except Exception:
+                message = '<unprintable %s object>' % type(value).__name__
+
         node = newrelic.core.error_node.ErrorNode(
                 type=exc.__name__,
-                message=str(value),
+                message=message,
                 stack_trace=traceback.format_exception(exc, value, tb),
                 custom_params=custom_params,
                 file_name=None,

@@ -54,6 +54,10 @@ settings.transaction_tracer.stack_trace_threshold = 0
 def my_error():
     raise RuntimeError('error-1')
 
+@newrelic.api.error_trace.error_trace()
+def my_error_unicode():
+    raise NotImplementedError(u'error-3 ' + unichr(40960))
+
 @newrelic.api.database_trace.database_trace(sql='select * from cat')
 def my_database():
     time.sleep(0.1)
@@ -109,6 +113,11 @@ def my_function_3():
 
     try:
         my_error()
+    except:
+        pass
+
+    try:
+        my_error_unicode()
     except:
         pass
 

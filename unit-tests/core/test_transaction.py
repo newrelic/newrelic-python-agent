@@ -83,7 +83,7 @@ def my_function_3():
     time.sleep(0.1)
     transaction = newrelic.api.transaction.transaction()
 
-    if transaction and transaction.active:
+    if transaction:
         transaction.application.record_metric('metric-int', 1)
         transaction.application.record_metric('metric-float', 1.0)
         transaction.custom_parameters['custom-string'] = '1'
@@ -129,7 +129,7 @@ def handler(environ, start_response):
 
     if name is not None:
         transaction = newrelic.api.transaction.transaction()
-        if transaction and transaction.active:
+        if transaction:
             transaction.name_transaction(name, group)
 
     my_function()
@@ -148,7 +148,7 @@ def task(name=None, group=None):
 
     if name is not None:
         transaction = newrelic.api.transaction.transaction()
-        if transaction and transaction.active:
+        if transaction:
             transaction.name_transaction(name, group)
 
     my_function()

@@ -292,10 +292,6 @@ class Transaction(object):
         return self._settings
 
     @property
-    def active(self):
-        return self._settings is not None
-
-    @property
     def application(self):
         return self._application
 

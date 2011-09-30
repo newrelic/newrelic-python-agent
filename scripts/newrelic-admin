@@ -211,6 +211,46 @@ def validate_config(args):
 
     #_background_task()
 
+@command('run-python', '...',
+"""Executes the Python interpreter with the supplied arguments but forces
+the initialisation of the agent automatically at startup. Licence key,
+application and log file details must be supplied via environment variables
+NEW_RELIC_LICENSE_KEY, NEW_RELIC_APP_NAME and NEW_RELIC_LOG.""")
+def run_python(args):
+    import newrelic
+
+    root_directory = os.path.dirname(newrelic.__file__)
+    boot_directory = os.path.join(root_directory, 'bootstrap')
+
+    if 'PYTHONPATH' in os.environ:
+        python_path = "%s:%s" % (boot_directory, os.environ['PYTHONPATH'])
+    else:
+        python_path = boot_directory
+
+    os.environ['PYTHONPATH'] = python_path
+
+    os.execl(sys.executable, *args)
+
+@command('run-program', '...',
+"""Executes the command line but forces the initialisation of the agent
+automatically at startup. Licence key, application and log file details
+must be supplied via environment variables NEW_RELIC_LICENSE_KEY,
+NEW_RELIC_APP_NAME and NEW_RELIC_LOG.""")
+def run_program(args):
+    import newrelic
+
+    root_directory = os.path.dirname(newrelic.__file__)
+    boot_directory = os.path.join(root_directory, 'bootstrap')
+
+    if 'PYTHONPATH' in os.environ:
+        python_path = "%s:%s" % (boot_directory, os.environ['PYTHONPATH'])
+    else:
+        python_path = boot_directory
+
+    os.environ['PYTHONPATH'] = python_path
+
+    os.execl(*args)
+
 if __name__ == '__main__':
     if len(sys.argv) == 1:
         print "Type 'newrelic-admin help' for usage."

@@ -277,7 +277,14 @@ def _load_configuration(config_file=None, environment=None,
     # If no configuration file then nothing more to be done.
 
     if not config_file:
+
         _logger.debug("no agent configuration file")
+
+        # Force initialisation of the logging system now in case
+        # setup provided by environment variables.
+
+        newrelic.core.log_file.initialize()
+
         return
 
     _logger.debug("agent configuration file was %s" % config_file)
@@ -1107,6 +1114,7 @@ def _setup_instrumentation():
 
 def initialize(config_file=None, environment=None, ignore_errors=True,
             log_file=None, log_level=None):
+
     _load_configuration(config_file, environment, ignore_errors,
             log_file, log_level)
 

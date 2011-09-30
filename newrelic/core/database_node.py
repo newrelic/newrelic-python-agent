@@ -63,10 +63,15 @@ class DatabaseNode(_DatabaseNode):
 
         elif operation in ('show',):
             name = 'Database/%s' % operation
+            scope = root.path
 
             yield newrelic.core.metric.TimeMetric(name=name,
                 scope='', overflow=None, forced=True, duration=self.duration,
                 exclusive=self.exclusive)
+
+            yield newrelic.core.metric.TimeMetric(name=name, scope=scope,
+                    overflow=None, forced=True, duration=self.duration,
+                    exclusive=self.exclusive)
 
         else:
             yield newrelic.core.metric.TimeMetric(name='Database/other',
@@ -80,7 +85,7 @@ class DatabaseNode(_DatabaseNode):
             scope = root.path
 
             yield newrelic.core.metric.TimeMetric(name='Database/other/sql',
-                scope='', overflow=None, forced=True, duration=self.duration,
+                scope=scope, overflow=None, forced=True, duration=self.duration,
                 exclusive=self.exclusive)
 
         # Now for the children.

@@ -229,7 +229,25 @@ def run_python(args):
 
     os.environ['PYTHONPATH'] = python_path
 
-    os.execl(sys.executable, sys.executable, *args)
+    # Heroku does not set #! line on installed Python scripts
+    # correctly and instead does an activate_this fiddle once
+    # script has started. The value of sys.executable is
+    # therefore wrong. Need to do a fiddle here to ensure we
+    # pick up the Python executable in the same directory as
+    # this script in preference to that used to execute this
+    # script.
+
+    bin_directory = os.path.dirname(sys.argv[0])
+
+    if bin_directory:
+        python_exe = os.path.basename(sys.executable)
+        python_exe_path = os.path.join(bin_directory, python_exe)
+        if not os.path.exists(python_exe_path):
+            python_exe_path = sys.executable
+    else:
+        python_exe_path = sys.executable
+
+    os.execl(python_exe_path, python_exe_path, *args)
 
 @command('run-program', '...',
 """Executes the command line but forces the initialisation of the agent

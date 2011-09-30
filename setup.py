@@ -44,7 +44,6 @@ packages = [
   "newrelic.lib",
   "newrelic.lib.sqlparse",
   "newrelic.lib.sqlparse.engine",
-  "newrelic.scripts",
 ]
 
 setup(

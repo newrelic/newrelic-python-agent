@@ -144,7 +144,11 @@ def handler(environ, start_response):
         if transaction:
             transaction.name_transaction(name, group)
 
+    time.sleep(0.5)
+
     my_function()
+
+    time.sleep(0.5)
 
     status = '200 OK'
     output = 'Hello World!'

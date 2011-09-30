@@ -213,10 +213,6 @@ def _process_configuration(section):
                      'get', _map_record_sql)
     _process_setting(section, 'transaction_tracer.stack_trace_threshold',
                      'getfloat', None)
-    _process_setting(section, 'transaction_tracer.expensive_nodes_limit',
-                     'getint', None)
-    _process_setting(section, 'transaction_tracer.expensive_node_minimum',
-                     'getfloat', None)
     _process_setting(section, 'error_collector.enabled',
                      'getboolean', None),
     _process_setting(section, 'error_collector.ignore_errors',

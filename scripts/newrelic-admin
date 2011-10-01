@@ -109,7 +109,12 @@ def validate_config(args):
     _logger = logging.getLogger('newrelic')
     _logger.debug('Starting agent validation.')
 
-    newrelic.agent.initialize(args[0], ignore_errors=False,
+    config_file = args[0]
+
+    if config_file == '-':
+        config_file = None
+
+    newrelic.agent.initialize(config_file, ignore_errors=False,
                log_file=_settings.log_file, log_level=_settings.log_level)
 
     _settings.app_name = 'Python Agent Test'

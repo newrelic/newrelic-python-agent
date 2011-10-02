@@ -8,6 +8,13 @@
 rm -rf build dist
 rm -rf *.egg-info
 
+# Record build number.
+
+if test x"$BUILD_NUMBER" != x""
+then
+    echo "build_number = $BUILD_NUMBER" > newrelic/build.py
+fi
+
 # Trigger the build.
 
 python setup.py build

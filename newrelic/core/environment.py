@@ -7,13 +7,19 @@ import sys
 import os
 import platform
 
+import newrelic
+
 def environment_settings():
     """Returns an array of arrays of environment settings
 
     """
 
     env = []
-    
+
+    # Agent information.
+
+    env.append(('Agent Version', '.'.join(map(str, newrelic.version_info))))
+
     # System information.
 
     env.append(('Arch', platform.machine()))

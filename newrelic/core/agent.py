@@ -6,6 +6,7 @@ interacting with the agent core.
 import logging
 import threading
 
+import newrelic
 import newrelic.core.log_file
 import newrelic.core.config
 import newrelic.core.remote
@@ -73,6 +74,9 @@ class Agent(object):
 	# we trigger initialisation again here.
 
         newrelic.core.log_file.initialize()
+
+        _logger.info('Initialising New Relic Python Agent (%s)' % \
+                     '.'.join(map(str, newrelic.version_info)))
 
         Agent._lock.acquire()
         try:

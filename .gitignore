@@ -11,6 +11,8 @@
 
 /VERSION
 
+/newrelic/build.py
+
 /newrelic.egg-info
 
 /test-env

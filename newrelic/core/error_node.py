@@ -1,5 +1,8 @@
-import collections
+try:
+    from collections import namedtuple
+except:
+    from newrelic.lib.namedtuple import namedtuple
 
-ErrorNode = collections.namedtuple('ErrorNode',
+ErrorNode = namedtuple('ErrorNode',
         ['type', 'message', 'stack_trace', 'custom_params',
         'file_name', 'line_number', 'source'])

@@ -4,15 +4,19 @@ then to be generated.
 
 """
 
-import collections
 import itertools
 import urlparse
+
+try:
+    from collections import namedtuple
+except:
+    from newrelic.lib.namedtuple import namedtuple
 
 import newrelic.core.metric
 import newrelic.core.error_collector
 import newrelic.core.trace_node
 
-_TransactionNode = collections.namedtuple('_TransactionNode',
+_TransactionNode = namedtuple('_TransactionNode',
         ['settings', 'path', 'type', 'group', 'name', 'request_uri',
         'response_code', 'request_params', 'custom_params', 'queue_start',
         'start_time', 'end_time', 'duration', 'exclusive', 'children',

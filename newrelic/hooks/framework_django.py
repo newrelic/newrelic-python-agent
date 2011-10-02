@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 import sys
 import types
 import threading
@@ -325,9 +327,14 @@ class ViewHandlerWrapper(object):
                 try:
                     return self.__wrapped(*args, **kwargs)
                 except:
-                    transaction.notice_error(*sys.exc_info(),
-                            ignore_errors=['django.http.Http404'])
+                    # Python 2.5 doesn't allow *args before keywords.
+                    # See http://bugs.python.org/issue3473.
+                    exc_info = sys.exc_info()
+                    transaction.notice_error(exc_info[0], exc_info[1],
+                            exc_info[2], ignore_errors=['django.http.Http404'])
                     raise
+                finally:
+                    exc_info = None
         else:
             return self.__wrapped(*args, **kwargs)
 

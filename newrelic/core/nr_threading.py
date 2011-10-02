@@ -47,7 +47,7 @@ class QueueProcessingThread(threading.Thread):
             work = self._work_queue.get()
             try:
                 work()
-            except Exception as ex:
+            except Exception, ex:
                 if QueueProcessingThread.STOP is ex:
                     run = False
                 if self._error_callback:

@@ -1,12 +1,15 @@
-import collections
+try:
+    from collections import namedtuple
+except:
+    from newrelic.lib.namedtuple import namedtuple
 
-RootNode = collections.namedtuple('RootNode',
+RootNode = namedtuple('RootNode',
         ['start_time', 'request_params', 'custom_params', 'root'])
 
 def root_start_time(root):
     return root.start_time / 1000.0
 
-TraceNode = collections.namedtuple('TraceNode',
+TraceNode = namedtuple('TraceNode',
         ['start_time', 'end_time', 'name', 'params', 'children'])
 
 def node_start_time(root, node):

@@ -1,12 +1,21 @@
+from __future__ import with_statement
+
 import atexit
 import threading
 import Queue
-import json
 import zlib
 import base64
 import sys
 import logging
 import time
+
+try:
+    import json
+except:
+    try:
+        import simplejson as json
+    except:
+        import newrelic.lib.simplejson as json
 
 from newrelic.core.remote import NewRelicService
 from newrelic.core.nr_threading import QueueProcessingThread

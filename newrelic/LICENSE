@@ -1,5 +1,11 @@
 This product includes sqlparse (http://pypi.python.org/pypi/sqlparse) which
-is distributed under a BSD license. See 'newrelic/lib/sqlplarse/LICENSE'.
+is distributed under a BSD license. See 'newrelic/lib/sqlplarse'.
+
+This product includes namedtuple (http://code.activestate.com/recipes/500261/)
+which is distributed under the PSF license. See 'newrelic/lib/namedtuple'.
+
+This product includes simplejson (http://pypi.python.org/pypi/simplejson)
+which is distributed under the MIT license. See 'newrelic/lib/simplejson'.
 
 All other components of this product are
 Copyright (c) 2010-2011 New Relic, Inc.  All rights reserved.

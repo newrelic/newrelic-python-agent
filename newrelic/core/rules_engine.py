@@ -1,7 +1,11 @@
 import re
-import collections
 
-_NormalizationRule = collections.namedtuple('_NormalizationRule',
+try:
+    from collections import namedtuple
+except:
+    from newrelic.lib.namedtuple import namedtuple
+
+_NormalizationRule = namedtuple('_NormalizationRule',
         ['match_expression', 'replacement', 'ignore', 'eval_order',
         'terminate_chain', 'each_segment', 'replace_all'])
 

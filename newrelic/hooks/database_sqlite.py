@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 import newrelic.api.transaction
 import newrelic.api.database_trace
 import newrelic.api.function_trace

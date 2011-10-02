@@ -1,13 +1,17 @@
-import collections
 import itertools
 import urlparse
 import re
+
+try:
+    from collections import namedtuple
+except:
+    from newrelic.lib.namedtuple import namedtuple
 
 import newrelic.core.metric
 import newrelic.core.trace_node
 import newrelic.core.database_utils
 
-_DatabaseNode = collections.namedtuple('_DatabaseNode',
+_DatabaseNode = namedtuple('_DatabaseNode',
         ['dbapi', 'connect_params', 'sql', 'children',
         'start_time', 'end_time', 'duration', 'exclusive',
         'stack_trace', 'sql_format'])

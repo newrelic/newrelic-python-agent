@@ -5,12 +5,19 @@ Created on Jul 26, 2011
 '''
 
 import os
-import json
 import httplib
 import socket
 import string
 import time
 import logging
+
+try:
+    import json
+except:
+    try:
+        import simplejson as json
+    except:
+        import newrelic.lib.simplejson as json
 
 import newrelic
 import newrelic.core.config
@@ -48,7 +55,7 @@ class NewRelicService(object):
                 finally:
                     conn.close()
 
-            except Exception as ex:
+            except Exception, ex:
                 #FIXME log
                 _logger.error('Error on agent shutdown.')
                 _logger.exception('Exception Details.')
@@ -140,10 +147,10 @@ class NewRelicService(object):
     def invoke_remote(self, connection, method, compress = True, agent_run_id = None, *args):
         try:
             return self._remote.invoke_remote(connection, method, compress, agent_run_id, *args)
-        except ForceShutdownException as ex:
+        except ForceShutdownException, ex:
             self._agent_run_id = None
             raise ex
-        except ForceRestartException as ex:
+        except ForceRestartException, ex:
             self._agent_run_id = None
             raise ex
 
@@ -216,7 +223,7 @@ class JSONRemote(object):
     def parse_response(self, str):
         try:
             res = json.loads(str)
-        except Exception as ex:
+        except Exception, ex:
             # FIXME log json
             raise Exception("Json load failed error:", ex.message, ex)
 
@@ -242,7 +249,7 @@ class JSONRemote(object):
             reply = response.read()
             try:
                 return self.parse_response(reply)
-            except Exception as ex:
+            except Exception, ex:
                 _logger.error('Error parsing JSON response.')
                 _logger.exception('Exception Details.')
                 _logger.debug('JSON Response')

@@ -1,11 +1,15 @@
-import collections
 import itertools
 import urlparse
+
+try:
+    from collections import namedtuple
+except:
+    from newrelic.lib.namedtuple import namedtuple
 
 import newrelic.core.metric
 import newrelic.core.trace_node
 
-_ExternalNode = collections.namedtuple('_ExternalNode',
+_ExternalNode = namedtuple('_ExternalNode',
         ['library', 'url', 'children', 'start_time', 'end_time',
         'duration', 'exclusive'])
 

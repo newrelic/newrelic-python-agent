@@ -1,15 +1,18 @@
-import collections
+try:
+    from collections import namedtuple
+except:
+    from newrelic.lib.namedtuple import namedtuple
 
-Metric = collections.namedtuple('Metric', ['name', 'scope'])
+Metric = namedtuple('Metric', ['name', 'scope'])
 
-ApdexMetric = collections.namedtuple('ApdexMetric',
+ApdexMetric = namedtuple('ApdexMetric',
         ['name', 'overflow', 'forced', 'satisfying', 'tolerating',
         'frustrating'])
 
-TimeMetric = collections.namedtuple('TimeMetric',
+TimeMetric = namedtuple('TimeMetric',
         ['name', 'scope', 'overflow', 'forced', 'duration', 'exclusive'])
 
-ValueMetric = collections.namedtuple('ValueMetric',
+ValueMetric = namedtuple('ValueMetric',
         ['name', 'value'])
 
 # NOTE: currently used only for tests

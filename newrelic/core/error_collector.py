@@ -4,11 +4,13 @@ Created on Jul 30, 2011
 @author: sdaubin
 '''
 
+try:
+    from collections import namedtuple
+except:
+    from newrelic.lib.namedtuple import namedtuple
 
-import collections
-
-TracedError = collections.namedtuple('TracedError', ['start_time','path','message','type','parameters'])
-
+TracedError = namedtuple('TracedError',
+         ['start_time','path','message','type','parameters'])
 
 def error_parameters(uri,backtrace=[],request_params={},custom_params={}):
     params = {}

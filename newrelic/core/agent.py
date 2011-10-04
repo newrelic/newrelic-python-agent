@@ -75,7 +75,7 @@ class Agent(object):
 
         newrelic.core.log_file.initialize()
 
-        _logger.info('Initialising New Relic Python Agent (%s)' % \
+        _logger.info('New Relic Python Agent (%s)' % \
                      '.'.join(map(str, newrelic.version_info)))
 
         Agent._lock.acquire()

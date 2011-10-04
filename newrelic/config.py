@@ -65,12 +65,11 @@ _cache_object = []
 # internal configuration settings object.
 
 _LOG_LEVEL = {
+    'CRITICAL' : logging.CRITICAL,
     'ERROR' : logging.ERROR,
     'WARNING': logging.WARNING,
     'INFO' : logging.INFO,
-    'VERBOSE' : logging.INFO,
     'DEBUG' : logging.DEBUG,
-    'VERBOSEDEBUG': logging.DEBUG,
 }
 
 _RECORD_SQL = {

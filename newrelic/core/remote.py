@@ -71,19 +71,19 @@ class NewRelicService(object):
         return self._agent_run_id is not None
 
     def connect(self,conn=None):
-        _logger.info("Service connection.")
+        _logger.debug("Service connection.")
         create_conn = conn is None
-        _logger.info("Connection required %s." % create_conn)
+        _logger.debug("Connection required %s." % create_conn)
         try:
             if create_conn:
-                _logger.info("Creating new connection.")
+                _logger.debug("Creating new connection.")
                 conn = self._remote.create_connection()
-                _logger.info("Got new connection.")
+                _logger.debug("Got new connection.")
             redirect_host = self.invoke_remote(conn, "get_redirect_host", True, None)
 
             if redirect_host is not None:
                 self._remote.host = redirect_host
-                _logger.info("Collector redirection to %s" % redirect_host)
+                _logger.debug("Collector redirection to %s" % redirect_host)
 
             self.parse_connect_response(self.invoke_remote(conn, "connect", True, None, self.get_start_options()))
         except:

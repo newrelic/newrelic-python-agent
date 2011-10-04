@@ -43,12 +43,11 @@ _settings.debug = DebugSettings()
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
 
 _LOG_LEVEL = {
+    'CRITICAL' : logging.CRITICAL,
     'ERROR' : logging.ERROR,
     'WARNING': logging.WARNING,
     'INFO' : logging.INFO,
-    'VERBOSE' : logging.INFO,
     'DEBUG' : logging.DEBUG,
-    'VERBOSEDEBUG': logging.DEBUG,
 }
 
 _settings.log_level = os.environ.get('NEW_RELIC_LOG_LEVEL', 'INFO').upper()

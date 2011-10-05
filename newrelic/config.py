@@ -1034,6 +1034,10 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.framework_cherrypy',
             'instrument_cherrypy_cptree')
 
+    _process_module_definition('tornado.wsgi',
+            'newrelic.hooks.adapter_tornado',
+            'instrument_tornado_wsgi')
+
     _process_module_definition('cx_Oracle',
             'newrelic.hooks.database_dbapi2')
     _process_module_definition('MySQLdb',

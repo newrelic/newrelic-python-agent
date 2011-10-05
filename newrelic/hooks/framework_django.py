@@ -7,7 +7,6 @@ import threading
 import newrelic.api.transaction
 import newrelic.api.function_trace
 import newrelic.api.in_function
-import newrelic.api.out_function
 import newrelic.api.pre_function
 import newrelic.api.post_function
 import newrelic.api.error_trace

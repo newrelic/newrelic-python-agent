@@ -87,7 +87,7 @@ def environment_settings():
         dispatcher.append(('Dispatcher', 'flup/fastcgi (threaded)'))
 
     if not dispatcher and 'flup.server.fcgi_fork' in sys.modules:
-        dispatcher.append(('Dispatcher', 'flup/fastcgi (prefork))'))
+        dispatcher.append(('Dispatcher', 'flup/fastcgi (prefork)'))
 
     if not dispatcher and 'flup.server.scgi' in sys.modules:
         dispatcher.append(('Dispatcher', 'flup/scgi (threaded)'))

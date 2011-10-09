@@ -19,28 +19,6 @@ STATE_STOPPED = 2
 
 class Transaction(object):
 
-    _requests_lock = threading.Lock()
-    _requests_time = 0.0
-    _requests = 0
-
-    @classmethod
-    def _start_request(cls):
-        with cls._requests_lock:
-            now = time.time()
-            value = (cls._requests * (now - cls._requests_time)) / 60.0
-            cls._requests_time = now
-            cls._requests += 1
-            return (cls._requests, value)
-
-    @classmethod
-    def _stop_request(cls):
-        with cls._requests_lock:
-            now = time.time()
-            value = (cls._requests * (now - cls._requests_time)) / 60.0
-            cls._requests_time = now
-            cls._requests -= 1
-            return (cls._requests, value)
-
     _transactions = weakref.WeakValueDictionary()
 
     @classmethod
@@ -164,16 +142,6 @@ class Transaction(object):
 
         self.start_time = time.time()
 
-        # Record some custom metrics about number of
-        # concurrent requests and utilisation.
-
-        values = self._start_request()
-
-        self.record_metric(
-                'Supportability/Agent/Transaction/Concurrent', values[0])
-        self.record_metric(
-                'Supportability/Agent/Transaction/Utilization', values[1])
-
         # We need to push an object onto the top of the
         # node stack so that children can reach back and
         # add themselves as children to the parent. We
@@ -227,16 +195,6 @@ class Transaction(object):
         for child in children:
             exclusive -= child.duration
         exclusive = max(0, exclusive)
-
-        # Record some custom metrics about number of
-        # concurrent requests and utilisation.
-
-        values = self._stop_request()
-
-        self.record_metric(
-                'Supportability/Agent/Transaction/Concurrent', values[0])
-        self.record_metric(
-                'Supportability/Agent/Transaction/Utilization', values[1])
 
         # Construct final root node of transaction trace.
         # Freeze path in case not already done. This will

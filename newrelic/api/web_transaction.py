@@ -7,6 +7,7 @@ import base64
 import time
 import string
 
+import newrelic.api.application
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
 

@@ -11,6 +11,9 @@ def instrument(module):
 
         def __init__(self, cursor):
             self.__cursor = cursor
+            self.fetchone = self.__cursor.fetchone
+            self.fetchmany = self.__cursor.fetchmany
+            self.fetchall = self.__cursor.fetchall
 
         def __getattr__(self, name):
             return getattr(self.__cursor, name)

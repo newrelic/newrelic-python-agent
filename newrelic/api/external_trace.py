@@ -21,6 +21,12 @@ class ExternalTrace(newrelic.api.time_trace.TimeTrace):
         self.library = library
         self.url = url
 
+    def create_node(self):
+        return self.node(library=self.library, url=self.url,
+                children=self.children, start_time=self.start_time,
+                end_time=self.end_time, duration=self.duration,
+                exclusive=self.exclusive)
+
 class ExternalTraceWrapper(object):
 
     def __init__(self, wrapped, library, url):

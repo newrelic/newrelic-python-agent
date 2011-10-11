@@ -185,16 +185,17 @@ class Transaction(object):
         if not self.stopped:
             self.end_time = time.time()
 
-        children = self._node_stack.pop().children
+        root = self._node_stack.pop()
+        children = root.children
 
-        # Derive generated values from the raw data.
+        # Derive generated values from the raw data. The
+        # dummy root node has exclusive time of children
+        # as negative number. Add our own duration to get
+        # our own exclusive time.
 
         duration = self.end_time - self.start_time
 
-        exclusive = duration
-        for child in children:
-            exclusive -= child.duration
-        exclusive = max(0, exclusive)
+        exclusive = duration + root.exclusive
 
         # Construct final root node of transaction trace.
         # Freeze path in case not already done. This will

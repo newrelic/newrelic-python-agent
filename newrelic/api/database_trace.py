@@ -24,7 +24,7 @@ class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
 
         self.connect_params = None
 
-    def finalize(self):
+    def finalize_data(self):
         self.stack_trace = None
 
         settings = self.transaction.settings
@@ -35,6 +35,13 @@ class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
                 self.stack_trace = traceback.format_stack()
 
         self.sql_format = transaction_tracer.record_sql
+
+    def create_node(self):
+        return self.node(dbapi=self.dbapi, sql=self.sql,
+                children=self.children, connect_params=self.connect_params,
+                start_time=self.start_time, end_time=self.end_time,
+                duration=self.duration, exclusive=self.exclusive,
+                stack_trace=self.stack_trace, sql_format=self.sql_format)
 
 class DatabaseTraceWrapper(object):
 

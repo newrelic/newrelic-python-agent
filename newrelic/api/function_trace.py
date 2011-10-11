@@ -21,6 +21,12 @@ class FunctionTrace(newrelic.api.time_trace.TimeTrace):
         self.name = name
         self.group = group or 'Function'
 
+    def create_node(self):
+        return self.node(group=self.group, name=self.name,
+                children=self.children, start_time=self.start_time,
+                end_time=self.end_time, duration=self.duration,
+                exclusive=self.exclusive)
+
 class FunctionTraceWrapper(object):
 
     def __init__(self, wrapped, name=None, group=None):

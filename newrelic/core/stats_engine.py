@@ -36,7 +36,7 @@ class ApdexStats(list):
         self[1] += other[1]
         self[2] += other[2]
 
-    def merge_metric(self, metric):
+    def merge_apdex_metric(self, metric):
         """Merge data from an apdex metric object."""
 
         self[0] += metric.satisfying
@@ -77,18 +77,31 @@ class TimeStats(list):
 
         self[0] += other[0]
 
-    def merge_metric(self, metric):
-        """Merge data from a time or value metric object."""
+    def merge_time_metric(self, metric):
+        """Merge data from a time metric object."""
 
-        if hasattr(metric, 'duration') and hasattr(metric, 'exclusive'):
-            duration = metric.duration
-            exclusive = metric.exclusive
+        duration = metric.duration
+        exclusive = metric.exclusive
 
-            if exclusive is None:
-                exclusive = duration
-        else:
-            duration = metric.value
-            exclusive = metric.value
+        if exclusive is None:
+            exclusive = duration
+
+        self[1] += duration
+        self[2] += exclusive
+        self[3] = self[0] and min(self[3], duration) or duration
+        self[4] = max(self[4], duration)
+        self[5] += duration ** 2
+
+	# Must update the call count last as update of the
+	# minimum call time is dependent on initial value.
+
+        self[0] += 1
+
+    def merge_value_metric(self, metric):
+        """Merge data from a value metric object."""
+
+        duration = metric.value
+        exclusive = metric.value
 
         self[1] += duration
         self[2] += exclusive
@@ -208,7 +221,7 @@ class StatsEngine(object):
         if stats is None:
             stats = ApdexStats()
             self.__stats_table[key] = stats
-        stats.merge_metric(metric)
+        stats.merge_apdex_metric(metric)
 
     def record_apdex_metrics(self, metrics):
 	"""Record the apdex metrics supplied by the iterable for a
@@ -245,7 +258,7 @@ class StatsEngine(object):
         if stats is None:
             stats = TimeStats()
             self.__stats_table[key] = stats
-        stats.merge_metric(metric)
+        stats.merge_time_metric(metric)
 
     def record_time_metrics(self, metrics, threshold, minimum, maximum):
 	"""Record the time metrics supplied by the iterable for a single
@@ -322,7 +335,7 @@ class StatsEngine(object):
         if stats is None:
             stats = TimeStats()
             self.__stats_table[key] = stats
-        stats.merge_metric(metric)
+        stats.merge_value_metric(metric)
 
     def record_value_metrics(self, metrics):
 	"""Record the value metrics supplied by the iterable, merging

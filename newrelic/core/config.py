@@ -107,7 +107,8 @@ _settings.transaction_name.limit = 500
 
 _settings.transaction_metrics.overflow_minimum = 5
 _settings.transaction_metrics.overflow_maximum = 10
-_settings.transaction_metrics.overflow_threshold = 0.05
+#_settings.transaction_metrics.overflow_threshold = 0.05
+_settings.transaction_metrics.overflow_threshold = 0.0
 
 _settings.debug.ignore_all_server_settings = False
 _settings.debug.local_settings_overrides = []

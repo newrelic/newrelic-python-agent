@@ -226,6 +226,12 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'debug.sql_statement_parsing',
                      'getboolean', None)
+    _process_setting(section, 'transaction_metrics.overflow_minimum',
+                     'getint', None)
+    _process_setting(section, 'transaction_metrics.overflow_maximum',
+                     'getint', None)
+    _process_setting(section, 'transaction_metrics.overflow_threshold',
+                     'getfloat', None)
 
 # Loading of configuration from specified file and for specified
 # deployment environment. Can also indicate whether configuration

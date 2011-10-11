@@ -1,6 +1,3 @@
-import itertools
-import urlparse
-
 try:
     from collections import namedtuple
 except:

@@ -272,3 +272,6 @@ class Application(object):
                     self._stats_engine.merge_stats(stats, collect_errors=False)
                 except:
                     _logger.exception('Failed to remerge harvest data.')
+
+                if not self._service.connected():
+                    self._work_queue.put_nowait(self.connect)

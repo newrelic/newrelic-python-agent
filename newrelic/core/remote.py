@@ -144,6 +144,8 @@ class NewRelicService(object):
         settings = newrelic.core.config.create_settings_snapshot(response)
         self._configuration = settings
 
+        _logger.debug('Connection response %s' % settings)
+
     def invoke_remote(self, connection, method, compress = True, agent_run_id = None, *args):
         try:
             return self._remote.invoke_remote(connection, method, compress, agent_run_id, *args)

@@ -383,6 +383,8 @@ class Transaction(object):
         else:
             custom_params = self._custom_params
 
+        type = exc.__name__
+
         try:
             message = str(value)
         except Exception:
@@ -392,10 +394,24 @@ class Transaction(object):
             except Exception:
                 message = '<unprintable %s object>' % type(value).__name__
 
+        stack_trace = traceback.format_exception(exc, value, tb)
+
+	# Check that we have not recorded this exception
+	# previously for this transaction due to multiple
+	# error traces triggering. This is not going to be
+        # exact but the UI hides exceptions of same type
+        # anyway. Better that we under count exceptions of
+        # same type and message rather than count same one
+        # multiple times.
+
+        for error in self._errors:
+            if error.type == type and error.message == message:
+                return
+
         node = newrelic.core.error_node.ErrorNode(
-                type=exc.__name__,
+                type=type,
                 message=message,
-                stack_trace=traceback.format_exception(exc, value, tb),
+                stack_trace=stack_trace,
                 custom_params=custom_params,
                 file_name=None,
                 line_number=None,

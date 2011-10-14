@@ -600,7 +600,10 @@ class StatsEngine(object):
         return result
 
     def formatted_sql(self, dbapi, format, sql):
-        if format != 'obfuscated':
+        if format == 'off':
+            return ''
+        sql = sql.strip()
+        if format == 'raw':
             return sql
         name = dbapi and dbapi.__name__ or None 
         key = (name, sql)

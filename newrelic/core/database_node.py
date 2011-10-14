@@ -142,12 +142,15 @@ class DatabaseNode(_DatabaseNode):
         end_time = newrelic.core.trace_node.node_end_time(root, self)
         children = [child.trace_node(stats, root) for child in self.children]
 
+        params = {}
+
         sql = stats.formatted_sql(self.dbapi, self.sql_format, self.sql)
 
-        params = { 'sql': sql }
+        if sql:
+            params['sql'] = sql
 
-        if self.stack_trace:
-            params['backtrace'] = self.stack_trace
+            if self.stack_trace:
+                params['backtrace'] = self.stack_trace
 
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children)

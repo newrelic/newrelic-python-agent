@@ -277,7 +277,22 @@ def run_program(args):
 
     os.environ['PYTHONPATH'] = python_path
 
-    os.execl(args[0], *args)
+    program_exe_path = args[0]
+
+    # If not an absolute or relative path, then we need to
+    # see if program can be found in PATH. Note that can
+    # be found in current working directory even though '.'
+    # not in PATH.
+
+    if not os.path.dirname(program_exe_path):
+        program_search_path = os.environ.get('PATH', '').split(':')
+        for path in program_search_path:
+            path = os.path.join(path, program_exe_path)
+            if os.path.exists(path) and os.access(path, os.X_OK):
+                program_exe_path = path
+                break
+
+    os.execl(program_exe_path, *args)
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:

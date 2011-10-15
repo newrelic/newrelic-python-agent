@@ -3,6 +3,7 @@ import os
 
 import newrelic.api.transaction
 import newrelic.api.import_hook
+import newrelic.api.web_transaction
 import newrelic.api.external_trace
 import newrelic.api.function_trace
 import newrelic.api.name_transaction
@@ -79,6 +80,8 @@ def instrument_gluon_restricted(module):
             name=name_function_restricted, group=group_function_restricted)
 
 def instrument_gluon_main(module):
+
+    newrelic.api.web_transaction.wrap_wsgi_application(module, 'wsgibase')
 
     # Wrap main function which dispatches the various
     # phases of a request in order to capture any

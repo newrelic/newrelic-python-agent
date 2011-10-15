@@ -247,7 +247,8 @@ def run_python(args):
     if bin_directory:
         python_exe = os.path.basename(sys.executable)
         python_exe_path = os.path.join(bin_directory, python_exe)
-        if not os.path.exists(python_exe_path):
+        if (not os.path.exists(python_exe_path) or
+                not os.access(python_exe_path, os.X_OK)):
             python_exe_path = sys.executable
     else:
         python_exe_path = sys.executable

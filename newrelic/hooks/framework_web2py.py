@@ -190,8 +190,12 @@ def instrument_gluon_http(module):
 
         frame = sys._getframe(1)
 
+        if os.path.split(frame.f_code.co_filename)[-1] == 'pre_function.py':
+            frame = frame.f_back
+
         if os.path.split(frame.f_code.co_filename)[-1] != 'main.py':
             return
+
         if frame.f_code.co_name != 'wsgibase':
             return
 

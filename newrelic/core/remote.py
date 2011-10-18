@@ -85,6 +85,9 @@ class NewRelicService(object):
                 self._remote.host = redirect_host
                 _logger.debug("Collector redirection to %s" % redirect_host)
 
+            _logger.info('New Relic Data Collector (%s:%s)' % (
+                    self._remote.host, self._remote._port))
+
             self.parse_connect_response(self.invoke_remote(conn, "connect", True, None, self.get_start_options()))
         except:
             _logger.exception('Failed to connect to core application.')

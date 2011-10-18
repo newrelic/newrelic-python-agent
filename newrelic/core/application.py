@@ -54,9 +54,11 @@ class Application(object):
         self._work_queue = Queue.Queue(10)
         self._work_thread = QueueProcessingThread(("New Relic Worker Thread (%s)" % str(self._app_names)),self._work_queue)
         self._work_thread.start()
-        self._work_queue.put_nowait(self.connect)
 
         self._samplers = newrelic.core.samplers.create_samplers()
+
+        self._connected_event = threading.Event()
+        self._work_queue.put_nowait(self.connect)
 
         # Force harvesting of metrics on process shutdown. Required
         # as various Python web application hosting mechanisms can
@@ -84,6 +86,12 @@ class Application(object):
     def configuration(self):
         return self._service.configuration
 
+    def wait_for_connection(self, timeout):
+        self._connected_event.wait(timeout)
+        if not self._connected_event.isSet():
+            _logger.debug("Timeout out waiting for New Relic service "
+                          "connection with timeout of %s seconds." % timeout)
+
     def connect(self):
         try:
             _logger.debug("Connecting to the New Relic service.")
@@ -108,6 +116,12 @@ class Application(object):
                         self._service.configuration.url_rules)
 
                 _logger.debug("Connected to the New Relic service.")
+
+                # Don't ever clear this at this point so is really only
+                # signalling the first successful connection having been
+                # made.
+
+                self._connected_event.set()
 
             return connected
         except:
@@ -155,11 +169,11 @@ class Application(object):
 
     def record_transaction(self, data):
         try:
-	    # We accumulate stats into a workarea and only then
-	    # merge it into the main one under a thread lock. Do
-	    # this to ensure that the process of generating the
-	    # metrics into the stats don't unecessarily lock out
-	    # another thread.
+            # We accumulate stats into a workarea and only then
+            # merge it into the main one under a thread lock. Do
+            # this to ensure that the process of generating the
+            # metrics into the stats don't unecessarily lock out
+            # another thread.
 
             stats = self._stats_engine.create_workarea()
             stats.record_transaction(data)

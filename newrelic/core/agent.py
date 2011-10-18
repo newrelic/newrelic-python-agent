@@ -68,10 +68,10 @@ class Agent(object):
         if Agent._instance:
             return Agent._instance
 
-	# Just in case that the main initialisation function
-	# wasn't called to read in a configuration file and as
-	# such the logging system was not initialised already,
-	# we trigger initialisation again here.
+        # Just in case that the main initialisation function
+        # wasn't called to read in a configuration file and as
+        # such the logging system was not initialised already,
+        # we trigger initialisation again here.
 
         newrelic.core.log_file.initialize()
 
@@ -90,9 +90,9 @@ class Agent(object):
             Agent._lock.release()
 
     def __init__(self, config):
-	"""Initialises the agent and attempt to establish a connection
-	to the core application. Will start the harvest loop running but
-	will not activate any applications.
+        """Initialises the agent and attempt to establish a connection
+        to the core application. Will start the harvest loop running but
+        will not activate any applications.
 
         """
 
@@ -132,21 +132,21 @@ class Agent(object):
             self._harvester = None
 
     def global_settings(self):
-	"""Returns the global default settings object. If access is
-	needed to this prior to initialising the agent, use the
-	'newrelic.core.config' module directly.
+        """Returns the global default settings object. If access is
+        needed to this prior to initialising the agent, use the
+        'newrelic.core.config' module directly.
 
         """
 
         return newrelic.core.config.global_settings()
 
     def application_settings(self, app_name):
-	"""Returns the application specific settings object. This only
-	returns a valid settings object once a connection has been
-	established to the core application and the application server
-	side settings have been obtained. If this returns None then
-	activate_application() should be used to force activation for
-	the agent in case that hasn't been done previously.
+        """Returns the application specific settings object. This only
+        returns a valid settings object once a connection has been
+        established to the core application and the application server
+        side settings have been obtained. If this returns None then
+        activate_application() should be used to force activation for
+        the agent in case that hasn't been done previously.
 
         """
 
@@ -155,35 +155,38 @@ class Agent(object):
         if application:
             return application.configuration
 
-    def activate_application(self, app_name, linked_applications=[]):
-	"""Initiates activation for the named application if this has
-	not been done previously. If an attempt to trigger the
-	activation of the application has already been performed,
-	whether or not that has completed, calling this again will
+    def activate_application(self, app_name, linked_applications=[],
+                             timeout=0.0):
+        """Initiates activation for the named application if this has
+        not been done previously. If an attempt to trigger the
+        activation of the application has already been performed,
+        whether or not that has completed, calling this again will
         have no affect.
 
-	The list of linked applications is the additional applications
-	to which data should also be reported in addition to the primary
-	application.
+        The list of linked applications is the additional applications
+        to which data should also be reported in addition to the primary
+        application.
+
+        The timeout is how long to wait for the initial connection. The
+        timeout only applies the first time a specific named application
+        is being activated. The timeout would be used by test harnesses
+        and can't really be used by activation of application for first
+        request because it can take up to a second for initial handshake
+        to get back configuration settings for application.
 
         """
 
         if not self._harvester:
             return
 
-	# FIXME To make testing easier, need to be able to supply an
-	# argument indicating want to wait for application to be
-	# activated. This could be indefinite wait, or be a time value.
-        # Should be able to do this based on a thread condition variable.
-
-        linked_applications = sorted(set(linked_applications))
-
         Agent._lock.acquire()
         try:
             application = self._applications.get(app_name, None)
             if not application:
+                linked_applications = sorted(set(linked_applications))
                 application = newrelic.core.application.Application(
                         self._remote, app_name, linked_applications)
+                application.wait_for_connection(timeout)
                 self._applications[app_name] = application
                 self._harvester.register_harvest_listener(application)
         finally:
@@ -191,24 +194,24 @@ class Agent(object):
 
     @property
     def applications(self):
-	"""Returns a dictionary of the internal application objects
-	cooresponding to the applications for which activation has already
-	been requested. This does not reflect whether activation has been
-	successful or not. To determine if application if currently in an
-	activated state use application_settings() method to see if a valid
-	application settings objects is available or query the application
+        """Returns a dictionary of the internal application objects
+        cooresponding to the applications for which activation has already
+        been requested. This does not reflect whether activation has been
+        successful or not. To determine if application if currently in an
+        activated state use application_settings() method to see if a valid
+        application settings objects is available or query the application
         object directly.
 
         """
         return self._applications
 
     def application(self, app_name):
-	"""Returns the internal application object for the named
-	application or None if not activate. When an application object
+        """Returns the internal application object for the named
+        application or None if not activate. When an application object
         is returned, it does not relect whether activation has been
-	successful or not. To determine if application if currently in an
-	activated state use application_settings() method to see if a valid
-	application settings objects is available or query the application
+        successful or not. To determine if application if currently in an
+        activated state use application_settings() method to see if a valid
+        application settings objects is available or query the application
         object directly.
 
         """
@@ -216,14 +219,14 @@ class Agent(object):
         return self._applications.get(app_name, None)
 
     def record_metric(self, app_name, name, value):
-	"""Records a basic metric for the named application. If there has
-	been no prior request to activate the application, the metric is
-	discarded.
+        """Records a basic metric for the named application. If there has
+        been no prior request to activate the application, the metric is
+        discarded.
 
         """
 
-	# FIXME Are base metrics ignored if the application is not in
-	# the activated state when received or are they accumulated?
+        # FIXME Are base metrics ignored if the application is not in
+        # the activated state when received or are they accumulated?
 
         application = self._applications.get(app_name, None)
         if application is None:
@@ -232,15 +235,15 @@ class Agent(object):
         application.record_metric(name, value)
 
     def record_metrics(self, app_name, metrics):
-	"""Records the metrics for the named application. If there has
-	been no prior request to activate the application, the metric is
-	discarded. The metrics should be an iterable yielding tuples
+        """Records the metrics for the named application. If there has
+        been no prior request to activate the application, the metric is
+        discarded. The metrics should be an iterable yielding tuples
         consisting of the name and value.
 
         """
 
-	# FIXME Are base metrics ignored if the application is not in
-	# the activated state when received or are they accumulated?
+        # FIXME Are base metrics ignored if the application is not in
+        # the activated state when received or are they accumulated?
 
         application = self._applications.get(app_name, None)
         if application is None:
@@ -250,9 +253,9 @@ class Agent(object):
 
     def record_transaction(self, app_name, data):
         """Processes the raw transaction data, generating and recording
-	appropriate metrics against the named application. If there has
-	been no prior request to activate the application, the metric is
-	discarded.
+        appropriate metrics against the named application. If there has
+        been no prior request to activate the application, the metric is
+        discarded.
 
         The actual processing of the raw transaction data is performed
         by the process_raw_transaction() function of the module

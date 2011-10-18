@@ -53,8 +53,9 @@ class Application(object):
     def active(self):
         return self.settings is not None
 
-    def activate(self):
-        self._agent.activate_application(self._name, self._linked)
+    def activate(self, timeout=0.0):
+        # The timeout only applies on the first call.
+        self._agent.activate_application(self._name, self._linked, timeout)
 
     def shutdown(self):
         pass

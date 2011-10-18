@@ -192,24 +192,18 @@ def validate_config(args):
 
     _application = newrelic.api.application.application()
 
-    #_status = _application.activate(wait=True)
-    _status = _application.activate()
+    timeout = 5.0
 
-    """
-    if not _application.running:
+    _status = _application.activate(timeout=timeout)
+
+    if not _application.active:
         raise RuntimeError('Unable to register application for test, '
-                           'check that the local daemon process is running '
-                           'and is configured properly.')
-    """
+                           'connection could not be established within '
+                           '%s seconds.' % timeout)
 
     _logger.debug('Run the validation test.')
 
     _environ = { 'SCRIPT_NAME': '', 'PATH_INFO': '/test' }
-
-    _iterable = _wsgi_application(_environ, _start_response)
-    _iterable.close()
-
-    time.sleep(5.0)
 
     _iterable = _wsgi_application(_environ, _start_response)
     _iterable.close()

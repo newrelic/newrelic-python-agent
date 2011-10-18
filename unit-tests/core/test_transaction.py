@@ -203,10 +203,7 @@ class TransactionTests(unittest.TestCase):
 
 	# Want to force agent initialisation and connection so
 	# we know that data will actually get through to core
-	# and not lost because application not activated. We
-        # really need a way of saying to the agent that want to
-        # wait, either indefinitely or for a set period, when
-        # activating the application. Will make this easier.
+	# and not lost because application not activated.
 
         agent = newrelic.core.agent.agent()
 
@@ -214,13 +211,8 @@ class TransactionTests(unittest.TestCase):
         application_settings = agent.application_settings(name)
         self.assertEqual(application_settings, None)
 
-        agent.activate_application(name)
-
-        for i in range(10):
-            application_settings = agent.application_settings(name)
-            if application_settings:
-                break
-            time.sleep(0.5)
+        agent.activate_application(name, timeout=5.0)
+        application_settings = agent.application_settings(name)
 
         # If this fails it means we weren't able to establish
         # a connection and activate the named application.

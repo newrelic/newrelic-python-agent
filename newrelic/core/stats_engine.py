@@ -72,8 +72,8 @@ class TimeStats(list):
         self[4] = max(self[4], other[4])
         self[5] += other[5]
 
-	# Must update the call count last as update of the
-	# minimum call time is dependent on initial value.
+        # Must update the call count last as update of the
+        # minimum call time is dependent on initial value.
 
         self[0] += other[0]
 
@@ -92,8 +92,8 @@ class TimeStats(list):
         self[4] = max(self[4], duration)
         self[5] += duration ** 2
 
-	# Must update the call count last as update of the
-	# minimum call time is dependent on initial value.
+        # Must update the call count last as update of the
+        # minimum call time is dependent on initial value.
 
         self[0] += 1
 
@@ -109,8 +109,8 @@ class TimeStats(list):
         self[4] = max(self[4], duration)
         self[5] += duration ** 2
 
-	# Must update the call count last as update of the
-	# minimum call time is dependent on initial value.
+        # Must update the call count last as update of the
+        # minimum call time is dependent on initial value.
 
         self[0] += 1
 
@@ -154,8 +154,8 @@ class StatsEngine(object):
 
     @property
     def slow_transaction(self):
-	"""Returns a reference to the details of the slowest transaction
-	for the reporting period or None if one hasn't been recorded.
+        """Returns a reference to the details of the slowest transaction
+        for the reporting period or None if one hasn't been recorded.
 
         """
 
@@ -163,8 +163,8 @@ class StatsEngine(object):
 
     @property
     def transaction_errors(self):
-	"""Returns a reference to a list containing any errors collected
-	during the reporting period.
+        """Returns a reference to a list containing any errors collected
+        during the reporting period.
 
         """
 
@@ -172,8 +172,8 @@ class StatsEngine(object):
 
     @property
     def sql_traces(self):
-	"""Returns a reference to a list containing any sql traces
-	collected during the reporting period.
+        """Returns a reference to a list containing any sql traces
+        collected during the reporting period.
 
         """
 
@@ -181,24 +181,24 @@ class StatsEngine(object):
 
     @property
     def metric_ids(self):
-	"""Returns a reference to the dictionary containing the mappings
-	from metric (name, scope) to the integer identifier supplied
-	back from the core application. These integer identifiers are
-	used when sending data to the core application to cut down on
-	the size of data being sent.
+        """Returns a reference to the dictionary containing the mappings
+        from metric (name, scope) to the integer identifier supplied
+        back from the core application. These integer identifiers are
+        used when sending data to the core application to cut down on
+        the size of data being sent.
 
         """
 
         return self.__metric_ids
 
     def update_metric_ids(self, metric_ids):
-	"""Updates the dictionary containing the mappings from metric
-	(name, scope) to the integer identifier supplied back from the
-	core application. The input should be an iterable returning a
-	list of pairs where first is a dictionary with name and scope
-	keys with corresponding values. The second should be the integer
-	identifier. The dictionary is converted to a (name, scope) tuple
-	for use as key into the internal dictionary containing the
+        """Updates the dictionary containing the mappings from metric
+        (name, scope) to the integer identifier supplied back from the
+        core application. The input should be an iterable returning a
+        list of pairs where first is a dictionary with name and scope
+        keys with corresponding values. The second should be the integer
+        identifier. The dictionary is converted to a (name, scope) tuple
+        for use as key into the internal dictionary containing the
         mappings.
 
         """
@@ -208,8 +208,8 @@ class StatsEngine(object):
             self.__metric_ids[key] = value
 
     def record_apdex_metric(self, metric):
-	"""Record a single apdex metric, merging the data with any data
-	from prior apdex metrics with the same name.
+        """Record a single apdex metric, merging the data with any data
+        from prior apdex metrics with the same name.
 
         """
 
@@ -224,9 +224,9 @@ class StatsEngine(object):
         stats.merge_apdex_metric(metric)
 
     def record_apdex_metrics(self, metrics):
-	"""Record the apdex metrics supplied by the iterable for a
-	single transaction, merging the data with any data from prior
-	apdex metrics with the same name.
+        """Record the apdex metrics supplied by the iterable for a
+        single transaction, merging the data with any data from prior
+        apdex metrics with the same name.
 
         """
 
@@ -237,8 +237,8 @@ class StatsEngine(object):
             self.record_apdex_metric(metric)
 
     def record_time_metric(self, metric, overflow=False):
-	"""Record a single time metric, merging the data with any data
-	from prior time metrics with the same name and scope. When
+        """Record a single time metric, merging the data with any data
+        from prior time metrics with the same name and scope. When
         overflow is true then the overflow metric name is used rather
         than the original metric name.
 
@@ -247,8 +247,8 @@ class StatsEngine(object):
         if not self.__settings:
             return
 
-	# Scope is forced to be empty string if None as
-	# scope of None is reserved for apdex metrics.
+        # Scope is forced to be empty string if None as
+        # scope of None is reserved for apdex metrics.
 
         if overflow:
             key = (metric.overflow, metric.scope or '')
@@ -261,17 +261,17 @@ class StatsEngine(object):
         stats.merge_time_metric(metric)
 
     def record_time_metrics(self, metrics, threshold, minimum, maximum):
-	"""Record the time metrics supplied by the iterable for a single
-	transaction, merging the data with any data from prior time
-	metrics with the same name and scope. For metrics which are not
-	being forced and which define an overflow metric, a minimum
-	number of unique metrics will be reported. This will be those with
-	longest exclusive time. Beyond that mininum number of unique
-	metrics, subsequent metrics will be distinctly reported if they
-	have exclusive time greater than the threshold, stopping when a
-	maximum number of unique metrics have been recorded. After that the
-	metrics will be reported against any defined overflow metric name
-	instead.
+        """Record the time metrics supplied by the iterable for a single
+        transaction, merging the data with any data from prior time
+        metrics with the same name and scope. For metrics which are not
+        being forced and which define an overflow metric, a minimum
+        number of unique metrics will be reported. This will be those with
+        longest exclusive time. Beyond that mininum number of unique
+        metrics, subsequent metrics will be distinctly reported if they
+        have exclusive time greater than the threshold, stopping when a
+        maximum number of unique metrics have been recorded. After that the
+        metrics will be reported against any defined overflow metric name
+        instead.
 
         """
 
@@ -316,19 +316,19 @@ class StatsEngine(object):
                 self.record_time_metric(metric)
 
     def record_value_metric(self, metric):
-	"""Record a single value metric, merging the data with any data
-	from prior value metrics with the same name.
+        """Record a single value metric, merging the data with any data
+        from prior value metrics with the same name.
 
         """
 
         if not self.__settings:
             return
 
-	# Scope is forced to be empty string. This means
-	# that it can overlap with a time metric, but no
-	# validation is done to avoid clashes and mixing
-	# the two types of metrics will simply cause
-	# incorrect data.
+        # Scope is forced to be empty string. This means
+        # that it can overlap with a time metric, but no
+        # validation is done to avoid clashes and mixing
+        # the two types of metrics will simply cause
+        # incorrect data.
 
         key = (metric.name, '')
         stats = self.__stats_table.get(key)
@@ -338,8 +338,8 @@ class StatsEngine(object):
         stats.merge_value_metric(metric)
 
     def record_value_metrics(self, metrics):
-	"""Record the value metrics supplied by the iterable, merging
-	the data with any data from prior value metrics with the same
+        """Record the value metrics supplied by the iterable, merging
+        the data with any data from prior value metrics with the same
         name.
 
         """
@@ -395,19 +395,19 @@ class StatsEngine(object):
         # configuration and finished after application had been
         # restarted.
 
-	# Record the apdex, value and time metrics generated from the
-	# transaction. Whether time metrics are reported as distinct
-	# metrics or into a rollup is in part controlled via settings
-	# for minimum number of unique metrics to be reported and thence
-	# whether over a time threshold calculated as percentage of
-	# overall request time, up to a maximum number of unique
-	# metrics. This is intended to limit how many metrics are
-	# reported for each transaction and try and cutdown on an
-	# explosion of unique metric names. The limits and thresholds
-	# are applied after the metrics are reverse sorted based on
-	# exclusive times for each metric. This ensures that the metrics
-	# with greatest exclusive time are retained over those with
-	# lesser time. Such metrics get reported into the performance
+        # Record the apdex, value and time metrics generated from the
+        # transaction. Whether time metrics are reported as distinct
+        # metrics or into a rollup is in part controlled via settings
+        # for minimum number of unique metrics to be reported and thence
+        # whether over a time threshold calculated as percentage of
+        # overall request time, up to a maximum number of unique
+        # metrics. This is intended to limit how many metrics are
+        # reported for each transaction and try and cutdown on an
+        # explosion of unique metric names. The limits and thresholds
+        # are applied after the metrics are reverse sorted based on
+        # exclusive times for each metric. This ensures that the metrics
+        # with greatest exclusive time are retained over those with
+        # lesser time. Such metrics get reported into the performance
         # breakdown tab for specific web transactions.
 
         self.record_apdex_metrics(transaction.apdex_metrics(self))
@@ -440,9 +440,9 @@ class StatsEngine(object):
         if transaction_tracer.enabled and settings.collect_traces:
             self.__sql_traces.extend(transaction.sql_traces(self))
 
-	# Remember as slowest transaction if transaction tracer
-	# is enabled, it is over the threshold and slower than
-	# any existing transaction.
+        # Remember as slowest transaction if transaction tracer
+        # is enabled, it is over the threshold and slower than
+        # any existing transaction.
 
         threshold = transaction_tracer.transaction_threshold
 
@@ -454,12 +454,12 @@ class StatsEngine(object):
                     self.__slow_transaction = transaction
 
     def metric_data(self):
-	"""Returns a generator yielding the low level metric data for
-	sending to the core application pertaining to the reporting
-	period. This consists of tuple pairs where first is dictionary
-	with name and scope keys with corresponding values, or integer
-	identifier if metric had an entry in dictionary mapping metric
-	(name, scope) as supplied from core application. The second is
+        """Returns a generator yielding the low level metric data for
+        sending to the core application pertaining to the reporting
+        period. This consists of tuple pairs where first is dictionary
+        with name and scope keys with corresponding values, or integer
+        identifier if metric had an entry in dictionary mapping metric
+        (name, scope) as supplied from core application. The second is
         the list of accumulated metric data, the list always being of
         length 6.
 
@@ -473,11 +473,11 @@ class StatsEngine(object):
             yield key, value
 
     def reset_stats(self, settings):
-	"""Resets the accumulated statistics back to initial state and
-	associates the application settings object with the stats
-	engine. This should be called when application is first
-	activated and combined application settings incorporating server
-	side settings are available. Would also be called on any forced
+        """Resets the accumulated statistics back to initial state and
+        associates the application settings object with the stats
+        engine. This should be called when application is first
+        activated and combined application settings incorporating server
+        side settings are available. Would also be called on any forced
         restart of agent or a reconnection due to loss of connection.
 
         """
@@ -492,22 +492,22 @@ class StatsEngine(object):
         self.__sql_obfuscated = {}
 
     def create_snapshot(self):
-	"""Creates a snapshot of the accumulated statistics, error
-	details and slow transaction and returns it. This is a shallow
-	copy, only copying the top level objects. The originals are then
-	reset back to being empty, with the exception of the dictionary
-	mapping metric (name, scope) to the integer identifiers received
-	from the core application. The latter is retained as should
-	carry forward to subsequent runs. This method would be called
+        """Creates a snapshot of the accumulated statistics, error
+        details and slow transaction and returns it. This is a shallow
+        copy, only copying the top level objects. The originals are then
+        reset back to being empty, with the exception of the dictionary
+        mapping metric (name, scope) to the integer identifiers received
+        from the core application. The latter is retained as should
+        carry forward to subsequent runs. This method would be called
         to snapshot the data when doing the harvest.
 
         """
 
         stats = copy.copy(self)
 
-	# We retain the table of metric IDs. This should be okay
-	# for continuing connection. If connection is lost then
-	# reset_engine() above would be called and it would be
+        # We retain the table of metric IDs. This should be okay
+        # for continuing connection. If connection is lost then
+        # reset_engine() above would be called and it would be
         # all thrown away so no chance of following through with
         # incorrect mappings. Possibly even fine to retain them
         # over a reset but need to verify that.
@@ -522,13 +522,13 @@ class StatsEngine(object):
         return stats
 
     def create_workarea(self):
-	"""Creates and returns a new empty stats engine object but where
-	the settings, tables of parsed SQL and obfuscated SQL are shared
-	with this instance. This would be used to distill stats from a
+        """Creates and returns a new empty stats engine object but where
+        the settings, tables of parsed SQL and obfuscated SQL are shared
+        with this instance. This would be used to distill stats from a
         single web transaction before then merging it back into the parent
         under a thread lock.
 
-	"""
+        """
 
         stats = StatsEngine()
 
@@ -548,8 +548,8 @@ class StatsEngine(object):
 
         """
 
-	# Merge back data into any new data which has been
-	# accumulated.
+        # Merge back data into any new data which has been
+        # accumulated.
 
         # FIXME Should all metrics always be merged back in?
 

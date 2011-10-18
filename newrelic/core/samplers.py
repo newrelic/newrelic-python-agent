@@ -145,3 +145,36 @@ class MemorySampler(object):
                 name='Memory/Physical', value=_memory_used())
 
 register_sampler(MemorySampler)
+
+class ThreadUtilizationSampler(object):
+
+    def __init__(self):
+        self._last_timestamp = time.time()
+        self._utilization = mod_wsgi.thread_utilization()
+
+    def value_metrics(self):
+        now = time.time()
+        new_utilization = mod_wsgi.thread_utilization()
+
+        elapsed_time = now - self._last_timestamp
+
+        utilization = new_utilization - self._utilization
+
+        utilization = utilization / elapsed_time
+
+        self._last_timestamp = now
+        self._utilization = new_utilization
+
+        yield newrelic.core.metric.ValueMetric(
+                name='Supportability/WSGI/Thread/Count',
+                value=mod_wsgi.threads_per_process)
+        yield newrelic.core.metric.ValueMetric(
+                name='Supportability/WSGI/Thread/Utilization',
+                value=utilization)
+
+try:
+    import mod_wsgi
+    if hasattr(mod_wsgi, 'thread_utilization'):
+        register_sampler(ThreadUtilizationSampler)
+except:
+    pass

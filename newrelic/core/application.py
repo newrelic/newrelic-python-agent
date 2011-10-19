@@ -2,7 +2,6 @@ from __future__ import with_statement
 
 import atexit
 import threading
-import Queue
 import zlib
 import base64
 import sys
@@ -17,9 +16,7 @@ except:
     except:
         import newrelic.lib.simplejson as json
 
-from newrelic.core.remote import NewRelicService
-from newrelic.core.nr_threading import QueueProcessingThread
-
+import newrelic.core.remote
 import newrelic.core.metric
 import newrelic.core.stats_engine
 import newrelic.core.rules_engine
@@ -42,23 +39,20 @@ class Application(object):
         self._app_names = [app_name] + linked_applications
 
         self._remote = remote
-        self._service = NewRelicService(remote, self._app_names)
+        self._service = newrelic.core.remote.NewRelicService(
+                remote, self._app_names)
 
         self._stats_lock = threading.Lock()
         self._stats_engine = newrelic.core.stats_engine.StatsEngine()
+
         self._stats_custom_lock = threading.Lock()
         self._stats_custom_engine = newrelic.core.stats_engine.StatsEngine()
-        self._rules_engine = None
 
-        # we could pull this queue and its processor up to the agent
-        self._work_queue = Queue.Queue(10)
-        self._work_thread = QueueProcessingThread(("New Relic Worker Thread (%s)" % str(self._app_names)),self._work_queue)
-        self._work_thread.start()
+        self._rules_engine = None
 
         self._samplers = newrelic.core.samplers.create_samplers()
 
         self._connected_event = threading.Event()
-        self._work_queue.put_nowait(self.connect)
 
         # Force harvesting of metrics on process shutdown. Required
         # as various Python web application hosting mechanisms can
@@ -79,14 +73,18 @@ class Application(object):
     def linked_applications(self):
         return self._linked_applications
 
-    def stop(self):
-        self._work_thread.stop()
-
     @property
     def configuration(self):
         return self._service.configuration
 
-    def wait_for_connection(self, timeout):
+    def activate_session(self):
+        self._connected_event.clear()
+        thread = threading.Thread(target=self.connect,
+                name='NR-Activate-Session/%s' % self.name)
+        thread.setDaemon(True)
+        thread.start()
+
+    def wait_for_session_activation(self, timeout):
         self._connected_event.wait(timeout)
         if not self._connected_event.isSet():
             _logger.debug("Timeout out waiting for New Relic service "
@@ -288,4 +286,4 @@ class Application(object):
                     _logger.exception('Failed to remerge harvest data.')
 
                 if not self._service.connected():
-                    self._work_queue.put_nowait(self.connect)
+                    self.activate_session()

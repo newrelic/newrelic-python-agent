@@ -186,7 +186,9 @@ class Agent(object):
                 linked_applications = sorted(set(linked_applications))
                 application = newrelic.core.application.Application(
                         self._remote, app_name, linked_applications)
-                application.wait_for_connection(timeout)
+                application.activate_session()
+                if timeout:
+                    application.wait_for_session_activation(timeout)
                 self._applications[app_name] = application
                 self._harvester.register_harvest_listener(application)
         finally:

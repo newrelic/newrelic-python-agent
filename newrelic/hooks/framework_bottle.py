@@ -6,8 +6,7 @@ import newrelic.api.function_trace
 
 def instrument(module):
 
-    newrelic.api.web_transaction.wrap_wsgi_application(
-            module, 'Bottle.wsgi')
+    version = map(int, module.__version__.split('.'))
 
     def out_Bottle_match(result):
         callback, args = result
@@ -17,16 +16,36 @@ def instrument(module):
                 ignore_errors=['bottle.HTTPResponse', 'bottle.RouteReset'])
         return callback, args
 
-    newrelic.api.out_function.wrap_out_function(
-            module, 'Bottle._match', out_Bottle_match)
+    if version >= [0, 9, 0]:
+        newrelic.api.web_transaction.wrap_wsgi_application(
+                module, 'Bottle.wsgi')
 
-    newrelic.api.function_trace.wrap_function_trace(
-            module, 'SimpleTemplate.render')
-    newrelic.api.function_trace.wrap_function_trace(
-            module, 'MakoTemplate.render')
-    newrelic.api.function_trace.wrap_function_trace(
-            module, 'CheetahTemplate.render')
-    newrelic.api.function_trace.wrap_function_trace(
-            module, 'Jinja2Template.render')
-    newrelic.api.function_trace.wrap_function_trace(
-            module, 'SimpleTALTemplate.render')
+        newrelic.api.out_function.wrap_out_function(
+                module, 'Bottle._match', out_Bottle_match)
+
+        newrelic.api.function_trace.wrap_function_trace(
+                module, 'SimpleTemplate.render')
+        newrelic.api.function_trace.wrap_function_trace(
+                module, 'MakoTemplate.render')
+        newrelic.api.function_trace.wrap_function_trace(
+                module, 'CheetahTemplate.render')
+        newrelic.api.function_trace.wrap_function_trace(
+                module, 'Jinja2Template.render')
+        newrelic.api.function_trace.wrap_function_trace(
+                module, 'SimpleTALTemplate.render')
+
+    else:
+        newrelic.api.web_transaction.wrap_wsgi_application(
+                module, 'Bottle.__call__')
+
+        newrelic.api.out_function.wrap_out_function(
+                module, 'Bottle.match_url', out_Bottle_match)
+
+        newrelic.api.function_trace.wrap_function_trace(
+                module, 'SimpleTemplate.render')
+        newrelic.api.function_trace.wrap_function_trace(
+                module, 'MakoTemplate.render')
+        newrelic.api.function_trace.wrap_function_trace(
+                module, 'CheetahTemplate.render')
+        newrelic.api.function_trace.wrap_function_trace(
+                module, 'Jinja2Template.render')

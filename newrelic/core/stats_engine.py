@@ -6,6 +6,7 @@ data whereby it is sent to the core application.
 """
 
 import operator
+import weakref
 import copy
 
 import newrelic.core.metric
@@ -114,6 +115,11 @@ class TimeStats(list):
 
         self[0] += 1
 
+class CachedObject(object):
+
+    def __init__(self, value):
+        self.value = value
+
 class StatsEngine(object):
 
     """The stats engine object holds the accumulated transactions metrics,
@@ -142,6 +148,9 @@ class StatsEngine(object):
 
     """
 
+    __sql_parsed = weakref.WeakValueDictionary()
+    __sql_obfuscated = weakref.WeakValueDictionary()
+
     def __init__(self):
         self.__settings = None
         self.__stats_table = {}
@@ -149,8 +158,9 @@ class StatsEngine(object):
         self.__transaction_errors = []
         self.__sql_traces = []
         self.__metric_ids = {}
-        self.__sql_parsed = {}
-        self.__sql_obfuscated = {}
+
+        self.__sql_parsed_history = [set()]
+        self.__sql_obfuscated_history = [set()] 
 
     @property
     def slow_transaction(self):
@@ -460,8 +470,15 @@ class StatsEngine(object):
         self.__transaction_errors = []
         self.__sql_traces = []
         self.__metric_ids = {}
-        self.__sql_parsed = {}
-        self.__sql_obfuscated = {}
+
+        # FIXME Method needs to be called something better such as
+        # rollover.
+
+        self.__sql_parsed_history.insert(0, set())
+        self.__sql_parsed_history = self.__sql_parsed_history[:3]
+
+        self.__sql_obfuscated_history.insert(0, set())
+        self.__sql_obfuscated_history = self.__sql_obfuscated_history[:3]
 
     def create_snapshot(self):
         """Creates a snapshot of the accumulated statistics, error
@@ -488,8 +505,9 @@ class StatsEngine(object):
         self.__slow_transaction = None
         self.__transaction_errors = []
         self.__sql_traces = []
-        self.__sql_parsed = {}
-        self.__sql_obfuscated = {}
+
+        self.__sql_parsed_history = [set()]
+        self.__sql_obfuscated_history = [set()] 
 
         return stats
 
@@ -564,23 +582,47 @@ class StatsEngine(object):
                     transaction.duration > self.slow_transaction.duration:
                 self.__slow_transaction = transaction
 
+        # Merge history of SQL from snapshot.
+
+        for cache in snapshot.__sql_parsed_history:
+            self.__sql_parsed_history[0].update(cache)
+        for cache in snapshot.__sql_obfuscated_history:
+            self.__sql_obfuscated_history[0].update(cache)
+
     def parsed_sql(self, sql):
-        if sql in self.__sql_parsed:
-            return self.__sql_parsed[sql]
+        result = self.__sql_parsed.get(sql, None)
+        if result is not None:
+            self.__sql_parsed_history[0].add(result)
+            return result.value
+
         result = newrelic.core.database_utils.parsed_sql(sql)
-        self.__sql_parsed[sql] = result
+        cached_object = CachedObject(result)
+        self.__sql_parsed[sql] = cached_object
+        self.__sql_parsed_history[0].add(cached_object)
+
         return result
 
     def formatted_sql(self, dbapi, format, sql):
         if format == 'off':
             return ''
+
+        # FIXME Need to implement truncation here.
+
         sql = sql.strip()
         if format == 'raw':
             return sql
+
         name = dbapi and dbapi.__name__ or None 
         key = (name, sql)
-        if key in self.__sql_obfuscated:
-            return self.__sql_obfuscated[key]
+
+        result = self.__sql_obfuscated.get(key, None)
+        if result is not None:
+            self.__sql_obfuscated_history[0].add(result)
+            return result.value
+
         result = newrelic.core.database_utils.obfuscate_sql(name, sql)
-        self.__sql_obfuscated[key] = result
+        cached_object = CachedObject(result)
+        self.__sql_obfuscated[key] = cached_object
+        self.__sql_obfuscated_history[0].add(cached_object)
+
         return result

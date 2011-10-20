@@ -3,14 +3,15 @@ interacting with the agent core.
 
 """
 
+import time
 import logging
 import threading
+import atexit
 
 import newrelic
 import newrelic.core.log_file
 import newrelic.core.config
 import newrelic.core.remote
-import newrelic.core.harvest
 import newrelic.core.application
 
 _logger = logging.getLogger('newrelic.core.agent')
@@ -85,6 +86,7 @@ class Agent(object):
 
                 settings = newrelic.core.config.global_settings()
                 Agent._instance = Agent(settings)
+                Agent._instance.activate_agent()
             return Agent._instance
         finally:
             Agent._lock.release()
@@ -122,14 +124,15 @@ class Agent(object):
                         config.license_key, config.host, config.port)
 
         self._applications = {}
+        self._config = config
 
-        # FIXME Should harvest period be a configuration
-        # parameter.
+        self._harvest_thread = threading.Thread(target=self._harvest_loop,
+                name='NR-Harvest-Thread')
+        self._harvest_thread.setDaemon(True)
+        self._harvest_shutdown = threading.Event()
 
-        if config.monitor_mode:
-            self._harvester = newrelic.core.harvest.Harvester(self._remote, 60)
-        else:
-            self._harvester = None
+        if self._config.monitor_mode:
+            atexit.register(self.shutdown_agent)
 
     def global_settings(self):
         """Returns the global default settings object. If access is
@@ -176,7 +179,7 @@ class Agent(object):
 
         """
 
-        if not self._harvester:
+        if not self._config.monitor_mode:
             return
 
         Agent._lock.acquire()
@@ -190,7 +193,6 @@ class Agent(object):
                 if timeout:
                     application.wait_for_session_activation(timeout)
                 self._applications[app_name] = application
-                self._harvester.register_harvest_listener(application)
         finally:
             Agent._lock.release()
 
@@ -278,31 +280,113 @@ class Agent(object):
 
         return application.normalize_name(name)
 
-    # FIXME The following for managing running state of harvester and
-    # applications should probably support the concept of a manually
-    # triggered restart. Have to think about the case where a fork of
-    # process occurs after this is initialised and new requests handled
-    # in the sub process. As is, the higher level instrumentation layer
-    # will only activate this agent on the first request which would
-    # normally be after the fork. But this doesn't rule out that someone
-    # may come up with some odd system where both parent and child
-    # handle requests. The parent for example may run background tasks
-    # rather than handle specific web requests.
+    def _harvest_loop(self):
+        now = time.time()
 
-    def stop(self):
-        if not self._harvester:
+        self._next_harvest = ((now-(now+30.0)%60.0)+60.0)
+
+        while True:
+            if self._harvest_shutdown.isSet():
+		# We would have just finished a harvest or only
+		# just started the agent, so don't bother doing
+		# a forced harvest if shutting down anyway.
+
+                return
+
+            now = time.time()
+            delay = self._next_harvest - now
+            self._next_harvest += 60.0
+
+            if delay > 0.0:
+                self._harvest_shutdown.wait(delay) 
+                if self._harvest_shutdown.isSet(): 
+                    # Force a final harvest on agent shutdown.
+
+                    self._run_harvest()
+                    return
+
+            self._run_harvest()
+
+            # Something really went wrong here and we are overdue
+            # already for next harvest. Skip it and wait until the
+            # next harvest time instead.
+
+            now = time.time()
+            while self._next_harvest < now:
+                self._next_harvest += 60.0
+
+    def _run_harvest(self):
+        # If we can't even get a connection at the start of this
+        # harvest then pass on doing all the applications.
+
+        try:
+            connection = self._remote.create_connection()
+        except:
+            _logger.exception('Failed to create connection, aborting '
+                              'harvest for all applications.')
+
+        try:
+	    # XXX This isn't going to main order of applications
+	    # such that oldest is always done first. A new one
+	    # could come in earlier once added and upset the
+	    # overall timing.
+
+            for application in self._applications.values():
+                try:
+		    # Last application to be harvested this time
+		    # around failed and we must have closed the
+		    # connection. Attempt to create a new
+		    # connection so can try remaining
+		    # applications. If it a issues with being
+		    # able to contact data collector will likely
+		    # fail again, but better that than missing
+		    # later applications because an early one
+		    # failed for an unknown reason.
+
+                    if not connection:
+                        try:
+                            connection = self._remote.create_connection()
+                        except:
+                            _logger.exception('Failed to create connection, '
+                                              'aborting harvest.')
+
+                    # Connection okay. Harvest single application.
+
+                    application.harvest(connection)
+
+                except:
+                    _logger.exception('Failed to harvest data for %s.' %
+                                      application.name)
+
+                    # For any sort of failure, close and null out
+                    # the connection. If more applications still to
+                    # go then will create a connection again for it
+                    # when enter loop again above.
+
+                    connection.close()
+                    connection = None
+
+        finally:
+            connection.close()
+
+    def activate_agent(self):
+        if not self._config.monitor_mode:
+            return
+        if self._harvest_thread.isAlive():
+            return
+        self._harvest_thread.start()
+
+    def shutdown_agent(self, timeout=None):
+        if self._harvest_shutdown.isSet():
             return
 
-        for app in self._applications.itervalues():
-            app.stop()
-        self._harvester.stop()
-        self._applications.clear()
+        if timeout is None:
+            timeout = self._config.shutdown_timeout
 
-    def shutdown(self):
-        if not self._harvester:
-            return
+        _logger.info('New Relic Python Agent Shutdown')
 
-        self._harvester.stop_harvest_thread()
+        self._harvest_shutdown.set()
+        self._harvest_thread.join(timeout)
 
 def agent():
     """Returns the agent object. This function should always be used and

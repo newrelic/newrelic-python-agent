@@ -85,6 +85,7 @@ _settings.include_environ = [ 'REQUEST_METHOD', 'HTTP_USER_AGENT',
                               'HTTP_REFERRER' ]
 
 _settings.sampling_rate = 0
+_settings.shutdown_timeout = 2.5
 
 _settings.beacon = None
 _settings.application_id = None

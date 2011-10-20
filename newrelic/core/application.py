@@ -1,6 +1,5 @@
 from __future__ import with_statement
 
-import atexit
 import threading
 import zlib
 import base64
@@ -25,15 +24,8 @@ import newrelic.core.samplers
 _logger = logging.getLogger('newrelic.core.application')
 
 class Application(object):
-    '''
-    classdocs
-    '''
 
     def __init__(self, remote, app_name, linked_applications=[]):
-        '''
-        Constructor
-        '''
-
         self._app_name = app_name
         self._linked_applications = sorted(set(linked_applications))
         self._app_names = [app_name] + linked_applications
@@ -53,17 +45,6 @@ class Application(object):
         self._samplers = newrelic.core.samplers.create_samplers()
 
         self._connected_event = threading.Event()
-
-        # Force harvesting of metrics on process shutdown. Required
-        # as various Python web application hosting mechanisms can
-        # restart processes on regular basis and in worst case with
-        # CGI/WSGI process, on every request.
-
-        # TODO Note that need to look at possibilities that forcing
-        # harvest will hang and whether some timeout mechanism will
-        # be needed, otherwise process shutdown may be delayed.
-
-        atexit.register(self.force_harvest)
 
     @property
     def name(self):
@@ -97,7 +78,7 @@ class Application(object):
             _logger.debug("Connection status is %s." % connected)
             if connected:
                 # TODO Is it right that stats are thrown away all the time.
-                # What is meant to happen to stats went core application
+                # What is meant to happen to stats when core application
                 # requested a restart?
 
                 # FIXME Could then stats engine objects simply be replaced.
@@ -182,10 +163,6 @@ class Application(object):
             _logger.exception('Recording transaction failed.')
         finally:
             self._stats_lock.release()
-
-    def force_harvest(self):
-        connection = self._remote.create_connection()
-        self.harvest(connection)
 
     def harvest(self,connection):
         _logger.debug("Harvesting.")
@@ -287,3 +264,5 @@ class Application(object):
 
                 if not self._service.connected():
                     self.activate_session()
+
+            _logger.debug("Done harvesting.")

@@ -156,11 +156,14 @@ class Application(object):
 
             stats = self._stats_engine.create_workarea()
             stats.record_transaction(data)
+        except:
+            _logger.exception('Recording transaction failed.')
 
+        try:
             self._stats_lock.acquire()
             self._stats_engine.merge_stats(stats)
         except:
-            _logger.exception('Recording transaction failed.')
+            _logger.exception('Merging transaction failed.')
         finally:
             self._stats_lock.release()
 

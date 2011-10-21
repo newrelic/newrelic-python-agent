@@ -5,7 +5,21 @@ except:
 
 import newrelic.core.metric
 import newrelic.core.trace_node
-import newrelic.core.database_utils
+
+from newrelic.core.database_utils import obfuscate_sql, parsed_sql
+
+def formatted_sql(dbapi, format, sql):
+    if format == 'off':
+        return ''
+
+    # FIXME Need to implement truncation somewhere.
+
+    if format == 'raw':
+        return sql
+
+    name = dbapi and dbapi.__name__ or None 
+
+    return obfuscate_sql(name, sql)
 
 _DatabaseNode = namedtuple('_DatabaseNode',
         ['dbapi', 'connect_params', 'sql', 'children',
@@ -40,7 +54,7 @@ class DatabaseNode(_DatabaseNode):
         # does appear to generate one. Also, the SQL parser has
         # special cases for 'set', 'create' and 'call' as well.
 
-        table, operation = stats.parsed_sql(self.sql)
+        table, operation = parsed_sql(self.sql)
 
         if operation in ('select', 'update', 'insert', 'delete'):
             name = 'Database/%s/%s' % (table, operation)
@@ -90,10 +104,10 @@ class DatabaseNode(_DatabaseNode):
 
         # Now for the children.
 
-	# TODO Above exclusive times don't take into
-	# consideration children if any existed. Still need to
-	# work out how such children to this nodes is meant to
-	# work.
+        # TODO Above exclusive times don't take into
+        # consideration children if any existed. Still need to
+        # work out how such children to this nodes is meant to
+        # work.
 
         for child in self.children:
             for metric in child.time_metrics(stats, root, self):
@@ -101,7 +115,7 @@ class DatabaseNode(_DatabaseNode):
 
     def sql_trace_node(self, stats, root):
 
-        table, operation = stats.parsed_sql(self.sql)
+        table, operation = parsed_sql(self.sql)
 
         # TODO Verify that these are the correct names to use.
         # Could possibly cache this if necessary.
@@ -115,7 +129,7 @@ class DatabaseNode(_DatabaseNode):
 
         duration = self.duration
 
-        sql = stats.formatted_sql(self.dbapi, self.sql_format, self.sql)
+        sql = formatted_sql(self.dbapi, self.sql_format, self.sql)
 
         # FIXME This is where we need to generate the data structure,
         # likely a dictionary for holding single sql trace. Believe
@@ -126,7 +140,7 @@ class DatabaseNode(_DatabaseNode):
 
     def trace_node(self, stats, root):
 
-        table, operation = stats.parsed_sql(self.sql)
+        table, operation = parsed_sql(self.sql)
 
         # TODO Verify that these are the correct names to use.
         # Could possibly cache this if necessary.
@@ -144,7 +158,7 @@ class DatabaseNode(_DatabaseNode):
 
         params = {}
 
-        sql = stats.formatted_sql(self.dbapi, self.sql_format, self.sql)
+        sql = formatted_sql(self.dbapi, self.sql_format, self.sql)
 
         if sql:
             params['sql'] = sql

@@ -13,6 +13,7 @@ import newrelic.core.log_file
 import newrelic.core.config
 import newrelic.core.remote
 import newrelic.core.application
+import newrelic.core.database_utils
 
 _logger = logging.getLogger('newrelic.core.agent')
 
@@ -287,9 +288,9 @@ class Agent(object):
 
         while True:
             if self._harvest_shutdown.isSet():
-		# We would have just finished a harvest or only
-		# just started the agent, so don't bother doing
-		# a forced harvest if shutting down anyway.
+                # We would have just finished a harvest or only
+                # just started the agent, so don't bother doing
+                # a forced harvest if shutting down anyway.
 
                 return
 
@@ -311,9 +312,18 @@ class Agent(object):
             # already for next harvest. Skip it and wait until the
             # next harvest time instead.
 
+            # FIXME Should harvest period be configuration setting.
+
             now = time.time()
             while self._next_harvest < now:
                 self._next_harvest += 60.0
+
+            # Expire entries from any caches which are being kept.
+
+            # FIXME Make number of harvest periods that cache entries
+            # are kept for configurable.
+
+            newrelic.core.database_utils.sql_properties_cache.expire(3)
 
     def _run_harvest(self):
         # If we can't even get a connection at the start of this
@@ -326,22 +336,22 @@ class Agent(object):
                               'harvest for all applications.')
 
         try:
-	    # XXX This isn't going to main order of applications
-	    # such that oldest is always done first. A new one
-	    # could come in earlier once added and upset the
-	    # overall timing.
+            # XXX This isn't going to main order of applications
+            # such that oldest is always done first. A new one
+            # could come in earlier once added and upset the
+            # overall timing.
 
             for application in self._applications.values():
                 try:
-		    # Last application to be harvested this time
-		    # around failed and we must have closed the
-		    # connection. Attempt to create a new
-		    # connection so can try remaining
-		    # applications. If it a issues with being
-		    # able to contact data collector will likely
-		    # fail again, but better that than missing
-		    # later applications because an early one
-		    # failed for an unknown reason.
+                    # Last application to be harvested this time
+                    # around failed and we must have closed the
+                    # connection. Attempt to create a new
+                    # connection so can try remaining
+                    # applications. If it a issues with being
+                    # able to contact data collector will likely
+                    # fail again, but better that than missing
+                    # later applications because an early one
+                    # failed for an unknown reason.
 
                     if not connection:
                         try:

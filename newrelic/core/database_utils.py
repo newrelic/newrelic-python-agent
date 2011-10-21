@@ -4,10 +4,51 @@ explain plans for SQL etc.
 """
 
 import re
+import weakref
 
 import newrelic.lib.sqlparse
 import newrelic.lib.sqlparse.sql
 import newrelic.lib.sqlparse.tokens
+
+# Caching mechanism for storing generated results from operations on
+# database queries. Values are kept in a weak value dictionary with
+# moving history of buckets also holding the value so not removed from
+# the dictionary. The cached should be expired on each harvest loop
+# iteration. To allow for preservation of frequently used results, a
+# number of the buckets retaining history should be kept when cache is
+# expired.
+#
+# Note that there is no thread locking on this and that should not be an
+# issue. It will mean that there is a race condition for adding entries,
+# but since result will always be the same, doesn't matter if work
+# duplicated in this rare case.
+
+class SqlProperties(object):
+
+    def __init__(self, sql):
+        self.sql = sql
+        self.obfuscated = None
+        self.parsed = None
+
+class SqlPropertiesCache(object):
+
+    def __init__(self):
+        self.__cache = weakref.WeakValueDictionary()
+        self.__history = [set()]
+
+    def fetch(self, sql):
+        entry = self.__cache.get(sql, None)
+        if entry is None:
+            entry = SqlProperties(sql)
+            self.__cache[sql] = entry
+        self.__history[0].add(entry)
+        return entry
+
+    def expire(self, keep):
+        self.__history.insert(0, set())
+        self.__history = self.__history[:keep+1]
+
+sql_properties_cache = SqlPropertiesCache()
 
 # See http://stackoverflow.com/questions/6718874.
 #
@@ -42,6 +83,11 @@ def obfuscate_sql(name, sql):
 
     """
 
+    entry = sql_properties_cache.fetch(sql)
+
+    if entry.obfuscated is not None:
+        return entry.obfuscated
+
     # Substitute quoted strings first. In the case of MySQL it
     # uses back quotes around table names so safe to replace
     # contents of strings using either single of double quotes.
@@ -50,18 +96,20 @@ def obfuscate_sql(name, sql):
     # quoted strings.
 
     if name in ['MySQLdb']:
-        sql = _any_quotes_re.sub('?', sql)
+        obfuscated = _any_quotes_re.sub('?', sql)
     else:
-        sql = _single_quotes_re.sub('?', sql)
+        obfuscated = _single_quotes_re.sub('?', sql)
 
     # Finally replace straight integer values. This will pick
     # up integers by themselves but also as part of floating
     # point numbers. Because of word boundary checks in pattern
     # will not match numbers within identifier names.
 
-    sql = _int_re.sub('?', sql)
+    obfuscated = _int_re.sub('?', obfuscated)
 
-    return sql
+    entry.obfuscated = obfuscated
+
+    return obfuscated
 
 class SqlParser:
     def __init__(self, sql):
@@ -135,6 +183,11 @@ class SqlParser:
         return self._get_first_identifier_after(idx)
 
 def parsed_sql(sql):
+    entry = sql_properties_cache.fetch(sql)
+
+    if entry.parsed is not None:
+        return entry.parsed
+
     # FIXME The SqlParser class doesn't cope well with badly
     # formed input data, so need to catch exceptions here.
 
@@ -145,5 +198,7 @@ def parsed_sql(sql):
     except:
         table = None
         operation = None
+
+    entry.parsed = (table, operation)
 
     return table, operation

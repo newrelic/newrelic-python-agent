@@ -142,12 +142,14 @@ class NewRelicService(object):
         # we're hardcoded to a 1 minute harvest
         response.pop("data_report_period")
 
+        _logger.debug('Server side settings %s' % response)
+
         # FIXME Need to resolve app naming issue.
         name = self._app_names[0]
         settings = newrelic.core.config.create_settings_snapshot(response)
         self._configuration = settings
 
-        _logger.debug('Connection response %s' % settings)
+        _logger.debug('Application settings %s' % settings)
 
     def invoke_remote(self, connection, method, compress = True, agent_run_id = None, *args):
         try:

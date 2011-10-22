@@ -93,10 +93,47 @@ class ResolverWrapper(object):
         else:
             return self.__wrapped(*args, **kwargs)
 
+class RoutesResolverWrapper(object):
+
+    def __init__(self, wrapped):
+        if type(wrapped) == types.TupleType:
+            (instance, wrapped) = wrapped
+        else:
+            instance = None
+        self.__instance = instance
+        self.__wrapped = wrapped
+
+    def __getattr__(self, name):
+        return getattr(self.__wrapped, name)
+
+    def __get__(self, instance, klass):
+        if instance is None:
+            return self
+        descriptor = self.__wrapped.__get__(instance, klass)
+        return self.__class__((instance, descriptor))
+
+    def __call__(self, *args, **kwargs):
+        transaction = newrelic.api.transaction.transaction()
+        if transaction:
+            try:
+                handler = self.__wrapped(*args, **kwargs)
+                if handler:
+                    handler = HandlerWrapper(handler)
+                else:
+                    transaction.name_transaction('404', group='Uri')
+                return handler
+            except:
+                transaction.notice_error(*sys.exc_info())
+                raise
+        else:
+            return self.__wrapped(*args, **kwargs)
+
 def instrument_cherrypy_cpdispatch(module):
 
     newrelic.api.object_wrapper.wrap_object(module,
             'Dispatcher.find_handler', ResolverWrapper)
+    newrelic.api.object_wrapper.wrap_object(module,
+            'RoutesDispatcher.find_handler', RoutesResolverWrapper)
 
 def instrument_cherrypy_cpwsgi(module):
 

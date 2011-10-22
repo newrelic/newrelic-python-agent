@@ -10,59 +10,72 @@ def instrument(module):
     class CursorWrapper(object):
 
         def __init__(self, cursor):
-            self.__cursor = cursor
-            self.fetchone = self.__cursor.fetchone
-            self.fetchmany = self.__cursor.fetchmany
-            self.fetchall = self.__cursor.fetchall
+            #self._nr_cursor = cursor
+            #self.fetchone = self._nr_cursor.fetchone
+            #self.fetchmany = self._nr_cursor.fetchmany
+            #self.fetchall = self._nr_cursor.fetchall
+
+            object.__setattr__(self, '_nr_cursor', cursor)
+            object.__setattr__(self, 'fetchone', cursor.fetchone)
+            object.__setattr__(self, 'fetchmany', cursor.fetchmany)
+            object.__setattr__(self, 'fetchall', cursor.fetchall)
+
+        def __setattr__(self, name, value):
+            setattr(self._nr_cursor, name, value)
 
         def __getattr__(self, name):
-            return getattr(self.__cursor, name)
+            return getattr(self._nr_cursor, name)
 
         def __iter__(self):
-            return iter(self.__cursor)
+            return iter(self._nr_cursor)
 
         def execute(self, sql, parameters=()):
             transaction = newrelic.api.transaction.transaction()
             if not transaction:
-                return self.__cursor.execute(sql, parameters)
+                return self._nr_cursor.execute(sql, parameters)
             with newrelic.api.database_trace.DatabaseTrace(
                     transaction, sql, module):
-                return self.__cursor.execute(sql, parameters)
+                return self._nr_cursor.execute(sql, parameters)
 
         def executemany(self, sql, seq_of_parameters=[]): 
             transaction = newrelic.api.transaction.transaction()
             if not transaction:
-                return self.__cursor.executemany(sql, seq_of_parameters)
+                return self._nr_cursor.executemany(sql, seq_of_parameters)
             with newrelic.api.database_trace.DatabaseTrace(
                     transaction, sql, module):
-                return self.__cursor.executemany(sql, seq_of_parameters)
+                return self._nr_cursor.executemany(sql, seq_of_parameters)
 
     class ConnectionWrapper(object):
 
         def __init__(self, connection):
-            self.__connection = connection
+            #self._nr_connection = connection
+
+            object.__setattr__(self, '_nr_connection', connection)
+
+        def __setattr__(self, name, value):
+            setattr(self._nr_connection, name, value)
 
         def __getattr__(self, name):
-            return getattr(self.__connection, name)
+            return getattr(self._nr_connection, name)
 
         def cursor(self, *args, **kwargs):
-            return CursorWrapper(self.__connection.cursor(*args, **kwargs))
+            return CursorWrapper(self._nr_connection.cursor(*args, **kwargs))
 
         def commit(self):
             transaction = newrelic.api.transaction.transaction()
             if not transaction:
-                return self.__connection.commit()
+                return self._nr_connection.commit()
             with newrelic.api.database_trace.DatabaseTrace(
                     transaction, 'COMMIT', module):
-                return self.__connection.commit()
+                return self._nr_connection.commit()
 
         def rollback(self):
             transaction = newrelic.api.transaction.transaction()
             if not transaction:
-                return self.__connection.rollback()
+                return self._nr_connection.rollback()
             with newrelic.api.database_trace.DatabaseTrace(
                     transaction, 'ROLLBACK', module):
-                return self.__connection.rollback()
+                return self._nr_connection.rollback()
 
     class ConnectionFactory(object):
 

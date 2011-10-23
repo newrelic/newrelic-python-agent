@@ -97,6 +97,8 @@ _settings.transaction_tracer.enabled = True
 _settings.transaction_tracer.transaction_threshold = 'apdex_f'
 _settings.transaction_tracer.record_sql = 'obfuscated'
 _settings.transaction_tracer.stack_trace_threshold = 0.5
+_settings.transaction_tracer.explain_enabled = True
+_settings.transaction_tracer.explain_threshold = 0.5
 
 _settings.error_collector.enabled = True
 _settings.error_collector.capture_source = False
@@ -104,7 +106,11 @@ _settings.error_collector.ignore_errors = []
 
 _settings.browser_monitoring.auto_instrument = True
 
-_settings.transaction_name.limit = 500
+_settings.transaction_name.limit = None
+_settings.transaction_name.naming_scheme = None
+
+_settings.rum.enabled = True
+_settings.rum.load_episodes_file = True
 
 _settings.transaction_metrics.overflow_minimum = 5
 _settings.transaction_metrics.overflow_maximum = 10
@@ -245,7 +251,20 @@ def create_settings_snapshot(server_side_config={}):
 
      settings_snapshot = copy.deepcopy(_settings)
 
-     # Overlay with server side configuration settings.
+     # Break out the server side agent config settings which
+     # are stored under 'agent_config' key.
+
+     agent_config = server_side_config.pop('agent_config', {})
+
+     # Overlay with global server side configuration settings.
+
+     for (name, value) in server_side_config.items():
+         apply_config_setting(settings_snapshot, name, value)
+
+     # Overlay with agent server side configuration settings.
+     # Assuming for now that agent service side configuration
+     # can always take precedence over the global server side
+     # configuration settings.
 
      for (name, value) in server_side_config.items():
          apply_config_setting(settings_snapshot, name, value)

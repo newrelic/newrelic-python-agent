@@ -275,7 +275,8 @@ class StatsEngine(object):
         if not self.__settings:
             return
 
-        if threshold:
+        #if threshold:
+        if False:
             metrics = reversed(sorted(metrics, key=lambda x: x.exclusive))
 
             include = set()
@@ -307,6 +308,30 @@ class StatsEngine(object):
                     include.add((metric.name, metric.scope))
 
                 self.record_time_metric(metric, overflow=overflow)
+
+        elif threshold:
+            include = set()
+
+            remaining = []
+
+            # Metric types we should never rollup into overflow.
+
+            exclude = set(['Database', 'External', 'Memcache'])
+
+            for metric in metrics:
+                if (metric.name.split('/')[0] in exclude or
+                        metric.forced or not metric.overflow or
+                        metric.exclusive >= threshold):
+                    include.add((metric.name, metric.scope))
+                    self.record_time_metric(metric, overflow=False)
+                else:
+                    remaining.append(metric)
+
+            for metric in remaining:
+                if (metric.name, metric.scope) in include:
+                    self.record_time_metric(metric, overflow=False)
+                else:
+                    self.record_time_metric(metric, overflow=True)
 
         else:
             for metric in metrics:

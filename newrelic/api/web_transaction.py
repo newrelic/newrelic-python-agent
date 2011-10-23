@@ -80,8 +80,8 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         # base class making the decision based on whether
         # application or agent as a whole are enabled.
 
-        enabled = _lookup_environ_setting(
-                environ, 'newrelic.enabled', None)
+        enabled = _lookup_environ_setting(environ,
+                'newrelic.enabled', None)
 
         # Initialise the common transaction base class.
 
@@ -96,12 +96,16 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         # Check for override settings from WSGI environ.
 
-        self.background_task = _lookup_environ_setting(
-                environ, 'newrelic.background_task', False)
-        self.ignore = _lookup_environ_setting(
-                environ, 'newrelic.ignore', False)
-        self.ignore_apdex = _lookup_environ_setting(
-                environ, 'newrelic.ignore_apdex', False)
+        self.background_task = _lookup_environ_setting(environ,
+                'newrelic.background_task', False)
+
+        self.ignore = _lookup_environ_setting(environ,
+                'newrelic.ignore', False)
+        self.ignore_apdex = _lookup_environ_setting(environ,
+                'newrelic.ignore_apdex', False)
+
+        self.rum_enabled = _lookup_environ_setting(environ,
+                'newrelic.rum.enabled', self._settings.rum.enabled)
 
         # Extract from the WSGI environ dictionary
         # details of the URL path. This will be set as
@@ -223,13 +227,16 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         if self._state != newrelic.api.transaction.STATE_RUNNING:
             return ''
 
+        if self.background_task:
+            return ''
+
+        if not self.rum_enabled:
+            return ''
+
         if self.ignore:
             return ''
 
         if not self._settings:
-            return ''
-
-        if not self._settings.browser_monitoring.auto_instrument:
             return ''
 
         if not self._settings.episodes_url:
@@ -272,14 +279,12 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         queue_duration = int((start_time - queue_start) * 1000)
         request_duration = int((end_time - start_time) * 1000)
 
-        # FIXME Check whether meant to be checking file or URL.
-
 	# Settings will have values as Unicode strings and the
 	# result here will be Unicode so need to convert back to
 	# normal string. Using str() and default encoding should
 	# be fine as should all be ASCII anyway.
 
-        if not self._settings.episodes_file:
+        if not self._settings.rum.load_episodes_file:
             return str(_rum_footer_short_fragment % (
                     self._settings.beacon,
                     self._settings.browser_key,

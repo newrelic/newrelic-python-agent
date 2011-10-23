@@ -94,11 +94,14 @@ class Transaction(object):
         self.background_task = False
 
         self.enabled = False
+        self.rum_enabled = False
+
         self.ignore = False
         self.ignore_apdex = False
-        self.coroutines = False
+
         self.capture_params = True
         self.ignored_params = []
+
         self.response_code = 0
 
         self._custom_metrics = []

@@ -212,11 +212,23 @@ def _process_configuration(section):
                      'get', _map_record_sql)
     _process_setting(section, 'transaction_tracer.stack_trace_threshold',
                      'getfloat', None)
+    _process_setting(section, 'transaction_tracer.explain_enabled',
+                     'getboolean', None)
+    _process_setting(section, 'transaction_tracer.explain_threshold',
+                     'getfloat', None)
     _process_setting(section, 'error_collector.enabled',
+                     'getboolean', None),
+    _process_setting(section, 'error_collector.capture_source',
                      'getboolean', None),
     _process_setting(section, 'error_collector.ignore_errors',
                      'get', _map_ignore_errors)
     _process_setting(section, 'browser_monitoring.auto_instrument',
+                     'getboolean', None)
+    _process_setting(section, 'rum.enabled',
+                     'getboolean', None)
+    _process_setting(section, 'rum.load_episodes_file',
+                     'getboolean', None)
+    _process_setting(section, 'slow_sql.enabled',
                      'getboolean', None)
     _process_setting(section, 'local_daemon.socket_path',
                      'get', None)

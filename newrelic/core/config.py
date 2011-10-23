@@ -38,6 +38,7 @@ _settings.browser_monitoring = BrowserMonitorSettings()
 _settings.transaction_name = TransactionNameSettings()
 _settings.transaction_metrics = TransactionMetricsSettings()
 _settings.rum = RumSettings()
+_settings.slow_sql = RumSettings()
 _settings.debug = DebugSettings()
 
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
@@ -91,7 +92,6 @@ _settings.beacon = None
 _settings.application_id = None
 _settings.browser_key = None
 _settings.episodes_url = None
-_settings.episodes_file = None
 
 _settings.transaction_tracer.enabled = True
 _settings.transaction_tracer.transaction_threshold = 'apdex_f'
@@ -111,6 +111,8 @@ _settings.transaction_name.naming_scheme = None
 
 _settings.rum.enabled = True
 _settings.rum.load_episodes_file = True
+
+_settings.slow_sql.enabled = True
 
 _settings.transaction_metrics.overflow_minimum = 5
 _settings.transaction_metrics.overflow_maximum = 10

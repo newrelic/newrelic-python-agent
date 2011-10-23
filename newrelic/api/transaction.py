@@ -9,9 +9,11 @@ import traceback
 import newrelic.core.config
 
 import newrelic.core.transaction_node
+import newrelic.core.database_node
 import newrelic.core.error_node
 
 import newrelic.api.time_trace
+
 
 STATE_PENDING = 0
 STATE_RUNNING = 1
@@ -399,9 +401,9 @@ class Transaction(object):
 
         stack_trace = traceback.format_exception(exc, value, tb)
 
-	# Check that we have not recorded this exception
-	# previously for this transaction due to multiple
-	# error traces triggering. This is not going to be
+        # Check that we have not recorded this exception
+        # previously for this transaction due to multiple
+        # error traces triggering. This is not going to be
         # exact but the UI hides exceptions of same type
         # anyway. Better that we under count exceptions of
         # same type and message rather than count same one
@@ -421,13 +423,12 @@ class Transaction(object):
                 source=None)
 
         # TODO Errors are recorded in time order. If
-        # there are two exceptions of same time and
-        # different message, the UI displays the
-        # first one. In the PHP agent it was
-        # recording the errors in reverse time order
-        # and so the UI displayed the last one. What
-        # is the the official order in which they
-        # should be sent.
+        # there are two exceptions of same type and
+        # different message, the UI displays the first
+        # one. In the PHP agent it was recording the
+        # errors in reverse time order and so the UI
+        # displayed the last one. What is the the
+        # official order in which they should be sent.
 
         self._errors.append(node)
 
@@ -444,13 +445,16 @@ class Transaction(object):
         return parent
 
     def _process_node(self, node):
-        pass
-
-        # TODO Need to incorporate slow SQL tracking.
-
-        #if transaction_tracer.enabled and settings.collect_traces:
-        #    if duration >= transaction_tracer.stack_trace_threshold:
-        #        self.transaction._slow_sql.append(node)
+        if type(node) is newrelic.core.database_node.DatabaseNode:
+            if not self._settings.collect_traces:
+                return
+            if not self._settings.slow_sql.enabled:
+                return
+            if not self._settings.transaction_tracer.record_sql == 'off':
+                return
+            if duration < self._settings.transaction_tracer.explain_threshold:
+                return
+            self._slow_sql.append(node)
 
     def stop_recording(self):
         if not self.enabled:

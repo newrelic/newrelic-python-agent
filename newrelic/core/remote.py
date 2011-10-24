@@ -243,7 +243,11 @@ class JSONRemote(object):
 
 
     def invoke_remote(self, connection, method, compress = True, agent_run_id = None, *args):
-        json_data = self._encoder.encode(args)
+        # FIXME BIG HACK
+        if method == 'sql_trace_data':
+            json_data = self._encoder.encode(args[1:])
+        else:
+            json_data = self._encoder.encode(args)
         url = self.remote_method_uri(method, agent_run_id)
 
         headers = {"Content-Encoding" : "identity" } # FIXME deflate

@@ -446,13 +446,14 @@ class Transaction(object):
 
     def _process_node(self, node):
         if type(node) is newrelic.core.database_node.DatabaseNode:
-            if not self._settings.collect_traces:
+            settings = self._settings
+            if not settings.collect_traces:
                 return
-            if not self._settings.slow_sql.enabled:
+            if not settings.slow_sql.enabled:
                 return
-            if not self._settings.transaction_tracer.record_sql == 'off':
+            if settings.transaction_tracer.record_sql == 'off':
                 return
-            if duration < self._settings.transaction_tracer.explain_threshold:
+            if node.duration < settings.transaction_tracer.explain_threshold:
                 return
             self._slow_sql.append(node)
 

@@ -6,7 +6,7 @@ except:
 import newrelic.core.metric
 import newrelic.core.trace_node
 
-from newrelic.core.database_utils import obfuscate_sql, parsed_sql
+from newrelic.core.database_utils import obfuscated_sql, parsed_sql
 
 def formatted_sql(dbapi, format, sql):
     if format == 'off':
@@ -19,7 +19,26 @@ def formatted_sql(dbapi, format, sql):
 
     name = dbapi and dbapi.__name__ or None 
 
-    return obfuscate_sql(name, sql)
+    return obfuscated_sql(name, sql)
+
+_SlowSqlNode = namedtuple('_SlowSqlNode',
+        ['duration', 'path', 'request_uri', 'sql', 'sql_format',
+        'metric', 'dbapi', 'connect_params', 'stack_trace'])
+
+class SlowSqlNode(_SlowSqlNode):
+
+    @property
+    def sql_id(self):
+        name = self.dbapi and self.dbapi.__name__ or None 
+        return obfuscated_sql(name, self.sql, collapsed=True)
+
+    @property
+    def formatted_sql(self):
+        return formatted_sql(self.dbapi, self.sql_format, self.sql)
+
+    @property
+    def explain_plan(self):
+        return None
 
 _DatabaseNode = namedtuple('_DatabaseNode',
         ['dbapi', 'connect_params', 'sql', 'children',
@@ -113,12 +132,9 @@ class DatabaseNode(_DatabaseNode):
             for metric in child.time_metrics(stats, root, self):
                 yield metric
 
-    def sql_trace_node(self, stats, root):
+    def slow_sql_node(self, stats, root):
 
         table, operation = parsed_sql(self.sql)
-
-        # TODO Verify that these are the correct names to use.
-        # Could possibly cache this if necessary.
 
         if operation in ('select', 'update', 'insert', 'delete'):
             name = 'Database/%s/%s' % (table, operation)
@@ -127,16 +143,15 @@ class DatabaseNode(_DatabaseNode):
         else:
             name = 'Database/other/sql'
 
-        duration = self.duration
+        request_uri = ''
+        if root.type == 'WebTransaction':
+            request_uri = root.request_uri
 
-        sql = formatted_sql(self.dbapi, self.sql_format, self.sql)
-
-        # FIXME This is where we need to generate the data structure,
-        # likely a dictionary for holding single sql trace. Believe
-        # that node needs to hold the metric name, duration and sql
-        # but not sure how each is identified. Could even be a tuple.
-
-        # yield ?????
+        return SlowSqlNode(duration=self.duration, path=root.path,
+                request_uri=request_uri, sql=self.sql,
+                sql_format=self.sql_format, metric=name,
+                dbapi=self.dbapi, connect_params=self.connect_params,
+                stack_trace=self.stack_trace)
 
     def trace_node(self, stats, root):
 

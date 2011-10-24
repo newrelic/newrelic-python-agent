@@ -9,6 +9,7 @@ import operator
 import copy
 
 import newrelic.core.metric
+import newrelic.core.database_utils
 
 class ApdexStats(list):
 
@@ -113,6 +114,49 @@ class TimeStats(list):
 
         self[0] += 1
 
+class SlowSqlStats(list):
+
+    def __init__(self):
+        super(SlowSqlStats, self).__init__([0, 0, 0, 0, None])
+
+    call_count = property(operator.itemgetter(0))
+    total_call_time = property(operator.itemgetter(1))
+    min_call_time = property(operator.itemgetter(2))
+    max_call_time = property(operator.itemgetter(3))
+    slow_sql_node = property(operator.itemgetter(4))
+
+    def merge_stats(self, other):
+        """Merge data from another instance of this object."""
+
+        self[1] += other[1]
+        self[2] = self[0] and min(self[2], other[2]) or other[2]
+        self[3] = max(self[3], other[3])
+
+        if self[3] == other[3]:
+            self[4] = other[4]
+
+        # Must update the call count last as update of the
+        # minimum call time is dependent on initial value.
+
+        self[0] += other[0]
+
+    def merge_slow_sql_node(self, node):
+        """Merge data from a slow sql node object."""
+
+        duration = node.duration
+
+        self[1] += duration
+        self[2] = self[0] and min(self[2], duration) or duration
+        self[3] = max(self[3], duration)
+
+        if self[3] == duration:
+            self[4] = node
+
+        # Must update the call count last as update of the
+        # minimum call time is dependent on initial value.
+
+        self[0] += 1
+
 class StatsEngine(object):
 
     """The stats engine object holds the accumulated transactions metrics,
@@ -144,9 +188,9 @@ class StatsEngine(object):
     def __init__(self):
         self.__settings = None
         self.__stats_table = {}
+        self.__sql_stats_table = {}
         self.__slow_transaction = None
         self.__transaction_errors = []
-        self.__sql_traces = []
         self.__metric_ids = {}
 
     @property
@@ -168,13 +212,9 @@ class StatsEngine(object):
         return self.__transaction_errors
 
     @property
-    def sql_traces(self):
-        """Returns a reference to a list containing any sql traces
-        collected during the reporting period.
-
-        """
-
-        return self.__sql_traces
+    def sql_stats_table(self):
+        # XXX Needs to not exist.
+        return self.__sql_stats_table
 
     @property
     def metric_ids(self):
@@ -220,6 +260,8 @@ class StatsEngine(object):
             self.__stats_table[key] = stats
         stats.merge_apdex_metric(metric)
 
+        return key
+
     def record_apdex_metrics(self, metrics):
         """Record the apdex metrics supplied by the iterable for a
         single transaction, merging the data with any data from prior
@@ -256,6 +298,8 @@ class StatsEngine(object):
             stats = TimeStats()
             self.__stats_table[key] = stats
         stats.merge_time_metric(metric)
+
+        return key
 
     def record_time_metrics(self, metrics, threshold, minimum, maximum):
         """Record the time metrics supplied by the iterable for a single
@@ -359,6 +403,8 @@ class StatsEngine(object):
             self.__stats_table[key] = stats
         stats.merge_value_metric(metric)
 
+        return key
+
     def record_value_metrics(self, metrics):
         """Record the value metrics supplied by the iterable, merging
         the data with any data from prior value metrics with the same
@@ -371,6 +417,24 @@ class StatsEngine(object):
 
         for metric in metrics:
             self.record_value_metric(metric)
+
+    def record_slow_sql_node(self, node):
+        """Record a single sql metric, merging the data with any data
+        from prior sql metrics for the same sql key.
+
+        """
+
+        if not self.__settings:
+            return
+
+        key = node.sql_id
+        stats = self.__sql_stats_table.get(key)
+        if stats is None:
+            stats = SlowSqlStats()
+            self.__sql_stats_table[key] = stats
+        stats.merge_slow_sql_node(node)
+
+        return key
 
     def record_transaction(self, transaction):
         """Record any apdex and time metrics for the transaction as
@@ -387,6 +451,7 @@ class StatsEngine(object):
 
         error_collector = settings.error_collector
         transaction_tracer = settings.transaction_tracer
+        slow_sql = settings.slow_sql
         transaction_metrics = settings.transaction_metrics
 
         # Record the apdex, value and time metrics generated from the
@@ -424,15 +489,9 @@ class StatsEngine(object):
 
         # Capture any sql traces if transaction tracer enabled.
 
-        # FIXME What needs to be done here to convert the sql
-        # nodes of the transaction into form to be held by the
-        # sql_traces attribute ready for sending to the core
-        # application. Assumed for moment that is sequence of
-        # dictionary objects like for error details and can just
-        # add them into the end of the list.
-
-        if transaction_tracer.enabled and settings.collect_traces:
-            self.__sql_traces.extend(transaction.sql_traces(self))
+        if slow_sql.enabled and settings.collect_traces:
+            for node in transaction.slow_sql_nodes(self):
+                self.record_slow_sql_node(node)
 
         # Remember as slowest transaction if transaction tracer
         # is enabled, it is over the threshold and slower than
@@ -478,9 +537,9 @@ class StatsEngine(object):
 
         self.__settings = settings
         self.__stats_table = {}
+        self.__sql_stats_table = {}
         self.__slow_transaction = None
         self.__transaction_errors = []
-        self.__sql_traces = []
         self.__metric_ids = {}
 
     def create_snapshot(self):
@@ -505,9 +564,9 @@ class StatsEngine(object):
         # over a reset but need to verify that.
 
         self.__stats_table = {}
+        self.__sql_stats_table = {}
         self.__slow_transaction = None
         self.__transaction_errors = []
-        self.__sql_traces = []
 
         return stats
 
@@ -531,6 +590,9 @@ class StatsEngine(object):
         occurred in sending details or errors or slow transaction, then
         those should be thrown away and this method not called, else you
         would end up sending base metric data multiple times.
+
+        XXX Also happens when recording transaction. Will be ordering
+        issue as to which slow sql node is kept.
 
         """
 
@@ -559,12 +621,12 @@ class StatsEngine(object):
         # Insert original sql traces at start of any new
         # ones to maintain time based order.
 
-        # FIXME Should all accumulated sql traces be retained
-        # or should they be aged out. For now throw away
-        # the older ones for period that reporting failed.
-
-        #if collect_traces:
-        #    self.__sql_traces[:0] = snapshot.sql_traces
+        for key, other in snapshot.__sql_stats_table.iteritems():
+            stats = self.__sql_stats_table.get(key)
+            if not stats:
+                self.__sql_stats_table[key] = copy.copy(other)
+            else:
+                stats.merge_stats(other)
 
         # Restore original slow transaction if slower than
         # any newer slow transaction.

@@ -20,6 +20,7 @@ import newrelic.core.metric
 import newrelic.core.stats_engine
 import newrelic.core.rules_engine
 import newrelic.core.samplers
+import newrelic.core.database_utils
 
 _logger = logging.getLogger('newrelic.core.application')
 
@@ -225,16 +226,42 @@ class Application(object):
                         self._service.send_error_data(
                                 connection, stats.transaction_errors)
 
-                # FIXME This may not be right as we may need to
-                # massage the format of the sql data if it needs
-                # to be compressed. Also need to find out if
-                # returns a table of IDs like metric IDs but for
-                # the SQL queries or some other response.
+                # FIXME This needs to be cleaned up. It is just to get
+                # it working. What part of code should be responsible
+                # for doing compressing and final packaging of message.
 
-                #sql_traces = stats.sql_traces
-                #if sql_traces:
-                #    self._service.send_sql_data(
-                #            connection, stats.sql_traces)
+                slow_sql_nodes = list(sorted(stats.sql_stats_table.values(),
+                        key=lambda x: x.max_call_time))[-10:]
+
+                if slow_sql_nodes:
+                    slow_sql_data = []
+
+                    for node in slow_sql_nodes:
+
+                        params = {}
+
+                        if node.slow_sql_node.stack_trace:
+                            params['backtrace'] = node.slow_sql_node.stack_trace 
+                        if node.slow_sql_node.explain_plan:
+                            params['explain_plan'] = node.slow_sql_node.explain_plan 
+                        params_data = base64.standard_b64encode(
+                                zlib.compress(json.dumps(params)))
+
+                        data = [node.slow_sql_node.path,
+                                node.slow_sql_node.request_uri,
+                                hash(node.slow_sql_node.sql_id),
+                                node.slow_sql_node.formatted_sql,
+                                node.slow_sql_node.metric,
+                                node.call_count,
+                                node.total_call_time*1000,
+                                node.min_call_time*1000,
+                                node.max_call_time*1000,
+                                params_data]
+
+                        slow_sql_data.append(data)
+
+                    self._service.send_sql_data(
+                            connection, slow_sql_data)
 
                 # FIXME This needs to be cleaned up. It is just to get
                 # it working. What part of code should be responsible
@@ -245,7 +272,7 @@ class Application(object):
                     if stats.slow_transaction:
                         transaction_trace = slow_transaction.transaction_trace(
                                 stats)
-                        compressed_data = base64.encodestring(
+                        compressed_data = base64.standard_b64encode(
                                 zlib.compress(json.dumps(transaction_trace)))
                         trace_data = [[transaction_trace.root.start_time,
                                 transaction_trace.root.end_time,

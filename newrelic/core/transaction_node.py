@@ -226,15 +226,6 @@ class TransactionNode(_TransactionNode):
                     start_time=0, path=self.path, message=error.message,
                     type=error.type, parameters=params)
 
-    def sql_traces(self, stats):
-        """Return a generator yielding the details for each slow sql
-        trace capture during this transaction.
-
-        """
-
-        for node in self.slow_sql:
-            yield node.sql_trace_node(stats, self)
-
     def trace_node(self, stats, root):
 
         name = self.path
@@ -266,3 +257,8 @@ class TransactionNode(_TransactionNode):
         return newrelic.core.trace_node.RootNode(start_time=start_time,
                 request_params=request_params, custom_params=custom_params,
                 root=root)
+
+    def slow_sql_nodes(self, stats):
+        for item in self.slow_sql:
+            yield item.slow_sql_node(stats, self)
+

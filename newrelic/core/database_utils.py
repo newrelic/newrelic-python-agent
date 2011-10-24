@@ -28,6 +28,7 @@ class SqlProperties(object):
     def __init__(self, sql):
         self.sql = sql
         self.obfuscated = None
+        self.obfuscated_collapsed = None
         self.parsed = None
 
 class SqlPropertiesCache(object):
@@ -75,7 +76,12 @@ _any_quotes_re = re.compile(_any_quotes_pattern)
 
 _int_re = re.compile(r'\b\d+\b')
 
-def obfuscate_sql(name, sql):
+# Obfuscation can produce sets as (?,?). Need to be able to collapse
+# these to single value set.
+
+_collapse_set_re = re.compile(r'\(\s*\?(\s*,\s*\?\s*)*\)')
+
+def obfuscated_sql(name, sql, collapsed=False):
     """Returns obfuscated version of the sql. The quoting
     convention is determined by looking at the name of the
     database module supplied. Obfuscation consists of replacing
@@ -86,6 +92,8 @@ def obfuscate_sql(name, sql):
     entry = sql_properties_cache.fetch(sql)
 
     if entry.obfuscated is not None:
+        if collapsed:
+            return entry.obfuscated_collapsed
         return entry.obfuscated
 
     # Substitute quoted strings first. In the case of MySQL it
@@ -106,9 +114,13 @@ def obfuscate_sql(name, sql):
     # will not match numbers within identifier names.
 
     obfuscated = _int_re.sub('?', obfuscated)
+    obfuscated_collapsed = _collapse_set_re.sub('(?)', obfuscated)
 
     entry.obfuscated = obfuscated
+    entry.obfuscated_collapsed = obfuscated_collapsed
 
+    if collapsed:
+        return obfuscated_collapsed
     return obfuscated
 
 class SqlParser:

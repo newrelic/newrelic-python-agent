@@ -329,55 +329,68 @@ class Agent(object):
         # If we can't even get a connection at the start of this
         # harvest then pass on doing all the applications.
 
+        connection = None
+
         try:
             connection = self._remote.create_connection()
+
         except:
             _logger.exception('Failed to create connection, aborting '
                               'harvest for all applications.')
 
-        try:
-            # XXX This isn't going to main order of applications
+        else:
+            # This isn't going to maintain order of applications
             # such that oldest is always done first. A new one
             # could come in earlier once added and upset the
-            # overall timing.
+            # overall timing. The data collector should cope
+            # with this though.
 
             for application in self._applications.values():
-                try:
                     # Last application to be harvested this time
                     # around failed and we must have closed the
                     # connection. Attempt to create a new
-                    # connection so can try remaining
-                    # applications. If it a issues with being
-                    # able to contact data collector will likely
-                    # fail again, but better that than missing
-                    # later applications because an early one
-                    # failed for an unknown reason.
+                    # connection so can we can try remaining
+                    # applications. If we can't get a new connection
+                    # though then we skip remainder of applications.
 
-                    if not connection:
-                        try:
+                    try:
+                        if not connection:
                             connection = self._remote.create_connection()
+                    except:
+                        _logger.exception('Failed to create connection, '
+                                          'aborting harvest.')
+
+                        break
+
+                    else:
+                        # Connection okay. Harvest single application.
+
+                        try:
+                            application.harvest(connection)
+
                         except:
-                            _logger.exception('Failed to create connection, '
-                                              'aborting harvest.')
+                            _logger.exception('Failed to harvest data '
+                                              'for %s.' % application.name)
 
-                    # Connection okay. Harvest single application.
+                            # For any sort of failure, close and null out
+                            # the connection. If more applications still to
+                            # go then will create a connection again for it
+                            # when enter loop again above.
 
-                    application.harvest(connection)
+                            try:
+                                connection.close()
+                            except:
+                                _logger.exception('Failed to '
+                                                  'close connection.')
 
-                except:
-                    _logger.exception('Failed to harvest data for %s.' %
-                                      application.name)
+                            connection = None
 
-                    # For any sort of failure, close and null out
-                    # the connection. If more applications still to
-                    # go then will create a connection again for it
-                    # when enter loop again above.
-
-                    connection.close()
-                    connection = None
-
-        finally:
-            connection.close()
+            else:
+                if connection:
+                    try:
+                        connection.close()
+                    except:
+                        _logger.exception('Failed to close connection.')
 
     def activate_agent(self):
         if not self._config.monitor_mode:

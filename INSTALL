@@ -9,16 +9,6 @@ agent. Also see the New Relic support site at:
 for additional information.
 
 
-Note to BETA testers
---------------------
-
-Although these instructions reference documentation on the New Relic
-support site, that documentation may not be live at the time you read this.
-If we know this is the case, we will have supplied you details from those
-which are relevant. Otherwise ask us which documentation you are interested
-in and we will supply it if we are able to at that time.
-
-
 If you don't read instructions
 ------------------------------
 
@@ -142,7 +132,7 @@ tested at this point and is not supported.
 What Python version can this be used with?
 ------------------------------------------
 
-At the present time Python 2.6 or 2.7 is required.
+At the present time Python 2.5, 2.6 or 2.7 is required.
 
 
 How can I test that the install is okay?

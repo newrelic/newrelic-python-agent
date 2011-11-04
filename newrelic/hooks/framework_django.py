@@ -105,6 +105,8 @@ def browser_timing_middleware(request, response):
             content = ''.join(parts)
             response.content = content
 
+    response['Content-Length'] = str(len(response.content))
+
     return response
 
 def register_browser_timing_middleware(middleware):

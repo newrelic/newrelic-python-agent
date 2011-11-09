@@ -124,7 +124,7 @@ class Application(object):
     def normalize_name(self, name):
         try:
             if not self._rules_engine:
-                return name
+                return name, False
             return self._rules_engine.normalize(name)
         except:
             _logger.exception('Name normalization failed.')

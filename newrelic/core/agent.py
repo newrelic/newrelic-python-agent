@@ -277,7 +277,7 @@ class Agent(object):
     def normalize_name(self, app_name, name):
         application = self._applications.get(app_name, None)
         if application is None:
-            return name
+            return name, False
 
         return application.normalize_name(name)
 

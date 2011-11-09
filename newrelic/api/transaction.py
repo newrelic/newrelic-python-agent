@@ -316,10 +316,11 @@ class Transaction(object):
             self._priority = None
 
             if self._group == 'Uri':
-                name = self._application.normalize_name(self._name)
+                name, ignore = self._application.normalize_name(self._name)
                 if self._name != name:
                     self._group = 'NormalizedUri'
                     self._name = name
+                self.ignore = self.ignore or ignore
 
             self._frozen_path = self.path
 

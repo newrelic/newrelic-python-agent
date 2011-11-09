@@ -40,6 +40,7 @@ class RulesEngine(object):
 
     def normalize(self, string):
         final_string = string
+        ignore = False
         for rule in self.__rules:
             if rule.each_segment:
                 matched = False
@@ -71,7 +72,10 @@ class RulesEngine(object):
                 matched = rule_string != final_string
                 final_string = rule_string
 
+            if matched:
+                ignore = ignore or rule.ignore
+
             if matched and rule.terminate_chain:
                 break
 
-        return final_string
+        return (final_string, ignore)

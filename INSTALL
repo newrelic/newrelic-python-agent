@@ -4,7 +4,7 @@ Installation Instructions
 This file provides a brief set of installation instructions for the Python
 agent. Also see the New Relic support site at:
 
-    http://support.newrelic.com/help/kb/python/new-relic-for-python
+    http://newrelic.com/docs/python/new-relic-for-python
 
 for additional information.
 
@@ -177,4 +177,4 @@ For further details on how to integrate the Python agent into your web
 application when using these other WSGI hosting mechanisms see the New
 Relic support site.
 
-    http://support.newrelic.com/help/kb/python/new-relic-for-python
+    http://newrelic.com/docs/python/new-relic-for-python

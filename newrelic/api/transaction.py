@@ -252,7 +252,8 @@ class Transaction(object):
         self._settings = None
         self.enabled = False
 
-        self._application.record_transaction(node)
+        if not self.ignore:
+            self._application.record_transaction(node)
 
     @property
     def state(self):
@@ -479,6 +480,6 @@ class Transaction(object):
 
 def transaction():
     current = Transaction._current_transaction()
-    if current and current.stopped:
+    if current and (current.ignore or current.stopped):
         return None
     return current

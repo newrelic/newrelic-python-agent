@@ -214,7 +214,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         if self._settings.capture_environ:
             for name in self._settings.include_environ:
                 if name in environ:
-                    self._custom_params[name] = environ[name]
+                    self._request_environment[name] = environ[name]
 
         # Flags for tracking whether RUM header inserted.
 

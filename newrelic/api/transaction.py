@@ -93,6 +93,9 @@ class Transaction(object):
         self._custom_params = {}
         self._request_params = {}
 
+        self._request_environment = {}
+        self._response_properties = {}
+
         self.background_task = False
 
         self.enabled = False
@@ -222,7 +225,14 @@ class Transaction(object):
                 group = 'Uri'
 
         if self.response_code != 0:
-            self._custom_params['STATUS'] = str(self.response_code)
+            self._response_properties['STATUS'] = str(self.response_code)
+
+        parameter_groups = {}
+
+        if self._request_environment:
+            parameter_groups['Request environment'] = self._request_environment
+        if self._response_properties:
+            parameter_groups['Response properties'] = self._response_properties
 
         node = newrelic.core.transaction_node.TransactionNode(
                 settings=self._settings,
@@ -244,7 +254,8 @@ class Transaction(object):
                 slow_sql=tuple(self._slow_sql),
                 apdex_t=self._settings.apdex_t,
                 ignore_apdex=self.ignore_apdex,
-                custom_metrics=self._custom_metrics)
+                custom_metrics=self._custom_metrics,
+                parameter_groups=parameter_groups)
 
         # Clear settings as we are all done and don't
         # need it anymore.

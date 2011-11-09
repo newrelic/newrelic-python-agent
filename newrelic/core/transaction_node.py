@@ -20,7 +20,8 @@ _TransactionNode = namedtuple('_TransactionNode',
         ['settings', 'path', 'type', 'group', 'name', 'request_uri',
         'response_code', 'request_params', 'custom_params', 'queue_start',
         'start_time', 'end_time', 'duration', 'exclusive', 'children',
-        'errors', 'slow_sql', 'apdex_t', 'ignore_apdex', 'custom_metrics'])
+        'errors', 'slow_sql', 'apdex_t', 'ignore_apdex', 'custom_metrics',
+        'parameter_groups'])
 
 class TransactionNode(_TransactionNode):
 
@@ -217,6 +218,8 @@ class TransactionNode(_TransactionNode):
             params["stack_trace"] = error.stack_trace
             if self.request_params:
                 params["request_params"] = request_params
+            if self.parameter_groups:
+                params["parameter_groups"] = self.parameter_groups
             if error.custom_params:
                 if self.response_code != 0:
                     error.custom_params['STATUS'] = str(self.response_code)
@@ -244,6 +247,7 @@ class TransactionNode(_TransactionNode):
         start_time = newrelic.core.trace_node.root_start_time(self)
         request_params = self.request_params or None
         custom_params = self.custom_params or None
+        parameter_groups = self.parameter_groups or None
         trace_node = self.trace_node(stats, self)
 
 	# There is an additional trace node labelled as 'ROOT'
@@ -256,7 +260,7 @@ class TransactionNode(_TransactionNode):
 
         return newrelic.core.trace_node.RootNode(start_time=start_time,
                 request_params=request_params, custom_params=custom_params,
-                root=root)
+                root=root, parameter_groups=parameter_groups)
 
     def slow_sql_nodes(self, stats):
         for item in self.slow_sql:

@@ -4,7 +4,8 @@ except:
     from newrelic.lib.namedtuple import namedtuple
 
 RootNode = namedtuple('RootNode',
-        ['start_time', 'request_params', 'custom_params', 'root'])
+        ['start_time', 'request_params', 'custom_params', 'root',
+        'parameter_groups'])
 
 def root_start_time(root):
     return root.start_time / 1000.0

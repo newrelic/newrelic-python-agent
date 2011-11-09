@@ -29,7 +29,7 @@ class RulesEngine(object):
         for rule in rules:
             kwargs = {}
             for name in map(str, rule.keys()):
-                kwargs[name] = str(rule[name])
+                kwargs[name] = rule[name]
             self.__rules.append(NormalizationRule(**kwargs))
 
         self.__rules = sorted(self.__rules, key=lambda rule: rule.eval_order)
@@ -67,7 +67,9 @@ class RulesEngine(object):
                 if matched:
                     final_string = '/'.join(rule_segments)
             else:
-                matched, final_string = rule.apply(final_string)
+                rule_string = rule.apply(final_string)
+                matched = rule_string != final_string
+                final_string = rule_string
 
             if matched and rule.terminate_chain:
                 break

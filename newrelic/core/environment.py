@@ -107,7 +107,9 @@ def environment_settings():
     if not dispatcher and 'tornado' in sys.modules:
         dispatcher.append(('Dispatcher', 'tornado'))
         tornado = sys.modules['tornado']
-        dispatcher.append(('Dispatcher Version', str(tornado.version_info)))
+        if hasattr(tornado, 'version_info'):
+            dispatcher.append(('Dispatcher Version',
+                               str(tornado.version_info)))
 
     if not dispatcher and 'gunicorn' in sys.modules:
         if 'gunicorn.workers.ggevent' in sys.modules:

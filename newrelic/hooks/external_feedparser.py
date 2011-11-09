@@ -11,7 +11,7 @@ class capture_external_trace(object):
         self._nr_next_object = wrapped
         if not hasattr(self, '_nr_last_object'):
             self._nr_last_object = wrapped
-    def __call__(self, url):
+    def __call__(self, url, *args, **kwargs):
         if url.split(':')[0].lower() in ['http', 'https', 'ftp']:
             current_transaction = newrelic.api.transaction.transaction()
             if current_transaction:
@@ -19,16 +19,16 @@ class capture_external_trace(object):
                         current_transaction, 'feedparser', url)
                 context_manager = trace.__enter__()
                 try:
-                    result = self._nr_next_object(url)
+                    result = self._nr_next_object(url, *args, **kwargs)
                 except:
                     context_manager.__exit__(*sys.exc_info())
                     raise
                 context_manager.__exit__(None, None, None)
                 return result
             else:
-                return self._nr_next_object(url)
+                return self._nr_next_object(url, *args, **kwargs)
         else:
-            return self._nr_next_object(url)
+            return self._nr_next_object(url, *args, **kwargs)
     def __getattr__(self, name):
        return getattr(self._nr_next_object, name)
 

@@ -602,3 +602,11 @@ def instrument_django_core_servers_basehttp(module):
 
         newrelic.api.in_function.wrap_in_function(module,
                 'ServerHandler.run', wrap_wsgi_application_entry_point)
+
+def instrument_django_contrib_staticfiles_views(module):
+    if type(module.serve) is not ViewHandlerWrapper:
+        module.serve = ViewHandlerWrapper(module.serve)
+
+def instrument_django_contrib_staticfiles_handlers(module):
+    newrelic.api.name_transaction.wrap_name_transaction(module,
+        'StaticFilesHandler.serve')

@@ -1008,6 +1008,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('django.contrib.staticfiles.handlers',
             'newrelic.hooks.framework_django',
             'instrument_django_contrib_staticfiles_handlers')
+    _process_module_definition('django.views.debug',
+            'newrelic.hooks.framework_django',
+            'instrument_django_views_debug')
 
     _process_module_definition('flask.app',
             'newrelic.hooks.framework_flask')

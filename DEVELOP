@@ -6,6 +6,8 @@ need a few tools to be able to build it if developing on your local
 machine. These are:
 
 1. A complete installation of Python including sqlite and zlib support.
+   Python 2.6 is recommended. Any code changes made to the Python agent
+   must be compatible with Python 2.5 through 2.7.
 
 2. The 'virtualenv' package for Python. This should be installed into
    the Python installation being used. It is required to setup a Python
@@ -107,44 +109,33 @@ If you need to be able to run a specific unit test, then you can use the
     test-env/bin/python unit-tests/api/test_wsgi_applicaton.py -v
 
 
-Hudson Build Boxes
-==================
-
-For the Hudson build boxes we want to always be using the same version of
-Python, but also may need alternate Python installations and variants for
-automated unit testing. To assist in setting these up there is a separate
-set of build scripts to be found in the 'python-tools' directory. Follow
-the instructions in 'python-tools/README' as to how to install all the
-required Python versions/variants for the platform. These can be installed
-globally, especially if setting up the Hudson build boxes to start with, or
-they can be built in place, in which case they will end up being installed
-in the 'python-tools/parts' directory.
-
-Which ever place all the different Python versions/variants are installed,
-you can use the '--with-python' option to the 'configure' script in this
-directory as described above to select a specific one to be used for
-building the Python agent during development. For example:
-
-    ./configure --with-python=python-tools/parts/python-2.7-ucs4/bin/python
-
-
-Build Release Package
-=====================
+Building A Release Package
+==========================
 
 To build the Python agent for release use the script:
 
     build.sh
 
-If running this in local development environment, it expects that you have
-run the install script in 'python-tools' directory to install at least the
-primary required Python version for the platform into the local
-'python-tools/parts' directory.
+The script expects to be able to find the 'python' executable in your PATH
+or that of the Hudson user when this script is executed on the Hudson build
+boxes.
 
-When this same script is run under the Hudson server, it will expect the
-Python versions to be installed under the 'python-tools' subdirectory of the
-home directory of the 'hudson' build account.
+The result of running this script will be a tar ball placed in the 'dist'
+sub directory. It will be named with the form:
 
-The result of running this script will be placed in the 'package' sub
-directory. The directory created will be named according to the release
-version. The directory will be tar'd and gzip'd as well into a file that
-can then be given out.
+    newrelic-A.B.C.D.tar.gz
+
+The 'A.B.C' component of version will come from the version number defined
+in the 'newrelic/__init__.py' file. The 'D' component of the version is the
+build number and will be '0' for local development or the Hudson build
+number when the script is run under Hudson.
+
+After creating the release package, you should verify that it can be installed
+into a Python virtual environment by running:
+
+    pip install dist/newrelic-A.B.C.D.tar.gz
+
+This is necessary as the creation of the tar ball only collects the files
+into a Python source package and doesn't actually compile any of the Python
+code files into byte code. The latter is needed as a final check to ensure
+that syntax of code it correct.

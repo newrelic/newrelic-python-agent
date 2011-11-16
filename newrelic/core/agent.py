@@ -346,44 +346,45 @@ class Agent(object):
             # with this though.
 
             for application in self._applications.values():
-                    # Last application to be harvested this time
-                    # around failed and we must have closed the
-                    # connection. Attempt to create a new
-                    # connection so can we can try remaining
-                    # applications. If we can't get a new connection
-                    # though then we skip remainder of applications.
+
+                # Last application to be harvested this time
+                # around failed and we must have closed the
+                # connection. Attempt to create a new
+                # connection so can we can try remaining
+                # applications. If we can't get a new connection
+                # though then we skip remainder of applications.
+
+                try:
+                    if not connection:
+                        connection = self._remote.create_connection()
+                except:
+                    _logger.exception('Failed to create connection, '
+                                      'aborting harvest.')
+
+                    break
+
+                else:
+                    # Connection okay. Harvest single application.
 
                     try:
-                        if not connection:
-                            connection = self._remote.create_connection()
+                        application.harvest(connection)
+
                     except:
-                        _logger.exception('Failed to create connection, '
-                                          'aborting harvest.')
+                        _logger.exception('Failed to harvest data '
+                                          'for %s.' % application.name)
 
-                        break
-
-                    else:
-                        # Connection okay. Harvest single application.
+                        # For any sort of failure, close and null out
+                        # the connection. If more applications still to
+                        # go then will create a connection again for it
+                        # when enter loop again above.
 
                         try:
-                            application.harvest(connection)
-
+                            connection.close()
                         except:
-                            _logger.exception('Failed to harvest data '
-                                              'for %s.' % application.name)
+                            _logger.exception('Failed to '
+                                              'close connection.')
 
-                            # For any sort of failure, close and null out
-                            # the connection. If more applications still to
-                            # go then will create a connection again for it
-                            # when enter loop again above.
-
-                            try:
-                                connection.close()
-                            except:
-                                _logger.exception('Failed to '
-                                                  'close connection.')
-
-                            connection = None
+                        connection = None
 
             else:
                 if connection:

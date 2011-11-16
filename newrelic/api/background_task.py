@@ -18,8 +18,8 @@ class BackgroundTask(newrelic.api.transaction.Transaction):
 
         self.background_task = True
 
-	# Bail out if the transaction is running in a
-	# disabled state.
+        # Bail out if the transaction is running in a
+        # disabled state.
 
         if not self.enabled:
             return
@@ -43,9 +43,6 @@ class BackgroundTaskWrapper(object):
 
         if not hasattr(self, '_nr_last_object'):
             self._nr_last_object = wrapped
-
-        if type(application) != newrelic.api.application.Application:
-            application = newrelic.api.application.application(application)
 
         self._nr_application = application
         self._nr_name = name
@@ -81,14 +78,14 @@ class BackgroundTaskWrapper(object):
         else:
             group = self._nr_group
 
-	# Check to see if we are being called within the context
-	# of a web transaction. If we are, then we will just
-	# flag the current web transaction as a background task
-	# if not already marked as such and name the web
-	# transaction as well. In any case, if nested in another
-	# transaction be it a web transaction or background
-	# task, then we don't do anything else and just called
-	# the wrapped function.
+        # Check to see if we are being called within the context
+        # of a web transaction. If we are, then we will just
+        # flag the current web transaction as a background task
+        # if not already marked as such and name the web
+        # transaction as well. In any case, if nested in another
+        # transaction be it a web transaction or background
+        # task, then we don't do anything else and just called
+        # the wrapped function.
 
         if transaction:
             if (type(transaction) ==
@@ -102,9 +99,13 @@ class BackgroundTaskWrapper(object):
 
         # Otherwise treat it as top level transaction.
 
+        application = self._nr_application
+        if type(application) != newrelic.api.application.Application:
+            application = newrelic.api.application.application(application)
+
         try:
             success = True
-            manager = BackgroundTask(self._nr_application, name, group)
+            manager = BackgroundTask(application, name, group)
             manager.__enter__()
             try:
                 return self._nr_next_object(*args, **kwargs)

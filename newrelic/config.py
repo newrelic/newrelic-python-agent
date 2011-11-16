@@ -1114,6 +1114,10 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.component_piston',
             'instrument_piston_resource')
 
+    _process_module_definition('celery.app.task',
+            'newrelic.hooks.application_celery',
+            'instrument_celery_app_task')
+
 _instrumentation_done = False
 
 def _setup_instrumentation():

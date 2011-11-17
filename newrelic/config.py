@@ -1118,6 +1118,19 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.application_celery',
             'instrument_celery_app_task')
 
+    _process_module_definition('flup.server.cgi',
+            'newrelic.hooks.adapter_flup',
+            'instrument_flup_server_cgi')
+    _process_module_definition('flup.server.ajp_base',
+            'newrelic.hooks.adapter_flup',
+            'instrument_flup_server_ajp_base')
+    _process_module_definition('flup.server.fcgi_base',
+            'newrelic.hooks.adapter_flup',
+            'instrument_flup_server_fcgi_base')
+    _process_module_definition('flup.server.scgi_base',
+            'newrelic.hooks.adapter_flup',
+            'instrument_flup_server_scgi_base')
+
 _instrumentation_done = False
 
 def _setup_instrumentation():

@@ -1135,6 +1135,10 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.external_pywapi',
             'instrument_pywapi')
 
+    _process_module_definition('meinheld.server',
+            'newrelic.hooks.adapter_meinheld',
+            'instrument_meinheld_server')
+
 _instrumentation_done = False
 
 def _setup_instrumentation():

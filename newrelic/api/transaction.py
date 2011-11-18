@@ -5,6 +5,7 @@ import time
 import weakref
 import threading
 import traceback
+import logging
 
 import newrelic.core.config
 
@@ -14,6 +15,8 @@ import newrelic.core.error_node
 
 import newrelic.api.time_trace
 
+
+_logger = logging.getLogger('newrelic.api')
 
 STATE_PENDING = 0
 STATE_RUNNING = 1
@@ -181,7 +184,11 @@ class Transaction(object):
             return
 
         if not self._dead:
-            self._drop_transaction(self)
+            try:
+                self._drop_transaction(self)
+            except:
+                _logger.exception('Unable to drop transaction.')
+                raise
 
         # Record error if one was registered.
 

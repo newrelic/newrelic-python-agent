@@ -28,6 +28,13 @@ class Transaction(object):
 
     @classmethod
     def _current_thread(cls):
+        meinheld = sys.modules.get('meinheld.server')
+
+        if meinheld:
+            result = meinheld.get_ident()
+            if result is not None:
+                return result
+
         greenlet = sys.modules.get('greenlet')
 
         if greenlet:

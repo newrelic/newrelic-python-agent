@@ -217,7 +217,7 @@ class TransactionNode(_TransactionNode):
             params["request_uri"] = self.request_uri
             params["stack_trace"] = error.stack_trace
             if self.request_params:
-                params["request_params"] = request_params
+                params["request_params"] = self.request_params
             if self.parameter_groups:
                 params["parameter_groups"] = self.parameter_groups
             if error.custom_params:

@@ -649,8 +649,8 @@ def instrument_django_core_servers_basehttp(module):
     # instead which will likely need to be dealt with via
     # instrumentation of the wsgiref module or some other means.
 
-    def wrap_wsgi_application_entry_point(self, application, **kwargs):
-        return ((newrelic.api.web_transaction.WSGIApplicationWrapper(
+    def wrap_wsgi_application_entry_point(server, application, **kwargs):
+      return ((server, newrelic.api.web_transaction.WSGIApplicationWrapper(
                 application),), kwargs)
 
     # XXX Because of risk of people still trying to use the

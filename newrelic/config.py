@@ -1117,6 +1117,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('celery.app.task',
             'newrelic.hooks.application_celery',
             'instrument_celery_app_task')
+    _process_module_definition('celery.worker',
+            'newrelic.hooks.application_celery',
+            'instrument_celery_worker')
 
     _process_module_definition('flup.server.cgi',
             'newrelic.hooks.adapter_flup',

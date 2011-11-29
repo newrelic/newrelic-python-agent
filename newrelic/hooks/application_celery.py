@@ -19,5 +19,4 @@ def instrument_celery_worker(module):
         application.activate()
 
     newrelic.api.pre_function.wrap_pre_function(module,
-        'WorkController.process_initializer',
-        activate_default_application)
+        'process_initializer', activate_default_application)

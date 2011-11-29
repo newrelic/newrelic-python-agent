@@ -1077,6 +1077,8 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.database_dbapi2')
     _process_module_definition('psycopg2',
             'newrelic.hooks.database_dbapi2')
+    _process_module_definition('pyodbc',
+            'newrelic.hooks.database_dbapi2')
 
     _process_module_definition('pysqlite2.dbapi2',
             'newrelic.hooks.database_sqlite')

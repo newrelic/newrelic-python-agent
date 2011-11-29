@@ -212,9 +212,13 @@ def validate_config(args):
 
 @command('run-python', '...',
 """Executes the Python interpreter with the supplied arguments but forces
-the initialisation of the agent automatically at startup. Licence key,
-application and log file details must be supplied via environment variables
-NEW_RELIC_LICENSE_KEY, NEW_RELIC_APP_NAME and NEW_RELIC_LOG.""")
+the initialisation of the agent automatically at startup.
+         
+If using an agent configuration file the path to the file should be
+supplied by the environment variable NEW_RELIC_CONFIG_FILE. Alternatively,
+just the licence key, application and log file details can be supplied via
+environment variables NEW_RELIC_LICENSE_KEY, NEW_RELIC_APP_NAME and
+NEW_RELIC_LOG.""")
 def run_python(args):
     import newrelic
 
@@ -251,9 +255,13 @@ def run_python(args):
 
 @command('run-program', '...',
 """Executes the command line but forces the initialisation of the agent
-automatically at startup. Licence key, application and log file details
-must be supplied via environment variables NEW_RELIC_LICENSE_KEY,
-NEW_RELIC_APP_NAME and NEW_RELIC_LOG.""")
+automatically at startup.
+         
+If using an agent configuration file the path to the file should be
+supplied by the environment variable NEW_RELIC_CONFIG_FILE. Alternatively,
+just the licence key, application and log file details can be supplied via
+environment variables NEW_RELIC_LICENSE_KEY, NEW_RELIC_APP_NAME and
+NEW_RELIC_LOG.""")
 def run_program(args):
     if len(args) == 0:
         print "Type 'newrelic-admin help run-program' for usage."

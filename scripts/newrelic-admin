@@ -20,7 +20,7 @@ def usage(name):
 @command(None)
 def help(args):
     if not args:
-        print 'Usage: newrelic-admin command [options] [args]'
+        print 'Usage: newrelic-admin command [options]'
         print
         print "Type 'newrelic-admin help <command>'",
         print "for help on a specific command."

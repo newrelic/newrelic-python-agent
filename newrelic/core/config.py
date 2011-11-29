@@ -94,7 +94,7 @@ _settings.browser_key = None
 _settings.episodes_url = None
 
 _settings.transaction_tracer.enabled = True
-_settings.transaction_tracer.transaction_threshold = 'apdex_f'
+_settings.transaction_tracer.transaction_threshold = None
 _settings.transaction_tracer.record_sql = 'obfuscated'
 _settings.transaction_tracer.stack_trace_threshold = 0.5
 _settings.transaction_tracer.explain_enabled = True

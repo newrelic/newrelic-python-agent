@@ -56,6 +56,15 @@ directory where the "python" executable should be located.
 As necessary, move the generated "newrelic.ini" configuration file to a
 directory where your Python web applicaton is located.
 
+If you are unable to run the "newrelic-admin" command in your environment
+to generate the sample configuration you can instead also download a copy
+of the sample configuration from:
+
+    http://download.newrelic.com/python_agent/release/newrelic.ini
+
+If downloading the sample configuration rather than generating it with the
+'newrelic-admin' command, you will need to edit it and change the 'license_key' setting to be your account license key yourself.
+
 Now modify the configuration file and first uncomment the line:
 
     log_file = /tmp/newrelic-python-agent.log

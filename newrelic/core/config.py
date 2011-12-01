@@ -14,10 +14,12 @@ import logging
 import string
 import copy
 
-# The Settings objects and the global default settings. We created a
-# distinct type for each category of settings so that an error when
-# accessing a non existant setting is more descriptive and identifies
-# the category of settings.
+# The Settings objects and the global default settings. We create a
+# distinct type for each sub category of settings that the agent knows
+# about so that an error when accessing a non existant setting is more
+# descriptive and identifies the category of settings. When applying
+# server side configuration we create normal Settings object for new
+# sub categories we don't know about.
 
 class Settings(object):
     def __repr__(self):
@@ -180,6 +182,8 @@ def global_settings_dump():
 
 def apply_config_setting(settings_object, name, value):
     """Apply a setting to the settings object where name is a dotted path.
+    If there is no pre existing settings object for a sub category then
+    one will be created and added automatically.
 
     >>> name = 'browser_monitoring.auto_instrument'
     >>> value = False
@@ -193,6 +197,8 @@ def apply_config_setting(settings_object, name, value):
     fields = string.splitfields(name, '.', 1)
 
     while len(fields) > 1:
+        if not hasattr(target, fields[0]):
+            setattr(target, fields[0], Settings())
         target = getattr(target, fields[0])
         fields = string.splitfields(fields[1], '.', 1)
 

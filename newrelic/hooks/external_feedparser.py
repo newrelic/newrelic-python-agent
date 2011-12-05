@@ -12,6 +12,10 @@ class capture_external_trace(object):
         if not hasattr(self, '_nr_last_object'):
             self._nr_last_object = wrapped
     def __call__(self, url, *args, **kwargs):
+        if url.startswith('feed:http'):
+            url = url[5:]
+        elif url.startswith('feed:'):
+            url = 'http:' + url[5:]
         if url.split(':')[0].lower() in ['http', 'https', 'ftp']:
             current_transaction = newrelic.api.transaction.transaction()
             if current_transaction:

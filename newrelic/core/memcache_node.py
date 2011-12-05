@@ -44,16 +44,11 @@ class MemcacheNode(_MemcacheNode):
                 overflow=overflow, forced=False, duration=self.duration,
                 exclusive=self.exclusive)
 
-        # Now for the children.
+        # XXX Ignore the children as this should be a terminal node.
 
-	# TODO Above exclusive times don't take into
-	# consideration children if any existed. Still need to
-	# work out how such children to this nodes is meant to
-	# work.
-
-        for child in self.children:
-            for metric in child.time_metrics(stats, root, self):
-                yield metric
+        #for child in self.children:
+        #    for metric in child.time_metrics(stats, root, self):
+        #        yield metric
 
     def trace_node(self, stats, root):
 
@@ -61,7 +56,11 @@ class MemcacheNode(_MemcacheNode):
 
         start_time = newrelic.core.trace_node.node_start_time(root, self)
         end_time = newrelic.core.trace_node.node_end_time(root, self)
-        children = [child.trace_node(stats, root) for child in self.children]
+
+        # XXX Ignore the children as this should be a terminal node.
+
+        #children = [child.trace_node(stats, root) for child in self.children]
+        children = []
 
         params = None
 

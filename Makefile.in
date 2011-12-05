@@ -32,6 +32,7 @@ install-testing : test-env all
 .PHONY: unit-tests
 .PHONY: unit-tests/api
 .PHONY: unit-tests/core
+.PHONY: unit-tests/hooks
 
 unit-tests/api : test-env install-testing
 	@for test in unit-tests/api/*.py; \
@@ -39,6 +40,10 @@ unit-tests/api : test-env install-testing
 
 unit-tests/core : test-env install-testing
 	@for test in unit-tests/core/*.py; \
+	    do test-env/bin/python $$test -v; done
+
+unit-tests/hooks : test-env install-testing
+	@for test in unit-tests/hooks/*.py; \
 	    do test-env/bin/python $$test -v; done
 
 unit-tests : unit-tests/api unit-tests/core

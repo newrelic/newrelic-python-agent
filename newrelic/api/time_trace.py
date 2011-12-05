@@ -16,6 +16,15 @@ class TimeTrace(object):
         if not self.transaction:
             return
 
+        # Don't do any tracing if parent is designated
+        # as a terminal node.
+
+        parent = self.transaction._parent_node()
+
+        if parent.terminal_node():
+            self.transaction = None
+            return
+
         # Record start time.
 
         self.start_time = time.time()
@@ -89,6 +98,9 @@ class TimeTrace(object):
             return self.node(**dict((k, self.__dict__[k])
                     for k in self.node._fields))
         return self
+
+    def terminal_node(self):
+        return False
 
     def process_child(self, node):
         self.children.append(node)

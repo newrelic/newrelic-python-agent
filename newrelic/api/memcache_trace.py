@@ -25,6 +25,9 @@ class MemcacheTrace(newrelic.api.time_trace.TimeTrace):
                 start_time=self.start_time, end_time=self.end_time,
                 duration=self.duration, exclusive=self.exclusive)
 
+    def terminal_node(self):
+        return True
+
 class MemcacheTraceWrapper(object):
 
     def __init__(self, wrapped, command):

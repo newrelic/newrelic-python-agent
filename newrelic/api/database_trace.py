@@ -43,6 +43,9 @@ class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
                 duration=self.duration, exclusive=self.exclusive,
                 stack_trace=self.stack_trace, sql_format=self.sql_format)
 
+    def terminal_node(self):
+        return True
+
 class DatabaseTraceWrapper(object):
 
     def __init__(self, wrapped, sql, dbapi=None):

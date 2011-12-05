@@ -462,6 +462,9 @@ class Transaction(object):
     def record_metric(self, name, value):
         self._custom_metrics.append((name, value))
 
+    def _parent_node(self):
+        return self._node_stack[-1]
+
     def _push_current(self, node):
         self._node_stack.append(node)
 

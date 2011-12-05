@@ -27,6 +27,9 @@ class ExternalTrace(newrelic.api.time_trace.TimeTrace):
                 end_time=self.end_time, duration=self.duration,
                 exclusive=self.exclusive)
 
+    def terminal_node(self):
+        return True
+
 class ExternalTraceWrapper(object):
 
     def __init__(self, wrapped, library, url):

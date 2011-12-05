@@ -79,7 +79,7 @@ _int_re = re.compile(r'\b\d+\b')
 # Obfuscation can produce sets as (?,?). Need to be able to collapse
 # these to single value set.
 
-_collapse_set_re = re.compile(r'\(\s*\?(\s*,\s*\?\s*)*\)')
+_collapse_set_re = re.compile(r'\(\s*(\?|%s)(\s*,\s*(\?|%s)\s*)*\)')
 
 def obfuscated_sql(name, sql, collapsed=False):
     """Returns obfuscated version of the sql. The quoting

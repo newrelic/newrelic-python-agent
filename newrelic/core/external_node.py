@@ -48,7 +48,12 @@ class ExternalNode(_ExternalNode):
                 overflow=None, forced=False, duration=self.duration,
                 exclusive=self.exclusive)
 
-        name = 'External/%s/%s%s' % (host, self.library, path)
+        # XXX UI doesn't make use of path so avoid metric explosion for
+        # now by passing '/' for path. Need to work out what consistent
+        # format is supposed to be used by all agents.
+
+        #name = 'External/%s/%s%s' % (host, self.library, path)
+        name = 'External/%s/%s%s' % (host, self.library, '/')
         overflow = 'External/*'
 
         yield newrelic.core.metric.TimeMetric(name=name, scope='',

@@ -19,7 +19,11 @@ class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
     def __init__(self, transaction, sql, dbapi=None):
         super(DatabaseTrace, self).__init__(transaction)
 
-        self.sql = sql
+        if transaction:
+            self.sql = transaction._intern_string(sql)
+        else:
+            self.sql = sql
+
         self.dbapi = dbapi
 
         self.connect_params = None

@@ -102,6 +102,8 @@ class Transaction(object):
 
         self._stack_trace_count = 0
 
+        self._string_cache = {}
+
         self._custom_params = {}
         self._request_params = {}
 
@@ -467,6 +469,9 @@ class Transaction(object):
     def _parent_node(self):
         if self._node_stack:
             return self._node_stack[-1]
+
+    def _intern_string(self, value):
+        return self._string_cache.setdefault(value, value)
 
     def _push_current(self, node):
         self._node_stack.append(node)

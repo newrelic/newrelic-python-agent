@@ -29,7 +29,8 @@ class RulesEngine(object):
         for rule in rules:
             kwargs = {}
             for name in map(str, rule.keys()):
-                kwargs[name] = rule[name]
+                if name in NormalizationRule._fields:
+                    kwargs[name] = rule[name]
             self.__rules.append(NormalizationRule(**kwargs))
 
         self.__rules = sorted(self.__rules, key=lambda rule: rule.eval_order)
@@ -47,10 +48,10 @@ class RulesEngine(object):
 
                 segments = final_string.split('/')
 
-		# FIXME This fiddle is to skip leading segment
-		# when splitting on '/' where it is empty.
-		# Should the rule just be to skip any empty
-		# segment when matching keeping it as empty
+                # FIXME This fiddle is to skip leading segment
+                # when splitting on '/' where it is empty.
+                # Should the rule just be to skip any empty
+                # segment when matching keeping it as empty
                 # but not matched. Wouldn't then have to treat
                 # this as special.
 

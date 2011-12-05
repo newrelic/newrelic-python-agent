@@ -31,11 +31,30 @@ class TestRulesEngine(unittest.TestCase):
         self.assertEqual([NormalizationRule(**rule0),
                           NormalizationRule(**rule1)], rules_engine.rules)
 
+    def test_rules_engine_should_initialize_with_extra_attributes(self):
+        rule0 = self.rule
+        rule1 = dict(match_expression = "/something else/", 
+                     replacement = "?", 
+                     ignore = False, 
+                     eval_order = 1, 
+                     terminate_chain = True, 
+                     each_segment = False, 
+                     replace_all = False,
+                     extra = None)
+
+        rules_engine = RulesEngine([rule0, rule1])
+
+        del rule1['extra']
+
+        self.assertEqual([NormalizationRule(**rule0),
+                          NormalizationRule(**rule1)], rules_engine.rules)
+
     def test_rule_with_replace_all_and_no_each_segment(self):
         rules_engine = RulesEngine([self.rule])
         result = rules_engine.normalize(self.test_url)
-        self.assertEqual("/wallabies/ArticleDetails/tabid/*/ArticleID/*/Default.aspx",
-                         result)
+        self.assertEqual(
+            ("/wallabies/ArticleDetails/tabid/*/ArticleID/*/Default.aspx",
+            False), result)
 
     def test_rule_without_replace_all(self):
         rule = dict(match_expression = "[0-9]+", 
@@ -48,8 +67,9 @@ class TestRulesEngine(unittest.TestCase):
 
         rules_engine = RulesEngine([rule])
         result = rules_engine.normalize(self.test_url)
-        self.assertEqual("/wallabies/ArticleDetails/tabid/*/ArticleID/3773/Default.aspx",
-                         result)
+        self.assertEqual(
+            ("/wallabies/ArticleDetails/tabid/*/ArticleID/3773/Default.aspx",
+            False), result)
 
 
     def test_multiple_rules_are_applied_in_eval_order(self):
@@ -71,8 +91,9 @@ class TestRulesEngine(unittest.TestCase):
 
         rules_engine = RulesEngine([rule1, rule0])
         result = rules_engine.normalize(self.test_url)
-        self.assertEqual("/wallabies/ArticleDetails/tabid/bar/ArticleID/bar/Default.aspx",
-                         result)
+        self.assertEqual(
+            ("/wallabies/ArticleDetails/tabid/bar/ArticleID/bar/Default.aspx",
+            False), result)
 
     def test_rule_on_each_segment(self):
         rule = dict(match_expression = ".*",
@@ -85,7 +106,7 @@ class TestRulesEngine(unittest.TestCase):
 
         rules_engine = RulesEngine([rule])
         result = rules_engine.normalize(self.test_url)
-        self.assertEqual("/X/X/X/X/X/X/X", result)
+        self.assertEqual(("/X/X/X/X/X/X/X", False), result)
 
 
     def test_rule_with_back_substition(self):
@@ -99,8 +120,9 @@ class TestRulesEngine(unittest.TestCase):
 
         rules_engine = RulesEngine([rule])
         result = rules_engine.normalize(self.test_url)
-        self.assertEqual("/wallabies/ArticleDetails/tabid/1515X/ArticleID/3773X/Default.aspx", 
-                         result)
+        self.assertEqual(
+            ("/wallabies/ArticleDetails/tabid/1515X/ArticleID/3773X/Default.aspx", 
+            False), result)
 
     def test_rules_with_terminate_chain_with_match_expression(self):
         rule0 = dict(match_expression = "[0-9]+", 
@@ -121,8 +143,9 @@ class TestRulesEngine(unittest.TestCase):
 
         rules_engine = RulesEngine([rule1, rule0])
         result = rules_engine.normalize(self.test_url)
-        self.assertEqual("/wallabies/ArticleDetails/tabid/foo/ArticleID/foo/Default.aspx",
-                         result)
+        self.assertEqual(
+            ("/wallabies/ArticleDetails/tabid/foo/ArticleID/foo/Default.aspx",
+            False), result)
 
     def test_rules_with_terminate_chain_without_match_expression(self):
         rule0 = dict(match_expression = "python_is_seriously_awesome", 
@@ -143,8 +166,9 @@ class TestRulesEngine(unittest.TestCase):
 
         rules_engine = RulesEngine([rule1, rule0])
         result = rules_engine.normalize(self.test_url)
-        self.assertEqual("/wallabies/ArticleDetails/tabid/bar/ArticleID/3773/Default.aspx",
-                         result)
+        self.assertEqual(
+            ("/wallabies/ArticleDetails/tabid/bar/ArticleID/3773/Default.aspx",
+            False), result)
 
     def test_normalizer_reports_if_ignore_rule_was_applied(self):
         rule = dict(match_expression = "[0-9]+", 

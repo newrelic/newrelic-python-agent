@@ -209,11 +209,22 @@ class SqlParser:
         idx = self._find_idx_for(ttype, match)
         return self._get_first_identifier_after(idx)
 
-def parsed_sql(sql):
+def parsed_sql(name, sql):
     entry = sql_properties_cache.fetch(sql)
 
     if entry.parsed is not None:
         return entry.parsed
+
+    # We need to operate on SQL which has had IN clause
+    # collapsed as SqlParser performs really badly on very
+    # big SQL and the IN clause is usually the cause of
+    # that.
+
+    # XXX This does mean we are doing obfuscation even if
+    # we do not need to. Makes things much quicker though
+    # so likely offsets overall performance.
+
+    sql = obfuscated_sql(name, sql, collapsed=True)
 
     # The SqlParser class doesn't cope well with badly formed
     # input data, so need to catch exceptions here. We return

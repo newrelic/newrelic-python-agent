@@ -1,6 +1,6 @@
 import unittest
 
-from newrelic.core.database_utils import obfuscated_sql
+from newrelic.core.database_utils import obfuscated_sql, parsed_sql
 
 class TestDatabase(unittest.TestCase):
     def test_obfuscator_obfuscates_numeric_literals(self):
@@ -45,6 +45,17 @@ class TestDatabase(unittest.TestCase):
         select = "SELECT column1 FROM table1 WHERE column1 IN (%s,%s,%s)"
         self.assertEqual("SELECT column1 FROM table1 WHERE column1 IN (?)",
                          obfuscated_sql('pyscopg2', select, collapsed=True))
+
+    def test_obfuscator_collapses_in_clause_very_large(self):
+        select = "SELECT column1 FROM table1 WHERE column1 IN (" + \
+                (50000 * "%s,") + "%s)"
+        self.assertEqual("SELECT column1 FROM table1 WHERE column1 IN (?)",
+                         obfuscated_sql('pyscopg2', select, collapsed=True))
+
+    def test_obfuscator_very_large_in_clause(self):
+        select = "SELECT column1 FROM table1 WHERE column1 IN (" + \
+                (50000 * "%s,") + "%s)"
+        self.assertEqual(('table1', 'select'), parsed_sql('pyscopg2', select))
 
 if __name__ == "__main__":
     unittest.main()

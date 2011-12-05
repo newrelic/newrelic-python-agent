@@ -47,6 +47,11 @@ _DatabaseNode = namedtuple('_DatabaseNode',
 
 class DatabaseNode(_DatabaseNode):
 
+    @property
+    def parsed_sql(self):
+        name = self.dbapi and self.dbapi.__name__ or None 
+        return parsed_sql(name, self.sql)
+
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
         database node as well as all the child nodes.
@@ -73,7 +78,7 @@ class DatabaseNode(_DatabaseNode):
         # does appear to generate one. Also, the SQL parser has
         # special cases for 'set', 'create' and 'call' as well.
 
-        table, operation = parsed_sql(self.sql)
+        table, operation = self.parsed_sql
 
         if operation in ('select', 'update', 'insert', 'delete'):
             name = 'Database/%s/%s' % (table, operation)
@@ -129,7 +134,7 @@ class DatabaseNode(_DatabaseNode):
 
     def slow_sql_node(self, stats, root):
 
-        table, operation = parsed_sql(self.sql)
+        table, operation = self.parsed_sql
 
         if operation in ('select', 'update', 'insert', 'delete'):
             name = 'Database/%s/%s' % (table, operation)
@@ -150,7 +155,7 @@ class DatabaseNode(_DatabaseNode):
 
     def trace_node(self, stats, root):
 
-        table, operation = parsed_sql(self.sql)
+        table, operation = self.parsed_sql
 
         # TODO Verify that these are the correct names to use.
         # Could possibly cache this if necessary.

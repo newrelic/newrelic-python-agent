@@ -21,7 +21,7 @@ class TimeTrace(object):
 
         parent = self.transaction._parent_node()
 
-        if parent.terminal_node():
+        if not parent or parent.terminal_node():
             self.transaction = None
             return
 

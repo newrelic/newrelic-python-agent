@@ -100,6 +100,8 @@ class Transaction(object):
         self._errors = []
         self._slow_sql = []
 
+        self._stack_trace_count = 0
+
         self._custom_params = {}
         self._request_params = {}
 
@@ -463,7 +465,8 @@ class Transaction(object):
         self._custom_metrics.append((name, value))
 
     def _parent_node(self):
-        return self._node_stack[-1]
+        if self._node_stack:
+            return self._node_stack[-1]
 
     def _push_current(self, node):
         self._node_stack.append(node)

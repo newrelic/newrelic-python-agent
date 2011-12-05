@@ -29,10 +29,14 @@ class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
 
         settings = self.transaction.settings
         transaction_tracer = settings.transaction_tracer
+        agent_limits = settings.agent_limits
 
         if transaction_tracer.enabled and settings.collect_traces:
             if self.duration >= transaction_tracer.stack_trace_threshold:
-                self.stack_trace = traceback.format_stack()
+                if (self.transaction._stack_trace_count < 
+                       agent_limits.slow_sql_stack_trace):
+                    self.stack_trace = traceback.format_stack()
+                    self.transaction._stack_trace_count += 1
 
         self.sql_format = transaction_tracer.record_sql
 

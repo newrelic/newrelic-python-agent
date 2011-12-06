@@ -21,9 +21,7 @@ if os.path.exists(develop_file):
 
     import newrelic
 
-    build_number = os.environ.get('BUILD_NUMBER', '0')
-    package_version = "%s.%s" % (newrelic.version, build_number)
-    package_directory = '.'
+    package_version = newrelic.version
 
     version_file_fds = open(version_file, 'w')
     print >> version_file_fds, package_version
@@ -33,7 +31,6 @@ else:
     # Installing from release package.
 
     package_version = open(version_file, 'r').read().strip()
-    package_directory = '.'
 
 
 packages = [
@@ -58,7 +55,6 @@ setup(
   license = copyright,
   url = "http://www.newrelic.com",
   packages = packages,
-  package_dir = { 'newrelic': '%s/newrelic' % package_directory },
   package_data = { 'newrelic': ['newrelic.ini', 'LICENSE',
                                 'lib/sqlparse/LICENSE'] },
   extra_path = ( "newrelic", "newrelic-%s" % package_version ),

@@ -101,11 +101,15 @@ def _map_record_sql(s):
 def _map_ignore_errors(s):
     return s.split()
 
+def _map_function_trace(s):
+    return s.split()
+
 # Processing of a single setting from configuration file.
 
 def _raise_configuration_error(section, option=None):
     _logger.error('CONFIGURATION ERROR')
-    _logger.error('Section = %s' % section)
+    if section:
+        _logger.error('Section = %s' % section)
 
     if option is None:
         options = _config_object.options(section)
@@ -114,20 +118,31 @@ def _raise_configuration_error(section, option=None):
         _logger.exception('Exception Details')
 
         if not _ignore_errors:
-            raise newrelic.api.exceptions.ConfigurationError(
-                    'Invalid configuration for section "%s". '
-                    'Check New Relic agent log file for further '
-                    'details.' % section)
+            if section:
+                raise newrelic.api.exceptions.ConfigurationError(
+                        'Invalid configuration for section "%s". '
+                        'Check New Relic agent log file for further '
+                        'details.' % section)
+            else:
+                raise newrelic.api.exceptions.ConfigurationError(
+                        'Invalid configuration. Check New Relic agent '
+                        'log file for further details.')
 
     else:
         _logger.error('Option = %s' % option)
         _logger.exception('Exception Details')
 
         if not _ignore_errors:
-            raise newrelic.api.exceptions.ConfigurationError(
-                    'Invalid configuration for option "%s" in '
-                    'section "%s". Check New Relic agent log '
-                    'file for further details.' % (option, section))
+            if section:
+                raise newrelic.api.exceptions.ConfigurationError(
+                        'Invalid configuration for option "%s" in '
+                        'section "%s". Check New Relic agent log '
+                        'file for further details.' % (option, section))
+            else:
+                raise newrelic.api.exceptions.ConfigurationError(
+                        'Invalid configuration for option "%s". '
+                        'Check New Relic agent log file for further '
+                        'details.' % option)
 
 def _process_setting(section, option, getter, mapper):
     try:
@@ -216,6 +231,8 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'transaction_tracer.explain_threshold',
                      'getfloat', None)
+    _process_setting(section, 'transaction_tracer.function_trace',
+                     'get', _map_function_trace)
     _process_setting(section, 'error_collector.enabled',
                      'getboolean', None),
     _process_setting(section, 'error_collector.capture_source',
@@ -406,7 +423,25 @@ def _load_configuration(config_file=None, environment=None,
             _process_app_name('newrelic')
     else:
         _process_app_name('newrelic')
-                                           
+
+    # Instrument with function trace and callables supplied by the
+    # user in the configuration.
+
+    for function in _settings.transaction_tracer.function_trace:
+        try:
+            (module, object_path) = string.splitfields(function, ':', 1)
+
+            name = None
+            group = 'Function'
+
+            _logger.debug("register function-trace %s" %
+                    ((module, object_path, name, group),))
+
+            hook = _function_trace_import_hook(object_path, name, group)
+            newrelic.api.import_hook.register_import_hook(module, hook)
+        except:
+            _raise_configuration_error(section=None,
+                    option='transaction_tracer.function_trace')
 
 # Generic error reporting functions.
 

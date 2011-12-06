@@ -104,6 +104,7 @@ _settings.transaction_tracer.record_sql = 'obfuscated'
 _settings.transaction_tracer.stack_trace_threshold = 0.5
 _settings.transaction_tracer.explain_enabled = True
 _settings.transaction_tracer.explain_threshold = 0.5
+_settings.transaction_tracer.function_trace = []
 
 _settings.error_collector.enabled = True
 _settings.error_collector.capture_source = False

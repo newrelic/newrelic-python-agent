@@ -77,7 +77,8 @@ _any_quotes_re = re.compile(_any_quotes_pattern)
 _int_re = re.compile(r'\b\d+\b')
 
 # Obfuscation can produce sets as (?,?). Need to be able to collapse
-# these to single value set.
+# these to single value set. Also need to deal with parameterised
+# values which can be ? or %s.
 
 _collapse_set_re = re.compile(r'\(\s*(\?|%s)(\s*,\s*(\?|%s)\s*)*\)')
 
@@ -114,6 +115,13 @@ def obfuscated_sql(name, sql, collapsed=False):
     # will not match numbers within identifier names.
 
     obfuscated = _int_re.sub('?', obfuscated)
+
+    # Collapse sets of values used in IN clauses to a single.
+    # This form of obfuscated SQL will be used when generating
+    # ID for slow SQL samples as well as be SQL which the table
+    # and operation are derived from. This is used for the latter
+    # as large sets will slow down the SQL parser dramatically. 
+
     obfuscated_collapsed = _collapse_set_re.sub('(?)', obfuscated)
 
     entry.obfuscated = obfuscated

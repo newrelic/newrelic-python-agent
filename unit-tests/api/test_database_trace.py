@@ -101,7 +101,7 @@ class DatabaseTraceTests(unittest.TestCase):
             except TypeError:
                 pass
 
-    def test_database_trace_decorator(self):
+    def test_database_stack_trace_limit(self):
         environ = { "REQUEST_URI": "/database_stack_trace_limit" }
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)

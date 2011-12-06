@@ -229,26 +229,27 @@ class TransactionNode(_TransactionNode):
                     start_time=0, path=self.path, message=error.message,
                     type=error.type, parameters=params)
 
-    def trace_node(self, stats, root):
+    def trace_node(self, stats, string_table, root):
 
         name = self.path
 
         start_time = newrelic.core.trace_node.node_start_time(root, self)
         end_time = newrelic.core.trace_node.node_end_time(root, self)
-        children = [child.trace_node(stats, root) for child in self.children]
+        children = [child.trace_node(stats, string_table, root) for
+                    child in self.children]
 
         params = {}
 
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children)
 
-    def transaction_trace(self, stats):
+    def transaction_trace(self, stats, string_table):
 
         start_time = newrelic.core.trace_node.root_start_time(self)
         request_params = self.request_params or None
         custom_params = self.custom_params or None
         parameter_groups = self.parameter_groups or None
-        trace_node = self.trace_node(stats, self)
+        trace_node = self.trace_node(stats, string_table, self)
 
 	# There is an additional trace node labelled as 'ROOT'
 	# that needs to be inserted below the root node object

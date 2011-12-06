@@ -153,7 +153,7 @@ class DatabaseNode(_DatabaseNode):
                 dbapi=self.dbapi, connect_params=self.connect_params,
                 stack_trace=self.stack_trace)
 
-    def trace_node(self, stats, root):
+    def trace_node(self, stats, string_table, root):
 
         table, operation = self.parsed_sql
 
@@ -167,12 +167,15 @@ class DatabaseNode(_DatabaseNode):
         else:
             name = 'Database/other/sql'
 
+        name = string_table.cache(name)
+
         start_time = newrelic.core.trace_node.node_start_time(root, self)
         end_time = newrelic.core.trace_node.node_end_time(root, self)
 
         # XXX Ignore the children as this should be a terminal node.
 
-        #children = [child.trace_node(stats, root) for child in self.children]
+        #children = [child.trace_node(stats, string_table, root) for
+        #            child in self.children]
         children = []
 
         params = {}
@@ -180,10 +183,10 @@ class DatabaseNode(_DatabaseNode):
         sql = formatted_sql(self.dbapi, self.sql_format, self.sql)
 
         if sql:
-            params['sql'] = sql
+            params['sql'] = string_table.cache(sql)
 
             if self.stack_trace:
-                params['backtrace'] = self.stack_trace
+                params['backtrace'] = map(string_table.cache, self.stack_trace)
 
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children)

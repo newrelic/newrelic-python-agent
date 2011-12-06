@@ -21,6 +21,7 @@ import newrelic.core.stats_engine
 import newrelic.core.rules_engine
 import newrelic.core.samplers
 import newrelic.core.database_utils
+import newrelic.core.string_table
 
 _logger = logging.getLogger('newrelic.core.application')
 
@@ -270,10 +271,12 @@ class Application(object):
                 if self._service.configuration.collect_traces:
                     slow_transaction = stats.slow_transaction
                     if stats.slow_transaction:
+                        string_table = newrelic.core.string_table.StringTable()
                         transaction_trace = slow_transaction.transaction_trace(
-                                stats)
+                                stats, string_table)
+                        data = [transaction_trace, string_table.values()]
                         compressed_data = base64.standard_b64encode(
-                                zlib.compress(json.dumps(transaction_trace)))
+                                zlib.compress(json.dumps(data)))
                         trace_data = [[transaction_trace.root.start_time,
                                 transaction_trace.root.end_time,
                                 stats.slow_transaction.path,

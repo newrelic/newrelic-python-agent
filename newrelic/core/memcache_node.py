@@ -50,16 +50,19 @@ class MemcacheNode(_MemcacheNode):
         #    for metric in child.time_metrics(stats, root, self):
         #        yield metric
 
-    def trace_node(self, stats, root):
+    def trace_node(self, stats, string_table, root):
 
         name = 'Memcache/%s' % self.command
+
+        name = string_table.cache(name)
 
         start_time = newrelic.core.trace_node.node_start_time(root, self)
         end_time = newrelic.core.trace_node.node_end_time(root, self)
 
         # XXX Ignore the children as this should be a terminal node.
 
-        #children = [child.trace_node(stats, root) for child in self.children]
+        #children = [child.trace_node(stats, string_table, root) for
+        #            child in self.children]
         children = []
 
         params = None

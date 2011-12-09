@@ -1140,6 +1140,8 @@ def _process_module_builtin_defaults():
 
     _process_module_definition('httplib',
             'newrelic.hooks.external_httplib')
+    _process_module_definition('httplib2',
+            'newrelic.hooks.external_httplib2')
     _process_module_definition('urllib',
             'newrelic.hooks.external_urllib')
     _process_module_definition('urllib2',

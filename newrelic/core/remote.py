@@ -25,7 +25,7 @@ import newrelic.core.config
 from newrelic.core.exceptions import raise_newrelic_exception,ForceRestartException,ForceShutdownException
 from newrelic.core import environment
 
-_logger = logging.getLogger('newrelic.remote')
+_logger = logging.getLogger('newrelic.core.remote')
 
 class NewRelicService(object):
     def __init__(self, remote,app_names=["FIXME Python test"]):

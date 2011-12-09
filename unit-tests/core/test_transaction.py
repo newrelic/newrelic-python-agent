@@ -19,6 +19,7 @@ import newrelic.api.database_trace
 import newrelic.api.external_trace
 import newrelic.api.function_trace
 import newrelic.api.memcache_trace
+import newrelic.api.solr_trace
 
 import newrelic.api.error_trace
 import newrelic.api.name_transaction
@@ -72,6 +73,10 @@ def my_external():
 def my_memcache():
     time.sleep(0.1)
 
+@newrelic.api.solr_trace.solr_trace(library='test', command='add')
+def my_solr():
+    time.sleep(0.1)
+
 @newrelic.api.function_trace.function_trace(group='Template/Render')
 def my_function_1():
     time.sleep(0.1)
@@ -82,6 +87,7 @@ def my_function_2():
     my_database()
     my_external()
     my_memcache()
+    my_solr()
     time.sleep(0.1)
 
 @newrelic.api.function_trace.function_trace()

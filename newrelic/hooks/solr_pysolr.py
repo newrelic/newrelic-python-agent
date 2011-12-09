@@ -22,4 +22,4 @@ def instrument(module):
                 module, 'Solr.commit', 'pysolr', 'commit')
     if hasattr(module.Solr, 'optimize'):
         newrelic.api.solr_trace.wrap_solr_trace(
-                module, 'Solr.delete', 'pysolr', 'optimize')
+                module, 'Solr.optimize', 'pysolr', 'optimize')

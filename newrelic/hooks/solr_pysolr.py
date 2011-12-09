@@ -20,6 +20,6 @@ def instrument(module):
     if hasattr(module.Solr, 'commit'):
         newrelic.api.solr_trace.wrap_solr_trace(
                 module, 'Solr.commit', 'pysolr', 'commit')
-    if hasattr(module.Solr, 'delete'):
+    if hasattr(module.Solr, 'optimize'):
         newrelic.api.solr_trace.wrap_solr_trace(
                 module, 'Solr.delete', 'pysolr', 'optimize')

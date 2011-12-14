@@ -5,8 +5,8 @@ from newrelic.core.rules_engine import *
 class TestRulesEngine(unittest.TestCase):
 
     def setUp(self):
-        self.rule = dict(match_expression = "[0-9]+", 
-                         replacement = "*", 
+        self.rule = dict(match_expression = u"[0-9]+", 
+                         replacement = u"*", 
                          ignore = False, 
                          eval_order = 1, 
                          terminate_chain = True, 
@@ -18,8 +18,8 @@ class TestRulesEngine(unittest.TestCase):
 
     def test_rules_engine_should_initialize_with_multiple_rules(self):
         rule0 = self.rule
-        rule1 = dict(match_expression = "/something else/", 
-                     replacement = "?", 
+        rule1 = dict(match_expression = u"/something else/", 
+                     replacement = u"?", 
                      ignore = False, 
                      eval_order = 1, 
                      terminate_chain = True, 
@@ -33,8 +33,8 @@ class TestRulesEngine(unittest.TestCase):
 
     def test_rules_engine_should_initialize_with_extra_attributes(self):
         rule0 = self.rule
-        rule1 = dict(match_expression = "/something else/", 
-                     replacement = "?", 
+        rule1 = dict(match_expression = u"/something else/", 
+                     replacement = u"?", 
                      ignore = False, 
                      eval_order = 1, 
                      terminate_chain = True, 
@@ -57,8 +57,8 @@ class TestRulesEngine(unittest.TestCase):
             False), result)
 
     def test_rule_without_replace_all(self):
-        rule = dict(match_expression = "[0-9]+", 
-                    replacement = "*", 
+        rule = dict(match_expression = u"[0-9]+", 
+                    replacement = u"*", 
                     ignore = False, 
                     eval_order = 1, 
                     terminate_chain = True, 
@@ -73,16 +73,16 @@ class TestRulesEngine(unittest.TestCase):
 
 
     def test_multiple_rules_are_applied_in_eval_order(self):
-        rule0 = dict(match_expression = "[0-9]+", 
-                     replacement = "foo", 
+        rule0 = dict(match_expression = u"[0-9]+", 
+                     replacement = u"foo", 
                      ignore = False, 
                      eval_order = 0,
                      terminate_chain = False, 
                      each_segment = False, 
                      replace_all = True)
 
-        rule1 = dict(match_expression = "foo", 
-                     replacement = "bar",
+        rule1 = dict(match_expression = u"foo", 
+                     replacement = u"bar",
                      ignore = False, 
                      eval_order = 1,
                      terminate_chain = False, 
@@ -96,8 +96,8 @@ class TestRulesEngine(unittest.TestCase):
             False), result)
 
     def test_rule_on_each_segment(self):
-        rule = dict(match_expression = ".*",
-                    replacement = "X",
+        rule = dict(match_expression = u".*",
+                    replacement = u"X",
                     ignore = False, 
                     eval_order = 0,
                     terminate_chain = False, 
@@ -110,8 +110,8 @@ class TestRulesEngine(unittest.TestCase):
 
 
     def test_rule_with_back_substition(self):
-        rule = dict(match_expression = "([0-9].*)",
-                    replacement = "\\1X",
+        rule = dict(match_expression = u"([0-9].*)",
+                    replacement = u"\\1X",
                     ignore = False, 
                     eval_order = 0,
                     terminate_chain = False, 
@@ -125,16 +125,16 @@ class TestRulesEngine(unittest.TestCase):
             False), result)
 
     def test_rules_with_terminate_chain_with_match_expression(self):
-        rule0 = dict(match_expression = "[0-9]+", 
-                     replacement = "foo", 
+        rule0 = dict(match_expression = u"[0-9]+", 
+                     replacement = u"foo", 
                      ignore = False, 
                      eval_order = 0,
                      terminate_chain = True, 
                      each_segment = False, 
                      replace_all = True)
 
-        rule1 = dict(match_expression = "foo", 
-                     replacement = "bar",
+        rule1 = dict(match_expression = u"foo", 
+                     replacement = u"bar",
                      ignore = False, 
                      eval_order = 1,
                      terminate_chain = False, 
@@ -148,16 +148,16 @@ class TestRulesEngine(unittest.TestCase):
             False), result)
 
     def test_rules_with_terminate_chain_without_match_expression(self):
-        rule0 = dict(match_expression = "python_is_seriously_awesome", 
-                     replacement = "foo", 
+        rule0 = dict(match_expression = u"python_is_seriously_awesome", 
+                     replacement = u"foo", 
                      ignore = False, 
                      eval_order = 0,
                      terminate_chain = True, 
                      each_segment = False, 
                      replace_all = True)
 
-        rule1 = dict(match_expression = "1515", 
-                     replacement = "bar",
+        rule1 = dict(match_expression = u"1515", 
+                     replacement = u"bar",
                      ignore = False, 
                      eval_order = 1,
                      terminate_chain = False, 
@@ -171,8 +171,8 @@ class TestRulesEngine(unittest.TestCase):
             False), result)
 
     def test_normalizer_reports_if_ignore_rule_was_applied(self):
-        rule = dict(match_expression = "[0-9]+", 
-                    replacement = "foo", 
+        rule = dict(match_expression = u"[0-9]+", 
+                    replacement = u"foo", 
                     ignore = True, 
                     eval_order = 0,
                     terminate_chain = False, 
@@ -182,7 +182,39 @@ class TestRulesEngine(unittest.TestCase):
         rules_engine = RulesEngine([rule])
         result = rules_engine.normalize(self.test_url)
 
-        # XXX Need to return ignore transaction flag.
+        self.assertEqual(
+            ("/wallabies/ArticleDetails/tabid/foo/ArticleID/foo/Default.aspx",
+            True), result)
+
+    def test_rule_with_unicode_and_non_ascii(self):
+        rule = dict(match_expression = u"^(/xxx.*)", 
+                         replacement = u"/yyy", 
+                         ignore = False, 
+                         eval_order = 1, 
+                         terminate_chain = True, 
+                         each_segment = False, 
+                         replace_all = True)
+
+        rules_engine = RulesEngine([rule])
+        url = (u'/xxx' + unichr(0x0bf2)).encode('UTF-8')
+        result = rules_engine.normalize(url)
+
+        self.assertEqual(("/yyy", False), result)
+
+    def test_rule_with_unicode_and_non_ascii_include_original(self):
+        rule = dict(match_expression = u"^(/xxx.*)", 
+                         replacement = u"/yyy\\1", 
+                         ignore = False, 
+                         eval_order = 1, 
+                         terminate_chain = True, 
+                         each_segment = False, 
+                         replace_all = True)
+
+        rules_engine = RulesEngine([rule])
+        url = (u'/xxx' + unichr(0x0bf2)).encode('UTF-8')
+        result = rules_engine.normalize(url)
+
+        self.assertEqual((u"/yyy"+url.decode('Latin-1'), False), result)
 
 if __name__ == "__main__":
     unittest.main()

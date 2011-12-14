@@ -374,6 +374,18 @@ class Transaction(object):
         if priority is not None:
             self._priority = priority
 
+        # The name can be a URL for the default case. URLs are
+        # supposed to be ASCII but can get a URL with illegal
+        # non ASCII characters. As the rule patterns and
+        # replacements are Unicode then can get Unicode
+        # conversion warnings or errors when URL is converted to
+        # Unicode and default encoding is ASCII. Thus need to
+        # convert URL to Unicode as Latin-1 explicitly to avoid
+        # problems with illegal characters.
+
+        if type(name) == type(''):
+            name = name.decode('Latin-1')
+
         self._group = group
         self._name = name
 

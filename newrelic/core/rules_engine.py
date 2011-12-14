@@ -40,6 +40,18 @@ class RulesEngine(object):
         return self.__rules
 
     def normalize(self, string):
+        # URLs are supposed to be ASCII but can get a
+        # URL with illegal non ASCII characters. As the
+        # rule patterns and replacements are Unicode
+        # then can get Unicode conversion warnings or
+        # errors when URL is converted to Unicode and
+        # default encoding is ASCII. Thus need to
+        # convert URL to Unicode as Latin-1 explicitly
+        # to avoid problems with illegal characters.
+
+        if type(string) == type(''):
+            string = string.decode('Latin-1')
+
         final_string = string
         ignore = False
         for rule in self.__rules:

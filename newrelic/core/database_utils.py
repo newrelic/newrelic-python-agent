@@ -201,21 +201,229 @@ class SqlParser:
     table_name_re_2 = re.compile('\(.*')
 
     def _format_table_token(self, token):
-        #table_name = re.sub('[",`,\[,\]]*', '', token.to_unicode()).lower()
         table_name = self.table_name_re_1.sub('', token.to_unicode()).lower()
         if token.__class__.__name__ == 'Function':
-            #return re.sub('\(.*', '', table_name)
             return self.table_name_re_2.sub('', table_name)
         return table_name
 
     def _find_idx_for(self, ttype, match):
         node = self.stmt.token_next_match(0, ttype, match)
         return self.stmt.token_index(node)
-        
 
     def _find_table_token_for(self, ttype, match):
         idx = self._find_idx_for(ttype, match)
         return self._get_first_identifier_after(idx)
+
+_identifier_re = re.compile('["`\[\]]*')
+
+def _format_identifier(token):
+    return _identifier_re.sub('', token.to_unicode()).strip().lower()
+
+def _parse_select(statement, token):
+    # For 'select' we need to look for 'from'. The argument to
+    # 'from' can be a single table name, a list of table names
+    # or a sub query.
+
+    from_token = statement.token_next_match(token,
+            newrelic.lib.sqlparse.tokens.Keyword, 'from')
+
+    if from_token is None:
+        return None
+
+    argument = statement.token_next(from_token)
+
+    if argument is None:
+        return None
+
+    # Where it is a list of table names we grab the first in the
+    # list and use it alone. Presume that this can only occur
+    # for actual table names and not a sub query but doesn't
+    # matter as following handles it anyway.
+
+    if type(argument) == newrelic.lib.sqlparse.sql.IdentifierList:
+        argument = argument.get_identifiers()[0]
+
+    # Now we need to check whether it is actually a sub query.
+    # In this case we pull the data from the token list for the
+    # sub query instead.
+
+    first_token = argument.token_first()
+
+    if type(first_token) == newrelic.lib.sqlparse.sql.Parenthesis:
+        tokens = first_token.tokens[1:-1]
+        token_list = newrelic.lib.sqlparse.sql.TokenList(tokens)
+        (identifier, operation) = _parse_token_list(token_list)
+        return identifier
+
+    # We only use the first token as still can be a list of
+    # tokens where aliases are being used.
+
+    return _format_identifier(first_token)
+
+def _parse_delete(statement, token):
+    # For 'delete' we need to look for 'from'. The argument to
+    # 'from' can be a single table name.
+
+    from_token = statement.token_next_match(token,
+            newrelic.lib.sqlparse.tokens.Keyword, 'from')
+
+    if from_token is None:
+        return None
+
+    argument = statement.token_next(from_token)
+
+    if argument is None:
+        return None
+
+    first_token = argument.token_first()
+
+    return _format_identifier(first_token)
+
+def _parse_insert(statement, token):
+    # For 'insert' we need to look for 'into'. The argument to
+    # 'into' can be a single table name.
+
+    into_token = statement.token_next_match(token,
+            newrelic.lib.sqlparse.tokens.Keyword, 'into')
+
+    if into_token is None:
+        return None
+
+    argument = statement.token_next(into_token)
+
+    if argument is None:
+        return None
+
+    first_token = argument.token_first()
+
+    return _format_identifier(first_token)
+
+def _parse_update(statement, token):
+    # For 'update' we need the immediately following argument.
+
+    argument = statement.token_next(token)
+
+    if argument is None:
+        return None
+
+    first_token = argument.token_first()
+
+    return _format_identifier(first_token)
+
+def _parse_create(statement, token):
+    # For 'create' we need to look for 'table'. The argument to
+    # 'table' should be a single table name.
+
+    table_token = statement.token_next_match(token,
+            newrelic.lib.sqlparse.tokens.Keyword, 'table')
+
+    if table_token is None:
+        return None
+
+    argument = statement.token_next(table_token)
+
+    if argument is None:
+        return None
+
+    first_token = argument.token_first()
+
+    return _format_identifier(first_token)
+
+def _parse_call(statement, token):
+    # For 'call' we need the immediately following argument.
+
+    argument = statement.token_next(token)
+
+    if argument is None:
+        return None
+
+    first_token = argument.token_first()
+
+    return _format_identifier(first_token)
+
+def _parse_show(statement, token):
+    # For 'show' we need all the following arguments.
+
+    argument = statement.token_next(token)
+
+    if argument is None:
+        return None
+
+    idx = statement.token_index(argument)
+    tokens = statement.tokens[idx:]
+    token_list = newrelic.lib.sqlparse.sql.TokenList(tokens)
+
+    return _format_identifier(token_list)
+
+def _parse_set(statement, token):
+    # For 'set' we need all the following arguments bar the last
+    # one which is the value the variable is being set to.
+
+    argument = statement.token_next(token)
+
+    if argument is None:
+        return None
+
+    idx = statement.token_index(argument)
+    tokens = statement.tokens[idx:-1]
+    token_list = newrelic.lib.sqlparse.sql.TokenList(tokens)
+
+    return _format_identifier(token_list)
+
+_parser_table = {
+    u'select': _parse_select,
+    u'delete': _parse_delete,
+    u'insert': _parse_insert,
+    u'update': _parse_update,
+    u'create': _parse_create,
+    u'call': _parse_call,
+    u'show': _parse_show,
+    u'set': _parse_set,
+}
+
+def _parse_token_list(statement):
+    # The operation will be the first non white space token in
+    # the token. If no tokens at all then bail out.
+
+    for token in statement.tokens:
+        if not token.is_whitespace():
+            break
+    else:
+        return (None, None)
+
+    # Execute the parser for any operations we are interested
+    # in. Any we don't care about will see table be returned
+    # as None meaning it will be bundled under other SQL in
+    # metrics.
+
+    identifier = None
+    operation = token.to_unicode().lower()
+
+    parser = _parser_table.get(operation)
+    if parser:
+        identifier = parser(statement, token)
+
+    if not identifier:
+        operation = None
+
+    return (identifier, operation)
+
+def _parse_sql_statement(sql):
+    # The SQL could actually consist of multiple statements each
+    # separated by a semicolon. The parse() routine splits out
+    # each statement and returns a tuple holding each. We can
+    # only report on one of the statements so use the first one.
+    #
+    # The parse() routine will raise an exception if not well
+    # formed SQL that it can parse so need to catch that, ignore
+    # it and then bail out.
+
+    try:
+        statement = newrelic.lib.sqlparse.parse(sql)[0]
+    except:
+        return (None, None)
+
+    return _parse_token_list(statement)
 
 def parsed_sql(name, sql):
     entry = sql_properties_cache.fetch(sql)
@@ -224,7 +432,7 @@ def parsed_sql(name, sql):
         return entry.parsed
 
     # We need to operate on SQL which has had IN clause
-    # collapsed as SqlParser performs really badly on very
+    # collapsed as SQL parser performs really badly on very
     # big SQL and the IN clause is usually the cause of
     # that.
 
@@ -234,17 +442,21 @@ def parsed_sql(name, sql):
 
     sql = obfuscated_sql(name, sql, collapsed=True)
 
-    # The SqlParser class doesn't cope well with badly formed
-    # input data, so need to catch exceptions here. We return
-    # (None, None) to indicate could parse out the details.
+    # XXX This old code doesn't work for various cases.
+    #
+    ## The SqlParser class doesn't cope well with badly formed
+    ## input data, so need to catch exceptions here. We return
+    ## (None, None) to indicate could parse out the details.
+    #
+    #try:
+    #    parsed_sql = SqlParser(sql)
+    #    table = parsed_sql.table
+    #    operation = parsed_sql.operation
+    #except:
+    #    table = None
+    #    operation = None
 
-    try:
-        parsed_sql = SqlParser(sql)
-        table = parsed_sql.table
-        operation = parsed_sql.operation
-    except:
-        table = None
-        operation = None
+    table, operation = _parse_sql_statement(sql)
 
     entry.parsed = (table, operation)
 

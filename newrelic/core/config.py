@@ -125,6 +125,7 @@ _settings.transaction_metrics.overflow_maximum = 10
 #_settings.transaction_metrics.overflow_threshold = 0.05
 _settings.transaction_metrics.overflow_threshold = 0.0
 
+_settings.agent_limits.transaction_traces_nodes = 10000
 _settings.agent_limits.slow_sql_stack_trace = 30
 
 _settings.debug.ignore_all_server_settings = False

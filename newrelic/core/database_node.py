@@ -178,6 +178,8 @@ class DatabaseNode(_DatabaseNode):
         #            child in self.children]
         children = []
 
+        root.trace_node_count += 1
+
         params = {}
 
         sql = formatted_sql(self.dbapi, self.sql_format, self.sql)

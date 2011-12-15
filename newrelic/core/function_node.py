@@ -40,8 +40,18 @@ class FunctionNode(_FunctionNode):
 
         start_time = newrelic.core.trace_node.node_start_time(root, self)
         end_time = newrelic.core.trace_node.node_end_time(root, self)
-        children = [child.trace_node(stats, string_table, root) for
-                    child in self.children]
+
+        #children = [child.trace_node(stats, string_table, root) for
+        #            child in self.children]
+
+        root.trace_node_count += 1
+
+        children = []
+
+        for child in self.children:
+            if root.trace_node_count > root.trace_node_limit:
+                break
+            children.append(child.trace_node(stats, string_table, root))
 
         params = None
 

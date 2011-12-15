@@ -235,15 +235,28 @@ class TransactionNode(_TransactionNode):
 
         start_time = newrelic.core.trace_node.node_start_time(root, self)
         end_time = newrelic.core.trace_node.node_end_time(root, self)
-        children = [child.trace_node(stats, string_table, root) for
-                    child in self.children]
+
+        #children = [child.trace_node(stats, string_table, root) for
+        #            child in self.children]
+
+        root.trace_node_count += 1
+
+        children = []
+
+        for child in self.children:
+            if root.trace_node_count > root.trace_node_limit:
+                break
+            children.append(child.trace_node(stats, string_table, root))
 
         params = {}
 
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children)
 
-    def transaction_trace(self, stats, string_table):
+    def transaction_trace(self, stats, string_table, limit):
+
+        self.trace_node_count = 0
+        self.trace_node_limit = limit
 
         start_time = newrelic.core.trace_node.root_start_time(self)
         request_params = self.request_params or None

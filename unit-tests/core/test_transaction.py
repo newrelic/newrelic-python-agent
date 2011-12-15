@@ -50,6 +50,8 @@ settings.log_level = logging.DEBUG
 settings.transaction_tracer.transaction_threshold = 0
 settings.transaction_tracer.stack_trace_threshold = 0
 
+settings.shutdown_timeout = 10.0
+
 # The WSGI application and test functions. Just use decorators to apply
 # wrappers as easier than trying to use automated instrumentation.
 

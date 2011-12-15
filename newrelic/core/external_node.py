@@ -94,6 +94,8 @@ class ExternalNode(_ExternalNode):
         #            child in self.children]
         children = []
 
+        root.trace_node_count += 1
+
         params = None
 
         return newrelic.core.trace_node.TraceNode(start_time=start_time,

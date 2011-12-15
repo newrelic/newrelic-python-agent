@@ -271,9 +271,11 @@ class Application(object):
                 if self._service.configuration.collect_traces:
                     slow_transaction = stats.slow_transaction
                     if stats.slow_transaction:
+                        limits = self._service.configuration.agent_limits
+                        limit = limits.transaction_traces_nodes
                         string_table = newrelic.core.string_table.StringTable()
                         transaction_trace = slow_transaction.transaction_trace(
-                                stats, string_table)
+                                stats, string_table, limit)
                         data = [transaction_trace, string_table.values()]
                         compressed_data = base64.standard_b64encode(
                                 zlib.compress(json.dumps(data)))

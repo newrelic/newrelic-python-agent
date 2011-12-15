@@ -261,6 +261,10 @@ def _process_configuration(section):
                      'getint', None)
     _process_setting(section, 'transaction_metrics.overflow_threshold',
                      'getfloat', None)
+    _process_setting(section, 'agent_limits.transaction_traces_nodes',
+                     'getint', None)
+    _process_setting(section, 'agent_limits.slow_sql_stack_trace',
+                     'getint', None)
 
 # Loading of configuration from specified file and for specified
 # deployment environment. Can also indicate whether configuration

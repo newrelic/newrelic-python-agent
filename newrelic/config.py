@@ -263,6 +263,8 @@ def _process_configuration(section):
                      'getfloat', None)
     _process_setting(section, 'agent_limits.transaction_traces_nodes',
                      'getint', None)
+    _process_setting(section, 'agent_limits.sql_query_length_maximum',
+                     'getint', None)
     _process_setting(section, 'agent_limits.slow_sql_stack_trace',
                      'getint', None)
 

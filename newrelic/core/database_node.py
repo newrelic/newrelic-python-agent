@@ -185,7 +185,11 @@ class DatabaseNode(_DatabaseNode):
         sql = formatted_sql(self.dbapi, self.sql_format, self.sql)
 
         if sql:
-            params['sql'] = string_table.cache(sql)
+            # Limit the length of any SQL that is reported back.
+
+            limit = root.settings.agent_limits.sql_query_length_maximum
+
+            params['sql'] = string_table.cache(sql[:limit])
 
             if self.stack_trace:
                 params['backtrace'] = map(string_table.cache, self.stack_trace)

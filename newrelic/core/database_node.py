@@ -147,8 +147,14 @@ class DatabaseNode(_DatabaseNode):
         if root.type == 'WebTransaction':
             request_uri = root.request_uri
 
+        # Limit the length of any SQL that is reported back.
+
+        limit = root.settings.agent_limits.sql_query_length_maximum
+
+        sql = self.sql[:limit]
+
         return SlowSqlNode(duration=self.duration, path=root.path,
-                request_uri=request_uri, sql=self.sql,
+                request_uri=request_uri, sql=sql,
                 sql_format=self.sql_format, metric=name,
                 dbapi=self.dbapi, connect_params=self.connect_params,
                 stack_trace=self.stack_trace)

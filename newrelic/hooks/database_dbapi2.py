@@ -9,13 +9,10 @@ def instrument(module):
 
     class CursorWrapper(object):
 
-        def __init__(self, cursor):
-            #self._nr_cursor = cursor
-            #self.fetchone = self._nr_cursor.fetchone
-            #self.fetchmany = self._nr_cursor.fetchmany
-            #self.fetchall = self._nr_cursor.fetchall
-
+        def __init__(self, cursor, connect_params=None, cursor_params=None):
             object.__setattr__(self, '_nr_cursor', cursor)
+            object.__setattr__(self, '_nr_connect_params', connect_params)
+            object.__setattr__(self, '_nr_cursor_params', cursor_params)
             object.__setattr__(self, 'fetchone', cursor.fetchone)
             object.__setattr__(self, 'fetchmany', cursor.fetchmany)
             object.__setattr__(self, 'fetchall', cursor.fetchall)
@@ -34,7 +31,8 @@ def instrument(module):
             if not transaction:
                 return self._nr_cursor.execute(sql, *args, **kwargs)
             with newrelic.api.database_trace.DatabaseTrace(
-                    transaction, sql, module):
+                    transaction, sql, module, self._nr_connect_params,
+                    self._nr_cursor_params, (args, kwargs)):
                 return self._nr_cursor.execute(sql, *args, **kwargs)
 
         def executemany(self, sql, *args, **kwargs): 
@@ -47,10 +45,9 @@ def instrument(module):
 
     class ConnectionWrapper(object):
 
-        def __init__(self, connection):
-            #self._nr_connection = connection
-
+        def __init__(self, connection, connect_params=None):
             object.__setattr__(self, '_nr_connection', connection)
+            object.__setattr__(self, '_nr_connect_params', connect_params)
 
         def __setattr__(self, name, value):
             setattr(self._nr_connection, name, value)
@@ -59,7 +56,8 @@ def instrument(module):
             return getattr(self._nr_connection, name)
 
         def cursor(self, *args, **kwargs):
-            return CursorWrapper(self._nr_connection.cursor(*args, **kwargs))
+            return CursorWrapper(self._nr_connection.cursor(*args, **kwargs),
+                                 self._nr_connect_params, (args, kwargs))
 
         def commit(self):
             transaction = newrelic.api.transaction.transaction()
@@ -83,7 +81,8 @@ def instrument(module):
             self.__connect = connect
 
         def __call__(self, *args, **kwargs):
-            return ConnectionWrapper(self.__connect(*args, **kwargs))
+            return ConnectionWrapper(self.__connect(*args, **kwargs),
+                                     (args, kwargs))
 
     newrelic.api.function_trace.wrap_function_trace(module, 'connect',
             name='%s:%s' % (module.__name__, 'connect'))

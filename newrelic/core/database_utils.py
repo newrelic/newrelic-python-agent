@@ -461,3 +461,60 @@ def parsed_sql(name, sql):
     entry.parsed = (table, operation)
 
     return table, operation
+
+_explain_plan_command = {
+    'MySQLdb': 'EXPLAIN',
+    'postgresql.interface.proboscis.dbapi2': 'EXPLAIN',
+    'psycopg2': 'EXPLAIN',
+    'sqlite3.dbapi2': 'EXPLAIN QUERY PLAN',
+}
+
+def explain_plan(dbapi, sql, connect_params, cursor_params, execute_params):
+    name = dbapi and dbapi.__name__ or None
+
+    if name is None:
+        return None
+
+    if connect_params is None:
+        return None
+    if cursor_params is None:
+        return None
+    if execute_params is None:
+        return None
+
+    query = None
+
+    command = _explain_plan_command.get(name)
+
+    if not command:
+        return None
+
+    query = '%s %s' % (command, sql)
+
+    args, kwargs = connect_params
+    try:
+        connection = dbapi.connect(*args, **kwargs)
+        try:
+            args, kwargs = cursor_params
+            cursor = connection.cursor(*args, **kwargs)
+            try:
+                args, kwargs = execute_params
+                cursor.execute(query, *args, **kwargs)
+                columns = []
+                if cursor.description:
+                    for column in cursor.description:
+                        columns.append(column[0])
+                rows = cursor.fetchall()
+                if not columns and not rows:
+                    return None
+                return (columns, rows)
+            except:
+                pass
+            finally:
+                cursor.close()
+        finally:
+            connection.close()
+    except:
+        pass
+
+    return None

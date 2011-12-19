@@ -101,6 +101,7 @@ class Transaction(object):
         self._slow_sql = []
 
         self._stack_trace_count = 0
+        self._explain_plan_count = 0
 
         self._string_cache = {}
 

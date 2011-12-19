@@ -16,7 +16,10 @@ class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
 
     node = newrelic.core.database_node.DatabaseNode
 
-    def __init__(self, transaction, sql, dbapi=None):
+    def __init__(self, transaction, sql, dbapi=None,
+                 connect_params=None, cursor_params=None,
+                 execute_params=None):
+
         super(DatabaseTrace, self).__init__(transaction)
 
         if transaction:
@@ -26,10 +29,16 @@ class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
 
         self.dbapi = dbapi
 
-        self.connect_params = None
+        self.connect_params = connect_params
+        self.cursor_params = cursor_params
+        self.execute_params = execute_params
 
     def finalize_data(self):
         self.stack_trace = None
+
+        connect_params = None
+        cursor_params = None
+        execute_params = None
 
         settings = self.transaction.settings
         transaction_tracer = settings.transaction_tracer
@@ -43,14 +52,33 @@ class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
                                            traceback.format_stack())
                     self.transaction._stack_trace_count += 1
 
+
+            # Only remember all the params for the calls if know
+            # there is a chance we will need to do an explain plan.
+
+            if (transaction_tracer.explain_enabled and
+                    self.duration >= transaction_tracer.explain_threshold):
+                if (self.transaction._explain_plan_count < 
+                       agent_limits.sql_explain_plans):
+                    connect_params = self.connect_params
+                    cursor_params = self.cursor_params
+                    execute_params = self.execute_params
+                    self.transaction._explain_plan_count += 1
+
         self.sql_format = transaction_tracer.record_sql
+
+        self.connect_params = connect_params
+        self.cursor_params = cursor_params
+        self.execute_params = execute_params
 
     def create_node(self):
         return self.node(dbapi=self.dbapi, sql=self.sql,
-                children=self.children, connect_params=self.connect_params,
-                start_time=self.start_time, end_time=self.end_time,
-                duration=self.duration, exclusive=self.exclusive,
-                stack_trace=self.stack_trace, sql_format=self.sql_format)
+                children=self.children, start_time=self.start_time,
+                end_time=self.end_time, duration=self.duration,
+                exclusive=self.exclusive, stack_trace=self.stack_trace,
+                sql_format=self.sql_format, connect_params=self.connect_params,
+                cursor_params=self.cursor_params,
+                execute_params=self.execute_params)
 
     def terminal_node(self):
         return True

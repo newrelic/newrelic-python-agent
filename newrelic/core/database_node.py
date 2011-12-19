@@ -6,7 +6,8 @@ except:
 import newrelic.core.metric
 import newrelic.core.trace_node
 
-from newrelic.core.database_utils import obfuscated_sql, parsed_sql
+from newrelic.core.database_utils import (obfuscated_sql, parsed_sql,
+                                          explain_plan)
 
 def formatted_sql(dbapi, format, sql):
     if format == 'off':
@@ -23,7 +24,8 @@ def formatted_sql(dbapi, format, sql):
 
 _SlowSqlNode = namedtuple('_SlowSqlNode',
         ['duration', 'path', 'request_uri', 'sql', 'sql_format',
-        'metric', 'dbapi', 'connect_params', 'stack_trace'])
+        'metric', 'dbapi', 'stack_trace', 'connect_params',
+        'cursor_params', 'execute_params'])
 
 class SlowSqlNode(_SlowSqlNode):
 
@@ -38,12 +40,13 @@ class SlowSqlNode(_SlowSqlNode):
 
     @property
     def explain_plan(self):
-        return None
+        return explain_plan(self.dbapi, self.sql, self.connect_params,
+                            self.cursor_params, self.execute_params)
 
 _DatabaseNode = namedtuple('_DatabaseNode',
-        ['dbapi', 'connect_params', 'sql', 'children',
-        'start_time', 'end_time', 'duration', 'exclusive',
-        'stack_trace', 'sql_format'])
+        ['dbapi',  'sql', 'children', 'start_time', 'end_time', 'duration',
+        'exclusive', 'stack_trace', 'sql_format', 'connect_params',
+        'cursor_params', 'execute_params'])
 
 class DatabaseNode(_DatabaseNode):
 
@@ -51,6 +54,11 @@ class DatabaseNode(_DatabaseNode):
     def parsed_sql(self):
         name = self.dbapi and self.dbapi.__name__ or None 
         return parsed_sql(name, self.sql)
+
+    @property
+    def explain_plan(self):
+        return explain_plan(self.dbapi, self.sql, self.connect_params,
+                            self.cursor_params, self.execute_params)
 
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
@@ -156,8 +164,10 @@ class DatabaseNode(_DatabaseNode):
         return SlowSqlNode(duration=self.duration, path=root.path,
                 request_uri=request_uri, sql=sql,
                 sql_format=self.sql_format, metric=name,
-                dbapi=self.dbapi, connect_params=self.connect_params,
-                stack_trace=self.stack_trace)
+                dbapi=self.dbapi, stack_trace=self.stack_trace,
+                connect_params=self.connect_params,
+                cursor_params=self.cursor_params,
+                execute_params=self.execute_params)
 
     def trace_node(self, stats, string_table, root):
 
@@ -199,6 +209,10 @@ class DatabaseNode(_DatabaseNode):
 
             if self.stack_trace:
                 params['backtrace'] = map(string_table.cache, self.stack_trace)
+
+            explain_plan = self.explain_plan
+            if explain_plan:
+                params['explain_plan'] = explain_plan
 
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children)

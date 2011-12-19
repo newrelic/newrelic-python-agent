@@ -128,6 +128,7 @@ _settings.transaction_metrics.overflow_threshold = 0.0
 _settings.agent_limits.transaction_traces_nodes = 10000
 _settings.agent_limits.sql_query_length_maximum = 16384
 _settings.agent_limits.slow_sql_stack_trace = 30
+_settings.agent_limits.sql_explain_plans = 30
 
 _settings.debug.ignore_all_server_settings = False
 _settings.debug.local_settings_overrides = []

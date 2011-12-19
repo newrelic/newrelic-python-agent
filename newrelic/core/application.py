@@ -243,8 +243,11 @@ class Application(object):
 
                         if node.slow_sql_node.stack_trace:
                             params['backtrace'] = node.slow_sql_node.stack_trace 
-                        if node.slow_sql_node.explain_plan:
-                            params['explain_plan'] = node.slow_sql_node.explain_plan 
+
+                        explain_plan = node.slow_sql_node.explain_plan
+                        if explain_plan:
+                            params['explain_plan'] = explain_plan
+
                         params_data = base64.standard_b64encode(
                                 zlib.compress(json.dumps(params)))
 

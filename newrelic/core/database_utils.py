@@ -247,18 +247,21 @@ def _parse_select(statement, token):
     # In this case we pull the data from the token list for the
     # sub query instead.
 
-    first_token = argument.token_first()
+    if isinstance(argument, newrelic.lib.sqlparse.sql.TokenList):
+        first_token = argument.token_first()
 
-    if type(first_token) == newrelic.lib.sqlparse.sql.Parenthesis:
-        tokens = first_token.tokens[1:-1]
-        token_list = newrelic.lib.sqlparse.sql.TokenList(tokens)
-        (identifier, operation) = _parse_token_list(token_list)
-        return identifier
+        if type(first_token) == newrelic.lib.sqlparse.sql.Parenthesis:
+            tokens = first_token.tokens[1:-1]
+            token_list = newrelic.lib.sqlparse.sql.TokenList(tokens)
+            (identifier, operation) = _parse_token_list(token_list)
+            return identifier
 
-    # We only use the first token as still can be a list of
-    # tokens where aliases are being used.
+        # We only use the first token as still can be a list of
+        # tokens where aliases are being used.
 
-    return _format_identifier(first_token)
+        return _format_identifier(first_token)
+
+    return _format_identifier(argument)
 
 def _parse_delete(statement, token):
     # For 'delete' we need to look for 'from'. The argument to
@@ -275,9 +278,12 @@ def _parse_delete(statement, token):
     if argument is None:
         return None
 
-    first_token = argument.token_first()
+    if isinstance(argument, newrelic.lib.sqlparse.sql.TokenList):
+        first_token = argument.token_first()
 
-    return _format_identifier(first_token)
+        return _format_identifier(first_token)
+
+    return _format_identifier(argument)
 
 def _parse_insert(statement, token):
     # For 'insert' we need to look for 'into'. The argument to
@@ -294,9 +300,12 @@ def _parse_insert(statement, token):
     if argument is None:
         return None
 
-    first_token = argument.token_first()
+    if isinstance(argument, newrelic.lib.sqlparse.sql.TokenList):
+        first_token = argument.token_first()
 
-    return _format_identifier(first_token)
+        return _format_identifier(first_token)
+
+    return _format_identifier(argument)
 
 def _parse_update(statement, token):
     # For 'update' we need the immediately following argument.
@@ -306,9 +315,12 @@ def _parse_update(statement, token):
     if argument is None:
         return None
 
-    first_token = argument.token_first()
+    if isinstance(argument, newrelic.lib.sqlparse.sql.TokenList):
+        first_token = argument.token_first()
 
-    return _format_identifier(first_token)
+        return _format_identifier(first_token)
+
+    return _format_identifier(argument)
 
 def _parse_create(statement, token):
     # For 'create' we need to look for 'table'. The argument to
@@ -325,9 +337,12 @@ def _parse_create(statement, token):
     if argument is None:
         return None
 
-    first_token = argument.token_first()
+    if isinstance(argument, newrelic.lib.sqlparse.sql.TokenList):
+        first_token = argument.token_first()
 
-    return _format_identifier(first_token)
+        return _format_identifier(first_token)
+
+    return _format_identifier(argument)
 
 def _parse_call(statement, token):
     # For 'call' we need the immediately following argument.
@@ -337,9 +352,12 @@ def _parse_call(statement, token):
     if argument is None:
         return None
 
-    first_token = argument.token_first()
+    if isinstance(argument, newrelic.lib.sqlparse.sql.TokenList):
+        first_token = argument.token_first()
 
-    return _format_identifier(first_token)
+        return _format_identifier(first_token)
+
+    return _format_identifier(argument)
 
 def _parse_show(statement, token):
     # For 'show' we need all the following arguments.
@@ -456,7 +474,11 @@ def parsed_sql(name, sql):
     #    table = None
     #    operation = None
 
-    table, operation = _parse_sql_statement(sql)
+    try:
+        table, operation = _parse_sql_statement(sql)
+    except:
+        table = None
+        operation = None
 
     entry.parsed = (table, operation)
 

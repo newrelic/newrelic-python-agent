@@ -1175,6 +1175,13 @@ def _process_module_builtin_defaults():
     _process_module_definition('solr',
             'newrelic.hooks.solr_solrpy')
 
+    _process_module_definition('redis.connection',
+            'newrelic.hooks.nosql_redis',
+            'instrument_redis_connection')
+    _process_module_definition('redis.client',
+            'newrelic.hooks.nosql_redis',
+            'instrument_redis_client')
+
     _process_module_definition('piston.resource',
             'newrelic.hooks.component_piston',
             'instrument_piston_resource')

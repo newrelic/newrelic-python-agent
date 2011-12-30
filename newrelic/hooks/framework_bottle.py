@@ -14,14 +14,16 @@ def instrument(module):
         callback = newrelic.api.name_transaction.NameTransactionWrapper(
                 callback)
         callback = newrelic.api.error_trace.ErrorTraceWrapper(callback,
-                ignore_errors=['bottle.HTTPResponse', 'bottle.RouteReset'])
+                ignore_errors=['bottle.HTTPResponse', 'bottle.RouteReset',
+                               'bottle.HTTPError'])
         return callback, args
 
     def out_Route_make_callback(callback):
         callback = newrelic.api.name_transaction.NameTransactionWrapper(
                 callback)
         callback = newrelic.api.error_trace.ErrorTraceWrapper(callback,
-                ignore_errors=['bottle.HTTPResponse', 'bottle.RouteReset'])
+                ignore_errors=['bottle.HTTPResponse', 'bottle.RouteReset',
+                               'bottle.HTTPError'])
         return callback
 
     if version >= [0, 10, 0]:

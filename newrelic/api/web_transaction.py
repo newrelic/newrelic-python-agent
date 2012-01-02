@@ -104,6 +104,8 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         self.ignore_apdex = _lookup_environ_setting(environ,
                 'newrelic.ignore_apdex', False)
 
+        self.capture_params = _lookup_environ_setting(environ,
+                'newrelic.capture_params', self._settings.capture_params)
         self.rum_enabled = _lookup_environ_setting(environ,
                 'newrelic.rum.enabled', self._settings.rum.enabled)
 
@@ -194,7 +196,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         # Capture query request string parameters.
 
-        if self._settings.capture_params:
+        if self.capture_params:
             value = environ.get('QUERY_STRING', None)
 
             if value:

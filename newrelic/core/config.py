@@ -83,7 +83,7 @@ _settings.collect_traces = True
 
 _settings.apdex_t = 0.5
 
-_settings.capture_params = True
+_settings.capture_params = False
 _settings.ignored_params = []
 
 _settings.capture_environ = True

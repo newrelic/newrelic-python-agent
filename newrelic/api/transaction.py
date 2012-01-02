@@ -119,7 +119,7 @@ class Transaction(object):
         self.ignore = False
         self.ignore_apdex = False
 
-        self.capture_params = True
+        self.capture_params = False
         self.ignored_params = []
 
         self.response_code = 0

@@ -198,7 +198,7 @@ class JSONRemote(object):
         self._port = port
         self._protocol = "http://"
         self._license_key = license_key
-        self._encoder = NRJSONEncoder()
+        self._encoder = NRJSONEncoder(encoding='Latin-1')
 
     def get_host(self):
         return self._host

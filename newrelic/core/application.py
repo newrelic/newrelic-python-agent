@@ -249,7 +249,8 @@ class Application(object):
                             params['explain_plan'] = explain_plan
 
                         params_data = base64.standard_b64encode(
-                                zlib.compress(json.dumps(params)))
+                                zlib.compress(json.dumps(params,
+                                              encoding='Latin-1')))
 
                         data = [node.slow_sql_node.path,
                                 node.slow_sql_node.request_uri,
@@ -281,7 +282,8 @@ class Application(object):
                                 stats, string_table, limit)
                         data = [transaction_trace, string_table.values()]
                         compressed_data = base64.standard_b64encode(
-                                zlib.compress(json.dumps(data)))
+                                zlib.compress(json.dumps(data,
+                                              encoding='Latin-1')))
                         trace_data = [[transaction_trace.root.start_time,
                                 transaction_trace.root.end_time,
                                 stats.slow_transaction.path,

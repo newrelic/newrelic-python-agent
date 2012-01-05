@@ -458,7 +458,15 @@ def parsed_sql(name, sql):
     # we do not need to. Makes things much quicker though
     # so likely offsets overall performance.
 
-    sql = obfuscated_sql(name, sql, collapsed=True)
+    sql_collapsed = obfuscated_sql(name, sql, collapsed=True)
+
+    entry_collapsed = None
+
+    if sql != sql_collapsed:
+        entry_collapsed = sql_properties_cache.fetch(sql_collapsed)
+
+        if entry_collapsed.parsed is not None:
+            return entry_collapsed.parsed
 
     # XXX This old code doesn't work for various cases.
     #
@@ -475,12 +483,15 @@ def parsed_sql(name, sql):
     #    operation = None
 
     try:
-        table, operation = _parse_sql_statement(sql)
+        table, operation = _parse_sql_statement(sql_collapsed)
     except:
         table = None
         operation = None
 
     entry.parsed = (table, operation)
+
+    if entry_collapsed:
+        entry_collapsed.parsed = (table, operation)
 
     return table, operation
 

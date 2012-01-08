@@ -97,17 +97,18 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         # Check for override settings from WSGI environ.
 
         self.background_task = _lookup_environ_setting(environ,
-                'newrelic.background_task', False)
+                'newrelic.set_background_task', False)
 
-        self.ignore = _lookup_environ_setting(environ,
-                'newrelic.ignore', False)
-        self.ignore_apdex = _lookup_environ_setting(environ,
-                'newrelic.ignore_apdex', False)
-
+        self.ignore_transaction = _lookup_environ_setting(environ,
+                'newrelic.ignore_transaction', False)
+        self.suppress_apdex = _lookup_environ_setting(environ,
+                'newrelic.suppress_apdex_metric', False)
         self.capture_params = _lookup_environ_setting(environ,
-                'newrelic.capture_params', self._settings.capture_params)
-        self.rum_enabled = _lookup_environ_setting(environ,
-                'newrelic.rum.enabled', self._settings.rum.enabled)
+                'newrelic.capture_request_params',
+                self._settings.capture_params)
+        self.autorum_disabled = _lookup_environ_setting(environ,
+                'newrelic.disable_browser_autorum',
+                not self._settings.browser_monitoring.auto_instrument)
 
         # Extract from the WSGI environ dictionary
         # details of the URL path. This will be set as
@@ -196,20 +197,19 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         # Capture query request string parameters.
 
-        if self.capture_params:
-            value = environ.get('QUERY_STRING', None)
+        value = environ.get('QUERY_STRING', None)
 
-            if value:
-                try:
-                    params = urlparse.parse_qs(value)
-                except:
-                    params = cgi.parse_qs(value)
+        if value:
+            try:
+                params = urlparse.parse_qs(value)
+            except:
+                params = cgi.parse_qs(value)
 
-                for name in self._settings.ignored_params:
-                    if name in params:
-                        del params[name]
+            for name in self._settings.ignored_params:
+                if name in params:
+                    del params[name]
 
-                self._request_params.update(params)
+            self._request_params.update(params)
 
         # Capture WSGI request environ dictionary values.
 
@@ -232,10 +232,10 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         if self.background_task:
             return ''
 
-        if not self.rum_enabled:
+        if not self._settings.rum.enabled:
             return ''
 
-        if self.ignore:
+        if self.ignore_transaction:
             return ''
 
         if not self._settings:
@@ -261,7 +261,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         if self._state != newrelic.api.transaction.STATE_RUNNING:
             return ''
 
-        if self.ignore:
+        if self.ignore_transaction:
             return ''
 
         if not self._rum_header:

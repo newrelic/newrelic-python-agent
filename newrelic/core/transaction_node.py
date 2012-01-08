@@ -20,7 +20,7 @@ _TransactionNode = namedtuple('_TransactionNode',
         ['settings', 'path', 'type', 'group', 'name', 'request_uri',
         'response_code', 'request_params', 'custom_params', 'queue_start',
         'start_time', 'end_time', 'duration', 'exclusive', 'children',
-        'errors', 'slow_sql', 'apdex_t', 'ignore_apdex', 'custom_metrics',
+        'errors', 'slow_sql', 'apdex_t', 'suppress_apdex', 'custom_metrics',
         'parameter_groups'])
 
 class TransactionNode(_TransactionNode):
@@ -134,7 +134,7 @@ class TransactionNode(_TransactionNode):
         if not self.name:
             return
 
-        if self.ignore_apdex:
+        if self.suppress_apdex:
             return
 
         # The apdex metrics are only relevant to web transactions.

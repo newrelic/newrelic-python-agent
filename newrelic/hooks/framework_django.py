@@ -29,7 +29,10 @@ def browser_timing_middleware(request, response):
     # Only insert RUM JavaScript headers and footers if enabled
     # in configuration.
 
-    if not transaction.settings.browser_monitoring.auto_instrument:
+    if not transaction.settings.rum.enabled:
+        return response
+
+    if transaction.autorum_disabled:
         return response
 
     # Only possible if the content type is text/html.

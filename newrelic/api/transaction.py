@@ -114,10 +114,10 @@ class Transaction(object):
         self.background_task = False
 
         self.enabled = False
-        self.rum_enabled = False
+        self.autorum_disabled = False
 
-        self.ignore = False
-        self.ignore_apdex = False
+        self.ignore_transaction = False
+        self.suppress_apdex = False
 
         self.capture_params = False
         self.ignored_params = []
@@ -246,7 +246,11 @@ class Transaction(object):
         if self.response_code != 0:
             self._response_properties['STATUS'] = str(self.response_code)
 
+        request_params = {}
         parameter_groups = {}
+
+        if self.capture_params:
+            request_params = self._request_params
 
         if self._request_environment:
             parameter_groups['Request environment'] = self._request_environment
@@ -261,7 +265,7 @@ class Transaction(object):
                 name=self._name,
                 request_uri=self._request_uri,
                 response_code=self.response_code,
-                request_params=self._request_params,
+                request_params=request_params,
                 custom_params=self._custom_params,
                 queue_start=self.queue_start,
                 start_time=self.start_time,
@@ -272,7 +276,7 @@ class Transaction(object):
                 errors=tuple(self._errors),
                 slow_sql=tuple(self._slow_sql),
                 apdex_t=self._settings.apdex_t,
-                ignore_apdex=self.ignore_apdex,
+                suppress_apdex=self.suppress_apdex,
                 custom_metrics=self._custom_metrics,
                 parameter_groups=parameter_groups)
 
@@ -282,7 +286,7 @@ class Transaction(object):
         self._settings = None
         self.enabled = False
 
-        if not self.ignore:
+        if not self.ignore_transaction:
             self._application.record_transaction(node)
 
     @property
@@ -350,7 +354,7 @@ class Transaction(object):
                 if self._name != name:
                     self._group = 'NormalizedUri'
                     self._name = name
-                self.ignore = self.ignore or ignore
+                self.ignore_transaction = self.ignore_transaction or ignore
 
             self._frozen_path = self.path
 
@@ -530,6 +534,6 @@ class Transaction(object):
 
 def transaction():
     current = Transaction._current_transaction()
-    if current and (current.ignore or current.stopped):
+    if current and (current.ignore_transaction or current.stopped):
         return None
     return current

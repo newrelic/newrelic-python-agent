@@ -62,7 +62,7 @@ SQL_PARSE_TESTS = [
     IN (SELECT first_name FROM student_details WHERE subject= 'Science')"""
   ),
   (
-    # "Setect with correlated sub query using table alias.
+    # "Select with correlated sub query using table alias.
     ('product', 'select'),
     """SELECT p.product_name FROM product p WHERE p.product_id = (SELECT
     o.product_id FROM order_items o WHERE o.product_id = p.product_id)"""
@@ -91,6 +91,15 @@ SQL_PARSE_TESTS = [
     c.model, c.manufacturer_id ) AS t, app_vendor v WHERE v.id =
     t.manufacturer_id AND v.approved = true GROUP BY t.manufacturer_id ORDER BY
     COUNT(t.manufacturer_id) DESC LIMIT ?"""
+  ),
+
+  (
+    # Select with correlated sub query using aliases.
+    ('photos', 'select'),
+    """SELECT count(?) AS count_1 FROM (SELECT DISTINCT photos.id AS photos_id
+    FROM photos, item_map WHERE item_map.to_id IN (%s) AND item_map.to_type =
+    %s AND item_map.from_id = photos.id AND item_map.from_type = %s AND
+    item_map.deleted = %s) AS anon_1"""
   ),
 
   (

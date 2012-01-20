@@ -236,18 +236,26 @@ def _parse_select(statement, token):
         return None
 
     # Where it is a list of table names we grab the first in the
-    # list and use it alone. Presume that this can only occur
-    # for actual table names and not a sub query but doesn't
-    # matter as following handles it anyway.
+    # list and use it alone. Seems that sub queries also get
+    # bundled up this way sometimes as well, but doesn't matter
+    # as following handles it anyway.
 
     if type(argument) == newrelic.lib.sqlparse.sql.IdentifierList:
         argument = argument.get_identifiers()[0]
 
     # Now we need to check whether it is actually a sub query.
     # In this case we pull the data from the token list for the
-    # sub query instead.
+    # sub query instead. We need though to deal with a couple of
+    # different cases for the sub query which sqlparse library
+    # handles differently.
 
     if isinstance(argument, newrelic.lib.sqlparse.sql.TokenList):
+
+        # For a token list, if the first token is a parenthesis
+        # group, then it is a sub query. We extract the sub
+        # query from the parenthesis group, drop leading and
+        # trailing parenthesis.
+
         first_token = argument.token_first()
 
         if type(first_token) == newrelic.lib.sqlparse.sql.Parenthesis:
@@ -256,10 +264,28 @@ def _parse_select(statement, token):
             (identifier, operation) = _parse_token_list(token_list)
             return identifier
 
-        # We only use the first token as still can be a list of
-        # tokens where aliases are being used.
+        # As table names can be aliased, we still only use the
+        # first token so pick up the table name and not the full
+        # string with alias.
 
         return _format_identifier(first_token)
+
+    elif (type(argument) == newrelic.lib.sqlparse.sql.Token and
+            argument.ttype == newrelic.lib.sqlparse.tokens.Punctuation and
+            argument.value == '('):
+
+        # For some cases of a sub query, then it seems to not
+        # get parsed out correctly and so we end up with a
+        # normal token stream with punctuation value '('
+        # indicating start of a sub query. We leave the closing
+        # parenthesis and any alias on the list of tokens but
+        # that doesn't seem to cause any problems.
+
+        index_first = statement.token_index(argument)
+        tokens = statement.tokens[index_first+1:]
+        token_list = newrelic.lib.sqlparse.sql.TokenList(tokens)
+        (identifier, operation) = _parse_token_list(token_list)
+        return identifier
 
     return _format_identifier(argument)
 

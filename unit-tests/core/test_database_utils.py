@@ -173,6 +173,13 @@ SQL_PARSE_TESTS = [
     ('employee', 'update'),
     """UPDATE employee SET salary = salary + (salary * 0.2)"""
   ),
+  (
+    # Update.
+    ('users_user', 'update'),
+    """UPDATE users_user SET birthday=%(birthday)s,
+    change_date=TIMEZONE(%(TIMEZONE_1)s, now()) WHERE users_user.id =
+    %(users_user_id)s"""
+  ),
 
   (
     # Create.

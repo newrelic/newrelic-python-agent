@@ -251,15 +251,33 @@ def _parse_select(statement, token):
 
     if isinstance(argument, newrelic.lib.sqlparse.sql.TokenList):
 
-        # For a token list, if the first token is a parenthesis
-        # group, then it is a sub query. We extract the sub
-        # query from the parenthesis group, drop leading and
-        # trailing parenthesis.
-
         first_token = argument.token_first()
 
         if type(first_token) == newrelic.lib.sqlparse.sql.Parenthesis:
+
+            # For a token list, if the first token is a parenthesis
+            # group, then it is a sub query. We extract the sub
+            # query from the parenthesis group, drop leading and
+            # trailing parenthesis.
+
             tokens = first_token.tokens[1:-1]
+            token_list = newrelic.lib.sqlparse.sql.TokenList(tokens)
+            (identifier, operation) = _parse_token_list(token_list)
+            return identifier
+
+        elif (type(first_token) == newrelic.lib.sqlparse.sql.Token and
+                first_token.ttype == newrelic.lib.sqlparse.tokens.Punctuation
+                and first_token.value == '('):
+
+            # For some cases of a sub query, then it seems to not
+            # get parsed out correctly and so we end up with a
+            # normal token stream with punctuation value '('
+            # indicating start of a sub query. We leave the closing
+            # parenthesis and any alias on the list of tokens but
+            # that doesn't seem to cause any problems.
+
+            index_first = argument.token_index(first_token)
+            tokens = argument.tokens[index_first+1:]
             token_list = newrelic.lib.sqlparse.sql.TokenList(tokens)
             (identifier, operation) = _parse_token_list(token_list)
             return identifier

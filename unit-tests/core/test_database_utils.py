@@ -92,7 +92,6 @@ SQL_PARSE_TESTS = [
     t.manufacturer_id AND v.approved = true GROUP BY t.manufacturer_id ORDER BY
     COUNT(t.manufacturer_id) DESC LIMIT ?"""
   ),
-
   (
     # Select with correlated sub query using aliases.
     ('photos', 'select'),
@@ -100,6 +99,26 @@ SQL_PARSE_TESTS = [
     FROM photos, item_map WHERE item_map.to_id IN (%s) AND item_map.to_type =
     %s AND item_map.from_id = photos.id AND item_map.from_type = %s AND
     item_map.deleted = %s) AS anon_1"""
+  ),
+  (
+    # Select with sub query.
+    ('entity_entity', 'select'),
+    """SELECT COUNT(*) FROM (SELECT "entity_entity"."id" AS "id",
+    "entity_site"."id" AS Col1, "entity_site"."updated_at",
+    "entity_site"."created_at", "entity_site"."domain",
+    "entity_site"."popularity_multiplier", "entity_site"."clicks",
+    "entity_site"."monetized_clicks", "entity_site"."epc",
+    "entity_site"."commission", "entity_site"."category_id",
+    "entity_site"."subdomain", "entity_site"."blocked",
+    "entity_site"."in_shop_list", "entity_site"."related_user_id",
+    "entity_site"."description", "entity_site"."shop_name",
+    "entity_site"."order", "entity_site"."featured",
+    "entity_site"."shop_data_complete", "entity_site"."shop_url" FROM
+    "entity_entity" LEFT OUTER JOIN "entity_site" ON
+    ("entity_entity"."site_id" = "entity_site"."id")
+    WHERE (NOT (("entity_site"."category_id" IN (%s, %s) AND NOT
+    ("entity_site"."id" IS NULL))) AND "entity_entity"."id" <= %s
+    ) LIMIT ?) subquery"""
   ),
 
   (

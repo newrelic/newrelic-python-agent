@@ -73,20 +73,46 @@ _any_quotes_re = re.compile(_any_quotes_pattern)
 # Technically this will not match numbers on the start of
 # identifiers even though leading digits on identifiers aren't
 # valid anyway. As it shouldn't occur, shouldn't be an issue.
+#
+# We add one variation here in that don't want to replace a
+# number that follows on from a ':'. This is because ':1' can be
+# used as positional parameter with database adapters where
+# 'paramstyle' is 'numeric'.
+#
+# TODO Probably should look at 'paramstyle' attribute of the
+# database adapter module and be specific about what pattern we
+# use. Don't at this point believe though that a numeric can
+# follow a ':' in SQL statements otherwise so should be safe
+# to do this.
 
-_int_re = re.compile(r'\b\d+\b')
+_int_re = re.compile(r'(?<!:)\b\d+\b')
 
-# Obfuscation can produce sets as (?,?). Need to be able to collapse
-# these to single value set. Also need to deal with parameterised
-# values which can be ? or %s.
+# Obfuscation can produce sets as '(?,?)'. Need to be able to
+# collapse these to single value set. Also need to deal with
+# parameterised values which can be '?', ':1', ':name', '%s' or
+# '%(name)s'.
+#
+# Note that we pickup up both ':1' and ':name' with the sub
+# pattern ':\w+'. This can match ':1name', which is not strictly
+# correct, but then it likely isn't valid in SQL anyway for
+# that param style.
+#
+# TODO We could also look at 'paramstyle' attribute here as
+# well and be more specific, but this comes after strings are
+# replaced and so shouldn't really find these patterns unless
+# actually in use as wouldn't be valid SQL otherwise.
 
-_collapse_set_re = re.compile(r'\(\s*(\?|%s)(\s*,\s*(\?|%s)\s*)*\)')
+_one_value_p = r'\s*(\?|%s|:\w+|%s|%\([^)]*\)s)\s*'
+_list_values_p = r'\(' + _one_value_p + r'(\s*,' + _one_value_p + r')*\s*\)'
+
+_collapse_set_re = re.compile(_list_values_p)
 
 def obfuscated_sql(name, sql, collapsed=False):
     """Returns obfuscated version of the sql. The quoting
     convention is determined by looking at the name of the
     database module supplied. Obfuscation consists of replacing
-    literal strings and integers.
+    literal strings and integers. Collapsing of values in sets
+    is optional.
 
     """
 
@@ -129,6 +155,7 @@ def obfuscated_sql(name, sql, collapsed=False):
 
     if collapsed:
         return obfuscated_collapsed
+
     return obfuscated
 
 class SqlParser:

@@ -237,6 +237,79 @@ SQL_PARSE_TESTS = [
   ),
 ]
 
+SQL_COLLAPSE_TESTS = [
+  """SELECT c1 FROM t1 WHERE c1 IN (1)""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( 1)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (1 )""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( 1 )""",
+  """SELECT c1 FROM t1 WHERE c1 IN (1,2)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (1,2,3)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (1, 2, 3, 4 )""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( 1,2)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (1 ,2)""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( 1 ,2)""",
+  """SELECT c1 FROM t1 WHERE c1 IN ('1')""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( '1')""",
+  """SELECT c1 FROM t1 WHERE c1 IN ('1' )""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( '1' )""",
+  """SELECT c1 FROM t1 WHERE c1 IN ('1','2')""",
+  """SELECT c1 FROM t1 WHERE c1 IN ('1','2','3')""",
+  """SELECT c1 FROM t1 WHERE c1 IN ('1', '2', '3', '4' )""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( '1','2')""",
+  """SELECT c1 FROM t1 WHERE c1 IN ('1' ,'2')""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( '1' ,'2')""",
+  """SELECT c1 FROM t1 WHERE c1 IN (?)""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( ?)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (? )""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( ? )""",
+  """SELECT c1 FROM t1 WHERE c1 IN (?,?)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (?,?,?)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (?, ?,?, ? )""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( ?,?)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (? ,?)""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( ? ,?)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (:1)""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( :1)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (:1 )""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( :1 )""",
+  """SELECT c1 FROM t1 WHERE c1 IN (:1,:2)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (:1,:2,:3)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (:1, :2, :3, :4 )""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( :1,:2)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (:1 ,:2)""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( :1 ,:2)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (:v1)""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( :v1)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (:v1 )""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( :v1 )""",
+  """SELECT c1 FROM t1 WHERE c1 IN (:v1,:v2)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (:v1,:v2,:v3)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (:v1, :v2, :v3, :v4 )""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( :v1,:v2)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (:v1 ,:v2)""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( :v1 ,:v2)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (%s)""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( %s)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (%s )""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( %s )""",
+  """SELECT c1 FROM t1 WHERE c1 IN (%s,%s)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (%s,%s,%s)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (%s, %s,%s , %s )""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( %s,%s)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (%s ,%s)""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( %s ,%s)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (%(v1)s)""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( %(v1)s)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (%(v1)s )""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( %(v1)s )""",
+  """SELECT c1 FROM t1 WHERE c1 IN (%(v1)s,%(v2)s)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (%(v1)s,%(v2)s,%(v3)s)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (%(v1)s, %(v2)s, %(v3)s , %(v4)s )""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( %(v1)s,%(v2)s)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (%(v1)s ,%(v2)s)""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( %(v1)s ,%(v2)s)""",
+]
+
 class TestDatabase(unittest.TestCase):
     def test_obfuscator_obfuscates_numeric_literals(self):
         select = "SELECT * FROM table WHERE table.column = 1 AND 2 = 3"
@@ -267,8 +340,8 @@ class TestDatabase(unittest.TestCase):
                          obfuscated_sql('pyscopg2', select))
 
     def test_obfuscator_does_not_obfuscate_integer_word_boundaries(self):
-        select = "A1 #2 ,3 .4 (5) =6 <7 :8 /9 B0C"
-        self.assertEqual("A1 #? ,? .? (?) =? <? :? /? B0C",
+        select = "A1 #2 ,3 .4 (5) =6 <7 /9 B9C"
+        self.assertEqual("A1 #? ,? .? (?) =? <? /? B9C",
                          obfuscated_sql('pyscopg2', select))
 
     def test_obfuscator_collapses_in_clause_literal(self):
@@ -295,6 +368,11 @@ class TestDatabase(unittest.TestCase):
     def test_parse_sql_tests(self):
         for result, sql in SQL_PARSE_TESTS:
             self.assertEqual(result, parsed_sql('pyscopg2', sql))
+
+    def test_collapse_sql_tests(self):
+        for sql in SQL_COLLAPSE_TESTS:
+            self.assertEqual("SELECT c1 FROM t1 WHERE c1 IN (?)",
+                             obfuscated_sql('psycopg2', sql, collapsed=True))
 
 if __name__ == "__main__":
     unittest.main()

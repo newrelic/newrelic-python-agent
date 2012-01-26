@@ -88,7 +88,8 @@ _settings.ignored_params = []
 
 _settings.capture_environ = True
 _settings.include_environ = [ 'REQUEST_METHOD', 'HTTP_USER_AGENT',
-                              'HTTP_REFERER' ]
+                              'HTTP_REFERER', 'CONTENT_TYPE',
+                              'CONTENT_LENGTH' ]
 
 _settings.sampling_rate = 0
 _settings.shutdown_timeout = 2.5

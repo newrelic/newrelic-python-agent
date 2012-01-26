@@ -310,6 +310,10 @@ class _WSGIApplicationIterable(object):
     def __iter__(self):
         for item in self.generator:
             yield item
+            try:
+                self.transaction._content_length += len(item)
+            except:
+                pass
  
     def close(self):
         try:
@@ -388,6 +392,14 @@ class WSGIApplicationWrapper(object):
         def _start_response(status, response_headers, *args):
             try:
                 transaction.response_code = int(status.split(' ')[0])
+            except:
+                pass
+            try:
+                header = filter(lambda x: x[0].lower()=='content-length',
+                                response_headers)[-1:]
+                if header:
+                    transaction._response_properties['CONTENT_LENGTH'] = \
+                            header[0][1]
             except:
                 pass
             return start_response(status, response_headers, *args)

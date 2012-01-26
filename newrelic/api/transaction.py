@@ -108,6 +108,7 @@ class Transaction(object):
         self._custom_params = {}
         self._request_params = {}
 
+        self._content_length = 0
         self._request_environment = {}
         self._response_properties = {}
 
@@ -245,6 +246,9 @@ class Transaction(object):
 
         if self.response_code != 0:
             self._response_properties['STATUS'] = str(self.response_code)
+        if self._content_length != 0:
+            self._response_properties['BYTES_SENT'] = \
+                    str(self._content_length)
 
         request_params = {}
         parameter_groups = {}

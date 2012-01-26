@@ -480,6 +480,19 @@ def _parse_token_list(statement):
     else:
         return (None, None)
 
+    # Check for parenthesis group around the statement or part
+    # thereof. We extract the inner statement from inside the
+    # parenthesis group, dropping the leading and trailing
+    # parenthesis and process again.
+    #
+    # TODO Note sure if need to also check for token with value
+    # of '(' in this sort of situation.
+
+    if type(token) == newrelic.lib.sqlparse.sql.Parenthesis:
+        tokens = token.tokens[1:-1]
+        token_list = newrelic.lib.sqlparse.sql.TokenList(tokens)
+        return _parse_token_list(token_list)
+
     # Execute the parser for any operations we are interested
     # in. Any we don't care about will see table be returned
     # as None meaning it will be bundled under other SQL in

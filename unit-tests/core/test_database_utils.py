@@ -120,6 +120,251 @@ SQL_PARSE_TESTS = [
     ("entity_site"."id" IS NULL))) AND "entity_entity"."id" <= %s
     ) LIMIT ?) subquery"""
   ),
+  (
+    # Select from union of sub queries.
+    ('t1', 'select'),
+    """select * from (select * from t1 union select * from t2)"""
+  ),
+  (
+    # Select from union of sub queries.
+    ('t1', 'select'),
+    """select * from ((select * from t1) union (select * from t2))"""
+  ),
+  (
+    # Select from union all of sub queries.
+    ('t1', 'select'),
+    """select * from (select * from t1 union all select * from t2)"""
+  ),
+  (
+    # Select from union all of sub queries.
+    ('t1', 'select'),
+    """select * from ((select * from t1) union all (select * from t2))"""
+  ),
+  (
+    # Select from union all of sub queries with limit.
+    ('t1', 'select'),
+    """(select * from (select * from t1 union all select * from t2)) limit 1"""
+  ),
+  (
+    # Additional nested brackets.
+    ('t1', 'select'),
+    """((select * from (select * from t1))) limit 1"""
+  ),
+  (
+    # Additional nested brackets.
+    ('t1', 'select'),
+    """(select * from ((select * from t1))) limit 1"""
+  ),
+  (
+    # Select with sub query. (Java agent test case)
+    ('dude', 'select'),
+    """select * from (select * from dude)""",
+  ),
+  (
+    # Select with sub query. (Java agent test case)
+    ('customers', 'select'),
+    """SELECT t.* FROM (SELECT ROW_NUMBER() OVER(ORDER BY customers.ad_channel
+    DESC) AS _row_num, * FROM [customers] WHERE (? = ?)) AS t WHERE t._row_num
+    BETWEEN ? AND ?""",
+  ),
+  (
+    # Select with sub query. (Java agent test case)
+    ('prod_lock', 'select'),
+    """select * from (select s.rush, NVL(NVL(o.postor, o.finalizer),
+    o.assignedPM)assignedPM, o.orderid, (case when (l.expiration IS NULL or
+    l.expiration<SYSDATE ) then ? else ? end) isLocked, o.design,
+    to_char(s.dtb_release, ?) dtb_release, to_char(s.dt_release, ?) dt_release,
+    o.printer, o.totalunits, o.totalprice from prod_lock l, (select orderid
+    from wm_order where dt_placed between to_date(?, ?) and SYSDATE+? and
+    tracking_no is not null) a, (select x.orderid, x.dtb_release, x.dt_release,
+    x.rush from prod_sched x where x.dt_extra? IS NULL and (NOT EXISTS (select
+    pp.orderid from prod_printcalc pp where pp.orderid=x.orderid)) and
+    x.dt_finalize IS NOT NULL and x.dt_finalize between to_date(?, ?) and
+    SYSDATE and x.dt_process is not null and x.dt_proof is not null )s,
+    (select * from prod_overview where printer NOT IN (?, ?, ? ))o, (select
+    orderid from prod_print where method !=?)p, (select distinct orderid
+    from prod_blank where source !=?)bl where s.orderid=o.orderid and
+    o.orderid=a.orderid and a.orderid=l.orderid and a.orderid=p.orderid and
+    a.orderid=bl.orderid order by s.dtb_release, decode(s.rush, ?, ?, ?, ?,
+    decode(s.rush, ?, ?, ?)) , a.orderid ) where rownum <= ?""",
+  ),
+  (
+    # Select with sub query. (Java agent test case)
+    ('plan_features_view', 'select'),
+    """select ent.PLAN_PLAN_PRIORITY, ent.TYPE_ID, ent.TYPE,
+    ent.PRIMARY_RELEASE, ent.IS_PARENT, ent.NAME, ent.ID, ent.OWNER_NAME,
+    ent.OWNER_STATUS, ent.SERIAL_NUMBER, ent.ADDITIONAL_RELEASE,
+    ent.RELEASE_NAME, PLAN_REF_ENTITY,"PLAN",INVEST_EST_AGGREGATED,
+    PLAN_NODE_ID,seq.NODE_ID from (select ent1.*,"PLAN" as PLAN_NODE_ID from
+    PLAN_FEATURES_VIEW ent1) ent,COMN_HIERARCHY_SEQ seq where ent."PLAN"=?
+    and (1=1 and ((ent.ACCESS_MODE in (-1,0,1,2)) or ent.OWNER=? or ent.OWNER
+    in (select gu.GROUP_ID as OWNER from USR_GROUP_USER gu where gu.USER_ID=?)
+    or (ent.ACCESS_MODE=6 and (ent.ID in (select pem.ENTITY_ID as ID from
+    V_PRINCIPAL_ENTITY_MEMBERSHIP pem where pem.MEMBER_ID=?) or ent.ID in
+    (select ENTITY_ID as ID from COMN_ENTITY_STAKEHOLDER_REL where USER_ID=?)))
+    or ( ent.ACCESS_MODE=6 and exists( select 0 from (select OWNER,ID as
+    ENTITY_ID from WKFL_ENT_ACT_PROT_U_VIEW) act where act.ENTITY_ID=ent.ID and
+    (act.OWNER=?)))) and (ent.TYPE_ID=0 or (ent.TYPE_ID>0 and exists(select 0
+    from (select ID as REL_GROUP_ID,ENTITY_TYPE_ID as REL_ENTITY_TYPE_ID from
+    REL_GROUP_SUB_TYPE_VIEW) rel, USR_GROUP_USER gu where
+    rel.REL_ENTITY_TYPE_ID=ent.TYPE_ID and rel.REL_GROUP_ID=gu.GROUP_ID and
+    gu.USER_ID=?)))) and seq.NODE_ID=ent.ID order by PRIMARY_RELEASE
+    desc,seq.HIERARCH_SEQ,seq.LVL,seq.SN""",
+  ),
+  (
+    # Select with sub query. (Java agent test case)
+    ('product', 'select'),
+    """SELECT
+    Product.Id,Product.Cost,Product.Name,Product.Summary,Product.Availability
+    FROM `Product` WHERE Id IN (SELECT ProductId FROM ProductTaxonomy WHERE
+    TaxId=220) AND Active = 1 AND Id NOT IN (Select AssocId FROM
+    ProductPairing) ORDER BY Name LIMIT 15 OFFSET 120""",
+  ),
+  (
+    # Select with sub query. (Java agent test case)
+    ('std_data.city_deals', 'select'),
+    """select citydeal1_.cd_id as cd1_1_1_, merchant1_.dm_id as dm1_1_1_,
+    citydeal1_.cd_appdomain_id as cd1_1_1_, citydeal1_.cd_canonical_tag as
+    cd1_1_1_, citydeal1_.cd_ptc_city_id as cd1_1_1_,
+    citydeal1_.cd_coupon_how_it_works as cd1_1_1_,
+    citydeal1_.cd_deal_title_coupon as cd1_1_1_,
+    citydeal1_.cd_deal_email_type as cd1_1_1_, citydeal1_.cd_dlg_id as
+    cd1_1_1_, citydeal1_.cd_deal_type_id as cd1_1_1_,
+    citydeal1_.cd_deal_end_time as cd1_1_1_, citydeal1_.cd_short_highlights
+    as cd1_1_1_, citydeal1_.cd_image_big as cd1_1_1_,
+    citydeal1_.cd_image_newsletter as cd1_1_1_,
+    citydeal1_.cd_sidedeal_image as cd1_1_1_, citydeal1_.cd_image_small as
+    cd1_1_1_, citydeal1_.cd_last_modified as cd1_1_1_,
+    citydeal1_.cd_long_description as cd1_1_1_,
+    citydeal1_.cd_customer_index_max as cd1_1_1_,
+    citydeal1_.cd_participant_maximum as cd1_1_1_,
+    citydeal1_.cd_merchant_id as cd1_1_1_, citydeal1_.cd_meta_description
+    as cd1_1_1_, citydeal1_.cd_meta_keywords as cd1_1_1_,
+    citydeal1_.cd_meta_title as cd1_1_1_, citydeal1_.cd_participant_minimum
+    as cd1_1_1_, citydeal1_.cd_mobile_description as cd1_1_1_,
+    citydeal1_.cd_mulligan_enabled as cd1_1_1_,
+    citydeal1_.cd_mulligan_parent as cd1_1_1_,
+    citydeal1_.cd_multideal_parent as cd1_1_1_,
+    citydeal1_.cd_multideal_type as cd1_1_1_,
+    citydeal1_.cd_newsletter_side_deal_title as cd1_1_1_,
+    citydeal1_.cd_newsletter_subject as cd1_1_1_,
+    citydeal1_.cd_newsletter_textblock as cd1_1_1_,
+    citydeal1_.cd_newsletter_title as cd1_1_1_,
+    citydeal1_.cd_original_price_gross as cd1_1_1_,
+    citydeal1_.cd_special_price_gross as cd1_1_1_,
+    citydeal1_.cd_deal_priority as cd1_1_1_, citydeal1_.cd_salesforce_id as
+    cd1_1_1_, citydeal1_.cd_deal_start_time as cd1_1_1_,
+    citydeal1_.cd_scheduled_for_newsletter as cd1_1_1_,
+    citydeal1_.cd_voucher_send_by_sms as cd1_1_1_,
+    citydeal1_.cd_short_description as cd1_1_1_, citydeal1_.cd_sms_prefix
+    as cd1_1_1_, citydeal1_.cd_participant_current as cd1_1_1_,
+    citydeal1_.cd_deal_status as cd1_1_1_, citydeal1_.cd_special_price_tax
+    as cd1_1_1_, citydeal1_.cd_title as cd1_1_1_,
+    citydeal1_.cd_title_for_url_permalink as cd1_1_1_,
+    citydeal1_.cd_coupon_valid_from as cd1_1_1_,
+    citydeal1_.cd_coupon_valid_until as cd1_1_1_,
+    citydeal1_.cd_voucher_delivery_event as cd1_1_1_,
+    citydeal1_.cd_mvc_pool_id as cd1_1_1_, merchant1_.dm_appdomain_id as
+    dm1_1_1_, merchant1_.dm_merchant_city as dm1_1_1_, merchant1_.dm_email
+    as dm1_1_1_, merchant1_.dm_fax_number as dm1_1_1_,
+    merchant1_.dm_merchant_googlemaps_ref as dm1_1_1_,
+    merchant1_.dm_merchant_homepage as dm1_1_1_,
+    merchant1_.dm_last_modified as dm1_1_1_, merchant1_.dm_merchant_logo as
+    dm1_1_1_, merchant1_.dm_mulligan_enabled as dm1_1_1_,
+    merchant1_.dm_merchant_company_name as dm1_1_1_,
+    merchant1_.dm_merchant_opening_hours as dm1_1_1_,
+    merchant1_.dm_password as dm1_1_1_, merchant1_.dm_merchant_phone as
+    dm1_1_1_, merchant1_.dm_status as dm1_1_1_,
+    merchant1_.dm_merchant_street as dm1_1_1_,
+    merchant1_.dm_merchant_street_number as dm1_1_1_,
+    merchant1_.dm_merchant_welcome_message as dm1_1_1_,
+    merchant1_.dm_merchant_zipcode as dm1_1_1_ from `std_data.city_deals`
+    citydeal1_ inner join std_data.deal_merchant merchant1_ on
+    citydeal1_.cd_merchant_id=merchant1_.dm_id where citydeal1_.cd_id=1
+    limit 1""",
+  ),
+  (
+    # Select. (dotNet agent test case)
+    ('dude', 'select'),
+    """select * from [dude]"""
+  ),
+  (
+    # Select with sub query. (PHP agent test case)
+    ('hp_comments', 'select'),
+    """(SELECT SQL_CALC_FOUND_ROWS c., e.entry_id, e.entry_title,
+    `ee`.`entry_extra_image` AS `entry_image` FROM `hp_comments` c,
+    `mt_entry` e , mt_entry_extra ee WHERE e.`entry_id` = c.`entry_id` AND
+    `ee`.`entry_extra_id` = `e`.`entry_id` AND `published` = ? AND
+    `removed` = ? AND `user_id` = ? ) UNION ALL (SELECT c., e.entry_id,
+    e.entry_title, `ee`.`entry_extra_image` AS `entry_image` FROM
+    `HPCommentsArchive?` c, `mt_entry` e , mt_entry_extra ee WHERE
+    e.`entry_id` = c.`entry_id` AND `ee`.`entry_extra_id` = `e`.`entry_id`
+    AND `published` = ? AND `removed` = ? AND `user_id` = ? ) UNION ALL
+    (SELECT c., e.entry_id, e.entry_title, `ee`.`entry_extra_image` AS
+    `entry_image` FROM `HPCommentsArchive?` c, `mt_entry` e ,
+    mt_entry_extra ee WHERE e.`entry_id` = c.`entry_id` AND
+    `ee`.`entry_extra_id` = `e`.`entry_id` AND `published` = ? AND
+    `removed` = ? AND `user_id` = ? ) UNION ALL (SELECT c., e.entry_id,
+    e.entry_title, `ee`.`entry_extra_image` AS `entry_image` FROM
+    `HPCommentsArchive?` c, `mt_entry` e , mt_entry_extra ee WHERE
+    e.`entry_id` = c.`entry_id` AND `ee`.`entry_extra_id` = `e`.`entry_id`
+    AND `published` = ? AND `removed` = ? AND `user_id` = ? ) UNION ALL
+    (SELECT c., e.entry_id, e.entry_title, `ee`.`entry_extra_image` AS
+    `entry_image` FROM `HPCommentsArchive?` c, `mt_entry` e ,
+    mt_entry_extra ee WHERE e.`entry_id` = c.`entry_id` AND
+    `ee`.`entry_extra_id` = `e`.`entry_id` AND `published` = ? AND
+    `removed` = ? AND `user_id` = ? ) UNION ALL (SELECT c., e.entry_id,
+    e.entry_title, `ee`.`entry_extra_image` AS `entry_image` FROM
+    `HPCommentsArchive?` c, `mt_entry` e , mt_entry_extra ee WHERE
+    e.`entry_id` = c.`entry_id` AND `ee`.`entry_extra_id` = `e`.`entry_id`
+    AND `published` = ? AND `removed` = ? AND `user_id` = ? ) UNION ALL
+    (SELECT c., e.entry_id, e.entry_title, `ee`.`entry_extra_image` AS
+    `entry_image` FROM `HPCommentsArchive?` c, `mt_entry` e ,
+    mt_entry_extra ee WHERE e.`entry_id` = c.`entry_id` AND
+    `ee`.`entry_extra_id` = `e`.`entry_id` AND `published` = ? AND
+    `removed` = ? AND `user_id` = ? ) UNION ALL (SELECT c., e.entry_id,
+    e.entry_title, `ee`.`entry_extra_image` AS `entry_image` FROM
+    `HPCommentsArchive?` c, `mt_entry` e , mt_entry_extra ee WHERE
+    e.`entry_id` = c.`entry_id` AND `ee`.`entry_extra_id` = `e`.`entry_id`
+    AND `published` = ? AND `removed` = ? AND `user_id` = ? ) UNION ALL
+    (SELECT c., e.entry_id, e.entry_title, `ee`.`entry_extra_image` AS
+    `entry_image` FROM `HPCommentsArchive?` c, `mt_entry` e ,
+    mt_entry_extra ee WHERE e.`entry_id` = c.`entry_id` AND
+    `ee`.`entry_extra_id` = `e`.`entry_id` AND `published` = ? AND
+    `removed` = ? AND `user_id` = ? ) UNION ALL (SELECT c., e.entry_id,
+    e.entry_title, `ee`.`entry_extra_image` AS `entry_image` FROM
+    `HPCommentsArchive?` c, `mt_entry` e , mt_entry_extra ee WHERE
+    e.`entry_id` = c.`entry_id` AND `ee`.`entry_extra_id` = `e`.`entry_id`
+    AND `published` = ? AND `removed` = ? AND `user_id` = ? ) UNION ALL
+    (SELECT c., e.entry_id, e.entry_title, `ee`.`entry_extra_image` AS
+    `entry_image` FROM `HPCommentsArchive?` c, `mt_entry` e ,
+    mt_entry_extra ee WHERE e.`entry_id` = c.`entry_id` AND
+    `ee`.`entry_extra_id` = `e`.`entry_id` AND `published` = ? AND
+    `removed` = ? AND `user_id` = ? ) UNION ALL (SELECT c., e.entry_id,
+    e.entry_title, `ee`.`entry_extra_image` AS `entry_image` FROM
+    `HPCommentsArchive?` c, `mt_entry` e , mt_entry_extra ee WHERE
+    e.`entry_id` = c.`entry_id` AND `ee`.`entry_extra_id` = `e`.`entry_id`
+    AND `published` = ? AND `removed` = ? AND `user_id` = ? ) UNION ALL
+    (SELECT c., e.entry_id, e.entry_title, `ee`.`entry_extra_image` AS
+    `entry_image` FROM `HPCommentsArchive?` c, `mt_entry` e ,
+    mt_entry_extra ee WHERE e.`entry_id` = c.`entry_id` AND
+    `ee`.`entry_extra_id` = `e`.`entry_id` AND `published` = ? AND
+    `removed` = ? AND `user_id` = ? ) UNION ALL (SELECT c., e.entry_id,
+    e.entry_title, `ee`.`entry_extra_image` AS `entry_image` FROM
+    `HPCommentsArchive?` c, `mt_entry` e , mt_entry_extra ee WHERE
+    e.`entry_id` = c.`entry_id` AND `ee`.`entry_extra_id` = `e`.`entry_id`
+    AND `published` = ? AND `removed` = ? AND `user_id` = ? ) UNION ALL
+    (SELECT c., e.entry_id, e.entry_title, `ee`.`entry_extra_image` AS
+    `entry_image` FROM `HPCommentsArchive?` c, `mt_entry` e ,
+    mt_entry_extra ee WHERE e.`entry_id` = c.`entry_id` AND
+    `ee`.`entry_extra_id` = `e`.`entry_id` AND `published` = ? AND
+    `removed` = ? AND `user_id` = ? ) UNION ALL (SELECT c., e.entry_id,
+    e.entry_title, `ee`.`entry_extra_image` AS `entry_image` FROM
+    `HPCommentsArchive?` c, `mt_entry` e , mt_entry_extra ee WHERE
+    e.`entry_id` = c.`entry_id` AND `ee`.`entry_extra_id` = `e`.`entry_id`
+    AND `published` = ? AND `removed` = ? AND `user_id` = ? ) ORDER BY
+    `created_on` DESC LIMIT ?, ? / app?.nyc.huffpo.net, slave-db /""",
+  ),
 
   (
     # Delete.

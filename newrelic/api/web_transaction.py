@@ -10,6 +10,7 @@ import string
 import newrelic.api.application
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
+import newrelic.api.function_trace
 
 #_rum_header_fragment = '<script type="text/javascript">' \
 #        'var NREUMQ=[];NREUMQ.push(["mark","firstbyte",' \
@@ -392,7 +393,9 @@ class WSGIApplicationWrapper(object):
             return start_response(status, response_headers, *args)
  
         try:
-            result = self._nr_next_object(environ, _start_response)
+            application = newrelic.api.function_trace.FunctionTraceWrapper(
+                    self._nr_next_object)
+            result = application(environ, _start_response)
         except:
             transaction.__exit__(*sys.exc_info())
             raise

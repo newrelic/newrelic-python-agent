@@ -1196,6 +1196,9 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.component_piston',
             'instrument_piston_doc')
 
+    _process_module_definition('celery.task.base',
+            'newrelic.hooks.application_celery',
+            'instrument_celery_app_task')
     _process_module_definition('celery.app.task',
             'newrelic.hooks.application_celery',
             'instrument_celery_app_task')

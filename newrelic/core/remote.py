@@ -4,6 +4,7 @@ Created on Jul 26, 2011
 @author: sdaubin
 '''
 
+import sys
 import os
 import httplib
 import socket
@@ -250,7 +251,15 @@ class JSONRemote(object):
             json_data = self._encoder.encode(args)
         url = self.remote_method_uri(method, agent_run_id)
 
-        headers = {"Content-Encoding" : "identity" } # FIXME deflate
+        headers = {}
+
+        headers["Content-Encoding"] = "identity" # FIXME deflate
+
+        user_agent = 'NewRelic-PythonAgent/%s (Python %s)' % (
+                newrelic.version, sys.version.split()[0])
+
+        headers['User-Agent'] = user_agent
+
         connection.request("POST", url, json_data, headers)
         response = connection.getresponse()
 

@@ -79,7 +79,7 @@ def browser_timing_middleware(request, response):
     end = content.rfind('</body>', -1024)
     if start != -1 and end != -1:
         offset = content.find('</head>', start)
-        if content.find('X-UA-Compatible', offset) == -1:
+        if content.find('X-UA-Compatible', start, offset) == -1:
             start = content.find('>', start, start+1024)
         elif offset != -1:
             start = offset - 1

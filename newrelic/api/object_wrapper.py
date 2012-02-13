@@ -61,7 +61,8 @@ def wrap_object(module, name, factory, args=()):
     apply_patch(parent, attribute, factory(original, *args))
 
 def object_context(object):
-    mname = inspect.getmodule(object).__name__
+    m = inspect.getmodule(object)
+    mname = m and m.__name__ or '<unknown>'
 
     cname = ''
     fname = ''

@@ -284,7 +284,7 @@ def create_settings_snapshot(server_side_config={}):
      # can always take precedence over the global server side
      # configuration settings.
 
-     for (name, value) in server_side_config.items():
+     for (name, value) in agent_config.items():
          apply_config_setting(settings_snapshot, name, value)
 
      # Update any dynamically calculated settings.

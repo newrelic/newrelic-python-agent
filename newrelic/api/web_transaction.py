@@ -308,13 +308,15 @@ class _WSGIApplicationIterable(object):
         self.generator = generator
  
     def __iter__(self):
-        for item in self.generator:
-            yield item
-            try:
-                self.transaction._content_length += len(item)
-            except:
-                pass
- 
+        with newrelic.api.function_trace.FunctionTrace(
+                self.transaction, name='Response', group='Python/WSGI'):
+            for item in self.generator:
+                yield item
+                try:
+                    self.transaction._content_length += len(item)
+                except:
+                    pass
+
     def close(self):
         try:
             if hasattr(self.generator, 'close'):
@@ -407,7 +409,10 @@ class WSGIApplicationWrapper(object):
         try:
             application = newrelic.api.function_trace.FunctionTraceWrapper(
                     self._nr_next_object)
-            result = application(environ, _start_response)
+
+            with newrelic.api.function_trace.FunctionTrace(
+                    transaction, name='Application', group='Python/WSGI'):
+                result = application(environ, _start_response)
         except:
             transaction.__exit__(*sys.exc_info())
             raise

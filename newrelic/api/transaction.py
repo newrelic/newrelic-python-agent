@@ -7,6 +7,12 @@ import threading
 import traceback
 import logging
 
+try:
+    from mod_wsgi import thread_utilization as _thread_utilization
+    from mod_wsgi import threads_per_process as _threads_per_process
+except:
+    _thread_utilization = None
+
 import newrelic.core.config
 
 import newrelic.core.transaction_node
@@ -108,6 +114,10 @@ class Transaction(object):
         self._custom_params = {}
         self._request_params = {}
 
+        self._thread_utilization_start = None
+        self._thread_utilization_end = None
+        self._thread_utilization_value = None
+
         self._read_start = None
         self._read_end = None
 
@@ -178,6 +188,12 @@ class Transaction(object):
 
         self._save_transaction(self)
 
+        # Calculate initial thread utilisation factor
+        # if using mod_wsgi.
+
+        if _thread_utilization:
+            self._thread_utilization_start = _thread_utilization()
+
         # Record the start time for transaction.
 
         self.start_time = time.time()
@@ -231,6 +247,15 @@ class Transaction(object):
 
         root = self._node_stack.pop()
         children = root.children
+        # Calculate thread utilisation factor if using
+        # mod_wsgi.
+
+        if self._thread_utilization_start:
+            if not self._thread_utilization_end:
+                self._thread_utilization_end = _thread_utilization()
+            self._thread_utilization_value = (self._thread_utilization_end -
+                    self._thread_utilization_start) / duration
+
 
         # Derive generated values from the raw data. The
         # dummy root node has exclusive time of children
@@ -279,6 +304,10 @@ class Transaction(object):
             metrics['WSGI/Output/Calls/write'] = self._calls_write
         if self._calls_yield != 0:
             metrics['WSGI/Output/Calls/yield'] = self._calls_yield
+
+        if self._thread_utilization_value:
+            metrics['WSGI/Thread/Utilization'] = self._thread_utilization_value
+            metrics['WSGI/Thread/Count'] = _threads_per_process
 
         read_duration = 0
         if self._read_start:
@@ -599,6 +628,9 @@ class Transaction(object):
 
         self.end_time = time.time()
         self.stopped = True
+
+        if not self._thread_utilization_end:
+            self._thread_utilization_end = _thread_utilization()
 
     def add_custom_parameter(self, name, value):
         self._custom_params[name] = value

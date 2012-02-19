@@ -1,5 +1,6 @@
 from __future__ import with_statement
 
+import os
 import sys
 import time
 import weakref
@@ -18,6 +19,7 @@ import newrelic.core.config
 import newrelic.core.transaction_node
 import newrelic.core.database_node
 import newrelic.core.error_node
+import newrelic.core.samplers
 
 import newrelic.api.time_trace
 
@@ -118,6 +120,11 @@ class Transaction(object):
         self._thread_utilization_end = None
         self._thread_utilization_value = None
 
+        self._cpu_user_time_start = None
+        self._cpu_user_time_end = None
+        self._cpu_user_time_value = None
+        self._cpu_utilization_value = None
+
         self._read_start = None
         self._read_end = None
 
@@ -188,6 +195,10 @@ class Transaction(object):
 
         self._save_transaction(self)
 
+        # Record initial CPU user time.
+
+        self._cpu_user_time_start = os.times()[0]
+
         # Calculate initial thread utilisation factor
         # if using mod_wsgi.
 
@@ -240,13 +251,14 @@ class Transaction(object):
         if exc is not None and value is not None and tb is not None:
             self.notice_error(exc, value, tb)
 
-        # Record the end time for transaction.
+        # Record the end time for transaction and then
+        # calculate the duration.
 
         if not self.stopped:
             self.end_time = time.time()
 
-        root = self._node_stack.pop()
-        children = root.children
+        duration = self.end_time - self.start_time
+
         # Calculate thread utilisation factor if using
         # mod_wsgi.
 
@@ -256,13 +268,22 @@ class Transaction(object):
             self._thread_utilization_value = (self._thread_utilization_end -
                     self._thread_utilization_start) / duration
 
+        # Calculate overall user time.
+
+        if not self._cpu_user_time_end:
+            self._cpu_user_time_end = os.times()[0]
+        self._cpu_user_time_value = (self._cpu_user_time_end -
+                self._cpu_user_time_start)
+        self._cpu_utilization_value = self._cpu_user_time_value / (
+                duration * newrelic.core.samplers.cpu_count())
 
         # Derive generated values from the raw data. The
         # dummy root node has exclusive time of children
         # as negative number. Add our own duration to get
         # our own exclusive time.
 
-        duration = self.end_time - self.start_time
+        root = self._node_stack.pop()
+        children = root.children
 
         exclusive = duration + root.exclusive
 
@@ -308,6 +329,9 @@ class Transaction(object):
         if self._thread_utilization_value:
             metrics['WSGI/Thread/Utilization'] = self._thread_utilization_value
             metrics['WSGI/Thread/Count'] = _threads_per_process
+
+        metrics['CPU/User Time'] = self._cpu_user_time_value
+        metrics['CPU/Utilization'] = self._cpu_utilization_value
 
         read_duration = 0
         if self._read_start:
@@ -631,6 +655,8 @@ class Transaction(object):
 
         if not self._thread_utilization_end:
             self._thread_utilization_end = _thread_utilization()
+
+        self._cpu_user_time_end = os.times()[0]
 
     def add_custom_parameter(self, name, value):
         self._custom_params[name] = value

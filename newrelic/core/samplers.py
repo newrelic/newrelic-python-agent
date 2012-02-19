@@ -22,10 +22,17 @@ def create_samplers():
 
     return [klass(*args) for klass, args in _samplers]
 
-def _cpu_count():
+_current_cpu_count = None
+
+def cpu_count(update=False):
     """Return the number of processors host hardware provides.
 
     """
+
+    global _current_cpu_count
+
+    if not update and _current_cpu_count:
+        return _current_cpu_count
 
     # TODO For more methods of determining this if required see
     # http://stackoverflow.com/questions/1006289.
@@ -34,7 +41,8 @@ def _cpu_count():
 
     try:
         import multiprocessing
-        return multiprocessing.cpu_count()
+        _current_cpu_count = multiprocessing.cpu_count()
+        return _current_cpu_count
     except (ImportError, NotImplementedError):
         pass
 
@@ -43,13 +51,16 @@ def _cpu_count():
     try:
         res = int(os.sysconf('SC_NPROCESSORS_ONLN'))
         if res > 0:
-            return res
+            _current_cpu_count = res
+            return _current_cpu_count
     except (AttributeError, ValueError):
         pass
 
     # Fallback to indicating only a single processor.
 
-    return 1
+    _current_cpu_count = 1
+
+    return _current_cpu_count
 
 class CPUSampler(object):
 
@@ -69,7 +80,7 @@ class CPUSampler(object):
 
         user_time = new_times[0] - self._times[0]
 
-        utilization = user_time / (elapsed_time*_cpu_count())
+        utilization = user_time / (elapsed_time*cpu_count(update=True))
 
         self._last_timestamp = now
         self._times = new_times

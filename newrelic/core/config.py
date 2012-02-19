@@ -152,20 +152,19 @@ def global_settings():
 
     return _settings
 
-def global_settings_dump():
-    """This returns dictionary of global settings flattened into a single
-    key namespace rather than nested hierarchy. This is used to send the
-    global settings configuration back to core application.
+def flatten_settings(settings):
+    """This returns dictionary of settings flattened into a single
+    key namespace rather than nested hierarchy.
 
     """
 
-    def dump_settings(settings, name, object):
+    def _flatten(settings, name, object):
         for key, value in object.__dict__.items():
             if isinstance(value, Settings):
                 if name:
-                    dump_settings(settings, '%s.%s' % (name, key), value)
+                    _flatten(settings, '%s.%s' % (name, key), value)
                 else:
-                    dump_settings(settings, key, value)
+                    _flatten(settings, key, value)
             else:
                 if name:
                     settings['%s.%s' % (name, key)] = value
@@ -174,7 +173,16 @@ def global_settings_dump():
 
         return settings
 
-    settings = dump_settings({}, None, _settings)
+    return _flatten({}, None, settings)
+
+def global_settings_dump():
+    """This returns dictionary of global settings flattened into a single
+    key namespace rather than nested hierarchy. This is used to send the
+    global settings configuration back to core application.
+
+    """
+
+    settings = flatten_settings(_settings)
 
     # Strip out any sensitive settings as can be sent unencrypted.
     # The license key is being sent already, but no point sending

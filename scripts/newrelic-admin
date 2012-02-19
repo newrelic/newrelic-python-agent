@@ -203,7 +203,8 @@ def validate_config(args):
 
     _logger.debug('Run the validation test.')
 
-    _environ = { 'SCRIPT_NAME': '', 'PATH_INFO': '/test' }
+    _environ = { 'SCRIPT_NAME': '', 'PATH_INFO': '/test',
+                 'QUERY_STRING': 'key=value' }
 
     _iterable = _wsgi_application(_environ, _start_response)
     _iterable.close()

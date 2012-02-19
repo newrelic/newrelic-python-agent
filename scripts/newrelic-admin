@@ -231,6 +231,216 @@ def validate_config(args):
 
     #_background_task()
 
+@command('local-config', 'config_file [log_file]',
+"""Dumps out the local agent configuration after having loaded the settings
+from <config_file>.""")
+def local_config(args):
+    if len(args) == 0:
+        usage('local-config')
+        return
+
+    import newrelic.core.config
+    import newrelic.core.log_file
+
+    import newrelic.api.settings
+
+    import newrelic.agent
+
+    _settings = newrelic.api.settings.settings()
+
+    if len(args) >= 2:
+        _settings.log_file = args[1]
+    else:
+        _settings.log_file = '/tmp/python-agent-test.log'
+
+    _settings.log_level = logging.DEBUG
+
+    try:
+        os.unlink(_settings.log_file)
+    except:
+        pass
+
+    newrelic.core.log_file.initialize()
+
+    _logger = logging.getLogger('newrelic')
+
+    config_file = args[0]
+
+    if config_file == '-':
+        config_file = None
+
+    newrelic.agent.initialize(config_file, ignore_errors=False,
+               log_file=_settings.log_file, log_level=_settings.log_level)
+
+    config = newrelic.core.config.flatten_settings(_settings)
+
+    keys = config.keys()
+    keys.sort()
+
+    for key in keys:
+        print '%s = %s' % (key, repr(config[key]))
+
+@command('server-config', 'config_file [log_file]',
+"""Dumps out the agent configuration after having loaded the settings
+from <config_file>, registered the application and then merged the server
+side configuration. The application name as specified in the agent
+configuration file is used.""")
+def remote_config(args):
+    if len(args) == 0:
+        usage('remote-config')
+        return
+
+    import newrelic.core.config
+    import newrelic.core.log_file
+
+    import newrelic.api.settings
+
+    import newrelic.agent
+
+    _settings = newrelic.api.settings.settings()
+
+    if len(args) >= 2:
+        _settings.log_file = args[1]
+    else:
+        _settings.log_file = '/tmp/python-agent-test.log'
+
+    _settings.log_level = logging.DEBUG
+
+    try:
+        os.unlink(_settings.log_file)
+    except:
+        pass
+
+    newrelic.core.log_file.initialize()
+
+    _logger = logging.getLogger('newrelic')
+
+    config_file = args[0]
+
+    if config_file == '-':
+        config_file = None
+
+    newrelic.agent.initialize(config_file, ignore_errors=False,
+               log_file=_settings.log_file, log_level=_settings.log_level)
+
+    _application = newrelic.api.application.application()
+
+    _timeout = 30.0
+
+    _start = time.time()
+    _status = _application.activate(timeout=_timeout)
+    _end = time.time()
+
+    _duration = _end - _start
+
+    if not _application.active:
+        _logger.debug('Failed registration after %s seconds.' % _duration)
+        raise RuntimeError('Unable to register application for test, '
+                           'connection could not be established within '
+                           '%s seconds.' % _timeout)
+
+    _logger.debug('Registration took %s seconds.' % _duration)
+
+    config = newrelic.core.config.flatten_settings(_application.settings)
+
+    keys = config.keys()
+    keys.sort()
+
+    for key in keys:
+        print '%s = %s' % (key, repr(config[key]))
+
+@command('license-key', 'config_file [log_file]',
+"""Prints out the account license key after having loaded the settings
+from <config_file>.""")
+def license_key(args):
+    if len(args) == 0:
+        usage('local-config')
+        return
+
+    import newrelic.core.config
+    import newrelic.core.log_file
+
+    import newrelic.api.settings
+
+    import newrelic.agent
+
+    _settings = newrelic.api.settings.settings()
+
+    if len(args) >= 2:
+        _settings.log_file = args[1]
+    else:
+        _settings.log_file = '/tmp/python-agent-test.log'
+
+    _settings.log_level = logging.DEBUG
+
+    try:
+        os.unlink(_settings.log_file)
+    except:
+        pass
+
+    newrelic.core.log_file.initialize()
+
+    _logger = logging.getLogger('newrelic')
+
+    config_file = args[0]
+
+    if config_file == '-':
+        config_file = None
+
+    newrelic.agent.initialize(config_file, ignore_errors=False,
+               log_file=_settings.log_file, log_level=_settings.log_level)
+
+    print 'license_key = %s' % repr(_settings.license_key)
+
+@command('network-config', 'config_file [log_file]',
+"""Prints out the network configuration after having loaded the settings
+from <config_file>.""")
+def network_config(args):
+    if len(args) == 0:
+        usage('network-config')
+        return
+
+    import newrelic.core.config
+    import newrelic.core.log_file
+
+    import newrelic.api.settings
+
+    import newrelic.agent
+
+    _settings = newrelic.api.settings.settings()
+
+    if len(args) >= 2:
+        _settings.log_file = args[1]
+    else:
+        _settings.log_file = '/tmp/python-agent-test.log'
+
+    _settings.log_level = logging.DEBUG
+
+    try:
+        os.unlink(_settings.log_file)
+    except:
+        pass
+
+    newrelic.core.log_file.initialize()
+
+    _logger = logging.getLogger('newrelic')
+
+    config_file = args[0]
+
+    if config_file == '-':
+        config_file = None
+
+    newrelic.agent.initialize(config_file, ignore_errors=False,
+               log_file=_settings.log_file, log_level=_settings.log_level)
+
+    print 'host = %s' % repr(_settings.host)
+    print 'port = %s' % repr(_settings.port)
+    print 'proxy_host = %s' % repr(_settings.proxy_host)
+    print 'proxy_port = %s' % repr(_settings.proxy_port)
+    print 'proxy_user = %s' % repr(_settings.proxy_user)
+    print 'proxy_pass = %s' % repr(_settings.proxy_pass)
+    print 'ssl = %s' % repr(_settings.ssl)
+
 @command('run-python', '...',
 """Executes the Python interpreter with the supplied arguments but forces
 the initialisation of the agent automatically at startup.

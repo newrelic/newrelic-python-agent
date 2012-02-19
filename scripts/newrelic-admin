@@ -119,6 +119,7 @@ def validate_config(args):
 
     _settings.app_name = 'Python Agent Test'
     _settings.transaction_tracer.transaction_threshold = 0
+    _settings.capture_params = True
 
     @newrelic.api.function_trace.function_trace()
     def _function1():

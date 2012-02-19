@@ -717,3 +717,7 @@ def instrument_django_views_debug(module):
             module.technical_404_response, priority=1)
     module.technical_500_response = ViewHandlerWrapper(
             module.technical_500_response, priority=1)
+
+def instrument_django_http_multipartparser(module):
+    newrelic.api.function_trace.wrap_function_trace(
+            module, 'MultiPartParser.parse')

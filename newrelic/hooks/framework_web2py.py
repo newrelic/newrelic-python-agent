@@ -16,42 +16,44 @@ def instrument_gluon_compileapp(module):
     # in executing a request after URL has been mapped
     # to a specific view. The name given to the web
     # transaction is combination of the application name
-    # and view path. Marked with group of 'Custom' as we
-    # have defined the formatting.
+    # and view path.
 
     def name_transaction_run_models_in(environment):
         return '%s::%s' % (environment['request'].application,
                 environment['response'].view)
 
-    newrelic.api.name_transaction.wrap_name_transaction(module, 'run_models_in',
-            name=name_transaction_run_models_in, group='Custom')
+    newrelic.api.name_transaction.wrap_name_transaction(module,
+            'run_models_in', name=name_transaction_run_models_in,
+            group='Web2Py')
 
     # Wrap functions which coordinate the execution of
     # the separate models, controller and view phases of
     # the request handling. This is done for timing how
     # long taken within these phases of request
-    # handling. Use use a 'Custom' group qualified by
-    # the phase.
+    # handling.
 
     def name_function_run_models_in(environment):
         return '%s/%s' % (environment['request'].controller,
                 environment['request'].function)
 
-    newrelic.api.function_trace.wrap_function_trace(module, 'run_models_in',
-            name=name_function_run_models_in, group='Custom/Models')
+    newrelic.api.function_trace.wrap_function_trace(module,
+            'run_models_in', name=name_function_run_models_in,
+            group='Python/Web2Py/Models')
 
     def name_function_run_controller_in(controller, function, environment):
         return '%s/%s' % (controller, function)
 
-    newrelic.api.function_trace.wrap_function_trace(module, 'run_controller_in',
-            name=name_function_run_controller_in, group='Custom/Controller')
+    newrelic.api.function_trace.wrap_function_trace(module,
+            'run_controller_in', name=name_function_run_controller_in,
+            group='Python/Web2Py/Controller')
 
     def name_function_run_view_in(environment):
         return '%s/%s' % (environment['request'].controller,
                 environment['request'].function)
 
-    newrelic.api.function_trace.wrap_function_trace(module, 'run_view_in',
-            name=name_function_run_view_in, group='Custom/View')
+    newrelic.api.function_trace.wrap_function_trace(module,
+            'run_view_in', name=name_function_run_view_in,
+            group='Python/Web2Py/View')
 
 def instrument_gluon_restricted(module):
 
@@ -219,19 +221,19 @@ def instrument_gluon_http(module):
                     parts = os.path.split(path_info)
                     if parts[1] == '':
                         if parts[0] == '/':
-                            txn.name_transaction('*', 'Custom')
+                            txn.name_transaction('*', 'Web2Py')
                         else:
                             name = '%s/*' % parts[0].lstrip('/')
-                            txn.name_transaction(name, 'Custom')
+                            txn.name_transaction(name, 'Web2Py')
                     else:
                         extension = os.path.splitext(parts[1])[-1]
                         name = '%s/*%s' % (parts[0].lstrip('/'), extension)
-                        txn.name_transaction(name, 'Custom')
+                        txn.name_transaction(name, 'Web2Py')
                 else:
-                    txn.name_transaction('*', 'Custom')
+                    txn.name_transaction('*', 'Web2Py')
 
             else:
-                txn.name_transaction('*', 'Custom')
+                txn.name_transaction('*', 'Web2Py')
 
     newrelic.api.pre_function.wrap_pre_function(
             module, 'HTTP.to', name_transaction_name_not_found)

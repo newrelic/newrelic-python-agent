@@ -120,6 +120,7 @@ def validate_config(args):
     _settings.app_name = 'Python Agent Test'
     _settings.transaction_tracer.transaction_threshold = 0
     _settings.capture_params = True
+    _settings.shutdown_timeout = 30.0
 
     @newrelic.api.function_trace.function_trace()
     def _function1():
@@ -193,14 +194,21 @@ def validate_config(args):
 
     _application = newrelic.api.application.application()
 
-    timeout = 5.0
+    _timeout = 30.0
 
-    _status = _application.activate(timeout=timeout)
+    _start = time.time()
+    _status = _application.activate(timeout=_timeout)
+    _end = time.time()
+
+    _duration = _end - _start
 
     if not _application.active:
+        _logger.debug('Failed registration after %s seconds.' % _duration)
         raise RuntimeError('Unable to register application for test, '
                            'connection could not be established within '
-                           '%s seconds.' % timeout)
+                           '%s seconds.' % _timeout)
+
+    _logger.debug('Registration took %s seconds.' % _duration)
 
     _logger.debug('Run the validation test.')
 

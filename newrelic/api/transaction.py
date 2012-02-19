@@ -108,9 +108,25 @@ class Transaction(object):
         self._custom_params = {}
         self._request_params = {}
 
-        self._content_length = 0
+        self._read_start = None
+        self._read_end = None
+
+        self._sent_start = None
+        self._sent_end = None
+
+        self._bytes_read = 0
+        self._bytes_sent = 0
+
+        self._calls_read = 0
+        self._calls_readline = 0
+        self._calls_readlines = 0
+
+        self._calls_write = 0
+        self._calls_yield = 0
+
         self._request_environment = {}
         self._response_properties = {}
+        self._transaction_metrics = {}
 
         self.background_task = False
 
@@ -246,9 +262,62 @@ class Transaction(object):
 
         if self.response_code != 0:
             self._response_properties['STATUS'] = str(self.response_code)
-        if self._content_length != 0:
-            self._response_properties['BYTES_SENT'] = \
-                    str(self._content_length)
+
+        metrics = self._transaction_metrics
+
+        if self._bytes_read != 0:
+            metrics['WSGI/Input/Bytes'] = self._bytes_read
+        if self._bytes_sent != 0:
+            metrics['WSGI/Output/Bytes'] = self._bytes_sent
+        if self._calls_read != 0:
+            metrics['WSGI/Input/Calls/read'] = self._calls_read
+        if self._calls_readline != 0:
+            metrics['WSGI/Input/Calls/readline'] = self._calls_readline
+        if self._calls_readlines != 0:
+            metrics['WSGI/Input/Calls/readlines'] = self._calls_readlines
+        if self._calls_write != 0:
+            metrics['WSGI/Output/Calls/write'] = self._calls_write
+        if self._calls_yield != 0:
+            metrics['WSGI/Output/Calls/yield'] = self._calls_yield
+
+        read_duration = 0
+        if self._read_start:
+            read_duration = self._read_end - self._read_start
+            metrics['WSGI/Input/Time'] = read_duration
+        self.record_metric('Supportability/WSGI/Input/Time',
+                           read_duration)
+
+        sent_duration = 0
+        if self._sent_start:
+            if not self._sent_end:
+                self._sent_end = time.time()
+            sent_duration = self._sent_end - self._sent_start
+            metrics['WSGI/Output/Time'] = sent_duration
+        self.record_metric('Supportability/WSGI/Output/Time',
+                           sent_duration)
+
+        if self.queue_start:
+            queue_wait = self.start_time - self.queue_start
+            if queue_wait < 0:
+                queue_wait = 0
+            metrics['WebFrontend/QueueTime'] = queue_wait
+
+        self.record_metric('Supportability/WSGI/Input/Bytes',
+                           self._bytes_read)
+
+        self.record_metric('Supportability/WSGI/Input/Calls/read',
+                           self._calls_read)
+        self.record_metric('Supportability/WSGI/Input/Calls/readline',
+                           self._calls_readline)
+        self.record_metric('Supportability/WSGI/Input/Calls/readlines',
+                           self._calls_readlines)
+
+        self.record_metric('Supportability/WSGI/Output/Bytes',
+                           self._bytes_sent)
+        self.record_metric('Supportability/WSGI/Output/Calls/yield',
+                           self._calls_yield)
+        self.record_metric('Supportability/WSGI/Output/Calls/write',
+                           self._calls_write)
 
         request_params = {}
         parameter_groups = {}
@@ -260,6 +329,8 @@ class Transaction(object):
             parameter_groups['Request environment'] = self._request_environment
         if self._response_properties:
             parameter_groups['Response properties'] = self._response_properties
+        if self._transaction_metrics:
+            parameter_groups['Transaction metrics'] = self._transaction_metrics
 
         node = newrelic.core.transaction_node.TransactionNode(
                 settings=self._settings,

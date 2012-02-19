@@ -308,12 +308,15 @@ class _WSGIApplicationIterable(object):
         self.generator = generator
  
     def __iter__(self):
+        if not self.transaction._sent_start:
+            self.transaction._sent_start = time.time()
         with newrelic.api.function_trace.FunctionTrace(
                 self.transaction, name='Response', group='Python/WSGI'):
             for item in self.generator:
                 yield item
                 try:
-                    self.transaction._content_length += len(item)
+                    self.transaction._calls_yield += 1
+                    self.transaction._bytes_sent += len(item)
                 except:
                     pass
 
@@ -326,7 +329,54 @@ class _WSGIApplicationIterable(object):
             raise
         else:
             self.transaction.__exit__(None, None, None)
- 
+            self.transaction._sent_end = time.time()
+
+class WSGIInputWrapper(object):
+
+    def __init__(self, transaction, input):
+        self.__transaction = transaction
+        self.__input = input
+
+    def close(self):
+        if hasattr(self.__input, 'close'):
+            self.__input.close()
+
+    def read(self, *args, **kwargs):
+        if not self.__transaction._read_start:
+            self.__transaction._read_start = time.time()
+        data = self.__input.read(*args, **kwargs)
+        try:
+            self.__transaction._calls_read += 1
+            self.__transaction._bytes_read += len(data)
+        except:
+            pass
+        self.__transaction._read_end = time.time()
+        return data
+
+    def readline(self, *args, **kwargs):
+        if not self.__transaction._read_start:
+            self.__transaction._read_start = time.time()
+        line = self.__input.readline(*args, **kwargs)
+        try:
+            self.__transaction._calls_readline += 1
+            self.__transaction._bytes_read += len(line)
+        except:
+            pass
+        self.__transaction._read_end = time.time()
+        return line
+
+    def readlines(self, *args, **kwargs):
+        if not self.__transaction._read_start:
+            self.__transaction._read_start = time.time()
+        lines = self.__input.readlines(*args, **kwargs)
+        try:
+            self.__transaction._calls_readlines += 1
+            self.__transaction._bytes_read += sum(map(len,lines))
+        except:
+            pass
+        self.__transaction._read_end = time.time()
+        return lines
+
 class WSGIApplicationWrapper(object):
 
     def __init__(self, wrapped, application=None):
@@ -396,6 +446,7 @@ class WSGIApplicationWrapper(object):
                 transaction.response_code = int(status.split(' ')[0])
             except:
                 pass
+
             try:
                 header = filter(lambda x: x[0].lower()=='content-length',
                                 response_headers)[-1:]
@@ -404,9 +455,31 @@ class WSGIApplicationWrapper(object):
                             header[0][1]
             except:
                 pass
-            return start_response(status, response_headers, *args)
+
+            _write = start_response(status, response_headers, *args)
+
+            def write(data):
+                if not transaction._sent_start:
+                    transaction._sent_start = time.time()
+                result = _write(data)
+                transaction._calls_write += 1
+                try:
+                    transaction._bytes_sent += len(data)
+                except:
+                    pass
+                transaction._sent_end = time.time()
+                return result
+
+            return write
  
         try:
+            # Should always exist, but check as test harnesses may not
+            # have it.
+
+            if 'wsgi.input' in environ:
+                environ['wsgi.input'] = WSGIInputWrapper(transaction,
+                        environ['wsgi.input'])
+
             application = newrelic.api.function_trace.FunctionTraceWrapper(
                     self._nr_next_object)
 

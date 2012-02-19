@@ -192,6 +192,17 @@ def validate_config(args):
 
     _logger.debug('Register test application.')
 
+    _logger.debug('Collector host is %s.' % repr(_settings.host))
+    _logger.debug('Collector port is %s.' % repr(_settings.port))
+
+    _logger.debug('Proxy host is %s.' % repr(_settings.proxy_host))
+    _logger.debug('Proxy port is %s.' % repr(_settings.proxy_port))
+    _logger.debug('Proxy user is %s.' % repr(_settings.proxy_user))
+
+    _logger.debug('SSL enabled is %s.' % repr(_settings.ssl))
+
+    _logger.debug('License key is %s.' % repr(_settings.license_key))
+
     _application = newrelic.api.application.application()
 
     _timeout = 30.0

@@ -229,19 +229,27 @@ class ResourceRenderWrapper(object):
         return self.__class__((instance, descriptor))
 
     def __call__(self, *args):
-        assert self._nr_instance != None
 
-	# Temporary work around due to customer calling class
-	# method directly with 'self' as first argument.
+        # Temporary work around due to customer calling class
+        # method directly with 'self' as first argument. Need
+        # to work out best practice for dealing with this.
 
-        request = args[-1]
+        if len(args) == 2:
+            # Assume called as unbound method with (self, request).
+            instance, request = args
+        else:
+            # Assume called as bound method with (request).
+            instance = self._nr_instance
+            request = args[-1]
+
+        assert instance != None
 
         transaction = newrelic.api.transaction.transaction()
 
         if transaction is not None:
             name = "%s.render_%s" % (
                     newrelic.api.object_wrapper.callable_name(
-                    self._nr_instance), request.method)
+                    instance), request.method)
             transaction.name_transaction(name, priority=1)
 
             with newrelic.api.function_trace.FunctionTrace(transaction, name):

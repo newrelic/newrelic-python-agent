@@ -228,8 +228,13 @@ class ResourceRenderWrapper(object):
         descriptor = self._nr_next_object.__get__(instance, klass)
         return self.__class__((instance, descriptor))
 
-    def __call__(self, request):
+    def __call__(self, *args):
         assert self._nr_instance != None
+
+	# Temporary work around due to customer calling class
+	# method directly with 'self' as first argument.
+
+        request = args[-1]
 
         transaction = newrelic.api.transaction.transaction()
 
@@ -240,9 +245,9 @@ class ResourceRenderWrapper(object):
             transaction.name_transaction(name, priority=1)
 
             with newrelic.api.function_trace.FunctionTrace(transaction, name):
-                return self._nr_next_object(request)
+                return self._nr_next_object(*args)
 
-        return self._nr_next_object(request)
+        return self._nr_next_object(*args)
 
 class DeferredUserList(UserList.UserList):
 

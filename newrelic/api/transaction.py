@@ -327,16 +327,17 @@ class Transaction(object):
             metrics['WSGI/Output/Calls/yield'] = self._calls_yield
 
         if self._thread_utilization_value:
-            metrics['WSGI/Thread/Utilization'] = self._thread_utilization_value
+            metrics['WSGI/Thread/Utilization'] = \
+                    '%.6f' % self._thread_utilization_value
             metrics['WSGI/Thread/Count'] = _threads_per_process
 
-        metrics['CPU/User Time'] = self._cpu_user_time_value
-        metrics['CPU/Utilization'] = self._cpu_utilization_value
+        metrics['CPU/User Time'] = '%.6f' % self._cpu_user_time_value
+        metrics['CPU/Utilization'] = '%.6f' % self._cpu_utilization_value
 
         read_duration = 0
         if self._read_start:
             read_duration = self._read_end - self._read_start
-            metrics['WSGI/Input/Time'] = read_duration
+            metrics['WSGI/Input/Time'] = '%.6f' % read_duration
         self.record_metric('Supportability/WSGI/Input/Time',
                            read_duration)
 
@@ -345,7 +346,7 @@ class Transaction(object):
             if not self._sent_end:
                 self._sent_end = time.time()
             sent_duration = self._sent_end - self._sent_start
-            metrics['WSGI/Output/Time'] = sent_duration
+            metrics['WSGI/Output/Time'] = '%.6f' % sent_duration
         self.record_metric('Supportability/WSGI/Output/Time',
                            sent_duration)
 
@@ -353,7 +354,7 @@ class Transaction(object):
             queue_wait = self.start_time - self.queue_start
             if queue_wait < 0:
                 queue_wait = 0
-            metrics['WebFrontend/QueueTime'] = queue_wait
+            metrics['WebFrontend/QueueTime'] = '%.6f' % queue_wait
 
         self.record_metric('Supportability/WSGI/Input/Bytes',
                            self._bytes_read)

@@ -1234,6 +1234,19 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.adapter_meinheld',
             'instrument_meinheld_server')
 
+    #_process_module_definition('twisted.web.server',
+    #        'newrelic.hooks.framework_twisted',
+    #        'instrument_twisted_web_server')
+    #_process_module_definition('twisted.web.http',
+    #        'newrelic.hooks.framework_twisted',
+    #        'instrument_twisted_web_http')
+    #_process_module_definition('twisted.web.resource',
+    #        'newrelic.hooks.framework_twisted',
+    #        'instrument_twisted_web_resource')
+    #_process_module_definition('twisted.internet.defer',
+    #        'newrelic.hooks.framework_twisted',
+    #        'instrument_twisted_internet_defer')
+
 _instrumentation_done = False
 
 def _setup_instrumentation():

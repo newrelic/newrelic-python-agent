@@ -365,6 +365,23 @@ SQL_PARSE_TESTS = [
     AND `published` = ? AND `removed` = ? AND `user_id` = ? ) ORDER BY
     `created_on` DESC LIMIT ?, ? / app?.nyc.huffpo.net, slave-db /""",
   ),
+  (
+    # Select with sub query.
+    ('pstat_tenant', 'select'),
+    """SELECT MAX(c) FROM (SELECT `pstat_tenant`.`id` AS `id`,
+    `pstat_tenant`.`name` AS `name`, `pstat_tenant`.`subdomain` AS `subdomain`,
+    `pstat_tenant`.`customer_id` AS `customer_id`, `pstat_tenant`.`login_token`
+    AS `login_token`, `pstat_tenant`.`old_login_token` AS `old_login_token`,
+    `pstat_tenant`.`token_update_date` AS `token_update_date`,
+    `pstat_tenant`.`created` AS `created`, `pstat_tenant`.`modified` AS
+    `modified`, COUNT(`document`.`id`) AS `c` FROM `pstat_tenant` LEFT OUTER
+    JOIN `bloc_bloc_tenants` ON (`pstat_tenant`.`id` =
+    `bloc_bloc_tenants`.`tenant_id`) LEFT OUTER
+    JOIN `bloc_bloc` ON (`bloc_bloc_tenants`.`bloc_id` = `bloc_bloc`.`id`) LEFT
+    OUTER JOIN `document` ON (`bloc_bloc`.`id` = `document`.`bloc_id`) GROUP BY
+    `pstat_tenant`.`id` ORDER BY NULL) subquery"""
+  ),
+
 
   (
     # Delete.

@@ -31,12 +31,14 @@ def instrument_redis_connection(module):
 
 def instrument_redis_client(module):
 
-    for method in _methods_1:
-        if hasattr(module.StrictRedis, method):
-            if hasattr(module, 'StrictRedis'):
+    if hasattr(module, 'StrictRedis'):
+        for method in _methods_1:
+            if hasattr(module.StrictRedis, method):
                 newrelic.api.function_trace.wrap_function_trace(
                         module, 'StrictRedis.%s' % method)
-            else:
+    else:
+        for method in _methods_1:
+            if hasattr(module.Redis, method):
                 newrelic.api.function_trace.wrap_function_trace(
                         module, 'Redis.%s' % method)
 

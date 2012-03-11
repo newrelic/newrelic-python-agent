@@ -1,8 +1,11 @@
 import sys
 import os
 
+with_setuptools = False
+
 try:
     from setuptools import setup
+    with_setuptools = True
 except:
     from distutils.core import setup
 
@@ -49,7 +52,7 @@ packages = [
   "newrelic.bootstrap",
 ]
 
-setup(
+kwargs = dict(
   name = "newrelic",
   version = package_version,
   description = "Python agent for New Relic",
@@ -63,3 +66,10 @@ setup(
   extra_path = ( "newrelic", "newrelic-%s" % package_version ),
   scripts = [ 'scripts/newrelic-admin' ],
 )
+
+if with_setuptools:
+    kwargs['entry_points'] = {
+      'console_scripts': ['newrelic-admin = newrelic.admin:main'],
+    }
+
+setup(**kwargs)

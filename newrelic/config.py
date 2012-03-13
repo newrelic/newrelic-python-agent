@@ -1234,6 +1234,14 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.adapter_meinheld',
             'instrument_meinheld_server')
 
+    _process_module_definition('waitress.server',
+            'newrelic.hooks.adapter_waitress',
+            'instrument_waitress_server')
+
+    _process_module_definition('pyramid.router',
+            'newrelic.hooks.framework_pyramid',
+            'instrument_pyramid_router')
+
     #_process_module_definition('twisted.web.server',
     #        'newrelic.hooks.framework_twisted',
     #        'instrument_twisted_web_server')

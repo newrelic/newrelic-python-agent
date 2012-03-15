@@ -18,5 +18,6 @@ def instrument_celery_worker(module):
         application = newrelic.api.application.application()
         application.activate()
 
-    newrelic.api.pre_function.wrap_pre_function(module,
-        'process_initializer', activate_default_application)
+    if hasattr(module, 'process_initializer'):
+        newrelic.api.pre_function.wrap_pre_function(module,
+            'process_initializer', activate_default_application)

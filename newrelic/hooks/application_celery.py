@@ -1,23 +1,80 @@
-import newrelic.core.agent
-import newrelic.api.application
-import newrelic.api.background_task
-import newrelic.api.pre_function
+"""This module provides instrumentation for Celery. Has been tested on
+Celery versions 2.2.X through 2.5.X.
+
+Note that Celery has a habit of moving things around in code base or of
+completely rewriting stuff across minor versions. See additional notes
+about this below.
+
+"""
+
+from newrelic.api.application import application
+from newrelic.api.background_task import BackgroundTaskWrapper
 
 def instrument_celery_app_task(module):
 
-    def name_transaction_base_task_call(task, *args, **kwargs):
-        return task.name
+    # Triggered for both 'celery.app.task' and 'celery.task.base'.
 
-    newrelic.api.background_task.wrap_background_task(module,
-            'BaseTask.__call__', name=name_transaction_base_task_call,
-            group='Celery')
+    if hasattr(module, 'BaseTask'):
+
+        # Need to add a wrapper for background task entry point.
+
+	# In Celery 2.2 the 'BaseTask' class actually resided in the
+	# module 'celery.task.base'. In Celery 2.3 the 'BaseTask' class
+	# moved to 'celery.app.task' but an alias to it was retained in
+	# the module 'celery.task.base'. We need to detect both module
+	# imports, but we check the module name associated with
+	# 'BaseTask' to ensure that we do not instrument the class via
+	# the alias in Celery 2.3 and later.
+
+	# In Celery 2.5, although 'BaseTask' still exists execution of
+	# the task doesn't pass through it. For Celery 2.5 need to wrap
+	# the tracer instead.
+
+        def task_name(task, *args, **kwargs):
+            return task.name
+
+        if module.BaseTask.__module__ == module.__name__:
+            module.BaseTask.__call__ = BackgroundTaskWrapper(
+                    module.BaseTask.__call__, name=task_name,
+                    group='Celery')
+
+def instrument_celery_execute_trace(module):
+
+    # Triggered for 'celery.execute_trace'.
+
+    if hasattr(module, 'build_tracer'):
+
+	# Need to add a wrapper for background task entry point.
+
+	# In Celery 2.5 we need to wrap the task when tracer is being
+	# created.
+
+        _build_tracer = module.build_tracer
+
+        def build_tracer(name, task, *args, **kwargs):
+            task = task or module.tasks[name]
+            task = BackgroundTaskWrapper(task, name=name, group='Celery')
+            return _build_tracer(name, task, *args, **kwargs)
+
+        module.build_tracer = build_tracer
 
 def instrument_celery_worker(module):
 
-    def activate_default_application(*args, **kwargs):
-        application = newrelic.api.application.application()
-        application.activate()
+    # Triggered for 'celery.worker' and 'celery.concurrency.processes'.
 
     if hasattr(module, 'process_initializer'):
-        newrelic.api.pre_function.wrap_pre_function(module,
-            'process_initializer', activate_default_application)
+
+        # We try and force registration of default application after
+        # fork of worker process rather than lazily on first request.
+
+	# Originally the 'process_initializer' function was located in
+	# 'celery.worker'. In Celery 2.5 the function 'process_intializer'
+	# was moved to the module 'celery.concurrency.processes'.
+
+        _process_initializer = module.process_initializer
+
+        def process_initializer(*args, **kwargs):
+            application().activate()
+            return _process_initializer(*args, **kwargs)
+
+        module.process_initializer = process_initializer

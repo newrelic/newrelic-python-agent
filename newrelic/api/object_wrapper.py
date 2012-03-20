@@ -116,3 +116,51 @@ def callable_name(object, separator=':'):
     except:
         pass
     return name
+
+class ObjectWrapper(object):
+
+    def __init__(self, wrapped):
+        if type(wrapped) == type(()):
+            (instance, wrapped) = wrapped
+        else:
+            instance = None
+
+        self._nr_instance = instance
+        self._nr_next_object = wrapped
+
+        try:
+            self._nr_last_object = wrapped._nr_last_object
+        except:
+            self._nr_last_object = wrapped
+
+        for attr in WRAPPER_ASSIGNMENTS:
+            try:
+                value = getattr(wrapped, attr)
+            except AttributeError:
+                pass
+            else:
+                object.__setattr__(self, attr, value)
+
+    def __setattr__(self, name, value):
+        if not name.startswith('_nr_'):
+            setattr(self._nr_next_object, name, value)
+        else:
+            self.__dict__[name] = value
+
+    def __getattr__(self, name):
+        return getattr(self._nr_next_object, name)
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self
+        descriptor = self._nr_next_object.__get__(instance, owner)
+        return self._nr_new_object((instance, descriptor))
+
+    def _nr_new_object(self, wrapped):
+        return self.__class__(wrapped)
+
+    def __dir__(self):
+        return dir(self._nr_next_object)
+
+    def __call__(self, *args, **kwargs):
+        return self._nr_next_object(*args, **kwargs)

@@ -282,6 +282,16 @@ def create_settings_snapshot(server_side_config={}):
 
      agent_config = server_side_config.pop('agent_config', {})
 
+     # Remap as necessary any server side agent config settings.
+
+     # TODO This needs to be broken out into separate routine and
+     # used also when reading in local agent configuration file.
+
+     if 'transaction_tracer.transaction_threshold' in agent_config:
+         value = agent_config['transaction_tracer.transaction_threshold']
+         if value == 'apdex_f':
+             agent_config['transaction_tracer.transaction_threshold'] = None
+
      # Overlay with global server side configuration settings.
 
      for (name, value) in server_side_config.items():

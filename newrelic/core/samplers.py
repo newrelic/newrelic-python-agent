@@ -2,6 +2,18 @@ import os
 import time
 import sys
 
+try:
+    import resource
+    have_resource = True
+except:
+    have_resource = False
+
+try:
+    import multiprocessing
+    have_multiprocessing = True
+except:
+    have_multiprocessing = False
+
 import newrelic.core.metric
 
 _samplers = []
@@ -39,21 +51,21 @@ def cpu_count(update=False):
 
     # Python 2.6+.
 
-    try:
-        import multiprocessing
-        _current_cpu_count = multiprocessing.cpu_count()
-        return _current_cpu_count
-    except (ImportError, NotImplementedError):
-        pass
+    if have_multiprocessing:
+        try:
+            _current_cpu_count = multiprocessing.cpu_count()
+            return _current_cpu_count
+        except NotImplementedError:
+            pass
 
     # POSIX Systems.
 
     try:
-        res = int(os.sysconf('SC_NPROCESSORS_ONLN'))
+        res = os.sysconf('SC_NPROCESSORS_ONLN')
         if res > 0:
             _current_cpu_count = res
             return _current_cpu_count
-    except (AttributeError, ValueError):
+    except (ValueError, OSError, AttributeError):
         pass
 
     # Fallback to indicating only a single processor.
@@ -135,15 +147,12 @@ def _memory_used():
     # can differ based on platform. Assume 1024 byte blocks as
     # default.
 
-    try:
-        import resource
+    if have_resource:
         rusage = resource.getrusage(resource.RUSAGE_SELF)
         if sys.platform == 'darwin':
             return float(rusage.ru_maxrss) / (1024*1024)
         else:
             return float(rusage.ru_maxrss) / 1024
-    except:
-        pass
 
     # Fallback to indicating no memory usage.
 
@@ -182,6 +191,9 @@ class ThreadUtilizationSampler(object):
         yield newrelic.core.metric.ValueMetric(
                 name='Supportability/WSGI/Thread/Utilization',
                 value=utilization)
+
+        yield newrelic.core.metric.ValueMetric(name='Instance/Busy',
+                value=utilization/mod_wsgi.threads_per_process)
 
 try:
     import mod_wsgi

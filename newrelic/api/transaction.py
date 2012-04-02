@@ -35,13 +35,16 @@ class Transaction(object):
     _transactions = weakref.WeakValueDictionary()
 
     @classmethod
-    def _current_thread(cls):
+    def _current_coroutine(cls):
         meinheld = sys.modules.get('meinheld.server')
 
         if meinheld:
-            result = meinheld.get_ident()
-            if result is not None:
-                return result
+            try:
+                result = meinheld.get_ident()
+                if result is not None:
+                    return result
+            except:
+                pass
 
         greenlet = sys.modules.get('greenlet')
 
@@ -51,16 +54,22 @@ class Transaction(object):
             except:
                 pass
 
+    @classmethod
+    def _current_thread(cls):
         return threading.currentThread()
 
     @classmethod
+    def _current_context(cls):
+        return (cls._current_thread(), cls._current_coroutine())
+
+    @classmethod
     def _current_transaction(cls):
-        thread = cls._current_thread()
+        thread = cls._current_context()
         return cls._transactions.get(thread)
 
     @classmethod
     def _save_transaction(cls, transaction):
-        thread = cls._current_thread()
+        thread = cls._current_context()
         if thread in cls._transactions:
             raise RuntimeError('transaction already active')
 
@@ -68,9 +77,9 @@ class Transaction(object):
 
     @classmethod
     def _drop_transaction(cls, transaction):
-        thread = cls._current_thread()
+        thread = cls._current_context()
         if not thread in cls._transactions:
-            raise RuntimeError('no activate transaction')
+            raise RuntimeError('no active transaction')
 
         current = cls._transactions.get(thread)
 

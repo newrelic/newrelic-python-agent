@@ -64,33 +64,39 @@ class Transaction(object):
 
     @classmethod
     def _current_transaction(cls):
-        thread = cls._current_context()
-        return cls._transactions.get(thread)
+        active_context = cls._current_context()
+        return cls._transactions.get(active_context)
 
     @classmethod
     def _save_transaction(cls, transaction):
-        thread = cls._current_context()
-        if thread in cls._transactions:
+        active_context = cls._current_context()
+
+        if active_context in cls._transactions:
             raise RuntimeError('transaction already active')
 
-        cls._transactions[thread] = transaction
+        cls._transactions[active_context] = transaction
+        transaction._active_context = active_context
 
     @classmethod
     def _drop_transaction(cls, transaction):
-        thread = cls._current_context()
-        if not thread in cls._transactions:
+        active_context = transaction._active_context
+
+        if not active_context in cls._transactions:
             raise RuntimeError('no active transaction')
 
-        current = cls._transactions.get(thread)
+        current = cls._transactions.get(active_context)
 
         if transaction != current:
             raise RuntimeError('not the current transaction')
 
-        del cls._transactions[thread]
+        transaction._active_context = None
+        del cls._transactions[active_context]
 
     def __init__(self, application, enabled=None):
 
         self._application = application
+
+        self._active_context = None
 
         self._dead = False
 

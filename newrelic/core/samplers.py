@@ -192,8 +192,8 @@ class ThreadUtilizationSampler(object):
                 name='Supportability/WSGI/Thread/Utilization',
                 value=utilization)
 
-        yield newrelic.core.metric.ValueMetric(name='Instance/Busy',
-                value=utilization/mod_wsgi.threads_per_process)
+        #yield newrelic.core.metric.ValueMetric(name='Instance/Busy',
+        #        value=utilization/mod_wsgi.threads_per_process)
 
 try:
     import mod_wsgi

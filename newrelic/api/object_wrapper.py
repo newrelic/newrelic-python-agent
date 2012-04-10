@@ -77,7 +77,7 @@ def object_context(object):
         cname = object.__name__
         fname = ''
     elif inspect.ismethod(object):
-        if object.im_self and hasattr(object.im_self, '__name__'):
+        if object.im_self is not None and hasattr(object.im_self, '__name__'):
             cname = object.im_self.__name__
         else:
             cname = object.im_class.__name__

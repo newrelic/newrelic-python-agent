@@ -102,7 +102,11 @@ class CPUSampler(object):
         yield newrelic.core.metric.ValueMetric(
                 name='CPU/User/Utilization', value=utilization)
 
-register_sampler(CPUSampler)
+# Under Jython there is no os.times() function to disable the
+# CPU sampler completely for now when that cannot be found.
+
+if hasattr(os, 'times'):
+    register_sampler(CPUSampler)
 
 def _memory_used():
     """Returns the amount of resident memory in use in MBs.

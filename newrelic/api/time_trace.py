@@ -12,6 +12,12 @@ class TimeTrace(object):
         self.duration = 0.0
         self.exclusive = 0.0
 
+        # Don't do further tracing of transaction if
+        # it has been explicitly stopped.
+
+        if transaction and transaction.stopped:
+            self.transaction = None
+
     def __enter__(self):
         if not self.transaction:
             return

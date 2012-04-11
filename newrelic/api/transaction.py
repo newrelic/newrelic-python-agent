@@ -670,8 +670,9 @@ class Transaction(object):
         self.end_time = time.time()
         self.stopped = True
 
-        if not self._thread_utilization_end:
-            self._thread_utilization_end = _thread_utilization()
+        if self._thread_utilization_start:
+            if not self._thread_utilization_end:
+                self._thread_utilization_end = _thread_utilization()
 
         #self._cpu_user_time_end = os.times()[0]
 

@@ -399,7 +399,13 @@ def _load_configuration(config_file=None, environment=None,
         except ConfigParser.NoOptionError:
             return False
         else:
-            name = value.split(';')[0] or 'Python Application'
+            # XXX Note that because ';' with a preceding space is
+            # interpreted as the start of an embedded comment in the
+            # Python ini file format, there can never be a space
+            # preceding the ';' in a list of applications, although
+            # there can be a space after the ';'.
+
+            name = value.split(';')[0].strip() or 'Python Application'
 
             linked = []
             for altname in value.split(';')[1:]:

@@ -66,8 +66,9 @@ else:
 _settings.license_key = os.environ.get('NEW_RELIC_LICENSE_KEY', None)
 
 _settings.ssl = False
+
 _settings.host = os.environ.get('NEW_RELIC_HOST', 'collector.newrelic.com')
-_settings.port = int(os.environ.get('NEW_RELIC_PORT', '80'))
+_settings.port = int(os.environ.get('NEW_RELIC_PORT', '0'))
 
 _settings.proxy_host = None
 _settings.proxy_port = None
@@ -130,9 +131,13 @@ _settings.agent_limits.transaction_traces_nodes = 10000
 _settings.agent_limits.sql_query_length_maximum = 16384
 _settings.agent_limits.slow_sql_stack_trace = 30
 _settings.agent_limits.sql_explain_plans = 30
+_settings.agent_limits.slow_sql_data = 10
+_settings.agent_limits.merge_stats_maximum = 5
 
 _settings.debug.ignore_all_server_settings = False
 _settings.debug.local_settings_overrides = []
+
+_settings.debug.log_malformed_json_data = False
 
 def global_settings():
     """This returns the default global settings. Generally only used

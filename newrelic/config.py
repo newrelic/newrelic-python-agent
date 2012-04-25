@@ -201,6 +201,8 @@ def _process_configuration(section):
                      'get', None)
     _process_setting(section, 'port',
                      'getint', None)
+    _process_setting(section, 'ssl',
+                     'getboolean', None)
     _process_setting(section, 'proxy_host',
                      'get', None)
     _process_setting(section, 'proxy_port',
@@ -251,10 +253,6 @@ def _process_configuration(section):
                      'get', None)
     _process_setting(section, 'local_daemon.synchronous_startup',
                      'getboolean', None)
-    _process_setting(section, 'debug.dump_metric_table',
-                     'getboolean', None)
-    _process_setting(section, 'debug.sql_statement_parsing',
-                     'getboolean', None)
     _process_setting(section, 'transaction_metrics.overflow_minimum',
                      'getint', None)
     _process_setting(section, 'transaction_metrics.overflow_maximum',
@@ -269,6 +267,8 @@ def _process_configuration(section):
                      'getint', None)
     _process_setting(section, 'agent_limits.sql_explain_plans',
                      'getint', None)
+    _process_setting(section, 'debug.log_malformed_json_data',
+                     'getboolean', None)
 
 # Loading of configuration from specified file and for specified
 # deployment environment. Can also indicate whether configuration

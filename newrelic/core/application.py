@@ -1,52 +1,62 @@
+"""This module implements data recording and reporting for an application.
+
+"""
+
 from __future__ import with_statement
 
-import threading
-import zlib
-import base64
-import sys
 import logging
+import sys
+import threading
 import time
 
-try:
-    import json
-except:
-    try:
-        import simplejson as json
-    except:
-        import newrelic.lib.simplejson as json
-
-import newrelic.core.remote
-import newrelic.core.metric
-import newrelic.core.stats_engine
-import newrelic.core.rules_engine
-import newrelic.core.samplers
-import newrelic.core.database_utils
-import newrelic.core.string_table
+from newrelic.core.config import global_settings_dump
+from newrelic.core.data_collector import (create_session, ForceAgentRestart,
+        ForceAgentDisconnect, DiscardDataForRequest, RetryDataForRequest)
+from newrelic.core.environment import environment_settings
+from newrelic.core.metric import ValueMetric
+from newrelic.core.rules_engine import RulesEngine
+from newrelic.core.samplers import create_samplers
+from newrelic.core.stats_engine import StatsEngine
 
 _logger = logging.getLogger(__name__)
 
 class Application(object):
 
-    def __init__(self, remote, app_name, linked_applications=[]):
+    """Class which maintains recorded data for a single application.
+
+    """
+
+    def __init__(self, app_name, linked_applications=[]):
         self._app_name = app_name
         self._linked_applications = sorted(set(linked_applications))
-        self._app_names = [app_name] + linked_applications
 
-        self._remote = remote
-        self._service = newrelic.core.remote.NewRelicService(
-                remote, self._app_names)
+        self._period_start = 0.0
 
-        self._stats_lock = threading.Lock()
-        self._stats_engine = newrelic.core.stats_engine.StatsEngine()
+        self._agent_run_id = 0
+        self._active_session = None
 
-        self._stats_custom_lock = threading.Lock()
-        self._stats_custom_engine = newrelic.core.stats_engine.StatsEngine()
+        self._merge_count = 0
 
-        self._rules_engine = None
-
-        self._samplers = newrelic.core.samplers.create_samplers()
+        self._agent_shutdown = False
 
         self._connected_event = threading.Event()
+
+        self._stats_lock = threading.Lock()
+        self._stats_engine = StatsEngine()
+
+        self._stats_custom_lock = threading.Lock()
+        self._stats_custom_engine = StatsEngine()
+
+        # We setup an empty rules engine here even though will be
+        # replaced when application first registered. This is done to
+        # avoid a race condition in setting it later. Otherwise we have
+        # to use unnecessary locking to protect access.
+
+        self._rules_engine = RulesEngine([])
+
+        # Initial set of inbuilt data samplers for this application.
+
+        self._samplers = list(create_samplers())
 
     @property
     def name(self):
@@ -58,251 +68,428 @@ class Application(object):
 
     @property
     def configuration(self):
-        return self._service.configuration
+        return self._active_session and self._active_session.configuration
 
     def activate_session(self):
+        """Creates a background thread to initiate registration of the
+        application with the data collector if no active session already
+        exists. If you want to know whether registration was successful
+        then use wait_for_session_activation().
+
+        """
+
+        if self._active_session:
+            return
+
         self._connected_event.clear()
-        thread = threading.Thread(target=self.connect,
+
+        thread = threading.Thread(target=self.connect_to_data_collector,
                 name='NR-Activate-Session/%s' % self.name)
         thread.setDaemon(True)
         thread.start()
 
     def wait_for_session_activation(self, timeout):
+        """When called immediately after a request to initiate
+        registration of the application with the data collector and
+        create an active session, will wait for period specified by the
+        timeout to see if registration is successful.
+
+        """
+
         self._connected_event.wait(timeout)
+
         if not self._connected_event.isSet():
-            _logger.debug("Timeout out waiting for New Relic service "
-                          "connection with timeout of %s seconds." % timeout)
+            _logger.debug('Timeout out waiting for New Relic service '
+                    'connection with timeout of %s seconds.' % timeout)
+            return False
 
-    def connect(self):
-        try:
-            _logger.debug("Connecting to the New Relic service.")
-            connected = self._service.connect()
-            _logger.debug("Connection status is %s." % connected)
-            if connected:
-                # TODO Is it right that stats are thrown away all the time.
-                # What is meant to happen to stats when core application
-                # requested a restart?
+        return True
 
-                # FIXME Could then stats engine objects simply be replaced.
+    def connect_to_data_collector(self):
+        """Performs the actual registration of the application with the
+        data collector if no current active session.
 
-                with self._stats_lock:
-                    self._stats_engine.reset_stats(
-                            self._service.configuration)
+        """
 
-                with self._stats_custom_lock:
-                    self._stats_custom_engine.reset_stats(
-                            self._service.configuration)
+        if self._active_session:
+            return
 
-                self._rules_engine = newrelic.core.rules_engine.RulesEngine(
-                        self._service.configuration.url_rules)
+        # Register the application with the data collector. Any errors
+        # that occur will be dealt with by create_session(). The result
+        # will either be a session object or None. In the event of a
+        # failure to register we will try again, gradually backing off
+        # for longer and longer periods as we retry. The retry interval
+        # will be capped at 300 seconds.
 
-                _logger.debug("Connected to the New Relic service.")
+        retries = [(15, False, False), (15, False, False),
+                   (30, False, False), (60, True, False),
+                   (120, False, False), (300, False, True),]
 
-                # Don't ever clear this at this point so is really only
-                # signalling the first successful connection having been
-                # made.
+        while not self._active_session:
 
-                self._connected_event.set()
+            self._active_session = create_session(None, self._app_name,
+                    self.linked_applications, environment_settings(),
+                    global_settings_dump())
 
-            return connected
-        except:
-            _logger.exception('Failed connection startup.')
+            # We were successful, but first need to make sure we do not
+            # have any problems with the agent URL rules provided by the
+            # data collector. These could blow up when being compiled if
+            # the patterns are broken or use text which conflicts with
+            # extensions in Python's regular expression syntax.
 
-    def setup_rules_engine(self, rules):
-        ruleset = []
-        try:
-            for item in rules:
-                kwargs = {}
-                for name in map(str, item.keys()):
-                    kwargs[name] = str(item[name])
-                rule = newrelic.core.string_normalization.NormalizationRule(
-                        **kwargs)
-                ruleset.append(rule)
-            self._rules_engine = newrelic.core.string_normalization.Normalizer(*ruleset)
-        except:
-            _logger.exception('Failed to create url rule.')
+            if self._active_session:
+                try:
+                    self._rules_engine = RulesEngine(
+                            self._active_session.configuration.url_rules)
+
+                except:
+                    _logger.exception('The agent URL rules received from '
+                            'the data collector could not be compiled '
+                            'properly by the agent due to a syntactical '
+                            'error or other problem. Please report this '
+                            'to New Relic support for investigation.')
+
+                    # For good measure, in this situation we explicitly
+                    # shutdown the session as then the data collector
+                    # will record this. Ignore any error from this. Then
+                    # we discard the session so we go into a retry loop
+                    # on presumption that issue with the URL rules will
+                    # be fixed.
+
+                    try:
+                        self._active_session.shutdown_session()
+                    except:
+                        pass
+
+                    self._active_session = None
+
+            # Were we successful. If not go into the retry loop. Log
+            # warnings or errors as per schedule associated with the
+            # retry intervals.
+
+            if not self._active_session:
+                if retries:
+                    timeout, warning, error = retries.pop(0)
+
+                    if warning:
+                        _logger.warning('Registration of the application %r '
+                                'with the data collector failed after '
+                                'multiple attempts. Check the prior log '
+                                'entries and remedy any issue as necessary, '
+                                'or if the problem persists, report this '
+                                'problem to New Relic support for further '
+                                'investigation.' % self._app_name)
+
+                    elif error:
+                        _logger.error('Registration of the application %r '
+                                'with the data collector failed after '
+                                'further additional attempts. Please report '
+                                'this problem to New Relic support for '
+                                'further investigation.' % self._app_name)
+
+                else:
+                    timeout = 300
+
+                _logger.debug('Retrying registration of the application %r '
+                        'with the data collector after a further %d '
+                        'seconds.' % (self._app_name, timeout))
+
+                time.sleep(timeout)
+
+                continue
+
+            # Ensure we have cleared out any cached data from a prior agent
+            # run for this application.
+
+            with self._stats_lock:
+                self._stats_engine.reset_stats(
+                        self._active_session.configuration)
+
+            with self._stats_custom_lock:
+                self._stats_custom_engine.reset_stats(
+                        self._active_session.configuration)
+
+            # Flag that session activation has completed to anyone who has
+            # been waiting through calling the wait_for_session_activation()
+            # method.
+
+            self._connected_event.set()
 
     def normalize_name(self, name):
+        """Applies the agent agent URL rules to the supplied name."""
+
+        if not self._active_session:
+            return name, False
+
         try:
-            if not self._rules_engine:
-                return name, False
             return self._rules_engine.normalize(name)
+
         except:
-            _logger.exception('Name normalization failed.')
+            # In the event that the rules engine blows up because of a
+            # problem in the rules supplied by the data collector, we
+            # log the exception and otherwise return the original.
+	    #
+            # NOTE This has the potential to cause metric grouping
+            # issues, but we should not be getting broken rules to begin
+            # with if they are validated properly when entered or
+            # generated. We could perhaps instead flag that the URL
+            # should be ignored and the transaction not reported.
+
+            _logger.exception('The application of the metric normalization '
+                    'rules for the URL %r has failed. This can indicate '
+                    'a problem with the agent URL rules supplied by the '
+                    'data collector. Please report this problem to New '
+                    'Relic support for further investigation.' % name)
+
+            return name, False
 
     def record_metric(self, name, value):
-        try:
-            self._stats_custom_lock.acquire()
+        """Record a custom metric against the application independent
+        of a specific transaction.
+
+        NOTE that this will require locking of the stats engine for
+        custom metrics and so under heavy use will have performance
+        issues. It is better to record the custom metric against an
+        active transaction as they will then be aggregated at the end of
+        the transaction when all other metrics are aggregated and so no
+        additional locking will be required.
+
+        """
+
+        if not self._active_session:
+            return
+
+        with self._stats_custom_lock:
             self._stats_custom_engine.record_value_metric(
-                    newrelic.core.metric.ValueMetric(name=name, value=value))
-        finally:
-            self._stats_custom_lock.release()
+                    ValueMetric(name=name, value=value))
 
     def record_metrics(self, metrics):
-        try:
-            self._stats_custom_lock.acquire()
+        """Record a set of custom metrics against the application
+        independent of a specific transaction.
+
+        NOTE that this will require locking of the stats engine for
+        custom metrics and so under heavy use will have performance
+        issues. It is better to record the custom metric against an
+        active transaction as they will then be aggregated at the end of
+        the transaction when all other metrics are aggregated and so no
+        additional locking will be required.
+
+        """
+
+        if not self._active_session:
+            return
+
+        with self._stats_custom_lock:
             for name, value in metrics:
                 self._stats_custom_engine.record_value_metric(
-                        newrelic.core.metric.ValueMetric(name=name,
-                        value=value))
-        finally:
-            self._stats_custom_lock.release()
+                        ValueMetric(name=name, value=value))
 
     def record_transaction(self, data):
-        try:
-            # We accumulate stats into a workarea and only then
-            # merge it into the main one under a thread lock. Do
-            # this to ensure that the process of generating the
-            # metrics into the stats don't unecessarily lock out
-            # another thread.
+        """Record a single transaction against this application."""
 
-            stats = self._stats_engine.create_workarea()
-            stats.record_transaction(data)
-        except:
-            _logger.exception('Recording transaction failed.')
-
-        try:
-            self._stats_lock.acquire()
-            self._stats_engine.merge_stats(stats)
-        except:
-            _logger.exception('Merging transaction failed.')
-        finally:
-            self._stats_lock.release()
-
-    def harvest(self,connection):
-        _logger.debug("Harvesting.")
-
-        stats = None
-        stats_custom = None
-
-        try:
-            self._stats_lock.acquire()
-            stats = self._stats_engine.create_snapshot()
-        except:
-            _logger.exception('Failed to create snapshot of stats.')
-        finally:
-            self._stats_lock.release()
-
-        if stats is None:
+        if not self._active_session:
             return
 
         try:
-            self._stats_custom_lock.acquire()
-            stats_custom = self._stats_custom_engine.create_snapshot()
-        except:
-            _logger.exception('Failed to create snapshot of custom stats.')
-        finally:
-            self._stats_custom_lock.release()
+            # We accumulate stats into a workarea and only then merge it
+            # into the main one under a thread lock. Do this to ensure
+            # that the process of generating the metrics into the stats
+            # don't unecessarily lock out another thread.
 
-        if stats_custom:
-            stats.merge_stats(stats_custom)
+            stats = self._stats_engine.create_workarea()
+            stats.record_transaction(data)
+
+        except:
+            _logger.exception('The generation of transaction data has '
+                    'failed. This would indicate some sort of internal '
+                    'implementation issue with the agent. Please report '
+                    'this problem to New Relic support for further '
+                    'investigation.')
+
+        with self._stats_lock:
+            try:
+                self._stats_engine.merge_stats(stats)
+
+            except:
+                _logger.exception('The merging of transaction data has '
+                        'failed. This would indicate some sort of internal '
+                        'implementation issue with the agent. Please report '
+                        'this problem to New Relic support for further '
+                        'investigation.')
+
+    def harvest(self):
+        """Performs a harvest, reporting aggregated data for the current
+        reporting period to the data collector.
+
+        """
+
+        if self._agent_shutdown:
+            return
+
+        if not self._active_session:
+            _logger.debug('Cannot perform a data harvest for %r as '
+                    'there is no active session.' % self._app_name)
+
+            return
+
+        _logger.debug('Commencing data harvest for %r.' % self._app_name)
+
+        # Create a snapshot of the transaction stats and application
+        # specific custom metrics stats, then merge them together. The
+        # originals will be reset at the time this is done so that any
+        # new metrics that come in from this point onwards will be
+        # accumulated in a fresh bucket.
+
+        with self._stats_lock:
+            stats = self._stats_engine.create_snapshot()
+
+        with self._stats_custom_lock:
+            stats_custom = self._stats_custom_engine.create_snapshot()
+
+        stats.merge_stats(stats_custom)
+
+        # Now merge in any metrics from the data samplers associated
+        # with this application.
+	#
+        # NOTE If a data sampler has problems then what data was
+        # collected up to that point is retained. The data collector
+        # itself is still retained and would be used again on future
+        # harvest. If it is a persistent problem with the data sampler
+        # the issue would then reoccur with every harvest. If data
+        # sampler is a user provided data sampler, then should perhaps
+        # deregister it if it keeps having problems.
 
         for sampler in self._samplers:
-            for metric in sampler.value_metrics():
-                stats.record_value_metric(metric)
+            try:
+                for metric in sampler.value_metrics():
+                    stats.record_value_metric(metric)
 
-        stats.record_value_metric(newrelic.core.metric.ValueMetric(
+            except:
+                _logger.exception('The merging of value metrics from a '
+                        'data sampler has failed. If this issue persists '
+                        'then please report this problem to New Relic '
+                        'support for further investigation.')
+
+        # Add a metric we can use to track how many harvest periods have
+        # occurred.
+
+        stats.record_value_metric(ValueMetric(
                 name='Instance/Reporting', value=0))
 
-        success = False
+        # Create our time stamp as to when this reporting period ends
+        # and start reporting the data.
+
+        period_end = time.time()
 
         try:
-            if self._service.connected():
-                metric_ids = self._service.send_metric_data(
-                        connection, stats.metric_data())
+            configuration = self._active_session.configuration
 
-                # Say we have succeeded once have sent main metrics.
-                # If fails for errors and transaction trace then just
-                # discard them and keep going.
+            # Send the transaction and custom metric data.
 
-                # FIXME Is this behaviour the right one.
+            metric_ids = self._active_session.send_metric_data(
+              self._period_start, period_end, stats.metric_data())
 
-                success = True
+            # Successful, so we update the stats engine with the new
+            # metric IDs and reset the reporting period start time. If
+            # an error occurs after this point, any remaining data for
+            # the period being reported on will be thrown away. We reset
+            # the count of number of merges we have done due to failures
+            # as only really want to count errors in being able to
+            # report the main transaction metrics.
 
-                self._stats_engine.update_metric_ids(metric_ids)
+            self._merge_count = 0
+            self._period_start = period_end
+            self._stats_engine.update_metric_ids(metric_ids)
 
-                if self._service.configuration.collect_errors:
-                    transaction_errors = stats.transaction_errors
-                    if transaction_errors:
-                        self._service.send_error_data(
-                                connection, stats.transaction_errors)
+            # Send the accumulated error data.
 
-                # FIXME This needs to be cleaned up. It is just to get
-                # it working. What part of code should be responsible
-                # for doing compressing and final packaging of message.
+            if configuration.collect_errors:
+                self._active_session.send_errors(stats.error_data())
 
-                slow_sql_nodes = list(sorted(stats.sql_stats_table.values(),
-                        key=lambda x: x.max_call_time))[-10:]
+            if configuration.collect_traces:
+                self._active_session.send_sql_traces(
+                        stats.slow_sql_data())
+       
+                self._active_session.send_transaction_traces(
+                        stats.slow_transaction_data())
 
-                if slow_sql_nodes:
-                    slow_sql_data = []
+        except ForceAgentRestart:
+            # The data collector has indicated that we need to perform
+            # an internal agent restart. We attempt to properly shutdown
+            # the session and then initiate a new session.
 
-                    for node in slow_sql_nodes:
+            try:
+                self._active_session.shutdown_session()
+            except:
+                pass
 
-                        params = {}
+            self._active_session = None
 
-                        if node.slow_sql_node.stack_trace:
-                            params['backtrace'] = node.slow_sql_node.stack_trace 
+            self.activate_session()
 
-                        explain_plan = node.slow_sql_node.explain_plan
-                        if explain_plan:
-                            params['explain_plan'] = explain_plan
+        except ForceAgentDisconnect:
+            # The data collector has indicated that we need to force
+            # disconnect and stop reporting. We attempt to properly
+            # shutdown the session, but don't start a new one and flag
+            # ourselves as shutdown. This notification is presumably
+            # sent when a specific application is behaving so badly that
+            # it needs to be stopped entirely. It would require a
+            # complete process start to be able to attempt to connect
+            # again and if the server side kill switch is still enabled
+            # it would be told to disconnect once more.
 
-                        params_data = base64.standard_b64encode(
-                                zlib.compress(json.dumps(params,
-                                              encoding='Latin-1')))
+            try:
+                self._active_session.shutdown_session()
+            except:
+                pass
 
-                        data = [node.slow_sql_node.path,
-                                node.slow_sql_node.request_uri,
-                                hash(node.slow_sql_node.sql_id),
-                                node.slow_sql_node.formatted_sql,
-                                node.slow_sql_node.metric,
-                                node.call_count,
-                                node.total_call_time*1000,
-                                node.min_call_time*1000,
-                                node.max_call_time*1000,
-                                params_data]
+            self._active_session = None
 
-                        slow_sql_data.append(data)
+            self._agent_shutdown = True
 
-                    self._service.send_sql_data(
-                            connection, slow_sql_data)
+        except RetryDataForRequest:
+            # A potentially recoverable error occurred. We merge the
+            # stats back into that for the current period and abort the
+            # current harvest if the problem occurred when initially
+            # reporting the main transaction metrics. If the problem
+            # occurred when reporting other information then that and
+            # any other non reported information is thrown away.
+            #
+            # In order to prevent memory growth will we only merge data
+            # up to a set maximum number of successive times. When this
+            # occurs we throw away all the metric data and start over.
 
-                # FIXME This needs to be cleaned up. It is just to get
-                # it working. What part of code should be responsible
-                # for doing compressing and final packaging of message.
+            if self._period_start != period_end:
 
-                if self._service.configuration.collect_traces:
-                    slow_transaction = stats.slow_transaction
-                    if stats.slow_transaction:
-                        limits = self._service.configuration.agent_limits
-                        limit = limits.transaction_traces_nodes
-                        string_table = newrelic.core.string_table.StringTable()
-                        transaction_trace = slow_transaction.transaction_trace(
-                                stats, string_table, limit)
-                        data = [transaction_trace, string_table.values()]
-                        compressed_data = base64.standard_b64encode(
-                                zlib.compress(json.dumps(data,
-                                              encoding='Latin-1')))
-                        trace_data = [[transaction_trace.root.start_time,
-                                transaction_trace.root.end_time,
-                                stats.slow_transaction.path,
-                                stats.slow_transaction.request_uri,
-                                compressed_data]]
+                self._merge_count += 1
 
-                        self._service.send_trace_data(connection, trace_data)
+                maximum = configuration.agent_limits.merge_stats_maximum
+
+                if self._merge_count <= maximum:
+                    self._stats_engine.merge_stats(stats)
+
+                else:
+                    _logger.error('Unable to report main transaction metrics '
+                            'after %r successive attempts. Check the log '
+                            'messages and if necessary please report this '
+                            'problem to New Relic support for further '
+                            'investigation.' % maximum)
+
+                    self._merge_count = 0
+
+        except DiscardDataForRequest:
+            # An issue must have occurred in reporting the data but if
+            # we retry with same data the same error is likely to occur
+            # again so we just throw any data not sent away for this
+            # reporting period.
+
+            pass
 
         except:
-            _logger.exception('Data harvest failed.')
+            # An unexpected error, likely some sort of internal agent
+            # implementation issue.
 
-        finally:
-            if not success:
-                try:
-                    self._stats_engine.merge_stats(stats, collect_errors=False)
-                except:
-                    _logger.exception('Failed to remerge harvest data.')
-
-                if not self._service.connected():
-                    self.activate_session()
-
-            _logger.debug("Done harvesting.")
+            _logger.exception('Unexpected exception when attempting to '
+                    'harvest the metric data and send it to the data '
+                    'collector. Please report this problem to New Relic '
+                    'support for further investigation.')

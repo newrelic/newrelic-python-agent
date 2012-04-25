@@ -26,11 +26,17 @@ _agent_logger.addHandler(_NullHandler())
 _LOG_FORMAT = '%(asctime)s (%(process)d/%(threadName)s) ' \
               '%(name)s %(levelname)s - %(message)s'
 
-
 class FallbackStreamHandler(logging.StreamHandler):
     def emit(self, record):
         if len(logging.root.handlers) == 0:
-            return logging.StreamHandler.emit(self, record)
+            # Make sure we suppress any logging messages coming from
+            # third party packages we have bundled which use the module
+            # name as the logger name. The 'requests' module in
+            # particular is very verbose with its INFO messages when
+            # creating new socket connections in its pooling mechanism.
+
+            if not record.name.startswith('newrelic.lib'):
+                return logging.StreamHandler.emit(self, record)
 
 _initialized = False
 

@@ -5,11 +5,23 @@ data whereby it is sent to the core application.
 
 """
 
-import operator
+import base64
 import copy
+import operator
+import zlib
+
+try:
+    import json
+except:
+    try:
+        import simplejson as json
+    except:
+        import newrelic.lib.simplejson as json
 
 import newrelic.core.metric
 import newrelic.core.database_utils
+
+from newrelic.core.string_table import StringTable
 
 class ApdexStats(list):
 
@@ -192,29 +204,6 @@ class StatsEngine(object):
         self.__slow_transaction = None
         self.__transaction_errors = []
         self.__metric_ids = {}
-
-    @property
-    def slow_transaction(self):
-        """Returns a reference to the details of the slowest transaction
-        for the reporting period or None if one hasn't been recorded.
-
-        """
-
-        return self.__slow_transaction
-
-    @property
-    def transaction_errors(self):
-        """Returns a reference to a list containing any errors collected
-        during the reporting period.
-
-        """
-
-        return self.__transaction_errors
-
-    @property
-    def sql_stats_table(self):
-        # XXX Needs to not exist.
-        return self.__sql_stats_table
 
     @property
     def metric_ids(self):
@@ -518,12 +507,102 @@ class StatsEngine(object):
 
         """
 
+        if not self.__settings:
+            raise StopIteration()
+
         for key, value in self.__stats_table.iteritems():
             if key not in self.__metric_ids:
                 key = dict(name=key[0], scope=key[1])
             else:
                 key = self.__metric_ids[key]
             yield key, value
+
+    def error_data(self):
+        """Returns a to a list containing any errors collected during
+        the reporting period.
+
+        """
+
+        if not self.__settings:
+            return []
+
+        return self.__transaction_errors
+
+    def slow_sql_data(self):
+
+        if not self.__settings:
+            raise StopIteration()
+
+        if not self.__sql_stats_table:
+            raise StopIteration()
+
+        maximum = self.__settings.agent_limits.slow_sql_data
+
+        slow_sql_nodes = list(sorted(self.__sql_stats_table.values(),
+                key=lambda x: x.max_call_time))[-maximum:]
+
+        for node in slow_sql_nodes:
+
+            params = {}
+
+            if node.slow_sql_node.stack_trace:
+                params['backtrace'] = node.slow_sql_node.stack_trace 
+
+            explain_plan = node.slow_sql_node.explain_plan
+
+            if explain_plan:
+                params['explain_plan'] = explain_plan
+
+            params_data = base64.standard_b64encode(
+                    zlib.compress(json.dumps(params, encoding='Latin-1')))
+
+            data = [node.slow_sql_node.path,
+                    node.slow_sql_node.request_uri,
+                    hash(node.slow_sql_node.sql_id),
+                    node.slow_sql_node.formatted_sql,
+                    node.slow_sql_node.metric,
+                    node.call_count,
+                    node.total_call_time*1000,
+                    node.min_call_time*1000,
+                    node.max_call_time*1000,
+                    params_data]
+
+            yield data
+
+    def slow_transaction_data(self):
+        """Returns a list containing any slow transaction data collected
+        during the reporting period.
+
+        NOTE Currently only the slowest transaction for the reporting
+        period is retained.
+
+        """
+
+        if not self.__settings:
+            return []
+
+        if not self.__slow_transaction:
+            return []
+
+        string_table = StringTable()
+
+        maximum = self.__settings.agent_limits.transaction_traces_nodes
+
+        transaction_trace = self.__slow_transaction.transaction_trace(
+                self, string_table, maximum)
+
+        data = [transaction_trace, string_table.values()]
+
+        compressed_data = base64.standard_b64encode(
+                zlib.compress(json.dumps(data, encoding='Latin-1')))
+
+        trace_data = [[transaction_trace.root.start_time,
+                transaction_trace.root.end_time,
+                self.__slow_transaction.path,
+                self.__slow_transaction.request_uri,
+                compressed_data]]
+
+        return trace_data
 
     def reset_stats(self, settings):
         """Resets the accumulated statistics back to initial state and
@@ -560,8 +639,7 @@ class StatsEngine(object):
         # for continuing connection. If connection is lost then
         # reset_engine() above would be called and it would be
         # all thrown away so no chance of following through with
-        # incorrect mappings. Possibly even fine to retain them
-        # over a reset but need to verify that.
+        # incorrect mappings.
 
         self.__stats_table = {}
         self.__sql_stats_table = {}
@@ -583,23 +661,22 @@ class StatsEngine(object):
 
         return stats
 
-    def merge_stats(self, snapshot, collect_traces=True, collect_errors=True):
-        """Merges back all the data from a snapshot. This would be done
-        if the sending of the metric data from the harvest failed and
-        wanted to keep accumulating it for subsequent harvest. If failure
-        occurred in sending details or errors or slow transaction, then
-        those should be thrown away and this method not called, else you
-        would end up sending base metric data multiple times.
+    def merge_stats(self, snapshot, merge_traces=True, merge_errors=True,
+            merge_sql=True):
 
-        XXX Also happens when recording transaction. Will be ordering
-        issue as to which slow sql node is kept.
+        """Merges back all the data from a snapshot. This is used when
+        merging data from a single transaction into may stats engine. It
+        woould also be done if the sending of the metric data from the
+        harvest failed and wanted to keep accumulating it for subsequent
+        harvest. If failure occurred in sending details or errors or
+        slow transaction, then those should be thrown away and this
+        method not called, else you would end up sending base metric
+        data multiple times.
 
         """
 
         # Merge back data into any new data which has been
         # accumulated.
-
-        # FIXME Should all metrics always be merged back in?
 
         for key, other in snapshot.__stats_table.iteritems():
             stats = self.__stats_table.get(key)
@@ -611,31 +688,28 @@ class StatsEngine(object):
         # Insert original error details at start of any new
         # ones to maintain time based order.
 
-        # FIXME Should all accumulated errors be retained
-        # or should they be aged out. For now throw away
-        # the older ones for period that reporting failed.
-
-        if collect_errors:
-            self.__transaction_errors[:0] = snapshot.transaction_errors
+        if merge_errors:
+            self.__transaction_errors[:0] = snapshot.__transaction_errors
 
         # Insert original sql traces at start of any new
         # ones to maintain time based order.
 
-        for key, other in snapshot.__sql_stats_table.iteritems():
-            stats = self.__sql_stats_table.get(key)
-            if not stats:
-                self.__sql_stats_table[key] = copy.copy(other)
-            else:
-                stats.merge_stats(other)
+        if merge_sql:
+            for key, other in snapshot.__sql_stats_table.iteritems():
+                stats = self.__sql_stats_table.get(key)
+                if not stats:
+                    self.__sql_stats_table[key] = copy.copy(other)
+                else:
+                    stats.merge_stats(other)
 
         # Restore original slow transaction if slower than
         # any newer slow transaction.
 
-        if collect_traces:
+        if merge_traces:
             transaction = snapshot.__slow_transaction
 
-            if self.slow_transaction is None:
+            if self.__slow_transaction is None:
                 self.__slow_transaction = transaction
-            elif transaction is not None and \
-                    transaction.duration > self.slow_transaction.duration:
+            elif (transaction is not None and
+                    transaction.duration > self.__slow_transaction.duration):
                 self.__slow_transaction = transaction

@@ -3,6 +3,8 @@ interacting with the agent core.
 
 """
 
+from __future__ import with_statement
+
 import time
 import logging
 import threading
@@ -11,7 +13,6 @@ import atexit
 import newrelic
 import newrelic.core.log_file
 import newrelic.core.config
-import newrelic.core.remote
 import newrelic.core.application
 import newrelic.core.database_utils
 
@@ -77,20 +78,17 @@ class Agent(object):
 
         newrelic.core.log_file.initialize()
 
-        _logger.info('New Relic Python Agent (%s)' % \
-                     '.'.join(map(str, newrelic.version_info)))
+        _logger.info('New Relic Python Agent (%s)' % newrelic.version)
 
-        Agent._lock.acquire()
-        try:
+        with Agent._lock:
             if not Agent._instance:
                 _logger.debug('Creating instance of Python agent.')
 
                 settings = newrelic.core.config.global_settings()
                 Agent._instance = Agent(settings)
                 Agent._instance.activate_agent()
+
             return Agent._instance
-        finally:
-            Agent._lock.release()
 
     def __init__(self, config):
         """Initialises the agent and attempt to establish a connection
@@ -99,6 +97,10 @@ class Agent(object):
 
         """
 
+        """
+
+        # XXX Don't need this.
+
         license_key = config.license_key
 
         collector_host = config.host
@@ -106,23 +108,16 @@ class Agent(object):
 
         require_ssl = config.ssl
 
+        if not collector_port:
+            collector_port = require_ssl and 443 or 80
+
         proxy_host = config.proxy_host
         proxy_port = config.proxy_port
         proxy_user = config.proxy_user
         proxy_pass = config.proxy_pass
+        """
 
         _logger.debug('Initializing Python agent.')
-
-        if proxy_host:
-            # FIXME Need to implement proxy support.
-            raise NotImplemented('no support for proxy')
-        else:
-            if require_ssl:
-                # FIXME Need to implement SSL support.
-                raise NotImplemented('no support for ssl')
-            else:
-                self._remote = newrelic.core.remote.JSONRemote(
-                        config.license_key, config.host, config.port)
 
         self._applications = {}
         self._config = config
@@ -175,46 +170,44 @@ class Agent(object):
         timeout only applies the first time a specific named application
         is being activated. The timeout would be used by test harnesses
         and can't really be used by activation of application for first
-        request because it can take up to a second for initial handshake
-        to get back configuration settings for application.
+        request because it could take a second or more for initial
+        handshake to get back configuration settings for application.
 
         """
 
         if not self._config.monitor_mode:
             return
 
-        Agent._lock.acquire()
-        try:
+        with Agent._lock:
             application = self._applications.get(app_name, None)
             if not application:
                 linked_applications = sorted(set(linked_applications))
                 application = newrelic.core.application.Application(
-                        self._remote, app_name, linked_applications)
+                        app_name, linked_applications)
                 application.activate_session()
                 if timeout:
                     application.wait_for_session_activation(timeout)
                 self._applications[app_name] = application
-        finally:
-            Agent._lock.release()
 
     @property
     def applications(self):
         """Returns a dictionary of the internal application objects
-        cooresponding to the applications for which activation has already
+        corresponding to the applications for which activation has already
         been requested. This does not reflect whether activation has been
-        successful or not. To determine if application if currently in an
+        successful or not. To determine if application is currently in an
         activated state use application_settings() method to see if a valid
         application settings objects is available or query the application
         object directly.
 
         """
+
         return self._applications
 
     def application(self, app_name):
         """Returns the internal application object for the named
-        application or None if not activate. When an application object
+        application or None if not created. When an application object
         is returned, it does not relect whether activation has been
-        successful or not. To determine if application if currently in an
+        successful or not. To determine if application is currently in an
         activated state use application_settings() method to see if a valid
         application settings objects is available or query the application
         object directly.
@@ -261,10 +254,6 @@ class Agent(object):
         appropriate metrics against the named application. If there has
         been no prior request to activate the application, the metric is
         discarded.
-
-        The actual processing of the raw transaction data is performed
-        by the process_raw_transaction() function of the module
-        'newrelic.core.transaction'.
 
         """
 
@@ -326,78 +315,39 @@ class Agent(object):
             newrelic.core.database_utils.sql_properties_cache.expire(3)
 
     def _run_harvest(self):
-        # If we can't even get a connection at the start of this
-        # harvest then pass on doing all the applications.
+        # This isn't going to maintain order of applications
+        # such that oldest is always done first. A new one could
+        # come in earlier once added and upset the overall
+        # timing. The data collector should cope with this
+        # though.
 
-        connection = None
+        _logger.debug('Commencing harvest of all application data.')
 
-        try:
-            connection = self._remote.create_connection()
+        for application in self._applications.values():
+              try:
+                  application.harvest()
 
-        except:
-            _logger.exception('Failed to create connection, aborting '
-                              'harvest for all applications.')
+              except:
+                  _logger.exception('Failed to harvest data '
+                                    'for %s.' % application.name)
 
-        else:
-            # This isn't going to maintain order of applications
-            # such that oldest is always done first. A new one
-            # could come in earlier once added and upset the
-            # overall timing. The data collector should cope
-            # with this though.
-
-            for application in self._applications.values():
-
-                # Last application to be harvested this time
-                # around failed and we must have closed the
-                # connection. Attempt to create a new
-                # connection so can we can try remaining
-                # applications. If we can't get a new connection
-                # though then we skip remainder of applications.
-
-                try:
-                    if not connection:
-                        connection = self._remote.create_connection()
-                except:
-                    _logger.exception('Failed to create connection, '
-                                      'aborting harvest.')
-
-                    break
-
-                else:
-                    # Connection okay. Harvest single application.
-
-                    try:
-                        application.harvest(connection)
-
-                    except:
-                        _logger.exception('Failed to harvest data '
-                                          'for %s.' % application.name)
-
-                        # For any sort of failure, close and null out
-                        # the connection. If more applications still to
-                        # go then will create a connection again for it
-                        # when enter loop again above.
-
-                        try:
-                            connection.close()
-                        except:
-                            _logger.exception('Failed to '
-                                              'close connection.')
-
-                        connection = None
-
-            else:
-                if connection:
-                    try:
-                        connection.close()
-                    except:
-                        _logger.exception('Failed to close connection.')
+        _logger.debug('Completed harvest of all application data.')
 
     def activate_agent(self):
+        """Starts the main background for the agent."""
+
+        # Skip this if agent is not actually enabled.
+
         if not self._config.monitor_mode:
             return
+
+        # Skip this if background thread already running.
+
         if self._harvest_thread.isAlive():
             return
+
+        _logger.debug('Start Python Agent main thread.')
+
         self._harvest_thread.start()
 
     def shutdown_agent(self, timeout=None):

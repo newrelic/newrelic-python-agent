@@ -607,6 +607,7 @@ class Transaction(object):
                 return
 
         node = newrelic.core.error_node.ErrorNode(
+                timestamp=time.time(),
                 type=type,
                 message=message,
                 stack_trace=stack_trace,

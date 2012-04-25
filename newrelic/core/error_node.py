@@ -4,5 +4,5 @@ except:
     from newrelic.lib.namedtuple import namedtuple
 
 ErrorNode = namedtuple('ErrorNode',
-        ['type', 'message', 'stack_trace', 'custom_params',
+        ['timestamp', 'type', 'message', 'stack_trace', 'custom_params',
         'file_name', 'line_number', 'source'])

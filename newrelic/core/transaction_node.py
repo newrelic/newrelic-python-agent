@@ -226,8 +226,9 @@ class TransactionNode(_TransactionNode):
                 params["custom_params"] = error.custom_params
 
             yield newrelic.core.error_collector.TracedError(
-                    start_time=0, path=self.path, message=error.message,
-                    type=error.type, parameters=params)
+                    start_time=error.timestamp, path=self.path,
+                    message=error.message, type=error.type,
+                    parameters=params)
 
     def trace_node(self, stats, string_table, root):
 

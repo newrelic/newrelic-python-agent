@@ -15,7 +15,7 @@ import newrelic.core.remote
 import newrelic.core.application
 import newrelic.core.database_utils
 
-_logger = logging.getLogger('newrelic.core.agent')
+_logger = logging.getLogger(__name__)
 
 class Agent(object):
 

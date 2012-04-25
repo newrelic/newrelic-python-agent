@@ -23,7 +23,7 @@ import newrelic.api.application
 
 __all__ = [ 'initialize', 'filter_app_factory' ]
 
-_logger = logging.getLogger('newrelic.config')
+_logger = logging.getLogger(__name__)
 
 # Register our importer which implements post import hooks for
 # triggering of callbacks to monkey patch modules before import

@@ -104,7 +104,7 @@ def validate_config(args):
 
     newrelic.core.log_file.initialize()
 
-    _logger = logging.getLogger('newrelic')
+    _logger = logging.getLogger(__name__)
     _logger.debug('Starting agent validation.')
 
     config_file = args[0]
@@ -260,7 +260,7 @@ def local_config(args):
 
     newrelic.core.log_file.initialize()
 
-    _logger = logging.getLogger('newrelic')
+    _logger = logging.getLogger(__name__)
 
     config_file = args[0]
 
@@ -311,7 +311,7 @@ def remote_config(args):
 
     newrelic.core.log_file.initialize()
 
-    _logger = logging.getLogger('newrelic')
+    _logger = logging.getLogger(__name__)
 
     config_file = args[0]
 
@@ -378,7 +378,7 @@ def license_key(args):
 
     newrelic.core.log_file.initialize()
 
-    _logger = logging.getLogger('newrelic')
+    _logger = logging.getLogger(__name__)
 
     config_file = args[0]
 
@@ -421,7 +421,7 @@ def network_config(args):
 
     newrelic.core.log_file.initialize()
 
-    _logger = logging.getLogger('newrelic')
+    _logger = logging.getLogger(__name__)
 
     config_file = args[0]
 

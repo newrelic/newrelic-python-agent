@@ -24,7 +24,7 @@ import newrelic.core.samplers
 import newrelic.api.time_trace
 
 
-_logger = logging.getLogger('newrelic.api')
+_logger = logging.getLogger(__name__)
 
 STATE_PENDING = 0
 STATE_RUNNING = 1

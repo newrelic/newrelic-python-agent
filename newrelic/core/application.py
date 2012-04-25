@@ -23,7 +23,7 @@ import newrelic.core.samplers
 import newrelic.core.database_utils
 import newrelic.core.string_table
 
-_logger = logging.getLogger('newrelic.core.application')
+_logger = logging.getLogger(__name__)
 
 class Application(object):
 

@@ -49,6 +49,12 @@ packages = [
   "newrelic.lib.sqlparse.engine",
   "newrelic.lib.namedtuple",
   "newrelic.lib.simplejson",
+  "newrelic.lib.requests",
+  "newrelic.lib.requests.packages",
+  "newrelic.lib.requests.packages.urllib3",
+  "newrelic.lib.requests.packages.urllib3.packages",
+  "newrelic.lib.requests.packages.urllib3.packages.ssl_match_hostname",
+  "newrelic.lib.requests.packages.oreos",
   "newrelic.bootstrap",
 ]
 

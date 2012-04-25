@@ -7,6 +7,9 @@ which is distributed under the PSF license. See 'newrelic/lib/namedtuple'.
 This product includes simplejson (http://pypi.python.org/pypi/simplejson)
 which is distributed under the MIT license. See 'newrelic/lib/simplejson'.
 
+This product includes requests (http://pypi.python.org/pypi/requests)
+which is distributed under the ISC license. See 'newrelic/lib/requests'.
+
 All other components of this product are
 Copyright (c) 2010-2011 New Relic, Inc.  All rights reserved.
 

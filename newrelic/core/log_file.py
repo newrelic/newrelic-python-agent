@@ -26,17 +26,30 @@ _agent_logger.addHandler(_NullHandler())
 _LOG_FORMAT = '%(asctime)s (%(process)d/%(threadName)s) ' \
               '%(name)s %(levelname)s - %(message)s'
 
-class FallbackStreamHandler(logging.StreamHandler):
+class FilteredStreamHandler(logging.StreamHandler):
     def emit(self, record):
-        if len(logging.root.handlers) == 0:
-            # Make sure we suppress any logging messages coming from
-            # third party packages we have bundled which use the module
-            # name as the logger name. The 'requests' module in
-            # particular is very verbose with its INFO messages when
-            # creating new socket connections in its pooling mechanism.
+        if len(logging.root.handlers) != 0:
+            return
 
-            if not record.name.startswith('newrelic.lib'):
-                return logging.StreamHandler.emit(self, record)
+        # Make sure we suppress any logging messages coming from third
+        # party packages we have bundled which use the module name as
+        # the logger name. The 'requests' module in particular is very
+        # verbose with its INFO messages when creating new socket
+        # connections in its pooling mechanism.
+
+        if not record.name.startswith('newrelic.lib'):
+            return logging.StreamHandler.emit(self, record)
+
+class FilteredFileHandler(logging.FileHandler):
+    def emit(self, record):
+        # Make sure we suppress any logging messages coming from third
+        # party packages we have bundled which use the module name as
+        # the logger name. The 'requests' module in particular is very
+        # verbose with its INFO messages when creating new socket
+        # connections in its pooling mechanism.
+
+        if not record.name.startswith('newrelic.lib'):
+            return logging.FileHandler.emit(self, record)
 
 _initialized = False
 
@@ -51,7 +64,7 @@ def initialize():
         settings = newrelic.core.config.global_settings()
 
         if settings.log_file == 'stdout':
-            handler = FallbackStreamHandler(sys.stdout)
+            handler = FilteredStreamHandler(sys.stdout)
 
             formatter = logging.Formatter(_LOG_FORMAT)
             handler.setFormatter(formatter)
@@ -62,7 +75,7 @@ def initialize():
             _agent_logger.debug('Initializing Python agent stdout logging.')
 
         elif settings.log_file == 'stderr':
-            handler = FallbackStreamHandler(sys.stderr)
+            handler = FilteredStreamHandler(sys.stderr)
 
             formatter = logging.Formatter(_LOG_FORMAT)
             handler.setFormatter(formatter)
@@ -74,7 +87,7 @@ def initialize():
 
         elif settings.log_file:
             try:
-                handler = logging.FileHandler(settings.log_file)
+                handler = FilteredFileHandler(settings.log_file)
 
                 formatter = logging.Formatter(_LOG_FORMAT)
                 handler.setFormatter(formatter)
@@ -86,7 +99,7 @@ def initialize():
                 _agent_logger.debug('Log file "%s".' % settings.log_file)
 
             except:
-                handler = FallbackStreamHandler(sys.stderr)
+                handler = FilteredStreamHandler(sys.stderr)
 
                 formatter = logging.Formatter(_LOG_FORMAT)
                 handler.setFormatter(formatter)

@@ -92,6 +92,12 @@ def proxy_server():
     scheme = settings.ssl and 'https' or 'http'
     proxy = '%s:%d' % (settings.proxy_host, settings.proxy_port)
 
+    # Encode the proxy user name and password into the proxy server value
+    # as requests library will strip it out of there and use that.
+
+    if settings.proxy_user is not None and settings.proxy_pass is not None:
+        proxy = '%s:%s@%s' % (settings.proxy_user, settings.proxy_pass, proxy)
+
     return { scheme: proxy }
 
 # Low level network functions and session management. When connecting to

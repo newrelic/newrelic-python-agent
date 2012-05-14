@@ -15,6 +15,35 @@ def command(name, options='', desc=''):
 def usage(name):
     print 'Usage: newrelic-admin %s %s' % (name, _commands[name][1])
 
+def initialize_logging():
+    import newrelic.core.log_file
+
+    newrelic.core.log_file.initialize()
+
+    # Send any errors or warnings to standard output as well so more
+    # obvious as use may have trouble finding the relevant messages in
+    # the agent log as it will be full of debug output as well.
+
+    class FilteredStreamHandler(logging.StreamHandler):
+        def emit(self, record):
+            if len(logging.root.handlers) != 0:
+                return
+
+            if record.name.startswith('newrelic.lib'):
+                return
+
+            if record.levelno < logging.WARNING:
+                return
+
+            return logging.StreamHandler.emit(self, record)
+
+    _stdout_logger = logging.getLogger('newrelic')
+    _stdout_handler = FilteredStreamHandler(sys.stdout)
+    _stdout_format = '%(levelname)s - %(message)s\n'
+    _stdout_formatter = logging.Formatter(_stdout_format)
+    _stdout_handler.setFormatter(_stdout_formatter)
+    _stdout_logger.addHandler(_stdout_handler)
+
 @command(None)
 def help(args):
     if not args:
@@ -76,8 +105,6 @@ def validate_config(args):
         usage('validate-config')
         return
 
-    import newrelic.core.log_file
-
     import newrelic.api.settings
     import newrelic.api.function_trace
     import newrelic.api.error_trace
@@ -102,31 +129,7 @@ def validate_config(args):
     except:
         pass
 
-    newrelic.core.log_file.initialize()
-
-    # Send any errors or warnings to standard output as well so more
-    # obvious as use may have trouble finding the relevant messages in
-    # the agent log as it will be full of debug output as well.
-
-    class FilteredStreamHandler(logging.StreamHandler):
-        def emit(self, record):
-            if len(logging.root.handlers) != 0:
-                return
-
-            if record.name.startswith('newrelic.lib'):
-                return
-
-            if record.levelno < logging.WARNING:
-                return
-
-            return logging.StreamHandler.emit(self, record)
-
-    _stdout_logger = logging.getLogger('newrelic')
-    _stdout_handler = FilteredStreamHandler(sys.stdout)
-    _stdout_format = '%(levelname)s - %(message)s\n'
-    _stdout_formatter = logging.Formatter(_stdout_format)
-    _stdout_handler.setFormatter(_stdout_formatter)
-    _stdout_logger.addHandler(_stdout_handler)
+    initialize_logging()
 
     _logger = logging.getLogger(__name__)
     _logger.debug('Starting agent validation.')
@@ -202,8 +205,9 @@ def validate_config(args):
     print
     print '  %s' % _settings.app_name
     print
-    print 'If data is not getting through to the UI after 5 minutes'
-    print 'then check the log file:'
+    print 'Any significant errors in performing the test will be shown'
+    print 'below. If no errors occured and data is still not getting'
+    print 'through to the UI after 5 minutes then check the log file:'
     print
     print '  %s' % _settings.log_file
     print
@@ -214,16 +218,16 @@ def validate_config(args):
 
     _logger.debug('Register test application.')
 
-    _logger.debug('Collector host is %s.' % repr(_settings.host))
-    _logger.debug('Collector port is %s.' % repr(_settings.port))
+    _logger.debug('Collector host is %r.', _settings.host)
+    _logger.debug('Collector port is %r.', _settings.port)
 
-    _logger.debug('Proxy host is %s.' % repr(_settings.proxy_host))
-    _logger.debug('Proxy port is %s.' % repr(_settings.proxy_port))
-    _logger.debug('Proxy user is %s.' % repr(_settings.proxy_user))
+    _logger.debug('Proxy host is %r.', _settings.proxy_host)
+    _logger.debug('Proxy port is %r.', _settings.proxy_port)
+    _logger.debug('Proxy user is %r.', _settings.proxy_user)
 
-    _logger.debug('SSL enabled is %s.' % repr(_settings.ssl))
+    _logger.debug('SSL enabled is %r.', _settings.ssl)
 
-    _logger.debug('License key is %s.' % repr(_settings.license_key))
+    _logger.debug('License key is %r.', _settings.license_key)
 
     _application = newrelic.api.application.application()
 
@@ -241,7 +245,7 @@ def validate_config(args):
             _timeout)
         return
 
-    _logger.debug('Registration took %s seconds.' % _duration)
+    _logger.debug('Registration took %s seconds.', _duration)
 
     _logger.debug('Run the validation test.')
 
@@ -262,7 +266,6 @@ def local_config(args):
         return
 
     import newrelic.core.config
-    import newrelic.core.log_file
 
     import newrelic.api.settings
 
@@ -282,7 +285,7 @@ def local_config(args):
     except:
         pass
 
-    newrelic.core.log_file.initialize()
+    initialize_logging()
 
     _logger = logging.getLogger(__name__)
 
@@ -313,7 +316,6 @@ def remote_config(args):
         return
 
     import newrelic.core.config
-    import newrelic.core.log_file
 
     import newrelic.api.settings
 
@@ -333,7 +335,7 @@ def remote_config(args):
     except:
         pass
 
-    newrelic.core.log_file.initialize()
+    initialize_logging()
 
     _logger = logging.getLogger(__name__)
 
@@ -356,12 +358,12 @@ def remote_config(args):
     _duration = _end - _start
 
     if not _application.active:
-        _logger.debug('Failed registration after %s seconds.' % _duration)
-        raise RuntimeError('Unable to register application for test, '
-                           'connection could not be established within '
-                           '%s seconds.' % _timeout)
+        _logger.error('Unable to register application for test, '
+            'connection could not be established within %s seconds.',
+            _timeout)
+        return
 
-    _logger.debug('Registration took %s seconds.' % _duration)
+    _logger.debug('Registration took %s seconds.', _duration)
 
     config = newrelic.core.config.flatten_settings(_application.settings)
 
@@ -380,7 +382,6 @@ def license_key(args):
         return
 
     import newrelic.core.config
-    import newrelic.core.log_file
 
     import newrelic.api.settings
 
@@ -400,7 +401,7 @@ def license_key(args):
     except:
         pass
 
-    newrelic.core.log_file.initialize()
+    initialize_logging()
 
     _logger = logging.getLogger(__name__)
 
@@ -423,7 +424,6 @@ def network_config(args):
         return
 
     import newrelic.core.config
-    import newrelic.core.log_file
 
     import newrelic.api.settings
 
@@ -443,7 +443,7 @@ def network_config(args):
     except:
         pass
 
-    newrelic.core.log_file.initialize()
+    initialize_logging()
 
     _logger = logging.getLogger(__name__)
 

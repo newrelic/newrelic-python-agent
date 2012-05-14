@@ -104,6 +104,30 @@ def validate_config(args):
 
     newrelic.core.log_file.initialize()
 
+    # Send any errors or warnings to standard output as well so more
+    # obvious as use may have trouble finding the relevant messages in
+    # the agent log as it will be full of debug output as well.
+
+    class FilteredStreamHandler(logging.StreamHandler):
+        def emit(self, record):
+            if len(logging.root.handlers) != 0:
+                return
+
+            if record.name.startswith('newrelic.lib'):
+                return
+
+            if record.levelno < logging.WARNING:
+                return
+
+            return logging.StreamHandler.emit(self, record)
+
+    _stdout_logger = logging.getLogger('newrelic')
+    _stdout_handler = FilteredStreamHandler(sys.stdout)
+    _stdout_format = '%(levelname)s - %(message)s\n'
+    _stdout_formatter = logging.Formatter(_stdout_format)
+    _stdout_handler.setFormatter(_stdout_formatter)
+    _stdout_logger.addHandler(_stdout_handler)
+
     _logger = logging.getLogger(__name__)
     _logger.debug('Starting agent validation.')
 
@@ -212,10 +236,10 @@ def validate_config(args):
     _duration = _end - _start
 
     if not _application.active:
-        _logger.debug('Failed registration after %s seconds.' % _duration)
-        raise RuntimeError('Unable to register application for test, '
-                           'connection could not be established within '
-                           '%s seconds.' % _timeout)
+        _logger.error('Unable to register application for test, '
+            'connection could not be established within %s seconds.',
+            _timeout)
+        return
 
     _logger.debug('Registration took %s seconds.' % _duration)
 

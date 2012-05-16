@@ -137,6 +137,8 @@ _settings.agent_limits.merge_stats_maximum = 5
 _settings.debug.ignore_all_server_settings = False
 _settings.debug.local_settings_overrides = []
 
+_settings.debug.log_data_collector_calls = False
+_settings.debug.log_data_collector_payloads = False
 _settings.debug.log_malformed_json_data = False
 
 def global_settings():

@@ -6,6 +6,7 @@ import logging
 import os
 import socket
 import sys
+import time
 import zlib
 
 try:
@@ -114,6 +115,8 @@ def send_request(url, method, license_key, agent_run_id=None, payload=()):
 
     settings = global_settings()
 
+    start = time.time()
+
     # Validate that the license key was actually set and if not replace
     # it with a string which makes it more obvious it was not set.
 
@@ -168,10 +171,19 @@ def send_request(url, method, license_key, agent_run_id=None, payload=()):
     except Exception, exc:
         _logger.error('Error encoding data for JSON payload for method %r '
                 'with payload of %r. Exception which occurred was %r. '
-                'Please report this problem to New Relic support.' % (method,
-                payload, exc))
+                'Please report this problem to New Relic support.', method,
+                payload, exc)
 
         raise DiscardDataForRequest(str(exc))
+
+    # Log details of call and/or payload for debugging. Use the JSON
+    # encoded value so know that what is encoded is correct.
+
+    if settings.debug.log_data_collector_payloads:
+        _logger.debug('Calling data collector with method=%r and '
+                'payload=%r.', method, data)
+    elif settings.debug.log_data_collector_calls:
+        _logger.debug('Calling data collector with method=%r.', method)
 
     # Compress the serialized JSON being sent as content if over 64KiB
     # in size. If less than 2MB in size compress for speed. If over
@@ -223,7 +235,7 @@ def send_request(url, method, license_key, agent_run_id=None, payload=()):
 
     except requests.RequestException, exc:
         _logger.warning('Unable to connect to the data collector with '
-                'url of %r. Error raised is %r.' % (url, exc))
+                'url of %r. Error raised is %r.', url, exc)
 
         raise RetryDataForRequest(str(exc))
 
@@ -231,15 +243,15 @@ def send_request(url, method, license_key, agent_run_id=None, payload=()):
         _logger.debug('Received a non 200 HTTP response from the data '
                 'collector where url=%r, method=%r, license_key=%r, '
                 'agent_run_id=%r, params=%r, headers=%r, status_code=%r '
-                'and content=%r.' % (url, method, license_key, agent_run_id,
-                params, headers, r.status_code, r.content))
+                'and content=%r.', url, method, license_key, agent_run_id,
+                params, headers, r.status_code, r.content)
 
     if r.status_code == 400:
         _logger.error('Data collector is indicating that a bad '
                 'request has been submitted for url %r, headers of %r, '
                 'params of %r and payload of %r. Please report this '
-                'problem to New Relic support.' % (url, headers, params,
-                payload))
+                'problem to New Relic support.', url, headers, params,
+                payload)
 
         raise DiscardDataForRequest()
 
@@ -249,7 +261,7 @@ def send_request(url, method, license_key, agent_run_id=None, payload=()):
                 'was over the maximum allowed size limit. The length of '
                 'the request content was %d. If this keeps occurring on a '
                 'regular basis, please report this problem to New Relic '
-                'support for further investigation.' % (method, len(data)))
+                'support for further investigation.', method, len(data))
 
         raise DiscardDataForRequest()
 
@@ -257,14 +269,14 @@ def send_request(url, method, license_key, agent_run_id=None, payload=()):
         _logger.warning('Data collector is indicating that it was sent '
                 'malformed JSON data for method %r. If this keeps occurring '
                 'on a regular basis, please report this problem to New '
-                'Relic support for further investigation.' % method)
+                'Relic support for further investigation.', method)
 
         if settings.debug.log_malformed_json_data:
             if headers['Content-Encoding'] == 'deflate':
                 data = zlib.uncompress(data)
 
             _logger.debug('JSON data which was rejected by the data '
-                    'collector was %r.' % data)
+                    'collector was %r.', data)
 
         raise DiscardDataForRequest(r.content)
 
@@ -283,10 +295,22 @@ def send_request(url, method, license_key, agent_run_id=None, payload=()):
         _logger.warning('An unexpected HTTP response was received from the '
                 'data collector of %r for method %r with payload of %r. If '
                 'this issue persists then please report this problem to New '
-                'Relic support for further investigation.' % (r.status_code,
-                method, payload))
+                'Relic support for further investigation.', r.status_code,
+                method, payload)
 
         raise DiscardDataForRequest()
+
+    # Log details of response payload for debugging. Use the JSON
+    # encoded value so know that what original encoded value was.
+
+    duration = time.time() - start
+
+    if settings.debug.log_data_collector_payloads:
+        _logger.debug('Valid response from data collector after %.2f '
+                'seconds with content=%r.', duration, r.content)
+    elif settings.debug.log_data_collector_calls:
+        _logger.debug('Valid response from data collector after %.2f '
+                'seconds.', duration)
 
     # If we got this far we should have a legitimate response from the
     # data collector. The response is JSON so need to decode it.
@@ -299,12 +323,12 @@ def send_request(url, method, license_key, agent_run_id=None, payload=()):
     except Exception, exc:
         _logger.error('Error decoding data for JSON payload for method %r '
                 'with payload of %r. Exception which occurred was %r. '
-                'Please report this problem to New Relic support.' % (method,
-                r.content, exc))
+                'Please report this problem to New Relic support.', method,
+                r.content, exc)
 
         if settings.debug.log_malformed_json_data:
             _logger.debug('JSON data received from data collector which '
-                    'could not be decoded was %r.' % r.content)
+                    'could not be decoded was %r.', r.content)
 
         raise DiscardDataForRequest(str(exc))
 
@@ -323,16 +347,16 @@ def send_request(url, method, license_key, agent_run_id=None, payload=()):
 
     _logger.debug('Received an exception from the data collector where '
             'url=%r, method=%r, license_key=%r, agent_run_id=%r, params=%r, '
-            'headers=%r, error_type=%r and message=%r' % (url, method,
+            'headers=%r, error_type=%r and message=%r', url, method,
             license_key, agent_run_id, params, headers, error_type,
-            message))
+            message)
 
     if error_type == 'NewRelic::Agent::LicenseException':
         _logger.error('Data collector is indicating that an incorrect '
                 'license key has been supplied by the agent. The value '
                 'which was used by the agent is %r. Please correct any '
                 'problem with the license key or report this problem to '
-                'New Relic support.' % license_key)
+                'New Relic support.', license_key)
 
         raise DiscardDataForRequest(message)
 
@@ -342,7 +366,7 @@ def send_request(url, method, license_key, agent_run_id=None, payload=()):
                 'was over the maximum allowed size limit. The length of '
                 'the request content was %d. If this keeps occurring on a '
                 'regular basis, please report this problem to New Relic '
-                'support for further investigation.' % (method, len(data)))
+                'support for further investigation.', method, len(data))
 
         raise DiscardDataForRequest(message)
 
@@ -355,7 +379,7 @@ def send_request(url, method, license_key, agent_run_id=None, payload=()):
         _logger.info('An automatic internal agent restart has been '
                 'requested by the data collector for the application '
                 'where the agent run was %r. The reason given for the '
-                'forced restart is %r.' % (agent_run_id, message))
+                'forced restart is %r.', agent_run_id, message)
 
         raise ForceAgentRestart(message)
 
@@ -364,7 +388,7 @@ def send_request(url, method, license_key, agent_run_id=None, payload=()):
                 'the data collector for the application where the '
                 'agent run was %r. The reason given for the forced '
                 'disconnection is %r. Please contact New Relic support '
-                'for further information.' % (agent_run_id, message))
+                'for further information.', agent_run_id, message)
 
         raise ForceAgentDisconnect(message)
 
@@ -375,7 +399,7 @@ def send_request(url, method, license_key, agent_run_id=None, payload=()):
             'data collector for method %r with payload of %r. The error '
             'was of type %r with message %r. If this issue persists '
             'then please report this problem to New Relic support for '
-            'further investigation.' % (method, payload, error_type, message))
+            'further investigation.', method, payload, error_type, message)
 
     raise DiscardDataForRequest(message)
 
@@ -401,7 +425,7 @@ class ApplicationSession(object):
         """
 
         _logger.debug('Connecting to data collector to terminate session '
-                'for agent run %r.' % self.agent_run_id)
+                'for agent run %r.', self.agent_run_id)
 
         return send_request(self.collector_url, 'shutdown',
                 self.license_key, self.agent_run_id)
@@ -488,6 +512,8 @@ def create_session(license_key, app_name, linked_applications,
     
     """
 
+    start = time.time()
+
     # If no license key provided in the call, fallback to using that
     # from the agent configuration file or environment variables. Flag
     # an error if the result still seems invalid.
@@ -506,8 +532,8 @@ def create_session(license_key, app_name, linked_applications,
 
         _logger.debug('Connecting to data collector to register agent with '
                 'license_key=%r, app_name=%r, linked_applications=%r, '
-                'environment=%r and settings=%r. ' % (license_key, app_name,
-                linked_applications, environment, settings))
+                'environment=%r and settings=%r.', license_key, app_name,
+                linked_applications, environment, settings)
 
         url = collector_url()
         redirect_host = send_request(url, 'get_redirect_host', license_key)
@@ -566,8 +592,10 @@ def create_session(license_key, app_name, linked_applications,
 
         session = ApplicationSession(url, license_key, application_config)
 
+        duration = time.time() - start
+
         _logger.debug('Successfully registered agent with app_name=%r, '
-                'redirect_host=%r and agent_run_id=%r.' % (app_name,
-                redirect_host, session.agent_run_id))
+                'redirect_host=%r and agent_run_id=%r in %.2f seconds.',
+                app_name, redirect_host, session.agent_run_id, duration)
 
         return session

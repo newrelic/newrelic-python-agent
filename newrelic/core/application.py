@@ -332,6 +332,8 @@ class Application(object):
 
             return
 
+        start = time.time()
+
         _logger.debug('Commencing data harvest for %r.' % self._app_name)
 
         # Create a snapshot of the transaction stats and application
@@ -504,3 +506,8 @@ class Application(object):
                     'harvest the metric data and send it to the data '
                     'collector. Please report this problem to New Relic '
                     'support for further investigation.')
+
+        duration = time.time() - start
+
+        _logger.debug('Completed harvest for %r in %.2f seconds.',
+                self._app_name, duration)

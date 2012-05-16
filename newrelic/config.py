@@ -267,6 +267,10 @@ def _process_configuration(section):
                      'getint', None)
     _process_setting(section, 'agent_limits.sql_explain_plans',
                      'getint', None)
+    _process_setting(section, 'debug.log_data_collector_calls',
+                     'getboolean', None)
+    _process_setting(section, 'debug.log_data_collector_payloads',
+                     'getboolean', None)
     _process_setting(section, 'debug.log_malformed_json_data',
                      'getboolean', None)
 

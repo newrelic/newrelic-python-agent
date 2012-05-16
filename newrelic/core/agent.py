@@ -9,6 +9,7 @@ import time
 import logging
 import threading
 import atexit
+import time
 
 import newrelic
 import newrelic.core.log_file
@@ -324,7 +325,13 @@ class Agent(object):
         # timing. The data collector should cope with this
         # though.
 
-        _logger.debug('Commencing harvest of all application data.')
+        if shutdown:
+            _logger.debug('Commencing harvest of all application data and '
+                    'forcing a shutdown at the same time.')
+        else:
+            _logger.debug('Commencing harvest of all application data.')
+
+        start = time.time()
 
         for application in self._applications.values():
               try:
@@ -334,7 +341,10 @@ class Agent(object):
                   _logger.exception('Failed to harvest data '
                                     'for %s.' % application.name)
 
-        _logger.debug('Completed harvest of all application data.')
+        duration = time.time() - start
+
+        _logger.debug('Completed harvest of all application data in %.2f '
+                'seconds.', duration)
 
     def activate_agent(self):
         """Starts the main background for the agent."""

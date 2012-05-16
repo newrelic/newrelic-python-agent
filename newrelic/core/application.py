@@ -209,6 +209,10 @@ class Application(object):
                 self._stats_custom_engine.reset_stats(
                         self._active_session.configuration)
 
+            # Record an initial start time for the reporting period.
+
+            self._period_start = time.time()
+
             # Flag that session activation has completed to anyone who has
             # been waiting through calling the wait_for_session_activation()
             # method.

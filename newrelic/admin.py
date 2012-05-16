@@ -147,6 +147,9 @@ def validate_config(args):
     _settings.capture_params = True
     _settings.shutdown_timeout = 30.0
 
+    _settings.debug.log_data_collector_calls = True
+    _settings.debug.log_malformed_json_data = True
+
     @newrelic.api.function_trace.function_trace()
     def _function1():
         time.sleep(0.1)

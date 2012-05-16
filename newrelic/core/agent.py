@@ -252,9 +252,7 @@ class Agent(object):
         return application.normalize_name(name)
 
     def _harvest_loop(self):
-        now = time.time()
-
-        self._next_harvest = ((now-(now+30.0)%60.0)+60.0)
+        self._next_harvest = time.time() + 60.0
 
         while True:
             if self._harvest_shutdown.isSet():
@@ -282,10 +280,17 @@ class Agent(object):
             self._run_harvest(shutdown=False)
 
             # Something really went wrong here and we are overdue
-            # already for next harvest. Skip it and wait until the
+            # already for next harvest. This can happen when we have a
+            # large number of applications. Skip it and wait until the
             # next harvest time instead.
-
-            # FIXME Should harvest period be configuration setting.
+            #
+            # NOTE This does mean that we aren't going to report on 1
+            # minute intervals when have lots of applications. We need
+            # to look at using multiple threads when have lots of
+            # applications. Also need to fix problem whereby one all
+            # applications created, that only the first application will
+            # reliably report on an even minute as when the others
+            # report will depend on how long the first takes.
 
             now = time.time()
             while self._next_harvest < now:

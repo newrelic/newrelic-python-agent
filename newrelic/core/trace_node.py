@@ -11,7 +11,7 @@ def root_start_time(root):
     return root.start_time / 1000.0
 
 TraceNode = namedtuple('TraceNode',
-        ['start_time', 'end_time', 'name', 'params', 'children'])
+        ['start_time', 'end_time', 'name', 'params', 'children', 'label'])
 
 def node_start_time(root, node):
     return int((node.start_time - root.start_time) * 1000.0)

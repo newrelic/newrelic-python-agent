@@ -9,10 +9,19 @@ import newrelic.core.metric
 import newrelic.core.trace_node
 
 _ExternalNode = namedtuple('_ExternalNode',
-        ['library', 'url', 'children', 'start_time', 'end_time',
+        ['library', 'url', 'method', 'children', 'start_time', 'end_time',
         'duration', 'exclusive'])
 
 class ExternalNode(_ExternalNode):
+
+    @property
+    def details(self):
+        if hasattr(self, '_details'):
+            return self._details
+
+        self._details = urlparse.urlparse(self.url)
+
+        return self._details
 
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
@@ -33,27 +42,20 @@ class ExternalNode(_ExternalNode):
                 scope='', overflow=None, forced=True, duration=self.duration,
                 exclusive=self.exclusive)
 
-        # Split the parts out of the URL. Can't use attribute
-        # style access and instead must use tuple style access
-        # as attribute access only added in Python 2.5.
+        hostname = self.details.hostname or 'unknown'
+        port = self.details.port
 
-        parts = urlparse.urlparse(self.url)
+        netloc = port and ('%s:%s' % (hostname, port)) or hostname
 
-        host = parts[1] or 'unknown'
-        path = parts[2]
+        method = self.method or ''
 
-        name = 'External/%s/all' % host
+        name = 'External/%s/all' % netloc
 
         yield newrelic.core.metric.TimeMetric(name=name, scope='',
                 overflow=None, forced=False, duration=self.duration,
                 exclusive=self.exclusive)
 
-        # XXX UI doesn't make use of path so avoid metric explosion for
-        # now by passing '/' for path. Need to work out what consistent
-        # format is supposed to be used by all agents.
-
-        #name = 'External/%s/%s%s' % (host, self.library, path)
-        name = 'External/%s/%s%s' % (host, self.library, '/')
+        name = 'External/%s/%s/%s' % (netloc, self.library, method)
         overflow = 'External/*'
 
         yield newrelic.core.metric.TimeMetric(name=name, scope='',
@@ -66,37 +68,32 @@ class ExternalNode(_ExternalNode):
                 overflow=overflow, forced=False, duration=self.duration,
                 exclusive=self.exclusive)
 
-        # XXX Ignore the children as this should be a terminal node.
-
-        #for child in self.children:
-        #    for metric in child.time_metrics(stats, root, self):
-        #        yield metric
-
     def trace_node(self, stats, string_table, root):
 
-        # FIXME This duplicates what is done above. Need to cache.
+        hostname = self.details.hostname or 'unknown'
+        port = self.details.port
 
-        parts = urlparse.urlparse(self.url)
+        netloc = port and ('%s:%s' % (hostname, port)) or hostname
 
-        host = parts[1] or 'unknown'
-        path = parts[2]
+        method = self.method or ''
 
-        name = 'External/%s/%s%s' % (host, self.library, path)
+        name = 'External/%s/%s/%s' % (netloc, self.library, method)
 
         name = string_table.cache(name)
 
         start_time = newrelic.core.trace_node.node_start_time(root, self)
         end_time = newrelic.core.trace_node.node_end_time(root, self)
 
-        # XXX Ignore the children as this should be a terminal node.
-
-        #children = [child.trace_node(stats, string_table, root) for
-        #            child in self.children]
         children = []
 
         root.trace_node_count += 1
 
         params = None
 
+        details = self.details
+        url = urlparse.urlunsplit((details.scheme, details.netloc,
+                details.path, '', ''))
+
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
-                end_time=end_time, name=name, params=params, children=children)
+                end_time=end_time, name=name, params=params, children=children,
+                label=url)

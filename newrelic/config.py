@@ -687,14 +687,14 @@ def _process_database_trace_configuration():
 
 # Setup external traces defined in configuration file.
 
-def _external_trace_import_hook(object_path, library, url):
+def _external_trace_import_hook(object_path, library, url, method):
     def _instrument(target):
         _logger.debug("wrap external-trace %s" %
-                ((target, object_path, library, url),))
+                ((target, object_path, library, url, method),))
 
         try:
             newrelic.api.external_trace.wrap_external_trace(
-                    target, object_path, library, url)
+                    target, object_path, library, url, method)
         except:
             _raise_instrumentation_error('external-trace', locals())
 
@@ -723,16 +723,23 @@ def _process_external_trace_configuration():
 
             library = _config_object.get(section, 'library')
             url = _config_object.get(section, 'url')
+            method = _config_object.get(section, 'method', None)
 
             if url.startswith('lambda '):
                 vars = { "callable_name":
                           newrelic.api.object_wrapper.callable_name }
                 url = eval(url, vars)
 
-            _logger.debug("register external-trace %s" %
-                    ((module, object_path, library, url),))
+            if method.startswith('lambda '):
+                vars = { "callable_name":
+                          newrelic.api.object_wrapper.callable_name }
+                method = eval(method, vars)
 
-            hook = _external_trace_import_hook(object_path, library, url)
+            _logger.debug("register external-trace %s" %
+                    ((module, object_path, library, url, method),))
+
+            hook = _external_trace_import_hook(object_path,
+                    library, url, method)
             newrelic.api.import_hook.register_import_hook(module, hook)
         except:
             _raise_configuration_error(section)

@@ -252,7 +252,8 @@ class TransactionNode(_TransactionNode):
         params = {}
 
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
-                end_time=end_time, name=name, params=params, children=children)
+                end_time=end_time, name=name, params=params, children=children,
+                label=None)
 
     def transaction_trace(self, stats, string_table, limit):
 
@@ -271,7 +272,7 @@ class TransactionNode(_TransactionNode):
         # from the actual top node for the transaction.
 
         root = newrelic.core.trace_node.TraceNode(trace_node[0],
-                trace_node[1], 'ROOT', {}, [trace_node])
+                trace_node[1], 'ROOT', {}, [trace_node], label=None)
 
         return newrelic.core.trace_node.RootNode(start_time=start_time,
                 request_params=request_params, custom_params=custom_params,

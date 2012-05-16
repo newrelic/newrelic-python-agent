@@ -56,4 +56,5 @@ class FunctionNode(_FunctionNode):
         params = None
 
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
-                end_time=end_time, name=name, params=params, children=children)
+                end_time=end_time, name=name, params=params, children=children,
+                label=None)

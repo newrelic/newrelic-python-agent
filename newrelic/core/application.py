@@ -317,7 +317,7 @@ class Application(object):
                         'this problem to New Relic support for further '
                         'investigation.')
 
-    def harvest(self):
+    def harvest(self, shutdown=False):
         """Performs a harvest, reporting aggregated data for the current
         reporting period to the data collector.
 
@@ -412,6 +412,17 @@ class Application(object):
        
                 self._active_session.send_transaction_traces(
                         stats.slow_transaction_data())
+
+            # If this is a final forced harvest for the process then
+            # attempt to shutdown the session.
+
+            if shutdown:
+                try:
+                    self._active_session.shutdown_session()
+                except:
+                    pass
+
+                self._active_session = None
 
         except ForceAgentRestart:
             # The data collector has indicated that we need to perform

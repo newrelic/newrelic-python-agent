@@ -281,6 +281,8 @@ class Agent(object):
                 # just started the agent, so don't bother doing
                 # a forced harvest if shutting down anyway.
 
+                self._run_harvest(shutdown=True)
+
                 return
 
             now = time.time()
@@ -292,10 +294,11 @@ class Agent(object):
                 if self._harvest_shutdown.isSet(): 
                     # Force a final harvest on agent shutdown.
 
-                    self._run_harvest()
+                    self._run_harvest(shutdown=True)
+
                     return
 
-            self._run_harvest()
+            self._run_harvest(shutdown=False)
 
             # Something really went wrong here and we are overdue
             # already for next harvest. Skip it and wait until the
@@ -314,7 +317,7 @@ class Agent(object):
 
             newrelic.core.database_utils.sql_properties_cache.expire(3)
 
-    def _run_harvest(self):
+    def _run_harvest(self, shutdown=False):
         # This isn't going to maintain order of applications
         # such that oldest is always done first. A new one could
         # come in earlier once added and upset the overall
@@ -325,7 +328,7 @@ class Agent(object):
 
         for application in self._applications.values():
               try:
-                  application.harvest()
+                  application.harvest(shutdown)
 
               except:
                   _logger.exception('Failed to harvest data '

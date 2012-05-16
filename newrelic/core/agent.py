@@ -98,26 +98,6 @@ class Agent(object):
 
         """
 
-        """
-
-        # XXX Don't need this.
-
-        license_key = config.license_key
-
-        collector_host = config.host
-        collector_port = config.port
-
-        require_ssl = config.ssl
-
-        if not collector_port:
-            collector_port = require_ssl and 443 or 80
-
-        proxy_host = config.proxy_host
-        proxy_port = config.proxy_port
-        proxy_user = config.proxy_user
-        proxy_pass = config.proxy_pass
-        """
-
         _logger.debug('Initializing Python agent.')
 
         self._applications = {}

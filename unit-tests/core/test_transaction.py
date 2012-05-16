@@ -39,7 +39,6 @@ _logger = logging.getLogger('newrelic')
 settings = newrelic.api.settings.settings()
 
 settings.host = 'staging-collector.newrelic.com'
-settings.port = 80
 settings.license_key = '84325f47e9dec80613e262be4236088a9983d501'
 
 settings.app_name = 'Python Agent Test'
@@ -51,6 +50,9 @@ settings.transaction_tracer.transaction_threshold = 0
 settings.transaction_tracer.stack_trace_threshold = 0
 
 settings.shutdown_timeout = 10.0
+
+settings.debug.log_data_collector_calls = True
+settings.debug.log_data_collector_payloads = True
 
 # The WSGI application and test functions. Just use decorators to apply
 # wrappers as easier than trying to use automated instrumentation.
@@ -219,7 +221,7 @@ class TransactionTests(unittest.TestCase):
         application_settings = agent.application_settings(name)
         self.assertEqual(application_settings, None)
 
-        agent.activate_application(name, timeout=5.0)
+        agent.activate_application(name, timeout=15.0)
         application_settings = agent.application_settings(name)
 
         # If this fails it means we weren't able to establish
@@ -230,6 +232,8 @@ class TransactionTests(unittest.TestCase):
         print 'SETTINGS', application_settings
 
         def start_response(status, headers): pass
+
+        _logger.debug('RUNNING WEB TRANSACTIONS')
 
         environ = { 'REQUEST_URI': '/request_uri?key=value' }
         handler(environ, start_response).close()
@@ -243,8 +247,12 @@ class TransactionTests(unittest.TestCase):
                 'test.type': 'stop_recording' }
         handler(environ, start_response).close()
 
+        _logger.debug('RUNNING BACKGROUND TASKS')
+
         task()
         task(name=__file__, group='Script/Execute')
+
+        _logger.debug('ALL TRANSACTIONS DONE')
 
 if __name__ == '__main__':
     unittest.main()

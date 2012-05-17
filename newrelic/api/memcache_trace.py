@@ -20,6 +20,9 @@ class MemcacheTrace(newrelic.api.time_trace.TimeTrace):
 
         self.command = command
 
+    def dump(self, file):
+        print >> file, self.__class__.__name__, dict(command=self.command)
+
     def create_node(self):
         return self.node(command=self.command, children=self.children,
                 start_time=self.start_time, end_time=self.end_time,

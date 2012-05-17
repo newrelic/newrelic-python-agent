@@ -33,6 +33,7 @@ class TransactionMetricsSettings(Settings): pass
 class RumSettings(Settings): pass
 class SlowSqlSettings(Settings): pass
 class AgentLimitsSettings(Settings): pass
+class ConsoleSettings(Settings): pass
 class DebugSettings(Settings): pass
 
 _settings = Settings()
@@ -44,6 +45,7 @@ _settings.transaction_metrics = TransactionMetricsSettings()
 _settings.rum = RumSettings()
 _settings.slow_sql = SlowSqlSettings()
 _settings.agent_limits = AgentLimitsSettings()
+_settings.console = ConsoleSettings()
 _settings.debug = DebugSettings()
 
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
@@ -133,6 +135,9 @@ _settings.agent_limits.slow_sql_stack_trace = 30
 _settings.agent_limits.sql_explain_plans = 30
 _settings.agent_limits.slow_sql_data = 10
 _settings.agent_limits.merge_stats_maximum = 5
+
+_settings.console.listener_socket = None
+_settings.console.allow_interpreter_cmd = False
 
 _settings.debug.ignore_all_server_settings = False
 _settings.debug.local_settings_overrides = []

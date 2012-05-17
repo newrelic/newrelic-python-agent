@@ -70,12 +70,13 @@ kwargs = dict(
   package_data = { 'newrelic': ['newrelic.ini', 'LICENSE',
                                 'lib/sqlparse/LICENSE'] },
   extra_path = ( "newrelic", "newrelic-%s" % package_version ),
-  scripts = [ 'scripts/newrelic-admin' ],
+  scripts = [ 'scripts/newrelic-admin', 'scripts/newrelic-console' ],
 )
 
 if with_setuptools:
     kwargs['entry_points'] = {
-      'console_scripts': ['newrelic-admin = newrelic.admin:main'],
+      'console_scripts': ['newrelic-admin = newrelic.admin:main',
+                          'newrelic-console = newrelic.console:main'],
     }
 
 setup(**kwargs)

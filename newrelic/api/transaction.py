@@ -684,6 +684,47 @@ class Transaction(object):
         for name, value in items:
             self._custom_params[name] = value
 
+    def dump(self, file):
+        """Dumps details about the transaction to the file object."""
+
+        print >> file, 'Application: %s' % (
+                self.application.name)
+        print >> file, 'Time Started: %s' % (
+                time.asctime(time.localtime(self.start_time)))
+        print >> file, 'Active Context: %r' % (
+                self._active_context,)
+        print >> file, 'Current Status: %d' % (
+                self._state)
+        print >> file, 'Recording Enabled: %s' % (
+                self.enabled)
+        print >> file, 'Ignore Transaction: %s' % (
+                self.ignore_transaction)
+        print >> file, 'Transaction Dead: %s' % (
+                self._dead)
+        print >> file, 'Transaction Stopped: %s' % (
+                self.stopped)
+        print >> file, 'Background Task: %s' % (
+                self.background_task)
+        print >> file, 'Request URI: %s' % (
+                self._request_uri)
+        print >> file, 'Transaction Group: %s' % (
+                self._group)
+        print >> file, 'Transaction Name: %s' % (
+                self._name)
+        print >> file, 'Name Priority: %r' % (
+                self._priority)
+        print >> file, 'Frozen Path: %s' % (
+                self._frozen_path)
+        print >> file, 'AutoRUM Disabled: %s' % (
+                self.autorum_disabled)
+        print >> file, 'Supress Apdex: %s' % (
+                self.suppress_apdex)
+
+        print >> file, 'Node Stack:'
+        for node in self._node_stack[1:]:
+            node.dump(file)
+
+
 def transaction():
     current = Transaction._current_transaction()
     if current and (current.ignore_transaction or current.stopped):

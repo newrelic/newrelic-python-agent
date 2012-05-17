@@ -21,6 +21,8 @@ import newrelic.api.profile_trace
 import newrelic.api.object_wrapper
 import newrelic.api.application
 
+import newrelic.console
+
 __all__ = [ 'initialize', 'filter_app_factory' ]
 
 _logger = logging.getLogger(__name__)
@@ -103,6 +105,9 @@ def _map_ignore_errors(s):
 
 def _map_function_trace(s):
     return s.split()
+
+def _map_console_listener_socket(s):
+    return s % {'pid': os.getpid()}
 
 # Processing of a single setting from configuration file.
 
@@ -267,6 +272,10 @@ def _process_configuration(section):
                      'getint', None)
     _process_setting(section, 'agent_limits.sql_explain_plans',
                      'getint', None)
+    _process_setting(section, 'console.listener_socket',
+                     'get', _map_console_listener_socket)
+    _process_setting(section, 'console.allow_interpreter_cmd',
+                     'getboolean', None)
     _process_setting(section, 'debug.log_data_collector_calls',
                      'getboolean', None)
     _process_setting(section, 'debug.log_data_collector_payloads',
@@ -1306,6 +1315,13 @@ def _setup_instrumentation():
 
     _process_function_profile_configuration()
 
+_console = None
+
+def _setup_agent_console():
+    if _settings.console.listener_socket:
+        _console = newrelic.console.ConnectionManager(
+                _settings.console.listener_socket)
+
 def initialize(config_file=None, environment=None, ignore_errors=True,
             log_file=None, log_level=None):
 
@@ -1314,6 +1330,7 @@ def initialize(config_file=None, environment=None, ignore_errors=True,
 
     if _settings.monitor_mode: 
         _setup_instrumentation()
+        _setup_agent_console()
 
 def filter_app_factory(app, global_conf, config_file, environment=None):
     initialize(config_file, environment)

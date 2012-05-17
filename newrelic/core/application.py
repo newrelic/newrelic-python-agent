@@ -27,16 +27,27 @@ class Application(object):
     """
 
     def __init__(self, app_name, linked_applications=[]):
+        _logger.debug('Initializing application with name %r and '
+                'linked applications of %r.', app_name, linked_applications)
+
+        self._creation_time = time.time()
+
         self._app_name = app_name
         self._linked_applications = sorted(set(linked_applications))
 
         self._period_start = 0.0
 
-        self._agent_run_id = 0
         self._active_session = None
 
-        self._merge_count = 0
+        self._transaction_count = 0
+        self._last_transaction = 0.0
 
+        self._harvest_count = 0
+
+        self._merge_count = 0
+        self._discard_count = 0
+
+        self._agent_restart = 0
         self._agent_shutdown = False
 
         self._connected_event = threading.Event()
@@ -69,6 +80,42 @@ class Application(object):
     @property
     def configuration(self):
         return self._active_session and self._active_session.configuration
+
+    def dump(self, file):
+        """Dumps details about the application to the file object."""
+
+        print >> file, 'Time Created: %s' % (
+                time.asctime(time.localtime(self._creation_time)))
+        print >> file, 'Linked Applications: %r' % (
+                self._linked_applications)
+        print >> file, 'Harvest Count: %d' % (
+                self._harvest_count)
+        print >> file, 'Agent Restart: %d' % (
+                self._agent_restart)
+        print >> file, 'Forced Shutdown: %s' % (
+                self._agent_shutdown)
+
+        active_session = self._active_session
+
+        if active_session:
+            print >> file, 'Collector URL: %s' % (
+                    active_session.collector_url)
+            print >> file, 'Agent Run ID: %d' % (
+                    active_session.agent_run_id)
+            print >> file, 'Normalization Rules: %r' % (
+                    self._rules_engine.rules)
+            print >> file, 'Harvest Period Start: %s' % (
+                    time.asctime(time.localtime(self._period_start)))
+            print >> file, 'Transaction Count: %d' % (
+                    self._transaction_count)
+            print >> file, 'Last Transaction: %s' % (
+                    time.asctime(time.localtime(self._last_transaction)))
+            print >> file, 'Harvest Metrics Count: %d' % (
+                    self._stats_engine.metrics_count())
+            print >> file, 'Harvest Merge Count: %d' % (
+                    self._merge_count)
+            print >> file, 'Harvest Discard Count: %d' % (
+                    self._discard_count)
 
     def activate_session(self):
         """Creates a background thread to initiate registration of the
@@ -209,9 +256,17 @@ class Application(object):
                 self._stats_custom_engine.reset_stats(
                         self._active_session.configuration)
 
-            # Record an initial start time for the reporting period.
+            # Record an initial start time for the reporting period and
+            # clear record of last transaction processed.
 
             self._period_start = time.time()
+
+            self._transaction_count = 0
+            self._last_transaction = 0.0
+
+            # Clear any prior count of harvest merges due to failures.
+
+            self._merge_count = 0
 
             # Flag that session activation has completed to anyone who has
             # been waiting through calling the wait_for_session_activation()
@@ -312,6 +367,9 @@ class Application(object):
 
         with self._stats_lock:
             try:
+                self._transaction_count += 1
+                self._last_transaction = data.end_time
+
                 self._stats_engine.merge_stats(stats)
 
             except:
@@ -336,6 +394,8 @@ class Application(object):
 
             return
 
+        self._harvest_count += 1
+
         start = time.time()
 
         _logger.debug('Commencing data harvest for %r.' % self._app_name)
@@ -347,6 +407,9 @@ class Application(object):
         # accumulated in a fresh bucket.
 
         with self._stats_lock:
+            self._transaction_count = 0
+            self._last_transaction = 0.0
+
             stats = self._stats_engine.create_snapshot()
 
         with self._stats_custom_lock:
@@ -440,6 +503,7 @@ class Application(object):
             except:
                 pass
 
+            self._agent_restart += 1
             self._active_session = None
 
             self.activate_session()
@@ -492,6 +556,8 @@ class Application(object):
                             'problem to New Relic support for further '
                             'investigation.' % maximum)
 
+                    self._discard_count += self._merge_count
+
                     self._merge_count = 0
 
         except DiscardDataForRequest:
@@ -500,7 +566,7 @@ class Application(object):
             # again so we just throw any data not sent away for this
             # reporting period.
 
-            pass
+            self._discard_count += 1
 
         except:
             # An unexpected error, likely some sort of internal agent

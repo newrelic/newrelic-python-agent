@@ -33,6 +33,9 @@ class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
         self.cursor_params = cursor_params
         self.execute_params = execute_params
 
+    def dump(self, file):
+        print >> file, self.__class__.__name__, dict(sql=self.sql)
+
     def finalize_data(self):
         self.stack_trace = None
 

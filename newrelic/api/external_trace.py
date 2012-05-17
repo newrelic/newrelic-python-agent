@@ -22,6 +22,10 @@ class ExternalTrace(newrelic.api.time_trace.TimeTrace):
         self.url = url
         self.method = method
 
+    def dump(self, file):
+        print >> file, self.__class__.__name__, dict(library=self.library,
+                url=self.url, method=self.method)
+
     def create_node(self):
         return self.node(library=self.library, url=self.url,
                 method=self.method, children=self.children,

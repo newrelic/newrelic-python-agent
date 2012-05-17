@@ -233,6 +233,14 @@ class StatsEngine(object):
             key = (key['name'], key['scope'])
             self.__metric_ids[key] = value
 
+    def metrics_count(self):
+        """Returns a count of the number of unique metrics currently
+        recorded for apdex, time and value metrics.
+
+        """
+
+        return len(self.__stats_table)
+
     def record_apdex_metric(self, metric):
         """Record a single apdex metric, merging the data with any data
         from prior apdex metrics with the same name.

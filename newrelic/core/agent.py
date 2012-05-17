@@ -100,6 +100,8 @@ class Agent(object):
 
         _logger.debug('Initializing Python agent.')
 
+        self._creation_time = time.time()
+
         self._applications = {}
         self._config = config
 
@@ -115,6 +117,24 @@ class Agent(object):
 
         if self._config.monitor_mode:
             atexit.register(self.shutdown_agent)
+
+    def dump(self, file):
+        """Dumps details about the agent to the file object."""
+
+        print >> file, 'Time Created: %s' % (
+                time.asctime(time.localtime(self._creation_time)))
+        print >> file, 'Harvest Count: %d' % (
+                self._harvest_count)
+        print >> file, 'Last Harvest: %s' % (
+                time.asctime(time.localtime(self._last_harvest)))
+        print >> file, 'Harvest Duration: %.2f' % (
+                self._harvest_duration)
+        print >> file, 'Next Harvest: %s' % (
+                time.asctime(time.localtime(self._next_harvest)))
+        print >> file, 'Agent Shutdown: %s' % (
+                self._harvest_shutdown.isSet())
+        print >> file, 'Applications: %r' % (
+                sorted(self._applications.keys()))
 
     def global_settings(self):
         """Returns the global default settings object. If access is

@@ -108,6 +108,11 @@ class Agent(object):
         self._harvest_thread.setDaemon(True)
         self._harvest_shutdown = threading.Event()
 
+        self._harvest_count = 0
+        self._last_harvest = 0.0
+        self._harvest_duration = 0.0
+        self._next_harvest = 0.0
+
         if self._config.monitor_mode:
             atexit.register(self.shutdown_agent)
 
@@ -252,7 +257,7 @@ class Agent(object):
         return application.normalize_name(name)
 
     def _harvest_loop(self):
-        self._next_harvest = time.time() + 60.0
+        self._next_harvest = time.time()
 
         while True:
             if self._harvest_shutdown.isSet():
@@ -264,24 +269,11 @@ class Agent(object):
 
                 return
 
-            now = time.time()
-            delay = self._next_harvest - now
-            self._next_harvest += 60.0
-
-            if delay > 0.0:
-                self._harvest_shutdown.wait(delay) 
-                if self._harvest_shutdown.isSet(): 
-                    # Force a final harvest on agent shutdown.
-
-                    self._run_harvest(shutdown=True)
-
-                    return
-
-            self._run_harvest(shutdown=False)
-
-            # Something really went wrong here and we are overdue
+            # We are either going into the loop the first time, or
+            # something really went wrong here and we are overdue
             # already for next harvest. This can happen when we have a
-            # large number of applications. Skip it and wait until the
+            # large number of applications. Can also happen if clock
+            # is changed significantly. Skip it and wait until the
             # next harvest time instead.
             #
             # NOTE This does mean that we aren't going to report on 1
@@ -293,8 +285,24 @@ class Agent(object):
             # report will depend on how long the first takes.
 
             now = time.time()
-            while self._next_harvest < now:
+            while self._next_harvest <= now:
                 self._next_harvest += 60.0
+
+            # Wait until next harvest period but drop out and force
+            # harvest if been notified that process is being shutdown.
+
+            delay = self._next_harvest - now
+            self._harvest_shutdown.wait(delay) 
+
+            if self._harvest_shutdown.isSet(): 
+                # Force a final harvest on agent shutdown.
+                self._run_harvest(shutdown=True)
+
+                return
+
+            # Run the normal harvest cycle.
+
+            self._run_harvest(shutdown=False)
 
             # Expire entries from any caches which are being kept.
 
@@ -316,7 +324,8 @@ class Agent(object):
         else:
             _logger.debug('Commencing harvest of all application data.')
 
-        start = time.time()
+        self._harvest_count += 1
+        self._last_harvest = time.time()
 
         for application in self._applications.values():
               try:
@@ -326,10 +335,10 @@ class Agent(object):
                   _logger.exception('Failed to harvest data '
                                     'for %s.' % application.name)
 
-        duration = time.time() - start
+        self._harvest_duration = time.time() - self._last_harvest
 
         _logger.debug('Completed harvest of all application data in %.2f '
-                'seconds.', duration)
+                'seconds.', self._harvest_duration)
 
     def activate_agent(self):
         """Starts the main background for the agent."""

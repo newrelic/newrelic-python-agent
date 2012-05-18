@@ -21,7 +21,7 @@ class FunctionProfile(object):
 
 class FunctionProfileWrapper(ObjectWrapper):
 
-    def __init__(self, wrapped, filename, spread=1.0, checkpoint=30):
+    def __init__(self, wrapped, filename, delay=1.0, checkpoint=30):
         self._nr_instance = None
         self._nr_next_object = wrapped
 
@@ -29,13 +29,13 @@ class FunctionProfileWrapper(ObjectWrapper):
             self._nr_last_object = wrapped
 
         self._nr_filename = filename % { 'pid': os.getpid() }
-        self._nr_spread = spread
+        self._nr_delay = delay
         self._nr_checkpoint = checkpoint
 
         self._nr_lock = threading.Lock()
         self._nr_profile = cProfile.Profile()
 
-        self._nr_last = time.time() - spread
+        self._nr_last = time.time() - delay
 
         self._nr_active = False
         self._nr_count = 0
@@ -45,7 +45,7 @@ class FunctionProfileWrapper(ObjectWrapper):
             if self._nr_active:
                 return wrapped(*args, **kwargs)
 
-            if time.time() - self._nr_last < self._nr_spread:
+            if time.time() - self._nr_last < self._nr_delay:
                 return wrapped(*args, **kwargs)
 
             self._nr_active = True
@@ -78,12 +78,12 @@ class FunctionProfileWrapper(ObjectWrapper):
     def __call__(self, *args, **kwargs):
         return self._nr_invoke(_nr_next_object, *args, **kwargs)
 
-def function_profile(filename, spread=1.0, checkpoint=30):
+def function_profile(filename, delay=1.0, checkpoint=30):
     def decorator(wrapped):
-        return FunctionProfileWrapper(wrapped, filename, spread, checkpoint)
+        return FunctionProfileWrapper(wrapped, filename, delay, checkpoint)
     return decorator
 
-def wrap_function_profile(module, object_path, filename, spread=1.0,
+def wrap_function_profile(module, object_path, filename, delay=1.0,
         checkpoint=30):
     wrap_object(module, object_path, FunctionProfileWrapper,
-            (filename, spread, checkpoint))
+            (filename, delay, checkpoint))

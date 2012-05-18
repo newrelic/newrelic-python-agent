@@ -979,14 +979,14 @@ def _process_error_trace_configuration():
 
 # Setup function profiler defined in configuration file.
 
-def _function_profile_import_hook(object_path, filename, spread, checkpoint):
+def _function_profile_import_hook(object_path, filename, delay, checkpoint):
     def _instrument(target):
         _logger.debug("wrap function-profile %s" %
-                ((target, object_path, filename, spread, checkpoint),))
+                ((target, object_path, filename, delay, checkpoint),))
 
         try:
             newrelic.api.function_profile.wrap_function_profile(target,
-                    object_path, filename, spread, checkpoint)
+                    object_path, filename, delay, checkpoint)
         except:
             _raise_instrumentation_error('function-profile', locals())
 
@@ -1014,21 +1014,21 @@ def _process_function_profile_configuration():
             (module, object_path) = string.splitfields(function, ':', 1)
 
             filename = None
-            spread = 1.0
+            delay = 1.0
             checkpoint = 30
 
             filename = _config_object.get(section, 'filename')
 
-            if _config_object.has_option(section, 'spread'):
-                spread = _config_object.getfloat(section, 'spread')
+            if _config_object.has_option(section, 'delay'):
+                delay = _config_object.getfloat(section, 'delay')
             if _config_object.has_option(section, 'checkpoint'):
                 checkpoint = _config_object.getfloat(section, 'checkpoint')
 
             _logger.debug("register function-profile %s" %
-                    ((module, object_path, filename, spread, checkpoint),))
+                    ((module, object_path, filename, delay, checkpoint),))
 
             hook = _function_profile_import_hook(object_path, filename,
-                    spread, checkpoint)
+                    delay, checkpoint)
             newrelic.api.import_hook.register_import_hook(module, hook)
         except:
             _raise_configuration_error(section)

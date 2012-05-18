@@ -41,6 +41,12 @@ def shell_command(wrapped):
 
         return wrapped(self, *args, **kwargs)
 
+    if wrapper.__name__.startswith('do_'):
+        args, varargs, keywords, defaults = inspect.getargspec(wrapped)
+        prototype = wrapper.__name__[3:] + ' ' + inspect.formatargspec(
+                args[1:], varargs, keywords, defaults)
+        wrapper.__doc__ = '\n'.join((prototype, wrapper.__doc__.lstrip('\n')))
+
     return wrapper
 
 _consoles = threading.local()
@@ -149,8 +155,8 @@ class ConsoleShell(cmd.Cmd):
 
     @shell_command
     def do_prompt(self, flag=None):
-        """prompt (on|off)
-	Enable or disable the console prompt."""
+        """
+        Enable or disable the console prompt."""
 
         if flag == 'on':
             self.prompt = '(newrelic:%d) ' % os.getpid()
@@ -159,15 +165,15 @@ class ConsoleShell(cmd.Cmd):
 
     @shell_command
     def do_exit(self):
-        """exit
+        """
         Exit the console."""
 
         return True
 
     @shell_command
     def do_dump_config(self, name=None):
-        """config [name]
-	Displays global configuration or that of the named application.
+        """
+        Displays global configuration or that of the named application.
         """
 
         if name is None:
@@ -183,7 +189,7 @@ class ConsoleShell(cmd.Cmd):
 
     @shell_command
     def do_agent_status(self):
-        """agent_status
+        """
         Displays general status information about the agent, registered
         applications, harvest cycles etc.
         """
@@ -192,14 +198,15 @@ class ConsoleShell(cmd.Cmd):
 
     @shell_command
     def do_applications(self):
-        """applications
+        """
         Displays a list of the applications.
         """
 
         print >> self.stdout, repr(sorted(agent().applications.keys()))
 
+    @shell_command
     def do_application_status(self, name):
-        """application_status name
+        """
         Displays general status information about an application, last
         harvest cycle, etc.
         """
@@ -210,7 +217,7 @@ class ConsoleShell(cmd.Cmd):
 
     @shell_command
     def do_transactions(self):
-        """transactions
+        """
         """
 
         for transaction in Transaction._transactions.values():
@@ -219,7 +226,7 @@ class ConsoleShell(cmd.Cmd):
 
     @shell_command
     def do_interpreter(self):
-        """console
+        """
         When enabled in the configuration file, will startup up an embedded
         interactive Python interpreter. Invoke 'exit()' or 'quit()' to
         escape the interpreter session."""
@@ -254,9 +261,9 @@ class ConsoleShell(cmd.Cmd):
 
     @shell_command
     def do_threads(self): 
-        """threads
-	Display stack trace dumps for all threads currently executing
-	within the Python interpreter.
+        """
+        Display stack trace dumps for all threads currently executing
+        within the Python interpreter.
 
         Note that if coroutines are being used, such as systems based
         on greenlets, then only the thread stack of the currently

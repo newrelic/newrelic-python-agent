@@ -17,7 +17,7 @@ import newrelic.api.function_trace
 import newrelic.api.memcache_trace
 import newrelic.api.name_transaction
 import newrelic.api.error_trace
-import newrelic.api.profile_trace
+import newrelic.api.function_profile
 import newrelic.api.object_wrapper
 import newrelic.api.application
 
@@ -979,14 +979,14 @@ def _process_error_trace_configuration():
 
 # Setup function profiler defined in configuration file.
 
-def _function_profile_import_hook(object_path, depth):
+def _function_profile_import_hook(object_path, filename, spread, checkpoint):
     def _instrument(target):
         _logger.debug("wrap function-profile %s" %
-                ((target, object_path, depth),))
+                ((target, object_path, filename, spread, checkpoint),))
 
         try:
-            newrelic.api.profile_trace.wrap_function_profile(target,
-                    object_path, depth)
+            newrelic.api.function_profile.wrap_function_profile(target,
+                    object_path, filename, spread, checkpoint)
         except:
             _raise_instrumentation_error('function-profile', locals())
 
@@ -1013,15 +1013,22 @@ def _process_function_profile_configuration():
             function = _config_object.get(section, 'function')
             (module, object_path) = string.splitfields(function, ':', 1)
 
-            depth = 5
+            filename = None
+            spread = 1.0
+            checkpoint = 30
 
-            if _config_object.has_option(section, 'depth'):
-                depth = _config_object.getint(section, 'depth')
+            filename = _config_object.get(section, 'filename')
+
+            if _config_object.has_option(section, 'spread'):
+                spread = _config_object.getfloat(section, 'spread')
+            if _config_object.has_option(section, 'checkpoint'):
+                checkpoint = _config_object.getfloat(section, 'checkpoint')
 
             _logger.debug("register function-profile %s" %
-                    ((module, object_path, depth),))
+                    ((module, object_path, filename, spread, checkpoint),))
 
-            hook = _function_profile_import_hook(object_path, depth)
+            hook = _function_profile_import_hook(object_path, filename,
+                    spread, checkpoint)
             newrelic.api.import_hook.register_import_hook(module, hook)
         except:
             _raise_configuration_error(section)

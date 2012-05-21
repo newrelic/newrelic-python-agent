@@ -527,7 +527,7 @@ class StatsEngine(object):
                 key = dict(name=key[0], scope=key[1])
             else:
                 key = self.__metric_ids[key]
-            result.append(key, value)
+            result.append((key, value))
 
         return result
 

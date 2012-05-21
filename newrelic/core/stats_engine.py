@@ -506,7 +506,7 @@ class StatsEngine(object):
 
     @internal_trace('Supportability/StatsEngine/Calls/metric_data')
     def metric_data(self):
-        """Returns a generator yielding the low level metric data for
+        """Returns a list containing the low level metric data for
         sending to the core application pertaining to the reporting
         period. This consists of tuple pairs where first is dictionary
         with name and scope keys with corresponding values, or integer
@@ -518,14 +518,18 @@ class StatsEngine(object):
         """
 
         if not self.__settings:
-            raise StopIteration()
+            return []
+
+        result = []
 
         for key, value in self.__stats_table.iteritems():
             if key not in self.__metric_ids:
                 key = dict(name=key[0], scope=key[1])
             else:
                 key = self.__metric_ids[key]
-            yield key, value
+            result.append(key, value)
+
+        return result
 
     @internal_trace('Supportability/StatsEngine/Calls/error_data')
     def error_data(self):

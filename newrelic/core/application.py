@@ -17,6 +17,8 @@ from newrelic.core.metric import ValueMetric
 from newrelic.core.rules_engine import RulesEngine
 from newrelic.core.samplers import create_samplers
 from newrelic.core.stats_engine import StatsEngine
+from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
+        InternalTraceContext)
 
 _logger = logging.getLogger(__name__)
 
@@ -147,7 +149,7 @@ class Application(object):
 
         if not self._connected_event.isSet():
             _logger.debug('Timeout out waiting for New Relic service '
-                    'connection with timeout of %s seconds.' % timeout)
+                    'connection with timeout of %s seconds.', timeout)
             return False
 
         return True
@@ -225,21 +227,21 @@ class Application(object):
                                 'entries and remedy any issue as necessary, '
                                 'or if the problem persists, report this '
                                 'problem to New Relic support for further '
-                                'investigation.' % self._app_name)
+                                'investigation.', self._app_name)
 
                     elif error:
                         _logger.error('Registration of the application %r '
                                 'with the data collector failed after '
                                 'further additional attempts. Please report '
                                 'this problem to New Relic support for '
-                                'further investigation.' % self._app_name)
+                                'further investigation.', self._app_name)
 
                 else:
                     timeout = 300
 
                 _logger.debug('Retrying registration of the application %r '
                         'with the data collector after a further %d '
-                        'seconds.' % (self._app_name, timeout))
+                        'seconds.', self._app_name, timeout)
 
                 time.sleep(timeout)
 
@@ -287,7 +289,7 @@ class Application(object):
             # In the event that the rules engine blows up because of a
             # problem in the rules supplied by the data collector, we
             # log the exception and otherwise return the original.
-	    #
+            #
             # NOTE This has the potential to cause metric grouping
             # issues, but we should not be getting broken rules to begin
             # with if they are validated properly when entered or
@@ -298,7 +300,7 @@ class Application(object):
                     'rules for the URL %r has failed. This can indicate '
                     'a problem with the agent URL rules supplied by the '
                     'data collector. Please report this problem to New '
-                    'Relic support for further investigation.' % name)
+                    'Relic support for further investigation.', name)
 
             return name, False
 
@@ -390,194 +392,220 @@ class Application(object):
 
         if not self._active_session:
             _logger.debug('Cannot perform a data harvest for %r as '
-                    'there is no active session.' % self._app_name)
+                    'there is no active session.', self._app_name)
 
             return
 
-        self._harvest_count += 1
+        internal_stats = self._stats_engine.create_workarea()
 
-        start = time.time()
+        def record_internal_trace(name, duration):
+            internal_stats.record_value_metric(ValueMetric(
+                    name=name, value=duration))
 
-        _logger.debug('Commencing data harvest for %r.' % self._app_name)
+        with InternalTraceContext(record_internal_trace):
+            with InternalTrace('Supportability/Harvest/Calls/harvest'):
 
-        # Create a snapshot of the transaction stats and application
-        # specific custom metrics stats, then merge them together. The
-        # originals will be reset at the time this is done so that any
-        # new metrics that come in from this point onwards will be
-        # accumulated in a fresh bucket.
+                self._harvest_count += 1
 
-        with self._stats_lock:
-            self._transaction_count = 0
-            self._last_transaction = 0.0
+                start = time.time()
 
-            stats = self._stats_engine.create_snapshot()
+                _logger.debug('Commencing data harvest for %r.',
+                        self._app_name)
 
-        with self._stats_custom_lock:
-            stats_custom = self._stats_custom_engine.create_snapshot()
+                # Create a snapshot of the transaction stats and
+                # application specific custom metrics stats, then merge
+                # them together. The originals will be reset at the time
+                # this is done so that any new metrics that come in from
+                # this point onwards will be accumulated in a fresh
+                # bucket.
 
-        stats.merge_stats(stats_custom)
+                with self._stats_lock:
+                    self._transaction_count = 0
+                    self._last_transaction = 0.0
 
-        # Now merge in any metrics from the data samplers associated
-        # with this application.
-	#
-        # NOTE If a data sampler has problems then what data was
-        # collected up to that point is retained. The data collector
-        # itself is still retained and would be used again on future
-        # harvest. If it is a persistent problem with the data sampler
-        # the issue would then reoccur with every harvest. If data
-        # sampler is a user provided data sampler, then should perhaps
-        # deregister it if it keeps having problems.
+                    stats = self._stats_engine.create_snapshot()
 
-        for sampler in self._samplers:
-            try:
-                for metric in sampler.value_metrics():
-                    stats.record_value_metric(metric)
+                with self._stats_custom_lock:
+                    stats_custom = self._stats_custom_engine.create_snapshot()
 
-            except:
-                _logger.exception('The merging of value metrics from a '
-                        'data sampler has failed. If this issue persists '
-                        'then please report this problem to New Relic '
-                        'support for further investigation.')
+                stats.merge_stats(stats_custom)
 
-        # Add a metric we can use to track how many harvest periods have
-        # occurred.
+                # Now merge in any metrics from the data samplers
+                # associated with this application.
+		#
+                # NOTE If a data sampler has problems then what data was
+                # collected up to that point is retained. The data
+                # collector itself is still retained and would be used
+                # again on future harvest. If it is a persistent problem
+                # with the data sampler the issue would then reoccur
+                # with every harvest. If data sampler is a user provided
+                # data sampler, then should perhaps deregister it if it
+                # keeps having problems.
 
-        stats.record_value_metric(ValueMetric(
-                name='Instance/Reporting', value=0))
+                for sampler in self._samplers:
+                    try:
+                        for metric in sampler.value_metrics():
+                            stats.record_value_metric(metric)
 
-        # Create our time stamp as to when this reporting period ends
-        # and start reporting the data.
+                    except:
+                        _logger.exception('The merging of value metrics from '
+                                'a data sampler has failed. If this issue '
+                                'persists then please report this problem to '
+                                'New Relic support for further investigation.')
 
-        period_end = time.time()
+                # Add a metric we can use to track how many harvest
+                # periods have occurred.
 
-        try:
-            configuration = self._active_session.configuration
+                stats.record_value_metric(ValueMetric(
+                        name='Instance/Reporting', value=0))
 
-            # Send the transaction and custom metric data.
+                # Create our time stamp as to when this reporting period
+                # ends and start reporting the data.
 
-            metric_ids = self._active_session.send_metric_data(
-              self._period_start, period_end, stats.metric_data())
+                period_end = time.time()
 
-            # Successful, so we update the stats engine with the new
-            # metric IDs and reset the reporting period start time. If
-            # an error occurs after this point, any remaining data for
-            # the period being reported on will be thrown away. We reset
-            # the count of number of merges we have done due to failures
-            # as only really want to count errors in being able to
-            # report the main transaction metrics.
-
-            self._merge_count = 0
-            self._period_start = period_end
-            self._stats_engine.update_metric_ids(metric_ids)
-
-            # Send the accumulated error data.
-
-            if configuration.collect_errors:
-                self._active_session.send_errors(stats.error_data())
-
-            if configuration.collect_traces:
-                self._active_session.send_sql_traces(
-                        stats.slow_sql_data())
-       
-                self._active_session.send_transaction_traces(
-                        stats.slow_transaction_data())
-
-            # If this is a final forced harvest for the process then
-            # attempt to shutdown the session.
-
-            if shutdown:
                 try:
-                    self._active_session.shutdown_session()
-                except:
-                    pass
+                    configuration = self._active_session.configuration
 
-                self._active_session = None
+                    # Send the transaction and custom metric data.
 
-        except ForceAgentRestart:
-            # The data collector has indicated that we need to perform
-            # an internal agent restart. We attempt to properly shutdown
-            # the session and then initiate a new session.
+                    metric_ids = self._active_session.send_metric_data(
+                      self._period_start, period_end, stats.metric_data())
 
-            try:
-                self._active_session.shutdown_session()
-            except:
-                pass
-
-            self._agent_restart += 1
-            self._active_session = None
-
-            self.activate_session()
-
-        except ForceAgentDisconnect:
-            # The data collector has indicated that we need to force
-            # disconnect and stop reporting. We attempt to properly
-            # shutdown the session, but don't start a new one and flag
-            # ourselves as shutdown. This notification is presumably
-            # sent when a specific application is behaving so badly that
-            # it needs to be stopped entirely. It would require a
-            # complete process start to be able to attempt to connect
-            # again and if the server side kill switch is still enabled
-            # it would be told to disconnect once more.
-
-            try:
-                self._active_session.shutdown_session()
-            except:
-                pass
-
-            self._active_session = None
-
-            self._agent_shutdown = True
-
-        except RetryDataForRequest:
-            # A potentially recoverable error occurred. We merge the
-            # stats back into that for the current period and abort the
-            # current harvest if the problem occurred when initially
-            # reporting the main transaction metrics. If the problem
-            # occurred when reporting other information then that and
-            # any other non reported information is thrown away.
-            #
-            # In order to prevent memory growth will we only merge data
-            # up to a set maximum number of successive times. When this
-            # occurs we throw away all the metric data and start over.
-
-            if self._period_start != period_end:
-
-                self._merge_count += 1
-
-                maximum = configuration.agent_limits.merge_stats_maximum
-
-                if self._merge_count <= maximum:
-                    self._stats_engine.merge_stats(stats)
-
-                else:
-                    _logger.error('Unable to report main transaction metrics '
-                            'after %r successive attempts. Check the log '
-                            'messages and if necessary please report this '
-                            'problem to New Relic support for further '
-                            'investigation.' % maximum)
-
-                    self._discard_count += self._merge_count
+                    # Successful, so we update the stats engine with the
+                    # new metric IDs and reset the reporting period
+                    # start time. If an error occurs after this point,
+                    # any remaining data for the period being reported
+                    # on will be thrown away. We reset the count of
+                    # number of merges we have done due to failures as
+                    # only really want to count errors in being able to
+                    # report the main transaction metrics.
 
                     self._merge_count = 0
+                    self._period_start = period_end
+                    self._stats_engine.update_metric_ids(metric_ids)
 
-        except DiscardDataForRequest:
-            # An issue must have occurred in reporting the data but if
-            # we retry with same data the same error is likely to occur
-            # again so we just throw any data not sent away for this
-            # reporting period.
+                    # Send the accumulated error data.
 
-            self._discard_count += 1
+                    if configuration.collect_errors:
+                        self._active_session.send_errors(stats.error_data())
 
-        except:
-            # An unexpected error, likely some sort of internal agent
-            # implementation issue.
+                    if configuration.collect_traces:
+                        self._active_session.send_sql_traces(
+                                stats.slow_sql_data())
+               
+                        self._active_session.send_transaction_traces(
+                                stats.slow_transaction_data())
 
-            _logger.exception('Unexpected exception when attempting to '
-                    'harvest the metric data and send it to the data '
-                    'collector. Please report this problem to New Relic '
-                    'support for further investigation.')
+                    # If this is a final forced harvest for the process
+                    # then attempt to shutdown the session.
 
-        duration = time.time() - start
+                    if shutdown:
+                        try:
+                            self._active_session.shutdown_session()
+                        except:
+                            pass
 
-        _logger.debug('Completed harvest for %r in %.2f seconds.',
-                self._app_name, duration)
+                        self._active_session = None
+
+                except ForceAgentRestart:
+                    # The data collector has indicated that we need to
+                    # perform an internal agent restart. We attempt to
+                    # properly shutdown the session and then initiate a
+                    # new session.
+
+                    try:
+                        self._active_session.shutdown_session()
+                    except:
+                        pass
+
+                    self._agent_restart += 1
+                    self._active_session = None
+
+                    self.activate_session()
+
+                except ForceAgentDisconnect:
+                    # The data collector has indicated that we need to
+                    # force disconnect and stop reporting. We attempt to
+                    # properly shutdown the session, but don't start a
+                    # new one and flag ourselves as shutdown. This
+                    # notification is presumably sent when a specific
+                    # application is behaving so badly that it needs to
+                    # be stopped entirely. It would require a complete
+                    # process start to be able to attempt to connect
+                    # again and if the server side kill switch is still
+                    # enabled it would be told to disconnect once more.
+
+                    try:
+                        self._active_session.shutdown_session()
+                    except:
+                        pass
+
+                    self._active_session = None
+
+                    self._agent_shutdown = True
+
+                except RetryDataForRequest:
+                    # A potentially recoverable error occurred. We merge
+                    # the stats back into that for the current period
+                    # and abort the current harvest if the problem
+                    # occurred when initially reporting the main
+                    # transaction metrics. If the problem occurred when
+                    # reporting other information then that and any
+                    # other non reported information is thrown away.
+		    #
+                    # In order to prevent memory growth will we only
+                    # merge data up to a set maximum number of
+                    # successive times. When this occurs we throw away
+                    # all the metric data and start over.
+
+                    if self._period_start != period_end:
+
+                        self._merge_count += 1
+
+                        agent_limits = configuration.agent_limits
+                        maximum = agent_limits.merge_stats_maximum
+
+                        if self._merge_count <= maximum:
+                            self._stats_engine.merge_stats(stats)
+
+                        else:
+                            _logger.error('Unable to report main transaction '
+                                    'metrics after %r successive attempts. '
+                                    'Check the log messages and if necessary '
+                                    'please report this problem to New Relic '
+                                    'support for further investigation.',
+                                    maximum)
+
+                            self._discard_count += self._merge_count
+
+                            self._merge_count = 0
+
+                except DiscardDataForRequest:
+                    # An issue must have occurred in reporting the data
+                    # but if we retry with same data the same error is
+                    # likely to occur again so we just throw any data
+                    # not sent away for this reporting period.
+
+                    self._discard_count += 1
+
+                except:
+                    # An unexpected error, likely some sort of internal
+                    # agent implementation issue.
+
+                    _logger.exception('Unexpected exception when attempting '
+                            'to harvest the metric data and send it to the '
+                            'data collector. Please report this problem to '
+                            'New Relic support for further investigation.')
+
+                duration = time.time() - start
+
+                _logger.debug('Completed harvest for %r in %.2f seconds.',
+                        self._app_name, duration)
+
+        # Merge back in statistics recorded about the last harvest
+        # and communication with the data collector. This will be
+        # part of the data for the next harvest period.
+
+        with self._stats_lock:
+            self._stats_engine.merge_stats(internal_stats)

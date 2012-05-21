@@ -10,6 +10,8 @@ import newrelic.lib.sqlparse
 import newrelic.lib.sqlparse.sql
 import newrelic.lib.sqlparse.tokens
 
+from newrelic.core.internal_metrics import internal_trace
+
 # Caching mechanism for storing generated results from operations on
 # database queries. Values are kept in a weak value dictionary with
 # moving history of buckets also holding the value so not removed from
@@ -107,6 +109,7 @@ _list_values_p = r'\(' + _one_value_p + r'(\s*,' + _one_value_p + r')*\s*\)'
 
 _collapse_set_re = re.compile(_list_values_p)
 
+@internal_trace('Supportability/DatabaseUtils/Calls/obfuscated_sql')
 def obfuscated_sql(name, sql, collapsed=False):
     """Returns obfuscated version of the sql. The quoting
     convention is determined by looking at the name of the
@@ -246,6 +249,7 @@ _identifier_re = re.compile('["`\[\]]*')
 def _format_identifier(token):
     return _identifier_re.sub('', token.to_unicode()).strip().lower()
 
+@internal_trace('Supportability/DatabaseUtils/Calls/parse_select')
 def _parse_select(statement, token):
     # For 'select' we need to look for 'from'. The argument to
     # 'from' can be a single table name, a list of table names
@@ -334,6 +338,7 @@ def _parse_select(statement, token):
 
     return _format_identifier(argument)
 
+@internal_trace('Supportability/DatabaseUtils/Calls/parse_delete')
 def _parse_delete(statement, token):
     # For 'delete' we need to look for 'from'. The argument to
     # 'from' can be a single table name.
@@ -356,6 +361,7 @@ def _parse_delete(statement, token):
 
     return _format_identifier(argument)
 
+@internal_trace('Supportability/DatabaseUtils/Calls/parse_insert')
 def _parse_insert(statement, token):
     # For 'insert' we need to look for 'into'. The argument to
     # 'into' can be a single table name.
@@ -378,6 +384,7 @@ def _parse_insert(statement, token):
 
     return _format_identifier(argument)
 
+@internal_trace('Supportability/DatabaseUtils/Calls/parse_update')
 def _parse_update(statement, token):
     # For 'update' we need the immediately following argument.
 
@@ -393,6 +400,7 @@ def _parse_update(statement, token):
 
     return _format_identifier(argument)
 
+@internal_trace('Supportability/DatabaseUtils/Calls/parse_create')
 def _parse_create(statement, token):
     # For 'create' we need to look for 'table'. The argument to
     # 'table' should be a single table name.
@@ -415,6 +423,7 @@ def _parse_create(statement, token):
 
     return _format_identifier(argument)
 
+@internal_trace('Supportability/DatabaseUtils/Calls/parse_call')
 def _parse_call(statement, token):
     # For 'call' we need the immediately following argument.
 
@@ -430,6 +439,7 @@ def _parse_call(statement, token):
 
     return _format_identifier(argument)
 
+@internal_trace('Supportability/DatabaseUtils/Calls/parse_show')
 def _parse_show(statement, token):
     # For 'show' we need all the following arguments.
 
@@ -444,6 +454,7 @@ def _parse_show(statement, token):
 
     return _format_identifier(token_list)
 
+@internal_trace('Supportability/DatabaseUtils/Calls/parse_set')
 def _parse_set(statement, token):
     # For 'set' we need all the following arguments bar the last
     # one which is the value the variable is being set to.
@@ -510,6 +521,7 @@ def _parse_token_list(statement):
 
     return (identifier, operation)
 
+@internal_trace('Supportability/DatabaseUtils/Calls/parse_sql_statement')
 def _parse_sql_statement(sql):
     # The SQL could actually consist of multiple statements each
     # separated by a semicolon. The parse() routine splits out
@@ -586,6 +598,7 @@ _explain_plan_command = {
     'sqlite3.dbapi2': 'EXPLAIN QUERY PLAN',
 }
 
+@internal_trace('Supportability/DatabaseUtils/Calls/explain_plan')
 def explain_plan(dbapi, sql, connect_params, cursor_params, execute_params):
     name = dbapi and dbapi.__name__ or None
 

@@ -22,6 +22,7 @@ import newrelic.core.metric
 import newrelic.core.database_utils
 
 from newrelic.core.string_table import StringTable
+from newrelic.core.internal_metrics import internal_trace
 
 class ApdexStats(list):
 
@@ -503,6 +504,7 @@ class StatsEngine(object):
                 elif transaction.duration >= self.__slow_transaction.duration:
                     self.__slow_transaction = transaction
 
+    @internal_trace('Supportability/StatsEngine/Calls/metric_data')
     def metric_data(self):
         """Returns a generator yielding the low level metric data for
         sending to the core application pertaining to the reporting
@@ -525,6 +527,7 @@ class StatsEngine(object):
                 key = self.__metric_ids[key]
             yield key, value
 
+    @internal_trace('Supportability/StatsEngine/Calls/error_data')
     def error_data(self):
         """Returns a to a list containing any errors collected during
         the reporting period.
@@ -536,6 +539,7 @@ class StatsEngine(object):
 
         return self.__transaction_errors
 
+    @internal_trace('Supportability/StatsEngine/Calls/slow_sql_data')
     def slow_sql_data(self):
 
         if not self.__settings:
@@ -577,6 +581,7 @@ class StatsEngine(object):
 
             yield data
 
+    @internal_trace('Supportability/StatsEngine/Calls/slow_transaction_data')
     def slow_transaction_data(self):
         """Returns a list containing any slow transaction data collected
         during the reporting period.

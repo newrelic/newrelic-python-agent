@@ -2,6 +2,8 @@
 
 """
 
+from __future__ import with_statement
+
 import logging
 import os
 import socket
@@ -21,6 +23,7 @@ import newrelic.lib.requests as requests
 
 from newrelic import version
 from newrelic.core.config import global_settings, create_settings_snapshot
+from newrelic.core.internal_metrics import internal_trace, InternalTrace
 
 _logger = logging.getLogger(__name__)
 
@@ -165,8 +168,9 @@ def send_request(url, method, license_key, agent_run_id=None, payload=()):
     # a problem with the implementation of the agent.
 
     try:
-        data = json.dumps(payload, ensure_ascii=True, encoding='Latin-1',
-                default=lambda o: list(iter(o)))
+        with InternalTrace('Supportability/JSONEncode/Calls/%s' % method):
+            data = json.dumps(payload, ensure_ascii=True, encoding='Latin-1',
+                    default=lambda o: list(iter(o)))
 
     except Exception, exc:
         _logger.error('Error encoding data for JSON payload for method %r '
@@ -193,7 +197,8 @@ def send_request(url, method, license_key, agent_run_id=None, payload=()):
     if len(data) > 64*1024:
         headers['Content-Encoding'] = 'deflate'
         level = (len(data) < 2000000) and 1 or 9
-        data = zlib.compress(data, level)
+        with InternalTrace('Supportability/ZLIBCompress/Calls/%s' % method):
+            data = zlib.compress(data, level)
 
     # Send the request. We set 'verify' to be false so that when using
     # SSL there is no attempt to do SSL certificate validation. If it
@@ -416,6 +421,7 @@ class ApplicationSession(object):
         self.configuration = configuration
         self.agent_run_id = configuration.agent_run_id
 
+    @internal_trace('Supportability/Collector/Calls/shutdown_session')
     def shutdown_session(self):
         """Called to perform orderly deregistration of agent run against
         data collector, rather than simply dropping the connection and
@@ -430,6 +436,7 @@ class ApplicationSession(object):
         return send_request(self.collector_url, 'shutdown',
                 self.license_key, self.agent_run_id)
 
+    @internal_trace('Supportability/Collector/Calls/send_metric_data')
     def send_metric_data(self, start_time, end_time, metric_data):
         """Called to submit metric data for specified period of time.
         Time values are seconds since UNIX epoch as returned by the
@@ -443,6 +450,7 @@ class ApplicationSession(object):
         return send_request(self.collector_url, 'metric_data',
                 self.license_key, self.agent_run_id, payload)
 
+    @internal_trace('Supportability/Collector/Calls/send_errors')
     def send_errors(self, errors):
         """Called to submit errors. The errors should be an iterable
         of individual errors details.
@@ -463,6 +471,7 @@ class ApplicationSession(object):
         return send_request(self.collector_url, 'error_data',
                 self.license_key, self.agent_run_id, payload)
 
+    @internal_trace('Supportability/Collector/Calls/send_transaction_traces')
     def send_transaction_traces(self, transaction_traces):
         """Called to submit transaction traces. The transaction traces
         should be an iterable of individual traces.
@@ -483,6 +492,7 @@ class ApplicationSession(object):
         return send_request(self.collector_url, 'transaction_sample_data',
                 self.license_key, self.agent_run_id, payload)
 
+    @internal_trace('Supportability/Collector/Calls/send_sql_traces')
     def send_sql_traces(self, sql_traces):
         """Called to sub SQL traces. The SQL traces should be an
         iterable of individual SQL details.

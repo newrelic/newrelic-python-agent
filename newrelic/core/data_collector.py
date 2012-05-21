@@ -168,7 +168,7 @@ def send_request(url, method, license_key, agent_run_id=None, payload=()):
     # a problem with the implementation of the agent.
 
     try:
-        with InternalTrace('Supportability/JSONEncode/Calls/%s' % method):
+        with InternalTrace('Supportability/Collector/JSON/Encode/%s' % method):
             data = json.dumps(payload, ensure_ascii=True, encoding='Latin-1',
                     default=lambda o: list(iter(o)))
 
@@ -197,7 +197,8 @@ def send_request(url, method, license_key, agent_run_id=None, payload=()):
     if len(data) > 64*1024:
         headers['Content-Encoding'] = 'deflate'
         level = (len(data) < 2000000) and 1 or 9
-        with InternalTrace('Supportability/ZLIBCompress/Calls/%s' % method):
+        with InternalTrace('Supportability/Collector/ZLIB/Compress/'
+                '%s' % method):
             data = zlib.compress(data, level)
 
     # Send the request. We set 'verify' to be false so that when using
@@ -323,7 +324,8 @@ def send_request(url, method, license_key, agent_run_id=None, payload=()):
     # decoded as 'UTF-8'.
 
     try:
-        result = json.loads(r.content, encoding='UTF-8')
+        with InternalTrace('Supportability/Collector/JSON/Decode/%s' % method):
+            result = json.loads(r.content, encoding='UTF-8')
 
     except Exception, exc:
         _logger.error('Error decoding data for JSON payload for method %r '
@@ -421,7 +423,7 @@ class ApplicationSession(object):
         self.configuration = configuration
         self.agent_run_id = configuration.agent_run_id
 
-    @internal_trace('Supportability/Collector/Calls/shutdown_session')
+    @internal_trace('Supportability/Collector/Calls/shutdown')
     def shutdown_session(self):
         """Called to perform orderly deregistration of agent run against
         data collector, rather than simply dropping the connection and
@@ -436,7 +438,7 @@ class ApplicationSession(object):
         return send_request(self.collector_url, 'shutdown',
                 self.license_key, self.agent_run_id)
 
-    @internal_trace('Supportability/Collector/Calls/send_metric_data')
+    @internal_trace('Supportability/Collector/Calls/metric_data')
     def send_metric_data(self, start_time, end_time, metric_data):
         """Called to submit metric data for specified period of time.
         Time values are seconds since UNIX epoch as returned by the
@@ -450,7 +452,7 @@ class ApplicationSession(object):
         return send_request(self.collector_url, 'metric_data',
                 self.license_key, self.agent_run_id, payload)
 
-    @internal_trace('Supportability/Collector/Calls/send_errors')
+    @internal_trace('Supportability/Collector/Calls/error_data')
     def send_errors(self, errors):
         """Called to submit errors. The errors should be an iterable
         of individual errors details.
@@ -461,8 +463,6 @@ class ApplicationSession(object):
 
         """
 
-        errors = list(errors)
-
         if not errors:
             return
 
@@ -471,7 +471,7 @@ class ApplicationSession(object):
         return send_request(self.collector_url, 'error_data',
                 self.license_key, self.agent_run_id, payload)
 
-    @internal_trace('Supportability/Collector/Calls/send_transaction_traces')
+    @internal_trace('Supportability/Collector/Calls/transaction_sample_data')
     def send_transaction_traces(self, transaction_traces):
         """Called to submit transaction traces. The transaction traces
         should be an iterable of individual traces.
@@ -482,8 +482,6 @@ class ApplicationSession(object):
 
         """
 
-        transaction_traces = list(transaction_traces)
-
         if not transaction_traces:
             return
 
@@ -492,7 +490,7 @@ class ApplicationSession(object):
         return send_request(self.collector_url, 'transaction_sample_data',
                 self.license_key, self.agent_run_id, payload)
 
-    @internal_trace('Supportability/Collector/Calls/send_sql_traces')
+    @internal_trace('Supportability/Collector/Calls/sql_trace_data')
     def send_sql_traces(self, sql_traces):
         """Called to sub SQL traces. The SQL traces should be an
         iterable of individual SQL details.
@@ -501,8 +499,6 @@ class ApplicationSession(object):
         queries in the most recent period being reported on.
 
         """
-
-        sql_traces = list(sql_traces)
 
         if not sql_traces:
             return

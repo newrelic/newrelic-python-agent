@@ -22,7 +22,8 @@ import newrelic.core.metric
 import newrelic.core.database_utils
 
 from newrelic.core.string_table import StringTable
-from newrelic.core.internal_metrics import internal_trace
+from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
+        internal_metric)
 
 class ApdexStats(list):
 
@@ -547,15 +548,17 @@ class StatsEngine(object):
     def slow_sql_data(self):
 
         if not self.__settings:
-            raise StopIteration()
+            return []
 
         if not self.__sql_stats_table:
-            raise StopIteration()
+            return []
 
         maximum = self.__settings.agent_limits.slow_sql_data
 
         slow_sql_nodes = list(sorted(self.__sql_stats_table.values(),
                 key=lambda x: x.max_call_time))[-maximum:]
+
+        result = []
 
         for node in slow_sql_nodes:
 
@@ -583,7 +586,9 @@ class StatsEngine(object):
                     node.max_call_time*1000,
                     params_data]
 
-            yield data
+            result.append(data)
+
+        return result
 
     @internal_trace('Supportability/StatsEngine/Calls/slow_transaction_data')
     def slow_transaction_data(self):
@@ -608,16 +613,29 @@ class StatsEngine(object):
         transaction_trace = self.__slow_transaction.transaction_trace(
                 self, string_table, maximum)
 
+        internal_metric('Supportability/StatsEngine/Counts/'
+                'transaction_sample_data',
+                self.__slow_transaction.trace_node_count)
+
         data = [transaction_trace, string_table.values()]
 
-        compressed_data = base64.standard_b64encode(
-                zlib.compress(json.dumps(data, encoding='Latin-1')))
+        with InternalTrace('Supportability/StatsEngine/JSON/Encode/'
+                'transaction_sample_data'):
+            json_data = json.dumps(data, encoding='Latin-1')
+
+        with InternalTrace('Supportability/StatsEngine/ZLIB/Compress/'
+                'transaction_sample_data'):
+            zlib_data = zlib.compress(json_data)
+
+        with InternalTrace('Supportability/StatsEngine/BASE64/Encode/'
+                'transaction_sample_data'):
+            pack_data = base64.standard_b64encode(zlib_data)
 
         trace_data = [[transaction_trace.root.start_time,
                 transaction_trace.root.end_time,
                 self.__slow_transaction.path,
                 self.__slow_transaction.request_uri,
-                compressed_data]]
+                pack_data]]
 
         return trace_data
 

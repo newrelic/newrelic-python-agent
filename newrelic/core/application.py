@@ -18,7 +18,7 @@ from newrelic.core.rules_engine import RulesEngine
 from newrelic.core.samplers import create_samplers
 from newrelic.core.stats_engine import StatsEngine
 from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
-        InternalTraceContext)
+        InternalTraceContext, internal_metric)
 
 _logger = logging.getLogger(__name__)
 
@@ -469,8 +469,13 @@ class Application(object):
 
                     # Send the transaction and custom metric data.
 
+                    metric_data = stats.metric_data()
+
+                    internal_metric('Supportability/Harvest/Counts/'
+                            'metric_data', len(metric_data))
+
                     metric_ids = self._active_session.send_metric_data(
-                      self._period_start, period_end, stats.metric_data())
+                      self._period_start, period_end, metric_data)
 
                     # Successful, so we update the stats engine with the
                     # new metric IDs and reset the reporting period
@@ -488,14 +493,32 @@ class Application(object):
                     # Send the accumulated error data.
 
                     if configuration.collect_errors:
-                        self._active_session.send_errors(stats.error_data())
+                        error_data = stats.error_data()
+
+                        internal_metric('Supportability/Harvest/Counts/'
+                                'error_data', len(error_data))
+
+                        if error_data:
+                            self._active_session.send_errors(error_data)
 
                     if configuration.collect_traces:
-                        self._active_session.send_sql_traces(
-                                stats.slow_sql_data())
+                        slow_sql_data = stats.slow_sql_data()
+
+                        internal_metric('Supportability/Harvest/Counts/'
+                                'sql_trace_data', len(slow_sql_data))
+
+                        if slow_sql_data:
+                            self._active_session.send_sql_traces(slow_sql_data)
                
-                        self._active_session.send_transaction_traces(
-                                stats.slow_transaction_data())
+                        slow_transaction_data = stats.slow_transaction_data()
+
+                        internal_metric('Supportability/Harvest/Counts/'
+                                'transaction_sample_data',
+                                len(slow_transaction_data))
+
+                        if slow_transaction_data:
+                            self._active_session.send_transaction_traces(
+                                    slow_transaction_data)
 
                     # If this is a final forced harvest for the process
                     # then attempt to shutdown the session.

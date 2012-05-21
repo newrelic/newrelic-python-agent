@@ -80,3 +80,7 @@ def internal_trace(name=None):
 def wrap_internal_trace(module, object_path, name=None):
     newrelic.api.object_wrapper.wrap_object(module, object_path,
             InternalTraceWrapper, (name,))
+
+def internal_metric(name, value):
+    if hasattr(_context, 'current'):
+        _context.current.record(name, value)

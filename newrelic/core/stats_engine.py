@@ -130,6 +130,37 @@ class TimeStats(list):
 
         self[0] += 1
 
+class ValueMetrics(object):
+
+    """Table for collection a set of value metrics.
+
+    """
+
+    def __init__(self):
+        self.__stats_table = {}
+
+    def record_value_metric(self, metric):
+        """Record a single value metric, merging the data with any data
+        from prior value metrics with the same name.
+        
+        """
+
+        key = (metric.name, '')
+        stats = self.__stats_table.get(key)
+        if stats is None:
+            stats = TimeStats()
+            self.__stats_table[key] = stats
+        stats.merge_value_metric(metric)
+
+    def metrics(self):
+        """Returns an iterator over the set of value metrics. The items
+        returned are a tuple consisting of the metric key and accumulated
+        stats for that key.
+        
+        """
+
+        return self.__stats_table.iteritems()
+
 class SlowSqlStats(list):
 
     def __init__(self):
@@ -437,6 +468,7 @@ class StatsEngine(object):
 
         return key
 
+    @internal_trace('Supportability/StatsEngine/Calls/record_transaction')
     def record_transaction(self, transaction):
         """Record any apdex and time metrics for the transaction as
         well as any errors which occurred for the transaction. If the
@@ -534,6 +566,16 @@ class StatsEngine(object):
 
         return result
 
+    def metric_data_count(self):
+        """Returns a count of the number of unique metrics.
+
+        """
+
+        if not self.__settings:
+            return 0
+
+        return len(self.__stats_table)
+        
     @internal_trace('Supportability/StatsEngine/Calls/error_data')
     def error_data(self):
         """Returns a to a list containing any errors collected during
@@ -624,6 +666,9 @@ class StatsEngine(object):
         with InternalTrace('Supportability/StatsEngine/JSON/Encode/'
                 'transaction_sample_data'):
             json_data = json.dumps(data, encoding='Latin-1')
+
+        internal_metric('Supportability/StatsEngine/ZLIB/Bytes/'
+                'transaction_sample_data', len(json_data))
 
         with InternalTrace('Supportability/StatsEngine/ZLIB/Compress/'
                 'transaction_sample_data'):
@@ -750,3 +795,17 @@ class StatsEngine(object):
             elif (transaction is not None and
                     transaction.duration > self.__slow_transaction.duration):
                 self.__slow_transaction = transaction
+
+    def merge_value_metrics(self, metrics):
+        """Merges in a set of value metrics. The metrics should be
+        provide as an iterable where each item is a tuple of the key and
+        the accumulated stats for that metric key.
+
+        """
+
+        for key, other in metrics:
+            stats = self.__stats_table.get(key)
+            if not stats:
+                self.__stats_table[key] = copy.copy(other)
+            else:
+                stats.merge_stats(other)

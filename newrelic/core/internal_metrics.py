@@ -6,25 +6,28 @@ import types
 import time
 import threading
 
+from newrelic.core.metric import ValueMetric
+
 _context = threading.local()
 
 class InternalTrace(object):
 
-    def __init__(self, name, record=None):
+    def __init__(self, name, metrics=None):
         self.name = name
-        self.record = record
+        self.metrics = metrics
         self.start = 0.0
 
     def __enter__(self):
-        if self.record is None and hasattr(_context, 'current'):
-            self.record = _context.current.record
+        if self.metrics is None:
+            self.metrics = getattr(_context, 'current', None)
         self.start = time.time()
         return self
 
     def __exit__(self, exc, value, tb):
         duration = max(self.start, time.time()) - self.start
-        if self.record:
-            self.record(self.name, duration)
+        if self.metrics is not None:
+            self.metrics.record_value_metric(
+                    ValueMetric(name=self.name, value=duration))
 
 class InternalTraceWrapper(object):
 
@@ -33,14 +36,12 @@ class InternalTraceWrapper(object):
         self.name = name
 
     def execute(self, wrapped, *args, **kwargs):
-        record = None
-        if hasattr(_context, 'current'):
-            record = _context.current.record
+        metrics = getattr(_context, 'current', None)
 
-        if record is None:
+        if metrics is None:
             return wrapped(*args, **kwargs)
 
-        with InternalTrace(self.name, record):
+        with InternalTrace(self.name, metrics):
             return wrapped(*args, **kwargs)
 
     def __get__(self, instance, klass):
@@ -58,19 +59,18 @@ class InternalTraceWrapper(object):
 
 class InternalTraceContext(object):
 
-    def __init__(self, record):
+    def __init__(self, metrics):
         self.previous = None
-        self.record = record
+        self.metrics = metrics
 
     def __enter__(self):
-        if hasattr(_context, 'current'):
-            self.previous = _context.current
-        _context.current = self
+        self.previous = getattr(_context, 'current', None)
+        _context.current = self.metrics
         return self
 
     def __exit__(self, exc, value, tb):
-        self.current = self.previous
-        return
+        if self.previous is not None:
+            _context.current = self.previous
 
 def internal_trace(name=None):
     def decorator(wrapped):
@@ -82,5 +82,6 @@ def wrap_internal_trace(module, object_path, name=None):
             InternalTraceWrapper, (name,))
 
 def internal_metric(name, value):
-    if hasattr(_context, 'current'):
-        _context.current.record(name, value)
+    metrics = getattr(_context, 'current', None)
+    if metrics is not None:
+        metrics.record_value_metric(ValueMetric(name=name, value=value))

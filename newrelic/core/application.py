@@ -16,7 +16,7 @@ from newrelic.core.environment import environment_settings
 from newrelic.core.metric import ValueMetric
 from newrelic.core.rules_engine import RulesEngine
 from newrelic.core.samplers import create_samplers
-from newrelic.core.stats_engine import StatsEngine
+from newrelic.core.stats_engine import StatsEngine, ValueMetrics
 from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
         InternalTraceContext, internal_metric)
 
@@ -351,35 +351,51 @@ class Application(object):
         if not self._active_session:
             return
 
-        try:
-            # We accumulate stats into a workarea and only then merge it
-            # into the main one under a thread lock. Do this to ensure
-            # that the process of generating the metrics into the stats
-            # don't unecessarily lock out another thread.
+        internal_metrics = ValueMetrics()
 
-            stats = self._stats_engine.create_workarea()
-            stats.record_transaction(data)
-
-        except:
-            _logger.exception('The generation of transaction data has '
-                    'failed. This would indicate some sort of internal '
-                    'implementation issue with the agent. Please report '
-                    'this problem to New Relic support for further '
-                    'investigation.')
-
-        with self._stats_lock:
+        with InternalTraceContext(internal_metrics):
             try:
-                self._transaction_count += 1
-                self._last_transaction = data.end_time
+                # We accumulate stats into a workarea and only then merge it
+                # into the main one under a thread lock. Do this to ensure
+                # that the process of generating the metrics into the stats
+                # don't unecessarily lock out another thread.
 
-                self._stats_engine.merge_stats(stats)
+                stats = self._stats_engine.create_workarea()
+                stats.record_transaction(data)
 
             except:
-                _logger.exception('The merging of transaction data has '
+                _logger.exception('The generation of transaction data has '
                         'failed. This would indicate some sort of internal '
                         'implementation issue with the agent. Please report '
                         'this problem to New Relic support for further '
                         'investigation.')
+
+            with self._stats_lock:
+                try:
+                    self._transaction_count += 1
+                    self._last_transaction = data.end_time
+
+                    internal_metric('Supportability/Transaction/Counts/'
+                            'metric_data', stats.metric_data_count())
+
+                    self._stats_engine.merge_stats(stats)
+
+                    # We merge the internal statistics here as well even
+                    # though have popped out of the context where we are
+                    # recording. This is okay so long as don't record
+                    # anything else after this point. If we do then that
+                    # data will not be recorded.
+
+                    self._stats_engine.merge_value_metrics(
+                            internal_metrics.metrics())
+
+                except:
+                    _logger.exception('The merging of transaction data has '
+                            'failed. This would indicate some sort of '
+                            'internal implementation issue with the agent. '
+                            'Please report this problem to New Relic support '
+                            'for further investigation.')
+
 
     def harvest(self, shutdown=False):
         """Performs a harvest, reporting aggregated data for the current
@@ -396,13 +412,9 @@ class Application(object):
 
             return
 
-        internal_stats = self._stats_engine.create_workarea()
+        internal_metrics = ValueMetrics()
 
-        def record_internal_trace(name, duration):
-            internal_stats.record_value_metric(ValueMetric(
-                    name=name, value=duration))
-
-        with InternalTraceContext(record_internal_trace):
+        with InternalTraceContext(internal_metrics):
             with InternalTrace('Supportability/Harvest/Calls/harvest'):
 
                 self._harvest_count += 1
@@ -631,4 +643,4 @@ class Application(object):
         # part of the data for the next harvest period.
 
         with self._stats_lock:
-            self._stats_engine.merge_stats(internal_stats)
+            self._stats_engine.merge_value_metrics(internal_metrics.metrics())

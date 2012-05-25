@@ -23,7 +23,8 @@ import newrelic.lib.requests as requests
 
 from newrelic import version
 from newrelic.core.config import global_settings, create_settings_snapshot
-from newrelic.core.internal_metrics import internal_trace, InternalTrace
+from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
+        internal_metric)
 
 _logger = logging.getLogger(__name__)
 
@@ -197,6 +198,10 @@ def send_request(url, method, license_key, agent_run_id=None, payload=()):
     if len(data) > 64*1024:
         headers['Content-Encoding'] = 'deflate'
         level = (len(data) < 2000000) and 1 or 9
+
+        internal_metric('Supportability/Collector/ZLIB/Bytes/%s' % method,
+                len(data))
+
         with InternalTrace('Supportability/Collector/ZLIB/Compress/'
                 '%s' % method):
             data = zlib.compress(data, level)
@@ -234,6 +239,9 @@ def send_request(url, method, license_key, agent_run_id=None, payload=()):
     # application is being restarted and not in state to be able to
     # accept requests. It should be a transient issue so should be able
     # to retain data and try again.
+
+    internal_metric('Supportability/Collector/Output/Bytes/%s' % method,
+            len(data))
 
     try:
         r = requests.post(url, params=params, headers=headers,
@@ -322,6 +330,9 @@ def send_request(url, method, license_key, agent_run_id=None, payload=()):
     # data collector. The response is JSON so need to decode it.
     # Everything will come back as Unicode. Make sure all strings are
     # decoded as 'UTF-8'.
+
+    internal_metric('Supportability/Collector/Input/Bytes/%s' % method,
+            len(r.content))
 
     try:
         with InternalTrace('Supportability/Collector/JSON/Decode/%s' % method):

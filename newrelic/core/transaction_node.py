@@ -16,6 +16,8 @@ import newrelic.core.metric
 import newrelic.core.error_collector
 import newrelic.core.trace_node
 
+from newrelic.core.internal_metrics import internal_trace
+
 _TransactionNode = namedtuple('_TransactionNode',
         ['settings', 'path', 'type', 'group', 'name', 'request_uri',
         'response_code', 'request_params', 'custom_params', 'queue_start',
@@ -33,6 +35,7 @@ class TransactionNode(_TransactionNode):
 
     """
 
+    @internal_trace('Supportability/TransactionNode/Calls/time_metrics')
     def time_metrics(self, stats):
         """Return a generator yielding the timed metrics for the
         top level web transaction as well as all the child nodes.
@@ -126,6 +129,7 @@ class TransactionNode(_TransactionNode):
             for metric in child.time_metrics(stats, self, self):
                 yield metric
 
+    @internal_trace('Supportability/TransactionNode/Calls/apdex_metrics')
     def apdex_metrics(self, stats):
         """Return a generator yielding the apdex metrics for this node.
 
@@ -187,6 +191,7 @@ class TransactionNode(_TransactionNode):
                 overflow=None, forced=True, satisfying=satisfying,
                 tolerating=tolerating, frustrating=frustrating)
 
+    @internal_trace('Supportability/TransactionNode/Calls/value_metrics')
     def value_metrics(self, stats):
         """Return a generator yielding any custom metrics recorded
         against this transaction.
@@ -196,6 +201,7 @@ class TransactionNode(_TransactionNode):
         for name, value in self.custom_metrics:
             yield newrelic.core.metric.ValueMetric(name=name, value=value)
 
+    @internal_trace('Supportability/TransactionNode/Calls/error_details')
     def error_details(self):
         """Return a generator yielding the details for each unique error
         captured during this transaction.
@@ -255,6 +261,7 @@ class TransactionNode(_TransactionNode):
                 end_time=end_time, name=name, params=params, children=children,
                 label=None)
 
+    @internal_trace('Supportability/TransactionNode/Calls/transaction_trace')
     def transaction_trace(self, stats, string_table, limit):
 
         self.trace_node_count = 0
@@ -278,6 +285,7 @@ class TransactionNode(_TransactionNode):
                 request_params=request_params, custom_params=custom_params,
                 root=root, parameter_groups=parameter_groups)
 
+    @internal_trace('Supportability/TransactionNode/Calls/slow_sql_nodes')
     def slow_sql_nodes(self, stats):
         for item in self.slow_sql:
             yield item.slow_sql_node(stats, self)

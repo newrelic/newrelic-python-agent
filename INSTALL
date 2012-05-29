@@ -2,7 +2,7 @@ Installation Instructions
 =========================
 
 This file provides a brief set of installation instructions for the Python
-agent. Also see the New Relic support site at:
+agent. Also see the New Relic documentation site at:
 
     http://newrelic.com/docs/python/new-relic-for-python
 
@@ -13,7 +13,7 @@ If you don't read instructions
 ------------------------------
 
 If you don't want to read through the complete instructions here and on the
-New Relic support site, you should at least read the following section.
+New Relic documentation site, you should at least read the following section.
 
 To get the New Relic Python agent working you need to perform three steps.
 
@@ -42,8 +42,11 @@ command:
     newrelic-admin generate-config LICENSE-KEY newrelic.ini
 
 When you run this command, replace the argument "LICENSE-KEY" with your
-actual license key for your New Relic account. You can find this in the
-"Support" tab when you are logged into your account.
+actual license key for your New Relic account. To find your account license key:
+
+    1. Log into your account. 
+    2. Navigate to "Help->Help Center".
+    3. Look on the right side-bar under "Get Your License Key".
 
 The final argument is the name of an output file to save the result to.
 Here we have used "newrelic.ini" and it should be written to the directory
@@ -184,6 +187,6 @@ can be easily wrapped with the New Relic WSGI application wrapper.
 
 For further details on how to integrate the Python agent into your web
 application when using these other WSGI hosting mechanisms see the New
-Relic support site.
+Relic documentation site.
 
     http://newrelic.com/docs/python/new-relic-for-python

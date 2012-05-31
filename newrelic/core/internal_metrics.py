@@ -29,7 +29,7 @@ class InternalTrace(object):
             self.metrics.record_value_metric(
                     ValueMetric(name=self.name, value=duration))
 
-class InternalTraceWrapper(object):
+class xInternalTraceWrapper(object):
 
     def __init__(self, wrapped, name=None):
         self.wrapped = wrapped
@@ -56,6 +56,35 @@ class InternalTraceWrapper(object):
 
     def __call__(self, *args, **kwargs):
         return self.execute(self.wrapped, *args, **kwargs)
+
+class InternalTraceWrapper(object):
+
+    def __init__(self, wrapped, name):
+        if type(wrapped) == type(()):
+            (instance, wrapped) = wrapped
+        else:
+            instance = None
+        self.__instance = instance
+        self.__wrapped = wrapped
+        self.__name = name
+
+    def __getattr__(self, name):
+        return getattr(self.__wrapped, name)
+
+    def __get__(self, instance, klass):
+        if instance is None:
+            return self
+        descriptor = self.__wrapped.__get__(instance, klass)
+        return self.__class__((instance, descriptor), self.__name)
+
+    def __call__(self, *args, **kwargs):
+        metrics = getattr(_context, 'current', None)
+
+        if metrics is None:
+            return self.__wrapped(*args, **kwargs)
+
+        with InternalTrace(self.__name, metrics):
+            return self.__wrapped(*args, **kwargs)
 
 class InternalTraceContext(object):
 

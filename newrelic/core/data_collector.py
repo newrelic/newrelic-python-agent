@@ -105,12 +105,28 @@ def proxy_server():
 
     return { scheme: proxy }
 
+# For now we create one session object for handling requests to data
+# collector as all applications being harvested one after another in the
+# same thread. We force pool size to 1 to ensure that only one
+# connection to data collector which will be maintained due to keep
+# alive and reused. If move to multiple threads to harvest applications
+# when have more than one, then need to change this such that either
+# allow more connections or multiple session objects.
+
+_requests_config = {}
+_requests_config['keep_alive'] = True
+_requests_config['pool_connections'] = 1
+_requests_config['pool_maxsize'] = 1
+
+_requests_session = requests.session(config=_requests_config)
+
 # Low level network functions and session management. When connecting to
 # the data collector it is initially done through the main data collector.
 # It is though then necessary to ask the data collector for the per
 # session data collector to use. Subsequent calls are then made to it.
 
-def send_request(url, method, license_key, agent_run_id=None, payload=()):
+def send_request(session, url, method, license_key, agent_run_id=None,
+            payload=()):
     """Constructs and sends a request to the data collector."""
 
     params = {}
@@ -139,14 +155,6 @@ def send_request(url, method, license_key, agent_run_id=None, payload=()):
 
     headers['User-Agent'] = USER_AGENT
     headers['Content-Encoding'] = 'identity'
-
-    # The data collector doesn't appear to honour keep alive but set it
-    # up in case that ever changes. Keep alive is handled within the
-    # 'request' library automatically when it is supported by the server
-    # using a pool of connections keyed on server name.
-
-    config['keep_alive'] = True
-    headers['Connection'] = 'Keep-Alive'
 
     # Set up definitions for proxy server in case that has been set.
 
@@ -244,8 +252,12 @@ def send_request(url, method, license_key, agent_run_id=None, payload=()):
             len(data))
 
     try:
-        r = requests.post(url, params=params, headers=headers,
-                config=config, proxies=proxies, verify=False, data=data)
+        if session:
+            r = session.post(url, params=params, headers=headers,
+                    proxies=proxies, verify=False, data=data)
+        else:
+            r = requests.post(url, params=params, headers=headers,
+                    proxies=proxies, verify=False, data=data)
 
     except requests.RequestException, exc:
         _logger.warning('Unable to connect to the data collector with '
@@ -428,7 +440,9 @@ class ApplicationSession(object):
 
     """
 
-    def __init__(self, collector_url, license_key, configuration):
+    def __init__(self, requests_session, collector_url, license_key,
+                configuration):
+        self.requests_session = requests_session
         self.collector_url = collector_url
         self.license_key = license_key
         self.configuration = configuration
@@ -446,8 +460,8 @@ class ApplicationSession(object):
         _logger.debug('Connecting to data collector to terminate session '
                 'for agent run %r.', self.agent_run_id)
 
-        return send_request(self.collector_url, 'shutdown',
-                self.license_key, self.agent_run_id)
+        return send_request(self.requests_session, self.collector_url,
+                'shutdown', self.license_key, self.agent_run_id)
 
     @internal_trace('Supportability/Collector/Calls/metric_data')
     def send_metric_data(self, start_time, end_time, metric_data):
@@ -460,8 +474,8 @@ class ApplicationSession(object):
 
         payload = (self.agent_run_id, start_time, end_time, metric_data)
 
-        return send_request(self.collector_url, 'metric_data',
-                self.license_key, self.agent_run_id, payload)
+        return send_request(self.requests_session, self.collector_url,
+                'metric_data', self.license_key, self.agent_run_id, payload)
 
     @internal_trace('Supportability/Collector/Calls/error_data')
     def send_errors(self, errors):
@@ -479,7 +493,8 @@ class ApplicationSession(object):
 
         payload = (self.agent_run_id, errors)
 
-        return send_request(self.collector_url, 'error_data',
+        return send_request(self.requests_session, self.collector_url,
+                'error_data',
                 self.license_key, self.agent_run_id, payload)
 
     @internal_trace('Supportability/Collector/Calls/transaction_sample_data')
@@ -498,8 +513,9 @@ class ApplicationSession(object):
 
         payload = (self.agent_run_id, transaction_traces)
 
-        return send_request(self.collector_url, 'transaction_sample_data',
-                self.license_key, self.agent_run_id, payload)
+        return send_request(self.requests_session, self.collector_url,
+                'transaction_sample_data', self.license_key,
+                self.agent_run_id, payload)
 
     @internal_trace('Supportability/Collector/Calls/sql_trace_data')
     def send_sql_traces(self, sql_traces):
@@ -516,8 +532,9 @@ class ApplicationSession(object):
 
         payload = (sql_traces,)
 
-        return send_request(self.collector_url, 'sql_trace_data',
-                self.license_key, self.agent_run_id, payload)
+        return send_request(self.requests_session, self.collector_url,
+                'sql_trace_data', self.license_key, self.agent_run_id,
+                payload)
 
 def create_session(license_key, app_name, linked_applications,
         environment, settings):
@@ -553,11 +570,18 @@ def create_session(license_key, app_name, linked_applications,
                 linked_applications, environment, settings)
 
         url = collector_url()
-        redirect_host = send_request(url, 'get_redirect_host', license_key)
+        redirect_host = send_request(None, url, 'get_redirect_host',
+                license_key)
 
         # Then we perform a connect to the actual data collector host
         # we need to use. All communications after this point should go
         # to the secondary data collector.
+        #
+        # We use the global requests session object for now as harvest
+        # for different applications are all done in turn. We will need
+        # to change this if use multiple threads as currently force
+        # session object to maintain only single connection to ensure
+        # that keep alive is effective.
 
         app_names = [app_name] + linked_applications
 
@@ -575,8 +599,8 @@ def create_session(license_key, app_name, linked_applications,
         payload = (local_config,)
 
         url = collector_url(redirect_host)
-        server_config = send_request(url, 'connect', license_key,
-                None, payload)
+        server_config = send_request(_requests_session, url, 'connect',
+                license_key, None, payload)
 
         # The agent configuration for the application in constructed
         # by taking a snapshot of the locally constructed configuration
@@ -607,7 +631,8 @@ def create_session(license_key, app_name, linked_applications,
         # Everything fine so we create the session object through which
         # subsequent communication with data collector will be done.
 
-        session = ApplicationSession(url, license_key, application_config)
+        session = ApplicationSession(_requests_session, url, license_key,
+                application_config)
 
         duration = time.time() - start
 

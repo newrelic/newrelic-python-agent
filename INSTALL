@@ -42,7 +42,8 @@ command:
     newrelic-admin generate-config LICENSE-KEY newrelic.ini
 
 When you run this command, replace the argument "LICENSE-KEY" with your
-actual license key for your New Relic account. To find your account license key:
+actual license key for your New Relic account. To find your account license
+key:
 
     1. Log into your account. 
     2. Navigate to "Help->Help Center".
@@ -66,7 +67,8 @@ of the sample configuration from:
     http://download.newrelic.com/python_agent/release/newrelic.ini
 
 If downloading the sample configuration rather than generating it with the
-'newrelic-admin' command, you will need to edit it and change the 'license_key' setting to be your account license key yourself.
+'newrelic-admin' command, you will need to edit it and change the
+'license_key' setting to be your account license key yourself.
 
 Now modify the configuration file and first uncomment the line:
 

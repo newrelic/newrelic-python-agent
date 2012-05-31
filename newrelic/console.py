@@ -346,7 +346,10 @@ class ConnectionManager(object):
             except:
                 shell.stdout.flush()
                 print >> shell.stdout, 'Unexpected exception.'
-                traceback.print_exception(*sys.exc_info(), file=shell.stdout)
+                exc_info = sys.exc_info()
+                traceback.print_exception(exc_info[0], exc_info[1],
+                        exc_info[2], file=shell.stdout)
+                exc_info = None
 
             shell.stdin = None
             shell.stdout = None

@@ -22,10 +22,10 @@ from newrelic.api.transaction import Transaction
 from newrelic.api.object_wrapper import ObjectWrapper
 
 def shell_command(wrapped):
-    argspec = inspect.getargspec(wrapped)
+    args, varargs, keywords, defaults = inspect.getargspec(wrapped)
 
     parser = optparse.OptionParser()
-    for name in argspec.args[1:]:
+    for name in args[1:]:
         parser.add_option('--%s' % name, dest=name)
 
     @functools.wraps(wrapped)
@@ -42,7 +42,6 @@ def shell_command(wrapped):
         return wrapped(self, *args, **kwargs)
 
     if wrapper.__name__.startswith('do_'):
-        args, varargs, keywords, defaults = inspect.getargspec(wrapped)
         prototype = wrapper.__name__[3:] + ' ' + inspect.formatargspec(
                 args[1:], varargs, keywords, defaults)
         wrapper.__doc__ = '\n'.join((prototype, wrapper.__doc__.lstrip('\n')))

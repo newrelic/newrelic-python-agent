@@ -5,6 +5,7 @@ import ConfigParser
 import logging
 
 import newrelic.core.log_file
+import newrelic.core.agent
 
 import newrelic.api.settings
 import newrelic.api.import_hook
@@ -1324,10 +1325,15 @@ def _setup_instrumentation():
 
 _console = None
 
+def _startup_agent_console():
+    global _console
+
+    _console = newrelic.console.ConnectionManager(
+            _settings.console.listener_socket)
+
 def _setup_agent_console():
     if _settings.console.listener_socket:
-        _console = newrelic.console.ConnectionManager(
-                _settings.console.listener_socket)
+        newrelic.core.agent.Agent.run_on_startup(_startup_agent_console)
 
 def initialize(config_file=None, environment=None, ignore_errors=True,
             log_file=None, log_level=None):

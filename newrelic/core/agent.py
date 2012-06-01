@@ -61,9 +61,14 @@ class Agent(object):
 
     _lock = threading.Lock()
     _instance = None
+    _delayed_callables = []
 
     @staticmethod
-    def _singleton():
+    def run_on_startup(callable):
+        Agent._delayed_callables.append(callable)
+
+    @staticmethod
+    def agent_singleton():
         """Used by the agent() function to access/create the single
         agent object instance.
 
@@ -88,6 +93,9 @@ class Agent(object):
                 settings = newrelic.core.config.global_settings()
                 Agent._instance = Agent(settings)
                 Agent._instance.activate_agent()
+
+                for callable in Agent._delayed_callables:
+                    callable()
 
             return Agent._instance
 
@@ -400,4 +408,4 @@ def agent():
 
     """
 
-    return Agent._singleton()
+    return Agent.agent_singleton()

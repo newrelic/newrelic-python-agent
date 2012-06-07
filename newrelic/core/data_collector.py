@@ -101,7 +101,8 @@ def proxy_server():
     # as requests library will strip it out of there and use that.
 
     if settings.proxy_user is not None and settings.proxy_pass is not None:
-        proxy = '%s:%s@%s' % (settings.proxy_user, settings.proxy_pass, proxy)
+        proxy = 'http://%s:%s@%s' % (settings.proxy_user,
+                settings.proxy_pass, proxy)
 
     return { scheme: proxy }
 

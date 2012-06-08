@@ -21,64 +21,68 @@ class FunctionProfile(object):
         self.profile.disable()
         pass
 
-class FunctionProfileWrapper(ObjectWrapper):
+class FunctionProfileContext(object):
 
-    def __init__(self, wrapped, filename, delay=1.0, checkpoint=30):
-        self._nr_instance = None
-        self._nr_next_object = wrapped
+    def __init__(self, filename, delay=1.0, checkpoint=30):
+        self.filename = filename % { 'pid': os.getpid() }
+        self.delay = delay
+        self.checkpoint = checkpoint
 
-        if not hasattr(self, '_nr_last_object'):
-            self._nr_last_object = wrapped
+        self.lock = threading.Lock()
+        self.profile = cProfile.Profile()
 
-        self._nr_filename = filename % { 'pid': os.getpid() }
-        self._nr_delay = delay
-        self._nr_checkpoint = checkpoint
+        self.last = time.time() - delay
 
-        self._nr_lock = threading.Lock()
-        self._nr_profile = cProfile.Profile()
+        self.active = False
+        self.count = 0
 
-        self._nr_last = time.time() - delay
-
-        self._nr_active = False
-        self._nr_count = 0
-
-    def _nr_invoke(self, wrapped, *args, **kwargs):
-        with self._nr_lock:
-            if self._nr_active:
+    def invoke(self, wrapped, instance, *args, **kwargs):
+        with self.lock:
+            if self.active:
                 return wrapped(*args, **kwargs)
 
-            if time.time() - self._nr_last < self._nr_delay:
+            if time.time() - self.last < self.delay:
                 return wrapped(*args, **kwargs)
 
-            self._nr_active = True
-            self._nr_count += 1
+            self.active = True
+            self.count += 1
 
         try:
-            with FunctionProfile(self._nr_profile):
+            with FunctionProfile(self.profile):
                 result = wrapped(*args, **kwargs)
 
-            if (self._nr_count % self._nr_checkpoint) == 0:
-                self._nr_profile.dump_stats(self._nr_filename)
+            if (self.count % self.checkpoint) == 0:
+                self.profile.dump_stats(self.filename)
 
             return result
 
         finally:
-            self._nr_last = time.time()
-            self._nr_active = False
+            self.last = time.time()
+            self.active = False
+
+class _FunctionProfileWrapper(object):
+
+    def __init__(self, wrapped, instance, context):
+        self._nr_wrapped = wrapped
+        self._nr_instance = instance
+        self._nr_context = context
+
+    def __getattr__(self, name):
+        return getattr(self._nr_wrapped, name)
 
     def __get__(self, instance, klass):
         if instance is None:
             return self
-
-        @functools.wraps(self._nr_next_object)
-        def wrapper(*args, **kwargs):
-            descriptor = self._nr_next_object.__get__(instance, klass)
-            return self._nr_invoke(descriptor, *args, **kwargs)
-
-        return wrapper
+        descriptor = self._nr_wrapped.__get__(instance, klass)
+        return self.__class__(descriptor, instance, self._nr_context)
 
     def __call__(self, *args, **kwargs):
-        return self._nr_invoke(_nr_next_object, *args, **kwargs)
+        return self._nr_context.invoke(self._nr_wrapped,
+            self._nr_instance, *args, **kwargs)
+
+def FunctionProfileWrapper(wrapped, filename, delay=1.0, checkpoint=30):
+    context = FunctionProfileContext(filename, delay, checkpoint)
+    return _FunctionProfileWrapper(wrapped, None, context)
 
 def function_profile(filename, delay=1.0, checkpoint=30):
     def decorator(wrapped):

@@ -302,7 +302,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
             if headers['Content-Encoding'] == 'deflate':
                 data = zlib.uncompress(data)
 
-            _logger.debug('JSON data which was rejected by the data '
+            _logger.info('JSON data which was rejected by the data '
                     'collector was %r.', data)
 
         raise DiscardDataForRequest(r.content)
@@ -358,7 +358,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 r.content, exc)
 
         if settings.debug.log_malformed_json_data:
-            _logger.debug('JSON data received from data collector which '
+            _logger.info('JSON data received from data collector which '
                     'could not be decoded was %r.', r.content)
 
         raise DiscardDataForRequest(str(exc))

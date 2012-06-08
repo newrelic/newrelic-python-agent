@@ -415,7 +415,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         raise ForceAgentRestart(message)
 
     elif error_type == 'NewRelic::Agent::ForceDisconnectException':
-        _logger.alert('Disconnection of the agent has been requested by '
+        _logger.critical('Disconnection of the agent has been requested by '
                 'the data collector for the application where the '
                 'agent run was %r. The reason given for the forced '
                 'disconnection is %r. Please contact New Relic support '

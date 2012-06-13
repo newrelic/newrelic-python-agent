@@ -13,7 +13,7 @@ import newrelic.lib.sqlparse.sql
 import newrelic.lib.sqlparse.tokens
 
 from newrelic.core.config import global_settings
-from newrelic.core.internal_metrics import internal_trace
+from newrelic.core.internal_metrics import (internal_trace, internal_metric)
 
 _logger = logging.getLogger(__name__)
 
@@ -46,9 +46,14 @@ class SqlPropertiesCache(object):
 
     def fetch(self, sql):
         entry = self.__cache.get(sql, None)
+
         if entry is None:
+            internal_metric('Supportability/DatabaseUtils/Cache/Misses', 1)
             entry = SqlProperties(sql)
             self.__cache[sql] = entry
+        else:
+            internal_metric('Supportability/DatabaseUtils/Cache/Hits', 1)
+
         self.__history[0].add(entry)
         return entry
 

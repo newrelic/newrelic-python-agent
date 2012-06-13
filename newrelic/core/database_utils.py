@@ -3,14 +3,19 @@ explain plans for SQL etc.
 
 """
 
+import logging
 import re
+import time
 import weakref
 
 import newrelic.lib.sqlparse
 import newrelic.lib.sqlparse.sql
 import newrelic.lib.sqlparse.tokens
 
+from newrelic.core.config import global_settings
 from newrelic.core.internal_metrics import internal_trace
+
+_logger = logging.getLogger(__name__)
 
 # Caching mechanism for storing generated results from operations on
 # database queries. Values are kept in a weak value dictionary with
@@ -531,9 +536,27 @@ def _parse_sql_statement(sql):
     # The parse() routine will raise an exception if not well
     # formed SQL that it can parse so need to catch that, ignore
     # it and then bail out.
+    #
+    # We optionally log details of the SQL if debug option enabled
+    # to capture SQL statements which take longer than a certain
+    # threshold to be parsed by the sqlparse library.
+
+    settings = global_settings()
 
     try:
+        if settings.debug.sql_parsing_log_threshold is not None:
+            start = time.time()
+
         statement = newrelic.lib.sqlparse.parse(sql)[0]
+
+        if settings.debug.sql_parsing_log_threshold is not None:
+            duration = time.time() - start
+            if duration >= settings.debug.sql_parsing_log_threshold:
+                _logger.info('Time spent parsing SQL exceeded the defined '
+                        'threshold with duration of %.3f seconds. Please '
+                        'report the details to New Relic support for '
+                        'investigation. The SQL statement was %r.',
+                        duration, sql)
     except:
         return (None, None)
 

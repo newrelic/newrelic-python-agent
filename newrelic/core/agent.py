@@ -285,6 +285,8 @@ class Agent(object):
         return application.normalize_name(name)
 
     def _harvest_loop(self):
+        settings = newrelic.core.config.global_settings()
+
         self._next_harvest = time.time()
 
         while True:
@@ -334,10 +336,8 @@ class Agent(object):
 
             # Expire entries from any caches which are being kept.
 
-            # FIXME Make number of harvest periods that cache entries
-            # are kept for configurable.
-
-            newrelic.core.database_utils.sql_properties_cache.expire(3)
+            newrelic.core.database_utils.sql_properties_cache.expire(
+                    settings.agent_limits.sql_cache_buckets)
 
     def _run_harvest(self, shutdown=False):
         # This isn't going to maintain order of applications

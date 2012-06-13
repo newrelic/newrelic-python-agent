@@ -546,6 +546,8 @@ def _parse_sql_statement(sql):
     # to capture SQL statements which take longer than a certain
     # threshold to be parsed by the sqlparse library.
 
+    internal_metric('Supportability/DatabaseUtils/Parse/Bytes', len(sql))
+
     settings = global_settings()
 
     try:

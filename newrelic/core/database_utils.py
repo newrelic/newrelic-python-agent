@@ -48,9 +48,15 @@ class SqlPropertiesCache(object):
         entry = self.__cache.get(sql, None)
 
         if entry is None:
-            internal_metric('Supportability/DatabaseUtils/Cache/Misses', 1)
             entry = SqlProperties(sql)
             self.__cache[sql] = entry
+
+            settings = global_settings()
+
+            if settings.debug.log_sql_cache_misses:
+                _logger.info('SQL cache miss occurred for SQL of %r.', sql)
+
+            internal_metric('Supportability/DatabaseUtils/Cache/Misses', 1)
         else:
             internal_metric('Supportability/DatabaseUtils/Cache/Hits', 1)
 

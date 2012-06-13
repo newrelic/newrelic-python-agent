@@ -291,6 +291,8 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'debug.sql_parsing_log_threshold',
                      'getfloat', None)
+    _process_setting(section, 'debug.log_sql_cache_misses',
+                     'getboolean', None)
 
 # Loading of configuration from specified file and for specified
 # deployment environment. Can also indicate whether configuration

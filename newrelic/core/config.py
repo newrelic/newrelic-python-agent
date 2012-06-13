@@ -148,6 +148,7 @@ _settings.debug.log_data_collector_payloads = False
 _settings.debug.log_malformed_json_data = False
 
 _settings.debug.sql_parsing_log_threshold = None
+_settings.debug.log_sql_cache_misses = False
 
 def global_settings():
     """This returns the default global settings. Generally only used

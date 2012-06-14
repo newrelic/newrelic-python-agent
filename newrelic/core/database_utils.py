@@ -17,6 +17,8 @@ from newrelic.core.internal_metrics import (internal_trace, internal_metric)
 
 _logger = logging.getLogger(__name__)
 
+_settings = global_settings()
+
 # Caching mechanism for storing generated results from operations on
 # database queries. Values are kept in a weak value dictionary with
 # moving history of buckets also holding the value so not removed from
@@ -51,9 +53,7 @@ class SqlPropertiesCache(object):
             entry = SqlProperties(sql)
             self.__cache[sql] = entry
 
-            settings = global_settings()
-
-            if settings.debug.log_sql_cache_misses:
+            if _settings.debug.log_sql_cache_misses:
                 _logger.info('SQL cache miss occurred for SQL of %r.', sql)
 
             internal_metric('Supportability/DatabaseUtils/Cache/Misses', 1)
@@ -177,10 +177,21 @@ def obfuscated_sql(name, sql, collapsed=False):
 
     return obfuscated
 
-_identifier_re = re.compile('["`\[\]]*')
+# Helper function for extracting out any identifier from a string which
+# might be preceded or followed by punctuation which we can expect in
+# context of SQL statements.
+#
+# Note that it may be better to match and extract on the characters of
+# the first identifier in string rather than trying to remove everything
+# else.
 
-def _format_identifier(token):
-    return _identifier_re.sub('', token.to_unicode()).strip().lower()
+#_identifier_re = re.compile('["`\[\]]*')
+_identifier_re = re.compile('[\',"`\[\]\(\)]*')
+
+def _extract_identifier(token):
+    return _identifier_re.sub('', token).strip().lower()
+
+# SQL parser routines for where using sqlparse the library.
 
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_select')
 def _parse_select(statement, token):
@@ -250,7 +261,7 @@ def _parse_select(statement, token):
         # first token so pick up the table name and not the full
         # string with alias.
 
-        return _format_identifier(first_token)
+        return _extract_identifier(first_token.to_unicode())
 
     elif (type(argument) == newrelic.lib.sqlparse.sql.Token and
             argument.ttype == newrelic.lib.sqlparse.tokens.Punctuation and
@@ -269,7 +280,7 @@ def _parse_select(statement, token):
         (identifier, operation) = _parse_token_list(token_list)
         return identifier
 
-    return _format_identifier(argument)
+    return _extract_identifier(argument.to_unicode())
 
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_delete')
 def _parse_delete(statement, token):
@@ -290,9 +301,9 @@ def _parse_delete(statement, token):
     if isinstance(argument, newrelic.lib.sqlparse.sql.TokenList):
         first_token = argument.token_first()
 
-        return _format_identifier(first_token)
+        return _extract_identifier(first_token.to_unicode())
 
-    return _format_identifier(argument)
+    return _extract_identifier(argument.to_unicode())
 
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_insert')
 def _parse_insert(statement, token):
@@ -313,9 +324,9 @@ def _parse_insert(statement, token):
     if isinstance(argument, newrelic.lib.sqlparse.sql.TokenList):
         first_token = argument.token_first()
 
-        return _format_identifier(first_token)
+        return _extract_identifier(first_token.to_unicode())
 
-    return _format_identifier(argument)
+    return _extract_identifier(argument.to_unicode())
 
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_update')
 def _parse_update(statement, token):
@@ -329,9 +340,9 @@ def _parse_update(statement, token):
     if isinstance(argument, newrelic.lib.sqlparse.sql.TokenList):
         first_token = argument.token_first()
 
-        return _format_identifier(first_token)
+        return _extract_identifier(first_token.to_unicode())
 
-    return _format_identifier(argument)
+    return _extract_identifier(argument.to_unicode())
 
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_create')
 def _parse_create(statement, token):
@@ -352,9 +363,9 @@ def _parse_create(statement, token):
     if isinstance(argument, newrelic.lib.sqlparse.sql.TokenList):
         first_token = argument.token_first()
 
-        return _format_identifier(first_token)
+        return _extract_identifier(first_token.to_unicode())
 
-    return _format_identifier(argument)
+    return _extract_identifier(argument.to_unicode())
 
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_call')
 def _parse_call(statement, token):
@@ -368,9 +379,9 @@ def _parse_call(statement, token):
     if isinstance(argument, newrelic.lib.sqlparse.sql.TokenList):
         first_token = argument.token_first()
 
-        return _format_identifier(first_token)
+        return _extract_identifier(first_token.to_unicode())
 
-    return _format_identifier(argument)
+    return _extract_identifier(argument.to_unicode())
 
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_show')
 def _parse_show(statement, token):
@@ -385,7 +396,7 @@ def _parse_show(statement, token):
     tokens = statement.tokens[idx:]
     token_list = newrelic.lib.sqlparse.sql.TokenList(tokens)
 
-    return _format_identifier(token_list)
+    return _extract_identifier(token_list.to_unicode())
 
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_set')
 def _parse_set(statement, token):
@@ -401,7 +412,7 @@ def _parse_set(statement, token):
     tokens = statement.tokens[idx:-1]
     token_list = newrelic.lib.sqlparse.sql.TokenList(tokens)
 
-    return _format_identifier(token_list)
+    return _extract_identifier(token_list.to_unicode())
 
 _parser_table = {
     u'select': _parse_select,
@@ -454,8 +465,7 @@ def _parse_token_list(statement):
 
     return (identifier, operation)
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_sql_statement')
-def _parse_sql_statement(sql):
+def _parse_sql_statement_v1(sql):
     # The SQL could actually consist of multiple statements each
     # separated by a semicolon. The parse() routine splits out
     # each statement and returns a tuple holding each. We can
@@ -471,17 +481,15 @@ def _parse_sql_statement(sql):
 
     internal_metric('Supportability/DatabaseUtils/Parse/Bytes', len(sql))
 
-    settings = global_settings()
-
     try:
-        if settings.debug.sql_parsing_log_threshold is not None:
+        if _settings.debug.sql_parsing_log_threshold is not None:
             start = time.time()
 
         statement = newrelic.lib.sqlparse.parse(sql)[0]
 
-        if settings.debug.sql_parsing_log_threshold is not None:
+        if _settings.debug.sql_parsing_log_threshold is not None:
             duration = time.time() - start
-            if duration >= settings.debug.sql_parsing_log_threshold:
+            if duration >= _settings.debug.sql_parsing_log_threshold:
                 _logger.info('Time spent parsing SQL exceeded the defined '
                         'threshold with duration of %.3f seconds. Please '
                         'report the details to New Relic support for '
@@ -491,6 +499,79 @@ def _parse_sql_statement(sql):
         return (None, None)
 
     return _parse_token_list(statement)
+
+# SQL parser routines for where using regex library.
+
+_pattern_switches = re.IGNORECASE | re.DOTALL
+
+_comment_pattern_re = re.compile(r'/\*.*?\*/', _pattern_switches)
+
+def _remove_comments(sql):
+    return _comment_pattern_re.sub('', sql)
+
+_from_pattern_re = re.compile(r'\s+FROM\s+(?!\()(\S+)', _pattern_switches)
+_into_pattern_re = re.compile(r'\s+INTO\s+(?!\()(\S+)', _pattern_switches)
+_update_pattern_re = re.compile(r'\s*UPDATE\s+(?!\()(\S+)', _pattern_switches)
+_table_pattern_re = re.compile(r'\s+TABLE\s+(?!\()(\S+)', _pattern_switches)
+_call_pattern_re = re.compile(r'\s*CALL\s+(?!\()(\w+)', _pattern_switches)
+_show_pattern_re = re.compile(r'\s*SHOW\s+(.*)', _pattern_switches)
+_set_pattern_re = re.compile(r'\s*SET\s+(.*)\W+.*', _pattern_switches)
+_exec_pattern_re = re.compile(r'\s*EXEC\s+(?!\()(\w+)', _pattern_switches)
+_execute_pattern_re = re.compile(r'\s*EXECUTE\s+(?!\()(\w+)', _pattern_switches)
+_alter_pattern_re = re.compile(r'\s*ALTER\s+(?!\()(\w+)', _pattern_switches)
+
+_re_table = {
+    u'select': _from_pattern_re,
+    u'delete': _from_pattern_re,
+    u'insert': _into_pattern_re,
+    u'update': _update_pattern_re,
+    u'create': _table_pattern_re,
+    u'drop': _table_pattern_re,
+    u'call': _call_pattern_re,
+    u'show': _show_pattern_re,
+    u'set': _set_pattern_re,
+    u'alter': _alter_pattern_re,
+    u'exec': _exec_pattern_re,
+    u'execute': _execute_pattern_re,
+}
+
+def _parse_operation(sql):
+    try:
+        first_word = sql.split()[0].lower()
+    except:
+        return None
+
+    operation = _extract_identifier(first_word)
+
+    return operation if operation in _re_table.keys() else None
+
+def _parse_table(sql, regex):
+    try:
+        table = regex.findall(sql)[0]
+    except:
+        return None
+
+    return _extract_identifier(table)
+
+def _parse_sql_statement_v2(sql):
+    internal_metric('Supportability/DatabaseUtils/Parse/Bytes', len(sql))
+
+    sql = _remove_comments(sql)
+
+    operation = _parse_operation(sql)
+    if operation is None:
+        return (None, None)
+
+    table = _parse_table(sql, _re_table[operation])
+
+    return (table, operation) if table else (None, None)
+
+@internal_trace('Supportability/DatabaseUtils/Calls/parse_sql_statement')
+def _parse_sql_statement(sql):
+    if _settings.debug.sql_parsing_mechanism == 'regex':
+        return _parse_sql_statement_v2(sql)
+    else:
+        return _parse_sql_statement_v1(sql)
 
 def parsed_sql(name, sql):
     entry = sql_properties_cache.fetch(sql)

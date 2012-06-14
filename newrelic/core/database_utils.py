@@ -177,89 +177,6 @@ def obfuscated_sql(name, sql, collapsed=False):
 
     return obfuscated
 
-class SqlParser:
-
-    def __init__(self, sql):
-        self.stmt = newrelic.lib.sqlparse.parse(sql)[0]
-        self.operation = self.get_operation()
-        self.table = self.get_table()
-
-    def get_operation(self):
-        ddl = self.stmt.token_next_by_type(0, 
-                     newrelic.lib.sqlparse.tokens.Keyword.DDL)
-        dml = self.stmt.token_next_by_type(0, 
-                     newrelic.lib.sqlparse.tokens.Keyword.DML)
-
-        if ddl and not dml:
-            return ddl.value.lower()
-        elif dml and not ddl:
-            return dml.value.lower()
-        elif ddl and dml:
-            if self.stmt.token_index(ddl) < self.stmt.token_index(dml):
-                return ddl.value.lower()
-            else:
-                return dml.value.lower()
-        else:
-            keyword = self.stmt.token_next_by_type(0, 
-                     newrelic.lib.sqlparse.tokens.Keyword)
-            return keyword.value.lower()
-
-    def get_table(self):
-        if self.operation == 'select' or self.operation == 'delete':
-            token = self._find_table_token_for(
-                    newrelic.lib.sqlparse.tokens.Keyword, 'FROM')
-        elif self.operation == 'update':
-            token = self._find_table_token_for(
-                    newrelic.lib.sqlparse.tokens.Keyword.DML, 'UPDATE')
-        elif self.operation == 'set' or self.operation == 'show':
-            token = self._find_table_token_for(
-                    newrelic.lib.sqlparse.tokens.Keyword,
-                    self.operation.upper())
-        elif self.operation == 'insert':
-            token = self._find_table_token_for(
-                    newrelic.lib.sqlparse.tokens.Keyword, 'INTO')
-        elif self.operation == 'create':
-            idx = self._find_idx_for(
-                    newrelic.lib.sqlparse.tokens.Keyword.DDL, 'CREATE') 
-            token = self.stmt.token_next_by_type(
-                    idx+1, newrelic.lib.sqlparse.tokens.Keyword)
-        elif self.operation == 'call':
-            self.operation = 'ExecuteProcedure'
-            token = self._find_table_token_for(
-                    newrelic.lib.sqlparse.tokens.Keyword, 'CALL')
-        else:
-            token = None
-
-        if token is not None:
-            return self._format_table_token(token)
-
-    def _get_first_identifier_after(self, idx):
-        for token in self.stmt.tokens[idx:]:
-            if token.__class__.__name__ == 'Identifier':
-                return token
-            elif token.__class__.__name__ == 'IdentifierList':
-                first_table_token = token.get_identifiers()[0]
-                return first_table_token
-            elif token.__class__.__name__ == 'Function':
-                return token
-
-    table_name_re_1 = re.compile('[",`,\[,\]]*')
-    table_name_re_2 = re.compile('\(.*')
-
-    def _format_table_token(self, token):
-        table_name = self.table_name_re_1.sub('', token.to_unicode()).lower()
-        if token.__class__.__name__ == 'Function':
-            return self.table_name_re_2.sub('', table_name)
-        return table_name
-
-    def _find_idx_for(self, ttype, match):
-        node = self.stmt.token_next_match(0, ttype, match)
-        return self.stmt.token_index(node)
-
-    def _find_table_token_for(self, ttype, match):
-        idx = self._find_idx_for(ttype, match)
-        return self._get_first_identifier_after(idx)
-
 _identifier_re = re.compile('["`\[\]]*')
 
 def _format_identifier(token):
@@ -599,20 +516,6 @@ def parsed_sql(name, sql):
 
         if entry_collapsed.parsed is not None:
             return entry_collapsed.parsed
-
-    # XXX This old code doesn't work for various cases.
-    #
-    ## The SqlParser class doesn't cope well with badly formed
-    ## input data, so need to catch exceptions here. We return
-    ## (None, None) to indicate could parse out the details.
-    #
-    #try:
-    #    parsed_sql = SqlParser(sql)
-    #    table = parsed_sql.table
-    #    operation = parsed_sql.operation
-    #except:
-    #    table = None
-    #    operation = None
 
     try:
         table, operation = _parse_sql_statement(sql_collapsed)

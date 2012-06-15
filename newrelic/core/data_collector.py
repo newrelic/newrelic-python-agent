@@ -11,15 +11,8 @@ import sys
 import time
 import zlib
 
-try:
-    import json
-except:
-    try:
-        import simplejson as json
-    except:
-        import newrelic.lib.simplejson as json
-
 import newrelic.lib.requests as requests
+import newrelic.lib.simplejson as simplejson
 
 from newrelic import version
 from newrelic.core.config import global_settings, create_settings_snapshot
@@ -80,7 +73,7 @@ def collector_url(server=None):
 def proxy_server():
     """Returns the dictionary of proxy server settings to be supplied to
     the 'requests' library when making requests.
-    
+
     """
 
     settings = global_settings()
@@ -179,7 +172,8 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
     try:
         with InternalTrace('Supportability/Collector/JSON/Encode/%s' % method):
-            data = json.dumps(payload, ensure_ascii=True, encoding='Latin-1',
+            data = simplejson.dumps(payload, ensure_ascii=True,
+                    encoding='Latin-1', namedtuple_as_object=False,
                     default=lambda o: list(iter(o)))
 
     except Exception, exc:
@@ -349,7 +343,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
     try:
         with InternalTrace('Supportability/Collector/JSON/Decode/%s' % method):
-            result = json.loads(r.content, encoding='UTF-8')
+            result = simplejson.loads(r.content, encoding='UTF-8')
 
     except Exception, exc:
         _logger.error('Error decoding data for JSON payload for method %r '
@@ -544,7 +538,7 @@ def create_session(license_key, app_name, linked_applications,
     collector and retrieves the server side configuration. Returns a
     session object if successful through which subsequent calls to the
     data collector are made. If unsucessful then None is returned.
-    
+
     """
 
     start = time.time()

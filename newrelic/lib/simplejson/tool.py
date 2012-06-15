@@ -11,7 +11,7 @@ Usage::
 
 """
 import sys
-import simplejson as json
+import newrelic.lib.simplejson as json
 
 def main():
     if len(sys.argv) == 1:

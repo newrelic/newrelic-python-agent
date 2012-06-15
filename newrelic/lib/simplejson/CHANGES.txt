@@ -1,3 +1,46 @@
+Version 2.5.2 released 2012-05-10
+
+* Fix for regression introduced in 2.5.1
+  https://github.com/simplejson/simplejson/issues/35
+
+Version 2.5.1 released 2012-05-10
+
+* Support for use_decimal=True in environments that use Python
+  sub-interpreters such as uWSGI
+  https://github.com/simplejson/simplejson/issues/34
+
+Version 2.5.0 released 2012-03-29
+
+* New item_sort_key option for encoder to allow fine grained control of sorted
+  output
+
+Version 2.4.0 released 2012-03-06
+
+* New bigint_as_string option for encoder to trade JavaScript number precision
+  issues for type issues.
+  https://github.com/simplejson/simplejson/issues/31
+
+Version 2.3.3 released 2012-02-27
+
+* Allow unknown numerical types for indent parameter
+  https://github.com/simplejson/simplejson/pull/29
+
+Version 2.3.2 released 2011-12-30
+
+* Fix crashing regression in speedups introduced in 2.3.1
+
+Version 2.3.1 released 2011-12-29
+
+* namedtuple_as_object now checks _asdict to ensure that it
+  is callable.
+  https://github.com/simplejson/simplejson/issues/26
+
+Version 2.3.0 released 2011-12-05
+
+* Any objects with _asdict() methods are now considered for
+  namedtuple_as_object.
+  https://github.com/simplejson/simplejson/pull/22
+
 Version 2.2.1 released 2011-09-06
 
 * Fix MANIFEST.in issue when building a sdist from a sdist.
@@ -237,7 +280,7 @@ Version 1.1 released 2005-12-31
 * dump, dumps, load, loads now accept an optional cls kwarg to use an
   alternate JSONEncoder or JSONDecoder class for convenience.
 * The read/write compatibility shim for json-py now have deprecation warnings
- 
+
 Version 1.0 released 2005-12-25
 
  * Initial release

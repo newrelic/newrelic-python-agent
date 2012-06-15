@@ -12,16 +12,10 @@ import copy
 import operator
 import zlib
 
-try:
-    import json
-except:
-    try:
-        import simplejson as json
-    except:
-        import newrelic.lib.simplejson as json
-
 import newrelic.core.metric
 import newrelic.core.database_utils
+
+import newrelic.lib.simplejson as simplejson
 
 from newrelic.core.string_table import StringTable
 from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
@@ -30,9 +24,9 @@ from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
 class ApdexStats(list):
 
     """Bucket for accumulating apdex metrics.
-    
+
     """
-    
+
     # Is based on a list of length 6 as all metrics are sent to the core
     # application as that and list as base class means it encodes direct
     # to JSON as we need it. In this case only the first 3 entries are
@@ -62,7 +56,7 @@ class ApdexStats(list):
 class TimeStats(list):
 
     """Bucket for accumulating time and value metrics.
-    
+
     """
 
     # Is based on a list of length 6 as all metrics are sent to the core
@@ -142,7 +136,7 @@ class ValueMetrics(object):
     def record_value_metric(self, metric):
         """Record a single value metric, merging the data with any data
         from prior value metrics with the same name.
-        
+
         """
 
         key = (metric.name, '')
@@ -156,7 +150,7 @@ class ValueMetrics(object):
         """Returns an iterator over the set of value metrics. The items
         returned are a tuple consisting of the metric key and accumulated
         stats for that key.
-        
+
         """
 
         return self.__stats_table.iteritems()
@@ -575,7 +569,7 @@ class StatsEngine(object):
             return 0
 
         return len(self.__stats_table)
-        
+
     @internal_trace('Supportability/StatsEngine/Calls/error_data')
     def error_data(self):
         """Returns a to a list containing any errors collected during
@@ -609,15 +603,18 @@ class StatsEngine(object):
             params = {}
 
             if node.slow_sql_node.stack_trace:
-                params['backtrace'] = node.slow_sql_node.stack_trace 
+                params['backtrace'] = node.slow_sql_node.stack_trace
 
             explain_plan = node.slow_sql_node.explain_plan
 
             if explain_plan:
                 params['explain_plan'] = explain_plan
 
-            params_data = base64.standard_b64encode(
-                    zlib.compress(json.dumps(params, encoding='Latin-1')))
+            json_data = simplejson.dumps(params, ensure_ascii=True,
+                    encoding='Latin-1', namedtuple_as_object=False,
+                    default=lambda o: list(iter(o)))
+
+            params_data = base64.standard_b64encode(zlib.compress(json_data))
 
             data = [node.slow_sql_node.path,
                     node.slow_sql_node.request_uri,
@@ -665,7 +662,10 @@ class StatsEngine(object):
 
         with InternalTrace('Supportability/StatsEngine/JSON/Encode/'
                 'transaction_sample_data'):
-            json_data = json.dumps(data, encoding='Latin-1')
+
+            json_data = simplejson.dumps(data, ensure_ascii=True,
+                    encoding='Latin-1', namedtuple_as_object=False,
+                    default=lambda o: list(iter(o)))
 
         internal_metric('Supportability/StatsEngine/ZLIB/Bytes/'
                 'transaction_sample_data', len(json_data))

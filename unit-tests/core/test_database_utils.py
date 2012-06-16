@@ -2,23 +2,44 @@ import unittest
 
 from newrelic.core.database_utils import obfuscated_sql, parsed_sql
 
-SQL_PARSE_TESTS = [
-  (
-    # Empty.
-    (None, None),
-    ""
-  ),
-  (
-    # Empty (whitespace).
-    (None, None),
-    " "
-  ),
-  (
-    # Invalid.
-    (None, None),
-    """select"""
-  ),
+GENERAL_PARSE_TESTS = [
+    (
+        # Empty.
+        (None, None),
+        ""
+    ),
+    (
+        # Empty (whitespace).
+        (None, None),
+        " "
+    ),
+    (
+        # Invalid.
+        (None, None),
+        """select"""
+    ),
+]
 
+COMMENT_PARSE_TESTS = [
+  (
+    # Multi-line comment (Java Agent TestCase)
+    ('dude1', 'select'),
+    """/* this comment
+            is crazy.
+            yo
+        */ select * from dude1"""
+  ),
+  (
+    # Comment in middle (dotNet Agent TestCase)
+    ('dude2', 'select'),
+    """select *
+    /* ignore the comment */
+    from dude2
+    """
+  ),
+]
+
+SELECT_PARSE_TESTS = [
   (
     # Select.
     ('student_details', 'select'),
@@ -52,7 +73,7 @@ SQL_PARSE_TESTS = [
   (
     # Select with condition and alias.
     ('employee', 'select'),
-    """SELECT name, salary, salary*1.2 AS new_salary FROM employee 
+    """SELECT name, salary, salary*1.2 AS new_salary FROM employee
     WHERE salary*1.2 > 30000"""
   ),
   (
@@ -149,6 +170,11 @@ SQL_PARSE_TESTS = [
     # Additional nested brackets.
     ('t1', 'select'),
     """((select * from (select * from t1))) limit 1"""
+  ),
+  (
+    # Additional nested brackets with a space.
+    ('t1', 'select'),
+    """( ( select * from (select * from t1))) limit 1"""
   ),
   (
     # Additional nested brackets.
@@ -381,8 +407,75 @@ SQL_PARSE_TESTS = [
     OUTER JOIN `document` ON (`bloc_bloc`.`id` = `document`.`bloc_id`) GROUP BY
     `pstat_tenant`.`id` ORDER BY NULL) subquery"""
   ),
+  (
+    # Select with special char in table name
+    ('v$session', 'select'),
+    """SELECT count(*) theCount FROM v$session WHERE client_info = ?"""
+  ),
+  (
+    # Select with special char in table name
+    ('krusher', 'select'),
+    """select krusher?_.id as id?_?_, location?_.id as id?_?_, followers?_.id
+    as id?_?_, followees?_.id as id?_?_, krusher?_.ban_info as ban?_?_?_,
+    krusher?_.birth_date as birth?_?_?_, krusher?_.campaign as campaign?_?_,
+    krusher?_.click_id as click?_?_?_, krusher?_.email as email?_?_,
+    krusher?_.facebook_oauth_token as facebook?_?_?_,
+    krusher?_.facebook_user_id as facebook?_?_?_, krusher?_.gender as
+    gender?_?_, krusher?_.likes as likes?_?_, krusher?_.posts as posts?_?_,
+    krusher?_.crew as crew?_?_, krusher?_.week_likes as week?_?_?_,
+    krusher?_.week_posts as week?_?_?_, krusher?_.weekly_stats_date as
+    weekly?_?_?_, krusher?_.last_ip as last?_?_?_, krusher?_.last_login_date as
+    last?_?_?_, krusher?_.location as location?_?_, krusher?_.nickname as
+    nickname?_?_, krusher?_.partner as partner?_?_, krusher?_.referrer as
+    referrer?_?_, krusher?_.sign_up_date as sign?_?_?_, location?_.city as
+    city?_?_, location?_.country as country?_?_,
+    location?_.facebook_location_id as facebook?_?_?_, location?_.state as
+    state?_?_, location?_.zip as zip?_?_, followers?_.following as
+    following?_?_, followers?_.krusher_from as krusher?_?_?_,
+    followers?_.krusher_to as krusher?_?_?_, followers?_.social_network as
+    social?_?_?_, followers?_.krusher_to as krusher?_?__, followers?_.id as
+    id?__, followees?_.following as following?_?_, followees?_.krusher_from as
+    krusher?_?_?_, followees?_.krusher_to as krusher?_?_?_,
+    followees?_.social_network as social?_?_?_, followees?_.krusher_from as
+    krusher?_?__, followees?_.id as id?__ from krusher krusher?_ left outer
+    join location location?_ on krusher?_.location=location?_.id left outer
+    join friend followers?_ on krusher?_.id=followers?_.krusher_to left outer
+    join friend followees?_ on krusher?_.id=followees?_.krusher_from where
+    krusher?_.facebook_oauth_token=?"""
+  ),
+  (
+    # Select. (Java Agent TestCase)
+    ('prod_peml', 'select'),
+    """select pemlid, message, to_char(dt_modified, 'MM/DD\"<br>\"HH:MIAM'),
+    to_char(dt_sent, 'MM/DD\"<br>\"HH:MIAM'), to_char(dt_open,
+    'MM/DD\"<br>\"HH:MIAM'), to_char(dt_yes, 'MM/DD\"<br>\"HH:MIAM'),
+    to_char(dt_no, 'MM/DD\"<br>\"HH:MIAM'), to_char(dt_cancel,
+    'MM/DD\"<br>\"HH:MIAM'), replace(peml_notes, ' ', '<BR>'),
+    replace(cust_notes, ' ', '<BR>'), rep, decode(peml_type, '1', 'req',
+    'opt'), NVL(sign(sysdate-(900/86400)-NVL(dt_yes, dt_no)), '0') from
+    prod_peml where orderid='776371' order by pemlid"""
+  ),
+  (
+    # Select with double-quoted table name (Java Agent TestCase)
+    ('metrics2', 'select'),
+    """
+    SELECT * from "metrics2"
+    """
+  ),
+  (
+    # Select with table name in paranthesis (php agent TestCase)
+    # FAIL
+    ('foobar', 'select'),
+    """SELECT * FROM (foobar)"""
+  ),
+  (
+    # Select with single-quoted table name (Java Agent TestCase)
+    ('metrics1', 'select'),
+    """SELECT * from 'metrics1'"""
+  ),
+]
 
-
+DELETE_PARSE_TESTS = [
   (
     # Delete.
     ('employee', 'delete'),
@@ -400,11 +493,13 @@ SQL_PARSE_TESTS = [
     t2 WHERE NOT EXISTS (SELECT * FROM t3 WHERE ROW(5*t2.s1,77)= (SELECT
     50,11*s1 FROM t4 UNION SELECT 50,77 FROM (SELECT * FROM t5) AS t5)))"""
   ),
+]
 
+INSERT_PARSE_TESTS = [
   (
     # Insert.
     ('employee', 'insert'),
-    """INSERT INTO employee 
+    """INSERT INTO employee
     VALUES (105, 'Srinath', 'Aeronautics', 27, 33000)"""
   ),
   (
@@ -424,7 +519,14 @@ SQL_PARSE_TESTS = [
     """INSERT INTO employee (id, name, dept, age, salary location) SELECT
     emp_id, emp_name, dept, age, salary, location FROM temp_employee"""
   ),
+  (
+    # Insert with no space between table name and ()
+    ('test', 'insert'),
+    """insert   into test(id, name) values(6, 'Bubba')"""
+  )
+]
 
+UPDATE_PARSE_TESTS = [
   (
     # Update.
     ('employee', 'update'),
@@ -442,7 +544,9 @@ SQL_PARSE_TESTS = [
     change_date=TIMEZONE(%(TIMEZONE_1)s, now()) WHERE users_user.id =
     %(users_user_id)s"""
   ),
+]
 
+CREATE_PARSE_TESTS = [
   (
     # Create.
     ('temp_employee', 'create'),
@@ -451,10 +555,12 @@ SQL_PARSE_TESTS = [
   (
     # Create.
     ('employee', 'create'),
-    """CREATE TABLE employee ( id number(5), name char(20), dept char(10), 
+    """CREATE TABLE employee ( id number(5), name char(20), dept char(10),
     age number(2), salary number(10), location char(10) )"""
   ),
+]
 
+CALL_PARSE_TESTS = [
   (
     # Call.
     ('foo', 'call'),
@@ -465,7 +571,22 @@ SQL_PARSE_TESTS = [
     ('foo', 'call'),
     """CALL FOO 1 2 """
   ),
+]
 
+EXEC_PARSE_TESTS = [
+  (
+    # Call.
+    ('tsip_api_rates_lookup_intl', 'exec'),
+    """EXEC TSIP_API_RATES_LOOKUP_INTL"""
+  ),
+  (
+    # Call.
+    ('dagetaccount', 'execute'),
+    """EXECUTE DAGetAccount @AccountID=?,@IncludeLotLinks=?"""
+  ),
+]
+
+SHOW_PARSE_TESTS = [
   (
     # Show.
     ('profiles', 'show'),
@@ -481,7 +602,16 @@ SQL_PARSE_TESTS = [
     ('columns from mydb.mytable', 'show'),
     """SHOW COLUMNS FROM mydb.mytable"""
   ),
+  (
+    # Show long name
+    ('wow_this_is_a_really_long_name_isnt_it_cmon_man_it_s_crazy_no_way_bruh',
+        'show'),
+    """show
+    wow_this_is_a_really_long_name_isnt_it_cmon_man_it_s_crazy_no_way_bruh"""),
 
+]
+
+SET_PARSE_TESTS = [
   (
     # Set.
     ('language', 'set'),
@@ -489,13 +619,31 @@ SQL_PARSE_TESTS = [
   ),
   (
     # Set.
-    ('auto commit', 'set'),
+    ('auto', 'set'),
     """SET AUTO COMMIT ON"""
   ),
   (
     # Set.
-    ('transaction isolation level', 'set'),
+    ('transaction', 'set'),
     """SET TRANSACTION ISOLATION LEVEL SERIALIZABLE"""
+  ),
+  (
+    # Set with equals sign
+    ('character_set_results', 'set'),
+    """SET character_set_results=NULL"""
+  ),
+  (
+    # Compound statment -- FAIL
+    ('foo', 'set'),
+    """set FOO=17; set BAR=18"""
+  ),
+]
+
+ALTER_PARSE_TESTS = [
+  # alter
+  (
+      ('session', 'alter'),
+      """ALTER SESSION SET ISOLATION_LEVEL = READ COMMITTED"""
   ),
 ]
 
@@ -504,9 +652,6 @@ SQL_COLLAPSE_TESTS = [
   """SELECT c1 FROM t1 WHERE c1 IN ( 1)""",
   """SELECT c1 FROM t1 WHERE c1 IN (1 )""",
   """SELECT c1 FROM t1 WHERE c1 IN ( 1 )""",
-  """SELECT c1 FROM t1 WHERE c1 IN (\n1 )""",
-  """SELECT c1 FROM t1 WHERE c1 IN (1\n)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (\n1\n)""",
   """SELECT c1 FROM t1 WHERE c1 IN (1,2)""",
   """SELECT c1 FROM t1 WHERE c1 IN (1,2,3)""",
   """SELECT c1 FROM t1 WHERE c1 IN (1, 2, 3, 4 )""",
@@ -517,9 +662,6 @@ SQL_COLLAPSE_TESTS = [
   """SELECT c1 FROM t1 WHERE c1 IN ( '1')""",
   """SELECT c1 FROM t1 WHERE c1 IN ('1' )""",
   """SELECT c1 FROM t1 WHERE c1 IN ( '1' )""",
-  """SELECT c1 FROM t1 WHERE c1 IN (\n'1')""",
-  """SELECT c1 FROM t1 WHERE c1 IN ('1'\n )""",
-  """SELECT c1 FROM t1 WHERE c1 IN (\n'1'\n)""",
   """SELECT c1 FROM t1 WHERE c1 IN ('1','2')""",
   """SELECT c1 FROM t1 WHERE c1 IN ('1','2','3')""",
   """SELECT c1 FROM t1 WHERE c1 IN ('1', '2', '3', '4' )""",
@@ -530,9 +672,6 @@ SQL_COLLAPSE_TESTS = [
   """SELECT c1 FROM t1 WHERE c1 IN ( ?)""",
   """SELECT c1 FROM t1 WHERE c1 IN (? )""",
   """SELECT c1 FROM t1 WHERE c1 IN ( ? )""",
-  """SELECT c1 FROM t1 WHERE c1 IN (\n? )""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( ?\n)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (\n?\n)""",
   """SELECT c1 FROM t1 WHERE c1 IN (?,?)""",
   """SELECT c1 FROM t1 WHERE c1 IN (?,?,?)""",
   """SELECT c1 FROM t1 WHERE c1 IN (?, ?,?, ? )""",
@@ -543,9 +682,6 @@ SQL_COLLAPSE_TESTS = [
   """SELECT c1 FROM t1 WHERE c1 IN ( :1)""",
   """SELECT c1 FROM t1 WHERE c1 IN (:1 )""",
   """SELECT c1 FROM t1 WHERE c1 IN ( :1 )""",
-  """SELECT c1 FROM t1 WHERE c1 IN (\n:1 )""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( :1\n)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (\n:1\n)""",
   """SELECT c1 FROM t1 WHERE c1 IN (:1,:2)""",
   """SELECT c1 FROM t1 WHERE c1 IN (:1,:2,:3)""",
   """SELECT c1 FROM t1 WHERE c1 IN (:1, :2, :3, :4 )""",
@@ -556,9 +692,6 @@ SQL_COLLAPSE_TESTS = [
   """SELECT c1 FROM t1 WHERE c1 IN ( :v1)""",
   """SELECT c1 FROM t1 WHERE c1 IN (:v1 )""",
   """SELECT c1 FROM t1 WHERE c1 IN ( :v1 )""",
-  """SELECT c1 FROM t1 WHERE c1 IN (\n:v1 )""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( :v1\n)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (\n:v1\n)""",
   """SELECT c1 FROM t1 WHERE c1 IN (:v1,:v2)""",
   """SELECT c1 FROM t1 WHERE c1 IN (:v1,:v2,:v3)""",
   """SELECT c1 FROM t1 WHERE c1 IN (:v1, :v2, :v3, :v4 )""",
@@ -569,9 +702,6 @@ SQL_COLLAPSE_TESTS = [
   """SELECT c1 FROM t1 WHERE c1 IN ( %s)""",
   """SELECT c1 FROM t1 WHERE c1 IN (%s )""",
   """SELECT c1 FROM t1 WHERE c1 IN ( %s )""",
-  """SELECT c1 FROM t1 WHERE c1 IN (\n%s )""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( %s\n)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (\n%s\n)""",
   """SELECT c1 FROM t1 WHERE c1 IN (%s,%s)""",
   """SELECT c1 FROM t1 WHERE c1 IN (%s,%s,%s)""",
   """SELECT c1 FROM t1 WHERE c1 IN (%s, %s,%s , %s )""",
@@ -582,9 +712,6 @@ SQL_COLLAPSE_TESTS = [
   """SELECT c1 FROM t1 WHERE c1 IN ( %(v1)s)""",
   """SELECT c1 FROM t1 WHERE c1 IN (%(v1)s )""",
   """SELECT c1 FROM t1 WHERE c1 IN ( %(v1)s )""",
-  """SELECT c1 FROM t1 WHERE c1 IN (\n%(v1)s )""",
-  """SELECT c1 FROM t1 WHERE c1 IN ( %(v1)s\n)""",
-  """SELECT c1 FROM t1 WHERE c1 IN (\n%(v1)s )""",
   """SELECT c1 FROM t1 WHERE c1 IN (%(v1)s,%(v2)s)""",
   """SELECT c1 FROM t1 WHERE c1 IN (%(v1)s,%(v2)s,%(v3)s)""",
   """SELECT c1 FROM t1 WHERE c1 IN (%(v1)s, %(v2)s, %(v3)s , %(v4)s )""",
@@ -592,6 +719,7 @@ SQL_COLLAPSE_TESTS = [
   """SELECT c1 FROM t1 WHERE c1 IN (%(v1)s ,%(v2)s)""",
   """SELECT c1 FROM t1 WHERE c1 IN ( %(v1)s ,%(v2)s)""",
 ]
+
 
 class TestDatabase(unittest.TestCase):
     def test_obfuscator_obfuscates_numeric_literals(self):
@@ -648,8 +776,52 @@ class TestDatabase(unittest.TestCase):
                 (50000 * "%s,") + "%s)"
         self.assertEqual(('table1', 'select'), parsed_sql('pyscopg2', select))
 
-    def test_parse_sql_tests(self):
-        for result, sql in SQL_PARSE_TESTS:
+    def test_parse_general_statements(self):
+        for result, sql in GENERAL_PARSE_TESTS:
+            self.assertEqual(result, parsed_sql('pyscopg2', sql))
+
+    def test_parse_comment_statements(self):
+        for result, sql in COMMENT_PARSE_TESTS:
+            self.assertEqual(result, parsed_sql('pyscopg2', sql))
+
+    def test_parse_select_statements(self):
+        for result, sql in SELECT_PARSE_TESTS:
+            self.assertEqual(result, parsed_sql('pyscopg2', sql))
+
+    def test_parse_delete_tests(self):
+        for result, sql in DELETE_PARSE_TESTS:
+            self.assertEqual(result, parsed_sql('pyscopg2', sql))
+
+    def test_parse_insert_tests(self):
+        for result, sql in INSERT_PARSE_TESTS:
+            self.assertEqual(result, parsed_sql('pyscopg2', sql))
+
+    def test_parse_update_tests(self):
+        for result, sql in UPDATE_PARSE_TESTS:
+            self.assertEqual(result, parsed_sql('pyscopg2', sql))
+
+    def test_parse_create_tests(self):
+        for result, sql in CREATE_PARSE_TESTS:
+            self.assertEqual(result, parsed_sql('pyscopg2', sql))
+
+    def test_parse_call_tests(self):
+        for result, sql in CALL_PARSE_TESTS:
+            self.assertEqual(result, parsed_sql('pyscopg2', sql))
+
+    def test_parse_exec_tests(self):
+        for result, sql in EXEC_PARSE_TESTS:
+            self.assertEqual(result, parsed_sql('pyscopg2', sql))
+
+    def test_parse_alter_tests(self):
+        for result, sql in ALTER_PARSE_TESTS:
+            self.assertEqual(result, parsed_sql('pyscopg2', sql))
+
+    def test_parse_show_tests(self):
+        for result, sql in SHOW_PARSE_TESTS:
+            self.assertEqual(result, parsed_sql('pyscopg2', sql))
+
+    def test_parse_set_tests(self):
+        for result, sql in SET_PARSE_TESTS:
             self.assertEqual(result, parsed_sql('pyscopg2', sql))
 
     def test_collapse_sql_tests(self):

@@ -505,6 +505,7 @@ def _parse_sql_statement_v1(sql):
 _pattern_switches = re.IGNORECASE | re.DOTALL
 
 _comment_pattern_re = re.compile(r'/\*.*?\*/', _pattern_switches)
+_word_pattern_re = re.compile(r'\W*(\w+).*', _pattern_switches)
 
 def _remove_comments(sql):
     return _comment_pattern_re.sub('', sql)
@@ -537,9 +538,8 @@ _re_table = {
 
 def _parse_operation(sql):
     try:
-        # Split the sql line based on non-word chars and pick the first
-        # non-empty item
-        first_word = next(s for s in re.split(r'\W+', sql) if s)
+        # Remove non-word chars from the beginning
+        first_word = _word_pattern_re.sub(r'\1', sql)
     except:
         return None
 

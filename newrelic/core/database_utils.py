@@ -165,7 +165,7 @@ def obfuscated_sql(name, sql, collapsed=False):
     # This form of obfuscated SQL will be used when generating
     # ID for slow SQL samples as well as be SQL which the table
     # and operation are derived from. This is used for the latter
-    # as large sets will slow down the SQL parser dramatically. 
+    # as large sets will slow down the SQL parser dramatically.
 
     obfuscated_collapsed = _collapse_set_re.sub('(?)', obfuscated)
 
@@ -515,7 +515,7 @@ _update_pattern_re = re.compile(r'\s*UPDATE\s+(?!\()(\S+)', _pattern_switches)
 _table_pattern_re = re.compile(r'\s+TABLE\s+(?!\()(\S+)', _pattern_switches)
 _call_pattern_re = re.compile(r'\s*CALL\s+(?!\()(\w+)', _pattern_switches)
 _show_pattern_re = re.compile(r'\s*SHOW\s+(.*)', _pattern_switches)
-_set_pattern_re = re.compile(r'\s*SET\s+(.*)\W+.*', _pattern_switches)
+_set_pattern_re = re.compile(r'\s*SET\s+(.*?)\W+.*', _pattern_switches)
 _exec_pattern_re = re.compile(r'\s*EXEC\s+(?!\()(\w+)', _pattern_switches)
 _execute_pattern_re = re.compile(r'\s*EXECUTE\s+(?!\()(\w+)', _pattern_switches)
 _alter_pattern_re = re.compile(r'\s*ALTER\s+(?!\()(\w+)', _pattern_switches)
@@ -537,7 +537,9 @@ _re_table = {
 
 def _parse_operation(sql):
     try:
-        first_word = sql.split()[0].lower()
+        # Split the sql line based on non-word chars and pick the first
+        # non-empty item
+        first_word = next(s for s in re.split(r'\W+', sql) if s)
     except:
         return None
 

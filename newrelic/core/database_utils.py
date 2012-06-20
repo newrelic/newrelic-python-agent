@@ -105,6 +105,31 @@ _any_quotes_re = re.compile(_any_quotes_pattern)
 
 _int_re = re.compile(r'(?<!:)\b\d+\b')
 
+# Obfuscation of SQL is done when reporting it back to the data
+# collector so that sensitive information is not being passed.
+
+_quotes_table = {
+    'MySQLdb': _any_quotes_re,
+}
+
+_quotes_default = _single_quotes_re
+
+def _obfuscate_sql(name, sql):
+    quotes_re = _quotes_table.get(name, _quotes_default)
+
+    # Substitute quoted strings first.
+
+    sql = quotes_re.sub('?', sql)
+
+    # Replace straight integer values. This will pick up
+    # integers by themselves but also as part of floating point
+    # numbers. Because of word boundary checks in pattern will
+    # not match numbers within identifier names.
+
+    sql = _int_re.sub('?', sql)
+
+    return sql
+
 # Obfuscation can produce sets as '(?,?)'. Need to be able to
 # collapse these to single value set. Also need to deal with
 # parameterised values which can be '?', ':1', ':name', '%s' or
@@ -115,67 +140,72 @@ _int_re = re.compile(r'(?<!:)\b\d+\b')
 # correct, but then it likely isn't valid in SQL anyway for
 # that param style.
 #
+# This is all done so that when we produce a hash value for a
+# slow SQL that it generates same value for two SQL statements
+# where they only different by number of values in a value set.
+#
 # TODO We could also look at 'paramstyle' attribute here as
 # well and be more specific, but this comes after strings are
 # replaced and so shouldn't really find these patterns unless
 # actually in use as wouldn't be valid SQL otherwise.
 
-_one_value_p = r'\s*(\?|%s|:\w+|%s|%\([^)]*\)s)\s*'
-_list_values_p = r'\(' + _one_value_p + r'(\s*,' + _one_value_p + r')*\s*\)'
+_one_value_all_p = r'\s*(\?|%s|:\w+|%\([^)]*\)s)\s*'
+_list_values_all_p = r'\(' + _one_value_all_p + r'(\s*,' + \
+        _one_value_all_p + r')*\s*\)'
 
-_collapse_set_re = re.compile(_list_values_p)
+_collapse_set_all_re = re.compile(_list_values_all_p)
+
+_one_value_percent_p = r'\s*(\?|%s)\s*'
+_list_values_percent_p = r'\(' + _one_value_percent_p + r'(\s*,' + \
+        _one_value_percent_p + r')*\s*\)'
+
+_collapse_set_percent_re = re.compile(_list_values_percent_p)
+
+_one_value_question_p = r'\s*(\?)\s*'
+_list_values_question_p = r'\(' + _one_value_question_p + r'(\s*,' + \
+        _one_value_question_p + r')*\s*\)'
+
+_collapse_set_question_re = re.compile(_list_values_question_p)
+
+_collapse_table = {
+    'MySQLdb': _collapse_set_percent_re,
+    'postgresql.interface.proboscis.dbapi2': _collapse_set_percent_re,
+    'psycopg2': _collapse_set_percent_re,
+    'sqlite3.dbapi2': _collapse_set_question_re,
+}
+
+_collapse_default = _collapse_set_all_re
+
+def _collapse_sql(name, sql):
+    # XXX Although would be more efficient to base what needs to be
+    # done based on the database client module being used, you get
+    # frameworks such as Django which do magic with cursor factories
+    # to allow an alternate placeholder style to be used.
+
+    #collapse_set_re = _collapse_table.get(name, _collapse_default)
+    #return collapse_set_re.sub('(?)', sql)
+
+    return _collapse_default.sub('(?)', sql)
 
 @internal_trace('Supportability/DatabaseUtils/Calls/obfuscated_sql')
 def obfuscated_sql(name, sql, collapsed=False):
-    """Returns obfuscated version of the sql. The quoting
-    convention is determined by looking at the name of the
-    database module supplied. Obfuscation consists of replacing
-    literal strings and integers. Collapsing of values in sets
-    is optional.
+    """Returns obfuscated version of the sql. Obfuscation consists of
+    replacing literal strings and integers. Values sets can also
+    optionally be collapsed to a single value.
 
     """
 
     entry = sql_properties_cache.fetch(sql)
 
-    if entry.obfuscated is not None:
-        if collapsed:
-            return entry.obfuscated_collapsed
-        return entry.obfuscated
-
-    # Substitute quoted strings first. In the case of MySQL it
-    # uses back quotes around table names so safe to replace
-    # contents of strings using either single of double quotes.
-    # For PostgreSQL and other databases, double quotes are used
-    # around table names so only replace contents of single
-    # quoted strings.
-
-    if name in ['MySQLdb']:
-        obfuscated = _any_quotes_re.sub('?', sql)
-    else:
-        obfuscated = _single_quotes_re.sub('?', sql)
-
-    # Finally replace straight integer values. This will pick
-    # up integers by themselves but also as part of floating
-    # point numbers. Because of word boundary checks in pattern
-    # will not match numbers within identifier names.
-
-    obfuscated = _int_re.sub('?', obfuscated)
-
-    # Collapse sets of values used in IN clauses to a single.
-    # This form of obfuscated SQL will be used when generating
-    # ID for slow SQL samples as well as be SQL which the table
-    # and operation are derived from. This is used for the latter
-    # as large sets will slow down the SQL parser dramatically.
-
-    obfuscated_collapsed = _collapse_set_re.sub('(?)', obfuscated)
-
-    entry.obfuscated = obfuscated
-    entry.obfuscated_collapsed = obfuscated_collapsed
+    if entry.obfuscated is None:
+        entry.obfuscated = _obfuscate_sql(name, sql)
 
     if collapsed:
-        return obfuscated_collapsed
-
-    return obfuscated
+        if entry.obfuscated_collapsed is None:
+            entry.obfuscated_collapsed = _collapse_sql(name, entry.obfuscated)
+        return entry.obfuscated_collapsed
+    else:
+        return entry.obfuscated
 
 # Helper function for extracting out any identifier from a string which
 # might be preceded or followed by punctuation which we can expect in

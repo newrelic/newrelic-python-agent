@@ -134,12 +134,6 @@ class DatabaseNode(_DatabaseNode):
                 scope=scope, overflow=None, forced=True, duration=self.duration,
                 exclusive=self.exclusive)
 
-        # XXX Ignore the children as this should be a terminal node.
-
-        #for child in self.children:
-        #    for metric in child.time_metrics(stats, root, self):
-        #        yield metric
-
     def slow_sql_node(self, stats, root):
 
         table, operation = self.parsed_sql
@@ -169,7 +163,7 @@ class DatabaseNode(_DatabaseNode):
                 cursor_params=self.cursor_params,
                 execute_params=self.execute_params)
 
-    def trace_node(self, stats, string_table, root):
+    def trace_node(self, stats, root):
 
         table, operation = self.parsed_sql
 
@@ -183,15 +177,11 @@ class DatabaseNode(_DatabaseNode):
         else:
             name = 'Database/other/sql'
 
-        name = string_table.cache(name)
+        name = root.string_table.cache(name)
 
         start_time = newrelic.core.trace_node.node_start_time(root, self)
         end_time = newrelic.core.trace_node.node_end_time(root, self)
 
-        # XXX Ignore the children as this should be a terminal node.
-
-        #children = [child.trace_node(stats, string_table, root) for
-        #            child in self.children]
         children = []
 
         root.trace_node_count += 1
@@ -205,10 +195,11 @@ class DatabaseNode(_DatabaseNode):
 
             limit = root.settings.agent_limits.sql_query_length_maximum
 
-            params['sql'] = string_table.cache(sql[:limit])
+            params['sql'] = root.string_table.cache(sql[:limit])
 
             if self.stack_trace:
-                params['backtrace'] = map(string_table.cache, self.stack_trace)
+                params['backtrace'] = map(root.string_table.cache,
+                        self.stack_trace)
 
             explain_plan = self.explain_plan
             if explain_plan:

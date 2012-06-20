@@ -9,6 +9,7 @@ from __future__ import with_statement
 
 import base64
 import copy
+import logging
 import operator
 import zlib
 
@@ -17,9 +18,10 @@ import newrelic.core.database_utils
 
 import newrelic.lib.simplejson as simplejson
 
-from newrelic.core.string_table import StringTable
 from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
         internal_metric)
+
+_logger = logging.getLogger(__name__)
 
 class ApdexStats(list):
 
@@ -647,18 +649,21 @@ class StatsEngine(object):
         if not self.__slow_transaction:
             return []
 
-        string_table = StringTable()
-
         maximum = self.__settings.agent_limits.transaction_traces_nodes
 
         transaction_trace = self.__slow_transaction.transaction_trace(
-                self, string_table, maximum)
+                self, maximum)
 
         internal_metric('Supportability/StatsEngine/Counts/'
                 'transaction_sample_data',
                 self.__slow_transaction.trace_node_count)
 
-        data = [transaction_trace, string_table.values()]
+        data = [transaction_trace,
+                self.__slow_transaction.string_table.values()]
+
+        if self.__settings.debug.log_transaction_trace_payload:
+            _logger.debug('Encoding slow transaction data where '
+                    'payload=%r.', data)
 
         with InternalTrace('Supportability/StatsEngine/JSON/Encode/'
                 'transaction_sample_data'):

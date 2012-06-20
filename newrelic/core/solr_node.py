@@ -44,25 +44,15 @@ class SolrNode(_SolrNode):
                 overflow=overflow, forced=False, duration=self.duration,
                 exclusive=self.exclusive)
 
-        # XXX Ignore the children as this should be a terminal node.
-
-        #for child in self.children:
-        #    for metric in child.time_metrics(stats, root, self):
-        #        yield metric
-
-    def trace_node(self, stats, string_table, root):
+    def trace_node(self, stats, root):
 
         name = 'SolrClient/%s/%s' % (self.library, self.command)
 
-        name = string_table.cache(name)
+        name = root.string_table.cache(name)
 
         start_time = newrelic.core.trace_node.node_start_time(root, self)
         end_time = newrelic.core.trace_node.node_end_time(root, self)
 
-        # XXX Ignore the children as this should be a terminal node.
-
-        #children = [child.trace_node(stats, string_table, root) for
-        #            child in self.children]
         children = []
 
         root.trace_node_count += 1

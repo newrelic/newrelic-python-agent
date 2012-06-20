@@ -68,7 +68,7 @@ class ExternalNode(_ExternalNode):
                 overflow=overflow, forced=False, duration=self.duration,
                 exclusive=self.exclusive)
 
-    def trace_node(self, stats, string_table, root):
+    def trace_node(self, stats, root):
 
         hostname = self.details.hostname or 'unknown'
         port = self.details.port
@@ -79,7 +79,7 @@ class ExternalNode(_ExternalNode):
 
         name = 'External/%s/%s/%s' % (netloc, self.library, method)
 
-        name = string_table.cache(name)
+        name = root.string_table.cache(name)
 
         start_time = newrelic.core.trace_node.node_start_time(root, self)
         end_time = newrelic.core.trace_node.node_end_time(root, self)

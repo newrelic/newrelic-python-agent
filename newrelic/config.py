@@ -289,6 +289,8 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'debug.log_malformed_json_data',
                      'getboolean', None)
+    _process_setting(section, 'debug.log_transaction_trace_payload',
+                     'getboolean', None)
     _process_setting(section, 'debug.sql_parsing_log_threshold',
                      'getfloat', None)
     _process_setting(section, 'debug.log_sql_cache_misses',

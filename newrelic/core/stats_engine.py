@@ -455,7 +455,7 @@ class StatsEngine(object):
         if not self.__settings:
             return
 
-        key = node.sql_id
+        key = node.identifier
         stats = self.__sql_stats_table.get(key)
         if stats is None:
             stats = SlowSqlStats()
@@ -620,8 +620,8 @@ class StatsEngine(object):
 
             data = [node.slow_sql_node.path,
                     node.slow_sql_node.request_uri,
-                    hash(node.slow_sql_node.sql_id),
-                    node.slow_sql_node.formatted_sql,
+                    node.slow_sql_node.identifier,
+                    node.slow_sql_node.formatted,
                     node.slow_sql_node.metric,
                     node.call_count,
                     node.total_call_time*1000,

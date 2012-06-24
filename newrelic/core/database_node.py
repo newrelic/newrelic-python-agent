@@ -6,21 +6,7 @@ except:
 import newrelic.core.metric
 import newrelic.core.trace_node
 
-from newrelic.core.database_utils import (obfuscated_sql, parsed_sql,
-                                          explain_plan)
-
-def formatted_sql(dbapi, format, sql):
-    if format == 'off':
-        return ''
-
-    # FIXME Need to implement truncation somewhere.
-
-    if format == 'raw':
-        return sql
-
-    name = dbapi and dbapi.__name__ or None 
-
-    return obfuscated_sql(name, sql)
+from newrelic.core.database_utils import sql_statement
 
 _SlowSqlNode = namedtuple('_SlowSqlNode',
         ['duration', 'path', 'request_uri', 'sql', 'sql_format',
@@ -29,19 +15,23 @@ _SlowSqlNode = namedtuple('_SlowSqlNode',
 
 class SlowSqlNode(_SlowSqlNode):
 
-    @property
-    def sql_id(self):
-        name = self.dbapi and self.dbapi.__name__ or None 
-        return obfuscated_sql(name, self.sql, collapsed=True)
+    def __new__(cls, *args, **kwargs):
+        node = _SlowSqlNode.__new__(cls, *args, **kwargs)
+        node.statement = sql_statement(node.sql, node.dbapi)
+        return node
 
     @property
-    def formatted_sql(self):
-        return formatted_sql(self.dbapi, self.sql_format, self.sql)
+    def formatted(self):
+        return self.statement.formatted(self.sql_format)
+
+    @property
+    def identifier(self):
+        return self.statement.identifier
 
     @property
     def explain_plan(self):
-        return explain_plan(self.dbapi, self.sql, self.connect_params,
-                            self.cursor_params, self.execute_params)
+        return self.statement.explain_plan(self.connect_params,
+                self.cursor_params, self.execute_params)
 
 _DatabaseNode = namedtuple('_DatabaseNode',
         ['dbapi',  'sql', 'children', 'start_time', 'end_time', 'duration',
@@ -50,15 +40,27 @@ _DatabaseNode = namedtuple('_DatabaseNode',
 
 class DatabaseNode(_DatabaseNode):
 
+    def __new__(cls, *args, **kwargs):
+        node = _DatabaseNode.__new__(cls, *args, **kwargs)
+        node.statement = sql_statement(node.sql, node.dbapi)
+        return node
+
     @property
-    def parsed_sql(self):
-        name = self.dbapi and self.dbapi.__name__ or None 
-        return parsed_sql(name, self.sql)
+    def operation(self):
+        return self.statement.operation
+
+    @property
+    def target(self):
+        return self.statement.target
+
+    @property
+    def formatted(self):
+        return self.statement.formatted(self.sql_format)
 
     @property
     def explain_plan(self):
-        return explain_plan(self.dbapi, self.sql, self.connect_params,
-                            self.cursor_params, self.execute_params)
+        return self.statement.explain_plan(self.connect_params,
+                self.cursor_params, self.execute_params)
 
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
@@ -86,10 +88,10 @@ class DatabaseNode(_DatabaseNode):
         # does appear to generate one. Also, the SQL parser has
         # special cases for 'set', 'create' and 'call' as well.
 
-        table, operation = self.parsed_sql
+        operation = self.operation
 
         if operation in ('select', 'update', 'insert', 'delete'):
-            name = 'Database/%s/%s' % (table, operation)
+            name = 'Database/%s/%s' % (self.target, operation)
             overflow = 'Database/*/%s' % operation
             scope = root.path
 
@@ -136,10 +138,10 @@ class DatabaseNode(_DatabaseNode):
 
     def slow_sql_node(self, stats, root):
 
-        table, operation = self.parsed_sql
+        operation = self.operation
 
         if operation in ('select', 'update', 'insert', 'delete'):
-            name = 'Database/%s/%s' % (table, operation)
+            name = 'Database/%s/%s' % (self.target, operation)
         elif operation in ('show',):
             name = 'Database/%s' % operation
         else:
@@ -165,13 +167,13 @@ class DatabaseNode(_DatabaseNode):
 
     def trace_node(self, stats, root):
 
-        table, operation = self.parsed_sql
+        operation = self.operation
 
         # TODO Verify that these are the correct names to use.
         # Could possibly cache this if necessary.
 
         if operation in ('select', 'update', 'insert', 'delete'):
-            name = 'Database/%s/%s' % (table, operation)
+            name = 'Database/%s/%s' % (self.target, operation)
         elif operation in ('show',):
             name = 'Database/%s' % operation
         else:
@@ -188,7 +190,7 @@ class DatabaseNode(_DatabaseNode):
 
         params = {}
 
-        sql = formatted_sql(self.dbapi, self.sql_format, self.sql)
+        sql = self.formatted
 
         if sql:
             # Limit the length of any SQL that is reported back.

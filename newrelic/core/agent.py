@@ -15,7 +15,6 @@ import newrelic
 import newrelic.core.log_file
 import newrelic.core.config
 import newrelic.core.application
-import newrelic.core.database_utils
 
 _logger = logging.getLogger(__name__)
 
@@ -333,11 +332,6 @@ class Agent(object):
             # Run the normal harvest cycle.
 
             self._run_harvest(shutdown=False)
-
-            # Expire entries from any caches which are being kept.
-
-            newrelic.core.database_utils.sql_properties_cache.expire(
-                    settings.agent_limits.sql_cache_buckets)
 
     def _run_harvest(self, shutdown=False):
         # This isn't going to maintain order of applications

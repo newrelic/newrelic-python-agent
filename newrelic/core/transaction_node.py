@@ -38,8 +38,10 @@ class TransactionNode(_TransactionNode):
 
     @property
     def string_table(self):
-        if not hasattr(self, '_string_table'):
-            self._string_table = StringTable()
+        result = getattr(self, '_string_table', None)
+        if result is not None:
+            return result
+        self._string_table = StringTable()
         return self._string_table
 
     @internal_trace('Supportability/TransactionNode/Calls/time_metrics')

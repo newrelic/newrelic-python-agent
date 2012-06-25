@@ -8,6 +8,7 @@ import cgi
 import base64
 import time
 import string
+import Cookie
 
 import newrelic.api.application
 import newrelic.api.transaction
@@ -36,6 +37,13 @@ _rum_footer_short_fragment = '<script type="text/javascript">' \
         'NREUMQ.push(["nrf2","%s","%s",%d,"%s",%d,%d,' \
         'new Date().getTime()])</script>'
 
+_rum2_footer_short_fragment = '<script type="text/javascript">' \
+        'if(!NREUMQ.f){NREUMQ.f=function(){NREUMQ.push(["load",' \
+        'new Date().getTime()]);if(NREUMQ.a)NREUMQ.a();};' \
+        'NREUMQ.a=window.onload;window.onload=NREUMQ.f;};' \
+        'NREUMQ.push(["nrfj","%s","%s",%d,"%s",%d,%d,' \
+        'new Date().getTime(),"%s","%s"])</script>'
+
 #_rum_footer_long_fragment = '<script type="text/javascript">' \
 #        'if(!NREUMQ.f)NREUMQ.f=function(){NREUMQ.push(["load",' \
 #        'new Date().getTime()]);var e=document.createElement("script");' \
@@ -53,6 +61,15 @@ _rum_footer_long_fragment = '<script type="text/javascript">' \
         'NREUMQ.a=window.onload;window.onload=NREUMQ.f;};' \
         'NREUMQ.push(["nrf2","%s","%s",%d,"%s",%d,%d,' \
         'new Date().getTime()])</script>'
+
+_rum2_footer_long_fragment = '<script type="text/javascript">' \
+        'if(!NREUMQ.f){NREUMQ.f=function(){NREUMQ.push(["load",' \
+        'new Date().getTime()]);var e=document.createElement("script");' \
+        'e.type="text/javascript";e.async=true;e.src="%s";' \
+        'document.body.appendChild(e);if(NREUMQ.a)NREUMQ.a();};' \
+        'NREUMQ.a=window.onload;window.onload=NREUMQ.f;};' \
+        'NREUMQ.push(["nrfj","%s","%s",%d,"%s",%d,%d,' \
+        'new Date().getTime(),"%s","%s"])</script>'
 
 def _obfuscate_transaction_name(name, key):
     s = []
@@ -125,6 +142,12 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         request_uri = environ.get('REQUEST_URI', None)
         script_name = environ.get('SCRIPT_NAME', None)
         path_info = environ.get('PATH_INFO', None)
+        http_cookie = environ.get('HTTP_COOKIE', None)
+
+        if http_cookie.find("NRAGENT") != -1:
+            c = Cookie.SimpleCookie(http_cookie)
+            token = c['NRAGENT'].value[3:]  # Remove the 'tk=' prefix
+                                            # tk=0123456789ABCDEF
 
         self._request_uri = request_uri
 
@@ -304,11 +327,11 @@ class WebTransaction(newrelic.api.transaction.Transaction):
                     name, queue_duration, request_duration))
 
 class _WSGIApplicationIterable(object):
- 
+
     def __init__(self, transaction, generator):
         self.transaction = transaction
         self.generator = generator
- 
+
     def __iter__(self):
         if not self.transaction._sent_start:
             self.transaction._sent_start = time.time()
@@ -439,10 +462,10 @@ class WSGIApplicationWrapper(object):
                 application = newrelic.api.application.application(application)
 
         # Now start recording the actual web transaction.
- 
+
         transaction = WebTransaction(application, environ)
         transaction.__enter__()
- 
+
         def _start_response(status, response_headers, *args):
             try:
                 transaction.response_code = int(status.split(' ')[0])
@@ -473,7 +496,7 @@ class WSGIApplicationWrapper(object):
                 return result
 
             return write
- 
+
         try:
             # Should always exist, but check as test harnesses may not
             # have it.
@@ -491,7 +514,7 @@ class WSGIApplicationWrapper(object):
         except:
             transaction.__exit__(*sys.exc_info())
             raise
- 
+
         return _WSGIApplicationIterable(transaction, result)
 
 def wsgi_application(application=None):

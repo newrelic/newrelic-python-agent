@@ -683,8 +683,10 @@ class StatsEngine(object):
                 'transaction_sample_data'):
             pack_data = base64.standard_b64encode(zlib_data)
 
-        trace_data = [[transaction_trace.root.start_time,
-                transaction_trace.root.end_time,
+        root = transaction_trace.root
+
+        trace_data = [[root.start_time,
+                root.end_time-root.start_time,
                 self.__slow_transaction.path,
                 self.__slow_transaction.request_uri,
                 pack_data]]

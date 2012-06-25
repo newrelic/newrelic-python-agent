@@ -307,10 +307,10 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         queue_duration = int((start_time - queue_start) * 1000)
         request_duration = int((end_time - start_time) * 1000)
 
-	# Settings will have values as Unicode strings and the
-	# result here will be Unicode so need to convert back to
-	# normal string. Using str() and default encoding should
-	# be fine as should all be ASCII anyway.
+    # Settings will have values as Unicode strings and the
+    # result here will be Unicode so need to convert back to
+    # normal string. Using str() and default encoding should
+    # be fine as should all be ASCII anyway.
 
         if not self._settings.rum.load_episodes_file:
             return str(_rum_footer_short_fragment % (
@@ -396,7 +396,7 @@ class WSGIInputWrapper(object):
         lines = self.__input.readlines(*args, **kwargs)
         try:
             self.__transaction._calls_readlines += 1
-            self.__transaction._bytes_read += sum(map(len,lines))
+            self.__transaction._bytes_read += sum(map(len, lines))
         except:
             pass
         self.__transaction._read_end = time.time()
@@ -473,7 +473,7 @@ class WSGIApplicationWrapper(object):
                 pass
 
             try:
-                header = filter(lambda x: x[0].lower()=='content-length',
+                header = filter(lambda x: x[0].lower() == 'content-length',
                                 response_headers)[-1:]
                 if header:
                     transaction._response_properties['CONTENT_LENGTH'] = \

@@ -1,21 +1,21 @@
 import unittest
 
-from newrelic.core.database_utils import obfuscated_sql, parsed_sql
+from newrelic.core.database_utils import SQLStatement
 
 GENERAL_PARSE_TESTS = [
     (
         # Empty.
-        (None, None),
+        ('', ''),
         ""
     ),
     (
         # Empty (whitespace).
-        (None, None),
+        ('', ''),
         " "
     ),
     (
         # Invalid.
-        (None, None),
+        ('', 'select'),
         """select"""
     ),
 ]
@@ -463,15 +463,26 @@ SELECT_PARSE_TESTS = [
     """
   ),
   (
-    # Select with table name in paranthesis (php agent TestCase)
-    # FAIL
-    ('foobar', 'select'),
-    """SELECT * FROM (foobar)"""
-  ),
-  (
     # Select with single-quoted table name (Java Agent TestCase)
     ('metrics1', 'select'),
     """SELECT * from 'metrics1'"""
+  ),
+  (
+    # Select large value set.
+    ('t1', 'select'),
+    """SELECT * from 't1' WHERE c1 in (%s""" + (50000*""",%s""") + """)""",
+  ),
+  (
+    # Select with no from clause.
+    # FAIL
+    ('xxx', 'select'),
+    """select now() as time"""
+  ),
+  (
+    # Select with table name in parenthesis (php agent TestCase)
+    # FAIL
+    ('foobar', 'select'),
+    """SELECT * FROM (foobar)"""
   ),
 ]
 
@@ -558,6 +569,12 @@ CREATE_PARSE_TESTS = [
     """CREATE TABLE employee ( id number(5), name char(20), dept char(10),
     age number(2), salary number(10), location char(10) )"""
   ),
+  (
+    # Create.
+    # FAIL
+    ('my table', 'create'),
+    """CREATE TABLE "my table" ("my column" INT)"""
+  ),
 ]
 
 CALL_PARSE_TESTS = [
@@ -633,7 +650,8 @@ SET_PARSE_TESTS = [
     """SET character_set_results=NULL"""
   ),
   (
-    # Compound statment -- FAIL
+    # Compound statment
+    # FAIL
     ('foo', 'set'),
     """set FOO=17; set BAR=18"""
   ),
@@ -647,7 +665,7 @@ ALTER_PARSE_TESTS = [
   ),
 ]
 
-SQL_COLLAPSE_TESTS = [
+SQL_NORMALIZE_TESTS = [
   """SELECT c1 FROM t1 WHERE c1 IN (1)""",
   """SELECT c1 FROM t1 WHERE c1 IN ( 1)""",
   """SELECT c1 FROM t1 WHERE c1 IN (1 )""",
@@ -739,116 +757,141 @@ SQL_COLLAPSE_TESTS = [
   """SELECT c1 FROM t1 WHERE c1 IN ( %(v1)s,%(v2)s)""",
   """SELECT c1 FROM t1 WHERE c1 IN (%(v1)s ,%(v2)s)""",
   """SELECT c1 FROM t1 WHERE c1 IN ( %(v1)s ,%(v2)s)""",
+  """ SELECT c1 FROM t1 WHERE c1 IN (1)""",
+  """  SELECT c1 FROM t1 WHERE c1 IN (1)""",
+  """ \n SELECT c1 FROM t1 WHERE c1 IN (1)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (1) """,
+  """SELECT c1 FROM t1 WHERE c1 IN (1)  """,
+  """SELECT c1 FROM t1 WHERE c1 IN (1) \n """,
+  """SELECT  c1 FROM t1 WHERE c1 IN (1)""",
+  """SELECT \n c1 FROM t1 WHERE c1 IN (1)""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( 1)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (  1)""",
+  """SELECT c1 FROM t1 WHERE c1 IN ( \n 1)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (1 )""",
+  """SELECT c1 FROM t1 WHERE c1 IN (1  )""",
+  """SELECT c1 FROM t1 WHERE c1 IN (1 \n )""",
+  """SELECT c1 FROM t1 WHERE c1 IN (""" + (50000*"""%s,""") + """%s)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (""" + (50000*""":1,""") + """%s)""",
+  """SELECT c1 FROM t1 WHERE c1 IN (""" + (50000*"""%(name)s,""") + """%s)""",
 ]
 
-
 class TestDatabase(unittest.TestCase):
-    def test_obfuscator_obfuscates_numeric_literals(self):
-        select = "SELECT * FROM table WHERE table.column = 1 AND 2 = 3"
-        self.assertEqual("SELECT * FROM table WHERE table.column = ? AND ? = ?",
-                         obfuscated_sql('pyscopg2', select))
-        insert = "INSERT INTO table VALUES (1,2, 3 ,  4)"
-        self.assertEqual("INSERT INTO table VALUES (?,?, ? ,  ?)",
-                         obfuscated_sql('psycopg2', insert))
-
-    def test_obfuscator_obfuscates_string_literals(self):
-        insert = "INSERT INTO X values('', 'jim''s ssn',0, 1 , 'jim''s son''s son')"
-        self.assertEqual("INSERT INTO X values(?, ?,?, ? , ?)",
-                         obfuscated_sql('psycopg2', insert))
-
-    def test_obfuscator_does_not_obfuscate_table_or_column_names(self):
-        select = 'SELECT "table"."column" FROM "table" WHERE "table"."column" = \'value\' LIMIT 1'
-        self.assertEqual('SELECT "table"."column" FROM "table" WHERE "table"."column" = ? LIMIT ?',
-                         obfuscated_sql('psycopg2', select))
-
-    def test_mysql_obfuscation(self):
-        select = 'SELECT `table`.`column` FROM `table` WHERE `table`.`column` = \'value\' AND `table`.`other_column` = "other value" LIMIT 1'
-        self.assertEqual('SELECT `table`.`column` FROM `table` WHERE `table`.`column` = ? AND `table`.`other_column` = ? LIMIT ?',
-                         obfuscated_sql('MySQLdb', select))
-
-    def test_obfuscator_does_not_obfuscate_trailing_integers(self):
-        select = "SELECT * FROM table1 WHERE table2.column3 = 1 AND 2 = 3"
-        self.assertEqual("SELECT * FROM table1 WHERE table2.column3 = ? AND ? = ?",
-                         obfuscated_sql('pyscopg2', select))
-
-    def test_obfuscator_does_not_obfuscate_integer_word_boundaries(self):
-        select = "A1 #2 ,3 .4 (5) =6 <7 /9 B9C"
-        self.assertEqual("A1 #? ,? .? (?) =? <? /? B9C",
-                         obfuscated_sql('pyscopg2', select))
-
-    def test_obfuscator_collapses_in_clause_literal(self):
-        select = "SELECT column1 FROM table1 WHERE column1 IN (1,2,3)"
-        self.assertEqual("SELECT column1 FROM table1 WHERE column1 IN (?)",
-                         obfuscated_sql('pyscopg2', select, collapsed=True))
-
-    def test_obfuscator_collapses_in_clause_parameterised(self):
-        select = "SELECT column1 FROM table1 WHERE column1 IN (%s,%s,%s)"
-        self.assertEqual("SELECT column1 FROM table1 WHERE column1 IN (?)",
-                         obfuscated_sql('pyscopg2', select, collapsed=True))
-
-    def test_obfuscator_collapses_in_clause_very_large(self):
-        select = "SELECT column1 FROM table1 WHERE column1 IN (" + \
-                (50000 * "%s,") + "%s)"
-        self.assertEqual("SELECT column1 FROM table1 WHERE column1 IN (?)",
-                         obfuscated_sql('pyscopg2', select, collapsed=True))
-
-    def test_obfuscator_very_large_in_clause(self):
-        select = "SELECT column1 FROM table1 WHERE column1 IN (" + \
-                (50000 * "%s,") + "%s)"
-        self.assertEqual(('table1', 'select'), parsed_sql('pyscopg2', select))
 
     def test_parse_general_statements(self):
-        for result, sql in GENERAL_PARSE_TESTS:
-            self.assertEqual(result, parsed_sql('pyscopg2', sql))
+        for expected_result, sql in GENERAL_PARSE_TESTS:
+            statement = SQLStatement(sql, 'pyscopg2')
+            actual_result = statement.target, statement.operation
+            self.assertEqual(expected_result, actual_result)
 
     def test_parse_comment_statements(self):
-        for result, sql in COMMENT_PARSE_TESTS:
-            self.assertEqual(result, parsed_sql('pyscopg2', sql))
+        for expected_result, sql in COMMENT_PARSE_TESTS:
+            statement = SQLStatement(sql, 'pyscopg2')
+            actual_result = statement.target, statement.operation
+            self.assertEqual(expected_result, actual_result)
 
     def test_parse_select_statements(self):
-        for result, sql in SELECT_PARSE_TESTS:
-            self.assertEqual(result, parsed_sql('pyscopg2', sql))
+        for expected_result, sql in SELECT_PARSE_TESTS:
+            statement = SQLStatement(sql, 'pyscopg2')
+            actual_result = statement.target, statement.operation
+            self.assertEqual(expected_result, actual_result)
 
     def test_parse_delete_tests(self):
-        for result, sql in DELETE_PARSE_TESTS:
-            self.assertEqual(result, parsed_sql('pyscopg2', sql))
+        for expected_result, sql in DELETE_PARSE_TESTS:
+            statement = SQLStatement(sql, 'pyscopg2')
+            actual_result = statement.target, statement.operation
+            self.assertEqual(expected_result, actual_result)
 
     def test_parse_insert_tests(self):
-        for result, sql in INSERT_PARSE_TESTS:
-            self.assertEqual(result, parsed_sql('pyscopg2', sql))
+        for expected_result, sql in INSERT_PARSE_TESTS:
+            statement = SQLStatement(sql, 'pyscopg2')
+            actual_result = statement.target, statement.operation
+            self.assertEqual(expected_result, actual_result)
 
     def test_parse_update_tests(self):
-        for result, sql in UPDATE_PARSE_TESTS:
-            self.assertEqual(result, parsed_sql('pyscopg2', sql))
+        for expected_result, sql in UPDATE_PARSE_TESTS:
+            statement = SQLStatement(sql, 'pyscopg2')
+            actual_result = statement.target, statement.operation
+            self.assertEqual(expected_result, actual_result)
 
     def test_parse_create_tests(self):
-        for result, sql in CREATE_PARSE_TESTS:
-            self.assertEqual(result, parsed_sql('pyscopg2', sql))
+        for expected_result, sql in CREATE_PARSE_TESTS:
+            statement = SQLStatement(sql, 'pyscopg2')
+            actual_result = statement.target, statement.operation
+            self.assertEqual(expected_result, actual_result)
 
     def test_parse_call_tests(self):
-        for result, sql in CALL_PARSE_TESTS:
-            self.assertEqual(result, parsed_sql('pyscopg2', sql))
+        for expected_result, sql in CALL_PARSE_TESTS:
+            statement = SQLStatement(sql, 'pyscopg2')
+            actual_result = statement.target, statement.operation
+            self.assertEqual(expected_result, actual_result)
 
     def test_parse_exec_tests(self):
-        for result, sql in EXEC_PARSE_TESTS:
-            self.assertEqual(result, parsed_sql('pyscopg2', sql))
+        for expected_result, sql in EXEC_PARSE_TESTS:
+            statement = SQLStatement(sql, 'pyscopg2')
+            actual_result = statement.target, statement.operation
+            self.assertEqual(expected_result, actual_result)
 
     def test_parse_alter_tests(self):
-        for result, sql in ALTER_PARSE_TESTS:
-            self.assertEqual(result, parsed_sql('pyscopg2', sql))
+        for expected_result, sql in ALTER_PARSE_TESTS:
+            statement = SQLStatement(sql, 'pyscopg2')
+            actual_result = statement.target, statement.operation
+            self.assertEqual(expected_result, actual_result)
 
     def test_parse_show_tests(self):
-        for result, sql in SHOW_PARSE_TESTS:
-            self.assertEqual(result, parsed_sql('pyscopg2', sql))
+        for expected_result, sql in SHOW_PARSE_TESTS:
+            statement = SQLStatement(sql, 'pyscopg2')
+            actual_result = statement.target, statement.operation
+            self.assertEqual(expected_result, actual_result)
 
     def test_parse_set_tests(self):
-        for result, sql in SET_PARSE_TESTS:
-            self.assertEqual(result, parsed_sql('pyscopg2', sql))
+        for expected_result, sql in SET_PARSE_TESTS:
+            statement = SQLStatement(sql, 'pyscopg2')
+            actual_result = statement.target, statement.operation
+            self.assertEqual(expected_result, actual_result)
 
-    def test_collapse_sql_tests(self):
-        for sql in SQL_COLLAPSE_TESTS:
-            self.assertEqual("SELECT c1 FROM t1 WHERE c1 IN (?)",
-                             obfuscated_sql('psycopg2', sql, collapsed=True))
+    def test_obfuscate_numeric_literals(self):
+        sql = 'SELECT * FROM t1 WHERE t2.c3 = 1 AND 2 = 3'
+        statement = SQLStatement(sql, 'pyscopg2')
+        expected_result = 'SELECT * FROM t1 WHERE t2.c3 = ? AND ? = ?'
+        actual_result = statement.obfuscated
+        self.assertEqual(expected_result, actual_result)
+
+    def test_obfuscate_integer_word_boundaries(self):
+        sql = 'A1 #2 ,3 .4 (5) =6 <7 /9 B9C'
+        statement = SQLStatement(sql, 'pyscopg2')
+        expected_result = 'A1 #? ,? .? (?) =? <? /? B9C'
+        actual_result = statement.obfuscated
+        self.assertEqual(expected_result, actual_result)
+
+    def test_obfuscate_string_literals(self):
+        sql = "INSERT INTO X values('', 'a''b c',0, 1 , 'd''e f''s h')"
+        statement = SQLStatement(sql, 'pyscopg2')
+        expected_result = "INSERT INTO X values(?, ?,?, ? , ?)"
+        actual_result = statement.obfuscated
+        self.assertEqual(expected_result, actual_result)
+
+    def test_obfuscate_table_and_column_names(self):
+        sql = 'SELECT "t"."c" FROM "t" WHERE "t"."c" = \'value\' LIMIT 1'
+        statement = SQLStatement(sql, 'pyscopg2')
+        expected_result = 'SELECT "t"."c" FROM "t" WHERE "t"."c" = ? LIMIT ?'
+        actual_result = statement.obfuscated
+        self.assertEqual(expected_result, actual_result)
+
+    def test_obfuscate_mysql_table_and_column_names(self):
+        sql = 'SELECT `t`.`c` FROM `t` WHERE `t`.`c` = \'value\' LIMIT 1'
+        statement = SQLStatement(sql, 'pyscopg2')
+        expected_result = 'SELECT `t`.`c` FROM `t` WHERE `t`.`c` = ? LIMIT ?'
+        actual_result = statement.obfuscated
+        self.assertEqual(expected_result, actual_result)
+
+    def test_normalize_sql_tests(self):
+        expected_result = 'SELECT c1 FROM t1 WHERE c1 IN(?)'
+        for sql in SQL_NORMALIZE_TESTS:
+            statement = SQLStatement(sql, 'pyscopg2')
+            actual_result = statement.normalized
+            self.assertEqual(expected_result, actual_result)
+            self.assertEqual(hash(expected_result), hash(actual_result))
 
 if __name__ == "__main__":
     unittest.main()

@@ -172,15 +172,6 @@ class TransactionNode(_TransactionNode):
         yield ApdexMetric(name='Apdex', satisfying=satisfying,
                 tolerating=tolerating, frustrating=frustrating)
 
-    def value_metrics(self, stats):
-        """Return a generator yielding any custom metrics recorded
-        against this transaction.
-
-        """
-
-        for name, value in self.custom_metrics:
-            yield ValueMetric(name=name, value=value)
-
     def error_details(self):
         """Return a generator yielding the details for each unique error
         captured during this transaction.

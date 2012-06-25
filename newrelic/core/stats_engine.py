@@ -428,7 +428,7 @@ class StatsEngine(object):
 
         with InternalTrace(
                 'Supportability/TransactionNode/Calls/value_metrics'):
-            self.record_value_metrics(transaction.value_metrics(self))
+            self.merge_value_metrics(transaction.custom_metrics.metrics())
 
         with InternalTrace(
                 'Supportability/TransactionNode/Calls/time_metrics'):

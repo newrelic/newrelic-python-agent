@@ -13,9 +13,6 @@ import logging
 import operator
 import zlib
 
-import newrelic.core.metric
-import newrelic.core.database_utils
-
 import newrelic.lib.simplejson as simplejson
 
 from newrelic.core.internal_metrics import (internal_trace, InternalTrace,

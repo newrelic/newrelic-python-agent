@@ -2,7 +2,6 @@ from __future__ import with_statement
 
 import sys
 import types
-import inspect
 import urlparse
 import cgi
 import base64

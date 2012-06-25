@@ -23,6 +23,8 @@ import newrelic.core.samplers
 
 import newrelic.api.time_trace
 
+from newrelic.core.stats_engine import ValueMetrics
+from newrelic.core.metric import ValueMetric
 
 _logger = logging.getLogger(__name__)
 
@@ -173,7 +175,7 @@ class Transaction(object):
 
         self.response_code = 0
 
-        self._custom_metrics = []
+        self._custom_metrics = ValueMetrics()
 
         global_settings = newrelic.core.config.global_settings()
 
@@ -627,7 +629,8 @@ class Transaction(object):
         self._errors.append(node)
 
     def record_metric(self, name, value):
-        self._custom_metrics.append((name, value))
+        self._custom_metrics.record_value_metric(
+                ValueMetric(name=name, value=value))
 
     def _parent_node(self):
         if self._node_stack:

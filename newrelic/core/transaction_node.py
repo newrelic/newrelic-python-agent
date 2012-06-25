@@ -12,11 +12,12 @@ try:
 except:
     from newrelic.lib.namedtuple import namedtuple
 
-import newrelic.core.metric
 import newrelic.core.error_collector
 import newrelic.core.trace_node
 
+from newrelic.core.metric import (ApdexMetric, TimeMetric, ValueMetric)
 from newrelic.core.internal_metrics import internal_trace
+from newrelic.core.string_table import StringTable
 
 _TransactionNode = namedtuple('_TransactionNode',
         ['settings', 'path', 'type', 'group', 'name', 'request_uri',
@@ -35,7 +36,14 @@ class TransactionNode(_TransactionNode):
 
     """
 
-    @internal_trace('Supportability/TransactionNode/Calls/time_metrics')
+    @property
+    def string_table(self):
+        result = getattr(self, '_string_table', None)
+        if result is not None:
+            return result
+        self._string_table = StringTable()
+        return self._string_table
+
     def time_metrics(self, stats):
         """Return a generator yielding the timed metrics for the
         top level web transaction as well as all the child nodes.
@@ -64,18 +72,7 @@ class TransactionNode(_TransactionNode):
             # and how the exclusive component would appear in
             # the overview graphs.
 
-            # TODO The PHP agent doesn't mark this as forced but
-            # possibly it should be. Would always be included in
-            # PHP agent as comes first in the metrics generated
-            # for a request and wouldn't get removed when metric
-            # limit reached.
-
-            #yield newrelic.core.metric.TimeMetric(name='HttpDispatcher',
-            #        scope='', overflow=None, forced=False,
-            #        duration=self.duration, exclusive=None)
-
-            yield newrelic.core.metric.TimeMetric(name='HttpDispatcher',
-                    scope='', overflow=None, forced=True,
+            yield TimeMetric(name='HttpDispatcher', scope='',
                     duration=self.duration, exclusive=None)
 
             # Upstream queue time within any web server front end.
@@ -91,17 +88,14 @@ class TransactionNode(_TransactionNode):
                 if queue_wait < 0:
                     queue_wait = 0
 
-                yield newrelic.core.metric.TimeMetric(
-                        name='WebFrontend/QueueTime', scope='',
-                        overflow=None, forced=True, duration=queue_wait,
-                        exclusive=None)
+                yield TimeMetric(name='WebFrontend/QueueTime', scope='',
+                        duration=queue_wait, exclusive=None)
 
         # Generate the full transaction metric.
 
         name = self.path
 
-        yield newrelic.core.metric.TimeMetric(name=name, scope='',
-                overflow=None, forced=True, duration=self.duration,
+        yield TimeMetric(name=name, scope='', duration=self.duration,
                 exclusive=self.exclusive)
 
         # Generate the rollup metric.
@@ -111,17 +105,15 @@ class TransactionNode(_TransactionNode):
         else:
             rollup = self.type
 
-        yield newrelic.core.metric.TimeMetric(name=rollup, scope='',
-                overflow=None, forced=True, duration=self.duration,
+        yield TimeMetric(name=rollup, scope='', duration=self.duration,
                 exclusive=self.exclusive)
 
 	# Generate metric indicating if errors present. Only do
 	# this for web transactions and not anything else.
 
         if self.type == 'WebTransaction' and self.errors:
-            yield newrelic.core.metric.TimeMetric(name='Errors/all',
-                    scope='', overflow=None, forced=True, duration=0.0,
-                    exclusive=None)
+            yield TimeMetric(name='Errors/all', scope='', duration=0.0,
+                      exclusive=None)
 
         # Now for the children.
 
@@ -129,7 +121,6 @@ class TransactionNode(_TransactionNode):
             for metric in child.time_metrics(stats, self, self):
                 yield metric
 
-    @internal_trace('Supportability/TransactionNode/Calls/apdex_metrics')
     def apdex_metrics(self, stats):
         """Return a generator yielding the apdex metrics for this node.
 
@@ -165,43 +156,22 @@ class TransactionNode(_TransactionNode):
             else:
                 frustrating = 1
 
-        # Generate the full apdex metric. In this case we
-        # need to specific an overflow metric for case where
-        # too many metrics have been generated and want to
-        # stick remainder in a bucket.
+        # Generate the full apdex metric.
 
-        # TODO Should the apdex metric path only include the
-        # first segment of group? That is, only the top level
-        # category and not any sub categories.
-
-        if self.group in ['Uri', 'NormalizedUri'] and self.name[:1] == '/':
+        if (self.group in ('Uri', 'NormalizedUri') and
+                self.name.startswith('/')):
             name = 'Apdex/%s%s' % (self.group, self.name)
         else:
             name = 'Apdex/%s/%s' % (self.group, self.name)
 
-        overflow = 'Apdex/%s/*' % self.group
-
-        yield newrelic.core.metric.ApdexMetric(name=name,
-                overflow=overflow, forced=False, satisfying=satisfying,
+        yield ApdexMetric(name=name, satisfying=satisfying,
                 tolerating=tolerating, frustrating=frustrating)
 
         # Generate the rollup metric.
 
-        yield newrelic.core.metric.ApdexMetric(name='Apdex',
-                overflow=None, forced=True, satisfying=satisfying,
+        yield ApdexMetric(name='Apdex', satisfying=satisfying,
                 tolerating=tolerating, frustrating=frustrating)
 
-    @internal_trace('Supportability/TransactionNode/Calls/value_metrics')
-    def value_metrics(self, stats):
-        """Return a generator yielding any custom metrics recorded
-        against this transaction.
-
-        """
-
-        for name, value in self.custom_metrics:
-            yield newrelic.core.metric.ValueMetric(name=name, value=value)
-
-    @internal_trace('Supportability/TransactionNode/Calls/error_details')
     def error_details(self):
         """Return a generator yielding the details for each unique error
         captured during this transaction.
@@ -236,15 +206,12 @@ class TransactionNode(_TransactionNode):
                     message=error.message, type=error.type,
                     parameters=params)
 
-    def trace_node(self, stats, string_table, root):
+    def trace_node(self, stats, root):
 
         name = self.path
 
         start_time = newrelic.core.trace_node.node_start_time(root, self)
         end_time = newrelic.core.trace_node.node_end_time(root, self)
-
-        #children = [child.trace_node(stats, string_table, root) for
-        #            child in self.children]
 
         root.trace_node_count += 1
 
@@ -253,7 +220,7 @@ class TransactionNode(_TransactionNode):
         for child in self.children:
             if root.trace_node_count > root.trace_node_limit:
                 break
-            children.append(child.trace_node(stats, string_table, root))
+            children.append(child.trace_node(stats, root))
 
         params = {}
 
@@ -262,7 +229,7 @@ class TransactionNode(_TransactionNode):
                 label=None)
 
     @internal_trace('Supportability/TransactionNode/Calls/transaction_trace')
-    def transaction_trace(self, stats, string_table, limit):
+    def transaction_trace(self, stats, limit):
 
         self.trace_node_count = 0
         self.trace_node_limit = limit
@@ -271,7 +238,7 @@ class TransactionNode(_TransactionNode):
         request_params = self.request_params or None
         custom_params = self.custom_params or None
         parameter_groups = self.parameter_groups or None
-        trace_node = self.trace_node(stats, string_table, self)
+        trace_node = self.trace_node(stats, self)
 
 	# There is an additional trace node labelled as 'ROOT'
 	# that needs to be inserted below the root node object
@@ -285,7 +252,6 @@ class TransactionNode(_TransactionNode):
                 request_params=request_params, custom_params=custom_params,
                 root=root, parameter_groups=parameter_groups)
 
-    @internal_trace('Supportability/TransactionNode/Calls/slow_sql_nodes')
     def slow_sql_nodes(self, stats):
         for item in self.slow_sql:
             yield item.slow_sql_node(stats, self)

@@ -1,6 +1,3 @@
-This product includes sqlparse (http://pypi.python.org/pypi/sqlparse) which
-is distributed under a BSD license. See 'newrelic/lib/sqlplarse'.
-
 This product includes namedtuple (http://code.activestate.com/recipes/500261/)
 which is distributed under the PSF license. See 'newrelic/lib/namedtuple'.
 

@@ -259,12 +259,6 @@ def _process_configuration(section):
                      'get', None)
     _process_setting(section, 'local_daemon.synchronous_startup',
                      'getboolean', None)
-    _process_setting(section, 'transaction_metrics.overflow_minimum',
-                     'getint', None)
-    _process_setting(section, 'transaction_metrics.overflow_maximum',
-                     'getint', None)
-    _process_setting(section, 'transaction_metrics.overflow_threshold',
-                     'getfloat', None)
     _process_setting(section, 'agent_limits.transaction_traces_nodes',
                      'getint', None)
     _process_setting(section, 'agent_limits.sql_query_length_maximum',
@@ -277,8 +271,6 @@ def _process_configuration(section):
                      'getint', None)
     _process_setting(section, 'agent_limits.merge_stats_maximum',
                      'getint', None)
-    _process_setting(section, 'agent_limits.sql_cache_buckets',
-                     'getint', None)
     _process_setting(section, 'console.listener_socket',
                      'get', _map_console_listener_socket)
     _process_setting(section, 'console.allow_interpreter_cmd',
@@ -289,12 +281,8 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'debug.log_malformed_json_data',
                      'getboolean', None)
-    _process_setting(section, 'debug.sql_parsing_log_threshold',
-                     'getfloat', None)
-    _process_setting(section, 'debug.log_sql_cache_misses',
+    _process_setting(section, 'debug.log_transaction_trace_payload',
                      'getboolean', None)
-    _process_setting(section, 'debug.sql_parsing_mechanism',
-                     'get', None)
 
 # Loading of configuration from specified file and for specified
 # deployment environment. Can also indicate whether configuration

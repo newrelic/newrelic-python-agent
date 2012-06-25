@@ -124,18 +124,12 @@ _settings.rum.load_episodes_file = True
 
 _settings.slow_sql.enabled = True
 
-_settings.transaction_metrics.overflow_minimum = 5
-_settings.transaction_metrics.overflow_maximum = 10
-#_settings.transaction_metrics.overflow_threshold = 0.05
-_settings.transaction_metrics.overflow_threshold = 0.0
-
 _settings.agent_limits.transaction_traces_nodes = 10000
 _settings.agent_limits.sql_query_length_maximum = 16384
 _settings.agent_limits.slow_sql_stack_trace = 30
 _settings.agent_limits.sql_explain_plans = 30
 _settings.agent_limits.slow_sql_data = 10
 _settings.agent_limits.merge_stats_maximum = 5
-_settings.agent_limits.sql_cache_buckets = 3
 
 _settings.console.listener_socket = None
 _settings.console.allow_interpreter_cmd = False
@@ -146,11 +140,7 @@ _settings.debug.local_settings_overrides = []
 _settings.debug.log_data_collector_calls = False
 _settings.debug.log_data_collector_payloads = False
 _settings.debug.log_malformed_json_data = False
-
-_settings.debug.sql_parsing_log_threshold = None
-_settings.debug.log_sql_cache_misses = False
-
-_settings.debug.sql_parsing_mechanism = 'regex'
+_settings.debug.log_transaction_trace_payload = False
 
 def global_settings():
     """This returns the default global settings. Generally only used

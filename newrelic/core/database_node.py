@@ -3,9 +3,9 @@ try:
 except:
     from newrelic.lib.namedtuple import namedtuple
 
-import newrelic.core.metric
 import newrelic.core.trace_node
 
+from newrelic.core.metric import TimeMetric
 from newrelic.core.database_utils import sql_statement
 
 _SlowSqlNode = namedtuple('_SlowSqlNode',
@@ -68,18 +68,15 @@ class DatabaseNode(_DatabaseNode):
 
         """
 
-        yield newrelic.core.metric.TimeMetric(name='Database/all',
-            scope='', overflow=None, forced=True, duration=self.duration,
-            exclusive=self.exclusive)
+        yield TimeMetric(name='Database/all', scope='',
+                duration=self.duration, exclusive=self.exclusive)
 
         if root.type == 'WebTransaction':
-            yield newrelic.core.metric.TimeMetric(name='Database/allWeb',
-                scope='', overflow=None, forced=True, duration=self.duration,
-                exclusive=self.exclusive)
+            yield TimeMetric(name='Database/allWeb', scope='',
+                    duration=self.duration, exclusive=self.exclusive)
         else:
-            yield newrelic.core.metric.TimeMetric(name='Database/allOther',
-                scope='', overflow=None, forced=True, duration=self.duration,
-                exclusive=self.exclusive)
+            yield TimeMetric(name='Database/allOther', scope='',
+                    duration=self.duration, exclusive=self.exclusive)
 
         # FIXME The follow is what PHP agent was doing, but it may
         # not sync up with what is now actually required. As example,
@@ -92,49 +89,36 @@ class DatabaseNode(_DatabaseNode):
 
         if operation in ('select', 'update', 'insert', 'delete'):
             name = 'Database/%s/%s' % (self.target, operation)
-            overflow = 'Database/*/%s' % operation
-            scope = root.path
 
-            yield newrelic.core.metric.TimeMetric(name=name, scope='',
-                    overflow=overflow, forced=False, duration=self.duration,
+            yield TimeMetric(name=name, scope='', duration=self.duration,
                     exclusive=self.exclusive)
 
-            yield newrelic.core.metric.TimeMetric(name=name, scope=scope,
-                    overflow=overflow, forced=False, duration=self.duration,
-                    exclusive=self.exclusive)
+            yield TimeMetric(name=name, scope=root.path,
+                    duration=self.duration, exclusive=self.exclusive)
 
             name = 'Database/%s' % operation
 
-            yield newrelic.core.metric.TimeMetric(name=name,
-                scope='', overflow=None, forced=True, duration=self.duration,
-                exclusive=self.exclusive)
+            yield TimeMetric(name=name, scope='', duration=self.duration,
+                    exclusive=self.exclusive)
 
         elif operation in ('show',):
             name = 'Database/%s' % operation
-            scope = root.path
 
-            yield newrelic.core.metric.TimeMetric(name=name,
-                scope='', overflow=None, forced=True, duration=self.duration,
-                exclusive=self.exclusive)
-
-            yield newrelic.core.metric.TimeMetric(name=name, scope=scope,
-                    overflow=None, forced=True, duration=self.duration,
+            yield TimeMetric(name=name, scope='', duration=self.duration,
                     exclusive=self.exclusive)
 
+            yield TimeMetric(name=name, scope=root.path,
+                    duration=self.duration, exclusive=self.exclusive)
+
         else:
-            yield newrelic.core.metric.TimeMetric(name='Database/other',
-                scope='', overflow=None, forced=True, duration=self.duration,
-                exclusive=self.exclusive)
+            yield TimeMetric(name='Database/other', scope='',
+                    duration=self.duration, exclusive=self.exclusive)
 
-            yield newrelic.core.metric.TimeMetric(name='Database/other/sql',
-                scope='', overflow=None, forced=True, duration=self.duration,
-                exclusive=self.exclusive)
+            yield TimeMetric(name='Database/other/sql', scope='',
+                    duration=self.duration, exclusive=self.exclusive)
 
-            scope = root.path
-
-            yield newrelic.core.metric.TimeMetric(name='Database/other/sql',
-                scope=scope, overflow=None, forced=True, duration=self.duration,
-                exclusive=self.exclusive)
+            yield TimeMetric(name='Database/other/sql', scope=root.path,
+                    duration=self.duration, exclusive=self.exclusive)
 
     def slow_sql_node(self, stats, root):
 

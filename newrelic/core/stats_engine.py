@@ -300,11 +300,9 @@ class StatsEngine(object):
         for metric in metrics:
             self.record_apdex_metric(metric)
 
-    def record_time_metric(self, metric, overflow=False):
+    def record_time_metric(self, metric):
         """Record a single time metric, merging the data with any data
-        from prior time metrics with the same name and scope. When
-        overflow is true then the overflow metric name is used rather
-        than the original metric name.
+        from prior time metrics with the same name and scope.
 
         """
 
@@ -314,10 +312,7 @@ class StatsEngine(object):
         # Scope is forced to be empty string if None as
         # scope of None is reserved for apdex metrics.
 
-        if overflow:
-            key = (metric.overflow, metric.scope or '')
-        else:
-            key = (metric.name, metric.scope or '')
+        key = (metric.name, metric.scope or '')
         stats = self.__stats_table.get(key)
         if stats is None:
             stats = TimeStats()
@@ -326,85 +321,18 @@ class StatsEngine(object):
 
         return key
 
-    def record_time_metrics(self, metrics, threshold, minimum, maximum):
+    def record_time_metrics(self, metrics):
         """Record the time metrics supplied by the iterable for a single
         transaction, merging the data with any data from prior time
-        metrics with the same name and scope. For metrics which are not
-        being forced and which define an overflow metric, a minimum
-        number of unique metrics will be reported. This will be those with
-        longest exclusive time. Beyond that mininum number of unique
-        metrics, subsequent metrics will be distinctly reported if they
-        have exclusive time greater than the threshold, stopping when a
-        maximum number of unique metrics have been recorded. After that the
-        metrics will be reported against any defined overflow metric name
-        instead.
+        metrics with the same name and scope.
 
         """
 
         if not self.__settings:
             return
 
-        #if threshold:
-        if False:
-            metrics = reversed(sorted(metrics, key=lambda x: x.exclusive))
-
-            include = set()
-
-            # Metric types we should never rollup into overflow.
-
-            exclude = set(['Database', 'External', 'Memcache'])
-
-            for metric in metrics:
-                overflow = False
-
-                if metric.name.split('/')[0] not in exclude:
-
-                    if not metric.forced and metric.overflow:
-
-                        if (metric.name, metric.scope) in include:
-                            pass
-
-                        elif len(include) < minimum:
-                            pass
-
-                        elif maximum > 0 and len(include) > maximum:
-                            overflow = True
-
-                        elif metric.exclusive < threshold:
-                            overflow = True
-
-                if not overflow:
-                    include.add((metric.name, metric.scope))
-
-                self.record_time_metric(metric, overflow=overflow)
-
-        elif threshold:
-            include = set()
-
-            remaining = []
-
-            # Metric types we should never rollup into overflow.
-
-            exclude = set(['Database', 'External', 'Memcache'])
-
-            for metric in metrics:
-                if (metric.name.split('/')[0] in exclude or
-                        metric.forced or not metric.overflow or
-                        metric.exclusive >= threshold):
-                    include.add((metric.name, metric.scope))
-                    self.record_time_metric(metric, overflow=False)
-                else:
-                    remaining.append(metric)
-
-            for metric in remaining:
-                if (metric.name, metric.scope) in include:
-                    self.record_time_metric(metric, overflow=False)
-                else:
-                    self.record_time_metric(metric, overflow=True)
-
-        else:
-            for metric in metrics:
-                self.record_time_metric(metric)
+        for metric in metrics:
+            self.record_time_metric(metric)
 
     def record_value_metric(self, metric):
         """Record a single value metric, merging the data with any data
@@ -478,7 +406,6 @@ class StatsEngine(object):
         error_collector = settings.error_collector
         transaction_tracer = settings.transaction_tracer
         slow_sql = settings.slow_sql
-        transaction_metrics = settings.transaction_metrics
 
         # Record the apdex, value and time metrics generated from the
         # transaction. Whether time metrics are reported as distinct
@@ -495,29 +422,32 @@ class StatsEngine(object):
         # lesser time. Such metrics get reported into the performance
         # breakdown tab for specific web transactions.
 
-        self.record_apdex_metrics(transaction.apdex_metrics(self))
+        with InternalTrace(
+                'Supportability/TransactionNode/Calls/apdex_metrics'):
+            self.record_apdex_metrics(transaction.apdex_metrics(self))
 
-        self.record_value_metrics(transaction.value_metrics(self))
+        with InternalTrace(
+                'Supportability/TransactionNode/Calls/value_metrics'):
+            self.record_value_metrics(transaction.value_metrics(self))
 
-        minimum = transaction_metrics.overflow_minimum
-        maximum = transaction_metrics.overflow_maximum
-
-        threshold = transaction_metrics.overflow_threshold
-        threshold = threshold * transaction.duration
-
-        self.record_time_metrics(transaction.time_metrics(self),
-                threshold, minimum, maximum)
+        with InternalTrace(
+                'Supportability/TransactionNode/Calls/time_metrics'):
+            self.record_time_metrics(transaction.time_metrics(self))
 
         # Capture any errors if error collection is enabled.
 
         if error_collector.enabled and settings.collect_errors:
-            self.__transaction_errors.extend(transaction.error_details())
+            with InternalTrace(
+                    'Supportability/TransactionNode/Calls/error_details'):
+                self.__transaction_errors.extend(transaction.error_details())
 
         # Capture any sql traces if transaction tracer enabled.
 
         if slow_sql.enabled and settings.collect_traces:
-            for node in transaction.slow_sql_nodes(self):
-                self.record_slow_sql_node(node)
+            with InternalTrace(
+                    'Supportability/TransactionNode/Calls/slow_sql_nodes'):
+                for node in transaction.slow_sql_nodes(self):
+                    self.record_slow_sql_node(node)
 
         # Remember as slowest transaction if transaction tracer
         # is enabled, it is over the threshold and slower than

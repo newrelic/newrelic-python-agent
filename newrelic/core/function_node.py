@@ -3,8 +3,9 @@ try:
 except:
     from newrelic.lib.namedtuple import namedtuple
 
-import newrelic.core.metric
 import newrelic.core.trace_node
+
+from newrelic.core.metric import TimeMetric
 
 _FunctionNode = namedtuple('_FunctionNode',
         ['group', 'name', 'children', 'start_time', 'end_time',
@@ -19,12 +20,9 @@ class FunctionNode(_FunctionNode):
         """
 
         name = '%s/%s' % (self.group, self.name)
-        overflow = '%s/*' % self.group
-        scope = root.path
 
-        yield newrelic.core.metric.TimeMetric(name=name, scope=scope,
-                overflow=overflow, forced=False, duration=self.duration,
-                exclusive=self.exclusive)
+        yield TimeMetric(name=name, scope=root.path,
+                duration=self.duration, exclusive=self.exclusive)
 
         # Now for the children.
 

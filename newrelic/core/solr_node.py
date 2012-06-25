@@ -3,8 +3,9 @@ try:
 except:
     from newrelic.lib.namedtuple import namedtuple
 
-import newrelic.core.metric
 import newrelic.core.trace_node
+
+from newrelic.core.metric import TimeMetric
 
 _SolrNode = namedtuple('_SolrNode',
         ['library', 'command', 'children', 'start_time', 'end_time',
@@ -18,31 +19,23 @@ class SolrNode(_SolrNode):
 
         """
 
-        yield newrelic.core.metric.TimeMetric(name='Solr/all',
-            scope='', overflow=None, forced=True, duration=self.duration,
-            exclusive=self.exclusive)
+        yield TimeMetric(name='Solr/all', scope='',
+                duration=self.duration, exclusive=self.exclusive)
 
         if root.type == 'WebTransaction':
-            yield newrelic.core.metric.TimeMetric(name='Solr/allWeb',
-                scope='', overflow=None, forced=True, duration=self.duration,
-                exclusive=self.exclusive)
+            yield TimeMetric(name='Solr/allWeb', scope='',
+                    duration=self.duration, exclusive=self.exclusive)
         else:
-            yield newrelic.core.metric.TimeMetric(name='Solr/allOther',
-                scope='', overflow=None, forced=True, duration=self.duration,
-                exclusive=self.exclusive)
+            yield TimeMetric(name='Solr/allOther', scope='',
+                    duration=self.duration, exclusive=self.exclusive)
 
         name = 'Solr/%s' % self.command
-        overflow = 'Solr/*'
 
-        yield newrelic.core.metric.TimeMetric(name=name, scope='',
-                overflow=overflow, forced=False, duration=self.duration,
-                exclusive=self.exclusive)
+        yield TimeMetric(name=name, scope='', duration=self.duration,
+                  exclusive=self.exclusive)
 
-        scope = root.path
-
-        yield newrelic.core.metric.TimeMetric(name=name, scope=scope,
-                overflow=overflow, forced=False, duration=self.duration,
-                exclusive=self.exclusive)
+        yield TimeMetric(name=name, scope=root.path,
+                duration=self.duration, exclusive=self.exclusive)
 
     def trace_node(self, stats, root):
 

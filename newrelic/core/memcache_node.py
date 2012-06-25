@@ -3,8 +3,9 @@ try:
 except:
     from newrelic.lib.namedtuple import namedtuple
 
-import newrelic.core.metric
 import newrelic.core.trace_node
+
+from newrelic.core.metric import TimeMetric
 
 _MemcacheNode = namedtuple('_MemcacheNode',
         ['command', 'children', 'start_time', 'end_time', 'duration',
@@ -18,31 +19,23 @@ class MemcacheNode(_MemcacheNode):
 
         """
 
-        yield newrelic.core.metric.TimeMetric(name='Memcache/all',
-            scope='', overflow=None, forced=True, duration=self.duration,
-            exclusive=self.exclusive)
+        yield TimeMetric(name='Memcache/all', scope='',
+                duration=self.duration, exclusive=self.exclusive)
 
         if root.type == 'WebTransaction':
-            yield newrelic.core.metric.TimeMetric(name='Memcache/allWeb',
-                scope='', overflow=None, forced=True, duration=self.duration,
-                exclusive=self.exclusive)
+            yield TimeMetric(name='Memcache/allWeb', scope='',
+                    duration=self.duration, exclusive=self.exclusive)
         else:
-            yield newrelic.core.metric.TimeMetric(name='Memcache/allOther',
-                scope='', overflow=None, forced=True, duration=self.duration,
-                exclusive=self.exclusive)
+            yield TimeMetric(name='Memcache/allOther', scope='',
+                    duration=self.duration, exclusive=self.exclusive)
 
         name = 'Memcache/%s' % self.command
-        overflow = 'Memcache/*'
 
-        yield newrelic.core.metric.TimeMetric(name=name, scope='',
-                overflow=overflow, forced=False, duration=self.duration,
-                exclusive=self.exclusive)
+        yield TimeMetric(name=name, scope='', duration=self.duration,
+                  exclusive=self.exclusive)
 
-        scope = root.path
-
-        yield newrelic.core.metric.TimeMetric(name=name, scope=scope,
-                overflow=overflow, forced=False, duration=self.duration,
-                exclusive=self.exclusive)
+        yield TimeMetric(name=name, scope=root.path,
+                duration=self.duration, exclusive=self.exclusive)
 
     def trace_node(self, stats, root):
 

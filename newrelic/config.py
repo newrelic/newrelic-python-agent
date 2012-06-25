@@ -259,12 +259,6 @@ def _process_configuration(section):
                      'get', None)
     _process_setting(section, 'local_daemon.synchronous_startup',
                      'getboolean', None)
-    _process_setting(section, 'transaction_metrics.overflow_minimum',
-                     'getint', None)
-    _process_setting(section, 'transaction_metrics.overflow_maximum',
-                     'getint', None)
-    _process_setting(section, 'transaction_metrics.overflow_threshold',
-                     'getfloat', None)
     _process_setting(section, 'agent_limits.transaction_traces_nodes',
                      'getint', None)
     _process_setting(section, 'agent_limits.sql_query_length_maximum',

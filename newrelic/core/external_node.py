@@ -5,8 +5,9 @@ try:
 except:
     from newrelic.lib.namedtuple import namedtuple
 
-import newrelic.core.metric
 import newrelic.core.trace_node
+
+from newrelic.core.metric import TimeMetric
 
 _ExternalNode = namedtuple('_ExternalNode',
         ['library', 'url', 'method', 'children', 'start_time', 'end_time',
@@ -29,18 +30,15 @@ class ExternalNode(_ExternalNode):
 
         """
 
-        yield newrelic.core.metric.TimeMetric(name='External/all',
-            scope='', overflow=None, forced=True, duration=self.duration,
-            exclusive=self.exclusive)
+        yield TimeMetric(name='External/all', scope='',
+                duration=self.duration, exclusive=self.exclusive)
 
         if root.type == 'WebTransaction':
-            yield newrelic.core.metric.TimeMetric(name='External/allWeb',
-                scope='', overflow=None, forced=True, duration=self.duration,
-                exclusive=self.exclusive)
+            yield TimeMetric(name='External/allWeb', scope='',
+                    duration=self.duration, exclusive=self.exclusive)
         else:
-            yield newrelic.core.metric.TimeMetric(name='External/allOther',
-                scope='', overflow=None, forced=True, duration=self.duration,
-                exclusive=self.exclusive)
+            yield TimeMetric(name='External/allOther', scope='',
+                    duration=self.duration, exclusive=self.exclusive)
 
         hostname = self.details.hostname or 'unknown'
         port = self.details.port
@@ -51,22 +49,16 @@ class ExternalNode(_ExternalNode):
 
         name = 'External/%s/all' % netloc
 
-        yield newrelic.core.metric.TimeMetric(name=name, scope='',
-                overflow=None, forced=False, duration=self.duration,
-                exclusive=self.exclusive)
+        yield TimeMetric(name=name, scope='', duration=self.duration,
+                  exclusive=self.exclusive)
 
         name = 'External/%s/%s/%s' % (netloc, self.library, method)
-        overflow = 'External/*'
 
-        yield newrelic.core.metric.TimeMetric(name=name, scope='',
-                overflow=overflow, forced=False, duration=self.duration,
+        yield TimeMetric(name=name, scope='', duration=self.duration,
                 exclusive=self.exclusive)
 
-        scope = root.path
-
-        yield newrelic.core.metric.TimeMetric(name=name, scope=scope,
-                overflow=overflow, forced=False, duration=self.duration,
-                exclusive=self.exclusive)
+        yield TimeMetric(name=name, scope=root.path,
+                duration=self.duration, exclusive=self.exclusive)
 
     def trace_node(self, stats, root):
 

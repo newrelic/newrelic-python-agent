@@ -99,21 +99,6 @@ def proxy_server():
 
     return { scheme: proxy }
 
-# For now we create one session object for handling requests to data
-# collector as all applications being harvested one after another in the
-# same thread. We force pool size to 1 to ensure that only one
-# connection to data collector which will be maintained due to keep
-# alive and reused. If move to multiple threads to harvest applications
-# when have more than one, then need to change this such that either
-# allow more connections or multiple session objects.
-
-_requests_config = {}
-_requests_config['keep_alive'] = True
-_requests_config['pool_connections'] = 1
-_requests_config['pool_maxsize'] = 1
-
-_requests_session = requests.session(config=_requests_config)
-
 # Low level network functions and session management. When connecting to
 # the data collector it is initially done through the main data collector.
 # It is though then necessary to ask the data collector for the per
@@ -209,6 +194,18 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 '%s' % method):
             data = zlib.compress(data, level)
 
+    # If no requests session object for socket connection create one
+    # now. We use a session object rather than direct post as want to
+    # ensure that socket connection isn't kept alive by requests.
+
+    if not session:
+        session_config = {}
+        session_config['keep_alive'] = True
+        session_config['pool_connections'] = 1
+        session_config['pool_maxsize'] = 1
+
+        session = requests.session(config=session_config)
+
     # Send the request. We set 'verify' to be false so that when using
     # SSL there is no attempt to do SSL certificate validation. If it
     # were enabled then we would also need the 'certifi' library.
@@ -247,12 +244,8 @@ def send_request(session, url, method, license_key, agent_run_id=None,
             len(data))
 
     try:
-        if session:
-            r = session.post(url, params=params, headers=headers,
-                    proxies=proxies, verify=False, data=data)
-        else:
-            r = requests.post(url, params=params, headers=headers,
-                    proxies=proxies, verify=False, data=data)
+        r = session.post(url, params=params, headers=headers,
+                proxies=proxies, verify=False, data=data)
 
     except requests.RequestException, exc:
         _logger.warning('Unable to connect to the data collector with '
@@ -435,14 +428,34 @@ class ApplicationSession(object):
 
     """
 
-    def __init__(self, requests_session, collector_url, license_key,
+    def __init__(self, collector_url, license_key,
                 configuration):
-        self.requests_session = requests_session
         self.collector_url = collector_url
         self.license_key = license_key
         self.configuration = configuration
         self.agent_run_id = configuration.agent_run_id
 
+        self._requests_session = None
+
+    @property
+    def requests_session(self):
+        if self._requests_session is None:
+            # We force pool size to 1 to ensure that only one
+            # connection to the data collector which will be
+            # maintained due to keep alive and reused.
+
+            config = {}
+            config['keep_alive'] = True
+            config['pool_connections'] = 1
+            config['pool_maxsize'] = 1
+
+            self._requests_session = requests.session(config=config)
+
+        return self._requests_session
+
+    def close_connection(self):
+        self._requests_session = None
+        
     @internal_trace('Supportability/Collector/Calls/shutdown')
     def shutdown_session(self):
         """Called to perform orderly deregistration of agent run against
@@ -594,7 +607,7 @@ def create_session(license_key, app_name, linked_applications,
         payload = (local_config,)
 
         url = collector_url(redirect_host)
-        server_config = send_request(_requests_session, url, 'connect',
+        server_config = send_request(None, url, 'connect',
                 license_key, None, payload)
 
         # The agent configuration for the application in constructed
@@ -626,8 +639,7 @@ def create_session(license_key, app_name, linked_applications,
         # Everything fine so we create the session object through which
         # subsequent communication with data collector will be done.
 
-        session = ApplicationSession(_requests_session, url, license_key,
-                application_config)
+        session = ApplicationSession(url, license_key, application_config)
 
         duration = time.time() - start
 

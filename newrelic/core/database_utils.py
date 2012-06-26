@@ -155,12 +155,9 @@ def _normalize_sql(sql, dbapi):
 # might be preceded or followed by punctuation which we can expect in
 # context of SQL statements.
 #
-# XXX This is going to fail for various cases. For details on naming
-# rules for database table names see:
-#
-# http://www.informit.com/articles/article.aspx?p=377068
+# TODO This is always going to do what we require, but it is only used
+# now for cases below which never get invoked, so is okay for now.
 
-#_identifier_re = re.compile('["`\[\]]*')
 _identifier_re = re.compile('[\',"`\[\]\(\)]*')
 
 def _extract_identifier(token):
@@ -175,84 +172,148 @@ def _uncomment_sql(sql, dbapi):
     return _uncomment_sql_re.sub('', sql)
 
 # Parser routines for the different SQL statement operation types.
+#
+# Picking out the name of the target identifier for the specific
+# operation is more than a bit tricky. This is because names can contain
+# special characters. Quoting can also be used to allow any characters
+# with escaping of quotes with such values following the SQL
+# conventions.
+#
+# The most broad naming rule which includes all other databases appears
+# to be SQL server:
+#
+# http://msdn.microsoft.com/en-us/library/ms175874.aspx
+#
+# which says:
+#
+#   The first character must be one of the following:
+#
+#     A letter as defined by the Unicode Standard 3.2. The Unicode
+#     definition of letters includes Latin characters from a through z,
+#     from A through Z, and also letter characters from other languages.
+#
+#     The underscore (_), at sign (@), or number sign (#).
+#
+#   Subsequent characters can include the following:
+#
+#     Letters as defined in the Unicode Standard 3.2.
+#
+#     Decimal numbers from either Basic Latin or other national scripts.
+#
+#     The at sign, dollar sign ($), number sign, or underscore.
+#
+# One of the problems is that letters and numbers can be any which are
+# valid for the locale in use, but how do we know for sure that locale
+# setting of the process and what is used by the regular expression
+# library even matches what the database is using. We therefore have to
+# avoid trying to use \w pattern even if LOCALE flag is used.
+#
+# On top of the character set issues and quoting, different types of
+# bracketing such as () and [] can also be used around names.
+#
+# Because of the difficulty in handling locales especially, what we do
+# instead is try and match based on whatever occurs between the
+# different delimiters we expect. That way we do not have to worry about
+# locale.
 
 def _parse_default(sql, regex):
     match = regex.search(sql)
     return match and _extract_identifier(match.group(1)) or ''
 
-_parse_from_p = r'\s+FROM\s+(?!\()(\S+)'
+_parse_identifier_1_p = r'"((?:[^"]|"")+)"'
+_parse_identifier_2_p = r"'((?:[^']|'')+)'"
+_parse_identifier_3_p = r'`((?:[^`]|``)+)`'
+_parse_identifier_4_p = r'\[\s*(\S+)\s*\]'
+_parse_identifier_5_p = r'\(\s*(\S+)\s*\)'
+_parse_identifier_6_p = r'([^\s\(\)\[\],]+)'
+
+_parse_identifier_p = ''.join(('(', _parse_identifier_1_p, '|',
+        _parse_identifier_2_p, '|', _parse_identifier_3_p, '|',
+        _parse_identifier_4_p, '|', _parse_identifier_5_p, '|',
+        _parse_identifier_6_p, ')'))
+
+_parse_from_p = '\s+FROM\s+' + _parse_identifier_p
 _parse_from_re = re.compile(_parse_from_p, re.IGNORECASE)
-
-_parse_into_p = r'\s+INTO\s+(?!\()(\S+)'
-_parse_into_re = re.compile(_parse_into_p, re.IGNORECASE)
-
-_parse_update_p = r'\s*UPDATE\s+(?!\()(\S+)'
-_parse_update_re = re.compile(_parse_update_p, re.IGNORECASE)
-
-_parse_table_p = r'\s+TABLE\s+(?!\()(\S+)'
-_parse_table_re = re.compile(_parse_table_p, re.IGNORECASE)
-
-_parse_call_p = r'\s*CALL\s+(?!\()(\w+)'
-_parse_call_re = re.compile(_parse_call_p, re.IGNORECASE)
-
-_parse_show_p = r'\s*SHOW\s+(.*)'
-_parse_show_re = re.compile(_parse_show_p, re.IGNORECASE | re.DOTALL)
-
-_parse_set_p = r'\s*SET\s+(.*?)\W+.*'
-_parse_set_re = re.compile(_parse_set_p, re.IGNORECASE | re.DOTALL)
-
-_parse_exec_p = r'\s*EXEC\s+(?!\()(\w+)'
-_parse_exec_re = re.compile(_parse_exec_p, re.IGNORECASE)
-
-_parse_execute_p = r'\s*EXECUTE\s+(?!\()(\w+)'
-_parse_execute_re = re.compile(_parse_execute_p, re.IGNORECASE)
-
-_parse_alter_p = r'\s*ALTER\s+(?!\()(\w+)'
-_parse_alter_re = re.compile(_parse_alter_p, re.IGNORECASE)
 
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_target_select')
 def _parse_select(sql, dbapi):
-    return _parse_default(sql, _parse_from_re)
+    m = _parse_from_re.search(sql)
+    return m and (s for s in m.groups()[1:] if s).next().lower() or ''
 
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_target_delete')
 def _parse_delete(sql, dbapi):
-    return _parse_default(sql, _parse_from_re)
+    m = _parse_from_re.search(sql)
+    return m and (s for s in m.groups()[1:] if s).next().lower() or ''
+
+_parse_into_p = '\s+INTO\s+' + _parse_identifier_p
+_parse_into_re = re.compile(_parse_into_p, re.IGNORECASE)
 
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_target_insert')
 def _parse_insert(sql, dbapi):
-    return _parse_default(sql, _parse_into_re)
+    m = _parse_into_re.search(sql)
+    return m and (s for s in m.groups()[1:] if s).next().lower() or ''
+
+_parse_update_p = '\s*UPDATE\s+' + _parse_identifier_p
+_parse_update_re = re.compile(_parse_update_p, re.IGNORECASE)
 
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_target_update')
 def _parse_update(sql, dbapi):
-    return _parse_default(sql, _parse_update_re)
+    m = _parse_update_re.search(sql)
+    return m and (s for s in m.groups()[1:] if s).next().lower() or ''
+
+_parse_table_p = '\s+TABLE\s+' + _parse_identifier_p
+_parse_table_re = re.compile(_parse_table_p, re.IGNORECASE)
 
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_target_create')
 def _parse_create(sql, dbapi):
-    return _parse_default(sql, _parse_table_re)
+    m = _parse_table_re.search(sql)
+    return m and (s for s in m.groups()[1:] if s).next().lower() or ''
 
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_target_drop')
 def _parse_drop(sql, dbapi):
-    return _parse_default(sql, _parse_table_re)
+    m = _parse_table_re.search(sql)
+    return m and (s for s in m.groups()[1:] if s).next().lower() or ''
+
+# TODO Following need to be reviewed again. They aren't currently used
+# in actual use as only parse out target for select/insert/update/delete.
+
+_parse_call_p = r'\s*CALL\s+(?!\()(\w+)'
+_parse_call_re = re.compile(_parse_call_p, re.IGNORECASE)
 
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_target_call')
 def _parse_call(sql, dbapi):
     return _parse_default(sql, _parse_call_re)
 
+_parse_show_p = r'\s*SHOW\s+(.*)'
+_parse_show_re = re.compile(_parse_show_p, re.IGNORECASE | re.DOTALL)
+
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_target_show')
 def _parse_show(sql, dbapi):
     return _parse_default(sql, _parse_show_re)
+
+_parse_set_p = r'\s*SET\s+(.*?)\W+.*'
+_parse_set_re = re.compile(_parse_set_p, re.IGNORECASE | re.DOTALL)
 
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_target_set')
 def _parse_set(sql, dbapi):
     return _parse_default(sql, _parse_set_re)
 
+_parse_exec_p = r'\s*EXEC\s+(?!\()(\w+)'
+_parse_exec_re = re.compile(_parse_exec_p, re.IGNORECASE)
+
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_target_exec')
 def _parse_exec(sql, dbapi):
     return _parse_default(sql, _parse_exec_re)
 
+_parse_execute_p = r'\s*EXECUTE\s+(?!\()(\w+)'
+_parse_execute_re = re.compile(_parse_execute_p, re.IGNORECASE)
+
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_target_execute')
 def _parse_execute(sql, dbapi):
     return _parse_default(sql, _parse_execute_re)
+
+_parse_alter_p = r'\s*ALTER\s+(?!\()(\w+)'
+_parse_alter_re = re.compile(_parse_alter_p, re.IGNORECASE)
 
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_target_alter')
 def _parse_alter(sql, dbapi):

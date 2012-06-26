@@ -88,12 +88,15 @@ class DatabaseNode(_DatabaseNode):
         operation = self.operation
 
         if operation in ('select', 'update', 'insert', 'delete'):
-            name = 'Database/%s/%s' % (self.target, operation)
+            target = self.target
 
-            yield TimeMetric(name=name, scope='', duration=self.duration,
-                    exclusive=self.exclusive)
+            if target:
+                name = 'Database/%s/%s' % (self.target, operation)
 
-            yield TimeMetric(name=name, scope=root.path,
+                yield TimeMetric(name=name, scope='', duration=self.duration,
+                        exclusive=self.exclusive)
+
+                yield TimeMetric(name=name, scope=root.path,
                     duration=self.duration, exclusive=self.exclusive)
 
             name = 'Database/%s' % operation
@@ -125,7 +128,11 @@ class DatabaseNode(_DatabaseNode):
         operation = self.operation
 
         if operation in ('select', 'update', 'insert', 'delete'):
-            name = 'Database/%s/%s' % (self.target, operation)
+            target = self.target
+            if target:
+                name = 'Database/%s/%s' % (target, operation)
+            else:
+                name = 'Database/%s' % operation
         elif operation in ('show',):
             name = 'Database/%s' % operation
         else:
@@ -157,7 +164,11 @@ class DatabaseNode(_DatabaseNode):
         # Could possibly cache this if necessary.
 
         if operation in ('select', 'update', 'insert', 'delete'):
-            name = 'Database/%s/%s' % (self.target, operation)
+            target = self.target
+            if target:
+                name = 'Database/%s/%s' % (target, operation)
+            else:
+                name = 'Database/%s' % operation
         elif operation in ('show',):
             name = 'Database/%s' % operation
         else:

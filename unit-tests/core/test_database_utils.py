@@ -473,16 +473,16 @@ SELECT_PARSE_TESTS = [
     """SELECT * from 't1' WHERE c1 in (%s""" + (50000*""",%s""") + """)""",
   ),
   (
-    # Select with no from clause.
-    # FAIL
-    ('xxx', 'select'),
-    """select now() as time"""
-  ),
-  (
     # Select with table name in parenthesis (php agent TestCase)
     # FAIL
     ('foobar', 'select'),
     """SELECT * FROM (foobar)"""
+  ),
+  (
+    # Select with no from clause.
+    # FAIL
+    ('', 'select'),
+    """select now() as time"""
   ),
 ]
 
@@ -794,6 +794,8 @@ class TestDatabase(unittest.TestCase):
         for expected_result, sql in SELECT_PARSE_TESTS:
             statement = SQLStatement(sql, 'pyscopg2')
             actual_result = statement.target, statement.operation
+            if expected_result != actual_result:
+                print 'XXX', expected_result == actual_result, sql
             self.assertEqual(expected_result, actual_result)
 
     def test_parse_delete_tests(self):

@@ -638,6 +638,14 @@ class Application(object):
                 _logger.debug('Completed harvest for %r in %.2f seconds.',
                         self._app_name, duration)
 
+                # Force close the socket connection which has been
+                # created for this harvest if session still exists.
+                # New connection will be create automatically on the
+                # next harvest.
+
+                if self._active_session:
+                    self._active_session.close_connection()
+
         # Merge back in statistics recorded about the last harvest
         # and communication with the data collector. This will be
         # part of the data for the next harvest period.

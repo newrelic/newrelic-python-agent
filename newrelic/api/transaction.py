@@ -401,7 +401,7 @@ class Transaction(object):
         #if self._transaction_metrics:
         #    parameter_groups['Transaction metrics'] = self._transaction_metrics
 
-        self._custom_params['cpu_time'] = self._cpu_utilization_value
+        self._custom_params['cpu_time'] = 100 * self._cpu_utilization_value
 
         node = newrelic.core.transaction_node.TransactionNode(
                 settings=self._settings,

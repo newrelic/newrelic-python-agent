@@ -67,6 +67,10 @@ class Application(object):
     def link_to_application(self, name):
         self._linked[name] = True
 
+    @property
+    def thread_utilization(self):
+        return self._agent.thread_utilization(self._name)
+
     def record_metric(self, name, value):
         if self.active:
             self._agent.record_metric(self._name, name, value)

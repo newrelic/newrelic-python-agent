@@ -217,7 +217,7 @@ class Transaction(object):
 
         # Record initial CPU user time.
 
-        #self._cpu_user_time_start = os.times()[0]
+        self._cpu_user_time_start = os.times()[0]
 
         # Calculate initial thread utilisation factor
         # if using mod_wsgi.
@@ -290,12 +290,12 @@ class Transaction(object):
 
         # Calculate overall user time.
 
-        #if not self._cpu_user_time_end:
-        #    self._cpu_user_time_end = os.times()[0]
-        #self._cpu_user_time_value = (self._cpu_user_time_end -
-        #        self._cpu_user_time_start)
-        #self._cpu_utilization_value = self._cpu_user_time_value / (
-        #        duration * newrelic.core.samplers.cpu_count())
+        if not self._cpu_user_time_end:
+            self._cpu_user_time_end = os.times()[0]
+        self._cpu_user_time_value = (self._cpu_user_time_end -
+                self._cpu_user_time_start)
+        self._cpu_utilization_value = self._cpu_user_time_value / (
+                duration * newrelic.core.samplers.cpu_count())
 
         # Derive generated values from the raw data. The
         # dummy root node has exclusive time of children
@@ -351,9 +351,6 @@ class Transaction(object):
                     '%.6f' % self._thread_utilization_value
             metrics['WSGI/Thread/Count'] = _threads_per_process
 
-        #metrics['CPU/User Time'] = '%.6f' % self._cpu_user_time_value
-        #metrics['CPU/Utilization'] = '%.6f' % self._cpu_utilization_value
-
         read_duration = 0
         if self._read_start:
             read_duration = self._read_end - self._read_start
@@ -406,6 +403,8 @@ class Transaction(object):
 
         #if self._transaction_metrics:
         #    parameter_groups['Transaction metrics'] = self._transaction_metrics
+
+        self._custom_params['cpu_time'] = self._cpu_utilization_value
 
         node = newrelic.core.transaction_node.TransactionNode(
                 settings=self._settings,
@@ -682,7 +681,7 @@ class Transaction(object):
             if not self._thread_utilization_end:
                 self._thread_utilization_end = _thread_utilization()
 
-        #self._cpu_user_time_end = os.times()[0]
+        self._cpu_user_time_end = os.times()[0]
 
     def add_custom_parameter(self, name, value):
         self._custom_params[name] = value

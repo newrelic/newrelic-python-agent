@@ -20,7 +20,39 @@ from newrelic.core.stats_engine import StatsEngine, ValueMetrics
 from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
         InternalTraceContext, internal_metric)
 
+try:
+    from newrelic.core._thread_utilization import ThreadUtilization
+except:
+    ThreadUtilization = None
+
 _logger = logging.getLogger(__name__)
+
+class ThreadUtilizationSampler(object):
+
+    def __init__(self, utilization_tracker):
+        self._utilization_tracker = utilization_tracker
+        self._last_timestamp = time.time()
+        self._utilization = self._utilization_tracker.utilization_count()
+
+    def value_metrics(self):
+        now = time.time()
+        new_utilization = self._utilization_tracker.utilization_count()
+
+        elapsed_time = now - self._last_timestamp
+
+        utilization = new_utilization - self._utilization
+
+        utilization = utilization / elapsed_time
+
+        self._last_timestamp = now
+        self._utilization = new_utilization
+
+        concurrency = self._utilization_tracker.maximum_concurrency()
+
+        yield ValueMetric(name='Supportability/WSGI/Thread/Utilization',
+                value=utilization)
+        yield ValueMetric(name='Supportability/WSGI/Thread/Concurrency',
+                value=concurrency)
 
 class Application(object):
 
@@ -71,6 +103,14 @@ class Application(object):
 
         self._samplers = list(create_samplers())
 
+        self._thread_utilization = None
+
+        if ThreadUtilization is not None:
+            self._thread_utilization = ThreadUtilization()
+
+        self._samplers.append(ThreadUtilizationSampler(
+                self._thread_utilization))
+
     @property
     def name(self):
         return self._app_name
@@ -82,6 +122,10 @@ class Application(object):
     @property
     def configuration(self):
         return self._active_session and self._active_session.configuration
+
+    @property
+    def thread_utilization(self):
+        return self._thread_utilization
 
     def dump(self, file):
         """Dumps details about the application to the file object."""

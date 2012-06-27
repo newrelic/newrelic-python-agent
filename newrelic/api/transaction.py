@@ -8,12 +8,6 @@ import threading
 import traceback
 import logging
 
-try:
-    from mod_wsgi import thread_utilization as _thread_utilization
-    from mod_wsgi import threads_per_process as _threads_per_process
-except:
-    _thread_utilization = None
-
 import newrelic.core.config
 
 import newrelic.core.transaction_node
@@ -133,6 +127,8 @@ class Transaction(object):
         self._custom_params = {}
         self._request_params = {}
 
+        self._thread_utilization = application.thread_utilization
+
         self._thread_utilization_start = None
         self._thread_utilization_end = None
         self._thread_utilization_value = None
@@ -212,19 +208,20 @@ class Transaction(object):
 
         self._save_transaction(self)
 
+        # Record the start time for transaction.
+
+        self.start_time = time.time()
+
         # Record initial CPU user time.
 
         self._cpu_user_time_start = os.times()[0]
 
-        # Calculate initial thread utilisation factor
-        # if using mod_wsgi.
+        # Calculate initial thread utilisation factor.
 
-        if _thread_utilization:
-            self._thread_utilization_start = _thread_utilization()
-
-        # Record the start time for transaction.
-
-        self.start_time = time.time()
+        if self._thread_utilization:
+            self._thread_utilization.enter_transaction()
+            self._thread_utilization_start = \
+                    self._thread_utilization.utilization_count()
 
         # We need to push an object onto the top of the
         # node stack so that children can reach back and
@@ -276,15 +273,6 @@ class Transaction(object):
 
         duration = self.end_time - self.start_time
 
-        # Calculate thread utilisation factor if using
-        # mod_wsgi.
-
-        if self._thread_utilization_start:
-            if not self._thread_utilization_end:
-                self._thread_utilization_end = _thread_utilization()
-            self._thread_utilization_value = (self._thread_utilization_end -
-                    self._thread_utilization_start) / duration
-
         # Calculate overall user time.
 
         if not self._cpu_user_time_end:
@@ -293,6 +281,18 @@ class Transaction(object):
                 self._cpu_user_time_start)
         self._cpu_utilization_value = self._cpu_user_time_value / (
                 duration * newrelic.core.samplers.cpu_count())
+
+        # Calculate thread utilisation factor if using.
+
+        if self._thread_utilization:
+            self._thread_utilization.exit_transaction()
+            if self._thread_utilization_start:
+                if not self._thread_utilization_end:
+                    self._thread_utilization_end = (
+                            self._thread_utilization.utilization_count())
+                self._thread_utilization_value = (
+                        self._thread_utilization_end -
+                        self._thread_utilization_start) / duration
 
         # Derive generated values from the raw data. The
         # dummy root node has exclusive time of children
@@ -345,13 +345,12 @@ class Transaction(object):
 
         if self._thread_utilization_value:
             metrics['WSGI/Thread/Utilization'] = \
-                    '%.6f' % self._thread_utilization_value
-            metrics['WSGI/Thread/Count'] = _threads_per_process
+                    '%.4f' % self._thread_utilization_value
 
         read_duration = 0
         if self._read_start:
             read_duration = self._read_end - self._read_start
-            metrics['WSGI/Input/Time'] = '%.6f' % read_duration
+            metrics['WSGI/Input/Time'] = '%.4f' % read_duration
         self.record_metric('Supportability/WSGI/Input/Time',
                            read_duration)
 
@@ -360,7 +359,7 @@ class Transaction(object):
             if not self._sent_end:
                 self._sent_end = time.time()
             sent_duration = self._sent_end - self._sent_start
-            metrics['WSGI/Output/Time'] = '%.6f' % sent_duration
+            metrics['WSGI/Output/Time'] = '%.4f' % sent_duration
         self.record_metric('Supportability/WSGI/Output/Time',
                            sent_duration)
 
@@ -368,7 +367,7 @@ class Transaction(object):
             queue_wait = self.start_time - self.queue_start
             if queue_wait < 0:
                 queue_wait = 0
-            metrics['WebFrontend/QueueTime'] = '%.6f' % queue_wait
+            metrics['WebFrontend/QueueTime'] = '%.4f' % queue_wait
 
         self.record_metric('Supportability/WSGI/Input/Bytes',
                            self._bytes_read)
@@ -398,8 +397,8 @@ class Transaction(object):
         if self._response_properties:
             parameter_groups['Response properties'] = self._response_properties
 
-        #if self._transaction_metrics:
-        #    parameter_groups['Transaction metrics'] = self._transaction_metrics
+        if self._transaction_metrics:
+            parameter_groups['Transaction metrics'] = self._transaction_metrics
 
         self._custom_params['cpu_time'] = 100 * self._cpu_utilization_value
 
@@ -673,9 +672,11 @@ class Transaction(object):
         self.end_time = time.time()
         self.stopped = True
 
-        if self._thread_utilization_start:
-            if not self._thread_utilization_end:
-                self._thread_utilization_end = _thread_utilization()
+        if self._thread_utilization:
+            if self._thread_utilization_start:
+                if not self._thread_utilization_end:
+                    self._thread_utilization_end = (
+                            self._thread_utilization.utilization_count())
 
         self._cpu_user_time_end = os.times()[0]
 

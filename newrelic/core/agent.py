@@ -229,6 +229,18 @@ class Agent(object):
 
         return self._applications.get(app_name, None)
 
+    def thread_utilization(self, app_name):
+        """Returns the tracker object which monitors thread utilization
+        for the specified application.
+
+        """
+
+        application = self._applications.get(app_name, None)
+        if application is None:
+            return None
+
+        return application.thread_utilization
+
     def record_metric(self, app_name, name, value):
         """Records a basic metric for the named application. If there has
         been no prior request to activate the application, the metric is

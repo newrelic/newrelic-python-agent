@@ -107,9 +107,8 @@ class Application(object):
 
         if ThreadUtilization is not None:
             self._thread_utilization = ThreadUtilization()
-
-        self._samplers.append(ThreadUtilizationSampler(
-                self._thread_utilization))
+            self._samplers.append(ThreadUtilizationSampler(
+                    self._thread_utilization))
 
     @property
     def name(self):

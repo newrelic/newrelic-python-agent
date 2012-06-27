@@ -232,6 +232,7 @@ class StatsEngine(object):
         self.__slow_transaction = None
         self.__transaction_errors = []
         self.__metric_ids = {}
+        self.__saved_transactions = []
 
     @property
     def metric_ids(self):
@@ -461,6 +462,12 @@ class StatsEngine(object):
                     self.__slow_transaction = transaction
                 elif transaction.duration >= self.__slow_transaction.duration:
                     self.__slow_transaction = transaction
+                if transaction.guid:
+                    maximum = settings.agent_limits.saved_transactions
+                    self.__saved_transactions.append(transaction)
+                    self.__saved_transactions = sorted(
+                            self.__saved_transactions,
+                            key=lambda x: x.duration)[-maximum:]
 
     @internal_trace('Supportability/StatsEngine/Calls/metric_data')
     def metric_data(self):
@@ -636,6 +643,7 @@ class StatsEngine(object):
         self.__slow_transaction = None
         self.__transaction_errors = []
         self.__metric_ids = {}
+        self.__saved_transactions = []
 
     def create_snapshot(self):
         """Creates a snapshot of the accumulated statistics, error

@@ -24,7 +24,7 @@ _TransactionNode = namedtuple('_TransactionNode',
         'response_code', 'request_params', 'custom_params', 'queue_start',
         'start_time', 'end_time', 'duration', 'exclusive', 'children',
         'errors', 'slow_sql', 'apdex_t', 'suppress_apdex', 'custom_metrics',
-        'parameter_groups'])
+        'parameter_groups', 'guid'])
 
 class TransactionNode(_TransactionNode):
 

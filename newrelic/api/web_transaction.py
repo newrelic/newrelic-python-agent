@@ -8,6 +8,8 @@ import base64
 import time
 import string
 import Cookie
+import random
+import re
 
 import newrelic.api.application
 import newrelic.api.transaction
@@ -86,6 +88,10 @@ def _lookup_environ_setting(environ, name, default=False):
             flag = flag.lower() in ['on', 'true', '1']
     return flag
 
+def _extract_token(token):
+    token = re.search(r"^tk=([^\"<'>]+)$", token)
+    return token and token.group(1)
+
 class WebTransaction(newrelic.api.transaction.Transaction):
 
     def __init__(self, application, environ):
@@ -145,8 +151,8 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         if http_cookie.find("NRAGENT") != -1:
             c = Cookie.SimpleCookie(http_cookie)
-            token = c['NRAGENT'].value[3:]  # Remove the 'tk=' prefix
-                                            # tk=0123456789ABCDEF
+            self.token = _extract_token(c['NRAGENT'].value)
+            self.guid = self.token and random.getrandbits(64)
 
         self._request_uri = request_uri
 

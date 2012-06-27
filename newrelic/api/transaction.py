@@ -175,6 +175,9 @@ class Transaction(object):
 
         self.response_code = 0
 
+        self.token = None
+        self.guid = None
+
         self._custom_metrics = ValueMetrics()
 
         global_settings = newrelic.core.config.global_settings()
@@ -425,7 +428,8 @@ class Transaction(object):
                 apdex_t=self._settings.apdex_t,
                 suppress_apdex=self.suppress_apdex,
                 custom_metrics=self._custom_metrics,
-                parameter_groups=parameter_groups)
+                parameter_groups=parameter_groups,
+                guid=self.guid)
 
         # Clear settings as we are all done and don't
         # need it anymore.
@@ -475,7 +479,7 @@ class Transaction(object):
                 group = 'Uri'
 
         name = self._name
-        
+
         if name is None:
             name = '<undefined>'
 

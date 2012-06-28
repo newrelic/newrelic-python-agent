@@ -183,7 +183,15 @@ class Transaction(object):
                 self._settings = self._application.settings
                 if not self._settings:
                     self._application.activate()
-                else:
+
+                    # We see again if the settings is now valid
+                    # in case startup timeout had been specified
+                    # and registration had been started and
+                    # completed within the timeout.
+
+                    self._settings = self._application.settings
+
+                if self._settings:
                     self.enabled = True
 
     def __del__(self):

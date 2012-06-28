@@ -53,8 +53,11 @@ class Application(object):
     def active(self):
         return self.settings is not None
 
-    def activate(self, timeout=0.0):
-        # The timeout only applies on the first call.
+    def activate(self, timeout=None):
+        # If timeout not supplied then the default from the global
+        # configuration will later be used. Note that the timeout only
+        # applies on the first call to activate the application.
+
         self._agent.activate_application(self._name, self._linked, timeout)
 
     def shutdown(self):

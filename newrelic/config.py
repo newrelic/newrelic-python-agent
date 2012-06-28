@@ -227,6 +227,10 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'include_environ',
                      'get', _map_include_environ)
+    _process_setting(section, 'startup_timeout',
+                     'getfloat', None)
+    _process_setting(section, 'shutdown_timeout',
+                     'getfloat', None)
     _process_setting(section, 'transaction_tracer.enabled',
                      'getboolean', None)
     _process_setting(section, 'transaction_tracer.transaction_threshold',

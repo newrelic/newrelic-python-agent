@@ -12,7 +12,7 @@ import newrelic.config
 
 initialize = newrelic.config.initialize
 
-def register_application(name=None, timeout=0.0):
+def register_application(name=None, timeout=None):
     application = newrelic.api.application.application(name)
     application.activate(timeout)
 

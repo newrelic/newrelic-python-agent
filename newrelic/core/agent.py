@@ -168,7 +168,7 @@ class Agent(object):
             return application.configuration
 
     def activate_application(self, app_name, linked_applications=[],
-                             timeout=0.0):
+                             timeout=None):
         """Initiates activation for the named application if this has
         not been done previously. If an attempt to trigger the
         activation of the application has already been performed,
@@ -190,6 +190,15 @@ class Agent(object):
 
         if not self._config.monitor_mode:
             return
+
+        # If timeout not supplied then use default from the global
+        # configuration. Note that the timeout only applies on the first
+        # call to activate the application.
+
+        settings = newrelic.core.config.global_settings()
+
+        if timeout is None:
+            timeout = settings.startup_timeout
 
         with Agent._lock:
             application = self._applications.get(app_name, None)

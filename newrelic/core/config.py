@@ -95,6 +95,8 @@ _settings.include_environ = [ 'REQUEST_METHOD', 'HTTP_USER_AGENT',
                               'CONTENT_LENGTH' ]
 
 _settings.sampling_rate = 0
+
+_settings.startup_timeout = 0.0
 _settings.shutdown_timeout = 2.5
 
 _settings.beacon = None

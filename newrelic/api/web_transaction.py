@@ -131,8 +131,8 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         if http_cookie.find("NRAGENT") != -1:
             c = Cookie.SimpleCookie(http_cookie)
-            self.token = _extract_token(c['NRAGENT'].value)
-            self.guid = self.token and random.getrandbits(64)
+            self.rum_token = _extract_token(c['NRAGENT'].value)
+            self.rum_guid = self.rum_token and str(random.getrandbits(64))
 
         self._request_uri = request_uri
 
@@ -292,19 +292,41 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         queue_duration = int((start_time - queue_start) * 1000)
         request_duration = int((end_time - start_time) * 1000)
 
+        threshold = self._settings.transaction_tracer.transaction_threshold
+        rum_guid = self.rum_guid if request_duration >= threshold else ''
+        rum_token = self.rum_token or ''
+
     # Settings will have values as Unicode strings and the
     # result here will be Unicode so need to convert back to
     # normal string. Using str() and default encoding should
     # be fine as should all be ASCII anyway.
 
         if not self._settings.rum.load_episodes_file:
-            return str(_rum_footer_short_fragment % (
+            if self._settings.rum.jsonp:
+                return str(_rum2_footer_short_fragment % (
+                    self._settings.beacon,
+                    self._settings.browser_key,
+                    self._settings.application_id,
+                    name, queue_duration, request_duration, rum_guid,
+                    rum_token))
+            else:
+                return str(_rum_footer_short_fragment % (
                     self._settings.beacon,
                     self._settings.browser_key,
                     self._settings.application_id,
                     name, queue_duration, request_duration))
         else:
-            return str(_rum_footer_long_fragment % (
+            if self._settings.rum.jsonp:
+                #import pdb; pdb.set_trace() ### XXX BREAKPOINT
+                return str(_rum2_footer_long_fragment % (
+                    self._settings.episodes_url,
+                    self._settings.beacon,
+                    self._settings.browser_key,
+                    self._settings.application_id,
+                    name, queue_duration, request_duration, rum_guid,
+                    rum_token))
+            else:
+                return str(_rum_footer_long_fragment % (
                     self._settings.episodes_url,
                     self._settings.beacon,
                     self._settings.browser_key,

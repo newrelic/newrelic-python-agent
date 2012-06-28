@@ -274,57 +274,57 @@ def update_dynamic_settings(settings_object):
         transaction_tracer.transaction_threshold = settings_object.apdex_f
 
 def create_settings_snapshot(server_side_config={}):
-     """Create a snapshot of the global default settings and overlay it
-     with any server side configuration settings. Any local settings
-     overrides to take precedence over server side configuration settings
-     will then be reapplied to the copy. Note that the intention is that
-     the resulting settings object will be cached for subsequent use
-     within the application object the settings pertain to.
+    """Create a snapshot of the global default settings and overlay it
+    with any server side configuration settings. Any local settings
+    overrides to take precedence over server side configuration settings
+    will then be reapplied to the copy. Note that the intention is that
+    the resulting settings object will be cached for subsequent use
+    within the application object the settings pertain to.
 
-     >>> server_config = { 'browser_monitoring.auto_instrument': False }
-     >>>
-     >>> settings_snapshot = create_settings_snapshot(server_config)
+    >>> server_config = { 'browser_monitoring.auto_instrument': False }
+    >>>
+    >>> settings_snapshot = create_settings_snapshot(server_config)
 
-     """
+    """
 
-     settings_snapshot = copy.deepcopy(_settings)
+    settings_snapshot = copy.deepcopy(_settings)
 
-     # Break out the server side agent config settings which
-     # are stored under 'agent_config' key.
+    # Break out the server side agent config settings which
+    # are stored under 'agent_config' key.
 
-     agent_config = server_side_config.pop('agent_config', {})
+    agent_config = server_side_config.pop('agent_config', {})
 
-     # Remap as necessary any server side agent config settings.
+    # Remap as necessary any server side agent config settings.
 
-     # TODO This needs to be broken out into separate routine and
-     # used also when reading in local agent configuration file.
+    # TODO This needs to be broken out into separate routine and
+    # used also when reading in local agent configuration file.
 
-     if 'transaction_tracer.transaction_threshold' in agent_config:
-         value = agent_config['transaction_tracer.transaction_threshold']
-         if value == 'apdex_f':
-             agent_config['transaction_tracer.transaction_threshold'] = None
+    if 'transaction_tracer.transaction_threshold' in agent_config:
+        value = agent_config['transaction_tracer.transaction_threshold']
+        if value == 'apdex_f':
+            agent_config['transaction_tracer.transaction_threshold'] = None
 
-     # Overlay with global server side configuration settings.
+    # Overlay with global server side configuration settings.
 
-     for (name, value) in server_side_config.items():
-         apply_config_setting(settings_snapshot, name, value)
+    for (name, value) in server_side_config.items():
+        apply_config_setting(settings_snapshot, name, value)
 
-     # Overlay with agent server side configuration settings.
-     # Assuming for now that agent service side configuration
-     # can always take precedence over the global server side
-     # configuration settings.
+    # Overlay with agent server side configuration settings.
+    # Assuming for now that agent service side configuration
+    # can always take precedence over the global server side
+    # configuration settings.
 
-     for (name, value) in agent_config.items():
-         apply_config_setting(settings_snapshot, name, value)
+    for (name, value) in agent_config.items():
+        apply_config_setting(settings_snapshot, name, value)
 
-     # Update any dynamically calculated settings.
+    # Update any dynamically calculated settings.
 
-     update_dynamic_settings(settings_snapshot)
+    update_dynamic_settings(settings_snapshot)
 
-     # Reapply on top any local setting overrides.
+    # Reapply on top any local setting overrides.
 
-     for name in _settings.debug.local_settings_overrides:
-         value = fetch_config_setting(_settings, name)
-         apply_config_setting(settings_snapshot, name, value)
+    for name in _settings.debug.local_settings_overrides:
+        value = fetch_config_setting(_settings, name)
+        apply_config_setting(settings_snapshot, name, value)
 
-     return settings_snapshot
+    return settings_snapshot

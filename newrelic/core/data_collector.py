@@ -428,8 +428,7 @@ class ApplicationSession(object):
 
     """
 
-    def __init__(self, collector_url, license_key,
-                configuration):
+    def __init__(self, collector_url, license_key, configuration):
         self.collector_url = collector_url
         self.license_key = license_key
         self.configuration = configuration
@@ -468,8 +467,15 @@ class ApplicationSession(object):
         _logger.debug('Connecting to data collector to terminate session '
                 'for agent run %r.', self.agent_run_id)
 
-        return send_request(self.requests_session, self.collector_url,
+        result = send_request(self.requests_session, self.collector_url,
                 'shutdown', self.license_key, self.agent_run_id)
+
+        _logger.info('Successfully shutdown New Relic Python agent '
+                'where app_name=%r, pid=%r, and agent_run_id=%r',
+                self.configuration.app_name, os.getpid(),
+                self.agent_run_id)
+
+        return result
 
     @internal_trace('Supportability/Collector/Calls/metric_data')
     def send_metric_data(self, start_time, end_time, metric_data):
@@ -643,8 +649,26 @@ def create_session(license_key, app_name, linked_applications,
 
         duration = time.time() - start
 
-        _logger.debug('Successfully registered agent with app_name=%r, '
-                'redirect_host=%r and agent_run_id=%r in %.2f seconds.',
-                app_name, redirect_host, session.agent_run_id, duration)
+        # Log successful agent registration and any server side messages.
+
+        _logger.info('Successfully registered New Relic Python agent '
+                'where app_name=%r, pid=%r, redirect_host=%r and '
+                'agent_run_id=%r, in %.2f seconds.', app_name, os.getpid(),
+                redirect_host, session.agent_run_id, duration)
+
+        logger_func_mapping = {
+            'ERROR': _logger.error,
+            'WARN': _logger.warning,
+            'INFO': _logger.info,
+            'VERBOSE': _logger.debug,
+        }
+
+        if 'messages' in server_config:
+            for item in server_config['messages']:
+                message = item['message']
+                level = item['level']
+                logger_func = logger_func_mapping.get(level, None)
+                if logger_func:
+                    logger_func('%s', message)
 
         return session

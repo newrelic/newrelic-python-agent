@@ -123,15 +123,17 @@ _settings.transaction_name.naming_scheme = None
 
 _settings.rum.enabled = True
 _settings.rum.load_episodes_file = True
+_settings.rum.jsonp = True
 
 _settings.slow_sql.enabled = True
 
-_settings.agent_limits.transaction_traces_nodes = 10000
+_settings.agent_limits.transaction_traces_nodes = 2000
 _settings.agent_limits.sql_query_length_maximum = 16384
 _settings.agent_limits.slow_sql_stack_trace = 30
 _settings.agent_limits.sql_explain_plans = 30
 _settings.agent_limits.slow_sql_data = 10
 _settings.agent_limits.merge_stats_maximum = 5
+_settings.agent_limits.saved_transactions = 10
 
 _settings.console.listener_socket = None
 _settings.console.allow_interpreter_cmd = False

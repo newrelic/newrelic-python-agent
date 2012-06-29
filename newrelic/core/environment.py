@@ -142,6 +142,13 @@ def environment_settings():
 
     for name, module in sys.modules.items():
         if name.find('.') == -1 and hasattr(module, '__file__'):
+            try:
+                import pkg_resources
+                version = pkg_resources.get_distribution(name).version
+                if version:
+                    name = '%s (%s)' % (name, version)
+            except:
+                pass
             plugins.append(name)
 
     env.append(('Plugin List', plugins))

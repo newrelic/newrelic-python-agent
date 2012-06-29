@@ -349,10 +349,13 @@ def _parse_target(sql, dbapi, operation):
     return parse and parse(sql, dbapi) or ''
 
 _explain_plan_table = {
-    'MySQLdb': 'EXPLAIN',
-    'postgresql.interface.proboscis.dbapi2': 'EXPLAIN',
-    'psycopg2': 'EXPLAIN',
-    'sqlite3.dbapi2': 'EXPLAIN QUERY PLAN',
+    'MySQLdb': ('EXPLAIN', ('select',)),
+    'postgresql.interface.proboscis.dbapi2': ('EXPLAIN',
+            ('select', 'insert', 'update', 'delete')),
+    'psycopg2': ('EXPLAIN',
+            ('select', 'insert', 'update', 'delete')),
+    'sqlite3.dbapi2': ('EXPLAIN QUERY PLAN',
+            ('select', 'insert', 'update', 'delete')),
 }
 
 @internal_trace('Supportability/DatabaseUtils/Calls/explain_plan')
@@ -376,9 +379,22 @@ def _explain_plan(sql, dbapi, connect_params, cursor_params, execute_params):
 
     query = None
 
-    command = _explain_plan_table.get(name)
+    command, operations = _explain_plan_table.get(name, (None, None))
 
     if not command:
+        return None
+
+    # Don't do an explain plan for operations which the database is
+    # believed not to support doing so. Also restrict them to the basic
+    # SQL operation types even though some database such as PostgreSQL
+    # can support others. This is to avoid errors being logged in
+    # database log file when explain plan done on the wrong thing. Not
+    # going through the SQL cache here as only doing this for a small
+    # number of SQL statements per application per harvest cycle.
+
+    operation = _parse_operation(sql, dbapi)
+
+    if operation not in operations:
         return None
 
     query = '%s %s' % (command, sql)

@@ -22,6 +22,21 @@ class ErrorTrace(object):
         module = value.__class__.__module__
         name = value.__class__.__name__
 
+        # We need to check for module.name and module:name.
+        # Originally we used module.class but that was
+        # inconsistent with everything else which used
+        # module:name. So changed to use ':' as separator, but
+        # for backward compatability need to support '.' as
+        # separator for time being.
+
+        if module:
+            path = '%s:%s' % (module, name)
+        else:
+            path = name
+
+        if self._ignore_errors and path in self._ignore_errors:
+            return
+
         if module:
             path = '%s.%s' % (module, name)
         else:

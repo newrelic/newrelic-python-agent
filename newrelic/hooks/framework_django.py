@@ -47,13 +47,20 @@ def browser_timing_middleware(request, response):
     if response.has_header('Content-Encoding'):
         return response
 
-    # No point continuing if header or footer is empty. This can
-    # occur if RUM is not enabled within the UI.
+    # No point continuing if header is empty. This can occur if
+    # RUM is not enabled within the UI. It is assumed at this
+    # point that if header is not empty, then footer will be not
+    # empty. We don't want to generate the footer just yet as
+    # want to do that as late as possible so that application
+    # server time in footer is as accurate as possible. In
+    # particular, if the response content is generated on demand
+    # then the flattening of the response could take some time
+    # and we want to track that. We thus generate footer below
+    # at point of insertion.
 
     header = transaction.browser_timing_header()
-    footer = transaction.browser_timing_footer()
 
-    if not header or not footer:
+    if not header:
         return response
 
     # Make sure we flatten any content first as it could be
@@ -88,7 +95,7 @@ def browser_timing_middleware(request, response):
             parts.append(content[0:start+1])
             parts.append(header)
             parts.append(content[start+1:end])
-            parts.append(footer)
+            parts.append(transaction.browser_timing_footer())
             parts.append(content[end:])
             response.content = ''
             content = ''.join(parts)
@@ -102,7 +109,7 @@ def browser_timing_middleware(request, response):
             parts.append(header)
             parts.append('</head>')
             parts.append(content[start:end])
-            parts.append(footer)
+            parts.append(transaction.browser_timing_footer())
             parts.append(content[end:])
             response.content = ''
             content = ''.join(parts)

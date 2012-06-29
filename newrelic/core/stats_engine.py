@@ -577,7 +577,7 @@ class StatsEngine(object):
         if not self.__settings:
             return []
 
-        if self.__slow_transaction and not self.__saved_transactions:
+        if not self.__slow_transaction and not self.__saved_transactions:
             return []
 
         trace_data = []
@@ -732,6 +732,7 @@ class StatsEngine(object):
         self.__sql_stats_table = {}
         self.__slow_transaction = None
         self.__transaction_errors = []
+        self.__saved_transactions = []
 
         return stats
 

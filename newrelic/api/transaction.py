@@ -171,8 +171,8 @@ class Transaction(object):
 
         self.response_code = 0
 
-        self.token = None
-        self.guid = None
+        self.rum_token = None
+        self.rum_guid = None
 
         self._custom_metrics = ValueMetrics()
 
@@ -435,7 +435,7 @@ class Transaction(object):
                 suppress_apdex=self.suppress_apdex,
                 custom_metrics=self._custom_metrics,
                 parameter_groups=parameter_groups,
-                guid=self.guid)
+                guid=self.rum_guid)
 
         # Clear settings as we are all done and don't
         # need it anymore.

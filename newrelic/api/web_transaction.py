@@ -129,20 +129,10 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         path_info = environ.get('PATH_INFO', None)
         http_cookie = environ.get('HTTP_COOKIE', None)
 
-<<<<<<< HEAD
-        self.rum_token = None
-        self.rum_guid = None
-
         if http_cookie.find("NRAGENT") != -1:
             c = Cookie.SimpleCookie(http_cookie)
             self.rum_token = _extract_token(c['NRAGENT'].value)
             self.rum_guid = self.rum_token and str(random.getrandbits(64))
-=======
-        if http_cookie.find("NRAGENT") != -1:
-            c = Cookie.SimpleCookie(http_cookie)
-            token = c['NRAGENT'].value[3:]  # Remove the 'tk=' prefix
-                                            # tk=0123456789ABCDEF
->>>>>>> Added the rum2 footer strings.
 
         self._request_uri = request_uri
 

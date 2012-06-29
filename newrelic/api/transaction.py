@@ -570,11 +570,26 @@ class Transaction(object):
         if exc is None or value is None or tb is None:
             return
 
-        # XXX Need to capture source if enabled in
-        # settings.
-
         module = value.__class__.__module__
         name = value.__class__.__name__
+
+        # We need to check for module.name and module:name.
+        # Originally we used module.class but that was
+        # inconsistent with everything else which used
+        # module:name. So changed to use ':' as separator, but
+        # for backward compatability need to support '.' as
+        # separator for time being.
+
+        if module:
+            fullname = '%s:%s' % (module, name)
+        else:
+            fullname = name
+
+        if fullname in ignore_errors:
+            return
+
+        if fullname in error_collector.ignore_errors:
+            return
 
         if module:
             fullname = '%s.%s' % (module, name)

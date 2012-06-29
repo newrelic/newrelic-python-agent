@@ -433,7 +433,7 @@ class ViewHandlerWrapper(object):
                     # See http://bugs.python.org/issue3473.
                     exc_info = sys.exc_info()
                     transaction.notice_error(exc_info[0], exc_info[1],
-                            exc_info[2], ignore_errors=['django.http.Http404'])
+                            exc_info[2], ignore_errors=['django.http:Http404'])
                     raise
                 finally:
                     exc_info = None
@@ -535,7 +535,7 @@ def instrument_django_core_urlresolvers(module):
     # case that one can be raised by get_callable().
 
     newrelic.api.error_trace.wrap_error_trace(module,
-            'get_callable', ignore_errors=['django.http.Http404'])
+            'get_callable', ignore_errors=['django.http:Http404'])
 
     # Wrap methods which resolves a request to a view handler.
     # This can be called against a resolver initialised against

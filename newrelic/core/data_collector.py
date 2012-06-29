@@ -248,8 +248,16 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 proxies=proxies, verify=False, data=data)
 
     except requests.RequestException, exc:
-        _logger.warning('Unable to connect to the data collector with '
-                'url of %r. Error raised is %r.', url, exc)
+        if not settings.proxy_host or not settings.proxy_port:
+            _logger.warning('Unable to connect via a direct connection '
+                    'to the data collector with url of %r. Error raised '
+                    'is %r.', url, exc)
+        else:
+            _logger.warning('Unable to connect to the data collector with '
+                    'url of %r while connecting via proxy host %r on port '
+                    '%r with proxy user of %r. Error raised is %r.', url,
+                    settings.proxy_host, settings.proxy_port,
+                    settings.proxy_user, exc)
 
         raise RetryDataForRequest(str(exc))
 
@@ -306,11 +314,21 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         raise ServerIsUnavailable()
 
     elif r.status_code != 200:
-        _logger.warning('An unexpected HTTP response was received from the '
-                'data collector of %r for method %r with payload of %r. If '
-                'this issue persists then please report this problem to New '
-                'Relic support for further investigation.', r.status_code,
-                method, payload)
+        if not settings.proxy_host or not settings.proxy_port:
+            _logger.warning('An unexpected HTTP response was received from '
+                    'the data collector of %r for method %r. The payload for '
+                    'the request was %r. If this issue persists then please '
+                    'report this problem to New Relic support for further '
+                    'investigation.', r.status_code, method, payload)
+        else:
+            _logger.warning('An unexpected HTTP response was received from '
+                    'the data collector of %r for method %r while connecting '
+                    'via proxy host %r on port %r with proxy user of %r. '
+                    'The payload for the request was %r. If this issue '
+                    'persists then please report this problem to New Relic '
+                    'support for further investigation.', r.status_code,
+                    method, settings.proxy_host, settings.proxy_port,
+                    settings.proxy_user, payload)
 
         raise DiscardDataForRequest()
 

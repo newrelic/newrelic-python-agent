@@ -462,6 +462,7 @@ class StatsEngine(object):
                     self.__slow_transaction = transaction
                 elif transaction.duration >= self.__slow_transaction.duration:
                     self.__slow_transaction = transaction
+
                 if transaction.guid:
                     maximum = settings.agent_limits.saved_transactions
                     self.__saved_transactions.append(transaction)
@@ -566,6 +567,68 @@ class StatsEngine(object):
             result.append(data)
 
         return result
+
+    @internal_trace('Supportability/StatsEngine/Calls/transaction_data')
+    def transaction_data(self):
+        """Returns a list of slow transaction data collected
+        during the reporting period.
+
+        """
+        if not self.__settings:
+            return []
+
+        if self.__slow_transaction and not self.__saved_transactions:
+            return []
+
+        trace_data = []
+        maximum = self.__settings.agent_limits.transaction_traces_nodes
+        traces = self.__saved_transactions
+
+        if self.__slow_transaction not in traces:
+            traces.append(self.__slow_transaction)
+
+        for trace in traces:
+            transaction_trace = trace.transaction_trace(self, maximum)
+
+            internal_metric('Supportability/StatsEngine/Counts/'
+                            'transaction_sample_data',
+                            trace.trace_node_count)
+
+            data = [transaction_trace,
+                    trace.string_table.values()]
+
+            if self.__settings.debug.log_transaction_trace_payload:
+                _logger.debug('Encoding slow transaction data where '
+                              'payload=%r.', data)
+
+            with InternalTrace('Supportability/StatsEngine/JSON/Encode/'
+                               'transaction_sample_data'):
+
+                json_data = simplejson.dumps(data, ensure_ascii=True,
+                        encoding='Latin-1', namedtuple_as_object=False,
+                        default=lambda o: list(iter(o)))
+
+            internal_metric('Supportability/StatsEngine/ZLIB/Bytes/'
+                            'transaction_sample_data', len(json_data))
+
+            with InternalTrace('Supportability/StatsEngine/ZLIB/Compress/'
+                               'transaction_sample_data'):
+                zlib_data = zlib.compress(json_data)
+
+            with InternalTrace('Supportability/StatsEngine/BASE64/Encode/'
+                               'transaction_sample_data'):
+                pack_data = base64.standard_b64encode(zlib_data)
+
+            root = transaction_trace.root
+
+            trace_data.append([root.start_time,
+                    root.end_time - root.start_time,
+                    trace.path,
+                    trace.request_uri,
+                    pack_data,
+                    trace.guid or ''])
+
+        return trace_data
 
     @internal_trace('Supportability/StatsEngine/Calls/slow_transaction_data')
     def slow_transaction_data(self):

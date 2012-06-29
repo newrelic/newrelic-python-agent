@@ -129,6 +129,9 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         path_info = environ.get('PATH_INFO', None)
         http_cookie = environ.get('HTTP_COOKIE', None)
 
+        self.rum_token = None
+        self.rum_guid = None
+
         if http_cookie.find("NRAGENT") != -1:
             c = Cookie.SimpleCookie(http_cookie)
             self.rum_token = _extract_token(c['NRAGENT'].value)
@@ -317,7 +320,6 @@ class WebTransaction(newrelic.api.transaction.Transaction):
                     name, queue_duration, request_duration))
         else:
             if self._settings.rum.jsonp:
-                #import pdb; pdb.set_trace() ### XXX BREAKPOINT
                 return str(_rum2_footer_long_fragment % (
                     self._settings.episodes_url,
                     self._settings.beacon,

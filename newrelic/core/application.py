@@ -564,8 +564,8 @@ class Application(object):
 
                         if slow_sql_data:
                             self._active_session.send_sql_traces(slow_sql_data)
-               
-                        slow_transaction_data = stats.slow_transaction_data()
+
+                        slow_transaction_data = stats.transaction_data()
 
                         internal_metric('Supportability/Harvest/Counts/'
                                 'transaction_sample_data',

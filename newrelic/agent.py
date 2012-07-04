@@ -1,6 +1,7 @@
 import os
 
 import newrelic.core.agent
+import newrelic.core.config
 
 import newrelic.api.web_transaction
 import newrelic.api.background_task
@@ -13,6 +14,7 @@ import newrelic.api.function_trace
 import newrelic.config
 
 initialize = newrelic.config.initialize
+global_settings = newrelic.core.config.global_settings
 application_instance = newrelic.api.application.application_instance
 current_transaction = newrelic.api.transaction.current_transaction
 

@@ -90,9 +90,11 @@ def disable_browser_autorum(flag=True):
         transaction.autorum_disabled = flag
 
 wsgi_application = newrelic.api.web_transaction.wsgi_application
+WebTransaction = newrelic.api.web_transaction.WebTransaction
 WSGIApplicationWrapper = newrelic.api.web_transaction.WSGIApplicationWrapper
 
 background_task = newrelic.api.background_task.background_task
+BackgroundTask = newrelic.api.background_task.BackgroundTask
 BackgroundTaskWrapper = newrelic.api.background_task.BackgroundTaskWrapper
 
 function_trace = newrelic.api.function_trace.function_trace

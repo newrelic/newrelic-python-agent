@@ -751,8 +751,11 @@ class Transaction(object):
             node.dump(file)
 
 
-def transaction():
+def current_transaction():
     current = Transaction._current_transaction()
     if current and (current.ignore_transaction or current.stopped):
         return None
     return current
+
+# For backward compatability only.
+transaction = current_transaction

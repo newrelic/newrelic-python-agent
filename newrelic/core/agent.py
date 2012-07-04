@@ -412,7 +412,7 @@ class Agent(object):
         self._harvest_shutdown.set()
         self._harvest_thread.join(timeout)
 
-def agent():
+def agent_instance():
     """Returns the agent object. This function should always be used and
     instances of the agent object should never be created directly to
     ensure there is only ever one instance.
@@ -424,3 +424,6 @@ def agent():
     """
 
     return Agent.agent_singleton()
+
+# For backward compatability only.
+agent = agent_instance

@@ -91,5 +91,8 @@ class Application(object):
             return self._agent.normalize_name(self._name, name)
         return name, False
 
-def application(name=None):
+def application_instance(name=None):
     return Application._instance(name)
+
+# For backward compatability only.
+application = application_instance

@@ -1,5 +1,7 @@
 import os
 
+import newrelic.core.agent
+
 import newrelic.api.web_transaction
 import newrelic.api.background_task
 
@@ -16,6 +18,9 @@ def register_application(name=None, timeout=None):
     application = newrelic.api.application.application(name)
     application.activate(timeout)
 
+def shutdown_agent(timeout=None):
+    newrelic.core.agent.agent().shutdown_agent(timeout)
+    
 def current_transaction():
     return newrelic.api.transaction.transaction()
 

@@ -1,31 +1,43 @@
-import unittest
-import time
+import logging
 import sys
+import time
+import unittest
 
 import newrelic.api.settings
-import newrelic.api.log_file
 import newrelic.api.application
 import newrelic.api.web_transaction
 import newrelic.api.function_trace
 
+_logger = logging.getLogger('newrelic')
+
 settings = newrelic.api.settings.settings()
-settings.log_file = "%s.log" % __file__
-settings.log_level = newrelic.api.log_file.LOG_VERBOSEDEBUG
+
+settings.host = 'staging-collector.newrelic.com'
+settings.license_key = '84325f47e9dec80613e262be4236088a9983d501'
+
+settings.app_name = 'Python Unit Tests'
+
+settings.log_file = '%s.log' % __file__
+settings.log_level = logging.DEBUG
+
 settings.transaction_tracer.transaction_threshold = 0
+settings.transaction_tracer.stack_trace_threshold = 0
 
-application = newrelic.api.application.application("UnitTests")
+settings.shutdown_timeout = 10.0
 
-#@newrelic.api.function_trace.function_trace(name='_test_function_1')
+settings.debug.log_data_collector_calls = True
+settings.debug.log_data_collector_payloads = True
+
+application = newrelic.api.application.application_instance()
+application.activate(timeout=10.0)
+
+@newrelic.api.function_trace.function_trace(name='_test_function_1')
 def _test_function_1():
     time.sleep(1.0)
-_test_function_1 = newrelic.api.function_trace.function_trace(
-        name='_test_function_1')(_test_function_1)
 
-#@newrelic.api.function_trace.function_trace()
+@newrelic.api.function_trace.function_trace()
 def _test_function_nn_1():
     time.sleep(0.1)
-_test_function_nn_1 = newrelic.api.function_trace.function_trace()(
-        _test_function_nn_1)
 
 class _test_class_nn_2:
     def _test_function(self):
@@ -46,20 +58,16 @@ _test_class_instance_nn_3._test_function = \
         _test_class_instance_nn_3._test_function)
 
 class _test_class_nn_4:
-    #@newrelic.api.function_trace.function_trace()
+    @newrelic.api.function_trace.function_trace()
     def _test_function(self):
         time.sleep(0.1)
-    _test_function = newrelic.api.function_trace.function_trace()(
-            _test_function)
 
 _test_class_instance_nn_4 = _test_class_nn_4()
 
 class _test_class_nn_5(object):
-    #@newrelic.api.function_trace.function_trace()
+    @newrelic.api.function_trace.function_trace()
     def _test_function(self):
         time.sleep(0.1)
-    _test_function = newrelic.api.function_trace.function_trace()(
-            _test_function)
 
 _test_class_instance_nn_5 = _test_class_nn_5()
 
@@ -71,12 +79,10 @@ _test_function_6 = newrelic.api.function_trace.function_trace(
 class FunctionTraceTests(unittest.TestCase):
 
     def setUp(self):
-        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                "STARTING - %s" % self._testMethodName)
+        _logger.debug('STARTING - %s' % self._testMethodName)
 
     def tearDown(self):
-        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                "STOPPING - %s" % self._testMethodName)
+        _logger.debug('STOPPING - %s' % self._testMethodName)
 
     def test_function_trace(self):
         environ = { "REQUEST_URI": "/function_trace" }

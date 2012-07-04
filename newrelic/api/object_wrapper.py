@@ -2,6 +2,8 @@ import sys
 import types
 import inspect
 
+from newrelic.api.transaction import current_transaction
+
 # From Python 3.X. In older Python versions it fails if attributes do
 # not exist and don't maintain a __wrapped__ attribute.
 
@@ -118,21 +120,18 @@ def callable_name(object, separator=':'):
     return name
 
 class ObjectWrapper(object):
-
-    def __init__(self, wrapped):
-        if type(wrapped) == type(()):
-            (instance, wrapped) = wrapped
-        else:
-            instance = None
-
-        self._nr_instance = instance
+    
+    def __init__(self, wrapped, instance, wrapper):
         self._nr_next_object = wrapped
 
+        self._nr_instance = instance
+        self._nr_wrapper = wrapper
+        
         try:
             self._nr_last_object = wrapped._nr_last_object
         except:
             self._nr_last_object = wrapped
-
+        
         for attr in WRAPPER_ASSIGNMENTS:
             try:
                 value = getattr(wrapped, attr)
@@ -154,13 +153,14 @@ class ObjectWrapper(object):
         if instance is None:
             return self
         descriptor = self._nr_next_object.__get__(instance, owner)
-        return self._nr_new_object((instance, descriptor))
+        return self.__class__(descriptor, instance, self._nr_wrapper)
 
-    def _nr_new_object(self, wrapped):
-        return self.__class__(wrapped)
-
-    def __dir__(self):
+    def __dir__(self): 
         return dir(self._nr_next_object)
 
+    def __iter__(self):
+        return iter(self._nr_next_object)
+
     def __call__(self, *args, **kwargs):
-        return self._nr_next_object(*args, **kwargs)
+        return self._nr_wrapper(self._nr_next_object,
+                self._nr_instance, args, kwargs)

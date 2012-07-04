@@ -14,6 +14,9 @@ import newrelic.config
 
 initialize = newrelic.config.initialize
 
+def application_instance(name=None):
+    return newrelic.api.application.application(name)
+
 def register_application(name=None, timeout=None):
     application = newrelic.api.application.application(name)
     application.activate(timeout)

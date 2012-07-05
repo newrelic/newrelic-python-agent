@@ -271,7 +271,7 @@ class Transaction(object):
         # Record error if one was registered.
 
         if exc is not None and value is not None and tb is not None:
-            self.notice_error(exc, value, tb)
+            self.record_exception(exc, value, tb)
 
         # Record the end time for transaction and then
         # calculate the duration.
@@ -547,7 +547,7 @@ class Transaction(object):
         self._group = group
         self._name = name
 
-    def notice_error(self, exc, value, tb, params={}, ignore_errors=[]):
+    def record_exception(self, exc, value, tb, params={}, ignore_errors=[]):
 
         # Bail out if the transaction is not active or
         # collection of errors not enabled.
@@ -648,6 +648,10 @@ class Transaction(object):
         # official order in which they should be sent.
 
         self._errors.append(node)
+
+    def notice_error(self, exc, value, tb, params={}, ignore_errors=[]):
+        # For backward compatability only.
+        self.record_exception(exc, value, tb, params, ignore_errors)
 
     def record_metric(self, name, value):
         self._custom_metrics.record_value_metric(

@@ -717,3 +717,11 @@ def instrument_django_views_debug(module):
 
 def instrument_django_http_multipartparser(module):
     wrap_function_trace(module, 'MultiPartParser.parse')
+
+def instrument_django_core_mail(module):
+    wrap_function_trace(module, 'mail_admins')
+    wrap_function_trace(module, 'mail_managers')
+    wrap_function_trace(module, 'send_mail')
+
+def instrument_django_core_mail_message(module):
+    wrap_function_trace(module, 'EmailMessage:send')

@@ -1095,6 +1095,12 @@ def _process_module_builtin_defaults():
     _process_module_definition('django.http.multipartparser',
             'newrelic.hooks.framework_django',
             'instrument_django_http_multipartparser')
+    _process_module_definition('django.core.mail',
+            'newrelic.hooks.framework_django',
+            'instrument_django_core_mail')
+    _process_module_definition('django.core.mail.message',
+            'newrelic.hooks.framework_django',
+            'instrument_django_core_mail_message')
 
     _process_module_definition('flask.app',
             'newrelic.hooks.framework_flask')

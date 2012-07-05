@@ -109,7 +109,7 @@ def instrument_gluon_main(module):
                 except HTTP, e:
                     raise
                 except:
-                    txn.notice_error(*sys.exc_info())
+                    txn.record_exception(*sys.exc_info())
                     raise
             else:
                 return self._nr_next_object(request, response, session)

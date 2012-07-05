@@ -121,10 +121,10 @@ def my_function_3():
             params['error-tuple'] = (1.0, 1.1)
             params['error-dict'] = {'K1.0': 'V1.0', 'K1.1': 'V1.1'}
             #params['error-object'] = my_function_2
-            #transaction.notice_error(*sys.exc_info(), params=params)
+            #transaction.record_exception(*sys.exc_info(), params=params)
             exc_info = sys.exc_info()
-            transaction.notice_error(exc_info[0], exc_info[1], exc_info[2],
-                                     params=params)
+            transaction.record_exception(exc_info[0], exc_info[1],
+                    exc_info[2], params=params)
 
     try:
         my_error()

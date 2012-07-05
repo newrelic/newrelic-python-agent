@@ -64,7 +64,7 @@ def add_custom_parameter(key, value):
 def record_exception(exc, value, tb, params={}, ignore_errors=[]):
     transaction = current_transaction()
     if transaction:
-        transaction.notice_error(exc, value, tb, params, ignore_errors)
+        transaction.record_exception(exc, value, tb, params, ignore_errors)
 
 def record_custom_metric(name, value):
     transaction = current_transaction()

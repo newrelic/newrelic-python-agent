@@ -45,7 +45,7 @@ class ErrorTrace(object):
         if self._ignore_errors and path in self._ignore_errors:
             return
 
-        self._transaction.notice_error(exc, value, tb)
+        self._transaction.record_exception(exc, value, tb)
 
 class ErrorTraceWrapper(object):
 

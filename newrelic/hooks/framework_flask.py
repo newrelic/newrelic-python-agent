@@ -17,7 +17,7 @@ def wrap_add_url_rule_input(app, rule, endpoint=None, view_func=None,
 def wrap_handle_exception(self, e):
     current_transaction = newrelic.api.transaction.transaction()
     if current_transaction:
-        current_transaction.notice_error(*sys.exc_info())
+        current_transaction.record_exception(*sys.exc_info())
 
 def instrument(module):
 

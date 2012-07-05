@@ -215,7 +215,7 @@ class RequestFinishWrapper(object):
                     result = self._nr_next_object()
 
             except:
-                transaction.notice_error(*sys.exc_info())
+                transaction.record_exception(*sys.exc_info())
                 raise
 
         elif self._nr_instance._nr_wait_function_trace:

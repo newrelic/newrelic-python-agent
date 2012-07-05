@@ -202,7 +202,7 @@ class WebTransactionTests(unittest.TestCase):
                     transaction.custom_parameters["1"] = "1" 
                     raise RuntimeError("runtime_error %d" % i)
                 except RuntimeError:
-                    transaction.notice_error(*sys.exc_info())
+                    transaction.record_exception(*sys.exc_info())
 
     def test_implicit_runtime_error(self):
         environ = { "REQUEST_URI": "/implicit_runtime_error" }

@@ -9,7 +9,7 @@ from newrelic.core.metric import TimeMetric
 
 _FunctionNode = namedtuple('_FunctionNode',
         ['group', 'name', 'children', 'start_time', 'end_time',
-        'duration', 'exclusive'])
+        'duration', 'exclusive', 'label'])
 
 class FunctionNode(_FunctionNode):
 
@@ -52,4 +52,4 @@ class FunctionNode(_FunctionNode):
 
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children,
-                label=None)
+                label=self.label)

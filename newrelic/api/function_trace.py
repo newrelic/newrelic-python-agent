@@ -11,11 +11,12 @@ from newrelic.core.function_node import FunctionNode
 
 class FunctionTrace(TimeTrace):
 
-    def __init__(self, transaction, name, group=None):
+    def __init__(self, transaction, name, group=None, label=None):
         super(FunctionTrace, self).__init__(transaction)
 
         self.name = name
         self.group = group or 'Function'
+        self.label = label
 
     def dump(self, file):
         print >> file, self.__class__.__name__, dict(name=self.name,
@@ -25,9 +26,9 @@ class FunctionTrace(TimeTrace):
         return FunctionNode(group=self.group, name=self.name,
                 children=self.children, start_time=self.start_time,
                 end_time=self.end_time, duration=self.duration,
-                exclusive=self.exclusive)
+                exclusive=self.exclusive, label=self.label)
 
-def FunctionTraceWrapper(wrapped, name=None, group=None):
+def FunctionTraceWrapper(wrapped, name=None, group=None, label=None):
 
     def dynamic_wrapper(wrapped, instance, args, kwargs):
         transaction = current_transaction()
@@ -56,7 +57,16 @@ def FunctionTraceWrapper(wrapped, name=None, group=None):
         else:
             _group = group
 
-        with FunctionTrace(transaction, _name, _group):
+        if callable(label):
+            if instance and inspect.ismethod(wrapped):
+                _label = label(instance, *args, **kwargs)
+            else:
+                _label = label(*args, **kwargs)
+
+        else:
+            _label = label
+
+        with FunctionTrace(transaction, _name, _group, _label):
             return wrapped(*args, **kwargs)
 
     def literal_wrapper(wrapped, instance, args, kwargs):
@@ -67,16 +77,19 @@ def FunctionTraceWrapper(wrapped, name=None, group=None):
 
         _name = name or callable_name(wrapped)
 
-        with FunctionTrace(transaction, _name, group):
+        with FunctionTrace(transaction, _name, group, label):
             return wrapped(*args, **kwargs)
 
-    if callable(name) or callable(group):
+    if callable(name) or callable(group) or callable(label):
         return ObjectWrapper(wrapped, None, dynamic_wrapper)
 
     return ObjectWrapper(wrapped, None, literal_wrapper)
 
-def function_trace(name=None, group=None):
-    return functools.partial(FunctionTraceWrapper, name=name, group=group)
+def function_trace(name=None, group=None, label=None):
+    return functools.partial(FunctionTraceWrapper, name=name,
+            group=group, label=label)
 
-def wrap_function_trace(module, object_path, name=None, group=None):
-    wrap_object(module, object_path, FunctionTraceWrapper, (name, group))
+def wrap_function_trace(module, object_path, name=None,
+        group=None, label=None):
+    wrap_object(module, object_path, FunctionTraceWrapper,
+            (name, group, label))

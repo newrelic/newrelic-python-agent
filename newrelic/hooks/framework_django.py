@@ -514,7 +514,7 @@ def wrap_url_resolver(wrapped):
 
     return ObjectWrapper(wrapped, None, wrapper)
 
-def wrap_url_resolver_nnn(wrapped):
+def wrap_url_resolver_nnn(wrapped, priority=1):
 
     # Wrapper to be applied to the URL resolver for errors.
 
@@ -528,7 +528,8 @@ def wrap_url_resolver_nnn(wrapped):
 
         with FunctionTrace(transaction, name=name):
             callback, param_dict = wrapped(*args, **kwargs)
-            return (wrap_view_handler(callback), param_dict)
+            return (wrap_view_handler(callback, priority=priority),
+                    param_dict)
 
     return ObjectWrapper(wrapped, None, wrapper)
 

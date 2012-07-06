@@ -724,4 +724,4 @@ def instrument_django_core_mail(module):
     wrap_function_trace(module, 'send_mail')
 
 def instrument_django_core_mail_message(module):
-    wrap_function_trace(module, 'EmailMessage:send')
+    wrap_function_trace(module, 'EmailMessage.send')

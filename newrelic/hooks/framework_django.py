@@ -422,7 +422,7 @@ def instrument_django_core_handlers_wsgi(module):
             wrap_handle_uncaught_exception(
             module.WSGIHandler.handle_uncaught_exception))
 
-def wrap_view_handler(wrapped):
+def wrap_view_handler(wrapped, priority=3):
 
     # Ensure we don't wrap the view handler more than once. This
     # looks like it may occur in cases where the resolver is
@@ -440,7 +440,7 @@ def wrap_view_handler(wrapped):
         if transaction is None:
             return wrapped(*args, **kwargs)
 
-        transaction.name_transaction(name, priority=3)
+        transaction.name_transaction(name)
 
         with FunctionTrace(transaction, name=name):
             try:
@@ -703,16 +703,16 @@ def instrument_django_core_servers_basehttp(module):
                 wrap_wsgi_application_entry_point)
 
 def instrument_django_contrib_staticfiles_views(module):
-    if type(module.serve) is not ViewHandlerWrapper:
-        module.serve = ViewHandlerWrapper(module.serve, priority=3)
+    if not hasattr(wrapped, '_nr_django_view_handler'):
+        module.serve = wrap_view_handler(module.serve, priority=3)
 
 def instrument_django_contrib_staticfiles_handlers(module):
     wrap_name_transaction(module, 'StaticFilesHandler.serve')
 
 def instrument_django_views_debug(module):
-    module.technical_404_response = ViewHandlerWrapper(
+    module.technical_404_response = wrap_view_handler(
             module.technical_404_response, priority=1)
-    module.technical_500_response = ViewHandlerWrapper(
+    module.technical_500_response = wrap_view_handler(
             module.technical_500_response, priority=1)
 
 def instrument_django_http_multipartparser(module):

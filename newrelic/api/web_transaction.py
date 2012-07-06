@@ -129,7 +129,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         path_info = environ.get('PATH_INFO', None)
         http_cookie = environ.get('HTTP_COOKIE', None)
 
-        if http_cookie.find("NRAGENT") != -1:
+        if http_cookie and ("NRAGENT" in http_cookie):
             c = Cookie.SimpleCookie(http_cookie)
             self.rum_token = _extract_token(c['NRAGENT'].value)
             self.rum_guid = self.rum_token and str(random.getrandbits(64))

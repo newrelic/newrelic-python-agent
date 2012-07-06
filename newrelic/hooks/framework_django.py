@@ -440,7 +440,7 @@ def wrap_view_handler(wrapped, priority=3):
         if transaction is None:
             return wrapped(*args, **kwargs)
 
-        transaction.name_transaction(name)
+        transaction.name_transaction(name, priority=priority)
 
         with FunctionTrace(transaction, name=name):
             try:

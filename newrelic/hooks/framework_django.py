@@ -497,10 +497,10 @@ def wrap_url_resolver(wrapped):
 
                 if type(result) == type(()):
                     callback, callback_args, callback_kwargs = result
-                    result = (wrap_view_handler(callback),
+                    result = (wrap_view_handler(callback, priority=3),
                             callback_args, callback_kwargs)
                 else:
-                    result.func = wrap_view_handler(result.func)
+                    result.func = wrap_view_handler(result.func, priority=3)
 
                 return result
 
@@ -555,15 +555,23 @@ def instrument_django_core_urlresolvers(module):
     module.RegexURLResolver.resolve = wrap_url_resolver(
             module.RegexURLResolver.resolve)
 
+    # Wrap methods which resolve error handlers. For 403 and 404
+    # we give these higher naming priority over any prior
+    # middleware or view handler to give them visibility. For a
+    # 500, which will be triggered for unhandled exception, we
+    # leave any original name derived from a middleware or view
+    # handler in place so error details identify the correct
+    # transaction.
+
     if hasattr(module.RegexURLResolver, 'resolve403'):
         module.RegexURLResolver.resolve403 = wrap_url_resolver_nnn(
-                module.RegexURLResolver.resolve403)
+                module.RegexURLResolver.resolve403, priority=3)
 
     module.RegexURLResolver.resolve404 = wrap_url_resolver_nnn(
-            module.RegexURLResolver.resolve404)
+            module.RegexURLResolver.resolve404, priority=3)
 
     module.RegexURLResolver.resolve500 = wrap_url_resolver_nnn(
-            module.RegexURLResolver.resolve500)
+            module.RegexURLResolver.resolve500, priority=1)
 
 def instrument_django_template(module):
 
@@ -709,8 +717,17 @@ def instrument_django_contrib_staticfiles_handlers(module):
     wrap_name_transaction(module, 'StaticFilesHandler.serve')
 
 def instrument_django_views_debug(module):
+
+    # Wrap methods for handling errors when Django debug
+    # enabled. For 404 we give this higher naming priority over
+    # any prior middleware or view handler to give them
+    # visibility. For a 500, which will be triggered for
+    # unhandled exception, we leave any original name derived
+    # from a middleware or view handler in place so error
+    # details identify the correct transaction.
+
     module.technical_404_response = wrap_view_handler(
-            module.technical_404_response, priority=1)
+            module.technical_404_response, priority=3)
     module.technical_500_response = wrap_view_handler(
             module.technical_500_response, priority=1)
 

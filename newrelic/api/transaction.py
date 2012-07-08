@@ -409,8 +409,6 @@ class Transaction(object):
         if self._transaction_metrics:
             parameter_groups['Transaction metrics'] = self._transaction_metrics
 
-        self._custom_params['cpu_time'] = 100 * self._cpu_utilization_value
-
         node = newrelic.core.transaction_node.TransactionNode(
                 settings=self._settings,
                 path=self.path,
@@ -432,7 +430,8 @@ class Transaction(object):
                 apdex_t=self._settings.apdex_t,
                 suppress_apdex=self.suppress_apdex,
                 custom_metrics=self._custom_metrics,
-                parameter_groups=parameter_groups)
+                parameter_groups=parameter_groups,
+                cpu_utilization=self._cpu_utilization_value)
 
         # Clear settings as we are all done and don't
         # need it anymore.

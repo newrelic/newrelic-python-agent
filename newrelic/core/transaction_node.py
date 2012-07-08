@@ -24,7 +24,7 @@ _TransactionNode = namedtuple('_TransactionNode',
         'response_code', 'request_params', 'custom_params', 'queue_start',
         'start_time', 'end_time', 'duration', 'exclusive', 'children',
         'errors', 'slow_sql', 'apdex_t', 'suppress_apdex', 'custom_metrics',
-        'parameter_groups'])
+        'parameter_groups', 'cpu_utilization'])
 
 class TransactionNode(_TransactionNode):
 
@@ -239,6 +239,12 @@ class TransactionNode(_TransactionNode):
         custom_params = self.custom_params or None
         parameter_groups = self.parameter_groups or None
         trace_node = self.trace_node(stats, self)
+
+        # Add in special CPU time value for UI to display CPU burn.
+
+        if type(custom_params) == type({}):
+            custom_params = dict(custom_params)
+            custom_params['cpu_time'] = 100 * self.cpu_utilization
 
 	# There is an additional trace node labelled as 'ROOT'
 	# that needs to be inserted below the root node object

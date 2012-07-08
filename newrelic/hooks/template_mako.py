@@ -18,7 +18,7 @@ class TemplateRenderWrapper(object):
         return self.__class__(descriptor)
 
     def __call__(self, template, *args, **kwargs):
-        transaction = newrelic.api.transaction.transaction()
+        transaction = newrelic.api.transaction.current_transaction()
         if transaction:
             if hasattr(template, 'filename'):
                 name = template.filename or '<template>'

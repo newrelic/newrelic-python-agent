@@ -16,7 +16,7 @@ import os
 
 import __builtin__
 
-from newrelic.core.agent import agent
+from newrelic.core.agent import agent_instance
 from newrelic.core.config import global_settings, flatten_settings
 from newrelic.api.transaction import Transaction
 from newrelic.api.object_wrapper import ObjectWrapper
@@ -176,9 +176,9 @@ class ConsoleShell(cmd.Cmd):
         """
 
         if name is None:
-            config = agent().global_settings()
+            config = agent_instance().global_settings()
         else:
-            config = agent().application_settings(name)
+            config = agent_instance().application_settings(name)
 
         if config is not None:
             config = flatten_settings(config)
@@ -193,7 +193,7 @@ class ConsoleShell(cmd.Cmd):
         applications, harvest cycles etc.
         """
 
-        agent().dump(self.stdout)
+        agent_instance().dump(self.stdout)
 
     @shell_command
     def do_applications(self):
@@ -201,7 +201,8 @@ class ConsoleShell(cmd.Cmd):
         Displays a list of the applications.
         """
 
-        print >> self.stdout, repr(sorted(agent().applications.keys()))
+        print >> self.stdout, repr(sorted(
+              agent_instance().applications.keys()))
 
     @shell_command
     def do_application_status(self, name):
@@ -210,7 +211,7 @@ class ConsoleShell(cmd.Cmd):
         harvest cycle, etc.
         """
 
-        application = agent().application(name)
+        application = agent_instance().application(name)
         if application is not None:
             application.dump(self.stdout)
 

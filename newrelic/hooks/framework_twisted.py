@@ -7,6 +7,7 @@ import sys
 import weakref
 import UserList
 
+import newrelic.api.application
 import newrelic.api.object_wrapper
 import newrelic.api.transaction
 import newrelic.api.web_transaction
@@ -40,7 +41,7 @@ class RequestProcessWrapper(object):
     def __call__(self):
         assert self._nr_instance != None
 
-        transaction = newrelic.api.transaction.transaction()
+        transaction = newrelic.api.transaction.current_transaction()
 
         # Check to see if we are being called within the context of any
         # sort of transaction. If we are, then we don't bother doing
@@ -53,7 +54,7 @@ class RequestProcessWrapper(object):
         # Always use the default application specified in the agent
         # configuration.
 
-        application = newrelic.api.application.application()
+        application = newrelic.api.application.application_instance()
 
         # We need to fake up a WSGI like environ dictionary with the key
         # bits of information we need.
@@ -179,14 +180,14 @@ class RequestFinishWrapper(object):
         transaction = self._nr_instance._nr_transaction
 
         if self._nr_instance._nr_wait_function_trace:
-            if newrelic.api.transaction.transaction():
+            if newrelic.api.transaction.current_transaction():
                 _logger.debug('The Twisted.Web request finish() method is '
                         'being called while in wait state but there is '
                         'already a current transaction.')
             else:
                 transaction._save_transaction(transaction)
 
-        elif not newrelic.api.transaction.transaction():
+        elif not newrelic.api.transaction.current_transaction():
             _logger.debug('The Twisted.Web request finish() method is '
                     'being called from request process() method or a '
                     'deferred but there is not a current transaction.')
@@ -301,7 +302,7 @@ class ResourceRenderWrapper(object):
 
         assert instance != None
 
-        transaction = newrelic.api.transaction.transaction()
+        transaction = newrelic.api.transaction.current_transaction()
 
         if transaction is None:
             return self._nr_next_object(*args)
@@ -372,7 +373,7 @@ class DeferredWrapper(object):
         # each callback is actually called.
 
         if self._nr_instance:
-            transaction = newrelic.api.transaction.transaction()
+            transaction = newrelic.api.transaction.current_transaction()
             if transaction:
                 self._nr_instance._nr_transaction = transaction
                 self._nr_instance.callbacks = DeferredUserList(
@@ -403,7 +404,7 @@ class DeferredCallbacksWrapper(object):
     def __call__(self):
         assert self._nr_instance != None
 
-        transaction = newrelic.api.transaction.transaction()
+        transaction = newrelic.api.transaction.current_transaction()
 
         # If there is an active transaction then deferred is being
         # called within a context of another deferred so simply call the
@@ -501,7 +502,7 @@ class InlineGeneratorWrapper(object):
         name = newrelic.api.object_wrapper.callable_name(self._nr_wrapped)
         iterable = iter(self._nr_generator)
         while 1:
-            transaction = newrelic.api.transaction.transaction()
+            transaction = newrelic.api.transaction.current_transaction()
             with newrelic.api.function_trace.FunctionTrace(
                   transaction, name, group='Python/Twisted/Generator'):
                 yield next(iterable)
@@ -529,7 +530,7 @@ class InlineCallbacksWrapper(object):
         return self.__class__((instance, descriptor))
 
     def __call__(self, *args, **kwargs):
-        transaction = newrelic.api.transaction.transaction()
+        transaction = newrelic.api.transaction.current_transaction()
 
         if not transaction:
             return self._nr_next_object(*args, **kwargs)

@@ -1,6 +1,7 @@
 from __future__ import with_statement
 
 import threading
+import warnings
 
 import newrelic.core.config
 import newrelic.core.agent
@@ -36,7 +37,7 @@ class Application(object):
         self._linked = {}
         self.enabled = True
 
-        self._agent = newrelic.core.agent.agent()
+        self._agent = newrelic.core.agent.agent_instance()
 
     @property
     def name(self):
@@ -94,5 +95,8 @@ class Application(object):
 def application_instance(name=None):
     return Application._instance(name)
 
-# For backward compatability only.
-application = application_instance
+def application():
+   warnings.warn('Internal API change. Use application_instance() '
+           'instead of application().', DeprecationWarning, stacklevel=2)
+
+   return application_instance()

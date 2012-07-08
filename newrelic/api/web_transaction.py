@@ -384,7 +384,7 @@ class WSGIApplicationWrapper(object):
         return self.__class__((instance, descriptor), self._nr_application)
 
     def __call__(self, environ, start_response):
-        transaction = newrelic.api.transaction.transaction()
+        transaction = newrelic.api.transaction.current_transaction()
 
         # Check to see if we are being called within the
         # context of any sort of transaction. If we are,
@@ -405,18 +405,21 @@ class WSGIApplicationWrapper(object):
             if app_name.find(';') != -1:
                 app_names = [string.strip(n) for n in app_name.split(';')]
                 app_name = app_names[0]
-                application = newrelic.api.application.application(app_name)
+                application = newrelic.api.application.application_instance(
+                        app_name)
                 for altname in app_names[1:]:
                     application.link_to_application(altname)
             else:
-                application = newrelic.api.application.application(app_name)
+                application = newrelic.api.application.application_instance(
+                        app_name)
         else:
             application = self._nr_application
 
             # FIXME Should this allow for multiple apps if a string.
 
             if type(application) != newrelic.api.application.Application:
-                application = newrelic.api.application.application(application)
+                application = newrelic.api.application.application_instance(
+                        application)
 
         # Now start recording the actual web transaction.
  

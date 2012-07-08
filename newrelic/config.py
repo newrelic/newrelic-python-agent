@@ -432,7 +432,8 @@ def _load_configuration(config_file=None, environment=None,
                     linked.append(altname)
 
             if linked:
-                application = newrelic.api.application.application(name)
+                application = newrelic.api.application.application_instance(
+                        name)
                 for altname in linked:
                     _logger.debug("link to %s" % ((name, altname),))
                     application.link_to_application(altname)

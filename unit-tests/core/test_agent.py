@@ -19,13 +19,13 @@ _settings.app_name = 'Python Unit Test1'
 class AgentTest(unittest.TestCase):
 
     def test_agent_singleton(self):
-        a = newrelic.core.agent.agent()
+        a = newrelic.core.agent.agent_instance()
         self.assertNotEqual(None, a)
-        b = newrelic.core.agent.agent()
+        b = newrelic.core.agent.agent_instance()
         self.assertEqual(a,b)
 
     def test_agent_connection(self):
-        agent = newrelic.core.agent.agent()
+        agent = newrelic.core.agent.agent_instance()
 
         # FIXME This can be the only test which activates
         # the application as checks that not active first.

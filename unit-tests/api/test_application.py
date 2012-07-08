@@ -20,11 +20,13 @@ class ApplicationTests(unittest.TestCase):
                 "STOPPING - %s" % self._testMethodName)
 
     def test_create(self):
-        application = newrelic.api.application.application("UnitTests")
+        application = newrelic.api.application.application_instance(
+                "UnitTests")
         self.assertEqual(application.name, "UnitTests")
 
     def test_enabled(self):
-        application = newrelic.api.application.application("UnitTests")
+        application = newrelic.api.application.application_instance(
+                "UnitTests")
         self.assertTrue(application.enabled)
         application.enabled = False
         self.assertFalse(application.enabled)
@@ -32,8 +34,10 @@ class ApplicationTests(unittest.TestCase):
         self.assertTrue(application.enabled)
 
     def test_singleton(self):
-        application1 = newrelic.api.application.application("UnitTests")
-        application2 = newrelic.api.application.application("UnitTests")
+        application1 = newrelic.api.application.application_instance(
+                "UnitTests")
+        application2 = newrelic.api.application.application_instance(
+                "UnitTests")
         self.assertEqual(id(application1), id(application2))
 
 if __name__ == '__main__':

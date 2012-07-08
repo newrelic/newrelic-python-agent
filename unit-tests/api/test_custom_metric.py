@@ -12,7 +12,7 @@ settings.log_file = "%s.log" % __file__
 settings.log_level = newrelic.api.log_file.LOG_VERBOSEDEBUG
 settings.transaction_tracer.transaction_threshold = 0
 
-application = newrelic.api.application.application("UnitTests")
+application = newrelic.api.application.application_instance("UnitTests")
 
 class CustomMetricTests(unittest.TestCase):
 

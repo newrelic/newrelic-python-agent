@@ -765,5 +765,8 @@ def current_transaction():
         return None
     return current
 
-# For backward compatability only.
-transaction = current_transaction
+def transaction():
+   warnings.warn('Internal API change. Use current_transaction() '
+           'instead of transaction().', DeprecationWarning, stacklevel=2)
+
+   return current_transaction()

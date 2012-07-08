@@ -33,7 +33,7 @@ class wrap_template(object):
         return self.__class__((instance, descriptor))
 
     def __call__(self, *args, **kwargs):
-        current_transaction = newrelic.api.transaction.transaction()
+        current_transaction = newrelic.api.transaction.current_transaction()
         if current_transaction and self.__instance:
             return stream_wrapper(self.__wrapped(*args, **kwargs),
                                   self.__instance.filepath)

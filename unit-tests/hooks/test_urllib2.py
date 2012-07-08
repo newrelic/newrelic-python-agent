@@ -81,7 +81,7 @@ class TransactionTests(unittest.TestCase):
 	# we know that data will actually get through to core
 	# and not lost because application not activated.
 
-        agent = newrelic.core.agent.agent()
+        agent = newrelic.core.agent.agent_instance()
 
         name = settings.app_name
         application_settings = agent.application_settings(name)

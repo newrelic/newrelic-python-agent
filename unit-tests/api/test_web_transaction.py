@@ -39,7 +39,7 @@ newrelic.agent.initialize()
 
 import newrelic.core.agent
 
-agent = newrelic.core.agent.agent()
+agent = newrelic.core.agent.agent_instance()
 
 name = settings.app_name
 application_settings = agent.application_settings(name)
@@ -52,7 +52,7 @@ for i in range(10):
         break
     time.sleep(0.5)
 
-application = newrelic.api.application.application(settings.app_name)
+application = newrelic.api.application.application_instance(settings.app_name)
 
 class WebTransactionTests(unittest.TestCase):
 
@@ -63,7 +63,7 @@ class WebTransactionTests(unittest.TestCase):
         _logger.debug('STOPPING - %s' % self._testMethodName)
 
     def test_inactive(self):
-        self.assertEqual(newrelic.api.transaction.transaction(), None)
+        self.assertEqual(newrelic.api.transaction.current_transaction(), None)
 
     def test_web_transaction(self):
         environ = { "REQUEST_URI": "/web_transaction" }
@@ -73,7 +73,7 @@ class WebTransactionTests(unittest.TestCase):
             self.assertTrue(transaction.enabled)
             self.assertEqual(transaction.path,
                     'WebTransaction/Uri' + environ["REQUEST_URI"])
-            self.assertEqual(newrelic.api.transaction.transaction(),
+            self.assertEqual(newrelic.api.transaction.current_transaction(),
                     transaction)
             self.assertFalse(transaction.background_task)
             time.sleep(1.0)
@@ -121,7 +121,7 @@ class WebTransactionTests(unittest.TestCase):
             path = "/named_web_transaction"
             transaction.name_transaction(path, group)
             self.assertTrue(transaction.enabled)
-            self.assertEqual(newrelic.api.transaction.transaction(),
+            self.assertEqual(newrelic.api.transaction.current_transaction(),
                     transaction)
             self.assertEqual(transaction.path,
                     'WebTransaction/'+group+'/'+path)
@@ -167,7 +167,7 @@ class WebTransactionTests(unittest.TestCase):
                 application, environ)
         transaction.__enter__()
         del transaction
-        self.assertEqual(newrelic.api.transaction.transaction(), None)
+        self.assertEqual(newrelic.api.transaction.current_transaction(), None)
 
     def test_request_parameters(self):
         environ = { "REQUEST_URI": "/request_parameters",
@@ -221,7 +221,7 @@ class WebTransactionTests(unittest.TestCase):
                 application, environ)
         with transaction:
             self.assertFalse(transaction.enabled)
-            self.assertEqual(newrelic.api.transaction.transaction(), None)
+            self.assertEqual(newrelic.api.transaction.current_transaction(), None)
         application.enabled = True
 
     def test_environ_enabled_bool(self):
@@ -232,7 +232,7 @@ class WebTransactionTests(unittest.TestCase):
                 application, environ)
         with transaction:
             self.assertTrue(transaction.enabled)
-            self.assertEqual(newrelic.api.transaction.transaction(),
+            self.assertEqual(newrelic.api.transaction.current_transaction(),
                     transaction)
         application.enabled = True
 
@@ -243,7 +243,7 @@ class WebTransactionTests(unittest.TestCase):
                 application, environ)
         with transaction:
             self.assertFalse(transaction.enabled)
-            self.assertEqual(newrelic.api.transaction.transaction(), None)
+            self.assertEqual(newrelic.api.transaction.current_transaction(), None)
 
     def test_environ_enabled_string(self):
         application.enabled = False
@@ -253,7 +253,7 @@ class WebTransactionTests(unittest.TestCase):
                 application, environ)
         with transaction:
             self.assertTrue(transaction.enabled)
-            self.assertEqual(newrelic.api.transaction.transaction(),
+            self.assertEqual(newrelic.api.transaction.current_transaction(),
                     transaction)
         application.enabled = True
 
@@ -264,7 +264,7 @@ class WebTransactionTests(unittest.TestCase):
                 application, environ)
         with transaction:
             self.assertFalse(transaction.enabled)
-            self.assertEqual(newrelic.api.transaction.transaction(), None)
+            self.assertEqual(newrelic.api.transaction.current_transaction(), None)
 
     def test_ignore_web_transaction(self):
         environ = { "REQUEST_URI": "/ignore_web_transaction" }

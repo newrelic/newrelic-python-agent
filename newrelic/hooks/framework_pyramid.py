@@ -32,7 +32,7 @@ class ViewCallableWrapper(object):
         return self.__class__((instance, descriptor))
 
     def __call__(self, *args, **kwargs):
-        transaction = newrelic.api.transaction.transaction()
+        transaction = newrelic.api.transaction.current_transaction()
         if not transaction:
             return self._nr_next_object(*args, **kwargs)
 
@@ -62,7 +62,7 @@ class AdaptersWrapper(object):
         return getattr(self._nr_wrapped, name)
 
     def lookup(self, *args, **kwargs):
-        transaction = newrelic.api.transaction.transaction()
+        transaction = newrelic.api.transaction.current_transaction()
         if not transaction:
             return getattr(self._nr_wrapped, 'lookup')(*args, **kwargs)
         view_callable = getattr(self._nr_wrapped, 'lookup')(*args, **kwargs)

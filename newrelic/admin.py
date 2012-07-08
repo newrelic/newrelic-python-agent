@@ -232,7 +232,7 @@ def validate_config(args):
 
     _logger.debug('License key is %r.', _settings.license_key)
 
-    _application = newrelic.api.application.application()
+    _application = newrelic.api.application.application_instance()
 
     _timeout = 30.0
 
@@ -350,7 +350,7 @@ def remote_config(args):
     newrelic.agent.initialize(config_file, ignore_errors=False,
                log_file=_settings.log_file, log_level=_settings.log_level)
 
-    _application = newrelic.api.application.application()
+    _application = newrelic.api.application.application_instance()
 
     _timeout = 30.0
 

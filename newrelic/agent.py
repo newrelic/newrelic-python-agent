@@ -15,7 +15,7 @@ import newrelic.config
 
 initialize = newrelic.config.initialize
 global_settings = newrelic.core.config.global_settings
-application_instance = newrelic.api.application.application_instance
+application = newrelic.api.application.application_instance
 current_transaction = newrelic.api.transaction.current_transaction
 
 def register_application(name=None, timeout=None):

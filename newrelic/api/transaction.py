@@ -7,6 +7,7 @@ import weakref
 import threading
 import traceback
 import logging
+import warnings
 
 import newrelic.core.config
 
@@ -650,7 +651,10 @@ class Transaction(object):
         self._errors.append(node)
 
     def notice_error(self, exc, value, tb, params={}, ignore_errors=[]):
-        # For backward compatability only.
+        warnings.warn('Internal API change. Use record_transaction() '
+                'instead of notice_error().', DeprecationWarning,
+                stacklevel=2)
+
         self.record_exception(exc, value, tb, params, ignore_errors)
 
     def record_metric(self, name, value):

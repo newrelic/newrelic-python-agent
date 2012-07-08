@@ -492,9 +492,7 @@ def wrap_url_resolver(wrapped):
             # XXX This can raise a Resolver404. If this is not dealt
             # with, is this the source of our unnamed 404 requests.
 
-            label = 'path=%r' % path
-
-            with FunctionTrace(transaction, name=name, label=label):
+            with FunctionTrace(transaction, name=name, label=path):
                 result = wrapped(path)
 
                 if type(result) == type(()):

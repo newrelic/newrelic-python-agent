@@ -19,8 +19,9 @@ application = newrelic.api.application.application_instance
 current_transaction = newrelic.api.transaction.current_transaction
 
 def register_application(name=None, timeout=None):
-    application = application_instance(name)
-    application.activate(timeout)
+    instance = application(name)
+    instance.activate(timeout)
+    return instance
 
 def shutdown_agent(timeout=None):
     agent = newrelic.core.agent.agent_instance()

@@ -473,6 +473,7 @@ class StatsEngine(object):
 
                 # Add transaction to the saved list, if transaction has a guid
                 # and number of saved transactions is less than the limit.
+
                 if transaction.guid:
                     maximum = settings.agent_limits.saved_transactions
                     if len(self.__saved_transactions) < maximum:
@@ -824,6 +825,11 @@ class StatsEngine(object):
             elif (transaction is not None and
                     transaction.duration > self.__slow_transaction.duration):
                 self.__slow_transaction = transaction
+
+            # Merge saved_transactions
+            maximum = self.__settings.agent_limits.saved_transactions
+            self.__saved_transactions.extend(snapshot.__saved_transactions)
+            self.__saved_transactions = self.__saved_transactions[:maximum]
 
     def merge_value_metrics(self, metrics):
         """Merges in a set of value metrics. The metrics should be

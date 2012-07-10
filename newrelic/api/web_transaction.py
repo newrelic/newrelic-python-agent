@@ -294,14 +294,15 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         queue_duration = int((start_time - queue_start) * 1000)
         request_duration = int((end_time - start_time) * 1000)
 
-        threshold = self._settings.transaction_tracer.transaction_threshold
-        rum_guid = self.rum_guid or ''
         rum_token = self.rum_token or ''
+        rum_guid = self.rum_guid or ''
+
+        threshold = self._settings.transaction_tracer.transaction_threshold
         rum_guid = rum_guid if request_duration >= threshold else ''
 
-        user = ""
-        account = ""
-        product = ""
+        user = ''
+        account = ''
+        product = ''
 
     # Settings will have values as Unicode strings and the
     # result here will be Unicode so need to convert back to

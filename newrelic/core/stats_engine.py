@@ -463,12 +463,12 @@ class StatsEngine(object):
                 elif transaction.duration >= self.__slow_transaction.duration:
                     self.__slow_transaction = transaction
 
+                # Add transaction to the saved list, if transaction has a guid
+                # and number of saved transactions is less than the limit.
                 if transaction.guid:
                     maximum = settings.agent_limits.saved_transactions
-                    self.__saved_transactions.append(transaction)
-                    self.__saved_transactions = sorted(
-                            self.__saved_transactions,
-                            key=lambda x: x.duration)[-maximum:]
+                    if len(self.__saved_transactions) < maximum:
+                        self.__saved_transactions.append(transaction)
 
     @internal_trace('Supportability/StatsEngine/Calls/metric_data')
     def metric_data(self):

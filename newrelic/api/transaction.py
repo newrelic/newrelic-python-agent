@@ -600,6 +600,14 @@ class Transaction(object):
         if fullname in error_collector.ignore_errors:
             return
 
+        # Only remember up to limit of what can be caught for a
+        # single transaction. This could be trimmed further
+        # later if there are already recorded errors and would
+        # go over the harvest limit.
+
+        if len(self._errors) >= settings.agent_limits.errors_per_transaction:
+            return
+
         if params:
             custom_params = dict(self._custom_params)
             custom_params.update(params)
@@ -617,8 +625,6 @@ class Transaction(object):
             except Exception:
                 message = '<unprintable %s object>' % type(value).__name__
 
-        stack_trace = traceback.format_exception(exc, value, tb)
-
         # Check that we have not recorded this exception
         # previously for this transaction due to multiple
         # error traces triggering. This is not going to be
@@ -630,6 +636,8 @@ class Transaction(object):
         for error in self._errors:
             if error.type == type and error.message == message:
                 return
+
+        stack_trace = traceback.format_exception(exc, value, tb)
 
         node = newrelic.core.error_node.ErrorNode(
                 timestamp=time.time(),

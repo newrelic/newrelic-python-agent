@@ -132,6 +132,8 @@ _settings.agent_limits.slow_sql_stack_trace = 30
 _settings.agent_limits.sql_explain_plans = 30
 _settings.agent_limits.slow_sql_data = 10
 _settings.agent_limits.merge_stats_maximum = 5
+_settings.agent_limits.errors_per_transaction = 5
+_settings.agent_limits.errors_per_harvest = 20
 
 _settings.console.listener_socket = None
 _settings.console.allow_interpreter_cmd = False

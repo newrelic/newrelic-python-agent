@@ -30,9 +30,7 @@ class TransactionNode(_TransactionNode):
 
     """Class holding data corresponding to the root of the transaction. All
     the nodes of interest recorded for the transaction are held as a tree
-    structure within the 'childen' attribute. Errors raised can recorded
-    are within the 'errors' attribute. Nodes corresponding to slow SQL
-    requests are available directly in the 'slow_sql' attribute.
+    structure within the 'childen' attribute.
 
     """
 

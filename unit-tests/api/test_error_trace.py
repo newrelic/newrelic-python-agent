@@ -1,23 +1,37 @@
 # vim: set fileencoding=utf-8 :
   
-import unittest
-import time
+import logging
 import sys
+import time
+import unittest
 
 import newrelic.api.settings
-import newrelic.api.log_file
 import newrelic.api.application
 import newrelic.api.web_transaction
 import newrelic.api.error_trace
 
+_logger = logging.getLogger('newrelic')
+
 settings = newrelic.api.settings.settings()
-settings.log_file = "%s.log" % __file__
-settings.log_level = newrelic.api.log_file.LOG_VERBOSEDEBUG
+
+settings.host = 'staging-collector.newrelic.com'
+settings.license_key = '84325f47e9dec80613e262be4236088a9983d501'
+
+settings.app_name = 'Python Unit Tests'
+
+settings.log_file = '%s.log' % __file__
+settings.log_level = logging.DEBUG
+
 settings.transaction_tracer.transaction_threshold = 0
+settings.transaction_tracer.stack_trace_threshold = 0
 
-settings.error_collector.ignore_errors = ['exceptions.NotImplementedError']
+settings.shutdown_timeout = 10.0
 
-application = newrelic.api.application.application_instance("UnitTests")
+settings.debug.log_data_collector_calls = True
+settings.debug.log_data_collector_payloads = True
+
+application = newrelic.api.application.application_instance()
+application.activate(timeout=10.0)
 
 class Error:
     def __init__(self, message):
@@ -43,12 +57,10 @@ def function_4():
 class ErrorTraceTransactionTests(unittest.TestCase):
 
     def setUp(self):
-        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                "STARTING - %s" % self._testMethodName)
+        _logger.debug('STARTING - %s' % self._testMethodName)
 
     def tearDown(self):
-        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                "STOPPING - %s" % self._testMethodName)
+        _logger.debug('STOPPING - %s' % self._testMethodName)
 
     def test_implicit_runtime_error(self):
         environ = { "REQUEST_URI": "/error_trace" }
@@ -120,6 +132,33 @@ class ErrorTraceTransactionTests(unittest.TestCase):
                                        sys.getdefaultencoding())
             except:
                 pass
+
+    def test_per_transaction_limit(self):
+        environ = { "REQUEST_URI": "/per_transaction_limit" }
+        transaction = newrelic.api.web_transaction.WebTransaction(
+                application, environ)
+        with transaction:
+            time.sleep(2.0)
+            for i in range(25):
+                try:
+                    with newrelic.api.error_trace.ErrorTrace(transaction):
+                        raise RuntimeError("runtime_error %d" % i)
+                except:
+                    pass
+
+    def test_per_harvest_limit(self):
+        environ = { "REQUEST_URI": "/per_harvest_limit" }
+        for i in range(5):
+            transaction = newrelic.api.web_transaction.WebTransaction(
+                    application, environ)
+            with transaction:
+                time.sleep(2.0)
+                for i in range(10):
+                    try:
+                        with newrelic.api.error_trace.ErrorTrace(transaction):
+                            raise RuntimeError("runtime_error %d" % i)
+                    except:
+                        pass
 
 if __name__ == '__main__':
     unittest.main()

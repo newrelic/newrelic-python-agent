@@ -97,7 +97,7 @@ def my_function_2():
 @newrelic.api.function_trace.function_trace()
 def my_function_3():
     time.sleep(0.1)
-    transaction = newrelic.api.transaction.transaction()
+    transaction = newrelic.api.transaction.current_transaction()
 
     if transaction:
         transaction.application.record_metric('metric-int', 1)
@@ -121,10 +121,10 @@ def my_function_3():
             params['error-tuple'] = (1.0, 1.1)
             params['error-dict'] = {'K1.0': 'V1.0', 'K1.1': 'V1.1'}
             #params['error-object'] = my_function_2
-            #transaction.notice_error(*sys.exc_info(), params=params)
+            #transaction.record_exception(*sys.exc_info(), params=params)
             exc_info = sys.exc_info()
-            transaction.notice_error(exc_info[0], exc_info[1], exc_info[2],
-                                     params=params)
+            transaction.record_exception(exc_info[0], exc_info[1],
+                    exc_info[2], params=params)
 
     try:
         my_error()
@@ -155,7 +155,7 @@ def handler(environ, start_response):
     transaction = None
 
     if name is not None:
-        transaction = newrelic.api.transaction.transaction()
+        transaction = newrelic.api.transaction.current_transaction()
         if transaction:
             transaction.name_transaction(name, group)
 
@@ -176,7 +176,7 @@ def handler(environ, start_response):
         with newrelic.api.function_trace.FunctionTrace(transaction, 'abort'):
             time.sleep(5.0)
             transaction.stop_recording()
-            transaction = newrelic.api.transaction.transaction()
+            transaction = newrelic.api.transaction.current_transaction()
             with newrelic.api.function_trace.FunctionTrace(transaction, 'dead'):
                 time.sleep(5.0)
 
@@ -186,7 +186,7 @@ def handler(environ, start_response):
 def task(name=None, group=None):
 
     if name is not None:
-        transaction = newrelic.api.transaction.transaction()
+        transaction = newrelic.api.transaction.current_transaction()
         if transaction:
             transaction.name_transaction(name, group)
 
@@ -215,7 +215,7 @@ class TransactionTests(unittest.TestCase):
 	# we know that data will actually get through to core
 	# and not lost because application not activated.
 
-        agent = newrelic.core.agent.agent()
+        agent = newrelic.core.agent.agent_instance()
 
         name = settings.app_name
         application_settings = agent.application_settings(name)

@@ -28,7 +28,7 @@ class capture_error(object):
         return self.__class__((instance, descriptor))
 
     def __call__(self, *args, **kwargs):
-        current_transaction = newrelic.api.transaction.transaction()
+        current_transaction = newrelic.api.transaction.current_transaction()
         if current_transaction:
             webob_exc = newrelic.api.import_hook.import_module('webob.exc')
             try:
@@ -36,7 +36,7 @@ class capture_error(object):
             except webob_exc.HTTPException:
                 raise
             except:
-                current_transaction.notice_error(*sys.exc_info())
+                current_transaction.record_exception(*sys.exc_info())
                 raise
         else:
             return self.__wrapped(*args, **kwargs)

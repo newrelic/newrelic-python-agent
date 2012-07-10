@@ -1,22 +1,37 @@
-import unittest
-import time
+import logging
 import sys
+import time
+import unittest
 
 import newrelic.api.settings
-import newrelic.api.log_file
 import newrelic.api.application
 import newrelic.api.transaction
 import newrelic.api.background_task
 
+_logger = logging.getLogger('newrelic')
+
 settings = newrelic.api.settings.settings()
-settings.app_name = "UnitTests"
-settings.log_file = "%s.log" % __file__
-settings.log_level = newrelic.api.log_file.LOG_VERBOSEDEBUG
+
+settings.host = 'staging-collector.newrelic.com'
+settings.license_key = '84325f47e9dec80613e262be4236088a9983d501'
+
+settings.app_name = 'Python Unit Tests'
+
+settings.log_file = '%s.log' % __file__
+settings.log_level = logging.DEBUG
+
 settings.transaction_tracer.transaction_threshold = 0
+settings.transaction_tracer.stack_trace_threshold = 0
 
-application = newrelic.api.application.application("UnitTests")
+settings.shutdown_timeout = 10.0
 
-@newrelic.api.background_task.background_task("UnitTests",
+settings.debug.log_data_collector_calls = True
+settings.debug.log_data_collector_payloads = True
+
+application = newrelic.api.application.application_instance()
+application.activate(timeout=10.0)
+
+@newrelic.api.background_task.background_task(settings.app_name,
         name='_test_function_1')
 def _test_function_1():
     time.sleep(1.0)
@@ -36,15 +51,13 @@ def _test_function_nl_1(arg):
 class BackgroundTaskTests(unittest.TestCase):
 
     def setUp(self):
-        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                "STARTING - %s" % self._testMethodName)
+        _logger.debug('STARTING - %s' % self._testMethodName)
 
     def tearDown(self):
-        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                "STOPPING - %s" % self._testMethodName)
+        _logger.debug('STOPPING - %s' % self._testMethodName)
 
-    def test_inactive(self):
-        self.assertEqual(newrelic.api.transaction.transaction(), None)
+    def test_no_current_transaction(self):
+        self.assertEqual(newrelic.api.transaction.current_transaction(), None)
 
     def test_background_task(self):
         name = "background_task"
@@ -52,7 +65,7 @@ class BackgroundTaskTests(unittest.TestCase):
                 application, name)
         with transaction:
             self.assertTrue(transaction.enabled)
-            self.assertEqual(newrelic.api.transaction.transaction(),
+            self.assertEqual(newrelic.api.transaction.current_transaction(),
                              transaction)
             self.assertTrue(transaction.background_task)
             try:
@@ -70,9 +83,10 @@ class BackgroundTaskTests(unittest.TestCase):
             path = "named_background_task"
             transaction.name_transaction(path, group)
             self.assertTrue(transaction.enabled)
-            self.assertEqual(newrelic.api.transaction.transaction(),
+            self.assertEqual(newrelic.api.transaction.current_transaction(),
                              transaction)
-            self.assertEqual(transaction.path, group+'/'+path)
+            self.assertEqual(transaction.path,
+                             'OtherTransaction/'+group+'/'+path)
 
     def test_exit_on_delete(self):
         name = "exit_on_delete"
@@ -80,22 +94,22 @@ class BackgroundTaskTests(unittest.TestCase):
                 application, name)
         transaction.__enter__()
         del transaction
-        self.assertEqual(newrelic.api.transaction.transaction(), None)
+        self.assertEqual(newrelic.api.transaction.current_transaction(), None)
 
     def test_custom_parameters(self):
         name = "custom_parameters"
         transaction = newrelic.api.background_task.BackgroundTask(
                 application, name)
         with transaction:
-            transaction.custom_parameters["1"] = "1" 
-            transaction.custom_parameters["2"] = "2" 
-            transaction.custom_parameters["3"] = 3
-            transaction.custom_parameters["4"] = 4.0
-            transaction.custom_parameters["5"] = ("5", 5)
-            transaction.custom_parameters["6"] = ["6", 6]
-            transaction.custom_parameters["7"] = {"7": 7}
-            transaction.custom_parameters[8] = "8"
-            transaction.custom_parameters[9.0] = "9.0"
+            transaction.add_custom_parameter("1", "1")
+            transaction.add_custom_parameter("2", "2") 
+            transaction.add_custom_parameter("3", 3)
+            transaction.add_custom_parameter("4", 4.0)
+            transaction.add_custom_parameter("5", ("5", 5))
+            transaction.add_custom_parameter("6", ["6", 6])
+            transaction.add_custom_parameter("7", {"7": 7})
+            transaction.add_custom_parameter(8, "8")
+            transaction.add_custom_parameter(9.0, "9.0")
 
     def test_explicit_runtime_error(self):
         name = "explicit_runtime_error"
@@ -106,7 +120,7 @@ class BackgroundTaskTests(unittest.TestCase):
                 try:
                     raise RuntimeError("runtime_error %d" % i)
                 except RuntimeError:
-                    transaction.notice_error(*sys.exc_info())
+                    transaction.record_exception(*sys.exc_info())
 
     def test_implicit_runtime_error(self):
         name = "implicit_runtime_error"
@@ -124,7 +138,8 @@ class BackgroundTaskTests(unittest.TestCase):
         transaction = newrelic.api.background_task.BackgroundTask(
                 application, name)
         with transaction:
-            self.assertEqual(newrelic.api.transaction.transaction(), None)
+            self.assertEqual(
+                    newrelic.api.transaction.current_transaction(), None)
         application.enabled = True
 
     def test_ignore_background_task(self):
@@ -132,13 +147,13 @@ class BackgroundTaskTests(unittest.TestCase):
         transaction = newrelic.api.background_task.BackgroundTask(
                 application, name)
         with transaction:
-            self.assertFalse(transaction.ignore)
-            transaction.ignore = True
-            self.assertTrue(transaction.ignore)
-            transaction.ignore = False
-            self.assertFalse(transaction.ignore)
-            transaction.ignore = True
-            self.assertTrue(transaction.ignore)
+            self.assertFalse(transaction.ignore_transaction)
+            transaction.ignore_transaction = True
+            self.assertTrue(transaction.ignore_transaction)
+            transaction.ignore_transaction = False
+            self.assertFalse(transaction.ignore_transaction)
+            transaction.ignore_transaction = True
+            self.assertTrue(transaction.ignore_transaction)
             self.assertTrue(transaction.enabled)
 
     def test_background_task_named_decorator(self):

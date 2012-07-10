@@ -56,7 +56,7 @@ class MemcacheTraceWrapper(object):
         return self.__class__((instance, descriptor), self._nr_command)
 
     def __call__(self, *args, **kwargs):
-        transaction = newrelic.api.transaction.transaction()
+        transaction = newrelic.api.transaction.current_transaction()
         if not transaction:
             return self._nr_next_object(*args, **kwargs)
 

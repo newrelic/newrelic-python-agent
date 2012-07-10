@@ -17,7 +17,7 @@ settings.transaction_tracer.transaction_threshold = 0
 
 settings.error_collector.ignore_errors = ['exceptions.NotImplementedError']
 
-application = newrelic.api.application.application("UnitTests")
+application = newrelic.api.application.application_instance("UnitTests")
 
 class Error:
     def __init__(self, message):

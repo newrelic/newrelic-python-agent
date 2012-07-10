@@ -101,7 +101,7 @@ def instrument_gluon_main(module):
             if not hasattr(self, '_nr_last_object'):
                 self._nr_last_object = wrapped
         def __call__(self, request, response, session):
-            txn = newrelic.api.transaction.transaction()
+            txn = newrelic.api.transaction.current_transaction()
             if txn:
                 HTTP = newrelic.api.import_hook.import_module('gluon.http').HTTP
                 try:
@@ -109,7 +109,7 @@ def instrument_gluon_main(module):
                 except HTTP, e:
                     raise
                 except:
-                    txn.notice_error(*sys.exc_info())
+                    txn.record_exception(*sys.exc_info())
                     raise
             else:
                 return self._nr_next_object(request, response, session)
@@ -186,7 +186,7 @@ def instrument_gluon_http(module):
     # mean that isn't always the case.
 
     def name_transaction_name_not_found(response, *args):
-        txn = newrelic.api.transaction.transaction()
+        txn = newrelic.api.transaction.current_transaction()
         if not txn:
             return
 

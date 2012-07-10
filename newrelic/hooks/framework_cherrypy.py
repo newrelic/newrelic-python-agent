@@ -25,7 +25,7 @@ class HandlerWrapper(object):
         return self.__class__(descriptor)
 
     def __call__(self, *args, **kwargs):
-        transaction = newrelic.api.transaction.transaction()
+        transaction = newrelic.api.transaction.current_transaction()
         if transaction:
             transaction.name_transaction(name=self.__name, priority=2)
             with newrelic.api.error_trace.ErrorTrace(transaction):
@@ -34,7 +34,7 @@ class HandlerWrapper(object):
                     try:
                         return self.__wrapped(*args, **kwargs)
                     except:
-                        transaction.notice_error(*sys.exc_info())
+                        transaction.record_exception(*sys.exc_info())
                         raise
         else:
             return self.__wrapped(*args, **kwargs)
@@ -73,7 +73,7 @@ class ResolverWrapper(object):
         return self.__class__((instance, descriptor))
 
     def __call__(self, *args, **kwargs):
-        transaction = newrelic.api.transaction.transaction()
+        transaction = newrelic.api.transaction.current_transaction()
         if transaction:
             try:
                 obj, vpath = self.__wrapped(*args, **kwargs)
@@ -88,7 +88,7 @@ class ResolverWrapper(object):
                     transaction.name_transaction('404', group='Uri')
                 return obj, vpath
             except:
-                transaction.notice_error(*sys.exc_info())
+                transaction.record_exception(*sys.exc_info())
                 raise
         else:
             return self.__wrapped(*args, **kwargs)
@@ -113,7 +113,7 @@ class RoutesResolverWrapper(object):
         return self.__class__((instance, descriptor))
 
     def __call__(self, *args, **kwargs):
-        transaction = newrelic.api.transaction.transaction()
+        transaction = newrelic.api.transaction.current_transaction()
         if transaction:
             try:
                 handler = self.__wrapped(*args, **kwargs)
@@ -123,7 +123,7 @@ class RoutesResolverWrapper(object):
                     transaction.name_transaction('404', group='Uri')
                 return handler
             except:
-                transaction.notice_error(*sys.exc_info())
+                transaction.record_exception(*sys.exc_info())
                 raise
         else:
             return self.__wrapped(*args, **kwargs)

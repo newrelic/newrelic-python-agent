@@ -7,7 +7,7 @@ about this below.
 
 """
 
-from newrelic.api.application import application
+from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTaskWrapper
 
 def instrument_celery_app_task(module):
@@ -74,7 +74,7 @@ def instrument_celery_worker(module):
         _process_initializer = module.process_initializer
 
         def process_initializer(*args, **kwargs):
-            application().activate()
+            application_instance().activate()
             return _process_initializer(*args, **kwargs)
 
         module.process_initializer = process_initializer

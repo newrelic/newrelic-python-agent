@@ -23,7 +23,7 @@ class FunctionProfile(object):
         if event not in ['call', 'c_call', 'return', 'c_return']:
             return
 
-        transaction = newrelic.api.transaction.transaction()
+        transaction = newrelic.api.transaction.current_transaction()
         if not transaction:
             return
 
@@ -90,7 +90,7 @@ class ProfileTraceWrapper(object):
                               self._nr_group)
 
     def __call__(self, *args, **kwargs):
-        transaction = newrelic.api.transaction.transaction()
+        transaction = newrelic.api.transaction.current_transaction()
         if not transaction:
             return self._nr_next_object(*args, **kwargs)
 

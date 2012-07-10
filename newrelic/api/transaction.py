@@ -7,6 +7,7 @@ import weakref
 import threading
 import traceback
 import logging
+import warnings
 
 import newrelic.core.config
 
@@ -274,7 +275,7 @@ class Transaction(object):
         # Record error if one was registered.
 
         if exc is not None and value is not None and tb is not None:
-            self.notice_error(exc, value, tb)
+            self.record_exception(exc, value, tb)
 
         # Record the end time for transaction and then
         # calculate the duration.
@@ -411,8 +412,6 @@ class Transaction(object):
         if self._transaction_metrics:
             parameter_groups['Transaction metrics'] = self._transaction_metrics
 
-        self._custom_params['cpu_time'] = 100 * self._cpu_utilization_value
-
         node = newrelic.core.transaction_node.TransactionNode(
                 settings=self._settings,
                 path=self.path,
@@ -435,7 +434,8 @@ class Transaction(object):
                 suppress_apdex=self.suppress_apdex,
                 custom_metrics=self._custom_metrics,
                 parameter_groups=parameter_groups,
-                guid=self.rum_guid)
+                guid=self.rum_guid,
+                cpu_utilization=self._cpu_utilization_value)
 
         # Clear settings as we are all done and don't
         # need it anymore.
@@ -551,7 +551,7 @@ class Transaction(object):
         self._group = group
         self._name = name
 
-    def notice_error(self, exc, value, tb, params={}, ignore_errors=[]):
+    def record_exception(self, exc, value, tb, params={}, ignore_errors=[]):
 
         # Bail out if the transaction is not active or
         # collection of errors not enabled.
@@ -652,6 +652,13 @@ class Transaction(object):
         # official order in which they should be sent.
 
         self._errors.append(node)
+
+    def notice_error(self, exc, value, tb, params={}, ignore_errors=[]):
+        warnings.warn('Internal API change. Use record_transaction() '
+                'instead of notice_error().', DeprecationWarning,
+                stacklevel=2)
+
+        self.record_exception(exc, value, tb, params, ignore_errors)
 
     def record_metric(self, name, value):
         self._custom_metrics.record_value_metric(
@@ -755,8 +762,14 @@ class Transaction(object):
             node.dump(file)
 
 
-def transaction():
+def current_transaction():
     current = Transaction._current_transaction()
     if current and (current.ignore_transaction or current.stopped):
         return None
     return current
+
+def transaction():
+   warnings.warn('Internal API change. Use current_transaction() '
+           'instead of transaction().', DeprecationWarning, stacklevel=2)
+
+   return current_transaction()

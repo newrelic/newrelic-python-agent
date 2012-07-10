@@ -30,7 +30,7 @@ def instrument(module):
             return iter(self._nr_cursor)
 
         def execute(self, sql, *args, **kwargs):
-            transaction = newrelic.api.transaction.transaction()
+            transaction = newrelic.api.transaction.current_transaction()
             if not transaction:
                 return self._nr_cursor.execute(sql, *args, **kwargs)
             with newrelic.api.database_trace.DatabaseTrace(
@@ -38,7 +38,7 @@ def instrument(module):
                 return self._nr_cursor.execute(sql, *args, **kwargs)
 
         def executemany(self, sql, *args, **kwargs): 
-            transaction = newrelic.api.transaction.transaction()
+            transaction = newrelic.api.transaction.current_transaction()
             if not transaction:
                 return self._nr_cursor.executemany(sql, *args, **kwargs)
             with newrelic.api.database_trace.DatabaseTrace(
@@ -46,7 +46,7 @@ def instrument(module):
                 return self._nr_cursor.executemany(sql, *args, **kwargs)
 
         def executescript(self, sql_script): 
-            transaction = newrelic.api.transaction.transaction()
+            transaction = newrelic.api.transaction.current_transaction()
             if not transaction:
                 return self._nr_cursor.executemany(sql_script)
             with newrelic.api.database_trace.DatabaseTrace(
@@ -78,7 +78,7 @@ def instrument(module):
             return CursorWrapper(self._nr_connection.cursor(*args, **kwargs))
 
         def commit(self):
-            transaction = newrelic.api.transaction.transaction()
+            transaction = newrelic.api.transaction.current_transaction()
             if not transaction:
                 return self._nr_connection.commit()
             with newrelic.api.database_trace.DatabaseTrace(
@@ -86,7 +86,7 @@ def instrument(module):
                 return self._nr_connection.commit()
 
         def rollback(self):
-            transaction = newrelic.api.transaction.transaction()
+            transaction = newrelic.api.transaction.current_transaction()
             if not transaction:
                 return self._nr_connection.rollback()
             with newrelic.api.database_trace.DatabaseTrace(
@@ -94,7 +94,7 @@ def instrument(module):
                 return self._nr_connection.rollback()
 
         def execute(self, sql, *args, **kwargs):
-            transaction = newrelic.api.transaction.transaction()
+            transaction = newrelic.api.transaction.current_transaction()
             if not transaction:
                 return self._nr_connection.execute(sql, *args, **kwargs)
             with newrelic.api.database_trace.DatabaseTrace(
@@ -102,7 +102,7 @@ def instrument(module):
                 return self._nr_connection.execute(sql, *args, **kwargs)
 
         def executemany(self, sql, *args, **kwargs): 
-            transaction = newrelic.api.transaction.transaction()
+            transaction = newrelic.api.transaction.current_transaction()
             if not transaction:
                 return self._nr_connection.executemany(sql, *args, **kwargs)
             with newrelic.api.database_trace.DatabaseTrace(
@@ -110,7 +110,7 @@ def instrument(module):
                 return self._nr_connection.executemany(sql, *args, **kwargs)
 
         def executescript(self, sql_script): 
-            transaction = newrelic.api.transaction.transaction()
+            transaction = newrelic.api.transaction.current_transaction()
             if not transaction:
                 return self._nr_connection.executemany(sql_script)
             with newrelic.api.database_trace.DatabaseTrace(

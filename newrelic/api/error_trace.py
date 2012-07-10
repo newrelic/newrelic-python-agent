@@ -45,7 +45,7 @@ class ErrorTrace(object):
         if self._ignore_errors and path in self._ignore_errors:
             return
 
-        self._transaction.notice_error(exc, value, tb)
+        self._transaction.record_exception(exc, value, tb)
 
 class ErrorTraceWrapper(object):
 
@@ -72,7 +72,7 @@ class ErrorTraceWrapper(object):
         return self.__class__((instance, descriptor), self._nr_ignore_errors)
 
     def __call__(self, *args, **kwargs):
-        transaction = newrelic.api.transaction.transaction()
+        transaction = newrelic.api.transaction.current_transaction()
         if not transaction:
             return self._nr_next_object(*args, **kwargs)
 

@@ -12,10 +12,10 @@ settings.log_file = "%s.log" % __file__
 settings.log_level = newrelic.api.log_file.LOG_VERBOSEDEBUG
 settings.transaction_tracer.transaction_threshold = 0
 
-_application = newrelic.api.application.application("UnitTests")
+_application = newrelic.api.application.application_instance("UnitTests")
 
 def _wsgiapp_function(self, *args):
-    transaction = newrelic.api.transaction.transaction()
+    transaction = newrelic.api.transaction.current_transaction()
     assert transaction != None
 _wsgiapp_function = newrelic.api.web_transaction.WSGIApplicationWrapper(
         _wsgiapp_function, _application)
@@ -29,19 +29,19 @@ class _wsgiapp_class:
     def __init__(self, *args):
         pass
     def __call__(self):
-        transaction = newrelic.api.transaction.transaction()
+        transaction = newrelic.api.transaction.current_transaction()
         assert transaction != None
 _wsgiapp_class = newrelic.api.web_transaction.WSGIApplicationWrapper(
         _wsgiapp_class, _application)
 
 @newrelic.api.web_transaction.wsgi_application("UnitTests")
 def _wsgiapp_function_decorator(self, *args):
-    transaction = newrelic.api.transaction.transaction()
+    transaction = newrelic.api.transaction.current_transaction()
     assert transaction != None
 
 @newrelic.api.web_transaction.wsgi_application()
 def _wsgiapp_function_decorator_default(self, *args):
-    transaction = newrelic.api.transaction.transaction()
+    transaction = newrelic.api.transaction.current_transaction()
     assert transaction != None
 
 @newrelic.api.web_transaction.wsgi_application("UnitTests")
@@ -49,7 +49,7 @@ class _wsgiapp_class_decorator:
     def __init__(self, *args):
         pass
     def __call__(self):
-        transaction = newrelic.api.web_transaction.transaction()
+        transaction = newrelic.api.web_transaction.current_transaction()
         assert transaction != None
 
 class WSGIApplicationTests(unittest.TestCase):
@@ -74,7 +74,7 @@ class WSGIApplicationTests(unittest.TestCase):
             pass
 
     def _wsgiapp_method(self, *args):
-        transaction = newrelic.api.transaction.transaction()
+        transaction = newrelic.api.transaction.current_transaction()
         self.assertNotEqual(transaction, None)
     _wsgiapp_method = newrelic.api.web_transaction.WSGIApplicationWrapper(
             _wsgiapp_method, _application)
@@ -97,7 +97,7 @@ class WSGIApplicationTests(unittest.TestCase):
 
     @newrelic.api.web_transaction.wsgi_application("UnitTests")
     def _wsgiapp_method_decorator(self, *args):
-        transaction = newrelic.api.transaction.transaction()
+        transaction = newrelic.api.transaction.current_transaction()
         self.assertNotEqual(transaction, None)
 
     def test_wsgiapp_method_decorator(self):

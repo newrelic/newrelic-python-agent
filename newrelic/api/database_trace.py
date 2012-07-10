@@ -113,7 +113,7 @@ class DatabaseTraceWrapper(object):
                               self._nr_dbapi)
 
     def __call__(self, *args, **kwargs):
-        transaction = newrelic.api.transaction.transaction()
+        transaction = newrelic.api.transaction.current_transaction()
         if not transaction:
             return self._nr_next_object(*args, **kwargs)
 

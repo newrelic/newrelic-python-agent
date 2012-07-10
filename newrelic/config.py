@@ -432,7 +432,8 @@ def _load_configuration(config_file=None, environment=None,
                     linked.append(altname)
 
             if linked:
-                application = newrelic.api.application.application(name)
+                application = newrelic.api.application.application_instance(
+                        name)
                 for altname in linked:
                     _logger.debug("link to %s" % ((name, altname),))
                     application.link_to_application(altname)
@@ -1095,6 +1096,12 @@ def _process_module_builtin_defaults():
     _process_module_definition('django.http.multipartparser',
             'newrelic.hooks.framework_django',
             'instrument_django_http_multipartparser')
+    _process_module_definition('django.core.mail',
+            'newrelic.hooks.framework_django',
+            'instrument_django_core_mail')
+    _process_module_definition('django.core.mail.message',
+            'newrelic.hooks.framework_django',
+            'instrument_django_core_mail_message')
 
     _process_module_definition('flask.app',
             'newrelic.hooks.framework_flask')

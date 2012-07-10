@@ -6,7 +6,7 @@ import os
 import threading
 import time
 
-from newrelic.api.object_wrapper import ObjectWrapper, wrap_object
+from newrelic.api.object_wrapper import (ObjectWrapper, wrap_object)
 
 class FunctionProfile(object):
 
@@ -21,7 +21,7 @@ class FunctionProfile(object):
         self.profile.disable()
         pass
 
-class FunctionProfileContext(object):
+class FunctionProfileSession(object):
 
     def __init__(self, filename, delay=1.0, checkpoint=30):
         self.filename = filename % { 'pid': os.getpid() }
@@ -36,7 +36,7 @@ class FunctionProfileContext(object):
         self.active = False
         self.count = 0
 
-    def invoke(self, wrapped, instance, *args, **kwargs):
+    def __call__(self, wrapped, instance, args, kwargs):
         with self.lock:
             if self.active:
                 return wrapped(*args, **kwargs)
@@ -60,34 +60,13 @@ class FunctionProfileContext(object):
             self.last = time.time()
             self.active = False
 
-class _FunctionProfileWrapper(object):
-
-    def __init__(self, wrapped, instance, context):
-        self._nr_wrapped = wrapped
-        self._nr_instance = instance
-        self._nr_context = context
-
-    def __getattr__(self, name):
-        return getattr(self._nr_wrapped, name)
-
-    def __get__(self, instance, klass):
-        if instance is None:
-            return self
-        descriptor = self._nr_wrapped.__get__(instance, klass)
-        return self.__class__(descriptor, instance, self._nr_context)
-
-    def __call__(self, *args, **kwargs):
-        return self._nr_context.invoke(self._nr_wrapped,
-            self._nr_instance, *args, **kwargs)
-
 def FunctionProfileWrapper(wrapped, filename, delay=1.0, checkpoint=30):
-    context = FunctionProfileContext(filename, delay, checkpoint)
-    return _FunctionProfileWrapper(wrapped, None, context)
+    wrapper = FunctionProfileSession(filename, delay, checkpoint)
+    return ObjectWrapper(wrapped, None, wrapper)
 
 def function_profile(filename, delay=1.0, checkpoint=30):
-    def decorator(wrapped):
-        return FunctionProfileWrapper(wrapped, filename, delay, checkpoint)
-    return decorator
+    return functools.partial(FunctionProfileWrapper, filename=filename,
+            delay=delay, checkpoint=checkpoint)
 
 def wrap_function_profile(module, object_path, filename, delay=1.0,
         checkpoint=30):

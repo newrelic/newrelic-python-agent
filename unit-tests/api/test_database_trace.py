@@ -39,14 +39,14 @@ newrelic.agent.initialize()
 
 import newrelic.core.agent
 
-agent = newrelic.core.agent.agent()
+agent = newrelic.core.agent.agent_instance()
 
 name = settings.app_name
 application_settings = agent.application_settings(name)
 
 agent.activate_application(name, timeout=10.0)
 
-application = newrelic.api.application.application(settings.app_name)
+application = newrelic.api.application.application_instance(settings.app_name)
 
 @newrelic.api.database_trace.database_trace(lambda sql: sql)
 def _test_function_1(sql):

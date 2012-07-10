@@ -17,7 +17,7 @@ class capture_external_trace(object):
         elif url.startswith('feed:'):
             url = 'http:' + url[5:]
         if url.split(':')[0].lower() in ['http', 'https', 'ftp']:
-            current_transaction = newrelic.api.transaction.transaction()
+            current_transaction = newrelic.api.transaction.current_transaction()
             if current_transaction:
                 trace = newrelic.api.external_trace.ExternalTrace(
                         current_transaction, 'feedparser', url, 'GET')

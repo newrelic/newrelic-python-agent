@@ -472,7 +472,7 @@ class ApplicationSession(object):
 
     def close_connection(self):
         self._requests_session = None
-        
+
     @internal_trace('Supportability/Collector/Calls/shutdown')
     def shutdown_session(self):
         """Called to perform orderly deregistration of agent run against
@@ -673,6 +673,11 @@ def create_session(license_key, app_name, linked_applications,
                 'where app_name=%r, pid=%r, redirect_host=%r and '
                 'agent_run_id=%r, in %.2f seconds.', app_name, os.getpid(),
                 redirect_host, session.agent_run_id, duration)
+
+        if hasattr(application_config, 'high_security'):
+            _logger.info('High security mode is being applied to all '
+                    'communications between the agent and the data '
+                    'collector for this session.')
 
         logger_func_mapping = {
             'ERROR': _logger.error,

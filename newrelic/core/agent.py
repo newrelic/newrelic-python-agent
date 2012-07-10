@@ -10,6 +10,7 @@ import logging
 import threading
 import atexit
 import time
+import warnings
 
 import newrelic
 import newrelic.core.log_file
@@ -21,7 +22,7 @@ _logger = logging.getLogger(__name__)
 class Agent(object):
 
     """Only one instance of the agent should ever exist and that can be
-    obtained using the agent() function.
+    obtained using the agent_instance() function.
 
     The licence key information, network connection details for the
     collector, plus whether SSL should be used is obtained directly from
@@ -34,11 +35,11 @@ class Agent(object):
     created needs to be via the 'newrelic.core.config' module.
 
     After the network connection details have been set, and the agent
-    object created and accessed using the agent() function, each individual
-    reporting application can be activated using the activate_application()
-    method of the agent. The name of the primary application and an
-    optional list of linked applications to which metric data should also
-    be reported needs to be supplied.
+    object created and accessed using the agent_instance() function, each
+    individual reporting application can be activated using the
+    activate_application() method of the agent. The name of the primary
+    application and an optional list of linked applications to which metric
+    data should also be reported needs to be supplied.
 
     Once an application has been activated and communications established
     with the core application, the application specific settings, which
@@ -68,8 +69,8 @@ class Agent(object):
 
     @staticmethod
     def agent_singleton():
-        """Used by the agent() function to access/create the single
-        agent object instance.
+	"""Used by the agent_instance() function to access/create the
+	single agent object instance.
 
         """
 
@@ -412,7 +413,7 @@ class Agent(object):
         self._harvest_shutdown.set()
         self._harvest_thread.join(timeout)
 
-def agent():
+def agent_instance():
     """Returns the agent object. This function should always be used and
     instances of the agent object should never be created directly to
     ensure there is only ever one instance.
@@ -424,3 +425,9 @@ def agent():
     """
 
     return Agent.agent_singleton()
+
+def agent():
+   warnings.warn('Internal API change. Use agent_instance() '
+           'instead of agent().', DeprecationWarning, stacklevel=2)
+
+   return agent_instance()

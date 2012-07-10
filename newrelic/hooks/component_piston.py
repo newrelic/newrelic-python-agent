@@ -24,7 +24,7 @@ class MethodWrapper(object):
         return getattr(self._nr_wrapped, name)
 
     def __call__(self, *args, **kwargs):
-        transaction = newrelic.api.transaction.transaction()
+        transaction = newrelic.api.transaction.current_transaction()
         if transaction:
             transaction.name_transaction(self._nr_name,
                     priority=self._nr_priority)

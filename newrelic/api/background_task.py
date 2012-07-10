@@ -1,18 +1,20 @@
-import sys
-import types
+import functools
 import inspect
+import sys
 
-import newrelic.api.transaction
-import newrelic.api.web_transaction
-import newrelic.api.object_wrapper
+from newrelic.api.application import (Application, application_instance)
+from newrelic.api.object_wrapper import (ObjectWrapper,
+        callable_name, wrap_object)
+from newrelic.api.transaction import (Transaction, current_transaction)
+from newrelic.api.web_transaction import WebTransaction
 
-class BackgroundTask(newrelic.api.transaction.Transaction):
+class BackgroundTask(Transaction):
 
     def __init__(self, application, name, group=None):
 
         # Initialise the common transaction base class.
 
-        newrelic.api.transaction.Transaction.__init__(self, application)
+        super(BackgroundTask, self).__init__(application)
 
         # Mark this as a background task even if disabled.
 
@@ -28,55 +30,31 @@ class BackgroundTask(newrelic.api.transaction.Transaction):
 
         self.name_transaction(name, group, priority=1)
 
-class xBackgroundTaskWrapper(object):
+def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
 
-    def __init__(self, wrapped, application=None, name=None, group=None):
-        if type(wrapped) == types.TupleType:
-            (instance, wrapped) = wrapped
-        else:
-            instance = None
+    def wrapper(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
 
-        newrelic.api.object_wrapper.update_wrapper(self, wrapped)
-
-        self._nr_instance = instance
-        self._nr_next_object = wrapped
-
-        if not hasattr(self, '_nr_last_object'):
-            self._nr_last_object = wrapped
-
-        self._nr_application = application
-        self._nr_name = name
-        self._nr_group = group
-
-    def __get__(self, instance, klass):
-        if instance is None:
-            return self
-        descriptor = self._nr_next_object.__get__(instance, klass)
-        return self.__class__((instance, descriptor), self._nr_application,
-                              self._nr_name, self._nr_group)
-
-    def __call__(self, *args, **kwargs):
-        transaction = newrelic.api.transaction.transaction()
-
-        if self._nr_name is None:
-            name = newrelic.api.object_wrapper.callable_name(
-                    self._nr_next_object)
-        elif not isinstance(self._nr_name, basestring):
-            if self._nr_instance and inspect.ismethod(self._nr_next_object):
-                name = self._nr_name(self._nr_instance, *args, **kwargs)
+        if callable(name):
+            if instance and inspect.ismethod(wrapped):
+                _name = name(instance, *args, **kwargs)
             else:
-                name = self._nr_name(*args, **kwargs)
-        else:
-            name = self._nr_name
+                _name = name(*args, **kwargs)
 
-        if self._nr_group is not None and not isinstance(
-                self._nr_group, basestring):
-            if self._nr_instance and inspect.ismethod(self._nr_next_object):
-                group = self._nr_group(self._nr_instance, *args, **kwargs)
-            else:
-                group = self._nr_group(*args, **kwargs)
+        elif name is None:
+            _name = callable_name(wrapped)
+
         else:
-            group = self._nr_group
+            _name = name
+
+        if callable(group):
+            if instance and inspect.ismethod(wrapped):
+                _group = group(instance, *args, **kwargs)
+            else:
+                _group = group(*args, **kwargs)
+
+        else:
+            _group = group
 
         # Check to see if we are being called within the context
         # of a web transaction. If we are, then we will just
@@ -88,27 +66,26 @@ class xBackgroundTaskWrapper(object):
         # the wrapped function.
 
         if transaction:
-            if (type(transaction) ==
-                    newrelic.api.web_transaction.WebTransaction):
-
+            if type(transaction) == WebTransaction:
                 if not transaction.background_task:
                     transaction.background_task = True
                     transaction.name_transaction(name, group)
 
-            return self._nr_next_object(*args, **kwargs)
+            return wrapped(*args, **kwargs)
 
         # Otherwise treat it as top level transaction.
 
-        application = self._nr_application
-        if type(application) != newrelic.api.application.Application:
-            application = newrelic.api.application.application(application)
+        if type(application) != Application:
+            _application = application_instance(application)
+        else:
+            _application = application
 
         try:
             success = True
-            manager = BackgroundTask(application, name, group)
+            manager = BackgroundTask(_application, _name, _group)
             manager.__enter__()
             try:
-                return self._nr_next_object(*args, **kwargs)
+                return wrapped(*args, **kwargs)
             except:
                 success = False
                 if not manager.__exit__(*sys.exc_info()):
@@ -117,87 +94,13 @@ class xBackgroundTaskWrapper(object):
             if success:
                 manager.__exit__(None, None, None)
 
-class BackgroundTaskWrapper(newrelic.api.object_wrapper.ObjectWrapper):
-
-    def __init__(self, wrapped, application=None, name=None, group=None):
-        super(BackgroundTaskWrapper, self).__init__(wrapped)
-
-        self._nr_application = application
-        self._nr_name = name
-        self._nr_group = group
-
-    def _nr_new_object(self, wrapped):
-        return self.__class__(wrapped, self._nr_application,
-                              self._nr_name, self._nr_group)
-
-    def __call__(self, *args, **kwargs):
-        transaction = newrelic.api.transaction.transaction()
-
-        if self._nr_name is None:
-            name = newrelic.api.object_wrapper.callable_name(
-                    self._nr_next_object)
-        elif not isinstance(self._nr_name, basestring):
-            if self._nr_instance and inspect.ismethod(self._nr_next_object):
-                name = self._nr_name(self._nr_instance, *args, **kwargs)
-            else:
-                name = self._nr_name(*args, **kwargs)
-        else:
-            name = self._nr_name
-
-        if self._nr_group is not None and not isinstance(
-                self._nr_group, basestring):
-            if self._nr_instance and inspect.ismethod(self._nr_next_object):
-                group = self._nr_group(self._nr_instance, *args, **kwargs)
-            else:
-                group = self._nr_group(*args, **kwargs)
-        else:
-            group = self._nr_group
-
-        # Check to see if we are being called within the context
-        # of a web transaction. If we are, then we will just
-        # flag the current web transaction as a background task
-        # if not already marked as such and name the web
-        # transaction as well. In any case, if nested in another
-        # transaction be it a web transaction or background
-        # task, then we don't do anything else and just called
-        # the wrapped function.
-
-        if transaction:
-            if (type(transaction) ==
-                    newrelic.api.web_transaction.WebTransaction):
-
-                if not transaction.background_task:
-                    transaction.background_task = True
-                    transaction.name_transaction(name, group)
-
-            return self._nr_next_object(*args, **kwargs)
-
-        # Otherwise treat it as top level transaction.
-
-        application = self._nr_application
-        if type(application) != newrelic.api.application.Application:
-            application = newrelic.api.application.application(application)
-
-        try:
-            success = True
-            manager = BackgroundTask(application, name, group)
-            manager.__enter__()
-            try:
-                return self._nr_next_object(*args, **kwargs)
-            except:
-                success = False
-                if not manager.__exit__(*sys.exc_info()):
-                    raise
-        finally:
-            if success:
-                manager.__exit__(None, None, None)
+    return ObjectWrapper(wrapped, None, wrapper)
 
 def background_task(application=None, name=None, group=None):
-    def decorator(wrapped):
-        return BackgroundTaskWrapper(wrapped, application, name, group)
-    return decorator
+    return functools.partial(BackgroundTaskWrapper,
+            application=application, name=name, group=group)
 
-def wrap_background_task(module, object_path, application=None, name=None,
-                         group=None):
-    newrelic.api.object_wrapper.wrap_object(module, object_path,
-            BackgroundTaskWrapper, (application, name, group))
+def wrap_background_task(module, object_path, application=None,
+        name=None, group=None):
+    wrap_object(module, object_path, BackgroundTaskWrapper,
+            (application, name, group))

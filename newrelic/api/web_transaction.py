@@ -32,7 +32,7 @@ _rum2_footer_short_fragment = '<script type="text/javascript">' \
         'new Date().getTime()]);if(NREUMQ.a)NREUMQ.a();};' \
         'NREUMQ.a=window.onload;window.onload=NREUMQ.f;};' \
         'NREUMQ.push(["nrfj","%s","%s",%d,"%s",%d,%d,' \
-        'new Date().getTime(),"%s","%s"])</script>'
+        'new Date().getTime(),"%s","%s","%s","%s","%s"])</script>'
 
 _rum_footer_long_fragment = '<script type="text/javascript">' \
         'if(!NREUMQ.f){NREUMQ.f=function(){NREUMQ.push(["load",' \
@@ -50,7 +50,7 @@ _rum2_footer_long_fragment = '<script type="text/javascript">' \
         'document.body.appendChild(e);if(NREUMQ.a)NREUMQ.a();};' \
         'NREUMQ.a=window.onload;window.onload=NREUMQ.f;};' \
         'NREUMQ.push(["nrfj","%s","%s",%d,"%s",%d,%d,' \
-        'new Date().getTime(),"%s","%s"])</script>'
+        'new Date().getTime(),"%s","%s","%s","%s","%s"])</script>'
 
 def _obfuscate_transaction_name(name, key):
     s = []
@@ -299,6 +299,10 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         rum_token = self.rum_token or ''
         rum_guid = rum_guid if request_duration >= threshold else ''
 
+        user = ""
+        account = ""
+        product = ""
+
     # Settings will have values as Unicode strings and the
     # result here will be Unicode so need to convert back to
     # normal string. Using str() and default encoding should
@@ -311,7 +315,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
                     self._settings.browser_key,
                     self._settings.application_id,
                     name, queue_duration, request_duration, rum_guid,
-                    rum_token))
+                    rum_token, user, account, product))
             else:
                 return str(_rum_footer_short_fragment % (
                     self._settings.beacon,
@@ -326,7 +330,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
                     self._settings.browser_key,
                     self._settings.application_id,
                     name, queue_duration, request_duration, rum_guid,
-                    rum_token))
+                    rum_token, user, account, product))
             else:
                 return str(_rum_footer_long_fragment % (
                     self._settings.episodes_url,

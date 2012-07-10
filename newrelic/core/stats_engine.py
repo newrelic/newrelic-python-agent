@@ -450,12 +450,14 @@ class StatsEngine(object):
                     self.record_slow_sql_node(node)
 
         # Remember as slowest transaction if transaction tracer
-        # is enabled, it is over the threshold and slower than
-        # any existing transaction.
+        # is enabled, it is over the threshold, slower than
+        # any existing transaction and recording of transaction
+        # trace for this transaction has not been suppressed.
 
         threshold = transaction_tracer.transaction_threshold
 
-        if transaction_tracer.enabled and settings.collect_traces:
+        if (not transaction.suppress_transaction_trace and
+                    transaction_tracer.enabled and settings.collect_traces):
             if transaction.duration >= threshold:
                 if self.__slow_transaction is None:
                     self.__slow_transaction = transaction

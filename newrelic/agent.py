@@ -89,6 +89,11 @@ def disable_browser_autorum(flag=True):
     if transaction:
         transaction.autorum_disabled = flag
 
+def suppress_transaction_trace(flag=True):
+    transaction = current_transaction()
+    if transaction:
+        transaction.suppress_transaction_trace = flag
+
 wsgi_application = newrelic.api.web_transaction.wsgi_application
 WebTransaction = newrelic.api.web_transaction.WebTransaction
 WSGIApplicationWrapper = newrelic.api.web_transaction.WSGIApplicationWrapper

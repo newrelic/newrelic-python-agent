@@ -166,6 +166,7 @@ class Transaction(object):
 
         self.ignore_transaction = False
         self.suppress_apdex = False
+        self.suppress_transaction_trace = False
 
         self.capture_params = False
         self.ignored_params = []
@@ -431,7 +432,8 @@ class Transaction(object):
                 suppress_apdex=self.suppress_apdex,
                 custom_metrics=self._custom_metrics,
                 parameter_groups=parameter_groups,
-                cpu_utilization=self._cpu_utilization_value)
+                cpu_utilization=self._cpu_utilization_value,
+                suppress_transaction_trace=self.suppress_transaction_trace)
 
         # Clear settings as we are all done and don't
         # need it anymore.

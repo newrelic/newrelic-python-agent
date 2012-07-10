@@ -172,13 +172,19 @@ def handler(environ, start_response):
                         ('Content-Length', str(len(output)))]
     start_response(status, response_headers)
 
-    if type == 'stop_recording' and transaction:
-        with newrelic.api.function_trace.FunctionTrace(transaction, 'abort'):
-            time.sleep(5.0)
-            transaction.stop_recording()
-            transaction = newrelic.api.transaction.current_transaction()
-            with newrelic.api.function_trace.FunctionTrace(transaction, 'dead'):
+    if transaction:
+        if type == 'stop_recording':
+            with newrelic.api.function_trace.FunctionTrace(
+                    transaction, 'abort'):
                 time.sleep(5.0)
+                transaction.stop_recording()
+                transaction = newrelic.api.transaction.current_transaction()
+                with newrelic.api.function_trace.FunctionTrace(
+                        transaction, 'dead'):
+                    time.sleep(5.0)
+        elif type == 'suppress_transaction_trace':
+            newrelic.agent.suppress_transaction_trace()
+            time.sleep(20.0)
 
     return [output]
 
@@ -239,12 +245,19 @@ class TransactionTests(unittest.TestCase):
         handler(environ, start_response).close()
 
         environ = { 'REQUEST_URI': '/request_uri?key=value',
-                'test.name': __file__, 'test.group': 'Script/Execute', }
+                'test.name': __file__,
+                'test.group': 'Script/Execute', }
         handler(environ, start_response).close()
 
         environ = { 'REQUEST_URI': '/request_uri?key=value&abort=1',
-                'test.name': __file__, 'test.group': 'Script/Execute',
+                'test.name': __file__,
+                'test.group': 'Script/Execute',
                 'test.type': 'stop_recording' }
+        handler(environ, start_response).close()
+
+        environ = { 'REQUEST_URI': '/request_uri?key=value&abort=1',
+                'test.name': 'suppress_transaction_trace',
+                'test.type': 'suppress_transaction_trace' }
         handler(environ, start_response).close()
 
         _logger.debug('RUNNING BACKGROUND TASKS')

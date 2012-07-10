@@ -436,11 +436,17 @@ class StatsEngine(object):
             self.record_time_metrics(transaction.time_metrics(self))
 
         # Capture any errors if error collection is enabled.
+        # Only retain maximum number allowed per harvest.
 
-        if error_collector.enabled and settings.collect_errors:
+        if (error_collector.enabled and settings.collect_errors and
+                len(self.__transaction_errors) <
+                settings.agent_limits.errors_per_harvest):
             with InternalTrace(
                     'Supportability/TransactionNode/Calls/error_details'):
                 self.__transaction_errors.extend(transaction.error_details())
+
+                self.__transaction_errors = self.__transaction_errors[:
+                        settings.agent_limits.errors_per_harvest]
 
         # Capture any sql traces if transaction tracer enabled.
 
@@ -451,12 +457,14 @@ class StatsEngine(object):
                     self.record_slow_sql_node(node)
 
         # Remember as slowest transaction if transaction tracer
-        # is enabled, it is over the threshold and slower than
-        # any existing transaction.
+        # is enabled, it is over the threshold, slower than
+        # any existing transaction and recording of transaction
+        # trace for this transaction has not been suppressed.
 
         threshold = transaction_tracer.transaction_threshold
 
-        if transaction_tracer.enabled and settings.collect_traces:
+        if (not transaction.suppress_transaction_trace and
+                    transaction_tracer.enabled and settings.collect_traces):
             if transaction.duration >= threshold:
                 if self.__slow_transaction is None:
                     self.__slow_transaction = transaction
@@ -763,6 +771,18 @@ class StatsEngine(object):
 
         """
 
+        # FIXME The ordering here is wrong in that when merging for
+        # new transaction, the snapshot will actually be newer data,
+        # where as when merging failed harvest data, will be merging
+        # old data. Possibly should split out merging of metrics to
+        # merge_metrics() and failed harvest should use that since
+        # possibly should only retain metric data anyway and not the
+        # other things in that case. This function can then call
+        # merge_stats() and for the rest treat snapshot as always
+        # being newer data and thus reverse the precedence here.
+
+        settings = self.__settings
+
         # Merge back data into any new data which has been
         # accumulated.
 
@@ -777,7 +797,10 @@ class StatsEngine(object):
         # ones to maintain time based order.
 
         if merge_errors:
-            self.__transaction_errors[:0] = snapshot.__transaction_errors
+            errors = list(snapshot.__transaction_errors)
+            errors.extend(self.__transaction_errors)
+            self.__transaction_errors = errors[:
+                  settings.agent_limits.errors_per_harvest]
 
         # Insert original sql traces at start of any new
         # ones to maintain time based order.

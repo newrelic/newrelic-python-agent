@@ -108,6 +108,8 @@ class WebTransaction(newrelic.api.transaction.Transaction):
                 'newrelic.ignore_transaction', False)
         self.suppress_apdex = _lookup_environ_setting(environ,
                 'newrelic.suppress_apdex_metric', False)
+        self.suppress_transaction_trace = _lookup_environ_setting(environ,
+                'newrelic.suppress_transaction_trace', False)
         self.capture_params = _lookup_environ_setting(environ,
                 'newrelic.capture_request_params',
                 self._settings.capture_params)

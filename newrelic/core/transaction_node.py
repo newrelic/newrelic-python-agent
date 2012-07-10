@@ -24,15 +24,14 @@ _TransactionNode = namedtuple('_TransactionNode',
         'response_code', 'request_params', 'custom_params', 'queue_start',
         'start_time', 'end_time', 'duration', 'exclusive', 'children',
         'errors', 'slow_sql', 'apdex_t', 'suppress_apdex', 'custom_metrics',
-        'parameter_groups', 'cpu_utilization', 'guid'])
+        'parameter_groups', 'guid', 'cpu_utilization',
+        'suppress_transaction_trace'])
 
 class TransactionNode(_TransactionNode):
 
     """Class holding data corresponding to the root of the transaction. All
     the nodes of interest recorded for the transaction are held as a tree
-    structure within the 'childen' attribute. Errors raised can recorded
-    are within the 'errors' attribute. Nodes corresponding to slow SQL
-    requests are available directly in the 'slow_sql' attribute.
+    structure within the 'childen' attribute.
 
     """
 

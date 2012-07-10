@@ -568,8 +568,8 @@ class StatsEngine(object):
 
         return result
 
-    @internal_trace('Supportability/StatsEngine/Calls/transaction_data')
-    def transaction_data(self):
+    @internal_trace('Supportability/StatsEngine/Calls/transaction_trace_data')
+    def transaction_trace_data(self):
         """Returns a list of slow transaction data collected
         during the reporting period.
 
@@ -577,7 +577,7 @@ class StatsEngine(object):
         if not self.__settings:
             return []
 
-        if not self.__slow_transaction and not self.__saved_transactions:
+        if (not self.__slow_transaction) and (not self.__saved_transactions):
             return []
 
         trace_data = []

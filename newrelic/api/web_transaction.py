@@ -52,7 +52,7 @@ _rum2_footer_long_fragment = '<script type="text/javascript">' \
         'NREUMQ.push(["nrfj","%s","%s",%d,"%s",%d,%d,' \
         'new Date().getTime(),"%s","%s","%s","%s","%s"])</script>'
 
-def _obfuscate_transaction_name(name, key):
+def _obfuscate(name, key):
     s = []
     for i in range(len(name)):
         s.append(chr(ord(name[i]) ^ ord(key[i%13])))
@@ -284,8 +284,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         self._freeze_path()
 
-        name = _obfuscate_transaction_name(self.path,
-                self._settings.license_key)
+        name = _obfuscate(self.path, self._settings.license_key)
 
         queue_start = self.queue_start or self.start_time
         start_time = self.start_time
@@ -300,14 +299,14 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         threshold = self._settings.transaction_tracer.transaction_threshold
         rum_guid = rum_guid if request_duration >= threshold else ''
 
-        user = ''
-        account = ''
-        product = ''
+        user = _obfuscate(self.rum_user, self._settings.license_key)
+        account = _obfuscate(self.rum_account, self._settings.license_key)
+        product = _obfuscate(self.rum_product, self._settings.license_key)
 
-    # Settings will have values as Unicode strings and the
-    # result here will be Unicode so need to convert back to
-    # normal string. Using str() and default encoding should
-    # be fine as should all be ASCII anyway.
+        # Settings will have values as Unicode strings and the
+        # result here will be Unicode so need to convert back to
+        # normal string. Using str() and default encoding should
+        # be fine as should all be ASCII anyway.
 
         if not self._settings.rum.load_episodes_file:
             if self._settings.rum.jsonp:

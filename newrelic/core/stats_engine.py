@@ -591,7 +591,7 @@ class StatsEngine(object):
 
         trace_data = []
         maximum = self.__settings.agent_limits.transaction_traces_nodes
-        traces = self.__saved_transactions
+        traces = list(self.__saved_transactions)
 
         if self.__slow_transaction not in traces:
             traces.append(self.__slow_transaction)
@@ -635,7 +635,7 @@ class StatsEngine(object):
                     trace.path,
                     trace.request_uri,
                     pack_data,
-                    trace.guid or ''])
+                    trace.guid])
 
         return trace_data
 

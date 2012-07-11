@@ -175,6 +175,9 @@ class Transaction(object):
 
         self.rum_token = None
         self.rum_guid = None
+        self.rum_user = ''
+        self.rum_account = ''
+        self.rum_product = ''
 
         self._custom_metrics = ValueMetrics()
 

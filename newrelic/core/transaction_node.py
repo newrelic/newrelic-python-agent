@@ -241,9 +241,8 @@ class TransactionNode(_TransactionNode):
 
         # Add in special CPU time value for UI to display CPU burn.
 
-        if type(custom_params) == type({}):
-            custom_params = dict(custom_params)
-            custom_params['cpu_time'] = 100 * self.cpu_utilization
+        custom_params = custom_params and dict(custom_params) or {}
+        custom_params['cpu_time'] = 100 * self.cpu_utilization
 
 	# There is an additional trace node labelled as 'ROOT'
 	# that needs to be inserted below the root node object

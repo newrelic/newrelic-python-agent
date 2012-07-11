@@ -421,7 +421,8 @@ class Application(object):
                     internal_metric('Supportability/Transaction/Counts/'
                             'metric_data', stats.metric_data_count())
 
-                    self._stats_engine.merge_stats(stats)
+                    self._stats_engine.merge_metric_stats(stats)
+                    self._stats_engine.merge_other_stats(stats)
 
                     # We merge the internal statistics here as well even
                     # though have popped out of the context where we are
@@ -483,7 +484,7 @@ class Application(object):
                 with self._stats_custom_lock:
                     stats_custom = self._stats_custom_engine.create_snapshot()
 
-                stats.merge_stats(stats_custom)
+                stats.merge_metric_stats(stats_custom)
 
                 # Now merge in any metrics from the data samplers
                 # associated with this application.
@@ -635,7 +636,10 @@ class Application(object):
                     # In order to prevent memory growth will we only
                     # merge data up to a set maximum number of
                     # successive times. When this occurs we throw away
-                    # all the metric data and start over.
+                    # all the metric data and start over. We also only
+                    # merge main metric data and discard errors, slow
+                    # SQL and transaction traces from older harvest
+                    # period.
 
                     if self._period_start != period_end:
 
@@ -645,7 +649,7 @@ class Application(object):
                         maximum = agent_limits.merge_stats_maximum
 
                         if self._merge_count <= maximum:
-                            self._stats_engine.merge_stats(stats)
+                            self._stats_engine.merge_metric_stats(stats)
 
                         else:
                             _logger.error('Unable to report main transaction '

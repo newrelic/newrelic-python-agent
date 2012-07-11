@@ -384,8 +384,15 @@ class StatsEngine(object):
         key = node.identifier
         stats = self.__sql_stats_table.get(key)
         if stats is None:
-            stats = SlowSqlStats()
-            self.__sql_stats_table[key] = stats
+            # Only record slow SQL if not already over the limit on
+            # how many can be collected in the harvest period.
+
+            settings = self.__settings
+            maximum = settings.agent_limits.slow_sql_data
+            if len(self.__sql_stats_table) < maximum:
+                stats = SlowSqlStats()
+                self.__sql_stats_table[key] = stats
+
         stats.merge_slow_sql_node(node)
 
         return key
@@ -758,31 +765,15 @@ class StatsEngine(object):
 
         return stats
 
-    def merge_stats(self, snapshot, merge_traces=True, merge_errors=True,
-            merge_sql=True):
+    def merge_metric_stats(self, snapshot):
 
-        """Merges back all the data from a snapshot. This is used when
-        merging data from a single transaction into may stats engine. It
-        woould also be done if the sending of the metric data from the
-        harvest failed and wanted to keep accumulating it for subsequent
-        harvest. If failure occurred in sending details or errors or
-        slow transaction, then those should be thrown away and this
-        method not called, else you would end up sending base metric
-        data multiple times.
+        """Merges metric data from a snapshot. This is used when merging
+        data from a single transaction into main stats engine. It would
+        also be done if the sending of the metric data from the harvest
+        failed and wanted to keep accumulating it for subsequent
+        harvest.
 
         """
-
-        # FIXME The ordering here is wrong in that when merging for
-        # new transaction, the snapshot will actually be newer data,
-        # where as when merging failed harvest data, will be merging
-        # old data. Possibly should split out merging of metrics to
-        # merge_metrics() and failed harvest should use that since
-        # possibly should only retain metric data anyway and not the
-        # other things in that case. This function can then call
-        # merge_stats() and for the rest treat snapshot as always
-        # being newer data and thus reverse the precedence here.
-
-        settings = self.__settings
 
         # Merge back data into any new data which has been
         # accumulated.
@@ -794,28 +785,45 @@ class StatsEngine(object):
             else:
                 stats.merge_stats(other)
 
-        # Insert original error details at start of any new
-        # ones to maintain time based order.
+    def merge_other_stats(self, snapshot, merge_traces=True,
+            merge_errors=True, merge_sql=True):
+
+        """Merges non metric data from a snapshot. This would only be
+        used when merging data from a single transaction into main
+        stats engine. It is assumed the snapshot has newer data and
+        that any existing data takes precedence where what should be
+        collected is not otherwised based on time.
+
+        """
+
+        settings = self.__settings
+
+        # Append snapshot error details at end to maintain time
+        # based order and then trim at maximum to be kept.
 
         if merge_errors:
-            errors = list(snapshot.__transaction_errors)
-            errors.extend(self.__transaction_errors)
-            self.__transaction_errors = errors[:
-                  settings.agent_limits.errors_per_harvest]
+            maximum = settings.agent_limits.errors_per_harvest
+            self.__transaction_errors.extend(snapshot.__transaction_errors)
+            self.__transaction_errors = self.__transaction_errors[:maximum]
 
-        # Insert original sql traces at start of any new
-        # ones to maintain time based order.
+        # Add sql traces to the set of existing entries. If over
+        # the limit of how many to collect, only merge in if already
+        # seen the specific SQL.
 
         if merge_sql:
+            maximum = settings.agent_limits.slow_sql_data
             for key, other in snapshot.__sql_stats_table.iteritems():
                 stats = self.__sql_stats_table.get(key)
                 if not stats:
-                    self.__sql_stats_table[key] = copy.copy(other)
+                    if len(self.__sql_stats_table) < maximum:
+                        self.__sql_stats_table[key] = copy.copy(other)
                 else:
                     stats.merge_stats(other)
 
-        # Restore original slow transaction if slower than
-        # any newer slow transaction.
+        # Restore original slow transaction if slower than any newer
+        # slow transaction. Also append any saved transactions
+        # corresponding to browser traces, trimming them at the maximum
+        # to be kept.
 
         if merge_traces:
             transaction = snapshot.__slow_transaction
@@ -826,7 +834,6 @@ class StatsEngine(object):
                     transaction.duration > self.__slow_transaction.duration):
                 self.__slow_transaction = transaction
 
-            # Merge saved_transactions
             maximum = self.__settings.agent_limits.saved_transactions
             self.__saved_transactions.extend(snapshot.__saved_transactions)
             self.__saved_transactions = self.__saved_transactions[:maximum]

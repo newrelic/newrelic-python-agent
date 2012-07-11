@@ -303,10 +303,10 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         account = _obfuscate(self.rum_account, self._settings.license_key)
         product = _obfuscate(self.rum_product, self._settings.license_key)
 
-    # Settings will have values as Unicode strings and the
-    # result here will be Unicode so need to convert back to
-    # normal string. Using str() and default encoding should
-    # be fine as should all be ASCII anyway.
+        # Settings will have values as Unicode strings and the
+        # result here will be Unicode so need to convert back to
+        # normal string. Using str() and default encoding should
+        # be fine as should all be ASCII anyway.
 
         if not self._settings.rum.load_episodes_file:
             if self._settings.rum.jsonp:

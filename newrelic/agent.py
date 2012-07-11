@@ -62,6 +62,11 @@ def add_custom_parameter(key, value):
     if transaction:
         transaction.add_custom_parameter(key, value)
 
+def add_user_parameter(key, value):
+    transaction = current_transaction()
+    if transaction:
+        transaction.add_user_parameter(key, value)
+
 def record_exception(exc, value, tb, params={}, ignore_errors=[]):
     transaction = current_transaction()
     if transaction:

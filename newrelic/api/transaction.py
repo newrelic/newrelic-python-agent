@@ -126,6 +126,7 @@ class Transaction(object):
         self._string_cache = {}
 
         self._custom_params = {}
+        self._user_params = {}
         self._request_params = {}
 
         self._thread_utilization = application.thread_utilization
@@ -175,9 +176,6 @@ class Transaction(object):
 
         self.rum_token = None
         self.rum_guid = None
-        self.rum_user = ''
-        self.rum_account = ''
-        self.rum_product = ''
 
         self._custom_metrics = ValueMetrics()
 
@@ -733,6 +731,13 @@ class Transaction(object):
     def add_custom_parameters(self, items):
         for name, value in items:
             self._custom_params[name] = value
+
+    def add_user_parameter(self, name, value):
+        self._user_params[name] = value
+
+    def add_user_parameters(self, items):
+        for name, value in items:
+            self._user_params[name] = value
 
     def dump(self, file):
         """Dumps details about the transaction to the file object."""

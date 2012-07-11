@@ -53,6 +53,8 @@ _rum2_footer_long_fragment = '<script type="text/javascript">' \
         'new Date().getTime(),"%s","%s","%s","%s","%s"])</script>'
 
 def _obfuscate(name, key):
+    if name is None:
+        return ''
     s = []
     for i in range(len(name)):
         s.append(chr(ord(name[i]) ^ ord(key[i%13])))
@@ -299,9 +301,12 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         threshold = self._settings.transaction_tracer.transaction_threshold
         rum_guid = rum_guid if request_duration >= threshold else ''
 
-        user = _obfuscate(self.rum_user, self._settings.license_key)
-        account = _obfuscate(self.rum_account, self._settings.license_key)
-        product = _obfuscate(self.rum_product, self._settings.license_key)
+        user = _obfuscate(self._user_params.get('user'),
+                self._settings.license_key)
+        account = _obfuscate(self._user_params.get('account'),
+                self._settings.license_key)
+        product = _obfuscate(self._user_params.get('product'),
+                self._settings.license_key)
 
         # Settings will have values as Unicode strings and the
         # result here will be Unicode so need to convert back to

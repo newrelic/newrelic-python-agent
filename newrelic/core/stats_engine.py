@@ -636,13 +636,16 @@ class StatsEngine(object):
                 pack_data = base64.standard_b64encode(zlib_data)
 
             root = transaction_trace.root
+            force_persist = trace.guid is not None
 
             trace_data.append([root.start_time,
                     root.end_time - root.start_time,
                     trace.path,
                     trace.request_uri,
                     pack_data,
-                    trace.guid])
+                    trace.guid,
+                    None,
+                    force_persist])
 
         return trace_data
 

@@ -575,9 +575,9 @@ class StatsEngine(object):
                     node.slow_sql_node.formatted,
                     node.slow_sql_node.metric,
                     node.call_count,
-                    node.total_call_time*1000,
-                    node.min_call_time*1000,
-                    node.max_call_time*1000,
+                    node.total_call_time * 1000,
+                    node.min_call_time * 1000,
+                    node.max_call_time * 1000,
                     params_data]
 
             result.append(data)
@@ -702,7 +702,7 @@ class StatsEngine(object):
         root = transaction_trace.root
 
         trace_data = [[root.start_time,
-                root.end_time-root.start_time,
+                root.end_time - root.start_time,
                 self.__slow_transaction.path,
                 self.__slow_transaction.request_uri,
                 pack_data]]

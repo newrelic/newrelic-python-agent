@@ -1,5 +1,3 @@
-import os
-
 import newrelic.core.agent
 import newrelic.core.config
 

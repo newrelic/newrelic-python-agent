@@ -51,11 +51,11 @@ _settings.debug = DebugSettings()
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
 
 _LOG_LEVEL = {
-    'CRITICAL' : logging.CRITICAL,
-    'ERROR' : logging.ERROR,
+    'CRITICAL': logging.CRITICAL,
+    'ERROR': logging.ERROR,
     'WARNING': logging.WARNING,
-    'INFO' : logging.INFO,
-    'DEBUG' : logging.DEBUG,
+    'INFO': logging.INFO,
+    'DEBUG': logging.DEBUG,
 }
 
 _settings.log_level = os.environ.get('NEW_RELIC_LOG_LEVEL', 'INFO').upper()
@@ -90,9 +90,9 @@ _settings.capture_params = False
 _settings.ignored_params = []
 
 _settings.capture_environ = True
-_settings.include_environ = [ 'REQUEST_METHOD', 'HTTP_USER_AGENT',
+_settings.include_environ = ['REQUEST_METHOD', 'HTTP_USER_AGENT',
                               'HTTP_REFERER', 'CONTENT_TYPE',
-                              'CONTENT_LENGTH' ]
+                              'CONTENT_LENGTH']
 
 _settings.sampling_rate = 0
 

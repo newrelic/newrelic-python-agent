@@ -24,7 +24,7 @@ import newrelic.api.application
 
 import newrelic.console
 
-__all__ = [ 'initialize', 'filter_app_factory' ]
+__all__ = ['initialize', 'filter_app_factory']
 
 _logger = logging.getLogger(__name__)
 
@@ -171,7 +171,7 @@ def _process_setting(section, option, getter, mapper):
         # object. Walk the object path and assign it.
 
         target = _settings
-        fields = string.splitfields(option, '.', 1) 
+        fields = string.splitfields(option, '.', 1)
 
         while True:
             if len(fields) == 1:
@@ -319,7 +319,7 @@ def _load_configuration(config_file=None, environment=None,
 
     if _configuration_done:
         if _config_file != config_file or _environment != environment:
-          raise newrelic.api.exceptions.ConfigurationError(
+            raise newrelic.api.exceptions.ConfigurationError(
                     'Configuration has already been done against '
                     'differing configuration file or environment. '
                     'Prior configuration file used was "%s" and '
@@ -375,7 +375,7 @@ def _load_configuration(config_file=None, environment=None,
     _process_setting('newrelic', 'log_level', 'get', _map_log_level)
 
     if environment:
-        _process_setting('newrelic:%s' % environment ,
+        _process_setting('newrelic:%s' % environment,
                          'log_level', 'get', _map_log_level)
 
     if log_level is not None:
@@ -642,8 +642,8 @@ def _process_background_task_configuration():
                 group = _config_object.get(section, 'group')
 
             if name and name.startswith('lambda '):
-                vars = { "callable_name":
-                         newrelic.api.object_wrapper.callable_name }
+                vars = {"callable_name":
+                         newrelic.api.object_wrapper.callable_name}
                 name = eval(name, vars)
 
             _logger.debug("register background-task %s" %
@@ -694,8 +694,8 @@ def _process_database_trace_configuration():
             sql = _config_object.get(section, 'sql')
 
             if sql.startswith('lambda '):
-                vars = { "callable_name":
-                         newrelic.api.object_wrapper.callable_name }
+                vars = {"callable_name":
+                         newrelic.api.object_wrapper.callable_name}
                 sql = eval(sql, vars)
 
             _logger.debug("register database-trace %s" %
@@ -747,13 +747,13 @@ def _process_external_trace_configuration():
             method = _config_object.get(section, 'method', None)
 
             if url.startswith('lambda '):
-                vars = { "callable_name":
-                          newrelic.api.object_wrapper.callable_name }
+                vars = {"callable_name":
+                          newrelic.api.object_wrapper.callable_name}
                 url = eval(url, vars)
 
             if method.startswith('lambda '):
-                vars = { "callable_name":
-                          newrelic.api.object_wrapper.callable_name }
+                vars = {"callable_name":
+                          newrelic.api.object_wrapper.callable_name}
                 method = eval(method, vars)
 
             _logger.debug("register external-trace %s" %
@@ -807,7 +807,7 @@ def _process_function_trace_configuration():
 
             if function in ['django.template:NodeList.render_node',
                     'django.template.debug:DebugNodeList.render_node']:
-                  continue
+                continue
 
             name = None
             group = 'Function'
@@ -818,8 +818,8 @@ def _process_function_trace_configuration():
                 group = _config_object.get(section, 'group')
 
             if name and name.startswith('lambda '):
-                vars = { "callable_name":
-                         newrelic.api.object_wrapper.callable_name }
+                vars = {"callable_name":
+                         newrelic.api.object_wrapper.callable_name}
                 name = eval(name, vars)
 
             _logger.debug("register function-trace %s" %
@@ -869,8 +869,8 @@ def _process_memcache_trace_configuration():
             command = _config_object.get(section, 'command')
 
             if command.startswith('lambda '):
-                vars = { "callable_name":
-                         newrelic.api.object_wrapper.callable_name }
+                vars = {"callable_name":
+                         newrelic.api.object_wrapper.callable_name}
                 command = eval(command, vars)
 
             _logger.debug("register memcache-trace %s" %
@@ -926,8 +926,8 @@ def _process_name_transaction_configuration():
                 group = _config_object.get(section, 'group')
 
             if name and name.startswith('lambda '):
-                vars = { "callable_name":
-                         newrelic.api.object_wrapper.callable_name }
+                vars = {"callable_name":
+                         newrelic.api.object_wrapper.callable_name}
                 name = eval(name, vars)
 
             _logger.debug("register name-transaction %s" %
@@ -1358,7 +1358,7 @@ def initialize(config_file=None, environment=None, ignore_errors=True,
     _load_configuration(config_file, environment, ignore_errors,
             log_file, log_level)
 
-    if _settings.monitor_mode: 
+    if _settings.monitor_mode:
         _setup_instrumentation()
         _setup_agent_console()
 

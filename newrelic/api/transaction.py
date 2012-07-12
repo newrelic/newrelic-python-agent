@@ -787,7 +787,7 @@ def current_transaction():
     return current
 
 def transaction():
-   warnings.warn('Internal API change. Use current_transaction() '
-           'instead of transaction().', DeprecationWarning, stacklevel=2)
+    warnings.warn('Internal API change. Use current_transaction() '
+            'instead of transaction().', DeprecationWarning, stacklevel=2)
 
-   return current_transaction()
+    return current_transaction()

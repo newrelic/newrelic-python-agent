@@ -59,7 +59,7 @@ def _obfuscate(name, key):
         return ''
     s = []
     for i in range(len(name)):
-        s.append(chr(ord(name[i]) ^ ord(key[i%13])))
+        s.append(chr(ord(name[i]) ^ ord(key[i % 13])))
     return base64.b64encode(''.join(s))
 
 def _lookup_environ_setting(environ, name, default=False):
@@ -199,7 +199,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         if value and isinstance(value, basestring):
             if value.startswith('t='):
                 try:
-                    self.queue_start = int(value[2:])/1000000.0
+                    self.queue_start = int(value[2:]) / 1000000.0
                 except:
                     pass
 
@@ -208,7 +208,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
             if value and isinstance(value, basestring):
                 try:
-                    self.queue_start = int(value)/1000000.0
+                    self.queue_start = int(value) / 1000000.0
                 except:
                     pass
 

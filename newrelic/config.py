@@ -275,6 +275,12 @@ def _process_configuration(section):
                      'getint', None)
     _process_setting(section, 'agent_limits.merge_stats_maximum',
                      'getint', None)
+    _process_setting(section, 'agent_limits.saved_transactions',
+                     'getint', None)
+    _process_setting(section, 'agent_limits.errors_per_transaction',
+                     'getint', None)
+    _process_setting(section, 'agent_limits.errors_per_harvest',
+                     'getint', None)
     _process_setting(section, 'console.listener_socket',
                      'get', _map_console_listener_socket)
     _process_setting(section, 'console.allow_interpreter_cmd',

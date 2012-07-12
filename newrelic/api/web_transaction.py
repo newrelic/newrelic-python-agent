@@ -301,11 +301,11 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         threshold = self._settings.transaction_tracer.transaction_threshold
         rum_guid = rum_guid if request_duration >= threshold else ''
 
-        user = _obfuscate(self._user_params.get('user'),
+        user = _obfuscate(self._user_attrs.get('user'),
                 self._settings.license_key)
-        account = _obfuscate(self._user_params.get('account'),
+        account = _obfuscate(self._user_attrs.get('account'),
                 self._settings.license_key)
-        product = _obfuscate(self._user_params.get('product'),
+        product = _obfuscate(self._user_attrs.get('product'),
                 self._settings.license_key)
 
         # Settings will have values as Unicode strings and the

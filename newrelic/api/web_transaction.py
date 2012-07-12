@@ -37,8 +37,9 @@ _rum2_footer_short_fragment = '<script type="text/javascript">' \
 _rum_footer_long_fragment = '<script type="text/javascript">' \
         'if(!NREUMQ.f){NREUMQ.f=function(){NREUMQ.push(["load",' \
         'new Date().getTime()]);var e=document.createElement("script");' \
-        'e.type="text/javascript";e.async=true;e.src="%s";' \
-        'document.body.appendChild(e);if(NREUMQ.a)NREUMQ.a();};' \
+        'e.type="text/javascript";' \
+        'e.src=(("http:"===document.location.protocol)?"http:":"https:")' \
+        '+"//"+"%s";document.body.appendChild(e);if(NREUMQ.a)NREUMQ.a();};' \
         'NREUMQ.a=window.onload;window.onload=NREUMQ.f;};' \
         'NREUMQ.push(["nrf2","%s","%s",%d,"%s",%d,%d,' \
         'new Date().getTime()])</script>'
@@ -46,8 +47,9 @@ _rum_footer_long_fragment = '<script type="text/javascript">' \
 _rum2_footer_long_fragment = '<script type="text/javascript">' \
         'if(!NREUMQ.f){NREUMQ.f=function(){NREUMQ.push(["load",' \
         'new Date().getTime()]);var e=document.createElement("script");' \
-        'e.type="text/javascript";e.async=true;e.src="%s";' \
-        'document.body.appendChild(e);if(NREUMQ.a)NREUMQ.a();};' \
+        'e.type="text/javascript";' \
+        'e.src=(("http:"===document.location.protocol)?"http:":"https:")' \
+        '+"//"+"%s";document.body.appendChild(e);if(NREUMQ.a)NREUMQ.a();};' \
         'NREUMQ.a=window.onload;window.onload=NREUMQ.f;};' \
         'NREUMQ.push(["nrfj","%s","%s",%d,"%s",%d,%d,' \
         'new Date().getTime(),"%s","%s","%s","%s","%s"])</script>'
@@ -330,7 +332,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         else:
             if self._settings.rum.jsonp:
                 return str(_rum2_footer_long_fragment % (
-                    self._settings.episodes_url,
+                    self._settings.episodes_file,
                     self._settings.beacon,
                     self._settings.browser_key,
                     self._settings.application_id,
@@ -338,7 +340,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
                     rum_token, user, account, product))
             else:
                 return str(_rum_footer_long_fragment % (
-                    self._settings.episodes_url,
+                    self._settings.episodes_file,
                     self._settings.beacon,
                     self._settings.browser_key,
                     self._settings.application_id,

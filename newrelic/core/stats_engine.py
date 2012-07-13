@@ -63,7 +63,7 @@ class TimeStats(list):
     # to JSON as we need it.
 
     def __init__(self):
-        super(TimeStats, self).__init__([0, 0, 0, 0, 0, 0])
+        super(TimeStats, self).__init__([0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
     call_count = property(operator.itemgetter(0))
     total_call_time = property(operator.itemgetter(1))

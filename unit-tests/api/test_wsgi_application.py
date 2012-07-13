@@ -1,16 +1,30 @@
+import logging
 import unittest
 
 import newrelic.api.settings
-import newrelic.api.log_file
 import newrelic.api.application
 import newrelic.api.transaction
 import newrelic.api.web_transaction
 
+_logger = logging.getLogger('newrelic')
+
 settings = newrelic.api.settings.settings()
-settings.app_name = "UnitTests"
-settings.log_file = "%s.log" % __file__
-settings.log_level = newrelic.api.log_file.LOG_VERBOSEDEBUG
+
+settings.host = 'staging-collector.newrelic.com'
+settings.license_key = '84325f47e9dec80613e262be4236088a9983d501'
+
+settings.app_name = 'Python Unit Tests'
+
+settings.log_file = '%s.log' % __file__
+settings.log_level = logging.DEBUG
+
 settings.transaction_tracer.transaction_threshold = 0
+settings.transaction_tracer.stack_trace_threshold = 0
+
+settings.shutdown_timeout = 10.0
+
+settings.debug.log_data_collector_calls = True
+settings.debug.log_data_collector_payloads = True
 
 _application = newrelic.api.application.application_instance("UnitTests")
 
@@ -55,12 +69,10 @@ class _wsgiapp_class_decorator:
 class WSGIApplicationTests(unittest.TestCase):
 
     def setUp(self):
-        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                "STARTING - %s" % self._testMethodName)
+        _logger.debug('STARTING - %s' % self._testMethodName)
 
     def tearDown(self):
-        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                "STOPPING - %s" % self._testMethodName)
+        _logger.debug('STOPPING - %s' % self._testMethodName)
 
     def test_wsgiapp_function(self):
         environ = { "REQUEST_URI": "/wsgiapp_function" }

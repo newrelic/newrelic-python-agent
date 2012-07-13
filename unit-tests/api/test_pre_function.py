@@ -1,3 +1,4 @@
+import logging
 import unittest
 import time
 import sys
@@ -5,13 +6,27 @@ import sqlite3
 import os
 
 import newrelic.api.settings
-import newrelic.api.log_file
 import newrelic.api.pre_function
 
+_logger = logging.getLogger('newrelic')
+
 settings = newrelic.api.settings.settings()
-settings.log_file = "%s.log" % __file__
-settings.log_level = newrelic.api.log_file.LOG_VERBOSEDEBUG
+
+settings.host = 'staging-collector.newrelic.com'
+settings.license_key = '84325f47e9dec80613e262be4236088a9983d501'
+
+settings.app_name = 'Python Unit Tests'
+
+settings.log_file = '%s.log' % __file__
+settings.log_level = logging.DEBUG
+
 settings.transaction_tracer.transaction_threshold = 0
+settings.transaction_tracer.stack_trace_threshold = 0
+
+settings.shutdown_timeout = 10.0
+
+settings.debug.log_data_collector_calls = True
+settings.debug.log_data_collector_payloads = True
 
 _test_result = None
 _test_count = 0
@@ -59,12 +74,10 @@ _test_function_3 = newrelic.api.pre_function.pre_function(_pre_function)(
 class PreFunctionTests(unittest.TestCase):
 
     def setUp(self):
-        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                "STARTING - %s" % self._testMethodName)
+        _logger.debug('STARTING - %s' % self._testMethodName)
 
     def tearDown(self):
-        newrelic.api.log_file.log(newrelic.api.log_file.LOG_DEBUG,
-                "STOPPING - %s" % self._testMethodName)
+        _logger.debug('STOPPING - %s' % self._testMethodName)
 
     def test_wrap_function(self):
         o1 = _test_function_1
@@ -86,14 +99,14 @@ class PreFunctionTests(unittest.TestCase):
 
         result = _test_function_1(*args, **kwargs)
 
-        self.assertEqual(result, (args, kwargs)) 
+        self.assertEqual(result, (args, kwargs))
         self.assertEqual(_test_result, (args, kwargs))
         self.assertEqual(_test_phase, "_test_function_1")
 
         result = _test_function_1(*args, **kwargs)
         result = _test_function_1(*args, **kwargs)
 
-        self.assertEqual(_test_count, 3) 
+        self.assertEqual(_test_count, 3)
 
     def test_wrap_old_style_class_method(self):
         o1 = _test_class_1._test_function
@@ -113,7 +126,7 @@ class PreFunctionTests(unittest.TestCase):
         c = _test_class_1()
         result = c._test_function(*args, **kwargs)
 
-        self.assertEqual(result, (args, kwargs)) 
+        self.assertEqual(result, (args, kwargs))
         self.assertEqual(_test_result, ((c,)+args, kwargs))
 
     def test_wrap_new_style_class_method(self):
@@ -134,7 +147,7 @@ class PreFunctionTests(unittest.TestCase):
         c = _test_class_2()
         result = c._test_function(*args, **kwargs)
 
-        self.assertEqual(result, (args, kwargs)) 
+        self.assertEqual(result, (args, kwargs))
         self.assertEqual(_test_result, ((c,)+args, kwargs))
 
     def xxx_test_wrap_capi_class_method(self):
@@ -176,13 +189,13 @@ class PreFunctionTests(unittest.TestCase):
 
         result = _test_function_3(*args, **kwargs)
 
-        self.assertEqual(result, (args, kwargs)) 
+        self.assertEqual(result, (args, kwargs))
         self.assertEqual(_test_result, (args, kwargs))
 
         result = _test_function_3(*args, **kwargs)
         result = _test_function_3(*args, **kwargs)
 
-        self.assertEqual(_test_count, 3) 
+        self.assertEqual(_test_count, 3)
 
 if __name__ == '__main__':
     unittest.main()

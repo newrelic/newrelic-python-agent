@@ -143,7 +143,7 @@ class WebTransactionTests(unittest.TestCase):
 
     def test_environ_background_web_transaction_bool(self):
         environ = { "REQUEST_URI": "DUMMY",
-                    "newrelic.background_task": True }
+                    "newrelic.set_background_task": True }
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
@@ -153,7 +153,7 @@ class WebTransactionTests(unittest.TestCase):
 
     def test_environ_background_web_transaction_string(self):
         environ = { "REQUEST_URI": "DUMMY",
-                    "newrelic.background_task": "On" }
+                    "newrelic.set_background_task": "On" }
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
@@ -182,15 +182,15 @@ class WebTransactionTests(unittest.TestCase):
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
-            transaction.custom_parameters["1"] = "1" 
-            transaction.custom_parameters["2"] = "2" 
-            transaction.custom_parameters["3"] = 3
-            transaction.custom_parameters["4"] = 4.0
-            transaction.custom_parameters["5"] = ("5", 5)
-            transaction.custom_parameters["6"] = ["6", 6]
-            transaction.custom_parameters["7"] = {"7": 7}
-            transaction.custom_parameters[8] = "8"
-            transaction.custom_parameters[9.0] = "9.0"
+            transaction._custom_params["1"] = "1"
+            transaction._custom_params["2"] = "2"
+            transaction._custom_params["3"] = 3
+            transaction._custom_params["4"] = 4.0
+            transaction._custom_params["5"] = ("5", 5)
+            transaction._custom_params["6"] = ["6", 6]
+            transaction._custom_params["7"] = {"7": 7}
+            transaction._custom_params[8] = "8"
+            transaction._custom_params[9.0] = "9.0"
 
     def test_explicit_runtime_error(self):
         environ = { "REQUEST_URI": "/explicit_runtime_error" }
@@ -199,7 +199,7 @@ class WebTransactionTests(unittest.TestCase):
         with transaction:
             for i in range(10):
                 try:
-                    transaction.custom_parameters["1"] = "1" 
+                    transaction._custom_params["1"] = "1"
                     raise RuntimeError("runtime_error %d" % i)
                 except RuntimeError:
                     transaction.record_exception(*sys.exc_info())
@@ -271,30 +271,30 @@ class WebTransactionTests(unittest.TestCase):
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
-            self.assertFalse(transaction.ignore)
-            transaction.ignore = True
-            self.assertTrue(transaction.ignore)
-            transaction.ignore = False
-            self.assertFalse(transaction.ignore)
-            transaction.ignore = True
-            self.assertTrue(transaction.ignore)
+            self.assertFalse(transaction.ignore_transaction)
+            transaction.ignore_transaction = True
+            self.assertTrue(transaction.ignore_transaction)
+            transaction.ignore_transaction = False
+            self.assertFalse(transaction.ignore_transaction)
+            transaction.ignore_transaction = True
+            self.assertTrue(transaction.ignore_transaction)
             self.assertTrue(transaction.enabled)
 
     def test_environ_ignore_web_transaction_bool(self):
         environ = { "REQUEST_URI": "/environ_ignore_web_transaction_bool",
-                    "newrelic.ignore": True }
+                    "newrelic.ignore_transaction": True }
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
-            self.assertTrue(transaction.ignore)
+            self.assertTrue(transaction.ignore_transaction)
 
     def test_environ_ignore_web_transaction_string(self):
         environ = { "REQUEST_URI": "/environ_ignore_web_transaction_string",
-                    "newrelic.ignore": "On" }
+                    "newrelic.ignore_transaction": "On" }
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
-            self.assertTrue(transaction.ignore)
+            self.assertTrue(transaction.ignore_transaction)
 
     def test_queue_start(self):
         now = time.time()

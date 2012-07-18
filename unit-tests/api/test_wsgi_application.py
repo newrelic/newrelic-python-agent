@@ -27,6 +27,7 @@ settings.debug.log_data_collector_calls = True
 settings.debug.log_data_collector_payloads = True
 
 _application = newrelic.api.application.application_instance("UnitTests")
+_application.activate(timeout=10.0)
 
 def _wsgiapp_function(self, *args):
     transaction = newrelic.api.transaction.current_transaction()

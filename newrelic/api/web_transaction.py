@@ -182,6 +182,11 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         # proxied between any processes within the
         # application server.
         #
+        # Note that Heroku they set their own header
+        # called HTTP_X_HEROKU_QUEUE_WAIT_TIME but it is
+        # defined in milliseconds rather that
+        # microseconds.
+        #
         # Note that mod_wsgi 4.0 sets its own distinct
         # variable called mod_wsgi.queue_start so that
         # not necessary to enable and use mod_headers to
@@ -200,6 +205,16 @@ class WebTransaction(newrelic.api.transaction.Transaction):
             if value.startswith('t='):
                 try:
                     self.queue_start = int(value[2:]) / 1000000.0
+                except:
+                    pass
+
+        if self.queue_start == 0.0:
+            value = environ.get('HTTP_X_HEROKU_QUEUE_WAIT_TIME', None)
+
+            if value and isinstance(value, basestring):
+                try:
+                    self.queue_start = time.time()
+                    self.queue_start -= int(value) / 1000.0
                 except:
                     pass
 

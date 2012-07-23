@@ -393,7 +393,8 @@ class StatsEngine(object):
                 stats = SlowSqlStats()
                 self.__sql_stats_table[key] = stats
 
-        stats.merge_slow_sql_node(node)
+        else:
+            stats.merge_slow_sql_node(node)
 
         return key
 

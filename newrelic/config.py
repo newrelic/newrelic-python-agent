@@ -1263,10 +1263,13 @@ def _process_module_builtin_defaults():
     _process_module_definition('celery.worker',
             'newrelic.hooks.application_celery',
             'instrument_celery_worker')
-    _process_module_definition('celery.concurrency.processes',
+    _process_module_definition('celery.loaders.base',
             'newrelic.hooks.application_celery',
-            'instrument_celery_worker')
+            'instrument_celery_loaders_base')
     _process_module_definition('celery.execute.trace',
+            'newrelic.hooks.application_celery',
+            'instrument_celery_execute_trace')
+    _process_module_definition('celery.task.trace',
             'newrelic.hooks.application_celery',
             'instrument_celery_execute_trace')
 

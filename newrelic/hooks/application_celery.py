@@ -9,6 +9,7 @@ about this below.
 
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTaskWrapper
+from newrelic.api.pre_function import wrap_pre_function
 
 def instrument_celery_app_task(module):
 
@@ -26,8 +27,8 @@ def instrument_celery_app_task(module):
 	# 'BaseTask' to ensure that we do not instrument the class via
 	# the alias in Celery 2.3 and later.
 
-	# In Celery 2.5, although 'BaseTask' still exists execution of
-	# the task doesn't pass through it. For Celery 2.5 need to wrap
+	# In Celery 2.5+, although 'BaseTask' still exists execution of
+	# the task doesn't pass through it. For Celery 2.5+ need to wrap
 	# the tracer instead.
 
         def task_name(task, *args, **kwargs):
@@ -46,8 +47,11 @@ def instrument_celery_execute_trace(module):
 
 	# Need to add a wrapper for background task entry point.
 
-	# In Celery 2.5 we need to wrap the task when tracer is being
-	# created.
+        # In Celery 2.5+ we need to wrap the task when tracer is being
+        # created. Note that in Celery 2.5 the 'build_tracer' function
+        # actually resided in the module 'celery.execute.task'. In
+        # Celery 3.0 the 'build_tracer' function moved to
+        # 'celery.task.trace'.
 
         _build_tracer = module.build_tracer
 
@@ -68,7 +72,7 @@ def instrument_celery_worker(module):
         # fork of worker process rather than lazily on first request.
 
 	# Originally the 'process_initializer' function was located in
-	# 'celery.worker'. In Celery 2.5 the function 'process_intializer'
+	# 'celery.worker'. In Celery 2.5 the function 'process_initializer'
 	# was moved to the module 'celery.concurrency.processes'.
 
         _process_initializer = module.process_initializer
@@ -78,3 +82,11 @@ def instrument_celery_worker(module):
             return _process_initializer(*args, **kwargs)
 
         module.process_initializer = process_initializer
+
+def instrument_celery_loaders_base(module):
+
+    def force_application_activation(*args, **kwargs):
+        application_instance().activate()
+
+    wrap_pre_function(module, 'BaseLoader.init_worker',
+            force_application_activation)

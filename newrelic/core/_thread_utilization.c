@@ -9,11 +9,138 @@
 /* ------------------------------------------------------------------------- */
 
 typedef struct {
+    int currently_active;
+    double utilization_current;
+    double utilization_previous;
+    long long time_last_updated;
+    long long time_last_fetched;
+} UtilizationCount;
+
+static void reset_utilization_count(UtilizationCount *self)
+{
+    struct timeval t;
+
+    self->currently_active = 0;
+
+    self->utilization_current = 0.0;
+    self->utilization_previous = 0.0;
+
+    gettimeofday(&t, NULL);
+
+    self->time_last_updated = t.tv_sec * 1000000;
+    self->time_last_updated += t.tv_usec;
+
+    self->time_last_fetched = self->time_last_updated;
+}
+
+static double adjust_utilization_count(UtilizationCount *self, int adjustment)
+{
+    long long current_time;
+    double utilization = self->utilization_current;
+
+    struct timeval t;
+
+    gettimeofday(&t, NULL);
+
+    current_time = t.tv_sec * 1000000;
+    current_time += t.tv_usec;
+
+    utilization = (current_time - self->time_last_updated) / 1000000.0;
+
+    if (utilization < 0)
+        utilization = 0;
+
+    utilization = self->currently_active * utilization;
+    self->utilization_current += utilization;
+    utilization = self->utilization_current;
+
+    self->time_last_updated = current_time;
+    self->currently_active += adjustment;
+
+    if (adjustment == 0) {
+        self->time_last_fetched = self->time_last_updated;
+        self->utilization_previous = utilization;
+    }
+
+    return utilization;
+}
+
+static double fetch_utilization_count(UtilizationCount *self)
+{
+    long long time_last_fetched;
+    long long time_last_updated;
+
+    double utilization_current;
+    double utilization_previous;
+
+    double utilization_period;
+
+    double elapsed_time;
+
+    time_last_fetched = self->time_last_fetched;
+    utilization_previous = self->utilization_previous;
+
+    utilization_current = adjust_utilization_count(self, 0);
+
+    utilization_period = utilization_current - utilization_previous;
+
+    time_last_updated = self->time_last_updated;
+
+    elapsed_time = self->time_last_updated - time_last_fetched;
+    elapsed_time /= 1000000.0;
+
+    if (elapsed_time <= 0)
+        return 0.0;
+
+    return utilization_period / elapsed_time;
+}
+
+#if 0
+typedef struct {
+    int sample_count;
+    double total_value;
+    double minimum_value;
+    double maximum_value;
+    double sum_of_squares;
+} AggregateSample;
+
+static void reset_aggregate_sample(AggregateSample *self)
+{
+    self->sample_count = 0;
+    self->total_value = 0.0;
+    self->minimum_value = 0.0;
+    self->maximum_value = 0.0;
+    self->sum_of_squares = 0.0;
+}
+
+static void add_to_aggregate_sample(AggregateSample *self, double value)
+{
+    self->total_value += value;
+
+    if (!self->sample_count)
+        self->minimum_value = value;
+    else if (value < self->minimum_value)
+        self->minimum_value = value;
+
+    if (value > self->maximum_value)
+        self->maximum_value = value;
+
+    self->sum_of_squares += (value * value);
+
+    self->sample_count += 1;
+}
+#endif
+
+typedef struct {
     PyObject_HEAD
-    int active_requests;
-    double utilization_count;
-    long long utilization_last;
-    int maximum_concurrency;
+
+    PyObject *set_of_all_threads;
+
+    UtilizationCount thread_capacity;
+
+    int requests_current;
+    double requests_utilization_count;
+    long long requests_utilization_last;
 } NRUtilizationObject;
 
 extern PyTypeObject NRUtilization_Type;
@@ -28,23 +155,28 @@ static PyObject *NRUtilization_new(PyTypeObject *type,
     if (!self)
         return NULL;
 
-    self->active_requests = 0;
-    self->utilization_count = 0.0;
-    self->utilization_last = 0;
-    self->maximum_concurrency = 0;
+    self->set_of_all_threads = PyDict_New();
+
+    reset_utilization_count(&self->thread_capacity);
+
+    self->requests_current = 0;
+    self->requests_utilization_count = 0.0;
+    self->requests_utilization_last = 0;
 
     return (PyObject *)self;
 }
 
 static void NRUtilization_dealloc(NRUtilizationObject *self)
 {
+    Py_DECREF(self->set_of_all_threads);
+
     PyObject_Del(self);
 }
 
 static double NRUtilization_adjust(NRUtilizationObject *self, int adjustment)
 {
     long long now;
-    double utilization = self->utilization_count;
+    double utilization = self->requests_utilization_count;
 
     struct timeval t;
 
@@ -52,28 +184,74 @@ static double NRUtilization_adjust(NRUtilizationObject *self, int adjustment)
 
     now = ((long long)t.tv_sec) * 1000000 + ((long long)t.tv_usec);
 
-    if (self->utilization_last != 0.0) {
-        utilization = (now - self->utilization_last) / 1000000.0;
+    if (self->requests_utilization_last != 0.0) {
+        utilization = (now - self->requests_utilization_last) / 1000000.0;
 
         if (utilization < 0)
             utilization = 0;
 
-        utilization = self->active_requests * utilization;
-        self->utilization_count += utilization;
-        utilization = self->utilization_count;
+        utilization = self->requests_current * utilization;
+        self->requests_utilization_count += utilization;
+        utilization = self->requests_utilization_count;
     }
 
-    self->utilization_last = now;
-    self->active_requests += adjustment;
-
-    if (adjustment > 0 && self->active_requests > self->maximum_concurrency)
-        self->maximum_concurrency = self->active_requests;
+    self->requests_utilization_last = now;
+    self->requests_current += adjustment;
 
     return utilization;
 }
 
 static PyObject *NRUtilization_enter(NRUtilizationObject *self, PyObject *args)
 {
+    PyObject *module = NULL;
+    PyObject *thread = NULL;
+
+    module = PyImport_ImportModule("threading");
+
+    if (!module)
+        PyErr_Clear();
+
+    if (module) {
+        PyObject *dict = NULL;
+        PyObject *func = NULL;
+
+        dict = PyModule_GetDict(module);
+#if PY_MAJOR_VERSION >= 3
+        func = PyDict_GetItemString(dict, "current_thread");
+#else
+        func = PyDict_GetItemString(dict, "currentThread");
+#endif
+        if (func) {
+            Py_INCREF(func);
+            thread = PyEval_CallObject(func, (PyObject *)NULL);
+            if (!thread)
+                PyErr_Clear();
+
+            Py_DECREF(func);
+        }
+    }
+
+    Py_XDECREF(module);
+
+    if (thread) {
+        PyObject *ref = NULL;
+        PyObject *callback = NULL;
+
+        callback = PyObject_GetAttrString((PyObject *)self,
+                "delete_from_all");
+        ref = PyWeakref_NewRef(thread, callback);
+
+        if (!PyDict_Contains(self->set_of_all_threads, ref)) {
+            PyDict_SetItem(self->set_of_all_threads, ref, Py_None);
+            adjust_utilization_count(&self->thread_capacity, 1);
+        }
+
+        Py_DECREF(ref);
+        Py_DECREF(callback);
+    }
+
+    Py_XDECREF(thread);
+
     return PyFloat_FromDouble(NRUtilization_adjust(self, 1));
 }
 
@@ -82,28 +260,45 @@ static PyObject *NRUtilization_exit(NRUtilizationObject *self, PyObject *args)
     return PyFloat_FromDouble(NRUtilization_adjust(self, -1));
 }
 
+PyObject *NRUtilization_total(NRUtilizationObject *self, PyObject *args)
+{
+    PyObject *reset = Py_True;
+
+    double utilization;
+
+    if (!PyArg_ParseTuple(args, "|O!:total_threads",
+                &PyBool_Type, &reset)) {
+        return NULL;
+    }
+
+    utilization = fetch_utilization_count(&self->thread_capacity);
+
+    return PyFloat_FromDouble(utilization);
+}
+
 PyObject *NRUtilization_utilization(NRUtilizationObject *self, PyObject *args)
 {
     return PyFloat_FromDouble(NRUtilization_adjust(self, 0));
 }
 
-PyObject *NRUtilization_concurrency(NRUtilizationObject *self, PyObject *args)
+PyObject *NRUtilization_delete_all(NRUtilizationObject *self,
+        PyObject *args)
 {
-    PyObject *reset = Py_True;
+    PyObject *ref = NULL;
 
-    int maximum_concurrency;
-
-    if (!PyArg_ParseTuple(args, "|O!:maximum_concurrency",
-                &PyBool_Type, &reset)) {
+    if (!PyArg_ParseTuple(args, "O!:delete_from_all",
+                &_PyWeakref_RefType, &ref)) {
         return NULL;
     }
 
-    maximum_concurrency = self->maximum_concurrency;
+    if (PyDict_Contains(self->set_of_all_threads, ref)) {
+        PyDict_DelItem(self->set_of_all_threads, ref);
+        adjust_utilization_count(&self->thread_capacity, -1);
+    }
 
-    if (reset == Py_True)
-        self->maximum_concurrency = self->active_requests;
+    Py_INCREF(Py_None);
 
-    return PyInt_FromLong(maximum_concurrency);
+    return Py_None;
 }
 
 static PyMethodDef NRUtilization_methods[] = {
@@ -111,16 +306,18 @@ static PyMethodDef NRUtilization_methods[] = {
                             METH_NOARGS, 0 },
     { "exit_transaction",   (PyCFunction)NRUtilization_exit,
                             METH_NOARGS, 0 },
-    { "utilization_count", (PyCFunction)NRUtilization_utilization,
+    { "total_threads",      (PyCFunction)NRUtilization_total,
+                            METH_VARARGS, 0 },
+    { "utilization_count",  (PyCFunction)NRUtilization_utilization,
                             METH_NOARGS, 0 },
-    { "maximum_concurrency",(PyCFunction)NRUtilization_concurrency,
+    { "delete_from_all",    (PyCFunction)NRUtilization_delete_all,
                             METH_VARARGS, 0 },
     { NULL, NULL}
 };
 
 PyTypeObject NRUtilization_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    "newrelic.core._thread_utilization.ThreadUtilization", /*tp_name*/
+    "ThreadUtilization",    /*tp_name*/
     sizeof(NRUtilizationObject), /*tp_basicsize*/
     0,                      /*tp_itemsize*/
     /* methods */

@@ -47,12 +47,16 @@ class ThreadUtilizationSampler(object):
         self._last_timestamp = now
         self._utilization = new_utilization
 
-        concurrency = self._utilization_tracker.maximum_concurrency()
+        total_threads = self._utilization_tracker.total_threads()
 
+        yield ValueMetric(name='Supportability/WSGI/Thread/Available',
+                value=total_threads)
         yield ValueMetric(name='Supportability/WSGI/Thread/Utilization',
                 value=utilization)
-        yield ValueMetric(name='Supportability/WSGI/Thread/Concurrency',
-                value=concurrency)
+
+        busy = total_threads and utilization/total_threads or 0.0
+
+        yield ValueMetric(name='Instance/Busy', value=busy)
 
 class Application(object):
 

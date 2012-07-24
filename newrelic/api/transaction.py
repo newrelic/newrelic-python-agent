@@ -358,15 +358,14 @@ class Transaction(object):
             metrics['WSGI/Output/Calls/yield'] = self._calls_yield
 
         if self._thread_utilization_value:
-            metrics['WSGI/Thread/Utilization'] = \
+            metrics['Thread/Concurrency'] = \
                     '%.4f' % self._thread_utilization_value
 
         read_duration = 0
         if self._read_start:
             read_duration = self._read_end - self._read_start
             metrics['WSGI/Input/Time'] = '%.4f' % read_duration
-        self.record_metric('Supportability/WSGI/Input/Time',
-                           read_duration)
+        self.record_metric('Python/WSGI/Input/Time', read_duration)
 
         sent_duration = 0
         if self._sent_start:
@@ -374,7 +373,7 @@ class Transaction(object):
                 self._sent_end = time.time()
             sent_duration = self._sent_end - self._sent_start
             metrics['WSGI/Output/Time'] = '%.4f' % sent_duration
-        self.record_metric('Supportability/WSGI/Output/Time',
+        self.record_metric('Python/WSGI/Output/Time',
                            sent_duration)
 
         if self.queue_start:
@@ -383,21 +382,21 @@ class Transaction(object):
                 queue_wait = 0
             metrics['WebFrontend/QueueTime'] = '%.4f' % queue_wait
 
-        self.record_metric('Supportability/WSGI/Input/Bytes',
+        self.record_metric('Python/WSGI/Input/Bytes',
                            self._bytes_read)
 
-        self.record_metric('Supportability/WSGI/Input/Calls/read',
+        self.record_metric('Python/WSGI/Input/Calls/read',
                            self._calls_read)
-        self.record_metric('Supportability/WSGI/Input/Calls/readline',
+        self.record_metric('Python/WSGI/Input/Calls/readline',
                            self._calls_readline)
-        self.record_metric('Supportability/WSGI/Input/Calls/readlines',
+        self.record_metric('Python/WSGI/Input/Calls/readlines',
                            self._calls_readlines)
 
-        self.record_metric('Supportability/WSGI/Output/Bytes',
+        self.record_metric('Python/WSGI/Output/Bytes',
                            self._bytes_sent)
-        self.record_metric('Supportability/WSGI/Output/Calls/yield',
+        self.record_metric('Python/WSGI/Output/Calls/yield',
                            self._calls_yield)
-        self.record_metric('Supportability/WSGI/Output/Calls/write',
+        self.record_metric('Python/WSGI/Output/Calls/write',
                            self._calls_write)
 
         request_params = {}

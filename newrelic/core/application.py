@@ -36,6 +36,13 @@ class ThreadUtilizationSampler(object):
 
     def value_metrics(self):
         now = time.time()
+
+        # TODO This needs to be pushed down into _thread_utilization.c.
+        # In doing that, need to fix up UtilizationClass count so the
+        # reset is optional because in this case a read only variant is
+        # needed for getting a per request custom metric of the
+        # utilization doe period of the request.
+
         new_utilization = self._utilization_tracker.utilization_count()
 
         elapsed_time = now - self._last_timestamp
@@ -49,9 +56,9 @@ class ThreadUtilizationSampler(object):
 
         total_threads = self._utilization_tracker.total_threads()
 
-        yield ValueMetric(name='Supportability/WSGI/Thread/Available',
+        yield ValueMetric(name='Instance/Available',
                 value=total_threads)
-        yield ValueMetric(name='Supportability/WSGI/Thread/Utilization',
+        yield ValueMetric(name='Instance/Used',
                 value=utilization)
 
         busy = total_threads and utilization/total_threads or 0.0

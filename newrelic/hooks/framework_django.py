@@ -710,7 +710,7 @@ def instrument_django_core_servers_basehttp(module):
                 wrap_wsgi_application_entry_point)
 
 def instrument_django_contrib_staticfiles_views(module):
-    if not hasattr(wrapped, '_nr_django_view_handler'):
+    if not hasattr(module.serve, '_nr_django_view_handler'):
         module.serve = wrap_view_handler(module.serve, priority=3)
 
 def instrument_django_contrib_staticfiles_handlers(module):

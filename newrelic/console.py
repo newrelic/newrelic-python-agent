@@ -44,7 +44,9 @@ def shell_command(wrapped):
     if wrapper.__name__.startswith('do_'):
         prototype = wrapper.__name__[3:] + ' ' + inspect.formatargspec(
                 args[1:], varargs, keywords, defaults)
-        wrapper.__doc__ = '\n'.join((prototype, wrapper.__doc__.lstrip('\n')))
+        if hasattr(wrapper, '__doc__') and wrapper.__doc__ is not None:
+            wrapper.__doc__ = '\n'.join((prototype,
+                    wrapper.__doc__.lstrip('\n')))
 
     return wrapper
 

@@ -1,5 +1,6 @@
 *.swp
 *.pyc
+*.pyo
 
 /config.log
 /config.status

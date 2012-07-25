@@ -2,6 +2,8 @@
 
 #include <Python.h>
 
+#include <pythread.h>
+
 #ifndef PyVarObject_HEAD_INIT
 #define PyVarObject_HEAD_INIT(type, size) PyObject_HEAD_INIT(type) size,
 #endif
@@ -134,6 +136,8 @@ static void add_to_aggregate_sample(AggregateSample *self, double value)
 typedef struct {
     PyObject_HEAD
 
+    PyThread_type_lock thread_mutex;
+
     PyObject *set_of_all_threads;
 
     UtilizationCount thread_capacity;
@@ -155,6 +159,16 @@ static PyObject *NRUtilization_new(PyTypeObject *type,
     if (!self)
         return NULL;
 
+    /*
+     * XXX Using a mutex for now just in case the calls to get
+     * the current thread are causing release of GIL in a
+     * multithreaded context. May explain why having issues with
+     * object referred to by weakrefs being corrupted. The GIL
+     * should technically be enough to protect us here.
+     */
+
+    self->thread_mutex = PyThread_allocate_lock();
+
     self->set_of_all_threads = PyDict_New();
 
     reset_utilization_count(&self->thread_capacity);
@@ -169,6 +183,8 @@ static PyObject *NRUtilization_new(PyTypeObject *type,
 static void NRUtilization_dealloc(NRUtilizationObject *self)
 {
     Py_DECREF(self->set_of_all_threads);
+
+    PyThread_free_lock(self->thread_mutex);
 
     PyObject_Del(self);
 }
@@ -205,6 +221,8 @@ static PyObject *NRUtilization_enter(NRUtilizationObject *self, PyObject *args)
 {
     PyObject *module = NULL;
     PyObject *thread = NULL;
+
+    PyThread_acquire_lock(self->thread_mutex, 1);
 
     module = PyImport_ImportModule("threading");
 
@@ -252,6 +270,8 @@ static PyObject *NRUtilization_enter(NRUtilizationObject *self, PyObject *args)
 
     Py_XDECREF(thread);
 
+    PyThread_release_lock(self->thread_mutex);
+
     return PyFloat_FromDouble(NRUtilization_adjust(self, 1));
 }
 
@@ -291,10 +311,14 @@ PyObject *NRUtilization_delete_all(NRUtilizationObject *self,
         return NULL;
     }
 
+    PyThread_acquire_lock(self->thread_mutex, 1);
+
     if (PyDict_Contains(self->set_of_all_threads, ref)) {
         PyDict_DelItem(self->set_of_all_threads, ref);
         adjust_utilization_count(&self->thread_capacity, -1);
     }
+
+    PyThread_release_lock(self->thread_mutex);
 
     Py_INCREF(Py_None);
 

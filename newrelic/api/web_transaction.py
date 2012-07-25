@@ -7,7 +7,6 @@ import cgi
 import base64
 import time
 import string
-import Cookie
 import random
 import re
 
@@ -72,9 +71,14 @@ def _lookup_environ_setting(environ, name, default=False):
             flag = flag.lower() in ['on', 'true', '1']
     return flag
 
-def _extract_token(token):
-    token = re.search(r"^tk=([^\"<'>]+)$", token)
-    return token and token.group(1)
+def _extract_token(cookie):
+    try:
+        t = re.search(r"\bNRAGENT=(tk=.{16})", cookie)
+        token = re.search(r"^tk=([^\"<'>]+)$", t.group(1)) if t else None
+        return token and token.group(1)
+    except:
+        pass
+
 
 class WebTransaction(newrelic.api.transaction.Transaction):
 
@@ -136,8 +140,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         http_cookie = environ.get('HTTP_COOKIE', None)
 
         if http_cookie and ("NRAGENT" in http_cookie):
-            c = Cookie.SimpleCookie(http_cookie)
-            self.rum_token = _extract_token(c['NRAGENT'].value)
+            self.rum_token = _extract_token(http_cookie)
             self.rum_guid = self.rum_token and str(random.getrandbits(64))
 
         self._request_uri = request_uri

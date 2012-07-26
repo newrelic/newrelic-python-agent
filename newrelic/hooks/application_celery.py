@@ -7,6 +7,8 @@ about this below.
 
 """
 
+import functools
+
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTaskWrapper
 from newrelic.api.pre_function import wrap_pre_function
@@ -77,6 +79,7 @@ def instrument_celery_worker(module):
 
         _process_initializer = module.process_initializer
 
+        @functools.wraps(module.process_initializer)
         def process_initializer(*args, **kwargs):
             application_instance().activate()
             return _process_initializer(*args, **kwargs)

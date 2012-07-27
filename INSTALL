@@ -58,7 +58,7 @@ The "newrelic-admin" command itself should have been installed into the
 directory where the "python" executable should be located.
 
 As necessary, move the generated "newrelic.ini" configuration file to a
-directory where your Python web applicaton is located.
+directory where your Python web application is located.
 
 If you are unable to run the "newrelic-admin" command in your environment
 to generate the sample configuration you can instead also download a copy

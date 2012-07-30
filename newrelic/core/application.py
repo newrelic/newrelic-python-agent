@@ -41,7 +41,13 @@ class ThreadUtilizationSampler(object):
         # In doing that, need to fix up UtilizationClass count so the
         # reset is optional because in this case a read only variant is
         # needed for getting a per request custom metric of the
-        # utilization doe period of the request.
+        # utilization during period of the request.
+        #
+        # TODO This currently doesn't take into consideration coroutines
+        # and instance bust percentage is percentage of a single thread
+        # and not of total available coroutines. Not sure whether can
+        # generate something meaningful for coroutines. Also doesn't
+        # work for asynchronous systems such as Twisted.
 
         new_utilization = self._utilization_tracker.utilization_count()
 
@@ -56,14 +62,20 @@ class ThreadUtilizationSampler(object):
 
         total_threads = self._utilization_tracker.total_threads()
 
-        yield ValueMetric(name='Instance/Available',
-                value=total_threads)
-        yield ValueMetric(name='Instance/Used',
-                value=utilization)
+        if total_threads:
+            # Don't report any metrics if don't detect any threads
+            # available and in use for handling web transactions,
+            # otherwise we end up report zero metrics for task systems
+            # such as Celery which skews the results wrongly.
 
-        busy = total_threads and utilization/total_threads or 0.0
+            yield ValueMetric(name='Instance/Available',
+                    value=total_threads)
+            yield ValueMetric(name='Instance/Used',
+                    value=utilization)
 
-        yield ValueMetric(name='Instance/Busy', value=busy)
+            busy = total_threads and utilization/total_threads or 0.0
+
+            yield ValueMetric(name='Instance/Busy', value=busy)
 
 class Application(object):
 

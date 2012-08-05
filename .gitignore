@@ -33,3 +33,5 @@
 /python-tools/autom4te.cache
 /python-tools/Makefile
 /python-tools/buildout.cfg
+
+.tox

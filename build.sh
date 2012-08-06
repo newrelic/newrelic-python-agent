@@ -18,7 +18,7 @@ fi
 # Trigger the build. Only do this if working locally and not on Hudson
 # as there is no need to be doing it on Hudson.
 
-if test x"$BUILD_NUMBER" == x""
+if test x"$BUILD_NUMBER" = x""
 then
     python setup.py build
 

@@ -2,16 +2,16 @@
 
 # We first need to work out what Python installations we can use on the
 # system we are running this on. On the Hudson boxes we give preference
-# to our own Python installations over the system ones. If running the
-# MacOS X operating system we use what ever the system provides.
+# to our own Python installations over the system ones.
+#
+# Because of what appears to be a bug in tox and its understanding of
+# what the current working directory is when using a non default test
+# environment, we use the default test environments and run tests twice.
+# The first time as pure Python and the second with extensions enabled.
 
 PYTHON25=
 PYTHON26=
 PYTHON27=
-
-export PYTHON25
-export PYTHON26
-export PYTHON27
 
 ENVIRONMENTS=
 
@@ -22,29 +22,32 @@ if test x"$BUILD_NUMBER" != x""
 then
     if test -x $HOME/python-tools/python-2.5-ucs4/bin/python2.5
     then
-        ENVIRONMENTS="$ENVIRONMENTS,py25-pure-python,py25-with-extensions"
+        ENVIRONMENTS="$ENVIRONMENTS,py25"
         PYTHON25="$HOME/python-tools/python-2.5-ucs4/bin/python2.5"
+        PATH="$HOME/python-tools/python-2.5-ucs4/bin:$PATH"
     fi
     if test -x $HOME/python-tools/python-2.6-ucs4/bin/python2.6
     then
-        ENVIRONMENTS="$ENVIRONMENTS,py26-pure-python,py26-with-extensions"
+        ENVIRONMENTS="$ENVIRONMENTS,py26"
         PYTHON26="$HOME/python-tools/python-2.6-ucs4/bin/python2.6"
+        PATH="$HOME/python-tools/python-2.6-ucs4/bin:$PATH"
     fi
     if test -x $HOME/python-tools/python-2.7-ucs4/bin/python2.7
     then
-        ENVIRONMENTS="$ENVIRONMENTS,py27-pure-python,py27-with-extensions"
+        ENVIRONMENTS="$ENVIRONMENTS,py27"
         PYTHON27="$HOME/python-tools/python-2.7-ucs4/bin/python2.7"
+        PATH="$HOME/python-tools/python-2.7-ucs4/bin:$PATH"
     fi
 fi
 
 # Now fallback to system provided Python installations if we haven't
-# already found one of our own.
+# already found one of our own. Assumed that "/usr/bin" is in PATH.
 
 if test x"$PYTHON25" = x""
 then
     if test -x /usr/bin/python2.5
     then
-        ENVIRONMENTS="$ENVIRONMENTS,py25-pure-python,py25-with-extensions"
+        ENVIRONMENTS="$ENVIRONMENTS,py25"
         PYTHON25="/usr/bin/python2.5"
     fi
 fi
@@ -52,7 +55,7 @@ if test x"$PYTHON26" = x""
 then
     if test -x /usr/bin/python2.6
     then
-        ENVIRONMENTS="$ENVIRONMENTS,py26-pure-python,py26-with-extensions"
+        ENVIRONMENTS="$ENVIRONMENTS,py26"
         PYTHON26="/usr/bin/python2.6"
     fi
 fi
@@ -60,7 +63,7 @@ if test x"$PYTHON27" = x""
 then
     if test -x /usr/bin/python2.7
     then
-        ENVIRONMENTS="$ENVIRONMENTS,py27-pure-python,py27-with-extensions"
+        ENVIRONMENTS="$ENVIRONMENTS,py27"
         PYTHON27="/usr/bin/python2.7"
     fi
 fi
@@ -77,7 +80,29 @@ tox --help > /dev/null 2>&1
 
 if test "$?" = "0"
 then
-    exec tox -v --notest -e $ENVIRONMENTS
+    TOX="tox"
 else
-    exec python unit-tests/run-tox.py -v --notest -e $ENVIRONMENTS
+    TOX="python runtox.py"
+fi
+
+echo "Running validation with Pure Python version of agent!"
+
+NEW_RELIC_EXTENSIONS=false $TOX -v -e $ENVIRONMENTS
+
+STATUS=$?
+if test "$STATUS" != "0"
+then
+    echo "`basename $0`: *** Error $STATUS"
+    exit 1
+fi
+
+echo "Running validation with mixed binary version of agent!"
+
+NEW_RELIC_EXTENSIONS=true $TOX -v -e $ENVIRONMENTS
+
+STATUS=$?
+if test "$STATUS" != "0"
+then
+    echo "`basename $0`: *** Error $STATUS"
+    exit 1
 fi

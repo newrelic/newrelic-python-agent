@@ -142,7 +142,9 @@ def validate_config(args):
     newrelic.agent.initialize(config_file, ignore_errors=False,
                log_file=_settings.log_file, log_level=_settings.log_level)
 
-    _settings.app_name = 'Python Agent Test'
+    app_name = os.environ.get('NEW_RELIC_TEST_APP_NAME', 'Python Agent Test')
+
+    _settings.app_name = app_name
     _settings.transaction_tracer.transaction_threshold = 0
     _settings.capture_params = True
     _settings.shutdown_timeout = 30.0

@@ -41,9 +41,9 @@ def _in_function(*args, **kwds):
     _test_phase = '_in_function'
     return (args, kwds)
 
-def _in_function_cm(self, *args, **kwds):
+def _in_function_cm(*args, **kwds):
     global _test_result
-    _test_result = (self, (args, kwds))
+    _test_result = (args[0], (args[1:], kwds))
     global _test_count
     _test_count += 1
     global _test_phase

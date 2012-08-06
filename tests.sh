@@ -22,17 +22,17 @@ if test x"$BUILD_NUMBER" != x""
 then
     if test -x $HOME/python-tools/python-2.5-ucs4/bin/python2.5
     then
-        ENVIRONMENTS="$ENVIRONMENTS,py25"
+        ENVIRONMENTS="$ENVIRONMENTS,py25-pure-python,py25-with-extensions"
         PYTHON25="$HOME/python-tools/python-2.5-ucs4/bin/python2.5"
     fi
     if test -x $HOME/python-tools/python-2.6-ucs4/bin/python2.6
     then
-        ENVIRONMENTS="$ENVIRONMENTS,py26"
+        ENVIRONMENTS="$ENVIRONMENTS,py26-pure-python,py26-with-extensions"
         PYTHON26="$HOME/python-tools/python-2.6-ucs4/bin/python2.6"
     fi
     if test -x $HOME/python-tools/python-2.7-ucs4/bin/python2.7
     then
-        ENVIRONMENTS="$ENVIRONMENTS,py27"
+        ENVIRONMENTS="$ENVIRONMENTS,py27-pure-python,py27-with-extensions"
         PYTHON27="$HOME/python-tools/python-2.7-ucs4/bin/python2.7"
     fi
 fi
@@ -44,7 +44,7 @@ if test x"$PYTHON25" = x""
 then
     if test -x /usr/bin/python2.5
     then
-        ENVIRONMENTS="$ENVIRONMENTS,py25"
+        ENVIRONMENTS="$ENVIRONMENTS,py25-pure-python,py25-with-extensions"
         PYTHON25="/usr/bin/python2.5"
     fi
 fi
@@ -52,7 +52,7 @@ if test x"$PYTHON26" = x""
 then
     if test -x /usr/bin/python2.6
     then
-        ENVIRONMENTS="$ENVIRONMENTS,py26"
+        ENVIRONMENTS="$ENVIRONMENTS,py26-pure-python,py26-with-extensions"
         PYTHON26="/usr/bin/python2.6"
     fi
 fi
@@ -60,7 +60,7 @@ if test x"$PYTHON27" = x""
 then
     if test -x /usr/bin/python2.7
     then
-        ENVIRONMENTS="$ENVIRONMENTS,py27"
+        ENVIRONMENTS="$ENVIRONMENTS,py27-pure-python,py27-with-extension"
         PYTHON27="/usr/bin/python2.7"
     fi
 fi
@@ -77,7 +77,7 @@ tox --help > /dev/null 2>&1
 
 if test "$?" = "0"
 then
-    exec tox --notest -e $ENVIRONMENTS
+    exec tox -v --notest -e $ENVIRONMENTS
 else
-    exec python unit-tests/run-tox.py --notest -e $ENVIRONMENTS
+    exec python unit-tests/run-tox.py -v --notest -e $ENVIRONMENTS
 fi

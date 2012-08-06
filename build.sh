@@ -15,15 +15,19 @@ then
     echo "build_number = $BUILD_NUMBER" > newrelic/build.py
 fi
 
-# Trigger the build.
+# Trigger the build. Only do this if working locally and not on Hudson
+# as there is no need to be doing it on Hudson.
 
-python setup.py build
-
-STATUS=$?
-if test "$STATUS" != "0"
+if test x"$BUILD_NUMBER" == x""
 then
-    echo "`basename $0`: *** Error $STATUS"
-    exit 1
+    python setup.py build
+
+    STATUS=$?
+    if test "$STATUS" != "0"
+    then
+        echo "`basename $0`: *** Error $STATUS"
+        exit 1
+    fi
 fi
 
 # Trigger creation of source distribution tarball.

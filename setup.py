@@ -130,25 +130,38 @@ Python agent will still run, JSON encoding/decoding speedups will not be
 available, nor will some of the non core features of the Python agent.
 """
 
-try:
-    run_setup(with_extensions=True)
+with_extensions = os.environ.get('NEW_RELIC_EXTENSIONS', None)
+if with_extensions:
+    if with_extensions.lower() == 'true':
+        with_extensions = True
+    elif with_extensions.lower() == 'false':
+        with_extensions = False
+    else:
+        with_extensions = None
 
-except BuildExtFailed:
+if with_extensions is not None:
+    run_setup(with_extensions=with_extensions)
 
-    print 75 * '*'
+else:
+    try:
+        run_setup(with_extensions=True)
 
-    print WARNING
-    print "INFO: Trying to build the Python agent now without extensions."
+    except BuildExtFailed:
 
-    print
-    print 75 * '*'
+        print 75 * '*'
 
-    run_setup(with_extensions=False)
+        print WARNING
+        print "INFO: Trying to build without extensions."
 
-    print 75 * '*'
+        print
+        print 75 * '*'
 
-    print WARNING
-    print "INFO: Only pure Python parts of the Python agent were installed."
+        run_setup(with_extensions=False)
 
-    print
-    print 75 * '*'
+        print 75 * '*'
+
+        print WARNING
+        print "INFO: Only pure Python agent was installed."
+
+        print
+        print 75 * '*'

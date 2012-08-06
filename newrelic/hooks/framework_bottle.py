@@ -1,6 +1,5 @@
 import newrelic.api.web_transaction
 import newrelic.api.out_function
-import newrelic.api.post_function
 import newrelic.api.name_transaction
 import newrelic.api.error_trace
 import newrelic.api.function_trace

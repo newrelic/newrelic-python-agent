@@ -60,7 +60,7 @@ if test x"$PYTHON27" = x""
 then
     if test -x /usr/bin/python2.7
     then
-        ENVIRONMENTS="$ENVIRONMENTS,py27-pure-python,py27-with-extension"
+        ENVIRONMENTS="$ENVIRONMENTS,py27-pure-python,py27-with-extensions"
         PYTHON27="/usr/bin/python2.7"
     fi
 fi

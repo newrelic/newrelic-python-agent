@@ -160,34 +160,6 @@ class InFunctionTests(unittest.TestCase):
         self.assertEqual(result, (args, kwargs))
         self.assertEqual(_test_result, (c, (args, kwargs)))
 
-    def xxx_test_wrap_capi_class_method(self):
-        o1 = sqlite3.Cursor.execute
-        o2 = newrelic.api.in_function.wrap_in_function('sqlite3',
-                'Cursor.execute', _in_function)
-        #self.assertEqual(o1, o2.__last_object__)
-
-        global _test_result
-        _test_result = None
-
-        global _test_count
-        _test_count = 0
-
-        args = ('create table sample (data text)', )
-
-        db = "%s.db" % __file__
-        try:
-            os.unlink(db)
-        except:
-            pass
-        conn = sqlite3.connect(db)
-        c = conn.cursor()
-        result = c.execute(*args)
-        conn.commit()
-        os.unlink(db)
-
-        self.assertEqual(_test_result, (args, {}))
-        self.assertEqual(result, c)
-
     def test_decorator_in_function(self):
         global _test_result
         _test_result = None

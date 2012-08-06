@@ -1318,6 +1318,10 @@ def _process_module_builtin_defaults():
     #        'newrelic.hooks.framework_twisted',
     #        'instrument_twisted_internet_defer')
 
+    _process_module_definition('gevent.monkey',
+            'newrelic.hooks.coroutines_gevent',
+            'instrument_gevent_monkey')
+
 _instrumentation_done = False
 
 def _setup_instrumentation():

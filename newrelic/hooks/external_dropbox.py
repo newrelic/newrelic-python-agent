@@ -2,7 +2,7 @@ import newrelic.api.external_trace
 
 def instrument(module):
 
-    def url_request(method, url, *args, **kwargs):
+    def url_request(rest_obj, method, url, *args, **kwargs):
         return url
 
     newrelic.api.external_trace.wrap_external_trace(

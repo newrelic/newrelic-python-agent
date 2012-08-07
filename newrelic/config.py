@@ -1227,7 +1227,7 @@ def _process_module_builtin_defaults():
     _process_module_definition('xmlrpclib',
             'newrelic.hooks.external_xmlrpclib')
 
-    _process_module_definition('dropbox.api',
+    _process_module_definition('dropbox',
             'newrelic.hooks.external_dropbox')
 
     _process_module_definition('pysolr',

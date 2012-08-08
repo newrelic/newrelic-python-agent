@@ -1230,6 +1230,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('dropbox',
             'newrelic.hooks.external_dropbox')
 
+    _process_module_definition('facepy.graph_api',
+            'newrelic.hooks.external_facepy')
+
     _process_module_definition('pysolr',
             'newrelic.hooks.solr_pysolr')
 

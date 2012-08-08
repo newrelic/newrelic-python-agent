@@ -1,29 +1,7 @@
-import logging
 import unittest
 import types
 
-import newrelic.api.settings
 import newrelic.api.object_wrapper
-
-_logger = logging.getLogger('newrelic')
-
-settings = newrelic.api.settings.settings()
-
-settings.host = 'staging-collector.newrelic.com'
-settings.license_key = '84325f47e9dec80613e262be4236088a9983d501'
-
-settings.app_name = 'Python Unit Tests'
-
-settings.log_file = '%s.log' % __file__
-settings.log_level = logging.DEBUG
-
-settings.transaction_tracer.transaction_threshold = 0
-settings.transaction_tracer.stack_trace_threshold = 0
-
-settings.shutdown_timeout = 10.0
-
-settings.debug.log_data_collector_calls = True
-settings.debug.log_data_collector_payloads = True
 
 _function_args = None
 
@@ -41,12 +19,6 @@ class _wrapper(object):
        return self.wrapped(*args, **kwargs)
 
 class ApplicationTests(unittest.TestCase):
-
-    def setUp(self):
-        _logger.debug('STARTING - %s' % self._testMethodName)
-
-    def tearDown(self):
-        _logger.debug('STOPPING - %s' % self._testMethodName)
 
     def test_wrap_object(self):
         newrelic.api.object_wrapper.wrap_object(

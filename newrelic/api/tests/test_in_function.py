@@ -1,45 +1,28 @@
-import logging
 import unittest
-import time
-import sys
-import sqlite3
-import os
 
-import newrelic.api.settings
-import newrelic.api.post_function
-
-_logger = logging.getLogger('newrelic')
-
-settings = newrelic.api.settings.settings()
-
-settings.host = 'staging-collector.newrelic.com'
-settings.license_key = '84325f47e9dec80613e262be4236088a9983d501'
-
-settings.app_name = 'Python Unit Tests'
-
-settings.log_file = '%s.log' % __file__
-settings.log_level = logging.DEBUG
-
-settings.transaction_tracer.transaction_threshold = 0
-settings.transaction_tracer.stack_trace_threshold = 0
-
-settings.shutdown_timeout = 10.0
-
-settings.debug.log_data_collector_calls = True
-settings.debug.log_data_collector_payloads = True
+import newrelic.api.in_function
 
 _test_result = None
 _test_count = 0
 _test_phase = None
 
-def _post_function(*args, **kwargs):
+def _in_function(*args, **kwds):
     global _test_result
-    _test_result = (args, kwargs)
+    _test_result = (args, kwds)
     global _test_count
     _test_count += 1
     global _test_phase
-    _test_phase = '_post_function'
-    return args, kwargs
+    _test_phase = '_in_function'
+    return (args, kwds)
+
+def _in_function_cm(*args, **kwds):
+    global _test_result
+    _test_result = (args[0], (args[1:], kwds))
+    global _test_count
+    _test_count += 1
+    global _test_phase
+    _test_phase = '_in_function_cm'
+    return (args, kwds)
 
 def _test_function_1(*args, **kwargs):
     global _test_phase
@@ -63,26 +46,18 @@ class _test_class_2(object):
         _test_phase = '_test_class_2._test_function'
         return args, kwargs
 
-@newrelic.api.post_function.post_function(_post_function)
+@newrelic.api.in_function.in_function(_in_function)
 def _test_function_3(*args, **kwargs):
     global _test_phase
     _test_phase = '_test_function_3'
     return args, kwargs
-#_test_function_3 = newrelic.api.post_function.post_function(
-#        _post_function)(_test_function_3)
 
-class PostFunctionTests(unittest.TestCase):
-
-    def setUp(self):
-        _logger.debug('STARTING - %s' % self._testMethodName)
-
-    def tearDown(self):
-        _logger.debug('STOPPING - %s' % self._testMethodName)
+class InFunctionTests(unittest.TestCase):
 
     def test_wrap_function(self):
         o1 = _test_function_1
-        o2 = newrelic.api.post_function.wrap_post_function(__name__,
-                '_test_function_1', _post_function)
+        o2 = newrelic.api.in_function.wrap_in_function(__name__,
+                '_test_function_1', _in_function)
         #self.assertEqual(o1, o2.__last_object__)
 
         global _test_result
@@ -101,7 +76,7 @@ class PostFunctionTests(unittest.TestCase):
 
         self.assertEqual(result, (args, kwargs))
         self.assertEqual(_test_result, (args, kwargs))
-        self.assertEqual(_test_phase, "_post_function")
+        self.assertEqual(_test_phase, "_test_function_1")
 
         result = _test_function_1(*args, **kwargs)
         result = _test_function_1(*args, **kwargs)
@@ -110,8 +85,8 @@ class PostFunctionTests(unittest.TestCase):
 
     def test_wrap_old_style_class_method(self):
         o1 = _test_class_1._test_function
-        o2 = newrelic.api.post_function.wrap_post_function(__name__,
-                '_test_class_1._test_function', _post_function)
+        o2 = newrelic.api.in_function.wrap_in_function(__name__,
+                '_test_class_1._test_function', _in_function_cm)
         #self.assertEqual(o1, o2.__last_object__)
 
         global _test_result
@@ -127,12 +102,12 @@ class PostFunctionTests(unittest.TestCase):
         result = c._test_function(*args, **kwargs)
 
         self.assertEqual(result, (args, kwargs))
-        self.assertEqual(_test_result, ((c,)+args, kwargs))
+        self.assertEqual(_test_result, (c, (args, kwargs)))
 
     def test_wrap_new_style_class_method(self):
         o1 = _test_class_2._test_function
-        o2 = newrelic.api.post_function.wrap_post_function(__name__,
-                '_test_class_2._test_function', _post_function)
+        o2 = newrelic.api.in_function.wrap_in_function(__name__,
+                '_test_class_2._test_function', _in_function_cm)
         #self.assertEqual(o1, o2.__last_object__)
 
         global _test_result
@@ -148,9 +123,9 @@ class PostFunctionTests(unittest.TestCase):
         result = c._test_function(*args, **kwargs)
 
         self.assertEqual(result, (args, kwargs))
-        self.assertEqual(_test_result, ((c,)+args, kwargs))
+        self.assertEqual(_test_result, (c, (args, kwargs)))
 
-    def test_decorator(self):
+    def test_decorator_in_function(self):
         global _test_result
         _test_result = None
 

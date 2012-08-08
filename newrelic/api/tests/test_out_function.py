@@ -1,32 +1,6 @@
-import logging
 import unittest
-import time
-import sys
-import sqlite3
-import os
 
-import newrelic.api.settings
 import newrelic.api.out_function
-
-_logger = logging.getLogger('newrelic')
-
-settings = newrelic.api.settings.settings()
-
-settings.host = 'staging-collector.newrelic.com'
-settings.license_key = '84325f47e9dec80613e262be4236088a9983d501'
-
-settings.app_name = 'Python Unit Tests'
-
-settings.log_file = '%s.log' % __file__
-settings.log_level = logging.DEBUG
-
-settings.transaction_tracer.transaction_threshold = 0
-settings.transaction_tracer.stack_trace_threshold = 0
-
-settings.shutdown_timeout = 10.0
-
-settings.debug.log_data_collector_calls = True
-settings.debug.log_data_collector_payloads = True
 
 _test_result = None
 _test_count = 0
@@ -63,22 +37,13 @@ class _test_class_2(object):
         _test_phase = '_test_class_2._test_function'
         return args, kwargs
 
-#@newrelic.api.out_function.out_function(_out_function)
+@newrelic.api.out_function.out_function(_out_function)
 def _test_function_3(*args, **kwargs):
     global _test_phase
     _test_phase = '_test_function_3'
     return args, kwargs
-_test_function_3 = newrelic.api.out_function.out_function(_out_function)(
-        _test_function_3)
-
 
 class OutFunctionTests(unittest.TestCase):
-
-    def setUp(self):
-        _logger.debug('STARTING - %s' % self._testMethodName)
-
-    def tearDown(self):
-        _logger.debug('STOPPING - %s' % self._testMethodName)
 
     def test_wrap_function(self):
         o1 = _test_function_1

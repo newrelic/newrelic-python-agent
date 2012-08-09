@@ -60,7 +60,9 @@ def apply_patch(parent, attribute, replacement):
 
 def wrap_object(module, name, factory, args=()):
     (parent, attribute, original) = resolve_path(module, name)
-    apply_patch(parent, attribute, factory(original, *args))
+    wrapper = factory(original, *args)
+    apply_patch(parent, attribute, wrapper)
+    return wrapper
 
 def object_context(object):
     m = inspect.getmodule(object)

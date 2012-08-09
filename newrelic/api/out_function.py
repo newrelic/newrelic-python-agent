@@ -1,35 +1,11 @@
-import sys
-import types
-import inspect
+from newrelic.api.object_wrapper import ObjectWrapper, wrap_object
 
-import newrelic.api.object_wrapper
+def OutFunctionWrapper(wrapped, function):
 
-class OutFunctionWrapper(object):
+    def wrapper(wrapped, instance, args, kwargs):
+        return function(wrapped(*args, **kwargs))
 
-    def __init__(self, wrapped, function):
-        if type(wrapped) == types.TupleType:
-            (instance, wrapped) = wrapped
-        else:
-            instance = None
-
-        newrelic.api.object_wrapper.update_wrapper(self, wrapped)
-
-        self._nr_instance = instance
-        self._nr_next_object = wrapped
-
-        if not hasattr(self, '_nr_last_object'):
-            self._nr_last_object = wrapped
-
-        self._nr_function = function
-
-    def __get__(self, instance, klass):
-        if instance is None:
-            return self
-        descriptor = self._nr_next_object.__get__(instance, klass)
-        return self.__class__((instance, descriptor), self._nr_function)
-
-    def __call__(self, *args, **kwargs):
-        return self._nr_function(self._nr_next_object(*args, **kwargs))
+    return ObjectWrapper(wrapped, None, wrapper)
 
 def out_function(function):
     def decorator(wrapped):
@@ -37,5 +13,4 @@ def out_function(function):
     return decorator
 
 def wrap_out_function(module, object_path, function):
-    newrelic.api.object_wrapper.wrap_object(module, object_path,
-            OutFunctionWrapper, (function, ))
+    return wrap_object(module, object_path, OutFunctionWrapper, (function, ))

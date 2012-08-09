@@ -1,41 +1,19 @@
-import sys
-import types
 import inspect
 
-import newrelic.api.object_wrapper
+from newrelic.api.object_wrapper import ObjectWrapper, wrap_object
 
-class InFunctionWrapper(object):
+def InFunctionWrapper(wrapped, function):
 
-    def __init__(self, wrapped, function):
-        if type(wrapped) == types.TupleType:
-            (instance, wrapped) = wrapped
+    def wrapper(wrapped, instance, args, kwargs):
+        if instance and inspect.ismethod(wrapped):
+            (_args, _kwargs) = function(instance, *args, **kwargs)
+            _args = _args[1:]
         else:
-            instance = None
+            (_args, _kwargs) = function(*args, **kwargs)
 
-        newrelic.api.object_wrapper.update_wrapper(self, wrapped)
+        return wrapped(*_args, **_kwargs)
 
-        self._nr_instance = instance
-        self._nr_next_object = wrapped
-
-        if not hasattr(self, '_nr_last_object'):
-            self._nr_last_object = wrapped
-
-        self._nr_function = function
-
-    def __get__(self, instance, klass):
-        if instance is None:
-            return self
-        descriptor = self._nr_next_object.__get__(instance, klass)
-        return self.__class__((instance, descriptor), self._nr_function)
-
-    def __call__(self, *args, **kwargs):
-        if self._nr_instance and inspect.ismethod(self._nr_next_object):
-            (wrapped_args, wrapped_kwargs) = self._nr_function(
-                    self._nr_instance, *args, **kwargs)
-            wrapped_args = wrapped_args[1:]
-        else:
-            (wrapped_args, wrapped_kwargs) = self._nr_function(*args, **kwargs)
-        return self._nr_next_object(*wrapped_args, **wrapped_kwargs)
+    return ObjectWrapper(wrapped, None, wrapper)
 
 def in_function(function):
     def decorator(wrapped):
@@ -43,5 +21,4 @@ def in_function(function):
     return decorator
 
 def wrap_in_function(module, object_path, function):
-    newrelic.api.object_wrapper.wrap_object(module, object_path,
-            InFunctionWrapper, (function, ))
+    return wrap_object(module, object_path, InFunctionWrapper, (function, ))

@@ -1,3 +1,5 @@
+import functools
+
 from newrelic.api.object_wrapper import ObjectWrapper, wrap_object
 
 def OutFunctionWrapper(wrapped, function):
@@ -8,9 +10,7 @@ def OutFunctionWrapper(wrapped, function):
     return ObjectWrapper(wrapped, None, wrapper)
 
 def out_function(function):
-    def decorator(wrapped):
-        return OutFunctionWrapper(wrapped, function)
-    return decorator
+    return functools.partial(OutFunctionWrapper, function=function)
 
 def wrap_out_function(module, object_path, function):
-    return wrap_object(module, object_path, OutFunctionWrapper, (function, ))
+    return wrap_object(module, object_path, OutFunctionWrapper, (function,))

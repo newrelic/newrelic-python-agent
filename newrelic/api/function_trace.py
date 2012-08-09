@@ -91,5 +91,5 @@ def function_trace(name=None, group=None, label=None):
 
 def wrap_function_trace(module, object_path, name=None,
         group=None, label=None):
-    wrap_object(module, object_path, FunctionTraceWrapper,
+    return wrap_object(module, object_path, FunctionTraceWrapper,
             (name, group, label))

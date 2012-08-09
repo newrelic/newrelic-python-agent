@@ -1,3 +1,4 @@
+import functools
 import inspect
 
 from newrelic.api.object_wrapper import ObjectWrapper, wrap_object
@@ -16,9 +17,7 @@ def InFunctionWrapper(wrapped, function):
     return ObjectWrapper(wrapped, None, wrapper)
 
 def in_function(function):
-    def decorator(wrapped):
-        return InFunctionWrapper(wrapped, function)
-    return decorator
+    return functools.partial(InFunctionWrapper, function=function)
 
 def wrap_in_function(module, object_path, function):
-    return wrap_object(module, object_path, InFunctionWrapper, (function, ))
+    return wrap_object(module, object_path, InFunctionWrapper, (function,))

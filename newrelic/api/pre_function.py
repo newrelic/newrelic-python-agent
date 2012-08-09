@@ -1,3 +1,4 @@
+import functools
 import inspect
 
 from newrelic.api.object_wrapper import ObjectWrapper, wrap_object
@@ -15,9 +16,7 @@ def PreFunctionWrapper(wrapped, function):
     return ObjectWrapper(wrapped, None, wrapper)
 
 def pre_function(function):
-    def decorator(wrapped):
-        return PreFunctionWrapper(wrapped, function)
-    return decorator
+    return functools.partial(PreFunctionWrapper, function=function)
 
 def wrap_pre_function(module, object_path, function):
     return wrap_object(module, object_path, PreFunctionWrapper, (function,))

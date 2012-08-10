@@ -407,37 +407,43 @@ class WSGIInputWrapper(object):
     def read(self, *args, **kwargs):
         if not self.__transaction._read_start:
             self.__transaction._read_start = time.time()
-        data = self.__input.read(*args, **kwargs)
         try:
-            self.__transaction._calls_read += 1
-            self.__transaction._bytes_read += len(data)
-        except:
-            pass
-        self.__transaction._read_end = time.time()
+            data = self.__input.read(*args, **kwargs)
+            try:
+                self.__transaction._calls_read += 1
+                self.__transaction._bytes_read += len(data)
+            except:
+                pass
+        finally:
+            self.__transaction._read_end = time.time()
         return data
 
     def readline(self, *args, **kwargs):
         if not self.__transaction._read_start:
             self.__transaction._read_start = time.time()
-        line = self.__input.readline(*args, **kwargs)
         try:
-            self.__transaction._calls_readline += 1
-            self.__transaction._bytes_read += len(line)
-        except:
-            pass
-        self.__transaction._read_end = time.time()
+            line = self.__input.readline(*args, **kwargs)
+            try:
+                self.__transaction._calls_readline += 1
+                self.__transaction._bytes_read += len(line)
+            except:
+                pass
+        finally:
+            self.__transaction._read_end = time.time()
         return line
 
     def readlines(self, *args, **kwargs):
         if not self.__transaction._read_start:
             self.__transaction._read_start = time.time()
-        lines = self.__input.readlines(*args, **kwargs)
         try:
-            self.__transaction._calls_readlines += 1
-            self.__transaction._bytes_read += sum(map(len, lines))
-        except:
-            pass
-        self.__transaction._read_end = time.time()
+            lines = self.__input.readlines(*args, **kwargs)
+            try:
+                self.__transaction._calls_readlines += 1
+                self.__transaction._bytes_read += sum(map(len, lines))
+            except:
+                pass
+        finally:
+            self.__transaction._read_end = time.time()
         return lines
 
 class WSGIApplicationWrapper(object):

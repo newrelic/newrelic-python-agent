@@ -1,4 +1,5 @@
 import logging
+import StringIO
 import unittest
 
 import newrelic.api.settings
@@ -13,7 +14,7 @@ settings = newrelic.api.settings.settings()
 settings.host = 'staging-collector.newrelic.com'
 settings.license_key = '84325f47e9dec80613e262be4236088a9983d501'
 
-settings.app_name = 'Python Unit Tests'
+settings.app_name = 'UnitTests'
 
 settings.log_file = '%s.log' % __file__
 settings.log_level = logging.DEBUG
@@ -21,6 +22,7 @@ settings.log_level = logging.DEBUG
 settings.transaction_tracer.transaction_threshold = 0
 settings.transaction_tracer.stack_trace_threshold = 0
 
+settings.startup_timeout = 10.0
 settings.shutdown_timeout = 10.0
 
 settings.debug.log_data_collector_calls = True
@@ -29,19 +31,29 @@ settings.debug.log_data_collector_payloads = True
 _application = newrelic.api.application.application_instance("UnitTests")
 _application.activate(timeout=10.0)
 
-def _wsgiapp_function(self, *args):
+def _wsgiapp_function(environ, start_response):
     transaction = newrelic.api.transaction.current_transaction()
     assert transaction != None
+    input = environ.get('wsgi.input')
+    try:
+        if input and hasattr(input, 'read'):
+            input.read()
+        if input and hasattr(input, 'readline'):
+            input.readline()
+        if input and hasattr(input, 'readlines'):
+            input.readlines()
+    except:
+        pass
 _wsgiapp_function = newrelic.api.web_transaction.WSGIApplicationWrapper(
         _wsgiapp_function, _application)
 
-def _wsgiapp_function_error(self, *args):
+def _wsgiapp_function_error(environ, start_response):
     raise RuntimeError("_wsgiapp_function_error")
 _wsgiapp_function_error = newrelic.api.web_transaction.WSGIApplicationWrapper(
         _wsgiapp_function_error, _application)
 
 class _wsgiapp_class:
-    def __init__(self, *args):
+    def __init__(self, environ, start_response):
         pass
     def __call__(self):
         transaction = newrelic.api.transaction.current_transaction()
@@ -50,18 +62,18 @@ _wsgiapp_class = newrelic.api.web_transaction.WSGIApplicationWrapper(
         _wsgiapp_class, _application)
 
 @newrelic.api.web_transaction.wsgi_application("UnitTests")
-def _wsgiapp_function_decorator(self, *args):
+def _wsgiapp_function_decorator(environ, start_response):
     transaction = newrelic.api.transaction.current_transaction()
     assert transaction != None
 
 @newrelic.api.web_transaction.wsgi_application()
-def _wsgiapp_function_decorator_default(self, *args):
+def _wsgiapp_function_decorator_default(environ, start_response):
     transaction = newrelic.api.transaction.current_transaction()
     assert transaction != None
 
 @newrelic.api.web_transaction.wsgi_application("UnitTests")
 class _wsgiapp_class_decorator:
-    def __init__(self, *args):
+    def __init__(self, environ, start_response):
         pass
     def __call__(self):
         transaction = newrelic.api.web_transaction.current_transaction()
@@ -120,6 +132,35 @@ class WSGIApplicationTests(unittest.TestCase):
     def test_wsgiapp_class_decorator(self):
         environ = { "REQUEST_URI": "/wsgiapp_class_decorator" }
         _wsgiapp_class_decorator(environ, None).close()
+
+    def test_wsgiapp_function_input(self):
+        environ = { "REQUEST_URI": "/wsgiapp_function_input",
+                    "wsgi.input": StringIO.StringIO() }
+        _wsgiapp_function(environ, None).close()
+
+    def test_wsgiapp_function_read_exception(self):
+        class Input(object):
+            def read(self):
+                raise RuntimeError('fail')
+        environ = { "REQUEST_URI": "/wsgiapp_function_read_exception",
+                    "wsgi.input": Input() }
+        _wsgiapp_function(environ, None).close()
+
+    def test_wsgiapp_function_readline_exception(self):
+        class Input(object):
+            def readline(self):
+                raise RuntimeError('fail')
+        environ = { "REQUEST_URI": "/wsgiapp_function_readline_exception",
+                    "wsgi.input": Input() }
+        _wsgiapp_function(environ, None).close()
+
+    def test_wsgiapp_function_realines_exception(self):
+        class Input(object):
+            def readlines(self):
+                raise RuntimeError('fail')
+        environ = { "REQUEST_URI": "/wsgiapp_function_realines_exception",
+                    "wsgi.input": Input() }
+        _wsgiapp_function(environ, None).close()
 
 if __name__ == '__main__':
     unittest.main()

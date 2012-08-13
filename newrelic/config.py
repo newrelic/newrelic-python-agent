@@ -1114,6 +1114,11 @@ def _process_module_builtin_defaults():
     _process_module_definition('flask.templating',
             'newrelic.hooks.framework_flask')
 
+    _process_module_definition('web.application',
+            'newrelic.hooks.framework_web')
+    _process_module_definition('web.template',
+            'newrelic.hooks.framework_web')
+
     _process_module_definition('gluon.compileapp',
             'newrelic.hooks.framework_web2py',
             'instrument_gluon_compileapp')

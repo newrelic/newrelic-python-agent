@@ -96,8 +96,10 @@ _settings.include_environ = ['REQUEST_METHOD', 'HTTP_USER_AGENT',
 
 _settings.sampling_rate = 0
 
-_settings.startup_timeout = 0.0
-_settings.shutdown_timeout = 2.5
+_settings.startup_timeout = float(
+       os.environ.get('NEW_RELIC_STARTUP_TIMEOUT', '0.0'))
+_settings.shutdown_timeout = float(
+       os.environ.get('NEW_RELIC_SHUTDOWN_TIMEOUT', '2.5'))
 
 _settings.beacon = None
 _settings.application_id = None

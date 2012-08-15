@@ -10,16 +10,22 @@ from newrelic.api.object_wrapper import callable_name
 from newrelic.api.web_transaction import WSGIApplicationWrapper
 
 def _name_transaction(*args, **kwargs):
-    f = args[1]
     transaction = newrelic.api.transaction.current_transaction()
     if transaction:
-        transaction.name_transaction(callable_name(f))
+        if isinstance(args[1], basestring):
+            f = args[1]
+        else:
+            f = callable_name(args[1])
+        transaction.name_transaction(f)
     return (args, kwargs)
 
 def wrap_handle_exception(self):
     transaction = newrelic.api.transaction.current_transaction()
     if transaction:
         transaction.record_exception(*sys.exc_info())
+
+def template_name(render_obj, name):
+    return name
 
 def instrument(module):
 
@@ -33,4 +39,4 @@ def instrument(module):
 
     elif module.__name__ == 'web.template':
         newrelic.api.function_trace.wrap_function_trace(
-                module, 'render._template')
+                module, 'render.__getattr__', template_name, 'Template/Render')

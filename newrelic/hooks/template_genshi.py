@@ -16,6 +16,14 @@ class stream_wrapper(object):
         return getattr(self.__stream, name)
     def __iter__(self):
         return iter(self.__stream)
+    def __or__(self, function):
+        return self.__stream.__or__(function)
+    def __str__(self):
+        return self.__stream.__str__()
+    def __unicode__(self):
+        return self.__stream.__unicode__()
+    def __html__(self):
+        return self.__stream.__html__()
 
 class wrap_template(object):
     def __init__(self, wrapped):

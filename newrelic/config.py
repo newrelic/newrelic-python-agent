@@ -1265,6 +1265,10 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.component_piston',
             'instrument_piston_doc')
 
+    _process_module_definition('tastypie.resources',
+            'newrelic.hooks.component_tastypie',
+            'instrument_tastypie_resources')
+
     _process_module_definition('celery.task.base',
             'newrelic.hooks.application_celery',
             'instrument_celery_app_task')

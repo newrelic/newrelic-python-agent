@@ -237,6 +237,10 @@ class StatsEngine(object):
         self.__saved_transactions = []
 
     @property
+    def settings(self):
+        return self.__settings
+
+    @property
     def metric_ids(self):
         """Returns a reference to the dictionary containing the mappings
         from metric (name, scope) to the integer identifier supplied
@@ -766,7 +770,11 @@ class StatsEngine(object):
         # have number of harvests where no slow transaction was
         # collected.
 
-        if self.__slow_transaction is None:
+        if self.__settings is None:
+            self.__slow_transaction_dry_harvests = 0
+            self.__slow_transaction_map = {}
+
+        elif self.__slow_transaction is None:
             self.__slow_transaction_dry_harvests += 1
             agent_limits = self.__settings.agent_limits
             dry_harvests = agent_limits.slow_transaction_dry_harvests
@@ -822,6 +830,9 @@ class StatsEngine(object):
 
         """
 
+        if not self.__settings:
+            return
+
         # Merge back data into any new data which has been
         # accumulated.
 
@@ -842,6 +853,9 @@ class StatsEngine(object):
         collected is not otherwised based on time.
 
         """
+
+        if not self.__settings:
+            return
 
         settings = self.__settings
 
@@ -889,7 +903,7 @@ class StatsEngine(object):
                     self.__slow_transaction = transaction
                     self.__slow_transaction_map[name] = duration
 
-            maximum = self.__settings.agent_limits.saved_transactions
+            maximum = settings.agent_limits.saved_transactions
             self.__saved_transactions.extend(snapshot.__saved_transactions)
             self.__saved_transactions = self.__saved_transactions[:maximum]
 
@@ -899,6 +913,9 @@ class StatsEngine(object):
         the accumulated stats for that metric key.
 
         """
+
+        if not self.__settings:
+            return
 
         for key, other in metrics:
             stats = self.__stats_table.get(key)

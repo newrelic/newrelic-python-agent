@@ -417,6 +417,9 @@ class Application(object):
         if not self._active_session:
             return
 
+        if self._stats_engine.settings is None:
+            return
+
         internal_metrics = ValueMetrics()
 
         with InternalTraceContext(internal_metrics):

@@ -502,10 +502,10 @@ class Application(object):
                     self._transaction_count = 0
                     self._last_transaction = 0.0
 
-                    stats = self._stats_engine.create_snapshot()
+                    stats = self._stats_engine.harvest_snapshot()
 
                 with self._stats_custom_lock:
-                    stats_custom = self._stats_custom_engine.create_snapshot()
+                    stats_custom = self._stats_custom_engine.harvest_snapshot()
 
                 stats.merge_metric_stats(stats_custom)
 

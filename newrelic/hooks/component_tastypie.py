@@ -1,7 +1,7 @@
 import sys
 
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.api.object_wrapper import ObjectWrapper
+from newrelic.api.object_wrapper import ObjectWrapper, callable_name
 from newrelic.api.transaction import current_transaction
 from newrelic.api.pre_function import wrap_pre_function
 
@@ -11,7 +11,9 @@ def wrap_handle_exception(*args):
         transaction.record_exception(*sys.exc_info())
 
 def outer_fn_wrapper(outer_fn, instance, args, kwargs):
-    name = args[0]
+    view_name = args[0]
+    view_fn = getattr(instance, view_name, None)
+    name = view_fn and callable_name(view_fn)
 
     def inner_fn_wrapper(inner_fn, instance, args, kwargs):
         transaction = current_transaction()

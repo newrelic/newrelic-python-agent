@@ -618,7 +618,7 @@ class Transaction(object):
         else:
             custom_params = self._custom_params
 
-        type = exc.__name__
+        exc_type = exc.__name__
 
         try:
             message = str(value)
@@ -638,14 +638,14 @@ class Transaction(object):
         # multiple times.
 
         for error in self._errors:
-            if error.type == type and error.message == message:
+            if error.type == exc_type and error.message == message:
                 return
 
         stack_trace = traceback.format_exception(exc, value, tb)
 
         node = newrelic.core.error_node.ErrorNode(
                 timestamp=time.time(),
-                type=type,
+                type=exc_type,
                 message=message,
                 stack_trace=stack_trace,
                 custom_params=custom_params,

@@ -113,6 +113,7 @@ _settings.transaction_tracer.stack_trace_threshold = 0.5
 _settings.transaction_tracer.explain_enabled = True
 _settings.transaction_tracer.explain_threshold = 0.5
 _settings.transaction_tracer.function_trace = []
+_settings.transaction_tracer.top_n = 20
 
 _settings.error_collector.enabled = True
 _settings.error_collector.capture_source = False
@@ -138,6 +139,7 @@ _settings.agent_limits.merge_stats_maximum = 5
 _settings.agent_limits.saved_transactions = 10
 _settings.agent_limits.errors_per_transaction = 5
 _settings.agent_limits.errors_per_harvest = 20
+_settings.agent_limits.slow_transaction_dry_harvests = 5
 
 _settings.console.listener_socket = None
 _settings.console.allow_interpreter_cmd = False

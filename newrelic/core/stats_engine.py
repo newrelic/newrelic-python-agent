@@ -230,6 +230,8 @@ class StatsEngine(object):
         self.__stats_table = {}
         self.__sql_stats_table = {}
         self.__slow_transaction = None
+        self.__slow_transaction_map = {}
+        self.__slow_transaction_dry_harvests = 0
         self.__transaction_errors = []
         self.__metric_ids = {}
         self.__saved_transactions = []
@@ -465,22 +467,35 @@ class StatsEngine(object):
                     self.record_slow_sql_node(node)
 
         # Remember as slowest transaction if transaction tracer
-        # is enabled, it is over the threshold, slower than
-        # any existing transaction and recording of transaction
-        # trace for this transaction has not been suppressed.
+        # is enabled, it is over the threshold and slower than
+        # any existing transaction seen for this period and in
+        # the historical snapshot of slow transactions, plus
+        # recording of transaction trace for this transaction
+        # has not been suppressed.
 
         threshold = transaction_tracer.transaction_threshold
 
         if (not transaction.suppress_transaction_trace and
                     transaction_tracer.enabled and settings.collect_traces):
-            if transaction.duration >= threshold:
-                if self.__slow_transaction is None:
-                    self.__slow_transaction = transaction
-                elif transaction.duration >= self.__slow_transaction.duration:
-                    self.__slow_transaction = transaction
 
-                # Add transaction to the saved list, if transaction has a guid
-                # and number of saved transactions is less than the limit.
+            duration = transaction.duration
+
+            if duration >= threshold:
+                slowest = 0
+                name = transaction.path
+
+                if self.__slow_transaction:
+                    slowest = self.__slow_transaction.duration
+                if name in self.__slow_transaction_map:
+                    slowest = max(self.__slow_transaction_map[name], slowest)
+
+                if duration > slowest:
+                    self.__slow_transaction = transaction
+                    self.__slow_transaction_map[name] = duration
+
+                # Add transaction to the saved list, if transaction has
+                # a guid and number of saved transactions is less than
+                # the limit.
 
                 if transaction.guid:
                     maximum = settings.agent_limits.saved_transactions
@@ -724,11 +739,12 @@ class StatsEngine(object):
         self.__stats_table = {}
         self.__sql_stats_table = {}
         self.__slow_transaction = None
+        self.__slow_transaction_map = {}
         self.__transaction_errors = []
         self.__metric_ids = {}
         self.__saved_transactions = []
 
-    def create_snapshot(self):
+    def harvest_snapshot(self):
         """Creates a snapshot of the accumulated statistics, error
         details and slow transaction and returns it. This is a shallow
         copy, only copying the top level objects. The originals are then
@@ -742,11 +758,38 @@ class StatsEngine(object):
 
         stats = copy.copy(self)
 
-        # We retain the table of metric IDs. This should be okay
-        # for continuing connection. If connection is lost then
-        # reset_engine() above would be called and it would be
-        # all thrown away so no chance of following through with
-        # incorrect mappings.
+        # The slow transaction map is retained but we need to
+        # perform some housework on each harvest snapshot. What
+        # we do is add the slow transaction to the map of
+        # transactions and if we reach the threshold for maximum
+        # number we clear the table. Also clear the table if
+        # have number of harvests where no slow transaction was
+        # collected.
+
+        if self.__slow_transaction is None:
+            self.__slow_transaction_dry_harvests += 1
+            agent_limits = self.__settings.agent_limits
+            dry_harvests = agent_limits.slow_transaction_dry_harvests
+            if self.__slow_transaction_dry_harvests >= dry_harvests:
+                self.__slow_transaction_dry_harvests = 0
+                self.__slow_transaction_map = {}
+
+        else:
+            self.__slow_transaction_dry_harvests = 0
+            name = self.__slow_transaction.path
+            duration = self.__slow_transaction.duration
+            self.__slow_transaction_map[name] = duration
+
+            top_n = self.__settings.transaction_tracer.top_n
+            if len(self.__slow_transaction_map) >= top_n:
+                self.__slow_transaction_map = {}
+
+        # We also retain the table of metric IDs. This should be
+        # okay for continuing connection. If connection is lost
+        # then reset_engine() above would be called and it would
+        # be all thrown away so no chance of following through
+        # with incorrect mappings. Everything else is reset to
+        # initial values.
 
         self.__stats_table = {}
         self.__sql_stats_table = {}
@@ -832,11 +875,19 @@ class StatsEngine(object):
         if merge_traces:
             transaction = snapshot.__slow_transaction
 
-            if self.__slow_transaction is None:
-                self.__slow_transaction = transaction
-            elif (transaction is not None and
-                    transaction.duration > self.__slow_transaction.duration):
-                self.__slow_transaction = transaction
+            if transaction:
+                name = transaction.path
+                duration = transaction.duration
+
+                slowest = 0
+                if self.__slow_transaction:
+                    slowest = self.__slow_transaction.duration
+                if name in self.__slow_transaction_map:
+                    slowest = max(self.__slow_transaction_map[name], slowest)
+
+                if duration > slowest:
+                    self.__slow_transaction = transaction
+                    self.__slow_transaction_map[name] = duration
 
             maximum = self.__settings.agent_limits.saved_transactions
             self.__saved_transactions.extend(snapshot.__saved_transactions)

@@ -245,6 +245,8 @@ def _process_configuration(section):
                      'getfloat', None)
     _process_setting(section, 'transaction_tracer.function_trace',
                      'get', _map_function_trace)
+    _process_setting(section, 'transaction_tracer.top_n',
+                     'getint', None)
     _process_setting(section, 'error_collector.enabled',
                      'getboolean', None),
     _process_setting(section, 'error_collector.capture_source',
@@ -280,6 +282,8 @@ def _process_configuration(section):
     _process_setting(section, 'agent_limits.errors_per_transaction',
                      'getint', None)
     _process_setting(section, 'agent_limits.errors_per_harvest',
+                     'getint', None)
+    _process_setting(section, 'agent_limits.slow_transaction_dry_harvests',
                      'getint', None)
     _process_setting(section, 'console.listener_socket',
                      'get', _map_console_listener_socket)

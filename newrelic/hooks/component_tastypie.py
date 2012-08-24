@@ -15,13 +15,19 @@ def outer_fn_wrapper(outer_fn, instance, args, kwargs):
     view_fn = getattr(instance, view_name, None)
     name = view_fn and callable_name(view_fn)
 
+    # XXX
+    meta = instance._meta
+    name = '%s/%s' % (meta.resource_name, meta.api_name)
+    # XXX
+
     def inner_fn_wrapper(inner_fn, instance, args, kwargs):
         transaction = current_transaction()
 
         if transaction is None or name is None:
             return inner_fn(*args, **kwargs)
 
-        transaction.name_transaction(name, priority=4)
+        # transaction.name_transaction(name, priority=4)
+        transaction.name_transaction(name, 'Python/Resource', priority=4)
 
         with FunctionTrace(transaction, name=name):
             try:

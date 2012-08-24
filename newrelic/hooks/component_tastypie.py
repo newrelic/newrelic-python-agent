@@ -48,30 +48,6 @@ def instrument_tastypie_resources(module):
     module.Resource.wrap_view = ObjectWrapper(_wrap_view, None, outer_fn_wrapper)
     wrap_pre_function(module, 'Resource._handle_500', wrap_handle_exception)
 
-#def api_outer_fn_wrapper(outer_fn, instance, args, kwargs):
-#    view_name = args[0]
-#
-#    group = 'Python/TastyPie/Api'
-#    name =meta.api_name
-#
-#    def api_inner_fn_wrapper(inner_fn, instance, args, kwargs):
-#        transaction = current_transaction()
-#
-#        if transaction is None or name is None:
-#            return inner_fn(*args, **kwargs)
-#
-#        transaction.name_transaction(name, group, priority=4)
-#
-#        with FunctionTrace(transaction, name=name):
-#            try:
-#                return inner_fn(*args, **kwargs)
-#            except:
-#                transaction.record_exception(*sys.exc_info())
-#
-#    result = outer_fn(*args, **kwargs)
-#
-#    return ObjectWrapper(result, None, api_inner_fn_wrapper)
-
 def instrument_tastypie_api(module):
     _wrap_view = module.Api.wrap_view
     module.Api.wrap_view = ObjectWrapper(_wrap_view, None, outer_fn_wrapper)

@@ -64,39 +64,69 @@ def wrap_object(module, name, factory, args=()):
     apply_patch(parent, attribute, wrapper)
     return wrapper
 
+def _module_name(object):
+    if hasattr(object, '__module__'):
+        if object.__module__ in sys.modules:
+            return object.__module__
+
 def object_context(object):
-    m = inspect.getmodule(object)
-    mname = m and m.__name__ or '<unknown>'
-
-    cname = ''
-    fname = ''
-
     if hasattr(object, '_nr_last_object'):
         object = object._nr_last_object
+
+    mname = None
+    cname = None
+    fname = None
 
     # FIXME This will die if used on methods of Python objects
     # implemented in C.
 
     if inspect.isclass(object) or type(object) == types.TypeType:
+        # This is called for new and old style class objects.
+
+        mname = _module_name(object)
         cname = object.__name__
-        fname = ''
+        fname = None
+
     elif inspect.ismethod(object):
+        # This is called for both bound and unbound class methods.
+        # In the case of an unbound method the im_self attribute
+        # will be None.
+
         if object.im_self is not None and hasattr(object.im_self, '__name__'):
+            mname = _module_name(object.im_self)
             cname = object.im_self.__name__
+
         else:
+            mname = _module_name(object.im_class)
             cname = object.im_class.__name__
+
         fname = object.__name__
+
     elif inspect.isfunction(object):
-        cname = ''
+        # This is called for normal functions and static methods.
+
+        mname = _module_name(object)
+        cname = None
         fname = object.__name__
-    elif type(object) == types.InstanceType:
+
+    elif isinstance(object, types.InstanceType):
+        # This is called for instances of old style classes.
+
+        mname = _module_name(object)
         cname = object.__class__.__name__
-        fname = ''
+        fname = None
+
     elif hasattr(object, '__class__'):
+        # This is called for instances of new style classes.
+
+        mname = _module_name(object)
         cname = object.__class__.__name__
-        fname = ''
+        fname = None
 
     path = ''
+
+    if not mname:
+        mname = '<unknown>'
 
     if cname:
         path = cname

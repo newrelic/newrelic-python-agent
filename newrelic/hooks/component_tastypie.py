@@ -1,7 +1,7 @@
 import sys
 
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.api.object_wrapper import ObjectWrapper
+from newrelic.api.object_wrapper import ObjectWrapper, callable_name
 from newrelic.api.transaction import current_transaction
 from newrelic.api.pre_function import wrap_pre_function
 
@@ -18,12 +18,23 @@ def outer_fn_wrapper(outer_fn, instance, args, kwargs):
     if meta is None:
         group = 'Python/TastyPie/Api'
         name = instance.api_name
+        callable = getattr(instance, 'top_level', None)
     elif meta.api_name is not None:
         group = 'Python/TastyPie/Api'
         name = '%s/%s/%s' % (meta.api_name, meta.resource_name, view_name)
+        callable = getattr(instance, view_name, None)
     else:
         group = 'Python/TastyPie/Resource'
         name = '%s/%s' % (meta.resource_name, view_name)
+        callable = getattr(instance, view_name, None)
+
+    # Give preference to naming web transaction and trace node after
+    # target callable, but fall back to abstract path if for some reason
+    # we don't get a valid target callable.
+
+    if callable is not None:
+        name = callable_name(callable)
+        group = None
 
     def inner_fn_wrapper(inner_fn, instance, args, kwargs):
         transaction = current_transaction()
@@ -33,7 +44,7 @@ def outer_fn_wrapper(outer_fn, instance, args, kwargs):
 
         transaction.name_transaction(name, group, priority=4)
 
-        with FunctionTrace(transaction, name=name):
+        with FunctionTrace(transaction, name, group):
             try:
                 return inner_fn(*args, **kwargs)
             except:
@@ -45,7 +56,9 @@ def outer_fn_wrapper(outer_fn, instance, args, kwargs):
 
 def instrument_tastypie_resources(module):
     _wrap_view = module.Resource.wrap_view
-    module.Resource.wrap_view = ObjectWrapper(_wrap_view, None, outer_fn_wrapper)
+    module.Resource.wrap_view = ObjectWrapper(
+            _wrap_view, None, outer_fn_wrapper)
+
     wrap_pre_function(module, 'Resource._handle_500', wrap_handle_exception)
 
 def instrument_tastypie_api(module):

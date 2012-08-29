@@ -27,6 +27,9 @@ STATE_PENDING = 0
 STATE_RUNNING = 1
 STATE_STOPPED = 2
 
+CONCURRENCY_THREADING = 0
+CONCURRENCY_COROUTINE = 1
+
 class Transaction(object):
 
     _transactions = weakref.WeakValueDictionary()
@@ -57,7 +60,11 @@ class Transaction(object):
 
     @classmethod
     def _current_context(cls):
-        return (cls._current_thread(), cls._current_coroutine())
+        coroutine = cls._current_coroutine()
+        if coroutine is not None:
+            return (CONCURRENCY_COROUTINE, coroutine)
+        else:
+            return (CONCURRENCY_THREADING, cls._current_thread())
 
     @classmethod
     def _current_transaction(cls):
@@ -129,7 +136,7 @@ class Transaction(object):
         self._user_attrs = {}
         self._request_params = {}
 
-        self._thread_utilization = application.thread_utilization
+        self._thread_utilization = None
 
         self._thread_utilization_start = None
         self._thread_utilization_end = None
@@ -232,10 +239,14 @@ class Transaction(object):
 
         # Calculate initial thread utilisation factor.
 
-        if self._thread_utilization:
-            self._thread_utilization.enter_transaction()
-            self._thread_utilization_start = \
-                    self._thread_utilization.utilization_count()
+        concurrency_model, thread_instance  = self._active_context
+
+        if concurrency_model == CONCURRENCY_THREADING:
+            self._thread_utilization = self._application.thread_utilization
+            if self._thread_utilization:
+                self._thread_utilization.enter_transaction(thread_instance)
+                self._thread_utilization_start = \
+                        self._thread_utilization.utilization_count()
 
         # We need to push an object onto the top of the
         # node stack so that children can reach back and

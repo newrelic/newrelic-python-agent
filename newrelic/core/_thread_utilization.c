@@ -220,38 +220,45 @@ static double NRUtilization_adjust(NRUtilizationObject *self, int adjustment)
 static PyObject *NRUtilization_enter(NRUtilizationObject *self, PyObject *args)
 {
     PyObject *module = NULL;
-    PyObject *thread = NULL;
+    PyObject *thread = Py_None;
+
+    if (!PyArg_ParseTuple(args, "|O:enter_transaction", &thread))
+        return NULL;
 
     PyThread_acquire_lock(self->thread_mutex, 1);
 
-    module = PyImport_ImportModule("threading");
+    if (thread == Py_None) {
+        module = PyImport_ImportModule("threading");
 
-    if (!module)
-        PyErr_Clear();
+        if (!module)
+            PyErr_Clear();
 
-    if (module) {
-        PyObject *dict = NULL;
-        PyObject *func = NULL;
+        if (module) {
+            PyObject *dict = NULL;
+            PyObject *func = NULL;
 
-        dict = PyModule_GetDict(module);
+            dict = PyModule_GetDict(module);
 #if PY_MAJOR_VERSION >= 3
-        func = PyDict_GetItemString(dict, "current_thread");
+            func = PyDict_GetItemString(dict, "current_thread");
 #else
-        func = PyDict_GetItemString(dict, "currentThread");
+            func = PyDict_GetItemString(dict, "currentThread");
 #endif
-        if (func) {
-            Py_INCREF(func);
-            thread = PyEval_CallObject(func, (PyObject *)NULL);
-            if (!thread)
-                PyErr_Clear();
+            if (func) {
+                Py_INCREF(func);
+                thread = PyEval_CallObject(func, (PyObject *)NULL);
+                if (!thread)
+                    PyErr_Clear();
 
-            Py_DECREF(func);
+                Py_DECREF(func);
+            }
         }
+
+        Py_XDECREF(module);
     }
+    else
+        Py_INCREF(thread);
 
-    Py_XDECREF(module);
-
-    if (thread) {
+    if (thread && thread != Py_None) {
         PyObject *ref = NULL;
         PyObject *callback = NULL;
 
@@ -327,7 +334,7 @@ PyObject *NRUtilization_delete_all(NRUtilizationObject *self,
 
 static PyMethodDef NRUtilization_methods[] = {
     { "enter_transaction",  (PyCFunction)NRUtilization_enter,
-                            METH_NOARGS, 0 },
+                            METH_VARARGS, 0 },
     { "exit_transaction",   (PyCFunction)NRUtilization_exit,
                             METH_NOARGS, 0 },
     { "total_threads",      (PyCFunction)NRUtilization_total,

@@ -85,9 +85,12 @@ else
     TOX="python runtox.py"
 fi
 
-echo "Running validation with Pure Python version of agent!"
+TOX_OPTIONS="-c tox.ini"
+TOX_TESTS="newrelic/core/tests newrelic/api/tests"
 
-NEW_RELIC_EXTENSIONS=false $TOX -v -e $ENVIRONMENTS
+echo "Running tests with Pure Python version of agent!"
+
+NEW_RELIC_EXTENSIONS=false $TOX -v -e $ENVIRONMENTS $TOX_OPTIONS $TOX_TESTS
 
 STATUS=$?
 if test "$STATUS" != "0"
@@ -96,9 +99,9 @@ then
     exit 1
 fi
 
-echo "Running validation with mixed binary version of agent!"
+echo "Running tests with mixed binary version of agent!"
 
-NEW_RELIC_EXTENSIONS=true $TOX -v -e $ENVIRONMENTS
+NEW_RELIC_EXTENSIONS=true $TOX -v -e $ENVIRONMENTS $TOX_OPTIONS $TOX_TESTS
 
 STATUS=$?
 if test "$STATUS" != "0"

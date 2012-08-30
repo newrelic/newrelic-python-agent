@@ -2,34 +2,15 @@ import logging
 import StringIO
 import unittest
 
+import newrelic.tests.test_cases
+
 import newrelic.api.settings
 import newrelic.api.application
 import newrelic.api.transaction
 import newrelic.api.web_transaction
 
-_logger = logging.getLogger('newrelic')
-
 settings = newrelic.api.settings.settings()
-
-settings.host = 'staging-collector.newrelic.com'
-settings.license_key = '84325f47e9dec80613e262be4236088a9983d501'
-
-settings.app_name = 'UnitTests'
-
-settings.log_file = '%s.log' % __file__
-settings.log_level = logging.DEBUG
-
-settings.transaction_tracer.transaction_threshold = 0
-settings.transaction_tracer.stack_trace_threshold = 0
-
-settings.startup_timeout = 10.0
-settings.shutdown_timeout = 10.0
-
-settings.debug.log_data_collector_calls = True
-settings.debug.log_data_collector_payloads = True
-
-_application = newrelic.api.application.application_instance("UnitTests")
-_application.activate(timeout=10.0)
+_application = newrelic.api.application.application_instance()
 
 def _wsgiapp_function(environ, start_response):
     transaction = newrelic.api.transaction.current_transaction()
@@ -71,21 +52,19 @@ def _wsgiapp_function_decorator_default(environ, start_response):
     transaction = newrelic.api.transaction.current_transaction()
     assert transaction != None
 
-@newrelic.api.web_transaction.wsgi_application("UnitTests")
+# Python 2.5 doesn't have class decorators.
+#@newrelic.api.web_transaction.wsgi_application("UnitTests")
 class _wsgiapp_class_decorator:
     def __init__(self, environ, start_response):
         pass
     def __call__(self):
         transaction = newrelic.api.web_transaction.current_transaction()
         assert transaction != None
+_wsgiapp_class_decorator = newrelic.api.web_transaction.wsgi_application("UnitTests")(_wsgiapp_class_decorator)
 
-class WSGIApplicationTests(unittest.TestCase):
+class TestCase(newrelic.tests.test_cases.TestCase):
 
-    def setUp(self):
-        _logger.debug('STARTING - %s' % self._testMethodName)
-
-    def tearDown(self):
-        _logger.debug('STOPPING - %s' % self._testMethodName)
+    requires_collector = True
 
     def test_wsgiapp_function(self):
         environ = { "REQUEST_URI": "/wsgiapp_function" }

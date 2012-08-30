@@ -4,38 +4,17 @@ import logging
 import unittest
 import math
 
+import newrelic.tests.test_cases
+
 import newrelic.api.settings
 import newrelic.api.application
 
-_logger = logging.getLogger('newrelic')
-
 settings = newrelic.api.settings.settings()
+application = newrelic.api.application.application_instance()
 
-settings.host = 'staging-collector.newrelic.com'
-settings.license_key = '84325f47e9dec80613e262be4236088a9983d501'
+class TestCase(newrelic.tests.test_cases.TestCase):
 
-settings.app_name = 'Python Unit Tests'
-
-settings.log_file = '%s.log' % __file__
-settings.log_level = logging.DEBUG
-
-settings.transaction_tracer.transaction_threshold = 0
-settings.transaction_tracer.stack_trace_threshold = 0
-
-settings.shutdown_timeout = 10.0
-
-settings.debug.log_data_collector_calls = True
-settings.debug.log_data_collector_payloads = True
-
-application = newrelic.api.application.application_instance("UnitTests")
-
-class CustomMetricTests(unittest.TestCase):
-
-    def setUp(self):
-        _logger.debug('STARTING - %s' % self._testMethodName)
-
-    def tearDown(self):
-        _logger.debug('STOPPING - %s' % self._testMethodName)
+    requires_collector = True
 
     def test_int(self):
         for i in range(100):

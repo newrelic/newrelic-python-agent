@@ -1,7 +1,11 @@
+from __future__ import with_statement
+
 import unittest
 import time
 import sys
 import logging
+
+import newrelic.tests.test_cases
 
 import newrelic.api.settings
 import newrelic.api.application
@@ -10,55 +14,16 @@ import newrelic.api.database_trace
 
 import newrelic.agent
 
-_logger = logging.getLogger('newrelic')
-
 settings = newrelic.api.settings.settings()
-
-settings.host = 'staging-collector.newrelic.com'
-settings.port = 80
-settings.license_key = '84325f47e9dec80613e262be4236088a9983d501'
-
-settings.app_name = 'Python Agent Test'
-
-settings.log_file = '%s.log' % __file__
-settings.log_level = logging.DEBUG
-
-settings.transaction_tracer.transaction_threshold = 0
-
-# Initialise higher level instrumentation layers. Not
-# that they will be used in this test for now.
-
-newrelic.agent.initialize()
-
-# Want to force agent initialisation and connection so
-# we know that data will actually get through to core
-# and not lost because application not activated. We
-# really need a way of saying to the agent that want to
-# wait, either indefinitely or for a set period, when
-# activating the application. Will make this easier.
-
-import newrelic.core.agent
-
-agent = newrelic.core.agent.agent_instance()
-
-name = settings.app_name
-application_settings = agent.application_settings(name)
-
-agent.activate_application(name, timeout=10.0)
-
 application = newrelic.api.application.application_instance(settings.app_name)
 
 @newrelic.api.database_trace.database_trace(lambda sql: sql)
 def _test_function_1(sql):
     time.sleep(1.0)
 
-class DatabaseTraceTests(unittest.TestCase):
+class TestCase(newrelic.tests.test_cases.TestCase):
 
-    def setUp(self):
-        _logger.debug('STARTING - %s' % self._testMethodName)
-
-    def tearDown(self):
-        _logger.debug('STOPPING - %s' % self._testMethodName)
+    requires_collector = True
 
     def test_database_trace(self):
         environ = { "REQUEST_URI": "/database_trace" }

@@ -1,34 +1,19 @@
+from __future__ import with_statement
+  
 import logging
-import unittest
-import time
 import sys
+import time
+import unittest
+
+import newrelic.tests.test_cases
 
 import newrelic.api.settings
 import newrelic.api.application
 import newrelic.api.web_transaction
 import newrelic.api.external_trace
 
-_logger = logging.getLogger('newrelic')
-
 settings = newrelic.api.settings.settings()
-
-settings.host = 'staging-collector.newrelic.com'
-settings.license_key = '84325f47e9dec80613e262be4236088a9983d501'
-
-settings.app_name = 'Python Unit Tests'
-
-settings.log_file = '%s.log' % __file__
-settings.log_level = logging.DEBUG
-
-settings.transaction_tracer.transaction_threshold = 0
-settings.transaction_tracer.stack_trace_threshold = 0
-
-settings.shutdown_timeout = 10.0
-
-settings.debug.log_data_collector_calls = True
-settings.debug.log_data_collector_payloads = True
-
-application = newrelic.api.application.application_instance("UnitTests")
+application = newrelic.api.application.application_instance()
 
 @newrelic.api.external_trace.external_trace("unit-tests-1", lambda url: url)
 def _test_function_1(url):
@@ -50,13 +35,9 @@ class TestObject(object):
     def _test_function_4(url):
         time.sleep(1.0)
 
-class ExternalTraceTests(unittest.TestCase):
+class TestCase(newrelic.tests.test_cases.TestCase):
 
-    def setUp(self):
-        _logger.debug('STARTING - %s' % self._testMethodName)
-
-    def tearDown(self):
-        _logger.debug('STOPPING - %s' % self._testMethodName)
+    requires_collector = True
 
     def test_external_trace(self):
         environ = { "REQUEST_URI": "/external_trace" }

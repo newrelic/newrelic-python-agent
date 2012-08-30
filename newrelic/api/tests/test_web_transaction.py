@@ -1,7 +1,11 @@
+from __future__ import with_statement
+  
 import unittest
 import time
 import sys
 import logging
+
+import newrelic.tests.test_cases
 
 import newrelic.api.settings
 import newrelic.api.application
@@ -10,57 +14,12 @@ import newrelic.api.web_transaction
 
 import newrelic.agent
 
-_logger = logging.getLogger('newrelic')
-
 settings = newrelic.api.settings.settings()
+application = newrelic.api.application.application_instance()
 
-settings.host = 'staging-collector.newrelic.com'
-settings.port = 80
-settings.license_key = 'd67afc830dab717fd163bfcb0b8b88423e9a1a3b'
+class TestCase(newrelic.tests.test_cases.TestCase):
 
-settings.app_name = 'Python Unit Test1'
-
-settings.log_file = '%s.log' % __file__
-settings.log_level = logging.DEBUG
-
-settings.transaction_tracer.transaction_threshold = 0
-
-# Initialise higher level instrumentation layers. Not
-# that they will be used in this test for now.
-
-newrelic.agent.initialize()
-
-# Want to force agent initialisation and connection so
-# we know that data will actually get through to core
-# and not lost because application not activated. We
-# really need a way of saying to the agent that want to
-# wait, either indefinitely or for a set period, when
-# activating the application. Will make this easier.
-
-import newrelic.core.agent
-
-agent = newrelic.core.agent.agent_instance()
-
-name = settings.app_name
-application_settings = agent.application_settings(name)
-
-agent.activate_application(name)
-
-for i in range(10):
-    application_settings = agent.application_settings(name)
-    if application_settings:
-        break
-    time.sleep(0.5)
-
-application = newrelic.api.application.application_instance(settings.app_name)
-
-class WebTransactionTests(unittest.TestCase):
-
-    def setUp(self):
-        _logger.debug('STARTING - %s' % self._testMethodName)
-
-    def tearDown(self):
-        _logger.debug('STOPPING - %s' % self._testMethodName)
+    requires_collector = True
 
     def test_inactive(self):
         self.assertEqual(newrelic.api.transaction.current_transaction(), None)

@@ -16,7 +16,7 @@ import newrelic.api.database_trace
 import newrelic.api.external_trace
 import newrelic.api.function_trace
 import newrelic.api.memcache_trace
-import newrelic.api.name_transaction
+import newrelic.api.transaction_name
 import newrelic.api.error_trace
 import newrelic.api.function_profile
 import newrelic.api.object_wrapper
@@ -887,22 +887,24 @@ def _process_memcache_trace_configuration():
 
 # Setup name transaction wrapper defined in configuration file.
 
-def _name_transaction_import_hook(object_path, name, group):
+def _transaction_name_import_hook(object_path, name, group):
     def _instrument(target):
-        _logger.debug("wrap name-transaction %s" %
+        _logger.debug("wrap transaction-name %s" %
                 ((target, object_path, name, group),))
 
         try:
-            newrelic.api.name_transaction.wrap_name_transaction(
+            newrelic.api.transaction_name.wrap_transaction_name(
                     target, object_path, name, group)
         except:
-            _raise_instrumentation_error('name-transaction', locals())
+            _raise_instrumentation_error('transaction-name', locals())
 
     return _instrument
 
-def _process_name_transaction_configuration():
+def _process_transaction_name_configuration():
     for section in _config_object.sections():
-        if not section.startswith('name-transaction:'):
+        # Support 'name-transaction' for backward compatibility.
+        if (not section.startswith('transaction-name:') and
+                not section.startswith('name-transaction:')):
             continue
 
         enabled = False
@@ -934,10 +936,10 @@ def _process_name_transaction_configuration():
                          newrelic.api.object_wrapper.callable_name}
                 name = eval(name, vars)
 
-            _logger.debug("register name-transaction %s" %
+            _logger.debug("register transaction-name %s" %
                     ((module, object_path, name, group),))
 
-            hook = _name_transaction_import_hook(object_path, name,
+            hook = _transaction_name_import_hook(object_path, name,
                                                  group)
             newrelic.api.import_hook.register_import_hook(module, hook)
         except:
@@ -1366,7 +1368,7 @@ def _setup_instrumentation():
     _process_function_trace_configuration()
     _process_memcache_trace_configuration()
 
-    _process_name_transaction_configuration()
+    _process_transaction_name_configuration()
 
     _process_error_trace_configuration()
 

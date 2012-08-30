@@ -1,3 +1,5 @@
+import warnings
+
 import newrelic.core.agent
 import newrelic.core.config
 
@@ -6,6 +8,8 @@ import newrelic.api.background_task
 
 import newrelic.api.transaction
 import newrelic.api.application
+
+import newrelic.api.transaction_name
 
 import newrelic.api.function_trace
 
@@ -25,7 +29,14 @@ def shutdown_agent(timeout=None):
     agent = newrelic.core.agent.agent_instance()
     agent.shutdown_agent(timeout)
 
+def set_transaction_name(name, group=None, priority=None):
+    transaction = current_transaction()
+    if transaction:
+        transaction.name_transaction(name, group, priority)
+
 def name_transaction(name, group=None, priority=None):
+    #warnings.warn('API change. Use set_transaction_name() instead of '
+    #        'name_transaction().', DeprecationWarning, stacklevel=2)
     transaction = current_transaction()
     if transaction:
         transaction.name_transaction(name, group, priority)
@@ -108,3 +119,6 @@ BackgroundTaskWrapper = newrelic.api.background_task.BackgroundTaskWrapper
 function_trace = newrelic.api.function_trace.function_trace
 FunctionTrace = newrelic.api.function_trace.FunctionTrace
 FunctionTraceWrapper = newrelic.api.function_trace.FunctionTraceWrapper
+
+transaction_name = newrelic.api.transaction_name.transaction_name
+TransactionNameWrapper = newrelic.api.transaction_name.TransactionNameWrapper

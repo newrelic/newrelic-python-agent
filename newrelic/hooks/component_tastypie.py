@@ -18,22 +18,22 @@ def outer_fn_wrapper(outer_fn, instance, args, kwargs):
     if meta is None:
         group = 'Python/TastyPie/Api'
         name = instance.api_name
-        callable = getattr(instance, 'top_level', None)
+        callback = getattr(instance, 'top_level', None)
     elif meta.api_name is not None:
         group = 'Python/TastyPie/Api'
         name = '%s/%s/%s' % (meta.api_name, meta.resource_name, view_name)
-        callable = getattr(instance, view_name, None)
+        callback = getattr(instance, view_name, None)
     else:
         group = 'Python/TastyPie/Resource'
         name = '%s/%s' % (meta.resource_name, view_name)
-        callable = getattr(instance, view_name, None)
+        callback = getattr(instance, view_name, None)
 
     # Give preference to naming web transaction and trace node after
-    # target callable, but fall back to abstract path if for some reason
-    # we don't get a valid target callable.
+    # target callback, but fall back to abstract path if for some reason
+    # we don't get a valid target callback.
 
-    if callable is not None:
-        name = callable_name(callable)
+    if callback is not None:
+        name = callable_name(callback)
         group = None
 
     def inner_fn_wrapper(inner_fn, instance, args, kwargs):

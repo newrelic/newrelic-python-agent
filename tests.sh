@@ -85,12 +85,12 @@ else
     TOX="python runtox.py"
 fi
 
-TOX_OPTIONS="-c tox.ini"
-TOX_TESTS="newrelic/core/tests newrelic/api/tests"
+TOX_TESTS="newrelic/core/tests newrelic/api/tests newrelic/tests"
 
 echo "Running tests with Pure Python version of agent!"
 
-NEW_RELIC_EXTENSIONS=false $TOX -v -e $ENVIRONMENTS $TOX_OPTIONS $TOX_TESTS
+NEW_RELIC_EXTENSIONS=false $TOX -v -e $ENVIRONMENTS -c tox-admin.ini
+NEW_RELIC_EXTENSIONS=false $TOX -v -e $ENVIRONMENTS -c tox.ini $TOX_TESTS
 
 STATUS=$?
 if test "$STATUS" != "0"
@@ -101,7 +101,8 @@ fi
 
 echo "Running tests with mixed binary version of agent!"
 
-NEW_RELIC_EXTENSIONS=true $TOX -v -e $ENVIRONMENTS $TOX_OPTIONS $TOX_TESTS
+NEW_RELIC_EXTENSIONS=true $TOX -v -e $ENVIRONMENTS -c tox-admin.ini
+NEW_RELIC_EXTENSIONS=true $TOX -v -e $ENVIRONMENTS -c tox.ini $TOX_TESTS
 
 STATUS=$?
 if test "$STATUS" != "0"

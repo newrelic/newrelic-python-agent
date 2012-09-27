@@ -8,6 +8,7 @@ import logging
 import sys
 import threading
 import time
+import os
 
 from newrelic.core.config import global_settings_dump
 from newrelic.core.data_collector import (create_session, ForceAgentRestart,
@@ -17,6 +18,7 @@ from newrelic.core.metric import ValueMetric
 from newrelic.core.rules_engine import RulesEngine
 from newrelic.core.samplers import create_samplers
 from newrelic.core.stats_engine import StatsEngine, ValueMetrics
+from newrelic.core.thread_profiler import ThreadProfiler
 from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
         InternalTraceContext, internal_metric)
 
@@ -132,6 +134,9 @@ class Application(object):
             self._thread_utilization = ThreadUtilization()
             self._samplers.append(ThreadUtilizationSampler(
                     self._thread_utilization))
+
+        self._thread_profiler = ThreadProfiler(-1, 0.1, 180)
+        self._profiler_started = False
 
     @property
     def name(self):
@@ -514,7 +519,7 @@ class Application(object):
 
                 # Now merge in any metrics from the data samplers
                 # associated with this application.
-		#
+                #
                 # NOTE If a data sampler has problems then what data was
                 # collected up to that point is retained. The data
                 # collector itself is still retained and would be used
@@ -601,6 +606,20 @@ class Application(object):
                         if slow_transaction_data:
                             self._active_session.send_transaction_traces(
                                     slow_transaction_data)
+
+                    if os.path.isfile('/tmp/start_profile'):
+                        _logger.debug('Commencing thread profiling for %r.',
+                                self._app_name)
+                        self._thread_profiler.start_profiling()
+                        os.remove('/tmp/start_profile')
+                        self._profiler_started = True
+                    if self._profiler_started:
+                        profile_data = self._thread_profiler.profile_data()
+                        if profile_data:
+                            _logger.debug('Finished thread profiling for %r.',
+                                    self._app_name)
+                            self._active_session.send_profile_data(profile_data)
+                            self._profiler_started = False
 
                     # If this is a final forced harvest for the process
                     # then attempt to shutdown the session.

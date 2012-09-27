@@ -439,6 +439,18 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
     raise DiscardDataForRequest(message)
 
+def get_agent_commands():
+    """
+    Receive commands from collector to start/stop/cancel thread profiling
+    """
+    pass
+
+def agent_command_results():
+    """
+    Acknowledge the receipt of the collector command.
+    """
+    pass
+
 class ApplicationSession(object):
 
     """ Class which encapsulates communication with the data collector
@@ -547,6 +559,19 @@ class ApplicationSession(object):
 
         return send_request(self.requests_session, self.collector_url,
                 'transaction_sample_data', self.license_key,
+                self.agent_run_id, payload)
+
+    def send_profile_data(self, profile_data):
+        """Called to submit Profile Data.
+        """
+
+        if not profile_data:
+            return
+
+        payload = (self.agent_run_id, profile_data)
+
+        return send_request(self.requests_session, self.collector_url,
+                'profile_data', self.license_key,
                 self.agent_run_id, payload)
 
     @internal_trace('Supportability/Collector/Calls/sql_trace_data')

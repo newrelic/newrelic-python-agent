@@ -135,7 +135,6 @@ class Application(object):
             self._samplers.append(ThreadUtilizationSampler(
                     self._thread_utilization))
 
-        self._thread_profiler = ThreadProfiler(-1, 0.1, 180)
         self._profiler_started = False
 
     @property
@@ -607,12 +606,24 @@ class Application(object):
                             self._active_session.send_transaction_traces(
                                     slow_transaction_data)
 
-                    if os.path.isfile('/tmp/start_profile'):
-                        _logger.debug('Commencing thread profiling for %r.',
-                                self._app_name)
-                        self._thread_profiler.start_profiling()
-                        os.remove('/tmp/start_profile')
-                        self._profiler_started = True
+                    if True:
+                        commands = self._active_session.get_agent_commands()
+                        for command in commands:
+                            command_id = command[0]
+                            command_name = command[1]['name']
+                            command_args = command[1]['arguments']
+                            print command_args
+                            if command_name == 'start_profiler':
+                                self._thread_profiler = ThreadProfiler(
+                                        **command_args)
+                                _logger.debug(
+                                        'Commencing thread profiling for %r.',
+                                        self._app_name)
+                                self._thread_profiler.start_profiling()
+                                self._profiler_started = True
+                            self._active_session.send_agent_command_results(
+                                    command_id)
+
                     if self._profiler_started:
                         profile_data = self._thread_profiler.profile_data()
                         if profile_data:

@@ -1,9 +1,15 @@
-import threading
+import sys
 import time
-from collections import namedtuple
+import threading
 import zlib
-import newrelic.lib.simplejson as simplejson
 import base64
+
+try:
+    from collections import namedtuple
+except:
+    from newrelic.lib.collections import namedtuple
+
+import newrelic.lib.simplejson as simplejson
 
 _MethodData = namedtuple('_MethodData',
         ['file_name', 'method_name', 'line_no'])
@@ -42,7 +48,9 @@ class ProfileNode(object):
                 self.children.values()]
 
 class ThreadProfiler(object):
-    def __init__(self, profile_id, resolution, duration):
+    def __init__(self, profile_id, sample_period=0.1, duration=300,
+            profile_agent_code=False, only_runnable_threads=False,
+            only_request_threads=False):
         self._profiler_thread = threading.Thread(target=self.profiler_loop,
                 name='NR-Profiler-Thread')
         self._profiler_thread.setDaemon(True)
@@ -52,8 +60,12 @@ class ThreadProfiler(object):
         self._sample_count = 0
         self.start_time = 0
         self.stop_time = 0
-        self.call_trees = {}
-        self.resolution = resolution
+        self.call_trees = {'REQUEST': {}, 
+                'AGENT': {}, 
+                'BACKGROUND': {}, 
+                'OTHER': {}, 
+                }
+        self.sample_period = sample_period
         self.duration = duration
 
     def profiler_loop(self):
@@ -61,7 +73,7 @@ class ThreadProfiler(object):
             if self._profiler_shutdown.isSet():
                 self._run_profiler()
                 return 
-            self._profiler_shutdown.wait(self.resolution)
+            self._profiler_shutdown.wait(self.sample_period)
             self._run_profiler()
             if (time.time() - self.start_time) >= self.duration:
                 self.stop_profiling()
@@ -70,9 +82,17 @@ class ThreadProfiler(object):
         self._sample_count += 1
         stacks = collect_thread_stacks()
         for thread_id, stack_trace in stacks.items():
-            if thread_id not in self.call_trees.keys():
-                self.call_trees[thread_id] = ProfileNode(stack_trace[0])
-            node = self.call_trees[thread_id]
+            thr = threading._active.get(thread_id)
+            if thr.isDaemon():
+                if 'NR-' in thr.name:
+                    call_trees = self.call_trees['AGENT']
+                else:
+                    call_trees = self.call_trees['BACKGROUND']
+            else:
+                call_trees = self.call_trees['REQUEST']
+            if thread_id not in call_trees.keys():
+                call_trees[thread_id] = ProfileNode(stack_trace[0])
+            node = call_trees[thread_id]
             for method_data in stack_trace:
                 node = node.add_child(method_data)
     
@@ -83,46 +103,48 @@ class ThreadProfiler(object):
     def stop_profiling(self):
         self.stop_time = time.time()
         self._profiler_shutdown.set()
-        #self._profiler_thread.join(self.resolution)
+        #self._profiler_thread.join(self.sample_period)
 
     def profile_data(self):
         if self._profiler_thread.isAlive():
             return None
-        call_trees = self.call_trees.values()
-        call_trees.insert(0, {'cpu_time': 1})
-        call_data = {"REQUEST": call_trees}
+        call_data = {}
+        thread_count = 0
+        for thread_type, call_tree in self.call_trees.items():
+            stack = call_tree.values()
+            stack.insert(0, {'cpu_time': 1})
+            call_data[thread_type] = stack
+            thread_count += len(call_tree)
         json_data = simplejson.dumps(call_data, default=alt_serialize,
                 ensure_ascii=True, encoding='Latin-1',
                 namedtuple_as_object=False)
-        encoded_data = base64.standard_b64encode(
-                zlib.compress(json_data))
-        profile_data = [[ self.profile_id, self.start_time*1000,
-            self.stop_time*1000, self._sample_count, encoded_data,
-            len(call_trees) , 0]]
-        return profile_data
+        encoded_data = base64.standard_b64encode(zlib.compress(json_data))
+        profile = [[self.profile_id, self.start_time*1000, self.stop_time*1000,
+            self._sample_count, encoded_data, thread_count, 0]]
+        return profile
 
 def collect_thread_stacks():
-    import sys
     stack_traces = {}
     for thread_id, frame in sys._current_frames().items():
         stack_traces[thread_id] = []
         while frame:
-            stack_traces[thread_id].append(_MethodData(frame.f_code.co_filename,
-                frame.f_code.co_name, frame.f_code.co_firstlineno))
+            f = frame.f_code
+            stack_traces[thread_id].append(_MethodData(f.co_filename,
+                f.co_name, f.co_firstlineno))
             frame = frame.f_back
         stack_traces[thread_id].reverse()
     return stack_traces
 
-def alt_serialize(profile_node):
-    if isinstance(profile_node, ProfileNode):
-        return profile_node.jsonable()
+def alt_serialize(data):
+    if isinstance(data, ProfileNode):
+        return data.jsonable()
     else:
-        return profile_node
-
+        return data
 
 if __name__ == "__main__":
     t = ThreadProfiler(-1, 0.1, 1)
     t.start_profiling()
     import time
-    time.sleep(2)
+    time.sleep(1.1)
     print t.profile_data()
+    print zlib.decompress(base64.standard_b64decode(t.profile_data()[0][4]))

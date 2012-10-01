@@ -439,17 +439,6 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
     raise DiscardDataForRequest(message)
 
-def get_agent_commands():
-    """
-    Receive commands from collector to start/stop/cancel thread profiling
-    """
-    pass
-
-def agent_command_results():
-    """
-    Acknowledge the receipt of the collector command.
-    """
-    pass
 
 class ApplicationSession(object):
 
@@ -591,6 +580,24 @@ class ApplicationSession(object):
 
         return send_request(self.requests_session, self.collector_url,
                 'sql_trace_data', self.license_key, self.agent_run_id,
+                payload)
+
+    def get_agent_commands(self):
+        """
+        Receive commands from collector to start/stop/cancel thread profiling
+        """
+        payload = (self.agent_run_id,)
+        return send_request(self.requests_session, self.collector_url,
+                'get_agent_commands', self.license_key, self.agent_run_id,
+                payload)
+
+    def send_agent_command_results(self, command_id):
+        """
+        Acknowledge the receipt of the collector command.
+        """
+        payload = (self.agent_run_id, {command_id: {}})
+        return send_request(self.requests_session, self.collector_url,
+                'agent_command_results', self.license_key, self.agent_run_id,
                 payload)
 
 def create_session(license_key, app_name, linked_applications,

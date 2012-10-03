@@ -617,12 +617,25 @@ class Application(object):
                                 self._thread_profiler = ThreadProfiler(
                                         **command_args)
                                 _logger.debug(
-                                        'Commencing thread profiling for %r.',
+                                        'Commencing thread profiler for %r.',
                                         self._app_name)
                                 self._thread_profiler.start_profiling()
                                 self._profiler_started = True
-                            self._active_session.send_agent_command_results(
-                                    command_id)
+                                self._active_session.send_agent_command_results(
+                                        command_id)
+                            elif command_name == 'stop_profiler':
+                                if self._profiler_started:
+                                    self._thread_profiler.stop_profiling()
+                                    _logger.debug(
+                                            'Stopping thread profiler for %r.',
+                                            self._app_name)
+                                else:
+                                    _logger.debug(
+                                            'Thread profiler not running'
+                                            'for %r.',
+                                            self._app_name)
+                                self._active_session.send_agent_command_results(
+                                        command_id)
 
                     if self._profiler_started:
                         profile_data = self._thread_profiler.profile_data()

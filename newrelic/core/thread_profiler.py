@@ -3,11 +3,12 @@ import time
 import threading
 import zlib
 import base64
+import traceback
 
 try:
     from collections import namedtuple
 except:
-    from newrelic.lib.collections import namedtuple
+    from newrelic.lib.namedtuple import namedtuple
 
 import newrelic.lib.simplejson as simplejson
 
@@ -67,6 +68,10 @@ class ThreadProfiler(object):
                 }
         self.sample_period = sample_period
         self.duration = duration
+        self.profile_agent_code = profile_agent_code
+        self.only_runnable_threads = only_runnable_threads
+        self.only_request_threads = only_request_threads
+
 
     def profiler_loop(self):
         while True:
@@ -78,22 +83,35 @@ class ThreadProfiler(object):
             if (time.time() - self.start_time) >= self.duration:
                 self.stop_profiling()
 
+    def get_call_trees(self, thr):
+        if thr is None:  # Thread is not active
+            return None
+        if thr.isDaemon():
+            if self.only_request_threads:
+                return None
+            if 'NR-' in thr.name:
+                if self.profile_agent_code:
+                    return self.call_trees['AGENT']
+                else:
+                    return None
+            else:
+                return self.call_trees['BACKGROUND']
+        else:
+            return self.call_trees['REQUEST']
+
     def _run_profiler(self):
         self._sample_count += 1
-        stacks = collect_thread_stacks()
-        for thread_id, stack_trace in stacks.items():
+        for thread_id, frame in sys._current_frames().items():
             thr = threading._active.get(thread_id)
-            if thr.isDaemon():
-                if 'NR-' in thr.name:
-                    call_trees = self.call_trees['AGENT']
-                else:
-                    call_trees = self.call_trees['BACKGROUND']
-            else:
-                call_trees = self.call_trees['REQUEST']
-            if thread_id not in call_trees.keys():
-                call_trees[thread_id] = ProfileNode(stack_trace[0])
-            node = call_trees[thread_id]
-            for method_data in stack_trace:
+            call_trees = self.get_call_trees(thr)
+            if call_trees is None:
+                continue  # Appropriate call tree not found, ignore the thread
+            for file_name, line_no, func_name, text in traceback.extract_stack(
+                    frame):
+                method_data = _MethodData(file_name, func_name, line_no)
+                if thread_id not in call_trees.keys():
+                    call_trees[thread_id] = ProfileNode(method_data)
+                node = call_trees[thread_id]
                 node = node.add_child(method_data)
     
     def start_profiling(self):
@@ -103,7 +121,7 @@ class ThreadProfiler(object):
     def stop_profiling(self):
         self.stop_time = time.time()
         self._profiler_shutdown.set()
-        #self._profiler_thread.join(self.sample_period)
+        self._profiler_thread.join(self.sample_period)
 
     def profile_data(self):
         if self._profiler_thread.isAlive():
@@ -126,6 +144,7 @@ class ThreadProfiler(object):
 def collect_thread_stacks():
     stack_traces = {}
     for thread_id, frame in sys._current_frames().items():
+        thr = threading._active.get(thread_id)
         stack_traces[thread_id] = []
         while frame:
             f = frame.f_code
@@ -142,7 +161,7 @@ def alt_serialize(data):
         return data
 
 if __name__ == "__main__":
-    t = ThreadProfiler(-1, 0.1, 1)
+    t = ThreadProfiler(-1, 0.1, 1, profile_agent_code=True)
     t.start_profiling()
     import time
     time.sleep(1.1)

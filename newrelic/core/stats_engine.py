@@ -29,10 +29,11 @@ class ApdexStats(list):
     # Is based on a list of length 6 as all metrics are sent to the core
     # application as that and list as base class means it encodes direct
     # to JSON as we need it. In this case only the first 3 entries are
-    # used though with remainder being 0.
+    # strictly used for the metric. The 4th and 5th entries are set to
+    # be the apdex value in use at the time.
 
-    def __init__(self):
-        super(ApdexStats, self).__init__([0, 0, 0, 0, 0, 0])
+    def __init__(self, apdex=0):
+        super(ApdexStats, self).__init__([0, 0, 0, apdex, apdex, 0])
 
     satisfying = property(operator.itemgetter(0))
     tolerating = property(operator.itemgetter(1))
@@ -288,7 +289,7 @@ class StatsEngine(object):
         key = (metric.name, None)
         stats = self.__stats_table.get(key)
         if stats is None:
-            stats = ApdexStats()
+            stats = ApdexStats(self.__settings.apdex_t)
             self.__stats_table[key] = stats
         stats.merge_apdex_metric(metric)
 

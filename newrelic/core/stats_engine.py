@@ -620,7 +620,8 @@ class StatsEngine(object):
         maximum = self.__settings.agent_limits.transaction_traces_nodes
         traces = list(self.__saved_transactions)
 
-        if self.__slow_transaction not in traces:
+        if (self.__slow_transaction is not None and
+                self.__slow_transaction not in traces):
             traces.append(self.__slow_transaction)
 
         for trace in traces:

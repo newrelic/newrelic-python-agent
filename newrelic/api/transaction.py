@@ -302,10 +302,15 @@ class Transaction(object):
 
         if not self._cpu_user_time_end:
             self._cpu_user_time_end = os.times()[0]
+
         self._cpu_user_time_value = (self._cpu_user_time_end -
                 self._cpu_user_time_start)
-        self._cpu_utilization_value = self._cpu_user_time_value / (
-                duration * newrelic.core.samplers.cpu_count())
+
+        if duration:
+            self._cpu_utilization_value = self._cpu_user_time_value / (
+                    duration * newrelic.core.samplers.cpu_count())
+        else:
+            self._cpu_utilization_value = 0.0
 
         # Calculate thread utilisation factor if using.
 

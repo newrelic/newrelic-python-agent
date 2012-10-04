@@ -50,6 +50,16 @@ _settings.debug = DebugSettings()
 
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
 
+def _environ_as_bool(name, default=False):
+    flag = os.environ.get(name, default)
+    if default is None or default:
+        if isinstance(flag, basestring):
+            flag = not flag.lower() in ['off', 'false', '0']
+    else:
+        if isinstance(flag, basestring):
+            flag = flag.lower() in ['on', 'true', '1']
+    return flag
+
 _LOG_LEVEL = {
     'CRITICAL': logging.CRITICAL,
     'ERROR': logging.ERROR,
@@ -67,7 +77,7 @@ else:
 
 _settings.license_key = os.environ.get('NEW_RELIC_LICENSE_KEY', None)
 
-_settings.ssl = False
+_settings.ssl = _environ_as_bool('NEW_RELIC_SSL', False)
 
 _settings.host = os.environ.get('NEW_RELIC_HOST', 'collector.newrelic.com')
 _settings.port = int(os.environ.get('NEW_RELIC_PORT', '0'))

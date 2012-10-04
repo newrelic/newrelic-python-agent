@@ -18,6 +18,21 @@ from newrelic.api.web_transaction import WSGIApplicationWrapper
 
 def browser_timing_middleware(request, response):
 
+    # Don't do anything if receive a streaming response as is
+    # planned to be introduced in Django 1.5. Need to avoid this
+    # as there will be no 'content' attribute. Alternatively
+    # there may be a 'content' attribute which flattens the
+    # stream, which if we access, will break the streaming
+    # and/or buffer what is potentially a very large response in
+    # memory contrary to what user wanted by explicitly using a
+    # streaming response object in the first place. To preserve
+    # streaming but still do RUM insertion, need to move to a
+    # WSGI middleware and deal with how to update the content
+    # length.
+
+    if hasattr(response, 'streaming_content'):
+        return response
+
     # Need to be running within a valid web transaction.
 
     transaction = current_transaction()

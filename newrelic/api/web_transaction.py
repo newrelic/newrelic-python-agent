@@ -23,14 +23,14 @@ _rum_footer_short_fragment = '<script type="text/javascript">' \
         'if(!NREUMQ.f){NREUMQ.f=function(){NREUMQ.push(["load",' \
         'new Date().getTime()]);if(NREUMQ.a)NREUMQ.a();};' \
         'NREUMQ.a=window.onload;window.onload=NREUMQ.f;};' \
-        'NREUMQ.push(["nrf2","%s","%s",%d,"%s",%d,%d,' \
+        'NREUMQ.push(["nrf2","%s","%s","%s","%s",%d,%d,' \
         'new Date().getTime()]);</script>'
 
 _rum2_footer_short_fragment = '<script type="text/javascript">' \
         'if(!NREUMQ.f){NREUMQ.f=function(){NREUMQ.push(["load",' \
         'new Date().getTime()]);if(NREUMQ.a)NREUMQ.a();};' \
         'NREUMQ.a=window.onload;window.onload=NREUMQ.f;};' \
-        'NREUMQ.push(["nrfj","%s","%s",%d,"%s",%d,%d,' \
+        'NREUMQ.push(["nrfj","%s","%s","%s","%s",%d,%d,' \
         'new Date().getTime(),"%s","%s","%s","%s","%s"]);</script>'
 
 _rum_footer_long_fragment = '<script type="text/javascript">' \
@@ -40,7 +40,7 @@ _rum_footer_long_fragment = '<script type="text/javascript">' \
         'e.src=(("http:"===document.location.protocol)?"http:":"https:")' \
         '+"//"+"%s";document.body.appendChild(e);if(NREUMQ.a)NREUMQ.a();};' \
         'NREUMQ.a=window.onload;window.onload=NREUMQ.f;};' \
-        'NREUMQ.push(["nrf2","%s","%s",%d,"%s",%d,%d,' \
+        'NREUMQ.push(["nrf2","%s","%s","%s","%s",%d,%d,' \
         'new Date().getTime()]);</script>'
 
 _rum2_footer_long_fragment = '<script type="text/javascript">' \
@@ -50,7 +50,7 @@ _rum2_footer_long_fragment = '<script type="text/javascript">' \
         'e.src=(("http:"===document.location.protocol)?"http:":"https:")' \
         '+"//"+"%s";document.body.appendChild(e);if(NREUMQ.a)NREUMQ.a();};' \
         'NREUMQ.a=window.onload;window.onload=NREUMQ.f;};' \
-        'NREUMQ.push(["nrfj","%s","%s",%d,"%s",%d,%d,' \
+        'NREUMQ.push(["nrfj","%s","%s","%s","%s",%d,%d,' \
         'new Date().getTime(),"%s","%s","%s","%s","%s"]);</script>'
 
 def _obfuscate(name, key):

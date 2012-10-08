@@ -50,8 +50,7 @@ class ProfileNode(object):
 
 class ThreadProfiler(object):
     def __init__(self, profile_id, sample_period=0.1, duration=300,
-            profile_agent_code=False, only_runnable_threads=False,
-            only_request_threads=False):
+            profile_agent_code=False, only_runnable_threads=False):
         self._profiler_thread = threading.Thread(target=self.profiler_loop,
                 name='NR-Profiler-Thread')
         self._profiler_thread.setDaemon(True)
@@ -70,7 +69,6 @@ class ThreadProfiler(object):
         self.duration = duration
         self.profile_agent_code = profile_agent_code
         self.only_runnable_threads = only_runnable_threads
-        self.only_request_threads = only_request_threads
 
 
     def profiler_loop(self):
@@ -87,8 +85,6 @@ class ThreadProfiler(object):
         if thr is None:  # Thread is not active
             return None
         if thr.isDaemon():
-            if self.only_request_threads:
-                return None
             if 'NR-' in thr.name:
                 if self.profile_agent_code:
                     return self.call_trees['AGENT']
@@ -141,20 +137,10 @@ class ThreadProfiler(object):
             self._sample_count, encoded_data, thread_count, 0]]
         return profile
 
-def collect_thread_stacks():
-    stack_traces = {}
-    for thread_id, frame in sys._current_frames().items():
-        thr = threading._active.get(thread_id)
-        stack_traces[thread_id] = []
-        while frame:
-            f = frame.f_code
-            stack_traces[thread_id].append(_MethodData(f.co_filename,
-                f.co_name, f.co_firstlineno))
-            frame = frame.f_back
-        stack_traces[thread_id].reverse()
-    return stack_traces
-
 def alt_serialize(data):
+    """
+    Alternate serializer for the ProfileNode object. Used by the json.dumps
+    """
     if isinstance(data, ProfileNode):
         return data.jsonable()
     else:

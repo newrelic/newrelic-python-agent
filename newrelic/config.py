@@ -231,6 +231,8 @@ def _process_configuration(section):
                      'getfloat', None)
     _process_setting(section, 'shutdown_timeout',
                      'getfloat', None)
+    _process_setting(section, 'thread_profiler.enabled',
+                     'getboolean', None)
     _process_setting(section, 'transaction_tracer.enabled',
                      'getboolean', None)
     _process_setting(section, 'transaction_tracer.transaction_threshold',

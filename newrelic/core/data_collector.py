@@ -591,11 +591,11 @@ class ApplicationSession(object):
                 'get_agent_commands', self.license_key, self.agent_run_id,
                 payload)
 
-    def send_agent_command_results(self, command_id):
+    def send_agent_command_results(self, cmd_results):
         """
         Acknowledge the receipt of the collector command.
         """
-        payload = (self.agent_run_id, {command_id: {}})
+        payload = (self.agent_run_id, cmd_results)
         return send_request(self.requests_session, self.collector_url,
                 'agent_command_results', self.license_key, self.agent_run_id,
                 payload)

@@ -25,6 +25,7 @@ class Settings(object):
     def __repr__(self):
         return repr(self.__dict__)
 
+class ThreadProfilerSettings(Settings): pass
 class TransactionTracerSettings(Settings): pass
 class ErrorCollectorSettings(Settings): pass
 class BrowserMonitorSettings(Settings): pass
@@ -37,6 +38,7 @@ class ConsoleSettings(Settings): pass
 class DebugSettings(Settings): pass
 
 _settings = Settings()
+_settings.thread_profiler = ThreadProfilerSettings()
 _settings.transaction_tracer = TransactionTracerSettings()
 _settings.error_collector = ErrorCollectorSettings()
 _settings.browser_monitoring = BrowserMonitorSettings()
@@ -115,6 +117,8 @@ _settings.beacon = None
 _settings.application_id = None
 _settings.browser_key = None
 _settings.episodes_url = None
+
+_settings.thread_profiler.enabled = True
 
 _settings.transaction_tracer.enabled = True
 _settings.transaction_tracer.transaction_threshold = None

@@ -136,6 +136,7 @@ class Application(object):
                     self._thread_utilization))
 
         self._profiler_started = False
+        self._send_profile_data = False
 
     @property
     def name(self):
@@ -470,6 +471,41 @@ class Application(object):
                             'Please report this problem to New Relic support '
                             'for further investigation.')
 
+    def start_profiler(self, command_id=0, **kwargs):
+        if not self._active_session.configuration.thread_profiler:
+            _logger.warning('Collector requested a thread profiling sessions,'
+                    'but thread profiler is disabled in the config file. '
+                    'Add "thread_profiler=True" in your config file.')
+            return {command_id: {'error': 'The profiler service is disabled'}}
+
+        profile_id = kwargs['profile_id'] 
+        sample_period = kwargs['sample_period'] 
+        duration = kwargs['duration'] 
+        profile_agent_code = kwargs['profile_agent_code'] 
+        only_runnable_threads = kwargs['only_runnable_threads'] 
+
+        self._thread_profiler = ThreadProfiler(profile_id, sample_period,
+                duration, profile_agent_code, only_runnable_threads)
+
+        _logger.info('Commencing thread profiler for %r.', self._app_name)
+        self._thread_profiler.start_profiling()
+        self._profiler_started = True
+        self._send_profile_data = True
+        return {command_id: {}} 
+
+    def stop_profiler(self, command_id=0, **kwargs):
+        if not self._profiler_started:
+            _logger.warning('Received a stop_profiler command from collector'
+                    'but profiler is not running. If this error keeps'
+                    'repeating, please report this probelm to New Relic' 
+                    'support.')
+            return {command_id: {'error': 'Profiler not running.'}}
+
+        self._thread_profiler.stop_profiling()
+
+        _logger.info('Stopping thread profiler for %r.', self._app_name)
+        self._send_profile_data = kwargs['report_data']
+        return {command_id: {}} 
 
     def harvest(self, shutdown=False):
         """Performs a harvest, reporting aggregated data for the current
@@ -606,44 +642,32 @@ class Application(object):
                             self._active_session.send_transaction_traces(
                                     slow_transaction_data)
 
-                    if True:
-                        commands = self._active_session.get_agent_commands()
-                        for command in commands:
-                            command_id = command[0]
-                            command_name = command[1]['name']
-                            command_args = command[1]['arguments']
-                            print command_args
-                            if command_name == 'start_profiler':
-                                self._thread_profiler = ThreadProfiler(
-                                        **command_args)
-                                _logger.debug(
-                                        'Commencing thread profiler for %r.',
-                                        self._app_name)
-                                self._thread_profiler.start_profiling()
-                                self._profiler_started = True
-                                self._active_session.send_agent_command_results(
-                                        command_id)
-                            elif command_name == 'stop_profiler':
-                                if self._profiler_started:
-                                    self._thread_profiler.stop_profiling()
-                                    _logger.debug(
-                                            'Stopping thread profiler for %r.',
-                                            self._app_name)
-                                else:
-                                    _logger.debug(
-                                            'Thread profiler not running'
-                                            'for %r.',
-                                            self._app_name)
-                                self._active_session.send_agent_command_results(
-                                        command_id)
+                    # Get agent commands from collector
+                    agent_commands = self._active_session.get_agent_commands()
 
+                    # For each command, call the command handler. 
+                    # Reply to collector with the acknowledgement of the cmd
+                    for command in agent_commands:
+                        cmd_id = command[0]
+                        cmd_name = command[1]['name']
+                        cmd_args = command[1]['arguments']
+                        if hasattr(self, cmd_name):
+                            cmd_handler = getattr(self, cmd_name)
+                            cmd_res = cmd_handler(cmd_id, **cmd_args)
+                            if cmd_res:
+                                self._active_session.send_agent_command_results(
+                                        cmd_res)
+
+                    # If profiler is running, check if it is done and send 
+                    # profile data back to collector.
                     if self._profiler_started:
                         profile_data = self._thread_profiler.profile_data()
-                        if profile_data:
+                        if profile_data and self._send_profile_data:
                             _logger.debug('Finished thread profiling for %r.',
                                     self._app_name)
                             self._active_session.send_profile_data(profile_data)
                             self._profiler_started = False
+                            self._send_profile_data = False
 
                     # If this is a final forced harvest for the process
                     # then attempt to shutdown the session.

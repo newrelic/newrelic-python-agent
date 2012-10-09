@@ -81,7 +81,7 @@ class ThreadProfiler(object):
             if (time.time() - self.start_time) >= self.duration:
                 self.stop_profiling()
 
-    def get_call_trees(self, thr):
+    def get_call_tree(self, thr):
         if thr is None:  # Thread is not active
             return None
         if thr.isDaemon():
@@ -99,25 +99,27 @@ class ThreadProfiler(object):
         self._sample_count += 1
         for thread_id, frame in sys._current_frames().items():
             thr = threading._active.get(thread_id)
-            call_trees = self.get_call_trees(thr)
+            call_trees = self.get_call_tree(thr)
             if call_trees is None:
                 continue  # Appropriate call tree not found, ignore the thread
+            node = call_trees.get(thread_id)
             for file_name, line_no, func_name, text in traceback.extract_stack(
                     frame):
                 method_data = _MethodData(file_name, func_name, line_no)
-                if thread_id not in call_trees.keys():
+                if node is None:
                     call_trees[thread_id] = ProfileNode(method_data)
-                node = call_trees[thread_id]
+                    node = call_trees.get(thread_id)
                 node = node.add_child(method_data)
     
     def start_profiling(self):
         self.start_time = time.time()
         self._profiler_thread.start()
 
-    def stop_profiling(self):
+    def stop_profiling(self, forced=False):
         self.stop_time = time.time()
         self._profiler_shutdown.set()
-        self._profiler_thread.join(self.sample_period)
+        if forced:
+            self._profiler_thread.join(self.sample_period)
 
     def profile_data(self):
         if self._profiler_thread.isAlive():
@@ -151,5 +153,5 @@ if __name__ == "__main__":
     t.start_profiling()
     import time
     time.sleep(1.1)
-    print t.profile_data()
+    #print t.profile_data()
     print zlib.decompress(base64.standard_b64decode(t.profile_data()[0][4]))

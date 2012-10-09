@@ -472,10 +472,10 @@ class Application(object):
                             'for further investigation.')
 
     def start_profiler(self, command_id=0, **kwargs):
-        if not self._active_session.configuration.thread_profiler:
+        if not self._active_session.configuration.thread_profiler.enabled:
             _logger.warning('Collector requested a thread profiling sessions,'
                     'but thread profiler is disabled in the config file. '
-                    'Add "thread_profiler=True" in your config file.')
+                    'Add "thread_profiler.enabled=true" in your config file.')
             return {command_id: {'error': 'The profiler service is disabled'}}
 
         profile_id = kwargs['profile_id'] 
@@ -501,7 +501,7 @@ class Application(object):
                     'support.')
             return {command_id: {'error': 'Profiler not running.'}}
 
-        self._thread_profiler.stop_profiling()
+        self._thread_profiler.stop_profiling(forced=True)
 
         _logger.info('Stopping thread profiler for %r.', self._app_name)
         self._send_profile_data = kwargs['report_data']

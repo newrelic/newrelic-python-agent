@@ -72,6 +72,11 @@ class Transaction(object):
         return cls._transactions.get(active_context)
 
     @classmethod
+    def _lookup_transaction(cls, thread_obj):
+        active_context = (CONCURRENCY_THREADING, thread_obj)
+        return cls._transactions.get(active_context)
+
+    @classmethod
     def _save_transaction(cls, transaction):
         active_context = cls._current_context()
 

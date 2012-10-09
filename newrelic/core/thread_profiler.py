@@ -5,6 +5,8 @@ import zlib
 import base64
 import traceback
 
+from newrelic.api.transaction import Transaction, CONCURRENCY_THREADING
+
 try:
     from collections import namedtuple
 except:
@@ -84,14 +86,19 @@ class ThreadProfiler(object):
     def get_call_tree(self, thr):
         if thr is None:  # Thread is not active
             return None
-        if thr.isDaemon():
-            if 'NR-' in thr.name:
-                if self.profile_agent_code:
-                    return self.call_trees['AGENT']
-                else:
-                    return None
+        
+        # NR thread
+        if thr.name.startswith('NR-'):
+            if self.profile_agent_code:
+                return self.call_trees['AGENT']
             else:
-                return self.call_trees['BACKGROUND']
+                return None
+
+        transaction = Transaction._lookup_transaction(thr)
+        if transaction is None:
+            return self.call_trees['OTHER']
+        elif transaction.background_task:
+            return self.call_trees['BACKGROUND']
         else:
             return self.call_trees['REQUEST']
 

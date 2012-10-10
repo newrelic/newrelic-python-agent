@@ -86,7 +86,6 @@ class ThreadProfiler(object):
     def get_call_tree(self, thr):
         if thr is None:  # Thread is not active
             return None
-        
         # NR thread
         if thr.name.startswith('NR-'):
             if self.profile_agent_code:
@@ -117,12 +116,15 @@ class ThreadProfiler(object):
                     #call_trees[thread_id] = ProfileNode(method_data)
                     #node = call_trees.get(thread_id)
                 #node = node.add_child(method_data)
+
     def _run_profiler(self):
         self._sample_count += 1
         stacks = collect_thread_stacks()
         for thread_id, stack_trace in stacks.items():
             thr = threading._active.get(thread_id)
             call_trees = self.get_call_tree(thr)
+            if call_trees is None:
+                continue
             if thread_id not in call_trees.keys():
                 call_trees[thread_id] = ProfileNode(stack_trace[0])
             node = call_trees[thread_id]

@@ -663,7 +663,7 @@ class Application(object):
                     if self._profiler_started:
                         profile_data = self._thread_profiler.profile_data()
                         if profile_data and self._send_profile_data:
-                            _logger.debug('Finished thread profiling for %r.',
+                            _logger.info('Finished thread profiling for %r.',
                                     self._app_name)
                             self._active_session.send_profile_data(profile_data)
                             self._profiler_started = False

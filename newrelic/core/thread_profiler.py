@@ -102,21 +102,33 @@ class ThreadProfiler(object):
         else:
             return self.call_trees['REQUEST']
 
+    #def _run_profiler(self):
+        #self._sample_count += 1
+        #for thread_id, frame in sys._current_frames().items():
+            #thr = threading._active.get(thread_id)
+            #call_trees = self.get_call_tree(thr)
+            #if call_trees is None:
+                #continue  # Appropriate call tree not found, ignore the thread
+            #node = call_trees.get(thread_id)
+            #for file_name, line_no, func_name, text in traceback.extract_stack(
+                    #frame):
+                #method_data = _MethodData(file_name, func_name, line_no)
+                #if node is None:
+                    #call_trees[thread_id] = ProfileNode(method_data)
+                    #node = call_trees.get(thread_id)
+                #node = node.add_child(method_data)
     def _run_profiler(self):
         self._sample_count += 1
-        for thread_id, frame in sys._current_frames().items():
+        stacks = collect_thread_stacks()
+        for thread_id, stack_trace in stacks.items():
             thr = threading._active.get(thread_id)
             call_trees = self.get_call_tree(thr)
-            if call_trees is None:
-                continue  # Appropriate call tree not found, ignore the thread
-            node = call_trees.get(thread_id)
-            for file_name, line_no, func_name, text in traceback.extract_stack(
-                    frame):
-                method_data = _MethodData(file_name, func_name, line_no)
-                if node is None:
-                    call_trees[thread_id] = ProfileNode(method_data)
-                    node = call_trees.get(thread_id)
+            if thread_id not in call_trees.keys():
+                call_trees[thread_id] = ProfileNode(stack_trace[0])
+            node = call_trees[thread_id]
+            for method_data in stack_trace:
                 node = node.add_child(method_data)
+
     
     def start_profiling(self):
         self.start_time = time.time()
@@ -145,6 +157,18 @@ class ThreadProfiler(object):
         profile = [[self.profile_id, self.start_time*1000, self.stop_time*1000,
             self._sample_count, encoded_data, thread_count, 0]]
         return profile
+
+def collect_thread_stacks():
+    stack_traces = {}
+    for thread_id, frame in sys._current_frames().items():
+        stack_traces[thread_id] = []
+        while frame:
+            f = frame.f_code
+            stack_traces[thread_id].append(_MethodData(f.co_filename,
+                f.co_name, f.co_firstlineno))
+            frame = frame.f_back
+        stack_traces[thread_id].reverse()
+    return stack_traces
 
 def alt_serialize(data):
     """

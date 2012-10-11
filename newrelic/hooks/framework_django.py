@@ -30,8 +30,8 @@ def browser_timing_middleware(request, response):
     # WSGI middleware and deal with how to update the content
     # length.
 
-    if hasattr(response, 'streaming_content'):
-        return response
+    # if hasattr(response, 'streaming_content'):
+    #     return response
 
     # Need to be running within a valid web transaction.
 

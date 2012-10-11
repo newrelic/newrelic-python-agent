@@ -317,7 +317,7 @@ side configuration. The application name as specified in the agent
 configuration file is used.""")
 def remote_config(args):
     if len(args) == 0:
-        usage('remote-config')
+        usage('server-config')
         return
 
     import newrelic.core.config

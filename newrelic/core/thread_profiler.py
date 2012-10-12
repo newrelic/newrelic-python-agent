@@ -17,38 +17,38 @@ import newrelic.lib.simplejson as simplejson
 _MethodData = namedtuple('_MethodData',
         ['file_name', 'method_name', 'line_no'])
 
+NODE_LIMIT = 2000
+
 class ProfileNode(object):
     """This class provides the node used to construct the call tree.
     """
+    node_count = 0
     def __init__(self, method_data):
         self.method = method_data
         self.call_count = 0
         self.non_call_count = 0
         self.children = {}
+        self.ignore = False
+        ProfileNode.node_count += 1
 
-    def add_child(self, method_data):
+    def get_or_create_child(self, method_data):
         """
-        If method_data matches current node or one of the immediate child nodes
-        update the call count. Other wise create a new child node and set call
-        count to 1.
+        Return the child node that matches the method_data.
+        Otherwise create a new child node.
         """
-        if method_data == self.method:
-            self.call_count += 1
-            return self
-        else:
-            try:
-                self.children[method_data].call_count += 1
-            except KeyError:
-                self.children[method_data] = ProfileNode(method_data)
-                self.children[method_data].call_count += 1
-            return self.children[method_data]
+        if self.children.get(method_data) is None:
+            self.children[method_data] = ProfileNode(method_data)
+        return self.children[method_data]
+
+    def increment_call_count(self):
+        self.call_count += 1
 
     def jsonable(self):
         """
         Return Serializable data for json.
         """
         return [self.method, self.call_count, self.non_call_count,
-                self.children.values()]
+                [x for x in self.children.values() if not x.ignore ]]
 
 class ThreadProfiler(object):
     def __init__(self, profile_id, sample_period=0.1, duration=300,
@@ -71,12 +71,12 @@ class ThreadProfiler(object):
         self.duration = duration
         self.profile_agent_code = profile_agent_code
         self.only_runnable_threads = only_runnable_threads
-
+        self.node_list = []
+        ProfileNode.node_count = 0 # Reset node count to zero
 
     def profiler_loop(self):
         while True:
             if self._profiler_shutdown.isSet():
-                self._run_profiler()
                 return 
             self._profiler_shutdown.wait(self.sample_period)
             self._run_profiler()
@@ -101,22 +101,6 @@ class ThreadProfiler(object):
         else:
             return self.call_trees['REQUEST']
 
-    #def _run_profiler(self):
-        #self._sample_count += 1
-        #for thread_id, frame in sys._current_frames().items():
-            #thr = threading._active.get(thread_id)
-            #call_trees = self.get_call_tree(thr)
-            #if call_trees is None:
-                #continue  # Appropriate call tree not found, ignore the thread
-            #node = call_trees.get(thread_id)
-            #for file_name, line_no, func_name, text in traceback.extract_stack(
-                    #frame):
-                #method_data = _MethodData(file_name, func_name, line_no)
-                #if node is None:
-                    #call_trees[thread_id] = ProfileNode(method_data)
-                    #node = call_trees.get(thread_id)
-                #node = node.add_child(method_data)
-
     def _run_profiler(self):
         self._sample_count += 1
         stacks = collect_thread_stacks()
@@ -128,9 +112,10 @@ class ThreadProfiler(object):
             if thread_id not in call_trees.keys():
                 call_trees[thread_id] = ProfileNode(stack_trace[0])
             node = call_trees[thread_id]
-            for method_data in stack_trace:
-                node = node.add_child(method_data)
-
+            node.increment_call_count()
+            for method_data in stack_trace[1:]:
+                node = node.get_or_create_child(method_data)
+                node.increment_call_count()
     
     def start_profiling(self):
         self.start_time = time.time()
@@ -147,6 +132,8 @@ class ThreadProfiler(object):
             return None
         call_data = {}
         thread_count = 0
+        if ProfileNode.node_count > NODE_LIMIT:
+            self.prune_trees()
         for thread_type, call_tree in self.call_trees.items():
             stack = call_tree.values()
             stack.insert(0, {'cpu_time': 1})
@@ -159,6 +146,21 @@ class ThreadProfiler(object):
         profile = [[self.profile_id, self.start_time*1000, self.stop_time*1000,
             self._sample_count, encoded_data, thread_count, 0]]
         return profile
+
+    def prune_trees(self):
+        for call_trees in self.call_trees.values():
+            for call_tree in call_trees.values():
+                self.update_node_list(call_tree)
+        self.node_list.sort(key=lambda x: x.call_count)
+        for node in self.node_list[NODE_LIMIT:]:
+            node.ignore = True
+
+    def update_node_list(self, node):
+        if not node:
+            return 
+        self.node_list.append(node)
+        for child_node in node.children.values():
+            self.update_node_list(child_node)
 
 def collect_thread_stacks():
     stack_traces = {}
@@ -181,10 +183,19 @@ def alt_serialize(data):
     else:
         return data
 
+def fib(n):
+    if n < 2:
+        return n
+    return fib(n-1) + fib(n-2)
+
 if __name__ == "__main__":
     t = ThreadProfiler(-1, 0.1, 1, profile_agent_code=True)
     t.start_profiling()
+    #fib(35)
     import time
     time.sleep(1.1)
     #print t.profile_data()
+    #t.prune_trees()
+    #print t.node_list
     print zlib.decompress(base64.standard_b64decode(t.profile_data()[0][4]))
+    print ProfileNode.node_count

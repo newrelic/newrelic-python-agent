@@ -473,7 +473,7 @@ class Application(object):
 
     def start_profiler(self, command_id=0, **kwargs):
         if not self._active_session.configuration.thread_profiler.enabled:
-            _logger.warning('Collector requested a thread profiling sessions,'
+            _logger.warning('Collector requested a thread profiling session,'
                     'but thread profiler is disabled in the config file. '
                     'Add "thread_profiler.enabled=true" in your config file.')
             return {command_id: {'error': 'The profiler service is disabled'}}
@@ -484,6 +484,14 @@ class Application(object):
         profile_agent_code = kwargs['profile_agent_code'] 
         only_runnable_threads = kwargs['only_runnable_threads'] 
 
+        if self._profiler_started:
+            _logger.warning('Collector requested a thread profiling session, '
+                    ' but a profiler session is already in progress. Ignoring '
+                    'start_profiler command. If this message repeats often, '
+                    'please report this to New Relic support for further '
+                    'investigation.'
+                    )
+            return {command_id: {'error': 'Profiler already running'}}
         self._thread_profiler = ThreadProfiler(profile_id, sample_period,
                 duration, profile_agent_code, only_runnable_threads)
 

@@ -113,15 +113,31 @@ def object_context(object):
         # This is called for instances of old style classes.
 
         mname = _module_name(object)
-        cname = object.__class__.__name__
-        fname = None
+
+        # Where instance has __name__ attribute, assume it is
+        # likely going to be a decorator implemented as a class.
+
+        if hasattr(object, '__name__'):
+            cname = None
+            fname = object.__name__
+        else:
+            cname = object.__class__.__name__
+            fname = None
 
     elif hasattr(object, '__class__'):
         # This is called for instances of new style classes.
 
         mname = _module_name(object)
-        cname = object.__class__.__name__
-        fname = None
+
+        # Where instance has __name__ attribute, assume it is
+        # likely going to be a decorator implemented as a class.
+
+        if hasattr(object, '__name__'):
+            cname = None
+            fname = object.__name__
+        else:
+            cname = object.__class__.__name__
+            fname = None
 
     path = ''
 

@@ -491,6 +491,14 @@ class Application(object):
                     'investigation.'
                     )
             return {command_id: {'error': 'Profiler already running'}}
+
+        if not hasattr(sys, '_current_frames'):
+            _logger.warning('Thread Profiling is only available on Python and '
+                    'PyPy interpreter. It is not supported in the interpreter '
+                    'you\'re using.'
+                    )
+            return {command_id: {'error': 'Profiler not supported'}}
+
         self._thread_profiler = ThreadProfiler(profile_id, sample_period,
                 duration, profile_agent_code)
 

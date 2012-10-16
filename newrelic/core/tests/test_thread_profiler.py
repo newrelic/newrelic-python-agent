@@ -12,18 +12,22 @@ class TestThreadProfiler(unittest.TestCase):
         self.profile_agent_code = True
         self.tp = ThreadProfiler(self.profile_id, self.sample, self.duration,
                 self.profile_agent_code)
-
-    def test_profiler(self):
         self.tp.start_profiling()
         import time
         time.sleep(0.3)
-        pd = self.tp.profile_data()
-        p = pd[0]
+        self.pd = self.tp.profile_data()
+
+    def test_profiler(self):
+        p = self.pd[0]
         self.assertEqual(p[0], self.profile_id)
-        self.assertGreaterEqual(p[2] - p[1], self.duration) 
+        self.assertAlmostEqual((p[2] - p[1])/1000, self.duration, 1) 
         self.assertEqual(p[3] , self.duration/self.sample)
-        #print pd
+
+    #def test_profile_data(self):
+        #print self.pd
+        #p = self.pd[0]
         #print zlib.decompress(base64.standard_b64decode(p[4]))
+        #print ProfileNode.node_count
 
 if __name__ == '__main__':
     unittest.main()

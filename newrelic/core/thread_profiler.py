@@ -86,7 +86,7 @@ class ThreadProfiler(object):
         if thr is None:  # Thread is not active
             return None
         # NR thread
-        if thr.name.startswith('NR-'):
+        if thr.getName().startswith('NR-'):
             if self.profile_agent_code:
                 return self.call_trees['AGENT']
             else:

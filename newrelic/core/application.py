@@ -482,7 +482,6 @@ class Application(object):
         sample_period = kwargs['sample_period'] 
         duration = kwargs['duration'] 
         profile_agent_code = kwargs['profile_agent_code'] 
-        only_runnable_threads = kwargs['only_runnable_threads'] 
 
         if self._profiler_started:
             _logger.warning('Collector requested a thread profiling session, '
@@ -493,7 +492,7 @@ class Application(object):
                     )
             return {command_id: {'error': 'Profiler already running'}}
         self._thread_profiler = ThreadProfiler(profile_id, sample_period,
-                duration, profile_agent_code, only_runnable_threads)
+                duration, profile_agent_code)
 
         _logger.info('Commencing thread profiler for %r.', self._app_name)
         self._thread_profiler.start_profiling()

@@ -5,7 +5,7 @@ import zlib
 import base64
 import traceback
 
-from newrelic.api.transaction import Transaction, CONCURRENCY_THREADING
+from newrelic.api.transaction import Transaction
 
 try:
     from collections import namedtuple
@@ -52,8 +52,8 @@ class ProfileNode(object):
 
 class ThreadProfiler(object):
     def __init__(self, profile_id, sample_period=0.1, duration=300,
-            profile_agent_code=False, only_runnable_threads=False):
-        self._profiler_thread = threading.Thread(target=self.profiler_loop,
+            profile_agent_code=False):
+        self._profiler_thread = threading.Thread(target=self._profiler_loop,
                 name='NR-Profiler-Thread')
         self._profiler_thread.setDaemon(True)
         self._profiler_shutdown = threading.Event()
@@ -70,11 +70,10 @@ class ThreadProfiler(object):
         self.sample_period = sample_period
         self.duration = duration
         self.profile_agent_code = profile_agent_code
-        self.only_runnable_threads = only_runnable_threads
         self.node_list = []
         ProfileNode.node_count = 0 # Reset node count to zero
 
-    def profiler_loop(self):
+    def _profiler_loop(self):
         while True:
             if self._profiler_shutdown.isSet():
                 return 
@@ -83,7 +82,7 @@ class ThreadProfiler(object):
             if (time.time() - self.start_time) >= self.duration:
                 self.stop_profiling()
 
-    def get_call_tree(self, thr):
+    def _get_call_tree_bucket(self, thr):
         if thr is None:  # Thread is not active
             return None
         # NR thread
@@ -106,12 +105,12 @@ class ThreadProfiler(object):
         stacks = collect_thread_stacks()
         for thread_id, stack_trace in stacks.items():
             thr = threading._active.get(thread_id)
-            call_trees = self.get_call_tree(thr)
-            if call_trees is None:
+            bucket = self._get_call_tree_bucket(thr)
+            if bucket is None:  # Approprite bucket not found
                 continue
-            if thread_id not in call_trees.keys():
-                call_trees[thread_id] = ProfileNode(stack_trace[0])
-            node = call_trees[thread_id]
+            if thread_id not in bucket.keys():
+                bucket[thread_id] = ProfileNode(stack_trace[0])
+            node = bucket[thread_id]
             node.increment_call_count()
             for method_data in stack_trace[1:]:
                 node = node.get_or_create_child(method_data)
@@ -132,12 +131,9 @@ class ThreadProfiler(object):
             return None
         call_data = {}
         thread_count = 0
-        if ProfileNode.node_count > NODE_LIMIT:
-            self.prune_trees()
+        self._prune_trees(NODE_LIMIT)
         for thread_type, call_tree in self.call_trees.items():
-            stack = call_tree.values()
-            stack.insert(0, {'cpu_time': 1})
-            call_data[thread_type] = stack
+            call_data[thread_type] = call_tree.values()
             thread_count += len(call_tree)
         json_data = simplejson.dumps(call_data, default=alt_serialize,
                 ensure_ascii=True, encoding='Latin-1',
@@ -147,20 +143,22 @@ class ThreadProfiler(object):
             self._sample_count, encoded_data, thread_count, 0]]
         return profile
 
-    def prune_trees(self):
+    def _prune_trees(self, limit):
+        if ProfileNode.node_count < limit:
+            return
         for call_trees in self.call_trees.values():
             for call_tree in call_trees.values():
-                self.update_node_list(call_tree)
+                self._node_to_list(call_tree)
         self.node_list.sort(key=lambda x: x.call_count)
-        for node in self.node_list[NODE_LIMIT:]:
+        for node in self.node_list[limit:]:
             node.ignore = True
 
-    def update_node_list(self, node):
+    def _node_to_list(self, node):
         if not node:
             return 
         self.node_list.append(node)
         for child_node in node.children.values():
-            self.update_node_list(child_node)
+            self._node_to_list(child_node)
 
 def collect_thread_stacks():
     stack_traces = {}
@@ -195,7 +193,8 @@ if __name__ == "__main__":
     import time
     time.sleep(1.1)
     #print t.profile_data()
+    #print simplejson.dumps(t.profile_data())
     #t.prune_trees()
     #print t.node_list
     print zlib.decompress(base64.standard_b64decode(t.profile_data()[0][4]))
-    print ProfileNode.node_count
+    #print ProfileNode.node_count

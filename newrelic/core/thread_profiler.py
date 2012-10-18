@@ -36,12 +36,7 @@ class ProfileNode(object):
         Return the child node that matches the method_data.
         Otherwise create a new child node.
         """
-        if self.children.get(method_data) is None:
-            self.children[method_data] = ProfileNode(method_data)
-        return self.children[method_data]
-
-    def increment_call_count(self):
-        self.call_count += 1
+        return self.children.setdefault(method_data, ProfileNode(method_data))
 
     def jsonable(self):
         """
@@ -110,11 +105,16 @@ class ThreadProfiler(object):
                 continue
             if thread_id not in bucket.keys():
                 bucket[thread_id] = ProfileNode(stack_trace[0])
-            node = bucket[thread_id]
-            node.increment_call_count()
-            for method_data in stack_trace[1:]:
-                node = node.get_or_create_child(method_data)
-                node.increment_call_count()
+            self._update_call_tree(bucket[thread_id], stack_trace)
+
+    def _update_call_tree(self, call_tree, stack_trace):
+        if call_tree.method != stack_trace[0]:
+            return
+        node = call_tree
+        node.call_count += 1
+        for method_data in stack_trace[1:]:
+            node = node.get_or_create_child(method_data)
+            node.call_count += 1
     
     def start_profiling(self):
         self.start_time = time.time()
@@ -133,6 +133,8 @@ class ThreadProfiler(object):
         thread_count = 0
         self._prune_trees(NODE_LIMIT)
         for thread_type, call_tree in self.call_trees.items():
+            if not call_tree.values():  # Skip empty buckets
+                continue
             call_data[thread_type] = call_tree.values()
             thread_count += len(call_tree)
         json_data = simplejson.dumps(call_data, default=alt_serialize,

@@ -17,14 +17,8 @@ class TestProfileNode(unittest.TestCase):
         self.assertEqual(child.method, self.f[1])
         self.assertEqual(child.call_count, 0)
 
-    def test_increment_call_count(self):
-        child = self.call_tree.get_or_create_child(self.f[0])
-        child.increment_call_count()
-        self.assertEqual(child.call_count, 1)
-
     def test_jsonable(self):
-        self.call_tree.increment_call_count()
-        self.assertEqual(self.call_tree.jsonable(), [self.f[0], 1, 0, []])
+        self.assertEqual(self.call_tree.jsonable(), [self.f[0], 0, 0, []])
 
 if __name__ == '__main__':
     unittest.main()

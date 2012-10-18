@@ -177,5 +177,46 @@ class ObjectWrapperTests(unittest.TestCase):
         for callable, name in CALLABLES:
             self.assertEqual(callable_name(callable), name)
 
+    def test_comparison(self):
+        def _test_function_1(*args, **kwargs):
+            return args, kwargs
+        def _test_function_2(*args, **kwargs):
+            return args, kwargs
+
+        o1a = _test_function_1
+        o1b = Wrapper(_test_function_1)
+        o1c = Wrapper(_test_function_1)
+
+        o2a = _test_function_2
+        o2b = Wrapper(_test_function_2)
+        o2c = Wrapper(_test_function_2)
+
+        self.assertEqual(o1a, o1b)
+        self.assertEqual(o1b, o1a)
+        self.assertEqual(o1b, o1c)
+        self.assertEqual(o1c, o1b)
+
+        self.assertEqual(hash(o1a), hash(o1b))
+        self.assertEqual(hash(o1b), hash(o1c))
+
+        map = { o1a: True }
+
+        self.assertTrue(map[o1b])
+        self.assertTrue(map[o1c])
+
+        self.assertNotEqual(o1b, o2b)
+        self.assertNotEqual(o2b, o1b)
+
+    def test_display(self):
+        def _test_function_1(*args, **kwargs):
+            return args, kwargs
+
+        o1a = _test_function_1
+        o1b = Wrapper(_test_function_1)
+
+        self.assertEqual(str(o1a), str(o1b))
+        self.assertEqual(repr(o1a), repr(o1b))
+        self.assertEqual(unicode(o1a), unicode(o1b))
+
 if __name__ == '__main__':
     unittest.main()

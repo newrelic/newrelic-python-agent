@@ -42,7 +42,7 @@ class _wsgiapp_class:
 _wsgiapp_class = newrelic.api.web_transaction.WSGIApplicationWrapper(
         _wsgiapp_class, _application)
 
-@newrelic.api.web_transaction.wsgi_application("UnitTests")
+@newrelic.api.web_transaction.wsgi_application(_application.name)
 def _wsgiapp_function_decorator(environ, start_response):
     transaction = newrelic.api.transaction.current_transaction()
     assert transaction != None
@@ -53,14 +53,14 @@ def _wsgiapp_function_decorator_default(environ, start_response):
     assert transaction != None
 
 # Python 2.5 doesn't have class decorators.
-#@newrelic.api.web_transaction.wsgi_application("UnitTests")
+#@newrelic.api.web_transaction.wsgi_application(_application.name)
 class _wsgiapp_class_decorator:
     def __init__(self, environ, start_response):
         pass
     def __call__(self):
         transaction = newrelic.api.web_transaction.current_transaction()
         assert transaction != None
-_wsgiapp_class_decorator = newrelic.api.web_transaction.wsgi_application("UnitTests")(_wsgiapp_class_decorator)
+_wsgiapp_class_decorator = newrelic.api.web_transaction.wsgi_application(_application.name)(_wsgiapp_class_decorator)
 
 class TestCase(newrelic.tests.test_cases.TestCase):
 
@@ -99,7 +99,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         environ = { "REQUEST_URI": "/wsgiapp_function_decorator_default" }
         _wsgiapp_function_decorator_default(environ, None).close()
 
-    @newrelic.api.web_transaction.wsgi_application("UnitTests")
+    @newrelic.api.web_transaction.wsgi_application(_application.name)
     def _wsgiapp_method_decorator(self, *args):
         transaction = newrelic.api.transaction.current_transaction()
         self.assertNotEqual(transaction, None)

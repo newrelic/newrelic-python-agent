@@ -7,16 +7,6 @@ class TestProfileNode(unittest.TestCase):
         self.f = [_MethodData('file%d'%(i), 'func%d'%(i), i) for i in range(10)]
         self.call_tree = ProfileNode(self.f[0])
 
-    def test_get_child(self):
-        child = self.call_tree.get_or_create_child(self.f[0])
-        self.assertEqual(child.method, self.f[0])
-        self.assertEqual(child.call_count, 0)
-
-    def test_create_child(self):
-        child = self.call_tree.get_or_create_child(self.f[1])
-        self.assertEqual(child.method, self.f[1])
-        self.assertEqual(child.call_count, 0)
-
     def test_jsonable(self):
         self.assertEqual(self.call_tree.jsonable(), [self.f[0], 0, 0, []])
 

@@ -17,7 +17,7 @@ import newrelic.lib.simplejson as simplejson
 _MethodData = namedtuple('_MethodData',
         ['file_name', 'method_name', 'line_no'])
 
-NODE_LIMIT = 2000
+NODE_LIMIT = 20000
 
 class ProfileNode(object):
     """This class provides the node used to construct the call tree.
@@ -30,13 +30,6 @@ class ProfileNode(object):
         self.children = {}
         self.ignore = False
         ProfileNode.node_count += 1
-
-    def get_or_create_child(self, method_data):
-        """
-        Return the child node that matches the method_data.
-        Otherwise create a new child node.
-        """
-        return self.children.setdefault(method_data, ProfileNode(method_data))
 
     def jsonable(self):
         """
@@ -103,18 +96,16 @@ class ThreadProfiler(object):
             bucket = self._get_call_tree_bucket(thr)
             if bucket is None:  # Approprite bucket not found
                 continue
-            if thread_id not in bucket.keys():
-                bucket[thread_id] = ProfileNode(stack_trace[0])
-            self._update_call_tree(bucket[thread_id], stack_trace)
+            self._update_call_tree(bucket, stack_trace)
 
     def _update_call_tree(self, call_tree, stack_trace):
-        if call_tree.method != stack_trace[0]:
+        if not stack_trace:
             return
-        node = call_tree
+        node = call_tree.get(stack_trace[0])
+        if node is None:
+            node = call_tree[stack_trace[0]] = ProfileNode(stack_trace[0])
         node.call_count += 1
-        for method_data in stack_trace[1:]:
-            node = node.get_or_create_child(method_data)
-            node.call_count += 1
+        self._update_call_tree(node.children, stack_trace[1:])
     
     def start_profiling(self):
         self.start_time = time.time()
@@ -143,15 +134,16 @@ class ThreadProfiler(object):
         encoded_data = base64.standard_b64encode(zlib.compress(json_data))
         profile = [[self.profile_id, self.start_time*1000, self.stop_time*1000,
             self._sample_count, encoded_data, thread_count, 0]]
+
         return profile
 
     def _prune_trees(self, limit):
         if ProfileNode.node_count < limit:
             return
         for call_trees in self.call_trees.values():
-            for call_tree in call_trees.values():
-                self._node_to_list(call_tree)
-        self.node_list.sort(key=lambda x: x.call_count)
+            for root_node in call_trees.values():
+                self._node_to_list(root_node)
+        self.node_list.sort(key=lambda x: x.call_count, reverse=True)
         for node in self.node_list[limit:]:
             node.ignore = True
 
@@ -191,12 +183,9 @@ def fib(n):
 if __name__ == "__main__":
     t = ThreadProfiler(-1, 0.1, 1, profile_agent_code=True)
     t.start_profiling()
-    #fib(35)
-    import time
-    time.sleep(1.1)
-    #print t.profile_data()
-    #print simplejson.dumps(t.profile_data())
-    #t.prune_trees()
-    #print t.node_list
-    print zlib.decompress(base64.standard_b64decode(t.profile_data()[0][4]))
+    fib(20)
+    #import time
+    #time.sleep(1.1)
+    c = zlib.decompress(base64.standard_b64decode(t.profile_data()[0][4]))
+    print c
     #print ProfileNode.node_count

@@ -1,3 +1,4 @@
+import os
 import sys
 import time
 import threading
@@ -5,18 +6,19 @@ import zlib
 import base64
 import traceback
 
+import newrelic
 from newrelic.api.transaction import Transaction
+import newrelic.lib.simplejson as simplejson
 
 try:
     from collections import namedtuple
 except:
     from newrelic.lib.namedtuple import namedtuple
 
-import newrelic.lib.simplejson as simplejson
-
 _MethodData = namedtuple('_MethodData',
         ['file_name', 'method_name', 'line_no'])
 
+AGENT_DIR = os.path.dirname(newrelic.__file__) + '/'
 NODE_LIMIT = 20000
 
 class ProfileNode(object):
@@ -110,22 +112,29 @@ class ThreadProfiler(object):
             bucket = self._get_call_bucket(thr)
             if bucket is None:  # Appropriate bucket not found
                 continue
-            self._update_call_tree(bucket, stack_trace)
+            ignore_nr_method = bucket is not self.call_buckets['AGENT']
+            self._update_call_tree(bucket, stack_trace, ignore_nr_method)
 
-    def _update_call_tree(self, bucket, stack_trace):
+    def _update_call_tree(self, bucket, stack_trace, ignore_nr_method):
         """
         Merge a stack trace to a call tree in the bucket. If no appropriate
         call tree is found then create a new call tree. An appropriate call
-        tree will have the same root node as the first method in the stack
-        trace.
+        tree will have the same root node as the last method in the stack
+        trace. Methods from the stack trace are pulled from the end one at a
+        time and merged with the call tree recursively.
         """
         if not stack_trace:
             return
-        call_tree = bucket.get(stack_trace[0])
+        method = stack_trace.pop()
+        if method.file_name.startswith(AGENT_DIR) and ignore_nr_method:
+            return self._update_call_tree(bucket, stack_trace,
+                    ignore_nr_method)
+        call_tree = bucket.get(method)
         if call_tree is None:
-            call_tree = bucket[stack_trace[0]] = ProfileNode(stack_trace[0])
+            call_tree = bucket[method] = ProfileNode(method)
         call_tree.call_count += 1
-        self._update_call_tree(call_tree.children, stack_trace[1:])
+        return self._update_call_tree(call_tree.children, stack_trace,
+                ignore_nr_method)
     
     def start_profiling(self):
         self.start_time = time.time()
@@ -193,7 +202,6 @@ def collect_thread_stacks():
     """
     Get the stack traces of each thread and record it in a hash with 
     thread_id as key and a list of _MethodData objects as value.
-    The list is reversed since python returns a bottom-up stack trace.
     """
     stack_traces = {}
     for thread_id, frame in sys._current_frames().items():
@@ -203,7 +211,6 @@ def collect_thread_stacks():
             stack_traces[thread_id].append(_MethodData(f.co_filename,
                 f.co_name, f.co_firstlineno))
             frame = frame.f_back
-        stack_traces[thread_id].reverse()
     return stack_traces
 
 def fib(n):
@@ -217,9 +224,9 @@ def fib(n):
 if __name__ == "__main__":
     t = ThreadProfiler(-1, 0.1, 1, profile_agent_code=True)
     t.start_profiling()
-    fib(35)
-    #import time
-    #time.sleep(1.1)
+    #fib(35)
+    import time
+    time.sleep(1.1)
     c = zlib.decompress(base64.standard_b64decode(t.profile_data()[0][4]))
     print c
     #print ProfileNode.node_count

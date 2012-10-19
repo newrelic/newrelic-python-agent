@@ -26,7 +26,7 @@ class ProfileNode(object):
     def __init__(self, method_data):
         self.method = method_data
         self.call_count = 0
-        self.non_call_count = 0
+        self.non_call_count = 0  # only used by Java, never updated for python
         self.children = {}   # key is _MethodData and value is ProfileNode
         self.ignore = False
         ProfileNode.node_count += 1
@@ -36,7 +36,7 @@ class ProfileNode(object):
         Return Serializable data for json.
         """
         return [self.method, self.call_count, self.non_call_count,
-                [x for x in self.children.values() if not x.ignore ]]
+                [x for x in self.children.values() if not x.ignore]]
 
 class ThreadProfiler(object):
     def __init__(self, profile_id, sample_period=0.1, duration=300,
@@ -54,16 +54,13 @@ class ThreadProfiler(object):
         # call_buckets is a dict with 4 buckets. Each bucket's values is a dict
         # that can hold multiple call trees. The dict's key is _MethodData and
         # the value is the root of the call tree (a ProfileNode).
-        self.call_buckets = {'REQUEST': {}, 
-                'AGENT': {}, 
-                'BACKGROUND': {}, 
-                'OTHER': {}, 
-                }
+        self.call_buckets = {'REQUEST': {}, 'AGENT': {}, 'BACKGROUND': {},
+                'OTHER': {}}
         self.sample_period = sample_period
         self.duration = duration
         self.profile_agent_code = profile_agent_code
         self.node_list = []
-        ProfileNode.node_count = 0 # Reset node count to zero
+        ProfileNode.node_count = 0  # Reset node count to zero
 
     def _profiler_loop(self):
         """
@@ -73,7 +70,7 @@ class ThreadProfiler(object):
         """
         while True:
             if self._profiler_shutdown.isSet():
-                return 
+                return
             self._profiler_shutdown.wait(self.sample_period)
             self._run_profiler()
             if (time.time() - self.start_time) >= self.duration:
@@ -155,7 +152,7 @@ class ThreadProfiler(object):
                 continue
             call_data[bucket_type] = bucket.values()
             thread_count += len(bucket)
-        json_data = simplejson.dumps(call_data, default=alt_serialize,
+        json_data = simplejson.dumps(call_data, default=lambda o: o.jsonable(),
                 ensure_ascii=True, encoding='Latin-1',
                 namedtuple_as_object=False)
         encoded_data = base64.standard_b64encode(zlib.compress(json_data))
@@ -208,15 +205,6 @@ def collect_thread_stacks():
             frame = frame.f_back
         stack_traces[thread_id].reverse()
     return stack_traces
-
-def alt_serialize(data):
-    """
-    Alternate serializer for the ProfileNode object. Used by the json.dumps
-    """
-    if isinstance(data, ProfileNode):
-        return data.jsonable()
-    else:
-        return data
 
 def fib(n):
     """

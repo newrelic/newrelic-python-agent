@@ -27,7 +27,7 @@ class ProfileNode(object):
         self.method = method_data
         self.call_count = 0
         self.non_call_count = 0
-        self.children = {}
+        self.children = {}   # key is _MethodData and value is ProfileNode
         self.ignore = False
         ProfileNode.node_count += 1
 
@@ -50,7 +50,11 @@ class ThreadProfiler(object):
         self._sample_count = 0
         self.start_time = 0
         self.stop_time = 0
-        self.call_trees = {'REQUEST': {}, 
+
+        # call_buckets is a dict with 4 buckets. Each bucket's values is a dict
+        # that can hold multiple call trees. The dict's key is _MethodData and
+        # the value is the root of the call tree (a ProfileNode).
+        self.call_buckets = {'REQUEST': {}, 
                 'AGENT': {}, 
                 'BACKGROUND': {}, 
                 'OTHER': {}, 
@@ -62,6 +66,11 @@ class ThreadProfiler(object):
         ProfileNode.node_count = 0 # Reset node count to zero
 
     def _profiler_loop(self):
+        """
+        This is an infinite loop running in a background thread that wakes up
+        every 100ms and calls _run_profiler(). It does this for 'duration'
+        seconds and shutsdown the thread.
+        """
         while True:
             if self._profiler_shutdown.isSet():
                 return 
@@ -70,42 +79,56 @@ class ThreadProfiler(object):
             if (time.time() - self.start_time) >= self.duration:
                 self.stop_profiling()
 
-    def _get_call_tree_bucket(self, thr):
+    def _get_call_bucket(self, thr):
+        """
+        Classify the thread whether it's a Web Request, Background or Agent
+        thread and return the appropriate bucket to save the stack trace.
+        """
         if thr is None:  # Thread is not active
             return None
         # NR thread
         if thr.getName().startswith('NR-'):
             if self.profile_agent_code:
-                return self.call_trees['AGENT']
+                return self.call_buckets['AGENT']
             else:
                 return None
 
         transaction = Transaction._lookup_transaction(thr)
         if transaction is None:
-            return self.call_trees['OTHER']
+            return self.call_buckets['OTHER']
         elif transaction.background_task:
-            return self.call_trees['BACKGROUND']
+            return self.call_buckets['BACKGROUND']
         else:
-            return self.call_trees['REQUEST']
+            return self.call_buckets['REQUEST']
 
     def _run_profiler(self):
+        """
+        Collect stacktraces for each thread and update the appropriate call-
+        tree bucket.
+        """
         self._sample_count += 1
         stacks = collect_thread_stacks()
         for thread_id, stack_trace in stacks.items():
             thr = threading._active.get(thread_id)
-            bucket = self._get_call_tree_bucket(thr)
-            if bucket is None:  # Approprite bucket not found
+            bucket = self._get_call_bucket(thr)
+            if bucket is None:  # Appropriate bucket not found
                 continue
             self._update_call_tree(bucket, stack_trace)
 
-    def _update_call_tree(self, call_tree, stack_trace):
+    def _update_call_tree(self, bucket, stack_trace):
+        """
+        Merge a stack trace to a call tree in the bucket. If no appropriate
+        call tree is found then create a new call tree. An appropriate call
+        tree will have the same root node as the first method in the stack
+        trace.
+        """
         if not stack_trace:
             return
-        node = call_tree.get(stack_trace[0])
-        if node is None:
-            node = call_tree[stack_trace[0]] = ProfileNode(stack_trace[0])
-        node.call_count += 1
-        self._update_call_tree(node.children, stack_trace[1:])
+        call_tree = bucket.get(stack_trace[0])
+        if call_tree is None:
+            call_tree = bucket[stack_trace[0]] = ProfileNode(stack_trace[0])
+        call_tree.call_count += 1
+        self._update_call_tree(call_tree.children, stack_trace[1:])
     
     def start_profiling(self):
         self.start_time = time.time()
@@ -118,36 +141,51 @@ class ThreadProfiler(object):
             self._profiler_thread.join(self.sample_period)
 
     def profile_data(self):
+        """
+        Return the profile data once the thread profiler has finished otherwise 
+        return None.
+        """
         if self._profiler_thread.isAlive():
             return None
         call_data = {}
         thread_count = 0
-        self._prune_trees(NODE_LIMIT)
-        for thread_type, call_tree in self.call_trees.items():
-            if not call_tree.values():  # Skip empty buckets
+        self._prune_trees(NODE_LIMIT)  # Prune the tree if necessary
+        for bucket_type, bucket in self.call_buckets.items():
+            if not bucket.values():  # Skip empty buckets
                 continue
-            call_data[thread_type] = call_tree.values()
-            thread_count += len(call_tree)
+            call_data[bucket_type] = bucket.values()
+            thread_count += len(bucket)
         json_data = simplejson.dumps(call_data, default=alt_serialize,
                 ensure_ascii=True, encoding='Latin-1',
                 namedtuple_as_object=False)
         encoded_data = base64.standard_b64encode(zlib.compress(json_data))
         profile = [[self.profile_id, self.start_time*1000, self.stop_time*1000,
             self._sample_count, encoded_data, thread_count, 0]]
-
         return profile
 
     def _prune_trees(self, limit):
+        """
+        Prune all the call tree buckets if the number of nodes is greater than 
+        NODE_LIMIT. 
+
+        Algo:
+        * Add every node in each call tree to a list. 
+        * Reverse sort the list by call count. 
+        * Set the ignore flag on nodes that are above the NODE_LIMIT threshold
+        """
         if ProfileNode.node_count < limit:
             return
-        for call_trees in self.call_trees.values():
-            for root_node in call_trees.values():
-                self._node_to_list(root_node)
+        for bucket in self.call_buckets.values():
+            for call_tree in bucket.values():
+                self._node_to_list(call_tree)
         self.node_list.sort(key=lambda x: x.call_count, reverse=True)
         for node in self.node_list[limit:]:
             node.ignore = True
 
     def _node_to_list(self, node):
+        """
+        Walk the call tree and add each node to the node_list.
+        """
         if not node:
             return 
         self.node_list.append(node)
@@ -155,6 +193,11 @@ class ThreadProfiler(object):
             self._node_to_list(child_node)
 
 def collect_thread_stacks():
+    """
+    Get the stack traces of each thread and record it in a hash with 
+    thread_id as key and a list of _MethodData objects as value.
+    The list is reversed since python returns a bottom-up stack trace.
+    """
     stack_traces = {}
     for thread_id, frame in sys._current_frames().items():
         stack_traces[thread_id] = []
@@ -176,6 +219,9 @@ def alt_serialize(data):
         return data
 
 def fib(n):
+    """
+    Test recursive function. 
+    """
     if n < 2:
         return n
     return fib(n-1) + fib(n-2)
@@ -183,7 +229,7 @@ def fib(n):
 if __name__ == "__main__":
     t = ThreadProfiler(-1, 0.1, 1, profile_agent_code=True)
     t.start_profiling()
-    fib(20)
+    fib(35)
     #import time
     #time.sleep(1.1)
     c = zlib.decompress(base64.standard_b64decode(t.profile_data()[0][4]))

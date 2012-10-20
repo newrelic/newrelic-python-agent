@@ -21,6 +21,11 @@ _MethodData = namedtuple('_MethodData',
 AGENT_DIR = os.path.dirname(newrelic.__file__) + '/'
 NODE_LIMIT = 20000
 
+# Config variables
+
+USE_REAL_LINE_NUMBERS = False
+ADD_REAL_LINE_LEAF_NODE = True
+
 class ProfileNode(object):
     """This class provides the node used to construct the call tree.
     """
@@ -78,28 +83,6 @@ class ThreadProfiler(object):
             if (time.time() - self.start_time) >= self.duration:
                 self.stop_profiling()
 
-    def _get_call_bucket(self, thr):
-        """
-        Classify the thread whether it's a Web Request, Background or Agent
-        thread and return the appropriate bucket to save the stack trace.
-        """
-        if thr is None:  # Thread is not active
-            return None
-        # NR thread
-        if thr.getName().startswith('NR-'):
-            if self.profile_agent_code:
-                return self.call_buckets['AGENT']
-            else:
-                return None
-
-        transaction = Transaction._lookup_transaction(thr)
-        if transaction is None:
-            return self.call_buckets['OTHER']
-        elif transaction.background_task:
-            return self.call_buckets['BACKGROUND']
-        else:
-            return self.call_buckets['REQUEST']
-
     def _run_profiler(self):
         """
         Collect stacktraces for each thread and update the appropriate call-
@@ -109,13 +92,14 @@ class ThreadProfiler(object):
         stacks = collect_thread_stacks()
         for thread_id, stack_trace in stacks.items():
             thr = threading._active.get(thread_id)
-            bucket = self._get_call_bucket(thr)
-            if bucket is None:  # Appropriate bucket not found
+            th_type = classify_thread(thr)
+            if th_type is None:  # Thread category not found
                 continue
-            ignore_nr_method = bucket is not self.call_buckets['AGENT']
-            self._update_call_tree(bucket, stack_trace, ignore_nr_method)
+            if (th_type is 'AGENT') and (self.profile_agent_code is False):
+                continue
+            self._update_call_tree(self.call_buckets[th_type], stack_trace)
 
-    def _update_call_tree(self, bucket, stack_trace, ignore_nr_method):
+    def _update_call_tree(self, bucket, stack_trace):
         """
         Merge a stack trace to a call tree in the bucket. If no appropriate
         call tree is found then create a new call tree. An appropriate call
@@ -126,15 +110,11 @@ class ThreadProfiler(object):
         if not stack_trace:
             return
         method = stack_trace.pop()
-        if method.file_name.startswith(AGENT_DIR) and ignore_nr_method:
-            return self._update_call_tree(bucket, stack_trace,
-                    ignore_nr_method)
         call_tree = bucket.get(method)
         if call_tree is None:
             call_tree = bucket[method] = ProfileNode(method)
         call_tree.call_count += 1
-        return self._update_call_tree(call_tree.children, stack_trace,
-                ignore_nr_method)
+        return self._update_call_tree(call_tree.children, stack_trace)
     
     def start_profiling(self):
         self.start_time = time.time()
@@ -198,19 +178,57 @@ class ThreadProfiler(object):
         for child_node in node.children.values():
             self._node_to_list(child_node)
 
-def collect_thread_stacks():
+def classify_thread(thr):
+    """
+    Classify the thread whether it's a Web Request, Background or Agent
+    thread and return the appropriate bucket to save the stack trace.
+    """
+    if thr is None:  # Thread is not active
+        return None
+    # NR thread
+    if thr.getName().startswith('NR-'):
+        return 'AGENT'
+
+    transaction = Transaction._lookup_transaction(thr)
+    if transaction is None:
+        return 'OTHER'
+    elif transaction.background_task:
+        return 'BACKGROUND'
+    else:
+        return 'REQUEST'
+    return None
+
+
+def collect_thread_stacks(ignore_agent_frames=True):
     """
     Get the stack traces of each thread and record it in a hash with 
     thread_id as key and a list of _MethodData objects as value.
     """
     stack_traces = {}
     for thread_id, frame in sys._current_frames().items():
+        thr = threading._active.get(thread_id)
+        thr_type = classify_thread(thr)
         stack_traces[thread_id] = []
+        leaf_node = ADD_REAL_LINE_LEAF_NODE
         while frame:
-            f = frame.f_code
-            stack_traces[thread_id].append(_MethodData(f.co_filename,
-                f.co_name, f.co_firstlineno))
-            frame = frame.f_back
+            real_line = frame.f_lineno
+            filename = frame.f_code.co_filename
+            func_name = frame.f_code.co_name
+            first_line = frame.f_code.co_firstlineno
+            line_no = real_line if USE_REAL_LINE_NUMBERS else first_line
+            
+            frame = frame.f_back # next frame
+            if ((thr_type is not 'AGENT') and filename.startswith(AGENT_DIR)
+                    and ignore_agent_frames):
+                continue   #  Skip agent frame
+
+            if leaf_node:  # Add a synthesized leaf node with real line_no
+                stack_traces[thread_id].append(
+                        _MethodData(filename, real_line, real_line))
+                leaf_node = False
+
+            stack_traces[thread_id].append(
+                    _MethodData(filename, func_name, line_no))
     return stack_traces
 
 def fib(n):

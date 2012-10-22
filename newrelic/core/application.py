@@ -556,6 +556,8 @@ class Application(object):
                 # this point onwards will be accumulated in a fresh
                 # bucket.
 
+                transaction_count = self._transaction_count
+
                 with self._stats_lock:
                     self._transaction_count = 0
                     self._last_transaction = 0.0
@@ -600,6 +602,23 @@ class Application(object):
                 # ends and start reporting the data.
 
                 period_end = time.time()
+
+                # If this harvest is being forcibly triggered on process
+                # shutdown, there are transactions recorded, and the
+                # duration of the harvest period is less than 1 second,
+                # then artificially push out the end time of the harvest
+                # period. This is done so that the harvest period is not
+                # less than 1 second, otherwise the data collector will
+                # throw the data away. This is desirable for case where
+                # trying to monitor scripts which perform a one off task
+                # and then immediately exit. Also useful when running
+                # test scripts.
+
+                if shutdown and transaction_count != 0:
+                    if period_end - self._period_start < 1.0:
+                        _logger.debug('Stretching harvest duration for '
+                                'forced harvest on shutdown.')
+                        period_end = self._period_start + 1.001
 
                 try:
                     configuration = self._active_session.configuration

@@ -23,8 +23,9 @@ NODE_LIMIT = 20000
 
 # Config variables
 
-USE_REAL_LINE_NUMBERS = False
+USE_REAL_LINE_NUMBERS = True
 ADD_REAL_LINE_LEAF_NODE = True
+ADD_LINE_TO_FUNC_NAME = True
 
 class ProfileNode(object):
     """This class provides the node used to construct the call tree.
@@ -216,19 +217,36 @@ def collect_thread_stacks(ignore_agent_frames=True):
             func_name = frame.f_code.co_name
             first_line = frame.f_code.co_firstlineno
             line_no = real_line if USE_REAL_LINE_NUMBERS else first_line
-            
+
             frame = frame.f_back # next frame
             if ((thr_type is not 'AGENT') and filename.startswith(AGENT_DIR)
                     and ignore_agent_frames):
                 continue   #  Skip agent frame
 
-            if leaf_node:  # Add a synthesized leaf node with real line_no
-                stack_traces[thread_id].append(
-                        _MethodData(filename, real_line, real_line))
+            if leaf_node:
+              
+                # Add a synthesized leaf node with line number of where
+                # the code was executing at the point of the sample.
+                # This could be actual Python code within the function,
+                # or more likely showing the point where a call is being
+                # made into a C function wrapped as Python object. The
+                # latter can occur because we will not see stack frames
+                # when calling into C functions.
+
+                method_data = _MethodData(filename, '@%s#%s' % (
+                        func_name, real_line), line_no)
+                stack_traces[thread_id].append(method_data)
+
                 leaf_node = False
 
-            stack_traces[thread_id].append(
-                    _MethodData(filename, func_name, line_no))
+            if ADD_LINE_TO_FUNC_NAME:
+                method_data = _MethodData(filename, '%s#%s' % (
+                        func_name, first_line), line_no)
+            else:
+                method_data = _MethodData(filename, func_name, line_no)
+
+            stack_traces[thread_id].append(method_data)
+
     return stack_traces
 
 def fib(n):

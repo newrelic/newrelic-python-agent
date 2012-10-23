@@ -468,6 +468,87 @@ def network_config(args):
     print 'proxy_pass = %s' % repr(_settings.proxy_pass)
     print 'ssl = %s' % repr(_settings.ssl)
 
+@command('rum-header', '',
+"""Prints out the RUM header.""")
+def rum_footer(args):
+    if len(args) != 0:
+        usage('rum-header')
+        return
+
+    import newrelic.api.web_transaction
+
+    print newrelic.api.web_transaction._rum_header_fragment
+
+@command('rum-footer', 'config_file path [log_file]',
+"""Prints out the RUM footer for a resource with the supplied path.
+The application name as specified in the agent configuration file is
+used.""")
+def rum_footer(args):
+    if len(args) == 0:
+        usage('rum-footer')
+        return
+
+    import newrelic.core.config
+
+    import newrelic.api.settings
+
+    import newrelic.agent
+
+    _settings = newrelic.api.settings.settings()
+
+    if len(args) >= 3:
+        _settings.log_file = args[2]
+    else:
+        _settings.log_file = '/tmp/python-agent-test.log'
+
+    _settings.log_level = logging.DEBUG
+
+    try:
+        os.unlink(_settings.log_file)
+    except:
+        pass
+
+    initialize_logging()
+
+    _logger = logging.getLogger(__name__)
+
+    config_file = args[0]
+
+    if config_file == '-':
+        config_file = None
+
+    newrelic.agent.initialize(config_file, ignore_errors=False,
+               log_file=_settings.log_file, log_level=_settings.log_level)
+
+    _application = newrelic.api.application.application_instance()
+
+    _timeout = 30.0
+
+    _start = time.time()
+    _status = _application.activate(timeout=_timeout)
+    _end = time.time()
+
+    _duration = _end - _start
+
+    if not _application.active:
+        _logger.error('Unable to register application test, '
+            'connection could not be established within %s seconds.',
+            _timeout)
+        return
+
+    import newrelic.api.web_transaction
+
+    footer = newrelic.api.web_transaction._rum_footer_long_fragment
+
+    metric = 'WebTransaction/Static/%s' % args[1]
+
+    name = newrelic.api.web_transaction._obfuscate(metric,
+            _application.settings.license_key)
+
+    print str(footer % (_application.settings.episodes_file,
+        _application.settings.beacon, _application.settings.browser_key,
+        _application.settings.application_id, name, 0, 0))
+
 @command('run-python', '...',
 """Executes the Python interpreter with the supplied arguments but forces
 the initialisation of the agent automatically at startup.

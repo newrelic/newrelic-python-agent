@@ -219,7 +219,7 @@ class Application(object):
         self._connected_event.wait(timeout)
 
         if not self._connected_event.isSet():
-            _logger.debug('Timeout out waiting for New Relic service '
+            _logger.debug('Timeout waiting for New Relic service '
                     'connection with timeout of %s seconds.', timeout)
             return False
 

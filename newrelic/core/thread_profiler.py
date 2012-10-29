@@ -92,8 +92,7 @@ class ThreadProfiler(object):
         self._sample_count += 1
         stacks = collect_thread_stacks()
         for thread_id, stack_trace in stacks.items():
-            thr = threading._active.get(thread_id)
-            th_type = classify_thread(thr)
+            th_type = classify_thread(thread_id)
             if th_type is None:  # Thread category not found
                 continue
             if (th_type is 'AGENT') and (self.profile_agent_code is False):
@@ -179,26 +178,36 @@ class ThreadProfiler(object):
         for child_node in node.children.values():
             self._node_to_list(child_node)
 
-def classify_thread(thr):
-    """
-    Classify the thread whether it's a Web Request, Background or Agent
-    thread and return the appropriate bucket to save the stack trace.
-    """
-    if thr is None:  # Thread is not active
-        return None
-    # NR thread
-    if thr.getName().startswith('NR-'):
-        return 'AGENT'
+def classify_thread(thread_id):
+    """Classify whether a thread is a web transaction, background task,
+    internal agent thread or some other background thread. Returns the
+    name of the appropriate classification bucket to save data to.
 
-    transaction = Transaction._lookup_transaction(thr)
-    if transaction is None:
-        return 'OTHER'
-    elif transaction.background_task:
-        return 'BACKGROUND'
-    else:
-        return 'REQUEST'
-    return None
+    Note that this only works for the original thread ID and will not
+    work where the thread ID has been subsitituted with a greenlet
+    identifier such as when using eventlet or gevent. This shouldn't
+    be an issue as other code in this module will only call it for an
+    original thread ID.
 
+    """
+
+    # First check for any active web transactions or background tasks.
+    #
+    # XXX Need to eliminate this reach up from core to the higher layers
+    # of instrumentation.
+
+    transaction = Transaction._lookup_transaction(thread_id)
+
+    if transaction:
+        return transaction.background_task and 'BACKGROUND' or 'REQUEST'
+
+    # Now determine if thread is an internal agent thread. All agent
+    # internal threads have a thread name starting with 'NR-'.
+
+    thread = threading._active.get(thread_id)
+
+    if thread:
+        return thread.getName().startswith('NR-') and 'AGENT' or 'OTHER'
 
 def collect_thread_stacks(ignore_agent_frames=True):
     """
@@ -207,8 +216,7 @@ def collect_thread_stacks(ignore_agent_frames=True):
     """
     stack_traces = {}
     for thread_id, frame in sys._current_frames().items():
-        thr = threading._active.get(thread_id)
-        thr_type = classify_thread(thr)
+        thr_type = classify_thread(thread_id)
         stack_traces[thread_id] = []
         leaf_node = ADD_REAL_LINE_LEAF_NODE
         while frame:

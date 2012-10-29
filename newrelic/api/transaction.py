@@ -4,6 +4,7 @@ import os
 import sys
 import time
 import weakref
+import thread
 import threading
 import traceback
 import logging
@@ -35,7 +36,22 @@ class Transaction(object):
     _transactions = weakref.WeakValueDictionary()
 
     @classmethod
-    def _current_coroutine(cls):
+    def _current_thread_id(cls):
+        """Returns the thread ID for the caller.
+        
+        When using eventlet or gevent they will patch the thread module
+        and the get_ident() function will actually return the greenlet
+        ID. Even though patched, it will still return a valid thread ID
+        if a greenlet is not actually running.
+
+        """
+
+        # Meinheld does patch the thread module so this workaround is in
+        # here to cope with that. Suspect that Meinheld isn't going to
+        # work in other ways due to not doing any patching of standard
+        # libraries. Should drop support for Meinheld, but leave this
+        # here for now.
+
         meinheld = sys.modules.get('meinheld.server')
 
         if meinheld:
@@ -46,66 +62,91 @@ class Transaction(object):
             except:
                 pass
 
-        greenlet = sys.modules.get('greenlet')
-
-        if greenlet:
-            try:
-                return greenlet.getcurrent()
-            except:
-                pass
-
-    @classmethod
-    def _current_thread(cls):
-        return threading.currentThread()
-
-    @classmethod
-    def _current_context(cls):
-        coroutine = cls._current_coroutine()
-        if coroutine is not None:
-            return (CONCURRENCY_COROUTINE, coroutine)
-        else:
-            return (CONCURRENCY_THREADING, cls._current_thread())
+        return thread.get_ident()
 
     @classmethod
     def _current_transaction(cls):
-        active_context = cls._current_context()
-        return cls._transactions.get(active_context)
+        """Return the transaction object if one exists for the currently
+        executing thread.
+
+        """
+
+        return cls._transactions.get(cls._current_thread_id())
 
     @classmethod
-    def _lookup_transaction(cls, thread_obj):
-        active_context = (CONCURRENCY_THREADING, thread_obj)
-        return cls._transactions.get(active_context)
+    def _lookup_transaction(cls, thread_id):
+        """Returns the transaction object if one exists for the thread
+        with the corresponding thread ID.
+
+        Note that if a thread is actually running as a greenlet, using
+        the thread ID from the set of current frames returned by the
+        sys._current_frames() will not actually match. That is because
+        that thread ID is that of the real Python thread in which the
+        greenlets are running.
+
+        """
+
+        return cls._transactions.get(thread_id)
 
     @classmethod
     def _save_transaction(cls, transaction):
-        active_context = cls._current_context()
+        """Saves the specified transaction away under the thread ID of
+        the current executing thread. Will also cache the thread ID and
+        the type of concurrency mechanism being used in the transaction.
 
-        if active_context in cls._transactions:
+        """
+
+        thread_id = cls._current_thread_id()
+
+        if thread_id in cls._transactions:
             raise RuntimeError('transaction already active')
 
-        cls._transactions[active_context] = transaction
-        transaction._active_context = active_context
+        cls._transactions[thread_id] = transaction
+
+        transaction._thread_id = thread_id
+        transaction._concurrency_model = CONCURRENCY_THREADING
+
+        # We judge whether we are actually running in a coroutine by
+        # seeing if the current thread ID is actually listed in the set
+        # of all current frames for executing threads. If we are
+        # executing within a greenlet, then thread.get_ident() will
+        # return the greenlet identifier. This will not be a key in
+        # dictionary of all current frames because that will still be
+        # the original standard thread which all greenlets are running
+        # within.
+
+        if hasattr(sys, '_current_frames'):
+            if thread_id not in sys._current_frames():
+                transaction._concurrency_model = CONCURRENCY_COROUTINE
 
     @classmethod
     def _drop_transaction(cls, transaction):
-        active_context = transaction._active_context
+        """Drops the specified transaction, validating that it is
+        actually saved away under the current executing thread.
 
-        if not active_context in cls._transactions:
+        """
+
+        thread_id = transaction._thread_id
+
+        if not thread_id in cls._transactions:
             raise RuntimeError('no active transaction')
 
-        current = cls._transactions.get(active_context)
+        current = cls._transactions.get(thread_id)
 
         if transaction != current:
             raise RuntimeError('not the current transaction')
 
-        transaction._active_context = None
-        del cls._transactions[active_context]
+        transaction._thread_id = None
+        transaction._concurrency_model = None
+
+        del cls._transactions[thread_id]
 
     def __init__(self, application, enabled=None):
 
         self._application = application
 
-        self._active_context = None
+        self._thread_id = None
+        self._concurrency_model = None
 
         self._dead = False
 
@@ -244,9 +285,8 @@ class Transaction(object):
 
         # Calculate initial thread utilisation factor.
 
-        concurrency_model, thread_instance  = self._active_context
-
-        if concurrency_model == CONCURRENCY_THREADING:
+        if self._concurrency_model == CONCURRENCY_THREADING:
+            thread_instance = threading.currentThread()
             self._thread_utilization = self._application.thread_utilization
             if self._thread_utilization:
                 self._thread_utilization.enter_transaction(thread_instance)
@@ -766,8 +806,10 @@ class Transaction(object):
                 self.application.name)
         print >> file, 'Time Started: %s' % (
                 time.asctime(time.localtime(self.start_time)))
-        print >> file, 'Active Context: %r' % (
-                self._active_context,)
+        print >> file, 'Thread Id: %r' % (
+                self._thread_id,)
+        print >> file, 'Concurrency Model: %r' % (
+                self._concurrency_model,)
         print >> file, 'Current Status: %d' % (
                 self._state)
         print >> file, 'Recording Enabled: %s' % (

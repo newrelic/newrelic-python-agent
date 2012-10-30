@@ -15,17 +15,125 @@ try:
 except:
     from newrelic.lib.namedtuple import namedtuple
 
+NODE_LIMIT = 20000
+
+# Class which is used to identify the point in the code where execution
+# was occuring when the sample was taken. One of these will exist for
+# each stack frame.
+#
+# Note that the UI was originally written based around the Java agent
+# and for Java everything is in a class and so the class refers to the
+# method data. For Python we only have access to the function name and
+# do not know the class it is in. We thus only use the function name,
+# but because in the case of a method of a class, there could be
+# multiple methods of the same name defined within different classes, or
+# even as a function at global scope, then we add the first line number
+# of the code as part of the name. This makes it easier to identify
+# which function or method it is rather than trying to work it out from
+# execution line.
+
 _MethodData = namedtuple('_MethodData',
         ['file_name', 'method_name', 'line_no'])
 
-AGENT_DIR = os.path.dirname(newrelic.__file__) + '/'
-NODE_LIMIT = 20000
-
-# Config variables
+# Collection of the actual calls stacks is done by getting access to the
+# current stack frames for all threads provided by CPython. If greenlets
+# are used this is more complicated as greenlets will not appear in that
+# list of stack frames. The stack frames for greenlets are available
+# from the greenlet itself, but there is no list of all active greenlets.
+# For now we attach the greenlet to the record of any transaction we
+# are tracking and get to it that way. For convenience and because we
+# need to refer to the transaction objects to categorise what the thread
+# is being used for anyway, we put all the code dealing with that in the
+# transaction class and we reach up and get the data on active threads
+# from it.
 
 USE_REAL_LINE_NUMBERS = True
 ADD_REAL_LINE_LEAF_NODE = True
 ADD_LINE_TO_FUNC_NAME = True
+IGNORE_AGENT_FRAMES = True
+
+AGENT_PACKAGE_DIRECTORY = os.path.dirname(newrelic.__file__) + '/'
+
+def collect_stack_traces():
+    """Collects representaions for the stack of each active thread
+    within the process. A item is yielded for each thread which consists
+    of a tuple with the category of thread and then the stack trace.
+
+    """
+
+    for thread_id, thread_category, frame in Transaction._active_threads():
+        stack_trace = []
+
+        # The initial stack frame is the lowest frame or leaf node and
+        # we will track back up the stack. For that lowest stack frame
+        # we optionally want to introduce a fake node which captures the
+        # actual execution line so will be displayed as a separate item
+        # in the UI. This makes it easier to identify where in the
+        # actual code it was executing.
+
+        leaf_node = ADD_REAL_LINE_LEAF_NODE
+
+        while frame:
+            # The value frame.f_code.co_firstlineno is the first line of
+            # code in the file for the specified function. The value
+            # frame.f_lineno is the actual line which is being executed
+            # at the time the stack frame was being viewed.
+
+            filename = frame.f_code.co_filename
+            func_name = frame.f_code.co_name
+            first_line = frame.f_code.co_firstlineno
+
+            real_line = frame.f_lineno
+
+            # As we experiment with representation of the stack trace in
+            # UI, allow line number for each stack frame to either be
+            # the actual execution line or start of function. It would
+            # appear at this point it should always be execution line.
+
+            line_no = real_line if USE_REAL_LINE_NUMBERS else first_line
+
+            # Set ourselves up to process next frame back up the stack.
+
+            frame = frame.f_back
+
+            # So as to make it more obvious to the user as to what their
+            # code is doing, we drop out stack frames related to the
+            # agent instrumentation. Don't do this for the agent threads
+            # though as we still need to seem them in that case so can
+            # debug what the agent itself is doing.
+
+            if IGNORE_AGENT_FRAMES and thread_category != 'AGENT':
+                if filename.startswith(AGENT_PACKAGE_DIRECTORY):
+                    continue
+
+            if leaf_node:
+                # Add the fake leaf node with line number of where the
+                # code was executing at the point of the sample. This
+                # could be actual Python code within the function, or
+                # more likely showing the point where a call is being
+                # made into a C function wrapped as Python object. The
+                # latter can occur because we will not see stack frames
+                # when calling into C functions.
+
+                name = '@%s#%s' % (func_name, real_line)
+                method_data = _MethodData(filename, name, line_no)
+                stack_trace.append(method_data)
+
+                leaf_node = False
+
+            # Add the actual node for the function being called at this
+            # level in the stack frames.
+
+            if ADD_LINE_TO_FUNC_NAME:
+                name = '%s#%s' % (func_name, first_line)
+            else:
+                name = func_name
+
+            method_data = _MethodData(filename, name, line_no)
+
+            stack_trace.append(method_data)
+
+        yield thread_category, stack_trace
 
 class ProfileNode(object):
     """This class provides the node used to construct the call tree.
@@ -90,14 +198,12 @@ class ThreadProfiler(object):
         tree bucket.
         """
         self._sample_count += 1
-        stacks = collect_thread_stacks()
-        for thread_id, stack_trace in stacks.items():
-            th_type = classify_thread(thread_id)
-            if th_type is None:  # Thread category not found
+        for thread_category, stack_trace in collect_stack_traces():
+            if thread_category is None:  # Thread category not found
                 continue
-            if (th_type is 'AGENT') and (self.profile_agent_code is False):
+            if (thread_category == 'AGENT') and (self.profile_agent_code == False):
                 continue
-            self._update_call_tree(self.call_buckets[th_type], stack_trace)
+            self._update_call_tree(self.call_buckets[thread_category], stack_trace)
 
     def _update_call_tree(self, bucket, stack_trace):
         """
@@ -177,85 +283,6 @@ class ThreadProfiler(object):
         self.node_list.append(node)
         for child_node in node.children.values():
             self._node_to_list(child_node)
-
-def classify_thread(thread_id):
-    """Classify whether a thread is a web transaction, background task,
-    internal agent thread or some other background thread. Returns the
-    name of the appropriate classification bucket to save data to.
-
-    Note that this only works for the original thread ID and will not
-    work where the thread ID has been subsitituted with a greenlet
-    identifier such as when using eventlet or gevent. This shouldn't
-    be an issue as other code in this module will only call it for an
-    original thread ID.
-
-    """
-
-    # First check for any active web transactions or background tasks.
-    #
-    # XXX Need to eliminate this reach up from core to the higher layers
-    # of instrumentation.
-
-    transaction = Transaction._lookup_transaction(thread_id)
-
-    if transaction:
-        return transaction.background_task and 'BACKGROUND' or 'REQUEST'
-
-    # Now determine if thread is an internal agent thread. All agent
-    # internal threads have a thread name starting with 'NR-'.
-
-    thread = threading._active.get(thread_id)
-
-    if thread:
-        return thread.getName().startswith('NR-') and 'AGENT' or 'OTHER'
-
-def collect_thread_stacks(ignore_agent_frames=True):
-    """
-    Get the stack traces of each thread and record it in a hash with 
-    thread_id as key and a list of _MethodData objects as value.
-    """
-    stack_traces = {}
-    for thread_id, frame in sys._current_frames().items():
-        thr_type = classify_thread(thread_id)
-        stack_traces[thread_id] = []
-        leaf_node = ADD_REAL_LINE_LEAF_NODE
-        while frame:
-            real_line = frame.f_lineno
-            filename = frame.f_code.co_filename
-            func_name = frame.f_code.co_name
-            first_line = frame.f_code.co_firstlineno
-            line_no = real_line if USE_REAL_LINE_NUMBERS else first_line
-
-            frame = frame.f_back # next frame
-            if ((thr_type is not 'AGENT') and filename.startswith(AGENT_DIR)
-                    and ignore_agent_frames):
-                continue   #  Skip agent frame
-
-            if leaf_node:
-              
-                # Add a synthesized leaf node with line number of where
-                # the code was executing at the point of the sample.
-                # This could be actual Python code within the function,
-                # or more likely showing the point where a call is being
-                # made into a C function wrapped as Python object. The
-                # latter can occur because we will not see stack frames
-                # when calling into C functions.
-
-                method_data = _MethodData(filename, '@%s#%s' % (
-                        func_name, real_line), line_no)
-                stack_traces[thread_id].append(method_data)
-
-                leaf_node = False
-
-            if ADD_LINE_TO_FUNC_NAME:
-                method_data = _MethodData(filename, '%s#%s' % (
-                        func_name, first_line), line_no)
-            else:
-                method_data = _MethodData(filename, func_name, line_no)
-
-            stack_traces[thread_id].append(method_data)
-
-    return stack_traces
 
 def fib(n):
     """

@@ -89,6 +89,57 @@ class Transaction(object):
         return cls._transactions.get(thread_id)
 
     @classmethod
+    def _active_threads(cls):
+        """Returns an iterator over all current stack frames for all
+        active threads in the process. The result for each is a tuple
+        consisting of the thread identifier, a categorisation of the
+        type of thread, and the stack frame. Note that we actually treat
+        any greenlets as threads as well. In that case the thread ID is
+        the id() of the greenlet.
+
+        This is in this class for convenience as needs to access the
+        currently active transactions to categorise transaction threads
+        as being for web transactions or background tasks.
+
+        """
+
+        # First yield up those for real Python threads.
+
+        for thread_id, frame in sys._current_frames().items():
+            transaction = cls._transactions.get(thread_id)
+            if transaction is not None:
+                if transaction.background_task:
+                    yield thread_id, 'BACKGROUND', frame
+                else:
+                    yield thread_id, 'REQUEST', frame
+            else:
+                # Note that there may not always be a thread object.
+                # This is because thread could have been created direct
+                # against the thread module rather than via the high
+                # level threading module. Categorise anything we can't
+                # obtain a name for as being 'OTHER'.
+
+                thread = threading._active.get(thread_id)
+                if thread is not None and thread.getName().startswith('NR-'):
+                    yield thread_id, 'AGENT', frame
+                else:
+                    yield thread_id, 'OTHER', frame
+
+        # Now yield up those corresponding to greenlets. Right now only
+        # doing this for greenlets in which any active transactions are
+        # running. We don't have a way of knowing what non transaction
+        # threads are running.
+
+        for thread_id, transaction in cls._transactions.items():
+            if transaction._greenlet is not None:
+                gr = transaction._greenlet()
+                if gr and gr.gr_frame is not None:
+                    if transaction.background_task:
+                        yield thread_id, 'BACKGROUND', gr.gr_frame
+                    else:
+                        yield thread_id, 'REQUEST', gr.gr_frame
+
+    @classmethod
     def _save_transaction(cls, transaction):
         """Saves the specified transaction away under the thread ID of
         the current executing thread. Will also cache the thread ID and
@@ -118,6 +169,9 @@ class Transaction(object):
         if hasattr(sys, '_current_frames'):
             if thread_id not in sys._current_frames():
                 transaction._concurrency_model = CONCURRENCY_COROUTINE
+                greenlet = sys.modules.get('greenlet')
+                if greenlet:
+                    transaction._greenlet = weakref.ref(greenlet.getcurrent())
 
     @classmethod
     def _drop_transaction(cls, transaction):
@@ -138,6 +192,7 @@ class Transaction(object):
 
         transaction._thread_id = None
         transaction._concurrency_model = None
+        transaction._greenlet = None
 
         del cls._transactions[thread_id]
 
@@ -147,6 +202,7 @@ class Transaction(object):
 
         self._thread_id = None
         self._concurrency_model = None
+        self._greenlet = None
 
         self._dead = False
 

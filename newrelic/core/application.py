@@ -818,9 +818,11 @@ class Application(object):
 
                 except ForceAgentRestart:
                     # The data collector has indicated that we need to
-                    # perform an internal agent restart. We attempt to
-                    # properly shutdown the session and then initiate a
-                    # new session.
+                    # perform an internal agent restart. We throw away
+                    # the existing session and then initiate a new
+                    # session. We don't do a formal shutdown of the
+                    # session as the data collector will only reject
+                    # the shutdown command for the agent run anyway.
                     #
                     # If a thread profiling session is running, we need
                     # to make sure we stop that from running as well as
@@ -838,11 +840,6 @@ class Application(object):
                         self._profiler_started = False
                         self._send_profile_data = False
 
-                    try:
-                        self._active_session.shutdown_session()
-                    except:
-                        pass
-
                     self._agent_restart += 1
                     self._active_session = None
 
@@ -850,20 +847,25 @@ class Application(object):
 
                 except ForceAgentDisconnect:
                     # The data collector has indicated that we need to
-                    # force disconnect and stop reporting. We attempt to
-                    # properly shutdown the session, but don't start a
-                    # new one and flag ourselves as shutdown. This
-                    # notification is presumably sent when a specific
-                    # application is behaving so badly that it needs to
-                    # be stopped entirely. It would require a complete
-                    # process start to be able to attempt to connect
-                    # again and if the server side kill switch is still
-                    # enabled it would be told to disconnect once more.
+                    # force disconnect and stop reporting. We simply
+                    # throw away the existing session and don't start a
+                    # new one and flag ourselves as shutdown. We don't
+                    # do a formal shutdown of the session as the data
+                    # collector will only reject the shutdown command
+                    # for the agent run anyway.
                     #
                     # If a thread profiling session is running, we need
                     # to make sure we stop that from running as well as
                     # the agent will no longer be reporting without a
                     # restart of the process so no point.
+                    #
+                    # This notification is presumably sent when a
+                    # specific application is behaving so badly that it
+                    # needs to be stopped entirely. It would require a
+                    # complete process start to be able to attempt to
+                    # connect again and if the server side kill switch
+                    # is still enabled it would be told to disconnect
+                    # once more.
 
                     if self._profiler_started:
                         _logger.info('Aborting thread profiling session '
@@ -875,11 +877,6 @@ class Application(object):
                         self._thread_profiler = None
                         self._profiler_started = False
                         self._send_profile_data = False
-
-                    try:
-                        self._active_session.shutdown_session()
-                    except:
-                        pass
 
                     self._active_session = None
 
@@ -893,7 +890,7 @@ class Application(object):
                     # transaction metrics. If the problem occurred when
                     # reporting other information then that and any
                     # other non reported information is thrown away.
-		    #
+                    #
                     # In order to prevent memory growth will we only
                     # merge data up to a set maximum number of
                     # successive times. When this occurs we throw away

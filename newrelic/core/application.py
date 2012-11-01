@@ -523,8 +523,16 @@ class Application(object):
         # specific application.
 
         self._thread_profiler = ThreadProfiler(self._app_name, profile_id,
-                sample_period, duration, profile_agent_code)
-        self._thread_profiler.start_profiling()
+                sample_period, profile_agent_code)
+
+        # When starting the profiling session, we actually specify the
+        # stop time as being duration starting from when this harvest
+        # period started. This is an attempt to have the thread
+        # profiling session finish in time to have it reported with the
+        # harvest period finishing at about the same time, rather than
+        # being held over for the next harvest a minute later.
+
+        self._thread_profiler.start_profiling(self._period_start+duration)
 
         self._profiler_started = True
         self._send_profile_data = True

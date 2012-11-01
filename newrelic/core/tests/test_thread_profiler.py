@@ -1,6 +1,7 @@
 import unittest
 import zlib
 import base64
+import time
 
 from newrelic.core.thread_profiler import ThreadProfiler, ProfileNode, _MethodData
 
@@ -11,9 +12,8 @@ class TestThreadProfiler(unittest.TestCase):
         self.duration = 2.0
         self.profile_agent_code = True
         self.tp = ThreadProfiler('Application', self.profile_id,
-                self.sample, self.duration, self.profile_agent_code)
-        self.tp.start_profiling()
-        import time
+                self.sample, self.profile_agent_code)
+        self.tp.start_profiling(time.time()+self.duration)
         time.sleep(self.duration+self.sample)
         self.pd = self.tp.profile_data()
 

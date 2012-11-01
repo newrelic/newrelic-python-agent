@@ -141,25 +141,48 @@ def collect_stack_traces():
 
 class ProfileNode(object):
     """This class provides the node used to construct the call tree.
+
     """
+
     def __init__(self, method_data, depth=1):
+        """Creates an initial node for a method call. There can be
+        multiple nodes with same method name as one is created for
+        each point it is called in a call stack.
+
+        """
+
+        # The non_call_count attribute is only used in the Java agent.
+        # Not sure how it is used and whether would have any meaning in
+        # the Python agent.
+
         self.method = method_data
         self.call_count = 0
-        self.non_call_count = 0  # only used by Java, never updated for python
-        self.children = {}   # key is _MethodData and value is ProfileNode
+        self.non_call_count = 0
+
+        # A call stack is represented by calls from a method being added
+        # as children, indexed by method sub call is made against. We
+        # keep the depth of a specific node so can prune nodes later and
+        # drop deepest and least used first.
+
+        self.children = {}
         self.depth = depth
+
         self.ignore = False
 
     def jsonable(self):
+        """Helper method for returning the object in form suitable for
+        conversion to JSON in format expected by the data collector. Any
+        children which are being ignored due to having been pruned are
+        discarded at this point.
+
         """
-        Return Serializable data for json.
-        """
+
         return [self.method, self.call_count, self.non_call_count,
                 [x for x in self.children.values() if not x.ignore]]
 
 class ThreadProfiler(object):
 
-    def __init__(self, app_name, profile_id, sample_period=0.1, duration=300,
+    def __init__(self, app_name, profile_id, sample_period=0.1,
             profile_agent_code=False):
 
         """Initialises the thread profiler but does not actually start
@@ -183,7 +206,6 @@ class ThreadProfiler(object):
         self.app_name = app_name
         self.profile_id = profile_id
         self.sample_period = sample_period
-        self.duration = duration
         self.profile_agent_code = profile_agent_code
 
         self._sample_count = 0
@@ -247,25 +269,38 @@ class ThreadProfiler(object):
             self._profiler_shutdown.wait(self.sample_period)
 
     def _collect_sample(self):
+        """Collect call stack traces for each thread and update the
+        accumulate call tree data in the appropriate bucket for the
+        category of thread.
+
         """
-        Collect stacktraces for each thread and update the appropriate call-
-        tree bucket.
-        """
+
         self._sample_count += 1
+
         for thread_category, stack_trace in collect_stack_traces():
-            if thread_category is None:  # Thread category not found
+            if thread_category is None:
                 continue
-            if (thread_category == 'AGENT') and (self.profile_agent_code == False):
-                continue
-            self._update_call_tree(self._call_buckets[thread_category], stack_trace)
+
+            # Whether we capture data on agent threads is dictated from
+            # the UI when the start profiling request is triggered. Only
+            # admins can request details on agent threads. Discard them
+            # at this point if don't want them.
+
+            if self.profile_agent_code == False:
+                if thread_category == 'AGENT':
+                    continue
+
+            self._update_call_tree(self._call_buckets[thread_category],
+                    stack_trace)
 
     def _update_call_tree(self, bucket, stack_trace, depth=1):
-        """
-        Merge a stack trace to a call tree in the bucket. If no appropriate
-        call tree is found then create a new call tree. An appropriate call
-        tree will have the same root node as the last method in the stack
-        trace. Methods from the stack trace are pulled from the end one at a
-        time and merged with the call tree recursively.
+        """Merge a single call stack trace into a call tree bucket. If
+        no appropriate call tree is found then create a new call tree.
+        An appropriate call tree will have the same root node as the
+        last method in the stack trace. Methods from the stack trace are
+        pulled from the end one at a time and merged with the call tree
+        recursively.
+
         """
 
         if not stack_trace:
@@ -281,31 +316,60 @@ class ThreadProfiler(object):
 
         call_tree.call_count += 1
 
-        return self._update_call_tree(call_tree.children, stack_trace, depth+1)
+        # The call depth is incremented on each recursive call so we
+        # know the depth of the call stack. We use this later when
+        # pruning nodes if go over the limit. Specifically, the deepest
+        # and least used nodes will be prune first.
+
+        return self._update_call_tree(call_tree.children, stack_trace,
+                depth+1)
     
-    def start_profiling(self):
+    def start_profiling(self, stop_time):
+        """Start the thread profiling session, stopping by the specified
+        stop time.
+
+        """
+
         self._start_time = time.time()
-        self._stop_time = self._start_time + self.duration
+        self._stop_time = stop_time
         self._profiler_thread.start()
 
     def stop_profiling(self, wait_for_completion=False):
+        """Stop the thread profiling session. The stop time will be
+        updated with the actual time the thread profiling session was
+        requested to be stopped.
+
+        """
+
         self._stop_time = time.time()
         self._profiler_shutdown.set()
+
+        # If the caller wants to wait until completion, we join with the
+        # background thread and wait for it to exit. Note that you
+        # should not wait for completion if calling this from the
+        # background thread itself.
 
         if wait_for_completion:
             self._profiler_thread.join(self.sample_period)
 
     def profile_data(self):
+        """Returns the profile data once the thread profiling session has
+        finished otherwise returns None. The data structure returned is
+        in a form suitable for sending back to the data collector.
+
         """
-        Return the profile data once the thread profiler has finished otherwise 
-        return None.
-        """
+
+        # Profiling session not finished.
 
         if self._profiler_thread.isAlive():
             return None
 
         call_data = {}
         thread_count = 0
+
+        # We prune the number of nodes sent if we are over the specified
+        # limit. This is just to avoid having the response be too large
+        # and get rejected by the data collector.
 
         settings = global_settings()
 
@@ -316,8 +380,12 @@ class ThreadProfiler(object):
                 call_data[thread_category] = bucket.values()
                 thread_count += len(bucket)
 
-        json_data = simplejson.dumps(call_data, default=lambda o: o.jsonable(),
-                ensure_ascii=True, encoding='Latin-1',
+        # Construct the actual final data for sending. The actual call
+        # data is turned into JSON, compessed and then base64 encoded at
+        # this point to cut its size.
+
+        json_data = simplejson.dumps(call_data, ensure_ascii=True,
+                encoding='Latin-1', default=lambda o: o.jsonable(),
                 namedtuple_as_object=False)
         encoded_data = base64.standard_b64encode(zlib.compress(json_data))
 
@@ -374,11 +442,10 @@ def fib(n):
     return fib(n-1) + fib(n-2)
 
 if __name__ == "__main__":
-    t = ThreadProfiler('Application', -1, 0.1, 1, profile_agent_code=True)
-    t.start_profiling()
+    t = ThreadProfiler('Application', -1, 0.1, profile_agent_code=True)
+    t.start_profiling(time.time()+1)
     #fib(35)
     import time
     time.sleep(1.1)
     c = zlib.decompress(base64.standard_b64decode(t.profile_data()[0][4]))
     print c
-    #print ProfileNode.node_count

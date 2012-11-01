@@ -287,6 +287,8 @@ def _process_configuration(section):
                      'getint', None)
     _process_setting(section, 'agent_limits.slow_transaction_dry_harvests',
                      'getint', None)
+    _process_setting(section, 'agent_limits.thread_profiler_nodes',
+                     'getint', None)
     _process_setting(section, 'console.listener_socket',
                      'get', _map_console_listener_socket)
     _process_setting(section, 'console.allow_interpreter_cmd',

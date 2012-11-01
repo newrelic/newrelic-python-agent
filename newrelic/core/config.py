@@ -154,6 +154,7 @@ _settings.agent_limits.saved_transactions = 10
 _settings.agent_limits.errors_per_transaction = 5
 _settings.agent_limits.errors_per_harvest = 20
 _settings.agent_limits.slow_transaction_dry_harvests = 5
+_settings.agent_limits.thread_profiler_nodes = 20000
 
 _settings.console.listener_socket = None
 _settings.console.allow_interpreter_cmd = False

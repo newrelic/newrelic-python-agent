@@ -7,7 +7,7 @@ import base64
 import traceback
 
 import newrelic
-from newrelic.api.transaction import Transaction
+
 import newrelic.lib.simplejson as simplejson
 
 try:
@@ -15,7 +15,8 @@ try:
 except:
     from newrelic.lib.namedtuple import namedtuple
 
-NODE_LIMIT = 20000
+from newrelic.api.transaction import Transaction
+from newrelic.core.config import global_settings
 
 # Class which is used to identify the point in the code where execution
 # was occuring when the sample was taken. One of these will exist for
@@ -138,14 +139,13 @@ def collect_stack_traces():
 class ProfileNode(object):
     """This class provides the node used to construct the call tree.
     """
-    node_count = 0
-    def __init__(self, method_data):
+    def __init__(self, method_data, depth=1):
         self.method = method_data
         self.call_count = 0
         self.non_call_count = 0  # only used by Java, never updated for python
         self.children = {}   # key is _MethodData and value is ProfileNode
+        self.depth = depth
         self.ignore = False
-        ProfileNode.node_count += 1
 
     def jsonable(self):
         """
@@ -155,44 +155,90 @@ class ProfileNode(object):
                 [x for x in self.children.values() if not x.ignore]]
 
 class ThreadProfiler(object):
+
     def __init__(self, profile_id, sample_period=0.1, duration=300,
             profile_agent_code=False):
-        self._profiler_thread = threading.Thread(target=self._profiler_loop,
-                name='NR-Profiler-Thread')
+
+        """Initialises the thread profiler but does not actually start
+        the collection of samples. The start_profiling() method must be
+        called separately.
+
+        """
+
+        # Sampling is performed from a background thread. Once started
+        # it will continue for the nominated duration, take a sample and
+        # then sleep for the duration of the specified sampling period.
+        # Sleeping makes use of an event object so it can be interrupted
+        # if an explicit instruction is received to stop the profiling
+        # session from the UI.
+
+        self._profiler_thread = threading.Thread(
+                target=self._profiler_loop, name='NR-Profiler-Thread')
         self._profiler_thread.setDaemon(True)
         self._profiler_shutdown = threading.Event()
 
         self.profile_id = profile_id
-        self._sample_count = 0
-        self.start_time = 0
-        self.stop_time = 0
-
-        # call_buckets is a dict with 4 buckets. Each bucket's values is a dict
-        # that can hold multiple call trees. The dict's key is _MethodData and
-        # the value is the root of the call tree (a ProfileNode).
-        self.call_buckets = {'REQUEST': {}, 'AGENT': {}, 'BACKGROUND': {},
-                'OTHER': {}}
         self.sample_period = sample_period
         self.duration = duration
         self.profile_agent_code = profile_agent_code
-        self.node_list = []
-        ProfileNode.node_count = 0  # Reset node count to zero
+
+        self._sample_count = 0
+        self._start_time = 0
+        self._stop_time = 0
+
+        # When collecting the call stack samples for where each thread
+        # is executing, the data is aggregated into separate buckets
+        # based on the categorisation of the thread type. Each bucket's
+        # values is a dictionary that can hold multiple call trees. The
+        # key is the method data and the value is the root of the call
+        # tree, being an instance of a profile data node. A separate
+        # node list is also kept for all instances of profile nodes so
+        # can easily determine how many there are in total when done. If
+        # over the the limit of how many nodes can be reported, the tree
+        # will be pruned with least frequent visited nodes being
+        # dropped.
+
+        self._call_buckets = { 'REQUEST': {}, 'AGENT': {},
+                'BACKGROUND': {}, 'OTHER': {} }
+        self._node_list = []
 
     def _profiler_loop(self):
+        """This is an infinite loop running in a background thread that
+        periocally wakes up and collects the call stack samples.
+
         """
-        This is an infinite loop running in a background thread that wakes up
-        every 100ms and calls _run_profiler(). It does this for 'duration'
-        seconds and shutsdown the thread.
-        """
+
+        # We collect one sample as soon as we start and then we sleep
+        # for the time specified by the sampling period before taking
+        # the next sample. We continue this until sampling is explicitly
+        # stopped or until sleeping again would take us beyond the
+        # overall duration specified for sampling.
+	#
+        # We bail out before the overall duration has expired so there
+        # is a better chance of having data reported sooner. This is
+        # because currently data is simply held in the application
+        # object and reported on the next harvest. Because the sample
+        # period typically divides evenly into the duration and the
+        # duration is a multiple of the harvest duration, going long
+        # means more likely to have to wait another minute before data
+        # is reported to the data collector. Stopping short avoids us
+        # needing to implement things so that the thread profiler itself
+        # submits the profile data to the data collector if want to
+        # ensure it gets there earlier.
+
         while True:
             if self._profiler_shutdown.isSet():
                 return
-            self._profiler_shutdown.wait(self.sample_period)
-            self._run_profiler()
-            if (time.time() - self.start_time) >= self.duration:
-                self.stop_profiling()
 
-    def _run_profiler(self):
+            self._collect_sample()
+
+            if self._stop_time - time.time() < self.sample_period:
+                self.stop_profiling(wait_for_completion=False)
+                return
+
+            self._profiler_shutdown.wait(self.sample_period)
+
+    def _collect_sample(self):
         """
         Collect stacktraces for each thread and update the appropriate call-
         tree bucket.
@@ -203,9 +249,9 @@ class ThreadProfiler(object):
                 continue
             if (thread_category == 'AGENT') and (self.profile_agent_code == False):
                 continue
-            self._update_call_tree(self.call_buckets[thread_category], stack_trace)
+            self._update_call_tree(self._call_buckets[thread_category], stack_trace)
 
-    def _update_call_tree(self, bucket, stack_trace):
+    def _update_call_tree(self, bucket, stack_trace, depth=1):
         """
         Merge a stack trace to a call tree in the bucket. If no appropriate
         call tree is found then create a new call tree. An appropriate call
@@ -213,23 +259,32 @@ class ThreadProfiler(object):
         trace. Methods from the stack trace are pulled from the end one at a
         time and merged with the call tree recursively.
         """
+
         if not stack_trace:
             return
+
         method = stack_trace.pop()
         call_tree = bucket.get(method)
+
         if call_tree is None:
-            call_tree = bucket[method] = ProfileNode(method)
+            call_tree = ProfileNode(method, depth)
+            self._node_list.append(call_tree)
+            bucket[method] = call_tree
+
         call_tree.call_count += 1
-        return self._update_call_tree(call_tree.children, stack_trace)
+
+        return self._update_call_tree(call_tree.children, stack_trace, depth+1)
     
     def start_profiling(self):
-        self.start_time = time.time()
+        self._start_time = time.time()
+        self._stop_time = self._start_time + self.duration
         self._profiler_thread.start()
 
-    def stop_profiling(self, forced=False):
-        self.stop_time = time.time()
+    def stop_profiling(self, wait_for_completion=False):
+        self._stop_time = time.time()
         self._profiler_shutdown.set()
-        if forced:
+
+        if wait_for_completion:
             self._profiler_thread.join(self.sample_period)
 
     def profile_data(self):
@@ -237,52 +292,70 @@ class ThreadProfiler(object):
         Return the profile data once the thread profiler has finished otherwise 
         return None.
         """
+
         if self._profiler_thread.isAlive():
             return None
+
         call_data = {}
         thread_count = 0
-        self._prune_trees(NODE_LIMIT)  # Prune the tree if necessary
-        for bucket_type, bucket in self.call_buckets.items():
-            if not bucket.values():  # Skip empty buckets
-                continue
-            call_data[bucket_type] = bucket.values()
-            thread_count += len(bucket)
+
+        settings = global_settings()
+
+        self._prune_call_trees(settings.agent_limits.thread_profiler_nodes)
+
+        for thread_category, bucket in self._call_buckets.items():
+            if bucket:
+                call_data[thread_category] = bucket.values()
+                thread_count += len(bucket)
+
         json_data = simplejson.dumps(call_data, default=lambda o: o.jsonable(),
                 ensure_ascii=True, encoding='Latin-1',
                 namedtuple_as_object=False)
         encoded_data = base64.standard_b64encode(zlib.compress(json_data))
-        profile = [[self.profile_id, self.start_time*1000, self.stop_time*1000,
-            self._sample_count, encoded_data, thread_count, 0]]
+
+        profile = [[self.profile_id, self._start_time*1000,
+                self._stop_time*1000, self._sample_count, encoded_data,
+                thread_count, 0]]
+
         return profile
 
-    def _prune_trees(self, limit):
-        """
-        Prune all the call tree buckets if the number of nodes is greater than 
-        NODE_LIMIT. 
+    def _prune_call_trees(self, limit):
+        """Prune the number of profile nodes we send up to the data
+        collector down to the specified limit. Done to ensure not
+        sending so much data that gets reject for being over size limit.
 
-        Algo:
-        * Add every node in each call tree to a list. 
-        * Reverse sort the list by call count. 
-        * Set the ignore flag on nodes that are above the NODE_LIMIT threshold
         """
-        if ProfileNode.node_count < limit:
+
+        if len(self._node_list) <= limit:
             return
-        for bucket in self.call_buckets.values():
-            for call_tree in bucket.values():
-                self._node_to_list(call_tree)
-        self.node_list.sort(key=lambda x: x.call_count, reverse=True)
-        for node in self.node_list[limit:]:
-            node.ignore = True
 
-    def _node_to_list(self, node):
-        """
-        Walk the call tree and add each node to the node_list.
-        """
-        if not node:
-            return 
-        self.node_list.append(node)
-        for child_node in node.children.values():
-            self._node_to_list(child_node)
+        # We sort the profile nodes based on call count, but also take
+        # into consideration the depth of the node in the call tree.
+        # Based on sort order, we then ignore any nodes over our limit.
+        #
+        # We include depth as that way we try and trim the deepest and
+        # least visited leaf nodes first. If we don't do this, then
+        # depending on how sorting orders nodes with same call count, we
+        # could ignore a parent node high up in call chain even though
+        # children weren't being ignored and so effectively ignore more
+        # than the minimum we need to. Granted this would only occur
+        # where was a linear call tree where all had the same call count,
+        # such as may occur with recursion.
+	#
+        # Also note that we still can actually end up with less nodes in
+        # the end being displayed in the UI than the limit being applied
+        # even though we initially cutoff at the limit. This is because
+        # we are looking at nodes from different categories before they
+        # have been merged together. If a node appears at same relative
+        # position in multiple categories, then when displaying multiple
+        # categories in UI, the duplicates only appear as one after the
+        # UI merges them.
+
+        self._node_list.sort(key=lambda x: (x.call_count, -x.depth),
+                reverse=True)
+
+        for node in self._node_list[limit:]:
+            node.ignore = True
 
 def fib(n):
     """

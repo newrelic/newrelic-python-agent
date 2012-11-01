@@ -502,7 +502,8 @@ class Application(object):
         self._thread_profiler = ThreadProfiler(profile_id, sample_period,
                 duration, profile_agent_code)
 
-        _logger.info('Commencing thread profiler for %r.', self._app_name)
+        _logger.info('Starting thread profiling session for %r.',
+                self._app_name)
         self._thread_profiler.start_profiling()
         self._profiler_started = True
         self._send_profile_data = True
@@ -516,9 +517,10 @@ class Application(object):
                     'support.')
             return {command_id: {'error': 'Profiler not running.'}}
 
-        self._thread_profiler.stop_profiling(forced=True)
+        self._thread_profiler.stop_profiling(wait_for_completion=True)
 
-        _logger.info('Stopping thread profiler for %r.', self._app_name)
+        _logger.info('Stopping thread profiling session for %r.',
+                self._app_name)
         self._send_profile_data = kwargs['report_data']
         return {command_id: {}} 
 

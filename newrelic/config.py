@@ -1175,6 +1175,13 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.adapter_tornado',
             'instrument_tornado_wsgi')
 
+    #_process_module_definition('tornado.web',
+    #        'newrelic.hooks.framework_tornado',
+    #        'instrument_tornado_web')
+    #_process_module_definition('tornado.httpserver',
+    #        'newrelic.hooks.framework_tornado',
+    #        'instrument_tornado_httpserver')
+
     _process_module_definition('gunicorn.app.base',
             'newrelic.hooks.adapter_gunicorn',
             'instrument_gunicorn_app_base')

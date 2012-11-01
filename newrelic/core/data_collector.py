@@ -583,19 +583,23 @@ class ApplicationSession(object):
                 payload)
 
     def get_agent_commands(self):
+        """Receive agent commands from the data collector.
+
         """
-        Receive commands from collector to start/stop/cancel thread profiling
-        """
+
         payload = (self.agent_run_id,)
+
         return send_request(self.requests_session, self.collector_url,
                 'get_agent_commands', self.license_key, self.agent_run_id,
                 payload)
 
     def send_agent_command_results(self, cmd_results):
+        """Acknowledge the receipt of an agent command.
+
         """
-        Acknowledge the receipt of the collector command.
-        """
+
         payload = (self.agent_run_id, cmd_results)
+
         return send_request(self.requests_session, self.collector_url,
                 'agent_command_results', self.license_key, self.agent_run_id,
                 payload)

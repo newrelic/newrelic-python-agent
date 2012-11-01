@@ -1,5 +1,6 @@
 import os
 import sys
+import logging
 import time
 import threading
 import zlib
@@ -17,6 +18,8 @@ except:
 
 from newrelic.api.transaction import Transaction
 from newrelic.core.config import global_settings
+
+_logger = logging.getLogger(__name__)
 
 # Class which is used to identify the point in the code where execution
 # was occuring when the sample was taken. One of these will exist for
@@ -156,7 +159,7 @@ class ProfileNode(object):
 
 class ThreadProfiler(object):
 
-    def __init__(self, profile_id, sample_period=0.1, duration=300,
+    def __init__(self, app_name, profile_id, sample_period=0.1, duration=300,
             profile_agent_code=False):
 
         """Initialises the thread profiler but does not actually start
@@ -177,6 +180,7 @@ class ThreadProfiler(object):
         self._profiler_thread.setDaemon(True)
         self._profiler_shutdown = threading.Event()
 
+        self.app_name = app_name
         self.profile_id = profile_id
         self.sample_period = sample_period
         self.duration = duration
@@ -233,7 +237,11 @@ class ThreadProfiler(object):
             self._collect_sample()
 
             if self._stop_time - time.time() < self.sample_period:
+                _logger.info('Finished thread profiling session for %r.',
+                        self.app_name)
+
                 self.stop_profiling(wait_for_completion=False)
+
                 return
 
             self._profiler_shutdown.wait(self.sample_period)
@@ -366,7 +374,7 @@ def fib(n):
     return fib(n-1) + fib(n-2)
 
 if __name__ == "__main__":
-    t = ThreadProfiler(-1, 0.1, 1, profile_agent_code=True)
+    t = ThreadProfiler('Application', -1, 0.1, 1, profile_agent_code=True)
     t.start_profiling()
     #fib(35)
     import time

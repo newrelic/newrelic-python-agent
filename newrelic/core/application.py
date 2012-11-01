@@ -135,6 +135,9 @@ class Application(object):
             self._samplers.append(ThreadUtilizationSampler(
                     self._thread_utilization))
 
+        # Thread profiler and state of whether active or not.
+
+        self._thread_profiler = None
         self._profiler_started = False
         self._send_profile_data = False
 
@@ -472,10 +475,16 @@ class Application(object):
                             'for further investigation.')
 
     def start_profiler(self, command_id=0, **kwargs):
+        """Triggered by the start_profiler agent command to start a
+        thread profiling session.
+
+        """
+
         if not self._active_session.configuration.thread_profiler.enabled:
-            _logger.warning('Collector requested a thread profiling session,'
-                    'but thread profiler is disabled in the config file. '
-                    'Add "thread_profiler.enabled=true" in your config file.')
+            _logger.warning('A thread profiling session was requested '
+                    'for %r but thread profiling is disabled by the current '
+                    'agent configuration. Enable "thread_profiler.enabled" '
+                    'in the agent configuration.', self._app_name)
             return {command_id: {'error': 'The profiler service is disabled'}}
 
         profile_id = kwargs['profile_id'] 
@@ -484,44 +493,86 @@ class Application(object):
         profile_agent_code = kwargs['profile_agent_code'] 
 
         if self._profiler_started:
-            _logger.warning('Collector requested a thread profiling session, '
-                    ' but a profiler session is already in progress. Ignoring '
-                    'start_profiler command. If this message repeats often, '
-                    'please report this to New Relic support for further '
-                    'investigation.'
-                    )
+            _logger.warning('A thread profiling session was requested for '
+                    '%r but a thread profiling session is already in '
+                    'progress. Ignoring the subsequent request. '
+                    'If this keeps occurring on a regular basis, please '
+                    'report this problem to New Relic support for further '
+                    'investigation.', self._app_name)
             return {command_id: {'error': 'Profiler already running'}}
 
         if not hasattr(sys, '_current_frames'):
-            _logger.warning('Thread Profiling is only available on Python and '
-                    'PyPy interpreter. It is not supported in the interpreter '
-                    'you\'re using.'
-                    )
+            _logger.warning('A thread profiling session was requested for '
+                    '%r but thread profiling is not supported for the '
+                    'Python interpreter being used. Contact New Relic '
+                    'support for additional information about supported '
+                    'platforms for the thread profiling feature.',
+                    self._app_name)
             return {command_id: {'error': 'Profiler not supported'}}
-
-        self._thread_profiler = ThreadProfiler(profile_id, sample_period,
-                duration, profile_agent_code)
 
         _logger.info('Starting thread profiling session for %r.',
                 self._app_name)
+
+        # Note that the thread profiler is bound to the application and
+        # there is no restriction in place to ensure that only one is
+        # run at a time in a process. Thus technically one could start
+        # thread profiling session against multiple applications in same
+        # process. The merits of doing this are limited though, as the
+        # thread profiler reports on what all threads in the process are
+        # doing and not just those handling transactions related to the
+        # specific application.
+
+        self._thread_profiler = ThreadProfiler(self._app_name, profile_id,
+                sample_period, duration, profile_agent_code)
         self._thread_profiler.start_profiling()
+
         self._profiler_started = True
         self._send_profile_data = True
+
         return {command_id: {}} 
 
     def stop_profiler(self, command_id=0, **kwargs):
+        """Triggered by the stop_profiler agent command to forcibly stop
+        a thread profiling session prior to it having completed normally.
+
+        """
+
         if not self._profiler_started:
-            _logger.warning('Received a stop_profiler command from collector'
-                    'but profiler is not running. If this error keeps'
-                    'repeating, please report this probelm to New Relic' 
-                    'support.')
+            _logger.warning('A request was received to stop a thread '
+                    'profiling session for %r, but a thread profiling '
+                    'session is not running. If this keeps occurring on '
+                    'a regular basis, please report this problem to New '
+                    'Relic support for further investigation.',
+                    self._app_name)
             return {command_id: {'error': 'Profiler not running.'}}
 
-        self._thread_profiler.stop_profiling(wait_for_completion=True)
+        elif kwargs['profile_id'] != self._thread_profiler.profile_id:
+            _logger.warning('A request was received to stop a thread '
+                    'profiling session for %r, but the ID %r for '
+                    'the current thread profiling session does not '
+                    'match the provided ID of %r. If this keeps occurring on '
+                    'a regular basis, please report this problem to New '
+                    'Relic support for further investigation.',
+                    self._app_name, self._thread_profiler.profile_id,
+                    kwargs['profile_id'])
+            return {command_id: {'error': 'Profiler not running.'}}
 
         _logger.info('Stopping thread profiling session for %r.',
                 self._app_name)
+
+        # To ensure that the thread profiling session stops, we wait for
+        # its completion. If we don't need to send back the data from
+        # the thread profiling session, we discard the thread profiler
+        # immediately.
+
+        self._thread_profiler.stop_profiling(wait_for_completion=True)
+
         self._send_profile_data = kwargs['report_data']
+
+        if not self._send_profile_data:
+            self._thread_profiler = None
+            self._profiler_started = False
+
         return {command_id: {}} 
 
     def harvest(self, shutdown=False):
@@ -678,30 +729,57 @@ class Application(object):
                             self._active_session.send_transaction_traces(
                                     slow_transaction_data)
 
-                    # Get agent commands from collector
+                    # Get agent commands from collector.
+
                     agent_commands = self._active_session.get_agent_commands()
 
-                    # For each command, call the command handler. 
-                    # Reply to collector with the acknowledgement of the cmd
+                    # For each agent command received, call the
+                    # appropiate agent command handler. Reply to the
+                    # data collector with the acknowledgement of the
+                    # agent command.
+
                     for command in agent_commands:
                         cmd_id = command[0]
                         cmd_name = command[1]['name']
                         cmd_args = command[1]['arguments']
-                        if hasattr(self, cmd_name):
-                            cmd_handler = getattr(self, cmd_name)
-                            cmd_res = cmd_handler(cmd_id, **cmd_args)
-                            if cmd_res:
-                                self._active_session.send_agent_command_results(
-                                        cmd_res)
 
-                    # If profiler is running, check if it is done and send 
-                    # profile data back to collector.
+                        # An agent command is mapped to a method of this
+                        # class. If we don't know about a specific agent
+                        # command we just ignore it.
+
+                        cmd_handler = getattr(self, cmd_name, None)
+
+                        if cmd_handler is None:
+                            _logger.debug('Received unknown agent command '
+                                    '%r from the data collector for %r.',
+                                    cmd_name, self._app_name)
+                            continue
+
+                        cmd_res = cmd_handler(cmd_id, **cmd_args)
+
+                        if cmd_res:
+                            self._active_session.send_agent_command_results(
+                                    cmd_res)
+
+                    # If a profiling session is already running, check
+                    # if it is completed and send the accumulated
+                    # profile data back to the data collector. Note that
+                    # this come after we process the agent commands as
+                    # we might receive an agent command to stop the
+                    # profiling session, but still send the data back.
+                    # Having the sending of the results last ensures we
+                    # send back that data from the stopped profiling
+                    # session immediately.
+
                     if self._profiler_started:
                         profile_data = self._thread_profiler.profile_data()
+
                         if profile_data and self._send_profile_data:
-                            _logger.info('Finished thread profiling for %r.',
-                                    self._app_name)
+                            _logger.debug('Reporting thread profiling '
+                                    'session data for %r.', self._app_name)
+
                             self._active_session.send_profile_data(profile_data)
+
                             self._profiler_started = False
                             self._send_profile_data = False
 

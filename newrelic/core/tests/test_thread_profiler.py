@@ -10,8 +10,8 @@ class TestThreadProfiler(unittest.TestCase):
         self.sample = 0.1
         self.duration = 2.0
         self.profile_agent_code = True
-        self.tp = ThreadProfiler(self.profile_id, self.sample, self.duration,
-                self.profile_agent_code)
+        self.tp = ThreadProfiler('Application', self.profile_id,
+                self.sample, self.duration, self.profile_agent_code)
         self.tp.start_profiling()
         import time
         time.sleep(self.duration+self.sample)

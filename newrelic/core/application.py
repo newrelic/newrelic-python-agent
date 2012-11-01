@@ -793,8 +793,22 @@ class Application(object):
 
                     # If this is a final forced harvest for the process
                     # then attempt to shutdown the session.
+                    #
+                    # If a thread profiling session is running, we need
+                    # to make sure we stop that from running as well.
 
                     if shutdown:
+                        if self._profiler_started:
+                            _logger.info('Aborting thread profiling session '
+                                    'for %r.', self._app_name)
+
+                            self._thread_profiler.stop_profiling(
+                                    wait_for_completion=False)
+
+                            self._thread_profiler = None
+                            self._profiler_started = False
+                            self._send_profile_data = False
+
                         try:
                             self._active_session.shutdown_session()
                         except:
@@ -807,6 +821,22 @@ class Application(object):
                     # perform an internal agent restart. We attempt to
                     # properly shutdown the session and then initiate a
                     # new session.
+                    #
+                    # If a thread profiling session is running, we need
+                    # to make sure we stop that from running as well as
+                    # any data will not be able to be reported later if
+                    # do reconnect as will be a different agent run.
+
+                    if self._profiler_started:
+                        _logger.info('Aborting thread profiling session '
+                                'for %r.', self._app_name)
+
+                        self._thread_profiler.stop_profiling(
+                                wait_for_completion=False)
+
+                        self._thread_profiler = None
+                        self._profiler_started = False
+                        self._send_profile_data = False
 
                     try:
                         self._active_session.shutdown_session()
@@ -829,6 +859,22 @@ class Application(object):
                     # process start to be able to attempt to connect
                     # again and if the server side kill switch is still
                     # enabled it would be told to disconnect once more.
+                    #
+                    # If a thread profiling session is running, we need
+                    # to make sure we stop that from running as well as
+                    # the agent will no longer be reporting without a
+                    # restart of the process so no point.
+
+                    if self._profiler_started:
+                        _logger.info('Aborting thread profiling session '
+                                'for %r.', self._app_name)
+
+                        self._thread_profiler.stop_profiling(
+                                wait_for_completion=False)
+
+                        self._thread_profiler = None
+                        self._profiler_started = False
+                        self._send_profile_data = False
 
                     try:
                         self._active_session.shutdown_session()

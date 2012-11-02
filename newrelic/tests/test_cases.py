@@ -10,7 +10,7 @@ class TestCase(unittest.TestCase):
     app_name = global_settings().app_name
     application = None
 
-    # Set requires_collection to True in derived test case if the set
+    # Set requires_collector to True in derived test case if the set
     # of test cases requires the collector so as to report data.
 
     requires_collector = False

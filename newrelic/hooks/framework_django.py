@@ -545,6 +545,27 @@ def wrap_url_resolver_nnn(wrapped, priority=1):
 
     return ObjectWrapper(wrapped, None, wrapper)
 
+def wrap_url_reverse(wrapped):
+
+    # Wrap the URL resolver reverse lookup. Where the view
+    # handler is passed in we need to strip any instrumentation
+    # wrapper to ensure that it doesn't interfere with the
+    # lookup process. Technically this may now not be required
+    # as we have improved the proxying in the object wrapper,
+    # but do it just to avoid any potential for problems.
+
+    def wrapper(wrapped, instance, args, kwargs):
+        viewname = args[0]
+
+        if hasattr(viewname, '_nr_last_object'):
+            viewname = viewname._nr_last_object
+            args = list(args)
+            args[0] = viewname
+
+        return wrapped(*args, **kwargs)
+
+    return ObjectWrapper(wrapped, None, wrapper)
+
 def instrument_django_core_urlresolvers(module):
 
     # Wrap method which maps a string version of a function
@@ -586,6 +607,11 @@ def instrument_django_core_urlresolvers(module):
 
     module.RegexURLResolver.resolve500 = wrap_url_resolver_nnn(
             module.RegexURLResolver.resolve500, priority=1)
+
+    # Wrap function for performing reverse URL lookup to strip any
+    # instrumentation wrapper when view handler is passed in.
+
+    module.reverse = wrap_url_reverse(module.reverse)
 
 def instrument_django_template(module):
 

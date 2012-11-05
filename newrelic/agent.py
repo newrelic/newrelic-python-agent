@@ -12,6 +12,10 @@ import newrelic.api.application
 import newrelic.api.transaction_name
 
 import newrelic.api.function_trace
+import newrelic.api.external_trace
+import newrelic.api.error_trace
+
+import newrelic.api.object_wrapper
 
 import newrelic.config
 
@@ -120,5 +124,16 @@ function_trace = newrelic.api.function_trace.function_trace
 FunctionTrace = newrelic.api.function_trace.FunctionTrace
 FunctionTraceWrapper = newrelic.api.function_trace.FunctionTraceWrapper
 
+external_trace = newrelic.api.external_trace.external_trace
+ExternalTrace = newrelic.api.external_trace.ExternalTrace
+ExternalTraceWrapper = newrelic.api.external_trace.ExternalTraceWrapper
+
+error_trace = newrelic.api.error_trace.error_trace
+ErrorTrace = newrelic.api.error_trace.ErrorTrace
+ErrorTraceWrapper = newrelic.api.error_trace.ErrorTraceWrapper
+
 transaction_name = newrelic.api.transaction_name.transaction_name
 TransactionNameWrapper = newrelic.api.transaction_name.TransactionNameWrapper
+
+ObjectWrapper = newrelic.api.object_wrapper.ObjectWrapper
+callable_name = newrelic.api.object_wrapper.callable_name

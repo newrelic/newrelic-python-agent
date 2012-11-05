@@ -227,11 +227,5 @@ class ObjectWrapper(object):
     def __hash__(self):
         return hash(self._nr_last_object)
 
-    def __str__(self):
-        return str(self._nr_last_object)
-
-    def __repr__(self):
-        return repr(self._nr_last_object)
-
-    def __unicode__(self):
-        return unicode(self._nr_last_object)
+    def __repr__(self): 
+        return '<ObjectWrapper for %s>' % (str(self._nr_last_object))

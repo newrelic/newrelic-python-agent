@@ -30,11 +30,11 @@ def function_1():
 def function_2():
     raise Error("runtime_error 2")
 
-@newrelic.api.error_trace.error_trace()
+@newrelic.api.error_trace.error_trace(ignore_errors=['%s.Error' % __name__])
 def function_3():
-    raise NotImplementedError("runtime_error 3")
+    raise Error("runtime_error 3")
 
-@newrelic.api.error_trace.error_trace(ignore_errors=['__main__.Error'])
+@newrelic.api.error_trace.error_trace(ignore_errors=['%s:Error' % __name__])
 def function_4():
     raise Error("runtime_error 4")
 
@@ -77,8 +77,8 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             except:
                 pass
 
-    def test_implicit_runtime_error_ignore(self):
-        environ = { "REQUEST_URI": "/error_trace_ignore" }
+    def test_implicit_runtime_error_ignore_dot(self):
+        environ = { "REQUEST_URI": "/error_trace_ignore_dot" }
         transaction = newrelic.api.web_transaction.WebTransaction(
               application, environ)
         with transaction:
@@ -88,8 +88,8 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             except:
                 pass
 
-    def test_implicit_runtime_error_ignore_api(self):
-        environ = { "REQUEST_URI": "/error_trace_ignore_api" }
+    def test_implicit_runtime_error_ignore_colon(self):
+        environ = { "REQUEST_URI": "/error_trace_ignore_colon" }
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
         with transaction:
@@ -113,7 +113,10 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             except:
                 pass
 
-    def test_per_transaction_limit(self):
+    # These have 'zzz' and numbers in names to force them to be last
+    # and to enforce the order in which they are run.
+
+    def test_zzz_error_limit_1(self):
         environ = { "REQUEST_URI": "/per_transaction_limit" }
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
@@ -126,7 +129,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 except:
                     pass
 
-    def test_per_harvest_limit(self):
+    def test_zzz_error_limit_2(self):
         environ = { "REQUEST_URI": "/per_harvest_limit" }
         for i in range(5):
             transaction = newrelic.api.web_transaction.WebTransaction(

@@ -1,8 +1,10 @@
-import sys
-import types
+from __future__ import with_statement
 
-import newrelic.api.transaction
-import newrelic.api.object_wrapper
+import functools
+import sys
+
+from newrelic.api.transaction import current_transaction
+from newrelic.api.object_wrapper import (ObjectWrapper, wrap_object)
 
 class ErrorTrace(object):
 
@@ -47,54 +49,21 @@ class ErrorTrace(object):
 
         self._transaction.record_exception(exc, value, tb)
 
-class ErrorTraceWrapper(object):
+def ErrorTraceWrapper(wrapped, ignore_errors=None):
 
-    def __init__(self, wrapped, ignore_errors=None):
-        if type(wrapped) == types.TupleType:
-            (instance, wrapped) = wrapped
-        else:
-            instance = None
+    def wrapper(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
 
-        newrelic.api.object_wrapper.update_wrapper(self, wrapped)
+        if transaction is None:
+            return wrapped(*args, **kwargs)
 
-        self._nr_instance = instance
-        self._nr_next_object = wrapped
+        with ErrorTrace(transaction, ignore_errors):
+            return wrapped(*args, **kwargs)
 
-        if not hasattr(self, '_nr_last_object'):
-            self._nr_last_object = wrapped
-
-        self._nr_ignore_errors = ignore_errors
-
-    def __get__(self, instance, klass):
-        if instance is None:
-            return self
-        descriptor = self._nr_next_object.__get__(instance, klass)
-        return self.__class__((instance, descriptor), self._nr_ignore_errors)
-
-    def __call__(self, *args, **kwargs):
-        transaction = newrelic.api.transaction.current_transaction()
-        if not transaction:
-            return self._nr_next_object(*args, **kwargs)
-
-        try:
-            success = True
-            manager = ErrorTrace(transaction, self._nr_ignore_errors)
-            manager.__enter__()
-            try:
-                return self._nr_next_object(*args, **kwargs)
-            except:
-                success = False
-                if not manager.__exit__(*sys.exc_info()):
-                    raise
-        finally:
-            if success:
-                manager.__exit__(None, None, None)
+    return ObjectWrapper(wrapped, None, wrapper)
 
 def error_trace(ignore_errors=None):
-    def decorator(wrapped):
-        return ErrorTraceWrapper(wrapped, ignore_errors)
-    return decorator
+    return functools.partial(ErrorTraceWrapper, ignore_errors=ignore_errors)
 
 def wrap_error_trace(module, object_path, ignore_errors=None):
-    newrelic.api.object_wrapper.wrap_object(module, object_path,
-            ErrorTraceWrapper, (ignore_errors, ))
+    wrap_object(module, object_path, ErrorTraceWrapper, (ignore_errors, ))

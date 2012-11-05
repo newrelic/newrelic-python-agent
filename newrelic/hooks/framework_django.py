@@ -175,12 +175,13 @@ def newrelic_browser_timing_footer():
 
 middleware_instrumentation_lock = threading.Lock()
 
-def wrap_request_middleware(middleware):
+def wrap_leading_middleware(middleware):
 
-    # Wrapper to be applied to request middleware. Records the time
-    # spent in the middleware as separate function node and also
-    # attempts to name the web transaction after the name of the
-    # middleware with success being determined by the priority.
+    # Wrapper to be applied to middleware executed prior to the
+    # view handler being executed. Records the time spent in the
+    # middleware as separate function node and also attempts to
+    # name the web transaction after the name of the middleware
+    # with success being determined by the priority.
 
     def wrapper(wrapped):
         # The middleware if a class method would already be
@@ -217,6 +218,15 @@ def wrap_request_middleware(middleware):
         yield wrapper(wrapped)
 
 def wrap_view_middleware(middleware):
+
+    # XXX This is no longer being used. The changes to strip the
+    # wrapper from the view handler when passed into the function
+    # urlresolvers.reverse() solves most of the problems. To back
+    # that up, the object wrapper now proxies various special
+    # methods so that comparisons like '==' will work. The object
+    # wrapper can even be used as a standin for the wrapped object
+    # when used as a key in a dictionary and will correctly match
+    # the original wrapped object.
 
     # Wrapper to be applied to view middleware. Records the time
     # spent in the middleware as separate function node and also
@@ -345,12 +355,12 @@ def insert_and_wrap_middleware(handler, *args, **kwargs):
 
         if hasattr(handler, '_request_middleware'):
             handler._request_middleware = list(
-                    wrap_request_middleware(
+                    wrap_leading_middleware(
                     handler._request_middleware))
 
         if hasattr(handler, '_view_middleware'):
             handler._view_middleware = list(
-                    wrap_view_middleware(
+                    wrap_leading_middleware(
                     handler._view_middleware))
 
         if hasattr(handler, '_template_response_middleware'):

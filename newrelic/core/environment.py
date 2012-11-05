@@ -7,8 +7,6 @@ import sys
 import os
 import platform
 
-import newrelic
-
 def environment_settings():
     """Returns an array of arrays of environment settings
 
@@ -17,6 +15,8 @@ def environment_settings():
     env = []
 
     # Agent information.
+
+    import newrelic
 
     env.append(('Agent Version', '.'.join(map(str, newrelic.version_info))))
 
@@ -60,6 +60,24 @@ def environment_settings():
 
     except:
         pass
+
+    # Extensions information.
+
+    extensions = []
+
+    try:
+        import newrelic.core._thread_utilization
+        extensions.append('newrelic.core._thread_utilization')
+    except:
+        pass
+
+    try:
+        import newrelic.lib.simplejson._speedups
+        extensions.append('newrelic.lib.simplejson._speedups')
+    except:
+        pass
+
+    env.append(('Compiled Extensions', ', '.join(extensions)))
 
     # Dispatcher information.
 

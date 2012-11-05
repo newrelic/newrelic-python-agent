@@ -214,9 +214,11 @@ class ObjectWrapperTests(unittest.TestCase):
         o1a = _test_function_1
         o1b = Wrapper(_test_function_1)
 
-        self.assertEqual(str(o1a), str(o1b))
-        self.assertEqual(repr(o1a), repr(o1b))
-        self.assertEqual(unicode(o1a), unicode(o1b))
+        s = '<ObjectWrapper for %s>' % str(o1a)
+
+        self.assertEqual(s, str(o1b))
+        self.assertEqual(s, repr(o1b))
+        self.assertEqual(s, unicode(o1b))
 
 if __name__ == '__main__':
     unittest.main()

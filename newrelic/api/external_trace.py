@@ -1,19 +1,14 @@
 from __future__ import with_statement
 
-import sys
-import types
+import functools
 import inspect
-import time
 
-import newrelic.core.external_node
+from newrelic.api.time_trace import TimeTrace
+from newrelic.api.transaction import current_transaction
+from newrelic.api.object_wrapper import (ObjectWrapper, wrap_object)
+from newrelic.core.external_node import ExternalNode
 
-import newrelic.api.transaction
-import newrelic.api.time_trace
-import newrelic.api.object_wrapper
-
-class ExternalTrace(newrelic.api.time_trace.TimeTrace):
-
-    node = newrelic.core.external_node.ExternalNode
+class ExternalTrace(TimeTrace):
 
     def __init__(self, transaction, library, url, method=None):
         super(ExternalTrace, self).__init__(transaction)
@@ -27,7 +22,7 @@ class ExternalTrace(newrelic.api.time_trace.TimeTrace):
                 url=self.url, method=self.method)
 
     def create_node(self):
-        return self.node(library=self.library, url=self.url,
+        return ExternalNode(library=self.library, url=self.url,
                 method=self.method, children=self.children,
                 start_time=self.start_time, end_time=self.end_time,
                 duration=self.duration, exclusive=self.exclusive)
@@ -35,63 +30,53 @@ class ExternalTrace(newrelic.api.time_trace.TimeTrace):
     def terminal_node(self):
         return True
 
-class ExternalTraceWrapper(object):
+def ExternalTraceWrapper(wrapped, library, url, method=None):
 
-    def __init__(self, wrapped, library, url, method=None):
-        if type(wrapped) == types.TupleType:
-            (instance, wrapped) = wrapped
-        else:
-            instance = None
+    def dynamic_wrapper(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
 
-        newrelic.api.object_wrapper.update_wrapper(self, wrapped)
+        if transaction is None:
+            return wrapped(*args, **kwargs)
 
-        self._nr_instance = instance
-        self._nr_next_object = wrapped
-
-        if not hasattr(self, '_nr_last_object'):
-            self._nr_last_object = wrapped
-
-        self._nr_library = library
-        self._nr_url = url
-        self._nr_method = method
-
-    def __get__(self, instance, klass):
-        if instance is None:
-            return self
-        descriptor = self._nr_next_object.__get__(instance, klass)
-        return self.__class__((instance, descriptor), self._nr_library,
-                              self._nr_url, self._nr_method)
-
-    def __call__(self, *args, **kwargs):
-        transaction = newrelic.api.transaction.current_transaction()
-        if not transaction:
-            return self._nr_next_object(*args, **kwargs)
-
-        if not isinstance(self._nr_url, basestring):
-            if self._nr_instance and inspect.ismethod(self._nr_next_object):
-                url = self._nr_url(self._nr_instance, *args, **kwargs)
+        if callable(url):
+            if instance and inspect.ismethod(wrapped):
+                _url = url(instance, *args, **kwargs)
             else:
-                url = self._nr_url(*args, **kwargs)
+                _url = url(*args, **kwargs)
+        
         else:
-            url = self._nr_url
+            _url = url
 
-        if (self._nr_method is not None and
-                not isinstance(self._nr_method, basestring)):
-            if self._nr_instance and inspect.ismethod(self._nr_next_object):
-                method = self._nr_method(self._nr_instance, *args, **kwargs)
+        if callable(method):
+            if instance and inspect.ismethod(wrapped):
+                _method = method(instance, *args, **kwargs)
             else:
-                method = self._nr_method(*args, **kwargs)
+                _method = method(*args, **kwargs)
+        
         else:
-            method = self._nr_method
+            _method = method
 
-        with ExternalTrace(transaction, self._nr_library, url, method):
-            return self._nr_next_object(*args, **kwargs)
+        with ExternalTrace(transaction, library, _url, _method):
+            return wrapped(*args, **kwargs)
+
+    def literal_wrapper(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+
+        if transaction is None:
+            return wrapped(*args, **kwargs)
+
+        with ExternalTrace(transaction, library, url, method):
+            return wrapped(*args, **kwargs)
+
+    if callable(url) or callable(method):
+        return ObjectWrapper(wrapped, None, dynamic_wrapper)
+
+    return ObjectWrapper(wrapped, None, literal_wrapper)
 
 def external_trace(library, url, method=None):
-    def decorator(wrapped):
-        return ExternalTraceWrapper(wrapped, library, url, method)
-    return decorator
+    return functools.partial(ExternalTraceWrapper, library=library,
+            url=url, method=method)
 
 def wrap_external_trace(module, object_path, library, url, method=None):
-    newrelic.api.object_wrapper.wrap_object(module, object_path,
-            ExternalTraceWrapper, (library, url, method))
+    wrap_object(module, object_path, ExternalTraceWrapper,
+            (library, url, method))

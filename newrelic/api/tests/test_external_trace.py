@@ -15,8 +15,12 @@ import newrelic.api.external_trace
 settings = newrelic.api.settings.settings()
 application = newrelic.api.application.application_instance()
 
-@newrelic.api.external_trace.external_trace("unit-tests-1", lambda url: url)
-def _test_function_1(url):
+@newrelic.api.external_trace.external_trace("unit-tests-1a",
+        lambda url: url, lambda url: 'GET')
+def _test_function_1a(url):
+    time.sleep(1.0)
+
+def _test_function_1b(url):
     time.sleep(1.0)
 
 class TestObject(object):
@@ -46,7 +50,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         with transaction:
             time.sleep(0.1)
             with newrelic.api.external_trace.ExternalTrace(transaction,
-                    "unit-tests", "http://a:b@localhost/test/?c=d"):
+                    "unit-tests", "http://a:b@external_trace/test/?c=d"):
                 time.sleep(0.1)
             time.sleep(0.1)
 
@@ -56,7 +60,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                application, environ)
         try:
             with newrelic.api.external_trace.ExternalTrace(transaction,
-                    "unit-tests", "http://a:b@localhost/test/?c=d"):
+                    "unit-tests", "http://a:b@transaction_not_running"):
                 time.sleep(0.1)
         except RuntimeError:
             pass
@@ -67,11 +71,11 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 application, environ)
         with transaction:
             time.sleep(0.1)
-            _test_function_1("http://a:b@localhost/test/?c=d")
+            _test_function_1a("http://a:b@external_trace_decorator_1")
             o = TestObject()
-            o._test_function_2("http://a:b@localhost/test/?c=d")
-            o._test_function_3("http://a:b@localhost/test/?c=d")
-            o._test_function_4("http://a:b@localhost/test/?c=d")
+            o._test_function_2("http://a:b@external_trace_decorator_2")
+            o._test_function_3("http://a:b@external_trace_decorator_3")
+            o._test_function_4("http://a:b@external_trace_decorator_4")
             time.sleep(0.1)
 
     def test_external_trace_decorator_error(self):
@@ -80,9 +84,19 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 application, environ)
         with transaction:
             try:
-              _test_function_1("http://a:b@localhost/test/?c=d", None)
+              _test_function_1a("http://external_trace_decorator_error", None)
             except TypeError:
                 pass
+
+    def test_external_trace_wrap(self):
+        environ = { "REQUEST_URI": "/external_trace_wrap" }
+        transaction = newrelic.api.web_transaction.WebTransaction(
+                application, environ)
+        newrelic.api.external_trace.wrap_external_trace(
+                __name__, '_test_function_1b', 'unit-tests-1b',
+                "http://external_trace_wrap", 'GET')
+        with transaction:
+            _test_function_1b("http://external_trace_wrap")
 
 if __name__ == '__main__':
     unittest.main()

@@ -58,9 +58,9 @@ def resolve_path(module, name):
 def apply_patch(parent, attribute, replacement):
     setattr(parent, attribute, replacement)
 
-def wrap_object(module, name, factory, args=()):
+def wrap_object(module, name, factory, args=(), kwargs={}):
     (parent, attribute, original) = resolve_path(module, name)
-    wrapper = factory(original, *args)
+    wrapper = factory(original, *args, **kwargs)
     apply_patch(parent, attribute, wrapper)
     return wrapper
 

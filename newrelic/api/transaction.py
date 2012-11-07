@@ -442,9 +442,9 @@ class Transaction(object):
         self._freeze_path()
 
         if self.background_task:
-            type = 'OtherTransaction'
+            transaction_type = 'OtherTransaction'
         else:
-            type = 'WebTransaction'
+            transaction_type = 'WebTransaction'
 
         group = self._group
 
@@ -533,7 +533,7 @@ class Transaction(object):
         node = newrelic.core.transaction_node.TransactionNode(
                 settings=self._settings,
                 path=self.path,
-                type=type,
+                type=transaction_type,
                 group=group,
                 name=self._name,
                 request_uri=self._request_uri,
@@ -591,9 +591,9 @@ class Transaction(object):
             return self._frozen_path
 
         if self.background_task:
-            type = 'OtherTransaction'
+            transaction_type = 'OtherTransaction'
         else:
-            type = 'WebTransaction'
+            transaction_type = 'WebTransaction'
 
         group = self._group
 
@@ -615,9 +615,9 @@ class Transaction(object):
         # leading slash may be significant in that situation.
 
         if self._group in ['Uri', 'NormalizedUri'] and name[:1] == '/':
-            path = '%s/%s%s' % (type, group, name)
+            path = '%s/%s%s' % (transaction_type, group, name)
         else:
-            path = '%s/%s/%s' % (type, group, name)
+            path = '%s/%s/%s' % (transaction_type, group, name)
 
         return path
 

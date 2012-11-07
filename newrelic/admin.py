@@ -484,7 +484,7 @@ def rum_footer(args):
 The application name as specified in the agent configuration file is
 used.""")
 def rum_footer(args):
-    if len(args) == 0:
+    if len(args) < 2:
         usage('rum-footer')
         return
 

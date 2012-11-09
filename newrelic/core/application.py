@@ -117,14 +117,13 @@ class Application(object):
         self._stats_custom_lock = threading.Lock()
         self._stats_custom_engine = StatsEngine()
 
-        # We setup an empty rules engine here even though will be
+        # We setup empty rules engines here even though they will be
         # replaced when application first registered. This is done to
         # avoid a race condition in setting it later. Otherwise we have
         # to use unnecessary locking to protect access.
 
-        self._rules_engine = {'url': RulesEngine([]), 
-                'transaction': RulesEngine([]),
-                'metric': RulesEngine([])}
+        self._rules_engine = { 'url': RulesEngine([]), 
+                'transaction': RulesEngine([]), 'metric': RulesEngine([]) }
 
         # Initial set of inbuilt data samplers for this application.
 
@@ -261,26 +260,30 @@ class Application(object):
                     global_settings_dump())
 
             # We were successful, but first need to make sure we do not
-            # have any problems with the agent URL rules provided by the
-            # data collector. These could blow up when being compiled if
-            # the patterns are broken or use text which conflicts with
-            # extensions in Python's regular expression syntax.
+            # have any problems with the agent normalization rules
+            # provided by the data collector. These could blow up when
+            # being compiled if the patterns are broken or use text
+            # which conflicts with extensions in Python's regular
+            # expression syntax.
 
             if self._active_session:
+                configuration = self._active_session.configuration
+
                 try:
                     self._rules_engine['url'] = RulesEngine(
-                            self._active_session.configuration.url_rules)
+                            configuration.url_rules)
                     self._rules_engine['metric'] = RulesEngine(
-                            self._active_session.configuration.metric_rules)
+                            configuration.metric_rules)
                     self._rules_engine['transaction'] = RulesEngine(
-                            self._active_session.configuration.transaction_rules)
+                            configuration.transaction_rules)
 
                 except:
-                    _logger.exception('The agent rules received from '
-                            'the data collector could not be compiled '
-                            'properly by the agent due to a syntactical '
-                            'error or other problem. Please report this '
-                            'to New Relic support for investigation.')
+                    _logger.exception('The agent normalization rules '
+                            'received from the data collector could not '
+                            'be compiled properly by the agent due to a '
+                            'syntactical error or other problem. Please '
+                            'report this to New Relic support for '
+                            'investigation.')
 
                     # For good measure, in this situation we explicitly
                     # shutdown the session as then the data collector
@@ -334,13 +337,13 @@ class Application(object):
             # Ensure we have cleared out any cached data from a prior agent
             # run for this application.
 
+            configuration = self._active_session.configuration
+
             with self._stats_lock:
-                self._stats_engine.reset_stats(
-                        self._active_session.configuration)
+                self._stats_engine.reset_stats(configuration)
 
             with self._stats_custom_lock:
-                self._stats_custom_engine.reset_stats(
-                        self._active_session.configuration)
+                self._stats_custom_engine.reset_stats(configuration)
 
             # Record an initial start time for the reporting period and
             # clear record of last transaction processed.
@@ -361,7 +364,8 @@ class Application(object):
             self._connected_event.set()
 
     def normalize_name(self, name, rule_type):
-        """Applies the agent agent URL rules to the supplied name."""
+        """Applies the agent normalization rules of the the specified
+        rule type to the supplied name."""
 
         if not self._active_session:
             return name, False
@@ -377,10 +381,10 @@ class Application(object):
             # NOTE This has the potential to cause metric grouping
             # issues, but we should not be getting broken rules to begin
             # with if they are validated properly when entered or
-            # generated. We could perhaps instead flag that the URL
-            # should be ignored and the transaction not reported.
+            # generated. We could perhaps instead flag that the
+            # transaction be ignored and thus not reported.
 
-            _logger.exception('The application of the metric normalization '
+            _logger.exception('The application of the normalization '
                     'rules for %r has failed. This can indicate '
                     'a problem with the agent rules supplied by the '
                     'data collector. Please report this problem to New '
@@ -903,7 +907,7 @@ class Application(object):
                     # transaction metrics. If the problem occurred when
                     # reporting other information then that and any
                     # other non reported information is thrown away.
-		    #
+                    #
                     # In order to prevent memory growth will we only
                     # merge data up to a set maximum number of
                     # successive times. When this occurs we throw away

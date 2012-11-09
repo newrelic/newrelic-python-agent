@@ -275,7 +275,6 @@ class Transaction(object):
         self.autorum_disabled = False
 
         self.ignore_transaction = False
-        self.apdex = 0
         self.suppress_apdex = False
         self.suppress_transaction_trace = False
 
@@ -283,6 +282,8 @@ class Transaction(object):
         self.ignored_params = []
 
         self.response_code = 0
+
+        self.apdex = 0
 
         self.rum_token = None
         self.rum_guid = None
@@ -627,22 +628,34 @@ class Transaction(object):
             self._priority = None
 
             if self._group == 'Uri':
-                # Apply url rules for Uri group
-                name, ignore = self._application.normalize_name(self._name,
-                        "url")
+                # Apply URL normalization rules. We would only have raw
+                # URLs where we were not specifically naming the web
+                # transactions for a specific web framework to be a code
+                # handler or otherwise.
+
+                name, ignore = self._application.normalize_name(
+                        self._name, 'url')
+
                 if self._name != name:
                     self._group = 'NormalizedUri'
                     self._name = name
+
                 self.ignore_transaction = self.ignore_transaction or ignore
             
-            # Apply transaction rules on the full path
+            # Apply transaction rules on the full transaction name.
+            # The path is frozen at this point and cannot be further
+            # changed.
+
             self._frozen_path, ignore = self._application.normalize_name(
-                    self.path, "transaction")
+                    self.path, 'transaction')
+
             self.ignore_transaction = self.ignore_transaction or ignore
 
-            # Look up the apdex from the key_transactions hash. If current
-            # transaction is not a key transaction then use the default apdex
-            # from settings.
+            # Look up the apdex from the table of key transactions. If
+            # current transaction is not a key transaction then use the
+            # default apdex from settings. The path used at this point
+            # is the frozen path.
+
             self.apdex = (self._settings.web_transactions_apdex.get(self.path)
                     or self._settings.apdex_t)
 

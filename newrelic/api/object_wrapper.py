@@ -203,6 +203,12 @@ class ObjectWrapper(object):
         descriptor = self._nr_next_object.__get__(instance, owner)
         return self.__class__(descriptor, instance, self._nr_wrapper)
 
+    def __enter__(self):
+        return self._nr_next_object.__enter__()
+
+    def __exit__(self, *args, **kwargs):
+        return self._nr_next_object.__exit__(*args, **kwargs)
+
     def __dir__(self): 
         return dir(self._nr_next_object)
 

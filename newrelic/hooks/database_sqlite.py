@@ -74,6 +74,20 @@ def instrument(module):
         def __getattr__(self, name):
             return getattr(self._nr_connection, name)
 
+        def __enter__(self):
+            self._nr_connection.__enter__()
+
+            # Must return a reference to self as otherwise will
+            # be returning the inner connection object. If 'as'
+            # is used with the 'with' statement this will mean
+            # no longer using the wrapped connection object and
+            # nothing will be tracked.
+
+            return self
+
+        def __exit__(self, *args, **kwargs):
+            return self._nr_connection.__exit__(*args, **kwargs)
+
         def cursor(self, *args, **kwargs):
             return CursorWrapper(self._nr_connection.cursor(*args, **kwargs))
 

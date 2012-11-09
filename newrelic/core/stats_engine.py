@@ -478,13 +478,14 @@ class StatsEngine(object):
         # recording of transaction trace for this transaction
         # has not been suppressed.
 
-        threshold = (transaction_tracer.transaction_threshold or
-                transaction.apdex_t * 4)
-
         if (not transaction.suppress_transaction_trace and
                     transaction_tracer.enabled and settings.collect_traces):
 
             duration = transaction.duration
+            threshold = transaction_tracer.transaction_threshold
+
+            if threshold is None:
+                threshold = transaction.apdex_t * 4
 
             if duration >= threshold:
                 slowest = 0

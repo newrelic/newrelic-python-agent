@@ -303,11 +303,6 @@ class Agent(object):
         if application is None:
             return name, False
 
-        if rule_type not in ('url', 'transaction', 'metric'):
-            warnings.warn('rule_type can only be "url", "metric" or' 
-                    '"transaction"', DeprecationWarning, stacklevel=2)
-            return name, False
-
         return application.normalize_name(name, rule_type)
 
     def _harvest_loop(self):

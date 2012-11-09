@@ -122,7 +122,8 @@ def send_request(session, url, method, license_key, agent_run_id=None,
     if not license_key:
         license_key = 'NO LICENSE KEY WAS SET IN AGENT CONFIGURATION'
 
-    # All our requests are formatted for version 10 of the agent protocol.
+    # The agent formats requests and is able to handle responses for
+    # protocol version 12.
 
     params['method'] = method
     params['license_key'] = license_key

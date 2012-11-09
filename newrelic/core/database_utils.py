@@ -58,6 +58,7 @@ _int_re = re.compile(r'(?<!:)\b\d+\b')
 _quotes_table = {
     'MySQLdb': _any_quotes_re,
     'pymysql': _any_quotes_re,
+    'oursql': _any_quotes_re,
 }
 
 _quotes_default = _single_quotes_re
@@ -351,6 +352,7 @@ def _parse_target(sql, dbapi, operation):
 
 _explain_plan_table = {
     'MySQLdb': ('EXPLAIN', ('select',)),
+    'oursql': ('EXPLAIN', ('select',)),
     'pymysql': ('EXPLAIN', ('select',)),
     'postgresql.interface.proboscis.dbapi2': ('EXPLAIN',
             ('select', 'insert', 'update', 'delete')),

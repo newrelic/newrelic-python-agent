@@ -318,7 +318,8 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         rum_token = self.rum_token or ''
         rum_guid = self.rum_guid or ''
 
-        threshold = self._settings.transaction_tracer.transaction_threshold
+        threshold = (self._settings.transaction_tracer.transaction_threshold or
+                self.apdex * 4)
         rum_guid = rum_guid if request_duration >= threshold else ''
 
         user = _obfuscate(self._user_attrs.get('user'),

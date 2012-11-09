@@ -298,12 +298,17 @@ class Agent(object):
 
         application.record_transaction(data)
 
-    def normalize_name(self, app_name, name):
+    def normalize_name(self, app_name, name, rule_type='url'):
         application = self._applications.get(app_name, None)
         if application is None:
             return name, False
 
-        return application.normalize_name(name)
+        if rule_type not in ('url', 'transaction', 'metric'):
+            warnings.warn('rule_type can only be "url", "metric" or' 
+                    '"transaction"', DeprecationWarning, stacklevel=2)
+            return name, False
+
+        return application.normalize_name(name, rule_type)
 
     def _harvest_loop(self):
         settings = newrelic.core.config.global_settings()

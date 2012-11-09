@@ -122,7 +122,9 @@ class Application(object):
         # avoid a race condition in setting it later. Otherwise we have
         # to use unnecessary locking to protect access.
 
-        self._rules_engine = RulesEngine([])
+        self._rules_engine = {'url': RulesEngine([]), 
+                'transaction': RulesEngine([]),
+                'metric': RulesEngine([])}
 
         # Initial set of inbuilt data samplers for this application.
 
@@ -178,8 +180,12 @@ class Application(object):
                     active_session.collector_url)
             print >> file, 'Agent Run ID: %d' % (
                     active_session.agent_run_id)
-            print >> file, 'Normalization Rules: %r' % (
-                    self._rules_engine.rules)
+            print >> file, 'URL Normalization Rules: %r' % (
+                    self._rules_engine['url'].rules)
+            print >> file, 'Metric Normalization Rules: %r' % (
+                    self._rules_engine['metric'].rules)
+            print >> file, 'Transaction Normalization Rules: %r' % (
+                    self._rules_engine['transaction'].rules)
             print >> file, 'Harvest Period Start: %s' % (
                     time.asctime(time.localtime(self._period_start)))
             print >> file, 'Transaction Count: %d' % (
@@ -262,11 +268,15 @@ class Application(object):
 
             if self._active_session:
                 try:
-                    self._rules_engine = RulesEngine(
+                    self._rules_engine['url'] = RulesEngine(
                             self._active_session.configuration.url_rules)
+                    self._rules_engine['metric'] = RulesEngine(
+                            self._active_session.configuration.metric_rules)
+                    self._rules_engine['transaction'] = RulesEngine(
+                            self._active_session.configuration.transaction_rules)
 
                 except:
-                    _logger.exception('The agent URL rules received from '
+                    _logger.exception('The agent rules received from '
                             'the data collector could not be compiled '
                             'properly by the agent due to a syntactical '
                             'error or other problem. Please report this '
@@ -350,14 +360,14 @@ class Application(object):
 
             self._connected_event.set()
 
-    def normalize_name(self, name):
+    def normalize_name(self, name, rule_type):
         """Applies the agent agent URL rules to the supplied name."""
 
         if not self._active_session:
             return name, False
 
         try:
-            return self._rules_engine.normalize(name)
+            return self._rules_engine[rule_type].normalize(name)
 
         except:
             # In the event that the rules engine blows up because of a
@@ -371,8 +381,8 @@ class Application(object):
             # should be ignored and the transaction not reported.
 
             _logger.exception('The application of the metric normalization '
-                    'rules for the URL %r has failed. This can indicate '
-                    'a problem with the agent URL rules supplied by the '
+                    'rules for %r has failed. This can indicate '
+                    'a problem with the agent rules supplied by the '
                     'data collector. Please report this problem to New '
                     'Relic support for further investigation.', name)
 

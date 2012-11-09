@@ -275,6 +275,7 @@ class Transaction(object):
         self.autorum_disabled = False
 
         self.ignore_transaction = False
+        self.apdex = 0
         self.suppress_apdex = False
         self.suppress_transaction_trace = False
 
@@ -548,7 +549,7 @@ class Transaction(object):
                 children=tuple(children),
                 errors=tuple(self._errors),
                 slow_sql=tuple(self._slow_sql),
-                apdex_t=self._settings.apdex_t,
+                apdex_t=self.apdex,
                 suppress_apdex=self.suppress_apdex,
                 custom_metrics=self._custom_metrics,
                 parameter_groups=parameter_groups,
@@ -626,13 +627,24 @@ class Transaction(object):
             self._priority = None
 
             if self._group == 'Uri':
-                name, ignore = self._application.normalize_name(self._name)
+                # Apply url rules for Uri group
+                name, ignore = self._application.normalize_name(self._name,
+                        "url")
                 if self._name != name:
                     self._group = 'NormalizedUri'
                     self._name = name
                 self.ignore_transaction = self.ignore_transaction or ignore
+            
+            # Apply transaction rules on the full path
+            self._frozen_path, ignore = self._application.normalize_name(
+                    self.path, "transaction")
+            self.ignore_transaction = self.ignore_transaction or ignore
 
-            self._frozen_path = self.path
+            # Look up the apdex from the key_transactions hash. If current
+            # transaction is not a key transaction then use the default apdex
+            # from settings.
+            self.apdex = (self._settings.web_transactions_apdex.get(self.path)
+                    or self._settings.apdex_t)
 
     def name_transaction(self, name, group=None, priority=None):
 

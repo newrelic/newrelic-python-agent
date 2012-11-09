@@ -87,9 +87,9 @@ class Application(object):
         if self.active:
             self._agent.record_transaction(self._name, data)
 
-    def normalize_name(self, name):
+    def normalize_name(self, name, rule_type='url'):
         if self.active:
-            return self._agent.normalize_name(self._name, name)
+            return self._agent.normalize_name(self._name, name, rule_type)
         return name, False
 
 def application_instance(name=None):

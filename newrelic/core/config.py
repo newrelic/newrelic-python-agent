@@ -97,6 +97,7 @@ _settings.collect_errors = True
 _settings.collect_traces = True
 
 _settings.apdex_t = 0.5
+_settings.web_transactions_apdex = {}
 
 _settings.capture_params = False
 _settings.ignored_params = []
@@ -117,6 +118,10 @@ _settings.beacon = None
 _settings.application_id = None
 _settings.browser_key = None
 _settings.episodes_url = None
+
+_settings.url_rules = []
+_settings.metric_rules = []
+_settings.transaction_rules = []
 
 _settings.thread_profiler.enabled = True
 
@@ -339,8 +344,7 @@ def create_settings_snapshot(server_side_config={}):
         apply_config_setting(settings_snapshot, name, value)
 
     # Update any dynamically calculated settings.
-
-    update_dynamic_settings(settings_snapshot)
+    # update_dynamic_settings(settings_snapshot)
 
     # Reapply on top any local setting overrides.
 

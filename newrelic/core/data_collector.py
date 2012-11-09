@@ -126,7 +126,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
     params['method'] = method
     params['license_key'] = license_key
-    params['protocol_version'] = '10'
+    params['protocol_version'] = '12'
     params['marshal_format'] = 'json'
 
     if agent_run_id:

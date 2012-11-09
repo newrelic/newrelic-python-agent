@@ -282,23 +282,6 @@ def fetch_config_setting(settings_object, name):
 
     return target
 
-def update_dynamic_settings(settings_object):
-    """Updates any dynamically calculated settings values. This would
-    generally be applied on a copy of the global default settings and
-    not directly.
-
-    >>> settings_snapshot = copy.deepcopy(_settings)
-    >>> update_dynamic_settings(settings_snapshot)
-
-    """
-
-    settings_object.apdex_f = 4 * settings_object.apdex_t
-
-    transaction_tracer = settings_object.transaction_tracer
-
-    if transaction_tracer.transaction_threshold is None:
-        transaction_tracer.transaction_threshold = settings_object.apdex_f
-
 def create_settings_snapshot(server_side_config={}):
     """Create a snapshot of the global default settings and overlay it
     with any server side configuration settings. Any local settings
@@ -322,9 +305,6 @@ def create_settings_snapshot(server_side_config={}):
 
     # Remap as necessary any server side agent config settings.
 
-    # TODO This needs to be broken out into separate routine and
-    # used also when reading in local agent configuration file.
-
     if 'transaction_tracer.transaction_threshold' in agent_config:
         value = agent_config['transaction_tracer.transaction_threshold']
         if value == 'apdex_f':
@@ -342,9 +322,6 @@ def create_settings_snapshot(server_side_config={}):
 
     for (name, value) in agent_config.items():
         apply_config_setting(settings_snapshot, name, value)
-
-    # Update any dynamically calculated settings.
-    # update_dynamic_settings(settings_snapshot)
 
     # Reapply on top any local setting overrides.
 

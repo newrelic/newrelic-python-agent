@@ -220,5 +220,25 @@ class ObjectWrapperTests(unittest.TestCase):
         self.assertEqual(s, repr(o1b))
         self.assertEqual(s, unicode(o1b))
 
+    def test_context_manager(self):
+        vars = [0]
+
+        # Python 2.7 requires __enter__/__exit__ to be on the
+        # class type. Cannot be attributes or returned by
+        # __getattr__. This tests change to have these special
+        # methods in the ObjectWrapper class.
+
+        class CM(object):
+            def __enter__(self):
+                vars[0] = 1
+                return self
+            def __exit__(self, *args, **kwargs):
+                vars[0] = 0
+
+        self.assertEqual(vars[0], 0)
+        with Wrapper(CM()):
+            self.assertEqual(vars[0], 1)
+        self.assertEqual(vars[0], 0)
+        
 if __name__ == '__main__':
     unittest.main()

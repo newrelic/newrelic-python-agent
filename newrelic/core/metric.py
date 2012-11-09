@@ -6,7 +6,7 @@ except:
 Metric = namedtuple('Metric', ['name', 'scope'])
 
 ApdexMetric = namedtuple('ApdexMetric',
-        ['name', 'satisfying', 'tolerating', 'frustrating'])
+        ['name', 'satisfying', 'tolerating', 'frustrating', 'apdex_t'])
 
 TimeMetric = namedtuple('TimeMetric',
         ['name', 'scope', 'duration', 'exclusive'])

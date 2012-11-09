@@ -164,12 +164,14 @@ class TransactionNode(_TransactionNode):
             name = 'Apdex/%s/%s' % (self.group, self.name)
 
         yield ApdexMetric(name=name, satisfying=satisfying,
-                tolerating=tolerating, frustrating=frustrating)
+                tolerating=tolerating, frustrating=frustrating,
+                apdex_t=self.apdex_t)
 
         # Generate the rollup metric.
 
         yield ApdexMetric(name='Apdex', satisfying=satisfying,
-                tolerating=tolerating, frustrating=frustrating)
+                tolerating=tolerating, frustrating=frustrating,
+                apdex_t=self.apdex_t)
 
     def error_details(self):
         """Return a generator yielding the details for each unique error

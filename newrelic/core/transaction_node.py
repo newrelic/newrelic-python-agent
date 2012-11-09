@@ -92,9 +92,7 @@ class TransactionNode(_TransactionNode):
 
         # Generate the full transaction metric.
 
-        name = self.path
-
-        yield TimeMetric(name=name, scope='', duration=self.duration,
+        yield TimeMetric(name=self.path, scope='', duration=self.duration,
                 exclusive=self.exclusive)
 
         # Generate the rollup metric.
@@ -107,12 +105,24 @@ class TransactionNode(_TransactionNode):
         yield TimeMetric(name=rollup, scope='', duration=self.duration,
                 exclusive=self.exclusive)
 
-	# Generate metric indicating if errors present. Only do
-	# this for web transactions and not anything else.
-
-        if self.type == 'WebTransaction' and self.errors:
+        if self.errors:
+            # Generate overall rollup metric indicating if errors present. 
             yield TimeMetric(name='Errors/all', scope='', duration=0.0,
                       exclusive=None)
+
+            # Generate individual error metric for transaction.
+            yield TimeMetric(name='Errors/%s'% self.path, scope='',
+                    duration=0.0, exclusive=None)
+
+            # Generate rollup metric for WebTransaction errors.
+            if self.type == 'WebTransaction':
+                yield TimeMetric(name='Errors/allWeb', scope='', duration=0.0,
+                        exclusive=None)
+
+            # Generate rollup metric for OtherTransaction errors.
+            if self.type != 'WebTransaction':
+                yield TimeMetric(name='Errors/allOther', scope='',
+                        duration=0.0, exclusive=None)
 
         # Now for the children.
 

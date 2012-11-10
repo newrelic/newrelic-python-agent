@@ -9,6 +9,7 @@ import sys
 import threading
 import time
 import os
+from functools import partial
 
 from newrelic.core.config import global_settings_dump
 from newrelic.core.data_collector import (create_session, ForceAgentRestart,
@@ -700,7 +701,13 @@ class Application(object):
 
                     # Send the transaction and custom metric data.
 
-                    metric_data = stats.metric_data()
+                    # Create a metric_normalizer based on self.normalize_name
+                    metric_normalizer = partial(self.normalize_name,
+                            rule_type='metric')
+
+                    # Pass the metric_normalizer to stats.metric_data to do 
+                    # metric renaming
+                    metric_data = stats.metric_data(metric_normalizer)
 
                     internal_metric('Supportability/Harvest/Counts/'
                             'metric_data', len(metric_data))

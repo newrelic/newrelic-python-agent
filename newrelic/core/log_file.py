@@ -51,6 +51,18 @@ class FilteredFileHandler(logging.FileHandler):
         if not record.name.startswith('newrelic.lib'):
             return logging.FileHandler.emit(self, record)
 
+# This is to filter out the overly verbose log messages at INFO level
+# made by the urllib3 module embedded in the bundled requests module.
+# this possibly negates the need for the above custom handlers now.
+
+class RequestsConnectionFilter(logging.Filter):
+    def filter(self, record):
+        return False
+
+_requests_logger = logging.getLogger(
+    'newrelic.lib.requests.packages.urllib3.connectionpool')
+_requests_logger.addFilter(RequestsConnectionFilter())
+
 _initialized = False
 
 def initialize():
@@ -64,7 +76,8 @@ def initialize():
         settings = newrelic.core.config.global_settings()
 
         if settings.log_file == 'stdout':
-            handler = FilteredStreamHandler(sys.stdout)
+            #handler = FilteredStreamHandler(sys.stdout)
+            handler = logging.StreamHandler(sys.stdout)
 
             formatter = logging.Formatter(_LOG_FORMAT)
             handler.setFormatter(formatter)
@@ -75,7 +88,8 @@ def initialize():
             _agent_logger.debug('Initializing Python agent stdout logging.')
 
         elif settings.log_file == 'stderr':
-            handler = FilteredStreamHandler(sys.stderr)
+            #handler = FilteredStreamHandler(sys.stderr)
+            handler = logging.StreamHandler(sys.stderr)
 
             formatter = logging.Formatter(_LOG_FORMAT)
             handler.setFormatter(formatter)
@@ -87,7 +101,8 @@ def initialize():
 
         elif settings.log_file:
             try:
-                handler = FilteredFileHandler(settings.log_file)
+                #handler = FilteredFileHandler(settings.log_file)
+                handler = logging.FileHandler(settings.log_file)
 
                 formatter = logging.Formatter(_LOG_FORMAT)
                 handler.setFormatter(formatter)

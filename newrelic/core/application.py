@@ -11,7 +11,7 @@ import time
 import os
 from functools import partial
 
-from newrelic.core.config import global_settings_dump
+from newrelic.core.config import global_settings_dump, global_settings
 from newrelic.core.data_collector import (create_session, ForceAgentRestart,
         ForceAgentDisconnect, DiscardDataForRequest, RetryDataForRequest)
 from newrelic.core.environment import environment_settings
@@ -271,6 +271,19 @@ class Application(object):
                 configuration = self._active_session.configuration
 
                 try:
+                    settings = global_settings()
+
+                    if settings.debug.log_normalization_rules:
+                        _logger.info('The URL normalization rules for %r '
+                                'are %r.', self._app_name,
+                                 configuration.url_rules)
+                        _logger.info('The metric normalization rules for %r '
+                                'are %r.', self._app_name,
+                                 configuration.metric_name_rules)
+                        _logger.info('The transaction normalization rules '
+                                'for %r are %r.', self._app_name,
+                                 configuration.transaction_name_rules)
+
                     self._rules_engine['url'] = RulesEngine(
                             configuration.url_rules)
                     self._rules_engine['metric'] = RulesEngine(

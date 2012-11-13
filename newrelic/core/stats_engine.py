@@ -536,10 +536,15 @@ class StatsEngine(object):
         result = []
         normalized_stats = {}
 
-        # Metric Renaming and Re-Aggregation.
-        # After applying the metric renaming rules, the metrics are
-        # re-aggregated to collapse the metrics with same names after the
-        # renaming.
+        # Metric Renaming and Re-Aggregation. After applying the metric
+        # renaming rules, the metrics are re-aggregated to collapse the
+        # metrics with same names after the renaming.
+
+        if self.__settings.debug.log_raw_metric_data:
+            _logger.info('Raw metric data for harvest of %r is %r.',
+                    self.__settings.app_name,
+                    list(self.__stats_table.iteritems()))
+
         if normalizer is not None:
             for key, value in self.__stats_table.iteritems():
                 key = (normalizer(key[0])[0] , key[1])
@@ -550,6 +555,11 @@ class StatsEngine(object):
                     stats.merge_stats(value)
         else:
             normalized_stats = self.__stats_table
+
+        if self.__settings.debug.log_normalized_metric_data:
+            _logger.info('Normalized metric data for harvest of %r is %r.',
+                    self.__settings.app_name,
+                    list(normalized_stats.iteritems()))
 
         for key, value in normalized_stats.iteritems():
             if key not in self.__metric_ids:

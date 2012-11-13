@@ -274,9 +274,9 @@ class Application(object):
                     self._rules_engine['url'] = RulesEngine(
                             configuration.url_rules)
                     self._rules_engine['metric'] = RulesEngine(
-                            configuration.metric_rules)
+                            configuration.metric_name_rules)
                     self._rules_engine['transaction'] = RulesEngine(
-                            configuration.transaction_rules)
+                            configuration.transaction_name_rules)
 
                 except:
                     _logger.exception('The agent normalization rules '

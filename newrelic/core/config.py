@@ -120,8 +120,8 @@ _settings.browser_key = None
 _settings.episodes_url = None
 
 _settings.url_rules = []
-_settings.metric_rules = []
-_settings.transaction_rules = []
+_settings.metric_name_rules = []
+_settings.transaction_name_rules = []
 
 _settings.thread_profiler.enabled = True
 

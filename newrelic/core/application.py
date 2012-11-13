@@ -702,8 +702,12 @@ class Application(object):
                     # Send the transaction and custom metric data.
 
                     # Create a metric_normalizer based on self.normalize_name
-                    metric_normalizer = partial(self.normalize_name,
-                            rule_type='metric')
+                    # If metric rename rules are empty, set normalizer to None.
+                    if _rules_engine['metric'].rules:
+                        metric_normalizer = partial(self.normalize_name,
+                                rule_type='metric')
+                    else:
+                        metric_normalizer = None
 
                     # Pass the metric_normalizer to stats.metric_data to do 
                     # metric renaming

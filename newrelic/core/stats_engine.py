@@ -518,7 +518,7 @@ class StatsEngine(object):
                         self.__saved_transactions.append(transaction)
 
     @internal_trace('Supportability/StatsEngine/Calls/metric_data')
-    def metric_data(self, normalizer):
+    def metric_data(self, normalizer=None):
         """Returns a list containing the low level metric data for
         sending to the core application pertaining to the reporting
         period. This consists of tuple pairs where first is dictionary
@@ -534,10 +534,24 @@ class StatsEngine(object):
             return []
 
         result = []
+        normalized_stats = {}
 
-        for key, value in self.__stats_table.iteritems():
-            # Normalize metric names using the normalizer function
-            key = (normalizer(key[0]) , key[1])
+        # Metric Renaming and Re-Aggregation.
+        # After applying the metric renaming rules, the metrics are
+        # re-aggregated to collapse the metrics with same names after the
+        # renaming.
+        if normalizer is not None:
+            for key, value in self.__stats_table.iteritems():
+                key = (normalizer(key[0])[0] , key[1])
+                stats = normalized_stats.get(key)
+                if stats is None:
+                    normalized_stats[key] = copy.copy(value)
+                else:
+                    stats.merge_stats(value)
+        else:
+            normalized_stats = self.__stats_table
+
+        for key, value in normalized_stats.iteritems():
             if key not in self.__metric_ids:
                 key = dict(name=key[0], scope=key[1])
             else:

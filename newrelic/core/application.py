@@ -701,16 +701,20 @@ class Application(object):
 
                     # Send the transaction and custom metric data.
 
-                    # Create a metric_normalizer based on self.normalize_name
-                    # If metric rename rules are empty, set normalizer to None.
-                    if _rules_engine['metric'].rules:
+                    # Create a metric_normalizer based on normalize_name
+                    # If metric rename rules are empty, set normalizer
+                    # to None and the stats engine will skip steps as
+                    # appropriate.
+
+                    if self._rules_engine['metric'].rules:
                         metric_normalizer = partial(self.normalize_name,
                                 rule_type='metric')
                     else:
                         metric_normalizer = None
 
-                    # Pass the metric_normalizer to stats.metric_data to do 
-                    # metric renaming
+                    # Pass the metric_normalizer to stats.metric_data to
+                    # do metric renaming.
+
                     metric_data = stats.metric_data(metric_normalizer)
 
                     internal_metric('Supportability/Harvest/Counts/'

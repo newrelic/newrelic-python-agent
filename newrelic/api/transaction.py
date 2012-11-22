@@ -509,9 +509,12 @@ class Transaction(object):
             # current transaction is not a key transaction then use the
             # default apdex from settings. The path used at this point
             # is the frozen path.
+            # Check if settings is not None. Can be an issue for the first
+            # request while registering with collector.
 
-            self.apdex = (self._settings.web_transactions_apdex.get(self.path)
-                    or self._settings.apdex_t)
+            if self._settings:
+                self.apdex = (self._settings.web_transactions_apdex.get(
+                    self.path) or self._settings.apdex_t)
 
     def name_transaction(self, name, group=None, priority=None):
 

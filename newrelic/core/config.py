@@ -125,6 +125,9 @@ _settings.url_rules = []
 _settings.metric_name_rules = []
 _settings.transaction_name_rules = []
 
+_settings.cross_process_id = ''
+_settings.encoding_key = ''
+
 _settings.thread_profiler.enabled = True
 
 _settings.transaction_tracer.enabled = True

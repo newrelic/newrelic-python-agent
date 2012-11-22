@@ -610,6 +610,35 @@ class WSGIApplicationWrapper(object):
             except:
                 pass
 
+            cross_process_id = environ.get('HTTP_X_NEWRELIC_ID')
+
+            # Add the following to header only if cross_process_id is present.  
+            #
+            # X-NewRelic-App-Data: obfuscated(json)
+            # json = ['cross_process_id', 'transaction_name', queue_time,
+            # response_time, content_length]
+            #
+            # Settings will be None for the first request during app
+            # registration.
+            if cross_process_id and transaction._settings:
+                transaction._freeze_path()
+                name = transaction.path
+                queue_time = (transaction.queue_start and
+                        (transaction.start_time - transaction.queue_start)) 
+                response_time = time.time() - transaction.start_time
+                content_length = int(environ.get('CONTENT_LENGTH') or -1)
+                key = transaction._settings.encoding_key
+                # transaction.path is a unicode value, convert it to normal
+                # string with default encoding (ascii).
+                app_data = str('["%s", "%s", %f, %f, %d]' % (
+                        cross_process_id, name, queue_time, response_time,
+                        content_length))
+                response_headers.append(('X-NewRelic-App-Data', _obfuscate(
+                    app_data, key)))
+
+                transaction.record_metric('ClientApplication/%s/all' %
+                        _deobfuscate(cross_process_id, key), response_time)
+
             _write = start_response(status, response_headers, *args)
 
             def write(data):

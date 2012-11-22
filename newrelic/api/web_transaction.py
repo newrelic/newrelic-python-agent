@@ -53,13 +53,21 @@ _rum2_footer_long_fragment = '<script type="text/javascript">' \
         'NREUMQ.push(["nrfj","%s","%s","%s","%s",%d,%d,' \
         'new Date().getTime(),"%s","%s","%s","%s","%s"]);</script>'
 
+def _encode(name, key):
+    s = []
+    for i in range(len(name)):
+        s.append(chr(ord(name[i]) ^ ord(key[i % len(key)])))
+    return s
+
 def _obfuscate(name, key):
     if name is None:
         return ''
-    s = []
-    for i in range(len(name)):
-        s.append(chr(ord(name[i]) ^ ord(key[i % 13])))
-    return base64.b64encode(''.join(s))
+    return base64.b64encode(''.join(_encode(name, key)))
+
+def _deobfuscate(name, key):
+    if name is None:
+        return ''
+    return str(''.join(_encode(base64.b64decode(name), key)))
 
 def _lookup_environ_setting(environ, name, default=False):
     flag = environ.get(name, default)

@@ -7,6 +7,8 @@ import sys
 import os
 import platform
 
+from newrelic.core.samplers import cpu_count
+
 def environment_settings():
     """Returns an array of arrays of environment settings
 
@@ -25,6 +27,7 @@ def environment_settings():
     env.append(('Arch', platform.machine()))
     env.append(('OS', platform.system()))
     env.append(('OS version', platform.release()))
+    env.append(('CPU Count', cpu_count()))
 
     # Python information.
 

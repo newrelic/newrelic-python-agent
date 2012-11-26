@@ -123,7 +123,7 @@ class Agent(object):
         self._harvest_duration = 0.0
         self._next_harvest = 0.0
 
-        if self._config.monitor_mode:
+        if self._config.enabled:
             atexit.register(self.shutdown_agent)
 
     def dump(self, file):
@@ -189,7 +189,7 @@ class Agent(object):
 
         """
 
-        if not self._config.monitor_mode:
+        if not self._config.enabled:
             return
 
         # If timeout not supplied then use default from the global
@@ -389,7 +389,8 @@ class Agent(object):
 
         # Skip this if agent is not actually enabled.
 
-        if not self._config.monitor_mode:
+        if not self._config.enabled:
+            _logger.debug('The Python Agent has not been enabled.')
             return
 
         # Skip this if background thread already running.

@@ -292,7 +292,7 @@ class Transaction(object):
 
         global_settings = newrelic.core.config.global_settings()
 
-        if global_settings.monitor_mode:
+        if global_settings.enabled:
             if enabled or (enabled is None and application.enabled):
                 self._settings = self._application.settings
                 if not self._settings:

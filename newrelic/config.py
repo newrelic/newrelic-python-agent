@@ -1419,8 +1419,11 @@ def initialize(config_file=None, environment=None, ignore_errors=True,
             log_file, log_level)
 
     if _settings.monitor_mode:
+        _settings.enabled = True
         _setup_instrumentation()
         _setup_agent_console()
+    else:
+        _settings.enabled = False
 
 def filter_app_factory(app, global_conf, config_file, environment=None):
     initialize(config_file, environment)

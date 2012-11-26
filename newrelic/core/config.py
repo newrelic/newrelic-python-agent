@@ -70,6 +70,8 @@ _LOG_LEVEL = {
     'DEBUG': logging.DEBUG,
 }
 
+_settings.enabled = _environ_as_bool('NEW_RELIC_ENABLED', False)
+
 _settings.log_level = os.environ.get('NEW_RELIC_LOG_LEVEL', 'INFO').upper()
 
 if _settings.log_level in _LOG_LEVEL:

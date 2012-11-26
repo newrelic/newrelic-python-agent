@@ -23,7 +23,16 @@ try:
 except:
     pass
 
+license_key = os.environ.get('NEW_RELIC_LICENSE_KEY', None)
+
 config_file = os.environ.get('NEW_RELIC_CONFIG_FILE', None)
 environment = os.environ.get('NEW_RELIC_ENVIRONMENT', None)
 
-newrelic.agent.initialize(config_file, environment)
+# We skip agent initialisation if neither the license key or config file
+# environment variables are set. We do this as some people like to use a
+# common startup script which always uses the wrapper script, and which
+# controls whether the agent is actually run based on the presence of
+# the environment variables.
+
+if license_key or config_file:
+    newrelic.agent.initialize(config_file, environment)

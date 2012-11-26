@@ -1405,6 +1405,9 @@ _console = None
 def _startup_agent_console():
     global _console
 
+    if _console:
+        return
+
     _console = newrelic.console.ConnectionManager(
             _settings.console.listener_socket)
 

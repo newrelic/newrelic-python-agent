@@ -390,7 +390,7 @@ class Agent(object):
         # Skip this if agent is not actually enabled.
 
         if not self._config.enabled:
-            _logger.debug('The Python Agent has not been enabled.')
+            _logger.warning('The Python Agent is not enabled.')
             return
 
         # Skip this if background thread already running.

@@ -93,7 +93,7 @@ _settings.proxy_pass = os.environ.get('NEW_RELIC_PROXY_PASS', None)
 
 _settings.app_name = os.environ.get('NEW_RELIC_APP_NAME', 'Python Application')
 
-_settings.monitor_mode = True
+_settings.monitor_mode = _environ_as_bool('NEW_RELIC_MONITOR_MODE', True)
 
 _settings.collect_errors = True
 _settings.collect_traces = True

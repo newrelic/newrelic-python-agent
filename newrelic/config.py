@@ -188,6 +188,9 @@ def _process_setting(section, option, getter, mapper):
 
         _cache_object.append((option, value))
 
+    except ConfigParser.NoSectionError:
+        pass
+
     except ConfigParser.NoOptionError:
         pass
 
@@ -435,6 +438,8 @@ def _load_configuration(config_file=None, environment=None,
         try:
             value = _config_object.get(section, 'app_name')
         except ConfigParser.NoOptionError:
+            return False
+        except ConfigParser.NoSectionError:
             return False
         else:
             # XXX Note that because ';' with a preceding space is

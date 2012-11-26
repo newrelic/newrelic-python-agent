@@ -294,7 +294,13 @@ class StatsEngine(object):
         if not self.__settings:
             return
 
-        key = (metric.name, None)
+        # Note that because we are using a scope here of an empty string
+        # we can potentially clash with an unscoped metric. Using None,
+        # although it may help to keep them separate in the agent will
+        # not make a difference to the data collector which treats None
+        # as an empty string anyway.
+
+        key = (metric.name, '')
         stats = self.__stats_table.get(key)
         if stats is None:
             stats = ApdexStats(metric.apdex_t)

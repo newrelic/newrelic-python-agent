@@ -5,12 +5,14 @@ interacting with the agent core.
 
 from __future__ import with_statement
 
+import os
 import time
 import logging
 import threading
 import atexit
 import time
 import warnings
+import traceback
 
 import newrelic
 import newrelic.core.log_file
@@ -88,9 +90,19 @@ class Agent(object):
 
         with Agent._lock:
             if not Agent._instance:
-                _logger.debug('Creating instance of Python agent.')
-
                 settings = newrelic.core.config.global_settings()
+
+                if settings.debug.log_agent_initialization:
+                    _logger.info('Creating instance of Python agent in '
+                            'process %d.', os.getpid())
+                    _logger.info('Agent was intialized from: %r',
+                            ''.join(traceback.format_stack()[:-1]))
+                else:
+                    _logger.debug('Creating instance of Python agent in '
+                            'process %d.', os.getpid())
+                    _logger.debug('Agent was intialized from: %r',
+                            ''.join(traceback.format_stack()[:-1]))
+
                 Agent._instance = Agent(settings)
                 Agent._instance.activate_agent()
 
@@ -204,6 +216,17 @@ class Agent(object):
         with Agent._lock:
             application = self._applications.get(app_name, None)
             if not application:
+                if settings.debug.log_agent_initialization:
+                    _logger.info('Creating application instance for %r '
+                            'in process %d.', app_name, os.getpid())
+                    _logger.info('Application was activated from: %r',
+                            ''.join(traceback.format_stack()[:-1]))
+                else:
+                    _logger.debug('Creating application instance for %r '
+                            'in process %d.', app_name, os.getpid())
+                    _logger.debug('Application was activated from: %r',
+                            ''.join(traceback.format_stack()[:-1]))
+
                 linked_applications = sorted(set(linked_applications))
                 application = newrelic.core.application.Application(
                         app_name, linked_applications)
@@ -211,6 +234,13 @@ class Agent(object):
                 if timeout:
                     application.wait_for_session_activation(timeout)
                 self._applications[app_name] = application
+
+            else:
+                # Do some checks to see whether try to reactivate the
+                # application in a different process to what it was
+                # originally activated in.
+
+                application.validate_process()
 
     @property
     def applications(self):

@@ -9,6 +9,8 @@ import sys
 import threading
 import time
 import os
+import traceback
+
 from functools import partial
 
 from newrelic.core.config import global_settings_dump, global_settings
@@ -94,6 +96,8 @@ class Application(object):
 
         self._app_name = app_name
         self._linked_applications = sorted(set(linked_applications))
+
+        self._process_id = None
 
         self._period_start = 0.0
 
@@ -209,6 +213,8 @@ class Application(object):
 
         if self._active_session:
             return
+
+        self._process_id = os.getpid()
 
         self._connected_event.clear()
 
@@ -377,6 +383,46 @@ class Application(object):
 
             self._connected_event.set()
 
+    def validate_process(self):
+        """Logs a warning message if called in a process different to
+        where the application was registered. Only logs a message the
+        first time this is detected for current active session.
+
+        """
+
+        process_id = os.getpid()
+
+        # Detect where potentially trying to record any data in a
+        # process different to where the harvest thread was created.
+        # Note that this only works for the case where a section had
+        # been activated prior to the process being forked.
+
+        if self._process_id and process_id != self._process_id:
+            _logger.warning('Attempt to reactivate application or record '
+                    'transactions in a process different to where the '
+                    'agent was already registered for application %r. No '
+                    'data will be reported for this process with pid of '
+                    '%d. Registration of the agent for this application '
+                    'occurred in process with pid %d. If no data at all '
+                    'is being reported for your application, then please '
+                    'report this problem to New Relic support for further '
+                    'investigation.', self._app_name, process_id,
+                    self._process_id)
+
+            settings = global_settings()
+
+            if settings.debug.log_agent_initialization:
+                _logger.info('Process validation check was triggered '
+                        'from: %r', ''.join(traceback.format_stack()[:-1]))
+            else:
+                _logger.debug('Process validation check was triggered '
+                        'from: %r', ''.join(traceback.format_stack()[:-1]))
+
+            # We now zero out the process ID so we know we have already
+            # generated a warning message.
+
+            self._process_id = 0
+
     def normalize_name(self, name, rule_type):
         """Applies the agent normalization rules of the the specified
         rule type to the supplied name."""
@@ -455,6 +501,11 @@ class Application(object):
 
         if self._stats_engine.settings is None:
             return
+
+        # Do checks to see whether trying to record a transaction in a
+        # different process to that the application was activated in.
+
+        self.validate_process()
 
         internal_metrics = ValueMetrics()
 

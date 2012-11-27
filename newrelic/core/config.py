@@ -169,6 +169,7 @@ _settings.console.allow_interpreter_cmd = False
 _settings.debug.ignore_all_server_settings = False
 _settings.debug.local_settings_overrides = []
 
+_settings.debug.log_agent_initialization = False
 _settings.debug.log_data_collector_calls = False
 _settings.debug.log_data_collector_payloads = False
 _settings.debug.log_malformed_json_data = False

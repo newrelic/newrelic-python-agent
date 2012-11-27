@@ -310,6 +310,8 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'debug.log_normalization_rules',
                      'getboolean', None)
+    _process_setting(section, 'debug.log_agent_initialization',
+                     'getboolean', None)
 
 # Loading of configuration from specified file and for specified
 # deployment environment. Can also indicate whether configuration

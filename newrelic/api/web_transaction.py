@@ -610,16 +610,16 @@ class WSGIApplicationWrapper(object):
             except:
                 pass
 
-            cross_process_id = environ.get('HTTP_X_NEWRELIC_ID')
+            in_cross_process_id = environ.get('HTTP_X_NEWRELIC_ID')
 
-            # Add the following to header if cross_process_id is present and
+            # Add the following to header if in_cross_process_id is present and
             # transactions are enabled.
             #
             # X-NewRelic-App-Data: obfuscated(json)
-            # json = ['cross_process_id', 'transaction_name', queue_time,
-            # response_time, content_length]
+            # json = ['out_cross_process_id', 'transaction_name',
+            # queue_time, response_time, content_length]
 
-            if (cross_process_id is not None) and transaction.enabled:
+            if (in_cross_process_id is not None) and transaction.enabled:
                 transaction._freeze_path()
                 name = transaction.path
                 queue_time = (transaction.queue_start and
@@ -627,13 +627,13 @@ class WSGIApplicationWrapper(object):
                 response_time = time.time() - transaction.start_time
                 content_length = int(environ.get('CONTENT_LENGTH') or -1)
                 key = transaction._settings.encoding_key
+                out_cross_process_id = transaction._settings.cross_process_id
 
-                # transaction.path is a unicode value, so keep the string as
-                # unicode
+                # name is a unicode value, so keep the string as unicode
 
                 app_data = u'["%s", "%s", %f, %f, %d]' % (
-                        _deobfuscate(cross_process_id, key), name, queue_time,
-                        response_time, content_length)
+                        out_cross_process_id, name, queue_time, response_time,
+                        content_length)
 
                 # Convert unicode string to utf-8 byte string before
                 # obfuscation
@@ -643,11 +643,12 @@ class WSGIApplicationWrapper(object):
                 response_headers.append(('X-NewRelic-App-Data', _obfuscate(
                     app_data, key)))
 
-                # Only add the metric if cross_process_id is NOT empty.
+                # Only add the metric if in_cross_process_id is NOT empty.
 
-                if len(cross_process_id) > 0:
-                    transaction.record_metric('ClientApplication/%s/all' %
-                            _deobfuscate(cross_process_id, key), response_time)
+                if len(in_cross_process_id) > 0:
+                    metric_name = 'ClientApplication/%s/all' % (
+                            _deobfuscate(in_cross_process_id, key)) 
+                    transaction.record_metric( metric_name, response_time)
             _write = start_response(status, response_headers, *args)
 
             def write(data):

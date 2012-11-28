@@ -140,7 +140,9 @@ def _memory_used():
 
         try:
             fp = open(statm, 'r')
-            return float(fp.read().split()[1]) / 1024
+            rss_pages = float(fp.read().split()[1])
+            memory_bytes = rss_pages * resource.getpagesize()
+            return memory_bytes / (1024*1024)
         except:
             pass
         finally:
@@ -154,9 +156,14 @@ def _memory_used():
     if have_resource:
         rusage = resource.getrusage(resource.RUSAGE_SELF)
         if sys.platform == 'darwin':
-            return float(rusage.ru_maxrss) / (1024*1024)
+            # On MacOS X, despite the manual page saying the
+            # value is in kilobytes, it is actually in bytes.
+
+            memory_bytes = float(rusage.ru_maxrss)
+            return memory_bytes / (1024*1024)
         else:
-            return float(rusage.ru_maxrss) / 1024
+            memory_kbytes = float(rusage.ru_maxrss)
+            return memory_kbytes / 1024
 
     # Fallback to indicating no memory usage.
 

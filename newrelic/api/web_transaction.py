@@ -632,8 +632,8 @@ class WSGIApplicationWrapper(object):
                 # unicode
 
                 app_data = u'["%s", "%s", %f, %f, %d]' % (
-                        cross_process_id, name, queue_time, response_time,
-                        content_length)
+                        _deobfuscate(cross_process_id, key), name, queue_time,
+                        response_time, content_length)
 
                 # Convert unicode string to utf-8 byte string before
                 # obfuscation

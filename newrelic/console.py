@@ -342,16 +342,20 @@ class ConnectionManager(object):
             shell.stdin = client.makefile('r')
             shell.stdout = client.makefile('w')
 
-            try:
-                shell.cmdloop()
+            while True:
+                try:
+                    shell.cmdloop()
 
-            except:
-                shell.stdout.flush()
-                print >> shell.stdout, 'Unexpected exception.'
-                exc_info = sys.exc_info()
-                traceback.print_exception(exc_info[0], exc_info[1],
-                        exc_info[2], file=shell.stdout)
-                exc_info = None
+                except:
+                    shell.stdout.flush()
+                    print >> shell.stdout, 'Unexpected exception.'
+                    exc_info = sys.exc_info()
+                    traceback.print_exception(exc_info[0], exc_info[1],
+                            exc_info[2], file=shell.stdout)
+                    exc_info = None
+
+                else:
+                    break
 
             shell.stdin = None
             shell.stdout = None

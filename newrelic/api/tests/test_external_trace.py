@@ -77,6 +77,12 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             o._test_function_3("http://a:b@external_trace_decorator_3")
             o._test_function_4("http://a:b@external_trace_decorator_4")
             time.sleep(0.1)
+            _test_function_1a("http://a:b@external_trace_decorator_1:80")
+            o = TestObject()
+            o._test_function_2("http://a:b@external_trace_decorator_2:80")
+            o._test_function_3("http://a:b@external_trace_decorator_3:80")
+            o._test_function_4("http://a:b@external_trace_decorator_4:80")
+            time.sleep(0.1)
 
     def test_external_trace_decorator_error(self):
         environ = { "REQUEST_URI": "/external_trace_decorator_error" }
@@ -97,6 +103,13 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 "http://external_trace_wrap", 'GET')
         with transaction:
             _test_function_1b("http://external_trace_wrap")
+
+    def test_externa_trace_invalid_urls(self):
+        environ = { "REQUEST_URI": "/external_trace_invalid_url" }
+        transaction = newrelic.api.web_transaction.WebTransaction(
+                application, environ)
+        with transaction:
+            _test_function_1a("http://invalid_url:xxx")
 
 if __name__ == '__main__':
     unittest.main()

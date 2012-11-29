@@ -41,7 +41,11 @@ class ExternalNode(_ExternalNode):
                     duration=self.duration, exclusive=self.exclusive)
 
         hostname = self.details.hostname or 'unknown'
-        port = self.details.port
+
+        try:
+            port = self.details.port
+        except:
+            port = None
 
         netloc = port and ('%s:%s' % (hostname, port)) or hostname
 
@@ -63,7 +67,11 @@ class ExternalNode(_ExternalNode):
     def trace_node(self, stats, root):
 
         hostname = self.details.hostname or 'unknown'
-        port = self.details.port
+
+        try:
+            port = self.details.port
+        except:
+            port = None
 
         netloc = port and ('%s:%s' % (hostname, port)) or hostname
 

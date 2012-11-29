@@ -123,8 +123,8 @@ class OutputWrapper(ObjectWrapper):
 def intercept_console():
     setquit()
 
-    sys.stdout = OutputWrapper(sys.stdout)
-    sys.stderr = OutputWrapper(sys.stderr)
+    sys.stdout = OutputWrapper(sys.stdout, None, None)
+    sys.stderr = OutputWrapper(sys.stderr, None, None)
 
 class EmbeddedConsole(code.InteractiveConsole):
 

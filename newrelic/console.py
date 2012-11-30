@@ -186,6 +186,16 @@ class ConsoleShell(cmd.Cmd):
         print >> self.stdout, sys.path
 
     @shell_command
+    def do_sys_modules(self):
+        """
+        Displays the list of Python modules loaded."""
+
+        for name, module in sorted(sys.modules.items()):
+            if module is not None:
+                file = getattr(module, '__file__', None)
+                print >> self.stdout, "%s - %s" % (name, file)
+
+    @shell_command
     def do_os_environ(self):
         """
         Displays the set of user environment variables."""

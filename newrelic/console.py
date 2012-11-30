@@ -421,11 +421,12 @@ class ClientShell(cmd.Cmd):
 
     prompt = '(newrelic) '
 
-    def __init__(self, config_file, stdin=None, stdout=None):
+    def __init__(self, config_file, stdin=None, stdout=None, log=None):
         cmd.Cmd.__init__(self, stdin=stdin, stdout=stdout)
 
         self.__config_file = config_file
         self.__config_object = ConfigParser.RawConfigParser()
+        self.__log_object = log
 
         if not self.__config_object.read([config_file]):
             raise RuntimeError('Unable to open configuration file %s.' %
@@ -502,9 +503,14 @@ class ClientShell(cmd.Cmd):
             while 1:
                 try:
                     c = sys.stdin.read(1)
+
                     if not c:
                         client.shutdown(socket.SHUT_RD)
                         break
+
+                    if self.__log_object:
+                        self.__log_object.write(c)
+
                     client.sendall(c)
                 except:
                     break
@@ -513,8 +519,13 @@ class ClientShell(cmd.Cmd):
             while 1:
                 try:
                     c = client.recv(1)
+
                     if not c:
                         break
+
+                    if self.__log_object:
+                        self.__log_object.write(c)
+
                     sys.stdout.write(c)
                     sys.stdout.flush()
                 except:

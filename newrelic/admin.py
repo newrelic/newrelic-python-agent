@@ -635,7 +635,7 @@ def run_program(args):
 
     os.execl(program_exe_path, *args)
 
-@command('debug-console', 'config_file [session_log_file]',
+@command('debug-console', 'config_file [session_log]',
 """Runs the client for the embedded agent debugging console.
 """)
 def debug_console(args):
@@ -646,8 +646,12 @@ def debug_console(args):
     import newrelic.console
 
     config_file = args[0]
+    log_object = None
 
-    shell = newrelic.console.ClientShell(config_file)
+    if len(args) >= 2:
+        log_object = open(args[1], 'w')
+
+    shell = newrelic.console.ClientShell(config_file, log=log_object)
     shell.cmdloop()
 
 def main():

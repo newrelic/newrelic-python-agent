@@ -270,6 +270,30 @@ class ConsoleShell(cmd.Cmd):
             application.dump(self.stdout)
 
     @shell_command
+    def do_import_hooks(self):
+        """
+        Displays list of registered import hooks, which have fired and
+        which encountered errors.
+        """
+
+        from newrelic.config import module_import_hook_results
+
+        results = module_import_hook_results()
+        for key in sorted(results.keys()):
+            result = results[key]
+            if result is None:
+                if key[0] not in sys.modules:
+                    print >> self.stdout, '%s: PENDING' % (key,)
+                else:
+                    print >> self.stdout, '%s: IMPORTED' % (key,)
+            elif not result:
+                print >> self.stdout, '%s: INSTRUMENTED' % (key,)
+            else:
+                print >> self.stdout, '%s: FAILED' % (key,)
+                for line in result:
+                    print >> self.stdout, line,
+
+    @shell_command
     def do_transactions(self):
         """
         """

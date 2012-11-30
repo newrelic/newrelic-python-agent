@@ -3,6 +3,7 @@ import sys
 import string
 import ConfigParser
 import logging
+import traceback
 
 import newrelic.core.log_file
 import newrelic.core.agent
@@ -518,7 +519,12 @@ def _raise_instrumentation_error(type, locals):
 
 # Registration of module import hooks defined in configuration file.
 
-def _module_import_hook(module, function):
+_module_import_hook_results = {}
+
+def module_import_hook_results():
+    return _module_import_hook_results
+
+def _module_import_hook(target, module, function):
     def _instrument(target):
         _logger.debug("instrument module %s" %
                 ((target, module, function),))
@@ -526,7 +532,14 @@ def _module_import_hook(module, function):
         try:
             getattr(newrelic.api.import_hook.import_module(module),
                     function)(target)
+
+            _module_import_hook_results[(target.__name__, module,
+                    function)] = ''
+
         except:
+            _module_import_hook_results[(target.__name__, module,
+                    function)] = traceback.format_exception(*sys.exc_info())
+
             _raise_instrumentation_error('import-hook', locals())
 
     return _instrument
@@ -561,8 +574,12 @@ def _process_module_configuration():
             _logger.debug("register module %s" %
                     ((target, module, function),))
 
-            hook = _module_import_hook(module, function)
+            hook = _module_import_hook(target, module, function)
             newrelic.api.import_hook.register_import_hook(target, hook)
+
+            _module_import_hook_results.setdefault(
+                    (target, module, function), None)
+
         except:
             _raise_configuration_error(section)
 
@@ -1090,7 +1107,10 @@ def _process_module_definition(target, module, function='instrument'):
                     ((target, module, function),))
 
             newrelic.api.import_hook.register_import_hook(target,
-                    _module_import_hook(module, function))
+                    _module_import_hook(target, module, function))
+
+            _module_import_hook_results.setdefault(
+                    (target, module, function), None)
     except:
         _raise_configuration_error(section)
 

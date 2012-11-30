@@ -204,6 +204,26 @@ class ConsoleShell(cmd.Cmd):
             print >> self.stdout, "%s = %r" % (key, name)
 
     @shell_command
+    def do_config_args(self):
+        """
+        Displays the configure arguments used to build Python."""
+
+        args = ''
+
+        try:
+            # This may fail if using package Python and the
+            # developer package for Python isn't also installed.
+
+            import distutils.sysconfig
+
+            args = distutils.sysconfig.get_config_var('CONFIG_ARGS')
+
+        except:
+            pass
+
+        print >> self.stdout, args
+
+    @shell_command
     def do_dump_config(self, name=None):
         """
         Displays global configuration or that of the named application.

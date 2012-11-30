@@ -172,6 +172,28 @@ class ConsoleShell(cmd.Cmd):
         return True
 
     @shell_command
+    def do_sys_prefix(self):
+        """
+        Displays the value of sys.prefix."""
+
+        print >> self.stdout, sys.prefix
+
+    @shell_command
+    def do_sys_path(self):
+        """
+        Displays the value of sys.path."""
+
+        print >> self.stdout, sys.path
+
+    @shell_command
+    def do_os_environ(self):
+        """
+        Displays the set of user environment variables."""
+
+        for key, name in os.environ.items():
+            print >> self.stdout, "%s = %r" % (key, name)
+
+    @shell_command
     def do_dump_config(self, name=None):
         """
         Displays global configuration or that of the named application.

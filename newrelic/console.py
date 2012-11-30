@@ -196,6 +196,13 @@ class ConsoleShell(cmd.Cmd):
                 print >> self.stdout, "%s - %s" % (name, file)
 
     @shell_command
+    def do_sys_meta_path(self):
+        """
+        Displays the value of sys.meta_path."""
+
+        print >> self.stdout, sys.meta_path
+
+    @shell_command
     def do_os_environ(self):
         """
         Displays the set of user environment variables."""

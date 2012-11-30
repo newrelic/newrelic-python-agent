@@ -329,6 +329,7 @@ class ConsoleShell(cmd.Cmd):
             block.append('# ThreadID: %s' % threadId) 
             thr = threading._active.get(threadId)
             if thr:
+                block.append('# Type: %s' % type(thr).__name__) 
                 block.append('# Name: %s' % thr.name) 
             for filename, lineno, name, line in traceback.extract_stack(
                 stack): 

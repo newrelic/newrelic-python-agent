@@ -281,15 +281,21 @@ class ConsoleShell(cmd.Cmd):
               agent_instance().applications.keys()))
 
     @shell_command
-    def do_application_status(self, name):
+    def do_application_status(self, name=None):
         """
         Displays general status information about an application, last
         harvest cycle, etc.
         """
 
-        application = agent_instance().application(name)
-        if application is not None:
-            application.dump(self.stdout)
+        if name is not None:
+            applications = [agent_instance().application(name)]
+        else:
+            applications = agent_instance().applications.values()
+
+        for application in applications:
+            if application is not None:
+                application.dump(self.stdout)
+                print >> self.stdout
 
     @shell_command
     def do_import_hooks(self):

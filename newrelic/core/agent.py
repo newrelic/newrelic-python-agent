@@ -121,6 +121,7 @@ class Agent(object):
         _logger.debug('Initializing Python agent.')
 
         self._creation_time = time.time()
+        self._process_id = os.getpid()
 
         self._applications = {}
         self._config = config
@@ -143,6 +144,8 @@ class Agent(object):
 
         print >> file, 'Time Created: %s' % (
                 time.asctime(time.localtime(self._creation_time)))
+        print >> file, 'Initialization PID: %s' % (
+                self._process_id)
         print >> file, 'Harvest Count: %d' % (
                 self._harvest_count)
         print >> file, 'Last Harvest: %s' % (

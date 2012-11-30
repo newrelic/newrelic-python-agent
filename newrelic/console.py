@@ -172,6 +172,13 @@ class ConsoleShell(cmd.Cmd):
         return True
 
     @shell_command
+    def do_process_id(self):
+        """
+        Displays the process ID of the process."""
+
+        print >> self.stdout, os.getpid()
+
+    @shell_command
     def do_sys_prefix(self):
         """
         Displays the value of sys.prefix."""

@@ -170,6 +170,8 @@ class Application(object):
                 time.asctime(time.localtime(self._creation_time)))
         print >> file, 'Linked Applications: %r' % (
                 self._linked_applications)
+        print >> file, 'Registration PID: %s' % (
+                self._process_id)
         print >> file, 'Harvest Count: %d' % (
                 self._harvest_count)
         print >> file, 'Agent Restart: %d' % (

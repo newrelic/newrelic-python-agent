@@ -635,6 +635,21 @@ def run_program(args):
 
     os.execl(program_exe_path, *args)
 
+@command('debug-console', 'config_file [session_log_file]',
+"""Runs the client for the embedded agent debugging console.
+""")
+def debug_console(args):
+    if len(args) == 0:
+        usage('agent-console')
+        return
+
+    import newrelic.console
+
+    config_file = args[0]
+
+    shell = newrelic.console.ClientShell(config_file)
+    shell.cmdloop()
+
 def main():
     if len(sys.argv) == 1:
         print "Type 'newrelic-admin help' for usage."

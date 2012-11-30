@@ -13,6 +13,7 @@ import sys
 import threading
 import traceback
 import os
+import time
 
 import __builtin__
 
@@ -216,6 +217,13 @@ class ConsoleShell(cmd.Cmd):
 
         for key, name in os.environ.items():
             print >> self.stdout, "%s = %r" % (key, name)
+
+    @shell_command
+    def do_current_time(self):
+        """
+        Displays the current time."""
+
+        print >> self.stdout, time.asctime()
 
     @shell_command
     def do_config_args(self):

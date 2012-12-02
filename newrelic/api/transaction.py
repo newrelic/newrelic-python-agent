@@ -331,7 +331,12 @@ class Transaction(object):
         # storage so that it can be accessed from
         # anywhere in the context of the transaction.
 
-        self._save_transaction(self)
+        try:
+            self._save_transaction(self)
+        except:
+            self._state = STATE_PENDING
+            self.enabled = False
+            raise
 
         # Record the start time for transaction.
 

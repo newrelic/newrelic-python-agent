@@ -38,29 +38,28 @@ class Transaction(object):
     @classmethod
     def _current_thread_id(cls):
         """Returns the thread ID for the caller.
-        
-        When using eventlet or gevent they will patch the thread module
-        and the get_ident() function will actually return the greenlet
-        ID. Even though patched, it will still return a valid thread ID
-        if a greenlet is not actually running.
+
+        When greenlets are present and we detect we are running in the
+        greenlet then we use the greenlet ID instead of the thread ID.
 
         """
 
-        # Meinheld does patch the thread module so this workaround is in
-        # here to cope with that. Suspect that Meinheld isn't going to
-        # work in other ways due to not doing any patching of standard
-        # libraries. Should drop support for Meinheld, but leave this
-        # here for now.
+        greenlet = sys.modules.get('greenlet')
 
-        meinheld = sys.modules.get('meinheld.server')
+        if greenlet:
+            # Greenlet objects are maintained in a tree structure with
+            # the 'parent' attribute pointing to that which a specific
+            # instance is associated with. Only the root node has no
+            # parent. This node is special and is the one which
+            # corresponds to the original thread where the greenlet
+            # module was imported and initialised. That root greenlet is
+            # never actually running and we should always ignore it. In
+            # all other cases where we can obtain a current greenlet,
+            # then it should indicate we are running as a greenlet.
 
-        if meinheld:
-            try:
-                result = meinheld.get_ident()
-                if result is not None:
-                    return result
-            except:
-                pass
+            current = greenlet.getcurrent()
+            if current is not None and current.parent:
+                return id(current)
 
         return thread.get_ident()
 

@@ -1217,6 +1217,10 @@ def _process_module_builtin_defaults():
     #        'newrelic.hooks.framework_tornado',
     #        'instrument_tornado_httpserver')
 
+    _process_module_definition('paste.httpserver',
+            'newrelic.hooks.adapter_paste',
+            'instrument_paste_httpserver')
+
     _process_module_definition('gunicorn.app.base',
             'newrelic.hooks.adapter_gunicorn',
             'instrument_gunicorn_app_base')

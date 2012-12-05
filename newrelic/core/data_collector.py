@@ -250,13 +250,20 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
     except requests.RequestException, exc:
         if not settings.proxy_host or not settings.proxy_port:
-            _logger.warning('Unable to connect via a direct connection '
-                    'to the data collector with url of %r. Error raised '
-                    'is %r.', url, exc)
+            _logger.warning('Data collector is not contactable. This can be '
+                    'because of a network issue or because of the data '
+                    'collector being restarted. In the event that contact '
+                    'cannot be made after a period of time then please '
+                    'report this problem to New Relic support for further '
+                    'investigation. The error raised was %r.', exc)
         else:
-            _logger.warning('Unable to connect to the data collector with '
-                    'url of %r while connecting via proxy host %r on port '
-                    '%r with proxy user of %r. Error raised is %r.', url,
+            _logger.warning('Data collector is not contactable via the proxy '
+                    'host %r on port %r with proxy user of %r. This can be '
+                    'because of a network issue or because of the data '
+                    'collector being restarted. In the event that contact '
+                    'cannot be made after a period of time then please '
+                    'report this problem to New Relic support for further '
+                    'investigation. The error raised was %r.',
                     settings.proxy_host, settings.proxy_port,
                     settings.proxy_user, exc)
 

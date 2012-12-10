@@ -29,6 +29,11 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             application.record_metric(u"CustomMetricTests01/√√√√√", i)
 
     def test_disabled(self):
+        # XXX This will actually always work as the record_metric()
+        # method doesn't check enabled flag. Is expected at this point
+        # that any internal code using the method checks before making
+        # the class.
+
         application.enabled = False
         application.record_metric("CustomMetricTests01/Disabled", 1)
         application.enabled = True

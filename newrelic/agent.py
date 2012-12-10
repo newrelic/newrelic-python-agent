@@ -90,10 +90,14 @@ def record_exception(exc, value, tb, params={}, ignore_errors=[]):
     if transaction:
         transaction.record_exception(exc, value, tb, params, ignore_errors)
 
-def record_custom_metric(name, value):
-    transaction = current_transaction()
-    if transaction:
-        transaction.record_metric(name, value)
+def record_custom_metric(name, value, application=None):
+    if application is None:
+        transaction = current_transaction()
+        if transaction:
+            transaction.record_metric(name, value)
+    else:
+        if application.enabled:
+            application.record_metric(name, value)
 
 def get_browser_timing_header():
     transaction = current_transaction()

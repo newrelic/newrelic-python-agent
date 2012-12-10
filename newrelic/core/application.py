@@ -213,6 +213,9 @@ class Application(object):
 
         """
 
+        if self._agent_shutdown:
+            return
+
         if self._active_session:
             return
 

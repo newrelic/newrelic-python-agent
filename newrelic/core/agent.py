@@ -71,8 +71,8 @@ class Agent(object):
 
     @staticmethod
     def agent_singleton():
-	"""Used by the agent_instance() function to access/create the
-	single agent object instance.
+        """Used by the agent_instance() function to access/create the
+        single agent object instance.
 
         """
 
@@ -136,8 +136,10 @@ class Agent(object):
         self._harvest_duration = 0.0
         self._next_harvest = 0.0
 
+        self._process_shutdown = False
+
         if self._config.enabled:
-            atexit.register(self.shutdown_agent)
+            atexit.register(self._atexit_shutdown)
 
     def dump(self, file):
         """Dumps details about the agent to the file object."""
@@ -343,50 +345,78 @@ class Agent(object):
 
         self._next_harvest = time.time()
 
-        while True:
-            if self._harvest_shutdown.isSet():
-                # We would have just finished a harvest or only
-                # just started the agent, so don't bother doing
-                # a forced harvest if shutting down anyway.
+        try:
+            while True:
+                if self._harvest_shutdown.isSet():
+                    # NOTE We would have just finished a harvest or only
+                    # just started the agent, so we could skip doing a
+                    # forced harvest, or at least if most recent harvest
+                    # was started within in certain period of time. The
+                    # chances of it occuring are probably slim enough
+                    # that is not an issue.
 
-                self._run_harvest(shutdown=True)
+                    self._run_harvest(shutdown=True)
 
-                return
+                    return
 
-            # We are either going into the loop the first time, or
-            # something really went wrong here and we are overdue
-            # already for next harvest. This can happen when we have a
-            # large number of applications. Can also happen if clock
-            # is changed significantly. Skip it and wait until the
-            # next harvest time instead.
-            #
-            # NOTE This does mean that we aren't going to report on 1
-            # minute intervals when have lots of applications. We need
-            # to look at using multiple threads when have lots of
-            # applications. Also need to fix problem whereby one all
-            # applications created, that only the first application will
-            # reliably report on an even minute as when the others
-            # report will depend on how long the first takes.
+                # We are either going into the loop the first time, or
+                # something really went wrong here and we are overdue
+                # already for next harvest. This can happen when we have
+                # a large number of applications. Can also happen if
+                # clock is changed significantly. Skip it and wait until
+                # the next harvest time instead.
+                #
+                # NOTE This does mean that we aren't going to report on
+                # 1 minute intervals when have lots of applications. We
+                # need to look at using multiple threads when have lots
+                # of applications. Also need to fix problem whereby one
+                # all applications created, that only the first
+                # application will reliably report on an even minute as
+                # when the others report will depend on how long the
+                # first takes.
 
-            now = time.time()
-            while self._next_harvest <= now:
-                self._next_harvest += 60.0
+                now = time.time()
+                while self._next_harvest <= now:
+                    self._next_harvest += 60.0
 
-            # Wait until next harvest period but drop out and force
-            # harvest if been notified that process is being shutdown.
+                # Wait until next harvest period but drop out and force
+                # harvest if been notified that process is being
+                # shutdown.
 
-            delay = self._next_harvest - now
-            self._harvest_shutdown.wait(delay) 
+                delay = self._next_harvest - now
+                self._harvest_shutdown.wait(delay) 
 
-            if self._harvest_shutdown.isSet(): 
-                # Force a final harvest on agent shutdown.
-                self._run_harvest(shutdown=True)
+                if self._harvest_shutdown.isSet(): 
+                    # Force a final harvest on agent shutdown.
 
-                return
+                    self._run_harvest(shutdown=True)
 
-            # Run the normal harvest cycle.
+                    return
 
-            self._run_harvest(shutdown=False)
+                # Run the normal harvest cycle.
+
+                self._run_harvest(shutdown=False)
+
+        except:
+            # An unexpected error, possibly some sort of internal agent
+            # implementation issue or more likely due to modules being
+            # destroyed from the main thread on process exit when the
+            # background harvest thread is still running.
+
+            if self._process_shutdown:
+                _logger.exception('Unexpected exception in main harvest '
+                        'loop when process being shutdown. This can occur '
+                        'in rare cases due to the main thread cleaning up '
+                        'and destroying objects while the background harvest '
+                        'thread is still running. If this message occurs '
+                        'rarely, it can be ignored. If the message occurs '
+                        'on a regular basis, then please report it to New '
+                        'Relic support for further investigation.')
+
+            else:
+                _logger.exception('Unexpected exception in main harvest '
+                        'loop. Please report this problem to New Relic '
+                        'support for further investigation.')
 
     def _run_harvest(self, shutdown=False):
         # This isn't going to maintain order of applications
@@ -434,6 +464,15 @@ class Agent(object):
         _logger.debug('Start Python Agent main thread.')
 
         self._harvest_thread.start()
+
+    def _atexit_shutdown(self):
+        """Triggers agent shutdown but flags first that this is being
+        done because process is being shutdown.
+
+        """
+
+        self._process_shutdown = True
+        self.shutdown_agent()
 
     def shutdown_agent(self, timeout=None):
         if self._harvest_shutdown.isSet():

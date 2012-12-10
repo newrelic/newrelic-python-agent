@@ -93,21 +93,28 @@ the Hudson build number. If built on a local system, the build number of
 Running The Unit Tests
 ======================
 
-To run the unit tests you can run:
+To run the unit tests use the script:
 
-    make unit-tests
+    tests.sh
 
-This will construct a Python virtual environment in the 'test-env'
-subdirectory and the Python agent package will be installed into that
-rather than into the Python install found by the 'configure' script. This
-avoids polluting your main Python installation with your development
-version of the Python agent just to be able to run tests.
+This uses 'tox' to coordinate testing. For each Python version available
+this will construct a Python virtual environment the Python agent package
+will be installed into that rather than into the Python install found by
+the 'configure' script. This avoids polluting your main Python installation
+with your development version of the Python agent just to be able to run
+tests.
 
-If you need to be able to run a specific unit test, then you can use the
-'python' executable from the 'test-env' Python virtual environment.
+If you need to be able to run a specific unit test, then you can execute
+'tox' directly.
 
-    test-env/bin/python unit-tests/api/test_wsgi_applicaton.py -v
+    tox newrelic/api/tests/test_wsgi_applicaton.py
 
+You will need to have 'tox' and 'nose' installed in whatever Python
+installation or virtual environment you are using when developing with the
+package.
+
+The 'tests.sh' script will be automatically run by Jenkins whenever changes
+are pushed to the GIT repository.
 
 Building A Release Package
 ==========================

@@ -251,6 +251,9 @@ class Application(object):
 
         """
 
+        if self._agent_shutdown:
+            return
+
         if self._active_session:
             return
 
@@ -265,128 +268,144 @@ class Application(object):
                    (30, False, False), (60, True, False),
                    (120, False, False), (300, False, True),]
 
-        while not self._active_session:
+        try:
+            while not self._active_session:
 
-            self._active_session = create_session(None, self._app_name,
-                    self.linked_applications, environment_settings(),
-                    global_settings_dump())
+                self._active_session = create_session(None, self._app_name,
+                        self.linked_applications, environment_settings(),
+                        global_settings_dump())
 
-            # We were successful, but first need to make sure we do not
-            # have any problems with the agent normalization rules
-            # provided by the data collector. These could blow up when
-            # being compiled if the patterns are broken or use text
-            # which conflicts with extensions in Python's regular
-            # expression syntax.
+                # We were successful, but first need to make sure we do
+                # not have any problems with the agent normalization
+                # rules provided by the data collector. These could blow
+                # up when being compiled if the patterns are broken or
+                # use text which conflicts with extensions in Python's
+                # regular expression syntax.
 
-            if self._active_session:
-                configuration = self._active_session.configuration
-
-                try:
-                    settings = global_settings()
-
-                    if settings.debug.log_normalization_rules:
-                        _logger.info('The URL normalization rules for %r '
-                                'are %r.', self._app_name,
-                                 configuration.url_rules)
-                        _logger.info('The metric normalization rules for %r '
-                                'are %r.', self._app_name,
-                                 configuration.metric_name_rules)
-                        _logger.info('The transaction normalization rules '
-                                'for %r are %r.', self._app_name,
-                                 configuration.transaction_name_rules)
-
-                    self._rules_engine['url'] = RulesEngine(
-                            configuration.url_rules)
-                    self._rules_engine['metric'] = RulesEngine(
-                            configuration.metric_name_rules)
-                    self._rules_engine['transaction'] = RulesEngine(
-                            configuration.transaction_name_rules)
-
-                except:
-                    _logger.exception('The agent normalization rules '
-                            'received from the data collector could not '
-                            'be compiled properly by the agent due to a '
-                            'syntactical error or other problem. Please '
-                            'report this to New Relic support for '
-                            'investigation.')
-
-                    # For good measure, in this situation we explicitly
-                    # shutdown the session as then the data collector
-                    # will record this. Ignore any error from this. Then
-                    # we discard the session so we go into a retry loop
-                    # on presumption that issue with the URL rules will
-                    # be fixed.
+                if self._active_session:
+                    configuration = self._active_session.configuration
 
                     try:
-                        self._active_session.shutdown_session()
+                        settings = global_settings()
+
+                        if settings.debug.log_normalization_rules:
+                            _logger.info('The URL normalization rules for '
+                                    '%r are %r.', self._app_name,
+                                     configuration.url_rules)
+                            _logger.info('The metric normalization rules '
+                                    'for %r are %r.', self._app_name,
+                                     configuration.metric_name_rules)
+                            _logger.info('The transaction normalization '
+                                    'rules for %r are %r.', self._app_name,
+                                     configuration.transaction_name_rules)
+
+                        self._rules_engine['url'] = RulesEngine(
+                                configuration.url_rules)
+                        self._rules_engine['metric'] = RulesEngine(
+                                configuration.metric_name_rules)
+                        self._rules_engine['transaction'] = RulesEngine(
+                                configuration.transaction_name_rules)
+
                     except:
-                        pass
+                        _logger.exception('The agent normalization rules '
+                                'received from the data collector could not '
+                                'be compiled properly by the agent due to a '
+                                'syntactical error or other problem. Please '
+                                'report this to New Relic support for '
+                                'investigation.')
 
-                    self._active_session = None
+                        # For good measure, in this situation we explicitly
+                        # shutdown the session as then the data collector
+                        # will record this. Ignore any error from this. Then
+                        # we discard the session so we go into a retry loop
+                        # on presumption that issue with the URL rules will
+                        # be fixed.
 
-            # Were we successful. If not go into the retry loop. Log
-            # warnings or errors as per schedule associated with the
-            # retry intervals.
+                        try:
+                            self._active_session.shutdown_session()
+                        except:
+                            pass
 
-            if not self._active_session:
-                if retries:
-                    timeout, warning, error = retries.pop(0)
+                        self._active_session = None
 
-                    if warning:
-                        _logger.warning('Registration of the application %r '
-                                'with the data collector failed after '
-                                'multiple attempts. Check the prior log '
-                                'entries and remedy any issue as necessary, '
-                                'or if the problem persists, report this '
-                                'problem to New Relic support for further '
-                                'investigation.', self._app_name)
+                # Were we successful. If not go into the retry loop. Log
+                # warnings or errors as per schedule associated with the
+                # retry intervals.
 
-                    elif error:
-                        _logger.error('Registration of the application %r '
-                                'with the data collector failed after '
-                                'further additional attempts. Please report '
-                                'this problem to New Relic support for '
-                                'further investigation.', self._app_name)
+                if not self._active_session:
+                    if retries:
+                        timeout, warning, error = retries.pop(0)
 
-                else:
-                    timeout = 300
+                        if warning:
+                            _logger.warning('Registration of the application '
+                                    '%r with the data collector failed after '
+                                    'multiple attempts. Check the prior log '
+                                    'entries and remedy any issue as '
+                                    'necessary, or if the problem persists, '
+                                    'report this problem to New Relic '
+                                    'support for further investigation.',
+                                    self._app_name)
 
-                _logger.debug('Retrying registration of the application %r '
-                        'with the data collector after a further %d '
-                        'seconds.', self._app_name, timeout)
+                        elif error:
+                            _logger.error('Registration of the application '
+                                    '%r with the data collector failed after '
+                                    'further additional attempts. Please '
+                                    'report this problem to New Relic support '
+                                    'for further investigation.',
+                                    self._app_name)
 
-                time.sleep(timeout)
+                    else:
+                        timeout = 300
 
-                continue
+                    _logger.debug('Retrying registration of the application '
+                            '%r with the data collector after a further %d '
+                            'seconds.', self._app_name, timeout)
 
-            # Ensure we have cleared out any cached data from a prior agent
-            # run for this application.
+                    time.sleep(timeout)
 
-            configuration = self._active_session.configuration
+                    continue
 
-            with self._stats_lock:
-                self._stats_engine.reset_stats(configuration)
+                # Ensure we have cleared out any cached data from a
+                # prior agent run for this application.
 
-            with self._stats_custom_lock:
-                self._stats_custom_engine.reset_stats(configuration)
+                configuration = self._active_session.configuration
 
-            # Record an initial start time for the reporting period and
-            # clear record of last transaction processed.
+                with self._stats_lock:
+                    self._stats_engine.reset_stats(configuration)
 
-            self._period_start = time.time()
+                with self._stats_custom_lock:
+                    self._stats_custom_engine.reset_stats(configuration)
 
-            self._transaction_count = 0
-            self._last_transaction = 0.0
+                # Record an initial start time for the reporting period and
+                # clear record of last transaction processed.
 
-            # Clear any prior count of harvest merges due to failures.
+                self._period_start = time.time()
 
-            self._merge_count = 0
+                self._transaction_count = 0
+                self._last_transaction = 0.0
 
-            # Flag that session activation has completed to anyone who has
-            # been waiting through calling the wait_for_session_activation()
-            # method.
+                # Clear any prior count of harvest merges due to failures.
 
-            self._connected_event.set()
+                self._merge_count = 0
+
+                # Flag that the session activation has completed to
+                # anyone who has been waiting through calling the
+                # wait_for_session_activation() method.
+
+                self._connected_event.set()
+
+        except:
+            # If an exception occurs after agent has been flagged to be
+            # shutdown then we ignore the error. This is because all
+            # sorts of wierd errors could occur when main thread start
+            # destroying objects and this background thread to register
+            # the application is still running.
+
+            if not self._agent_shutdown:
+                _logger.exception('Unexpected exception when registering '
+                        'agent with the data collector. If this problem '
+                        'persists, please report this problem to New Relic '
+                        'support for further investigation.')
 
     def validate_process(self):
         """Logs a warning message if called in a process different to

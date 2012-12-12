@@ -614,6 +614,11 @@ def run_python(args):
         _log('root_directory = %r', root_directory) 
         _log('boot_directory = %r', boot_directory) 
 
+        if 'sitecustomize' in sys.modules:
+            local_sitecustomize = sys.modules['sitecustomize']
+            if hasattr(local_sitecustomize, '__file__'):
+                _log('local_sitecustomize = %r', local_sitecustomize.__file__) 
+
         _log('python_exe_path = %r', python_exe_path) 
         _log('execl_arguments = %r', [python_exe_path, python_exe_path]+args) 
 
@@ -683,6 +688,11 @@ def run_program(args):
 
         _log('root_directory = %r', root_directory) 
         _log('boot_directory = %r', boot_directory) 
+
+        if 'sitecustomize' in sys.modules:
+            local_sitecustomize = sys.modules['sitecustomize']
+            if hasattr(local_sitecustomize, '__file__'):
+                _log('local_sitecustomize = %r', local_sitecustomize.__file__) 
 
         _log('program_exe_path = %r', program_exe_path) 
         _log('execl_arguments = %r', [program_exe_path]+args) 

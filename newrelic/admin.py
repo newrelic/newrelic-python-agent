@@ -571,6 +571,8 @@ def run_python(args):
 
     os.environ['PYTHONPATH'] = python_path
 
+    os.environ['NEW_RELIC_ADMIN_COMMAND'] = repr(sys.argv)
+
     # We want to still call any local sitecustomize.py file
     # that we are overriding.
 
@@ -663,6 +665,8 @@ def run_program(args):
         python_path = boot_directory
 
     os.environ['PYTHONPATH'] = python_path
+
+    os.environ['NEW_RELIC_ADMIN_COMMAND'] = repr(sys.argv)
 
     # We want to still call any local sitecustomize.py file
     # that we are overriding.

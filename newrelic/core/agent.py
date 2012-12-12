@@ -79,6 +79,8 @@ class Agent(object):
         if Agent._instance:
             return Agent._instance
 
+        settings = newrelic.core.config.global_settings()
+
         # Just in case that the main initialisation function
         # wasn't called to read in a configuration file and as
         # such the logging system was not initialised already,
@@ -88,10 +90,18 @@ class Agent(object):
 
         _logger.info('New Relic Python Agent (%s)' % newrelic.version)
 
+        if 'NEW_RELIC_ADMIN_COMMAND' in os.environ:
+            if settings.debug.log_agent_initialization:
+                _logger.info('Monitored application started using the '
+                        'newrelic-admin command with command line of %s.',
+                        os.environ['NEW_RELIC_ADMIN_COMMAND'])
+            else:
+                _logger.debug('Monitored application started using the '
+                        'newrelic-admin command with command line of %s.',
+                        os.environ['NEW_RELIC_ADMIN_COMMAND'])
+
         with Agent._lock:
             if not Agent._instance:
-                settings = newrelic.core.config.global_settings()
-
                 if settings.debug.log_agent_initialization:
                     _logger.info('Creating instance of Python agent in '
                             'process %d.', os.getpid())

@@ -571,6 +571,22 @@ def run_python(args):
 
     os.environ['PYTHONPATH'] = python_path
 
+    # We want to still call any local sitecustomize.py file
+    # that we are overriding.
+
+    local_sitecustomize = None
+
+    if 'NEW_RELIC_SITE_CUSTOMIZE' in os.environ:
+        del os.environ['NEW_RELIC_SITE_CUSTOMIZE']
+
+    if 'sitecustomize' in sys.modules:
+        local_sitecustomize = sys.modules['sitecustomize']
+        if hasattr(local_sitecustomize, '__file__'):
+            os.environ['NEW_RELIC_SITE_CUSTOMIZE'] = (
+                    local_sitecustomize.__file__)
+        else:
+            local_sitecustomize = None
+
     # Heroku does not set #! line on installed Python scripts
     # correctly and instead does an activate_this fiddle once
     # script has started. The value of sys.executable is
@@ -614,10 +630,8 @@ def run_python(args):
         _log('root_directory = %r', root_directory) 
         _log('boot_directory = %r', boot_directory) 
 
-        if 'sitecustomize' in sys.modules:
-            local_sitecustomize = sys.modules['sitecustomize']
-            if hasattr(local_sitecustomize, '__file__'):
-                _log('local_sitecustomize = %r', local_sitecustomize.__file__) 
+        if local_sitecustomize is not None:
+            _log('local_sitecustomize = %r', local_sitecustomize.__file__) 
 
         _log('python_exe_path = %r', python_exe_path) 
         _log('execl_arguments = %r', [python_exe_path, python_exe_path]+args) 
@@ -649,6 +663,22 @@ def run_program(args):
         python_path = boot_directory
 
     os.environ['PYTHONPATH'] = python_path
+
+    # We want to still call any local sitecustomize.py file
+    # that we are overriding.
+
+    local_sitecustomize = None
+
+    if 'NEW_RELIC_SITE_CUSTOMIZE' in os.environ:
+        del os.environ['NEW_RELIC_SITE_CUSTOMIZE']
+
+    if 'sitecustomize' in sys.modules:
+        local_sitecustomize = sys.modules['sitecustomize']
+        if hasattr(local_sitecustomize, '__file__'):
+            os.environ['NEW_RELIC_SITE_CUSTOMIZE'] = (
+                    local_sitecustomize.__file__)
+        else:
+            local_sitecustomize = None
 
     program_exe_path = args[0]
 
@@ -689,10 +719,8 @@ def run_program(args):
         _log('root_directory = %r', root_directory) 
         _log('boot_directory = %r', boot_directory) 
 
-        if 'sitecustomize' in sys.modules:
-            local_sitecustomize = sys.modules['sitecustomize']
-            if hasattr(local_sitecustomize, '__file__'):
-                _log('local_sitecustomize = %r', local_sitecustomize.__file__) 
+        if local_sitecustomize is not None:
+            _log('local_sitecustomize = %r', local_sitecustomize.__file__) 
 
         _log('program_exe_path = %r', program_exe_path) 
         _log('execl_arguments = %r', [program_exe_path]+args) 

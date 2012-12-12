@@ -1,6 +1,19 @@
 import os
 import sys
 
+# First see if the user had defined any sitecustomize.py file which are
+# are overriding. If they are, then load it so it is still executed.
+
+site_customize = os.environ.get('NEW_RELIC_SITE_CUSTOMIZE')
+
+if site_customize:
+    import imp
+
+    if site_customize.endswith('.py'):
+        imp.load_source('_newrelic_sitecustomize', site_customize)
+    elif site_customize.endswith('.pyc') or site_customize.endswith('.pyo'):
+        imp.load_compiled('_newrelic_sitecustomize', site_customize)
+
 # When installed as egg with buildout, the root directory for packages
 # is not listed in sys.path and scripts instead set after Python has
 # started up. This will cause importing of 'newrelic' module to fail.

@@ -358,6 +358,8 @@ _explain_plan_table = {
             ('select', 'insert', 'update', 'delete')),
     'psycopg2': ('EXPLAIN',
             ('select', 'insert', 'update', 'delete')),
+    'psycopg2ct': ('EXPLAIN',
+            ('select', 'insert', 'update', 'delete')),
     'sqlite3.dbapi2': ('EXPLAIN QUERY PLAN',
             ('select', 'insert', 'update', 'delete')),
 }

@@ -84,7 +84,13 @@ def instrument(module):
             return ConnectionWrapper(self.__connect(*args, **kwargs),
                                      (args, kwargs))
 
+    # Check if module is already wrapped by newrelic 
+
+    if hasattr(module, '_nr_dbapi2_wrapped'):
+        return
+
     newrelic.api.function_trace.wrap_function_trace(module, 'connect',
             name='%s:%s' % (module.__name__, 'connect'))
 
     module.connect = ConnectionFactory(module.connect)
+    module._nr_dbapi2_wrapped = True

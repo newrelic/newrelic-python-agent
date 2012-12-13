@@ -1243,6 +1243,11 @@ def _process_module_builtin_defaults():
     _process_module_definition('psycopg2.extensions',
             'newrelic.hooks.database_psycopg2',
             'instrument_psycopg2_extensions')
+    _process_module_definition('psycopg2ct',
+            'newrelic.hooks.database_dbapi2')
+    _process_module_definition('psycopg2ct.extensions',
+            'newrelic.hooks.database_psycopg2',
+            'instrument_psycopg2_extensions')
 
     _process_module_definition('pysqlite2.dbapi2',
             'newrelic.hooks.database_sqlite')

@@ -6,6 +6,7 @@ interacting with the agent core.
 from __future__ import with_statement
 
 import os
+import sys
 import time
 import logging
 import threading
@@ -20,6 +21,32 @@ import newrelic.core.config
 import newrelic.core.application
 
 _logger = logging.getLogger(__name__)
+
+def check_environment():
+    # If running under uWSGI, then must be version 1.2.6 or newer. Must
+    # also be run with '--enable-threads' option.
+
+    if 'uwsgi' in sys.modules:
+        import uwsgi
+
+        if not ((hasattr(uwsgi, 'version_info') and
+                  uwsgi.version_info[:3] > (1, 2, 6))):
+            _logger.warning('The New Relic Python Agent requires version '
+                    '1.2.6 or newer of uWSGI, you are using %r. The newer '
+                    'version is required because older versions of uWSGI '
+                    'have a bug whereby it is not compliant with the WSGI '
+                    '(PEP 333) specification. This bug in uWSGI will result '
+                    'in data being reported incorrectly. For more details see '
+                    'https://newrelic.com/docs/python/python-agent-and-uwsgi.',
+                    '.'.join(map(str, uwsgi.version_info[:3])))
+
+        elif not uwsgi.opt.get('enable-threads'):
+            _logger.warning('The New Relic Python Agent requires that when '
+                    'using uWSGI that the enable-threads option be given '
+                    'to uwsgi when it is run. If the option is not supplied '
+                    'then threading will not be enabled and you will see no '
+                    'data being reported by the agent. For more details see '
+                    'https://newrelic.com/docs/python/python-agent-and-uwsgi.')
 
 class Agent(object):
 
@@ -89,6 +116,8 @@ class Agent(object):
         newrelic.core.log_file.initialize()
 
         _logger.info('New Relic Python Agent (%s)' % newrelic.version)
+
+        check_environment()
 
         if 'NEW_RELIC_ADMIN_COMMAND' in os.environ:
             if settings.debug.log_agent_initialization:

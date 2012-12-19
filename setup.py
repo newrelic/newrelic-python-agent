@@ -14,7 +14,7 @@ from distutils.command.build_ext import build_ext
 from distutils.errors import (CCompilerError, DistutilsExecError,
         DistutilsPlatformError)
 
-copyright = '(C) Copyright 2010-2012 New Relic Inc. All rights reserved.'
+copyright = '(C) Copyright 2010-2013 New Relic Inc. All rights reserved.'
 
 script_directory = os.path.dirname(__file__)
 if not script_directory:

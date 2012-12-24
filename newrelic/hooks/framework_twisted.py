@@ -122,7 +122,7 @@ class RequestProcessWrapper(object):
                         group='Python/Twisted')
 
                 self._nr_instance._nr_wait_function_trace.__enter__()
-                transaction._drop_transaction(transaction)
+                transaction.drop_transaction()
 
         except:
             # If an error occurs assume that transaction should be
@@ -185,7 +185,7 @@ class RequestFinishWrapper(object):
                         'being called while in wait state but there is '
                         'already a current transaction.')
             else:
-                transaction._save_transaction(transaction)
+                transaction.save_transaction()
 
         elif not newrelic.api.transaction.current_transaction():
             _logger.debug('The Twisted.Web request finish() method is '
@@ -438,7 +438,7 @@ class DeferredCallbacksWrapper(object):
             # Save the transaction recorded against the deferred as the
             # active transaction.
 
-            transaction._save_transaction(transaction)
+            transaction.save_transaction()
 
             # Record that are calling a deferred. This changes what we
             # do if the request finish() method is being called.
@@ -488,7 +488,7 @@ class DeferredCallbacksWrapper(object):
                         group='Python/Twisted')
 
                 request._nr_wait_function_trace.__enter__()
-                transaction._drop_transaction(transaction)
+                transaction.drop_transaction()
 
             request._nr_is_deferred_callback = False
 

@@ -16,8 +16,8 @@ try:
 except:
     from newrelic.lib.namedtuple import namedtuple
 
-from newrelic.api.transaction import Transaction
 from newrelic.core.config import global_settings
+from newrelic.core.transaction_cache import transaction_cache
 
 _logger = logging.getLogger(__name__)
 
@@ -65,7 +65,8 @@ def collect_stack_traces():
 
     """
 
-    for thread_id, thread_category, frame in Transaction._active_threads():
+    for thread_id, thread_category, frame in \
+                transaction_cache().active_threads():
         stack_trace = []
 
         # The initial stack frame is the lowest frame or leaf node and

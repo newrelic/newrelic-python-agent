@@ -99,7 +99,7 @@ def instrument_tornado_web(module):
                         group='Python/Tornado')
 
                 request._nr_wait_function_trace.__enter__()
-                transaction._drop_transaction(transaction)
+                transaction.drop_transaction()
 
         except:
             # If an error occurs assume that transaction should be
@@ -175,7 +175,7 @@ def instrument_tornado_httpserver(module):
                         'being called while in wait state but there is '
                         'already a current transaction.')
             else:
-                transaction._save_transaction(transaction)
+                transaction.save_transaction()
 
         elif not current_transaction():
             _logger.debug('The Tornado request finish() method is '

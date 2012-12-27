@@ -14,7 +14,6 @@ import atexit
 import time
 import warnings
 import traceback
-import imp
 
 import newrelic
 import newrelic.core.log_file
@@ -258,9 +257,7 @@ class Agent(object):
         if timeout is None:
             timeout = settings.startup_timeout
 
-        application = None
-        activating = False
-        lock_held = False
+        activate_session = False
 
         with Agent._lock:
             application = self._applications.get(app_name, None)
@@ -280,10 +277,7 @@ class Agent(object):
                 application = newrelic.core.application.Application(
                         app_name, linked_applications)
                 self._applications[app_name] = application
-
-                lock_held = imp.lock_held()
-                application.activate_session()
-                activating = True
+                activate_session = True
 
             else:
                 # Do some checks to see whether try to reactivate the
@@ -292,24 +286,13 @@ class Agent(object):
 
                 application.validate_process()
 
-        # If we are being asked to wait for registration we do so, but
-        # only up to duration specified by the timeout. Note though that
-        # we will not do this if we detect that we have been called in
-        # circumstances where the Python global import lock is being
-        # held, otherwise due to lazy imports deep in code used by the
-        # requests module, we can deadlock.
+        # Activate the session if application was just created and wait
+        # for session activation if a timeout was specified. This may
+        # bail out early if is detected that a deadlock may occur for
+        # the period of the timeout.
 
-        if activating and timeout:
-            if lock_held:
-                _logger.warning('Waiting for registration of the New Relic '
-                        'Python agent for application %r with timeout of %r '
-                        'seconds skipped due to potential for temporary '
-                        'thread deadlock. Please refer to the documentation '
-                        'on usage of newrelic.agent.register_application(), '
-                        'or report this issue to New Relic support for '
-                        'further investigation.', app_name, timeout)
-            else:
-                application.wait_for_session_activation(timeout)
+        if activate_session:
+            application.activate_session(timeout)
 
     @property
     def applications(self):

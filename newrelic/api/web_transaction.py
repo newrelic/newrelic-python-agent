@@ -610,69 +610,26 @@ class WSGIApplicationWrapper(object):
             except:
                 pass
 
-
             cross_process_enabled = (transaction.enabled and
                     transaction._settings.cross_process.enabled)
 
             if cross_process_enabled:
-                their_cross_process_id = environ.get('HTTP_X_NEWRELIC_ID')
+                valid_cross_process_id = environ.get('HTTP_X_NEWRELIC_ID')
+            else:
+                valid_cross_process_id = None
 
-            # Add the following to header if their_cross_process_id is present
-            # and transactions are enabled.
-            #
-            # X-NewRelic-App-Data: obfuscated(json)
-            # json = ['my_cross_process_id', 'transaction_name', queue_time,
-            # response_time, content_length]
-
-            if cross_process_enabled and (their_cross_process_id is not None):
-
-                # Freeze the transaction name before adding to the header.
-
-                transaction._freeze_path()
-                name = transaction.path
-
-                # Compute queue_time if transaction.queue_start is present,
-                # otherwise set queue_time to 0.
-
-                if transaction.queue_start:
-                    queue_time = (transaction.start_time -
-                            transaction.queue_start)
-                else:
-                    queue_time = 0
-
-                # This is an approximation of the transaction response time,
-                # since the transaction might not have ended when this header
-                # is written.
-                
-                response_time = time.time() - transaction.start_time
-
-                # Set content length to -1 if it isn't present in the incoming
-                # header.
-
-                content_length = int(environ.get('CONTENT_LENGTH') or -1)
+            if valid_cross_process_id is not None:
+                app_data, response_time = build_nr_response_header(transaction, environ)
 
                 key = transaction._settings.encoding_key
-                my_cross_process_id = transaction._settings.cross_process_id
-
-                # name is a unicode value, so keep the string as unicode
-
-                app_data = u'["%s", "%s", %f, %f, %d]' % (
-                        my_cross_process_id, name, queue_time, response_time,
-                        content_length)
-
-                # Convert unicode string to utf-8 byte string before
-                # obfuscation
-
-                app_data.encode('utf-8')
-
                 response_headers.append(('X-NewRelic-App-Data', _obfuscate(
                     app_data, key)))
 
                 # Only add the metric if their_cross_process_id is NOT empty.
 
-                if len(their_cross_process_id) > 0:
+                if len(valid_cross_process_id) > 0:
                     metric_name = 'ClientApplication/%s/all' % (
-                            _deobfuscate(their_cross_process_id, key)) 
+                            _deobfuscate(valid_cross_process_id, key)) 
                     transaction.record_metric( metric_name, response_time)
 
             _write = start_response(status, response_headers, *args)
@@ -710,6 +667,54 @@ class WSGIApplicationWrapper(object):
             raise
 
         return _WSGIApplicationIterable(transaction, result)
+
+def build_nr_response_header(transaction, environ):
+    """Add the following to response header:
+
+    X-NewRelic-App-Data: obfuscated(json)
+    json = ['my_cross_process_id', 'transaction_name', queue_time,
+    response_time, content_length]
+    
+    """
+
+
+    # Freeze the transaction name before adding to the header.
+
+    transaction._freeze_path()
+    name = transaction.path
+
+    # Compute queue_time if transaction.queue_start is present,
+    # otherwise set queue_time to 0.
+
+    if transaction.queue_start:
+        queue_time = (transaction.start_time - transaction.queue_start)
+    else:
+        queue_time = 0
+
+    # This is an approximation of the transaction response time,
+    # since the transaction might not have ended when this header
+    # is written.
+    
+    response_time = time.time() - transaction.start_time
+
+    # Set content length to -1 if it isn't present in the incoming
+    # header.
+
+    content_length = int(environ.get('CONTENT_LENGTH') or -1)
+
+    my_cross_process_id = transaction._settings.cross_process_id
+
+    # name is a unicode value, so keep the string as unicode
+
+    app_data = u'["%s", "%s", %f, %f, %d]' % ( my_cross_process_id, name,
+            queue_time, response_time, content_length)
+
+    # Convert unicode string to utf-8 byte string before
+    # obfuscation
+
+    app_data.encode('utf-8')
+
+    return app_data, response_time
 
 def wsgi_application(application=None, name=None, group=None, framework=None):
     def decorator(wrapped):

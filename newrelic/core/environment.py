@@ -3,11 +3,28 @@ system, Python and hosting environment.
 
 """
 
+import newrelic
+
 import sys
 import os
 import platform
 
 from newrelic.core.samplers import cpu_count
+
+try:
+    import newrelic.core._thread_utilization
+except:
+    pass
+
+try:
+    import newrelic.lib.simplejson._speedups
+except:
+    pass
+
+try:
+    import pkg_resources
+except:
+    pass
 
 def environment_settings():
     """Returns an array of arrays of environment settings
@@ -17,8 +34,6 @@ def environment_settings():
     env = []
 
     # Agent information.
-
-    import newrelic
 
     env.append(('Agent Version', '.'.join(map(str, newrelic.version_info))))
 
@@ -45,44 +60,20 @@ def environment_settings():
     env.append(('Python Prefix', sys.prefix))
     env.append(('Python Exec Prefix', sys.exec_prefix))
 
-    # TODO May be too sensitive and UI truncates information.
-
-    #env.append(('Python Module Path', str(sys.path)))
-
     env.append(('Python Version', sys.version))
     env.append(('Python Platform', sys.platform))
 
     env.append(('Python Max Unicode', sys.maxunicode))
 
-    try:
-	# This may fail if using package Python and the
-	# developer package for Python isn't also installed.
-
-        import distutils.sysconfig
-
-        # TODO The UI truncates information.
-
-        args = distutils.sysconfig.get_config_var('CONFIG_ARGS')
-        #env.append(('Python Config Args', args))
-
-    except:
-        pass
-
     # Extensions information.
 
     extensions = []
 
-    try:
-        import newrelic.core._thread_utilization
+    if 'newrelic.core._thread_utilization' in sys.modules:
         extensions.append('newrelic.core._thread_utilization')
-    except:
-        pass
 
-    try:
-        import newrelic.lib.simplejson._speedups
+    if 'newrelic.lib.simplejson._speedups' in sys.modules:
         extensions.append('newrelic.lib.simplejson._speedups')
-    except:
-        pass
 
     env.append(('Compiled Extensions', ', '.join(extensions)))
 
@@ -151,27 +142,15 @@ def environment_settings():
 
     # Module information.
 
-    # TODO This produces too much. Can be over 1000 modules for a Django
-    # application. Try restricting it to just top level modules and no
-    # sub modules in packages, plus drop any builtin modules. Bit hard
-    # to restrict it further because hard under virtual environments to
-    # try and identify what modules may be part of the actual Python
-    # installation and perhaps dropped.
-
-    #env.append(('Plugin List', list(sys.modules.keys())))
-
-    #env.append(('Plugin List', filter(
-    #        lambda x: x.find('.') == -1, sys.modules.keys())))
-
     plugins = []
 
     for name, module in sys.modules.items():
         if name.find('.') == -1 and hasattr(module, '__file__'):
             try:
-                import pkg_resources
-                version = pkg_resources.get_distribution(name).version
-                if version:
-                    name = '%s (%s)' % (name, version)
+                if 'pkg_resources' in sys.modules:
+                    version = pkg_resources.get_distribution(name).version
+                    if version:
+                        name = '%s (%s)' % (name, version)
             except:
                 pass
             plugins.append(name)

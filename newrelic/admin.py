@@ -107,6 +107,7 @@ def validate_config(args):
 
     import newrelic.api.settings
     import newrelic.api.function_trace
+    import newrelic.api.external_trace
     import newrelic.api.error_trace
     import newrelic.api.web_transaction
     import newrelic.api.background_task
@@ -152,9 +153,15 @@ def validate_config(args):
     _settings.debug.log_data_collector_calls = True
     _settings.debug.log_malformed_json_data = True
 
-    @newrelic.api.function_trace.function_trace()
-    def _function1():
+    @newrelic.api.external_trace.external_trace(library='test',
+            url='http://localhost/test', method='GET')
+    def _external1():
         time.sleep(0.1)
+
+    @newrelic.api.function_trace.function_trace(label='label',
+            params={'key-1': '1', 'key-2': 2, 'key-3': 3.0})
+    def _function1():
+        _external1()
 
     @newrelic.api.function_trace.function_trace()
     def _function2():

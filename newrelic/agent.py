@@ -38,6 +38,10 @@ def shutdown_agent(timeout=None):
     agent = newrelic.core.agent.agent_instance()
     agent.shutdown_agent(timeout)
 
+def application_settings(name=None):
+    instance = application(name)
+    return instance.settings
+    
 def set_transaction_name(name, group=None, priority=None):
     transaction = current_transaction()
     if transaction:

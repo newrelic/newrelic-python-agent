@@ -212,6 +212,8 @@ class Transaction(object):
         self._group = None
         self._name = None
 
+        self._frameworks = set()
+
         self._frozen_path = None
 
         self._node_stack = []
@@ -521,6 +523,11 @@ class Transaction(object):
                            self._calls_yield)
         self.record_metric('Python/WSGI/Output/Calls/write',
                            self._calls_write)
+
+        if self._frameworks:
+            for framework, version in self._frameworks:
+                self.record_metric('Python/Framework/%s/%s' %
+                    (framework, version), 1)
 
         request_params = {}
         parameter_groups = {}

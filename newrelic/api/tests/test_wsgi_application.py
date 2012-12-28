@@ -52,6 +52,44 @@ def _wsgiapp_function_decorator_default(environ, start_response):
     transaction = newrelic.api.transaction.current_transaction()
     assert transaction != None
 
+@newrelic.api.web_transaction.wsgi_application(
+        name='wsgiapp_named_wsgi_application', group='Group')
+def _wsgiapp_named_wsgi_application(environ, start_response):
+    transaction = newrelic.api.transaction.current_transaction()
+    assert transaction != None
+
+@newrelic.api.web_transaction.wsgi_application(
+        name='wsgiapp_named_wsgi_application_inner', group='Group')
+def _wsgiapp_named_wsgi_application_inner(environ, start_response):
+    transaction = newrelic.api.transaction.current_transaction()
+    assert transaction != None
+
+@newrelic.api.web_transaction.wsgi_application(
+        name='wsgiapp_named_wsgi_application_outer', group='Group')
+def _wsgiapp_named_wsgi_application_outer(environ, start_response):
+    return _wsgiapp_named_wsgi_application_inner(
+            environ, start_response)
+
+@newrelic.api.web_transaction.wsgi_application(framework='Framework')
+def _wsgiapp_named_framework_wsgi_application(environ, start_response):
+    transaction = newrelic.api.transaction.current_transaction()
+    assert transaction != None
+
+@newrelic.api.web_transaction.wsgi_application(framework=('Framework', '1'))
+def _wsgiapp_named_framework_wsgi_application_version(environ, start_response):
+    transaction = newrelic.api.transaction.current_transaction()
+    assert transaction != None
+
+@newrelic.api.web_transaction.wsgi_application(framework=('Framework', '1'))
+def _wsgiapp_named_framework_wsgi_application_inner(environ, start_response):
+    transaction = newrelic.api.transaction.current_transaction()
+    assert transaction != None
+
+@newrelic.api.web_transaction.wsgi_application(framework=('Framework', '2'))
+def _wsgiapp_named_framework_wsgi_application_outer(environ, start_response):
+    return _wsgiapp_named_framework_wsgi_application_inner(
+            environ, start_response)
+
 # Python 2.5 doesn't have class decorators.
 #@newrelic.api.web_transaction.wsgi_application(_application.name)
 class _wsgiapp_class_decorator:
@@ -98,6 +136,29 @@ class TestCase(newrelic.tests.test_cases.TestCase):
     def test_wsgiapp_function_decorator_default(self):
         environ = { "REQUEST_URI": "/wsgiapp_function_decorator_default" }
         _wsgiapp_function_decorator_default(environ, None).close()
+
+    def test_wsgiapp_named_wsgi_application(self):
+        environ = { "REQUEST_URI": "/wsgiapp_named_wsgi_application" }
+        _wsgiapp_named_wsgi_application(environ, None).close()
+
+    def test_wsgiapp_named_wsgi_application_nested(self):
+        environ = { "REQUEST_URI": "/wsgiapp_named_wsgi_application_nested" }
+        _wsgiapp_named_wsgi_application_outer(environ, None).close()
+
+    def test_wsgiapp_named_framework_wsgi_application(self):
+        environ = { "REQUEST_URI":
+                "/wsgiapp_named_framework_wsgi_application" }
+        _wsgiapp_named_framework_wsgi_application(environ, None).close()
+
+    def test_wsgiapp_named_framework_wsgi_application_version(self):
+        environ = { "REQUEST_URI":
+                "/wsgiapp_named_framework_wsgi_application_version" }
+        _wsgiapp_named_framework_wsgi_application_version(environ, None).close()
+
+    def test_wsgiapp_named_framework_wsgi_application_nested(self):
+        environ = { "REQUEST_URI":
+                "/wsgiapp_named_framework_wsgi_application_outer" }
+        _wsgiapp_named_framework_wsgi_application_outer(environ, None).close()
 
     @newrelic.api.web_transaction.wsgi_application(_application.name)
     def _wsgiapp_method_decorator(self, *args):

@@ -431,8 +431,12 @@ def instrument_django_core_handlers_wsgi(module):
     # wrapped from the WSGI script file or by the WSGI hosting
     # mechanism then those will take precedence.
 
+    import django
+
+    framework = ('Django', django.get_version())
+
     module.WSGIHandler.__call__ = WSGIApplicationWrapper(
-          module.WSGIHandler.__call__)
+          module.WSGIHandler.__call__, framework=framework)
 
     # Wrap handle_uncaught_exception() of WSGIHandler so that
     # can capture exception details of any exception which
@@ -708,8 +712,13 @@ def instrument_django_core_servers_basehttp(module):
     # instead which will likely need to be dealt with via
     # instrumentation of the wsgiref module or some other means.
 
+    import django
+
+    framework = ('Django', django.get_version())
+
     def wrap_wsgi_application_entry_point(server, application, **kwargs):
-      return ((server, WSGIApplicationWrapper(application),), kwargs)
+      return ((server, WSGIApplicationWrapper(application,
+              framework='Django'),), kwargs)
 
     # XXX Because of risk of people still trying to use the
     # inbuilt Django development server and since the code is

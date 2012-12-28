@@ -451,7 +451,8 @@ class WSGIInputWrapper(object):
 
 class WSGIApplicationWrapper(object):
 
-    def __init__(self, wrapped, application=None):
+    def __init__(self, wrapped, application=None, name=None, group=None,
+               framework=None):
         if type(wrapped) == types.TupleType:
             (instance, wrapped) = wrapped
         else:
@@ -462,6 +463,14 @@ class WSGIApplicationWrapper(object):
         self._nr_instance = instance
         self._nr_next_object = wrapped
 
+        self._nr_name = name
+        self._nr_group = group
+
+        if isinstance(framework, basestring):
+            self._nr_framework = (framework, None)
+        else:
+            self._nr_framework = framework
+
         if not hasattr(self, '_nr_last_object'):
             self._nr_last_object = wrapped
 
@@ -471,7 +480,8 @@ class WSGIApplicationWrapper(object):
         if instance is None:
             return self
         descriptor = self._nr_next_object.__get__(instance, klass)
-        return self.__class__((instance, descriptor), self._nr_application)
+        return self.__class__((instance, descriptor), self._nr_application,
+                self._nr_name, self._nr_group, self._nr_framework)
 
     def __call__(self, environ, start_response):
         transaction = newrelic.api.transaction.current_transaction()
@@ -482,6 +492,29 @@ class WSGIApplicationWrapper(object):
         # call the wrapped function.
 
         if transaction:
+            # Record details of framework against the transaction
+            # for later reporting as supportability metrics.
+
+            if self._nr_framework:
+                transaction._frameworks.add(self._nr_framework)
+
+            # Override the web transaction name to be the name of the
+            # wrapped callable if not explicitly named, and we want the
+            # default name to be that of the WSGI component for the
+            # framework. This will override the use of a raw URL which
+            # can result in metric grouping issues where a framework is
+            # not instrumented or is leaking URLs.
+
+            settings = transaction._settings
+
+            if self._nr_name is None and settings:
+                if self._nr_framework is not None:
+                    naming_scheme = settings.transaction_name.naming_scheme
+                    if naming_scheme in (None, 'framework'):
+                        name = newrelic.api.object_wrapper.callable_name(
+                                self._nr_next_object)
+                        transaction.name_transaction(name, priority=1)
+
             return self._nr_next_object(environ, start_response)
 
         # Otherwise treat it as top level transaction.
@@ -515,6 +548,44 @@ class WSGIApplicationWrapper(object):
 
         transaction = WebTransaction(application, environ)
         transaction.__enter__()
+
+        # Record details of framework against the transaction
+        # for later reporting as supportability metrics.
+
+        if self._nr_framework:
+            transaction._frameworks.add(self._nr_framework)
+
+        # Override the initial web transaction name to be the supplied
+        # name, or the name of the wrapped callable if wanting to use
+        # the callable as the default. This will override the use of a
+        # raw URL which can result in metric grouping issues where a
+        # framework is not instrumented or is leaking URLs.
+        #
+        # Note that at present if default for naming scheme is still
+        # None and we aren't specifically wrapping a designated
+        # framework, then we still allow old URL based naming to
+        # override. When we switch to always forcing a name we need to
+        # check for naming scheme being None here.
+
+        settings = transaction._settings
+
+        if self._nr_name is None and settings:
+            naming_scheme = settings.transaction_name.naming_scheme
+
+            if self._nr_framework is not None:
+                if naming_scheme in (None, 'framework'):
+                    name = newrelic.api.object_wrapper.callable_name(
+                            self._nr_next_object)
+                    transaction.name_transaction(name, priority=1)
+
+            elif naming_scheme in ('component', 'framework'):
+                name = newrelic.api.object_wrapper.callable_name(
+                        self._nr_next_object)
+                transaction.name_transaction(name, priority=1)
+
+        elif self._nr_name:
+            transaction.name_transaction(self._nr_name, self._nr_group,
+                  priority=1)
 
         def _start_response(status, response_headers, *args):
             try:
@@ -567,11 +638,13 @@ class WSGIApplicationWrapper(object):
 
         return _WSGIApplicationIterable(transaction, result)
 
-def wsgi_application(application=None):
+def wsgi_application(application=None, name=None, group=None, framework=None):
     def decorator(wrapped):
-        return WSGIApplicationWrapper(wrapped, application)
+        return WSGIApplicationWrapper(wrapped, application, name, group,
+            framework)
     return decorator
 
-def wrap_wsgi_application(module, object_path, application=None):
+def wrap_wsgi_application(module, object_path, application=None,
+            name=None, group=None, framework=None):
     newrelic.api.object_wrapper.wrap_object(module, object_path,
-            WSGIApplicationWrapper, (application, ))
+            WSGIApplicationWrapper, (application, name, group, framework))

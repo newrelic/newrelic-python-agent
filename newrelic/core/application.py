@@ -10,6 +10,7 @@ import threading
 import time
 import os
 import traceback
+import imp
 
 from functools import partial
 
@@ -116,6 +117,9 @@ class Application(object):
 
         self._connected_event = threading.Event()
 
+        self._detect_deadlock = False
+        self._deadlock_event = threading.Event()
+
         self._stats_lock = threading.Lock()
         self._stats_engine = StatsEngine()
 
@@ -205,11 +209,11 @@ class Application(object):
             print >> file, 'Harvest Discard Count: %d' % (
                     self._discard_count)
 
-    def activate_session(self):
+    def activate_session(self, timeout=0.0):
         """Creates a background thread to initiate registration of the
         application with the data collector if no active session already
-        exists. If you want to know whether registration was successful
-        then use wait_for_session_activation().
+        exists. Will wait up to the timeout specified for the session
+        to be activated.
 
         """
 
@@ -222,25 +226,56 @@ class Application(object):
         self._process_id = os.getpid()
 
         self._connected_event.clear()
+        self._deadlock_event.clear()
+
+        # If the session is activated when the Python global import lock
+        # has been acquired by the parent thread then the parent thread
+        # can potentially deadlock due to lazy imports in code being run
+        # to activate the session for the application. The deadlock will
+        # only be broken when the timeout completes at which point the
+        # activation process will resume. We want to avoid blocking the
+        # activation process and the parent thread for no good reason,
+        # so we use an extra event object to try and detect a potential
+        # deadlock. This works by having the activation thread try and
+        # explicitly lock the global module import lock. When it can it
+        # will set the event. If this doesn't occur within our hard
+        # wired timeout value, we will bail out on assumption that
+        # timeout has likely occurred.
+
+        deadlock_timeout = 0.1
+
+        if timeout >= deadlock_timeout:
+            self._detect_deadlock = True
 
         thread = threading.Thread(target=self.connect_to_data_collector,
                 name='NR-Activate-Session/%s' % self.name)
         thread.setDaemon(True)
         thread.start()
 
-    def wait_for_session_activation(self, timeout):
-        """When called immediately after a request to initiate
-        registration of the application with the data collector and
-        create an active session, will wait for period specified by the
-        timeout to see if registration is successful.
+        if not timeout:
+            return True
 
-        """
+        if self._detect_deadlock:
+            self._deadlock_event.wait(deadlock_timeout)
+
+            if not self._deadlock_event.isSet():
+                _logger.warning('Detected potential deadlock while waiting '
+                        'for activation of session for application %r. '
+                        'Returning after %0.2f seconds rather than waiting. '
+                        'If this problem occurs on every process restart, '
+                        'see the API documentation for proper usage of '
+                        'the newrelic.agent.register_application() function '
+                        'or if necessary report this problem to New Relic '
+                        'support for further investigation.', self._app_name,
+                        deadlock_timeout)
+                return False
 
         self._connected_event.wait(timeout)
 
         if not self._connected_event.isSet():
-            _logger.debug('Timeout waiting for New Relic service '
-                    'connection with timeout of %s seconds.', timeout)
+            _logger.debug('Timeout waiting for activation of session for '
+                    'application %r where timeout was %.02f seconds.',
+                    self._app_name, timeout)
             return False
 
         return True
@@ -256,6 +291,11 @@ class Application(object):
 
         if self._active_session:
             return
+
+        if self._detect_deadlock:
+            imp.acquire_lock()
+            self._deadlock_event.set()
+            imp.release_lock()
 
         # Register the application with the data collector. Any errors
         # that occur will be dealt with by create_session(). The result

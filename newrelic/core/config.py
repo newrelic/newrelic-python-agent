@@ -143,7 +143,8 @@ _settings.error_collector.ignore_errors = []
 _settings.browser_monitoring.auto_instrument = True
 
 _settings.transaction_name.limit = None
-_settings.transaction_name.naming_scheme = None
+_settings.transaction_name.naming_scheme = os.environ.get(
+        'NEW_RELIC_TRANSACTION_NAMING_SCHEME')
 
 _settings.rum.enabled = True
 _settings.rum.load_episodes_file = True

@@ -257,6 +257,8 @@ class Agent(object):
         if timeout is None:
             timeout = settings.startup_timeout
 
+        activate_session = False
+
         with Agent._lock:
             application = self._applications.get(app_name, None)
             if not application:
@@ -274,10 +276,8 @@ class Agent(object):
                 linked_applications = sorted(set(linked_applications))
                 application = newrelic.core.application.Application(
                         app_name, linked_applications)
-                application.activate_session()
-                if timeout:
-                    application.wait_for_session_activation(timeout)
                 self._applications[app_name] = application
+                activate_session = True
 
             else:
                 # Do some checks to see whether try to reactivate the
@@ -285,6 +285,14 @@ class Agent(object):
                 # originally activated in.
 
                 application.validate_process()
+
+        # Activate the session if application was just created and wait
+        # for session activation if a timeout was specified. This may
+        # bail out early if is detected that a deadlock may occur for
+        # the period of the timeout.
+
+        if activate_session:
+            application.activate_session(timeout)
 
     @property
     def applications(self):

@@ -88,12 +88,14 @@ class ExternalNode(_ExternalNode):
 
         root.trace_node_count += 1
 
-        params = None
+        params = {}
 
         details = self.details
         url = urlparse.urlunsplit((details.scheme, details.netloc,
                 details.path, '', ''))
 
+        params['url'] = url
+
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children,
-                label=url)
+                label=None)

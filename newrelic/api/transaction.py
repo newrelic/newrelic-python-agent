@@ -510,8 +510,8 @@ class Transaction(object):
             # default apdex from settings. The path used at this point
             # is the frozen path.
 
-            self.apdex = (self._settings.web_transactions_apdex.get(self.path)
-                    or self._settings.apdex_t)
+            self.apdex = (self._settings.web_transactions_apdex.get(
+                self.path) or self._settings.apdex_t)
 
     def name_transaction(self, name, group=None, priority=None):
 

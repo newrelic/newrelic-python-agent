@@ -36,6 +36,7 @@ class SlowSqlSettings(Settings): pass
 class AgentLimitsSettings(Settings): pass
 class ConsoleSettings(Settings): pass
 class DebugSettings(Settings): pass
+class CrossProcessSettings(Settings): pass
 
 _settings = Settings()
 _settings.thread_profiler = ThreadProfilerSettings()
@@ -49,6 +50,7 @@ _settings.slow_sql = SlowSqlSettings()
 _settings.agent_limits = AgentLimitsSettings()
 _settings.console = ConsoleSettings()
 _settings.debug = DebugSettings()
+_settings.cross_process = CrossProcessSettings()
 
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
 
@@ -125,7 +127,11 @@ _settings.url_rules = []
 _settings.metric_name_rules = []
 _settings.transaction_name_rules = []
 
+_settings.cross_process_id = ''
+_settings.encoding_key = ''
+
 _settings.thread_profiler.enabled = True
+_settings.cross_process.enabled = True
 
 _settings.transaction_tracer.enabled = True
 _settings.transaction_tracer.transaction_threshold = None

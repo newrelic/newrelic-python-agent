@@ -53,13 +53,21 @@ _rum2_footer_long_fragment = '<script type="text/javascript">' \
         'NREUMQ.push(["nrfj","%s","%s","%s","%s",%d,%d,' \
         'new Date().getTime(),"%s","%s","%s","%s","%s"]);</script>'
 
+def _encode(name, key):
+    s = []
+    for i in range(len(name)):
+        s.append(chr(ord(name[i]) ^ ord(key[i % len(key)])))
+    return s
+
 def _obfuscate(name, key):
     if name is None:
         return ''
-    s = []
-    for i in range(len(name)):
-        s.append(chr(ord(name[i]) ^ ord(key[i % 13])))
-    return base64.b64encode(''.join(s))
+    return base64.b64encode(''.join(_encode(name, key)))
+
+def _deobfuscate(name, key):
+    if name is None:
+        return ''
+    return ''.join(_encode(base64.b64decode(name), key))
 
 def _lookup_environ_setting(environ, name, default=False):
     flag = environ.get(name, default)
@@ -602,6 +610,35 @@ class WSGIApplicationWrapper(object):
             except:
                 pass
 
+            cross_process_enabled = (transaction.enabled and
+                    transaction._settings.cross_process.enabled)
+
+            if cross_process_enabled:
+                valid_cross_process_id = environ.get('HTTP_X_NEWRELIC_ID')
+            else:
+                valid_cross_process_id = None
+
+            if valid_cross_process_id is not None:
+
+                # Compute elapsed_time since transaction.start to get
+                # approximate response_time.
+
+                response_time = time.time() - transaction.start_time
+
+                app_data = WSGIApplicationWrapper.build_cross_process_header(
+                        transaction, environ, response_time)
+
+                key = transaction._settings.encoding_key
+                response_headers.append(('X-NewRelic-App-Data', _obfuscate(
+                    app_data, key)))
+
+                # Only add the metric if their_cross_process_id is NOT empty.
+
+                if len(valid_cross_process_id) > 0:
+                    metric_name = 'ClientApplication/%s/all' % (
+                            _deobfuscate(valid_cross_process_id, key)) 
+                    transaction.record_metric( metric_name, response_time)
+
             _write = start_response(status, response_headers, *args)
 
             def write(data):
@@ -637,6 +674,48 @@ class WSGIApplicationWrapper(object):
             raise
 
         return _WSGIApplicationIterable(transaction, result)
+
+    @staticmethod
+    def build_cross_process_header(transaction, environ, response_time):
+        """Add the following to response header:
+
+        X-NewRelic-App-Data: obfuscated(json)
+        json = ['my_cross_process_id', 'transaction_name', queue_time,
+        response_time, content_length]
+        
+        """
+
+        # Freeze the transaction name before adding to the header.
+
+        transaction._freeze_path()
+        name = transaction.path
+
+        # Compute queue_time if transaction.queue_start is present,
+        # otherwise set queue_time to 0.
+
+        if transaction.queue_start:
+            queue_time = (transaction.start_time - transaction.queue_start)
+        else:
+            queue_time = 0
+
+        # Set content length to -1 if it isn't present in the incoming
+        # header.
+
+        content_length = int(environ.get('CONTENT_LENGTH') or -1)
+
+        my_cross_process_id = transaction._settings.cross_process_id
+
+        # name is a unicode value, so keep the string as unicode
+
+        app_data = u'["%s", "%s", %f, %f, %d]' % ( my_cross_process_id, name,
+                queue_time, response_time, content_length)
+
+        # Convert unicode string to utf-8 byte string before
+        # obfuscation
+
+        app_data.encode('utf-8')
+
+        return app_data
 
 def wsgi_application(application=None, name=None, group=None, framework=None):
     def decorator(wrapped):

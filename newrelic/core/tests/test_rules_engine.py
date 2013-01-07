@@ -216,5 +216,22 @@ class TestRulesEngine(unittest.TestCase):
 
         self.assertEqual((u"/yyy"+url.decode('Latin-1'), False), result)
 
+    def test_negative_lookahead(self):
+        rule = dict(match_expression = u"^(?!account|application).*", 
+                         replacement = u"*", 
+                         ignore = False, 
+                         eval_order = 1, 
+                         terminate_chain = True, 
+                         each_segment = True, 
+                         replace_all = True)
+
+        rules_engine = RulesEngine([rule])
+
+        self.assertEqual((u"/account/*/application/*", False),
+                rules_engine.normalize(u'/account/myacc/application/test'))
+
+        self.assertEqual((u"/*/*/account/*/application", False),
+                rules_engine.normalize(u"/oh/dude/account/myacc/application"))
+
 if __name__ == "__main__":
     unittest.main()

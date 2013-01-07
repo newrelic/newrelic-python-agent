@@ -11,6 +11,8 @@ class Application(object):
     _lock = threading.Lock()
     _instances = {}
 
+    _delayed_callables = {}
+
     @staticmethod
     def _instance(name):
         if name is None:
@@ -32,12 +34,20 @@ class Application(object):
 
         return instance
 
+    @staticmethod
+    def run_on_initialization(name, callback):
+        Application._delayed_callables[name] = callback
+
     def __init__(self, name):
         self._name = name
         self._linked = {}
         self.enabled = True
 
         self._agent = newrelic.core.agent.agent_instance()
+
+        callback = Application._delayed_callables.get(name)
+        if callback:
+            callback(self)
 
     @property
     def name(self):

@@ -463,23 +463,15 @@ def _load_configuration(config_file=None, environment=None,
                 if altname:
                     linked.append(altname)
 
-            if linked:
-                application = newrelic.api.application.application_instance(
-                        name)
+            def _link_applications(application):
                 for altname in linked:
                     _logger.debug("link to %s" % ((name, altname),))
                     application.link_to_application(altname)
 
-                # Add linked applications into global settings
-                # configuration so sent back to core application.
-
-                # FIXME Do this is a try/except for now as will
-                # fail when using C version of agent code.
-
-                try:
-                    _settings.linked_applications = linked
-                except:
-                    pass
+            if linked:
+                newrelic.api.application.Application.run_on_initialization(
+                        name, _link_applications)
+                _settings.linked_applications = linked
 
             return True
 

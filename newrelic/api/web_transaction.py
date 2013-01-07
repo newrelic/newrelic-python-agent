@@ -244,9 +244,9 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         if value:
             try:
-                params = urlparse.parse_qs(value)
+                params = urlparse.parse_qs(value, keep_blank_values=True)
             except:
-                params = cgi.parse_qs(value)
+                params = cgi.parse_qs(value, keep_blank_values=True)
 
             for name in self._settings.ignored_params:
                 if name in params:

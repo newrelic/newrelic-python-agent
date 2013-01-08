@@ -171,6 +171,7 @@ def validate_config(args):
     @newrelic.api.error_trace.error_trace()
     @newrelic.api.function_trace.function_trace()
     def _function3():
+        newrelic.agent.add_custom_parameter("key-1", 1)
         raise RuntimeError('error')
      
     @newrelic.api.web_transaction.wsgi_application()

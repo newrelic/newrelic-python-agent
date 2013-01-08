@@ -208,8 +208,6 @@ class TransactionNode(_TransactionNode):
             if self.parameter_groups:
                 params["parameter_groups"] = self.parameter_groups
             if error.custom_params:
-                if self.response_code != 0:
-                    error.custom_params['STATUS'] = str(self.response_code)
                 params["custom_params"] = error.custom_params
 
             yield newrelic.core.error_collector.TracedError(

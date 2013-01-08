@@ -123,6 +123,10 @@ class Transaction(object):
         self.rum_token = None
         self.rum_guid = None
 
+        self.client_cross_process_id = None
+        self.client_account_id = None
+        self.client_application_id = None
+
         self._custom_metrics = ValueMetrics()
 
         global_settings = newrelic.core.config.global_settings()

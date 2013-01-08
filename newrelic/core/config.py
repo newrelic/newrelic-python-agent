@@ -127,8 +127,9 @@ _settings.url_rules = []
 _settings.metric_name_rules = []
 _settings.transaction_name_rules = []
 
-_settings.cross_process_id = ''
-_settings.encoding_key = ''
+_settings.cross_process_id = None
+_settings.trusted_account_ids = []
+_settings.encoding_key = None
 
 _settings.thread_profiler.enabled = True
 _settings.cross_process.enabled = True

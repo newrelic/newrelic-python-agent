@@ -115,6 +115,10 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         if not self.enabled:
             return
 
+        # Will need to check the settings a number of times.
+
+        settings = self._settings
+
         # Check for override settings from WSGI environ.
 
         self.background_task = _lookup_environ_setting(environ,
@@ -128,10 +132,10 @@ class WebTransaction(newrelic.api.transaction.Transaction):
                 'newrelic.suppress_transaction_trace', False)
         self.capture_params = _lookup_environ_setting(environ,
                 'newrelic.capture_request_params',
-                self._settings.capture_params)
+                settings.capture_params)
         self.autorum_disabled = _lookup_environ_setting(environ,
                 'newrelic.disable_browser_autorum',
-                not self._settings.browser_monitoring.auto_instrument)
+                not settings.browser_monitoring.auto_instrument)
 
         # Extract from the WSGI environ dictionary
         # details of the URL path. This will be set as
@@ -248,16 +252,49 @@ class WebTransaction(newrelic.api.transaction.Transaction):
             except:
                 params = cgi.parse_qs(value, keep_blank_values=True)
 
-            for name in self._settings.ignored_params:
+            for name in settings.ignored_params:
                 if name in params:
                     del params[name]
 
             self._request_params.update(params)
 
+        # Check for the New Relic cross process ID header and extract
+        # the relevant details.
+
+        if settings.cross_process.enabled and settings.cross_process_id and \
+               settings.trusted_account_ids and settings.encoding_key:
+
+            client_cross_process_id = environ.get('HTTP_X_NEWRELIC_ID')
+
+            if client_cross_process_id:
+                try:
+                    client_cross_process_id = _deobfuscate(
+                            client_cross_process_id, settings.encoding_key)
+
+                    # The cross process ID consists of the client
+                    # account ID and the ID of the specific application
+                    # the client is recording requests against. We need
+                    # to validate that the client account ID is in the
+                    # list of trusted account IDs and ignore it if it
+                    # isn't. The trusted account IDs list has the
+                    # account IDs as integers, so save the client ones
+                    # away as integers here so easier to compare later.
+
+                    client_account_id, client_application_id = \
+                            map(int, client_cross_process_id.split('#'))
+
+                    if client_account_id in settings.trusted_account_ids:
+                        self.client_cross_process_id = client_cross_process_id
+                        self.client_account_id = client_account_id
+                        self.client_application_id = client_application_id
+
+                except Exception:
+                    pass
+
         # Capture WSGI request environ dictionary values.
 
-        if self._settings.capture_environ:
-            for name in self._settings.include_environ:
+        if settings.capture_environ:
+            for name in settings.include_environ:
                 if name in environ:
                     self._request_environment[name] = environ[name]
 
@@ -617,15 +654,7 @@ class WSGIApplicationWrapper(object):
             except:
                 pass
 
-            cross_process_enabled = (transaction.enabled and
-                    transaction._settings.cross_process.enabled)
-
-            if cross_process_enabled:
-                valid_cross_process_id = environ.get('HTTP_X_NEWRELIC_ID')
-            else:
-                valid_cross_process_id = None
-
-            if valid_cross_process_id is not None:
+            if transaction.client_cross_process_id is not None:
 
                 # Compute elapsed_time since transaction.start to get
                 # approximate response_time.
@@ -639,12 +668,9 @@ class WSGIApplicationWrapper(object):
                 response_headers.append(('X-NewRelic-App-Data', _obfuscate(
                     app_data, key)))
 
-                # Only add the metric if their_cross_process_id is NOT empty.
-
-                if len(valid_cross_process_id) > 0:
-                    metric_name = 'ClientApplication/%s/all' % (
-                            _deobfuscate(valid_cross_process_id, key)) 
-                    transaction.record_metric( metric_name, response_time)
+                metric_name = 'ClientApplication/%s/all' % (
+                        transaction.client_cross_process_id)
+                transaction.record_metric(metric_name, response_time)
 
             _write = start_response(status, response_headers, *args)
 

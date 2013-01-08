@@ -199,6 +199,15 @@ class TransactionNode(_TransactionNode):
         # can be in params dictionaries. Need to convert values to
         # strings at some point.
 
+        if not self.errors:
+            return
+
+        custom_params = self.custom_params and dict(self.custom_params) or {}
+
+        if self.client_cross_process_id:
+            custom_params['client_cross_process_id'] = \
+                    self.client_cross_process_id
+
         for error in self.errors:
             params = {}
             params["request_uri"] = self.request_uri
@@ -207,8 +216,8 @@ class TransactionNode(_TransactionNode):
                 params["request_params"] = self.request_params
             if self.parameter_groups:
                 params["parameter_groups"] = self.parameter_groups
-            if error.custom_params:
-                params["custom_params"] = error.custom_params
+            if custom_params:
+                params["custom_params"] = custom_params
 
             yield newrelic.core.error_collector.TracedError(
                     start_time=error.timestamp, path=self.path,

@@ -25,7 +25,7 @@ _TransactionNode = namedtuple('_TransactionNode',
         'start_time', 'end_time', 'duration', 'exclusive', 'children',
         'errors', 'slow_sql', 'apdex_t', 'suppress_apdex', 'custom_metrics',
         'parameter_groups', 'guid', 'cpu_utilization',
-        'suppress_transaction_trace'])
+        'suppress_transaction_trace', 'client_cross_process_id'])
 
 class TransactionNode(_TransactionNode):
 
@@ -255,6 +255,10 @@ class TransactionNode(_TransactionNode):
 
         custom_params = custom_params and dict(custom_params) or {}
         custom_params['cpu_time'] = 100 * self.cpu_utilization
+
+        if self.client_cross_process_id:
+            custom_params['client_cross_process_id'] = \
+                    self.client_cross_process_id
 
 	# There is an additional trace node labelled as 'ROOT'
 	# that needs to be inserted below the root node object

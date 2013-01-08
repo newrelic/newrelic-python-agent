@@ -414,7 +414,8 @@ class Transaction(object):
                 parameter_groups=parameter_groups,
                 guid=self.rum_guid,
                 cpu_utilization=self._cpu_utilization_value,
-                suppress_transaction_trace=self.suppress_transaction_trace)
+                suppress_transaction_trace=self.suppress_transaction_trace,
+                client_cross_process_id=self.client_cross_process_id)
 
         # Clear settings as we are all done and don't
         # need it anymore.

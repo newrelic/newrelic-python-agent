@@ -720,9 +720,7 @@ class WSGIApplicationWrapper(object):
         # Convert unicode string to utf-8 byte string before
         # obfuscation
 
-        app_data.encode('utf-8')
-
-        return app_data
+        return app_data.encode('utf-8')
 
 def wsgi_application(application=None, name=None, group=None, framework=None):
     def decorator(wrapped):

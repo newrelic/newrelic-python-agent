@@ -290,6 +290,11 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         if not self._settings.license_key:
             return ''
 
+        # Requirement is that the first 13 characters of the account
+        # license key is used as the key when obfuscating values for
+        # the RUM footer. Will not be able to perform the obfuscation
+        # if license key isn't that long for some reason.
+
         if len(self._settings.license_key) < 13:
             return ''
 
@@ -314,7 +319,12 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         self._freeze_path()
 
-        name = _obfuscate(self.path, self._settings.license_key)
+        # When obfuscating values for the footer, we only use the
+        # first 13 characters of the account license key.
+
+        obfuscation_key = self._settings.license_key[:13]
+
+        name = _obfuscate(self.path, obfuscation_key)
 
         queue_start = self.queue_start or self.start_time
         start_time = self.start_time
@@ -332,12 +342,9 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         rum_guid = rum_guid if request_duration >= threshold else ''
 
-        user = _obfuscate(self._user_attrs.get('user'),
-                self._settings.license_key)
-        account = _obfuscate(self._user_attrs.get('account'),
-                self._settings.license_key)
-        product = _obfuscate(self._user_attrs.get('product'),
-                self._settings.license_key)
+        user = _obfuscate(self._user_attrs.get('user'), obfuscation_key)
+        account = _obfuscate(self._user_attrs.get('account'), obfuscation_key)
+        product = _obfuscate(self._user_attrs.get('product'), obfuscation_key)
 
         # Settings will have values as Unicode strings and the
         # result here will be Unicode so need to convert back to

@@ -10,6 +10,8 @@ import string
 import random
 import re
 
+import newrelic.lib.simplejson as simplejson
+
 import newrelic.api.application
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
@@ -736,17 +738,12 @@ class WSGIApplicationWrapper(object):
 
         content_length = int(environ.get('CONTENT_LENGTH') or -1)
 
-        my_cross_process_id = transaction._settings.cross_process_id
-
-        # name is a unicode value, so keep the string as unicode
-
-        app_data = u'["%s", "%s", %f, %f, %d]' % ( my_cross_process_id, name,
+        payload = (transaction._settings.cross_process_id, name,
                 queue_time, response_time, content_length)
+        app_data = simplejson.dumps(payload, ensure_ascii=True,
+                encoding='Latin-1')
 
-        # Convert unicode string to utf-8 byte string before
-        # obfuscation
-
-        return app_data.encode('utf-8')
+        return app_data
 
 def wsgi_application(application=None, name=None, group=None, framework=None):
     def decorator(wrapped):

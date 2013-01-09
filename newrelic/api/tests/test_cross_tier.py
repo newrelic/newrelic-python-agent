@@ -39,7 +39,7 @@ class TestResponseHeaderJSON(unittest.TestCase):
         environ = {"CONTENT_LENGTH":"5", "REQUEST_URI": "/web_transaction" }
 
         expected_header = u'["305249#35857", "WebTransaction/Uri%s"'\
-                ', 0.000000, 0.010000, 5]' % environ.get('REQUEST_URI')
+                ', 0, 0.01, 5]' % environ.get('REQUEST_URI')
         response_time = 0.01
 
         transaction = WebTransaction(application, environ)
@@ -57,7 +57,7 @@ class TestResponseHeaderJSON(unittest.TestCase):
         environ = { "REQUEST_URI": "/web_transaction" }
 
         expected_header = u'["305249#35857", "WebTransaction/Uri%s"'\
-                ', 0.000000, 0.010000, -1]' % environ.get('REQUEST_URI')
+                ', 0, 0.01, -1]' % environ.get('REQUEST_URI')
         response_time = 0.01
 
         transaction = WebTransaction(application, environ)

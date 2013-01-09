@@ -293,7 +293,6 @@ class WebTransaction(newrelic.api.transaction.Transaction):
                 except Exception:
                     pass
 
-
         # Capture WSGI request environ dictionary values. We capture
         # content length explicitly as will need it for cross process
         # metrics.

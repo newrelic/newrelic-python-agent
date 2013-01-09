@@ -10,8 +10,6 @@ import traceback
 import logging
 import warnings
 
-import newrelic.core.config
-
 import newrelic.core.transaction_node
 import newrelic.core.database_node
 import newrelic.core.error_node
@@ -84,6 +82,8 @@ class Transaction(object):
         self._cpu_user_time_value = None
         self._cpu_utilization_value = None
 
+        self._read_length = None
+
         self._read_start = None
         self._read_end = None
 
@@ -129,20 +129,20 @@ class Transaction(object):
 
         self._custom_metrics = ValueMetrics()
 
-        global_settings = newrelic.core.config.global_settings()
+        global_settings = application.global_settings
 
         if global_settings.enabled:
             if enabled or (enabled is None and application.enabled):
-                self._settings = self._application.settings
+                self._settings = application.settings
                 if not self._settings:
-                    self._application.activate()
+                    application.activate()
 
                     # We see again if the settings is now valid
                     # in case startup timeout had been specified
                     # and registration had been started and
                     # completed within the timeout.
 
-                    self._settings = self._application.settings
+                    self._settings = application.settings
 
                 if self._settings:
                     self.enabled = True

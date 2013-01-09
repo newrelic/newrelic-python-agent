@@ -54,6 +54,10 @@ class Application(object):
         return self._name
 
     @property
+    def global_settings(self):
+        return self._agent.global_settings()
+
+    @property
     def settings(self):
         global_settings = self._agent.global_settings()
         if global_settings.debug.ignore_all_server_settings:

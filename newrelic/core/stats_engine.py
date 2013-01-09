@@ -141,6 +141,9 @@ class ValueMetrics(object):
     def __init__(self):
         self.__stats_table = {}
 
+    def __contains__(self, key):
+        return key in self.__stats_table
+
     def record_value_metric(self, metric):
         """Record a single value metric, merging the data with any data
         from prior value metrics with the same name.

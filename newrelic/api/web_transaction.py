@@ -293,7 +293,12 @@ class WebTransaction(newrelic.api.transaction.Transaction):
                 except Exception:
                     pass
 
-        # Capture WSGI request environ dictionary values.
+
+        # Capture WSGI request environ dictionary values. We capture
+        # content length explicitly as will need it for cross process
+        # metrics.
+
+        self._read_length = int(environ.get('CONTENT_LENGTH') or -1)
 
         if settings.capture_environ:
             for name in settings.include_environ:
@@ -303,6 +308,80 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         # Flags for tracking whether RUM header inserted.
 
         self._rum_header = False
+
+    def process_response(self, status, response_headers, *args):
+        """Processes response status and headers, extracting any
+        details required and returning a set of additional headers
+        to merge into that being returned for the web transaction.
+
+        """
+
+        additional_headers = []
+
+        # Extract the HTTP status response code.
+
+        try:
+            self.response_code = int(status.split(' ')[0])
+        except:
+            pass
+
+        # Extract response content length for inclusion in custom
+        # parameters returned for slow transactions and errors.
+
+        try:
+            header = filter(lambda x: x[0].lower() == 'content-length',
+                    response_headers)[-1:]
+
+            if header:
+                self._response_properties['CONTENT_LENGTH'] = header[0][1]
+        except:
+            pass
+
+        # Generate metrics and response headers for inbound cross
+        # process web external calls.
+
+        if self.client_cross_process_id is not None:
+            # Need to work out queueing time and duration up to this
+            # point for inclusion in metrics and response header. If the
+            # recording of the transaction had been prematurely stopped
+            # via an API call, only return time up until that call was
+            # made so it will match what is reported as duration for the
+            # transaction.
+
+            if self.queue_start:
+                queue_time = self.start_time - self.queue_start
+            else:
+                queue_time = 0
+
+            if self.end_time:
+                duration = self.end_time = self.start_time
+            else:
+                duration = time.time() - self.start_time
+
+            # Generate the metric identifying the caller.
+
+            metric_name = 'ClientApplication/%s/all' % (
+                    self.client_cross_process_id)
+            self.record_metric(metric_name, duration)
+
+            # Generate the additional response headers which provide
+            # information back to the caller. We need to freeze the
+            # transaction name before adding to the header.
+
+            self._freeze_path()
+
+            payload = (self._settings.cross_process_id, self.path,
+                    queue_time, duration, self._read_length)
+            app_data = simplejson.dumps(payload, ensure_ascii=True,
+                    encoding='Latin-1')
+
+            additional_headers.append(('X-NewRelic-App-Data', _obfuscate(
+                    app_data, self._settings.encoding_key)))
+
+        # The additional headers returned need to be merged into the
+        # original response headers passed back by the application.
+
+        return additional_headers
 
     def browser_timing_header(self):
         if not self.enabled:
@@ -642,39 +721,12 @@ class WSGIApplicationWrapper(object):
                   priority=1)
 
         def _start_response(status, response_headers, *args):
-            try:
-                transaction.response_code = int(status.split(' ')[0])
-            except:
-                pass
 
-            try:
-                header = filter(lambda x: x[0].lower() == 'content-length',
-                                response_headers)[-1:]
-                if header:
-                    transaction._response_properties['CONTENT_LENGTH'] = \
-                            header[0][1]
-            except:
-                pass
+            additional_headers = transaction.process_response(
+                    status, response_headers, *args)
 
-            if transaction.client_cross_process_id is not None:
-
-                # Compute elapsed_time since transaction.start to get
-                # approximate response_time.
-
-                response_time = time.time() - transaction.start_time
-
-                app_data = WSGIApplicationWrapper.build_cross_process_header(
-                        transaction, environ, response_time)
-
-                key = transaction._settings.encoding_key
-                response_headers.append(('X-NewRelic-App-Data', _obfuscate(
-                    app_data, key)))
-
-                metric_name = 'ClientApplication/%s/all' % (
-                        transaction.client_cross_process_id)
-                transaction.record_metric(metric_name, response_time)
-
-            _write = start_response(status, response_headers, *args)
+            _write = start_response(status,
+                    response_headers+additional_headers, *args)
 
             def write(data):
                 if not transaction._sent_start:
@@ -709,41 +761,6 @@ class WSGIApplicationWrapper(object):
             raise
 
         return _WSGIApplicationIterable(transaction, result)
-
-    @staticmethod
-    def build_cross_process_header(transaction, environ, response_time):
-        """Add the following to response header:
-
-        X-NewRelic-App-Data: obfuscated(json)
-        json = ['my_cross_process_id', 'transaction_name', queue_time,
-        response_time, content_length]
-        
-        """
-
-        # Freeze the transaction name before adding to the header.
-
-        transaction._freeze_path()
-        name = transaction.path
-
-        # Compute queue_time if transaction.queue_start is present,
-        # otherwise set queue_time to 0.
-
-        if transaction.queue_start:
-            queue_time = (transaction.start_time - transaction.queue_start)
-        else:
-            queue_time = 0
-
-        # Set content length to -1 if it isn't present in the incoming
-        # header.
-
-        content_length = int(environ.get('CONTENT_LENGTH') or -1)
-
-        payload = (transaction._settings.cross_process_id, name,
-                queue_time, response_time, content_length)
-        app_data = simplejson.dumps(payload, ensure_ascii=True,
-                encoding='Latin-1')
-
-        return app_data
 
 def wsgi_application(application=None, name=None, group=None, framework=None):
     def decorator(wrapped):

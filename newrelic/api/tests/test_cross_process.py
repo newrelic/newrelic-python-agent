@@ -195,7 +195,7 @@ class TestCase(unittest.TestCase):
 
             # Disabled by agent configuration.
 
-            (False, u'1#2', [0], 1, 1, now, now+2, 'Name', False),
+            (False, u'1#2', [1], 1, 1, now, now+2, 'Name', False),
         ]
 
         for item in tests:

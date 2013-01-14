@@ -551,7 +551,7 @@ def rum_footer(args):
     metric = 'WebTransaction/Static/%s' % args[1]
 
     name = newrelic.api.web_transaction._obfuscate(metric,
-            _application.settings.license_key)
+            _application.settings.license_key[:13])
 
     print str(footer % (_application.settings.episodes_file,
         _application.settings.beacon, _application.settings.browser_key,

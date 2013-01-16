@@ -11,11 +11,13 @@ from newrelic.api.web_transaction import (_deobfuscate, _obfuscate,
 class TestCase(unittest.TestCase):
 
     def _run_cross_process_process_response(self, enabled,
-            client_cross_process_id, trusted_account_ids, content_length,
-            queue_start, start_time, end_time, transaction_name, expect_result):
+            client_cross_process_id, client_cross_process_id_fmt,
+            trusted_account_ids, content_length, queue_start, start_time,
+            end_time, transaction_name, expect_result):
 
         def test_args():
-            return repr((enabled, client_cross_process_id, trusted_account_ids,
+            return repr((enabled, client_cross_process_id,
+                    client_cross_process_id_fmt, trusted_account_ids,
                     content_length, queue_start, start_time, end_time,
                     transaction_name, expect_result))
 
@@ -49,7 +51,7 @@ class TestCase(unittest.TestCase):
         environ = {}
 
         if client_cross_process_id is not None:
-            environ['HTTP_X_NEWRELIC_ID'] = _obfuscate(
+            environ['HTTP_X_NEWRELIC_ID'] = client_cross_process_id_fmt(
                     client_cross_process_id, encoding_key)
 
         if content_length >= 0:
@@ -140,62 +142,92 @@ class TestCase(unittest.TestCase):
     def test_cross_process_response(self):
         now = time.time()
 
+        def _o(value, key):
+            return _obfuscate(value, key)
+
+        def _p(value, key):
+            return value
+
         tests = [
             # No incoming cross process header.
 
-            (True, None, [1], -1, 1, now, None, 'Name', False),
+            (True, None, _p, [1], -1, 1, now, None, 'Name', False),
 
             # Empty incoming cross process header.
 
-            (True, '', [1], -1, 1, now, None, 'Name', False),
+            (True, '', _p, [1], -1, 1, now, None, 'Name', False),
+
+            # Incoming cross process header not obfuscated.
+
+            (True, '1#2', _p, [1], -1, 1, now, None, 'Name', False),
+
+            # No field separator in cross process ID.
+
+            (True, u'1', _o, [1], -1, 1, now, None, 'Name', False),
+
+            # Empty account field in cross process ID.
+
+            (True, u'#2', _o, [1], -1, 1, now, None, 'Name', False),
+
+            # Empty application field in cross process ID.
+
+            (True, u'1#', _o, [1], -1, 1, now, None, 'Name', False),
+
+            # Non integer account field in cross process ID.
+
+            (True, u'A#2', _o, [1], -1, 1, now, None, 'Name', False),
+
+            # Non integer application field in cross process ID.
+
+            (True, u'1#B', _o, [1], -1, 1, now, None, 'Name', False),
 
             # No content length header.
 
-            (True, u'1#2', [1], -1, 0, now, None, 'Name', True),
+            (True, u'1#2', _o, [1], -1, 0, now, None, 'Name', True),
 
             # Empty or zero for content length header.
 
-            (True, u'1#2', [1], 0, 0, now, None, 'Name', True),
+            (True, u'1#2', _o, [1], 0, 0, now, None, 'Name', True),
 
             # Non zero content length header.
 
-            (True, u'1#2', [1], 1, 0, now, None, 'Name', True),
+            (True, u'1#2', _o, [1], 1, 0, now, None, 'Name', True),
 
             # Non zero queueing time.
 
-            (True, u'1#2', [1], 1, 1, now, None, 'Name', True),
+            (True, u'1#2', _o, [1], 1, 1, now, None, 'Name', True),
 
             # Transaction had been stopped.
 
-            (True, u'1#2', [1], 1, 1, now, now+2, 'Name', True),
+            (True, u'1#2', _o, [1], 1, 1, now, now+2, 'Name', True),
 
             # Transaction with Latin-1 Unicode name.
 
-            (True, u'1#2', [1], 1, 1, now, now+2, u'Name', True),
+            (True, u'1#2', _o, [1], 1, 1, now, now+2, u'Name', True),
 
             # Transaction with UTF-8 Unicode name.
 
-            (True, u'1#2', [1], 1, 1, now, now+2, unichr(0x0bf2), True),
+            (True, u'1#2', _o, [1], 1, 1, now, now+2, unichr(0x0bf2), True),
 
             # Transaction with single quotes in name.
 
-            (True, u'1#2', [1], 1, 1, now, now+2, 'Name\'', True),
+            (True, u'1#2', _o, [1], 1, 1, now, now+2, 'Name\'', True),
 
             # Transaction with double quotes in name.
 
-            (True, u'1#2', [1], 1, 1, now, now+2, 'Name\"', True),
+            (True, u'1#2', _o, [1], 1, 1, now, now+2, 'Name\"', True),
 
             # List of trusted accounts is empty.
 
-            (True, u'1#2', [], 1, 1, now, now+2, 'Name', False),
+            (True, u'1#2', _o, [], 1, 1, now, now+2, 'Name', False),
 
             # Not in trusted list of accounts.
 
-            (True, u'1#2', [0], 1, 1, now, now+2, 'Name', False),
+            (True, u'1#2', _o, [0], 1, 1, now, now+2, 'Name', False),
 
             # Disabled by agent configuration.
 
-            (False, u'1#2', [1], 1, 1, now, now+2, 'Name', False),
+            (False, u'1#2', _o, [1], 1, 1, now, now+2, 'Name', False),
         ]
 
         for item in tests:

@@ -444,7 +444,7 @@ class Agent(object):
 
                 self._run_harvest(shutdown=False)
 
-        except:
+        except Exception:
             # An unexpected error, possibly some sort of internal agent
             # implementation issue or more likely due to modules being
             # destroyed from the main thread on process exit when the
@@ -485,7 +485,7 @@ class Agent(object):
               try:
                   application.harvest(shutdown)
 
-              except:
+              except Exception:
                   _logger.exception('Failed to harvest data '
                                     'for %s.' % application.name)
 

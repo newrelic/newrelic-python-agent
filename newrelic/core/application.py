@@ -346,7 +346,7 @@ class Application(object):
                         self._rules_engine['transaction'] = RulesEngine(
                                 configuration.transaction_name_rules)
 
-                    except:
+                    except Exception:
                         _logger.exception('The agent normalization rules '
                                 'received from the data collector could not '
                                 'be compiled properly by the agent due to a '
@@ -363,7 +363,7 @@ class Application(object):
 
                         try:
                             self._active_session.shutdown_session()
-                        except:
+                        except Exception:
                             pass
 
                         self._active_session = None
@@ -434,7 +434,7 @@ class Application(object):
 
                 self._connected_event.set()
 
-        except:
+        except Exception:
             # If an exception occurs after agent has been flagged to be
             # shutdown then we ignore the error. This is because all
             # sorts of wierd errors could occur when main thread start
@@ -497,7 +497,7 @@ class Application(object):
         try:
             return self._rules_engine[rule_type].normalize(name)
 
-        except:
+        except Exception:
             # In the event that the rules engine blows up because of a
             # problem in the rules supplied by the data collector, we
             # log the exception and otherwise return the original.
@@ -583,7 +583,7 @@ class Application(object):
                 stats = self._stats_engine.create_workarea()
                 stats.record_transaction(data)
 
-            except:
+            except Exception:
                 _logger.exception('The generation of transaction data has '
                         'failed. This would indicate some sort of internal '
                         'implementation issue with the agent. Please report '
@@ -610,7 +610,7 @@ class Application(object):
                     self._stats_engine.merge_value_metrics(
                             internal_metrics.metrics())
 
-                except:
+                except Exception:
                     _logger.exception('The merging of transaction data has '
                             'failed. This would indicate some sort of '
                             'internal implementation issue with the agent. '
@@ -790,7 +790,7 @@ class Application(object):
                         for metric in sampler.value_metrics():
                             stats.record_value_metric(metric)
 
-                    except:
+                    except Exception:
                         _logger.exception('The merging of value metrics from '
                                 'a data sampler has failed. If this issue '
                                 'persists then please report this problem to '
@@ -968,7 +968,7 @@ class Application(object):
 
                         try:
                             self._active_session.shutdown_session()
-                        except:
+                        except Exception:
                             pass
 
                         self._active_session = None
@@ -997,7 +997,7 @@ class Application(object):
 
                     try:
                         self._active_session.shutdown_session()
-                    except:
+                    except Exception:
                         pass
 
                     self._agent_restart += 1
@@ -1035,7 +1035,7 @@ class Application(object):
 
                     try:
                         self._active_session.shutdown_session()
-                    except:
+                    except Exception:
                         pass
 
                     self._active_session = None
@@ -1089,7 +1089,7 @@ class Application(object):
 
                     self._discard_count += 1
 
-                except:
+                except Exception:
                     # An unexpected error, likely some sort of internal
                     # agent implementation issue.
 

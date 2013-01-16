@@ -692,7 +692,7 @@ def create_session(license_key, app_name, linked_applications,
 
         pass
 
-    except:
+    except Exception:
         # Any other errors are going to be unexpected and likely will
         # indicate an issue with the implementation of the agent.
 

@@ -422,13 +422,13 @@ def _explain_plan(sql, dbapi, connect_params, cursor_params, execute_params):
                 if not columns and not rows:
                     return None
                 return (columns, rows)
-            except:
+            except Exception:
                 pass
             finally:
                 cursor.close()
         finally:
             connection.close()
-    except:
+    except Exception:
         pass
 
     return None

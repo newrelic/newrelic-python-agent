@@ -8,6 +8,7 @@ import newrelic
 import sys
 import os
 import platform
+import re
 
 from newrelic.core.samplers import cpu_count
 
@@ -25,6 +26,37 @@ try:
     import pkg_resources
 except:
     pass
+
+def _get_available_memory():
+    if sys.platform == 'linux2':
+        try:
+            parser = re.compile(r'^(?P<key>\S*):\s*(?P<value>\d*)\s*kB')
+
+            fp = None
+
+            try:
+                fp = open('/proc/meminfo')
+
+                for line in fp.readlines():
+                    match = parser.match(line)
+                    if not match:
+                        continue
+                    key, value = match.groups(['key', 'value'])
+                    if key == 'MemTotal':
+                        memory_bytes = float(value) * 1024
+                        return memory_bytes / (1024*1024)
+
+            except:
+                pass
+
+            finally:
+                if fp:
+                    fp.close()
+
+        except IOError:
+            return 0
+
+    return 0
 
 def environment_settings():
     """Returns an array of arrays of environment settings
@@ -47,6 +79,7 @@ def environment_settings():
     env.append(('OS', platform.system()))
     env.append(('OS version', platform.release()))
     env.append(('CPU Count', cpu_count()))
+    env.append(('Available Memory', _get_available_memory()))
 
     # Python information.
 

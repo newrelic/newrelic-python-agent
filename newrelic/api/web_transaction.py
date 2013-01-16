@@ -647,6 +647,10 @@ class WSGIApplicationWrapper(object):
                                 self._nr_next_object)
                         transaction.name_transaction(name, priority=1)
 
+            elif self._nr_name:
+                transaction.name_transaction(self._nr_name, self._nr_group,
+                      priority=1)
+
             return self._nr_next_object(environ, start_response)
 
         # Otherwise treat it as top level transaction.
@@ -670,9 +674,13 @@ class WSGIApplicationWrapper(object):
         else:
             application = self._nr_application
 
+            # If application has an activate() method we assume it is an
+            # actual application. Do this rather than check type so that
+            # can easily mock it for testing.
+
             # FIXME Should this allow for multiple apps if a string.
 
-            if type(application) != newrelic.api.application.Application:
+            if not hasattr(application, 'activate'):
                 application = newrelic.api.application.application_instance(
                         application)
 

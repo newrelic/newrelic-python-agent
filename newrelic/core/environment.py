@@ -79,7 +79,7 @@ def environment_settings():
     env.append(('OS', platform.system()))
     env.append(('OS version', platform.release()))
     env.append(('CPU Count', cpu_count()))
-    env.append(('Available Memory', _get_available_memory()))
+    env.append(('System Memory', _get_available_memory()))
 
     # Python information.
 

@@ -569,14 +569,11 @@ def wrap_url_reverse(wrapped):
     # but do it just to avoid any potential for problems.
 
     def wrapper(wrapped, instance, args, kwargs):
-        viewname = args[0]
-
-        if hasattr(viewname, '_nr_last_object'):
-            viewname = viewname._nr_last_object
-            args = list(args)
-            args[0] = viewname
-
-        return wrapped(*args, **kwargs)
+        def execute(viewname, *args, **kwargs):
+            if hasattr(viewname, '_nr_last_object'):
+                viewname = viewname._nr_last_object
+            return wrapped(viewname, *args, **kwargs)
+        return execute(*args, **kwargs)
 
     return ObjectWrapper(wrapped, None, wrapper)
 

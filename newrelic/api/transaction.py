@@ -581,10 +581,11 @@ class Transaction(object):
         # inconsistent with everything else which used
         # module:name. So changed to use ':' as separator, but
         # for backward compatability need to support '.' as
-        # separator for time being.
+        # separator for time being. Check that with the ':'
+        # last as we will use that name as the exception type.
 
         if module:
-            fullname = '%s:%s' % (module, name)
+            fullname = '%s.%s' % (module, name)
         else:
             fullname = name
 
@@ -595,7 +596,7 @@ class Transaction(object):
             return
 
         if module:
-            fullname = '%s.%s' % (module, name)
+            fullname = '%s:%s' % (module, name)
         else:
             fullname = name
 
@@ -646,7 +647,7 @@ class Transaction(object):
 
         node = newrelic.core.error_node.ErrorNode(
                 timestamp=time.time(),
-                type=exc_type,
+                type=fullname,
                 message=message,
                 stack_trace=stack_trace,
                 custom_params=custom_params,

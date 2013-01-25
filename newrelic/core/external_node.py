@@ -91,7 +91,7 @@ class ExternalNode(_ExternalNode):
         params = {}
 
         details = self.details
-        url = urlparse.urlunsplit((details.scheme, details.netloc,
+        url = urlparse.urlunsplit((details.scheme, details.hostname,
                 details.path, '', ''))
 
         params['url'] = url

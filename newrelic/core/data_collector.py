@@ -99,6 +99,36 @@ def proxy_server():
 
     return { scheme: proxy }
 
+# This is a hack to work around a design flaw in the requests/urllib3
+# modules we currently bundle. Together they do not close the socket
+# connections in the connection pool when evicted, nor provide a way to
+# explicitly close connections still in the pool when a session ends. We
+# can get rid of this when we are able to drop Python 2.5 support and
+# upgrade to a newer requests version. When we do upgrade to the newest
+# requests library, we will be able to call close() on the session
+# object to force close connections.
+
+def close_requests_session(session, url=None):
+    try:
+        for connection_pool in session.poolmanager.pools.values():
+            try:
+                connection = connection_pool.pool.get_nowait()
+            except Exception:
+                connection = None
+
+            while connection is not None:
+                try:
+                    connection.close()
+                except Exception:
+                    pass
+
+                try:
+                    connection = connection_pool.pool.get_nowait()
+                except Exception:
+                    connection = None
+    except Exception:
+        pass
+
 # Low level network functions and session management. When connecting to
 # the data collector it is initially done through the main data collector.
 # It is though then necessary to ask the data collector for the per
@@ -195,9 +225,14 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 '%s' % method):
             data = zlib.compress(data, level)
 
-    # If no requests session object for socket connection create one
-    # now. We use a session object rather than direct post as want to
-    # ensure that socket connection isn't kept alive by requests.
+    # If there is no requests session object provided for making
+    # requests create one now. We use a transient session to get around
+    # designed flaws in the requests/urllib3 modules. See notes for
+    # close_requests_session() function above. Note that keep alive
+    # must be set to true at this point to ensure that the pool is
+    # actually used to allow us to be able to close the connection.
+
+    auto_close_session = False
 
     if not session:
         session_config = {}
@@ -206,6 +241,8 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         session_config['pool_maxsize'] = 1
 
         session = requests.session(config=session_config)
+
+        auto_close_session = True
 
     # Send the request. We set 'verify' to be false so that when using
     # SSL there is no attempt to do SSL certificate validation. If it
@@ -248,6 +285,12 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         r = session.post(url, params=params, headers=headers,
                 proxies=proxies, verify=False, data=data)
 
+        # Read the content now so we can force close the socket
+        # connection if this is a transient session as quickly
+        # as possible.
+
+        content = r.content
+
     except requests.RequestException, exc:
         if not settings.proxy_host or not settings.proxy_port:
             _logger.warning('Data collector is not contactable. This can be '
@@ -269,12 +312,20 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
         raise RetryDataForRequest(str(exc))
 
+    finally:
+        # This is a hack to work around design flaw in requests/urllib3
+        # which is bundled. See comments against close_requests_session().
+
+        if auto_close_session:
+            close_requests_session(session, url)
+            session = None
+
     if r.status_code != 200:
         _logger.debug('Received a non 200 HTTP response from the data '
                 'collector where url=%r, method=%r, license_key=%r, '
                 'agent_run_id=%r, params=%r, headers=%r, status_code=%r '
                 'and content=%r.', url, method, license_key, agent_run_id,
-                params, headers, r.status_code, r.content)
+                params, headers, r.status_code, content)
 
     if r.status_code == 400:
         _logger.error('Data collector is indicating that a bad '
@@ -308,7 +359,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
             _logger.info('JSON data which was rejected by the data '
                     'collector was %r.', data)
 
-        raise DiscardDataForRequest(r.content)
+        raise DiscardDataForRequest(content)
 
     elif r.status_code == 503:
         _logger.warning('Data collector is unavailable. This can be a '
@@ -347,7 +398,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
     if settings.debug.log_data_collector_payloads:
         _logger.debug('Valid response from data collector after %.2f '
-                'seconds with content=%r.', duration, r.content)
+                'seconds with content=%r.', duration, content)
     elif settings.debug.log_data_collector_calls:
         _logger.debug('Valid response from data collector after %.2f '
                 'seconds.', duration)
@@ -358,21 +409,21 @@ def send_request(session, url, method, license_key, agent_run_id=None,
     # decoded as 'UTF-8'.
 
     internal_metric('Supportability/Collector/Input/Bytes/%s' % method,
-            len(r.content))
+            len(content))
 
     try:
         with InternalTrace('Supportability/Collector/JSON/Decode/%s' % method):
-            result = simplejson.loads(r.content, encoding='UTF-8')
+            result = simplejson.loads(content, encoding='UTF-8')
 
     except Exception, exc:
         _logger.error('Error decoding data for JSON payload for method %r '
                 'with payload of %r. Exception which occurred was %r. '
                 'Please report this problem to New Relic support.', method,
-                r.content, exc)
+                content, exc)
 
         if settings.debug.log_malformed_json_data:
             _logger.info('JSON data received from data collector which '
-                    'could not be decoded was %r.', r.content)
+                    'could not be decoded was %r.', content)
 
         raise DiscardDataForRequest(str(exc))
 
@@ -480,6 +531,12 @@ class ApplicationSession(object):
         return self._requests_session
 
     def close_connection(self):
+        # This is a hack to work around design flaw in requests/urllib3
+        # which is bundled. See comments against close_requests_session().
+
+        if self._requests_session:
+            close_requests_session(self._requests_session)
+
         self._requests_session = None
 
     @internal_trace('Supportability/Collector/Calls/shutdown')

@@ -69,7 +69,7 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
             if type(transaction) == WebTransaction:
                 if not transaction.background_task:
                     transaction.background_task = True
-                    transaction.name_transaction(_name, group)
+                    transaction.name_transaction(_name, _group)
 
             return wrapped(*args, **kwargs)
 

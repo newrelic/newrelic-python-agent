@@ -1,5 +1,4 @@
-"""This module provides instrumentation for Celery. Has been tested on
-Celery versions 2.2.X through 2.5.X.
+"""This module provides instrumentation for Celery.
 
 Note that Celery has a habit of moving things around in code base or of
 completely rewriting stuff across minor versions. See additional notes
@@ -7,11 +6,62 @@ about this below.
 
 """
 
+from __future__ import with_statement
+
 import functools
+import inspect
 
 from newrelic.api.application import application_instance
-from newrelic.api.background_task import BackgroundTaskWrapper
+from newrelic.api.background_task import BackgroundTask
+from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.pre_function import wrap_pre_function
+from newrelic.api.web_transaction import WebTransaction
+from newrelic.api.object_wrapper import callable_name, ObjectWrapper
+from newrelic.api.transaction import current_transaction
+
+def CeleryTaskWrapper(wrapped, application=None, name=None):
+
+    def wrapper(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+
+        if callable(name):
+            if instance and inspect.ismethod(wrapped):
+                _name = name(instance, *args, **kwargs)
+            else:
+                _name = name(*args, **kwargs)
+
+        elif name is None:
+            _name = callable_name(wrapped)
+
+        else:
+            _name = name
+
+        # Helper for obtaining the appropriate application object. If
+        # has an activate() method assume it is a valid application
+        # object. Don't check by type so se can easily mock it for
+        # testing if need be.
+
+        def _application():
+            if hasattr(application, 'activate'):
+                return application
+            return application_instance(application)
+
+        # Check to see if we are being called within the context of an
+        # existing transaction. If we are, then we will record the call
+        # as a function trace node instead. This situation can occur
+        # when a function wrapped with Celery task decorator is called
+        # explicitly in the context of an existing transaction.
+
+        if transaction:
+            with FunctionTrace(transaction, callable_name(wrapped)):
+                return wrapped(*args, **kwargs)
+
+        # Otherwise treat it as top level background task.
+
+        with BackgroundTask(_application(), _name, 'Celery'):
+            return wrapped(*args, **kwargs)
+
+    return ObjectWrapper(wrapped, None, wrapper)
 
 def instrument_celery_app_task(module):
 
@@ -37,9 +87,8 @@ def instrument_celery_app_task(module):
             return task.name
 
         if module.BaseTask.__module__ == module.__name__:
-            module.BaseTask.__call__ = BackgroundTaskWrapper(
-                    module.BaseTask.__call__, name=task_name,
-                    group='Celery')
+            module.BaseTask.__call__ = CeleryTaskWrapper(
+                    module.BaseTask.__call__, name=task_name)
 
 def instrument_celery_execute_trace(module):
 
@@ -59,7 +108,7 @@ def instrument_celery_execute_trace(module):
 
         def build_tracer(name, task, *args, **kwargs):
             task = task or module.tasks[name]
-            task = BackgroundTaskWrapper(task, name=name, group='Celery')
+            task = CeleryTaskWrapper(task, name=name)
             return _build_tracer(name, task, *args, **kwargs)
 
         module.build_tracer = build_tracer

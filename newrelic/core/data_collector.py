@@ -204,10 +204,11 @@ def send_request(session, url, method, license_key, agent_run_id=None,
     # encoded value so know that what is encoded is correct.
 
     if settings.debug.log_data_collector_payloads:
-        _logger.debug('Calling data collector with method=%r and '
-                'payload=%r.', method, data)
+        _logger.debug('Calling data collector with url=%r, method=%r and '
+                'payload=%r.', url, method, data)
     elif settings.debug.log_data_collector_calls:
-        _logger.debug('Calling data collector with method=%r.', method)
+        _logger.debug('Calling data collector with url=%r and method=%r.',
+                url, method)
 
     # Compress the serialized JSON being sent as content if over 64KiB
     # in size. If less than 2MB in size compress for speed. If over

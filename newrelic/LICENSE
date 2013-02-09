@@ -7,6 +7,11 @@ which is distributed under the MIT license. See 'newrelic/lib/simplejson'.
 This product includes requests (http://pypi.python.org/pypi/requests)
 which is distributed under the ISC license. See 'newrelic/lib/requests'.
 
+This product includes certifi (http://pypi.python.org/pypi/certifi)
+which is distributed under the ISC license and which in turn includes
+the Mozilla bundle of CA Root Certificates, which is distributed under
+the MPL license. See 'newrelic/lib/certifi'.
+
 All other components of this product are
 Copyright (c) 2010-2013 New Relic, Inc.  All rights reserved.
 

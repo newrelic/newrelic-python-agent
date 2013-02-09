@@ -74,6 +74,7 @@ packages = [
   "newrelic.lib",
   #"newrelic.lib.sqlparse",
   #"newrelic.lib.sqlparse.engine",
+  "newrelic.lib.certifi",
   "newrelic.lib.namedtuple",
   "newrelic.lib.simplejson",
   "newrelic.lib.requests",
@@ -94,7 +95,8 @@ kwargs = dict(
   license = copyright,
   url = "http://www.newrelic.com",
   packages = packages,
-  package_data = { 'newrelic': ['newrelic.ini', 'LICENSE'] },
+  package_data = { 'newrelic': ['newrelic.ini', 'LICENSE',
+          'lib/certifi/cacert.pem', 'lib/certifi/LICENSE'] },
   extra_path = ( "newrelic", "newrelic-%s" % package_version ),
   scripts = [ 'scripts/newrelic-admin' ],
 )

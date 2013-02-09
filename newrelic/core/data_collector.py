@@ -13,6 +13,7 @@ import zlib
 
 import newrelic.lib.requests as requests
 import newrelic.lib.simplejson as simplejson
+import newrelic.lib.certifi as certifi
 
 from newrelic import version
 from newrelic.core.config import global_settings, create_settings_snapshot
@@ -241,7 +242,9 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         session_config['pool_connections'] = 1
         session_config['pool_maxsize'] = 1
 
-        session = requests.session(config=session_config)
+        cert_loc = certifi.where()
+
+        session = requests.session(config=session_config, verify=cert_loc)
 
         auto_close_session = True
 
@@ -284,7 +287,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
     try:
         r = session.post(url, params=params, headers=headers,
-                proxies=proxies, verify=False, data=data)
+                proxies=proxies, data=data)
 
         # Read the content now so we can force close the socket
         # connection if this is a transient session as quickly
@@ -527,7 +530,10 @@ class ApplicationSession(object):
             config['pool_connections'] = 1
             config['pool_maxsize'] = 1
 
-            self._requests_session = requests.session(config=config)
+            cert_loc = certifi.where()
+
+            self._requests_session = requests.session(config=config,
+                    verify=cert_loc)
 
         return self._requests_session
 

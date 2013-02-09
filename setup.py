@@ -94,8 +94,7 @@ kwargs = dict(
   license = copyright,
   url = "http://www.newrelic.com",
   packages = packages,
-  package_data = { 'newrelic': ['newrelic.ini', 'LICENSE',
-                                'lib/sqlparse/LICENSE'] },
+  package_data = { 'newrelic': ['newrelic.ini', 'LICENSE'] },
   extra_path = ( "newrelic", "newrelic-%s" % package_version ),
   scripts = [ 'scripts/newrelic-admin' ],
 )

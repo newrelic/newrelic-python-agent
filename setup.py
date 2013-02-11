@@ -96,7 +96,8 @@ kwargs = dict(
   url = "http://www.newrelic.com",
   packages = packages,
   package_data = { 'newrelic': ['newrelic.ini', 'LICENSE',
-          'lib/certifi/cacert.pem', 'lib/certifi/LICENSE'] },
+          'lib/certifi/cacert.pem', 'lib/certifi/LICENSE',
+          'lib/requests/LICENSE', 'lib/simplejson/LICENSE.txt'] },
   extra_path = ( "newrelic", "newrelic-%s" % package_version ),
   scripts = [ 'scripts/newrelic-admin' ],
 )

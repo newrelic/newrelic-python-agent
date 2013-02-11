@@ -486,7 +486,7 @@ class Transaction(object):
         if self._frozen_path is None:
             self._priority = None
 
-            if self._group == 'Uri':
+            if self._group == 'Uri' and self._name != '/':
                 # Apply URL normalization rules. We would only have raw
                 # URLs where we were not specifically naming the web
                 # transactions for a specific web framework to be a code

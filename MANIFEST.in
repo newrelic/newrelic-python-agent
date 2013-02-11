@@ -4,3 +4,5 @@ include newrelic/newrelic.ini
 include newrelic/LICENSE
 include newrelic/lib/requests/LICENSE
 include newrelic/lib/simplejson/LICENSE.txt
+include newrelic/lib/certifi/LICENSE
+include newrelic/lib/certifi/cacert.pem

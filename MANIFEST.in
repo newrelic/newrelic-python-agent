@@ -3,3 +3,4 @@ include VERSION
 include newrelic/newrelic.ini
 include newrelic/LICENSE
 include newrelic/lib/requests/LICENSE
+include newrelic/lib/simplejson/LICENSE.txt

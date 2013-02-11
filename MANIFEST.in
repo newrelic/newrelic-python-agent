@@ -2,5 +2,4 @@ include INSTALL
 include VERSION
 include newrelic/newrelic.ini
 include newrelic/LICENSE
-include newrelic/lib/sqlparse/LICENSE
 include newrelic/lib/requests/LICENSE

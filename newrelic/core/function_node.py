@@ -21,6 +21,9 @@ class FunctionNode(_FunctionNode):
 
         name = '%s/%s' % (self.group, self.name)
 
+        yield TimeMetric(name=name, scope='', duration=self.duration,
+                exclusive=self.exclusive)
+
         yield TimeMetric(name=name, scope=root.path,
                 duration=self.duration, exclusive=self.exclusive)
 

@@ -198,8 +198,6 @@ class ObjectWrapper(object):
         return getattr(self._nr_next_object, name)
 
     def __get__(self, instance, owner):
-        if instance is None:
-            return self
         descriptor = self._nr_next_object.__get__(instance, owner)
         return self.__class__(descriptor, instance, self._nr_wrapper)
 

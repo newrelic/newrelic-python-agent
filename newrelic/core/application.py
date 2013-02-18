@@ -113,6 +113,7 @@ class Application(object):
         self._discard_count = 0
 
         self._agent_restart = 0
+        self._pending_shutdown = False
         self._agent_shutdown = False
 
         self._connected_event = threading.Event()
@@ -220,6 +221,9 @@ class Application(object):
         if self._agent_shutdown:
             return
 
+        if self._pending_shutdown:
+            return
+
         if self._active_session:
             return
 
@@ -287,6 +291,9 @@ class Application(object):
         """
 
         if self._agent_shutdown:
+            return
+
+        if self._pending_shutdown:
             return
 
         if self._active_session:
@@ -441,7 +448,7 @@ class Application(object):
             # destroying objects and this background thread to register
             # the application is still running.
 
-            if not self._agent_shutdown:
+            if not self._agent_shutdown and not self._pending_shutdown:
                 _logger.exception('Unexpected exception when registering '
                         'agent with the data collector. If this problem '
                         'persists, please report this problem to New Relic '
@@ -734,6 +741,9 @@ class Application(object):
 
         if self._agent_shutdown:
             return
+
+        if shutdown:
+            self._pending_shutdown = True
 
         if not self._active_session:
             _logger.debug('Cannot perform a data harvest for %r as '

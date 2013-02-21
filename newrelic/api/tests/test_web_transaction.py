@@ -257,13 +257,153 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_queue_start(self):
         now = time.time()
-        ts = int((now-0.2) * 1000000)
-        environ = { "REQUEST_URI": "/queue_start",
-                    "HTTP_X_QUEUE_START": "t=%d" % ts }
-        transaction = newrelic.api.web_transaction.WebTransaction(
-                application, environ)
-        with transaction:
-            time.sleep(0.8)
+        ts = now-0.2
+
+        seconds_tests = [
+
+            # HTTP_X_REQUEST_START seconds (with t=)
+            ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t=%d" % ts},
+                ts),
+
+            # HTTP_X_REQUEST_START seconds 
+            ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"%d" % ts},
+                ts),
+
+            # HTTP_X_QUEUE_START seconds (with t=)
+            ({"REQUEST_URI":"/queue_start","HTTP_X_QUEUE_START":"t=%d" % ts},
+                ts),
+
+            # HTTP_X_QUEUE_START seconds 
+            ({"REQUEST_URI":"/queue_start","HTTP_X_QUEUE_START":"%d" % ts},
+                    ts),
+
+            # mod_wsgi.queue_start seconds 
+            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"%d" % ts},
+                    ts),
+
+            # mod_wsgi.queue_start seconds (with t=)
+            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"t=%d" % ts},
+                    ts),
+
+            # All three headers (with t=)
+            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"t=%d" % (ts
+                + 100),"HTTP_X_REQUEST_START":"t=%d" % ts,
+                "HTTP_X_QUEUE_START": "t=%d" % (ts + 100)}, ts),
+
+            # All three headers
+            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"%d" % (ts +
+                100),"HTTP_X_REQUEST_START":"%d" % ts,"HTTP_X_QUEUE_START":"%d"
+                % (ts + 100)}, ts) 
+
+            ]
+
+        milli_seconds_tests = [
+
+            # HTTP_X_REQUEST_START milli-seconds (with t=)
+            ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t=%.0f" % (ts
+                * 1000)}, ts),
+
+            # HTTP_X_REQUEST_START milli-seconds
+            ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"%.0f" % (ts *
+                1000)}, ts),
+
+            # HTTP_X_QUEUE_START milli-seconds (with t=)
+            ({"REQUEST_URI":"/queue_start","HTTP_X_QUEUE_START":"t=%.0f" % (ts *
+                1000)}, ts),
+
+            # HTTP_X_QUEUE_START milli-seconds
+            ({"REQUEST_URI":"/queue_start","HTTP_X_QUEUE_START":"%.0f" % (ts *
+                1000)}, ts),
+
+            # mod_wsgi.queue_start milli-seconds (with t=)
+            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"t=%.0f" % (ts
+                * 1000)}, ts),
+
+            # mod_wsgi.queue_start milli-seconds
+            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"%.0f" % (ts *
+                1000)}, ts),
+            
+            ]
+
+        micro_seconds_tests = [
+
+            # HTTP_X_REQUEST_START micro-seconds (with t=)
+            ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t=%.0f" % (ts
+                * 1000000)}, ts),
+
+            # HTTP_X_REQUEST_START micro-seconds
+            ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"%.0f" % (ts *
+                1000000)}, ts),
+
+            # HTTP_X_QUEUE_START micro-seconds (with t=)
+            ({"REQUEST_URI":"/queue_start","HTTP_X_QUEUE_START":"t=%.0f" % (ts *
+                1000000)}, ts),
+
+            # HTTP_X_QUEUE_START micro-seconds
+            ({"REQUEST_URI":"/queue_start","HTTP_X_QUEUE_START":"%.0f" % (ts *
+                1000000)}, ts),
+
+            # mod_wsgi.queue_start micro-seconds (with t=)
+            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"t=%.0f" % (ts
+                * 1000000)}, ts),
+
+            # mod_wsgi.queue_start micro-seconds
+            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"%.0f" % (ts *
+                1000000)}, ts),
+                ]
+
+        bad_data_tests = [
+
+            # Empty header.
+            {"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":""},
+
+            # Has t= prefix but no time.
+            {"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t="},
+
+            # Has non integer for value.
+            {"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t=X"},
+
+            # Has integer which never satisfies time threshold.
+            {"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t=1"},
+
+            # Has negative integer.
+            {"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t=-1"},
+
+            # Time in the future.
+            {"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t=%.0f" % (ts
+                + 1000)},
+
+        ]
+
+        for item in seconds_tests:
+            transaction = newrelic.api.web_transaction.WebTransaction(
+                    application, item[0])
+            with transaction:
+                self.assertAlmostEqual(transaction.queue_start, int(item[1]))
+
+        # Check for at least 2 significant digits
+        for item in milli_seconds_tests:
+            transaction = newrelic.api.web_transaction.WebTransaction(
+                    application, item[0])
+            with transaction:
+                self.assertAlmostEqual(transaction.queue_start, item[1], 2)
+
+        # Check for at least 6 significant digits
+        for item in micro_seconds_tests:
+            transaction = newrelic.api.web_transaction.WebTransaction(
+                    application, item[0])
+            with transaction:
+                self.assertAlmostEqual(transaction.queue_start, item[1], 5)
+
+        # Check that queue start is always 0.0. Do this check after
+        # transaction complete so that will get failure if is None and
+        # some arithmetic check is dependent on it always being float.
+        for item in bad_data_tests:
+            transaction = newrelic.api.web_transaction.WebTransaction(
+                    application, item)
+            with transaction:
+                pass
+            self.assertEqual(transaction.queue_start, 0.0)
 
 if __name__ == '__main__':
     unittest.main()

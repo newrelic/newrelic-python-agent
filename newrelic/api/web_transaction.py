@@ -199,10 +199,9 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         # proxied between any processes within the
         # application server.
         #
-        # Note that Heroku they set their own header
-        # called HTTP_X_HEROKU_QUEUE_WAIT_TIME but it is
-        # defined in milliseconds rather that
-        # microseconds.
+        # Note that Heroku will set two headers 'X-Request-Start'
+        # 'X-Queue-Start' but it is defined in milliseconds rather that
+        # microseconds. 
         #
         # Note that mod_wsgi 4.0 sets its own distinct
         # variable called mod_wsgi.queue_start so that
@@ -216,33 +215,43 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         # core doesn't have a way of tracking front end
         # web server time.
 
-        value = environ.get('HTTP_X_QUEUE_START', None)
+        def _parse_time_stamp(time_stamp):
+            """
+            Converts time_stamp to seconds. Input can be microseconds,
+            milliseconds or seconds
 
-        if value and isinstance(value, basestring):
-            if value.startswith('t='):
-                try:
-                    self.queue_start = int(value[2:]) / 1000000.0
-                except:
-                    pass
+            Divide the timestamp by the highest resolution divisor. If the
+            result is older than Jan 1 2000, then pick a lower resolution
+            divisor and repeat.  It is safe to assume no requests were queued
+            for more than 10 years.
 
-        if self.queue_start == 0.0:
-            value = environ.get('HTTP_X_HEROKU_QUEUE_WAIT_TIME', None)
+            """
+            JAN_1_2000 = time.mktime(time.gmtime(946684800))
+            for divisor in (1000000, 1000, 1):
+                converted_time = time_stamp/divisor
+                if converted_time > JAN_1_2000:
+                    return converted_time
+
+        queue_time_headers = ('HTTP_X_REQUEST_START', 'HTTP_X_QUEUE_START',
+                'mod_wsgi.queue_start')
+
+        for queue_time_header in queue_time_headers:
+            value = environ.get(queue_time_header, None)
+
+            if self.queue_start > 0.0:
+                break
 
             if value and isinstance(value, basestring):
-                try:
-                    self.queue_start = time.time()
-                    self.queue_start -= int(value) / 1000.0
-                except:
-                    pass
-
-        if self.queue_start == 0.0:
-            value = environ.get('mod_wsgi.queue_start', None)
-
-            if value and isinstance(value, basestring):
-                try:
-                    self.queue_start = int(value) / 1000000.0
-                except:
-                    pass
+                if value.startswith('t='):
+                    try:
+                        self.queue_start = _parse_time_stamp(int(value[2:]))
+                    except:
+                        pass
+                else:
+                    try:
+                        self.queue_start = _parse_time_stamp(int(value))
+                    except:
+                        pass
 
         # Capture query request string parameters.
 

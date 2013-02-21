@@ -257,13 +257,76 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_queue_start(self):
         now = time.time()
-        ts = int((now-0.2) * 1000000)
-        environ = { "REQUEST_URI": "/queue_start",
-                    "HTTP_X_QUEUE_START": "t=%d" % ts }
-        transaction = newrelic.api.web_transaction.WebTransaction(
-                application, environ)
-        with transaction:
-            time.sleep(0.8)
+        ts = int(now-0.2)
+        tests = [
 
+            # HTTP_X_REQUEST_START seconds (with t=)
+            ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t=%d" % ts}, ts),
+
+            # HTTP_X_REQUEST_START milli-seconds (with t=)
+            ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t=%d" % (ts * 1000)}, ts),
+
+            # HTTP_X_REQUEST_START micro-seconds (with t=)
+            ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t=%d" % (ts * 1000000)}, ts),
+
+            # HTTP_X_REQUEST_START seconds 
+            ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"%d" % ts}, ts),
+
+            # HTTP_X_REQUEST_START milli-seconds
+            ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"%d" % (ts * 1000)}, ts),
+
+            # HTTP_X_REQUEST_START micro-seconds
+            ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"%d" % (ts * 1000000)}, ts),
+
+            # HTTP_X_QUEUE_START seconds (with t=)
+            ({"REQUEST_URI":"/queue_start","HTTP_X_QUEUE_START":"t=%d" % ts}, ts),
+
+            # HTTP_X_QUEUE_START milli-seconds (with t=)
+            ({"REQUEST_URI":"/queue_start","HTTP_X_QUEUE_START":"t=%d" % (ts * 1000)}, ts),
+
+            # HTTP_X_QUEUE_START micro-seconds (with t=)
+            ({"REQUEST_URI":"/queue_start","HTTP_X_QUEUE_START":"t=%d" % (ts * 1000000)}, ts),
+
+            # HTTP_X_QUEUE_START seconds 
+            ({"REQUEST_URI":"/queue_start","HTTP_X_QUEUE_START":"%d" % ts}, ts),
+
+            # HTTP_X_QUEUE_START milli-seconds
+            ({"REQUEST_URI":"/queue_start","HTTP_X_QUEUE_START":"%d" % (ts * 1000)}, ts),
+
+            # HTTP_X_QUEUE_START micro-seconds
+            ({"REQUEST_URI":"/queue_start","HTTP_X_QUEUE_START":"%d" % (ts * 1000000)}, ts),
+
+            # mod_wsgi.queue_start seconds (with t=)
+            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"t=%d" % ts}, ts),
+
+            # mod_wsgi.queue_start milli-seconds (with t=)
+            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"t=%d" % (ts * 1000)}, ts),
+
+            # mod_wsgi.queue_start micro-seconds (with t=)
+            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"t=%d" % (ts * 1000000)}, ts),
+
+            # mod_wsgi.queue_start seconds 
+            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"%d" % ts}, ts),
+
+            # mod_wsgi.queue_start milli-seconds
+            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"%d" % (ts * 1000)}, ts),
+
+            # mod_wsgi.queue_start micro-seconds
+            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"%d" % (ts * 1000000)}, ts),
+
+            # All three headers (with t=)
+            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"t=%d" % (ts + 100),"HTTP_X_REQUEST_START":"t=%d" % ts,"HTTP_X_QUEUE_START":"t=%d" % (ts + 100)}, ts),
+
+            # All three headers
+            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"%d" % (ts + 100),"HTTP_X_REQUEST_START":"%d" % ts,"HTTP_X_QUEUE_START":"%d" % (ts + 100)}, ts)
+        ]
+
+        for item in tests:
+            transaction = newrelic.api.web_transaction.WebTransaction(
+                    application, item[0])
+            with transaction:
+                time.sleep(0.8)
+                self.assertEqual(transaction.queue_start, item[1])
+            
 if __name__ == '__main__':
     unittest.main()

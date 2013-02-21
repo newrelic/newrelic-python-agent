@@ -229,6 +229,12 @@ class WebTransaction(newrelic.api.transaction.Transaction):
             JAN_1_2000 = time.mktime(time.gmtime(946684800))
             for divisor in (1000000, 1000, 1):
                 converted_time = time_stamp/divisor
+
+                # If queue_start is in the future, return 0.0
+
+                if converted_time > time.time():
+                    return 0.0
+
                 if converted_time > JAN_1_2000:
                     return converted_time
 

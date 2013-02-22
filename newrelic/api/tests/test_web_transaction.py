@@ -300,27 +300,27 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         milli_seconds_tests = [
 
             # HTTP_X_REQUEST_START milli-seconds (with t=)
-            ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t=%d" % (ts
+            ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t=%.0f" % (ts
                 * 1000)}, ts),
 
             # HTTP_X_REQUEST_START milli-seconds
-            ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"%d" % (ts *
+            ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"%.0f" % (ts *
                 1000)}, ts),
 
             # HTTP_X_QUEUE_START milli-seconds (with t=)
-            ({"REQUEST_URI":"/queue_start","HTTP_X_QUEUE_START":"t=%d" % (ts *
+            ({"REQUEST_URI":"/queue_start","HTTP_X_QUEUE_START":"t=%.0f" % (ts *
                 1000)}, ts),
 
             # HTTP_X_QUEUE_START milli-seconds
-            ({"REQUEST_URI":"/queue_start","HTTP_X_QUEUE_START":"%d" % (ts *
+            ({"REQUEST_URI":"/queue_start","HTTP_X_QUEUE_START":"%.0f" % (ts *
                 1000)}, ts),
 
             # mod_wsgi.queue_start milli-seconds (with t=)
-            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"t=%d" % (ts
+            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"t=%.0f" % (ts
                 * 1000)}, ts),
 
             # mod_wsgi.queue_start milli-seconds
-            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"%d" % (ts *
+            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"%.0f" % (ts *
                 1000)}, ts),
             
             ]
@@ -328,27 +328,27 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         micro_seconds_tests = [
 
             # HTTP_X_REQUEST_START micro-seconds (with t=)
-            ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t=%d" % (ts
+            ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t=%.0f" % (ts
                 * 1000000)}, ts),
 
             # HTTP_X_REQUEST_START micro-seconds
-            ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"%d" % (ts *
+            ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"%.0f" % (ts *
                 1000000)}, ts),
 
             # HTTP_X_QUEUE_START micro-seconds (with t=)
-            ({"REQUEST_URI":"/queue_start","HTTP_X_QUEUE_START":"t=%d" % (ts *
+            ({"REQUEST_URI":"/queue_start","HTTP_X_QUEUE_START":"t=%.0f" % (ts *
                 1000000)}, ts),
 
             # HTTP_X_QUEUE_START micro-seconds
-            ({"REQUEST_URI":"/queue_start","HTTP_X_QUEUE_START":"%d" % (ts *
+            ({"REQUEST_URI":"/queue_start","HTTP_X_QUEUE_START":"%.0f" % (ts *
                 1000000)}, ts),
 
             # mod_wsgi.queue_start micro-seconds (with t=)
-            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"t=%d" % (ts
+            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"t=%.0f" % (ts
                 * 1000000)}, ts),
 
             # mod_wsgi.queue_start micro-seconds
-            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"%d" % (ts *
+            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"%.0f" % (ts *
                 1000000)}, ts),
                 ]
 
@@ -370,7 +370,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             {"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t=-1"},
 
             # Time in the future.
-            {"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t=%d" % (ts
+            {"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t=%.0f" % (ts
                 + 1000)},
 
         ]

@@ -393,7 +393,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             transaction = newrelic.api.web_transaction.WebTransaction(
                     application, item[0])
             with transaction:
-                self.assertAlmostEqual(transaction.queue_start, item[1], 6)
+                self.assertAlmostEqual(transaction.queue_start, item[1], 5)
 
         # Check that queue start is always 0.0. Do this check after
         # transaction complete so that will get failure if is None and

@@ -285,30 +285,6 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"t=%d" % ts},
                     ts),
 
-            # HTTP_X_REQUEST_START 1000 secs in the future (with t=)
-            ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t=%d" % (ts
-                + 1000)}, 0.0),
-
-            # HTTP_X_REQUEST_START 1000 secs in the future 
-            ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"%d" % (ts +
-                1000)}, 0.0),
-
-            # HTTP_X_QUEUE_START 1000 secs in the future (with t=)
-            ({"REQUEST_URI":"/queue_start","HTTP_X_QUEUE_START":"t=%d" % (ts +
-                1000)}, 0.0),
-
-            # HTTP_X_QUEUE_START 1000 secs in the future 
-            ({"REQUEST_URI":"/queue_start","HTTP_X_QUEUE_START":"%d" % (ts +
-                1000)}, 0.0),
-
-            # mod_wsgi.queue_start 1000 secs in the future (with t=)
-            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"t=%d" % (ts
-                + 1000)}, 0.0),
-
-            # mod_wsgi.queue_start 1000 secs in the future
-            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"%d" % (ts +
-                1000)}, 0.0),
-
             # All three headers (with t=)
             ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"t=%d" % (ts
                 + 100),"HTTP_X_REQUEST_START":"t=%d" % ts,
@@ -376,6 +352,29 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 1000000)}, ts),
                 ]
 
+        bad_data_tests = [
+
+            # Empty header.
+            {"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":""},
+
+            # Has t= prefix but no time.
+            {"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t="},
+
+            # Has non integer for value.
+            {"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t=X"},
+
+            # Has integer which never satisfies time threshold.
+            {"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t=1"},
+
+            # Has negative integer.
+            {"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t=-1"},
+
+            # Time in the future.
+            {"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t=%d" % (ts
+                + 1000)},
+
+        ]
+
         for item in seconds_tests:
             transaction = newrelic.api.web_transaction.WebTransaction(
                     application, item[0])
@@ -395,6 +394,16 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                     application, item[0])
             with transaction:
                 self.assertAlmostEqual(transaction.queue_start, item[1], 6)
-            
+
+        # Check that queue start is always 0.0. Do this check after
+        # transaction complete so that will get failure if is None and
+        # some arithmetic check is dependent on it always being float.
+        for item in bad_data_tests:
+            transaction = newrelic.api.web_transaction.WebTransaction(
+                    application, item)
+            with transaction:
+                pass
+            self.assertEqual(transaction.queue_start, 0.0)
+
 if __name__ == '__main__':
     unittest.main()

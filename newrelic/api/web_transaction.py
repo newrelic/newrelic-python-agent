@@ -188,58 +188,55 @@ class WebTransaction(newrelic.api.transaction.Transaction):
             if self._request_uri is not None:
                 self.name_transaction(self._request_uri, 'Uri', priority=1)
 
-        # See if the WSGI environ dictionary includes
-        # the special 'X-Queue-Start' HTTP header. This
-        # header is an optional header that can be set
-        # within the underlying web server or WSGI
-        # server to indicate when the current request
-        # was first received and ready to be processed.
-        # The difference between this time and when
-        # application starts processing the request is
-        # the queue time and represents how long spent
-        # in any explicit request queuing system, or how
-        # long waiting in connecting state against
-        # listener sockets where request needs to be
-        # proxied between any processes within the
-        # application server.
+        # See if the WSGI environ dictionary includes the
+        # special 'X-Request-Start' or 'X-Queue-Start' HTTP
+        # headers. These header are optional headers that can be
+        # set within the underlying web server or WSGI server to
+        # indicate when the current request was first received
+        # and ready to be processed. The difference between this
+        # time and when application starts processing the
+        # request is the queue time and represents how long
+        # spent in any explicit request queuing system, or how
+        # long waiting in connecting state against listener
+        # sockets where request needs to be proxied between any
+        # processes within the application server.
         #
-        # Note that Heroku will set two headers 'X-Request-Start'
-        # 'X-Queue-Start' but it is defined in milliseconds rather that
-        # microseconds. 
+        # Note that mod_wsgi 4.0 sets its own distinct variable
+        # called mod_wsgi.queue_start so that not necessary to
+        # enable and use mod_headers to add X-Queue-Start. So
+        # also check for that, but give priority to the
+        # explicitly added header in case that header was added
+        # in front end server to Apache instead.
         #
-        # Note that mod_wsgi 4.0 sets its own distinct
-        # variable called mod_wsgi.queue_start so that
-        # not necessary to enable and use mod_headers to
-        # add X-Queue-Start. So also check for that, but
-        # give priority to the explicitly added header
-        # in case that header was added in front end
-        # server to Apache instead although for that
-        # case they should be using X-Request-Start
-        # which do not support here yet as PHP agent
-        # core doesn't have a way of tracking front end
-        # web server time.
+        # Which ever header is used, we accomodate the value
+        # being in seconds, milliseconds or microseconds. Also
+        # handle it being prefixed with 't='.
+
+        now = time.time()
 
         def _parse_time_stamp(time_stamp):
             """
             Converts time_stamp to seconds. Input can be microseconds,
             milliseconds or seconds
 
-            Divide the timestamp by the highest resolution divisor. If the
-            result is older than Jan 1 2000, then pick a lower resolution
-            divisor and repeat.  It is safe to assume no requests were queued
-            for more than 10 years.
+            Divide the timestamp by the highest resolution divisor. If
+            the result is older than Jan 1 2000, then pick a lower
+            resolution divisor and repeat.  It is safe to assume no
+            requests were queued for more than 10 years.
 
             """
             for divisor in (1000000.0, 1000.0, 1.0):
                 converted_time = time_stamp/divisor
 
-                # If queue_start is in the future, return 0.0
+                # If queue_start is in the future, return 0.0.
 
-                if converted_time > time.time():
+                if converted_time > now:
                     return 0.0
 
                 if converted_time > JAN_1_2000:
                     return converted_time
+
+            return 0.0
 
         queue_time_headers = ('HTTP_X_REQUEST_START', 'HTTP_X_QUEUE_START',
                 'mod_wsgi.queue_start')
@@ -261,7 +258,6 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
             if self.queue_start > 0.0:
                 break
-
 
         # Capture query request string parameters.
 

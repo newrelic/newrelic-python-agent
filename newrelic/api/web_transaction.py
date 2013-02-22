@@ -55,6 +55,10 @@ _rum2_footer_long_fragment = '<script type="text/javascript">' \
         'NREUMQ.push(["nrfj","%s","%s","%s","%s",%d,%d,' \
         'new Date().getTime(),"%s","%s","%s","%s","%s"]);</script>'
 
+# Seconds since epoch for Jan 1 2000
+
+JAN_1_2000 = time.mktime(time.strptime('01 Jan 2000', '%d %b %Y'))
+
 def _encode(name, key):
     s = []
     for i in range(len(name)):
@@ -226,7 +230,6 @@ class WebTransaction(newrelic.api.transaction.Transaction):
             for more than 10 years.
 
             """
-            JAN_1_2000 = time.mktime(time.gmtime(946684800))
             for divisor in (1000000.0, 1000.0, 1.0):
                 converted_time = time_stamp/divisor
 
@@ -244,9 +247,6 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         for queue_time_header in queue_time_headers:
             value = environ.get(queue_time_header, None)
 
-            if self.queue_start > 0.0:
-                break
-
             if value and isinstance(value, basestring):
                 if value.startswith('t='):
                     try:
@@ -258,6 +258,10 @@ class WebTransaction(newrelic.api.transaction.Transaction):
                         self.queue_start = _parse_time_stamp(int(value))
                     except:
                         pass
+
+            if self.queue_start > 0.0:
+                break
+
 
         # Capture query request string parameters.
 

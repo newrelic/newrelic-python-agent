@@ -247,12 +247,12 @@ class WebTransaction(newrelic.api.transaction.Transaction):
             if value and isinstance(value, basestring):
                 if value.startswith('t='):
                     try:
-                        self.queue_start = _parse_time_stamp(int(value[2:]))
+                        self.queue_start = _parse_time_stamp(float(value[2:]))
                     except:
                         pass
                 else:
                     try:
-                        self.queue_start = _parse_time_stamp(int(value))
+                        self.queue_start = _parse_time_stamp(float(value))
                     except:
                         pass
 

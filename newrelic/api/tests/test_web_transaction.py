@@ -259,7 +259,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         now = time.time()
         ts = now-0.2
 
-        seconds_tests = [
+        integer_seconds_tests = [
 
             # HTTP_X_REQUEST_START seconds (with t=)
             ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t=%d" % ts},
@@ -297,7 +297,45 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
             ]
 
-        milli_seconds_tests = [
+        float_seconds_tests = [
+
+            # HTTP_X_REQUEST_START seconds (with t=)
+            ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t=%f" % ts},
+                ts),
+
+            # HTTP_X_REQUEST_START seconds 
+            ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"%f" % ts},
+                ts),
+
+            # HTTP_X_QUEUE_START seconds (with t=)
+            ({"REQUEST_URI":"/queue_start","HTTP_X_QUEUE_START":"t=%f" % ts},
+                ts),
+
+            # HTTP_X_QUEUE_START seconds 
+            ({"REQUEST_URI":"/queue_start","HTTP_X_QUEUE_START":"%f" % ts},
+                    ts),
+
+            # mod_wsgi.queue_start seconds 
+            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"%f" % ts},
+                    ts),
+
+            # mod_wsgi.queue_start seconds (with t=)
+            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"t=%f" % ts},
+                    ts),
+
+            # All three headers (with t=)
+            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"t=%f" % (ts
+                + 100),"HTTP_X_REQUEST_START":"t=%f" % ts,
+                "HTTP_X_QUEUE_START": "t=%f" % (ts + 100)}, ts),
+
+            # All three headers
+            ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"%f" % (ts +
+                100),"HTTP_X_REQUEST_START":"%f" % ts,"HTTP_X_QUEUE_START":"%f"
+                % (ts + 100)}, ts) 
+
+            ]
+
+        integer_milli_seconds_tests = [
 
             # HTTP_X_REQUEST_START milli-seconds (with t=)
             ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t=%.0f" % (ts
@@ -325,7 +363,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             
             ]
 
-        micro_seconds_tests = [
+        integer_micro_seconds_tests = [
 
             # HTTP_X_REQUEST_START micro-seconds (with t=)
             ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t=%.0f" % (ts
@@ -375,21 +413,27 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
         ]
 
-        for item in seconds_tests:
+        for item in integer_seconds_tests:
             transaction = newrelic.api.web_transaction.WebTransaction(
                     application, item[0])
             with transaction:
                 self.assertAlmostEqual(transaction.queue_start, int(item[1]))
 
+        for item in float_seconds_tests:
+            transaction = newrelic.api.web_transaction.WebTransaction(
+                    application, item[0])
+            with transaction:
+                self.assertAlmostEqual(transaction.queue_start, item[1], 5)
+
         # Check for at least 2 significant digits
-        for item in milli_seconds_tests:
+        for item in integer_milli_seconds_tests:
             transaction = newrelic.api.web_transaction.WebTransaction(
                     application, item[0])
             with transaction:
                 self.assertAlmostEqual(transaction.queue_start, item[1], 2)
 
         # Check for at least 6 significant digits
-        for item in micro_seconds_tests:
+        for item in integer_micro_seconds_tests:
             transaction = newrelic.api.web_transaction.WebTransaction(
                     application, item[0])
             with transaction:

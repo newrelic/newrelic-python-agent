@@ -6,7 +6,14 @@ import newrelic.api.function_trace
 
 def instrument(module):
 
-    version = map(int, module.__version__.split('.'))
+    # Note that dev versions have '-dev' suffix rather than '.?' where
+    # '?' is the patch level revision number. In that case can only
+    # add back a 0 for patch level revision number.
+
+    version = map(int, module.__version__.split('-')[0].split('.'))
+
+    if len(version) == 2:
+        version.append(0)
 
     def out_Bottle_match(result):
         callback, args = result

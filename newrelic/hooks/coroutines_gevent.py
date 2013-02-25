@@ -1,6 +1,6 @@
 from newrelic.api.post_function import wrap_post_function
 
-def _patch_thread(threading=True, _threading_local=True):
+def _patch_thread(threading=True, *args, **kwargs):
     # This is looking for evidence that are using gevent prior to
     # version 0.13.7. In those versions the threading._sleep() method
     # wasn't being patched, which would result in the agent not working.

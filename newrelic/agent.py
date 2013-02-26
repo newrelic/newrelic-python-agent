@@ -3,6 +3,8 @@ import warnings
 import newrelic.core.agent
 import newrelic.core.config
 
+import newrelic.core.data_source
+
 import newrelic.api.web_transaction
 import newrelic.api.background_task
 
@@ -94,15 +96,6 @@ def record_exception(exc, value, tb, params={}, ignore_errors=[]):
     if transaction:
         transaction.record_exception(exc, value, tb, params, ignore_errors)
 
-def record_custom_metric(name, value, application=None):
-    if application is None:
-        transaction = current_transaction()
-        if transaction:
-            transaction.record_metric(name, value)
-    else:
-        if application.enabled:
-            application.record_metric(name, value)
-
 def get_browser_timing_header():
     transaction = current_transaction()
     if transaction and hasattr(transaction, 'browser_timing_header'):
@@ -124,6 +117,34 @@ def suppress_transaction_trace(flag=True):
     transaction = current_transaction()
     if transaction:
         transaction.suppress_transaction_trace = flag
+
+def record_custom_metric(name, value, application=None):
+    if application is None:
+        transaction = current_transaction()
+        if transaction:
+            transaction.record_custom_metric(name, value)
+    else:
+        if application.enabled:
+            application.record_custom_metric(name, value)
+
+def record_custom_metrics(metrics, application=None):
+    if application is None:
+        transaction = current_transaction()
+        if transaction:
+            transaction.record_custom_metrics(metrics)
+    else:
+        if application.enabled:
+            application.record_custom_metrics(metrics)
+
+def register_data_source(source, application=None, name=None,
+        settings=None, **properties):
+    agent = newrelic.core.agent.agent_instance()
+    agent.register_data_source(source,
+            application and application.name or None, name, settings,
+            **properties)
+
+data_source_generator = newrelic.core.data_source.data_source_generator
+data_source_factory = newrelic.core.data_source.data_source_factory
 
 wsgi_application = newrelic.api.web_transaction.wsgi_application
 WebTransaction = newrelic.api.web_transaction.WebTransaction

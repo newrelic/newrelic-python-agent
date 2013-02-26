@@ -6,8 +6,6 @@ import types
 import time
 import threading
 
-from newrelic.core.metric import ValueMetric
-
 _context = threading.local()
 
 class InternalTrace(object):
@@ -26,8 +24,7 @@ class InternalTrace(object):
     def __exit__(self, exc, value, tb):
         duration = max(self.start, time.time()) - self.start
         if self.metrics is not None:
-            self.metrics.record_value_metric(
-                    ValueMetric(name=self.name, value=duration))
+            self.metrics.record_custom_metric(self.name, duration)
 
 class xInternalTraceWrapper(object):
 
@@ -113,4 +110,4 @@ def wrap_internal_trace(module, object_path, name=None):
 def internal_metric(name, value):
     metrics = getattr(_context, 'current', None)
     if metrics is not None:
-        metrics.record_value_metric(ValueMetric(name=name, value=value))
+        metrics.record_custom_metric(name, value)

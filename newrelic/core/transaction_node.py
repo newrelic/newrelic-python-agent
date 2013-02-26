@@ -15,7 +15,7 @@ except:
 import newrelic.core.error_collector
 import newrelic.core.trace_node
 
-from newrelic.core.metric import (ApdexMetric, TimeMetric, ValueMetric)
+from newrelic.core.metric import ApdexMetric, TimeMetric
 from newrelic.core.internal_metrics import internal_trace
 from newrelic.core.string_table import StringTable
 

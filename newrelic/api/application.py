@@ -18,6 +18,13 @@ class Application(object):
         if name is None:
             name = newrelic.core.config.global_settings().app_name
 
+        # Ensure we grab a reference to the agent before grabbing
+        # the lock, else startup callback on agent initialisation
+        # could deadlock as it tries to create a application when
+        # we already have the lock held.
+
+        agent = newrelic.core.agent.agent_instance()
+
         # Try first without lock. If we find it we can return.
 
         instance = Application._instances.get(name, None)
@@ -29,7 +36,7 @@ class Application(object):
 
                 instance = Application._instances.get(name, None)
                 if not instance:
-                    instance = Application(name)
+                    instance = Application(name, agent)
                     Application._instances[name] = instance
 
         return instance
@@ -38,12 +45,15 @@ class Application(object):
     def run_on_initialization(name, callback):
         Application._delayed_callables[name] = callback
 
-    def __init__(self, name):
+    def __init__(self, name, agent=None):
         self._name = name
         self._linked = {}
         self.enabled = True
 
-        self._agent = newrelic.core.agent.agent_instance()
+        if agent is None:
+            agent = newrelic.core.agent.agent_instance()
+
+        self._agent = agent
 
         callback = Application._delayed_callables.get(name)
         if callback:
@@ -85,17 +95,27 @@ class Application(object):
     def link_to_application(self, name):
         self._linked[name] = True
 
-    @property
-    def thread_utilization(self):
-        return self._agent.thread_utilization(self._name)
+    def record_custom_metric(self, name, value):
+        if self.active:
+            self._agent.record_custom_metric(self._name, name, value)
 
     def record_metric(self, name, value):
-        if self.active:
-            self._agent.record_metric(self._name, name, value)
+        warnings.warn('Internal API change. Use record_custom_metric() '
+                'instead of record_metric().', DeprecationWarning,
+                stacklevel=2)
+
+        return self.record_custom_metric(name, value)
+
+    def record_custom_metrics(self, metrics):
+        if self.active and metrics:
+            self._agent.record_custom_metrics(self._name, metrics)
 
     def record_metrics(self, metrics):
-        if self.active and metrics:
-            self._agent.record_metrics(self._name, metrics)
+        warnings.warn('Internal API change. Use record_custom_metrics() '
+                'instead of record_metrics().', DeprecationWarning,
+                stacklevel=2)
+
+        return self.record_custom_metrics(metrics)
 
     def record_transaction(self, data):
         if self.active:

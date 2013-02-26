@@ -18,24 +18,24 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_int(self):
         for i in range(100):
-            application.record_metric("CustomMetricTests01/Int", i)
+            application.record_custom_metric("CustomMetricTests01/Int", i)
 
     def test_float(self):
         for i in map(math.sqrt, range(100)):
-            application.record_metric("CustomMetricTests01/Float", i)
+            application.record_custom_metric("CustomMetricTests01/Float", i)
 
     def test_unicode(self):
         for i in map(math.sqrt, range(100)):
-            application.record_metric(u"CustomMetricTests01/√√√√√", i)
+            application.record_custom_metric(u"CustomMetricTests01/√√√√√", i)
 
     def test_disabled(self):
-        # XXX This will actually always work as the record_metric()
+        # XXX This will actually always work as the record_custom_metric()
         # method doesn't check enabled flag. Is expected at this point
         # that any internal code using the method checks before making
         # the class.
 
         application.enabled = False
-        application.record_metric("CustomMetricTests01/Disabled", 1)
+        application.record_custom_metric("CustomMetricTests01/Disabled", 1)
         application.enabled = True
 
 if __name__ == '__main__':

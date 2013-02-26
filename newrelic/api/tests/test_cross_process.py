@@ -76,8 +76,7 @@ class TestCase(unittest.TestCase):
 
         # Check for whether metric is presented when expected.
 
-        metric_name = 'ClientApplication/%s/all' % client_cross_process_id
-        metric = (metric_name, '')
+        metric = 'ClientApplication/%s/all' % client_cross_process_id
 
         self.assertEqual(metric in transaction._custom_metrics, expect_result,
                 'Failed for %s.' % test_args())

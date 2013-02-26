@@ -13,13 +13,14 @@ import warnings
 import newrelic.core.transaction_node
 import newrelic.core.database_node
 import newrelic.core.error_node
-import newrelic.core.samplers
 
 import newrelic.api.time_trace
 
-from newrelic.core.stats_engine import ValueMetrics
-from newrelic.core.metric import ValueMetric
+from newrelic.core.environment import cpu_count
+
+from newrelic.core.stats_engine import CustomMetrics
 from newrelic.core.transaction_cache import transaction_cache
+from newrelic.core.thread_utilization import utilization_tracker
 
 _logger = logging.getLogger(__name__)
 
@@ -71,7 +72,7 @@ class Transaction(object):
         self._user_attrs = {}
         self._request_params = {}
 
-        self._thread_utilization = None
+        self._utilization_tracker = None
 
         self._thread_utilization_start = None
         self._thread_utilization_end = None
@@ -127,7 +128,7 @@ class Transaction(object):
         self.client_account_id = None
         self.client_application_id = None
 
-        self._custom_metrics = ValueMetrics()
+        self._custom_metrics = CustomMetrics()
 
         global_settings = application.global_settings
 
@@ -198,11 +199,12 @@ class Transaction(object):
         if (not hasattr(sys, '_current_frames') or
                 self.thread_id in sys._current_frames()):
             thread_instance = threading.currentThread()
-            self._thread_utilization = self._application.thread_utilization
-            if self._thread_utilization:
-                self._thread_utilization.enter_transaction(thread_instance)
+            self._utilization_tracker = utilization_tracker(
+                    self.application.name)
+            if self._utilization_tracker:
+                self._utilization_tracker.enter_transaction(thread_instance)
                 self._thread_utilization_start = \
-                        self._thread_utilization.utilization_count()
+                        self._utilization_tracker.utilization_count()
 
         # We need to push an object onto the top of the
         # node stack so that children can reach back and
@@ -264,18 +266,18 @@ class Transaction(object):
 
         if duration:
             self._cpu_utilization_value = self._cpu_user_time_value / (
-                    duration * newrelic.core.samplers.cpu_count())
+                    duration * cpu_count())
         else:
             self._cpu_utilization_value = 0.0
 
         # Calculate thread utilisation factor if using.
 
-        if self._thread_utilization:
-            self._thread_utilization.exit_transaction()
+        if self._utilization_tracker:
+            self._utilization_tracker.exit_transaction()
             if self._thread_utilization_start:
                 if not self._thread_utilization_end:
                     self._thread_utilization_end = (
-                            self._thread_utilization.utilization_count())
+                            self._utilization_tracker.utilization_count())
                 self._thread_utilization_value = (
                         self._thread_utilization_end -
                         self._thread_utilization_start) / duration
@@ -337,7 +339,7 @@ class Transaction(object):
         if self._read_start:
             read_duration = self._read_end - self._read_start
             metrics['WSGI/Input/Time'] = '%.4f' % read_duration
-        self.record_metric('Python/WSGI/Input/Time', read_duration)
+        self.record_custom_metric('Python/WSGI/Input/Time', read_duration)
 
         sent_duration = 0
         if self._sent_start:
@@ -345,7 +347,7 @@ class Transaction(object):
                 self._sent_end = time.time()
             sent_duration = self._sent_end - self._sent_start
             metrics['WSGI/Output/Time'] = '%.4f' % sent_duration
-        self.record_metric('Python/WSGI/Output/Time',
+        self.record_custom_metric('Python/WSGI/Output/Time',
                            sent_duration)
 
         if self.queue_start:
@@ -354,26 +356,26 @@ class Transaction(object):
                 queue_wait = 0
             metrics['WebFrontend/QueueTime'] = '%.4f' % queue_wait
 
-        self.record_metric('Python/WSGI/Input/Bytes',
+        self.record_custom_metric('Python/WSGI/Input/Bytes',
                            self._bytes_read)
 
-        self.record_metric('Python/WSGI/Input/Calls/read',
+        self.record_custom_metric('Python/WSGI/Input/Calls/read',
                            self._calls_read)
-        self.record_metric('Python/WSGI/Input/Calls/readline',
+        self.record_custom_metric('Python/WSGI/Input/Calls/readline',
                            self._calls_readline)
-        self.record_metric('Python/WSGI/Input/Calls/readlines',
+        self.record_custom_metric('Python/WSGI/Input/Calls/readlines',
                            self._calls_readlines)
 
-        self.record_metric('Python/WSGI/Output/Bytes',
+        self.record_custom_metric('Python/WSGI/Output/Bytes',
                            self._bytes_sent)
-        self.record_metric('Python/WSGI/Output/Calls/yield',
+        self.record_custom_metric('Python/WSGI/Output/Calls/yield',
                            self._calls_yield)
-        self.record_metric('Python/WSGI/Output/Calls/write',
+        self.record_custom_metric('Python/WSGI/Output/Calls/write',
                            self._calls_write)
 
         if self._frameworks:
             for framework, version in self._frameworks:
-                self.record_metric('Python/Framework/%s/%s' %
+                self.record_custom_metric('Python/Framework/%s/%s' %
                     (framework, version), 1)
 
         request_params = {}
@@ -672,9 +674,19 @@ class Transaction(object):
 
         self.record_exception(exc, value, tb, params, ignore_errors)
 
+    def record_custom_metric(self, name, value):
+        self._custom_metrics.record_custom_metric(name, value)
+
+    def record_custom_metrics(self, metrics):
+        for name, value in metrics:
+            self._custom_metrics.record_custom_metric(name, value)
+
     def record_metric(self, name, value):
-        self._custom_metrics.record_value_metric(
-                ValueMetric(name=name, value=value))
+        warnings.warn('Internal API change. Use record_custom_metric() '
+                'instead of record_metric().', DeprecationWarning,
+                stacklevel=2)
+
+        return self.record_custom_metric(name, value)
 
     def _parent_node(self):
         if self._node_stack:
@@ -718,11 +730,11 @@ class Transaction(object):
         self.end_time = time.time()
         self.stopped = True
 
-        if self._thread_utilization:
+        if self._utilization_tracker:
             if self._thread_utilization_start:
                 if not self._thread_utilization_end:
                     self._thread_utilization_end = (
-                            self._thread_utilization.utilization_count())
+                            self._utilization_tracker.utilization_count())
 
         self._cpu_user_time_end = os.times()[0]
 

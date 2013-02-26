@@ -7,10 +7,11 @@ from newrelic.api.web_transaction import WebTransaction, wsgi_application
 from newrelic.api.transaction import current_transaction
 
 class MockApplication(object):
-    def __init__(self, settings):
+    def __init__(self, settings, name='Python Application'):
         self.global_settings = create_settings_snapshot()
         self.global_settings.enabled = True
         self.settings = create_settings_snapshot(settings)
+        self.name = name
         self.active = True
         self.enabled = True
         self.thread_utilization = None

@@ -100,8 +100,8 @@ def my_function_3():
     transaction = newrelic.api.transaction.current_transaction()
 
     if transaction:
-        transaction.application.record_metric('metric-int', 1)
-        transaction.application.record_metric('metric-float', 1.0)
+        transaction.application.record_custom_metric('metric-int', 1)
+        transaction.application.record_custom_metric('metric-float', 1.0)
         transaction.add_custom_parameter('custom-string', '1')
         transaction.add_custom_parameter('custom-int', 1)
         transaction.add_custom_parameter('custom-float', 1.0)

@@ -1025,6 +1025,83 @@ def _process_error_trace_configuration():
         except:
             _raise_configuration_error(section)
 
+# Automatic data source loading defined in configuration file.
+
+_data_sources = []
+
+def _process_data_source_configuration():
+    for section in _config_object.sections():
+        if not section.startswith('data-source:'):
+            continue
+
+        enabled = False
+
+        try:
+            enabled = _config_object.getboolean(section, 'enabled')
+        except ConfigParser.NoOptionError:
+            pass
+        except:
+            _raise_configuration_error(section)
+
+        if not enabled:
+            continue
+
+        try:
+            function = _config_object.get(section, 'function')
+            (module, object_path) = string.splitfields(function, ':', 1)
+
+            application = None
+            name = None
+            settings = {}
+            properties = {}
+
+            if _config_object.has_option(section, 'application'):
+                application = _config_object.get(section, 'application')
+            if _config_object.has_option(section, 'name'):
+                name = _config_object.get(section, 'name')
+
+            if _config_object.has_option(section, 'settings'):
+                config_section = _config_object.get(section, 'settings')
+                settings.update(_config_object.items(config_section))
+
+            properties.update(_config_object.items(section))
+
+            properties.pop('enabled', None)
+            properties.pop('function', None)
+            properties.pop('application', None)
+            properties.pop('name', None)
+            properties.pop('settings', None)
+
+            _logger.debug("register data-source %s" %
+                    ((module, object_path, name),))
+
+            _data_sources.append((section, module, object_path, application,
+                    name, settings, properties))
+        except:
+            _raise_configuration_error(section)
+
+def _startup_data_source():
+    agent_instance = newrelic.core.agent.agent_instance()
+
+    for section, module, object_path, application, name, \
+            settings, properties in _data_sources:
+        try:
+            source = getattr(newrelic.api.import_hook.import_module(
+                    module), object_path)
+
+            agent_instance.register_data_source(source,
+                    application, name, settings, **properties)
+
+        except:
+            _logger.exception('Attempt to register data source %s:%s with '
+                    'name %r from section %r of agent configuration file '
+                    'has failed. Data source will be skipped.', module,
+                    object_path, name, section)
+
+def _setup_data_source():
+    if _data_sources:
+        newrelic.core.agent.Agent.run_on_startup(_startup_data_source)
+
 # Setup function profiler defined in configuration file.
 
 def _function_profile_import_hook(object_path, filename, delay, checkpoint):
@@ -1432,6 +1509,8 @@ def _setup_instrumentation():
 
     _process_error_trace_configuration()
 
+    _process_data_source_configuration()
+
     _process_function_profile_configuration()
 
 _console = None
@@ -1458,6 +1537,7 @@ def initialize(config_file=None, environment=None, ignore_errors=True,
     if _settings.monitor_mode:
         _settings.enabled = True
         _setup_instrumentation()
+        _setup_data_source()
         _setup_agent_console()
     else:
         _settings.enabled = False

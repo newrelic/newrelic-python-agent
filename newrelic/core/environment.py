@@ -10,7 +10,15 @@ import os
 import platform
 import re
 
-from newrelic.core.samplers import cpu_count
+try:
+    import multiprocessing
+except:
+    pass
+
+try:
+    import pkg_resources
+except:
+    pass
 
 try:
     import newrelic.core._thread_utilization
@@ -22,10 +30,45 @@ try:
 except:
     pass
 
-try:
-    import pkg_resources
-except:
-    pass
+_current_cpu_count = None
+
+def cpu_count(update=False):
+    """Return the number of processors host hardware provides.
+
+    """
+
+    global _current_cpu_count
+
+    if not update and _current_cpu_count:
+        return _current_cpu_count
+
+    # TODO For more methods of determining this if required see
+    # http://stackoverflow.com/questions/1006289.
+
+    # Python 2.6+.
+
+    if 'multiprocessing' in sys.modules:
+        try:
+            _current_cpu_count = multiprocessing.cpu_count()
+            return _current_cpu_count
+        except NotImplementedError:
+            pass
+
+    # POSIX Systems.
+
+    try:
+        res = os.sysconf('SC_NPROCESSORS_ONLN')
+        if res > 0:
+            _current_cpu_count = res
+            return _current_cpu_count
+    except (ValueError, OSError, AttributeError):
+        pass
+
+    # Fallback to indicating only a single processor.
+
+    _current_cpu_count = 1
+
+    return _current_cpu_count
 
 def _get_available_memory():
     if sys.platform == 'linux2':

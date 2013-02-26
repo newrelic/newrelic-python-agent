@@ -376,7 +376,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
             metric_name = 'ClientApplication/%s/all' % (
                     self.client_cross_process_id)
-            self.record_metric(metric_name, duration)
+            self.record_custom_metric(metric_name, duration)
 
             # Generate the additional response headers which provide
             # information back to the caller. We need to freeze the

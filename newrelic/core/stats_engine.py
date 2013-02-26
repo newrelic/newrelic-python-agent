@@ -32,8 +32,9 @@ class ApdexStats(list):
     # strictly used for the metric. The 4th and 5th entries are set to
     # be the apdex_t value in use at the time.
 
-    def __init__(self, apdex_t=0.0):
-        super(ApdexStats, self).__init__([0, 0, 0, apdex_t, apdex_t, 0])
+    def __init__(self, satisfying=0, tolerating=0, frustrating=0, apdex_t=0.0):
+        super(ApdexStats, self).__init__([satisfying, tolerating,
+                frustrating, apdex_t, apdex_t, 0])
 
     satisfying = property(operator.itemgetter(0))
     tolerating = property(operator.itemgetter(1))
@@ -71,8 +72,12 @@ class TimeStats(list):
     # application as that and list as base class means it encodes direct
     # to JSON as we need it.
 
-    def __init__(self):
-        super(TimeStats, self).__init__([0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    def __init__(self, call_count=0, total_call_time=0.0,
+                total_exclusive_call_time=0.0, min_call_time=0.0,
+                max_call_time=0.0, sum_of_squares=0.0):
+        super(TimeStats, self).__init__([call_count, total_call_time,
+                total_exclusive_call_time, min_call_time,
+                max_call_time, sum_of_squares])
 
     call_count = property(operator.itemgetter(0))
     total_call_time = property(operator.itemgetter(1))
@@ -95,11 +100,8 @@ class TimeStats(list):
 
         self[0] += other[0]
 
-    def merge_time_metric(self, metric):
-        """Merge data from a time metric object."""
-
-        duration = metric.duration
-        exclusive = metric.exclusive
+    def merge_raw_time_metric(self, duration, exclusive=None):
+        """Merge time value."""
 
         if exclusive is None:
             exclusive = duration
@@ -115,24 +117,17 @@ class TimeStats(list):
 
         self[0] += 1
 
-    def merge_value_metric(self, metric):
-        """Merge data from a value metric object."""
+    def merge_time_metric(self, metric):
+        """Merge data from a time metric object."""
 
-        duration = metric.value
-        exclusive = metric.value
+        self.merge_raw_time_metric(metric.duration, metric.exclusive)
 
-        self[1] += duration
-        self[2] += exclusive
-        self[3] = self[0] and min(self[3], duration) or duration
-        self[4] = max(self[4], duration)
-        self[5] += duration ** 2
+    def merge_custom_metric(self, value):
+        """Merge data value."""
 
-        # Must update the call count last as update of the
-        # minimum call time is dependent on initial value.
+        self.merge_raw_time_metric(value)
 
-        self[0] += 1
-
-class ValueMetrics(object):
+class CustomMetrics(object):
 
     """Table for collection a set of value metrics.
 
@@ -144,23 +139,29 @@ class ValueMetrics(object):
     def __contains__(self, key):
         return key in self.__stats_table
 
-    def record_value_metric(self, metric):
+    def record_custom_metric(self, name, value):
         """Record a single value metric, merging the data with any data
         from prior value metrics with the same name.
 
         """
 
-        key = (metric.name, '')
-        stats = self.__stats_table.get(key)
+        stats = self.__stats_table.get(name)
         if stats is None:
             stats = TimeStats()
-            self.__stats_table[key] = stats
-        stats.merge_value_metric(metric)
+            self.__stats_table[name] = stats
+
+        def c2t(count=0, total=0.0, min=0.0, max=0.0, sum_of_squares=0.0):
+            return (count, total, total, min, max, sum_of_squares)
+
+        try:
+            stats.merge_stats(TimeStats(*c2t(**value)))
+        except:
+            stats.merge_custom_metric(value)
 
     def metrics(self):
         """Returns an iterator over the set of value metrics. The items
-        returned are a tuple consisting of the metric key and accumulated
-        stats for that key.
+        returned are a tuple consisting of the metric name and accumulated
+        stats for the metric.
 
         """
 
@@ -306,7 +307,7 @@ class StatsEngine(object):
         key = (metric.name, '')
         stats = self.__stats_table.get(key)
         if stats is None:
-            stats = ApdexStats(metric.apdex_t)
+            stats = ApdexStats(apdex_t=metric.apdex_t)
             self.__stats_table[key] = stats
         stats.merge_apdex_metric(metric)
 
@@ -359,7 +360,7 @@ class StatsEngine(object):
         for metric in metrics:
             self.record_time_metric(metric)
 
-    def record_value_metric(self, metric):
+    def record_custom_metric(self, name, value):
         """Record a single value metric, merging the data with any data
         from prior value metrics with the same name.
 
@@ -374,16 +375,23 @@ class StatsEngine(object):
         # the two types of metrics will simply cause
         # incorrect data.
 
-        key = (metric.name, '')
+        key = (name, '')
         stats = self.__stats_table.get(key)
         if stats is None:
             stats = TimeStats()
             self.__stats_table[key] = stats
-        stats.merge_value_metric(metric)
+
+        def c2t(count=0, total=0.0, min=0.0, max=0.0, sum_of_squares=0.0):
+            return (count, total, total, min, max, sum_of_squares)
+
+        try:
+            stats.merge_stats(TimeStats(*c2t(**value)))
+        except:
+            stats.merge_custom_metric(value)
 
         return key
 
-    def record_value_metrics(self, metrics):
+    def record_custom_metrics(self, metrics):
         """Record the value metrics supplied by the iterable, merging
         the data with any data from prior value metrics with the same
         name.
@@ -393,8 +401,8 @@ class StatsEngine(object):
         if not self.__settings:
             return
 
-        for metric in metrics:
-            self.record_value_metric(metric)
+        for name, value in metrics:
+            self.record_custom_metric(name, value)
 
     def record_slow_sql_node(self, node):
         """Record a single sql metric, merging the data with any data
@@ -461,7 +469,7 @@ class StatsEngine(object):
 
         with InternalTrace(
                 'Supportability/TransactionNode/Calls/value_metrics'):
-            self.merge_value_metrics(transaction.custom_metrics.metrics())
+            self.merge_custom_metrics(transaction.custom_metrics.metrics())
 
         with InternalTrace(
                 'Supportability/TransactionNode/Calls/time_metrics'):
@@ -954,17 +962,18 @@ class StatsEngine(object):
             self.__saved_transactions.extend(snapshot.__saved_transactions)
             self.__saved_transactions = self.__saved_transactions[:maximum]
 
-    def merge_value_metrics(self, metrics):
-        """Merges in a set of value metrics. The metrics should be
-        provide as an iterable where each item is a tuple of the key and
-        the accumulated stats for that metric key.
+    def merge_custom_metrics(self, metrics):
+        """Merges in a set of custom metrics. The metrics should be
+        provide as an iterable where each item is a tuple of the metric
+        name and the accumulated stats for the metric.
 
         """
 
         if not self.__settings:
             return
 
-        for key, other in metrics:
+        for name, other in metrics:
+            key = (name, '')
             stats = self.__stats_table.get(key)
             if not stats:
                 self.__stats_table[key] = copy.copy(other)

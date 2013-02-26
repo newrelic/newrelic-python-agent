@@ -20,6 +20,10 @@ import newrelic.core.log_file
 import newrelic.core.config
 import newrelic.core.application
 
+from newrelic.core.cpu_usage import cpu_usage_data_source
+from newrelic.core.memory_usage import memory_usage_data_source
+from newrelic.core.thread_utilization import thread_utilization_data_source
+
 _logger = logging.getLogger(__name__)
 
 def check_environment():
@@ -90,11 +94,17 @@ class Agent(object):
 
     _lock = threading.Lock()
     _instance = None
-    _delayed_callables = []
+    _startup_callables = []
+    _registration_callables = {}
 
     @staticmethod
     def run_on_startup(callable):
-        Agent._delayed_callables.append(callable)
+        Agent._startup_callables.append(callable)
+
+    @staticmethod
+    def run_on_registration(application, callable):
+        callables = Agent._registration_callables.setdefault(application, [])
+        callables.append(callable)
 
     @staticmethod
     def agent_singleton():
@@ -129,6 +139,8 @@ class Agent(object):
                         'newrelic-admin command with command line of %s.',
                         os.environ['NEW_RELIC_ADMIN_COMMAND'])
 
+        run_startup_callables = False
+
         with Agent._lock:
             if not Agent._instance:
                 if settings.debug.log_agent_initialization:
@@ -145,10 +157,13 @@ class Agent(object):
                 Agent._instance = Agent(settings)
                 Agent._instance.activate_agent()
 
-                for callable in Agent._delayed_callables:
-                    callable()
+                run_startup_callables = True
 
-            return Agent._instance
+        if run_startup_callables:
+            for callable in Agent._startup_callables:
+                callable()
+
+        return Agent._instance
 
     def __init__(self, config):
         """Initialises the agent and attempt to establish a connection
@@ -179,6 +194,8 @@ class Agent(object):
 
         if self._config.enabled:
             atexit.register(self._atexit_shutdown)
+
+        self._data_sources = {}
 
     def dump(self, file):
         """Dumps details about the agent to the file object."""
@@ -279,6 +296,18 @@ class Agent(object):
                 self._applications[app_name] = application
                 activate_session = True
 
+                # Register any data sources with the application.
+
+                for source, name, settings, properties in \
+                        self._data_sources.get(None, []):
+                    application.register_data_source(source, name,
+                            settings, **properties)
+
+                for source, name, settings, properties in \
+                        self._data_sources.get(app_name, []):
+                    application.register_data_source(source, name,
+                            settings, **properties)
+
             else:
                 # Do some checks to see whether try to reactivate the
                 # application in a different process to what it was
@@ -321,35 +350,58 @@ class Agent(object):
 
         return self._applications.get(app_name, None)
 
-    def thread_utilization(self, app_name):
-        """Returns the tracker object which monitors thread utilization
-        for the specified application.
+    def register_data_source(self, source, application=None,
+                name=None, settings=None, **properties):
+        """Registers the specified data source.
 
         """
 
-        application = self._applications.get(app_name, None)
-        if application is None:
-            return None
+        _logger.debug('Register data source with agent %r.',
+                (source, application, name, settings, properties))
 
-        return application.thread_utilization
+        with Agent._lock:
+            # Remember the data sources in case we need them later.
 
-    def record_metric(self, app_name, name, value):
+            self._data_sources.setdefault(application, []).append(
+                    (source, name, settings, properties))
+
+            if application is None:
+                # Bind to any applications that already exist.
+
+                for application in self._applications.values():
+                    application.register_data_source(source, name,
+                            settings, **properties)
+
+            else:
+                # Bind to specific application if it exists.
+
+                instance = self._applications.get(application)
+
+                if instance is not None:
+                    instance.register_data_source(source, name,
+                            settings, **properties)
+
+    def record_custom_metric(self, app_name, name, value):
         """Records a basic metric for the named application. If there has
         been no prior request to activate the application, the metric is
         discarded.
 
         """
 
-        # FIXME Are base metrics ignored if the application is not in
-        # the activated state when received or are they accumulated?
-
         application = self._applications.get(app_name, None)
-        if application is None:
+        if application is None or not application.active:
             return
 
-        application.record_metric(name, value)
+        application.record_custom_metric(name, value)
 
-    def record_metrics(self, app_name, metrics):
+    def record_metric(self, app_name, name, value):
+        warnings.warn('Internal API change. Use record_custom_metric() '
+                'instead of record_metric().', DeprecationWarning,
+                stacklevel=2)
+ 
+        return self.record_custom_metric(app_name, name, value)
+
+    def record_custom_metrics(self, app_name, metrics):
         """Records the metrics for the named application. If there has
         been no prior request to activate the application, the metric is
         discarded. The metrics should be an iterable yielding tuples
@@ -357,14 +409,18 @@ class Agent(object):
 
         """
 
-        # FIXME Are base metrics ignored if the application is not in
-        # the activated state when received or are they accumulated?
-
         application = self._applications.get(app_name, None)
-        if application is None:
+        if application is None or not application.active:
             return
 
-        application.record_metrics(metrics)
+        application.record_custom_metrics(metrics)
+
+    def record_metrics(self, app_name, metrics):
+        warnings.warn('Internal API change. Use record_custom_metrics() '
+                'instead of record_metrics().', DeprecationWarning,
+                stacklevel=2)
+ 
+        return self.record_custom_metrics(app_name, metrics)
 
     def record_transaction(self, app_name, data):
         """Processes the raw transaction data, generating and recording
@@ -375,7 +431,7 @@ class Agent(object):
         """
 
         application = self._applications.get(app_name, None)
-        if application is None:
+        if application is None or not application.active:
             return
 
         application.record_transaction(data)
@@ -389,6 +445,10 @@ class Agent(object):
 
     def _harvest_loop(self):
         settings = newrelic.core.config.global_settings()
+
+        self.register_data_source(cpu_usage_data_source)
+        self.register_data_source(memory_usage_data_source)
+        self.register_data_source(thread_utilization_data_source)
 
         self._next_harvest = time.time()
 

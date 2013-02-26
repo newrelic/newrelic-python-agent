@@ -10,6 +10,3 @@ ApdexMetric = namedtuple('ApdexMetric',
 
 TimeMetric = namedtuple('TimeMetric',
         ['name', 'scope', 'duration', 'exclusive'])
-
-ValueMetric = namedtuple('ValueMetric',
-        ['name', 'value'])

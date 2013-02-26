@@ -18,70 +18,14 @@ from newrelic.core.config import global_settings_dump, global_settings
 from newrelic.core.data_collector import (create_session, ForceAgentRestart,
         ForceAgentDisconnect, DiscardDataForRequest, RetryDataForRequest)
 from newrelic.core.environment import environment_settings
-from newrelic.core.metric import ValueMetric
 from newrelic.core.rules_engine import RulesEngine
-from newrelic.core.samplers import create_samplers
-from newrelic.core.stats_engine import StatsEngine, ValueMetrics
+from newrelic.core.stats_engine import StatsEngine, CustomMetrics
 from newrelic.core.thread_profiler import ThreadProfiler
 from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
         InternalTraceContext, internal_metric)
-
-try:
-    from newrelic.core._thread_utilization import ThreadUtilization
-except:
-    ThreadUtilization = None
+from newrelic.core.data_source import DataSampler
 
 _logger = logging.getLogger(__name__)
-
-class ThreadUtilizationSampler(object):
-
-    def __init__(self, utilization_tracker):
-        self._utilization_tracker = utilization_tracker
-        self._last_timestamp = time.time()
-        self._utilization = self._utilization_tracker.utilization_count()
-
-    def value_metrics(self):
-        now = time.time()
-
-        # TODO This needs to be pushed down into _thread_utilization.c.
-        # In doing that, need to fix up UtilizationClass count so the
-        # reset is optional because in this case a read only variant is
-        # needed for getting a per request custom metric of the
-        # utilization during period of the request.
-        #
-        # TODO This currently doesn't take into consideration coroutines
-        # and instance bust percentage is percentage of a single thread
-        # and not of total available coroutines. Not sure whether can
-        # generate something meaningful for coroutines. Also doesn't
-        # work for asynchronous systems such as Twisted.
-
-        new_utilization = self._utilization_tracker.utilization_count()
-
-        elapsed_time = now - self._last_timestamp
-
-        utilization = new_utilization - self._utilization
-
-        utilization = utilization / elapsed_time
-
-        self._last_timestamp = now
-        self._utilization = new_utilization
-
-        total_threads = self._utilization_tracker.total_threads()
-
-        if total_threads:
-            # Don't report any metrics if don't detect any threads
-            # available and in use for handling web transactions,
-            # otherwise we end up report zero metrics for task systems
-            # such as Celery which skews the results wrongly.
-
-            yield ValueMetric(name='Instance/Available',
-                    value=total_threads)
-            yield ValueMetric(name='Instance/Used',
-                    value=utilization)
-
-            busy = total_threads and utilization/total_threads or 0.0
-
-            yield ValueMetric(name='Instance/Busy', value=busy)
 
 class Application(object):
 
@@ -135,16 +79,7 @@ class Application(object):
         self._rules_engine = { 'url': RulesEngine([]), 
                 'transaction': RulesEngine([]), 'metric': RulesEngine([]) }
 
-        # Initial set of inbuilt data samplers for this application.
-
-        self._samplers = list(create_samplers())
-
-        self._thread_utilization = None
-
-        if ThreadUtilization is not None:
-            self._thread_utilization = ThreadUtilization()
-            self._samplers.append(ThreadUtilizationSampler(
-                    self._thread_utilization))
+        self._data_samplers = []
 
         # Thread profiler and state of whether active or not.
 
@@ -165,8 +100,8 @@ class Application(object):
         return self._active_session and self._active_session.configuration
 
     @property
-    def thread_utilization(self):
-        return self._thread_utilization
+    def active(self):
+        return self.configuration is not None
 
     def dump(self, file):
         """Dumps details about the application to the file object."""
@@ -441,6 +376,11 @@ class Application(object):
 
                 self._connected_event.set()
 
+                # Start any data samplers so they are aware of the start
+                # of the harvest period.
+
+                self.start_data_samplers()
+
         except Exception:
             # If an exception occurs after agent has been flagged to be
             # shutdown then we ignore the error. This is because all
@@ -523,7 +463,62 @@ class Application(object):
 
             return name, False
 
-    def record_metric(self, name, value):
+    def register_data_source(self, source, name, settings, **properties):
+        """Create a data sampler corresponding to the data source
+        for this application.
+
+        """
+
+        _logger.debug('Register data source %r against application where '
+                'application=%r, name=%r, settings=%r and properties=%r.',
+                source, self._app_name, name, settings, properties)
+
+        self._data_samplers.append(DataSampler(self._app_name, source,
+                name, settings, **properties))
+
+    def start_data_samplers(self):
+        """Starts any data samplers. This will be called when the
+        application has been successfully registered and monitoring of
+        transactions commences.
+
+        """
+
+        _logger.debug('Starting data samplers for application %r.',
+                self._app_name)
+
+        for data_sampler in self._data_samplers:
+            try:
+                 data_sampler.start()
+            except:
+                 _logger.exception('Unexpected exception when starting '
+                         'data source %r. Custom metrics from this data '
+                         'source may not be subsequently available. If '
+                         'this problem persists, please report this '
+                         'problem to the provider of the data source.',
+                         data_sampler.name)
+
+    def stop_data_samplers(self):
+        """Stop any data samplers. This will be called when the active
+        session is terminated due to a harvest reporting error or process
+        shutdown.
+
+        """
+
+        _logger.debug('Stopping data samplers for application %r.',
+                self._app_name)
+
+        for data_sampler in self._data_samplers:
+            try:
+                 data_sampler.stop()
+            except:
+                 _logger.exception('Unexpected exception when stopping data '
+                         'source %r Custom metrics from this data source '
+                         'may not be subsequently available. If this '
+                         'problem persists, please report this problem to '
+                         'the provider of the data source.',
+                         data_sampler.name)
+
+    def record_custom_metric(self, name, value):
         """Record a custom metric against the application independent
         of a specific transaction.
 
@@ -540,10 +535,9 @@ class Application(object):
             return
 
         with self._stats_custom_lock:
-            self._stats_custom_engine.record_value_metric(
-                    ValueMetric(name=name, value=value))
+            self._stats_custom_engine.record_custom_metric(name, value)
 
-    def record_metrics(self, metrics):
+    def record_custom_metrics(self, metrics):
         """Record a set of custom metrics against the application
         independent of a specific transaction.
 
@@ -561,8 +555,7 @@ class Application(object):
 
         with self._stats_custom_lock:
             for name, value in metrics:
-                self._stats_custom_engine.record_value_metric(
-                        ValueMetric(name=name, value=value))
+                self._stats_custom_engine.record_custom_metric(name, value)
 
     def record_transaction(self, data):
         """Record a single transaction against this application."""
@@ -578,7 +571,7 @@ class Application(object):
 
         self.validate_process()
 
-        internal_metrics = ValueMetrics()
+        internal_metrics = CustomMetrics()
 
         with InternalTraceContext(internal_metrics):
             try:
@@ -614,7 +607,7 @@ class Application(object):
                     # anything else after this point. If we do then that
                     # data will not be recorded.
 
-                    self._stats_engine.merge_value_metrics(
+                    self._stats_engine.merge_custom_metrics(
                             internal_metrics.metrics())
 
                 except Exception:
@@ -751,7 +744,7 @@ class Application(object):
 
             return
 
-        internal_metrics = ValueMetrics()
+        internal_metrics = CustomMetrics()
 
         with InternalTraceContext(internal_metrics):
             with InternalTrace('Supportability/Harvest/Calls/harvest'):
@@ -795,22 +788,23 @@ class Application(object):
                 # data sampler, then should perhaps deregister it if it
                 # keeps having problems.
 
-                for sampler in self._samplers:
+                for data_sampler in self._data_samplers:
                     try:
-                        for metric in sampler.value_metrics():
-                            stats.record_value_metric(metric)
+                        for name, value in data_sampler.metrics():
+                            stats.record_custom_metric(name, value)
 
                     except Exception:
-                        _logger.exception('The merging of value metrics from '
-                                'a data sampler has failed. If this issue '
+                        _logger.exception('The merging of custom metrics from '
+                                'data sampler %r has failed. If this issue '
                                 'persists then please report this problem to '
-                                'New Relic support for further investigation.')
+                                'the data source provider or New Relic '
+                                'support for further investigation.',
+                                data_sampler.name)
 
                 # Add a metric we can use to track how many harvest
                 # periods have occurred.
 
-                stats.record_value_metric(ValueMetric(
-                        name='Instance/Reporting', value=0))
+                stats.record_custom_metric('Instance/Reporting', 0)
 
                 # Create our time stamp as to when this reporting period
                 # ends and start reporting the data.
@@ -983,6 +977,10 @@ class Application(object):
 
                         self._active_session = None
 
+                        # Stop any data samplers.
+
+                        self.stop_data_samplers()
+
                 except ForceAgentRestart:
                     # The data collector has indicated that we need to
                     # perform an internal agent restart. We attempt to
@@ -1012,6 +1010,12 @@ class Application(object):
 
                     self._agent_restart += 1
                     self._active_session = None
+
+                    # Stop any data samplers.
+
+                    self.stop_data_samplers()
+
+                    # Initiate a new session.
 
                     self.activate_session()
 
@@ -1051,6 +1055,10 @@ class Application(object):
                     self._active_session = None
 
                     self._agent_shutdown = True
+
+                    # Stop any data samplers.
+
+                    self.stop_data_samplers()
 
                 except RetryDataForRequest:
                     # A potentially recoverable error occurred. We merge
@@ -1126,4 +1134,4 @@ class Application(object):
         # part of the data for the next harvest period.
 
         with self._stats_lock:
-            self._stats_engine.merge_value_metrics(internal_metrics.metrics())
+            self._stats_engine.merge_custom_metrics(internal_metrics.metrics())

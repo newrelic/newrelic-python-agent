@@ -19,7 +19,7 @@ class MockApplication(object):
         pass
     def normalize_name(self, name, rule_type):
         return name, False
-    def record_transaction(self, data):
+    def record_transaction(self, data, *args):
         return None
 
 class TestCase(unittest.TestCase):

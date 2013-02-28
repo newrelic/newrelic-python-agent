@@ -35,6 +35,9 @@ class TransactionNode(_TransactionNode):
 
     """
 
+    def __hash__(self):
+        return id(self)
+
     @property
     def string_table(self):
         result = getattr(self, '_string_table', None)

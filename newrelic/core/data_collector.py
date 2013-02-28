@@ -676,6 +676,17 @@ class ApplicationSession(object):
                 'agent_command_results', self.license_key, self.agent_run_id,
                 payload)
 
+    def get_xray_metadata(self, xray_id):
+        """Receive xray metadata from the data collector.
+
+        """
+
+        payload = (self.agent_run_id, xray_id)
+
+        return send_request(self.requests_session, self.collector_url,
+                'get_xray_metadata', self.license_key, self.agent_run_id,
+                payload)
+
 def create_session(license_key, app_name, linked_applications,
         environment, settings):
 

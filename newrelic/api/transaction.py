@@ -130,6 +130,8 @@ class Transaction(object):
 
         self._custom_metrics = CustomMetrics()
 
+        self._profile_samples = []
+
         global_settings = application.global_settings
 
         if global_settings.enabled:
@@ -417,7 +419,8 @@ class Transaction(object):
                 guid=self.rum_guid,
                 cpu_utilization=self._cpu_utilization_value,
                 suppress_transaction_trace=self.suppress_transaction_trace,
-                client_cross_process_id=self.client_cross_process_id)
+                client_cross_process_id=self.client_cross_process_id,
+                )
 
         # Clear settings as we are all done and don't
         # need it anymore.
@@ -425,8 +428,16 @@ class Transaction(object):
         self._settings = None
         self.enabled = False
 
+        # TODO: Better to check if the current transaction is an xray
+        # transaction and only send the profile samples if necessary.  If not
+        # set the profile_samples to None.
+        #
+        # Right now this is done in Application class since we don't have
+        # access to the list of xray txns.
+
         if not self.ignore_transaction:
-            self._application.record_transaction(node)
+            self._application.record_transaction(node, (self.background_task,
+                self._profile_samples))
 
     @property
     def state(self):
@@ -483,6 +494,13 @@ class Transaction(object):
             path = '%s/%s/%s' % (transaction_type, group, name)
 
         return path
+
+    @property
+    def profile_sample(self):
+        return self._profile_samples
+
+    def add_profile_sample(self, stack_trace):
+        self._profile_samples.append(stack_trace)
 
     def _freeze_path(self):
         if self._frozen_path is None:

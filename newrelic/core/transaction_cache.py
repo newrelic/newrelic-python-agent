@@ -67,9 +67,9 @@ class TransactionCache(object):
             transaction = self._cache.get(thread_id)
             if transaction is not None:
                 if transaction.background_task:
-                    yield thread_id, 'BACKGROUND', frame
+                    yield transaction, thread_id, 'BACKGROUND', frame
                 else:
-                    yield thread_id, 'REQUEST', frame
+                    yield transaction, thread_id, 'REQUEST', frame
             else:
                 # Note that there may not always be a thread object.
                 # This is because thread could have been created direct
@@ -79,9 +79,9 @@ class TransactionCache(object):
 
                 thread = threading._active.get(thread_id)
                 if thread is not None and thread.getName().startswith('NR-'):
-                    yield thread_id, 'AGENT', frame
+                    yield None, thread_id, 'AGENT', frame
                 else:
-                    yield thread_id, 'OTHER', frame
+                    yield None, thread_id, 'OTHER', frame
 
         # Now yield up those corresponding to greenlets. Right now only
         # doing this for greenlets in which any active transactions are
@@ -93,9 +93,9 @@ class TransactionCache(object):
                 gr = transaction._greenlet()
                 if gr and gr.gr_frame is not None:
                     if transaction.background_task:
-                        yield thread_id, 'BACKGROUND', gr.gr_frame
+                        yield transaction, thread_id, 'BACKGROUND', gr.gr_frame
                     else:
-                        yield thread_id, 'REQUEST', gr.gr_frame
+                        yield transaction, thread_id, 'REQUEST', gr.gr_frame
 
     def save_transaction(self, transaction):
         """Saves the specified transaction away under the thread ID of

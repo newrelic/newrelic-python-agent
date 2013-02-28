@@ -5,7 +5,6 @@ import time
 import threading
 import zlib
 import base64
-import traceback
 
 import newrelic
 
@@ -65,7 +64,7 @@ def collect_stack_traces():
 
     """
 
-    for thread_id, thread_category, frame in \
+    for txn, thread_id, thread_category, frame in \
                 transaction_cache().active_threads():
         stack_trace = []
 
@@ -137,6 +136,13 @@ def collect_stack_traces():
             method_data = _MethodData(filename, name, line_no)
 
             stack_trace.append(method_data)
+            
+        # Collect the stack trace samples in a list attached to the transaction
+        # obj. This will be merged together to create a call tree if the
+        # transaction is an xray txn.
+
+        if txn:
+            txn.add_profile_sample(stack_trace)
 
         yield thread_category, stack_trace
 
@@ -213,6 +219,8 @@ class ThreadProfiler(object):
         self._start_time = 0
         self._stop_time = 0
 
+        self._xray_txns = {}
+
         # When collecting the call stack samples for where each thread
         # is executing, the data is aggregated into separate buckets
         # based on the categorisation of the thread type. Each bucket's
@@ -228,6 +236,17 @@ class ThreadProfiler(object):
         self._call_buckets = { 'REQUEST': {}, 'AGENT': {},
                 'BACKGROUND': {}, 'OTHER': {} }
         self._node_list = []
+
+    def add_xray_txn(self, txn_name, xray_session):
+        """Add a new transaction to the list of xray transactions tracked by
+        the profiler. 
+
+        """
+
+        self._xray_txns[txn_name] = xray_session
+
+    def pop_xray_txn(self, txn_name):
+        self._xray_txns.pop(txn_name)
 
     def _profiler_loop(self):
         """This is an infinite loop running in a background thread that
@@ -279,6 +298,13 @@ class ThreadProfiler(object):
         self._sample_count += 1
 
         for thread_category, stack_trace in collect_stack_traces():
+
+            # When xray session is running do not merge stack traces to form a
+            # call tree. Stack traces will be merged during record_transaction.
+
+            if self._xray_txns:
+                continue
+
             if thread_category is None:
                 continue
 
@@ -294,6 +320,16 @@ class ThreadProfiler(object):
             self._update_call_tree(self._call_buckets[thread_category],
                     stack_trace)
 
+    def add_stack_traces(self, bucket_name, stack_traces):
+        """Add multiple stack traces to a call tree."""
+
+        bucket = self._call_buckets.get(bucket_name)
+        if bucket is None:
+            return
+
+        for stack_trace in stack_traces:
+            self._update_call_tree(bucket, stack_trace)
+    
     def _update_call_tree(self, bucket, stack_trace, depth=1):
         """Merge a single call stack trace into a call tree bucket. If
         no appropriate call tree is found then create a new call tree.
@@ -362,7 +398,7 @@ class ThreadProfiler(object):
 
         # Profiling session not finished.
 
-        if self._profiler_thread.isAlive():
+        if self._profiler_thread.isAlive() and not self._xray_txns:
             return None
 
         call_data = {}
@@ -381,6 +417,12 @@ class ThreadProfiler(object):
                 call_data[thread_category] = bucket.values()
                 thread_count += len(bucket)
 
+        # If no profile data was captured return None instead of sending an
+        # encoded empty data-structure 
+
+        if thread_count == 0:
+            return None
+
         # Construct the actual final data for sending. The actual call
         # data is turned into JSON, compessed and then base64 encoded at
         # this point to cut its size.
@@ -390,11 +432,28 @@ class ThreadProfiler(object):
                 namedtuple_as_object=False)
         encoded_data = base64.standard_b64encode(zlib.compress(json_data))
 
+        if self._xray_txns:
+            xray_obj = self._xray_txns.values()[0]
+            xray_id = xray_obj.xray_id
+        else:
+            xray_id = None
+
         profile = [[self.profile_id, self._start_time*1000,
                 self._stop_time*1000, self._sample_count, encoded_data,
-                thread_count, 0]]
+                thread_count, 0, xray_id]]
+
+        # If xray session is running send partial call tree and clear the
+        # data-structures.
+        if self._xray_txns:
+            self._reset_call_buckets()
 
         return profile
+
+    def _reset_call_buckets(self):
+        self._call_buckets = { 'REQUEST': {}, 'AGENT': {},
+                'BACKGROUND': {}, 'OTHER': {} }
+        self._node_list = []
+
 
     def _prune_call_trees(self, limit):
         """Prune the number of profile nodes we send up to the data
@@ -448,5 +507,7 @@ if __name__ == "__main__":
     #fib(35)
     import time
     time.sleep(1.1)
-    c = zlib.decompress(base64.standard_b64decode(t.profile_data()[0][4]))
+    pd = t.profile_data()
+    c = zlib.decompress(base64.standard_b64decode(pd[0][4]))
+    print pd
     print c

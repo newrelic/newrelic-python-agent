@@ -117,9 +117,9 @@ class Application(object):
 
         return self.record_custom_metrics(metrics)
 
-    def record_transaction(self, data):
+    def record_transaction(self, data, profile_samples=None):
         if self.active:
-            self._agent.record_transaction(self._name, data)
+            self._agent.record_transaction(self._name, data, profile_samples)
 
     def normalize_name(self, name, rule_type='url'):
         if self.active:

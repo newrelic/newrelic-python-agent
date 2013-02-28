@@ -422,7 +422,7 @@ class Agent(object):
  
         return self.record_custom_metrics(app_name, metrics)
 
-    def record_transaction(self, app_name, data):
+    def record_transaction(self, app_name, data, profile_samples=None):
         """Processes the raw transaction data, generating and recording
         appropriate metrics against the named application. If there has
         been no prior request to activate the application, the metric is
@@ -434,7 +434,7 @@ class Agent(object):
         if application is None or not application.active:
             return
 
-        application.record_transaction(data)
+        application.record_transaction(data, profile_samples)
 
     def normalize_name(self, app_name, name, rule_type='url'):
         application = self._applications.get(app_name, None)

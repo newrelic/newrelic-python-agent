@@ -37,9 +37,11 @@ class AgentLimitsSettings(Settings): pass
 class ConsoleSettings(Settings): pass
 class DebugSettings(Settings): pass
 class CrossProcessSettings(Settings): pass
+class XraySessionSettings(Settings): pass
 
 _settings = Settings()
 _settings.thread_profiler = ThreadProfilerSettings()
+_settings.xray_session = XraySessionSettings()
 _settings.transaction_tracer = TransactionTracerSettings()
 _settings.error_collector = ErrorCollectorSettings()
 _settings.browser_monitoring = BrowserMonitorSettings()
@@ -133,6 +135,7 @@ _settings.encoding_key = None
 
 _settings.thread_profiler.enabled = True
 _settings.cross_process.enabled = True
+_settings.xray_session.enabled = True
 
 _settings.transaction_tracer.enabled = True
 _settings.transaction_tracer.transaction_threshold = None
@@ -165,11 +168,12 @@ _settings.agent_limits.slow_sql_stack_trace = 30
 _settings.agent_limits.sql_explain_plans = 30
 _settings.agent_limits.slow_sql_data = 10
 _settings.agent_limits.merge_stats_maximum = 5
-_settings.agent_limits.saved_transactions = 10
 _settings.agent_limits.errors_per_transaction = 5
 _settings.agent_limits.errors_per_harvest = 20
 _settings.agent_limits.slow_transaction_dry_harvests = 5
 _settings.agent_limits.thread_profiler_nodes = 20000
+_settings.agent_limits.browser_transactions = 10
+_settings.agent_limits.xray_transactions = 10
 
 _settings.console.listener_socket = None
 _settings.console.allow_interpreter_cmd = False

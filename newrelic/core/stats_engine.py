@@ -247,7 +247,9 @@ class StatsEngine(object):
         self.__slow_transaction_dry_harvests = 0
         self.__transaction_errors = []
         self.__metric_ids = {}
-        self.__saved_transactions = []
+        self.__browser_transactions = []
+        self.__xray_transactions = []
+        self.xray_sessions = {}
 
     @property
     def settings(self):
@@ -430,6 +432,64 @@ class StatsEngine(object):
 
         return key
 
+    def _update_xray_transaction(self, transaction):
+        """Check if transaction is an xray transaction and save it to the
+        __xray_transactions
+        """
+
+        settings = self.__settings
+
+        # Nothing to do if we have reached the max limit of xray transactions
+        # to send per harvest.
+
+        maximum = settings.agent_limits.xray_transactions
+        if len(self.__xray_transactions) >= maximum:
+            return
+
+        # If current transaction qualifies as an xray_transaction, set the
+        # xray_id on the transaction object and save it in the
+        # xray_transactions list. 
+
+        xray_session = self.xray_sessions.get(transaction.path)
+        if xray_session:
+            transaction.xray_id = xray_session.xray_id
+            self.__xray_transactions.append(transaction)
+
+    def _update_slow_transaction(self, transaction):
+        """Check if transaction is the slowest transaction and update
+        accordingly.
+        """
+        slowest = 0
+        name = transaction.path
+
+        if self.__slow_transaction:
+            slowest = self.__slow_transaction.duration
+        if name in self.__slow_transaction_map:
+            slowest = max(self.__slow_transaction_map[name], slowest)
+
+        if transaction.duration > slowest:
+            self.__slow_transaction = transaction
+            self.__slow_transaction_map[name] = transaction.duration
+
+    def _update_browser_transaction(self, transaction):
+        """Check if transaction is a browser trace and save it to the
+        __browser_transaction
+        """
+
+        settings = self.__settings
+
+        # If guid is not set then it is not a browser transaction.
+
+        if transaction.guid is None:
+            return 
+
+        # Check if we have enough browser transactions before adding the
+        # current transaction to the list.
+
+        maximum = settings.agent_limits.browser_transactions
+        if len(self.__browser_transactions) < maximum:
+            self.__browser_transactions.append(transaction)
+
     @internal_trace('Supportability/StatsEngine/Calls/record_transaction')
     def record_transaction(self, transaction):
         """Record any apdex and time metrics for the transaction as
@@ -506,33 +566,19 @@ class StatsEngine(object):
         if (not transaction.suppress_transaction_trace and
                     transaction_tracer.enabled and settings.collect_traces):
 
-            duration = transaction.duration
+            # Transactions saved for xray session do not depend on the
+            # transaction threshold.
+
+            self._update_xray_transaction(transaction)
+
             threshold = transaction_tracer.transaction_threshold
 
             if threshold is None:
                 threshold = transaction.apdex_t * 4
 
-            if duration >= threshold:
-                slowest = 0
-                name = transaction.path
-
-                if self.__slow_transaction:
-                    slowest = self.__slow_transaction.duration
-                if name in self.__slow_transaction_map:
-                    slowest = max(self.__slow_transaction_map[name], slowest)
-
-                if duration > slowest:
-                    self.__slow_transaction = transaction
-                    self.__slow_transaction_map[name] = duration
-
-                # Add transaction to the saved list, if transaction has
-                # a guid and number of saved transactions is less than
-                # the limit.
-
-                if transaction.guid:
-                    maximum = settings.agent_limits.saved_transactions
-                    if len(self.__saved_transactions) < maximum:
-                        self.__saved_transactions.append(transaction)
+            if transaction.duration >= threshold:
+                self._update_slow_transaction(transaction)
+                self._update_browser_transaction(transaction)
 
     @internal_trace('Supportability/StatsEngine/Calls/metric_data')
     def metric_data(self, normalizer=None):
@@ -667,16 +713,23 @@ class StatsEngine(object):
         if not self.__settings:
             return []
 
-        if (not self.__slow_transaction) and (not self.__saved_transactions):
+        # Create a set 'traces' that is a union of slow transaction,
+        # browser_transactions and xray_transactions. This ensures we don't
+        # send duplicates of a transaction.
+
+        traces = set()
+        if self.__slow_transaction:
+            traces.add(self.__slow_transaction)
+        traces.update(self.__browser_transactions)
+        traces.update(self.__xray_transactions)
+
+        # Return an empty list if no transactions were captured.
+
+        if not traces:
             return []
 
         trace_data = []
         maximum = self.__settings.agent_limits.transaction_traces_nodes
-        traces = list(self.__saved_transactions)
-
-        if (self.__slow_transaction is not None and
-                self.__slow_transaction not in traces):
-            traces.append(self.__slow_transaction)
 
         for trace in traces:
             transaction_trace = trace.transaction_trace(self, maximum)
@@ -712,6 +765,7 @@ class StatsEngine(object):
 
             root = transaction_trace.root
             force_persist = trace.guid is not None
+            xray_id = getattr(trace, 'xray_id', None)
 
             trace_data.append([root.start_time,
                     root.end_time - root.start_time,
@@ -720,7 +774,8 @@ class StatsEngine(object):
                     pack_data,
                     trace.guid,
                     None,
-                    force_persist])
+                    force_persist,
+                    xray_id,])
 
         return trace_data
 
@@ -801,7 +856,8 @@ class StatsEngine(object):
         self.__slow_transaction_map = {}
         self.__transaction_errors = []
         self.__metric_ids = {}
-        self.__saved_transactions = []
+        self.__browser_transactions = []
+        self.__xray_transactions = []
 
     def harvest_snapshot(self):
         """Creates a snapshot of the accumulated statistics, error
@@ -858,7 +914,8 @@ class StatsEngine(object):
         self.__sql_stats_table = {}
         self.__slow_transaction = None
         self.__transaction_errors = []
-        self.__saved_transactions = []
+        self.__browser_transactions = []
+        self.__xray_transactions = []
 
         return stats
 
@@ -872,6 +929,7 @@ class StatsEngine(object):
         stats = StatsEngine()
 
         stats.__settings = self.__settings
+        stats.xray_sessions = self.xray_sessions
 
         return stats
 
@@ -936,10 +994,9 @@ class StatsEngine(object):
                 else:
                     stats.merge_stats(other)
 
-        # Restore original slow transaction if slower than any newer
-        # slow transaction. Also append any saved transactions
-        # corresponding to browser traces, trimming them at the maximum
-        # to be kept.
+        # Restore original slow transaction if slower than any newer slow
+        # transaction. Also append any saved transactions corresponding to
+        # browser and xray traces, trimming them at the maximum to be kept.
 
         if merge_traces:
             transaction = snapshot.__slow_transaction
@@ -958,9 +1015,13 @@ class StatsEngine(object):
                     self.__slow_transaction = transaction
                     self.__slow_transaction_map[name] = duration
 
-            maximum = settings.agent_limits.saved_transactions
-            self.__saved_transactions.extend(snapshot.__saved_transactions)
-            self.__saved_transactions = self.__saved_transactions[:maximum]
+            maximum = settings.agent_limits.browser_transactions
+            self.__browser_transactions.extend(snapshot.__browser_transactions)
+            self.__browser_transactions = self.__browser_transactions[:maximum]
+
+            maximum = settings.agent_limits.xray_transactions
+            self.__xray_transactions.extend(snapshot.__xray_transactions)
+            self.__xray_transactions = self.__xray_transactions[:maximum]
 
     def merge_custom_metrics(self, metrics):
         """Merges in a set of custom metrics. The metrics should be

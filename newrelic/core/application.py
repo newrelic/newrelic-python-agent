@@ -24,6 +24,8 @@ from newrelic.core.thread_profiler import ThreadProfiler
 from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
         InternalTraceContext, internal_metric)
 from newrelic.core.data_source import DataSampler
+from newrelic.core.xray_session import XraySession
+from newrelic.core.profile_sessions import profile_session_manager
 
 _logger = logging.getLogger(__name__)
 
@@ -83,9 +85,20 @@ class Application(object):
 
         # Thread profiler and state of whether active or not.
 
-        self._thread_profiler = None
-        self._profiler_started = False
-        self._send_profile_data = False
+        #self._thread_profiler = None
+        #self._profiler_started = False
+        #self._send_profile_data = False
+
+        #self._xray_profiler = None
+        self.xray_session_running = False
+
+        self.profile_manager = profile_session_manager()
+
+        # This holds a dictionary of currently active xray sessions. 
+        # key = xray_id
+        # value = XraySession object 
+
+        self._active_xrays = {}
 
     @property
     def name(self):
@@ -436,7 +449,9 @@ class Application(object):
 
     def normalize_name(self, name, rule_type):
         """Applies the agent normalization rules of the the specified
-        rule type to the supplied name."""
+        rule type to the supplied name.
+        
+        """
 
         if not self._active_session:
             return name, False
@@ -557,7 +572,7 @@ class Application(object):
             for name, value in metrics:
                 self._stats_custom_engine.record_custom_metric(name, value)
 
-    def record_transaction(self, data):
+    def record_transaction(self, data, profile_samples=None):
         """Record a single transaction against this application."""
 
         if not self._active_session:
@@ -590,6 +605,26 @@ class Application(object):
                         'this problem to New Relic support for further '
                         'investigation.')
 
+            if profile_samples and data.path in \
+                    self._stats_engine.xray_sessions:
+
+                try:
+                    background_task, samples = profile_samples
+
+                    internal_metric('Supportability/Profiling/Counts/'
+                            'stack_traces[sample]', len(samples))
+
+                    tr_type = 'BACKGROUND' if background_task else 'REQUEST'
+                    self.profile_manager.add_stack_traces(self._app_name,
+                            data.path, tr_type, samples)
+
+                except:
+                    _logger.exception('Building xray profile tree has failed.'
+                            'This would indicate some sort of internal '
+                            'implementation issue with the agent. Please '
+                            'report this problem to New Relic support for '
+                            'further investigation.')
+
             with self._stats_lock:
                 try:
                     self._transaction_count += 1
@@ -617,6 +652,261 @@ class Application(object):
                             'Please report this problem to New Relic support '
                             'for further investigation.')
 
+    def start_xray(self, command_id=0, **kwargs):
+        """Handler for agent command 'start_xray_session'. """
+
+        if not self._active_session.configuration.xray_session.enabled:
+            _logger.warning('An xray session was requested '
+                    'for %r but xray sessions are disabled by the current '
+                    'agent configuration. Enable "xray_session.enabled" '
+                    'in the agent configuration.', self._app_name)
+            return {command_id: {'error': 'The xray sessions are disabled'}}
+
+        try:
+            xray_id = kwargs['x_ray_id']
+            name = kwargs['key_transaction_name']
+            duration_s = kwargs.get('duration', 864000)  # 86400s = 24hrs
+            max_traces = kwargs.get('requested_trace_count', 100)
+            sample_period_s = kwargs.get('sample_period', 0.1)
+            run_profiler = kwargs.get('run_profiler', True)
+        except KeyError:
+
+            # A KeyError can happen if an xray id was present in
+            # active_xray_sessions but it was cancelled by the user before the
+            # agent could get it's metadata.
+
+            _logger.warning('An xray session was requested but appropriate '
+                    'parameters were not provided. Report this error '
+                    'to New Relic support for further investigation. '
+                    'Provided Params: %r', kwargs)
+            return {command_id: {'error': 'The xray sessions error'}}
+
+        stop_time_s = self._period_start + duration_s
+
+        # An xray session is deemed as already_running if the xray_id is
+        # already present in the self._active_xrays or the key txn is already
+        # tracked in the stats_engine.xray_sessions.
+        #
+        # If an xray was cancelled and then restarted within the same harvest
+        # period. The collector will send the start xray for the same key txn
+        # with a new xray id and drop the old xray id in the
+        # active_xray_sessions(). But before we get to the
+        # active_xray_sessions() where we stop the xray, we have to deal with
+        # the start_xray command which will try to start an xray session for
+        # the same key txn before it was stopped. Clear as mud?
+
+        already_running = self._active_xrays.get(xray_id) is not None
+        already_running |= (self._stats_engine.xray_sessions.get(name) is not
+                None)
+
+        if already_running:
+            _logger.warning('An xray session was requested for %r but an xray '
+                    'session for the requested key transaction %r is already ' 
+                    'in progress. Ignoring the subsequent request. This can '
+                    'happen occassionally. But if it keeps occurring on a '
+                    'regular basis, please report this problem to New Relic '
+                    'support for further  investigation.', 
+                    self._app_name, name)
+            return {command_id: {'error': 'Xray session already running.'}}
+
+        xs = XraySession(xray_id, name, stop_time_s, max_traces,
+                sample_period_s)
+
+        # Add it to the currently active xrays.
+
+        self._active_xrays[xray_id] = xs
+
+        # Add it to the stats engine to start recording Xray TTs.
+
+        self._stats_engine.xray_sessions[name] = xs
+
+        # Start the xray profiler only if requested by collector. 
+        
+        if run_profiler:
+            profiler_status = self.profile_manager.start_profile_session(
+                    self._app_name, -1, stop_time_s, sample_period_s, False,
+                    name, xray_id)
+            
+        _logger.info('Starting an xray session for %r. '
+                'duration:%d mins name:%s xray_id:%d', self._app_name,
+                duration_s/60, name, xray_id)
+
+        return {command_id: {}} 
+
+    def stop_xray(self, command_id=0, **kwargs):
+        """Handler for agent command 'stop_xray_session'. This command is sent
+        by collector under two conditions: 
+            
+        1. When there are enough traces for the xray session.
+        2. When the user cancels an xray session in progress.
+
+        """
+        try:
+            xray_id = kwargs['x_ray_id']
+            name = kwargs['key_transaction_name']
+        except KeyError:
+            _logger.warning('A stop xray was requested but appropriate '
+                    'parameters were not provided. Report this error '
+                    'to New Relic support for further investigation. '
+                    'Provided Params: %r', kwargs)
+            return {command_id: {'error': 'Xray session stop error.'}}
+        
+        # An xray session is deemed as already_running if the xray_id is
+        # already present in the self._active_xrays or the key txn is already
+        # tracked in the stats_engine.xray_sessions.
+
+        already_running = self._active_xrays.get(xray_id) is not None
+        already_running |= (self._stats_engine.xray_sessions.get(name) is not
+                None)
+        if not already_running:
+            _logger.warning('A request was received to stop xray '
+                    'session %d for %r, but the xray session is not running. '
+                    'If this keeps occurring on a regular basis, please '
+                    'report this problem to New Relic support for further '
+                    'investigation.', xray_id, self._app_name)
+
+            return {command_id: {'error': 'Xray session not running.'}}
+
+        try:
+            xs = self._active_xrays.pop(xray_id)
+            self._stats_engine.xray_sessions.pop(xs.key_txn)
+        except KeyError:
+            pass
+
+        # We are deliberately ignoring the return value from
+        # stop_profile_session because there is a chance that the profiler has
+        # stopped automatically after the alloted duration has elapsed before
+        # the collector got a chance to issue the stop_xray command. We don't
+        # want to raise an alarm for that scenario.
+
+        _logger.info('Stopping xray session %d for %r', xray_id,
+                self._app_name)
+
+        self.profile_manager.stop_profile_session(self._app_name, xs.key_txn)
+
+        return {command_id: {}} 
+
+    def active_xray_sessions(self, command_id=0, **kwargs):
+        """Receives  a list of xray_ids that are currently active in the
+        datacollector.
+
+        """
+
+        # If xray_sessions are disabled in the config file, just ignore the
+        # active_xray_sessions command and proceed.
+        #
+        # This can happen if one of the hosts has the xrays disabled but the
+        # other hosts are running x-rays.
+
+        if not self._active_session.configuration.xray_session.enabled:
+            return None
+
+        # Create a set from the xray_ids received from the collector. 
+
+        collector_xray_ids = set(kwargs['xray_ids'])
+
+        _logger.debug('X Ray sessions expected to be running for %r are '
+                '%r.', self._app_name, collector_xray_ids)
+
+        # Create a set from the xray_ids currently active in the agent.
+
+        agent_xray_ids = set(self._active_xrays)
+
+        _logger.debug('X Ray sessions actually running for %r are '
+                '%r.', self._app_name, agent_xray_ids)
+
+        # Result of the (agent_xray_ids - collector_xray_ids) will be the ids
+        # that are not active in collector but are still active in the agent.
+        # These xray sessions must be stopped.
+
+        stopped_xrays = agent_xray_ids - collector_xray_ids
+
+        _logger.debug('X Ray sessions to be stopped for %r are '
+                '%r.', self._app_name, stopped_xrays)
+
+        for xray_id in stopped_xrays:
+            xs = self._active_xrays.get(xray_id)
+            self.stop_xray(x_ray_id=xs.xray_id, key_transaction_name=xs.key_txn)
+
+        # Result of the (collector_xray_ids - agent_xray_ids) will be the ids
+        # that are new xray sessions created in the collector but are not yet
+        # activated in the agent. Agent will contact the collector with each
+        # xray_id and ask for it's metadata, then start the corresponding
+        # xray_sessions.
+
+        new_xrays = collector_xray_ids - agent_xray_ids
+
+        _logger.debug('X Ray sessions to be started for %r are '
+                '%r.', self._app_name, new_xrays)
+
+        for xray_id in new_xrays:
+            metadata = self._active_session.get_xray_metadata(xray_id)
+            self.start_xray(0, **metadata[0])
+
+        # 'active_xray_sessions' does NOT send an acknowledgement back to
+        # the collector
+
+        return None
+
+###############################################################################
+#    def xstart_xray(self, command_id=0, **kwargs):
+#        """Handler for agent command 'start_xray_session'. """
+#
+#        xray_id = kwargs['x_ray_id']
+#        name = kwargs['key_transaction_name']
+#        duration_s = kwargs['duration']
+#        max_traces = kwargs['requested_trace_count']
+#        sample_period_s = kwargs['sample_period']
+#
+#        xs = XraySession(xray_id, name, duration_s, max_traces,
+#                sample_period_s)
+#
+#        self._stats_engine.xray_sessions[name] = xs
+#
+#        # Create a new profiler obj if profiler is not already running
+#
+#        if self._xray_profiler is None:
+#            #self._xray_profiler = ThreadProfiler(self._app_name, xray_id,
+#                    #sample_period_s)
+#            self._xray_profiler = ThreadProfiler(self._app_name, -1,
+#                    sample_period_s)
+#
+#        self._xray_profiler.add_xray_txn(name, xs)
+#
+#        self._xray_profiler.start_profiling(self._period_start + duration_s)
+#        self.xray_start_time = time.time()
+#        self.xray_end_time = self.xray_start_time + duration_s
+#        self.xray_session_running = True
+#        _logger.debug('Starting X-ray session %r', name)
+#
+#    def xstop_xray(self, command_id=0, clear_everything=False, **kwargs):
+#        """Handler for agent command 'stop_xray_session'. This command is sent
+#        by collector under two conditions: 
+#            
+#        1. When there are enough traces for the xray session.
+#        2. When the user cancels an xray session in progress.
+#
+#        """
+#
+#        if not clear_everything:
+#            try:
+#                name = kwargs['key_transaction_name']
+#                self._stats_engine.xray_sessions.pop(name)
+#                self._xray_profiler.pop_xray_txn(name)
+#            except KeyError:
+#                # Received an invalid txn name
+#                pass
+#        else:
+#            self._stats_engine.xray_sessions.clear()
+#            self._xray_profiler._xray_txns.clear()
+#
+#        # No more xray txns to track
+#
+#        if not self._stats_engine.xray_sessions: 
+#            self._xray_profiler.stop_profiling(wait_for_completion=True)
+#            self.xray_session_running = False
+###############################################################################
+
     def start_profiler(self, command_id=0, **kwargs):
         """Triggered by the start_profiler agent command to start a
         thread profiling session.
@@ -632,17 +922,11 @@ class Application(object):
 
         profile_id = kwargs['profile_id'] 
         sample_period = kwargs['sample_period'] 
-        duration = kwargs['duration'] 
+        duration_s = kwargs['duration'] 
         profile_agent_code = kwargs['profile_agent_code'] 
 
-        if self._profiler_started:
-            _logger.warning('A thread profiling session was requested for '
-                    '%r but a thread profiling session is already in '
-                    'progress. Ignoring the subsequent request. '
-                    'If this keeps occurring on a regular basis, please '
-                    'report this problem to New Relic support for further '
-                    'investigation.', self._app_name)
-            return {command_id: {'error': 'Profiler already running'}}
+        stop_time_s = self._period_start + duration_s
+
 
         if not hasattr(sys, '_current_frames'):
             _logger.warning('A thread profiling session was requested for '
@@ -653,34 +937,29 @@ class Application(object):
                     self._app_name)
             return {command_id: {'error': 'Profiler not supported'}}
 
+        # ProfilerManager will only allow one generic thread profiler to be
+        # active at any given time. So if a user has multiple applications and
+        # tries to start an thread profiler from both of them, then it will
+        # fail and log an error message. The thread profiler will report on all
+        # threads in the process and not just those handling transactions
+        # related to the specific application.
+
+        success = self.profile_manager.start_profile_session(self._app_name,
+                profile_id, stop_time_s, sample_period, profile_agent_code)
+
+        if not success: 
+            _logger.warning('A thread profiling session was requested for '
+                    '%r but a thread profiling session is already in '
+                    'progress. Ignoring the subsequent request. '
+                    'If this keeps occurring on a regular basis, please '
+                    'report this problem to New Relic support for further '
+                    'investigation.', self._app_name)
+            return {command_id: {'error': 'Profiler already running'}}
+
         _logger.info('Starting thread profiling session for %r.',
                 self._app_name)
 
-        # Note that the thread profiler is bound to the application and
-        # there is no restriction in place to ensure that only one is
-        # run at a time in a process. Thus technically one could start
-        # thread profiling session against multiple applications in same
-        # process. The merits of doing this are limited though, as the
-        # thread profiler reports on what all threads in the process are
-        # doing and not just those handling transactions related to the
-        # specific application.
-
-        self._thread_profiler = ThreadProfiler(self._app_name, profile_id,
-                sample_period, profile_agent_code)
-
-        # When starting the profiling session, we actually specify the
-        # stop time as being duration starting from when this harvest
-        # period started. This is an attempt to have the thread
-        # profiling session finish in time to have it reported with the
-        # harvest period finishing at about the same time, rather than
-        # being held over for the next harvest a minute later.
-
-        self._thread_profiler.start_profiling(self._period_start+duration)
-
-        self._profiler_started = True
-        self._send_profile_data = True
-
-        return {command_id: {}} 
+        return {command_id: {}}
 
     def stop_profiler(self, command_id=0, **kwargs):
         """Triggered by the stop_profiler agent command to forcibly stop
@@ -688,7 +967,9 @@ class Application(object):
 
         """
 
-        if not self._profiler_started:
+        fps = self.profile_manager.full_profile_session
+
+        if fps is None:
             _logger.warning('A request was received to stop a thread '
                     'profiling session for %r, but a thread profiling '
                     'session is not running. If this keeps occurring on '
@@ -697,18 +978,18 @@ class Application(object):
                     self._app_name)
             return {command_id: {'error': 'Profiler not running.'}}
 
-        elif kwargs['profile_id'] != self._thread_profiler.profile_id:
+        elif kwargs['profile_id'] != fps.profile_id:
             _logger.warning('A request was received to stop a thread '
                     'profiling session for %r, but the ID %r for '
                     'the current thread profiling session does not '
                     'match the provided ID of %r. If this keeps occurring on '
                     'a regular basis, please report this problem to New '
                     'Relic support for further investigation.',
-                    self._app_name, self._thread_profiler.profile_id,
+                    self._app_name, fps.profile_id,
                     kwargs['profile_id'])
             return {command_id: {'error': 'Profiler not running.'}}
 
-        _logger.info('Stopping thread profiling session for %r.',
+        _logger.info('Stopping thread profiler session for %r.',
                 self._app_name)
 
         # To ensure that the thread profiling session stops, we wait for
@@ -716,15 +997,122 @@ class Application(object):
         # the thread profiling session, we discard the thread profiler
         # immediately.
 
-        self._thread_profiler.stop_profiling(wait_for_completion=True)
-
-        self._send_profile_data = kwargs['report_data']
-
-        if not self._send_profile_data:
-            self._thread_profiler = None
-            self._profiler_started = False
+        self.profile_manager.stop_profile_session(self._app_name)
 
         return {command_id: {}} 
+        
+###############################################################################
+#    def xstart_profiler(self, command_id=0, **kwargs):
+#        """Triggered by the start_profiler agent command to start a
+#        thread profiling session.
+#
+#        """
+#
+#        if not self._active_session.configuration.thread_profiler.enabled:
+#            _logger.warning('A thread profiling session was requested '
+#                    'for %r but thread profiling is disabled by the current '
+#                    'agent configuration. Enable "thread_profiler.enabled" '
+#                    'in the agent configuration.', self._app_name)
+#            return {command_id: {'error': 'The profiler service is disabled'}}
+#
+#        profile_id = kwargs['profile_id'] 
+#        sample_period = kwargs['sample_period'] 
+#        duration = kwargs['duration'] 
+#        profile_agent_code = kwargs['profile_agent_code'] 
+#
+#        if self._profiler_started:
+#            _logger.warning('A thread profiling session was requested for '
+#                    '%r but a thread profiling session is already in '
+#                    'progress. Ignoring the subsequent request. '
+#                    'If this keeps occurring on a regular basis, please '
+#                    'report this problem to New Relic support for further '
+#                    'investigation.', self._app_name)
+#            return {command_id: {'error': 'Profiler already running'}}
+#
+#        if not hasattr(sys, '_current_frames'):
+#            _logger.warning('A thread profiling session was requested for '
+#                    '%r but thread profiling is not supported for the '
+#                    'Python interpreter being used. Contact New Relic '
+#                    'support for additional information about supported '
+#                    'platforms for the thread profiling feature.',
+#                    self._app_name)
+#            return {command_id: {'error': 'Profiler not supported'}}
+#
+#        _logger.info('Starting thread profiling session for %r.',
+#                self._app_name)
+#
+#        # Note that the thread profiler is bound to the application and
+#        # there is no restriction in place to ensure that only one is
+#        # run at a time in a process. Thus technically one could start
+#        # thread profiling session against multiple applications in same
+#        # process. The merits of doing this are limited though, as the
+#        # thread profiler reports on what all threads in the process are
+#        # doing and not just those handling transactions related to the
+#        # specific application.
+#
+#        self._thread_profiler = ThreadProfiler(self._app_name, profile_id,
+#                sample_period, profile_agent_code)
+#
+#        # When starting the profiling session, we actually specify the
+#        # stop time as being duration starting from when this harvest
+#        # period started. This is an attempt to have the thread
+#        # profiling session finish in time to have it reported with the
+#        # harvest period finishing at about the same time, rather than
+#        # being held over for the next harvest a minute later.
+#
+#        self._thread_profiler.start_profiling(self._period_start+duration)
+#
+#        self._profiler_started = True
+#        self._send_profile_data = True
+#
+#        return {command_id: {}} 
+###############################################################################
+
+###############################################################################
+#    def xstop_profiler(self, command_id=0, **kwargs):
+#        """Triggered by the stop_profiler agent command to forcibly stop
+#        a thread profiling session prior to it having completed normally.
+#
+#        """
+#
+#        if not self._profiler_started:
+#            _logger.warning('A request was received to stop a thread '
+#                    'profiling session for %r, but a thread profiling '
+#                    'session is not running. If this keeps occurring on '
+#                    'a regular basis, please report this problem to New '
+#                    'Relic support for further investigation.',
+#                    self._app_name)
+#            return {command_id: {'error': 'Profiler not running.'}}
+#
+#        elif kwargs['profile_id'] != self._thread_profiler.profile_id:
+#            _logger.warning('A request was received to stop a thread '
+#                    'profiling session for %r, but the ID %r for '
+#                    'the current thread profiling session does not '
+#                    'match the provided ID of %r. If this keeps occurring on '
+#                    'a regular basis, please report this problem to New '
+#                    'Relic support for further investigation.',
+#                    self._app_name, self._thread_profiler.profile_id,
+#                    kwargs['profile_id'])
+#            return {command_id: {'error': 'Profiler not running.'}}
+#
+#        _logger.info('Stopping thread profiling session for %r.',
+#                self._app_name)
+#
+#        # To ensure that the thread profiling session stops, we wait for
+#        # its completion. If we don't need to send back the data from
+#        # the thread profiling session, we discard the thread profiler
+#        # immediately.
+#
+#        self._thread_profiler.stop_profiling(wait_for_completion=True)
+#
+#        self._send_profile_data = kwargs['report_data']
+#
+#        if not self._send_profile_data:
+#            self._thread_profiler = None
+#            self._profiler_started = False
+#
+#        return {command_id: {}} 
+###############################################################################
 
     def harvest(self, shutdown=False):
         """Performs a harvest, reporting aggregated data for the current
@@ -902,6 +1290,27 @@ class Application(object):
 
                     agent_commands = self._active_session.get_agent_commands()
 
+                    # Extract the command names from the agent_commands. This
+                    # is used to check for the presence of active_xray_sessions
+                    # command in the list. 
+
+                    cmd_names = [x[1]['name'] for x in agent_commands]
+
+                    no_xray_cmds = 'active_xray_sessions' not in cmd_names
+
+                    # If there are active xray sessions running but the agent
+                    # commands doesn't have any active_xray_session ids then
+                    # all the active xray sessions must be stopped.
+
+                    if self._active_xrays and no_xray_cmds:
+                        _logger.debug('Stopping all X Ray sessions for %r. '
+                            'Current sessions running are %r.', self._app_name,
+                            self._active_xrays.keys())
+
+                        for xs in self._active_xrays.values():
+                            self.stop_xray(x_ray_id=xs.xray_id,
+                                    key_transaction_name=xs.key_txn)
+
                     # For each agent command received, call the
                     # appropiate agent command handler. Reply to the
                     # data collector with the acknowledgement of the
@@ -930,27 +1339,18 @@ class Application(object):
                             self._active_session.send_agent_command_results(
                                     cmd_res)
 
-                    # If a profiling session is already running, check
-                    # if it is completed and send the accumulated
-                    # profile data back to the data collector. Note that
-                    # this come after we process the agent commands as
-                    # we might receive an agent command to stop the
-                    # profiling session, but still send the data back.
-                    # Having the sending of the results last ensures we
-                    # send back that data from the stopped profiling
-                    # session immediately.
+                    # Send the accumulated profile data back to the data
+                    # collector. Note that this come after we process the agent
+                    # commands as we might receive an agent command to stop the
+                    # profiling session, but still send the data back.  Having
+                    # the sending of the results last ensures we send back that
+                    # data from the stopped profiling session immediately.
 
-                    if self._profiler_started:
-                        profile_data = self._thread_profiler.profile_data()
-
-                        if profile_data and self._send_profile_data:
+                    for profile_data in self.profile_manager.profile_data(self._app_name):
+                        if profile_data:
                             _logger.debug('Reporting thread profiling '
                                     'session data for %r.', self._app_name)
-
                             self._active_session.send_profile_data(profile_data)
-
-                            self._profiler_started = False
-                            self._send_profile_data = False
 
                     # If this is a final forced harvest for the process
                     # then attempt to shutdown the session.
@@ -959,16 +1359,11 @@ class Application(object):
                     # to make sure we stop that from running as well.
 
                     if shutdown:
-                        if self._profiler_started:
-                            _logger.info('Aborting thread profiling session '
-                                    'for %r.', self._app_name)
+                        #_logger.info('Aborting thread profiling session '
+                        #        'for %r.', self._app_name)
 
-                            self._thread_profiler.stop_profiling(
-                                    wait_for_completion=False)
-
-                            self._thread_profiler = None
-                            self._profiler_started = False
-                            self._send_profile_data = False
+                        # XXX Call shutdown on the profile_manager.
+                        self.profile_manager.shutdown(self._app_name)
 
                         try:
                             self._active_session.shutdown_session()
@@ -992,16 +1387,11 @@ class Application(object):
                     # any data will not be able to be reported later if
                     # do reconnect as will be a different agent run.
 
-                    if self._profiler_started:
-                        _logger.info('Aborting thread profiling session '
-                                'for %r.', self._app_name)
+                    #_logger.info('Aborting thread profiling session '
+                    #        'for %r.', self._app_name)
 
-                        self._thread_profiler.stop_profiling(
-                                wait_for_completion=False)
-
-                        self._thread_profiler = None
-                        self._profiler_started = False
-                        self._send_profile_data = False
+                    # XXX Call shutdown on the profile_manager.
+                    self.profile_manager.shutdown(self._app_name)
 
                     try:
                         self._active_session.shutdown_session()
@@ -1036,16 +1426,8 @@ class Application(object):
                     # the agent will no longer be reporting without a
                     # restart of the process so no point.
 
-                    if self._profiler_started:
-                        _logger.info('Aborting thread profiling session '
-                                'for %r.', self._app_name)
-
-                        self._thread_profiler.stop_profiling(
-                                wait_for_completion=False)
-
-                        self._thread_profiler = None
-                        self._profiler_started = False
-                        self._send_profile_data = False
+                    # XXX Call shutdown on the profile_manager.
+                    self.profile_manager.shutdown(self._app_name)
 
                     try:
                         self._active_session.shutdown_session()

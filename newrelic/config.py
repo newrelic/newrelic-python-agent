@@ -239,6 +239,8 @@ def _process_configuration(section):
                      'get', None)
     _process_setting(section, 'thread_profiler.enabled',
                      'getboolean', None)
+    _process_setting(section, 'xray_session.enabled',
+                     'getboolean', None)
     _process_setting(section, 'transaction_tracer.enabled',
                      'getboolean', None)
     _process_setting(section, 'transaction_tracer.transaction_threshold',
@@ -285,7 +287,7 @@ def _process_configuration(section):
                      'getint', None)
     _process_setting(section, 'agent_limits.merge_stats_maximum',
                      'getint', None)
-    _process_setting(section, 'agent_limits.saved_transactions',
+    _process_setting(section, 'agent_limits.browser_transactions',
                      'getint', None)
     _process_setting(section, 'agent_limits.errors_per_transaction',
                      'getint', None)

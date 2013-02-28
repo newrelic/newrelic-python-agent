@@ -479,7 +479,8 @@ def wrap_view_handler(wrapped, priority=3):
                 # See http://bugs.python.org/issue3473.
                 exc_info = sys.exc_info()
                 transaction.record_exception(exc_info[0], exc_info[1],
-                        exc_info[2], ignore_errors=['django.http:Http404'])
+                        exc_info[2], ignore_errors=['django.http:Http404',
+                        'django.http.response:Http404'])
                 raise
 
             finally:
@@ -590,8 +591,8 @@ def instrument_django_core_urlresolvers(module):
     # a Http404 exception here, it probably is never the
     # case that one can be raised by get_callable().
 
-    wrap_error_trace(module, 'get_callable',
-            ignore_errors=['django.http:Http404'])
+    wrap_error_trace(module, 'get_callable', ignore_errors=[
+            'django.http:Http404', 'django.http.response:Http404'])
 
     # Wrap methods which resolves a request to a view handler.
     # This can be called against a resolver initialised against

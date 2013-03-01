@@ -37,7 +37,7 @@ class TestCase(unittest.TestCase):
 
         settings = {}
 
-        settings['cross_process.enabled'] = enabled
+        settings['cross_application_tracer.enabled'] = enabled
 
         settings['cross_process_id'] = cross_process_id
         settings['encoding_key'] = encoding_key

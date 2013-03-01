@@ -319,7 +319,7 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'debug.enable_coroutine_profiling',
                      'getboolean', None)
-    _process_setting(section, 'cross_process.enabled',
+    _process_setting(section, 'cross_application_tracer.enabled',
                      'getboolean', None)
 
 # Loading of configuration from specified file and for specified

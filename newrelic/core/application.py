@@ -49,6 +49,7 @@ class Application(object):
         self._period_start = 0.0
 
         self._active_session = None
+        self._harvest_enabled = False
 
         self._transaction_count = 0
         self._last_transaction = 0.0
@@ -383,23 +384,35 @@ class Application(object):
 
             self._merge_count = 0
 
+            # Update the active session in this object. This will the
+            # recording of transactions to start.
+
+            self._active_session = active_session
+
             # Flag that the session activation has completed to
             # anyone who has been waiting through calling the
             # wait_for_session_activation() method.
 
             self._connected_event.set()
 
-            # Start any data samplers so they are aware of the start
-            # of the harvest period.
+            # Immediately fetch any agent commands now even before start
+            # recording any transactions so running of any X-Ray
+            # sessions is not delayed.
+
+            self.process_agent_commands()
+
+            # Start any data samplers so they are aware of the start of
+            # the harvest period.
 
             self.start_data_samplers()
 
-            # Finally update the active session in this object. Only do
-            # this right at the end when everything validated and setup
-            # else a transaction could be recorded or a harvest run when
-            # we are in an inconsistent state.
+            # Finally enable the ability to perform a harvest. We only
+            # do this after we have processed agent commands and started
+            # the samplers so that don't have situation where harvesting
+            # tries to touch those things when this thread is still doing
+            # setup with them.
 
-            self._active_session = active_session
+            self._harvest_enabled = True
 
         except Exception:
             # If an exception occurs after agent has been flagged to be
@@ -659,7 +672,7 @@ class Application(object):
                             'Please report this problem to New Relic support '
                             'for further investigation.')
 
-    def start_xray(self, command_id=0, **kwargs):
+    def cmd_start_xray(self, command_id=0, **kwargs):
         """Handler for agent command 'start_xray_session'. """
 
         if not self._active_session.configuration.xray_session.enabled:
@@ -740,10 +753,10 @@ class Application(object):
 
         return {command_id: {}} 
 
-    def stop_xray(self, command_id=0, **kwargs):
-        """Handler for agent command 'stop_xray_session'. This command is sent
-        by collector under two conditions: 
-            
+    def cmd_stop_xray(self, command_id=0, **kwargs):
+        """Handler for agent command 'stop_xray_session'. This command
+        is sent by collector under two conditions:
+
         1. When there are enough traces for the xray session.
         2. When the user cancels an xray session in progress.
 
@@ -793,7 +806,7 @@ class Application(object):
 
         return {command_id: {}} 
 
-    def active_xray_sessions(self, command_id=0, **kwargs):
+    def cmd_active_xray_sessions(self, command_id=0, **kwargs):
         """Receives  a list of xray_ids that are currently active in the
         datacollector.
 
@@ -833,7 +846,8 @@ class Application(object):
 
         for xray_id in stopped_xrays:
             xs = self._active_xrays.get(xray_id)
-            self.stop_xray(x_ray_id=xs.xray_id, key_transaction_name=xs.key_txn)
+            self.cmd_stop_xray(x_ray_id=xs.xray_id,
+                    key_transaction_name=xs.key_txn)
 
         # Result of the (collector_xray_ids - agent_xray_ids) will be the ids
         # that are new xray sessions created in the collector but are not yet
@@ -848,7 +862,7 @@ class Application(object):
 
         for xray_id in new_xrays:
             metadata = self._active_session.get_xray_metadata(xray_id)
-            self.start_xray(0, **metadata[0])
+            self.cmd_start_xray(0, **metadata[0])
 
         # 'active_xray_sessions' does NOT send an acknowledgement back to
         # the collector
@@ -914,7 +928,7 @@ class Application(object):
 #            self.xray_session_running = False
 ###############################################################################
 
-    def start_profiler(self, command_id=0, **kwargs):
+    def cmd_start_profiler(self, command_id=0, **kwargs):
         """Triggered by the start_profiler agent command to start a
         thread profiling session.
 
@@ -968,7 +982,7 @@ class Application(object):
 
         return {command_id: {}}
 
-    def stop_profiler(self, command_id=0, **kwargs):
+    def cmd_stop_profiler(self, command_id=0, **kwargs):
         """Triggered by the stop_profiler agent command to forcibly stop
         a thread profiling session prior to it having completed normally.
 
@@ -1133,7 +1147,7 @@ class Application(object):
         if shutdown:
             self._pending_shutdown = True
 
-        if not self._active_session:
+        if not self._active_session or not self._harvest_enabled:
             _logger.debug('Cannot perform a data harvest for %r as '
                     'there is no active session.', self._app_name)
 
@@ -1293,58 +1307,10 @@ class Application(object):
                             self._active_session.send_transaction_traces(
                                     slow_transaction_data)
 
-                    # Get agent commands from collector.
+                    # Fetch agent commands sent from the data collector
+                    # and process them.
 
-                    agent_commands = self._active_session.get_agent_commands()
-
-                    # Extract the command names from the agent_commands. This
-                    # is used to check for the presence of active_xray_sessions
-                    # command in the list. 
-
-                    cmd_names = [x[1]['name'] for x in agent_commands]
-
-                    no_xray_cmds = 'active_xray_sessions' not in cmd_names
-
-                    # If there are active xray sessions running but the agent
-                    # commands doesn't have any active_xray_session ids then
-                    # all the active xray sessions must be stopped.
-
-                    if self._active_xrays and no_xray_cmds:
-                        _logger.debug('Stopping all X Ray sessions for %r. '
-                            'Current sessions running are %r.', self._app_name,
-                            self._active_xrays.keys())
-
-                        for xs in self._active_xrays.values():
-                            self.stop_xray(x_ray_id=xs.xray_id,
-                                    key_transaction_name=xs.key_txn)
-
-                    # For each agent command received, call the
-                    # appropiate agent command handler. Reply to the
-                    # data collector with the acknowledgement of the
-                    # agent command.
-
-                    for command in agent_commands:
-                        cmd_id = command[0]
-                        cmd_name = command[1]['name']
-                        cmd_args = command[1]['arguments']
-
-                        # An agent command is mapped to a method of this
-                        # class. If we don't know about a specific agent
-                        # command we just ignore it.
-
-                        cmd_handler = getattr(self, cmd_name, None)
-
-                        if cmd_handler is None:
-                            _logger.debug('Received unknown agent command '
-                                    '%r from the data collector for %r.',
-                                    cmd_name, self._app_name)
-                            continue
-
-                        cmd_res = cmd_handler(cmd_id, **cmd_args)
-
-                        if cmd_res:
-                            self._active_session.send_agent_command_results(
-                                    cmd_res)
+                    self.process_agent_commands()
 
                     # Send the accumulated profile data back to the data
                     # collector. Note that this come after we process
@@ -1504,6 +1470,7 @@ class Application(object):
             pass
 
         self._active_session = None
+        self._harvest_enabled = False
 
         # Initiate a new session if required, otherwise mark the agent
         # as shutdown.
@@ -1514,3 +1481,68 @@ class Application(object):
 
         else:
             self._agent_shutdown = True
+
+    def process_agent_commands(self):
+        """Fetches agents commands from data collector and process them.
+
+        """
+
+        # Get agent commands from the data collector.
+
+        _logger.debug('Process agent commands for %r.', self._app_name)
+
+        agent_commands = self._active_session.get_agent_commands()
+
+        # Extract the command names from the agent_commands. This is
+        # used to check for the presence of active_xray_sessions command
+        # in the list.
+
+        cmd_names = [x[1]['name'] for x in agent_commands]
+
+        no_xray_cmds = 'active_xray_sessions' not in cmd_names
+
+        # If there are active xray sessions running but the agent
+        # commands doesn't have any active_xray_session ids then all the
+        # active xray sessions must be stopped.
+
+        if self._active_xrays and no_xray_cmds:
+            _logger.debug('Stopping all X Ray sessions for %r. '
+                'Current sessions running are %r.', self._app_name,
+                self._active_xrays.keys())
+
+            for xs in self._active_xrays.values():
+                self.cmd_stop_xray(x_ray_id=xs.xray_id,
+                        key_transaction_name=xs.key_txn)
+
+        # For each agent command received, call the appropiate agent
+        # command handler. Reply to the data collector with the
+        # acknowledgement of the agent command.
+
+        for command in agent_commands:
+            cmd_id = command[0]
+            cmd_name = command[1]['name']
+            cmd_args = command[1]['arguments']
+
+            # An agent command is mapped to a method of this class. If
+            # we don't know about a specific agent command we just
+            # ignore it.
+
+            func_name = 'cmd_%s' % cmd_name
+
+            cmd_handler = getattr(self, func_name, None)
+
+            if cmd_handler is None:
+                _logger.debug('Received unknown agent command '
+                        '%r from the data collector for %r.',
+                        cmd_name, self._app_name)
+                continue
+
+            _logger.debug('Process agent command %r from the data '
+                    'collector for %r.', cmd_name, self._app_name)
+
+            cmd_res = cmd_handler(cmd_id, **cmd_args)
+
+            # Send back any result for the agent command.
+
+            if cmd_res:
+                self._active_session.send_agent_command_results(cmd_res)

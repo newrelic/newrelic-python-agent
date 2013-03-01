@@ -33,8 +33,16 @@ def check_environment():
     if 'uwsgi' in sys.modules:
         import uwsgi
 
-        if not ((hasattr(uwsgi, 'version_info') and
-                  uwsgi.version_info[:3] > (1, 2, 6))):
+        if not hasattr(uwsgi, 'version_info'):
+            _logger.warning('The New Relic Python Agent requires version '
+                    '1.2.6 or newer of uWSGI. The newer '
+                    'version is required because older versions of uWSGI '
+                    'have a bug whereby it is not compliant with the WSGI '
+                    '(PEP 333) specification. This bug in uWSGI will result '
+                    'in data being reported incorrectly. For more details see '
+                    'https://newrelic.com/docs/python/python-agent-and-uwsgi.')
+        elif ((hasattr(uwsgi, 'version_info') and
+                  uwsgi.version_info[:3] < (1, 2, 6))):
             _logger.warning('The New Relic Python Agent requires version '
                     '1.2.6 or newer of uWSGI, you are using %r. The newer '
                     'version is required because older versions of uWSGI '
@@ -44,7 +52,7 @@ def check_environment():
                     'https://newrelic.com/docs/python/python-agent-and-uwsgi.',
                     '.'.join(map(str, uwsgi.version_info[:3])))
 
-        elif not uwsgi.opt.get('enable-threads'):
+        if not uwsgi.opt.get('enable-threads'):
             _logger.warning('The New Relic Python Agent requires that when '
                     'using uWSGI that the enable-threads option be given '
                     'to uwsgi when it is run. If the option is not supplied '

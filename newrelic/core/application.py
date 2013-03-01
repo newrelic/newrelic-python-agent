@@ -259,14 +259,16 @@ class Application(object):
         # for longer and longer periods as we retry. The retry interval
         # will be capped at 300 seconds.
 
+        active_session = None
+
         retries = [(15, False, False), (15, False, False),
                    (30, False, False), (60, True, False),
                    (120, False, False), (300, False, True),]
 
         try:
-            while not self._active_session:
+            while not active_session:
 
-                self._active_session = create_session(None, self._app_name,
+                active_session = create_session(None, self._app_name,
                         self.linked_applications, environment_settings(),
                         global_settings_dump())
 
@@ -277,8 +279,8 @@ class Application(object):
                 # use text which conflicts with extensions in Python's
                 # regular expression syntax.
 
-                if self._active_session:
-                    configuration = self._active_session.configuration
+                if active_session:
+                    configuration = active_session.configuration
 
                     try:
                         settings = global_settings()
@@ -317,17 +319,17 @@ class Application(object):
                         # be fixed.
 
                         try:
-                            self._active_session.shutdown_session()
+                            active_session.shutdown_session()
                         except Exception:
                             pass
 
-                        self._active_session = None
+                        active_session = None
 
-                # Were we successful. If not go into the retry loop. Log
-                # warnings or errors as per schedule associated with the
-                # retry intervals.
+                # Were we successful. If not we will sleep for a bit and
+                # then go back and try again. Log warnings or errors as
+                # per schedule associated with the retry intervals.
 
-                if not self._active_session:
+                if not active_session:
                     if retries:
                         timeout, warning, error = retries.pop(0)
 
@@ -358,41 +360,46 @@ class Application(object):
 
                     time.sleep(timeout)
 
-                    continue
+            # We were successful. Ensure we have cleared out any cached
+            # data from a prior agent run for this application.
 
-                # Ensure we have cleared out any cached data from a
-                # prior agent run for this application.
+            configuration = active_session.configuration
 
-                configuration = self._active_session.configuration
+            with self._stats_lock:
+                self._stats_engine.reset_stats(configuration)
 
-                with self._stats_lock:
-                    self._stats_engine.reset_stats(configuration)
+            with self._stats_custom_lock:
+                self._stats_custom_engine.reset_stats(configuration)
 
-                with self._stats_custom_lock:
-                    self._stats_custom_engine.reset_stats(configuration)
+            # Record an initial start time for the reporting period and
+            # clear record of last transaction processed.
 
-                # Record an initial start time for the reporting period and
-                # clear record of last transaction processed.
+            self._period_start = time.time()
 
-                self._period_start = time.time()
+            self._transaction_count = 0
+            self._last_transaction = 0.0
 
-                self._transaction_count = 0
-                self._last_transaction = 0.0
+            # Clear any prior count of harvest merges due to failures.
 
-                # Clear any prior count of harvest merges due to failures.
+            self._merge_count = 0
 
-                self._merge_count = 0
+            # Flag that the session activation has completed to
+            # anyone who has been waiting through calling the
+            # wait_for_session_activation() method.
 
-                # Flag that the session activation has completed to
-                # anyone who has been waiting through calling the
-                # wait_for_session_activation() method.
+            self._connected_event.set()
 
-                self._connected_event.set()
+            # Start any data samplers so they are aware of the start
+            # of the harvest period.
 
-                # Start any data samplers so they are aware of the start
-                # of the harvest period.
+            self.start_data_samplers()
 
-                self.start_data_samplers()
+            # Finally update the active session in this object. Only do
+            # this right at the end when everything validated and setup
+            # else a transaction could be recorded or a harvest run when
+            # we are in an inconsistent state.
+
+            self._active_session = active_session
 
         except Exception:
             # If an exception occurs after agent has been flagged to be

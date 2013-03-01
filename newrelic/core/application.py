@@ -1320,12 +1320,7 @@ class Application(object):
                     # results last ensures we send back that data from
                     # the stopped profiling session immediately.
 
-                    for profile_data in \
-                            self.profile_manager.profile_data(self._app_name):
-                        if profile_data:
-                            _logger.debug('Reporting thread profiling '
-                                    'session data for %r.', self._app_name)
-                            self._active_session.send_profile_data(profile_data)
+                    self.report_profile_data()
 
                     # If this is a final forced harvest for the process
                     # then attempt to shutdown the session.
@@ -1438,6 +1433,19 @@ class Application(object):
         with self._stats_lock:
             self._stats_engine.merge_custom_metrics(internal_metrics.metrics())
 
+    def report_profile_data(self):
+        """Report back any profile data. This may be partial thread
+        profile data for X-Ray sessions, or final thread profile data
+        for a full profiling session.
+
+        """
+
+        for profile_data in self.profile_manager.profile_data(self._app_name):
+            if profile_data:
+                _logger.debug('Reporting thread profiling session data '
+                        'for %r.', self._app_name)
+                self._active_session.send_profile_data(profile_data)
+
     def internal_agent_shutdown(self, restart=False):
         """Terminates the active agent session for this application and
         optionally triggers activation of a new session.
@@ -1454,15 +1462,21 @@ class Application(object):
 
         self._active_xrays = {}
 
+        # Attempt to report back any profile data which was left when
+        # all profiling was shutdown due to the agent shutdown for this
+        # application.
+
+        try:
+            self.report_profile_data()
+        except:
+            pass
+
         # Stop any data samplers which are running. These can be internal
         # data samplers or user provided custom metric data sources.
 
         self.stop_data_samplers()
 
-        # Now shutdown the actual agent session. We need to ignore any
-        # exceptions as this will try and send a shutdown message to the
-        # data collector, but that could fail if the reason we shutdown
-        # was because we had lost connectivity to the data collector.
+        # Now shutdown the actual agent session.
 
         try:
             self._active_session.shutdown_session()

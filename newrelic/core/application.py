@@ -1365,7 +1365,7 @@ class Application(object):
                     # then attempt to shutdown the session.
 
                     if shutdown:
-                        self.internal_shutdown(restart=False)
+                        self.internal_agent_shutdown(restart=False)
 
                 except ForceAgentRestart:
                     # The data collector has indicated that we need to
@@ -1373,7 +1373,7 @@ class Application(object):
                     # properly shutdown the session and then initiate a
                     # new session.
 
-                    self.internal_shutdown(restart=True)
+                    self.internal_agent_shutdown(restart=True)
 
                 except ForceAgentDisconnect:
                     # The data collector has indicated that we need to
@@ -1387,7 +1387,7 @@ class Application(object):
                     # again and if the server side kill switch is still
                     # enabled it would be told to disconnect once more.
 
-                    self.internal_shutdown(restart=False)
+                    self.internal_agent_shutdown(restart=False)
 
                 except RetryDataForRequest:
                     # A potentially recoverable error occurred. We merge
@@ -1433,7 +1433,7 @@ class Application(object):
                             _logger.debug('Abandoning agent run and forcing '
                                     'a reconnect of the agent.')
 
-                            self.internal_shutdown(restart=True)
+                            self.internal_agent_shutdown(restart=True)
 
                 except DiscardDataForRequest:
                     # An issue must have occurred in reporting the data
@@ -1472,7 +1472,7 @@ class Application(object):
         with self._stats_lock:
             self._stats_engine.merge_custom_metrics(internal_metrics.metrics())
 
-    def internal_shutdown(self, restart=False):
+    def internal_agent_shutdown(self, restart=False):
         """Terminates the active agent session for this application and
         optionally triggers activation of a new session.
 

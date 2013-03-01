@@ -190,6 +190,8 @@ _settings.debug.log_normalization_rules = False
 _settings.debug.log_raw_metric_data = False
 _settings.debug.log_normalized_metric_data = False
 
+_settings.debug.enable_coroutine_profiling = False
+
 def global_settings():
     """This returns the default global settings. Generally only used
     directly in test scripts and test harnesses or when applying global

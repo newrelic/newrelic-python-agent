@@ -7,6 +7,8 @@ import thread
 import threading
 import weakref
 
+from newrelic.core.config import global_settings
+
 class TransactionCache(object):
 
     def __init__(self):
@@ -88,14 +90,19 @@ class TransactionCache(object):
         # running. We don't have a way of knowing what non transaction
         # threads are running.
 
-        for thread_id, transaction in self._cache.items():
-            if transaction._greenlet is not None:
-                gr = transaction._greenlet()
-                if gr and gr.gr_frame is not None:
-                    if transaction.background_task:
-                        yield transaction, thread_id, 'BACKGROUND', gr.gr_frame
-                    else:
-                        yield transaction, thread_id, 'REQUEST', gr.gr_frame
+        debug = global_settings().debug
+
+        if debug.enable_coroutine_profiling:
+            for thread_id, transaction in self._cache.items():
+                if transaction._greenlet is not None:
+                    gr = transaction._greenlet()
+                    if gr and gr.gr_frame is not None:
+                        if transaction.background_task:
+                            yield (transaction, thread_id,
+                                    'BACKGROUND', gr.gr_frame)
+                        else:
+                            yield (transaction, thread_id,
+                                    'REQUEST', gr.gr_frame)
 
     def save_transaction(self, transaction):
         """Saves the specified transaction away under the thread ID of

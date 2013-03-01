@@ -1481,6 +1481,30 @@ class Application(object):
 
                             self._merge_count = 0
 
+                            # Force an agent restart ourselves.
+
+                            _logger.debug('Abandoning agent run and forcing '
+                                    'a reconnect of the agent.')
+
+                            # XXX Call shutdown on the profile_manager.
+                            self.profile_manager.shutdown(self._app_name)
+
+                            try:
+                                self._active_session.shutdown_session()
+                            except Exception:
+                                pass
+
+                            self._agent_restart += 1
+                            self._active_session = None
+
+                            # Stop any data samplers.
+
+                            self.stop_data_samplers()
+
+                            # Initiate a new session.
+
+                            self.activate_session()
+
                 except DiscardDataForRequest:
                     # An issue must have occurred in reporting the data
                     # but if we retry with same data the same error is

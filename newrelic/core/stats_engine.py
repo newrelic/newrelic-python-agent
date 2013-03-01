@@ -858,6 +858,7 @@ class StatsEngine(object):
         self.__metric_ids = {}
         self.__browser_transactions = []
         self.__xray_transactions = []
+        self.xray_sessions = {}
 
     def harvest_snapshot(self):
         """Creates a snapshot of the accumulated statistics, error

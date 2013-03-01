@@ -1340,13 +1340,15 @@ class Application(object):
                                     cmd_res)
 
                     # Send the accumulated profile data back to the data
-                    # collector. Note that this come after we process the agent
-                    # commands as we might receive an agent command to stop the
-                    # profiling session, but still send the data back.  Having
-                    # the sending of the results last ensures we send back that
-                    # data from the stopped profiling session immediately.
+                    # collector. Note that this come after we process
+                    # the agent commands as we might receive an agent
+                    # command to stop the profiling session, but still
+                    # send the data back.  Having the sending of the
+                    # results last ensures we send back that data from
+                    # the stopped profiling session immediately.
 
-                    for profile_data in self.profile_manager.profile_data(self._app_name):
+                    for profile_data in \
+                            self.profile_manager.profile_data(self._app_name):
                         if profile_data:
                             _logger.debug('Reporting thread profiling '
                                     'session data for %r.', self._app_name)
@@ -1354,60 +1356,17 @@ class Application(object):
 
                     # If this is a final forced harvest for the process
                     # then attempt to shutdown the session.
-                    #
-                    # If a thread profiling session is running, we need
-                    # to make sure we stop that from running as well.
 
                     if shutdown:
-                        #_logger.info('Aborting thread profiling session '
-                        #        'for %r.', self._app_name)
-
-                        # XXX Call shutdown on the profile_manager.
-                        self.profile_manager.shutdown(self._app_name)
-
-                        try:
-                            self._active_session.shutdown_session()
-                        except Exception:
-                            pass
-
-                        self._active_session = None
-
-                        # Stop any data samplers.
-
-                        self.stop_data_samplers()
+                        self.internal_shutdown(restart=False)
 
                 except ForceAgentRestart:
                     # The data collector has indicated that we need to
                     # perform an internal agent restart. We attempt to
                     # properly shutdown the session and then initiate a
                     # new session.
-                    #
-                    # If a thread profiling session is running, we need
-                    # to make sure we stop that from running as well as
-                    # any data will not be able to be reported later if
-                    # do reconnect as will be a different agent run.
 
-                    #_logger.info('Aborting thread profiling session '
-                    #        'for %r.', self._app_name)
-
-                    # XXX Call shutdown on the profile_manager.
-                    self.profile_manager.shutdown(self._app_name)
-
-                    try:
-                        self._active_session.shutdown_session()
-                    except Exception:
-                        pass
-
-                    self._agent_restart += 1
-                    self._active_session = None
-
-                    # Stop any data samplers.
-
-                    self.stop_data_samplers()
-
-                    # Initiate a new session.
-
-                    self.activate_session()
+                    self.internal_shutdown(restart=True)
 
                 except ForceAgentDisconnect:
                     # The data collector has indicated that we need to
@@ -1420,27 +1379,8 @@ class Application(object):
                     # process start to be able to attempt to connect
                     # again and if the server side kill switch is still
                     # enabled it would be told to disconnect once more.
-                    #
-                    # If a thread profiling session is running, we need
-                    # to make sure we stop that from running as well as
-                    # the agent will no longer be reporting without a
-                    # restart of the process so no point.
 
-                    # XXX Call shutdown on the profile_manager.
-                    self.profile_manager.shutdown(self._app_name)
-
-                    try:
-                        self._active_session.shutdown_session()
-                    except Exception:
-                        pass
-
-                    self._active_session = None
-
-                    self._agent_shutdown = True
-
-                    # Stop any data samplers.
-
-                    self.stop_data_samplers()
+                    self.internal_shutdown(restart=False)
 
                 except RetryDataForRequest:
                     # A potentially recoverable error occurred. We merge
@@ -1486,24 +1426,7 @@ class Application(object):
                             _logger.debug('Abandoning agent run and forcing '
                                     'a reconnect of the agent.')
 
-                            # XXX Call shutdown on the profile_manager.
-                            self.profile_manager.shutdown(self._app_name)
-
-                            try:
-                                self._active_session.shutdown_session()
-                            except Exception:
-                                pass
-
-                            self._agent_restart += 1
-                            self._active_session = None
-
-                            # Stop any data samplers.
-
-                            self.stop_data_samplers()
-
-                            # Initiate a new session.
-
-                            self.activate_session()
+                            self.internal_shutdown(restart=True)
 
                 except DiscardDataForRequest:
                     # An issue must have occurred in reporting the data
@@ -1541,3 +1464,46 @@ class Application(object):
 
         with self._stats_lock:
             self._stats_engine.merge_custom_metrics(internal_metrics.metrics())
+
+    def internal_shutdown(self, restart=False):
+        """Terminates the active agent session for this application and
+        optionally triggers activation of a new session.
+
+        """
+
+        # We need to stop any thread profiler session related to this
+        # application. This may be a full thread profiling session or
+        # one run in relation to active X-Ray sessions. We also need to
+        # throw away any X-Ray sessions. These will be restarted as
+        # necessary after a reconnect if done.
+
+        self.profile_manager.shutdown(self._app_name)
+
+        self._active_xrays = {}
+
+        # Stop any data samplers which are running. These can be internal
+        # data samplers or user provided custom metric data sources.
+
+        self.stop_data_samplers()
+
+        # Now shutdown the actual agent session. We need to ignore any
+        # exceptions as this will try and send a shutdown message to the
+        # data collector, but that could fail if the reason we shutdown
+        # was because we had lost connectivity to the data collector.
+
+        try:
+            self._active_session.shutdown_session()
+        except Exception:
+            pass
+
+        self._active_session = None
+
+        # Initiate a new session if required, otherwise mark the agent
+        # as shutdown.
+
+        if restart:
+            self._agent_restart += 1
+            self.activate_session()
+
+        else:
+            self._agent_shutdown = True

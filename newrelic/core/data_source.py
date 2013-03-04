@@ -24,11 +24,17 @@ class DataSampler(object):
         self.name = (name or self.properties.get('name') or
                 callable_name(source))
 
+        self.group = self.properties.get('group')
+
+        if self.group:
+            self.group = self.group.rstrip('/')
+
         environ = {}
 
         environ['consumer.name'] = consumer
         environ['consumer.vendor'] = 'New Relic'
         environ['producer.name'] = self.name
+        environ['producer.group'] = self.group
 
         self.environ = environ
 
@@ -48,7 +54,11 @@ class DataSampler(object):
 
     def metrics(self):
         assert self.instance is not None
-        return self.instance()
+        if self.group:
+            return (('%s/%s' % (self.group, key), value)
+                    for key, value in self.instance())
+        else:
+            return self.instance()
 
 def data_source_generator(name=None, **properties):
     def _decorator(func):

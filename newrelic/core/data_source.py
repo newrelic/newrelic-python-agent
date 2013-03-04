@@ -3,6 +3,11 @@
 """
 
 import functools
+import logging
+
+from newrelic.api.object_wrapper import callable_name
+
+_logger = logging.getLogger(__name__)
 
 class DataSampler(object):
 
@@ -16,15 +21,18 @@ class DataSampler(object):
 
         self.properties.update(properties)
 
-        self.name = name or self.properties.get('name', source.__name__)
+        self.name = (name or self.properties.get('name') or
+                callable_name(source))
 
         environ = {}
 
         environ['consumer.name'] = consumer
         environ['consumer.vendor'] = 'New Relic'
-        environ['producer.name'] = name
+        environ['producer.name'] = self.name
 
         self.environ = environ
+
+        _logger.debug('Initialising data sampler for %r.', self.environ)
 
     def start(self):
         if self.instance is None:

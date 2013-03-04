@@ -2,8 +2,6 @@ import sys
 import types
 import inspect
 
-from newrelic.api.transaction import current_transaction
-
 # From Python 3.X. In older Python versions it fails if attributes do
 # not exist and don't maintain a __wrapped__ attribute.
 

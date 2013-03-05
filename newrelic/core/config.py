@@ -186,6 +186,7 @@ _settings.debug.log_data_collector_calls = False
 _settings.debug.log_data_collector_payloads = False
 _settings.debug.log_malformed_json_data = False
 _settings.debug.log_transaction_trace_payload = False
+_settings.debug.log_thread_profile_payload = False
 _settings.debug.log_normalization_rules = False
 _settings.debug.log_raw_metric_data = False
 _settings.debug.log_normalized_metric_data = False

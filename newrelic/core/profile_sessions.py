@@ -555,6 +555,10 @@ class ProfileSession(object):
         # data is turned into JSON, compessed and then base64 encoded at
         # this point to cut its size.
 
+        if settings.debug.log_thread_profile_payload:
+            _logger.debug('Encoding thread profile data where '
+                    'payload=%r.', flat_tree)
+
         json_call_tree = simplejson.dumps(flat_tree, ensure_ascii=True,
                 encoding='Latin-1', namedtuple_as_object=False)
         encoded_tree = base64.standard_b64encode(zlib.compress(json_call_tree))

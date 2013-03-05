@@ -309,6 +309,8 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'debug.log_transaction_trace_payload',
                      'getboolean', None)
+    _process_setting(section, 'debug.log_thread_profile_payload',
+                     'getboolean', None)
     _process_setting(section, 'debug.log_raw_metric_data',
                      'getboolean', None)
     _process_setting(section, 'debug.log_normalized_metric_data',

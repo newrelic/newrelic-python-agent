@@ -1085,6 +1085,8 @@ def _process_data_source_configuration():
             _raise_configuration_error(section)
 
 def _startup_data_source():
+    _logger.debug('Registering data sources defined in configuration.')
+
     agent_instance = newrelic.core.agent.agent_instance()
 
     for section, module, object_path, application, name, \
@@ -1102,7 +1104,17 @@ def _startup_data_source():
                     'has failed. Data source will be skipped.', module,
                     object_path, name, section)
 
+_data_sources_done = False
+
 def _setup_data_source():
+
+    global _data_sources_done
+
+    if _data_sources_done:
+        return
+
+    _data_sources_done = True
+
     if _data_sources:
         newrelic.core.agent.Agent.run_on_startup(_startup_data_source)
 

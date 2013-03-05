@@ -452,7 +452,11 @@ class Agent(object):
         return application.normalize_name(name, rule_type)
 
     def _harvest_loop(self):
+        _logger.debug('Entering harvest loop.')
+
         settings = newrelic.core.config.global_settings()
+
+        _logger.debug('Registering builtin data sources.')
 
         self.register_data_source(cpu_usage_data_source)
         self.register_data_source(memory_usage_data_source)

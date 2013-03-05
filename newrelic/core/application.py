@@ -523,6 +523,9 @@ class Application(object):
 
         for data_sampler in self._data_samplers:
             try:
+                 _logger.debug('Starting data sampler for %r in '
+                         'application %r.', data_sampler.name, self._app_name)
+
                  data_sampler.start()
             except:
                  _logger.exception('Unexpected exception when starting '
@@ -544,6 +547,9 @@ class Application(object):
 
         for data_sampler in self._data_samplers:
             try:
+                 _logger.debug('Stopping data sampler for %r in '
+                         'application %r.', data_sampler.name, self._app_name)
+
                  data_sampler.stop()
             except:
                  _logger.exception('Unexpected exception when stopping data '

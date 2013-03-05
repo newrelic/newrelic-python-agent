@@ -42,8 +42,16 @@ class DataSampler(object):
 
     def start(self):
         if self.instance is None:
-            self.instance = self.factory(self.environ)
-        if hasattr(self.instance, 'start'):
+                self.instance = self.factory(self.environ)
+
+                if self.instance is None:
+                    _logger.error('Failed to create instance of data source '
+                            '%r, returned None. Custom metrics from this data '
+                            'will not be subsequently available. If this '
+                            'problem persists, please report this problem '
+                            'to the provider of the data source.', self.name)
+
+        if self.instance and hasattr(self.instance, 'start'):
             self.instance.start()
 
     def stop(self):
@@ -53,7 +61,9 @@ class DataSampler(object):
             self.instance = None
 
     def metrics(self):
-        assert self.instance is not None
+        if self.instance is None:
+            return []
+
         if self.group:
             return (('%s/%s' % (self.group, key), value)
                     for key, value in self.instance())

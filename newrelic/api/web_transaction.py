@@ -201,12 +201,26 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         # sockets where request needs to be proxied between any
         # processes within the application server.
         #
-        # Note that mod_wsgi 4.0 sets its own distinct variable
-        # called mod_wsgi.queue_start so that not necessary to
-        # enable and use mod_headers to add X-Queue-Start. So
-        # also check for that, but give priority to the
-        # explicitly added header in case that header was added
-        # in front end server to Apache instead.
+        # Note that mod_wsgi sets its own distinct variables
+        # automatically. Initially it set mod_wsgi.queue_start,
+        # which equated to when Apache first accepted the
+        # request. This got changed to mod_wsgi.request_start
+        # however, and mod_wsgi.queue_start was instead used
+        # just for when requests are to be queued up for the
+        # daemon process and corresponded to the point at which
+        # they are being proxied, after Apache does any
+        # authentication etc. We check for both so older
+        # versions of mod_wsgi will still work, although we
+        # don't try and use the fact that it is possible to
+        # distinguish the two points and just pick up the
+        # earlier of the two.
+        #
+        # Checking for the mod_wsgi values means it is not
+        # necessary to enable and use mod_headers to add X
+        # -Request-Start or X-Queue-Start. But we still check
+        # for the headers and give priority to the explicitly
+        # added header in case that header was added in front
+        # end server to Apache instead.
         #
         # Which ever header is used, we accomodate the value
         # being in seconds, milliseconds or microseconds. Also
@@ -239,7 +253,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
             return 0.0
 
         queue_time_headers = ('HTTP_X_REQUEST_START', 'HTTP_X_QUEUE_START',
-                'mod_wsgi.queue_start')
+                'mod_wsgi.request_start', 'mod_wsgi.queue_start')
 
         for queue_time_header in queue_time_headers:
             value = environ.get(queue_time_header, None)

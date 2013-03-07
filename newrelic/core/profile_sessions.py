@@ -316,7 +316,8 @@ class ProfileSessionManager(object):
 
             self.finished_sessions.pop(app_name)
 
-            for xray_profile_sessions in self.application_xrays.values():
+            xray_profile_sessions = self.application_xrays.get(app_name)
+            if xray_profile_sessions:
                 for xps in xray_profile_sessions.values():
                     _logger.debug('Reporting partial thread profiling data '
                             'for %d transactions with name %r and xray ID of '

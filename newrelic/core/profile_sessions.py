@@ -99,9 +99,14 @@ def collect_stack_traces(include_nr_threads=False, include_xrays=False):
     for (txn, thread_id, thread_category, frame) in \
             transaction_cache().active_threads():
 
-        skip_thread = (thread_category == 'AGENT') and (not include_nr_threads)
+        # Skip background threads for X-rays.
 
-        if skip_thread:
+        if (include_xrays) and (txn and txn.background_task):
+            continue
+
+        # Skip NR Threads unless explicitly requested.
+
+        if (thread_category == 'AGENT') and (not include_nr_threads):
             continue
 
         stack_trace = format_stack_trace(frame, thread_category)

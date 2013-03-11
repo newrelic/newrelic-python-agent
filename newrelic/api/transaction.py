@@ -10,6 +10,8 @@ import traceback
 import logging
 import warnings
 
+from collections import deque
+
 import newrelic.core.transaction_node
 import newrelic.core.database_node
 import newrelic.core.error_node
@@ -130,7 +132,8 @@ class Transaction(object):
 
         self._custom_metrics = CustomMetrics()
 
-        self._profile_samples = []
+        self._profile_samples = deque()
+        self._profile_frames = {}
 
         global_settings = application.global_settings
 
@@ -500,7 +503,9 @@ class Transaction(object):
         return self._profile_samples
 
     def add_profile_sample(self, stack_trace):
-        self._profile_samples.append(stack_trace)
+        new_stack_trace = tuple(self._profile_frames.setdefault(frame, frame)
+                for frame in stack_trace)
+        self._profile_samples.append(new_stack_trace)
 
     def _freeze_path(self):
         if self._frozen_path is None:

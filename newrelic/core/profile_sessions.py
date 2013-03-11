@@ -52,8 +52,8 @@ def format_stack_trace(frame, thread_category):
 
         code = frame.f_code
 
-        filename = code.co_filename
-        func_name = code.co_name
+        filename = intern(code.co_filename)
+        func_name = intern(code.co_name)
         first_line = code.co_firstlineno
 
         real_line = frame.f_lineno

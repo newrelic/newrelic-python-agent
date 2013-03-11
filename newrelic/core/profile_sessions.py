@@ -161,6 +161,7 @@ class ProfileSessionManager(object):
         self._xray_suspended = False
         self.profile_agent_code = False
         self.sample_period_s = 0.1
+        self._aggregation_time = 0.0
 
     @internal_trace('Supportability/Profiling/Calls/add_stack_traces[sec|call]')
     def add_stack_traces(self, app_name, key_txn, txn_type, stack_traces):
@@ -180,9 +181,14 @@ class ProfileSessionManager(object):
         count = 0
 
         with self._lock:
+            start = time.time()
+
             for stack_trace in stack_traces:
                 count += len(stack_trace)
                 xps.update_call_tree(txn_type, stack_trace)
+
+            end = time.time() - start
+            self._aggregation_time += end
 
         internal_metric('Supportability/Profiling/Counts/stack_frames[frame]',
                 count)
@@ -338,11 +344,18 @@ class ProfileSessionManager(object):
         the active profile sessions.
 
         """
+
+        settings = global_settings()
+
+        overhead_threshold = settings.agent_limits.xray_profile_overhead
+
         while True:
 
             # If xray profilers are not suspended and at least one x-ray
             # session is active it'll cause collect_stack_traces() to add
             # the stack_traces to the txn obj.
+
+            start = time.time()
 
             include_xrays = ((not self._xray_suspended) and
                     any(self.application_xrays.itervalues()))
@@ -367,7 +380,25 @@ class ProfileSessionManager(object):
                 self._profiler_thread_running = False
                 return
 
-            self._profiler_shutdown.wait(self.sample_period_s)
+            # Adjust sample period dynamically base on overheads of doing
+            # thread profiling if is an X Ray session.
+
+            if not self._xray_suspended:
+                overhead = time.time() - start
+
+                with self._lock:
+                    aggregation_time = self._aggregation_time
+                    self._aggregation_time = 0.0
+
+                overhead += aggregation_time
+
+                delay = overhead / self.sample_period_s / overhead_threshold
+                delay = min((max(1.0, delay) * self.sample_period_s), 5.0)
+
+                self._profiler_shutdown.wait(delay)
+
+            else:
+                self._profiler_shutdown.wait(self.sample_period_s)
 
     def update_profile_sessions(self):
         """Check the current time and decide if any of the profile sessions

@@ -9,6 +9,7 @@ import threading
 import traceback
 import logging
 import warnings
+import itertools
 
 from collections import deque
 
@@ -136,6 +137,8 @@ class Transaction(object):
 
         self._profile_samples = deque()
         self._profile_frames = {}
+        self._profile_skip = 1
+        self._profile_count = 0
 
         global_settings = application.global_settings
 
@@ -521,10 +524,26 @@ class Transaction(object):
         if self._state != STATE_RUNNING:
             return
 
+        self._profile_count += 1
+
+        if self._profile_count < self._profile_skip:
+            return
+
+        self._profile_count = 0
+
         with self._transaction_lock:
             new_stack_trace = tuple(self._profile_frames.setdefault(
                     frame, frame) for frame in stack_trace)
             self._profile_samples.append(new_stack_trace)
+
+            agent_limits = self._application.global_settings.agent_limits
+            profile_maximum = agent_limits.xray_profile_maximum
+
+            if len(self._profile_samples) >= profile_maximum:
+                self._profile_samples = deque(itertools.islice(
+                        self._profile_samples, 0,
+                        len(self._profile_samples), 2))
+                self._profile_skip = 2 * self._profile_skip
 
     def _freeze_path(self):
         if self._frozen_path is None:

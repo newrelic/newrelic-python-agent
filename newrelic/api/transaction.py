@@ -39,6 +39,7 @@ class Transaction(object):
         self.thread_id = transaction_cache().current_thread_id()
 
         self._transaction_id = id(self)
+        self._transaction_lock = threading.Lock()
 
         self._dead = False
 
@@ -432,22 +433,29 @@ class Transaction(object):
                 client_cross_process_id=self.client_cross_process_id,
                 )
 
-        # Clear settings as we are all done and don't
-        # need it anymore.
+        # Clear settings as we are all done and don't need it
+        # anymore.
 
         self._settings = None
         self.enabled = False
 
-        # TODO: Better to check if the current transaction is an xray
-        # transaction and only send the profile samples if necessary.  If not
-        # set the profile_samples to None.
-        #
-        # Right now this is done in Application class since we don't have
-        # access to the list of xray txns.
+        # Unless we are ignoring the transaction, record it. We
+        # need to lock the profile samples and replace it with
+        # an empty list just in case the thread profiler kicks
+        # in just as we are trying to record the transaction.
+        # If we don't, when processing the samples, addition of
+        # new samples can cause an error.
 
         if not self.ignore_transaction:
-            self._application.record_transaction(node, (self.background_task,
-                self._profile_samples))
+            profile_samples = []
+
+            if self._profile_samples:
+                with self._transaction_lock:
+                    profile_samples = self._profile_samples
+                    self._profile_samples = deque()
+
+            self._application.record_transaction(node,
+                    (self.background_task, profile_samples))
 
     @property
     def state(self):
@@ -510,9 +518,13 @@ class Transaction(object):
         return self._profile_samples
 
     def add_profile_sample(self, stack_trace):
-        new_stack_trace = tuple(self._profile_frames.setdefault(frame, frame)
-                for frame in stack_trace)
-        self._profile_samples.append(new_stack_trace)
+        if self._state != STATE_RUNNING:
+            return
+
+        with self._transaction_lock:
+            new_stack_trace = tuple(self._profile_frames.setdefault(
+                    frame, frame) for frame in stack_trace)
+            self._profile_samples.append(new_stack_trace)
 
     def _freeze_path(self):
         if self._frozen_path is None:

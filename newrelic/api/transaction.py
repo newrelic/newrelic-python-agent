@@ -38,6 +38,8 @@ class Transaction(object):
 
         self.thread_id = transaction_cache().current_thread_id()
 
+        self._transaction_id = id(self)
+
         self._dead = False
 
         self._state = STATE_PENDING
@@ -234,8 +236,19 @@ class Transaction(object):
 
         # Mark as stopped and drop the transaction from
         # thread/coroutine local storage.
+        #
+        # Note that we validate the saved transaction ID
+        # against that for the current transaction object
+        # to protect against situations where a copy was
+        # made of the transaction object for some reason.
+        # Such a copy when garbage collected could trigger
+        # this function and cause a deadlock if it occurs
+        # while original transaction was being recorded.
 
         self._state = STATE_STOPPED
+
+        if self._transaction_id != id(self):
+            return
 
         if not self._settings:
             return

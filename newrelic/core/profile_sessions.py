@@ -186,6 +186,7 @@ class ProfileSessionManager(object):
             for stack_trace in stack_traces:
                 count += len(stack_trace)
                 xps.update_call_tree(txn_type, stack_trace)
+                xps.sample_count += 1
 
             end = time.time() - start
             self._aggregation_time += end
@@ -330,12 +331,6 @@ class ProfileSessionManager(object):
             xray_profile_sessions = self.application_xrays.get(app_name)
             if xray_profile_sessions:
                 for xps in xray_profile_sessions.values():
-                    _logger.debug('Reporting partial thread profiling data '
-                            'for %d transactions with name %r and xray ID of '
-                            '%r over a period of %.2f seconds and %d samples.',
-                            xps.transaction_count, xps.key_txn, xps.xray_id,
-                            time.time()-xps.start_time_s, xps.sample_count)
-
                     yield xps.profile_data()
 
     def _profiler_loop(self):
@@ -425,7 +420,6 @@ class ProfileSessionManager(object):
 
         for app_name, xray_profile_sessions in self.application_xrays.items():
             for key_txn, xps in xray_profile_sessions.items():
-                xps.sample_count += 1
                 if time.time() >= xps.stop_time_s:
                     self.stop_profile_session(app_name, key_txn)
                     _logger.info('Finished x-ray profiling session for %s',
@@ -591,6 +585,12 @@ class ProfileSession(object):
         # Construct the actual final data for sending. The actual call
         # data is turned into JSON, compessed and then base64 encoded at
         # this point to cut its size.
+
+        _logger.debug('Returning partial thread profiling data '
+                'for %d transactions with name %r and xray ID of '
+                '%r over a period of %.2f seconds and %d samples.',
+                self.transaction_count, self.key_txn, self.xray_id,
+                time.time()-self.start_time_s, self.sample_count)
 
         if settings.debug.log_thread_profile_payload:
             _logger.debug('Encoding thread profile data where '

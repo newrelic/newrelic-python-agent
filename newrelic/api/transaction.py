@@ -82,8 +82,7 @@ class Transaction(object):
 
         self._cpu_user_time_start = None
         self._cpu_user_time_end = None
-        self._cpu_user_time_value = None
-        self._cpu_utilization_value = None
+        self._cpu_user_time_value = 0.0
 
         self._read_length = None
 
@@ -266,14 +265,9 @@ class Transaction(object):
         if not self._cpu_user_time_end:
             self._cpu_user_time_end = os.times()[0]
 
-        self._cpu_user_time_value = (self._cpu_user_time_end -
-                self._cpu_user_time_start)
-
-        if duration:
-            self._cpu_utilization_value = self._cpu_user_time_value / (
-                    duration * cpu_count())
-        else:
-            self._cpu_utilization_value = 0.0
+        if duration and self._cpu_user_time_end:
+            self._cpu_user_time_value = (self._cpu_user_time_end -
+                    self._cpu_user_time_start)
 
         # Calculate thread utilisation factor if using.
 
@@ -420,7 +414,7 @@ class Transaction(object):
                 custom_metrics=self._custom_metrics,
                 parameter_groups=parameter_groups,
                 guid=self.rum_guid,
-                cpu_utilization=self._cpu_utilization_value,
+                cpu_time=self._cpu_user_time_value,
                 suppress_transaction_trace=self.suppress_transaction_trace,
                 client_cross_process_id=self.client_cross_process_id,
                 )

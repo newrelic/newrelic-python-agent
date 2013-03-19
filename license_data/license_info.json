@@ -1,0 +1,62 @@
+{
+    "libraries": {
+        "New Relic": {
+            "licenses": [
+                "New Relic"
+            ],
+            "name": "New Relic",
+            "url": "http://newrelic.com"
+        },
+        "certifi": {
+            "licenses": [
+                "ISC",
+                "MPL"
+            ],
+            "name": "certifi",
+            "url": "http://pypi.python.org/pypi/certifi"
+        },
+        "namedtuple": {
+            "licenses": [
+                "PSF"
+            ],
+            "name": "namedtuple",
+            "url": "http://code.activestate.com/recipes/500261/"
+        },
+        "requests": {
+            "licenses": [
+                "ISC"
+            ],
+            "name": "requests",
+            "url": "http://pypi.python.org/pypi/requests"
+        },
+        "simplejson": {
+            "licenses": [
+                "MIT"
+            ],
+            "name": "simplejson",
+            "url": "http://pypi.python.org/pypi/simplejson"
+        }
+    },
+    "licenses": {
+        "ISC": {
+            "name": "Internet Systems Consortium",
+            "url": "http://www.isc.org/software/license"
+        },
+        "MIT": {
+            "name": "The MIT License",
+            "url": "http://opensource.org/licenses/MIT"
+        },
+        "MPL": {
+            "name": "Mozilla Public License",
+            "url": "http://www.mozilla.org/MPL/"
+        },
+        "New Relic": {
+            "name": "New Relic",
+            "url": "http://newrelic.com"
+        },
+        "PSF": {
+            "name": "Python Software Foundation",
+            "url": "http://docs.python.org/2/license.html"
+        }
+    }
+}

@@ -8,6 +8,18 @@
 rm -rf build dist
 rm -rf *.egg-info
 
+
+# License Review
+
+python license_reviewer.py review
+
+STATUS=$?
+if test "$STATUS" != "0"
+then
+    echo "`basename $0`: *** Error $STATUS"
+    exit 1
+fi
+
 # Record build number.
 
 if test x"$BUILD_NUMBER" != x""

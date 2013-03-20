@@ -9,9 +9,19 @@ rm -rf build dist
 rm -rf *.egg-info
 
 
-# License Review
+# Get the path to python2.7 version.
+# license_reviewer.py
 
-python license_reviewer.py review
+if test x"$BUILD_NUMBER" != x""
+then
+    PYTHON27="$HOME/python-tools/python-2.7-ucs4/bin/python2.7"
+else
+    PYTHON27="/usr/bin/python2.7"
+fi
+
+export LICENSE_REVIEWER_METAFILE_PATH=license_data
+
+$PYTHON27 license_reviewer.py review
 
 STATUS=$?
 if test "$STATUS" != "0"

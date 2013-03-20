@@ -34,4 +34,6 @@
 /python-tools/Makefile
 /python-tools/buildout.cfg
 
+/license_data/license_errors.txt
+
 .tox

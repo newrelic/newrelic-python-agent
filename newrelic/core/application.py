@@ -929,7 +929,15 @@ class Application(object):
 
         for xray_id in new_xrays:
             metadata = self._active_session.get_xray_metadata(xray_id)
-            self.cmd_start_xray(0, **metadata[0])
+            if not metadata:
+                # We may get empty meta data if the xray session had
+                # completed or been deleted just prior to requesting
+                # the meta data.
+
+                _logger.debug('Meta data for xray session with id %r '
+                        'of %r is empty, ignore it.', xray_id, self._app_name)
+            else:
+                self.cmd_start_xray(0, **metadata[0])
 
         # Note that 'active_xray_sessions' does NOT need to send an
         # acknowledgement back to the collector

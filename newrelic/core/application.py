@@ -709,6 +709,59 @@ class Application(object):
 
         stop_time_s = self._period_start + duration_s
 
+        # Check whether we are already running an xray session for this
+        # xray id and ignore the subsequent request if we are.
+
+        if self._active_xrays.get(xray_id) is not None:
+            _logger.warning('An xray session was requested for %r but '
+                      'an xray session for the requested key transaction '
+                      '%r with ID of %r is already in progress. Ignoring '
+                      'the subsequent request. This can happen, but if it '
+                      'keeps occurring on a regular basis, please report '
+                      'this problem to New Relic support for further '
+                      'investigation.', self._app_name, name, xray_id)
+
+            return {command_id: {'error': 'Xray session already running.'}}
+
+        # Check whether we have an xray session running for the same key
+        # transaction, we should only ever have one. If already have one
+        # and the existing one has an ID which indicates it is older, then
+        # stop the existing one so we can replace it with the newer one.
+        # Otherwise allow the existing one to stand and ignore the new one.
+
+        xs = self._stats_engine.xray_sessions.get(name)
+
+        if xs:
+            if xs.xray_id < xray_id:
+                _logger.warning('An xray session was requested for %r but '
+                        'an xray session with id %r for the requested key '
+                        'transaction %r is already in progress. Replacing '
+                        'the existing older xray session with the newer xray '
+                        'session with id %r. This can happen occassionally. '
+                        'But if it keeps occurring on a regular basis, '
+                        'please report this problem to New Relic support '
+                        'for further  investigation.', self._app_name,
+                        xs.xray_id, name, xray_id)
+
+                self.profile_manager.stop_profile_session(
+                        self._app_name, xs.key_txn)
+
+            else:
+                _logger.warning('An xray session was requested for %r but '
+                        'a newer xray session with id %r for the requested '
+                        'key transaction %r is already in progress. Ignoring '
+                        'the older xray session request with id %r. This can '
+                        'happen occassionally. But if it keeps occurring '
+                        'on a regular basis, please report this problem '
+                        'to New Relic support for further  investigation.',
+                        self._app_name, xs.xray_id, name, xray_id)
+
+                return {command_id: {'error': 'Xray session already running.'}}
+
+        """
+
+        XXX Old way.
+
         # An xray session is deemed as already_running if the xray_id is
         # already present in the self._active_xrays or the key txn is already
         # tracked in the stats_engine.xray_sessions.
@@ -734,6 +787,10 @@ class Application(object):
                     'support for further  investigation.', 
                     self._app_name, name)
             return {command_id: {'error': 'Xray session already running.'}}
+
+        XXX Old way.
+
+        """
 
         xs = XraySession(xray_id, name, stop_time_s, max_traces,
                 sample_period_s)
@@ -841,9 +898,9 @@ class Application(object):
         _logger.debug('X Ray sessions actually running for %r are '
                 '%r.', self._app_name, agent_xray_ids)
 
-        # Result of the (agent_xray_ids - collector_xray_ids) will be the ids
-        # that are not active in collector but are still active in the agent.
-        # These xray sessions must be stopped.
+        # Result of the (agent_xray_ids - collector_xray_ids) will be
+        # the ids that are not active in collector but are still active
+        # in the agent. These xray sessions must be stopped.
 
         stopped_xrays = agent_xray_ids - collector_xray_ids
 
@@ -855,13 +912,17 @@ class Application(object):
             self.cmd_stop_xray(x_ray_id=xs.xray_id,
                     key_transaction_name=xs.key_txn)
 
-        # Result of the (collector_xray_ids - agent_xray_ids) will be the ids
-        # that are new xray sessions created in the collector but are not yet
-        # activated in the agent. Agent will contact the collector with each
-        # xray_id and ask for it's metadata, then start the corresponding
-        # xray_sessions.
+        # Result of the (collector_xray_ids - agent_xray_ids) will be
+        # the ids that are new xray sessions created in the collector
+        # but are not yet activated in the agent. Agent will contact the
+        # collector with each xray_id and ask for it's metadata, then
+        # start the corresponding xray_sessions. Note that we sort the
+        # list of IDs and give precedence to larger value, which should
+        # be newer. Do this just in case the data collector is tardy
+        # in flushing out a complete one and UI has allowed a new one
+        # to be created and so have multiple for same key transaction.
 
-        new_xrays = collector_xray_ids - agent_xray_ids
+        new_xrays = sorted(collector_xray_ids - agent_xray_ids, reverse=True)
 
         _logger.debug('X Ray sessions to be started for %r are '
                 '%r.', self._app_name, new_xrays)
@@ -870,8 +931,8 @@ class Application(object):
             metadata = self._active_session.get_xray_metadata(xray_id)
             self.cmd_start_xray(0, **metadata[0])
 
-        # 'active_xray_sessions' does NOT send an acknowledgement back to
-        # the collector
+        # Note that 'active_xray_sessions' does NOT need to send an
+        # acknowledgement back to the collector
 
         return None
 

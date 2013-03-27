@@ -20,7 +20,7 @@ from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
 
 try:
     from collections import namedtuple
-except:
+except ImportError:
     from newrelic.lib.namedtuple import namedtuple
 
 _logger = logging.getLogger(__name__)

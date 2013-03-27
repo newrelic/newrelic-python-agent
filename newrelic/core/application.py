@@ -543,7 +543,7 @@ class Application(object):
                          'application %r.', data_sampler.name, self._app_name)
 
                  data_sampler.start()
-            except:
+            except Exception:
                  _logger.exception('Unexpected exception when starting '
                          'data source %r. Custom metrics from this data '
                          'source may not be subsequently available. If '
@@ -567,7 +567,7 @@ class Application(object):
                          'application %r.', data_sampler.name, self._app_name)
 
                  data_sampler.stop()
-            except:
+            except Exception:
                  _logger.exception('Unexpected exception when stopping data '
                          'source %r Custom metrics from this data source '
                          'may not be subsequently available. If this '
@@ -660,7 +660,7 @@ class Application(object):
                     self.profile_manager.add_stack_traces(self._app_name,
                             data.path, tr_type, samples)
 
-                except:
+                except Exception:
                     _logger.exception('Building xray profile tree has failed.'
                             'This would indicate some sort of internal '
                             'implementation issue with the agent. Please '
@@ -1559,7 +1559,7 @@ class Application(object):
 
         try:
             self.report_profile_data()
-        except:
+        except Exception:
             pass
 
         # Stop any data samplers which are running. These can be internal

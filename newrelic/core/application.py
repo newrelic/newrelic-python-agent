@@ -397,9 +397,25 @@ class Application(object):
 
             # Immediately fetch any agent commands now even before start
             # recording any transactions so running of any X-Ray
-            # sessions is not delayed.
+            # sessions is not delayed. This could fail due to issues
+            # talking to the data collector or if we get back bad data.
+            # We need to make sure we ignore such errors and still allow
+            # the registration to be finalised so that agent still
+            # start up and collect metrics. Any X-Ray sessions will be
+            # picked up in subsequent harvest.
 
-            self.process_agent_commands()
+            try:
+                self.process_agent_commands()
+
+            except Exception:
+                if not self._agent_shutdown and not self._pending_shutdown:
+                    _logger.exception('Unexpected exception when processing '
+                            'agent commands when registering agent with the '
+                            'data collector. If this problem persists, please '
+                            'report this problem to New Relic support for '
+                            'further investigation.')
+                else:
+                    raise
 
             # Start any data samplers so they are aware of the start of
             # the harvest period.

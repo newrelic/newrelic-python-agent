@@ -759,8 +759,8 @@ class Application(object):
                         'for further  investigation.', self._app_name,
                         xs.xray_id, name, xray_id)
 
-                self.profile_manager.stop_profile_session(
-                        self._app_name, xs.key_txn)
+                self.cmd_stop_xray(x_ray_id=xs.xray_id,
+                        key_transaction_name=xs.key_txn)
 
             else:
                 _logger.warning('An xray session was requested for %r but '

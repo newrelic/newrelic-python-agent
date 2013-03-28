@@ -22,6 +22,7 @@ fi
 export LICENSE_REVIEWER_METAFILE_PATH=license_data
 
 $PYTHON27 license_reviewer.py review
+$PYTHON27 license_reviewer.py geninstallerdoc newrelic/LICENSE
 
 STATUS=$?
 if test "$STATUS" != "0"

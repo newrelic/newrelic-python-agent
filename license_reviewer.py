@@ -32,6 +32,7 @@ license_config_filename = 'license_config.ini'
 # gets read in from the ini file
 projectname = ""
 permalink = ""
+review_submodules = False
 
 new_relic_library = "New Relic"
 
@@ -223,6 +224,35 @@ def set_libraries_command(args):
 
     return 0
 
+def ack_file_change_command(args):
+    print("Acknowledging that libraries are still correct for a source file...\n")
+
+    license_source_map_file = os.path.join(license_reviewer_metafile_path, license_source_map_filename)
+    source_file = args.source
+
+    source_map = load_source_map_file(license_source_map_file)
+
+    repo_files = get_git_repo_files()
+
+    try:
+        update_hash(source_map, source_file)
+        save_license_source_map_file(license_source_map_file, source_map)
+    except NR_Error as e:
+        print(e.value)
+        return -1
+
+    return 0
+
+def update_hash(source_map, source_file):
+    if not os.path.exists(source_file):
+        raise NR_Error("[ERROR] source file does not exist: "+source_file)
+
+    if source_file not in source_map:
+        raise NR_Error("[ERROR] source file not in license_source_map")
+
+    source_map[source_file]["hash"] = hash_file(source_file)
+
+
 def set_libraries(license_info, source_map, repo_files, ignored_files, source_file, libraries):
     if not os.path.exists(source_file):
         raise NR_Error("[ERROR] source file does not exist: "+source_file)
@@ -376,7 +406,7 @@ def gen_installer_doc(license_info):
 
         lines.append("----------------------------------------------------------------")
         lines.append("")
-        lines.append("This product includes '"+library_name+"', which is released under the following license(s):")
+        lines.append("This product includes '%s' (%s), which is released under the following license(s):" % (library_name, library_url))
 
         for license_id in sorted(license_info["libraries"][library]["licenses"]):
             license_name = license_info["licenses"][license_id]["name"]
@@ -557,6 +587,28 @@ def get_git_repo_files():
     for file_name in file_list:
         norm_path = os.path.normpath(file_name)
         repo_files[norm_path] = norm_path
+
+    
+    if review_submodules:
+        # now let's see if there are any git submodules and add all the submodule files to our manifest
+        git_output = subprocess.check_output(["git", "submodule", "foreach", "git ls-files"])
+    
+        file_list = str(git_output).split("\n")
+        if len(file_list) > 1:
+    
+            current_submodule = ""
+    
+            for line in file_list:
+                submodule = re.search("Entering '(.+?)'", line)
+        
+                # if the text of the line is Entering 'submodulename'..., then we've entered a submodule
+                # otherwise, it's a file in the submodule
+                if submodule:
+                    current_submodule = submodule.group(1)
+                else:
+                    norm_path = os.path.normpath(os.path.join(current_submodule, line))
+        
+                    repo_files[norm_path] = norm_path
 
     return repo_files
 
@@ -799,12 +851,13 @@ def load_environ():
 def load_config_file():
     global projectname
     global permalink
+    global review_submodules
 
     errors = []
 
     license_config_file = os.path.join(license_reviewer_metafile_path, license_config_filename)
 
-    config = ConfigParser.ConfigParser()
+    config = ConfigParser.ConfigParser({"review_submodules":False})
 
     if os.path.exists(license_config_file):
         config.readfp(open(license_config_file))
@@ -817,6 +870,8 @@ def load_config_file():
             permalink = config.get("LicenseReviewerConfig", "permalink")
             if len(permalink) == 0:
                 errors.append("permalink variable not set in: "+license_config_file)
+
+            review_submodules = config.get("LicenseReviewerConfig", "review_submodules")
     
         except ConfigParser.NoOptionError as e:
             errors.append("error reading: "+license_config_file)
@@ -858,6 +913,10 @@ def get_and_run_command():
     set_libraries_command_parser.add_argument("source", help="The source file you want to set libraries on")
     set_libraries_command_parser.add_argument("libraryid", nargs="+", help="Libraries used by the source file")
     set_libraries_command_parser.set_defaults(func=set_libraries_command)
+
+    ack_file_change_command_parser = subparsers.add_parser("ackfilechange", description="Acknowledge that a source file's contents changed and that the referenced libraries don't need to be updated.")
+    ack_file_change_command_parser.add_argument("source", help="The source file to acknowledge")
+    ack_file_change_command_parser.set_defaults(func=ack_file_change_command)
 
     gen_installer_doc_command_parser = subparsers.add_parser("geninstallerdoc", description="Generates a plain text file to be used by an installer based on current license information")
     gen_installer_doc_command_parser.add_argument("--noreview", dest="noreview", action="store_true", help="Do not do a license review before generating the document. WARNING: only do this if you know the metafiles are correct. This should only be used for automation purposes.")

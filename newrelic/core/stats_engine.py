@@ -764,8 +764,8 @@ class StatsEngine(object):
                 pack_data = base64.standard_b64encode(zlib_data)
 
             root = transaction_trace.root
-            force_persist = trace.guid is not None
             xray_id = getattr(trace, 'xray_id', None)
+            force_persist = (trace.guid is not None) or (xray_id is not None)
 
             trace_data.append([root.start_time,
                     root.end_time - root.start_time,

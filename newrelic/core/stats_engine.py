@@ -1000,9 +1000,39 @@ class StatsEngine(object):
         # browser and xray traces, trimming them at the maximum to be kept.
 
         if merge_traces:
+
+            # Limit number of browser traces to the limit (10)
+            # FIXME - snapshot.__browser_transactions has only one element. So
+            # we can use the following code:
+            # 
+            # maximum = settings.agent_limits.browser_transactions
+            # if len(self.__browser_transactions) < maximum:
+            #     self.__browser_transactions.extend(
+            #                               snapshot.__browser_transactions)
+
+            maximum = settings.agent_limits.browser_transactions
+            self.__browser_transactions.extend(snapshot.__browser_transactions)
+            self.__browser_transactions = self.__browser_transactions[:maximum]
+
+            # Limit number of xray traces to the limit (10)
+            # Spill over traces after the limit should have no x-ray ids. This
+            # qualifies the trace to be considered for slow transaction.
+
+            maximum = settings.agent_limits.xray_transactions
+            self.__xray_transactions.extend(snapshot.__xray_transactions)
+            for txn in self.__xray_transactions[maximum:]:
+                txn.xray_id = None
+            self.__xray_transactions = self.__xray_transactions[:maximum]
+
             transaction = snapshot.__slow_transaction
 
-            if transaction:
+            # If the transaction has an xray_id then it does not qualify to
+            # be considered for slow transaction.  This is because in the Core
+            # app, there is logic to NOT show TTs with xray ids in the
+            # WebTransactions tab. If a TT has xray_id it is only shown under
+            # the xray page. 
+
+            if transaction and transaction.xray_id is None:
                 name = transaction.path
                 duration = transaction.duration
 
@@ -1016,13 +1046,6 @@ class StatsEngine(object):
                     self.__slow_transaction = transaction
                     self.__slow_transaction_map[name] = duration
 
-            maximum = settings.agent_limits.browser_transactions
-            self.__browser_transactions.extend(snapshot.__browser_transactions)
-            self.__browser_transactions = self.__browser_transactions[:maximum]
-
-            maximum = settings.agent_limits.xray_transactions
-            self.__xray_transactions.extend(snapshot.__xray_transactions)
-            self.__xray_transactions = self.__xray_transactions[:maximum]
 
     def merge_custom_metrics(self, metrics):
         """Merges in a set of custom metrics. The metrics should be

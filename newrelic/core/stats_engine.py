@@ -1032,7 +1032,8 @@ class StatsEngine(object):
             # WebTransactions tab. If a TT has xray_id it is only shown under
             # the xray page. 
 
-            if transaction and transaction.xray_id is None:
+            xray_id = getattr(transaction, 'xray_id', None)
+            if transaction and xray_id is None:
                 name = transaction.path
                 duration = transaction.duration
 

@@ -147,7 +147,7 @@ class Agent(object):
                         'newrelic-admin command with command line of %s.',
                         os.environ['NEW_RELIC_ADMIN_COMMAND'])
 
-        run_startup_callables = False
+        instance = None
 
         with Agent._lock:
             if not Agent._instance:
@@ -162,12 +162,18 @@ class Agent(object):
                     _logger.debug('Agent was intialized from: %r',
                             ''.join(traceback.format_stack()[:-1]))
 
-                Agent._instance = Agent(settings)
-                Agent._instance.activate_agent()
+                instance = Agent(settings)
+                instance.activate_agent()
 
-                run_startup_callables = True
+                Agent._instance = instance
 
-        if run_startup_callables:
+        if instance:
+            _logger.debug('Registering builtin data sources.')
+
+            instance.register_data_source(cpu_usage_data_source)
+            instance.register_data_source(memory_usage_data_source)
+            instance.register_data_source(thread_utilization_data_source)
+
             for callable in Agent._startup_callables:
                 callable()
 
@@ -455,12 +461,6 @@ class Agent(object):
         _logger.debug('Entering harvest loop.')
 
         settings = newrelic.core.config.global_settings()
-
-        _logger.debug('Registering builtin data sources.')
-
-        self.register_data_source(cpu_usage_data_source)
-        self.register_data_source(memory_usage_data_source)
-        self.register_data_source(thread_utilization_data_source)
 
         self._next_harvest = time.time()
 

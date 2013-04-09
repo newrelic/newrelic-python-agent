@@ -100,7 +100,7 @@ class Agent(object):
 
     """
 
-    _lock = threading.Lock()
+    _instance_lock = threading.Lock()
     _instance = None
     _startup_callables = []
     _registration_callables = {}
@@ -149,7 +149,7 @@ class Agent(object):
 
         instance = None
 
-        with Agent._lock:
+        with Agent._instance_lock:
             if not Agent._instance:
                 if settings.debug.log_agent_initialization:
                     _logger.info('Creating instance of Python agent in '
@@ -163,11 +163,14 @@ class Agent(object):
                             ''.join(traceback.format_stack()[:-1]))
 
                 instance = Agent(settings)
-                instance.activate_agent()
 
                 Agent._instance = instance
 
         if instance:
+            _logger.debug('Activating agent instance.')
+
+            instance.activate_agent()
+
             _logger.debug('Registering builtin data sources.')
 
             instance.register_data_source(cpu_usage_data_source)
@@ -205,6 +208,8 @@ class Agent(object):
         self._next_harvest = 0.0
 
         self._process_shutdown = False
+
+        self._lock = threading.Lock()
 
         if self._config.enabled:
             atexit.register(self._atexit_shutdown)
@@ -290,7 +295,7 @@ class Agent(object):
 
         activate_session = False
 
-        with Agent._lock:
+        with self._lock:
             application = self._applications.get(app_name, None)
             if not application:
                 if settings.debug.log_agent_initialization:
@@ -373,7 +378,7 @@ class Agent(object):
         _logger.debug('Register data source with agent %r.',
                 (source, application, name, settings, properties))
 
-        with Agent._lock:
+        with self._lock:
             # Remember the data sources in case we need them later.
 
             self._data_sources.setdefault(application, []).append(

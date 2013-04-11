@@ -575,6 +575,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/adapter_cherrypy.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/adapter_flup.py": {
         "hash": "n/a",
         "libraries": [

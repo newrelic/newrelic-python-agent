@@ -129,7 +129,7 @@ def instrument_gluon_template(module):
     # from this compilation step.
 
     def name_function_parse_template(filename, path='views/',
-            context=dict(), *args):
+            context=dict(), *args, **kwargs):
         if 'request' in context:
             folder = context['request'].folder
             if path.startswith(folder):
@@ -144,7 +144,7 @@ def instrument_gluon_tools(module):
 
     # Wrap utility function for fetching an external URL.
 
-    def url_external_fetch(url, *args):
+    def url_external_fetch(url, *args, **kwargs):
         return url
 
     newrelic.api.external_trace.wrap_external_trace(
@@ -185,7 +185,7 @@ def instrument_gluon_http(module):
     # fact that arbitrary rewrite rules can be used may
     # mean that isn't always the case.
 
-    def name_transaction_name_not_found(response, *args):
+    def name_transaction_name_not_found(response, *args, **kwargs):
         txn = newrelic.api.transaction.current_transaction()
         if not txn:
             return

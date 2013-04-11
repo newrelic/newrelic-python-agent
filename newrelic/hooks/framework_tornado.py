@@ -90,7 +90,7 @@ def instrument_tornado_web(module):
             # track wait time for deferred and manually pop the
             # transaction as being the current one for this thread.
 
-            if handler._finished is None:
+            if handler._finished:
                 transaction.__exit__(None, None, None)
                 request._nr_transaction = None
 

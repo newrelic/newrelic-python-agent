@@ -1486,6 +1486,10 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.adapter_waitress',
             'instrument_waitress_server')
 
+    _process_module_definition('cherrypy.wsgiserver.wsgiserver2',
+            'newrelic.hooks.adapter_cherrypy',
+            'instrument_cherrypy_wsgiserver_wsgiserver2')
+
     #_process_module_definition('pyramid.router',
     #        'newrelic.hooks.framework_pyramid',
     #        'instrument_pyramid_router')

@@ -47,6 +47,7 @@ def instrument_tornado_web(module):
         environ = {}
 
         environ['REQUEST_URI'] = request.uri
+        environ['QUERY_STRING'] = request.query
 
         # Now start recording the actual web transaction. Bail out though
         # if turns out that recording transactions is not enabled.

@@ -565,6 +565,9 @@ class WSGIInputWrapper(object):
         self.__transaction = transaction
         self.__input = input
 
+    def __getattr__(self, name): 
+        return getattr(self.__input, name) 
+
     def close(self):
         if hasattr(self.__input, 'close'):
             self.__input.close()

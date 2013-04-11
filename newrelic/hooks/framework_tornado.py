@@ -77,7 +77,7 @@ def instrument_tornado_web(module):
 
             with FunctionTrace(transaction, name='Request/Process',
                     group='Python/Tornado'):
-                result = wrapped(*args, **kwargs)
+                handler = wrapped(*args, **kwargs)
 
             # In the case of an immediate result or an exception
             # occuring, then finish() will have been called on the
@@ -90,7 +90,7 @@ def instrument_tornado_web(module):
             # track wait time for deferred and manually pop the
             # transaction as being the current one for this thread.
 
-            if request.connection._request is None:
+            if handler._finished is None:
                 transaction.__exit__(None, None, None)
                 request._nr_transaction = None
 
@@ -115,7 +115,7 @@ def instrument_tornado_web(module):
 
             raise
 
-        return result
+        return handler
 
     module.Application.__call__ = ObjectWrapper(
             module.Application.__call__, None, start_wrapper)

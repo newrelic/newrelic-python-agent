@@ -617,6 +617,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/adapter_wsgiref.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/application_celery.py": {
         "hash": "n/a",
         "libraries": [

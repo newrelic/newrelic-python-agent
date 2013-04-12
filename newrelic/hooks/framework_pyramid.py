@@ -3,6 +3,7 @@ from __future__ import with_statement
 import types
 
 import newrelic.api.in_function
+import newrelic.api.out_function
 import newrelic.api.function_trace
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
@@ -101,3 +102,15 @@ def instrument_pyramid_router(module):
 
     newrelic.api.web_transaction.wrap_wsgi_application(
             module, 'Router.__call__')
+
+def instrument_pyramid_config_views(module):
+
+    # Location of the ViewDeriver class changed from pyramid.config to
+    # pyramid.config.views so check if present before trying to update.
+
+    def wrap_mapped_view(mapped_view):
+        return ViewCallableWrapper(mapped_view)
+
+    if hasattr(module, 'ViewDeriver'):
+        newrelic.api.out_function.wrap_out_function(module,
+                'ViewDeriver.mapped_view', wrap_mapped_view)

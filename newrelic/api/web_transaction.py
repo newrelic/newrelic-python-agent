@@ -9,6 +9,7 @@ import time
 import string
 import random
 import re
+import datetime
 
 import newrelic.lib.simplejson as simplejson
 
@@ -57,7 +58,7 @@ _rum2_footer_long_fragment = '<script type="text/javascript">' \
 
 # Seconds since epoch for Jan 1 2000
 
-JAN_1_2000 = time.mktime(time.strptime('01 Jan 2000', '%d %b %Y'))
+JAN_1_2000 = float(datetime.datetime(2000, 1, 1).strftime('%s'))
 
 def _encode(name, key):
     s = []

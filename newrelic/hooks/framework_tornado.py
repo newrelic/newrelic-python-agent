@@ -12,6 +12,18 @@ from newrelic.api.function_trace import FunctionTrace
 
 _logger = logging.getLogger(__name__)
 
+def record_exception(transaction, exc_info):
+    import tornado.web
+
+    exc = exc_info[0]
+    value = exc_info[1]
+
+    if exc is tornado.web.HTTPError:
+        if value.status_code == 404:
+            return
+
+    transaction.record_exception(*exc_info)
+
 def instrument_tornado_web(module):
 
     # We want to wrap the __call__ method of an Application class as
@@ -102,7 +114,7 @@ def instrument_tornado_web(module):
                 request._nr_wait_function_trace.__enter__()
                 transaction.drop_transaction()
 
-        except:
+        except Exception:
             # If an error occurs assume that transaction should be
             # exited. Technically don't believe this should ever occur
             # unless our code here has an error.
@@ -149,6 +161,18 @@ def instrument_tornado_web(module):
 
     module.RequestHandler._execute = ObjectWrapper(
             module.RequestHandler._execute, None, execute_wrapper)
+
+    def error_wrapper(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+
+        if transaction is not None:
+            record_exception(transaction, sys.exc_info())
+
+        return wrapped(*args, **kwargs)
+
+    module.RequestHandler._handle_request_exception = ObjectWrapper(
+            module.RequestHandler._handle_request_exception, None,
+            error_wrapper)
 
 def instrument_tornado_httpserver(module):
 
@@ -203,7 +227,10 @@ def instrument_tornado_httpserver(module):
                         group='Python/Tornado'):
                     result = wrapped(*args, **kwargs)
 
-            except:
+            except Exception:
+                # The finish() function cannot raise HTTPError instances
+                # so do not have to worry about ignoring a 404 here.
+
                 transaction.record_exception(*sys.exc_info())
                 raise
 
@@ -228,7 +255,7 @@ def instrument_tornado_httpserver(module):
 
                 transaction.__exit__(None, None, None)
 
-            except:
+            except Exception:
                 transaction.__exit__(*sys.exc_info())
                 raise
 
@@ -245,7 +272,7 @@ def instrument_tornado_httpserver(module):
                         group='Python/Tornado'):
                     result = wrapped(*args, **kwargs)
 
-            except:
+            except Exception:
                 raise
 
         return result

@@ -1310,6 +1310,9 @@ def _process_module_builtin_defaults():
     #_process_module_definition('tornado.web',
     #        'newrelic.hooks.framework_tornado',
     #        'instrument_tornado_web')
+    #_process_module_definition('tornado.template',
+    #        'newrelic.hooks.framework_tornado',
+    #        'instrument_tornado_template')
     #_process_module_definition('tornado.httpserver',
     #        'newrelic.hooks.framework_tornado',
     #        'instrument_tornado_httpserver')

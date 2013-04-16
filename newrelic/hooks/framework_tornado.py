@@ -174,6 +174,58 @@ def instrument_tornado_web(module):
             module.RequestHandler._handle_request_exception, None,
             error_wrapper)
 
+    def render_wrapper(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+
+        if transaction is None:
+            return wrapped(*args, **kwargs)
+
+        name = callable_name(wrapped)
+        with FunctionTrace(transaction, name=name):
+            return wrapped(*args, **kwargs)
+
+    module.RequestHandler.render = ObjectWrapper(
+            module.RequestHandler.render, None, render_wrapper)
+    module.RequestHandler.render_string = ObjectWrapper(
+            module.RequestHandler.render_string, None, render_wrapper)
+
+def instrument_tornado_template(module):
+
+    def template_generate_wrapper(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+
+        if transaction is None:
+            return wrapped(*args, **kwargs)
+
+        with FunctionTrace(transaction, name=instance.name,
+                group='Template/Render'):
+            return wrapped(*args, **kwargs)
+
+    module.Template.generate = ObjectWrapper(
+            module.Template.generate, None, template_generate_wrapper)
+
+    def template_generate_wrapper(wrapped, instance, args, kwargs):
+        result = wrapped(*args, **kwargs)
+        if result is not None:
+            return 'import newrelic.agent as _nr_newrelic_agent\n' + result
+
+    module.Template._generate_python = ObjectWrapper(
+            module.Template._generate_python, None,
+            template_generate_wrapper)
+
+    def block_generate_wrapper(wrapped, instance, args, kwargs):
+        def execute(writer, *args, **kwargs):
+            writer.write_line('with _nr_newrelic_agent.FunctionTrace('
+                    '_nr_newrelic_agent.current_transaction(), name=%r, '
+                    'group="Template/Block"):' % instance.name, instance.line)
+            with writer.indent():
+                writer.write_line("pass", instance.line)
+                return wrapped(writer, *args, **kwargs)
+        return execute(*args, **kwargs)
+
+    module._NamedBlock.generate = ObjectWrapper(
+            module._NamedBlock.generate, None, block_generate_wrapper)
+
 def instrument_tornado_httpserver(module):
 
     def finish_wrapper(wrapped, instance, args, kwargs):

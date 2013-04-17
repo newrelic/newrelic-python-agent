@@ -1307,15 +1307,18 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.adapter_tornado',
             'instrument_tornado_wsgi')
 
+    #_process_module_definition('tornado.httpserver',
+    #        'newrelic.hooks.framework_tornado',
+    #        'instrument_tornado_httpserver')
+    #_process_module_definition('tornado.httputil',
+    #        'newrelic.hooks.framework_tornado',
+    #        'instrument_tornado_httputil')
     #_process_module_definition('tornado.web',
     #        'newrelic.hooks.framework_tornado',
     #        'instrument_tornado_web')
     #_process_module_definition('tornado.template',
     #        'newrelic.hooks.framework_tornado',
     #        'instrument_tornado_template')
-    #_process_module_definition('tornado.httpserver',
-    #        'newrelic.hooks.framework_tornado',
-    #        'instrument_tornado_httpserver')
 
     _process_module_definition('paste.httpserver',
             'newrelic.hooks.adapter_paste',

@@ -216,6 +216,48 @@ def instrument_tornado_httpserver(module):
             module.HTTPConnection._on_request_body, None,
             on_request_body_wrapper)
 
+    def finish_request_wrapper(wrapped, instance, args, kwargs):
+        assert instance is not None
+
+        request = instance._request
+
+        transaction = current_transaction()
+
+        if transaction:
+            return wrapped(*args, **kwargs)
+
+        if not hasattr(request, '_nr_transaction'):
+            return wrapped(*args, **kwargs)
+
+        transaction = request._nr_transaction
+
+        if transaction is None:
+            return wrapped(*args, **kwargs)
+
+        transaction.save_transaction()
+
+        try:
+            result = wrapped(*args, **kwargs)
+
+            if request._nr_wait_function_trace:
+                request._nr_wait_function_trace.__exit__(None, None, None)
+
+            transaction.__exit__(None, None, None)
+
+        except Exception:
+            transaction.__exit__(*sys.exc_info())
+            raise
+
+        finally:
+            request._nr_wait_function_trace = None
+            request._nr_transaction = None
+
+        return result
+
+    module.HTTPConnection._finish_request = ObjectWrapper(
+            module.HTTPConnection._finish_request, None,
+            finish_request_wrapper)
+
     def finish_wrapper(wrapped, instance, args, kwargs):
         assert instance is not None
 
@@ -287,21 +329,35 @@ def instrument_tornado_httpserver(module):
             # transaction down below.
 
             try:
+                complete = True
+
                 request._nr_wait_function_trace.__exit__(None, None, None)
 
                 with FunctionTrace(transaction, name='Request/Finish',
                         group='Python/Tornado'):
                     result = wrapped(*args, **kwargs)
 
-                transaction.__exit__(None, None, None)
+                if not instance.stream.writing():
+                    transaction.__exit__(None, None, None)
+
+                else:
+                    request._nr_wait_function_trace = FunctionTrace(
+                            transaction, name='Request/Output',
+                            group='Python/Tornado')
+
+                    request._nr_wait_function_trace.__enter__()
+                    transaction.drop_transaction()
+
+                    complete = False
 
             except Exception:
                 transaction.__exit__(*sys.exc_info())
                 raise
 
             finally:
-                request._nr_wait_function_trace = None
-                request._nr_transaction = None
+                if complete:
+                    request._nr_wait_function_trace = None
+                    request._nr_transaction = None
 
         else:
             # This should be the case where finish() is being called in
@@ -401,8 +457,17 @@ def instrument_tornado_web(module):
             # transaction as being the current one for this thread.
 
             if handler._finished:
-                transaction.__exit__(None, None, None)
-                request._nr_transaction = None
+                if not request.connection.stream.writing():
+                    transaction.__exit__(None, None, None)
+                    request._nr_transaction = None
+
+                else:
+                    request._nr_wait_function_trace = FunctionTrace(
+                            transaction, name='Request/Output',
+                            group='Python/Tornado')
+
+                    request._nr_wait_function_trace.__enter__()
+                    transaction.drop_transaction()
 
             else:
                 request._nr_wait_function_trace = FunctionTrace(

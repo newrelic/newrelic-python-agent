@@ -24,6 +24,39 @@ def record_exception(transaction, exc_info):
 
     transaction.record_exception(*exc_info)
 
+def request_environment(application, request):
+    result = {}
+
+    result['REQUEST_URI'] = request.uri
+    result['QUERY_STRING'] = request.query
+
+    settings = application.settings
+
+    if not settings:
+        return result
+
+    for key in settings.include_environ:
+        if key == 'REQUEST_METHOD':
+            result[key] = request.method
+        elif key == 'HTTP_USER_AGENT':
+            value = request.headers.get('User-Agent')
+            if value:
+                result[key] = value
+        elif key == 'HTTP_REFERER':
+            value = request.headers.get('Referer')
+            if value:
+                result[key] = value
+        elif key == 'CONTENT_TYPE':
+            value = request.headers.get('Content-Type')
+            if value:
+                result[key] = value
+        elif key == 'CONTENT_LENGTH':
+            value = request.headers.get('Content-Length')
+            if value:
+                result[key] = value
+
+    return result
+
 def instrument_tornado_httpserver(module):
 
     def on_headers_wrapper(wrapped, instance, args, kwargs):
@@ -77,10 +110,7 @@ def instrument_tornado_httpserver(module):
         # We need to fake up a WSGI like environ dictionary with the
         # key bits of information we need.
 
-        environ = {}
-
-        environ['REQUEST_URI'] = request.uri
-        environ['QUERY_STRING'] = request.query
+        environ = request_environment(application, request)
 
         # Now start recording the actual web transaction. Bail out
         # though if turns out that recording transactions is not
@@ -317,10 +347,7 @@ def instrument_tornado_web(module):
             # We need to fake up a WSGI like environ dictionary with the
             # key bits of information we need.
 
-            environ = {}
-
-            environ['REQUEST_URI'] = request.uri
-            environ['QUERY_STRING'] = request.query
+            environ = request_environment(application, request)
 
             # Now start recording the actual web transaction. Bail out
             # though if turns out that recording transactions is not
@@ -459,6 +486,26 @@ def instrument_tornado_web(module):
             module.RequestHandler.render, None, render_wrapper)
     module.RequestHandler.render_string = ObjectWrapper(
             module.RequestHandler.render_string, None, render_wrapper)
+
+    def generate_headers_wrapper(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+
+        if transaction is None:
+            return wrapped(*args, **kwargs)
+
+        transaction._thread_utilization_start = None
+
+        transaction.response_code = instance.get_status()
+
+        value = instance._headers.get('Content-Length')
+        if value:
+            transaction._response_properties['CONTENT_LENGTH'] = value
+            
+        return wrapped(*args, **kwargs)
+
+    module.RequestHandler._generate_headers = ObjectWrapper(
+            module.RequestHandler._generate_headers, None,
+            generate_headers_wrapper)
 
 def instrument_tornado_template(module):
 

@@ -572,6 +572,8 @@ def instrument_tornado_web(module):
             module.RequestHandler._generate_headers, None,
             generate_headers_wrapper)
 
+    wrap_function_trace(module, 'RequestHandler.finish')
+
 def instrument_tornado_template(module):
 
     def template_generate_wrapper(wrapped, instance, args, kwargs):
@@ -608,3 +610,88 @@ def instrument_tornado_template(module):
 
     module._NamedBlock.generate = ObjectWrapper(
             module._NamedBlock.generate, None, block_generate_wrapper)
+
+def instrument_tornado_stack_context(module):
+
+    def stack_context_wrap_wrapper(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+
+        if not transaction:
+            return wrapped(*args, **kwargs)
+
+        def callback_wrapper(wrapped, instance, args, kwargs):
+
+            if current_transaction():
+                return wrapped(*args, **kwargs)
+
+            if not hasattr(transaction, '_nr_current_request'):
+                return wrapped(*args, **kwargs)
+
+            request = transaction._nr_current_request()
+
+            if not request:
+                return wrapped(*args, **kwargs)
+
+            if not hasattr(request, '_nr_wait_function_trace'):
+                return wrapped(*args, **kwargs)
+
+            if not request._nr_wait_function_trace:
+                return wrapped(*args, **kwargs)
+
+            transaction.save_transaction()
+
+            if request._nr_wait_function_trace:
+                request._nr_wait_function_trace.__exit__(None, None, None)
+
+            request._nr_wait_function_trace = None
+
+            try:
+                name = callable_name(wrapped)
+                with FunctionTrace(transaction, name=name):
+                    return wrapped(*args, **kwargs)
+
+            finally:
+                if not request.connection.stream.writing():
+                    transaction.__exit__(None, None, None)
+                    request._nr_transaction = None
+
+                else:
+                    request._nr_wait_function_trace = FunctionTrace(
+                            transaction, name='Request/Output',
+                            group='Python/Tornado')
+
+                    request._nr_wait_function_trace.__enter__()
+                    transaction.drop_transaction()
+
+        def _fn(fn, *args, **kwargs):
+            return fn
+
+
+        fn = _fn(*args, **kwargs)
+
+        if fn is None or fn.__class__ is module._StackContextWrapper:
+            return fn
+
+        return ObjectWrapper(fn, None, callback_wrapper)
+
+    module.wrap = ObjectWrapper(module.wrap, None, stack_context_wrap_wrapper)
+
+def instrument_tornado_ioloop(module):
+
+    wrap_function_trace(module, 'IOLoop.add_handler')
+    wrap_function_trace(module, 'IOLoop.add_timeout')
+    wrap_function_trace(module, 'IOLoop.add_callback')
+
+    if hasattr(module, 'PollIOLoop'):
+        wrap_function_trace(module, 'PollIOLoop.add_handler')
+        wrap_function_trace(module, 'PollIOLoop.add_timeout')
+        wrap_function_trace(module, 'PollIOLoop.add_callback')
+        wrap_function_trace(module, 'PollIOLoop.add_callback_from_signal')
+
+def instrument_tornado_curl_httpclient(module):
+
+    wrap_function_trace(module, 'CurlAsyncHTTPClient.fetch')
+
+def instrument_tornado_simple_httpclient(module):
+
+    wrap_function_trace(module, 'SimpleAsyncHTTPClient.fetch')

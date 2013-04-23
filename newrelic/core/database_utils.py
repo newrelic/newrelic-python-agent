@@ -427,6 +427,10 @@ def _explain_plan(sql, dbapi, connect_params, cursor_params, execute_params):
             finally:
                 cursor.close()
         finally:
+            try:
+                connection.rollback()
+            except (AttributeError, dbapi.NotSupportedError):
+                pass
             connection.close()
     except Exception:
         pass

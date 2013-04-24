@@ -23,7 +23,7 @@ def _wsgiapp_function(environ, start_response):
             input.readline()
         if input and hasattr(input, 'readlines'):
             input.readlines()
-    except:
+    except Exception:
         pass
 _wsgiapp_function = newrelic.api.web_transaction.WSGIApplicationWrapper(
         _wsgiapp_function, _application)

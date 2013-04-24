@@ -12,22 +12,22 @@ import re
 
 try:
     import multiprocessing
-except:
+except ImportError:
     pass
 
 try:
     import pkg_resources
-except:
+except ImportError:
     pass
 
 try:
     import newrelic.core._thread_utilization
-except:
+except ImportError:
     pass
 
 try:
     import newrelic.lib.simplejson._speedups
-except:
+except ImportError:
     pass
 
 _current_cpu_count = None
@@ -89,7 +89,7 @@ def _get_available_memory():
                         memory_bytes = float(value) * 1024
                         return memory_bytes / (1024*1024)
 
-            except:
+            except Exception:
                 pass
 
             finally:
@@ -227,7 +227,7 @@ def environment_settings():
                     version = pkg_resources.get_distribution(name).version
                     if version:
                         name = '%s (%s)' % (name, version)
-            except:
+            except Exception:
                 pass
             plugins.append(name)
 

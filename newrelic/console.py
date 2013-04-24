@@ -91,7 +91,7 @@ def setquit():
 
             try:
                 sys.stdin.close()
-            except:
+            except Exception:
                 pass
             raise SystemExit(code)
 
@@ -104,21 +104,21 @@ class OutputWrapper(ObjectWrapper):
         try:
             shell = _consoles.active
             return shell.stdout.flush()
-        except:
+        except Exception:
             return self._nr_next_object.flush()
 
     def write(self, data):
         try:
             shell = _consoles.active
             return shell.stdout.write(data)
-        except:
+        except Exception:
             return self._nr_next_object.write(data)
 
     def writelines(self, data):
         try:
             shell = _consoles.active
             return shell.stdout.writelines(data)
-        except:
+        except Exception:
             return self._nr_next_object.writelines(data)
 
 def intercept_console():
@@ -240,7 +240,7 @@ class ConsoleShell(cmd.Cmd):
 
             args = distutils.sysconfig.get_config_var('CONFIG_ARGS')
 
-        except:
+        except Exception:
             pass
 
         print >> self.stdout, args
@@ -413,7 +413,7 @@ class ConnectionManager(object):
     def __socket_cleanup(self, path):
         try:
             os.unlink(path)
-        except:
+        except Exception:
             pass
 
     def __thread_run(self):
@@ -424,7 +424,7 @@ class ConnectionManager(object):
         else:
             try:
                 os.unlink(self.__listener_socket)
-            except:
+            except Exception:
                 pass
 
             listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -451,7 +451,7 @@ class ConnectionManager(object):
                 try:
                     shell.cmdloop()
 
-                except:
+                except Exception:
                     shell.stdout.flush()
                     print >> shell.stdout, 'Unexpected exception.'
                     exc_info = sys.exc_info()
@@ -535,7 +535,7 @@ class ClientShell(cmd.Cmd):
 
         try:
             selection = int(line)
-        except:
+        except Exception:
             selection = None
 
         if selection is None:
@@ -564,7 +564,7 @@ class ClientShell(cmd.Cmd):
                         self.__log_object.write(c)
 
                     client.sendall(c)
-                except:
+                except Exception:
                     break
 
         def read():
@@ -580,7 +580,7 @@ class ClientShell(cmd.Cmd):
 
                     sys.stdout.write(c)
                     sys.stdout.flush()
-                except:
+                except Exception:
                     break
 
         thread1 = threading.Thread(target=write)

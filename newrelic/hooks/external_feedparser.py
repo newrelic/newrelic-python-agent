@@ -40,7 +40,7 @@ class capture_external_trace(object):
                 context_manager = trace.__enter__()
                 try:
                     result = self._nr_next_object(url, *args, **kwargs)
-                except:
+                except:  # Catch all
                     context_manager.__exit__(*sys.exc_info())
                     raise
                 context_manager.__exit__(None, None, None)

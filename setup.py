@@ -6,7 +6,7 @@ with_setuptools = False
 try:
     from setuptools import setup
     with_setuptools = True
-except:
+except ImportError:
     from distutils.core import setup
 
 from distutils.core import Extension

@@ -9,7 +9,7 @@ import urlparse
 
 try:
     from collections import namedtuple
-except:
+except ImportError:
     from newrelic.lib.namedtuple import namedtuple
 
 import newrelic.core.error_collector

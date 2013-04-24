@@ -3,7 +3,7 @@ import sys
 
 try:
     import resource
-except:
+except ImportError:
     pass
 
 from newrelic.core.data_source import data_source_generator
@@ -43,7 +43,7 @@ def memory_used():
             rss_pages = float(fp.read().split()[1])
             memory_bytes = rss_pages * resource.getpagesize()
             return memory_bytes / (1024*1024)
-        except:
+        except Exception:
             pass
         finally:
             if fp:

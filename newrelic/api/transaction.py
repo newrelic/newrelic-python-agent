@@ -189,7 +189,7 @@ class Transaction(object):
 
         try:
             self.save_transaction()
-        except:
+        except:  # Catch all
             self._state = STATE_PENDING
             self.enabled = False
             raise
@@ -260,7 +260,7 @@ class Transaction(object):
         if not self._dead:
             try:
                 self.drop_transaction()
-            except:
+            except:  # Catch all
                 _logger.exception('Unable to drop transaction.')
                 raise
 

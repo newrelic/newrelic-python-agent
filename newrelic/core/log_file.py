@@ -113,7 +113,7 @@ def initialize():
                 _agent_logger.debug('Initializing Python agent logging.')
                 _agent_logger.debug('Log file "%s".' % settings.log_file)
 
-            except:
+            except Exception:
                 handler = FilteredStreamHandler(sys.stderr)
 
                 formatter = logging.Formatter(_LOG_FORMAT)

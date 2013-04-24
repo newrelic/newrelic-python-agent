@@ -17,7 +17,7 @@ import newrelic.api.error_trace
 settings = newrelic.api.settings.settings()
 application = newrelic.api.application.application_instance()
 
-class Error:
+class Error(Exception):
     def __init__(self, message):
         self.message = message
     def __str__(self):
@@ -51,7 +51,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             try:
                 with newrelic.api.error_trace.ErrorTrace(transaction):
                     raise RuntimeError("runtime_error")
-            except:
+            except Exception:
                 pass
 
     def test_implicit_runtime_error_decorator(self):
@@ -62,7 +62,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             time.sleep(0.5)
             try:
                 function_1()
-            except:
+            except Exception:
                 pass
 
     def test_implicit_runtime_error_wrap(self):
@@ -74,7 +74,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             time.sleep(0.5)
             try:
                 function_2()
-            except:
+            except Exception:
                 pass
 
     def test_implicit_runtime_error_ignore_dot(self):
@@ -85,7 +85,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             time.sleep(0.5)
             try:
                 function_3()
-            except:
+            except Exception:
                 pass
 
     def test_implicit_runtime_error_ignore_colon(self):
@@ -96,7 +96,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             time.sleep(0.5)
             try:
                 function_4()
-            except:
+            except Exception:
                 pass
 
     def test_implicit_runtime_unicode(self):
@@ -110,7 +110,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                     import sys
                     raise RuntimeError(u"runtime_error %s √√√√" %
                                        sys.getdefaultencoding())
-            except:
+            except Exception:
                 pass
 
     # These have 'zzz' and numbers in names to force them to be last
@@ -126,7 +126,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 try:
                     with newrelic.api.error_trace.ErrorTrace(transaction):
                         raise RuntimeError("runtime_error %d" % i)
-                except:
+                except Exception:
                     pass
 
     def test_zzz_error_limit_2(self):
@@ -140,7 +140,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                     try:
                         with newrelic.api.error_trace.ErrorTrace(transaction):
                             raise RuntimeError("runtime_error %d" % i)
-                    except:
+                    except Exception:
                         pass
 
 if __name__ == '__main__':

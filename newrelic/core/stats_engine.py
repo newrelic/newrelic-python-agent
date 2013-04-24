@@ -155,7 +155,7 @@ class CustomMetrics(object):
 
         try:
             stats.merge_stats(TimeStats(*c2t(**value)))
-        except:
+        except Exception:
             stats.merge_custom_metric(value)
 
     def metrics(self):
@@ -388,7 +388,7 @@ class StatsEngine(object):
 
         try:
             stats.merge_stats(TimeStats(*c2t(**value)))
-        except:
+        except Exception:
             stats.merge_custom_metric(value)
 
         return key

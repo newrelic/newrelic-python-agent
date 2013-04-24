@@ -124,7 +124,7 @@ class RequestProcessWrapper(object):
                 self._nr_instance._nr_wait_function_trace.__enter__()
                 transaction.drop_transaction()
 
-        except:
+        except:  # Catch all
             # If an error occurs assume that transaction should be
             # exited. Technically don't believe this should ever occur
             # unless our code here has an error or Twisted.Web is
@@ -215,7 +215,7 @@ class RequestFinishWrapper(object):
                         name='Request/Finish', group='Python/Twisted'):
                     result = self._nr_next_object()
 
-            except:
+            except:  # Catch all
                 transaction.record_exception(*sys.exc_info())
                 raise
 
@@ -241,7 +241,7 @@ class RequestFinishWrapper(object):
 
                 transaction.__exit__(None, None, None)
 
-            except:
+            except:  # Catch all
                 transaction.__exit__(*sys.exc_info())
                 raise
 
@@ -254,13 +254,9 @@ class RequestFinishWrapper(object):
             # This should be the case where finish() is being called in
             # the original render() function.
 
-            try:
-                with newrelic.api.function_trace.FunctionTrace(transaction,
-                        name='Request/Finish', group='Python/Twisted'):
-                    result = self._nr_next_object()
-
-            except:
-                raise
+            with newrelic.api.function_trace.FunctionTrace(transaction,
+                    name='Request/Finish', group='Python/Twisted'):
+                result = self._nr_next_object()
 
         return result
 

@@ -4,7 +4,7 @@ from newrelic.core.data_source import data_source_factory
 
 try:
     from newrelic.core._thread_utilization import ThreadUtilization
-except:
+except ImportError:
     ThreadUtilization = None
 
 _utilization_trackers = {}
@@ -34,7 +34,7 @@ class ThreadUtilizationDataSource(object):
             self._last_timestamp = None
             self._utilization = None
             del _utilization_trackers[self.source_name]
-        except:
+        except Exception:
             pass
 
     def __call__(self):

@@ -1,6 +1,6 @@
 try:
     from collections import namedtuple
-except:
+except ImportError:
     from newrelic.lib.namedtuple import namedtuple
 
 Metric = namedtuple('Metric', ['name', 'scope'])

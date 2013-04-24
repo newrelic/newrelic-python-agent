@@ -48,8 +48,9 @@ def outer_fn_wrapper(outer_fn, instance, args, kwargs):
         with FunctionTrace(transaction, name, group):
             try:
                 return inner_fn(*args, **kwargs)
-            except:
+            except:  # Catch all
                 transaction.record_exception(*sys.exc_info())
+                raise
 
     result = outer_fn(*args, **kwargs)
 

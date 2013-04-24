@@ -2,7 +2,7 @@ import re
 
 try:
     from collections import namedtuple
-except:
+except ImportError:
     from newrelic.lib.namedtuple import namedtuple
 
 _NormalizationRule = namedtuple('_NormalizationRule',

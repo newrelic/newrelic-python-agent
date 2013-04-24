@@ -195,7 +195,7 @@ def _process_setting(section, option, getter, mapper):
     except ConfigParser.NoOptionError:
         pass
 
-    except:
+    except Exception:
         _raise_configuration_error(section, option)
 
 # Processing of all the settings for specified section except
@@ -508,7 +508,7 @@ def _load_configuration(config_file=None, environment=None,
 
             hook = _function_trace_import_hook(object_path, name, group)
             newrelic.api.import_hook.register_import_hook(module, hook)
-        except:
+        except Exception:
             _raise_configuration_error(section=None,
                     option='transaction_tracer.function_trace')
 
@@ -544,7 +544,7 @@ def _module_import_hook(target, module, function):
             _module_import_hook_results[(target.__name__, module,
                     function)] = ''
 
-        except:
+        except Exception:
             _module_import_hook_results[(target.__name__, module,
                     function)] = traceback.format_exception(*sys.exc_info())
 
@@ -563,7 +563,7 @@ def _process_module_configuration():
             enabled = _config_object.getboolean(section, 'enabled')
         except ConfigParser.NoOptionError:
             pass
-        except:
+        except Exception:
             _raise_configuration_error(section)
 
         if not enabled:
@@ -588,7 +588,7 @@ def _process_module_configuration():
             _module_import_hook_results.setdefault(
                     (target, module, function), None)
 
-        except:
+        except Exception:
             _raise_configuration_error(section)
 
 # Setup wsgi application wrapper defined in configuration file.
@@ -601,7 +601,7 @@ def _wsgi_application_import_hook(object_path, application):
         try:
             newrelic.api.web_transaction.wrap_wsgi_application(
                     target, object_path, application)
-        except:
+        except Exception:
             _raise_instrumentation_error('wsgi-application', locals())
 
     return _instrument
@@ -617,7 +617,7 @@ def _process_wsgi_application_configuration():
             enabled = _config_object.getboolean(section, 'enabled')
         except ConfigParser.NoOptionError:
             pass
-        except:
+        except Exception:
             _raise_configuration_error(section)
 
         if not enabled:
@@ -637,7 +637,7 @@ def _process_wsgi_application_configuration():
 
             hook = _wsgi_application_import_hook(object_path, application)
             newrelic.api.import_hook.register_import_hook(module, hook)
-        except:
+        except Exception:
             _raise_configuration_error(section)
 
 # Setup background task wrapper defined in configuration file.
@@ -650,7 +650,7 @@ def _background_task_import_hook(object_path, application, name, group):
         try:
             newrelic.api.background_task.wrap_background_task(
                     target, object_path, application, name, group)
-        except:
+        except Exception:
             _raise_instrumentation_error('background-task', locals())
 
     return _instrument
@@ -666,7 +666,7 @@ def _process_background_task_configuration():
             enabled = _config_object.getboolean(section, 'enabled')
         except ConfigParser.NoOptionError:
             pass
-        except:
+        except Exception:
             _raise_configuration_error(section)
 
         if not enabled:
@@ -698,7 +698,7 @@ def _process_background_task_configuration():
             hook = _background_task_import_hook(object_path,
                   application, name, group)
             newrelic.api.import_hook.register_import_hook(module, hook)
-        except:
+        except Exception:
             _raise_configuration_error(section)
 
 # Setup database traces defined in configuration file.
@@ -711,7 +711,7 @@ def _database_trace_import_hook(object_path, sql):
         try:
             newrelic.api.database_trace.wrap_database_trace(
                     target, object_path, sql)
-        except:
+        except Exception:
             _raise_instrumentation_error('database-trace', locals())
 
     return _instrument
@@ -727,7 +727,7 @@ def _process_database_trace_configuration():
             enabled = _config_object.getboolean(section, 'enabled')
         except ConfigParser.NoOptionError:
             pass
-        except:
+        except Exception:
             _raise_configuration_error(section)
 
         if not enabled:
@@ -749,7 +749,7 @@ def _process_database_trace_configuration():
 
             hook = _database_trace_import_hook(object_path, sql)
             newrelic.api.import_hook.register_import_hook(module, hook)
-        except:
+        except Exception:
             _raise_configuration_error(section)
 
 # Setup external traces defined in configuration file.
@@ -762,7 +762,7 @@ def _external_trace_import_hook(object_path, library, url, method):
         try:
             newrelic.api.external_trace.wrap_external_trace(
                     target, object_path, library, url, method)
-        except:
+        except Exception:
             _raise_instrumentation_error('external-trace', locals())
 
     return _instrument
@@ -778,7 +778,7 @@ def _process_external_trace_configuration():
             enabled = _config_object.getboolean(section, 'enabled')
         except ConfigParser.NoOptionError:
             pass
-        except:
+        except Exception:
             _raise_configuration_error(section)
 
         if not enabled:
@@ -808,7 +808,7 @@ def _process_external_trace_configuration():
             hook = _external_trace_import_hook(object_path,
                     library, url, method)
             newrelic.api.import_hook.register_import_hook(module, hook)
-        except:
+        except Exception:
             _raise_configuration_error(section)
 
 # Setup function traces defined in configuration file.
@@ -821,7 +821,7 @@ def _function_trace_import_hook(object_path, name, group):
         try:
             newrelic.api.function_trace.wrap_function_trace(
                     target, object_path, name, group)
-        except:
+        except Exception:
             _raise_instrumentation_error('function-trace', locals())
 
     return _instrument
@@ -837,7 +837,7 @@ def _process_function_trace_configuration():
             enabled = _config_object.getboolean(section, 'enabled')
         except ConfigParser.NoOptionError:
             pass
-        except:
+        except Exception:
             _raise_configuration_error(section)
 
         if not enabled:
@@ -873,7 +873,7 @@ def _process_function_trace_configuration():
 
             hook = _function_trace_import_hook(object_path, name, group)
             newrelic.api.import_hook.register_import_hook(module, hook)
-        except:
+        except Exception:
             _raise_configuration_error(section)
 
 # Setup memcache traces defined in configuration file.
@@ -886,7 +886,7 @@ def _memcache_trace_import_hook(object_path, command):
         try:
             newrelic.api.memcache_trace.wrap_memcache_trace(
                     target, object_path, command)
-        except:
+        except Exception:
             _raise_instrumentation_error('memcache-trace', locals())
 
     return _instrument
@@ -902,7 +902,7 @@ def _process_memcache_trace_configuration():
             enabled = _config_object.getboolean(section, 'enabled')
         except ConfigParser.NoOptionError:
             pass
-        except:
+        except Exception:
             _raise_configuration_error(section)
 
         if not enabled:
@@ -924,7 +924,7 @@ def _process_memcache_trace_configuration():
 
             hook = _memcache_trace_import_hook(object_path, command)
             newrelic.api.import_hook.register_import_hook(module, hook)
-        except:
+        except Exception:
             _raise_configuration_error(section)
 
 # Setup name transaction wrapper defined in configuration file.
@@ -937,7 +937,7 @@ def _transaction_name_import_hook(object_path, name, group):
         try:
             newrelic.api.transaction_name.wrap_transaction_name(
                     target, object_path, name, group)
-        except:
+        except Exception:
             _raise_instrumentation_error('transaction-name', locals())
 
     return _instrument
@@ -955,7 +955,7 @@ def _process_transaction_name_configuration():
             enabled = _config_object.getboolean(section, 'enabled')
         except ConfigParser.NoOptionError:
             pass
-        except:
+        except Exception:
             _raise_configuration_error(section)
 
         if not enabled:
@@ -984,7 +984,7 @@ def _process_transaction_name_configuration():
             hook = _transaction_name_import_hook(object_path, name,
                                                  group)
             newrelic.api.import_hook.register_import_hook(module, hook)
-        except:
+        except Exception:
             _raise_configuration_error(section)
 
 # Setup error trace wrapper defined in configuration file.
@@ -997,7 +997,7 @@ def _error_trace_import_hook(object_path, ignore_errors):
         try:
             newrelic.api.error_trace.wrap_error_trace(
                     target, object_path, ignore_errors)
-        except:
+        except Exception:
             _raise_instrumentation_error('error-trace', locals())
 
     return _instrument
@@ -1013,7 +1013,7 @@ def _process_error_trace_configuration():
             enabled = _config_object.getboolean(section, 'enabled')
         except ConfigParser.NoOptionError:
             pass
-        except:
+        except Exception:
             _raise_configuration_error(section)
 
         if not enabled:
@@ -1034,7 +1034,7 @@ def _process_error_trace_configuration():
 
             hook = _error_trace_import_hook(object_path, ignore_errors)
             newrelic.api.import_hook.register_import_hook(module, hook)
-        except:
+        except Exception:
             _raise_configuration_error(section)
 
 # Automatic data source loading defined in configuration file.
@@ -1052,7 +1052,7 @@ def _process_data_source_configuration():
             enabled = _config_object.getboolean(section, 'enabled')
         except ConfigParser.NoOptionError:
             pass
-        except:
+        except Exception:
             _raise_configuration_error(section)
 
         if not enabled:
@@ -1089,7 +1089,7 @@ def _process_data_source_configuration():
 
             _data_sources.append((section, module, object_path, application,
                     name, settings, properties))
-        except:
+        except Exception:
             _raise_configuration_error(section)
 
 def _startup_data_source():
@@ -1106,7 +1106,7 @@ def _startup_data_source():
             agent_instance.register_data_source(source,
                     application, name, settings, **properties)
 
-        except:
+        except Exception:
             _logger.exception('Attempt to register data source %s:%s with '
                     'name %r from section %r of agent configuration file '
                     'has failed. Data source will be skipped.', module,
@@ -1136,7 +1136,7 @@ def _function_profile_import_hook(object_path, filename, delay, checkpoint):
         try:
             newrelic.api.function_profile.wrap_function_profile(target,
                     object_path, filename, delay, checkpoint)
-        except:
+        except Exception:
             _raise_instrumentation_error('function-profile', locals())
 
     return _instrument
@@ -1152,7 +1152,7 @@ def _process_function_profile_configuration():
             enabled = _config_object.getboolean(section, 'enabled')
         except ConfigParser.NoOptionError:
             pass
-        except:
+        except Exception:
             _raise_configuration_error(section)
 
         if not enabled:
@@ -1179,7 +1179,7 @@ def _process_function_profile_configuration():
             hook = _function_profile_import_hook(object_path, filename,
                     delay, checkpoint)
             newrelic.api.import_hook.register_import_hook(module, hook)
-        except:
+        except Exception:
             _raise_configuration_error(section)
 
 def _process_module_definition(target, module, function='instrument'):
@@ -1192,7 +1192,7 @@ def _process_module_definition(target, module, function='instrument'):
             enabled = _config_object.getboolean(section, 'enabled')
     except ConfigParser.NoOptionError:
         pass
-    except:
+    except Exception:
         _raise_configuration_error(section)
 
     try:
@@ -1208,7 +1208,7 @@ def _process_module_definition(target, module, function='instrument'):
 
             _module_import_hook_results.setdefault(
                     (target, module, function), None)
-    except:
+    except Exception:
         _raise_configuration_error(section)
 
 def _process_module_builtin_defaults():

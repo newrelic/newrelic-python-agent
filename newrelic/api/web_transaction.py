@@ -91,7 +91,7 @@ def _extract_token(cookie):
         t = re.search(r"\bNRAGENT=(tk=.{16})", cookie)
         token = re.search(r"^tk=([^\"<'>]+)$", t.group(1)) if t else None
         return token and token.group(1)
-    except:
+    except Exception:
         pass
 
 
@@ -263,12 +263,12 @@ class WebTransaction(newrelic.api.transaction.Transaction):
                 if value.startswith('t='):
                     try:
                         self.queue_start = _parse_time_stamp(float(value[2:]))
-                    except:
+                    except Exception:
                         pass
                 else:
                     try:
                         self.queue_start = _parse_time_stamp(float(value))
-                    except:
+                    except Exception:
                         pass
 
             if self.queue_start > 0.0:
@@ -281,7 +281,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         if value:
             try:
                 params = urlparse.parse_qs(value, keep_blank_values=True)
-            except:
+            except Exception:
                 params = cgi.parse_qs(value, keep_blank_values=True)
 
             for name in settings.ignored_params:
@@ -352,7 +352,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         try:
             self.response_code = int(status.split(' ')[0])
-        except:
+        except Exception:
             pass
 
         # Extract response content length for inclusion in custom
@@ -364,7 +364,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
             if header:
                 self._response_properties['CONTENT_LENGTH'] = header[0][1]
-        except:
+        except Exception:
             pass
 
         # Generate metrics and response headers for inbound cross
@@ -546,14 +546,14 @@ class _WSGIApplicationIterable(object):
                 try:
                     self.transaction._calls_yield += 1
                     self.transaction._bytes_sent += len(item)
-                except:
+                except Exception:
                     pass
 
     def close(self):
         try:
             if hasattr(self.generator, 'close'):
                 self.generator.close()
-        except:
+        except:  # Catch all
             self.transaction.__exit__(*sys.exc_info())
             raise
         else:
@@ -581,7 +581,7 @@ class WSGIInputWrapper(object):
             try:
                 self.__transaction._calls_read += 1
                 self.__transaction._bytes_read += len(data)
-            except:
+            except Exception:
                 pass
         finally:
             self.__transaction._read_end = time.time()
@@ -595,7 +595,7 @@ class WSGIInputWrapper(object):
             try:
                 self.__transaction._calls_readline += 1
                 self.__transaction._bytes_read += len(line)
-            except:
+            except Exception:
                 pass
         finally:
             self.__transaction._read_end = time.time()
@@ -609,7 +609,7 @@ class WSGIInputWrapper(object):
             try:
                 self.__transaction._calls_readlines += 1
                 self.__transaction._bytes_read += sum(map(len, lines))
-            except:
+            except Exception:
                 pass
         finally:
             self.__transaction._read_end = time.time()
@@ -776,7 +776,7 @@ class WSGIApplicationWrapper(object):
                 transaction._calls_write += 1
                 try:
                     transaction._bytes_sent += len(data)
-                except:
+                except Exception:
                     pass
                 transaction._sent_end = time.time()
                 return result
@@ -797,7 +797,7 @@ class WSGIApplicationWrapper(object):
             with newrelic.api.function_trace.FunctionTrace(
                     transaction, name='Application', group='Python/WSGI'):
                 result = application(environ, _start_response)
-        except:
+        except:  # Catch all
             transaction.__exit__(*sys.exc_info())
             raise
 

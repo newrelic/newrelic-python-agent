@@ -6,7 +6,7 @@ import functools
 
 try:
     from collections import namedtuple
-except:
+except ImportError:
     from newrelic.lib.namedtuple import namedtuple
 
 from newrelic.api.object_wrapper import (ObjectWrapper, wrap_object,

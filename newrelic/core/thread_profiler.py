@@ -12,7 +12,7 @@ import newrelic.lib.simplejson as simplejson
 
 try:
     from collections import namedtuple
-except:
+except ImportError:
     from newrelic.lib.namedtuple import namedtuple
 
 from newrelic.core.config import global_settings

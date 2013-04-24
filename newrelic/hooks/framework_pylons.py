@@ -35,7 +35,7 @@ class capture_error(object):
                 return self.__wrapped(*args, **kwargs)
             except webob_exc.HTTPException:
                 raise
-            except:
+            except:  # Catch all
                 current_transaction.record_exception(*sys.exc_info())
                 raise
         else:

@@ -127,7 +127,7 @@ def validate_config(args):
 
     try:
         os.unlink(_settings.log_file)
-    except:
+    except Exception:
         pass
 
     initialize_logging()
@@ -190,7 +190,7 @@ def validate_config(args):
 
         try:
             _function3()
-        except:
+        except Exception:
             pass
 
         return [output]
@@ -204,7 +204,7 @@ def validate_config(args):
 
         try:
             _function3()
-        except:
+        except Exception:
             pass
 
     def _start_response(*args):
@@ -295,7 +295,7 @@ def local_config(args):
 
     try:
         os.unlink(_settings.log_file)
-    except:
+    except Exception:
         pass
 
     initialize_logging()
@@ -345,7 +345,7 @@ def remote_config(args):
 
     try:
         os.unlink(_settings.log_file)
-    except:
+    except Exception:
         pass
 
     initialize_logging()
@@ -411,7 +411,7 @@ def license_key(args):
 
     try:
         os.unlink(_settings.log_file)
-    except:
+    except Exception:
         pass
 
     initialize_logging()
@@ -453,7 +453,7 @@ def network_config(args):
 
     try:
         os.unlink(_settings.log_file)
-    except:
+    except Exception:
         pass
 
     initialize_logging()
@@ -513,7 +513,7 @@ def rum_footer(args):
 
     try:
         os.unlink(_settings.log_file)
-    except:
+    except Exception:
         pass
 
     initialize_logging()
@@ -770,7 +770,7 @@ def main():
             function = _commands[command][0]
         else:
             function = help
-    except:
+    except Exception:
         print "Unknown command '%s'." % command,
         print "Type 'newrelic-admin help' for usage."
         sys.exit(1)

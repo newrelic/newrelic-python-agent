@@ -112,7 +112,7 @@ def my_function_3():
         #transaction.add_custom_parameter('custom-object', my_function_2)
         try:
             raise RuntimeError('error-2')
-        except:
+        except Exception:
             params = {}
             params['error-string'] = '1'
             params['error-int'] = 1
@@ -128,12 +128,12 @@ def my_function_3():
 
     try:
         my_error()
-    except:
+    except Exception:
         pass
 
     try:
         my_error_unicode()
-    except:
+    except Exception:
         pass
 
     time.sleep(0.1)

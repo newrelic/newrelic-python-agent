@@ -33,7 +33,7 @@ class HandlerWrapper(object):
                         transaction, name=self.__name):
                     try:
                         return self.__wrapped(*args, **kwargs)
-                    except:
+                    except:  # Catch all
                         transaction.record_exception(*sys.exc_info())
                         raise
         else:
@@ -87,7 +87,7 @@ class ResolverWrapper(object):
                 else:
                     transaction.name_transaction('404', group='Uri')
                 return obj, vpath
-            except:
+            except:  # Catch all
                 transaction.record_exception(*sys.exc_info())
                 raise
         else:
@@ -122,7 +122,7 @@ class RoutesResolverWrapper(object):
                 else:
                     transaction.name_transaction('404', group='Uri')
                 return handler
-            except:
+            except:  # Catch all
                 transaction.record_exception(*sys.exc_info())
                 raise
         else:

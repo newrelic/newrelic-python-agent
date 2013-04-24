@@ -33,7 +33,7 @@ import newrelic.agent
 
 try:
     del sys.path[sys.path.index(root_directory)]
-except:
+except Exception:
     pass
 
 license_key = os.environ.get('NEW_RELIC_LICENSE_KEY', None)

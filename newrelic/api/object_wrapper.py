@@ -161,7 +161,7 @@ def callable_name(object, separator=':'):
     name = "%s%s%s" % (module, separator, path)
     try:
         object._nr_object_path = name
-    except:
+    except Exception:
         pass
     return name
 
@@ -175,7 +175,7 @@ class ObjectWrapper(object):
         
         try:
             self._nr_last_object = wrapped._nr_last_object
-        except:
+        except Exception:
             self._nr_last_object = wrapped
         
         for attr in WRAPPER_ASSIGNMENTS:

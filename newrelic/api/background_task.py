@@ -86,7 +86,7 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
             manager.__enter__()
             try:
                 return wrapped(*args, **kwargs)
-            except:
+            except: #  Catch all
                 success = False
                 if not manager.__exit__(*sys.exc_info()):
                     raise

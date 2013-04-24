@@ -14,7 +14,7 @@ class CPUUsageDataSource(object):
         self._last_timestamp = time.time()
         try:
             self._times = os.times()
-        except:
+        except Exception:
             self._times = None
 
     def stop(self):

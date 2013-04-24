@@ -416,7 +416,7 @@ def wrap_handle_uncaught_exception(middleware):
             try:
                 return wrapped(request, resolver, exc_info)
 
-            except:
+            except:  # Catch all
                 transaction.record_exception(*sys.exc_info())
                 raise
 
@@ -474,7 +474,7 @@ def wrap_view_handler(wrapped, priority=3):
             try:
                 return wrapped(*args, **kwargs)
 
-            except:
+            except:  # Catch all
                 # Python 2.5 doesn't allow *args before keywords.
                 # See http://bugs.python.org/issue3473.
                 exc_info = sys.exc_info()
@@ -732,7 +732,7 @@ def instrument_django_core_servers_basehttp(module):
                 self.setup_environ()
                 self.result = application(self.environ, self.start_response)
                 self.finish_response()
-            except:
+            except Exception:
                 self.handle_error()
             finally:
                 self.close()

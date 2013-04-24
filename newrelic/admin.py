@@ -5,10 +5,10 @@ import logging
 
 _commands = {}
 
-def command(name, options='', desc=''):
+def command(name, options='', desc='', hidden=False):
     def wrapper(func):
         if name:
-            _commands[name] = (func, options, desc)
+            _commands[name] = (func, options, desc, hidden)
         return func
     return wrapper
 
@@ -56,7 +56,8 @@ def help(args):
 
         commands = sorted(_commands.keys())
         for name in commands:
-            print ' ', name
+            if not _commands[name][3]:
+                print ' ', name
 
     else:
         name = args[0]
@@ -491,7 +492,7 @@ def network_config(args):
     print 'ssl = %s' % repr(_settings.ssl)
 
 @command('rum-header', '',
-"""Prints out the RUM header.""")
+"""Prints out the RUM header.""", hidden=True)
 def rum_footer(args):
     if len(args) != 0:
         usage('rum-header')
@@ -504,7 +505,7 @@ def rum_footer(args):
 @command('rum-footer', 'config_file path [log_file]',
 """Prints out the RUM footer for a resource with the supplied path.
 The application name as specified in the agent configuration file is
-used.""")
+used.""", hidden=True)
 def rum_footer(args):
     if len(args) < 2:
         usage('rum-footer')
@@ -755,7 +756,7 @@ def run_program(args):
 
 @command('debug-console', 'config_file [session_log]',
 """Runs the client for the embedded agent debugging console.
-""")
+""", hidden=True)
 def debug_console(args):
     if len(args) == 0:
         usage('agent-console')

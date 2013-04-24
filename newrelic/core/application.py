@@ -248,6 +248,29 @@ class Application(object):
         if self._active_session:
             return
 
+        # We perform a short sleep here to ensure that this thread is
+        # suspended and the main thread gets to run. This is necessary
+        # for greenlet based systems else this thread would run until
+        # some other condition occurs which would cause it to yield. If
+        # that is allowed, then the first request which triggered
+        # activation of the application would be unduly delayed. A value
+        # of 10ms seems to work best. If it is made shorter at around
+        # 1ms, then it doesn't seem to cause a yield and still get a
+        # delay. So needs to be long enough to ensure a yield but not
+        # too long to hold off this thread either.
+
+        time.sleep(0.01)
+
+        # Acquire the Python module import lock and set a flag when we
+        # have it. This is done to detect the potential for a deadlock
+        # on the import lock where the code which activated the
+        # application held an import lock at the time of activation and
+        # is waiting for registration to complete. This short circuits
+        # the timeout so the caller isn't blocked for the full wait time
+        # if this thread was in a deadlock state that prevented it from
+        # running. Such a deadlock state could occur where subsequent
+        # code run form this thread performs a deferred module import.
+
         if self._detect_deadlock:
             imp.acquire_lock()
             self._deadlock_event.set()

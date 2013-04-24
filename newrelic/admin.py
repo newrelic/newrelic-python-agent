@@ -214,13 +214,14 @@ def validate_config(args):
     print
     print 'Running Python agent test.'
     print
-    print 'Look for data in the New Relic UI under the application:'
+    print 'Any significant errors in performing the test will be shown'
+    print 'below. If no errors occurred in the execution of this script '
+    print 'and data is still not reporting through to the UI against the '
+    print 'application:'
     print
     print '  %s' % _settings.app_name
     print
-    print 'Any significant errors in performing the test will be shown'
-    print 'below. If no errors occured and data is still not getting'
-    print 'through to the UI after 5 minutes then check the log file:'
+    print 'after 5 minutes then check the log file:'
     print
     print '  %s' % _settings.log_file
     print
@@ -257,6 +258,19 @@ def validate_config(args):
             'connection could not be established within %s seconds.',
             _timeout)
         return
+
+    else:
+        settings = _application.settings
+        if hasattr(settings, 'messages'):
+            for message in settings.messages:
+                if message['message'].startswith('Reporting to:'):
+                    parts = message['message'].split('Reporting to:')
+                    url = parts[1].strip()
+                    print 'Registration successful. Reporting to:'
+                    print
+                    print '  %s' % url
+                    print
+                    break
 
     _logger.debug('Registration took %s seconds.', _duration)
 

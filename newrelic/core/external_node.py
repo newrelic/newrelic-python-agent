@@ -2,7 +2,7 @@ import urlparse
 
 try:
     from collections import namedtuple
-except:
+except ImportError:
     from newrelic.lib.namedtuple import namedtuple
 
 import newrelic.core.trace_node
@@ -44,7 +44,7 @@ class ExternalNode(_ExternalNode):
 
         try:
             port = self.details.port
-        except:
+        except Exception:
             port = None
 
         netloc = port and ('%s:%s' % (hostname, port)) or hostname
@@ -70,7 +70,7 @@ class ExternalNode(_ExternalNode):
 
         try:
             port = self.details.port
-        except:
+        except Exception:
             port = None
 
         netloc = port and ('%s:%s' % (hostname, port)) or hostname

@@ -172,7 +172,7 @@ def validate_config(args):
     @newrelic.api.function_trace.function_trace()
     def _function3():
         newrelic.agent.add_custom_parameter("key-1", 1)
-        raise RuntimeError('error')
+        raise RuntimeError('This is a test error and can be ignored.')
      
     @newrelic.api.web_transaction.wsgi_application()
     def _wsgi_application(environ, start_response):

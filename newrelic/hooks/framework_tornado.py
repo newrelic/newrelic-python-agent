@@ -384,17 +384,39 @@ def instrument_tornado_httputil(module):
 def instrument_tornado_web(module):
 
     def call_wrapper(wrapped, instance, args, kwargs):
-        assert instance is not None
+        # We have to deal with a special case here because when using
+        # tornado.wsgi.WSGIApplication() to host the async API within
+        # a WSGI application, Tornado will call the wrapped method via
+        # the class method rather than via an instance. This means the
+        # instance will be None and the self argument will actually
+        # be the first argument. The args are still left intact for
+        # when we call the wrapped function.
 
-        def _request(request, *args, **kwargs):
+        def _request_unbound(instance, request, *args, **kwargs):
+            return instance, request
+
+        def _request_bound(request, *args, **kwargs):
             return request
 
-        request = _request(*args, **kwargs)
+        if instance is None:
+            instance, request = _request_unbound(*args, **kwargs)
+        else:
+            request = _request_bound(*args, **kwargs)
 
-        # If not transaction associated with request already, need to
-        # create a new one.
+        # If no transaction associated with request already, need to
+        # create a new one. The exception is when the the ASYNC API is
+        # being executed within a WSGI application, in which case a
+        # transaction will already be active. For that we execute
+        # straight away.
 
-        if not hasattr(request, '_nr_transaction'):
+        if hasattr(instance, '_wsgi'):
+            transaction = current_transaction()
+
+            with FunctionTrace(transaction, name='Request/Process',
+                    group='Python/Tornado'):
+                return wrapped(*args, **kwargs)
+
+        elif not hasattr(request, '_nr_transaction'):
             # Always use the default application specified in the agent
             # configuration.
 

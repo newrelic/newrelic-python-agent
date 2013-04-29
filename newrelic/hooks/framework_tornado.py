@@ -30,6 +30,10 @@ def request_environment(application, request):
     result['REQUEST_URI'] = request.uri
     result['QUERY_STRING'] = request.query
 
+    value = request.headers.get('X-NewRelic-ID')
+    if value:
+        result['HTTP_X_NEWRELIC_ID'] = value
+
     settings = application.settings
 
     if not settings:
@@ -582,12 +586,15 @@ def instrument_tornado_web(module):
 
         transaction._thread_utilization_start = None
 
-        transaction.response_code = instance.get_status()
+        status = '%d ???' % instance.get_status()
 
-        value = instance._headers.get('Content-Length')
-        if value:
-            transaction._response_properties['CONTENT_LENGTH'] = value
-            
+        response_headers = instance._headers.get_all()
+        additional_headers = transaction.process_response(
+                status, response_headers, *args)
+
+        for name, value in additional_headers:
+            instance.add_header(name, value)
+
         return wrapped(*args, **kwargs)
 
     module.RequestHandler._generate_headers = ObjectWrapper(

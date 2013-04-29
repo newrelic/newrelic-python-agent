@@ -143,7 +143,7 @@ def instrument_tornado_httpserver(module):
             request._nr_wait_function_trace.__enter__()
             transaction.drop_transaction()
 
-        except Exception:
+        except:  # Catch all
             # If an error occurs assume that transaction should be
             # exited. Technically don't believe this should ever occur
             # unless our code here has an error.
@@ -199,7 +199,7 @@ def instrument_tornado_httpserver(module):
 
             return wrapped(*args, **kwargs)
 
-        except Exception:
+        except:  # Catch all
             # If an error occurs assume that transaction should be
             # exited. Technically don't believe this should ever occur
             # unless our code here has an error.
@@ -244,7 +244,7 @@ def instrument_tornado_httpserver(module):
 
             transaction.__exit__(None, None, None)
 
-        except Exception:
+        except:  # Catch all
             transaction.__exit__(*sys.exc_info())
             raise
 
@@ -350,7 +350,7 @@ def instrument_tornado_httpserver(module):
 
                     complete = False
 
-            except Exception:
+            except:  # Catch all
                 transaction.__exit__(*sys.exc_info())
                 raise
 
@@ -499,7 +499,7 @@ def instrument_tornado_web(module):
                 request._nr_wait_function_trace.__enter__()
                 transaction.drop_transaction()
 
-        except Exception:
+        except:  # Catch all
             # If an error occurs assume that transaction should be
             # exited. Technically don't believe this should ever occur
             # unless our code here has an error.
@@ -691,8 +691,16 @@ def instrument_tornado_stack_context(module):
 
         fn = _fn(*args, **kwargs)
 
-        if fn is None or fn.__class__ is module._StackContextWrapper:
-            return fn
+        # Tornado 3.1 does with _StackContextWrapper and checks
+        # for a '_wrapped' attribute instead which makes this a
+        # bit more fragile.
+
+        if hasattr(module, '_StackContextWrapper'):
+            if fn is None or fn.__class__ is module._StackContextWrapper:
+                return fn
+        else:
+            if fn is None or hasattr(fn, '_wrapped'):
+                return fn
 
         return ObjectWrapper(fn, None, callback_wrapper)
 

@@ -409,7 +409,7 @@ def instrument_tornado_web(module):
         # transaction will already be active. For that we execute
         # straight away.
 
-        if hasattr(instance, '_wsgi'):
+        if instance._wsgi:
             transaction = current_transaction()
 
             with FunctionTrace(transaction, name='Request/Process',

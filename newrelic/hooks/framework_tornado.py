@@ -129,7 +129,6 @@ def instrument_tornado_httpserver(module):
 
         request._nr_transaction = transaction
 
-        request._nr_is_deferred_callback = False
         request._nr_wait_function_trace = None
 
         # We need to add a reference to the request object in to the
@@ -293,6 +292,31 @@ def instrument_tornado_httpserver(module):
                     'being called from request handler or a deferred '
                     'but there is not a current transaction.')
 
+        # If there is a current transaction, does it match that against
+        # the request.
+
+        if transaction and transaction != current_transaction():
+            # This can happen when one request handler calls finish()
+            # for a different request. We need to swap the current
+            # transaction around and call ourselves again. When it
+            # returns we need to restore things back the way they were,
+            # noting that the transaction we substituted in could have
+            # completed and may not longer be current in which case
+            # we should not drop it.
+
+            running_transaction = current_transaction()
+            running_transaction.drop_transaction()
+
+            transaction.save_transaction()
+
+            try:
+                return finish_wrapper(wrapped, instance, args, kwargs)
+
+            finally:
+                if current_transaction():
+                    transaction.drop_transaction()
+                running_transaction.save_transaction()
+
         # Except for case of being called when in wait state, we can't
         # actually exit the transaction at this point as may be called
         # in context of an outer function trace node.  We pop back out
@@ -300,28 +324,7 @@ def instrument_tornado_httpserver(module):
         # will pick up that request finished by seeing that the stream
         # is closed.
 
-        if request._nr_is_deferred_callback:
-
-            # If we are in a deferred callback log any error against the
-            # transaction here so we know we will capture it. We
-            # possibly don't need to do it here as outer scope may catch
-            # it anyway. Duplicate will be ignored so not too important.
-            # Most likely the finish() call would never fail anyway.
-
-            try:
-                with FunctionTrace(transaction, name='Request/Finish',
-                        group='Python/Tornado'):
-                    result = wrapped(*args, **kwargs)
-
-            except Exception:
-                # The finish() function cannot raise HTTPError instances
-                # so do not have to worry about ignoring a 404 here.
-
-                transaction.record_exception(*sys.exc_info())
-                raise
-
-        elif request._nr_wait_function_trace:
-
+        if request._nr_wait_function_trace:
             # Now handle the special case where finish() was called
             # while in the wait state. We might get here through Tornado
             # itself somehow calling finish() when still waiting for a
@@ -341,7 +344,7 @@ def instrument_tornado_httpserver(module):
                         group='Python/Tornado'):
                     result = wrapped(*args, **kwargs)
 
-                if not instance.stream.writing():
+                if not request.connection.stream.writing():
                     transaction.__exit__(None, None, None)
 
                 else:
@@ -444,7 +447,6 @@ def instrument_tornado_web(module):
 
             request._nr_transaction = transaction
 
-            request._nr_is_deferred_callback = False
             request._nr_wait_function_trace = None
 
             # We need to add a reference to the request object in to the

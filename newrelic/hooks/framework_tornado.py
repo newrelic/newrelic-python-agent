@@ -266,119 +266,91 @@ def instrument_tornado_httpserver(module):
 
         request = instance
 
-        # Call finish() method straight away if request is not even
-        # associated with a transaction.
+        # Call finish() method straight away if request object it is
+        # being called on is not even associated with a transaction.
 
-        if not hasattr(request, '_nr_transaction'):
+        transaction = getattr(request, '_nr_transaction', None)
+
+        if not transaction:
             return wrapped(*args, **kwargs)
 
-        # Technically we should only be able to be called here without
-        # an active transaction if we are in the wait state. If we are
-        # called in context of original request handler or a deferred
-        # the transaction should already be registered.
+        # Do we have a running transaction. When we do we need to
+        # consider two possiblities. The first is where the current
+        # running transaction doesn't match that bound to the request.
+        # For this case it would be where from within one transaction
+        # there is an attempt to call finish() on a distinct web request
+        # which was being monitored. The second is where finish() is
+        # being called for the current request.
 
-        transaction = request._nr_transaction
+        running_transaction = current_transaction()
 
-        if request._nr_wait_function_trace:
-            if current_transaction():
-                _logger.debug('The Tornado request finish() method is '
-                        'being called while in wait state but there is '
-                        'already a current transaction.')
+        if running_transaction:
+            if transaction != running_transaction:
+                # For this case we need to suspend the current running
+                # transaction and call ourselves again. When it returns
+                # we need to restore things back the way they were.
+
+                try:
+                    running_transaction.drop_transaction()
+
+                    return finish_wrapper(wrapped, instance, args, kwargs)
+
+                finally:
+                    running_transaction.save_transaction()
+
             else:
-                transaction.save_transaction()
-
-        elif not current_transaction():
-            _logger.debug('The Tornado request finish() method is '
-                    'being called from request handler or a deferred '
-                    'but there is not a current transaction.')
-
-        # If there is a current transaction, does it match that against
-        # the request.
-
-        if transaction and transaction != current_transaction():
-            # This can happen when one request handler calls finish()
-            # for a different request. We need to swap the current
-            # transaction around and call ourselves again. When it
-            # returns we need to restore things back the way they were,
-            # noting that the transaction we substituted in could have
-            # completed and may not longer be current in which case
-            # we should not drop it.
-
-            running_transaction = current_transaction()
-            running_transaction.drop_transaction()
-
-            transaction.save_transaction()
-
-            try:
-                return finish_wrapper(wrapped, instance, args, kwargs)
-
-            finally:
-                if current_transaction():
-                    transaction.drop_transaction()
-                running_transaction.save_transaction()
-
-        # Except for case of being called when in wait state, we can't
-        # actually exit the transaction at this point as may be called
-        # in context of an outer function trace node.  We pop back out
-        # allowing outer scope to actually exit the transaction and it
-        # will pick up that request finished by seeing that the stream
-        # is closed.
-
-        if request._nr_wait_function_trace:
-            # Now handle the special case where finish() was called
-            # while in the wait state. We might get here through Tornado
-            # itself somehow calling finish() when still waiting for a
-            # deferred. If this were to occur though then the
-            # transaction will not be popped if we simply marked request
-            # as finished as no outer scope to see that and clean up. We
-            # will thus need to end the function trace and exit the
-            # transaction. We end function trace here and then the
-            # transaction down below.
-
-            try:
-                complete = True
-
-                request._nr_wait_function_trace.__exit__(None, None, None)
+                # For this case we just trace the call.
 
                 with FunctionTrace(transaction, name='Request/Finish',
                         group='Python/Tornado'):
-                    result = wrapped(*args, **kwargs)
+                    return wrapped(*args, **kwargs)
 
-                if not request.connection.stream.writing():
-                    transaction.__exit__(None, None, None)
+        # No current running transaction. If we aren't in a wait state
+        # we call finish() straight away.
 
-                else:
-                    request._nr_wait_function_trace = FunctionTrace(
-                            transaction, name='Request/Output',
-                            group='Python/Tornado')
+        if not request._nr_wait_function_trace:
+            return wrapped(*args, **kwargs)
 
-                    request._nr_wait_function_trace.__enter__()
-                    transaction.drop_transaction()
+        # Now handle the special case where finish() was called while in
+        # the wait state. We need to restore the transaction for the
+        # request and then call finish(). When it returns we need to
+        # either end the transaction or go into a new wait state where
+        # we wait on output to be sent.
 
-                    complete = False
+        transaction.save_transaction()
 
-            except:  # Catch all
-                transaction.__exit__(*sys.exc_info())
-                raise
+        try:
+            complete = True
 
-            finally:
-                if complete:
-                    request._nr_wait_function_trace = None
-                    request._nr_transaction = None
+            request._nr_wait_function_trace.__exit__(None, None, None)
 
-        else:
-            # This should be the case where finish() is being called in
-            # the original request handler.
+            with FunctionTrace(transaction, name='Request/Finish',
+                    group='Python/Tornado'):
+                result = wrapped(*args, **kwargs)
 
-            try:
-                with FunctionTrace(transaction, name='Request/Finish',
-                        group='Python/Tornado'):
-                    result = wrapped(*args, **kwargs)
+            if not request.connection.stream.writing():
+                transaction.__exit__(None, None, None)
 
-            except Exception:
-                raise
+            else:
+                request._nr_wait_function_trace = FunctionTrace(
+                        transaction, name='Request/Output',
+                        group='Python/Tornado')
 
-        return result
+                request._nr_wait_function_trace.__enter__()
+                transaction.drop_transaction()
+
+                complete = False
+
+            return result
+
+        except:  # Catch all
+            transaction.__exit__(*sys.exc_info())
+            raise
+
+        finally:
+            if complete:
+                request._nr_wait_function_trace = None
+                request._nr_transaction = None
 
     module.HTTPRequest.finish = ObjectWrapper(
             module.HTTPRequest.finish, None, finish_wrapper)

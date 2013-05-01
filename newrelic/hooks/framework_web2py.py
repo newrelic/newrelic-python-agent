@@ -106,7 +106,7 @@ def instrument_gluon_main(module):
                 HTTP = newrelic.api.import_hook.import_module('gluon.http').HTTP
                 try:
                     return self._nr_next_object(request, response, session)
-                except HTTP, e:
+                except HTTP:
                     raise
                 except:  # Catch all
                     txn.record_exception(*sys.exc_info())

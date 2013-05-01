@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 import sys
 import logging
@@ -506,5 +508,5 @@ if __name__ == "__main__":
     time.sleep(1.1)
     pd = t.profile_data()
     c = zlib.decompress(base64.standard_b64decode(pd[0][4]))
-    print pd
-    print c
+    print(pd)
+    print(c)

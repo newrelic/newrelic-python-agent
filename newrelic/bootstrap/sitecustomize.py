@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 import sys
 
@@ -49,9 +51,9 @@ if debug_startup:
 
     def _log(text, *args):
         text = text % args
-        print 'NEWRELIC: %s (%d) - %s' % (time.strftime(
+        print('NEWRELIC: %s (%d) - %s' % (time.strftime(
                 '%Y-%m-%d %H:%M:%S', time.localtime()),
-                os.getpid(), text)
+                os.getpid(), text))
 
     _log('New Relic Bootstrap (%s)', newrelic.version)
 

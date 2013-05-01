@@ -193,13 +193,12 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                     encoding='Latin-1', namedtuple_as_object=False,
                     default=lambda o: list(iter(o)))
 
-    except Exception, exc:
-        _logger.error('Error encoding data for JSON payload for method %r '
-                'with payload of %r. Exception which occurred was %r. '
-                'Please report this problem to New Relic support.', method,
-                payload, exc)
+    except Exception:
+        _logger.exception('Error encoding data for JSON payload for '
+                'method %r with payload of %r. Please report this problem '
+                'to New Relic support.', method, payload)
 
-        raise DiscardDataForRequest(str(exc))
+        raise DiscardDataForRequest(str(sys.exc_info()[1]))
 
     # Log details of call and/or payload for debugging. Use the JSON
     # encoded value so know that what is encoded is correct.
@@ -297,14 +296,15 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
         content = r.content
 
-    except requests.RequestException, exc:
+    except requests.RequestException:
         if not settings.proxy_host or not settings.proxy_port:
             _logger.warning('Data collector is not contactable. This can be '
                     'because of a network issue or because of the data '
                     'collector being restarted. In the event that contact '
                     'cannot be made after a period of time then please '
                     'report this problem to New Relic support for further '
-                    'investigation. The error raised was %r.', exc)
+                    'investigation. The error raised was %r.',
+                    sys.exc_info()[1])
         else:
             _logger.warning('Data collector is not contactable via the proxy '
                     'host %r on port %r with proxy user of %r. This can be '
@@ -314,9 +314,9 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                     'report this problem to New Relic support for further '
                     'investigation. The error raised was %r.',
                     settings.proxy_host, settings.proxy_port,
-                    settings.proxy_user, exc)
+                    settings.proxy_user, sys.exc_info()[1])
 
-        raise RetryDataForRequest(str(exc))
+        raise RetryDataForRequest(str(sys.exc_info()[1]))
 
     finally:
         # This is a hack to work around design flaw in requests/urllib3
@@ -421,17 +421,16 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         with InternalTrace('Supportability/Collector/JSON/Decode/%s' % method):
             result = simplejson.loads(content, encoding='UTF-8')
 
-    except Exception, exc:
-        _logger.error('Error decoding data for JSON payload for method %r '
-                'with payload of %r. Exception which occurred was %r. '
-                'Please report this problem to New Relic support.', method,
-                content, exc)
+    except Exception:
+        _logger.exception('Error decoding data for JSON payload for '
+                'method %r with payload of %r. Please report this problem '
+                'to New Relic support.', method, content)
 
         if settings.debug.log_malformed_json_data:
             _logger.info('JSON data received from data collector which '
                     'could not be decoded was %r.', content)
 
-        raise DiscardDataForRequest(str(exc))
+        raise DiscardDataForRequest(str(sys.exc_info()[1]))
 
     # The decoded JSON can be either for a successful response or an
     # error. A successful response has a 'return_value' element and an

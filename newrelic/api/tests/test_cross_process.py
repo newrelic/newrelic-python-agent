@@ -1,7 +1,7 @@
 import unittest
 import time
 
-import newrelic.lib.simplejson as simplejson
+import newrelic.packages.simplejson as simplejson
 
 from newrelic.api.application import application_instance
 from newrelic.core.config import global_settings, create_settings_snapshot

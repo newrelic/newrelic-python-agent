@@ -2,7 +2,8 @@ import unittest
 import zlib
 import base64
 import time
-import newrelic.lib.simplejson as simplejson
+
+import newrelic.packages.simplejson as simplejson
 
 from newrelic.core.profile_sessions import (
         ProfileSessionManager, ProfileSession, CallTree,

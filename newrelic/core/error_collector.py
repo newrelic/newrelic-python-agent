@@ -1,9 +1,3 @@
-'''
-Created on Jul 30, 2011
-
-@author: sdaubin
-'''
-
 from collections import namedtuple
 
 TracedError = namedtuple('TracedError',

@@ -10,7 +10,7 @@ import base64
 
 import newrelic
 
-import newrelic.lib.simplejson as simplejson
+import newrelic.packages.simplejson as simplejson
 
 from collections import namedtuple
 

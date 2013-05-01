@@ -1,7 +1,7 @@
 import functools
 import inspect
 
-import newrelic.lib.simplejson as simplejson
+import newrelic.packages.simplejson as simplejson
 from newrelic.api.time_trace import TimeTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.api.object_wrapper import (ObjectWrapper, wrap_object)

@@ -7,7 +7,7 @@ import zlib
 import base64
 from collections import deque, defaultdict
 
-import newrelic.lib.simplejson as simplejson
+import newrelic.packages.simplejson as simplejson
 import newrelic
 
 from newrelic.core.config import global_settings

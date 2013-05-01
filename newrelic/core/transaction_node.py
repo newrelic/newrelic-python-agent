@@ -4,6 +4,9 @@ then to be generated.
 
 """
 
+import itertools
+import urlparse
+
 from collections import namedtuple
 
 import newrelic.core.error_collector

@@ -7,7 +7,7 @@ import time
 import string
 import re
 
-import newrelic.lib.simplejson as simplejson
+import newrelic.packages.simplejson as simplejson
 
 import newrelic.api.application
 import newrelic.api.transaction

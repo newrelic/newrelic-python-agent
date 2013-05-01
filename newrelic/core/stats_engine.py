@@ -11,7 +11,7 @@ import logging
 import operator
 import zlib
 
-import newrelic.lib.simplejson as simplejson
+import newrelic.packages.simplejson as simplejson
 
 from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
         internal_metric)

@@ -60,7 +60,7 @@ class RequestsConnectionFilter(logging.Filter):
         return False
 
 _requests_logger = logging.getLogger(
-    'newrelic.lib.requests.packages.urllib3.connectionpool')
+    'newrelic.packages.requests.packages.urllib3.connectionpool')
 _requests_logger.addFilter(RequestsConnectionFilter())
 
 _initialized = False

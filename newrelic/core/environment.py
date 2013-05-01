@@ -26,7 +26,7 @@ except ImportError:
     pass
 
 try:
-    import newrelic.lib.simplejson._speedups
+    import newrelic.packages.simplejson._speedups
 except ImportError:
     pass
 
@@ -148,8 +148,8 @@ def environment_settings():
     if 'newrelic.core._thread_utilization' in sys.modules:
         extensions.append('newrelic.core._thread_utilization')
 
-    if 'newrelic.lib.simplejson._speedups' in sys.modules:
-        extensions.append('newrelic.lib.simplejson._speedups')
+    if 'newrelic.packages.simplejson._speedups' in sys.modules:
+        extensions.append('newrelic.packages.simplejson._speedups')
 
     env.append(('Compiled Extensions', ', '.join(extensions)))
 

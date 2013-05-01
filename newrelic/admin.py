@@ -329,8 +329,7 @@ def local_config(args):
 
     config = newrelic.core.config.flatten_settings(_settings)
 
-    keys = config.keys()
-    keys.sort()
+    keys = sorted(config.keys())
 
     for key in keys:
         print('%s = %s' % (key, repr(config[key])))
@@ -397,8 +396,7 @@ def remote_config(args):
 
     config = newrelic.core.config.flatten_settings(_application.settings)
 
-    keys = config.keys()
-    keys.sort()
+    keys = sorted(config.keys())
 
     for key in keys:
         print('%s = %s' % (key, repr(config[key])))

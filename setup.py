@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import sys
 import os
 
@@ -32,7 +34,7 @@ if os.path.exists(develop_file):
     package_version = newrelic.version
 
     version_file_fds = open(version_file, 'w')
-    print >> version_file_fds, package_version
+    print(package_version, file=version_file_fds)
     version_file_fds.close()
 
 else:
@@ -41,11 +43,11 @@ else:
     package_version = open(version_file, 'r').read().strip()
 
 if sys.platform == 'win32' and sys.version_info > (2, 6):
-   build_ext_errors = (CCompilerError, DistutilsExecError,
-           DistutilsPlatformError, IOError)
+    build_ext_errors = (CCompilerError, DistutilsExecError,
+            DistutilsPlatformError, IOError)
 else:
-   build_ext_errors = (CCompilerError, DistutilsExecError,
-           DistutilsPlatformError)
+    build_ext_errors = (CCompilerError, DistutilsExecError,
+            DistutilsPlatformError)
 
 class BuildExtFailed(Exception):
     pass
@@ -54,58 +56,58 @@ class optional_build_ext(build_ext):
     def run(self):
         try:
             build_ext.run(self)
-        except DistutilsPlatformError, x:
+        except DistutilsPlatformError:
             raise BuildExtFailed()
 
     def build_extension(self, ext):
         try:
             build_ext.build_extension(self, ext)
-        except build_ext_errors, x:
+        except build_ext_errors:
             raise BuildExtFailed()
 
 packages = [
-  "newrelic",
-  "newrelic.api",
-  "newrelic.core",
-  "newrelic.extras",
-  "newrelic.extras.framework_django",
-  "newrelic.extras.framework_django.templatetags",
-  "newrelic.hooks",
-  "newrelic.lib",
-  #"newrelic.lib.sqlparse",
-  #"newrelic.lib.sqlparse.engine",
-  "newrelic.lib.certifi",
-  #"newrelic.lib.namedtuple",
-  "newrelic.lib.simplejson",
-  "newrelic.lib.requests",
-  "newrelic.lib.requests.packages",
-  "newrelic.lib.requests.packages.urllib3",
-  "newrelic.lib.requests.packages.urllib3.packages",
-  "newrelic.lib.requests.packages.urllib3.packages.ssl_match_hostname",
-  "newrelic.lib.requests.packages.oreos",
-  "newrelic.bootstrap",
-]
+        "newrelic",
+        "newrelic.api",
+        "newrelic.core",
+        "newrelic.extras",
+        "newrelic.extras.framework_django",
+        "newrelic.extras.framework_django.templatetags",
+        "newrelic.hooks",
+        "newrelic.lib",
+        #"newrelic.lib.sqlparse",
+        #"newrelic.lib.sqlparse.engine",
+        "newrelic.lib.certifi",
+        #"newrelic.lib.namedtuple",
+        "newrelic.lib.simplejson",
+        "newrelic.lib.requests",
+        "newrelic.lib.requests.packages",
+        "newrelic.lib.requests.packages.urllib3",
+        "newrelic.lib.requests.packages.urllib3.packages",
+        "newrelic.lib.requests.packages.urllib3.packages.ssl_match_hostname",
+        "newrelic.lib.requests.packages.oreos",
+        "newrelic.bootstrap",
+        ]
 
 kwargs = dict(
-  name = "newrelic",
-  version = package_version,
-  description = "Python agent for New Relic",
-  author = "New Relic",
-  author_email = "support@newrelic.com",
-  license = copyright,
-  url = "http://www.newrelic.com",
-  packages = packages,
-  package_data = { 'newrelic': ['newrelic.ini', 'LICENSE',
-          'lib/certifi/cacert.pem', 'lib/certifi/LICENSE',
-          'lib/requests/LICENSE', 'lib/simplejson/LICENSE.txt'] },
-  extra_path = ( "newrelic", "newrelic-%s" % package_version ),
-  scripts = [ 'scripts/newrelic-admin' ],
+        name="newrelic",
+        version=package_version,
+        description="Python agent for New Relic",
+        author="New Relic",
+        author_email="support@newrelic.com",
+        license=copyright,
+        url="http://www.newrelic.com",
+        packages=packages,
+        package_data={'newrelic': ['newrelic.ini', 'LICENSE',
+            'lib/certifi/cacert.pem', 'lib/certifi/LICENSE',
+            'lib/requests/LICENSE', 'lib/simplejson/LICENSE.txt']},
+        extra_path=("newrelic", "newrelic-%s" % package_version),
+        scripts=['scripts/newrelic-admin'],
 )
 
 if with_setuptools:
     kwargs['entry_points'] = {
-      'console_scripts': ['newrelic-admin = newrelic.admin:main'],
-    }
+            'console_scripts': ['newrelic-admin = newrelic.admin:main'],
+            }
 
 def run_setup(with_extensions):
     kwargs_tmp = dict(kwargs)
@@ -113,10 +115,10 @@ def run_setup(with_extensions):
     if with_extensions:
         kwargs_tmp['ext_modules'] = [
                 Extension("newrelic.lib.simplejson._speedups",
-                ["newrelic/lib/simplejson/_speedups.c"]),
+                    ["newrelic/lib/simplejson/_speedups.c"]),
                 Extension("newrelic.core._thread_utilization",
-                ["newrelic/core/_thread_utilization.c"]),
-            ]
+                    ["newrelic/core/_thread_utilization.c"]),
+                ]
         kwargs_tmp['cmdclass'] = dict(build_ext=optional_build_ext)
 
     setup(**kwargs_tmp)
@@ -149,20 +151,20 @@ else:
 
     except BuildExtFailed:
 
-        print 75 * '*'
+        print(75 * '*')
 
-        print WARNING
-        print "INFO: Trying to build without extensions."
+        print(WARNING)
+        print("INFO: Trying to build without extensions.")
 
-        print
-        print 75 * '*'
+        print()
+        print(75 * '*')
 
         run_setup(with_extensions=False)
 
-        print 75 * '*'
+        print(75 * '*')
 
-        print WARNING
-        print "INFO: Only pure Python agent was installed."
+        print(WARNING)
+        print("INFO: Only pure Python agent was installed.")
 
-        print
-        print 75 * '*'
+        print()
+        print(75 * '*')

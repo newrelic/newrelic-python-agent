@@ -130,6 +130,7 @@ def instrument_tornado_httpserver(module):
         request._nr_transaction = transaction
 
         request._nr_wait_function_trace = None
+        request._nr_request_finished = False
 
         # We need to add a reference to the request object in to the
         # transaction object as only able to stash the transaction
@@ -227,35 +228,49 @@ def instrument_tornado_httpserver(module):
         transaction = current_transaction()
 
         if transaction:
-            return wrapped(*args, **kwargs)
+            request._nr_request_finished = True
 
-        if not hasattr(request, '_nr_transaction'):
-            return wrapped(*args, **kwargs)
+            try:
+                result = wrapped(*args, **kwargs)
 
-        transaction = request._nr_transaction
+                if request._nr_wait_function_trace:
+                    request._nr_wait_function_trace.__exit__(None, None, None)
 
-        if transaction is None:
-            return wrapped(*args, **kwargs)
+            finally:
+                request._nr_wait_function_trace = None
 
-        transaction.save_transaction()
+            return result
 
-        try:
-            result = wrapped(*args, **kwargs)
+        else:
+            if not hasattr(request, '_nr_transaction'):
+                return wrapped(*args, **kwargs)
 
-            if request._nr_wait_function_trace:
-                request._nr_wait_function_trace.__exit__(None, None, None)
+            transaction = request._nr_transaction
 
-            transaction.__exit__(None, None, None)
+            if transaction is None:
+                return wrapped(*args, **kwargs)
 
-        except:  # Catch all
-            transaction.__exit__(*sys.exc_info())
-            raise
+            transaction.save_transaction()
 
-        finally:
-            request._nr_wait_function_trace = None
-            request._nr_transaction = None
+            request._nr_request_finished = True
 
-        return result
+            try:
+                result = wrapped(*args, **kwargs)
+
+                if request._nr_wait_function_trace:
+                    request._nr_wait_function_trace.__exit__(None, None, None)
+
+                transaction.__exit__(None, None, None)
+
+            except:  # Catch all
+                transaction.__exit__(*sys.exc_info())
+                raise
+
+            finally:
+                request._nr_wait_function_trace = None
+                request._nr_transaction = None
+
+            return result
 
     module.HTTPConnection._finish_request = ObjectWrapper(
             module.HTTPConnection._finish_request, None,
@@ -420,6 +435,7 @@ def instrument_tornado_web(module):
             request._nr_transaction = transaction
 
             request._nr_wait_function_trace = None
+            request._nr_request_finished = False
 
             # We need to add a reference to the request object in to the
             # transaction object as only able to stash the transaction
@@ -654,7 +670,15 @@ def instrument_tornado_stack_context(module):
                     return wrapped(*args, **kwargs)
 
             finally:
-                if not request.connection.stream.writing():
+                if not request._nr_request_finished:
+                    request._nr_wait_function_trace = FunctionTrace(
+                            transaction, name='Callback/Wait',
+                            group='Python/Tornado')
+
+                    request._nr_wait_function_trace.__enter__()
+                    transaction.drop_transaction()
+
+                elif not request.connection.stream.writing():
                     transaction.__exit__(None, None, None)
                     request._nr_transaction = None
 
@@ -669,10 +693,9 @@ def instrument_tornado_stack_context(module):
         def _fn(fn, *args, **kwargs):
             return fn
 
-
         fn = _fn(*args, **kwargs)
 
-        # Tornado 3.1 does with _StackContextWrapper and checks
+        # Tornado 3.1 doesn't use _StackContextWrapper and checks
         # for a '_wrapped' attribute instead which makes this a
         # bit more fragile.
 

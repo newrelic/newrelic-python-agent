@@ -1331,6 +1331,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('tornado.simple_httpclient',
             'newrelic.hooks.framework_tornado',
             'instrument_tornado_simple_httpclient')
+    _process_module_definition('tornado.gen',
+            'newrelic.hooks.framework_tornado',
+            'instrument_tornado_gen')
 
     _process_module_definition('paste.httpserver',
             'newrelic.hooks.adapter_paste',

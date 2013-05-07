@@ -729,3 +729,75 @@ def instrument_tornado_curl_httpclient(module):
 def instrument_tornado_simple_httpclient(module):
 
     wrap_function_trace(module, 'SimpleAsyncHTTPClient.fetch')
+
+def instrument_tornado_gen(module):
+
+    def coroutine_wrapper(wrapped, instance, args, kwargs):
+        def _func(func, *args, **kwargs):
+            return func
+
+        func = _func(*args, **kwargs)
+
+        name = callable_name(func)
+        name = '%s (generator)' % name
+
+        def func_wrapper(wrapped, instance, args, kwargs):
+            try:
+                result = wrapped(*args, **kwargs)
+
+            except (module.Return, StopIteration):
+                raise
+
+            except Exception:
+                raise
+
+            else:
+                if isinstance(result, types.GeneratorType):
+                    def _generator(generator):
+                        try:
+                            value = None
+                            exc = None
+
+                            while True:
+                                transaction = current_transaction()
+
+                                with FunctionTrace(transaction, name):
+                                    try:
+                                        if exc is not None:
+                                            yielded = generator.throw(*exc)
+                                            exc = None
+                                        else:
+                                            yielded = generator.send(value)
+
+                                    except (module.Return, StopIteration):
+                                        raise
+
+                                    except Exception:
+                                        if transaction:
+                                            transaction.record_exception(
+                                                    *sys.exc_info())
+                                        raise
+
+                                try:
+                                    value = yield yielded
+
+                                except Exception:
+                                    exc = sys.exc_info()
+
+                        finally:
+                            generator.close()
+
+                    result = _generator(result)
+
+                return result
+
+            finally:
+                pass
+
+        func = ObjectWrapper(func, None, func_wrapper)
+
+        return wrapped(func)
+
+    if hasattr(module, 'coroutine'):
+        module.coroutine = ObjectWrapper(module.coroutine, None,
+                coroutine_wrapper)

@@ -802,3 +802,7 @@ def instrument_tornado_gen(module):
     if hasattr(module, 'coroutine'):
         module.coroutine = ObjectWrapper(module.coroutine, None,
                 coroutine_wrapper)
+
+    if hasattr(module, 'engine'):
+        module.engine = ObjectWrapper(module.engine, None,
+                coroutine_wrapper)

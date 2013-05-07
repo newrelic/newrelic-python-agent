@@ -3,6 +3,7 @@ from __future__ import with_statement
 import logging
 import sys
 import weakref
+import types
 
 from newrelic.api.application import application_instance
 from newrelic.api.transaction import current_transaction

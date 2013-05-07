@@ -670,6 +670,11 @@ def instrument_tornado_stack_context(module):
                 with FunctionTrace(transaction, name=name):
                     return wrapped(*args, **kwargs)
 
+            except Exception:
+                transaction.record_exception(*sys.exc_info())
+
+                raise
+
             finally:
                 if not request._nr_request_finished:
                     request._nr_wait_function_trace = FunctionTrace(

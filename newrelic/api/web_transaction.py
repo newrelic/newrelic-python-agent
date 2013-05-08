@@ -654,7 +654,7 @@ class WSGIApplicationWrapper(object):
 
     def __init__(self, wrapped, application=None, name=None, group=None,
                framework=None):
-        if type(wrapped) == types.TupleType:
+        if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
         else:
             instance = None

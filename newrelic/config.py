@@ -1412,7 +1412,10 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.external_urllib3')
 
     _process_module_definition('requests.api',
-            'newrelic.hooks.external_requests')
+            'newrelic.hooks.external_requests', 'instrument_api')
+
+    _process_module_definition('requests.sessions',
+            'newrelic.hooks.external_requests', 'instrument_session')
 
     _process_module_definition('feedparser',
             'newrelic.hooks.external_feedparser')

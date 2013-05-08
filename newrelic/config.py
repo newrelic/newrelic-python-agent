@@ -1562,9 +1562,11 @@ def _process_module_builtin_defaults():
 
     _process_module_definition('urllib',
             'newrelic.hooks.external_urllib')
+    _process_module_definition('urllib.request',
+            'newrelic.hooks.external_urllib')
+
     _process_module_definition('urllib2',
             'newrelic.hooks.external_urllib2')
-
     _process_module_definition('urllib3.request',
             'newrelic.hooks.external_urllib3')
 

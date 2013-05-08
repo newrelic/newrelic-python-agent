@@ -11,9 +11,8 @@ import sys
 import time
 import zlib
 
-import newrelic.lib.requests as requests
-import newrelic.lib.simplejson as simplejson
-import newrelic.lib.certifi as certifi
+import newrelic.packages.requests as requests
+import newrelic.packages.simplejson as simplejson
 
 from newrelic import version
 from newrelic.core.config import global_settings, create_settings_snapshot
@@ -241,9 +240,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         session_config['pool_connections'] = 1
         session_config['pool_maxsize'] = 1
 
-        cert_loc = certifi.where()
-
-        session = requests.session(config=session_config, verify=cert_loc)
+        session = requests.session()
 
         auto_close_session = True
 
@@ -531,10 +528,7 @@ class ApplicationSession(object):
             config['pool_connections'] = 1
             config['pool_maxsize'] = 1
 
-            cert_loc = certifi.where()
-
-            self._requests_session = requests.session(config=config,
-                    verify=cert_loc)
+            self._requests_session = requests.session()
 
         return self._requests_session
 

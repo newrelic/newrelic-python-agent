@@ -622,7 +622,7 @@ class Transaction(object):
         # convert URL to Unicode as Latin-1 explicitly to avoid
         # problems with illegal characters.
 
-        if type(name) == type(''):
+        if isinstance(name, bytes):
             name = name.decode('Latin-1')
 
         self._group = group

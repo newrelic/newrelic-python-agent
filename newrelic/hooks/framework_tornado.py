@@ -767,7 +767,15 @@ def instrument_tornado_gen(module):
                             while True:
                                 transaction = current_transaction()
 
-                                with FunctionTrace(transaction, name):
+                                params = {}
+
+                                params['filename'] = \
+                                        generator.gi_frame.f_code.co_filename
+                                params['lineno'] = \
+                                        generator.gi_frame.f_lineno
+
+                                with FunctionTrace(transaction, name,
+                                        params=params):
                                     try:
                                         if exc is not None:
                                             yielded = generator.throw(*exc)

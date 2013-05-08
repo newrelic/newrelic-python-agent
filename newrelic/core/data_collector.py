@@ -99,36 +99,6 @@ def proxy_server():
 
     return { scheme: proxy }
 
-# This is a hack to work around a design flaw in the requests/urllib3
-# modules we currently bundle. Together they do not close the socket
-# connections in the connection pool when evicted, nor provide a way to
-# explicitly close connections still in the pool when a session ends. We
-# can get rid of this when we are able to drop Python 2.5 support and
-# upgrade to a newer requests version. When we do upgrade to the newest
-# requests library, we will be able to call close() on the session
-# object to force close connections.
-
-def close_requests_session(session, url=None):
-    try:
-        for connection_pool in session.poolmanager.pools.values():
-            try:
-                connection = connection_pool.pool.get_nowait()
-            except Exception:
-                connection = None
-
-            while connection is not None:
-                try:
-                    connection.close()
-                except Exception:
-                    pass
-
-                try:
-                    connection = connection_pool.pool.get_nowait()
-                except Exception:
-                    connection = None
-    except Exception:
-        pass
-
 # Low level network functions and session management. When connecting to
 # the data collector it is initially done through the main data collector.
 # It is though then necessary to ask the data collector for the per
@@ -226,22 +196,13 @@ def send_request(session, url, method, license_key, agent_run_id=None,
             data = zlib.compress(data, level)
 
     # If there is no requests session object provided for making
-    # requests create one now. We use a transient session to get around
-    # designed flaws in the requests/urllib3 modules. See notes for
-    # close_requests_session() function above. Note that keep alive
-    # must be set to true at this point to ensure that the pool is
-    # actually used to allow us to be able to close the connection.
+    # requests create one now. We want to close this as soon as we
+    # are done with it.
 
     auto_close_session = False
 
     if not session:
-        session_config = {}
-        session_config['keep_alive'] = True
-        session_config['pool_connections'] = 1
-        session_config['pool_maxsize'] = 1
-
         session = requests.session()
-
         auto_close_session = True
 
     # The 'requests' library can raise a number of exception derived
@@ -316,11 +277,8 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         raise RetryDataForRequest(str(sys.exc_info()[1]))
 
     finally:
-        # This is a hack to work around design flaw in requests/urllib3
-        # which is bundled. See comments against close_requests_session().
-
         if auto_close_session:
-            close_requests_session(session, url)
+            session.close()
             session = None
 
     if r.status_code != 200:
@@ -519,26 +477,12 @@ class ApplicationSession(object):
     @property
     def requests_session(self):
         if self._requests_session is None:
-            # We force pool size to 1 to ensure that only one
-            # connection to the data collector which will be
-            # maintained due to keep alive and reused.
-
-            config = {}
-            config['keep_alive'] = True
-            config['pool_connections'] = 1
-            config['pool_maxsize'] = 1
-
             self._requests_session = requests.session()
-
         return self._requests_session
 
     def close_connection(self):
-        # This is a hack to work around design flaw in requests/urllib3
-        # which is bundled. See comments against close_requests_session().
-
         if self._requests_session:
-            close_requests_session(self._requests_session)
-
+            self._requests_session.close()
         self._requests_session = None
 
     @internal_trace('Supportability/Collector/Calls/shutdown')

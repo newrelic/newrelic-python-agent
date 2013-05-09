@@ -4,6 +4,7 @@ import logging
 import sys
 import weakref
 import types
+import itertools
 
 from newrelic.api.application import application_instance
 from newrelic.api.transaction import current_transaction
@@ -579,7 +580,18 @@ def instrument_tornado_web(module):
 
         status = '%d ???' % instance.get_status()
 
-        response_headers = instance._headers.get_all()
+        # The HTTPHeaders class with get_all() only started to
+        # be used in Tornado 3.0. For older versions have to fall
+        # back to combining the dictionary and list of headers.
+
+        try:
+            response_headers = instance._headers.get_all()
+
+        except AttributeError:
+            response_headers = itertools.chain(
+                    instance._headers.iteritems(),
+                    instance._list_headers)
+
         additional_headers = transaction.process_response(
                 status, response_headers, *args)
 

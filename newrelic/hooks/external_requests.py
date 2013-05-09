@@ -1,6 +1,6 @@
 import newrelic.api.external_trace
 
-def instrument_session(module):
+def instrument_requests_sessions(module):
 
     def url_request(obj, method, url, *args, **kwargs):
         return url
@@ -8,7 +8,7 @@ def instrument_session(module):
     newrelic.api.external_trace.wrap_external_trace(
            module, 'Session.request', 'requests', url_request)
 
-def instrument_api(module):
+def instrument_requests_api(module):
 
     def url_request(method, url, *args, **kwargs):
         return url

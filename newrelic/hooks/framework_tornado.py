@@ -235,7 +235,8 @@ def instrument_tornado_httpserver(module):
             try:
                 result = wrapped(*args, **kwargs)
 
-                if request._nr_wait_function_trace:
+                if (hasattr(request, '_nr_wait_function_trace') and
+                        request._nr_wait_function_trace):
                     request._nr_wait_function_trace.__exit__(None, None, None)
 
             finally:

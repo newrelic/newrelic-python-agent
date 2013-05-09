@@ -571,6 +571,119 @@ def instrument_tornado_web(module):
     module.RequestHandler.render_string = ObjectWrapper(
             module.RequestHandler.render_string, None, render_wrapper)
 
+    def finish_wrapper(wrapped, instance, args, kwargs):
+        assert instance is not None
+
+        handler = instance
+        request = handler.request
+
+        # Call finish() method straight away if request object it is
+        # being called on is not even associated with a transaction.
+        # If we were in a running transaction we still want to record
+        # the call though. This will occur when calling finish on
+        # another request, but the target request wasn't monitored.
+
+        transaction = getattr(request, '_nr_transaction', None)
+
+        running_transaction = current_transaction()
+
+        if not transaction:
+            if running_transaction:
+                name = callable_name(wrapped)
+
+                with FunctionTrace(transaction, name):
+                    return wrapped(*args, **kwargs)
+
+            else:
+                return wrapped(*args, **kwargs)
+
+        # Do we have a running transaction. When we do we need to
+        # consider two possiblities. The first is where the current
+        # running transaction doesn't match that bound to the request.
+        # For this case it would be where from within one transaction
+        # there is an attempt to call finish() on a distinct web request
+        # which was being monitored. The second is where finish() is
+        # being called for the current request.
+
+        if running_transaction:
+            if transaction != running_transaction:
+                # For this case we need to suspend the current running
+                # transaction and call ourselves again. When it returns
+                # we need to restore things back the way they were.
+                # We still trace the call in the running transaction
+                # though so the fact that it called finish on another
+                # request is apparent.
+
+                name = callable_name(wrapped)
+
+                with FunctionTrace(running_transaction, name):
+                    try:
+                        running_transaction.drop_transaction()
+
+                        return finish_wrapper(wrapped, instance, args, kwargs)
+
+                    finally:
+                        running_transaction.save_transaction()
+
+            else:
+                # For this case we just trace the call.
+
+                name = callable_name(wrapped)
+
+                with FunctionTrace(transaction, name):
+                    return wrapped(*args, **kwargs)
+
+        # No current running transaction. If we aren't in a wait state
+        # we call finish() straight away.
+
+        if not request._nr_wait_function_trace:
+            return wrapped(*args, **kwargs)
+
+        # Now handle the special case where finish() was called while in
+        # the wait state. We need to restore the transaction for the
+        # request and then call finish(). When it returns we need to
+        # either end the transaction or go into a new wait state where
+        # we wait on output to be sent.
+
+        transaction.save_transaction()
+
+        try:
+            complete = True
+
+            request._nr_wait_function_trace.__exit__(None, None, None)
+
+            name = callable_name(wrapped)
+
+            with FunctionTrace(transaction, name):
+                result = wrapped(*args, **kwargs)
+
+            if not request.connection.stream.writing():
+                transaction.__exit__(None, None, None)
+
+            else:
+                request._nr_wait_function_trace = FunctionTrace(
+                        transaction, name='Request/Output',
+                        group='Python/Tornado')
+
+                request._nr_wait_function_trace.__enter__()
+                transaction.drop_transaction()
+
+                complete = False
+
+            return result
+
+        except:  # Catch all
+            transaction.__exit__(*sys.exc_info())
+            raise
+
+        finally:
+            if complete:
+                request._nr_wait_function_trace = None
+                request._nr_transaction = None
+
+    module.RequestHandler.finish = ObjectWrapper(
+            module.RequestHandler.finish, None, finish_wrapper)
+
     def generate_headers_wrapper(wrapped, instance, args, kwargs):
         transaction = current_transaction()
 
@@ -604,8 +717,6 @@ def instrument_tornado_web(module):
     module.RequestHandler._generate_headers = ObjectWrapper(
             module.RequestHandler._generate_headers, None,
             generate_headers_wrapper)
-
-    wrap_function_trace(module, 'RequestHandler.finish')
 
 def instrument_tornado_template(module):
 

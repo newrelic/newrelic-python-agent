@@ -953,9 +953,14 @@ def instrument_tornado_iostream(module):
 
         return wrapped(*args, **kwargs)
 
-    module.BaseIOStream._maybe_run_close_callback = ObjectWrapper(
-            module.BaseIOStream._maybe_run_close_callback, None,
-            maybe_run_close_callback_wrapper)
+    if hasattr(module, 'BaseIOStream'):
+        module.BaseIOStream._maybe_run_close_callback = ObjectWrapper(
+                module.BaseIOStream._maybe_run_close_callback, None,
+                maybe_run_close_callback_wrapper)
+    else:
+        module.IOStream._maybe_run_close_callback = ObjectWrapper(
+                module.IOStream._maybe_run_close_callback, None,
+                maybe_run_close_callback_wrapper)
 
 def instrument_tornado_curl_httpclient(module):
 

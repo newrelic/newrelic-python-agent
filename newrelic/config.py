@@ -1325,6 +1325,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('tornado.ioloop',
             'newrelic.hooks.framework_tornado',
             'instrument_tornado_ioloop')
+    _process_module_definition('tornado.iostream',
+            'newrelic.hooks.framework_tornado',
+            'instrument_tornado_iostream')
     _process_module_definition('tornado.curl_httpclient',
             'newrelic.hooks.framework_tornado',
             'instrument_tornado_curl_httpclient')

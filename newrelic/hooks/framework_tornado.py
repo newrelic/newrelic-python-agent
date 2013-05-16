@@ -134,6 +134,34 @@ def instrument_tornado_httpserver(module):
         request._nr_wait_function_trace = None
         request._nr_request_finished = False
 
+        # Add a callback variable to the connection object so we can
+        # be notified when the connection is closed before all content
+        # has been read.
+
+        def _close():
+            transaction.save_transaction()
+
+            try:
+                if request._nr_wait_function_trace:
+                    request._nr_wait_function_trace.__exit__(None, None, None)
+
+            finally:
+                request._nr_wait_function_trace = None
+
+            transaction.__exit__(None, None, None)
+            request._nr_transaction = None
+
+        connection.stream._nr_close_callback = _close
+
+        # Name transaction initially after the wrapped function so
+        # that if connection dropped before request content read,
+        # then don't get metric grouping issues with it being named
+        # after the URL.
+
+        name = callable_name(wrapped)
+
+        transaction.name_transaction(name)
+
         # We need to add a reference to the request object in to the
         # transaction object as only able to stash the transaction
         # in a deferred. Need to use a weakref to avoid an object
@@ -154,6 +182,8 @@ def instrument_tornado_httpserver(module):
             # exited. Technically don't believe this should ever occur
             # unless our code here has an error.
 
+            connection.stream._nr_close_callback = None
+
             _logger.exception('Unexpected exception raised by Tornado '
                     'HTTPConnection._on_headers().')
 
@@ -168,7 +198,13 @@ def instrument_tornado_httpserver(module):
     def on_request_body_wrapper(wrapped, instance, args, kwargs):
         assert instance is not None
 
-        request = instance._request
+        connection = instance
+        request = connection._request
+
+        # Wipe out our temporary callback for being notified that the
+        # connection is being closed before content is read.
+
+        connection.stream._nr_close_callback = None
 
         # If no transaction associated with the request we can call
         # through straight away. There should also be a current function
@@ -718,6 +754,49 @@ def instrument_tornado_web(module):
             module.RequestHandler._generate_headers, None,
             generate_headers_wrapper)
 
+    def on_connection_close_wrapper(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+
+        if transaction:
+            return wrapped(*args, **kwargs)
+
+        handler = instance
+        request = handler.request
+
+        transaction = getattr(request, '_nr_transaction', None)
+
+        if not transaction:
+            return wrapped(*args, **kwargs)
+
+        transaction.save_transaction()
+
+        if request._nr_wait_function_trace:
+            request._nr_wait_function_trace.__exit__(None, None, None)
+
+        name = callable_name(wrapped)
+
+        try:
+            with FunctionTrace(transaction, name):
+                return wrapped(*args, **kwargs)
+
+        except Exception:
+            transaction.record_exception(*sys.exc_info())
+
+        finally:
+            transaction.__exit__(None, None, None)
+
+    def init_wrapper(wrapped, instance, args, kwargs):
+        handler = instance
+
+        handler.on_connection_close = ObjectWrapper(
+                handler.on_connection_close, None,
+                on_connection_close_wrapper)
+
+        return wrapped(*args, **kwargs)
+
+    module.RequestHandler.__init__ = ObjectWrapper(
+            module.RequestHandler.__init__, None, init_wrapper)
+
 def instrument_tornado_template(module):
 
     def template_generate_wrapper(wrapped, instance, args, kwargs):
@@ -856,6 +935,27 @@ def instrument_tornado_ioloop(module):
         wrap_function_trace(module, 'PollIOLoop.add_timeout')
         wrap_function_trace(module, 'PollIOLoop.add_callback')
         wrap_function_trace(module, 'PollIOLoop.add_callback_from_signal')
+
+def instrument_tornado_iostream(module):
+
+    def maybe_run_close_callback_wrapper(wrapped, instance, args, kwargs):
+        stream = instance
+
+        if (not stream.closed() or stream._pending_callbacks != 0):
+            return wrapped(*args, **kwargs)
+
+        callback = getattr(stream, '_nr_close_callback', None)
+
+        stream._nr_close_callback = None
+
+        if callback:
+            callback()
+
+        return wrapped(*args, **kwargs)
+
+    module.BaseIOStream._maybe_run_close_callback = ObjectWrapper(
+            module.BaseIOStream._maybe_run_close_callback, None,
+            maybe_run_close_callback_wrapper)
 
 def instrument_tornado_curl_httpclient(module):
 

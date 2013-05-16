@@ -703,7 +703,7 @@ def instrument_tornado_web(module):
 
         except AttributeError:
             response_headers = itertools.chain(
-                    instance._headers.iteritems(),
+                    instance._headers.items(),
                     instance._list_headers)
 
         additional_headers = transaction.process_response(

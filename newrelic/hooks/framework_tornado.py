@@ -836,7 +836,9 @@ def instrument_tornado_stack_context(module):
             if fn is None or hasattr(fn, '_wrapped'):
                 return fn
 
-        return ObjectWrapper(fn, None, callback_wrapper)
+        fn = ObjectWrapper(fn, None, callback_wrapper)
+
+        return wrapped(fn)
 
     module.wrap = ObjectWrapper(module.wrap, None, stack_context_wrap_wrapper)
 

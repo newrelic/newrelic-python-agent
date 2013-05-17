@@ -788,16 +788,19 @@ def _process_external_trace_configuration():
             function = _config_object.get(section, 'function')
             (module, object_path) = string.splitfields(function, ':', 1)
 
+            method = None
+
             library = _config_object.get(section, 'library')
             url = _config_object.get(section, 'url')
-            method = _config_object.get(section, 'method', None)
+            if _config_object.has_option(section, 'method'):
+                method = _config_object.get(section, 'method')
 
             if url.startswith('lambda '):
                 vars = {"callable_name":
                           newrelic.api.object_wrapper.callable_name}
                 url = eval(url, vars)
 
-            if method.startswith('lambda '):
+            if method and method.startswith('lambda '):
                 vars = {"callable_name":
                           newrelic.api.object_wrapper.callable_name}
                 method = eval(method, vars)

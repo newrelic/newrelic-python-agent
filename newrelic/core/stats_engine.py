@@ -244,6 +244,7 @@ class StatsEngine(object):
         self.__sql_stats_table = {}
         self.__slow_transaction = None
         self.__slow_transaction_map = {}
+        self.__slow_transaction_old_duration = None
         self.__slow_transaction_dry_harvests = 0
         self.__transaction_errors = []
         self.__metric_ids = {}
@@ -459,6 +460,7 @@ class StatsEngine(object):
         """Check if transaction is the slowest transaction and update
         accordingly.
         """
+
         slowest = 0
         name = transaction.path
 
@@ -468,6 +470,31 @@ class StatsEngine(object):
             slowest = max(self.__slow_transaction_map[name], slowest)
 
         if transaction.duration > slowest:
+            # We are going to replace the prior slow transaction.
+            # We need to be a bit tricky here. If we are overriding
+            # an existing slow transaction for a different name,
+            # then we need to restore in the transaction map what
+            # the previous slowest duration was for that, or remove
+            # it if there wasn't one. This is so we do not incorrectly
+            # suppress it given that it was never actually reported
+            # as the slowest transaction.
+
+            if self.__slow_transaction:
+                if self.__slow_transaction.path != name:
+                    if self.__slow_transaction_old_duration:
+                        self.__slow_transaction_map[
+                                self.__slow_transaction.path] = (
+                                self.__slow_transaction_old_duration)
+                    else:
+                        del self.__slow_transaction_map[
+                                self.__slow_transaction.path]
+
+            if name in self.__slow_transaction_map:
+                self.__slow_transaction_old_duration = (
+                        self.__slow_transaction_map[name])
+            else:
+                self.__slow_transaction_old_duration = None
+
             self.__slow_transaction = transaction
             self.__slow_transaction_map[name] = transaction.duration
 
@@ -854,6 +881,7 @@ class StatsEngine(object):
         self.__sql_stats_table = {}
         self.__slow_transaction = None
         self.__slow_transaction_map = {}
+        self.__slow_transaction_old_duration = None
         self.__transaction_errors = []
         self.__metric_ids = {}
         self.__browser_transactions = []
@@ -885,6 +913,7 @@ class StatsEngine(object):
         if self.__settings is None:
             self.__slow_transaction_dry_harvests = 0
             self.__slow_transaction_map = {}
+            self.__slow_transaction_old_duration = None
 
         elif self.__slow_transaction is None:
             self.__slow_transaction_dry_harvests += 1
@@ -893,6 +922,7 @@ class StatsEngine(object):
             if self.__slow_transaction_dry_harvests >= dry_harvests:
                 self.__slow_transaction_dry_harvests = 0
                 self.__slow_transaction_map = {}
+                self.__slow_transaction_old_duration = None
 
         else:
             self.__slow_transaction_dry_harvests = 0
@@ -903,6 +933,7 @@ class StatsEngine(object):
             top_n = self.__settings.transaction_tracer.top_n
             if len(self.__slow_transaction_map) >= top_n:
                 self.__slow_transaction_map = {}
+                self.__slow_transaction_old_duration = None
 
         # We also retain the table of metric IDs. This should be
         # okay for continuing connection. If connection is lost
@@ -1044,6 +1075,32 @@ class StatsEngine(object):
                     slowest = max(self.__slow_transaction_map[name], slowest)
 
                 if duration > slowest:
+                    # We are going to replace the prior slow
+                    # transaction. We need to be a bit tricky here. If
+                    # we are overriding an existing slow transaction for
+                    # a different name, then we need to restore in the
+                    # transaction map what the previous slowest duration
+                    # was for that, or remove it if there wasn't one.
+                    # This is so we do not incorrectly suppress it given
+                    # that it was never actually reported as the slowest
+                    # transaction.
+
+                    if self.__slow_transaction:
+                        if self.__slow_transaction.path != name:
+                            if self.__slow_transaction_old_duration:
+                                self.__slow_transaction_map[
+                                        self.__slow_transaction.path] = (
+                                        self.__slow_transaction_old_duration)
+                            else:
+                                del self.__slow_transaction_map[
+                                        self.__slow_transaction.path]
+
+                    if name in self.__slow_transaction_map:
+                        self.__slow_transaction_old_duration = (
+                                self.__slow_transaction_map[name])
+                    else:
+                        self.__slow_transaction_old_duration = None
+
                     self.__slow_transaction = transaction
                     self.__slow_transaction_map[name] = duration
 

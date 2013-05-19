@@ -409,10 +409,15 @@ def instrument_tornado_httpserver(module):
     module.HTTPRequest.finish = ObjectWrapper(
             module.HTTPRequest.finish, None, finish_wrapper)
 
+    if hasattr(module.HTTPRequest, '_parse_mime_body'):
+        wrap_function_trace(module.HTTPRequest, '_parse_mime_body')
+
 def instrument_tornado_httputil(module):
 
-    wrap_function_trace(module, 'parse_body_arguments')
-    wrap_function_trace(module, 'parse_multipart_form_data')
+    if hasattr(module, 'parse_body_arguments'):
+        wrap_function_trace(module, 'parse_body_arguments')
+    if hasattr(module, 'parse_multipart_form_data'):
+        wrap_function_trace(module, 'parse_multipart_form_data')
 
 def instrument_tornado_web(module):
 
@@ -738,9 +743,15 @@ def instrument_tornado_web(module):
             response_headers = instance._headers.get_all()
 
         except AttributeError:
-            response_headers = itertools.chain(
-                    instance._headers.items(),
-                    instance._list_headers)
+            try:
+                response_headers = itertools.chain(
+                        instance._headers.items(),
+                        instance._list_headers)
+
+            except AttributeError:
+                response_headers = itertools.chain(
+                        instance._headers.items(),
+                        instance._headers)
 
         additional_headers = transaction.process_response(
                 status, response_headers, *args)
@@ -957,7 +968,7 @@ def instrument_tornado_iostream(module):
         module.BaseIOStream._maybe_run_close_callback = ObjectWrapper(
                 module.BaseIOStream._maybe_run_close_callback, None,
                 maybe_run_close_callback_wrapper)
-    else:
+    elif hasattr(module.IOStream, '_maybe_run_close_callback'):
         module.IOStream._maybe_run_close_callback = ObjectWrapper(
                 module.IOStream._maybe_run_close_callback, None,
                 maybe_run_close_callback_wrapper)

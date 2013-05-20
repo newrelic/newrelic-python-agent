@@ -77,6 +77,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/generator_trace.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/import_hook.py": {
         "hash": "n/a",
         "libraries": [
@@ -192,6 +198,12 @@
         ]
     },
     "newrelic/api/tests/test_function_trace.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/test_generator_trace.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

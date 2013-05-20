@@ -14,6 +14,7 @@ import newrelic.api.application
 import newrelic.api.transaction_name
 
 import newrelic.api.function_trace
+import newrelic.api.generator_trace
 import newrelic.api.external_trace
 import newrelic.api.error_trace
 
@@ -160,6 +161,10 @@ function_trace = newrelic.api.function_trace.function_trace
 FunctionTrace = newrelic.api.function_trace.FunctionTrace
 FunctionTraceWrapper = newrelic.api.function_trace.FunctionTraceWrapper
 wrap_function_trace = newrelic.api.function_trace.wrap_function_trace
+
+generator_trace = newrelic.api.generator_trace.generator_trace
+GeneratorTraceWrapper = newrelic.api.generator_trace.GeneratorTraceWrapper
+wrap_generator_trace = newrelic.api.generator_trace.wrap_generator_trace
 
 external_trace = newrelic.api.external_trace.external_trace
 ExternalTrace = newrelic.api.external_trace.ExternalTrace

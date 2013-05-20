@@ -144,6 +144,7 @@ _settings.transaction_tracer.stack_trace_threshold = 0.5
 _settings.transaction_tracer.explain_enabled = True
 _settings.transaction_tracer.explain_threshold = 0.5
 _settings.transaction_tracer.function_trace = []
+_settings.transaction_tracer.generator_trace = []
 _settings.transaction_tracer.top_n = 20
 
 _settings.error_collector.enabled = True

@@ -16,6 +16,7 @@ import newrelic.api.background_task
 import newrelic.api.database_trace
 import newrelic.api.external_trace
 import newrelic.api.function_trace
+import newrelic.api.generator_trace
 import newrelic.api.memcache_trace
 import newrelic.api.transaction_name
 import newrelic.api.error_trace
@@ -255,6 +256,8 @@ def _process_configuration(section):
                      'getfloat', None)
     _process_setting(section, 'transaction_tracer.function_trace',
                      'get', _map_function_trace)
+    _process_setting(section, 'transaction_tracer.generator_trace',
+                     'get', _map_function_trace)
     _process_setting(section, 'transaction_tracer.top_n',
                      'getint', None)
     _process_setting(section, 'error_collector.enabled',
@@ -493,7 +496,7 @@ def _load_configuration(config_file=None, environment=None,
     else:
         _process_app_name('newrelic')
 
-    # Instrument with function trace and callables supplied by the
+    # Instrument with function trace any callables supplied by the
     # user in the configuration.
 
     for function in _settings.transaction_tracer.function_trace:
@@ -511,6 +514,25 @@ def _load_configuration(config_file=None, environment=None,
         except Exception:
             _raise_configuration_error(section=None,
                     option='transaction_tracer.function_trace')
+
+    # Instrument with generator trace any callables supplied by the
+    # user in the configuration.
+
+    for function in _settings.transaction_tracer.generator_trace:
+        try:
+            (module, object_path) = string.splitfields(function, ':', 1)
+
+            name = None
+            group = 'Function'
+
+            _logger.debug("register generator-trace %s" %
+                    ((module, object_path, name, group),))
+
+            hook = _generator_trace_import_hook(object_path, name, group)
+            newrelic.api.import_hook.register_import_hook(module, hook)
+        except Exception:
+            _raise_configuration_error(section=None,
+                    option='transaction_tracer.generator_trace')
 
 # Generic error reporting functions.
 
@@ -875,6 +897,63 @@ def _process_function_trace_configuration():
                     ((module, object_path, name, group),))
 
             hook = _function_trace_import_hook(object_path, name, group)
+            newrelic.api.import_hook.register_import_hook(module, hook)
+        except Exception:
+            _raise_configuration_error(section)
+
+# Setup generator traces defined in configuration file.
+
+def _generator_trace_import_hook(object_path, name, group):
+    def _instrument(target):
+        _logger.debug("wrap generator-trace %s" %
+                ((target, object_path, name, group),))
+
+        try:
+            newrelic.api.generator_trace.wrap_generator_trace(
+                    target, object_path, name, group)
+        except Exception:
+            _raise_instrumentation_error('generator-trace', locals())
+
+    return _instrument
+
+def _process_generator_trace_configuration():
+    for section in _config_object.sections():
+        if not section.startswith('generator-trace:'):
+            continue
+
+        enabled = False
+
+        try:
+            enabled = _config_object.getboolean(section, 'enabled')
+        except ConfigParser.NoOptionError:
+            pass
+        except Exception:
+            _raise_configuration_error(section)
+
+        if not enabled:
+            continue
+
+        try:
+            function = _config_object.get(section, 'function')
+            (module, object_path) = string.splitfields(function, ':', 1)
+
+            name = None
+            group = 'Function'
+
+            if _config_object.has_option(section, 'name'):
+                name = _config_object.get(section, 'name')
+            if _config_object.has_option(section, 'group'):
+                group = _config_object.get(section, 'group')
+
+            if name and name.startswith('lambda '):
+                vars = {"callable_name":
+                         newrelic.api.object_wrapper.callable_name}
+                name = eval(name, vars)
+
+            _logger.debug("register generator-trace %s" %
+                    ((module, object_path, name, group),))
+
+            hook = _generator_trace_import_hook(object_path, name, group)
             newrelic.api.import_hook.register_import_hook(module, hook)
         except Exception:
             _raise_configuration_error(section)
@@ -1572,6 +1651,7 @@ def _setup_instrumentation():
     _process_database_trace_configuration()
     _process_external_trace_configuration()
     _process_function_trace_configuration()
+    _process_generator_trace_configuration()
     _process_memcache_trace_configuration()
 
     _process_transaction_name_configuration()

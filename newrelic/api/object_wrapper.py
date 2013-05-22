@@ -107,6 +107,20 @@ def object_context(object):
         cname = None
         fname = object.__name__
 
+    if inspect.isbuiltin(object):
+        if object.__self__ is None:
+            mname = object.__module__
+            cname = None
+            fname = object.__name__
+        elif hasattr(object.__self__, '__name__'):
+            mname = object.__self__.__module__
+            cname = object.__self__.__name__
+            fname = object.__name__
+        else:
+            mname = object.__self__.__class__.__module__
+            cname = object.__self__.__class__.__name__
+            fname = object.__name__
+
     elif isinstance(object, types.InstanceType):
         # This is called for instances of old style classes.
 

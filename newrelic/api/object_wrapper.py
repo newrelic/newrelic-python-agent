@@ -107,7 +107,7 @@ def object_context(object):
         cname = None
         fname = object.__name__
 
-    if inspect.isbuiltin(object):
+    elif inspect.isbuiltin(object):
         if object.__self__ is None:
             mname = object.__module__
             cname = None

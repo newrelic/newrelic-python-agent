@@ -17,6 +17,7 @@ import newrelic.api.database_trace
 import newrelic.api.external_trace
 import newrelic.api.function_trace
 import newrelic.api.generator_trace
+import newrelic.api.profile_trace
 import newrelic.api.memcache_trace
 import newrelic.api.transaction_name
 import newrelic.api.error_trace
@@ -958,6 +959,67 @@ def _process_generator_trace_configuration():
         except Exception:
             _raise_configuration_error(section)
 
+# Setup profile traces defined in configuration file.
+
+def _profile_trace_import_hook(object_path, name, group, depth):
+    def _instrument(target):
+        _logger.debug("wrap profile-trace %s" %
+                ((target, object_path, name, group, depth),))
+
+        try:
+            newrelic.api.profile_trace.wrap_profile_trace(
+                    target, object_path, name, group, depth=depth)
+        except Exception:
+            _raise_instrumentation_error('profile-trace', locals())
+
+    return _instrument
+
+def _process_profile_trace_configuration():
+    for section in _config_object.sections():
+        if not section.startswith('profile-trace:'):
+            continue
+
+        enabled = False
+
+        try:
+            enabled = _config_object.getboolean(section, 'enabled')
+        except ConfigParser.NoOptionError:
+            pass
+        except Exception:
+            _raise_configuration_error(section)
+
+        if not enabled:
+            continue
+
+        try:
+            function = _config_object.get(section, 'function')
+            (module, object_path) = string.splitfields(function, ':', 1)
+
+            name = None
+            group = 'Function'
+            depth = 3
+
+            if _config_object.has_option(section, 'name'):
+                name = _config_object.get(section, 'name')
+            if _config_object.has_option(section, 'group'):
+                group = _config_object.get(section, 'group')
+            if _config_object.has_option(section, 'depth'):
+                depth = _config_object.get(section, 'depth')
+
+            if name and name.startswith('lambda '):
+                vars = {"callable_name":
+                         newrelic.api.object_wrapper.callable_name}
+                name = eval(name, vars)
+
+            _logger.debug("register profile-trace %s" %
+                    ((module, object_path, name, group, depth),))
+
+            hook = _profile_trace_import_hook(object_path, name, group,
+                    depth=depth)
+            newrelic.api.import_hook.register_import_hook(module, hook)
+        except Exception:
+            _raise_configuration_error(section)
+
 # Setup memcache traces defined in configuration file.
 
 def _memcache_trace_import_hook(object_path, command):
@@ -1652,6 +1714,7 @@ def _setup_instrumentation():
     _process_external_trace_configuration()
     _process_function_trace_configuration()
     _process_generator_trace_configuration()
+    _process_profile_trace_configuration()
     _process_memcache_trace_configuration()
 
     _process_transaction_name_configuration()

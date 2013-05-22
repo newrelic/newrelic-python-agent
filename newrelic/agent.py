@@ -15,6 +15,7 @@ import newrelic.api.transaction_name
 
 import newrelic.api.function_trace
 import newrelic.api.generator_trace
+import newrelic.api.profile_trace
 import newrelic.api.external_trace
 import newrelic.api.error_trace
 
@@ -49,6 +50,9 @@ def set_transaction_name(name, group=None, priority=None):
     transaction = current_transaction()
     if transaction:
         transaction.name_transaction(name, group, priority)
+
+# DEPRECATED - The name_transaction() call is deprecated and the
+# set_transaction_name() function should be used instead.
 
 def name_transaction(name, group=None, priority=None):
     #warnings.warn('API change. Use set_transaction_name() instead of '
@@ -162,9 +166,19 @@ FunctionTrace = newrelic.api.function_trace.FunctionTrace
 FunctionTraceWrapper = newrelic.api.function_trace.FunctionTraceWrapper
 wrap_function_trace = newrelic.api.function_trace.wrap_function_trace
 
+# EXPERIMENTAL - Generator traces are currently experimental and may not
+# exist in this form in future versions of the agent.
+
 generator_trace = newrelic.api.generator_trace.generator_trace
 GeneratorTraceWrapper = newrelic.api.generator_trace.GeneratorTraceWrapper
 wrap_generator_trace = newrelic.api.generator_trace.wrap_generator_trace
+
+# EXPERIMENTAL - Profile traces are currently experimental and may not
+# exist in this form in future versions of the agent.
+
+profile_trace = newrelic.api.profile_trace.profile_trace
+ProfileTraceWrapper = newrelic.api.profile_trace.ProfileTraceWrapper
+wrap_profile_trace = newrelic.api.profile_trace.wrap_profile_trace
 
 external_trace = newrelic.api.external_trace.external_trace
 ExternalTrace = newrelic.api.external_trace.ExternalTrace

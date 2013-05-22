@@ -1,30 +1,42 @@
-import sys
+import functools
+import inspect
 import types
+import sys
+import os
 
-import newrelic.api.transaction
-import newrelic.api.object_wrapper
-import newrelic.api.function_trace
+from newrelic.api.transaction import current_transaction
+from newrelic.api.object_wrapper import (ObjectWrapper,
+        callable_name, wrap_object)
+from newrelic.api.function_trace import FunctionTrace
 
-# Temporary Python implementation of function profiler as proof of
-# concept. This is currently not compatible with coroutines and will not
-# do anything if detected that coroutines being used for current web
-# transaction.
-#
-# Note that this is currently triggering a time calculation bug within
-# the core agent library code in some circumstances.
+import newrelic
 
-class FunctionProfile(object):
+AGENT_PACKAGE_DIRECTORY = os.path.dirname(newrelic.__file__) + '/'              
+
+class ProfileTrace(object):
 
     def __init__(self, depth):
         self.function_traces = []
-        self.depth = depth
+        self.maximum_depth = depth
+        self.current_depth = 0
 
     def __call__(self, frame, event, arg):
-        if event not in ['call', 'c_call', 'return', 'c_return']:
+
+        if event not in ['call', 'c_call', 'return', 'c_return',
+                'exception', 'c_exception']:
             return
 
-        transaction = newrelic.api.transaction.current_transaction()
+        transaction = current_transaction()
+
         if not transaction:
+            return
+
+        # Not sure if setprofile() is reliable in the face of
+        # coroutine systems based on greenlets so don't run
+        # if we detect may be using greenlets.
+
+        if (hasattr(sys, '_current_frames') and not
+                transaction.thread_id in sys._current_frames()):
             return
 
         co = frame.f_code
@@ -32,90 +44,152 @@ class FunctionProfile(object):
         func_line_no = frame.f_lineno
         func_filename = co.co_filename
 
-        caller = frame.f_back
-        caller_line_no = caller.f_lineno
-        caller_filename = caller.f_code.co_filename
+        def _callable_name():
+            # This is pretty ugly and inefficient, but a stack
+            # frame doesn't provide any information about the
+            # original callable object. We thus need to try and
+            # deduce what it is by searching through the stack
+            # frame globals. This will still not work in many
+            # cases, including lambdas, generator expressions,
+            # and decoratored attributes such as properties of
+            # classes.
 
-        # FIXME Doesn't work for C calls. Don't appear to get the
-        # correct number of return events.
+            try:
+                if func_name in frame.f_globals:
+                    if frame.f_globals[func_name].func_code is co:
+                        return callable_name(frame.f_globals[func_name])
 
-        #if event in ['call', 'c_call']:
-        if event in ['call']:
-            if len(self.function_traces) >= self.depth:
+            except Exception:
+                pass
+
+            for name, obj in frame.f_globals.items():
+                try:
+                    if obj.__dict__[func_name].func_code is co:
+                        return callable_name(obj.__dict__[func_name])
+
+                except Exception:
+                    pass
+
+        if event in ['call', 'c_call']:
+            # Skip the outermost as we catch that with the root
+            # function traces for the profile trace.
+
+            if len(self.function_traces) == 0:
+                self.function_traces.append(None)
+                return
+
+            if self.current_depth >= self.maximum_depth:
+                self.function_traces.append(None)
+                return
+
+            if func_filename.startswith(AGENT_PACKAGE_DIRECTORY):
                 self.function_traces.append(None)
                 return
 
             if event == 'call':
-                name = 'Call to %s() on line %s of %s from line %s of %s' % \
-                        (func_name, func_line_no, func_filename,
-                        caller_line_no, caller_filename)
+                name = _callable_name()
+                if not name:
+                    name = '%s:%s#%s' % (func_filename, func_name,
+                            func_line_no)
             else:
-                name = 'Call to ???() from line %s of %s' % \
-                        (func_line_no, func_filename)
+                name = callable_name(arg)
+                if not name:
+                    name = '%s:@%s#%s' % (func_filename, func_name,
+                            func_line_no)
 
-            function_trace = newrelic.api.function_trace.FunctionTrace(
-                    transaction, name=name, group="Python/Profile")
+            function_trace = FunctionTrace(transaction, name=name)
             function_trace.__enter__()
+
             self.function_traces.append(function_trace)
+            self.current_depth += 1
 
-        #elif event in ['return', 'c_return']:
-        elif event in ['return']:
-            function_trace = self.function_traces.pop()
-            if function_trace:
-                function_trace.__exit__(None, None, None)
+        elif event in ['return', 'c_return', 'c_exception']:
+            if not self.function_traces:
+                return
 
-class ProfileTraceWrapper(object):
+            try:
+                function_trace = self.function_traces.pop()
 
-    def __init__(self, wrapped, depth=5):
-        if type(wrapped) == types.TupleType:
-            (instance, wrapped) = wrapped
+            except IndexError:
+                pass
+
+            else:
+                if function_trace:
+                    function_trace.__exit__(None, None, None)
+                    self.current_depth -= 1
+
+def ProfileTraceWrapper(wrapped, name=None, group=None, label=None,
+        params=None, depth=3):
+
+    def wrapper(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+
+        if transaction is None:
+            return wrapped(*args, **kwargs)
+
+        if callable(name):
+            if instance and inspect.ismethod(wrapped):
+                _name = name(instance, *args, **kwargs)
+            else:
+                _name = name(*args, **kwargs)
+
+        elif name is None:
+            _name = callable_name(wrapped)
+
         else:
-            instance = None
+            _name = name
 
-        newrelic.api.object_wrapper.update_wrapper(self, wrapped)
+        if callable(group):
+            if instance and inspect.ismethod(wrapped):
+                _group = group(instance, *args, **kwargs)
+            else:
+                _group = group(*args, **kwargs)
 
-        self._nr_instance = instance
-        self._nr_next_object = wrapped
+        else:
+            _group = group
 
-        if not hasattr(self, '_nr_last_object'):
-            self._nr_last_object = wrapped
+        if callable(label):
+            if instance and inspect.ismethod(wrapped):
+                _label = label(instance, *args, **kwargs)
+            else:
+                _label = label(*args, **kwargs)
 
-        self._nr_depth = depth
+        else:
+            _label = label
 
-    def __get__(self, instance, klass):
-        if instance is None:
-            return self
-        descriptor = self._nr_next_object.__get__(instance, klass)
-        return self.__class__((instance, descriptor), self._nr_name,
-                              self._nr_group)
+        if callable(params):
+            if instance and inspect.ismethod(wrapped):
+                _params = params(instance, *args, **kwargs)
+            else:
+                _params = params(*args, **kwargs)
 
-    def __call__(self, *args, **kwargs):
-        transaction = newrelic.api.transaction.current_transaction()
-        if not transaction:
-            return self._nr_next_object(*args, **kwargs)
+        else:
+            _params = params
 
-        #if transaction.coroutines:
-        #    return self._nr_next_object(*args, **kwargs)
-        if not hasattr(sys, 'getprofile'):
-            return self._nr_next_object(*args, **kwargs)
+        with FunctionTrace(transaction, _name, _group, _label, _params):
+            if not hasattr(sys, 'getprofile'):
+                return wrapped(*args, **kwargs)
 
-        profiler = sys.getprofile()
+            profiler = sys.getprofile()
 
-        if profiler:
-            return self._nr_next_object(*args, **kwargs)
+            if profiler:
+                return wrapped(*args, **kwargs)
 
-        sys.setprofile(FunctionProfile(self._nr_depth))
+            sys.setprofile(ProfileTrace(depth))
 
-        try:
-            return self._nr_next_object(*args, **kwargs)
-        finally:
-            sys.setprofile(profiler)
+            try:
+                return wrapped(*args, **kwargs)
 
-def function_profile(depth=5):
-    def decorator(wrapped):
-        return ProfileTraceWrapper(wrapped, depth)
-    return decorator
+            finally:
+                sys.setprofile(None)
 
-def wrap_function_profile(module, object_path, depth=5):
-    newrelic.api.object_wrapper.wrap_object(module, object_path,
-            ProfileTraceWrapper, (depth,))
+    return ObjectWrapper(wrapped, None, wrapper)
+
+def profile_trace(name=None, group=None, label=None, params=None, depth=3):
+    return functools.partial(ProfileTraceWrapper, name=name,
+            group=group, label=label, params=params, depth=depth)
+
+def wrap_profile_trace(module, object_path, name=None,
+        group=None, label=None, params=None, depth=3):
+    return wrap_object(module, object_path, ProfileTraceWrapper,
+            (name, group, label, params, depth))

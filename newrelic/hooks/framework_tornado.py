@@ -834,6 +834,8 @@ def instrument_tornado_template(module):
 
     def block_generate_wrapper(wrapped, instance, args, kwargs):
         def execute(writer, *args, **kwargs):
+            if not hasattr(instance, 'line'):
+                return wrapped(writer, *args, **kwargs)
             writer.write_line('with _nr_newrelic_agent.FunctionTrace('
                     '_nr_newrelic_agent.current_transaction(), name=%r, '
                     'group="Template/Block"):' % instance.name, instance.line)

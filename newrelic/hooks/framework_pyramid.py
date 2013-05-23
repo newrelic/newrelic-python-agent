@@ -48,7 +48,8 @@ class ViewCallableWrapper(object):
         transaction.name_transaction(name)
 
         with newrelic.api.function_trace.FunctionTrace(transaction, name):
-            with newrelic.api.error_trace.ErrorTrace(transaction):
+            with newrelic.api.error_trace.ErrorTrace(transaction,
+                    ignore_errors=['pyramid.httpexceptions:HTTPNotFound']):
                 return self._nr_next_object(*args, **kwargs)
 
 class AdaptersWrapper(object):

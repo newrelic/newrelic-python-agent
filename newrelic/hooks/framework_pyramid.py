@@ -102,7 +102,7 @@ def instrument_pyramid_router(module):
             'Router.handle_request', fixup_handle_request)
 
     newrelic.api.web_transaction.wrap_wsgi_application(
-            module, 'Router.__call__')
+            module, 'Router.__call__', framework='Pyramid')
 
 def instrument_pyramid_config_views(module):
 

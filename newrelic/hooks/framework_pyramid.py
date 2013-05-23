@@ -101,8 +101,17 @@ def instrument_pyramid_router(module):
     newrelic.api.in_function.wrap_in_function(module,
             'Router.handle_request', fixup_handle_request)
 
+    pyramid_version = None
+
+    try:
+        import pkg_resources
+        pyramid_version = pkg_resources.get_distribution('pyramid').version
+
+    except Exception:
+        pass
+
     newrelic.api.web_transaction.wrap_wsgi_application(
-            module, 'Router.__call__', framework='Pyramid')
+            module, 'Router.__call__', framework=('Pyramid', pyramid_version))
 
 def instrument_pyramid_config_views(module):
 

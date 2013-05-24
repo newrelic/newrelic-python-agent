@@ -617,6 +617,10 @@ class Transaction(object):
         self._group = group
         self._name = name
 
+    # XXX Preparing for transition to new name.
+
+    set_transaction_name = name_transaction
+
     def record_exception(self, exc, value, tb, params={}, ignore_errors=[]):
 
         # Bail out if the transaction is not active or

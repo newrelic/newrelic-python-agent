@@ -221,7 +221,10 @@ def environment_settings():
     plugins = []
 
     for name, module in sys.modules.items():
-        if name.find('.') == -1 and hasattr(module, '__file__'):
+        if name.startswith('newrelic.hooks.'):
+            plugins.append(name)
+
+        elif name.find('.') == -1 and hasattr(module, '__file__'):
             try:
                 if 'pkg_resources' in sys.modules:
                     version = pkg_resources.get_distribution(name).version

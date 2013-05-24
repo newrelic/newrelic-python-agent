@@ -181,11 +181,12 @@ def callable_name(object, separator=':'):
 
 class ObjectWrapper(object):
     
-    def __init__(self, wrapped, instance, wrapper):
+    def __init__(self, wrapped, instance, wrapper, kwargs={}):
         self._nr_next_object = wrapped
 
         self._nr_instance = instance
         self._nr_wrapper = wrapper
+        self._nr_kwargs = kwargs
         
         try:
             self._nr_last_object = wrapped._nr_last_object
@@ -227,7 +228,7 @@ class ObjectWrapper(object):
 
     def __call__(self, *args, **kwargs):
         return self._nr_wrapper(self._nr_next_object,
-                self._nr_instance, args, kwargs)
+                self._nr_instance, args, kwargs, **self._nr_kwargs)
 
     def __eq__(self, other):
         if isinstance(other, ObjectWrapper):
@@ -245,3 +246,6 @@ class ObjectWrapper(object):
 
     def __repr__(self): 
         return '<ObjectWrapper for %s>' % (str(self._nr_last_object))
+
+def wrap_callable(wrapped, wrapper, **kwargs):
+    return ObjectWrapper(wrapped, None, wrapper, kwargs)

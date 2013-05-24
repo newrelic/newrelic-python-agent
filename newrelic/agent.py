@@ -197,6 +197,7 @@ wrap_transaction_name = newrelic.api.transaction_name.wrap_transaction_name
 ObjectWrapper = newrelic.api.object_wrapper.ObjectWrapper
 callable_name = newrelic.api.object_wrapper.callable_name
 wrap_object = newrelic.api.object_wrapper.wrap_object
+wrap_callable = newrelic.api.object_wrapper.wrap_callable
 
 in_function = newrelic.api.in_function.in_function
 InFunctionWrapper = newrelic.api.in_function.InFunctionWrapper

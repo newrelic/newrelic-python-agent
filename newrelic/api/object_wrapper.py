@@ -181,11 +181,12 @@ def callable_name(object, separator=':'):
 
 class ObjectWrapper(object):
     
-    def __init__(self, wrapped, instance, wrapper, kwargs={}):
+    def __init__(self, wrapped, instance, wrapper, args=[], kwargs={}):
         self._nr_next_object = wrapped
 
         self._nr_instance = instance
         self._nr_wrapper = wrapper
+        self._nr_args = args
         self._nr_kwargs = kwargs
         
         try:
@@ -212,7 +213,8 @@ class ObjectWrapper(object):
 
     def __get__(self, instance, owner):
         descriptor = self._nr_next_object.__get__(instance, owner)
-        return self.__class__(descriptor, instance, self._nr_wrapper)
+        return self.__class__(descriptor, instance, self._nr_wrapper,
+                self._nr_args, self._nr_kwargs)
 
     def __enter__(self):
         return self._nr_next_object.__enter__()
@@ -247,5 +249,5 @@ class ObjectWrapper(object):
     def __repr__(self): 
         return '<ObjectWrapper for %s>' % (str(self._nr_last_object))
 
-def wrap_callable(wrapped, wrapper, **kwargs):
-    return ObjectWrapper(wrapped, None, wrapper, kwargs)
+def wrap_callable(wrapped, wrapper, *args, **kwargs):
+    return ObjectWrapper(wrapped, None, wrapper, args, kwargs)

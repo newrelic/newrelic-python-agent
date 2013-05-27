@@ -43,6 +43,14 @@ def instrument(module):
                     transaction, sql, module):
                 return self._nr_cursor.executemany(sql, *args, **kwargs)
 
+        def callproc(self, procname, *args, **kwargs): 
+            transaction = newrelic.api.transaction.current_transaction()
+            if not transaction:
+                return self._nr_cursor.callproc(procname, *args, **kwargs)
+            with newrelic.api.database_trace.DatabaseTrace(
+                    transaction, 'CALL %s' % procname):
+                return self._nr_cursor.callproc(procname, *args, **kwargs)
+
     class ConnectionWrapper(object):
 
         def __init__(self, connection, connect_params=None):

@@ -202,6 +202,10 @@ class ObjectWrapper(object):
             else:
                 object.__setattr__(self, attr, value)
 
+    @property
+    def __class__(self):
+        return self._nr_next_object.__class__
+
     def __setattr__(self, name, value):
         if not name.startswith('_nr_'):
             setattr(self._nr_next_object, name, value)
@@ -213,7 +217,7 @@ class ObjectWrapper(object):
 
     def __get__(self, instance, owner):
         descriptor = self._nr_next_object.__get__(instance, owner)
-        return self.__class__(descriptor, instance, self._nr_wrapper,
+        return type(self)(descriptor, instance, self._nr_wrapper,
                 self._nr_args, self._nr_kwargs)
 
     def __enter__(self):

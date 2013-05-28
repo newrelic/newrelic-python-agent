@@ -797,7 +797,24 @@ def instrument_tornado_web(module):
             transaction.__exit__(None, None, None)
 
     def init_wrapper(wrapped, instance, args, kwargs):
-        handler = instance
+        if instance:
+            # Bound method when RequestHandler instantiated
+            # directly.
+
+            handler = instance
+
+        elif args:
+            # When called from derived class constructor it is
+            # not done so as a bound method. Instead the self
+            # object will be passed as the first argument.
+
+            handler = args[0]
+
+        else:
+            # Incorrect number of arguments. Pass it through so
+            # it fails on call.
+
+            return wrapped(*args, **kwargs)
 
         handler.on_connection_close = ObjectWrapper(
                 handler.on_connection_close, None,

@@ -876,7 +876,7 @@
         ]
     },
     "newrelic/lib/certifi/cacert.pem": {
-        "hash": "26ddcf24fac454b40404b23338642a11",
+        "hash": "f106f71cc71b873f81ea58f2fd2b2ff6",
         "libraries": [
             "certifi"
         ]

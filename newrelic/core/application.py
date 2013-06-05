@@ -430,6 +430,17 @@ class Application(object):
             try:
                 self.process_agent_commands()
 
+            except RetryDataForRequest:
+                # Ignore any error connecting to the data collector at
+                # this point as trying to get agent commands at this
+                # point is an optimisation and not a big issue if it fails.
+                # Transient issues with the data collector for this will
+                # just cause noise in the agent logs and worry users. An
+                # ongoing connection issue will be picked properly with
+                # the subsequent data harvest.
+
+                pass
+
             except Exception:
                 if not self._agent_shutdown and not self._pending_shutdown:
                     _logger.exception('Unexpected exception when processing '

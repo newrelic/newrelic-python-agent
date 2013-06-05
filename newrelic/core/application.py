@@ -1107,16 +1107,30 @@ class Application(object):
 
                 for data_sampler in self._data_samplers:
                     try:
-                        for name, value in data_sampler.metrics():
-                            stats.record_custom_metric(name, value)
+                        for sample in data_sampler.metrics():
+                            try:
+                                name, value = sample
+                                stats.record_custom_metric(name, value)
+                            except Exception:
+                                _logger.exception('The merging of custom '
+                                        'metric sample %r from data source %r '
+                                        'has failed. Validate the format of '
+                                        'the sample. If this issue persists '
+                                        'then please report this problem to '
+                                        'the data source provider or New '
+                                        'Relic support for further '
+                                        'investigation.', sample,
+                                        data_sampler.name)
+                                break
 
                     except Exception:
-                        _logger.exception('The merging of custom metrics from '
-                                'data sampler %r has failed. If this issue '
-                                'persists then please report this problem to '
-                                'the data source provider or New Relic '
-                                'support for further investigation.',
-                                data_sampler.name)
+                        _logger.exception('The merging of custom metric '
+                                'samples from data source %r has failed. '
+                                'Validate that the data source is producing '
+                                'samples correctly. If this issue persists '
+                                'then please report this problem to the data '
+                                'source provider or New Relic support for '
+                                'further investigation.', data_sampler.name)
 
                 # Add a metric we can use to track how many harvest
                 # periods have occurred.

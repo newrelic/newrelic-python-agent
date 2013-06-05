@@ -286,8 +286,14 @@ def send_request(session, url, method, license_key, agent_run_id=None,
             len(data))
 
     try:
+        # The timeout value in the requests module is only on
+        # the initial connection and doesn't apply to how long
+        # it takes to get back a response.
+
+        timeout = settings.agent_limits.data_collector_timeout
+
         r = session.post(url, params=params, headers=headers,
-                proxies=proxies, data=data)
+                proxies=proxies, timeout=timeout, data=data)
 
         # Read the content now so we can force close the socket
         # connection if this is a transient session as quickly

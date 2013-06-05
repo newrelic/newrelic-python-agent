@@ -788,6 +788,43 @@ def instrument_django_views_debug(module):
     module.technical_500_response = wrap_view_handler(
             module.technical_500_response, priority=1)
 
+def wrap_view_dispatch(wrapped):
+
+    # Wrapper to be applied to dispatcher for class based views.
+
+    def wrapper(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+
+        if transaction is None:
+            return wrapped(*args, **kwargs)
+
+        def _args(request, *args, **kwargs):
+            return request
+
+        view = instance
+        request = _args(*args, **kwargs)
+
+        # We can't intercept the delegated view handler when it
+        # is looked up by the dispatch() method so we need to
+        # duplicate the lookup mechanism.
+
+        if request.method.lower() in view.http_method_names:
+            handler = getattr(view, request.method.lower(),
+                    view.http_method_not_allowed)
+        else:
+            handler = view.http_method_not_allowed
+
+        name = callable_name(handler)
+        transaction.set_transaction_name(name)
+
+        with FunctionTrace(transaction, name=name):
+            return wrapped(*args, **kwargs)
+
+    return ObjectWrapper(wrapped, None, wrapper)
+
+def instrument_django_views_generic_base(module):
+    module.View.dispatch = wrap_view_dispatch(module.View.dispatch)
+
 def instrument_django_http_multipartparser(module):
     wrap_function_trace(module, 'MultiPartParser.parse')
 

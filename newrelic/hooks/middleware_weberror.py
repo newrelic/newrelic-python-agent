@@ -1,4 +1,5 @@
 from newrelic.api.function_trace import wrap_function_trace
+from newrelic.api.external_trace import wrap_external_trace
 
 def instrument_weberror_errormiddleware(module):
 
@@ -6,6 +7,11 @@ def instrument_weberror_errormiddleware(module):
 
 def instrument_weberror_reporter(module):
 
+    def smtp_url(obj, *args, **kwargs):
+        return 'smtp://' + obj.smtp_server
+
+    wrap_external_trace(module, 'EmailReporter.report', 'weberror', smtp_url)
     wrap_function_trace(module, 'EmailReporter.report')
+
     wrap_function_trace(module, 'LogReporter.report')
     wrap_function_trace(module, 'FileReporter.report')

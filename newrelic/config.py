@@ -1696,7 +1696,6 @@ def _process_module_builtin_defaults():
     _process_module_definition('weberror.errormiddleware',
             'newrelic.hooks.middleware_weberror',
             'instrument_weberror_errormiddleware')
-
     _process_module_definition('weberror.reporter',
             'newrelic.hooks.middleware_weberror',
             'instrument_weberror_reporter')

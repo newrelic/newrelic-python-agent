@@ -1002,6 +1002,14 @@ def instrument_tornado_simple_httpclient(module):
 
 def instrument_tornado_gen(module):
 
+    # The Return exception type does not exist in Tornado 2.X.
+    # Create a dummy exception type as a placeholder.
+
+    try:
+        Return = module.Return
+    except AttributeError:
+        class Return(Exception): pass
+
     def coroutine_wrapper(wrapped, instance, args, kwargs):
         def _func(func, *args, **kwargs):
             return func
@@ -1015,7 +1023,7 @@ def instrument_tornado_gen(module):
             try:
                 result = wrapped(*args, **kwargs)
 
-            except (module.Return, StopIteration):
+            except (Return, StopIteration):
                 raise
 
             except Exception:
@@ -1047,7 +1055,7 @@ def instrument_tornado_gen(module):
                                         else:
                                             yielded = generator.send(value)
 
-                                    except (module.Return, StopIteration):
+                                    except (Return, StopIteration):
                                         raise
 
                                     except Exception:

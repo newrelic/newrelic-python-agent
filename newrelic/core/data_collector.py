@@ -714,7 +714,7 @@ def create_session(license_key, app_name, linked_applications,
 
     if not license_key:
         _logger.error('A valid account license key cannot be found. '
-            'Has a license key be specified in the agent configuration '
+            'Has a license key been specified in the agent configuration '
             'file or via the NEW_RELIC_LICENSE_KEY environment variable?')
 
     try:

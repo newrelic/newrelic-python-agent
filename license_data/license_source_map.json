@@ -815,6 +815,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/memcache_umemcache.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/nosql_pymongo.py": {
         "hash": "n/a",
         "libraries": [

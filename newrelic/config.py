@@ -1533,6 +1533,8 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.memcache_memcache')
     _process_module_definition('pylibmc',
             'newrelic.hooks.memcache_pylibmc')
+    _process_module_definition('umemcache',
+            'newrelic.hooks.memcache_umemcache')
 
     _process_module_definition('jinja2.environment',
             'newrelic.hooks.template_jinja2')

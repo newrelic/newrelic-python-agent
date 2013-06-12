@@ -292,6 +292,12 @@ class Application(object):
         try:
             while not active_session:
 
+                if self._agent_shutdown:
+                    return
+
+                if self._pending_shutdown:
+                    return
+
                 active_session = create_session(None, self._app_name,
                         self.linked_applications, environment_settings(),
                         global_settings_dump())

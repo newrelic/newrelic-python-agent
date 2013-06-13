@@ -7,7 +7,6 @@ import cgi
 import base64
 import time
 import string
-import random
 import re
 
 import newrelic.lib.simplejson as simplejson
@@ -65,12 +64,12 @@ def _encode(name, key):
         s.append(chr(ord(name[i]) ^ ord(key[i % len(key)])))
     return s
 
-def _obfuscate(name, key):
+def obfuscate(name, key):
     if name is None:
         return ''
     return base64.b64encode(''.join(_encode(name, key)))
 
-def _deobfuscate(name, key):
+def deobfuscate(name, key):
     if name is None:
         return ''
     return ''.join(_encode(base64.b64decode(name), key))
@@ -159,7 +158,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         if http_cookie and ("NRAGENT" in http_cookie):
             self.rum_token = _extract_token(http_cookie)
-            self.rum_guid = self.rum_token and str(random.getrandbits(64))
+            self.rum_trace = True if self.rum_token else False
 
         self._request_uri = request_uri
 
@@ -292,6 +291,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         # Check for the New Relic cross process ID header and extract
         # the relevant details.
 
+
         if settings.cross_application_tracer.enabled and \
                 settings.cross_process_id and settings.trusted_account_ids and \
                 settings.encoding_key:
@@ -300,8 +300,9 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
             if client_cross_process_id:
                 try:
-                    client_cross_process_id = _deobfuscate(
+                    client_cross_process_id = deobfuscate(
                             client_cross_process_id, settings.encoding_key)
+
 
                     # The cross process ID consists of the client
                     # account ID and the ID of the specific application
@@ -320,6 +321,18 @@ class WebTransaction(newrelic.api.transaction.Transaction):
                         self.client_account_id = client_account_id
                         self.client_application_id = client_application_id
 
+                        txn_header = self.process_txn_header(environ)
+                        if txn_header:
+                            self.referring_transaction_guid = txn_header[0]
+
+                            # Incoming record_tt is OR'd with existing
+                            # record_tt. In the sceanrio where we make multiple
+                            # ext request, this will ensure we don't set the
+                            # record_tt to False by a later request if it was
+                            # set to True by an earlier request.
+
+                            self.record_tt = self.record_tt or txn_header[1]
+
                 except Exception:
                     pass
 
@@ -337,6 +350,20 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         # Flags for tracking whether RUM header inserted.
 
         self._rum_header = False
+
+    def process_txn_header(self, environ):
+        encoded_txn_header = environ.get('HTTP_X_NEWRELIC_TRANSACTION')
+
+        if encoded_txn_header:
+            try:
+                decoded_txn_header = simplejson.loads(
+                        deobfuscate(encoded_txn_header,
+                            self._settings.encoding_key),
+                        encoding='UTF-8')
+            except Exception:
+                decoded_txn_header = None
+
+        return decoded_txn_header
 
     def process_response(self, status, response_headers, *args):
         """Processes response status and headers, extracting any
@@ -399,12 +426,12 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
             self._freeze_path()
 
-            payload = (self._settings.cross_process_id, self.path,
-                    queue_time, duration, self._read_length)
+            payload = (self._settings.cross_process_id, self.path, queue_time,
+                    duration, self._read_length, self.guid, self.record_tt)
             app_data = simplejson.dumps(payload, ensure_ascii=True,
                     encoding='Latin-1')
 
-            additional_headers.append(('X-NewRelic-App-Data', _obfuscate(
+            additional_headers.append(('X-NewRelic-App-Data', obfuscate(
                     app_data, self._settings.encoding_key)))
 
         # The additional headers returned need to be merged into the
@@ -471,7 +498,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         obfuscation_key = self._settings.license_key[:13]
 
-        name = _obfuscate(self.path, obfuscation_key)
+        name = obfuscate(self.path, obfuscation_key)
 
         queue_start = self.queue_start or self.start_time
         start_time = self.start_time
@@ -481,17 +508,20 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         request_duration = int((end_time - start_time) * 1000)
 
         rum_token = self.rum_token or ''
-        rum_guid = self.rum_guid or ''
+
+        # Only include the guid if the rum_token is not empty.
+
+        guid = self.guid if self.rum_token else ''
 
         threshold = self._settings.transaction_tracer.transaction_threshold
         if threshold is None:
             threshold = self.apdex *4
 
-        rum_guid = rum_guid if request_duration >= threshold else ''
+        guid = guid if request_duration >= threshold else ''
 
-        user = _obfuscate(self._user_attrs.get('user'), obfuscation_key)
-        account = _obfuscate(self._user_attrs.get('account'), obfuscation_key)
-        product = _obfuscate(self._user_attrs.get('product'), obfuscation_key)
+        user = obfuscate(self._user_attrs.get('user'), obfuscation_key)
+        account = obfuscate(self._user_attrs.get('account'), obfuscation_key)
+        product = obfuscate(self._user_attrs.get('product'), obfuscation_key)
 
         # Settings will have values as Unicode strings and the
         # result here will be Unicode so need to convert back to
@@ -504,7 +534,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
                     self._settings.beacon,
                     self._settings.browser_key,
                     self._settings.application_id,
-                    name, queue_duration, request_duration, rum_guid,
+                    name, queue_duration, request_duration, guid,
                     rum_token, user, account, product))
             else:
                 return str(_rum_footer_short_fragment % (
@@ -519,7 +549,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
                     self._settings.beacon,
                     self._settings.browser_key,
                     self._settings.application_id,
-                    name, queue_duration, request_duration, rum_guid,
+                    name, queue_duration, request_duration, guid,
                     rum_token, user, account, product))
             else:
                 return str(_rum_footer_long_fragment % (

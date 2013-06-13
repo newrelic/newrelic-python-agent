@@ -24,8 +24,8 @@ _TransactionNode = namedtuple('_TransactionNode',
         'response_code', 'request_params', 'custom_params', 'queue_start',
         'start_time', 'end_time', 'duration', 'exclusive', 'children',
         'errors', 'slow_sql', 'apdex_t', 'suppress_apdex', 'custom_metrics',
-        'parameter_groups', 'guid', 'cpu_time', 'suppress_transaction_trace',
-        'client_cross_process_id'])
+        'parameter_groups', 'guid', 'rum_trace', 'cpu_time', 'suppress_transaction_trace',
+        'client_cross_process_id', 'referring_transaction_guid', 'record_tt'])
 
 class TransactionNode(_TransactionNode):
 
@@ -109,7 +109,7 @@ class TransactionNode(_TransactionNode):
                 exclusive=self.exclusive)
 
         if self.errors:
-            # Generate overall rollup metric indicating if errors present. 
+            # Generate overall rollup metric indicating if errors present.
             yield TimeMetric(name='Errors/all', scope='', duration=0.0,
                       exclusive=None)
 
@@ -210,6 +210,13 @@ class TransactionNode(_TransactionNode):
         if self.client_cross_process_id:
             custom_params['client_cross_process_id'] = \
                     self.client_cross_process_id
+            custom_params['client_cpid'] = \
+                    self.client_cross_process_id
+        if self.referring_transaction_guid:
+            custom_params['referring_transaction_guid'] = \
+                    self.referring_transaction_guid
+            custom_params['ref_guid'] = \
+                    self.referring_transaction_guid
 
         for error in self.errors:
             params = {}
@@ -275,9 +282,16 @@ class TransactionNode(_TransactionNode):
         if self.client_cross_process_id:
             custom_params['client_cross_process_id'] = \
                     self.client_cross_process_id
+            custom_params['client_cpid'] = \
+                    self.client_cross_process_id
+        if self.referring_transaction_guid:
+            custom_params['referring_transaction_guid'] = \
+                    self.referring_transaction_guid
+            custom_params['ref_guid'] = \
+                    self.referring_transaction_guid
 
-	# There is an additional trace node labelled as 'ROOT'
-	# that needs to be inserted below the root node object
+        # There is an additional trace node labelled as 'ROOT'
+        # that needs to be inserted below the root node object
         # which is returned. It inherits the start and end time
         # from the actual top node for the transaction.
 
@@ -291,4 +305,3 @@ class TransactionNode(_TransactionNode):
     def slow_sql_nodes(self, stats):
         for item in self.slow_sql:
             yield item.slow_sql_node(stats, self)
-

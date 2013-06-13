@@ -11,7 +11,7 @@ from newrelic.core.metric import TimeMetric
 
 _ExternalNode = namedtuple('_ExternalNode',
         ['library', 'url', 'method', 'children', 'start_time', 'end_time',
-        'duration', 'exclusive'])
+        'duration', 'exclusive', 'params'])
 
 class ExternalNode(_ExternalNode):
 
@@ -49,20 +49,45 @@ class ExternalNode(_ExternalNode):
 
         netloc = port and ('%s:%s' % (hostname, port)) or hostname
 
-        method = self.method or ''
+        try:
+
+            # Remove cross_process_id from the params dict otherwise it shows
+            # up in the UI.
+
+            cross_process_id = self.params.pop('cross_process_id')
+        except KeyError:
+            cross_process_id = None
 
         name = 'External/%s/all' % netloc
 
         yield TimeMetric(name=name, scope='', duration=self.duration,
                   exclusive=self.exclusive)
 
-        name = 'External/%s/%s/%s' % (netloc, self.library, method)
+        if cross_process_id is None:
+            method = self.method or ''
 
-        yield TimeMetric(name=name, scope='', duration=self.duration,
-                exclusive=self.exclusive)
+            name = 'External/%s/%s/%s' % (netloc, self.library, method)
 
-        yield TimeMetric(name=name, scope=root.path,
-                duration=self.duration, exclusive=self.exclusive)
+            yield TimeMetric(name=name, scope='', duration=self.duration,
+                    exclusive=self.exclusive)
+
+            yield TimeMetric(name=name, scope=root.path,
+                    duration=self.duration, exclusive=self.exclusive)
+
+        else:
+            name = 'ExternalTransaction/%s/%s/%s' % (netloc,
+                    cross_process_id, root.path)
+
+            yield TimeMetric(name=name, scope='', duration=self.duration,
+                    exclusive=self.exclusive)
+
+            yield TimeMetric(name=name, scope=root.path,
+                    duration=self.duration, exclusive=self.exclusive)
+
+            name = 'ExternalApp/%s/%s/all' % (netloc, cross_process_id)
+
+            yield TimeMetric(name=name, scope='', duration=self.duration,
+                    exclusive=self.exclusive)
 
     def trace_node(self, stats, root):
 
@@ -88,7 +113,7 @@ class ExternalNode(_ExternalNode):
 
         root.trace_node_count += 1
 
-        params = {}
+        params = self.params
 
         details = self.details
         url = urlparse.urlunsplit((details.scheme, details.hostname,

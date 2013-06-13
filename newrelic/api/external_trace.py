@@ -3,9 +3,11 @@ from __future__ import with_statement
 import functools
 import inspect
 
+import newrelic.lib.simplejson as simplejson
 from newrelic.api.time_trace import TimeTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.api.object_wrapper import (ObjectWrapper, wrap_object)
+from newrelic.api.web_transaction import obfuscate, deobfuscate
 from newrelic.core.external_node import ExternalNode
 
 class ExternalTrace(TimeTrace):
@@ -16,6 +18,7 @@ class ExternalTrace(TimeTrace):
         self.library = library
         self.url = url
         self.method = method
+        self.params = {}
 
     def dump(self, file):
         print >> file, self.__class__.__name__, dict(library=self.library,
@@ -25,10 +28,57 @@ class ExternalTrace(TimeTrace):
         return ExternalNode(library=self.library, url=self.url,
                 method=self.method, children=self.children,
                 start_time=self.start_time, end_time=self.end_time,
-                duration=self.duration, exclusive=self.exclusive)
+                duration=self.duration, exclusive=self.exclusive,
+                params=self.params)
 
     def terminal_node(self):
         return True
+
+    def generate_request_headers(self):
+        """
+        Return a list of NewRelic specific headers as tuples
+        [(HEADER_NAME0, HEADER_VALUE0), (HEADER_NAME1, HEADER_VALUE1)]
+
+        """
+
+        settings = self.transaction._settings
+        encoded_cross_process_id = obfuscate(settings.cross_process_id,
+                settings.encoding_key)
+
+        transaction_data = [self.transaction.guid, self.transaction.record_tt]
+        encoded_transaction = obfuscate(simplejson.dumps(transaction_data,
+                    ensure_ascii=True, encoding='Latin-1'),
+                settings.encoding_key)
+
+        nr_headers = [('X-NewRelic-ID', encoded_cross_process_id),
+                ('X-NewRelic-Transaction', encoded_transaction)]
+        return nr_headers
+
+    def process_response_headers(self, response_headers):
+        """
+        Decode the response headers and create appropriate metics based on the
+        header values. The response_headers are passed in as a list of tuples.
+        [(HEADER_NAME0, HEADER_VALUE0), (HEADER_NAME1, HEADER_VALUE1)]
+
+        """
+
+        settings = self.transaction._settings
+        appdata = None
+
+        try:
+            for k, v in response_headers:
+                if k.upper() == 'X-NEWRELIC-APP-DATA':
+                    appdata = simplejson.loads(
+                            deobfuscate(v, settings.encoding_key),
+                            encoding='UTF-8')
+                    break
+
+            if appdata:
+                self.params['cross_process_id'] = appdata[0]
+                self.params['transaction_guid'] = appdata[5]
+
+        except Exception:
+            pass
 
 def ExternalTraceWrapper(wrapped, library, url, method=None):
 
@@ -43,7 +93,7 @@ def ExternalTraceWrapper(wrapped, library, url, method=None):
                 _url = url(instance, *args, **kwargs)
             else:
                 _url = url(*args, **kwargs)
-        
+
         else:
             _url = url
 
@@ -52,7 +102,7 @@ def ExternalTraceWrapper(wrapped, library, url, method=None):
                 _method = method(instance, *args, **kwargs)
             else:
                 _method = method(*args, **kwargs)
-        
+
         else:
             _method = method
 

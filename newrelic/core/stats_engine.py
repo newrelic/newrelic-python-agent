@@ -449,7 +449,7 @@ class StatsEngine(object):
 
         # If current transaction qualifies as an xray_transaction, set the
         # xray_id on the transaction object and save it in the
-        # xray_transactions list. 
+        # xray_transactions list.
 
         xray_session = self.xray_sessions.get(transaction.path)
         if xray_session:
@@ -505,10 +505,8 @@ class StatsEngine(object):
 
         settings = self.__settings
 
-        # If guid is not set then it is not a browser transaction.
-
-        if transaction.guid is None:
-            return 
+        if not transaction.rum_trace:
+            return
 
         # Check if we have enough browser transactions before adding the
         # current transaction to the list.
@@ -792,7 +790,11 @@ class StatsEngine(object):
 
             root = transaction_trace.root
             xray_id = getattr(trace, 'xray_id', None)
-            force_persist = (trace.guid is not None) or (xray_id is not None)
+
+            if (xray_id or trace.rum_trace or trace.record_tt):
+                force_persist = True
+            else:
+                force_persist = False
 
             trace_data.append([root.start_time,
                     root.end_time - root.start_time,
@@ -1035,7 +1037,7 @@ class StatsEngine(object):
             # Limit number of browser traces to the limit (10)
             # FIXME - snapshot.__browser_transactions has only one element. So
             # we can use the following code:
-            # 
+            #
             # maximum = settings.agent_limits.browser_transactions
             # if len(self.__browser_transactions) < maximum:
             #     self.__browser_transactions.extend(
@@ -1061,7 +1063,7 @@ class StatsEngine(object):
             # be considered for slow transaction.  This is because in the Core
             # app, there is logic to NOT show TTs with xray ids in the
             # WebTransactions tab. If a TT has xray_id it is only shown under
-            # the xray page. 
+            # the xray page.
 
             xray_id = getattr(transaction, 'xray_id', None)
             if transaction and xray_id is None:

@@ -10,6 +10,7 @@ import traceback
 import logging
 import warnings
 import itertools
+import random
 
 from collections import deque
 
@@ -127,11 +128,14 @@ class Transaction(object):
         self.apdex = 0
 
         self.rum_token = None
-        self.rum_guid = None
+        self.rum_trace = False
+        self.guid = str(random.getrandbits(64))
 
         self.client_cross_process_id = None
         self.client_account_id = None
         self.client_application_id = None
+        self.referring_transaction_guid = None
+        self.record_tt = False
 
         self._custom_metrics = CustomMetrics()
 
@@ -430,10 +434,13 @@ class Transaction(object):
                 suppress_apdex=self.suppress_apdex,
                 custom_metrics=self._custom_metrics,
                 parameter_groups=parameter_groups,
-                guid=self.rum_guid,
+                guid=self.guid,
+                rum_trace = self.rum_trace,
                 cpu_time=self._cpu_user_time_value,
                 suppress_transaction_trace=self.suppress_transaction_trace,
                 client_cross_process_id=self.client_cross_process_id,
+                referring_transaction_guid=self.referring_transaction_guid,
+                record_tt = self.record_tt,
                 )
 
         # Clear settings as we are all done and don't need it
@@ -563,7 +570,7 @@ class Transaction(object):
                     self._name = name
 
                 self.ignore_transaction = self.ignore_transaction or ignore
-            
+
             # Apply transaction rules on the full transaction name.
             # The path is frozen at this point and cannot be further
             # changed.

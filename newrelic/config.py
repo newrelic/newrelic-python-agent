@@ -1497,6 +1497,8 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.database_dbapi2')
     _process_module_definition('MySQLdb',
             'newrelic.hooks.database_dbapi2')
+    _process_module_definition('ibm_db_dbi',
+            'newrelic.hooks.database_dbapi2')
     _process_module_definition('oursql',
             'newrelic.hooks.database_dbapi2')
     _process_module_definition('postgresql.interface.proboscis.dbapi2',

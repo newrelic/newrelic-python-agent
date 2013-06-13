@@ -352,6 +352,8 @@ def _parse_target(sql, dbapi, operation):
 
 _explain_plan_table = {
     'MySQLdb': ('EXPLAIN', ('select',)),
+    'ibm_db_dbi': ('EXPLAIN',
+            ('select', 'insert', 'update', 'delete')),
     'oursql': ('EXPLAIN', ('select',)),
     'pymysql': ('EXPLAIN', ('select',)),
     'postgresql.interface.proboscis.dbapi2': ('EXPLAIN',

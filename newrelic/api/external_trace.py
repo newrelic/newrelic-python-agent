@@ -75,6 +75,7 @@ class ExternalTrace(TimeTrace):
 
             if appdata:
                 self.params['cross_process_id'] = appdata[0]
+                self.params['external_txn_name'] = appdata[1]
                 self.params['transaction_guid'] = appdata[5]
 
         except Exception:

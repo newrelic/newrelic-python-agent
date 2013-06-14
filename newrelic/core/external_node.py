@@ -54,16 +54,18 @@ class ExternalNode(_ExternalNode):
             # Remove cross_process_id from the params dict otherwise it shows
             # up in the UI.
 
-            cross_process_id = self.params.pop('cross_process_id')
+            self.cross_process_id = self.params.pop('cross_process_id')
+            self.external_txn_name = self.params.pop('external_txn_name')
         except KeyError:
-            cross_process_id = None
+            self.cross_process_id = None
+            self.external_txn_name = None
 
         name = 'External/%s/all' % netloc
 
         yield TimeMetric(name=name, scope='', duration=self.duration,
                   exclusive=self.exclusive)
 
-        if cross_process_id is None:
+        if self.cross_process_id is None:
             method = self.method or ''
 
             name = 'External/%s/%s/%s' % (netloc, self.library, method)
@@ -76,7 +78,7 @@ class ExternalNode(_ExternalNode):
 
         else:
             name = 'ExternalTransaction/%s/%s/%s' % (netloc,
-                    cross_process_id, root.path)
+                    self.cross_process_id, self.external_txn_name)
 
             yield TimeMetric(name=name, scope='', duration=self.duration,
                     exclusive=self.exclusive)
@@ -84,7 +86,7 @@ class ExternalNode(_ExternalNode):
             yield TimeMetric(name=name, scope=root.path,
                     duration=self.duration, exclusive=self.exclusive)
 
-            name = 'ExternalApp/%s/%s/all' % (netloc, cross_process_id)
+            name = 'ExternalApp/%s/%s/all' % (netloc, self.cross_process_id)
 
             yield TimeMetric(name=name, scope='', duration=self.duration,
                     exclusive=self.exclusive)
@@ -102,7 +104,12 @@ class ExternalNode(_ExternalNode):
 
         method = self.method or ''
 
-        name = 'External/%s/%s/%s' % (netloc, self.library, method)
+        if self.cross_process_id is None:
+            name = 'External/%s/%s/%s' % (netloc, self.library, method)
+        else:
+            name = 'ExternalTransaction/%s/%s/%s' % (netloc,
+                                                     self.cross_process_id,
+                                                     self.external_txn_name)
 
         name = root.string_table.cache(name)
 

@@ -4,9 +4,6 @@ then to be generated.
 
 """
 
-import itertools
-import urlparse
-
 try:
     from collections import namedtuple
 except ImportError:
@@ -114,7 +111,7 @@ class TransactionNode(_TransactionNode):
                       exclusive=None)
 
             # Generate individual error metric for transaction.
-            yield TimeMetric(name='Errors/%s'% self.path, scope='',
+            yield TimeMetric(name='Errors/%s' % self.path, scope='',
                     duration=0.0, exclusive=None)
 
             # Generate rollup metric for WebTransaction errors.
@@ -210,12 +207,8 @@ class TransactionNode(_TransactionNode):
         if self.client_cross_process_id:
             custom_params['client_cross_process_id'] = \
                     self.client_cross_process_id
-            custom_params['client_cpid'] = \
-                    self.client_cross_process_id
         if self.referring_transaction_guid:
             custom_params['referring_transaction_guid'] = \
-                    self.referring_transaction_guid
-            custom_params['ref_guid'] = \
                     self.referring_transaction_guid
 
         for error in self.errors:
@@ -282,12 +275,8 @@ class TransactionNode(_TransactionNode):
         if self.client_cross_process_id:
             custom_params['client_cross_process_id'] = \
                     self.client_cross_process_id
-            custom_params['client_cpid'] = \
-                    self.client_cross_process_id
         if self.referring_transaction_guid:
             custom_params['referring_transaction_guid'] = \
-                    self.referring_transaction_guid
-            custom_params['ref_guid'] = \
                     self.referring_transaction_guid
 
         # There is an additional trace node labelled as 'ROOT'

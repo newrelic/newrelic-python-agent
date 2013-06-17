@@ -129,7 +129,9 @@ class Transaction(object):
 
         self.rum_token = None
         self.rum_trace = False
-        self.guid = str(random.getrandbits(64))
+
+        # 16-digit random hex. Padded with zeros in the front.
+        self.guid = '%016x' % random.getrandbits(64)
 
         self.client_cross_process_id = None
         self.client_account_id = None

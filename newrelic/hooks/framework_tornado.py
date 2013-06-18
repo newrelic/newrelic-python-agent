@@ -160,7 +160,7 @@ def instrument_tornado_httpserver(module):
 
         name = callable_name(wrapped)
 
-        transaction.name_transaction(name)
+        transaction.set_transaction_name(name)
 
         # We need to add a reference to the request object in to the
         # transaction object as only able to stash the transaction
@@ -577,7 +577,7 @@ def instrument_tornado_web(module):
             return wrapped(*args, **kwargs)
 
         name = callable_name(getattr(handler, request.method.lower()))
-        transaction.name_transaction(name)
+        transaction.set_transaction_name(name)
 
         with FunctionTrace(transaction, name=name):
             return wrapped(*args, **kwargs)
@@ -1140,7 +1140,13 @@ def wsgi_container_call_wrapper(wrapped, instance, args, kwargs):
             # Call the original method in a trace object to give better
             # context in transaction traces.
 
-            transaction.set_transaction_name(name)
+            # XXX This is a temporary fiddle to preserve old default
+            # URL naming convention until will move away from that
+            # as a default.
+
+            if transaction._request_uri is not None:
+                 transaction.set_transaction_name(
+                         transaction._request_uri, 'Uri', priority=1)
 
             with FunctionTrace(transaction, name='WSGI/Application',
                     group='Python/Tornado'):
@@ -1170,7 +1176,13 @@ def wsgi_container_call_wrapper(wrapped, instance, args, kwargs):
 
     else:
         try:
-            transaction.set_transaction_name(name)
+            # XXX This is a temporary fiddle to preserve old default
+            # URL naming convention until will move away from that
+            # as a default.
+
+            if transaction._request_uri is not None:
+                 transaction.set_transaction_name(
+                         transaction._request_uri, 'Uri', priority=1)
 
             with FunctionTrace(transaction, name='WSGI/Application',
                     group='Python/Tornado'):

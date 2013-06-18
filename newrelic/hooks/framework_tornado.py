@@ -1091,3 +1091,115 @@ def instrument_tornado_gen(module):
     if hasattr(module, 'engine'):
         module.engine = ObjectWrapper(module.engine, None,
                 coroutine_wrapper)
+
+def wsgi_container_call_wrapper(wrapped, instance, args, kwargs):
+    def _args(request, *args, **kwargs):
+        return request
+
+    request = _args(*args, **kwargs)
+
+    transaction = getattr(request, '_nr_transaction', None)
+
+    name = callable_name(instance.wsgi_application)
+
+    if not transaction:
+        # Always use the default application specified in the agent
+        # configuration.
+
+        application = application_instance()
+
+        # We need to fake up a WSGI like environ dictionary with the
+        # key bits of information we need.
+
+        environ = request_environment(application, request)
+
+        # Now start recording the actual web transaction. Bail out
+        # though if turns out that recording transactions is not
+        # enabled.
+
+        transaction = WebTransaction(application, environ)
+
+        if not transaction.enabled:
+            return wrapped(*args, **kwargs)
+
+        transaction.__enter__()
+
+        request._nr_transaction = transaction
+
+        request._nr_wait_function_trace = None
+        request._nr_request_finished = False
+
+        # We need to add a reference to the request object in to the
+        # transaction object as only able to stash the transaction
+        # in a deferred. Need to use a weakref to avoid an object
+        # cycle which may prevent cleanup of transaction.
+
+        transaction._nr_current_request = weakref.ref(request)
+
+        try:
+            # Call the original method in a trace object to give better
+            # context in transaction traces.
+
+            transaction.set_transaction_name(name)
+
+            with FunctionTrace(transaction, name='WSGI/Application',
+                    group='Python/Tornado'):
+                with FunctionTrace(transaction, name=name):
+                    wrapped(*args, **kwargs)
+
+            if not request.connection.stream.writing():
+                transaction.__exit__(None, None, None)
+                request._nr_transaction = None
+
+            else:
+                request._nr_wait_function_trace = FunctionTrace(
+                        transaction, name='Request/Output',
+                        group='Python/Tornado')
+
+                request._nr_wait_function_trace.__enter__()
+                transaction.drop_transaction()
+
+        except:  # Catch all
+            # If an error occurs assume that transaction should be
+            # exited.
+
+            transaction.__exit__(*sys.exc_info())
+            request._nr_transaction = None
+
+            raise
+
+    else:
+        try:
+            transaction.set_transaction_name(name)
+
+            with FunctionTrace(transaction, name='WSGI/Application',
+                    group='Python/Tornado'):
+                with FunctionTrace(transaction, name=name):
+                    wrapped(*args, **kwargs)
+
+            if not request.connection.stream.writing():
+                transaction.__exit__(None, None, None)
+                request._nr_transaction = None
+
+            else:
+                request._nr_wait_function_trace = FunctionTrace(
+                        transaction, name='Request/Output',
+                        group='Python/Tornado')
+
+                request._nr_wait_function_trace.__enter__()
+                transaction.drop_transaction()
+
+        except:  # Catch all
+            # If an error occurs assume that transaction should be
+            # exited.
+
+            transaction.__exit__(*sys.exc_info())
+            request._nr_transaction = None
+
+            raise
+
+def instrument_tornado_wsgi(module):
+
+    module.WSGIContainer.__call__ = ObjectWrapper(
+            module.WSGIContainer.__call__, None,
+            wsgi_container_call_wrapper)

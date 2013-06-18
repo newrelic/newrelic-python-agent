@@ -617,12 +617,6 @@
             "New Relic"
         ]
     },
-    "newrelic/hooks/adapter_tornado.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "newrelic/hooks/adapter_waitress.py": {
         "hash": "n/a",
         "libraries": [

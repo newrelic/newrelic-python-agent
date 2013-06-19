@@ -61,7 +61,31 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
         with BackgroundTask(_application(), _name, 'Celery'):
             return wrapped(*args, **kwargs)
 
-    return ObjectWrapper(wrapped, None, wrapper)
+    obj = ObjectWrapper(wrapped, None, wrapper)
+
+    # Celery tasks that inherit from celery.app.task must implement a run()
+    # method.
+    # ref: (http://docs.celeryproject.org/en/2.5/reference/
+    #                            celery.app.task.html#celery.app.task.BaseTask)
+    # Celery task's __call__ method then calls the run() method to execute the
+    # task. But celery does a micro-optimization where if the __call__ method
+    # was not overridden by an inherited task, then it will directly execute
+    # the run() method without going through the __call__ method. Our
+    # instrumentation via ObjectWrapper() relies on __call__ being called which
+    # in turn executes the wrapper() function defined above. Since the micro
+    # optimization bypasses __call__ method it breaks our instrumentation of
+    # celery. To circumvent this problem, we added a run() attribute to our
+    # ObjectWrapper which points to our __call__ method. This causes Celery
+    # to execute our __call__ method which in turn applies the wrapper
+    # correctly before executing the task.
+    #
+    # This is only a problem in Celery versions 2.5.3 to 2.5.5. The later
+    # versions included a monkey-patching provision which did not perform this
+    # optimization on functions that were monkey-patched.
+
+    obj.__dict__['run'] = obj.__call__
+
+    return obj
 
 def instrument_celery_app_task(module):
 

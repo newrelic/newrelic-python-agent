@@ -1565,13 +1565,10 @@ def _process_module_builtin_defaults():
     _process_module_definition('urllib3.request',
             'newrelic.hooks.external_urllib3')
 
-    #_process_module_definition('requests.api',
-            #'newrelic.hooks.external_requests',
-            #'instrument_requests_api')
-    #_process_module_definition('requests.sessions',
-            #'newrelic.hooks.external_requests',
-            #'instrument_requests_sessions')
     _process_module_definition('requests.sessions',
+            'newrelic.hooks.external_requests',
+            'instrument_requests_sessions')
+    _process_module_definition('requests.models',
             'newrelic.hooks.external_requests',
             'instrument_requests_models')
 

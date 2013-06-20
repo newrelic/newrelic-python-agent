@@ -773,6 +773,19 @@ def debug_console(args):
     shell = newrelic.console.ClientShell(config_file, log=log_object)
     shell.cmdloop()
 
+@command('data-source', 'config_file',
+"""Loads the data sources specified in the agent configuration file and
+reports data from those data sources using the platform API.
+""")
+def data_source(args):
+    if len(args) == 0:
+        usage('data-source')
+        return
+
+    import newrelic.platform
+
+    newrelic.platform.run(*args)
+
 def main():
     if len(sys.argv) == 1:
         print "Type 'newrelic-admin help' for usage."

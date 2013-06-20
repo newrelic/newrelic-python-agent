@@ -1307,6 +1307,12 @@
             "New Relic"
         ]
     },
+    "newrelic/platform.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/tests/__init__.py": {
         "hash": "n/a",
         "libraries": [

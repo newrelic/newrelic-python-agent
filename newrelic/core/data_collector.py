@@ -248,10 +248,6 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
         auto_close_session = True
 
-    # Send the request. We set 'verify' to be false so that when using
-    # SSL there is no attempt to do SSL certificate validation. If it
-    # were enabled then we would also need the 'certifi' library.
-    #
     # The 'requests' library can raise a number of exception derived
     # from 'RequestException' before we even manage to get a connection
     # to the data collector.

@@ -39,10 +39,54 @@ def view_handler_wrapper(wrapped, instance, args, kwargs):
 def wrap_view_handler(mapped_view):
     return wrap_callable(mapped_view, view_handler_wrapper)
 
+def default_view_mapper_wrapper(wrapped, instance, args, kwargs):
+    wrapper = wrapped(*args, **kwargs)
+
+    def _args(view, *args, **kwargs):
+        return view
+
+    view = _args(*args, **kwargs)
+
+    def _wrapper(context, request):
+        transaction = current_transaction()
+        
+        if not transaction:
+            return wrapper(context, request)
+
+        name = callable_name(view)
+
+        with FunctionTrace(transaction, name=name) as tracer:
+            try:
+                return wrapper(context, request)
+            finally:
+                attr = instance.attr
+                if attr:
+                    inst = getattr(request, '__view__')
+                    name = callable_name(getattr(inst, attr))
+                    transaction.set_transaction_name(name, priority=1)
+                    tracer.name = name
+                else:
+                    inst = getattr(request, '__view__')
+                    method = getattr(inst, '__call__')
+                    if method:
+                        name = callable_name(method)
+                        transaction.set_transaction_name(name, priority=1)
+                        tracer.name = name
+
+    return _wrapper
+
 def instrument_pyramid_config_views(module):
     # Location of the ViewDeriver class changed from pyramid.config to
     # pyramid.config.views so check if present before trying to update.
 
     if hasattr(module, 'ViewDeriver'):
-        wrap_out_function(module, 'ViewDeriver.mapped_view',
+        wrap_out_function(module, 'ViewDeriver.__call__',
                 wrap_view_handler)
+
+    if hasattr(module, 'DefaultViewMapper'):
+        module.DefaultViewMapper.map_class_requestonly = wrap_callable(
+                module.DefaultViewMapper.map_class_requestonly,
+                default_view_mapper_wrapper)
+        module.DefaultViewMapper.map_class_native = wrap_callable(
+                module.DefaultViewMapper.map_class_native,
+                default_view_mapper_wrapper)

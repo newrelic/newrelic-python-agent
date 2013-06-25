@@ -33,7 +33,7 @@ def request_send_wrapper(wrapped, instance, args, kwargs):
         try:
             # Add our own extra headers to outgoing request.
 
-            outgoing_headers = tracer.generate_request_headers()
+            outgoing_headers = ExternalTrace.generate_request_headers(transaction)
 
             # Requests v0.5.0 sets headers to None if there are no additional
             # headers.

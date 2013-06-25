@@ -1551,8 +1551,17 @@ def _process_module_builtin_defaults():
     _process_module_definition('genshi.template.base',
             'newrelic.hooks.template_genshi')
 
+    #_process_module_definition('httplib',
+            #'newrelic.hooks.external_httplib')
+
     _process_module_definition('httplib',
-            'newrelic.hooks.external_httplib')
+            'newrelic.hooks.external_httplib', 'instrument_httplib_connect')
+    _process_module_definition('httplib',
+            'newrelic.hooks.external_httplib', 'instrument_httplib_putheader')
+    _process_module_definition('httplib',
+            'newrelic.hooks.external_httplib', 'instrument_httplib_endheaders')
+    _process_module_definition('httplib',
+            'newrelic.hooks.external_httplib', 'instrument_httplib_getresponse')
 
     _process_module_definition('httplib2',
             'newrelic.hooks.external_httplib2')

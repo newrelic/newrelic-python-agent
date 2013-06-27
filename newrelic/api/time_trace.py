@@ -20,7 +20,7 @@ class TimeTrace(object):
 
     def __enter__(self):
         if not self.transaction:
-            return
+            return self
 
         # Don't do any tracing if parent is designated
         # as a terminal node.
@@ -29,7 +29,7 @@ class TimeTrace(object):
 
         if not parent or parent.terminal_node():
             self.transaction = None
-            return
+            return parent
 
         # Record start time.
 
@@ -45,24 +45,24 @@ class TimeTrace(object):
         if not self.transaction:
             return
 
-	# If recording of time for transaction has already been
-	# stopped, then that time has to be used.
+        # If recording of time for transaction has already been
+        # stopped, then that time has to be used.
 
         if self.transaction.stopped:
             self.end_time = self.transaction.end_time
         else:
             self.end_time = time.time()
 
-	# Ensure end time is greater. Should be unless the
-	# system clock has been updated.
+        # Ensure end time is greater. Should be unless the
+        # system clock has been updated.
 
         if self.end_time < self.start_time:
             self.end_time = self.start_time
 
-	# Calculate duration and exclusive time. Up till now the
-	# exclusive time value had been used to accumulate
-	# duration from child nodes as negative value, so just
-	# add duration to that to get our own exclusive time.
+        # Calculate duration and exclusive time. Up till now the
+        # exclusive time value had been used to accumulate
+        # duration from child nodes as negative value, so just
+        # add duration to that to get our own exclusive time.
 
         self.duration = self.end_time - self.start_time
 
@@ -81,10 +81,10 @@ class TimeTrace(object):
 
         self.finalize_data()
 
-	# Give chance for derived class to create a standin node
-	# object to be used in the transaction trace. If we get
-	# one then give chance for transaction object to do
-	# something with it, as well as our parent node.
+        # Give chance for derived class to create a standin node
+        # object to be used in the transaction trace. If we get
+        # one then give chance for transaction object to do
+        # something with it, as well as our parent node.
 
         node = self.create_node()
 

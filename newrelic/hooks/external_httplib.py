@@ -1,26 +1,22 @@
+import functools
+
 from newrelic.agent import (ExternalTrace, ObjectWrapper, current_transaction)
 
-def httplib_connect_wrapper(wrapped, instance, args, kwargs):
+def httplib_connect_wrapper(wrapped, instance, args, kwargs, scheme):
     transaction = current_transaction()
 
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    parent = transaction._parent_node()
-
-    # Already wrapped - return right away.
-
-    if not parent or parent.terminal_node():
-        return wrapped(*args, **kwargs)
-
     connection = instance
 
-    with ExternalTrace(transaction, library='httplib', url=connection.host) \
+    url = '%s://%s' % (scheme, connection.host)
+
+    with ExternalTrace(transaction, library='httplib', url=url) \
             as tracer:
         # Add the tracer obj as an attr to the connection obj. The tracer will
         # be used by the subsequent calls to the connection obj to add NR
         # Headers.
-
         connection._nr_external_tracer = tracer
         return wrapped(*args, **kwargs)
 
@@ -55,6 +51,7 @@ def httplib_getresponse_wrapper(wrapped, instance, args, kwargs):
     response = wrapped(*args, **kwargs)
 
     connection = instance
+    connection._nr_skip_headers = False
 
     if hasattr(connection, '_nr_external_tracer'):
         tracer = connection._nr_external_tracer
@@ -82,44 +79,32 @@ def httplib_putheader_wrapper(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
-def instrument_httplib_connect(module):
+def instrument(module):
 
     module.HTTPConnection.connect = ObjectWrapper(
             module.HTTPConnection.connect,
             None,
-            httplib_connect_wrapper
+            functools.partial(httplib_connect_wrapper, scheme='http')
             )
 
-#    def url_connect_http(connection):
-#        return 'http://%s/' % connection.host
-#
-#    newrelic.api.external_trace.wrap_external_trace(
-#           module, 'HTTPConnection.connect', 'httplib',
-#           url_connect_http)
-#
-#    def url_connect_https(connection):
-#        return 'https://%s/' % connection.host
-#
-#    if hasattr(module, 'HTTPSConnection'):
-#        newrelic.api.external_trace.wrap_external_trace(
-#               module, 'HTTPSConnection.connect', 'httplib',
-#               url_connect_https)
+    module.HTTPSConnection.connect = ObjectWrapper(
+            module.HTTPConnection.connect,
+            None,
+            functools.partial(httplib_connect_wrapper, scheme='https')
+            )
 
-def instrument_httplib_endheaders(module):
     module.HTTPConnection.endheaders = ObjectWrapper(
             module.HTTPConnection.endheaders,
             None,
             httplib_endheaders_wrapper
             )
 
-def instrument_httplib_getresponse(module):
     module.HTTPConnection.getresponse = ObjectWrapper(
             module.HTTPConnection.getresponse,
             None,
             httplib_getresponse_wrapper
             )
 
-def instrument_httplib_putheader(module):
     module.HTTPConnection.putheader = ObjectWrapper(
             module.HTTPConnection.putheader,
             None,

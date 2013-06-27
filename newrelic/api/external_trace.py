@@ -69,6 +69,9 @@ class ExternalTrace(TimeTrace):
 
         """
 
+        if transaction is None:
+            return []
+
         settings = transaction.settings
         encoded_cross_process_id = obfuscate(settings.cross_process_id,
                 settings.encoding_key)
@@ -79,7 +82,8 @@ class ExternalTrace(TimeTrace):
                 settings.encoding_key)
 
         nr_headers = [('X-NewRelic-ID', encoded_cross_process_id),
-                ('X-NewRelic-Transaction', encoded_transaction)]
+                      ('X-NewRelic-Transaction', encoded_transaction)]
+
         return nr_headers
 
 def ExternalTraceWrapper(wrapped, library, url, method=None):

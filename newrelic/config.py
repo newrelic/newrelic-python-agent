@@ -1551,17 +1551,8 @@ def _process_module_builtin_defaults():
     _process_module_definition('genshi.template.base',
             'newrelic.hooks.template_genshi')
 
-    #_process_module_definition('httplib',
-            #'newrelic.hooks.external_httplib')
-
     _process_module_definition('httplib',
-            'newrelic.hooks.external_httplib', 'instrument_httplib_connect')
-    _process_module_definition('httplib',
-            'newrelic.hooks.external_httplib', 'instrument_httplib_putheader')
-    _process_module_definition('httplib',
-            'newrelic.hooks.external_httplib', 'instrument_httplib_endheaders')
-    _process_module_definition('httplib',
-            'newrelic.hooks.external_httplib', 'instrument_httplib_getresponse')
+            'newrelic.hooks.external_httplib')
 
     _process_module_definition('httplib2',
             'newrelic.hooks.external_httplib2')
@@ -1574,12 +1565,12 @@ def _process_module_builtin_defaults():
     _process_module_definition('urllib3.request',
             'newrelic.hooks.external_urllib3')
 
+    _process_module_definition('requests.api',
+            'newrelic.hooks.external_requests',
+            'instrument_requests_api')
     _process_module_definition('requests.sessions',
             'newrelic.hooks.external_requests',
             'instrument_requests_sessions')
-    _process_module_definition('requests.models',
-            'newrelic.hooks.external_requests',
-            'instrument_requests_models')
 
     _process_module_definition('feedparser',
             'newrelic.hooks.external_feedparser')

@@ -36,6 +36,10 @@ def request_environment(application, request):
     if value:
         result['HTTP_X_NEWRELIC_ID'] = value
 
+    value = request.headers.get('X-NewRelic-Transaction')
+    if value:
+        result['HTTP_X_NEWRELIC_TRANSACTION'] = value
+
     settings = application.settings
 
     if not settings:

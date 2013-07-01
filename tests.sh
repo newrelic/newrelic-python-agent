@@ -22,7 +22,7 @@ if test x"$BUILD_NUMBER" != x""
 then
     if test -x $HOME/python-tools/python-2.5-ucs4/bin/python2.5
     then
-        ENVIRONMENTS="$ENVIRONMENTS,py25"
+        #ENVIRONMENTS="$ENVIRONMENTS,py25"
         PYTHON25="$HOME/python-tools/python-2.5-ucs4/bin/python2.5"
         PATH="$HOME/python-tools/python-2.5-ucs4/bin:$PATH"
     fi

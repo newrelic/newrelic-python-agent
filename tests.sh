@@ -47,7 +47,7 @@ if test x"$PYTHON25" = x""
 then
     if test -x /usr/bin/python2.5
     then
-        ENVIRONMENTS="$ENVIRONMENTS,py25"
+        #ENVIRONMENTS="$ENVIRONMENTS,py25"
         PYTHON25="/usr/bin/python2.5"
     fi
 fi

@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 import functools
 
 from newrelic.agent import (ExternalTrace, ObjectWrapper, current_transaction)

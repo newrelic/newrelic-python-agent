@@ -43,6 +43,9 @@ class ExternalTrace(TimeTrace):
 
         """
 
+        if not self.settings.cross_application_tracer.enabled:
+            return []
+
         appdata = None
 
         try:
@@ -73,6 +76,10 @@ class ExternalTrace(TimeTrace):
             return []
 
         settings = transaction.settings
+
+        if not settings.cross_application_tracer.enabled:
+            return []
+
         encoded_cross_process_id = obfuscate(settings.cross_process_id,
                 settings.encoding_key)
 

@@ -5,7 +5,7 @@ import newrelic.lib.simplejson as simplejson
 
 from newrelic.api.application import application_instance
 from newrelic.core.config import global_settings, create_settings_snapshot
-from newrelic.api.web_transaction import (_deobfuscate, _obfuscate,
+from newrelic.api.web_transaction import (deobfuscate, obfuscate,
         WebTransaction)
 
 class TestCase(unittest.TestCase):
@@ -106,7 +106,7 @@ class TestCase(unittest.TestCase):
         # Now check the content of the response header.
 
         header_value = headers['X-NewRelic-App-Data']
-        deobfuscated_header = _deobfuscate(header_value, encoding_key)
+        deobfuscated_header = deobfuscate(header_value, encoding_key)
         decoded_data = simplejson.loads(deobfuscated_header)
 
         if queue_start:
@@ -119,8 +119,9 @@ class TestCase(unittest.TestCase):
         else:
             duration = time.time() - start_time
 
-        self.assertEqual(len(decoded_data), 5,
-                'Failed for %s.' % test_args())
+        self.assertEqual(len(decoded_data), 7,
+                'Failed for %s where decoded data was %s.' % (test_args(),
+                decoded_data))
 
         self.assertEqual(decoded_data[0], cross_process_id,
                 'Failed for %s.' % test_args())
@@ -142,7 +143,7 @@ class TestCase(unittest.TestCase):
         now = time.time()
 
         def _o(value, key):
-            return _obfuscate(value, key)
+            return obfuscate(value, key)
 
         def _p(value, key):
             return value

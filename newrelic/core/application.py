@@ -54,6 +54,8 @@ class Application(object):
         self._transaction_count = 0
         self._last_transaction = 0.0
 
+        self._custom_metrics_count = 0
+
         self._harvest_count = 0
 
         self._merge_count = 0
@@ -73,6 +75,9 @@ class Application(object):
 
         self._stats_custom_lock = threading.Lock()
         self._stats_custom_engine = StatsEngine()
+
+        self._agent_commands_lock = threading.Lock()
+        self._data_samplers_lock = threading.Lock()
 
         # We setup empty rules engines here even though they will be
         # replaced when application first registered. This is done to
@@ -152,6 +157,8 @@ class Application(object):
                     self._transaction_count)
             print >> file, 'Last Transaction: %s' % (
                     time.asctime(time.localtime(self._last_transaction)))
+            print >> file, 'Custom Metrics Count: %d' % (
+                    self._custom_metrics_count)
             print >> file, 'Harvest Metrics Count: %d' % (
                     self._stats_engine.metrics_count())
             print >> file, 'Harvest Merge Count: %d' % (
@@ -409,6 +416,8 @@ class Application(object):
             self._transaction_count = 0
             self._last_transaction = 0.0
 
+            self._custom_metrics_count = 0
+
             # Clear any prior count of harvest merges due to failures.
 
             self._merge_count = 0
@@ -417,6 +426,12 @@ class Application(object):
             # recording of transactions to start.
 
             self._active_session = active_session
+
+            # Enable the ability to perform a harvest. This is okay to
+            # do at this point as the processing of agent commands and
+            # starting of data samplers are protected by their own locks.
+
+            self._harvest_enabled = True
 
             # Flag that the session activation has completed to
             # anyone who has been waiting through calling the
@@ -461,14 +476,6 @@ class Application(object):
             # the harvest period.
 
             self.start_data_samplers()
-
-            # Finally enable the ability to perform a harvest. We only
-            # do this after we have processed agent commands and started
-            # the samplers so that don't have situation where harvesting
-            # tries to touch those things when this thread is still doing
-            # setup with them.
-
-            self._harvest_enabled = True
 
         except Exception:
             # If an exception occurs after agent has been flagged to be
@@ -574,22 +581,24 @@ class Application(object):
 
         """
 
-        _logger.debug('Starting data samplers for application %r.',
-                self._app_name)
+        with self._data_samplers_lock:
+            _logger.debug('Starting data samplers for application %r.',
+                    self._app_name)
 
-        for data_sampler in self._data_samplers:
-            try:
-                 _logger.debug('Starting data sampler for %r in '
-                         'application %r.', data_sampler.name, self._app_name)
+            for data_sampler in self._data_samplers:
+                try:
+                     _logger.debug('Starting data sampler for %r in '
+                             'application %r.', data_sampler.name,
+                             self._app_name)
 
-                 data_sampler.start()
-            except Exception:
-                 _logger.exception('Unexpected exception when starting '
-                         'data source %r. Custom metrics from this data '
-                         'source may not be subsequently available. If '
-                         'this problem persists, please report this '
-                         'problem to the provider of the data source.',
-                         data_sampler.name)
+                     data_sampler.start()
+                except Exception:
+                     _logger.exception('Unexpected exception when starting '
+                             'data source %r. Custom metrics from this data '
+                             'source may not be subsequently available. If '
+                             'this problem persists, please report this '
+                             'problem to the provider of the data source.',
+                             data_sampler.name)
 
     def stop_data_samplers(self):
         """Stop any data samplers. This will be called when the active
@@ -598,22 +607,24 @@ class Application(object):
 
         """
 
-        _logger.debug('Stopping data samplers for application %r.',
-                self._app_name)
+        with self._data_samplers_lock:
+            _logger.debug('Stopping data samplers for application %r.',
+                    self._app_name)
 
-        for data_sampler in self._data_samplers:
-            try:
-                 _logger.debug('Stopping data sampler for %r in '
-                         'application %r.', data_sampler.name, self._app_name)
+            for data_sampler in self._data_samplers:
+                try:
+                     _logger.debug('Stopping data sampler for %r in '
+                             'application %r.', data_sampler.name,
+                             self._app_name)
 
-                 data_sampler.stop()
-            except Exception:
-                 _logger.exception('Unexpected exception when stopping data '
-                         'source %r Custom metrics from this data source '
-                         'may not be subsequently available. If this '
-                         'problem persists, please report this problem to '
-                         'the provider of the data source.',
-                         data_sampler.name)
+                     data_sampler.stop()
+                except Exception:
+                     _logger.exception('Unexpected exception when stopping '
+                             'data source %r Custom metrics from this data '
+                             'source may not be subsequently available. If '
+                             'this problem persists, please report this '
+                             'problem to the provider of the data source.',
+                             data_sampler.name)
 
     def record_custom_metric(self, name, value):
         """Record a custom metric against the application independent
@@ -632,6 +643,7 @@ class Application(object):
             return
 
         with self._stats_custom_lock:
+            self._custom_metrics_count += 1
             self._stats_custom_engine.record_custom_metric(name, value)
 
     def record_custom_metrics(self, metrics):
@@ -652,6 +664,7 @@ class Application(object):
 
         with self._stats_custom_lock:
             for name, value in metrics:
+                self._custom_metrics_count += 1
                 self._stats_custom_engine.record_custom_metric(name, value)
 
     def record_transaction(self, data, profile_samples=None):
@@ -1098,6 +1111,7 @@ class Application(object):
                 # bucket.
 
                 transaction_count = self._transaction_count
+                custom_metrics_count = self._custom_metrics_count
 
                 with self._stats_lock:
                     self._transaction_count = 0
@@ -1106,6 +1120,8 @@ class Application(object):
                     stats = self._stats_engine.harvest_snapshot()
 
                 with self._stats_custom_lock:
+                    self._custom_metrics_count = 0
+
                     stats_custom = self._stats_custom_engine.harvest_snapshot()
 
                 stats.merge_metric_stats(stats_custom)
@@ -1170,7 +1186,7 @@ class Application(object):
                 # and then immediately exit. Also useful when running
                 # test scripts.
 
-                if shutdown and transaction_count != 0:
+                if shutdown and (transaction_count or custom_metrics_count):
                     if period_end - self._period_start < 1.0:
                         _logger.debug('Stretching harvest duration for '
                                 'forced harvest on shutdown.')
@@ -1440,62 +1456,69 @@ class Application(object):
 
         """
 
-        # Get agent commands from the data collector.
+        # We use a lock around this as this will be called just after
+        # having registered the agent, as well as during the normal
+        # harvest period. We want to avoid a problem if the process is
+        # being shutdown and a forced harvest was triggered while still
+        # doing the initial attempt to get the agent commands.
 
-        _logger.debug('Process agent commands for %r.', self._app_name)
+        with self._agent_commands_lock:
+            # Get agent commands from the data collector.
 
-        agent_commands = self._active_session.get_agent_commands()
+            _logger.debug('Process agent commands for %r.', self._app_name)
 
-        # Extract the command names from the agent_commands. This is
-        # used to check for the presence of active_xray_sessions command
-        # in the list.
+            agent_commands = self._active_session.get_agent_commands()
 
-        cmd_names = [x[1]['name'] for x in agent_commands]
+            # Extract the command names from the agent_commands. This is
+            # used to check for the presence of active_xray_sessions command
+            # in the list.
 
-        no_xray_cmds = 'active_xray_sessions' not in cmd_names
+            cmd_names = [x[1]['name'] for x in agent_commands]
 
-        # If there are active xray sessions running but the agent
-        # commands doesn't have any active_xray_session ids then all the
-        # active xray sessions must be stopped.
+            no_xray_cmds = 'active_xray_sessions' not in cmd_names
 
-        if self._active_xrays and no_xray_cmds:
-            _logger.debug('Stopping all X Ray sessions for %r. '
-                'Current sessions running are %r.', self._app_name,
-                self._active_xrays.keys())
+            # If there are active xray sessions running but the agent
+            # commands doesn't have any active_xray_session ids then all the
+            # active xray sessions must be stopped.
 
-            for xs in self._active_xrays.values():
-                self.stop_xray(x_ray_id=xs.xray_id,
-                        key_transaction_name=xs.key_txn)
+            if self._active_xrays and no_xray_cmds:
+                _logger.debug('Stopping all X Ray sessions for %r. '
+                    'Current sessions running are %r.', self._app_name,
+                    self._active_xrays.keys())
 
-        # For each agent command received, call the appropiate agent
-        # command handler. Reply to the data collector with the
-        # acknowledgement of the agent command.
+                for xs in self._active_xrays.values():
+                    self.stop_xray(x_ray_id=xs.xray_id,
+                            key_transaction_name=xs.key_txn)
 
-        for command in agent_commands:
-            cmd_id = command[0]
-            cmd_name = command[1]['name']
-            cmd_args = command[1]['arguments']
+            # For each agent command received, call the appropiate agent
+            # command handler. Reply to the data collector with the
+            # acknowledgement of the agent command.
 
-            # An agent command is mapped to a method of this class. If
-            # we don't know about a specific agent command we just
-            # ignore it.
+            for command in agent_commands:
+                cmd_id = command[0]
+                cmd_name = command[1]['name']
+                cmd_args = command[1]['arguments']
 
-            func_name = 'cmd_%s' % cmd_name
+                # An agent command is mapped to a method of this class. If
+                # we don't know about a specific agent command we just
+                # ignore it.
 
-            cmd_handler = getattr(self, func_name, None)
+                func_name = 'cmd_%s' % cmd_name
 
-            if cmd_handler is None:
-                _logger.debug('Received unknown agent command '
-                        '%r from the data collector for %r.',
-                        cmd_name, self._app_name)
-                continue
+                cmd_handler = getattr(self, func_name, None)
 
-            _logger.debug('Process agent command %r from the data '
-                    'collector for %r.', cmd_name, self._app_name)
+                if cmd_handler is None:
+                    _logger.debug('Received unknown agent command '
+                            '%r from the data collector for %r.',
+                            cmd_name, self._app_name)
+                    continue
 
-            cmd_res = cmd_handler(cmd_id, **cmd_args)
+                _logger.debug('Process agent command %r from the data '
+                        'collector for %r.', cmd_name, self._app_name)
 
-            # Send back any result for the agent command.
+                cmd_res = cmd_handler(cmd_id, **cmd_args)
 
-            if cmd_res:
-                self._active_session.send_agent_command_results(cmd_res)
+                # Send back any result for the agent command.
+
+                if cmd_res:
+                    self._active_session.send_agent_command_results(cmd_res)

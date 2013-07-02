@@ -1700,6 +1700,13 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.coroutines_gevent',
             'instrument_gevent_monkey')
 
+    _process_module_definition('weberror.errormiddleware',
+            'newrelic.hooks.middleware_weberror',
+            'instrument_weberror_errormiddleware')
+    _process_module_definition('weberror.reporter',
+            'newrelic.hooks.middleware_weberror',
+            'instrument_weberror_reporter')
+
 _instrumentation_done = False
 
 def _setup_instrumentation():

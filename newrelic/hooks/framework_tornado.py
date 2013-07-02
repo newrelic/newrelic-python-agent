@@ -611,10 +611,14 @@ def instrument_tornado_web(module):
         with FunctionTrace(transaction, name=name):
             return wrapped(*args, **kwargs)
 
-    module.RequestHandler.render = ObjectWrapper(
-            module.RequestHandler.render, None, render_wrapper)
-    module.RequestHandler.render_string = ObjectWrapper(
-            module.RequestHandler.render_string, None, render_wrapper)
+    # XXX This mucks up Tornado's calculation of where template file
+    # is as it does walking of the stack frames to work it out and the
+    # wrapper makes it stop before getting to the users code.
+
+    #module.RequestHandler.render = ObjectWrapper(
+    #        module.RequestHandler.render, None, render_wrapper)
+    #module.RequestHandler.render_string = ObjectWrapper(
+    #        module.RequestHandler.render_string, None, render_wrapper)
 
     def finish_wrapper(wrapped, instance, args, kwargs):
         assert instance is not None

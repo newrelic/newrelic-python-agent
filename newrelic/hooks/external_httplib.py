@@ -14,12 +14,14 @@ def httplib_connect_wrapper(wrapped, instance, args, kwargs, scheme):
 
     url = '%s://%s' % (scheme, connection.host)
 
-    with ExternalTrace(transaction, library='httplib', url=url) \
-            as tracer:
-        # Add the tracer obj as an attr to the connection obj. The tracer will
-        # be used by the subsequent calls to the connection obj to add NR
-        # Headers.
+    with ExternalTrace(transaction, library='httplib', url=url) as tracer:
+        # Add the tracer to the connection object. The tracer will be
+        # used in getresponse() to add back into the external trace,
+        # after the trace has already completed, details from the
+        # response headers.
+
         connection._nr_external_tracer = tracer
+
         return wrapped(*args, **kwargs)
 
 def httplib_endheaders_wrapper(wrapped, instance, args, kwargs):
@@ -30,10 +32,11 @@ def httplib_endheaders_wrapper(wrapped, instance, args, kwargs):
 
     connection = instance
 
-    # Check if _nr_skip_headers attr is present in connection obj. This attr is
-    # set by the putheader_wrapper if the NR headers are already present to
-    # avoid double wrapping. A double wrapping can happen if a higher level
-    # library (such as requests) uses httplib underneath.
+    # Check if the NR headers have already been added. This is just in
+    # case a higher level library which uses httplib underneath so
+    # happened to have been instrumented to also add the headers. The
+    # attribute will only ever have a True value, so in all other cases
+    # it shouldn't exist and so don't have to worry about deleting it.
 
     if getattr(connection, '_nr_skip_headers', None):
         return wrapped(*args, **kwargs)
@@ -41,6 +44,8 @@ def httplib_endheaders_wrapper(wrapped, instance, args, kwargs):
     outgoing_headers = ExternalTrace.generate_request_headers(transaction)
     for header_name, header_value in outgoing_headers:
         connection.putheader(header_name, header_value)
+
+    del connection._nr_skip_headers
 
     return wrapped(*args, **kwargs)
 
@@ -50,14 +55,21 @@ def httplib_getresponse_wrapper(wrapped, instance, args, kwargs):
     if transaction is None:
         return wrapped(*args, **kwargs)
 
+    connection = instance
+    tracer = getattr(connection, '_nr_external_tracer', None)
+
+    if not tracer:
+        return wrapped(*args, **kwargs)
+
+    # Make sure we remove the tracer from the connection object so that
+    # it doesn't hold onto objects. Do this before we call the wrapped
+    # function so is removed even if exception occurs.
+
+    del connection._nr_external_tracer
+
     response = wrapped(*args, **kwargs)
 
-    connection = instance
-    connection._nr_skip_headers = False
-
-    if hasattr(connection, '_nr_external_tracer'):
-        tracer = connection._nr_external_tracer
-        tracer.process_response_headers(response.getheaders())
+    tracer.process_response_headers(response.getheaders())
 
     return response
 
@@ -67,11 +79,11 @@ def httplib_putheader_wrapper(wrapped, instance, args, kwargs):
     if transaction is None:
         return wrapped(*args, **kwargs)
 
+    # Remember if we see any NR headers being set. This is only doing
+    # it if we see either, but they should always both be getting set.
+
     def nr_header(header, *args, **kwargs):
-        h = header.upper()
-        if (h == 'X-NEWRELIC-ID') or (h == 'X-NEWRELIC-TRANSACTION'):
-            return True
-        return False
+        return header.upper() in ('X-NEWRELIC-ID', 'X-NEWRELIC-TRANSACTION')
 
     connection = instance
 
@@ -79,7 +91,6 @@ def httplib_putheader_wrapper(wrapped, instance, args, kwargs):
         connection._nr_skip_headers = True
 
     return wrapped(*args, **kwargs)
-
 
 def instrument(module):
 

@@ -44,7 +44,7 @@ class ExternalTrace(TimeTrace):
         """
 
         if not self.settings.cross_application_tracer.enabled:
-            return []
+            return
 
         appdata = None
 

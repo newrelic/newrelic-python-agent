@@ -69,7 +69,8 @@ def httplib_getresponse_wrapper(wrapped, instance, args, kwargs):
 
     response = wrapped(*args, **kwargs)
 
-    tracer.process_response_headers(response.getheaders())
+    if hasattr(tracer, 'process_response_headers'):
+        tracer.process_response_headers(response.getheaders())
 
     return response
 

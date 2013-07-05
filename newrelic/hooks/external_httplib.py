@@ -102,7 +102,7 @@ def instrument(module):
             )
 
     module.HTTPSConnection.connect = ObjectWrapper(
-            module.HTTPConnection.connect,
+            module.HTTPSConnection.connect,
             None,
             functools.partial(httplib_connect_wrapper, scheme='https')
             )

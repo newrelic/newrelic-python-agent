@@ -34,20 +34,25 @@ def httplib_endheaders_wrapper(wrapped, instance, args, kwargs):
 
     # Check if the NR headers have already been added. This is just in
     # case a higher level library which uses httplib underneath so
-    # happened to have been instrumented to also add the headers. The
-    # attribute will only ever have a True value, so in all other cases
-    # it shouldn't exist and so don't have to worry about deleting it.
+    # happened to have been instrumented to also add the headers.
 
-    if getattr(connection, '_nr_skip_headers', None):
+    try:
+        skip_headers = getattr(connection, '_nr_skip_headers', False)
+
+        if skip_headers:
+            return wrapped(*args, **kwargs)
+
+        outgoing_headers = ExternalTrace.generate_request_headers(transaction)
+        for header_name, header_value in outgoing_headers:
+            connection.putheader(header_name, header_value)
+
         return wrapped(*args, **kwargs)
 
-    outgoing_headers = ExternalTrace.generate_request_headers(transaction)
-    for header_name, header_value in outgoing_headers:
-        connection.putheader(header_name, header_value)
-
-    del connection._nr_skip_headers
-
-    return wrapped(*args, **kwargs)
+    finally:
+        try:
+            del connection._nr_skip_headers
+        except AttributeError:
+            pass
 
 def httplib_getresponse_wrapper(wrapped, instance, args, kwargs):
     transaction = current_transaction()

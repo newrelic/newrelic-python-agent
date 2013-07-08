@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 import sys
 import types
 import inspect
@@ -49,7 +47,7 @@ class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
 
         if transaction_tracer.enabled and settings.collect_traces:
             if self.duration >= transaction_tracer.stack_trace_threshold:
-                if (self.transaction._stack_trace_count < 
+                if (self.transaction._stack_trace_count <
                        agent_limits.slow_sql_stack_trace):
                     self.stack_trace = map(self.transaction._intern_string,
                                            traceback.format_stack())
@@ -61,7 +59,7 @@ class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
 
             if (transaction_tracer.explain_enabled and
                     self.duration >= transaction_tracer.explain_threshold):
-                if (self.transaction._explain_plan_count < 
+                if (self.transaction._explain_plan_count <
                        agent_limits.sql_explain_plans):
                     connect_params = self.connect_params
                     cursor_params = self.cursor_params

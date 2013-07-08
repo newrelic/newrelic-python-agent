@@ -3,8 +3,6 @@ interacting with the agent core.
 
 """
 
-from __future__ import with_statement
-
 import os
 import sys
 import time
@@ -417,7 +415,7 @@ class Agent(object):
         warnings.warn('Internal API change. Use record_custom_metric() '
                 'instead of record_metric().', DeprecationWarning,
                 stacklevel=2)
- 
+
         return self.record_custom_metric(app_name, name, value)
 
     def record_custom_metrics(self, app_name, metrics):
@@ -438,7 +436,7 @@ class Agent(object):
         warnings.warn('Internal API change. Use record_custom_metrics() '
                 'instead of record_metrics().', DeprecationWarning,
                 stacklevel=2)
- 
+
         return self.record_custom_metrics(app_name, metrics)
 
     def record_transaction(self, app_name, data, profile_samples=None):
@@ -508,9 +506,9 @@ class Agent(object):
                 # shutdown.
 
                 delay = self._next_harvest - now
-                self._harvest_shutdown.wait(delay) 
+                self._harvest_shutdown.wait(delay)
 
-                if self._harvest_shutdown.isSet(): 
+                if self._harvest_shutdown.isSet():
                     # Force a final harvest on agent shutdown.
 
                     self._run_harvest(shutdown=True)

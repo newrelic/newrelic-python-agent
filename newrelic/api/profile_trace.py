@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 import functools
 import inspect
 import types
@@ -13,7 +11,7 @@ from newrelic.api.function_trace import FunctionTrace
 
 import newrelic
 
-AGENT_PACKAGE_DIRECTORY = os.path.dirname(newrelic.__file__) + '/'              
+AGENT_PACKAGE_DIRECTORY = os.path.dirname(newrelic.__file__) + '/'
 
 class ProfileTrace(object):
 

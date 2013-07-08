@@ -174,7 +174,7 @@ def validate_config(args):
     def _function3():
         newrelic.agent.add_custom_parameter("key-1", 1)
         raise RuntimeError('This is a test error and can be ignored.')
-     
+
     @newrelic.api.web_transaction.wsgi_application()
     def _wsgi_application(environ, start_response):
         status = '200 OK'
@@ -575,7 +575,7 @@ def rum_footer(args):
 @command('run-python', '...',
 """Executes the Python interpreter with the supplied arguments but forces
 the initialisation of the agent automatically at startup.
-         
+
 If using an agent configuration file the path to the file should be
 supplied by the environment variable NEW_RELIC_CONFIG_FILE. Alternatively,
 just the licence key, application and log file details can be supplied via
@@ -652,21 +652,21 @@ def run_python(args):
             if name.startswith('NEW_RELIC_') or name.startswith('PYTHON'):
                 _log('%s = %r', name, os.environ.get(name))
 
-        _log('root_directory = %r', root_directory) 
-        _log('boot_directory = %r', boot_directory) 
+        _log('root_directory = %r', root_directory)
+        _log('boot_directory = %r', boot_directory)
 
         if local_sitecustomize is not None:
-            _log('local_sitecustomize = %r', local_sitecustomize.__file__) 
+            _log('local_sitecustomize = %r', local_sitecustomize.__file__)
 
-        _log('python_exe_path = %r', python_exe_path) 
-        _log('execl_arguments = %r', [python_exe_path, python_exe_path]+args) 
+        _log('python_exe_path = %r', python_exe_path)
+        _log('execl_arguments = %r', [python_exe_path, python_exe_path]+args)
 
     os.execl(python_exe_path, python_exe_path, *args)
 
 @command('run-program', '...',
 """Executes the command line but forces the initialisation of the agent
 automatically at startup.
-         
+
 If using an agent configuration file the path to the file should be
 supplied by the environment variable NEW_RELIC_CONFIG_FILE. Alternatively,
 just the licence key, application and log file details can be supplied via
@@ -743,14 +743,14 @@ def run_program(args):
             if name.startswith('NEW_RELIC_') or name.startswith('PYTHON'):
                 _log('%s = %r', name, os.environ.get(name))
 
-        _log('root_directory = %r', root_directory) 
-        _log('boot_directory = %r', boot_directory) 
+        _log('root_directory = %r', root_directory)
+        _log('boot_directory = %r', boot_directory)
 
         if local_sitecustomize is not None:
-            _log('local_sitecustomize = %r', local_sitecustomize.__file__) 
+            _log('local_sitecustomize = %r', local_sitecustomize.__file__)
 
-        _log('program_exe_path = %r', program_exe_path) 
-        _log('execl_arguments = %r', [program_exe_path]+args) 
+        _log('program_exe_path = %r', program_exe_path)
+        _log('execl_arguments = %r', [program_exe_path]+args)
 
     os.execl(program_exe_path, *args)
 

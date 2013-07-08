@@ -45,7 +45,7 @@ def shutdown_agent(timeout=None):
 def application_settings(name=None):
     instance = application(name)
     return instance.settings
-    
+
 def set_transaction_name(name, group=None, priority=None):
     transaction = current_transaction()
     if transaction:

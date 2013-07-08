@@ -34,7 +34,7 @@ def register_import_hook(name, callable):
                 # and add current hook.
 
                 _import_hooks[name] = [callable]
-            
+
         else:
 
 	  # Hook has already been registered, so append current

@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 from newrelic.agent import (callable_name, current_transaction,
         wrap_callable, wrap_out_function, wrap_wsgi_application,
         ErrorTrace, FunctionTrace)
@@ -49,7 +47,7 @@ def default_view_mapper_wrapper(wrapped, instance, args, kwargs):
 
     def _wrapper(context, request):
         transaction = current_transaction()
-        
+
         if not transaction:
             return wrapper(context, request)
 

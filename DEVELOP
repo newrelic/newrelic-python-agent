@@ -6,8 +6,8 @@ need a few tools to be able to build it if developing on your local
 machine. These are:
 
 1. A complete installation of Python including sqlite and zlib support.
-   Python 2.6 is recommended. Any code changes made to the Python agent
-   must be compatible with Python 2.5 through 2.7.
+   Python 2.6 or 2.7 is recommended. Any code changes made to the Python
+   agent must be compatible with Python 2.6, 2.7 and 3.3+.
 
 2. The 'virtualenv' package for Python. This should be installed into
    the Python installation being used. It is required to setup a Python

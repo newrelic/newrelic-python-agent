@@ -9,7 +9,6 @@
 # environment, we use the default test environments and run tests twice.
 # The first time as pure Python and the second with extensions enabled.
 
-PYTHON25=
 PYTHON26=
 PYTHON27=
 
@@ -20,12 +19,6 @@ ENVIRONMENTS=
 
 if test x"$BUILD_NUMBER" != x""
 then
-    if test -x $HOME/python-tools/python-2.5-ucs4/bin/python2.5
-    then
-        #ENVIRONMENTS="$ENVIRONMENTS,py25"
-        PYTHON25="$HOME/python-tools/python-2.5-ucs4/bin/python2.5"
-        PATH="$HOME/python-tools/python-2.5-ucs4/bin:$PATH"
-    fi
     if test -x $HOME/python-tools/python-2.6-ucs4/bin/python2.6
     then
         ENVIRONMENTS="$ENVIRONMENTS,py26"
@@ -43,14 +36,6 @@ fi
 # Now fallback to system provided Python installations if we haven't
 # already found one of our own. Assumed that "/usr/bin" is in PATH.
 
-if test x"$PYTHON25" = x""
-then
-    if test -x /usr/bin/python2.5
-    then
-        #ENVIRONMENTS="$ENVIRONMENTS,py25"
-        PYTHON25="/usr/bin/python2.5"
-    fi
-fi
 if test x"$PYTHON26" = x""
 then
     if test -x /usr/bin/python2.6

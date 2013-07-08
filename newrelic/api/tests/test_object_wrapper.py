@@ -4,14 +4,11 @@ import sys
 import unittest
 import functools
 
-try:
-    from collections import namedtuple
-except ImportError:
-    from newrelic.lib.namedtuple import namedtuple
+from collections import namedtuple
 
 from newrelic.api.object_wrapper import (ObjectWrapper, wrap_object,
         callable_name, WRAPPER_ASSIGNMENTS)
-        
+
 def Wrapper(wrapped):
 
     def wrapper(wrapped, instance, args, kwargs):
@@ -50,7 +47,7 @@ def _decorator1(wrapped):
     return wrapper
 
 class _decorator2(object):
-    
+
     def __init__(self, wrapped):
         self._nr_wrapped = wrapped
 
@@ -241,6 +238,6 @@ class ObjectWrapperTests(unittest.TestCase):
         with Wrapper(CM()):
             self.assertEqual(vars[0], 1)
         self.assertEqual(vars[0], 0)
-        
+
 if __name__ == '__main__':
     unittest.main()

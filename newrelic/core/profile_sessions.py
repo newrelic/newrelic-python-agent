@@ -18,10 +18,7 @@ from newrelic.core.transaction_cache import transaction_cache
 from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
         internal_metric)
 
-try:
-    from collections import namedtuple
-except ImportError:
-    from newrelic.lib.namedtuple import namedtuple
+from collections import namedtuple
 
 _logger = logging.getLogger(__name__)
 
@@ -111,17 +108,17 @@ def collect_stack_traces(include_nr_threads=False, include_xrays=False):
 
         stack_trace = format_stack_trace(frame, thread_category)
 
-        # Skip over empty stack traces. This is merely for optimization. 
+        # Skip over empty stack traces. This is merely for optimization.
         #
         # It saves us from adding an empty deque to the txn obj, which will be
-        # discarded later on during call tree merge. 
+        # discarded later on during call tree merge.
 
         if not stack_trace:
             continue
 
         if include_xrays and txn:
             txn.add_profile_sample(stack_trace)
-        
+
         yield thread_category, stack_trace
 
 class ProfileSessionManager(object):
@@ -137,7 +134,7 @@ class ProfileSessionManager(object):
         with ProfileSessionManager._lock:
             if ProfileSessionManager._instance is None:
                 ProfileSessionManager._instance = ProfileSessionManager()
-        
+
         return ProfileSessionManager._instance
 
     def __init__(self):
@@ -234,7 +231,7 @@ class ProfileSessionManager(object):
                 # if it might in future better to return True.
 
                 return False
-            
+
             self.profile_agent_code = profile_agent_code
             self.sample_period_s = sample_period_s
             ps = ProfileSession(profile_id, stop_time, xray_id, key_txn)
@@ -245,7 +242,7 @@ class ProfileSessionManager(object):
                 self.full_profile_app = app_name
                 self._xray_suspended = True
                 _logger.debug('Suspending X-ray profiler.')
-            
+
             # Create a background thread to collect stack traces. Do this only
             # if a background thread doesn't already exist.
 
@@ -370,7 +367,7 @@ class ProfileSessionManager(object):
 
             # Stop the profiler thread if there are no profile sessions.
 
-            if ((self.full_profile_session is None) and 
+            if ((self.full_profile_session is None) and
                     (not any(self.application_xrays.itervalues()))):
                 self._profiler_thread_running = False
                 return
@@ -398,7 +395,7 @@ class ProfileSessionManager(object):
     def update_profile_sessions(self):
         """Check the current time and decide if any of the profile sessions
         have expired and move it to the finished_sessions list.
-        
+
         """
 
         if self.full_profile_session:
@@ -442,10 +439,10 @@ class ProfileSessionManager(object):
             xray_profile_sessions = self.application_xrays[app_name]
         except KeyError:
             return False
-            
+
         for key_txn in xray_profile_sessions.keys():
             self.stop_profile_session(app_name, key_txn)
-        
+
         return True
 
 
@@ -545,15 +542,15 @@ class ProfileSession(object):
 
         for node in self._node_list[limit:]:
             node.ignore = True
-        
+
     def profile_data(self):
 
         # Generic profiling sessions have to wait for completion before
         # reporting data.
         #
-        # Xray profile session can send partial profile data on every harvest. 
+        # Xray profile session can send partial profile data on every harvest.
 
-        if ((self.profiler_type == SessionType.GENERIC) and 
+        if ((self.profiler_type == SessionType.GENERIC) and
                 (self.state == SessionState.RUNNING)):
             return None
 
@@ -577,7 +574,7 @@ class ProfileSession(object):
                 thread_count += len(bucket)
 
         # If no profile data was captured return None instead of sending an
-        # encoded empty data-structure 
+        # encoded empty data-structure
 
         if thread_count == 0:
             return None

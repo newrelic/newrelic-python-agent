@@ -10,10 +10,7 @@ import newrelic
 
 import newrelic.lib.simplejson as simplejson
 
-try:
-    from collections import namedtuple
-except ImportError:
-    from newrelic.lib.namedtuple import namedtuple
+from collections import namedtuple
 
 from newrelic.core.config import global_settings
 from newrelic.core.transaction_cache import transaction_cache
@@ -136,7 +133,7 @@ def collect_stack_traces():
             method_data = _MethodData(filename, name, line_no)
 
             stack_trace.append(method_data)
-            
+
         # Collect the stack trace samples in a list attached to the transaction
         # obj. This will be merged together to create a call tree if the
         # transaction is an xray txn.
@@ -239,7 +236,7 @@ class ThreadProfiler(object):
 
     def add_xray_txn(self, txn_name, xray_session):
         """Add a new transaction to the list of xray transactions tracked by
-        the profiler. 
+        the profiler.
 
         """
 
@@ -329,7 +326,7 @@ class ThreadProfiler(object):
 
         for stack_trace in stack_traces:
             self._update_call_tree(bucket, stack_trace)
-    
+
     def _update_call_tree(self, bucket, stack_trace, depth=1):
         """Merge a single call stack trace into a call tree bucket. If
         no appropriate call tree is found then create a new call tree.
@@ -360,7 +357,7 @@ class ThreadProfiler(object):
 
         return self._update_call_tree(call_tree.children, stack_trace,
                 depth+1)
-    
+
     def start_profiling(self, stop_time):
         """Start the thread profiling session, stopping by the specified
         stop time.
@@ -418,7 +415,7 @@ class ThreadProfiler(object):
                 thread_count += len(bucket)
 
         # If no profile data was captured return None instead of sending an
-        # encoded empty data-structure 
+        # encoded empty data-structure
 
         if thread_count == 0:
             return None
@@ -495,7 +492,7 @@ class ThreadProfiler(object):
 
 def fib(n):
     """
-    Test recursive function. 
+    Test recursive function.
     """
     if n < 2:
         return n

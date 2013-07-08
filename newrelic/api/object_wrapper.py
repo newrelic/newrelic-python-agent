@@ -180,7 +180,7 @@ def callable_name(object, separator=':'):
     return name
 
 class ObjectWrapper(object):
-    
+
     def __init__(self, wrapped, instance, wrapper, args=[], kwargs={}):
         self._nr_next_object = wrapped
 
@@ -188,12 +188,12 @@ class ObjectWrapper(object):
         self._nr_wrapper = wrapper
         self._nr_args = args
         self._nr_kwargs = kwargs
-        
+
         try:
             self._nr_last_object = wrapped._nr_last_object
         except Exception:
             self._nr_last_object = wrapped
-        
+
         for attr in WRAPPER_ASSIGNMENTS:
             try:
                 value = getattr(wrapped, attr)
@@ -226,7 +226,7 @@ class ObjectWrapper(object):
     def __exit__(self, *args, **kwargs):
         return self._nr_next_object.__exit__(*args, **kwargs)
 
-    def __dir__(self): 
+    def __dir__(self):
         return dir(self._nr_next_object)
 
     def __iter__(self):
@@ -250,7 +250,7 @@ class ObjectWrapper(object):
     def __hash__(self):
         return hash(self._nr_last_object)
 
-    def __repr__(self): 
+    def __repr__(self):
         return '<ObjectWrapper for %s>' % (str(self._nr_last_object))
 
 def wrap_callable(wrapped, wrapper, *args, **kwargs):

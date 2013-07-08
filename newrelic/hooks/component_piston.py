@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 import types
 
 import newrelic.api.transaction

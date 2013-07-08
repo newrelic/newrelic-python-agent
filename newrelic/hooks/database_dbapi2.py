@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 import newrelic.api.transaction
 import newrelic.api.database_trace
 import newrelic.api.function_trace
@@ -35,7 +33,7 @@ def instrument(module):
                     self._nr_cursor_params, (args, kwargs)):
                 return self._nr_cursor.execute(sql, *args, **kwargs)
 
-        def executemany(self, sql, *args, **kwargs): 
+        def executemany(self, sql, *args, **kwargs):
             transaction = newrelic.api.transaction.current_transaction()
             if not transaction:
                 return self._nr_cursor.executemany(sql, *args, **kwargs)
@@ -43,7 +41,7 @@ def instrument(module):
                     transaction, sql, module):
                 return self._nr_cursor.executemany(sql, *args, **kwargs)
 
-        def callproc(self, procname, *args, **kwargs): 
+        def callproc(self, procname, *args, **kwargs):
             transaction = newrelic.api.transaction.current_transaction()
             if not transaction:
                 return self._nr_cursor.callproc(procname, *args, **kwargs)
@@ -92,7 +90,7 @@ def instrument(module):
             return ConnectionWrapper(self.__connect(*args, **kwargs),
                                      (args, kwargs))
 
-    # Check if module is already wrapped by newrelic 
+    # Check if module is already wrapped by newrelic
 
     if hasattr(module, '_nr_dbapi2_wrapped'):
         return

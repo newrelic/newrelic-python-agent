@@ -75,7 +75,7 @@ packages = [
   #"newrelic.lib.sqlparse",
   #"newrelic.lib.sqlparse.engine",
   "newrelic.lib.certifi",
-  "newrelic.lib.namedtuple",
+  #"newrelic.lib.namedtuple",
   "newrelic.lib.simplejson",
   "newrelic.lib.requests",
   "newrelic.lib.requests.packages",

@@ -1,7 +1,4 @@
-try:
-    from collections import namedtuple
-except ImportError:
-    from newrelic.lib.namedtuple import namedtuple
+from collections import namedtuple
 
 ErrorNode = namedtuple('ErrorNode',
         ['timestamp', 'type', 'message', 'stack_trace', 'custom_params',

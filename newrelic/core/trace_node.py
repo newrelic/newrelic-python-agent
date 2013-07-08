@@ -1,7 +1,4 @@
-try:
-    from collections import namedtuple
-except ImportError:
-    from newrelic.lib.namedtuple import namedtuple
+from collections import namedtuple
 
 RootNode = namedtuple('RootNode',
         ['start_time', 'request_params', 'custom_params', 'root',

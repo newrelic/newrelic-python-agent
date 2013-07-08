@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 import sys
 import time
 import unittest
@@ -81,7 +79,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 application, name)
         with transaction:
             transaction.add_custom_parameter("1", "1")
-            transaction.add_custom_parameter("2", "2") 
+            transaction.add_custom_parameter("2", "2")
             transaction.add_custom_parameter("3", 3)
             transaction.add_custom_parameter("4", 4.0)
             transaction.add_custom_parameter("5", ("5", 5))

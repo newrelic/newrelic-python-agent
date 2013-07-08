@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 import logging
 import types
 import urllib
@@ -64,7 +62,7 @@ class RequestProcessWrapper(object):
         environ['REQUEST_URI'] = self._nr_instance.path
 
         # Now start recording the actual web transaction.
- 
+
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
 
@@ -429,7 +427,7 @@ class DeferredCallbacksWrapper(object):
 
         if not request:
             return self._nr_next_object()
-        
+
         try:
             # Save the transaction recorded against the deferred as the
             # active transaction.
@@ -502,7 +500,7 @@ class InlineGeneratorWrapper(object):
             with newrelic.api.function_trace.FunctionTrace(
                   transaction, name, group='Python/Twisted/Generator'):
                 yield next(iterable)
-        
+
 class InlineCallbacksWrapper(object):
 
     def __init__(self, wrapped):

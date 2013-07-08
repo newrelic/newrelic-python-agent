@@ -1,7 +1,4 @@
-try:
-    from collections import namedtuple
-except ImportError:
-    from newrelic.lib.namedtuple import namedtuple
+from collections import namedtuple
 
 _XraySession = namedtuple('XraySession',
         ['xray_id', 'key_txn', 'stop_time_s', 'max_traces',
@@ -12,7 +9,7 @@ class XraySession(_XraySession):
     def get_trace_count(self):
         if getattr(self, '_trace_count', None) is None:
             self._trace_count = 0
-        return self._trace_count 
+        return self._trace_count
 
     def set_trace_count(self, count):
         self._trace_count = count

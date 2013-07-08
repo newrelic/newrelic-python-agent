@@ -5,8 +5,6 @@ data whereby it is sent to the core application.
 
 """
 
-from __future__ import with_statement
-
 import base64
 import copy
 import logging

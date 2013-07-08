@@ -56,7 +56,7 @@ class TestProfileSession(unittest.TestCase):
         self.assertEqual(len(self.g_profile_session.call_buckets['REQUEST']), 1)
 
         st1_expected = [_(self.method_a), 1, 0, [ [_(self.method_b), 1, 0,
-            [[_(self.method_c), 1, 0, []]]] ] ] 
+            [[_(self.method_c), 1, 0, []]]] ] ]
         self.assertEqual(st1_expected, tree.flatten())
 
         self.assertTrue(self.g_profile_session.update_call_tree('REQUEST',
@@ -64,12 +64,12 @@ class TestProfileSession(unittest.TestCase):
 
         self.assertEqual(len(self.g_profile_session.call_buckets['REQUEST']), 1)
 
-        st2_expected = [_(self.method_a), 2, 0, 
+        st2_expected = [_(self.method_a), 2, 0,
                 [
                     [_(self.method_b), 1, 0, [[_(self.method_c), 1, 0, []]]],
                     [_(self.method_d), 1, 0, [[_(self.method_c), 1, 0, []]]]
                 ]
-            ] 
+            ]
         self.assertEqual(st2_expected, tree.flatten())
 
         self.assertTrue(self.g_profile_session.update_call_tree('REQUEST',
@@ -81,7 +81,7 @@ class TestProfileSession(unittest.TestCase):
         tree = bucket.get(self.stack_trace3[0])
 
         st3_expected = [_(self.method_b), 1, 0, [ [_(self.method_d), 1, 0,
-            [[_(self.method_c), 1, 0, []]]] ] ] 
+            [[_(self.method_c), 1, 0, []]]] ] ]
         self.assertEqual(st3_expected, tree.flatten())
 
     def test_generic_profiler_profile_data(self):
@@ -97,9 +97,9 @@ class TestProfileSession(unittest.TestCase):
                 SessionState.RUNNING)
 
         # Try to get profile_data before the session is finished.
-        
+
         prof_data = self.g_profile_session.profile_data()
-        self.assertTrue(prof_data is None, 
+        self.assertTrue(prof_data is None,
                 'Profiling has not finished. Data should be None.')
 
         # Finish the session and then get the profile_data
@@ -108,7 +108,7 @@ class TestProfileSession(unittest.TestCase):
         prof_data = self.g_profile_session.profile_data()
         self.assertTrue(prof_data is None, 'Expected None. Instead got %s' %
                 prof_data)
-        
+
         self.g_profile_session.update_call_tree('REQUEST', self.stack_trace1)
         p = self.g_profile_session.profile_data()[0]
 
@@ -122,14 +122,14 @@ class TestProfileSession(unittest.TestCase):
         self.assertEqual(p[5], 1)
         # Non-runnable thread count - always zero
         self.assertEqual(p[6], 0)
-        # xray_id 
+        # xray_id
         self.assertEqual(p[7], None)
-         
+
         expected = '{"REQUEST": [[["file_a", "@method_a#10", 10],'\
                 ' 1, 0, [[["file_b", "@method_b#20", 20], 1, 0, [[["file_c", '\
                 '"@method_c#25", 25], 1, 0, []]]]]]]}'
         self.assertEqual(unscramble(p[4]), expected)
-                
+
 
     def test_xray_profiler_profile_data(self):
 
@@ -157,14 +157,14 @@ class TestProfileSession(unittest.TestCase):
         self.assertEqual(p[5], 1)
         # Non-runnable thread count - always zero
         self.assertEqual(p[6], 0)
-        # xray_id 
+        # xray_id
         self.assertEqual(p[7], 7)
         expected = '{"REQUEST": [[["file_a", "@method_a#10", 10], 2,'\
                 ' 0, [[["file_b", "@method_b#20", 20], 1, 0, [[["file_c",'\
                 ' "@method_c#25", 25], 1, 0, []]]], [["file_d", "@method_d#15", 15],'\
                 ' 1, 0, [[["file_c", "@method_c#25", 25], 1, 0, []]]]]]]}'
         self.assertEqual(unscramble(p[4]), expected)
-                
+
 
 class TestProfileSessionManager(unittest.TestCase):
 
@@ -184,7 +184,7 @@ class TestProfileSessionManager(unittest.TestCase):
         fps = manager.full_profile_session
         # Check if this is created correctly.
         self.assertTrue(isinstance(fps, ProfileSession))
-        
+
         # Session type must be GENERIC
         self.assertEqual(fps.profiler_type, SessionType.GENERIC)
 
@@ -209,9 +209,9 @@ class TestProfileSessionManager(unittest.TestCase):
         # Check if this is added to the dictionary.
         self.assertFalse(xps is None)
 
-        # Check if profile session obj was created correctly. 
+        # Check if profile session obj was created correctly.
         self.assertTrue(isinstance(xps, ProfileSession))
-        
+
         # Session type must be XRAY
         self.assertEqual(xps.profiler_type, SessionType.XRAY)
 
@@ -278,13 +278,13 @@ class TestProfileSessionManager(unittest.TestCase):
         xps2 = manager.application_xrays['app'].get(key_txn2)
 
         prof_data = manager.profile_data('app')
-        # Get the data. 
+        # Get the data.
         self.assertEqual(len(list(prof_data)), 2)
 
         manager.stop_profile_session('app')
         manager.stop_profile_session('app', key_txn1)
         prof_data = manager.profile_data('app')
-        
+
         self.assertEqual(len(list(prof_data)), 3)
 
         prof_data = manager.profile_data('app')

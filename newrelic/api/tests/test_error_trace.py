@@ -1,7 +1,5 @@
 # vim: set fileencoding=utf-8 :
 
-from __future__ import with_statement
-  
 import logging
 import sys
 import time

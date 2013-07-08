@@ -366,7 +366,7 @@ class ConsoleShell(cmd.Cmd):
             release_console()
 
     @shell_command
-    def do_threads(self): 
+    def do_threads(self):
         """
         Display stack trace dumps for all threads currently executing
         within the Python interpreter.
@@ -375,18 +375,18 @@ class ConsoleShell(cmd.Cmd):
         on greenlets, then only the thread stack of the currently
         executing coroutine will be displayed."""
 
-        all = [] 
+        all = []
         for threadId, stack in sys._current_frames().items():
             block = []
-            block.append('# ThreadID: %s' % threadId) 
+            block.append('# ThreadID: %s' % threadId)
             thr = threading._active.get(threadId)
             if thr:
-                block.append('# Type: %s' % type(thr).__name__) 
-                block.append('# Name: %s' % thr.name) 
+                block.append('# Type: %s' % type(thr).__name__)
+                block.append('# Name: %s' % thr.name)
             for filename, lineno, name, line in traceback.extract_stack(
-                stack): 
+                stack):
                 block.append('File: \'%s\', line %d, in %s' % (filename,
-                        lineno, name)) 
+                        lineno, name))
                 if line:
                     block.append('  %s' % (line.strip()))
             all.append('\n'.join(block))

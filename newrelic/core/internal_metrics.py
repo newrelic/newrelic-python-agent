@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 import functools
 import sys
 import types

@@ -13,16 +13,6 @@ which contains components released under the following license(s):
 
 This product includes:
 
-  'namedtuple' (http://code.activestate.com/recipes/500261/),
-
-which contains components released under the following license(s):
-
-  Python Software Foundation <http://docs.python.org/2/license.html>
-
----------------------------------------------------------------------------
-
-This product includes:
-
   'requests' (http://pypi.python.org/pypi/requests),
 
 which contains components released under the following license(s):

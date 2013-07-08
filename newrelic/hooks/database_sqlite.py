@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 import newrelic.api.transaction
 import newrelic.api.database_trace
 import newrelic.api.function_trace
@@ -37,7 +35,7 @@ def instrument(module):
                     transaction, sql, module):
                 return self._nr_cursor.execute(sql, *args, **kwargs)
 
-        def executemany(self, sql, *args, **kwargs): 
+        def executemany(self, sql, *args, **kwargs):
             transaction = newrelic.api.transaction.current_transaction()
             if not transaction:
                 return self._nr_cursor.executemany(sql, *args, **kwargs)
@@ -45,7 +43,7 @@ def instrument(module):
                     transaction, sql, module):
                 return self._nr_cursor.executemany(sql, *args, **kwargs)
 
-        def executescript(self, sql_script): 
+        def executescript(self, sql_script):
             transaction = newrelic.api.transaction.current_transaction()
             if not transaction:
                 return self._nr_cursor.executemany(sql_script)
@@ -115,7 +113,7 @@ def instrument(module):
                     transaction, sql, module):
                 return self._nr_connection.execute(sql, *args, **kwargs)
 
-        def executemany(self, sql, *args, **kwargs): 
+        def executemany(self, sql, *args, **kwargs):
             transaction = newrelic.api.transaction.current_transaction()
             if not transaction:
                 return self._nr_connection.executemany(sql, *args, **kwargs)
@@ -123,7 +121,7 @@ def instrument(module):
                     transaction, sql, module):
                 return self._nr_connection.executemany(sql, *args, **kwargs)
 
-        def executescript(self, sql_script): 
+        def executescript(self, sql_script):
             transaction = newrelic.api.transaction.current_transaction()
             if not transaction:
                 return self._nr_connection.executemany(sql_script)

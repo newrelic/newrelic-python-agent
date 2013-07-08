@@ -31,10 +31,16 @@ then
         PYTHON27="$HOME/python-tools/python-2.7-ucs4/bin/python2.7"
         PATH="$HOME/python-tools/python-2.7-ucs4/bin:$PATH"
     fi
+    if test -x $HOME/python-tools/python-3.3-ucs4/bin/python3.3
+    then
+        ENVIRONMENTS="$ENVIRONMENTS,py33"
+        PYTHON27="$HOME/python-tools/python-3.3-ucs4/bin/python3.3"
+        PATH="$HOME/python-tools/python-3.3-ucs4/bin:$PATH"
+    fi
 fi
 
 # Now fallback to system provided Python installations if we haven't
-# already found one of our own. Assumed that "/usr/bin" is in PATH.
+# already found one of our own. This is primarily for Mac OS X.
 
 if test x"$PYTHON26" = x""
 then
@@ -52,13 +58,51 @@ then
         PYTHON27="/usr/bin/python2.7"
     fi
 fi
-
-ENVIRONMENTS=`echo $ENVIRONMENTS | sed -e 's/^,//'`
-
-if test x"$ENVIRONMENTS" = x""
+if test x"$PYTHON33" = x""
 then
-    echo "No Python installations found."
-    exit 1
+    if test -x /usr/bin/python3.3
+    then
+        #ENVIRONMENTS="$ENVIRONMENTS,py33"
+        PYTHON27="/usr/bin/python3.3"
+    fi
+fi
+
+if test x"$PYTHON26" = x""
+then
+    if test -x /usr/local/bin/python2.6
+    then
+        ENVIRONMENTS="$ENVIRONMENTS,py26"
+        PYTHON26="/usr/local/bin/python2.6"
+    fi
+fi
+if test x"$PYTHON27" = x""
+then
+    if test -x /usr/local/bin/python2.7
+    then
+        ENVIRONMENTS="$ENVIRONMENTS,py27"
+        PYTHON27="/usr/local/bin/python2.7"
+    fi
+fi
+if test x"$PYTHON33" = x""
+then
+    if test -x /usr/local/bin/python3.3
+    then
+        #ENVIRONMENTS="$ENVIRONMENTS,py33"
+        PYTHON27="/usr/local/bin/python3.3"
+    fi
+fi
+
+if test x"$*" = x""
+then
+    ENVIRONMENTS=`echo $ENVIRONMENTS | sed -e 's/^,//'`
+    if test x"$ENVIRONMENTS" = x""
+    then
+        echo "No Python installations found."
+        exit 1
+    fi
+else
+    # Don't validate target environments. Trust the user.
+    ENVIRONMENTS=$*
 fi
 
 tox --help > /dev/null 2>&1

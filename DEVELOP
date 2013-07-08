@@ -104,6 +104,14 @@ the 'configure' script. This avoids polluting your main Python installation
 with your development version of the Python agent just to be able to run
 tests.
 
+By default the 'tests.sh' script will currently run tests for Python 2.6
+and Python 2.7. The script can also detect the presence of Python 3.3
+but will not run tests by default. If you want to run tests for Python
+3.3, or to be select about what Python versions to run tests for, the
+identifiers for the Python versions can be passed as separate arguments.
+
+    tests.sh py33
+
 If you need to be able to run a specific unit test, then you can execute
 'tox' directly.
 

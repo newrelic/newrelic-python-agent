@@ -7,7 +7,6 @@ README.md
 *.pyc
 *.pyo
 
-wrapper
 python-tools
 load-tests
 unit-tests
@@ -20,7 +19,6 @@ config.log
 config.status
 autom4te.cache
 Makefile
-newrelic/lib/sqlparse
 scripts
 DEVELOP
 INSTALL

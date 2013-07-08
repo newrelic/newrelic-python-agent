@@ -15,13 +15,6 @@
             "name": "certifi",
             "url": "http://pypi.python.org/pypi/certifi"
         },
-        "namedtuple": {
-            "licenses": [
-                "PSF"
-            ],
-            "name": "namedtuple",
-            "url": "http://code.activestate.com/recipes/500261/"
-        },
         "requests": {
             "licenses": [
                 "ISC"

@@ -893,12 +893,6 @@
             "certifi"
         ]
     },
-    "newrelic/lib/namedtuple/__init__.py": {
-        "hash": "15dd487abd4a731bbb398f39d206a11d",
-        "libraries": [
-            "namedtuple"
-        ]
-    },
     "newrelic/lib/requests/LICENSE": {
         "hash": "558e4fcd0c1ba25b2b41e127a646cf6a",
         "libraries": [

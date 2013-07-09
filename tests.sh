@@ -105,9 +105,9 @@ else
     ENVIRONMENTS=$*
 fi
 
-if test -x $HOME/python-tools/python-2.6-ucs4/bin/tox
+if test -x $HOME/python-tools/python-2.6-ucs4-testing/bin/tox
 then
-    TOX=$HOME/python-tools/python-2.6-ucs4/bin/tox
+    TOX=$HOME/python-tools/python-2.6-ucs4-testing/bin/tox
 else
     TOX=tox
 fi

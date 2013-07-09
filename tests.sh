@@ -105,7 +105,14 @@ else
     ENVIRONMENTS=$*
 fi
 
-tox --help > /dev/null 2>&1
+if test -x $HOME/python-tools/python-2.6-ucs4/bin/tox
+then
+    TOX=$HOME/python-tools/python-2.6-ucs4/bin/tox
+else
+    TOX=tox
+fi
+
+$TOX --help > /dev/null 2>&1
 
 if test "$?" = "0"
 then

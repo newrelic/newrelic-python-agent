@@ -114,10 +114,8 @@ fi
 
 $TOX --help > /dev/null 2>&1
 
-if test "$?" = "0"
+if test "$?" != "0"
 then
-    TOX="tox"
-else
     TOX="python runtox.py"
 fi
 

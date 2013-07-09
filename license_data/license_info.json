@@ -46,6 +46,6 @@
         "New Relic": {
             "name": "New Relic",
             "url": "http://newrelic.com"
-        },
+        }
     }
 }

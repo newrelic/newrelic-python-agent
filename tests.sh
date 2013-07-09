@@ -33,7 +33,7 @@ then
     fi
     if test -x $HOME/python-tools/python-3.3-ucs4/bin/python3.3
     then
-        ENVIRONMENTS="$ENVIRONMENTS,py33"
+        #ENVIRONMENTS="$ENVIRONMENTS,py33"
         PYTHON27="$HOME/python-tools/python-3.3-ucs4/bin/python3.3"
         PATH="$HOME/python-tools/python-3.3-ucs4/bin:$PATH"
     fi

@@ -37,10 +37,10 @@ def register_import_hook(name, callable):
 
         else:
 
-	  # Hook has already been registered, so append current
-	  # hook.
+            # Hook has already been registered, so append current
+            # hook.
 
-          _import_hooks[name].append(callable)
+            _import_hooks[name].append(callable)
 
     finally:
         imp.release_lock()
@@ -82,16 +82,16 @@ class ImportHookFinder:
         if not fullname in _import_hooks:
             return None
 
-	# Check whether this is being called on the second time
-	# through and return.
+        # Check whether this is being called on the second time
+        # through and return.
 
         if fullname in self._skip:
             return None
 
-	# We are now going to call back into import. We set a
-	# flag to see we are handling the module so that check
-	# above drops out on subsequent pass and we don't go
-	# into an infinite loop.
+        # We are now going to call back into import. We set a
+        # flag to see we are handling the module so that check
+        # above drops out on subsequent pass and we don't go
+        # into an infinite loop.
 
         self._skip[fullname] = True
 
@@ -100,9 +100,9 @@ class ImportHookFinder:
         finally:
             del self._skip[fullname]
 
-	# If we get this far then the module we are interested
-	# in does actually exist and so return our loader to
-	# trigger import hooks and then return the module.
+        # If we get this far then the module we are interested
+        # in does actually exist and so return our loader to
+        # trigger import hooks and then return the module.
 
         return _ImportHookLoader()
 

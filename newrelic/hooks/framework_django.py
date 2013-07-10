@@ -753,8 +753,8 @@ def instrument_django_core_servers_basehttp(module):
                         self.bytes_sent = 0
                         self.headers_sent = False
 
-	# Leaving this out for now to see whether weakref solves
-	# the problem.
+        # Leaving this out for now to see whether weakref solves
+        # the problem.
 
         #module.ServerHandler.run = run
         #module.ServerHandler.close = close

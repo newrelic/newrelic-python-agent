@@ -90,9 +90,9 @@ class TransactionTests(unittest.TestCase):
 
         newrelic.agent.initialize()
 
-	# Want to force agent initialisation and connection so
-	# we know that data will actually get through to core
-	# and not lost because application not activated.
+        # Want to force agent initialisation and connection so
+        # we know that data will actually get through to core
+        # and not lost because application not activated.
 
         agent = newrelic.core.agent.agent_instance()
 

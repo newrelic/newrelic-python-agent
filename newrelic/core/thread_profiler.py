@@ -256,7 +256,7 @@ class ThreadProfiler(object):
         # the next sample. We continue this until sampling is explicitly
         # stopped or until sleeping again would take us beyond the
         # overall duration specified for sampling.
-	#
+        #
         # We bail out before the overall duration has expired so there
         # is a better chance of having data reported sooner. This is
         # because currently data is simply held in the application
@@ -474,7 +474,7 @@ class ThreadProfiler(object):
         # than the minimum we need to. Granted this would only occur
         # where was a linear call tree where all had the same call count,
         # such as may occur with recursion.
-	#
+        #
         # Also note that we still can actually end up with less nodes in
         # the end being displayed in the UI than the limit being applied
         # even though we initially cutoff at the limit. This is because

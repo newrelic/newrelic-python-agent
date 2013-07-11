@@ -566,8 +566,7 @@ class DataSampler(object):
 
         self.properties.update(properties)
 
-        self.name = (name or self.properties.get('name') or
-                callable_name(source))
+        self.name = (name or self.properties.get('name') or source.__name__)
 
         self.group = self.properties.get('group')
 

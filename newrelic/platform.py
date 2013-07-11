@@ -114,7 +114,7 @@ def read_data_source(section):
         for part in parts[1:]:
             source = getattr(source, part)
 
-    except:
+    except Exception:
         _logger.exception('Attempt to load data source %s:%s with '
                 'name %r from section %r of agent configuration file '
                 'has failed. Data source will be skipped.', module_name,
@@ -688,7 +688,7 @@ class DataSampler(object):
                             value, self.name)
                     break
 
-        except:
+        except Exception:
             _logger.exception('The processing of custom metrics from '
                     'data sampler %r has failed.  If this issue persists '
                     'then please report this problem to the data source '
@@ -728,7 +728,7 @@ class DataSampler(object):
             self.metrics_table = None
             self.period_start = now
 
-        except:
+        except Exception:
             # An unexpected error, likely some sort of internal
             # agent implementation issue.
 
@@ -771,7 +771,7 @@ def run_standalone():
 
             data_samplers.append(data_sampler)
 
-        except:
+        except Exception:
             _logger.exception('Attempt to register data source %s:%s with '
                     'name %r from section %r of agent configuration file '
                     'has failed. Data source will be skipped.', module,
@@ -817,7 +817,7 @@ def run_standalone():
 
             _do_harvest()
 
-    except:
+    except Exception:
         _logger.exception('Unexpected exception when attempting '
                 'to harvest custom metrics and send it to the '
                 'data collector. Please report this problem to '

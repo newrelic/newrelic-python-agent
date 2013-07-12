@@ -31,7 +31,7 @@ def initialize_logging():
             if len(logging.root.handlers) != 0:
                 return
 
-            if record.name.startswith('newrelic.lib'):
+            if record.name.startswith('newrelic.packages'):
                 return
 
             if record.levelno < logging.WARNING:

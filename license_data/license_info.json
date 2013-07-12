@@ -7,17 +7,9 @@
             "name": "New Relic",
             "url": "http://newrelic.com"
         },
-        "certifi": {
-            "licenses": [
-                "ISC",
-                "MPL"
-            ],
-            "name": "certifi",
-            "url": "http://pypi.python.org/pypi/certifi"
-        },
         "requests": {
             "licenses": [
-                "ISC"
+                "apache2"
             ],
             "name": "requests",
             "url": "http://pypi.python.org/pypi/requests"
@@ -31,21 +23,17 @@
         }
     },
     "licenses": {
-        "ISC": {
-            "name": "Internet Systems Consortium",
-            "url": "http://www.isc.org/software/license"
-        },
         "MIT": {
             "name": "The MIT License",
             "url": "http://opensource.org/licenses/MIT"
         },
-        "MPL": {
-            "name": "Mozilla Public License",
-            "url": "http://www.mozilla.org/MPL/"
-        },
         "New Relic": {
             "name": "New Relic",
             "url": "http://newrelic.com"
+        },
+        "apache2": {
+            "name": "Apache License, Version 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0"
         }
     }
 }

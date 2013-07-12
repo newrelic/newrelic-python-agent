@@ -9,6 +9,9 @@
         },
         "requests": {
             "licenses": [
+                "MIT",
+                "LGPL",
+                "BSD",
                 "apache2"
             ],
             "name": "requests",
@@ -23,6 +26,14 @@
         }
     },
     "licenses": {
+        "BSD": {
+            "name": "The BSD License",
+            "url": "https://github.com/idan/oauthlib/blob/master/LICENSE"
+        },
+        "LGPL": {
+            "name": "GNU LESSER GENERAL PUBLIC LICENSE",
+            "url": "http://www.gnu.org/licenses/lgpl.html"
+        },
         "MIT": {
             "name": "The MIT License",
             "url": "http://opensource.org/licenses/MIT"

@@ -2,22 +2,11 @@
 
 This product includes:
 
-  'certifi' (http://pypi.python.org/pypi/certifi),
-
-which contains components released under the following license(s):
-
-  Internet Systems Consortium <http://www.isc.org/software/license>
-  Mozilla Public License <http://www.mozilla.org/MPL/>
-
----------------------------------------------------------------------------
-
-This product includes:
-
   'requests' (http://pypi.python.org/pypi/requests),
 
 which contains components released under the following license(s):
 
-  Internet Systems Consortium <http://www.isc.org/software/license>
+  Apache License, Version 2.0 <http://www.apache.org/licenses/LICENSE-2.0>
 
 ---------------------------------------------------------------------------
 

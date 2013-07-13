@@ -15,7 +15,8 @@ import imp
 from functools import partial
 
 from newrelic.core.config import global_settings_dump, global_settings
-from newrelic.core.data_collector import (create_session, ForceAgentRestart,
+from newrelic.core.data_collector import create_session
+from newrelic.network.exceptions import (ForceAgentRestart,
         ForceAgentDisconnect, DiscardDataForRequest, RetryDataForRequest)
 from newrelic.core.environment import environment_settings
 from newrelic.core.rules_engine import RulesEngine

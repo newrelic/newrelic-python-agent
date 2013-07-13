@@ -19,6 +19,10 @@ from newrelic.core.config import global_settings, create_settings_snapshot
 from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
         internal_metric)
 
+from newrelic.network.exceptions import (NetworkInterfaceException,
+        ForceAgentRestart, ForceAgentDisconnect, DiscardDataForRequest,
+        RetryDataForRequest, ServerIsUnavailable)
+
 _logger = logging.getLogger(__name__)
 
 # User agent string that must be used in all requests. The data collector
@@ -27,17 +31,6 @@ _logger = logging.getLogger(__name__)
 
 USER_AGENT = 'NewRelic-PythonAgent/%s (Python %s %s)' % (
          version, sys.version.split()[0], sys.platform)
-
-# Internal exceptions that can be generated in network layer. These are
-# use to control what the upper levels should do. Any actual details of
-# errors would already be logged at the network level.
-
-class NetworkInterfaceException(Exception): pass
-class ForceAgentRestart(NetworkInterfaceException): pass
-class ForceAgentDisconnect(NetworkInterfaceException): pass
-class DiscardDataForRequest(NetworkInterfaceException): pass
-class RetryDataForRequest(NetworkInterfaceException): pass
-class ServerIsUnavailable(RetryDataForRequest): pass
 
 # Data collector URL and proxy settings.
 

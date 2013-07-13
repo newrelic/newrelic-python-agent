@@ -68,6 +68,7 @@ class optional_build_ext(build_ext):
 packages = [
   "newrelic",
   "newrelic.api",
+  "newrelic.bootstrap",
   "newrelic.core",
   "newrelic.extras",
   "newrelic.extras.framework_django",
@@ -81,7 +82,8 @@ packages = [
   "newrelic/packages/requests/packages/urllib3/packages",
   "newrelic/packages/requests/packages/urllib3/packages/ssl_match_hostname",
   "newrelic/packages/simplejson",
-  "newrelic.bootstrap",
+  "newrelic.network",
+  "newrelic.samplers",
 ]
 
 kwargs = dict(

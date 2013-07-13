@@ -863,6 +863,30 @@
             "New Relic"
         ]
     },
+    "newrelic/network/__init__.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/network/addresses.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/network/exceptions.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/network/platform_api.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/newrelic.ini": {
         "hash": "n/a",
         "libraries": [
@@ -1338,6 +1362,18 @@
         ]
     },
     "newrelic/platform.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/samplers/__init__.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/samplers/decorators.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

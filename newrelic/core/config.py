@@ -59,11 +59,15 @@ _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
 def _environ_as_bool(name, default=False):
     flag = os.environ.get(name, default)
     if default is None or default:
-        if isinstance(flag, basestring):
+        try:
             flag = not flag.lower() in ['off', 'false', '0']
+        except AttributeError:
+            pass
     else:
-        if isinstance(flag, basestring):
+        try:
             flag = flag.lower() in ['on', 'true', '1']
+        except AttributeError:
+            pass
     return flag
 
 _LOG_LEVEL = {

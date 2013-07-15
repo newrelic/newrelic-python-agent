@@ -63,7 +63,7 @@ class SolrTraceWrapper(object):
         if not transaction:
             return self._nr_next_object(*args, **kwargs)
 
-        if not isinstance(self._nr_library, basestring):
+        if callable(self._nr_library):
             if self._nr_instance and inspect.ismethod(self._nr_next_object):
                 library = self._nr_library(self._nr_instance, *args,
                                            **kwargs)
@@ -72,7 +72,7 @@ class SolrTraceWrapper(object):
         else:
             library = self._nr_library
 
-        if not isinstance(self._nr_command, basestring):
+        if callable(self._nr_command):
             if self._nr_instance and inspect.ismethod(self._nr_next_object):
                 command = self._nr_command(self._nr_instance, *args,
                                            **kwargs)

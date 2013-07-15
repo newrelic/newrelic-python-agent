@@ -3,7 +3,7 @@ import newrelic.api.external_trace
 def instrument(module):
 
     def url_opener_open(opener, fullurl, *args, **kwargs):
-        if isinstance(fullurl, basestring):
+        if isinstance(fullurl, (str, unicode)):
             return fullurl
         else:
             return fullurl.get_full_url()

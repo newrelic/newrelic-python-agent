@@ -75,11 +75,15 @@ def deobfuscate(name, key):
 def _lookup_environ_setting(environ, name, default=False):
     flag = environ.get(name, default)
     if default is None or default:
-        if isinstance(flag, basestring):
+        try:
             flag = not flag.lower() in ['off', 'false', '0']
+        except AttributeError:
+            pass
     else:
-        if isinstance(flag, basestring):
+        try:
             flag = flag.lower() in ['on', 'true', '1']
+        except AttributeError:
+            pass
     return flag
 
 def _extract_token(cookie):
@@ -255,7 +259,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         for queue_time_header in queue_time_headers:
             value = environ.get(queue_time_header, None)
 
-            if value and isinstance(value, basestring):
+            if value and isinstance(value, (str, unicode)):
                 if value.startswith('t='):
                     try:
                         self.queue_start = _parse_time_stamp(float(value[2:]))
@@ -659,10 +663,12 @@ class WSGIApplicationWrapper(object):
         self._nr_name = name
         self._nr_group = group
 
-        if isinstance(framework, basestring):
-            self._nr_framework = (framework, None)
-        else:
+        if framework is None:
+            self._nr_framework = None
+        elif isinstance(framework, tuple):
             self._nr_framework = framework
+        else:
+            self._nr_framework = (framework, None)
 
         if not hasattr(self, '_nr_last_object'):
             self._nr_last_object = wrapped

@@ -12,7 +12,7 @@ from newrelic.api.web_transaction import WSGIApplicationWrapper
 def _name_transaction(*args, **kwargs):
     transaction = newrelic.api.transaction.current_transaction()
     if transaction:
-        if isinstance(args[1], basestring):
+        if isinstance(args[1], (str, unicode)):
             f = args[1]
         else:
             f = callable_name(args[1])

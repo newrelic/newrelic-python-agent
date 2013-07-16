@@ -2,13 +2,17 @@ import os
 import sys
 import time
 import weakref
-import thread
 import threading
 import traceback
 import logging
 import warnings
 import itertools
 import random
+
+try:
+    import thread
+except ImportError:
+    import _thread as thread
 
 from collections import deque
 

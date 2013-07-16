@@ -5,10 +5,6 @@ then to be generated.
 """
 
 import itertools
-try:
-    import urlparse
-except ImportError:
-    import urllib.parse as urlparse
 
 from collections import namedtuple
 

@@ -1,9 +1,13 @@
 import os
 import sys
 import string
-import ConfigParser
 import logging
 import traceback
+
+try:
+    import ConfigParser
+except ImportError:
+    import configparser as ConfigParser
 
 import newrelic.core.log_file
 import newrelic.core.agent

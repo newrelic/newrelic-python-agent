@@ -12,8 +12,12 @@ import shutil
 import filecmp
 import tempfile
 import cgi
-import ConfigParser
 from datetime import datetime
+
+try:
+    import ConfigParser
+except ImportError:
+    import configparser as ConfigParser
 
 # stuff to do:
 # -------------------------------------------------------
@@ -70,7 +74,7 @@ def review_command(args):
 
     f = open(license_error_filename, "w")
 
-    errors = check_for_missing_source_files(license_source_map) 
+    errors = check_for_missing_source_files(license_source_map)
     print_and_write_errors("Source files tracked in manifest but no longer "
             "in working dir", errors, f)
     error_count += len(errors)
@@ -205,7 +209,7 @@ def set_licenses_command(args):
         print(e.value)
         return -1
 
-    return 0 
+    return 0
 
 def set_licenses(license_info, library, licenses):
     # check to make sure the library they passed is already in our
@@ -213,7 +217,7 @@ def set_licenses(license_info, library, licenses):
     if library not in license_info["libraries"]:
         raise NR_Error("[ERROR] could not find library: " + library +
                 " in license_info file. Try using the addlibrary command.")
-       
+
     # check to make sure we already know about all the licenses they
     # passed to us
     for license in licenses:
@@ -525,7 +529,7 @@ def gen_installer_doc(license_info):
     lines.append(copyright_body % { "year": current_year })
     lines.append(75*'-')
 
-    return lines 
+    return lines
 
 def write_lines_to_file_if_diff(lines, filename):
     tmp_file = tempfile.NamedTemporaryFile("w", delete=False)
@@ -638,7 +642,7 @@ def get_ignored_files(ignore_file):
         comment_index = line.find("#")
         if comment_index != -1:
             relative_path = line[:comment_index].strip()
-            
+
         if len(relative_path) > 0:
            full_path = os.path.normpath(relative_path)
            ignored_files[full_path] = full_path
@@ -660,21 +664,21 @@ def get_git_repo_files():
         norm_path = os.path.normpath(file_name)
         repo_files[norm_path] = norm_path
 
-    
+
     if review_submodules:
         # now let's see if there are any git submodules and add all the
         # submodule files to our manifest
         git_output = subprocess.check_output(["git", "submodule",
                 "foreach", "git ls-files"])
-    
+
         file_list = str(git_output).split("\n")
         if len(file_list) > 1:
-    
+
             current_submodule = ""
-    
+
             for line in file_list:
                 submodule = re.search("Entering '(.+?)'", line)
-        
+
                 # if the text of the line is Entering 'submodulename'...,
                 # then we've entered a submodule otherwise, it's a file in
                 # the submodule
@@ -683,7 +687,7 @@ def get_git_repo_files():
                 else:
                     norm_path = os.path.normpath(
                             os.path.join(current_submodule, line))
-        
+
                     repo_files[norm_path] = norm_path
 
     return repo_files
@@ -720,7 +724,7 @@ def get_flattened_file_list(root_dir, ignored_files, repo_files):
         for dir_to_remove in dirs_to_remove:
             dirs.remove(dir_to_remove)
 
-    return flattened_file_list 
+    return flattened_file_list
 
 def check_for_missing_source_files(license_source_map):
     # verify that all files in our license_source_map file actually exist
@@ -811,7 +815,7 @@ def check_for_orphaned_licenses(license_info):
 
         if not license_in_use:
             errors.append(license)
- 
+
     return errors
 
 def check_for_source_files_not_in_manifest(flattened_file_list,
@@ -838,10 +842,10 @@ def check_for_changed_source_files(flattened_file_list, license_source_map):
             else:
                 # get the old hash key from our manifest
                 old_hash_key = license_source_map[full_path]["hash"]
- 
+
                 # get a hash of the existing file
                 hash_key = hash_file(full_path)
- 
+
                 if hash_key != old_hash_key:
                     errors.append(full_path)
 
@@ -858,7 +862,7 @@ def print_and_write_errors(subject, errors, open_file):
 
         for error in sorted(errors):
             print_and_write("  "+error, open_file)
-    
+
 def write_list_to_file(file_name, contents):
     f = open(file_name, "w")
 
@@ -894,7 +898,7 @@ def hash_file(file_name):
 
     while True:
         chunk = f.read(8192)
-        
+
         if not chunk:
             break
         m.update(chunk)
@@ -955,7 +959,7 @@ def load_config_file():
             if len(projectname) == 0:
                 errors.append("projectname variable not set in: "+
                         license_config_file)
-    
+
             permalink = config.get("LicenseReviewerConfig", "permalink")
             if len(permalink) == 0:
                 errors.append("permalink variable not set in: "+
@@ -963,7 +967,7 @@ def load_config_file():
 
             review_submodules = config.get("LicenseReviewerConfig",
                     "review_submodules")
-    
+
         except ConfigParser.NoOptionError as e:
             errors.append("error reading: "+license_config_file)
 
@@ -1120,7 +1124,7 @@ def main():
     git_root_dir = get_git_root_dir()
 
     if git_root_dir == "":
-        print("git not in path or not working correctly")        
+        print("git not in path or not working correctly")
         sys.exit(-1)
 
     # make sure the user runs this script from a git repo root directory

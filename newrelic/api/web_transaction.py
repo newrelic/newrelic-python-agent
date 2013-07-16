@@ -1,11 +1,15 @@
 import sys
 import types
-import urlparse
 import cgi
 import base64
 import time
 import string
 import re
+
+try:
+    import urlparse
+except ImportError:
+    import urllib.parse as urlparse
 
 import newrelic.packages.simplejson as simplejson
 
@@ -650,7 +654,7 @@ class WSGIApplicationWrapper(object):
 
     def __init__(self, wrapped, application=None, name=None, group=None,
                framework=None):
-        if type(wrapped) == types.TupleType:
+        if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
         else:
             instance = None

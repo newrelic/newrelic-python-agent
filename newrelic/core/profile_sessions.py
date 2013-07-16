@@ -18,6 +18,11 @@ from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
 
 from collections import namedtuple
 
+try:
+    from sys import intern
+except ImportError:
+    pass
+
 _logger = logging.getLogger(__name__)
 
 PERCENT_OVERHEAD = 10

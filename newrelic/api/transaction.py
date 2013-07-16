@@ -2,13 +2,17 @@ import os
 import sys
 import time
 import weakref
-import thread
 import threading
 import traceback
 import logging
 import warnings
 import itertools
 import random
+
+try:
+    import thread
+except ImportError:
+    import _thread as thread
 
 from collections import deque
 
@@ -618,7 +622,7 @@ class Transaction(object):
         # convert URL to Unicode as Latin-1 explicitly to avoid
         # problems with illegal characters.
 
-        if type(name) == type(''):
+        if isinstance(name, bytes):
             name = name.decode('Latin-1')
 
         self._group = group

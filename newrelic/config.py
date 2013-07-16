@@ -1,9 +1,12 @@
 import os
 import sys
-import string
-import ConfigParser
 import logging
 import traceback
+
+try:
+    import ConfigParser
+except ImportError:
+    import configparser as ConfigParser
 
 import newrelic.core.log_file
 import newrelic.core.agent
@@ -174,7 +177,7 @@ def _process_setting(section, option, getter, mapper):
         # object. Walk the object path and assign it.
 
         target = _settings
-        fields = string.splitfields(option, '.', 1)
+        fields = option.split('.', 1)
 
         while True:
             if len(fields) == 1:
@@ -182,7 +185,7 @@ def _process_setting(section, option, getter, mapper):
                 break
             else:
                 target = getattr(target, fields[0])
-                fields = string.splitfields(fields[1], '.', 1)
+                fields = fields[1].split('.', 1)
 
         # Cache the configuration so can be dumped out to
         # log file when whole main configuraiton has been
@@ -502,7 +505,7 @@ def _load_configuration(config_file=None, environment=None,
 
     for function in _settings.transaction_tracer.function_trace:
         try:
-            (module, object_path) = string.splitfields(function, ':', 1)
+            (module, object_path) = function.split(':', 1)
 
             name = None
             group = 'Function'
@@ -594,13 +597,13 @@ def _process_module_configuration():
 
         try:
             execute = _config_object.get(section, 'execute')
-            fields = string.splitfields(execute, ':', 1)
+            fields = execute.split(':', 1)
             module = fields[0]
             function = 'instrument'
             if len(fields) != 1:
                 function = fields[1]
 
-            target = string.splitfields(section, ':', 1)[1]
+            target = section.split(':', 1)[1]
 
             _logger.debug("register module %s" %
                     ((target, module, function),))
@@ -648,7 +651,7 @@ def _process_wsgi_application_configuration():
 
         try:
             function = _config_object.get(section, 'function')
-            (module, object_path) = string.splitfields(function, ':', 1)
+            (module, object_path) = function.split(':', 1)
 
             application = None
 
@@ -697,7 +700,7 @@ def _process_background_task_configuration():
 
         try:
             function = _config_object.get(section, 'function')
-            (module, object_path) = string.splitfields(function, ':', 1)
+            (module, object_path) = function.split(':', 1)
 
             application = None
             name = None
@@ -758,7 +761,7 @@ def _process_database_trace_configuration():
 
         try:
             function = _config_object.get(section, 'function')
-            (module, object_path) = string.splitfields(function, ':', 1)
+            (module, object_path) = function.split(':', 1)
 
             sql = _config_object.get(section, 'sql')
 
@@ -809,7 +812,7 @@ def _process_external_trace_configuration():
 
         try:
             function = _config_object.get(section, 'function')
-            (module, object_path) = string.splitfields(function, ':', 1)
+            (module, object_path) = function.split(':', 1)
 
             method = None
 
@@ -871,7 +874,7 @@ def _process_function_trace_configuration():
 
         try:
             function = _config_object.get(section, 'function')
-            (module, object_path) = string.splitfields(function, ':', 1)
+            (module, object_path) = function.split(':', 1)
 
             # FIXME Temporary work around to exclude Django stuff
             # that was given as example in early agent configuration
@@ -1054,7 +1057,7 @@ def _process_memcache_trace_configuration():
 
         try:
             function = _config_object.get(section, 'function')
-            (module, object_path) = string.splitfields(function, ':', 1)
+            (module, object_path) = function.split(':', 1)
 
             command = _config_object.get(section, 'command')
 
@@ -1107,7 +1110,7 @@ def _process_transaction_name_configuration():
 
         try:
             function = _config_object.get(section, 'function')
-            (module, object_path) = string.splitfields(function, ':', 1)
+            (module, object_path) = function.split(':', 1)
 
             name = None
             group = 'Function'
@@ -1165,7 +1168,7 @@ def _process_error_trace_configuration():
 
         try:
             function = _config_object.get(section, 'function')
-            (module, object_path) = string.splitfields(function, ':', 1)
+            (module, object_path) = function.split(':', 1)
 
             ignore_errors = []
 
@@ -1204,7 +1207,7 @@ def _process_data_source_configuration():
 
         try:
             function = _config_object.get(section, 'function')
-            (module, object_path) = string.splitfields(function, ':', 1)
+            (module, object_path) = function.split(':', 1)
 
             application = None
             name = None
@@ -1304,7 +1307,7 @@ def _process_function_profile_configuration():
 
         try:
             function = _config_object.get(section, 'function')
-            (module, object_path) = string.splitfields(function, ':', 1)
+            (module, object_path) = function.split(':', 1)
 
             filename = None
             delay = 1.0
@@ -1559,9 +1562,11 @@ def _process_module_builtin_defaults():
 
     _process_module_definition('urllib',
             'newrelic.hooks.external_urllib')
+    _process_module_definition('urllib.request',
+            'newrelic.hooks.external_urllib')
+
     _process_module_definition('urllib2',
             'newrelic.hooks.external_urllib2')
-
     _process_module_definition('urllib3.request',
             'newrelic.hooks.external_urllib3')
 

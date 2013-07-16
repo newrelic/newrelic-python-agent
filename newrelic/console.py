@@ -3,7 +3,6 @@ from __future__ import print_function
 import atexit
 import cmd
 import code
-import ConfigParser
 import functools
 import glob
 import inspect
@@ -17,7 +16,15 @@ import traceback
 import os
 import time
 
-import __builtin__
+try:
+    import ConfigParser
+except ImportError:
+    import configparser as ConfigParser
+
+try:
+    import __builtin__
+except ImportError:
+    import builtins as __builtin__
 
 from newrelic.core.agent import agent_instance
 from newrelic.core.config import global_settings, flatten_settings

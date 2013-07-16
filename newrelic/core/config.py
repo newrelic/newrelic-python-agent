@@ -11,7 +11,6 @@ the global defaults or those from local agent configuration.
 
 import os
 import logging
-import string
 import copy
 
 # The Settings objects and the global default settings. We create a
@@ -279,13 +278,13 @@ def apply_config_setting(settings_object, name, value):
     """
 
     target = settings_object
-    fields = string.splitfields(name, '.', 1)
+    fields = name.split('.', 1)
 
     while len(fields) > 1:
         if not hasattr(target, fields[0]):
             setattr(target, fields[0], Settings())
         target = getattr(target, fields[0])
-        fields = string.splitfields(fields[1], '.', 1)
+        fields = fields[1].split('.', 1)
 
     setattr(target, fields[0], value)
 
@@ -301,12 +300,12 @@ def fetch_config_setting(settings_object, name):
     """
 
     target = settings_object
-    fields = string.splitfields(name, '.', 1)
+    fields = name.split('.', 1)
 
     target = getattr(target, fields[0])
 
     while len(fields) > 1:
-        fields = string.splitfields(fields[1], '.', 1)
+        fields = fields[1].split('.', 1)
         target = getattr(target, fields[0])
 
     return target

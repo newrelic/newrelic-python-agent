@@ -47,6 +47,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/datastore_trace.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/error_trace.py": {
         "hash": "n/a",
         "libraries": [
@@ -383,6 +389,12 @@
             "New Relic"
         ]
     },
+    "newrelic/core/datastore_node.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/core/environment.py": {
         "hash": "n/a",
         "libraries": [
@@ -666,6 +678,12 @@
         ]
     },
     "newrelic/hooks/database_sqlite.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/datastore_pymongo.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

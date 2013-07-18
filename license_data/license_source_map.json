@@ -1379,6 +1379,12 @@
             "simplejson"
         ]
     },
+    "newrelic/packages/utils.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/platform.py": {
         "hash": "n/a",
         "libraries": [

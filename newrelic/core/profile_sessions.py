@@ -5,7 +5,7 @@ import time
 import threading
 import zlib
 import base64
-from collections import deque, defaultdict
+from collections import deque, defaultdict, namedtuple
 
 import newrelic.packages.simplejson as simplejson
 import newrelic
@@ -16,7 +16,7 @@ from newrelic.core.transaction_cache import transaction_cache
 from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
         internal_metric)
 
-from collections import namedtuple
+from newrelic.packages.utils import *
 
 try:
     from sys import intern
@@ -353,7 +353,7 @@ class ProfileSessionManager(object):
             start = time.time()
 
             include_xrays = ((not self._xray_suspended) and
-                    any(self.application_xrays.itervalues()))
+                    any(values(self.application_xrays)))
 
             for category, stack in collect_stack_traces(
                     self.profile_agent_code, include_xrays):
@@ -371,7 +371,7 @@ class ProfileSessionManager(object):
             # Stop the profiler thread if there are no profile sessions.
 
             if ((self.full_profile_session is None) and
-                    (not any(self.application_xrays.itervalues()))):
+                    (not any(values(self.application_xrays)))):
                 self._profiler_thread_running = False
                 return
 
@@ -412,14 +412,16 @@ class ProfileSessionManager(object):
 
         # Clean out the app_name entries with empty values
 
-        for app_name, xray_profile_sessions in self.application_xrays.items():
+        for app_name, xray_profile_sessions in \
+                listitems(self.application_xrays):
             if not xray_profile_sessions:
                 self.application_xrays.pop(app_name)
 
         # Update the xray_profile_sessions for each each application
 
-        for app_name, xray_profile_sessions in self.application_xrays.items():
-            for key_txn, xps in xray_profile_sessions.items():
+        for app_name, xray_profile_sessions in \
+                listitems(self.application_xrays):
+            for key_txn, xps in listitems(xray_profile_sessions):
                 if time.time() >= xps.stop_time_s:
                     self.stop_profile_session(app_name, key_txn)
                     _logger.info('Finished x-ray profiling session for %s',
@@ -435,7 +437,6 @@ class ProfileSessionManager(object):
         if app_name == self.full_profile_app:
             self.stop_profile_session(app_name)
 
-
         # Stop all xray profiler sessions.
 
         try:
@@ -443,7 +444,7 @@ class ProfileSessionManager(object):
         except KeyError:
             return False
 
-        for key_txn in xray_profile_sessions.keys():
+        for key_txn in listkeys(xray_profile_sessions):
             self.stop_profile_session(app_name, key_txn)
 
         return True
@@ -567,7 +568,7 @@ class ProfileSession(object):
         flat_tree = {}
         thread_count = 0
 
-        for category, bucket in self.call_buckets.items():
+        for category, bucket in items(self.call_buckets):
 
             # Only flatten buckets that have data in them. No need to send
             # empty buckets.

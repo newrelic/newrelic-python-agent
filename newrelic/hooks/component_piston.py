@@ -5,6 +5,8 @@ import newrelic.api.function_trace
 import newrelic.api.object_wrapper
 import newrelic.api.in_function
 
+from newrelic.packages.utils import *
+
 class MethodWrapper(object):
 
     def __init__(self, wrapped, priority=None):
@@ -54,7 +56,7 @@ class ResourceInitWrapper(object):
     def __call__(self, *args, **kwargs):
         self._nr_wrapped(*args, **kwargs)
         handler = self.__instance.handler
-        for name in self.__instance.callmap.itervalues():
+        for name in values(self.__instance.callmap):
             if hasattr(handler, name):
                 setattr(handler, name, MethodWrapper(
                         getattr(handler, name)))

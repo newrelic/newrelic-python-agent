@@ -62,7 +62,7 @@ class ProfileTrace(object):
             except Exception:
                 pass
 
-            for name, obj in frame.f_globals.items():
+            for name, obj in items(frame.f_globals):
                 try:
                     if obj.__dict__[func_name].func_code is co:
                         return callable_name(obj.__dict__[func_name])

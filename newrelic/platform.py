@@ -83,7 +83,7 @@ class Stats(dict):
 
         self.count += 1
 
-class Sampler(object):
+class DataSampler(object):
 
     def __init__(self, consumer, source, name, settings, **properties):
         self.consumer = consumer
@@ -125,28 +125,17 @@ class Sampler(object):
 
         _logger.debug('Initialising data sampler for %r.', self.environ)
 
-        # Need this when reporting data using platform agent API.
-
-        self.period_start = 0.0
-        self.metrics_table = None
-
     def start(self):
         if self.instance is None:
             self.instance = self.factory(self.environ)
         if hasattr(self.instance, 'start'):
             self.instance.start()
 
-        self.period_start = time.time()
-        self.metrics_table = None
-
     def stop(self):
         if hasattr(self.instance, 'stop'):
             self.instance.stop()
         else:
             self.instance = None
-
-        self.period_start = 0.0
-        self.metrics_table = None
 
     def metrics(self):
         assert self.instance is not None
@@ -156,6 +145,29 @@ class Sampler(object):
                     for key, value in self.instance())
         else:
             return self.instance()
+
+class DataAggregator(object):
+
+    def __init__(self, sampler):
+        self.sampler = sampler
+
+        self.period_start = 0.0
+        self.metrics_table = None
+
+    def __getattr__(self, name):
+        return getattr(self.sampler, name)
+
+    def start(self):
+        self.sampler.start()
+
+        self.period_start = time.time()
+        self.metrics_table = None
+
+    def stop(self):
+        self.sampler.stop()
+
+        self.period_start = 0.0
+        self.metrics_table = None
 
     def upload(self, session):
         assert self.instance is not None
@@ -270,11 +282,11 @@ class Agent(object):
         _logger.info('New Relic Python Agent - Data Source (%s)',
                 agent_version)
 
-        data_samplers = []
+        data_aggregators = []
 
         for (source, name, settings, properties) in self._data_sources:
             try:
-                data_sampler = Sampler('New Relic (Platform)', source,
+                data_sampler = DataSampler('New Relic (Platform)', source,
                         name, settings, **properties)
 
                 if data_sampler.guid is None:
@@ -283,21 +295,23 @@ class Agent(object):
 
                     continue
 
-                data_samplers.append(data_sampler)
+                data_aggregator = DataAggregator(data_sampler)
+
+                data_aggregators.append(data_aggregator)
 
             except Exception:
                 _logger.exception('Attempt to register data source %s '
                         'with name %r has failed. Data source will be '
                         'skipped.', source, name)
 
-        if not data_samplers:
+        if not data_aggregators:
             _logger.warning('No valid data sources defined.')
             return
 
         _logger.debug('Starting data samplers.')
 
-        for data_sampler in data_samplers:
-            data_sampler.start()
+        for data_aggregator in data_aggregators:
+            data_aggregator.start()
 
         next_harvest = time.time()
 
@@ -306,12 +320,12 @@ class Agent(object):
 
             session = self._interface.create_session()
 
-            for data_sampler in data_samplers:
+            for data_aggregator in data_aggregators:
                 _logger.debug('Harvest data source %r with guid %r. '
-                        'Reporting data to %r.', data_sampler.name,
-                        data_sampler.guid, data_sampler.consumer)
+                        'Reporting data to %r.', data_aggregator.name,
+                        data_aggregator.guid, data_aggregator.consumer)
 
-                data_sampler.upload(session)
+                data_aggregator.upload(session)
 
             session.close_connection()
 

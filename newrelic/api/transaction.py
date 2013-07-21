@@ -294,11 +294,20 @@ class Transaction(object):
             self._cpu_user_time_value = (self._cpu_user_time_end -
                     self._cpu_user_time_start)
 
-        # Calculate thread utilisation factor if using.
+        # Calculate thread utilisation factor. Note that even if
+        # we are tracking thread utilization we skip calculation
+        # if duration is zero. Under normal circumstances this
+        # should not occur but may if the system clock is wound
+        # backwards and duration was squashed to zero due to the
+        # request appearing to finish before it started. It may
+        # also occur if true response time came in under the
+        # resolution of the clock being used, but that is highly
+        # unlikely as the overhead of the agent itself should
+        # always ensure that that is hard to achieve.
 
         if self._utilization_tracker:
             self._utilization_tracker.exit_transaction()
-            if self._thread_utilization_start:
+            if self._thread_utilization_start and duration > 0.0:
                 if not self._thread_utilization_end:
                     self._thread_utilization_end = (
                             self._utilization_tracker.utilization_count())

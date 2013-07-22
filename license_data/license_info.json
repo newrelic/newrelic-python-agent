@@ -23,6 +23,13 @@
             ],
             "name": "simplejson",
             "url": "http://pypi.python.org/pypi/simplejson"
+        },
+        "six": {
+            "licenses": [
+                "MIT"
+            ],
+            "name": "six",
+            "url": "https://bitbucket.org/gutworth/six/overview"
         }
     },
     "licenses": {

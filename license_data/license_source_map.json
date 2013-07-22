@@ -1379,10 +1379,10 @@
             "simplejson"
         ]
     },
-    "newrelic/packages/utils.py": {
-        "hash": "n/a",
+    "newrelic/packages/six.py": {
+        "hash": "653f63e52e678a4f539906b2f2ee61bd",
         "libraries": [
-            "New Relic"
+            "six"
         ]
     },
     "newrelic/platform.py": {

@@ -19,13 +19,13 @@ from newrelic.network.exceptions import (ForceAgentRestart,
 from newrelic.core.environment import environment_settings
 from newrelic.core.rules_engine import RulesEngine
 from newrelic.core.stats_engine import StatsEngine, CustomMetrics
-from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
+from newrelic.core.internal_metrics import (InternalTrace,
         InternalTraceContext, internal_metric)
 from newrelic.core.data_source import DataSampler
 from newrelic.core.xray_session import XraySession
 from newrelic.core.profile_sessions import profile_session_manager
 
-from newrelic.packages.utils import *
+from newrelic.packages.six import iterkeys, itervalues
 
 _logger = logging.getLogger(__name__)
 
@@ -1484,9 +1484,9 @@ class Application(object):
             if self._active_xrays and no_xray_cmds:
                 _logger.debug('Stopping all X Ray sessions for %r. '
                     'Current sessions running are %r.', self._app_name,
-                    listkeys(self._active_xrays))
+                    list(iterkeys(self._active_xrays)))
 
-                for xs in listvalues(self._active_xrays):
+                for xs in list(itervalues(self._active_xrays)):
                     self.stop_xray(x_ray_id=xs.xray_id,
                             key_transaction_name=xs.key_txn)
 

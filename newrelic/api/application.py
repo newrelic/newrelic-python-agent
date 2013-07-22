@@ -4,7 +4,7 @@ import warnings
 import newrelic.core.config
 import newrelic.core.agent
 
-from newrelic.packages.utils import *
+from newrelic.packages.six import iterkeys
 
 class Application(object):
 
@@ -90,7 +90,7 @@ class Application(object):
 
     @property
     def linked_applications(self):
-        return listkeys(self._linked)
+        return list(iterkeys(self._linked))
 
     def link_to_application(self, name):
         self._linked[name] = True

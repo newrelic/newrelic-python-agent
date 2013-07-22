@@ -1,6 +1,5 @@
 import functools
 import inspect
-import types
 import sys
 import os
 
@@ -8,6 +7,7 @@ from newrelic.api.transaction import current_transaction
 from newrelic.api.object_wrapper import (ObjectWrapper,
         callable_name, wrap_object)
 from newrelic.api.function_trace import FunctionTrace
+from newrelic.packages.six import iteritems
 
 import newrelic
 
@@ -62,7 +62,7 @@ class ProfileTrace(object):
             except Exception:
                 pass
 
-            for name, obj in items(frame.f_globals):
+            for name, obj in iteritems(frame.f_globals):
                 try:
                     if obj.__dict__[func_name].func_code is co:
                         return callable_name(obj.__dict__[func_name])

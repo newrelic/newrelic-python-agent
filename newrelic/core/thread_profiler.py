@@ -15,7 +15,7 @@ from collections import namedtuple
 
 from newrelic.core.config import global_settings
 from newrelic.core.transaction_cache import transaction_cache
-from newrelic.packages.utils import *
+from newrelic.packages.six import itervalues
 
 _logger = logging.getLogger(__name__)
 
@@ -413,7 +413,7 @@ class ThreadProfiler(object):
 
         for thread_category, bucket in self._call_buckets.items():
             if bucket:
-                call_data[thread_category] = listvalues(bucket)
+                call_data[thread_category] = list(itervalues(bucket))
                 thread_count += len(bucket)
 
         # If no profile data was captured return None instead of sending an

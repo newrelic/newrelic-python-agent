@@ -596,7 +596,8 @@ class ProfileSession(object):
 
         json_call_tree = simplejson.dumps(flat_tree, ensure_ascii=True,
                 encoding='Latin-1', namedtuple_as_object=False)
-        encoded_tree = base64.standard_b64encode(zlib.compress(json_call_tree))
+        encoded_tree = base64.standard_b64encode(
+                zlib.compress(six.b(json_call_tree)))
 
         profile = [[self.profile_id, self.start_time_s*1000,
             (self.actual_stop_time_s or time.time()) * 1000, self.sample_count,

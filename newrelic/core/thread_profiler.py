@@ -429,7 +429,8 @@ class ThreadProfiler(object):
         json_data = simplejson.dumps(call_data, ensure_ascii=True,
                 encoding='Latin-1', default=lambda o: o.jsonable(),
                 namedtuple_as_object=False)
-        encoded_data = base64.standard_b64encode(zlib.compress(json_data))
+        encoded_data = base64.standard_b64encode(
+                zlib.compress(six.b(json_data)))
 
         if self._xray_txns:
             xray_obj = self._xray_txns.values()[0]

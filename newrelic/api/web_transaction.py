@@ -11,6 +11,7 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
+import newrelic.packages.six as six
 import newrelic.packages.simplejson as simplejson
 
 import newrelic.api.application
@@ -69,7 +70,7 @@ def _encode(name, key):
 def obfuscate(name, key):
     if name is None:
         return ''
-    return base64.b64encode(''.join(_encode(name, key)))
+    return base64.b64encode(six.b(''.join(_encode(name, key))))
 
 def deobfuscate(name, key):
     if name is None:

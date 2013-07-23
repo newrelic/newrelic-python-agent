@@ -711,7 +711,8 @@ class StatsEngine(object):
                     encoding='Latin-1', namedtuple_as_object=False,
                     default=lambda o: list(iter(o)))
 
-            params_data = base64.standard_b64encode(zlib.compress(json_data))
+            params_data = base64.standard_b64encode(
+                    zlib.compress(six.b(json_data)))
 
             data = [node.slow_sql_node.path,
                     node.slow_sql_node.request_uri,
@@ -781,7 +782,7 @@ class StatsEngine(object):
 
             with InternalTrace('Supportability/StatsEngine/ZLIB/Compress/'
                                'transaction_sample_data'):
-                zlib_data = zlib.compress(json_data)
+                zlib_data = zlib.compress(six.b(json_data))
 
             with InternalTrace('Supportability/StatsEngine/BASE64/Encode/'
                                'transaction_sample_data'):
@@ -851,7 +852,7 @@ class StatsEngine(object):
 
         with InternalTrace('Supportability/StatsEngine/ZLIB/Compress/'
                 'transaction_sample_data'):
-            zlib_data = zlib.compress(json_data)
+            zlib_data = zlib.compress(six.b(json_data))
 
         with InternalTrace('Supportability/StatsEngine/BASE64/Encode/'
                 'transaction_sample_data'):

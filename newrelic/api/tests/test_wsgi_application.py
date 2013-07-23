@@ -1,8 +1,9 @@
 import logging
-import StringIO
 import unittest
 
 import newrelic.tests.test_cases
+
+import newrelic.packages.six as six
 
 import newrelic.api.settings
 import newrelic.api.application
@@ -175,7 +176,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_wsgiapp_function_input(self):
         environ = { "REQUEST_URI": "/wsgiapp_function_input",
-                    "wsgi.input": StringIO.StringIO() }
+                    "wsgi.input": six.StringIO() }
         _wsgiapp_function(environ, None).close()
 
     def test_wsgiapp_function_read_exception(self):

@@ -68,14 +68,31 @@ def _encode(name, key):
     return s
 
 def obfuscate(name, key):
-    if name is None:
+
+    # Check if name and key are valid.
+
+    if not (name and key):
         return ''
-    return base64.b64encode(six.b(''.join(_encode(name, key))))
+
+    return base64.b64encode(six.b(''.join(_encode(name, key)))).decode('utf-8')
 
 def deobfuscate(name, key):
-    if name is None:
+
+    # Check if name and key are valid.
+
+    if not (name and key):
         return ''
-    return ''.join(_encode(base64.b64decode(name), key))
+
+    return ''.join(_decode(base64.b64decode(six.b(name)), six.b(key)))
+
+if six.PY3:
+    def _decode(name, key):
+        s = []
+        for i in range(len(name)):
+            s.append(chr(name[i] ^ key[i % len(key)]))
+        return s
+else:
+    _decode = _encode
 
 def _lookup_environ_setting(environ, name, default=False):
     flag = environ.get(name, default)

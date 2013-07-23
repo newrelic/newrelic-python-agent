@@ -17,10 +17,11 @@ import newrelic.core.log_file
 import newrelic.core.config
 import newrelic.core.application
 
+import newrelic.packages.six as six
+
 from newrelic.core.cpu_usage import cpu_usage_data_source
 from newrelic.core.memory_usage import memory_usage_data_source
 from newrelic.core.thread_utilization import thread_utilization_data_source
-from newrelic.packages.six import itervalues
 
 _logger = logging.getLogger(__name__)
 
@@ -385,7 +386,7 @@ class Agent(object):
             if application is None:
                 # Bind to any applications that already exist.
 
-                for application in list(itervalues(self._applications)):
+                for application in list(six.itervalues(self._applications)):
                     application.register_data_source(source, name,
                             settings, **properties)
 
@@ -556,7 +557,7 @@ class Agent(object):
         self._harvest_count += 1
         self._last_harvest = time.time()
 
-        for application in list(itervalues(self._applications)):
+        for application in list(six.itervalues(self._applications)):
               try:
                   application.harvest(shutdown)
 

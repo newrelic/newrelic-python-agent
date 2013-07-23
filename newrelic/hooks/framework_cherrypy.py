@@ -54,7 +54,7 @@ class ResourceWrapper(object):
 class ResolverWrapper(object):
 
     def __init__(self, wrapped):
-        if type(wrapped) == types.TupleType:
+        if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
         else:
             instance = None

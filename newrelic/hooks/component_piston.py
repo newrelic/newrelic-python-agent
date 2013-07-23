@@ -1,11 +1,11 @@
 import types
 
+import newrelic.packages.six as six
+
 import newrelic.api.transaction
 import newrelic.api.function_trace
 import newrelic.api.object_wrapper
 import newrelic.api.in_function
-
-from newrelic.packages.six import itervalues
 
 class MethodWrapper(object):
 
@@ -37,7 +37,7 @@ class MethodWrapper(object):
 class ResourceInitWrapper(object):
 
     def __init__(self, wrapped):
-        if type(wrapped) == types.TupleType:
+        if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
         else:
             instance = None
@@ -56,7 +56,7 @@ class ResourceInitWrapper(object):
     def __call__(self, *args, **kwargs):
         self._nr_wrapped(*args, **kwargs)
         handler = self.__instance.handler
-        for name in itervalues(self.__instance.callmap):
+        for name in six.itervalues(self.__instance.callmap):
             if hasattr(handler, name):
                 setattr(handler, name, MethodWrapper(
                         getattr(handler, name)))

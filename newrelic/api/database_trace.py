@@ -87,7 +87,7 @@ class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
 class DatabaseTraceWrapper(object):
 
     def __init__(self, wrapped, sql, dbapi=None):
-        if type(wrapped) == types.TupleType:
+        if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
         else:
             instance = None

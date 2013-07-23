@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import unittest
 
 from newrelic.core.database_utils import SQLStatement
@@ -795,7 +797,7 @@ class TestDatabase(unittest.TestCase):
             statement = SQLStatement(sql, 'pyscopg2')
             actual_result = statement.target, statement.operation
             if expected_result != actual_result:
-                print 'XXX', expected_result == actual_result, sql
+                print('XXX', expected_result == actual_result, sql)
             self.assertEqual(expected_result, actual_result)
 
     def test_parse_delete_tests(self):

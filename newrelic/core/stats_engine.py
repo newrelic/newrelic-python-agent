@@ -11,12 +11,11 @@ import logging
 import operator
 import zlib
 
+import newrelic.packages.six as six
 import newrelic.packages.simplejson as simplejson
 
 from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
         internal_metric)
-
-from newrelic.packages.six import iterkeys, itervalues, iteritems
 
 _logger = logging.getLogger(__name__)
 
@@ -165,7 +164,7 @@ class CustomMetrics(object):
 
         """
 
-        return iteritems(self.__stats_table)
+        return six.iteritems(self.__stats_table)
 
 class SlowSqlStats(list):
 
@@ -631,10 +630,10 @@ class StatsEngine(object):
         if self.__settings.debug.log_raw_metric_data:
             _logger.info('Raw metric data for harvest of %r is %r.',
                     self.__settings.app_name,
-                    list(iteritems(self.__stats_table)))
+                    list(six.iteritems(self.__stats_table)))
 
         if normalizer is not None:
-            for key, value in iteritems(self.__stats_table):
+            for key, value in six.iteritems(self.__stats_table):
                 key = (normalizer(key[0])[0] , key[1])
                 stats = normalized_stats.get(key)
                 if stats is None:
@@ -647,9 +646,9 @@ class StatsEngine(object):
         if self.__settings.debug.log_normalized_metric_data:
             _logger.info('Normalized metric data for harvest of %r is %r.',
                     self.__settings.app_name,
-                    list(iteritems(normalized_stats)))
+                    list(six.iteritems(normalized_stats)))
 
-        for key, value in iteritems(normalized_stats):
+        for key, value in six.iteritems(normalized_stats):
             if key not in self.__metric_ids:
                 key = dict(name=key[0], scope=key[1])
             else:
@@ -691,7 +690,7 @@ class StatsEngine(object):
 
         maximum = self.__settings.agent_limits.slow_sql_data
 
-        slow_sql_nodes = sorted(itervalues(self.__sql_stats_table),
+        slow_sql_nodes = sorted(six.itervalues(self.__sql_stats_table),
                 key=lambda x: x.max_call_time)[-maximum:]
 
         result = []
@@ -712,7 +711,8 @@ class StatsEngine(object):
                     encoding='Latin-1', namedtuple_as_object=False,
                     default=lambda o: list(iter(o)))
 
-            params_data = base64.standard_b64encode(zlib.compress(json_data))
+            params_data = base64.standard_b64encode(
+                    zlib.compress(six.b(json_data)))
 
             data = [node.slow_sql_node.path,
                     node.slow_sql_node.request_uri,
@@ -782,7 +782,7 @@ class StatsEngine(object):
 
             with InternalTrace('Supportability/StatsEngine/ZLIB/Compress/'
                                'transaction_sample_data'):
-                zlib_data = zlib.compress(json_data)
+                zlib_data = zlib.compress(six.b(json_data))
 
             with InternalTrace('Supportability/StatsEngine/BASE64/Encode/'
                                'transaction_sample_data'):
@@ -852,7 +852,7 @@ class StatsEngine(object):
 
         with InternalTrace('Supportability/StatsEngine/ZLIB/Compress/'
                 'transaction_sample_data'):
-            zlib_data = zlib.compress(json_data)
+            zlib_data = zlib.compress(six.b(json_data))
 
         with InternalTrace('Supportability/StatsEngine/BASE64/Encode/'
                 'transaction_sample_data'):
@@ -983,7 +983,7 @@ class StatsEngine(object):
         # Merge back data into any new data which has been
         # accumulated.
 
-        for key, other in iteritems(snapshot.__stats_table):
+        for key, other in six.iteritems(snapshot.__stats_table):
             stats = self.__stats_table.get(key)
             if not stats:
                 self.__stats_table[key] = copy.copy(other)
@@ -1020,7 +1020,7 @@ class StatsEngine(object):
 
         if merge_sql:
             maximum = settings.agent_limits.slow_sql_data
-            for key, other in iteritems(snapshot.__sql_stats_table):
+            for key, other in six.iteritems(snapshot.__sql_stats_table):
                 stats = self.__sql_stats_table.get(key)
                 if not stats:
                     if len(self.__sql_stats_table) < maximum:

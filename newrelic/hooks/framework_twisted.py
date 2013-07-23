@@ -17,7 +17,7 @@ _logger = logging.getLogger(__name__)
 class RequestProcessWrapper(object):
 
     def __init__(self, wrapped):
-        if type(wrapped) == types.TupleType:
+        if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
         else:
             instance = None

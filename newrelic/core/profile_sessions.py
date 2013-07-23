@@ -6,6 +6,7 @@ import zlib
 import base64
 from collections import deque, defaultdict
 
+import newrelic.packages.six as six
 import newrelic.packages.simplejson as simplejson
 import newrelic
 
@@ -13,8 +14,6 @@ from newrelic.core.config import global_settings
 from newrelic.core.transaction_cache import transaction_cache
 
 from newrelic.core.internal_metrics import (internal_trace, internal_metric)
-
-from newrelic.packages.six import iterkeys, itervalues, iteritems
 
 try:
     from sys import intern
@@ -351,7 +350,7 @@ class ProfileSessionManager(object):
             start = time.time()
 
             include_xrays = ((not self._xray_suspended) and
-                    any(itervalues(self.application_xrays)))
+                    any(six.itervalues(self.application_xrays)))
 
             for category, stack in collect_stack_traces(
                     self.profile_agent_code, include_xrays):
@@ -369,7 +368,7 @@ class ProfileSessionManager(object):
             # Stop the profiler thread if there are no profile sessions.
 
             if ((self.full_profile_session is None) and
-                    (not any(itervalues(self.application_xrays)))):
+                    (not any(six.itervalues(self.application_xrays)))):
                 self._profiler_thread_running = False
                 return
 
@@ -411,15 +410,15 @@ class ProfileSessionManager(object):
         # Clean out the app_name entries with empty values
 
         for app_name, xray_profile_sessions in \
-                list(iteritems(self.application_xrays)):
+                list(six.iteritems(self.application_xrays)):
             if not xray_profile_sessions:
                 self.application_xrays.pop(app_name)
 
         # Update the xray_profile_sessions for each each application
 
         for app_name, xray_profile_sessions in \
-                list(iteritems(self.application_xrays)):
-            for key_txn, xps in list(iteritems(xray_profile_sessions)):
+                list(six.iteritems(self.application_xrays)):
+            for key_txn, xps in list(six.iteritems(xray_profile_sessions)):
                 if time.time() >= xps.stop_time_s:
                     self.stop_profile_session(app_name, key_txn)
                     _logger.info('Finished x-ray profiling session for %s',
@@ -442,7 +441,7 @@ class ProfileSessionManager(object):
         except KeyError:
             return False
 
-        for key_txn in list(iterkeys(xray_profile_sessions)):
+        for key_txn in list(six.iterkeys(xray_profile_sessions)):
             self.stop_profile_session(app_name, key_txn)
 
         return True
@@ -566,7 +565,7 @@ class ProfileSession(object):
         flat_tree = {}
         thread_count = 0
 
-        for category, bucket in iteritems(self.call_buckets):
+        for category, bucket in six.iteritems(self.call_buckets):
 
             # Only flatten buckets that have data in them. No need to send
             # empty buckets.
@@ -597,7 +596,8 @@ class ProfileSession(object):
 
         json_call_tree = simplejson.dumps(flat_tree, ensure_ascii=True,
                 encoding='Latin-1', namedtuple_as_object=False)
-        encoded_tree = base64.standard_b64encode(zlib.compress(json_call_tree))
+        encoded_tree = base64.standard_b64encode(
+                zlib.compress(six.b(json_call_tree)))
 
         profile = [[self.profile_id, self.start_time_s*1000,
             (self.actual_stop_time_s or time.time()) * 1000, self.sample_count,

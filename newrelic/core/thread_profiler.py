@@ -9,13 +9,13 @@ import base64
 
 import newrelic
 
+import newrelic.packages.six as six
 import newrelic.packages.simplejson as simplejson
 
 from collections import namedtuple
 
 from newrelic.core.config import global_settings
 from newrelic.core.transaction_cache import transaction_cache
-from newrelic.packages.six import itervalues
 
 _logger = logging.getLogger(__name__)
 
@@ -413,7 +413,7 @@ class ThreadProfiler(object):
 
         for thread_category, bucket in self._call_buckets.items():
             if bucket:
-                call_data[thread_category] = list(itervalues(bucket))
+                call_data[thread_category] = list(six.itervalues(bucket))
                 thread_count += len(bucket)
 
         # If no profile data was captured return None instead of sending an
@@ -429,7 +429,8 @@ class ThreadProfiler(object):
         json_data = simplejson.dumps(call_data, ensure_ascii=True,
                 encoding='Latin-1', default=lambda o: o.jsonable(),
                 namedtuple_as_object=False)
-        encoded_data = base64.standard_b64encode(zlib.compress(json_data))
+        encoded_data = base64.standard_b64encode(
+                zlib.compress(six.b(json_data)))
 
         if self._xray_txns:
             xray_obj = self._xray_txns.values()[0]

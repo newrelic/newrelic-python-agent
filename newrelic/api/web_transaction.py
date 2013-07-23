@@ -11,6 +11,7 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
+import newrelic.packages.six as six
 import newrelic.packages.simplejson as simplejson
 
 import newrelic.api.application
@@ -69,7 +70,7 @@ def _encode(name, key):
 def obfuscate(name, key):
     if name is None:
         return ''
-    return base64.b64encode(''.join(_encode(name, key)))
+    return base64.b64encode(six.b(''.join(_encode(name, key))))
 
 def deobfuscate(name, key):
     if name is None:
@@ -263,7 +264,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         for queue_time_header in queue_time_headers:
             value = environ.get(queue_time_header, None)
 
-            if value and isinstance(value, (str, unicode)):
+            try:
                 if value.startswith('t='):
                     try:
                         self.queue_start = _parse_time_stamp(float(value[2:]))
@@ -274,6 +275,9 @@ class WebTransaction(newrelic.api.transaction.Transaction):
                         self.queue_start = _parse_time_stamp(float(value))
                     except Exception:
                         pass
+
+            except Exception:
+                pass
 
             if self.queue_start > 0.0:
                 break

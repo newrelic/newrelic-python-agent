@@ -1,5 +1,7 @@
 import unittest
 
+import newrelic.packages.six as six
+
 from newrelic.core.rules_engine import *
 
 class TestRulesEngine(unittest.TestCase):
@@ -196,7 +198,7 @@ class TestRulesEngine(unittest.TestCase):
                          replace_all = True)
 
         rules_engine = RulesEngine([rule])
-        url = (u'/xxx' + unichr(0x0bf2)).encode('UTF-8')
+        url = (u'/xxx' + six.unichr(0x0bf2)).encode('UTF-8')
         result = rules_engine.normalize(url)
 
         self.assertEqual(("/yyy", False), result)
@@ -211,7 +213,7 @@ class TestRulesEngine(unittest.TestCase):
                          replace_all = True)
 
         rules_engine = RulesEngine([rule])
-        url = (u'/xxx' + unichr(0x0bf2)).encode('UTF-8')
+        url = (u'/xxx' + six.unichr(0x0bf2)).encode('UTF-8')
         result = rules_engine.normalize(url)
 
         self.assertEqual((u"/yyy"+url.decode('Latin-1'), False), result)

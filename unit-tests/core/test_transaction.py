@@ -4,6 +4,8 @@ import unittest
 import time
 import logging
 
+import newrelic.packages.six as six
+
 import newrelic.core.agent
 
 import newrelic.api.settings
@@ -61,7 +63,7 @@ def my_error():
 
 @newrelic.api.error_trace.error_trace()
 def my_error_unicode():
-    raise NotImplementedError(u'error-3 ' + unichr(40960))
+    raise NotImplementedError(u'error-3 ' + six.unichr(40960))
 
 @newrelic.api.database_trace.database_trace(sql='select * from cat')
 def my_database():

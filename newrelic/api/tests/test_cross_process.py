@@ -1,6 +1,7 @@
 import unittest
 import time
 
+import newrelic.packages.six as six
 import newrelic.packages.simplejson as simplejson
 
 from newrelic.api.application import application_instance
@@ -207,7 +208,7 @@ class TestCase(unittest.TestCase):
 
             # Transaction with UTF-8 Unicode name.
 
-            (True, u'1#2', _o, [1], 1, 1, now, now+2, unichr(0x0bf2), True),
+            (True, u'1#2', _o, [1], 1, 1, now, now+2, six.unichr(0x0bf2), True),
 
             # Transaction with single quotes in name.
 

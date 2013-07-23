@@ -240,12 +240,12 @@ _parse_from_re = re.compile(_parse_from_p, re.IGNORECASE)
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_target_select')
 def _parse_select(sql, dbapi):
     m = _parse_from_re.search(sql)
-    return m and (s for s in m.groups()[1:] if s).next().lower() or ''
+    return m and next(s for s in m.groups()[1:] if s).lower() or ''
 
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_target_delete')
 def _parse_delete(sql, dbapi):
     m = _parse_from_re.search(sql)
-    return m and (s for s in m.groups()[1:] if s).next().lower() or ''
+    return m and next(s for s in m.groups()[1:] if s).lower() or ''
 
 _parse_into_p = '\s+INTO\s+' + _parse_identifier_p
 _parse_into_re = re.compile(_parse_into_p, re.IGNORECASE)
@@ -253,7 +253,7 @@ _parse_into_re = re.compile(_parse_into_p, re.IGNORECASE)
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_target_insert')
 def _parse_insert(sql, dbapi):
     m = _parse_into_re.search(sql)
-    return m and (s for s in m.groups()[1:] if s).next().lower() or ''
+    return m and next(s for s in m.groups()[1:] if s).lower() or ''
 
 _parse_update_p = '\s*UPDATE\s+' + _parse_identifier_p
 _parse_update_re = re.compile(_parse_update_p, re.IGNORECASE)
@@ -261,7 +261,7 @@ _parse_update_re = re.compile(_parse_update_p, re.IGNORECASE)
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_target_update')
 def _parse_update(sql, dbapi):
     m = _parse_update_re.search(sql)
-    return m and (s for s in m.groups()[1:] if s).next().lower() or ''
+    return m and next(s for s in m.groups()[1:] if s).lower() or ''
 
 _parse_table_p = '\s+TABLE\s+' + _parse_identifier_p
 _parse_table_re = re.compile(_parse_table_p, re.IGNORECASE)
@@ -269,12 +269,12 @@ _parse_table_re = re.compile(_parse_table_p, re.IGNORECASE)
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_target_create')
 def _parse_create(sql, dbapi):
     m = _parse_table_re.search(sql)
-    return m and (s for s in m.groups()[1:] if s).next().lower() or ''
+    return m and next(s for s in m.groups()[1:] if s).lower() or ''
 
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_target_drop')
 def _parse_drop(sql, dbapi):
     m = _parse_table_re.search(sql)
-    return m and (s for s in m.groups()[1:] if s).next().lower() or ''
+    return m and next(s for s in m.groups()[1:] if s).lower() or ''
 
 # TODO Following need to be reviewed again. They aren't currently used
 # in actual use as only parse out target for select/insert/update/delete.

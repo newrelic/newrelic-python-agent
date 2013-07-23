@@ -32,7 +32,7 @@ class MemcacheTrace(newrelic.api.time_trace.TimeTrace):
 class MemcacheTraceWrapper(object):
 
     def __init__(self, wrapped, command):
-        if type(wrapped) == types.TupleType:
+        if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
         else:
             instance = None

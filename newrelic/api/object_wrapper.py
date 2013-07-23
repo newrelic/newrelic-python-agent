@@ -78,14 +78,32 @@ def object_context(object):
     # FIXME This will die if used on methods of Python objects
     # implemented in C.
 
-    if inspect.isclass(object) or type(object) == types.TypeType:
+    if hasattr(object, '__qualname__'):
+        cname = None                                                            
+        fname = object.__qualname__                                             
+                                                                                
+        mname = _module_name(object)
+                                                                                
+        if mname is None:                                                       
+            if hasattr(object, '__self__'):                                     
+                if hasattr(object.__self__, '__module__'):                      
+                    mname = object.__self__.__class__.__module__                
+                elif hasattr(object.__self__, '__class__'):                     
+                    mname = object.__self__.__class__.__module__                
+                                                                                
+        if mname is None:                                                       
+            if hasattr(object, '__objclass__'):                                 
+                if hasattr(object.__objclass__, '__module__'):                  
+                    mname = object.__objclass__.__module__                      
+
+    elif inspect.isclass(object) or isinstance(object, type):
         # This is called for new and old style class objects.
 
         mname = _module_name(object)
         cname = object.__name__
         fname = None
 
-    elif inspect.ismethod(object):
+    elif hasattr(object, 'im_class') and inspect.ismethod(object):
         # This is called for both bound and unbound class methods.
         # In the case of an unbound method the im_self attribute
         # will be None.
@@ -121,7 +139,7 @@ def object_context(object):
             cname = object.__self__.__class__.__name__
             fname = object.__name__
 
-    elif isinstance(object, types.InstanceType):
+    elif hasattr(types, 'InstanceType') and isinstance(object, types.InstanceType):
         # This is called for instances of old style classes.
 
         mname = _module_name(object)

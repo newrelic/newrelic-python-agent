@@ -16,6 +16,8 @@ except ImportError:
 
 from collections import deque
 
+import newrelic.packages.six as six
+
 import newrelic.core.transaction_node
 import newrelic.core.database_node
 import newrelic.core.error_node
@@ -714,7 +716,7 @@ class Transaction(object):
         except Exception:
             try:
                 # Assume JSON encoding can handle unicode.
-                message = unicode(value)
+                message = six.text_type(value)
             except Exception:
                 message = '<unprintable %s object>' % type(value).__name__
 

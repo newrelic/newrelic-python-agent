@@ -4,6 +4,8 @@ import functools
 
 from collections import namedtuple
 
+import newrelic.packages.six as six
+
 from newrelic.api.object_wrapper import (ObjectWrapper, wrap_object,
         callable_name, WRAPPER_ASSIGNMENTS)
 
@@ -215,7 +217,7 @@ class ObjectWrapperTests(unittest.TestCase):
 
         self.assertEqual(s, str(o1b))
         self.assertEqual(s, repr(o1b))
-        self.assertEqual(s, unicode(o1b))
+        self.assertEqual(s, six.text_type(o1b))
 
     def test_context_manager(self):
         vars = [0]

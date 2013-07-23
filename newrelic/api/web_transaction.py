@@ -264,7 +264,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         for queue_time_header in queue_time_headers:
             value = environ.get(queue_time_header, None)
 
-            if value and isinstance(value, (str, unicode)):
+            try:
                 if value.startswith('t='):
                     try:
                         self.queue_start = _parse_time_stamp(float(value[2:]))
@@ -275,6 +275,9 @@ class WebTransaction(newrelic.api.transaction.Transaction):
                         self.queue_start = _parse_time_stamp(float(value))
                     except Exception:
                         pass
+
+            except Exception:
+                pass
 
             if self.queue_start > 0.0:
                 break

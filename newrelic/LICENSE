@@ -23,6 +23,16 @@ which contains components released under the following license(s):
 
 ---------------------------------------------------------------------------
 
+This product includes:
+
+  'six' (https://bitbucket.org/gutworth/six/overview),
+
+which contains components released under the following license(s):
+
+  The MIT License <http://opensource.org/licenses/MIT>
+
+---------------------------------------------------------------------------
+
 All other components of this product are:
 
   Copyright (c) 2010-2013 New Relic, Inc. All rights reserved.

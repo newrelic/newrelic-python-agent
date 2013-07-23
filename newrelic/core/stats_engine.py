@@ -16,6 +16,8 @@ import newrelic.packages.simplejson as simplejson
 from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
         internal_metric)
 
+from newrelic.packages.six import iterkeys, itervalues, iteritems
+
 _logger = logging.getLogger(__name__)
 
 class ApdexStats(list):
@@ -163,7 +165,7 @@ class CustomMetrics(object):
 
         """
 
-        return self.__stats_table.iteritems()
+        return iteritems(self.__stats_table)
 
 class SlowSqlStats(list):
 
@@ -629,10 +631,10 @@ class StatsEngine(object):
         if self.__settings.debug.log_raw_metric_data:
             _logger.info('Raw metric data for harvest of %r is %r.',
                     self.__settings.app_name,
-                    list(self.__stats_table.iteritems()))
+                    list(iteritems(self.__stats_table)))
 
         if normalizer is not None:
-            for key, value in self.__stats_table.iteritems():
+            for key, value in iteritems(self.__stats_table):
                 key = (normalizer(key[0])[0] , key[1])
                 stats = normalized_stats.get(key)
                 if stats is None:
@@ -645,9 +647,9 @@ class StatsEngine(object):
         if self.__settings.debug.log_normalized_metric_data:
             _logger.info('Normalized metric data for harvest of %r is %r.',
                     self.__settings.app_name,
-                    list(normalized_stats.iteritems()))
+                    list(iteritems(normalized_stats)))
 
-        for key, value in normalized_stats.iteritems():
+        for key, value in iteritems(normalized_stats):
             if key not in self.__metric_ids:
                 key = dict(name=key[0], scope=key[1])
             else:
@@ -689,8 +691,8 @@ class StatsEngine(object):
 
         maximum = self.__settings.agent_limits.slow_sql_data
 
-        slow_sql_nodes = list(sorted(self.__sql_stats_table.values(),
-                key=lambda x: x.max_call_time))[-maximum:]
+        slow_sql_nodes = sorted(itervalues(self.__sql_stats_table),
+                key=lambda x: x.max_call_time)[-maximum:]
 
         result = []
 
@@ -762,7 +764,7 @@ class StatsEngine(object):
                             trace.trace_node_count)
 
             data = [transaction_trace,
-                    trace.string_table.values()]
+                    list(trace.string_table.values())]
 
             if self.__settings.debug.log_transaction_trace_payload:
                 _logger.debug('Encoding slow transaction data where '
@@ -832,7 +834,7 @@ class StatsEngine(object):
                 self.__slow_transaction.trace_node_count)
 
         data = [transaction_trace,
-                self.__slow_transaction.string_table.values()]
+                list(self.__slow_transaction.string_table.values())]
 
         if self.__settings.debug.log_transaction_trace_payload:
             _logger.debug('Encoding slow transaction data where '
@@ -981,7 +983,7 @@ class StatsEngine(object):
         # Merge back data into any new data which has been
         # accumulated.
 
-        for key, other in snapshot.__stats_table.iteritems():
+        for key, other in iteritems(snapshot.__stats_table):
             stats = self.__stats_table.get(key)
             if not stats:
                 self.__stats_table[key] = copy.copy(other)
@@ -1018,7 +1020,7 @@ class StatsEngine(object):
 
         if merge_sql:
             maximum = settings.agent_limits.slow_sql_data
-            for key, other in snapshot.__sql_stats_table.iteritems():
+            for key, other in iteritems(snapshot.__sql_stats_table):
                 stats = self.__sql_stats_table.get(key)
                 if not stats:
                     if len(self.__sql_stats_table) < maximum:

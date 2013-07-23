@@ -16,6 +16,11 @@ def _(method_tuple):
     else:
         return (filename, '%s#%s' % (func_name, func_line), exec_line)
 
+def _unscramble(data):
+    if data:
+        return (
+            zlib.decompress(base64.standard_b64decode(data)).decode('utf-8'))
+
 class TestCallTree(unittest.TestCase):
 
     def setUp(self):
@@ -87,10 +92,6 @@ class TestProfileSession(unittest.TestCase):
 
     def test_generic_profiler_profile_data(self):
 
-        def unscramble(data):
-            if data:
-                return zlib.decompress(base64.standard_b64decode(data))
-
         self.assertEqual(self.g_profile_session.profiler_type,
                 SessionType.GENERIC)
 
@@ -129,14 +130,10 @@ class TestProfileSession(unittest.TestCase):
         expected = '{"REQUEST": [[["file_a", "@method_a#10", 10],'\
                 ' 1, 0, [[["file_b", "@method_b#20", 20], 1, 0, [[["file_c", '\
                 '"@method_c#25", 25], 1, 0, []]]]]]]}'
-        self.assertEqual(unscramble(p[4]), expected)
+        self.assertEqual(_unscramble(p[4]), expected)
 
 
     def test_xray_profiler_profile_data(self):
-
-        def unscramble(data):
-            if data:
-                return zlib.decompress(base64.standard_b64decode(data))
 
         self.assertEqual(self.x_profile_session.profiler_type,
                 SessionType.XRAY)
@@ -164,7 +161,7 @@ class TestProfileSession(unittest.TestCase):
                 ' 0, [[["file_b", "@method_b#20", 20], 1, 0, [[["file_c",'\
                 ' "@method_c#25", 25], 1, 0, []]]], [["file_d", "@method_d#15", 15],'\
                 ' 1, 0, [[["file_c", "@method_c#25", 25], 1, 0, []]]]]]]}'
-        self.assertEqual(unscramble(p[4]), expected)
+        self.assertEqual(_unscramble(p[4]), expected)
 
 
 class TestProfileSessionManager(unittest.TestCase):
@@ -263,8 +260,6 @@ class TestProfileSessionManager(unittest.TestCase):
         self.assertEqual(manager.finished_sessions['app'], [fps, xps1, xps2])
 
     def test_profile_data(self):
-        def unscramble(data):
-            return base64.standard_b64decode(data)
 
         manager = ProfileSessionManager()
         key_txn1 = 'abc'

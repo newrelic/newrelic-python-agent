@@ -37,7 +37,7 @@ class MethodWrapper(object):
 class ResourceInitWrapper(object):
 
     def __init__(self, wrapped):
-        if type(wrapped) == types.TupleType:
+        if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
         else:
             instance = None

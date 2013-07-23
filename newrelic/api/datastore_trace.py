@@ -45,7 +45,7 @@ class DatastoreTrace(newrelic.api.time_trace.TimeTrace):
 class DatastoreTraceWrapper(object):
 
     def __init__(self, wrapped, product, target, operation):
-        if type(wrapped) == types.TupleType:
+        if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
         else:
             instance = None

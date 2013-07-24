@@ -84,7 +84,8 @@ def obfuscate(name, key):
     if not (name and key):
         return ''
 
-    return base64.b64encode(six.b(''.join(_encode(name, key)))).decode('utf-8')
+    return six.text_type(base64.b64encode(six.b(''.join(_encode(name, key)))),
+                         encoding='Latin-1')
 
 def deobfuscate(name, key):
 

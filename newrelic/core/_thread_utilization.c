@@ -392,22 +392,54 @@ PyTypeObject NRUtilization_Type = {
 
 /* ------------------------------------------------------------------------- */
 
-PyMODINIT_FUNC
-init_thread_utilization(void)
+#if PY_MAJOR_VERSION >= 3
+static struct PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT,
+    "_thread_utilization", /* m_name */
+    NULL,                /* m_doc */
+    -1,                  /* m_size */
+    NULL,                /* m_methods */
+    NULL,                /* m_reload */
+    NULL,                /* m_traverse */
+    NULL,                /* m_clear */
+    NULL,                /* m_free */
+};
+#endif
+
+static PyObject *
+moduleinit(void)
 {
     PyObject *module;
 
+#if PY_MAJOR_VERSION >= 3
+    module = PyModule_Create(&moduledef);
+#else
     module = Py_InitModule3("_thread_utilization", NULL, NULL);
+#endif
 
     if (module == NULL)
-        return;
+        return NULL;
 
     if (PyType_Ready(&NRUtilization_Type) < 0)
-        return;
+        return NULL;
 
     Py_INCREF(&NRUtilization_Type);
     PyModule_AddObject(module, "ThreadUtilization",
             (PyObject *)&NRUtilization_Type);
+
+    return module;
 }
+
+#if PY_MAJOR_VERSION < 3
+PyMODINIT_FUNC init_thread_utilization(void)
+{
+    moduleinit();
+}
+#else
+PyMODINIT_FUNC PyInit__thread_utilization(void)
+{
+    return moduleinit();
+}
+#endif
 
 /* ------------------------------------------------------------------------- */

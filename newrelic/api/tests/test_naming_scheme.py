@@ -1,10 +1,13 @@
 import unittest
 import time
 
+import newrelic.packages.six as six
+
 from newrelic.api.application import application_instance
 from newrelic.core.config import global_settings, create_settings_snapshot
 from newrelic.api.web_transaction import WebTransaction, wsgi_application
 from newrelic.api.transaction import current_transaction
+from newrelic.api.object_wrapper import callable_name
 
 class MockApplication(object):
     def __init__(self, settings, name='Python Application'):
@@ -32,8 +35,6 @@ class TestCase(unittest.TestCase):
 
         # Should be named after the raw REQUEST_URI.
 
-        path = u'WebTransaction/Uri/url'
-
         @wsgi_application(application=application)
         def test_application_1(environ, start_response):
             transaction = current_transaction()
@@ -41,7 +42,9 @@ class TestCase(unittest.TestCase):
             self.assertNotEqual(transaction, None)
             self.assertTrue(transaction.enabled)
 
-            self.assertEqual(transaction.path, path)
+            self.assertEqual(transaction.path, path_1)
+
+        path_1 = u'WebTransaction/Uri/url'
 
         environ = {}
         environ['REQUEST_URI'] = '/url'
@@ -56,8 +59,6 @@ class TestCase(unittest.TestCase):
 
         # Should be named after the specific name and group.
 
-        path = u'WebTransaction/Group/Name'
-
         @wsgi_application(application=application, name='Name', group='Group')
         def test_application_1(environ, start_response):
             transaction = current_transaction()
@@ -65,7 +66,9 @@ class TestCase(unittest.TestCase):
             self.assertNotEqual(transaction, None)
             self.assertTrue(transaction.enabled)
 
-            self.assertEqual(transaction.path, path)
+            self.assertEqual(transaction.path, path_1)
+
+        path_1 = u'WebTransaction/Group/Name'
 
         environ = {}
         environ['REQUEST_URI'] = '/url'
@@ -80,8 +83,6 @@ class TestCase(unittest.TestCase):
 
         # Should be named after first WSGI component which was wrapped.
 
-        path = u'WebTransaction/Function/%s:test_application_1' % __name__
-
         @wsgi_application(application=application, framework='Framework')
         def test_application_1(environ, start_response):
             transaction = current_transaction()
@@ -89,11 +90,14 @@ class TestCase(unittest.TestCase):
             self.assertNotEqual(transaction, None)
             self.assertTrue(transaction.enabled)
 
-            self.assertEqual(transaction.path, path)
+            self.assertEqual(transaction.path, path_1)
 
             self.assertTrue(('Framework', None) in transaction._frameworks,
                     'The saved list of frameworks is %r.' % (
                     transaction._frameworks))
+
+        path_1 = u'WebTransaction/Function/%s' % callable_name(
+                test_application_1)
 
         environ = {}
         environ['REQUEST_URI'] = '/url'
@@ -117,13 +121,14 @@ class TestCase(unittest.TestCase):
             self.assertNotEqual(transaction, None)
             self.assertTrue(transaction.enabled)
 
-            path = u'WebTransaction/Function/%s:test_application_2' % __name__
-
-            self.assertEqual(transaction.path, path)
+            self.assertEqual(transaction.path, path_2)
 
             self.assertTrue(('Framework-2', '1.0') in transaction._frameworks,
                     'The saved list of frameworks is %r.' % (
                     transaction._frameworks))
+
+        path_2 = u'WebTransaction/Function/%s' % callable_name(
+                test_application_2)
 
         @wsgi_application(application=application, framework='Framework-1')
         def test_application_1(environ, start_response):
@@ -132,15 +137,16 @@ class TestCase(unittest.TestCase):
             self.assertNotEqual(transaction, None)
             self.assertTrue(transaction.enabled)
 
-            path = u'WebTransaction/Function/%s:test_application_1' % __name__
-
-            self.assertEqual(transaction.path, path)
+            self.assertEqual(transaction.path, path_1)
 
             self.assertTrue(('Framework-1', None) in transaction._frameworks,
                     'The saved list of frameworks is %r.' % (
                     transaction._frameworks))
 
             return test_application_2(environ, start_response)
+
+        path_1 = u'WebTransaction/Function/%s' % callable_name(
+                test_application_1)
 
         environ = {}
         environ['REQUEST_URI'] = '/url'
@@ -164,13 +170,14 @@ class TestCase(unittest.TestCase):
             self.assertNotEqual(transaction, None)
             self.assertTrue(transaction.enabled)
 
-            path = u'WebTransaction/Function/%s:test_application_2' % __name__
-
-            self.assertEqual(transaction.path, path)
+            self.assertEqual(transaction.path, path_2)
 
             self.assertTrue(('Framework-2', '1.0') in transaction._frameworks,
                     'The saved list of frameworks is %r.' % (
                     transaction._frameworks))
+
+        path_2 = u'WebTransaction/Function/%s' % callable_name(
+                test_application_2)
 
         @wsgi_application(application=application)
         def test_application_1(environ, start_response):
@@ -179,11 +186,11 @@ class TestCase(unittest.TestCase):
             self.assertNotEqual(transaction, None)
             self.assertTrue(transaction.enabled)
 
-            path = u'WebTransaction/Uri/url'
-
-            self.assertEqual(transaction.path, path)
+            self.assertEqual(transaction.path, path_1)
 
             return test_application_2(environ, start_response)
+
+        path_1 = u'WebTransaction/Uri/url'
 
         environ = {}
         environ['REQUEST_URI'] = '/url'
@@ -198,8 +205,6 @@ class TestCase(unittest.TestCase):
 
         # Should be named after the raw REQUEST_URI.
 
-        path = u'WebTransaction/Uri/url'
-
         @wsgi_application(application=application)
         def test_application_1(environ, start_response):
             transaction = current_transaction()
@@ -207,7 +212,9 @@ class TestCase(unittest.TestCase):
             self.assertNotEqual(transaction, None)
             self.assertTrue(transaction.enabled)
 
-            self.assertEqual(transaction.path, path)
+            self.assertEqual(transaction.path, path_1)
+
+        path_1 = u'WebTransaction/Uri/url'
 
         environ = {}
         environ['REQUEST_URI'] = '/url'
@@ -222,8 +229,6 @@ class TestCase(unittest.TestCase):
 
         # Should be named after the specific name and group.
 
-        path = u'WebTransaction/Group/Name'
-
         @wsgi_application(application=application, name='Name', group='Group')
         def test_application_1(environ, start_response):
             transaction = current_transaction()
@@ -231,7 +236,9 @@ class TestCase(unittest.TestCase):
             self.assertNotEqual(transaction, None)
             self.assertTrue(transaction.enabled)
 
-            self.assertEqual(transaction.path, path)
+            self.assertEqual(transaction.path, path_1)
+
+        path_1 = u'WebTransaction/Group/Name'
 
         environ = {}
         environ['REQUEST_URI'] = '/url'
@@ -253,9 +260,9 @@ class TestCase(unittest.TestCase):
             self.assertNotEqual(transaction, None)
             self.assertTrue(transaction.enabled)
 
-            path = u'WebTransaction/Group/Name-2'
+            self.assertEqual(transaction.path, path_2)
 
-            self.assertEqual(transaction.path, path)
+        path_2 = u'WebTransaction/Group/Name-2'
 
         @wsgi_application(application=application, name='Name-1', group='Group')
         def test_application_1(environ, start_response):
@@ -264,11 +271,11 @@ class TestCase(unittest.TestCase):
             self.assertNotEqual(transaction, None)
             self.assertTrue(transaction.enabled)
 
-            path = u'WebTransaction/Group/Name-1'
-
-            self.assertEqual(transaction.path, path)
+            self.assertEqual(transaction.path, path_1)
 
             return test_application_2(environ, start_response)
+
+        path_1 = u'WebTransaction/Group/Name-1'
 
         environ = {}
         environ['REQUEST_URI'] = '/url'
@@ -283,8 +290,6 @@ class TestCase(unittest.TestCase):
 
         # Should be named after the specific name and group.
 
-        path = u'WebTransaction/Group/Name'
-
         @wsgi_application(application=application, name='Name', group='Group')
         def test_application_1(environ, start_response):
             transaction = current_transaction()
@@ -292,7 +297,9 @@ class TestCase(unittest.TestCase):
             self.assertNotEqual(transaction, None)
             self.assertTrue(transaction.enabled)
 
-            self.assertEqual(transaction.path, path)
+            self.assertEqual(transaction.path, path_1)
+
+        path_1 = u'WebTransaction/Group/Name'
 
         environ = {}
         environ['REQUEST_URI'] = '/url'
@@ -307,8 +314,6 @@ class TestCase(unittest.TestCase):
 
         # Should be named after first WSGI component which was wrapped.
 
-        path = u'WebTransaction/Function/%s:test_application_1' % __name__
-
         @wsgi_application(application=application)
         def test_application_1(environ, start_response):
             transaction = current_transaction()
@@ -316,7 +321,10 @@ class TestCase(unittest.TestCase):
             self.assertNotEqual(transaction, None)
             self.assertTrue(transaction.enabled)
 
-            self.assertEqual(transaction.path, path)
+            self.assertEqual(transaction.path, path_1)
+
+        path_1 = u'WebTransaction/Function/%s' % callable_name(
+                test_application_1)
 
         environ = {}
         environ['REQUEST_URI'] = '/url'
@@ -339,9 +347,7 @@ class TestCase(unittest.TestCase):
             self.assertNotEqual(transaction, None)
             self.assertTrue(transaction.enabled)
 
-            path = u'WebTransaction/Function/%s:test_application_1' % __name__
-
-            self.assertEqual(transaction.path, path)
+            self.assertEqual(transaction.path, path_1)
 
         @wsgi_application(application=application)
         def test_application_1(environ, start_response):
@@ -350,11 +356,12 @@ class TestCase(unittest.TestCase):
             self.assertNotEqual(transaction, None)
             self.assertTrue(transaction.enabled)
 
-            path = u'WebTransaction/Function/%s:test_application_1' % __name__
-
-            self.assertEqual(transaction.path, path)
+            self.assertEqual(transaction.path, path_1)
 
             return test_application_2(environ, start_response)
+
+        path_1 = u'WebTransaction/Function/%s' % callable_name(
+                test_application_1)
 
         environ = {}
         environ['REQUEST_URI'] = '/url'
@@ -377,9 +384,7 @@ class TestCase(unittest.TestCase):
             self.assertNotEqual(transaction, None)
             self.assertTrue(transaction.enabled)
 
-            path = u'WebTransaction/Function/%s:test_application_1' % __name__
-
-            self.assertEqual(transaction.path, path)
+            self.assertEqual(transaction.path, path_1)
 
         @wsgi_application(application=application)
         def test_application_1(environ, start_response):
@@ -388,11 +393,12 @@ class TestCase(unittest.TestCase):
             self.assertNotEqual(transaction, None)
             self.assertTrue(transaction.enabled)
 
-            path = u'WebTransaction/Function/%s:test_application_1' % __name__
-
-            self.assertEqual(transaction.path, path)
+            self.assertEqual(transaction.path, path_1)
 
             return test_application_2(environ, start_response)
+
+        path_1 = u'WebTransaction/Function/%s' % callable_name(
+                test_application_1)
 
         environ = {}
         environ['REQUEST_URI'] = '/url'
@@ -415,9 +421,10 @@ class TestCase(unittest.TestCase):
             self.assertNotEqual(transaction, None)
             self.assertTrue(transaction.enabled)
 
-            path = u'WebTransaction/Function/%s:test_application_1' % __name__
+            self.assertEqual(transaction.path, path_1)
 
-            self.assertEqual(transaction.path, path)
+        path_1 = u'WebTransaction/Function/%s' % callable_name(
+                test_application_1)
 
         environ = {}
         environ['REQUEST_URI'] = '/url'
@@ -440,9 +447,10 @@ class TestCase(unittest.TestCase):
             self.assertNotEqual(transaction, None)
             self.assertTrue(transaction.enabled)
 
-            path = u'WebTransaction/Function/%s:test_application_2' % __name__
+            self.assertEqual(transaction.path, path_2)
 
-            self.assertEqual(transaction.path, path)
+        path_2 = u'WebTransaction/Function/%s' % callable_name(
+                test_application_2)
 
         @wsgi_application(application=application)
         def test_application_1(environ, start_response):
@@ -451,11 +459,12 @@ class TestCase(unittest.TestCase):
             self.assertNotEqual(transaction, None)
             self.assertTrue(transaction.enabled)
 
-            path = u'WebTransaction/Function/%s:test_application_1' % __name__
-
-            self.assertEqual(transaction.path, path)
+            self.assertEqual(transaction.path, path_1)
 
             return test_application_2(environ, start_response)
+
+        path_1 = u'WebTransaction/Function/%s' % callable_name(
+                test_application_1)
 
         environ = {}
         environ['REQUEST_URI'] = '/url'

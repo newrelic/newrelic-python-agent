@@ -104,9 +104,12 @@ CALLABLES = [
   (_class1._function2, _module_fqdn('_class1._function2')),
   (_class1()._function2, _module_fqdn('_class1._function2')),
 
-  # Not possible to get the class corresponding to a static method.
-  (_class1._function3, _module_fqdn('_function3')),
-  (_class1()._function3, _module_fqdn('_function3')),
+  # Not possible to get the class corresponding to a static
+  # method when running with Python 2, but can with Python 3.
+  (_class1._function3, six.PY3 and _module_fqdn('_class1._function3') or
+      _module_fqdn('_function3')),
+  (_class1()._function3, six.PY3 and _module_fqdn('_class1._function3') or
+      _module_fqdn('_function3')),
 
   (_class2, _module_fqdn('_class2')),
   (_class2(), _module_fqdn('_class2')),
@@ -117,18 +120,25 @@ CALLABLES = [
   (_class2._function2, _module_fqdn('_class2._function2')),
   (_class2()._function2, _module_fqdn('_class2._function2')),
 
-  # Not possible to get the class corresponding to a static method.
-  (_class2._function3, _module_fqdn('_function3')),
-  (_class2()._function3, _module_fqdn('_function3')),
+  # Not possible to get the class corresponding to a static
+  # method when running with Python 2, but can with Python 3.
+  (_class2._function3, six.PY3 and _module_fqdn('_class2._function3') or
+      _module_fqdn('_function3')),
+  (_class2()._function3, six.PY3 and _module_fqdn('_class2._function3') or
+      _module_fqdn('_function3')),
 
   (_class3, _module_fqdn('_class3')),
   (_class3(1), _module_fqdn('_class3')),
 
-  (_class3._make, _module_fqdn('_class3._make')),
-  (_class3(1)._make, _module_fqdn('_class3._make')),
+  (_class3._make, six.PY3 and _module_fqdn('_class3._make', 'builtins') or
+      _module_fqdn('_class3._make')),
+  (_class3(1)._make, six.PY3 and _module_fqdn('_class3._make', 'builtins') or
+      _module_fqdn('_class3._make')),
 
-  (_class3._asdict, _module_fqdn('_class3._asdict')),
-  (_class3(1)._asdict, _module_fqdn('_class3._asdict')),
+  (_class3._asdict, six.PY3 and _module_fqdn('_class3._asdict',
+      '<unknown>') or _module_fqdn('_class3._asdict')),
+  (_class3(1)._asdict, six.PY3 and _module_fqdn('_class3._asdict',
+      '<unknown>') or _module_fqdn('_class3._asdict')),
 
   (_function2, _module_fqdn('_function2')),
   (_function3, _module_fqdn('_function3')),
@@ -136,9 +146,12 @@ CALLABLES = [
   (_class4._function1, _module_fqdn('_class4._function1')),
   (_class4()._function1, _module_fqdn('_class4._function1')),
 
-  # Not possible to get the class where decorator is a class object.
-  (_class4._function2, _module_fqdn('_function2')),
-  (_class4()._function2, _module_fqdn('_function2')),
+  # Not possible to get the class where decorator is a class
+  # object when running with Python 2, but can with Python 3.
+  (_class4._function2, six.PY3 and _module_fqdn('_class4._function2') or
+      _module_fqdn('_function2')),
+  (_class4()._function2, six.PY3 and _module_fqdn('_class4._function2') or
+      _module_fqdn('_function2')),
 ]
 
 class ObjectWrapperTests(unittest.TestCase):

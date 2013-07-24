@@ -63,19 +63,31 @@ JAN_1_2000 = time.mktime((2000, 1, 1, 0, 0, 0, 0, 0, 0))
 
 def _encode(name, key):
     s = []
-    for i in range(len(name)):
-        s.append(chr(ord(name[i]) ^ ord(key[i % len(key)])))
+
+    # Convert name and key into bytes which are treated as integers.
+
+    key = list(six.iterbytes(six.b(key)))
+    for i, c in enumerate(six.iterbytes(six.b(name))):
+        s.append(chr(c ^ key[i % len(key)]))
     return s
 
 def obfuscate(name, key):
-    if name is None:
+    if not (name and key):
         return ''
-    return base64.b64encode(six.b(''.join(_encode(name, key))))
+
+    # Always pass name and key as str to _encode()
+
+    return six.text_type(base64.b64encode(six.b(''.join(_encode(name, key)))),
+            encoding='Latin-1')
 
 def deobfuscate(name, key):
-    if name is None:
+    if not (name and key):
         return ''
-    return ''.join(_encode(base64.b64decode(name), key))
+
+    # Always pass name and key as str to _encode()
+
+    return ''.join(_encode(six.text_type(base64.b64decode(six.b(name)),
+        encoding='Latin-1'), key))
 
 def _lookup_environ_setting(environ, name, default=False):
     flag = environ.get(name, default)

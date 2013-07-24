@@ -233,6 +233,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/tests/test_obfuscate_deobfuscate.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/tests/test_object_wrapper.py": {
         "hash": "n/a",
         "libraries": [

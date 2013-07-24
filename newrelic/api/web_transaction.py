@@ -67,6 +67,16 @@ def _encode(name, key):
         s.append(chr(ord(name[i]) ^ ord(key[i % len(key)])))
     return s
 
+if six.PY3:
+    def _decode(name, key):
+        s = []
+        for i in range(len(name)):
+            s.append(chr(name[i] ^ key[i % len(key)]))
+        return s
+else:
+    _decode = _encode
+
+
 def obfuscate(name, key):
 
     # Check if name and key are valid.
@@ -84,15 +94,6 @@ def deobfuscate(name, key):
         return ''
 
     return ''.join(_decode(base64.b64decode(six.b(name)), six.b(key)))
-
-if six.PY3:
-    def _decode(name, key):
-        s = []
-        for i in range(len(name)):
-            s.append(chr(name[i] ^ key[i % len(key)]))
-        return s
-else:
-    _decode = _encode
 
 def _lookup_environ_setting(environ, name, default=False):
     flag = environ.get(name, default)

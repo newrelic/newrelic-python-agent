@@ -84,7 +84,7 @@ class PlatformInterface(object):
         try:
             data = json.dumps(payload, ensure_ascii=True, encoding='Latin-1')
 
-        except Exception, exc:
+        except Exception as exc:
             _logger.error('Error encoding data for JSON payload '
                     'with payload of %r. Exception which occurred was %r. '
                     'Please report this problem to New Relic support.',
@@ -125,7 +125,7 @@ class PlatformInterface(object):
 
             content = r.content
 
-        except requests.RequestException, exc:
+        except requests.RequestException as exc:
             if not self.proxy_host or not self.proxy_port:
                 _logger.warning('Data collector is not contactable. This can '
                         'be because of a network issue or because of the data '

@@ -415,7 +415,7 @@ def run(config_file, background=False):
         enabled = option('enabled', section, 'boolean', default=True)
 
         if not enabled:
-            return
+            continue
 
         function = option('function', section)
         (module_name, object_path) = function.split(':', 1)

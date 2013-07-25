@@ -1,9 +1,11 @@
+import newrelic.packages.six as six
+
 import newrelic.api.external_trace
 
 def instrument(module):
 
     def url_opener_open(opener, fullurl, *args, **kwargs):
-        if isinstance(fullurl, (str, unicode)):
+        if isinstance(fullurl, six.string_types):
             return fullurl
         else:
             return fullurl.get_full_url()

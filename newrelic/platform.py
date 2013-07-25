@@ -6,7 +6,10 @@ import threading
 import socket
 import atexit
 
-from ConfigParser import RawConfigParser, NoOptionError
+try:
+    from ConfigParser import RawConfigParser, NoOptionError
+except ImportError:
+    from configparser import RawConfigParser, NoOptionError
 
 from . import version as agent_version
 
@@ -412,7 +415,7 @@ def run(config_file, background=False):
         enabled = option('enabled', section, 'boolean', default=True)
 
         if not enabled:
-            return
+            continue
 
         function = option('function', section)
         (module_name, object_path) = function.split(':', 1)

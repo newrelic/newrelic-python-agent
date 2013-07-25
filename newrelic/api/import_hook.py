@@ -1,6 +1,11 @@
 import sys
 import imp
 
+try:
+    from importlib import find_loader
+except ImportError:
+    find_loader = None
+
 _import_hooks = {}
 
 def register_import_hook(name, callable):
@@ -70,6 +75,20 @@ class _ImportHookLoader:
 
         return module
 
+class _ImportHookChainedLoader:
+
+    def __init__(self, loader):
+        self.loader = loader
+
+    def load_module(self, fullname):
+        module = loader.load_module(fullname)
+
+        # Call the import hooks on the module being handled.
+
+        _notify_import_hooks(fullname, module)
+
+        return module
+
 class ImportHookFinder:
 
     def __init__(self):
@@ -96,15 +115,27 @@ class ImportHookFinder:
         self._skip[fullname] = True
 
         try:
-            __import__(fullname)
+            # For Python 3 we need to use find_loader() from the new
+            # importlib module.
+
+            if find_loader:
+                loader = find_loader(fullname, path)
+
+                if loader:
+                    return _ImportHookChainedLoader(loader)
+
+            else:
+                __import__(fullname)
+
+                # If we get this far then the module we are
+                # interested in does actually exist and so return
+                # our loader to trigger import hooks and then return
+                # the module.
+
+                return _ImportHookLoader()
+
         finally:
             del self._skip[fullname]
-
-        # If we get this far then the module we are interested
-        # in does actually exist and so return our loader to
-        # trigger import hooks and then return the module.
-
-        return _ImportHookLoader()
 
 def import_hook(name):
     def decorator(wrapped):

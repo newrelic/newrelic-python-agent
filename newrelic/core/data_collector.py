@@ -2,14 +2,14 @@
 
 """
 
-
-
 import logging
 import os
 import socket
 import sys
 import time
 import zlib
+
+import newrelic.packages.six as six
 
 import newrelic.packages.requests as requests
 import newrelic.packages.simplejson as simplejson
@@ -186,7 +186,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
         with InternalTrace('Supportability/Collector/ZLIB/Compress/'
                 '%s' % method):
-            data = zlib.compress(data, level)
+            data = zlib.compress(six.b(data), level)
 
     # If there is no requests session object provided for making
     # requests create one now. We want to close this as soon as we

@@ -1555,15 +1555,17 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.template_genshi')
 
     _process_module_definition('httplib',
-            'newrelic.hooks.external_httplib')
+            'newrelic.hooks.external_httplib') # Python 2
+    _process_module_definition('http.client',
+            'newrelic.hooks.external_httplib') # Python 3
 
     _process_module_definition('httplib2',
             'newrelic.hooks.external_httplib2')
 
     _process_module_definition('urllib',
-            'newrelic.hooks.external_urllib')
+            'newrelic.hooks.external_urllib') # Python 2
     _process_module_definition('urllib.request',
-            'newrelic.hooks.external_urllib')
+            'newrelic.hooks.external_urllib') # Python 3
 
     _process_module_definition('urllib2',
             'newrelic.hooks.external_urllib2')

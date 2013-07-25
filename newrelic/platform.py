@@ -6,7 +6,10 @@ import threading
 import socket
 import atexit
 
-from ConfigParser import RawConfigParser, NoOptionError
+try:
+    from ConfigParser import RawConfigParser, NoOptionError
+except ImportError:
+    from configparser import RawConfigParser, NoOptionError
 
 from . import version as agent_version
 

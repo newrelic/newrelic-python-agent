@@ -184,7 +184,7 @@ def object_context(object):
 
     return (mname, path)
 
-def callable_name(object, separator=':'):
+def _obsolete_callable_name(object, separator=':'):
     if hasattr(object, '_nr_object_path'):
         name = object._nr_object_path
         if name is not None:
@@ -196,6 +196,8 @@ def callable_name(object, separator=':'):
     except Exception:
         pass
     return name
+
+from ..common.object_names import callable_name
 
 class ObjectWrapper(object):
 

@@ -323,6 +323,30 @@
             "New Relic"
         ]
     },
+    "newrelic/common/__init__.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/object_names.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/__init__.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_object_names.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/config.py": {
         "hash": "n/a",
         "libraries": [

@@ -69,11 +69,13 @@ packages = [
   "newrelic",
   "newrelic.api",
   "newrelic.bootstrap",
+  "newrelic.common",
   "newrelic.core",
   "newrelic.extras",
   "newrelic.extras.framework_django",
   "newrelic.extras.framework_django.templatetags",
   "newrelic.hooks",
+  "newrelic.network",
   "newrelic/packages",
   "newrelic/packages/requests",
   "newrelic/packages/requests/packages",
@@ -82,7 +84,6 @@ packages = [
   "newrelic/packages/requests/packages/urllib3/packages",
   "newrelic/packages/requests/packages/urllib3/packages/ssl_match_hostname",
   "newrelic/packages/simplejson",
-  "newrelic.network",
   "newrelic.samplers",
 ]
 

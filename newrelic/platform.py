@@ -13,6 +13,8 @@ except ImportError:
 
 from . import version as agent_version
 
+from .common.object_names import callable_name
+
 from .network.platform_api import PlatformInterface
 from .network.exceptions import (DiscardDataForRequest, RetryDataForRequest)
 
@@ -98,7 +100,8 @@ class DataSampler(object):
 
         self.properties.update(properties)
 
-        self.name = (name or self.properties.get('name') or source.__name__)
+        self.name = (name or self.properties.get('name') or
+                callable_name(source))
 
         self.group = self.properties.get('group')
 

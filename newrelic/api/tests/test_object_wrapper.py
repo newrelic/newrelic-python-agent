@@ -7,7 +7,8 @@ from collections import namedtuple
 import newrelic.packages.six as six
 
 from newrelic.api.object_wrapper import (ObjectWrapper, wrap_object,
-        callable_name, WRAPPER_ASSIGNMENTS)
+        WRAPPER_ASSIGNMENTS)
+from newrelic.api.object_wrapper import _obsolete_callable_name as callable_name
 
 def Wrapper(wrapped):
 

@@ -119,7 +119,12 @@ then
     TOX="python runtox.py"
 fi
 
-TOX_TESTS="newrelic/core/tests newrelic/api/tests newrelic/tests"
+TOX_TESTS=""
+
+TOX_TESTS="$TOX_TESTS newrelic/common/tests"
+TOX_TESTS="$TOX_TESTS newrelic/core/tests"
+TOX_TESTS="$TOX_TESTS newrelic/api/tests" 
+TOX_TESTS="$TOX_TESTS newrelic/tests"
 
 echo "Running tests with Pure Python version of agent!"
 

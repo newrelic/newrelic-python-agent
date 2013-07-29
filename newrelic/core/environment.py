@@ -32,6 +32,8 @@ try:
 except ImportError:
     pass
 
+import newrelic.packages.six as six
+
 def environment_settings():
     """Returns an array of arrays of environment settings
 
@@ -151,7 +153,7 @@ def environment_settings():
 
     plugins = []
 
-    for name, module in sys.modules.items():
+    for name, module in list(six.iteritems(sys.modules)):
         if name.startswith('newrelic.hooks.'):
             plugins.append(name)
 

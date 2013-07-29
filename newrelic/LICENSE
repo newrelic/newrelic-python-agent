@@ -33,6 +33,16 @@ which contains components released under the following license(s):
 
 ---------------------------------------------------------------------------
 
+This product includes:
+
+  'time.monotonic' (newrelic/common/_monotonic.c),
+
+which contains components released under the following license(s):
+
+  Python Software Foundation <http://docs.python.org/2/license.html>
+
+---------------------------------------------------------------------------
+
 All other components of this product are:
 
   Copyright (c) 2010-2013 New Relic, Inc. All rights reserved.

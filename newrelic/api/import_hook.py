@@ -81,7 +81,7 @@ class _ImportHookChainedLoader:
         self.loader = loader
 
     def load_module(self, fullname):
-        module = loader.load_module(fullname)
+        module = self.loader.load_module(fullname)
 
         # Call the import hooks on the module being handled.
 

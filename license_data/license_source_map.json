@@ -329,7 +329,25 @@
             "New Relic"
         ]
     },
+    "newrelic/common/_monotonic.c": {
+        "hash": "7ccf45995f7e4a2e22540da428d9f822",
+        "libraries": [
+            "time.monotonic"
+        ]
+    },
     "newrelic/common/object_names.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/stopwatch.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/system_info.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -342,6 +360,18 @@
         ]
     },
     "newrelic/common/tests/test_object_names.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_stopwatch.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_system_info.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -389,19 +419,7 @@
             "New Relic"
         ]
     },
-    "newrelic/core/cpu_usage.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "newrelic/core/data_collector.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/core/data_source.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -468,12 +486,6 @@
         ]
     },
     "newrelic/core/memcache_node.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/core/memory_usage.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -1427,7 +1439,49 @@
             "New Relic"
         ]
     },
+    "newrelic/samplers/cpu_usage.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/samplers/data_sampler.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/samplers/decorators.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/samplers/memory_usage.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/samplers/tests/test_cpu_usage.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/samplers/tests/test_data_sampler.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/samplers/tests/test_decorators.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/samplers/tests/test_memory_usage.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

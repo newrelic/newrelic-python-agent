@@ -112,9 +112,16 @@ def run_setup(with_extensions):
     kwargs_tmp = dict(kwargs)
 
     if with_extensions:
+        monotonic_libraries = []
+        if sys.platform == 'linux2':
+            monotonic_libraries = ['rt']
+
         kwargs_tmp['ext_modules'] = [
                 Extension("newrelic.packages.simplejson._speedups",
                 ["newrelic/packages/simplejson/_speedups.c"]),
+                Extension("newrelic.common._monotonic",
+                    ["newrelic/common/_monotonic.c"],
+                    libraries=monotonic_libraries),
                 Extension("newrelic.core._thread_utilization",
                     ["newrelic/core/_thread_utilization.c"]),
                 ]

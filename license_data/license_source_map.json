@@ -1421,7 +1421,25 @@
             "New Relic"
         ]
     },
+    "newrelic/samplers/cpu_usage.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/samplers/data_sampler.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/samplers/decorators.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/samplers/memory_usage.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

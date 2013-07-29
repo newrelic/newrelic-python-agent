@@ -5,6 +5,8 @@ system, Python and hosting environment.
 
 import newrelic
 
+from ..common.system_info import cpu_count, memory_total
+
 import sys
 import os
 import platform
@@ -30,77 +32,6 @@ try:
 except ImportError:
     pass
 
-_current_cpu_count = None
-
-def cpu_count(update=False):
-    """Return the number of processors host hardware provides.
-
-    """
-
-    global _current_cpu_count
-
-    if not update and _current_cpu_count:
-        return _current_cpu_count
-
-    # TODO For more methods of determining this if required see
-    # http://stackoverflow.com/questions/1006289.
-
-    # Python 2.6+.
-
-    if 'multiprocessing' in sys.modules:
-        try:
-            _current_cpu_count = multiprocessing.cpu_count()
-            return _current_cpu_count
-        except NotImplementedError:
-            pass
-
-    # POSIX Systems.
-
-    try:
-        res = os.sysconf('SC_NPROCESSORS_ONLN')
-        if res > 0:
-            _current_cpu_count = res
-            return _current_cpu_count
-    except (ValueError, OSError, AttributeError):
-        pass
-
-    # Fallback to indicating only a single processor.
-
-    _current_cpu_count = 1
-
-    return _current_cpu_count
-
-def _get_available_memory():
-    if sys.platform == 'linux2':
-        try:
-            parser = re.compile(r'^(?P<key>\S*):\s*(?P<value>\d*)\s*kB')
-
-            fp = None
-
-            try:
-                fp = open('/proc/meminfo')
-
-                for line in fp.readlines():
-                    match = parser.match(line)
-                    if not match:
-                        continue
-                    key, value = match.groups(['key', 'value'])
-                    if key == 'MemTotal':
-                        memory_bytes = float(value) * 1024
-                        return memory_bytes / (1024*1024)
-
-            except Exception:
-                pass
-
-            finally:
-                if fp:
-                    fp.close()
-
-        except IOError:
-            return 0
-
-    return 0
-
 def environment_settings():
     """Returns an array of arrays of environment settings
 
@@ -122,7 +53,7 @@ def environment_settings():
     env.append(('OS', platform.system()))
     env.append(('OS version', platform.release()))
     env.append(('CPU Count', cpu_count()))
-    env.append(('System Memory', _get_available_memory()))
+    env.append(('System Memory', memory_total()))
 
     # Python information.
 

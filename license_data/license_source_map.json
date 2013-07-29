@@ -335,6 +335,12 @@
             "New Relic"
         ]
     },
+    "newrelic/common/system_info.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/common/tests/__init__.py": {
         "hash": "n/a",
         "libraries": [
@@ -342,6 +348,12 @@
         ]
     },
     "newrelic/common/tests/test_object_names.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_system_info.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -389,19 +401,7 @@
             "New Relic"
         ]
     },
-    "newrelic/core/cpu_usage.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "newrelic/core/data_collector.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/core/data_source.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -468,12 +468,6 @@
         ]
     },
     "newrelic/core/memcache_node.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/core/memory_usage.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -1428,6 +1422,30 @@
         ]
     },
     "newrelic/samplers/decorators.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/samplers/tests/test_cpu_usage.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/samplers/tests/test_data_sampler.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/samplers/tests/test_decorators.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/samplers/tests/test_memory_usage.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

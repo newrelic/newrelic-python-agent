@@ -14,6 +14,8 @@ from functools import partial
 
 import newrelic.packages.six as six
 
+from newrelic.samplers.data_sampler import DataSampler
+
 from newrelic.core.config import global_settings_dump, global_settings
 from newrelic.core.data_collector import create_session
 from newrelic.network.exceptions import (ForceAgentRestart,
@@ -23,7 +25,6 @@ from newrelic.core.rules_engine import RulesEngine
 from newrelic.core.stats_engine import StatsEngine, CustomMetrics
 from newrelic.core.internal_metrics import (InternalTrace,
         InternalTraceContext, internal_metric)
-from newrelic.core.data_source import DataSampler
 from newrelic.core.xray_session import XraySession
 from newrelic.core.profile_sessions import profile_session_manager
 

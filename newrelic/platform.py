@@ -18,6 +18,7 @@ from .common.object_names import callable_name
 from .network.platform_api import PlatformInterface
 from .network.exceptions import (DiscardDataForRequest, RetryDataForRequest)
 
+from .samplers.data_sampler import DataSampler
 from .samplers.decorators import (data_source_generator, data_source_factory)
 
 _logger = logging.getLogger(__name__)
@@ -87,70 +88,6 @@ class Stats(dict):
         # minimum call time is dependent on initial value.
 
         self.count += 1
-
-class DataSampler(object):
-
-    def __init__(self, consumer, source, name, settings, **properties):
-        self.consumer = consumer
-
-        self.properties = source(settings)
-
-        self.factory = self.properties['factory']
-        self.instance =  None
-
-        self.properties.update(properties)
-
-        self.name = (name or self.properties.get('name') or
-                callable_name(source))
-
-        self.group = self.properties.get('group')
-
-        if self.group:
-            self.group = self.group.rstrip('/')
-
-        self.guid = self.properties.get('guid')
-
-        if self.guid is None and hasattr(source, 'guid'):
-            self.guid = source.guid
-
-        self.version = self.properties.get('version')
-
-        if self.version is None and hasattr(source, 'version'):
-            self.version = source.version
-
-        environ = {}
-
-        environ['consumer.name'] = consumer
-        environ['consumer.vendor'] = 'New Relic'
-        environ['producer.name'] = self.name
-        environ['producer.group'] = self.group
-        environ['producer.guid'] = self.guid
-        environ['producer.version'] = self.version
-
-        self.environ = environ
-
-        _logger.debug('Initialising data sampler for %r.', self.environ)
-
-    def start(self):
-        if self.instance is None:
-            self.instance = self.factory(self.environ)
-        if hasattr(self.instance, 'start'):
-            self.instance.start()
-
-    def stop(self):
-        if hasattr(self.instance, 'stop'):
-            self.instance.stop()
-        else:
-            self.instance = None
-
-    def metrics(self):
-        assert self.instance is not None
-
-        if self.group:
-            return (('%s/%s' % (self.group, key), value)
-                    for key, value in self.instance())
-        else:
-            return self.instance()
 
 class DataAggregator(object):
 

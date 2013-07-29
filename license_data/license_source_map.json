@@ -329,7 +329,19 @@
             "New Relic"
         ]
     },
+    "newrelic/common/_monotonic.c": {
+        "hash": "4f70c3eea9c5676ee1c69c5e5bfc6a3b",
+        "libraries": [
+            "time.monotonic"
+        ]
+    },
     "newrelic/common/object_names.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/stopwatch.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -348,6 +360,12 @@
         ]
     },
     "newrelic/common/tests/test_object_names.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_stopwatch.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

@@ -30,6 +30,13 @@
             ],
             "name": "six",
             "url": "https://bitbucket.org/gutworth/six/overview"
+        },
+        "time.monotonic": {
+            "licenses": [
+                "PSF"
+            ],
+            "name": "time.montonic",
+            "url": "newrelic/common/_monotonic.c"
         }
     },
     "licenses": {
@@ -48,6 +55,10 @@
         "New Relic": {
             "name": "New Relic",
             "url": "http://newrelic.com"
+        },
+        "PSF": {
+            "name": "Python Software Foundation",
+            "url": "http://docs.python.org/2/license.html"
         },
         "apache2": {
             "name": "Apache License, Version 2.0",

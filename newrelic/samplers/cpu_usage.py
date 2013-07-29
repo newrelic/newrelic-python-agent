@@ -7,6 +7,7 @@ import os
 import time
 
 from ..common.system_info import cpu_count
+from ..common.stopwatch import start_timer
 
 from .decorators import data_source_factory
 
@@ -14,34 +15,30 @@ from .decorators import data_source_factory
 class _CPUUsageDataSource(object):
 
     def __init__(self, settings, environ):
-        self._last_timestamp = None
+        self._timer = None
         self._times = None
 
     def start(self):
-        self._last_timestamp = time.time()
+        self._timer = start_timer()
         try:
             self._times = os.times()
         except Exception:
             self._times = None
 
     def stop(self):
-        self._last_timestamp = None
+        self._timer = None
         self._times = None
 
     def __call__(self):
         if self._times is None:
             return
 
-        now = time.time()
         new_times = os.times()
-
-        elapsed_time = now - self._last_timestamp
-
         user_time = new_times[0] - self._times[0]
 
+        elapsed_time = self._timer.restart_timer()
         utilization = user_time / (elapsed_time*cpu_count())
 
-        self._last_timestamp = now
         self._times = new_times
 
         yield ('CPU/User Time', user_time)

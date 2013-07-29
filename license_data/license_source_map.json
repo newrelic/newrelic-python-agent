@@ -330,7 +330,7 @@
         ]
     },
     "newrelic/common/_monotonic.c": {
-        "hash": "4f70c3eea9c5676ee1c69c5e5bfc6a3b",
+        "hash": "7ccf45995f7e4a2e22540da428d9f822",
         "libraries": [
             "time.monotonic"
         ]

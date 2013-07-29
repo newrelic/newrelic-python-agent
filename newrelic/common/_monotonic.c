@@ -6,10 +6,10 @@
 
 #include <Python.h>
 
-#include <sys/times.h>
-#include <sys/types.h>
+#include <time.h>
 
 #if defined(__APPLE__)
+#include <mach/mach.h>
 #include <mach/mach_time.h>
 #endif
 
@@ -78,8 +78,7 @@ static PyObject *monotonic(PyObject *self, PyObject *args)
 
     return PyFloat_FromDouble(secs);
 
-#elif defined(HAVE_CLOCK_GETTIME) && (defined(CLOCK_HIGHRES) || \
-        defined(CLOCK_MONOTONIC))
+#elif (defined(CLOCK_HIGHRES) || defined(CLOCK_MONOTONIC))
     struct timespec tp;
 #ifdef CLOCK_HIGHRES
     const clockid_t clk_id = CLOCK_HIGHRES;

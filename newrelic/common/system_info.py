@@ -6,6 +6,7 @@ system or for the specific process the code is running in.
 import os
 import sys
 import multiprocessing
+import re
 
 try:
     import resource

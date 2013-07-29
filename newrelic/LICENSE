@@ -35,7 +35,7 @@ which contains components released under the following license(s):
 
 This product includes:
 
-  'time.montonic' (newrelic/common/_monotonic.c),
+  'time.monotonic' (newrelic/common/_monotonic.c),
 
 which contains components released under the following license(s):
 

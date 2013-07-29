@@ -35,7 +35,7 @@
             "licenses": [
                 "PSF"
             ],
-            "name": "time.montonic",
+            "name": "time.monotonic",
             "url": "newrelic/common/_monotonic.c"
         }
     },

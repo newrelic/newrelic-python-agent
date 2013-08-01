@@ -773,6 +773,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/external_thrift.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/external_urllib.py": {
         "hash": "n/a",
         "libraries": [

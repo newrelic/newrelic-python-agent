@@ -8,6 +8,12 @@ def httplib_connect_wrapper(wrapped, instance, args, kwargs, scheme):
     if transaction is None:
         return wrapped(*args, **kwargs)
 
+    def _connect_unbound(instance, *args, **kwargs):
+        return instance
+
+    if instance is None:
+        instance = _connect_unbound(*args, **kwargs)
+
     connection = instance
 
     url = '%s://%s' % (scheme, connection.host)

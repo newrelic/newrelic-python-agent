@@ -214,6 +214,21 @@ class Agent(object):
         if self._config.enabled:
             atexit.register(self._atexit_shutdown)
 
+            # Register an atexit hook for uwsgi to facilitate the graceful
+            # reload of workers. This is necessary for uwsgi with gevent
+            # workers, since the graceful reload waits for all greenlets to
+            # join, but our NR background greenlet will never join since it has
+            # to stay alive indefinitely.since the graceful reload waits for
+            # all greenlets to join, but our NR background greenlet will never
+            # join since it has to stay alive indefinitely. But if we register
+            # our agent shutdown to the uwsgi's atexit hook, then the reload
+            # will trigger the atexit hook, thus shutting down our agent
+            # thread.
+
+            if 'uwsgi' in sys.modules:
+                import uwsgi
+                uwsgi.atexit = self._atexit_shutdown
+
         self._data_sources = {}
 
     def dump(self, file):

@@ -70,13 +70,14 @@ def httplib_getresponse_wrapper(wrapped, instance, args, kwargs):
     if not tracer:
         return wrapped(*args, **kwargs)
 
-    # Make sure we remove the tracer from the connection object so that
-    # it doesn't hold onto objects. Do this before we call the wrapped
-    # function so is removed even if exception occurs.
+    response = wrapped(*args, **kwargs)
+
+    # Make sure we remove the tracer from the connection object so that it
+    # doesn't hold onto objects. Do this after we call the wrapped function so
+    # if an exception occurs the higher library might retry the call again with
+    # the same connection object. Both urllib3 and requests do this in Py2.7
 
     del connection._nr_external_tracer
-
-    response = wrapped(*args, **kwargs)
 
     if hasattr(tracer, 'process_response_headers'):
         tracer.process_response_headers(response.getheaders())

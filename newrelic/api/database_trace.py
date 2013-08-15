@@ -48,9 +48,9 @@ class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
         if transaction_tracer.enabled and settings.collect_traces:
             if self.duration >= transaction_tracer.stack_trace_threshold:
                 if (self.transaction._stack_trace_count <
-                       agent_limits.slow_sql_stack_trace):
-                    self.stack_trace = map(self.transaction._intern_string,
-                                           traceback.format_stack())
+                        agent_limits.slow_sql_stack_trace):
+                    self.stack_trace = [self.transaction._intern_string(x) for
+                                        x in traceback.format_stack()]
                     self.transaction._stack_trace_count += 1
 
 

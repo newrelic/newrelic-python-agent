@@ -415,8 +415,8 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         # parameters returned for slow transactions and errors.
 
         try:
-            header = filter(lambda x: x[0].lower() == 'content-length',
-                    response_headers)[-1:]
+            header = [x for x in response_headers
+                    if x[0].lower() == 'content-length'][-1:]
 
             if header:
                 self._response_properties['CONTENT_LENGTH'] = header[0][1]

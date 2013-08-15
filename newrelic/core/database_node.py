@@ -192,8 +192,8 @@ class DatabaseNode(_DatabaseNode):
             params['sql'] = root.string_table.cache(sql[:limit])
 
             if self.stack_trace:
-                params['backtrace'] = map(root.string_table.cache,
-                        self.stack_trace)
+                params['backtrace'] = [root.string_table.cache(x) for x in
+                        self.stack_trace]
 
             explain_plan = self.explain_plan
             if explain_plan:

@@ -46,10 +46,10 @@ def instrument(module):
         def executescript(self, sql_script):
             transaction = newrelic.api.transaction.current_transaction()
             if not transaction:
-                return self._nr_cursor.executemany(sql_script)
+                return self._nr_cursor.executescript(sql_script)
             with newrelic.api.database_trace.DatabaseTrace(
                     transaction, sql_script, module):
-                return self._nr_cursor.executemany(sql_script)
+                return self._nr_cursor.executescript(sql_script)
 
         #def get_row_factory(self):
         #    return getattr(self._nr_cursor, 'row_factory')
@@ -124,10 +124,10 @@ def instrument(module):
         def executescript(self, sql_script):
             transaction = newrelic.api.transaction.current_transaction()
             if not transaction:
-                return self._nr_connection.executemany(sql_script)
+                return self._nr_connection.executescript(sql_script)
             with newrelic.api.database_trace.DatabaseTrace(
                     transaction, sql_script, module):
-                return self._nr_connection.executemany(sql_script)
+                return self._nr_connection.executescript(sql_script)
 
         #def get_row_factory(self):
         #    return getattr(self._nr_connection, 'row_factory')

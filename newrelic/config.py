@@ -1716,6 +1716,9 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.middleware_weberror',
             'instrument_weberror_reporter')
 
+    _process_module_definition('thrift.transport.TSocket',
+            'newrelic.hooks.external_thrift')
+
 _instrumentation_done = False
 
 def _setup_instrumentation():

@@ -218,16 +218,22 @@ class Agent(object):
             # reload of workers. This is necessary for uwsgi with gevent
             # workers, since the graceful reload waits for all greenlets to
             # join, but our NR background greenlet will never join since it has
-            # to stay alive indefinitely.since the graceful reload waits for
-            # all greenlets to join, but our NR background greenlet will never
-            # join since it has to stay alive indefinitely. But if we register
-            # our agent shutdown to the uwsgi's atexit hook, then the reload
-            # will trigger the atexit hook, thus shutting down our agent
-            # thread.
+            # to stay alive indefinitely. But if we register our agent shutdown
+            # to the uwsgi's atexit hook, then the reload will trigger the
+            # atexit hook, thus shutting down our agent thread. We should
+            # append our atexit hook to any pre-existing ones to prevent
+            # overwriting them.
 
             if 'uwsgi' in sys.modules:
                 import uwsgi
-                uwsgi.atexit = self._atexit_shutdown
+                uwsgi_original_atexit_callback = getattr(uwsgi, 'atexit', None)
+
+                def uwsgi_atexit_callback():
+                    self._atexit_shutdown()
+                    if uwsgi_original_atexit_callback:
+                        uwsgi_original_atexit_callback()
+
+                uwsgi.atexit = uwsgi_atexit_callback
 
         self._data_sources = {}
 

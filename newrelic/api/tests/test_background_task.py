@@ -9,6 +9,8 @@ import newrelic.api.application
 import newrelic.api.transaction
 import newrelic.api.background_task
 
+is_pypy = '__pypy__' in sys.builtin_module_names
+
 settings = newrelic.api.settings.settings()
 application = newrelic.api.application.application_instance()
 
@@ -66,6 +68,9 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                              'OtherTransaction/'+group+'/'+path)
 
     def test_exit_on_delete(self):
+        if is_pypy:
+            return
+
         name = "exit_on_delete"
         transaction = newrelic.api.background_task.BackgroundTask(
                 application, name)

@@ -12,6 +12,8 @@ import newrelic.api.web_transaction
 
 import newrelic.agent
 
+is_pypy = '__pypy__' in sys.builtin_module_names
+
 settings = newrelic.api.settings.settings()
 application = newrelic.api.application.application_instance()
 
@@ -119,6 +121,9 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             self.assertTrue(transaction.background_task)
 
     def test_exit_on_delete(self):
+        if is_pypy:
+            return
+
         environ = { "REQUEST_URI": "/exit_on_delete" }
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)

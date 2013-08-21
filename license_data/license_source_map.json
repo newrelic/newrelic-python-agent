@@ -551,12 +551,6 @@
             "New Relic"
         ]
     },
-    "newrelic/core/tests/test_profile_node.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "newrelic/core/tests/test_profile_sessions.py": {
         "hash": "n/a",
         "libraries": [
@@ -564,18 +558,6 @@
         ]
     },
     "newrelic/core/tests/test_rules_engine.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/core/tests/test_thread_profiler.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/core/thread_profiler.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

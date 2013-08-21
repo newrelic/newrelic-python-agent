@@ -148,6 +148,9 @@ if with_extensions:
     else:
         with_extensions = None
 
+if hasattr(sys, 'pypy_version_info'):
+    with_extensions = False
+
 if with_extensions is not None:
     run_setup(with_extensions=with_extensions)
 

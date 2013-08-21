@@ -11,6 +11,8 @@
 
 PYTHON26=
 PYTHON27=
+PYTHON33=
+PYPY=
 
 ENVIRONMENTS=
 
@@ -91,8 +93,16 @@ then
         PYTHON27="/usr/local/bin/python3.3"
     fi
 fi
+if test x"$PYPY" = x""
+then
+    if test -x /usr/local/bin/pypy
+    then
+        #ENVIRONMENTS="$ENVIRONMENTS,pypy"
+        PYPY="/usr/local/bin/pypy"
+    fi
+fi
 
-if test x"$*" = x""
+if test x"$1" = x""
 then
     ENVIRONMENTS=`echo $ENVIRONMENTS | sed -e 's/^,//'`
     if test x"$ENVIRONMENTS" = x""
@@ -102,7 +112,8 @@ then
     fi
 else
     # Don't validate target environments. Trust the user.
-    ENVIRONMENTS=$*
+    ENVIRONMENTS=$1
+    shift
 fi
 
 if test -x $HOME/python-tools/python-2.6-ucs4-testing/bin/tox
@@ -119,16 +130,29 @@ then
     TOX="python runtox.py"
 fi
 
-TOX_TESTS=""
+if test x"$*" = x""
+then
+    TOX_TESTS=""
 
-TOX_TESTS="$TOX_TESTS newrelic/common/tests"
-TOX_TESTS="$TOX_TESTS newrelic/core/tests"
-TOX_TESTS="$TOX_TESTS newrelic/api/tests" 
-TOX_TESTS="$TOX_TESTS newrelic/tests"
+    TOX_TESTS="$TOX_TESTS newrelic/common/tests"
+    TOX_TESTS="$TOX_TESTS newrelic/core/tests"
+    TOX_TESTS="$TOX_TESTS newrelic/api/tests" 
+    TOX_TESTS="$TOX_TESTS newrelic/tests"
+
+    NEW_RELIC_ADMIN_TESTS=true
+else
+    TOX_TESTS="$*"
+
+    NEW_RELIC_ADMIN_TESTS=false
+fi
 
 echo "Running tests with Pure Python version of agent!"
 
-NEW_RELIC_EXTENSIONS=false $TOX -v -e $ENVIRONMENTS -c tox-admin.ini
+if test x"$NEW_RELIC_ADMIN_TESTS" = x"true"
+then
+    NEW_RELIC_EXTENSIONS=false $TOX -v -e $ENVIRONMENTS -c tox-admin.ini
+fi
+
 NEW_RELIC_EXTENSIONS=false $TOX -v -e $ENVIRONMENTS -c tox.ini $TOX_TESTS
 
 STATUS=$?
@@ -140,7 +164,11 @@ fi
 
 echo "Running tests with mixed binary version of agent!"
 
-NEW_RELIC_EXTENSIONS=true $TOX -v -e $ENVIRONMENTS -c tox-admin.ini
+if test x"$NEW_RELIC_ADMIN_TESTS" = x"true"
+then
+    NEW_RELIC_EXTENSIONS=true $TOX -v -e $ENVIRONMENTS -c tox-admin.ini
+fi
+
 NEW_RELIC_EXTENSIONS=true $TOX -v -e $ENVIRONMENTS -c tox.ini $TOX_TESTS
 
 STATUS=$?

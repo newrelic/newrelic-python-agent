@@ -1,6 +1,4 @@
 import logging
-import types
-import urllib
 import sys
 import weakref
 import UserList
@@ -142,7 +140,7 @@ class RequestProcessWrapper(object):
 class RequestFinishWrapper(object):
 
     def __init__(self, wrapped):
-        if type(wrapped) == types.TupleType:
+        if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
         else:
             instance = None
@@ -261,7 +259,7 @@ class RequestFinishWrapper(object):
 class ResourceRenderWrapper(object):
 
     def __init__(self, wrapped):
-        if type(wrapped) == types.TupleType:
+        if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
         else:
             instance = None
@@ -338,7 +336,7 @@ class DeferredUserList(UserList.UserList):
 class DeferredWrapper(object):
 
     def __init__(self, wrapped):
-        if type(wrapped) == types.TupleType:
+        if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
         else:
             instance = None
@@ -376,7 +374,7 @@ class DeferredWrapper(object):
 class DeferredCallbacksWrapper(object):
 
     def __init__(self, wrapped):
-        if type(wrapped) == types.TupleType:
+        if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
         else:
             instance = None
@@ -504,7 +502,7 @@ class InlineGeneratorWrapper(object):
 class InlineCallbacksWrapper(object):
 
     def __init__(self, wrapped):
-        if type(wrapped) == types.TupleType:
+        if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
         else:
             instance = None

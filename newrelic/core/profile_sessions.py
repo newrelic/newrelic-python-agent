@@ -587,10 +587,15 @@ class ProfileSession(object):
                 flat_tree[category] = [x.flatten() for x in bucket.values()]
                 thread_count += len(bucket)
 
-        # If no profile data was captured return None instead of sending an
-        # encoded empty data-structure
+        # If no profile data was captured for an x-ray session return None
+        # instead of sending an encoded empty data-structure. For a generic
+        # profiler continue to send an empty tree. This can happen on a system
+        # that uses green threads (coroutines), so sending an empty tree marks
+        # the end of a profile session. If we don't send anything then the UI
+        # timesout after a very long time (~15mins) which is frustrating for
+        # the customer.
 
-        if thread_count == 0:
+        if (thread_count == 0) and (self.profiler_type == SessionType.XRAY):
             return None
 
         # Construct the actual final data for sending. The actual call

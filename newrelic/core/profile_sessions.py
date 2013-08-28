@@ -22,10 +22,7 @@ except ImportError:
 
 _logger = logging.getLogger(__name__)
 
-PERCENT_OVERHEAD = 10
-
 AGENT_PACKAGE_DIRECTORY = os.path.dirname(newrelic.__file__) + '/'
-MULTIPLIER = 100/PERCENT_OVERHEAD
 
 class SessionState(object):
     RUNNING = 1
@@ -241,7 +238,12 @@ class ProfileSessionManager(object):
                 self.full_profile_session = ps
                 self.full_profile_app = app_name
                 self._xray_suspended = True
-                _logger.debug('Suspending X-ray profiler.')
+
+                # If X-ray sessions are in progress then log the suspending of
+                # x-ray profiler
+
+                if xray_profile_sessions:
+                    _logger.debug('Suspending X-ray profiler.')
 
             # Create a background thread to collect stack traces. Do this only
             # if a background thread doesn't already exist.
@@ -278,7 +280,12 @@ class ProfileSessionManager(object):
                     self.full_profile_session = None
                     self.full_profile_app = None
                     self._xray_suspended = False
-                    _logger.debug('Resuming X-ray profiler.')
+
+                    # If X-ray sessions are pending then log the reenabling of
+                    # x-ray profiler
+
+                    if self.application_xrays[app_name]:
+                        _logger.debug('Resuming X-ray profiler.')
                     return True
                 else:
                     # log an error message
@@ -315,7 +322,7 @@ class ProfileSessionManager(object):
                     _logger.debug('Reporting final thread profiling data for '
                             '%d transactions over a period of %.2f seconds '
                             'and %d samples.', session.transaction_count,
-                            time.time()-session.start_time_s,
+                            time.time() - session.start_time_s,
                             session.sample_count)
 
                 yield session.profile_data()
@@ -328,6 +335,12 @@ class ProfileSessionManager(object):
             xray_profile_sessions = self.application_xrays.get(app_name)
             if xray_profile_sessions:
                 for xps in xray_profile_sessions.values():
+                    _logger.debug('Returning partial thread profiling data '
+                            'for %d transactions with name %r and xray ID of '
+                            '%r over a period of %.2f seconds and %d samples.',
+                            self.transaction_count, self.key_txn, self.xray_id,
+                            time.time() - self.start_time_s, self.sample_count)
+
                     yield xps.profile_data()
 
     def _profiler_loop(self):
@@ -584,12 +597,6 @@ class ProfileSession(object):
         # data is turned into JSON, compessed and then base64 encoded at
         # this point to cut its size.
 
-        _logger.debug('Returning partial thread profiling data '
-                'for %d transactions with name %r and xray ID of '
-                '%r over a period of %.2f seconds and %d samples.',
-                self.transaction_count, self.key_txn, self.xray_id,
-                time.time()-self.start_time_s, self.sample_count)
-
         if settings.debug.log_thread_profile_payload:
             _logger.debug('Encoding thread profile data where '
                     'payload=%r.', flat_tree)
@@ -599,7 +606,7 @@ class ProfileSession(object):
         encoded_tree = base64.standard_b64encode(
                 zlib.compress(six.b(json_call_tree)))
 
-        profile = [[self.profile_id, self.start_time_s*1000,
+        profile = [[self.profile_id, self.start_time_s * 1000,
             (self.actual_stop_time_s or time.time()) * 1000, self.sample_count,
             encoded_tree, thread_count, 0, self.xray_id]]
 
@@ -640,4 +647,3 @@ class CallTree(object):
 
 def profile_session_manager():
     return ProfileSessionManager.singleton()
-

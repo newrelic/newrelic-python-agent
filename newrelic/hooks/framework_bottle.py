@@ -10,7 +10,7 @@ def instrument(module):
     # '?' is the patch level revision number. In that case can only
     # add back a 0 for patch level revision number.
 
-    version = map(int, module.__version__.split('-')[0].split('.'))
+    version = [int(x) for x in module.__version__.split('-')[0].split('.')]
 
     if len(version) == 2:
         version.append(0)

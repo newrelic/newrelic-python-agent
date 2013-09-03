@@ -9,9 +9,10 @@
 # environment, we use the default test environments and run tests twice.
 # The first time as pure Python and the second with extensions enabled.
 
-PYTHON25=
 PYTHON26=
 PYTHON27=
+PYTHON33=
+PYPY=
 
 ENVIRONMENTS=
 
@@ -20,12 +21,6 @@ ENVIRONMENTS=
 
 if test x"$BUILD_NUMBER" != x""
 then
-    if test -x $HOME/python-tools/python-2.5-ucs4/bin/python2.5
-    then
-        #ENVIRONMENTS="$ENVIRONMENTS,py25"
-        PYTHON25="$HOME/python-tools/python-2.5-ucs4/bin/python2.5"
-        PATH="$HOME/python-tools/python-2.5-ucs4/bin:$PATH"
-    fi
     if test -x $HOME/python-tools/python-2.6-ucs4/bin/python2.6
     then
         ENVIRONMENTS="$ENVIRONMENTS,py26"
@@ -38,19 +33,17 @@ then
         PYTHON27="$HOME/python-tools/python-2.7-ucs4/bin/python2.7"
         PATH="$HOME/python-tools/python-2.7-ucs4/bin:$PATH"
     fi
+    if test -x $HOME/python-tools/python-3.3-ucs4/bin/python3.3
+    then
+        ENVIRONMENTS="$ENVIRONMENTS,py33"
+        PYTHON27="$HOME/python-tools/python-3.3-ucs4/bin/python3.3"
+        PATH="$HOME/python-tools/python-3.3-ucs4/bin:$PATH"
+    fi
 fi
 
 # Now fallback to system provided Python installations if we haven't
-# already found one of our own. Assumed that "/usr/bin" is in PATH.
+# already found one of our own. This is primarily for Mac OS X.
 
-if test x"$PYTHON25" = x""
-then
-    if test -x /usr/bin/python2.5
-    then
-        #ENVIRONMENTS="$ENVIRONMENTS,py25"
-        PYTHON25="/usr/bin/python2.5"
-    fi
-fi
 if test x"$PYTHON26" = x""
 then
     if test -x /usr/bin/python2.6
@@ -67,29 +60,99 @@ then
         PYTHON27="/usr/bin/python2.7"
     fi
 fi
-
-ENVIRONMENTS=`echo $ENVIRONMENTS | sed -e 's/^,//'`
-
-if test x"$ENVIRONMENTS" = x""
+if test x"$PYTHON33" = x""
 then
-    echo "No Python installations found."
-    exit 1
+    if test -x /usr/bin/python3.3
+    then
+        ENVIRONMENTS="$ENVIRONMENTS,py33"
+        PYTHON27="/usr/bin/python3.3"
+    fi
 fi
 
-tox --help > /dev/null 2>&1
-
-if test "$?" = "0"
+if test x"$PYTHON26" = x""
 then
-    TOX="tox"
+    if test -x /usr/local/bin/python2.6
+    then
+        ENVIRONMENTS="$ENVIRONMENTS,py26"
+        PYTHON26="/usr/local/bin/python2.6"
+    fi
+fi
+if test x"$PYTHON27" = x""
+then
+    if test -x /usr/local/bin/python2.7
+    then
+        ENVIRONMENTS="$ENVIRONMENTS,py27"
+        PYTHON27="/usr/local/bin/python2.7"
+    fi
+fi
+if test x"$PYTHON33" = x""
+then
+    if test -x /usr/local/bin/python3.3
+    then
+        ENVIRONMENTS="$ENVIRONMENTS,py33"
+        PYTHON27="/usr/local/bin/python3.3"
+    fi
+fi
+if test x"$PYPY" = x""
+then
+    if test -x /usr/local/bin/pypy
+    then
+        #ENVIRONMENTS="$ENVIRONMENTS,pypy"
+        PYPY="/usr/local/bin/pypy"
+    fi
+fi
+
+if test x"$1" = x""
+then
+    ENVIRONMENTS=`echo $ENVIRONMENTS | sed -e 's/^,//'`
+    if test x"$ENVIRONMENTS" = x""
+    then
+        echo "No Python installations found."
+        exit 1
+    fi
 else
+    # Don't validate target environments. Trust the user.
+    ENVIRONMENTS=$1
+    shift
+fi
+
+if test -x $HOME/python-tools/python-2.6-ucs4-testing/bin/tox
+then
+    TOX=$HOME/python-tools/python-2.6-ucs4-testing/bin/tox
+else
+    TOX=tox
+fi
+
+$TOX --help > /dev/null 2>&1
+
+if test "$?" != "0"
+then
     TOX="python runtox.py"
 fi
 
-TOX_TESTS="newrelic/core/tests newrelic/api/tests newrelic/tests"
+if test x"$*" = x""
+then
+    TOX_TESTS=""
+
+    TOX_TESTS="$TOX_TESTS newrelic/common/tests"
+    TOX_TESTS="$TOX_TESTS newrelic/core/tests"
+    TOX_TESTS="$TOX_TESTS newrelic/api/tests" 
+    TOX_TESTS="$TOX_TESTS newrelic/tests"
+
+    NEW_RELIC_ADMIN_TESTS=true
+else
+    TOX_TESTS="$*"
+
+    NEW_RELIC_ADMIN_TESTS=false
+fi
 
 echo "Running tests with Pure Python version of agent!"
 
-NEW_RELIC_EXTENSIONS=false $TOX -v -e $ENVIRONMENTS -c tox-admin.ini
+if test x"$NEW_RELIC_ADMIN_TESTS" = x"true"
+then
+    NEW_RELIC_EXTENSIONS=false $TOX -v -e $ENVIRONMENTS -c tox-admin.ini
+fi
+
 NEW_RELIC_EXTENSIONS=false $TOX -v -e $ENVIRONMENTS -c tox.ini $TOX_TESTS
 
 STATUS=$?
@@ -101,7 +164,11 @@ fi
 
 echo "Running tests with mixed binary version of agent!"
 
-NEW_RELIC_EXTENSIONS=true $TOX -v -e $ENVIRONMENTS -c tox-admin.ini
+if test x"$NEW_RELIC_ADMIN_TESTS" = x"true"
+then
+    NEW_RELIC_EXTENSIONS=true $TOX -v -e $ENVIRONMENTS -c tox-admin.ini
+fi
+
 NEW_RELIC_EXTENSIONS=true $TOX -v -e $ENVIRONMENTS -c tox.ini $TOX_TESTS
 
 STATUS=$?

@@ -1,10 +1,7 @@
-from __future__ import with_statement
-
 import os
 import sys
 import time
 import weakref
-import thread
 import threading
 import traceback
 import logging
@@ -12,7 +9,14 @@ import warnings
 import itertools
 import random
 
+try:
+    import thread
+except ImportError:
+    import _thread as thread
+
 from collections import deque
+
+import newrelic.packages.six as six
 
 import newrelic.core.transaction_node
 import newrelic.core.database_node
@@ -292,11 +296,20 @@ class Transaction(object):
             self._cpu_user_time_value = (self._cpu_user_time_end -
                     self._cpu_user_time_start)
 
-        # Calculate thread utilisation factor if using.
+        # Calculate thread utilisation factor. Note that even if
+        # we are tracking thread utilization we skip calculation
+        # if duration is zero. Under normal circumstances this
+        # should not occur but may if the system clock is wound
+        # backwards and duration was squashed to zero due to the
+        # request appearing to finish before it started. It may
+        # also occur if true response time came in under the
+        # resolution of the clock being used, but that is highly
+        # unlikely as the overhead of the agent itself should
+        # always ensure that that is hard to achieve.
 
         if self._utilization_tracker:
             self._utilization_tracker.exit_transaction()
-            if self._thread_utilization_start:
+            if self._thread_utilization_start and duration > 0.0:
                 if not self._thread_utilization_end:
                     self._thread_utilization_end = (
                             self._utilization_tracker.utilization_count())
@@ -620,7 +633,7 @@ class Transaction(object):
         # convert URL to Unicode as Latin-1 explicitly to avoid
         # problems with illegal characters.
 
-        if type(name) == type(''):
+        if isinstance(name, bytes):
             name = name.decode('Latin-1')
 
         self._group = group
@@ -703,7 +716,7 @@ class Transaction(object):
         except Exception:
             try:
                 # Assume JSON encoding can handle unicode.
-                message = unicode(value)
+                message = six.text_type(value)
             except Exception:
                 message = '<unprintable %s object>' % type(value).__name__
 

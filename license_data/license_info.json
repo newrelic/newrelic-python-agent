@@ -7,24 +7,12 @@
             "name": "New Relic",
             "url": "http://newrelic.com"
         },
-        "certifi": {
-            "licenses": [
-                "ISC",
-                "MPL"
-            ],
-            "name": "certifi",
-            "url": "http://pypi.python.org/pypi/certifi"
-        },
-        "namedtuple": {
-            "licenses": [
-                "PSF"
-            ],
-            "name": "namedtuple",
-            "url": "http://code.activestate.com/recipes/500261/"
-        },
         "requests": {
             "licenses": [
-                "ISC"
+                "MIT",
+                "LGPL",
+                "BSD",
+                "apache2"
             ],
             "name": "requests",
             "url": "http://pypi.python.org/pypi/requests"
@@ -35,20 +23,34 @@
             ],
             "name": "simplejson",
             "url": "http://pypi.python.org/pypi/simplejson"
+        },
+        "six": {
+            "licenses": [
+                "MIT"
+            ],
+            "name": "six",
+            "url": "https://bitbucket.org/gutworth/six/overview"
+        },
+        "time.monotonic": {
+            "licenses": [
+                "PSF"
+            ],
+            "name": "time.monotonic",
+            "url": "newrelic/common/_monotonic.c"
         }
     },
     "licenses": {
-        "ISC": {
-            "name": "Internet Systems Consortium",
-            "url": "http://www.isc.org/software/license"
+        "BSD": {
+            "name": "The BSD License",
+            "url": "https://github.com/idan/oauthlib/blob/master/LICENSE"
+        },
+        "LGPL": {
+            "name": "GNU LESSER GENERAL PUBLIC LICENSE",
+            "url": "http://www.gnu.org/licenses/lgpl.html"
         },
         "MIT": {
             "name": "The MIT License",
             "url": "http://opensource.org/licenses/MIT"
-        },
-        "MPL": {
-            "name": "Mozilla Public License",
-            "url": "http://www.mozilla.org/MPL/"
         },
         "New Relic": {
             "name": "New Relic",
@@ -57,6 +59,10 @@
         "PSF": {
             "name": "Python Software Foundation",
             "url": "http://docs.python.org/2/license.html"
+        },
+        "apache2": {
+            "name": "Apache License, Version 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0"
         }
     }
 }

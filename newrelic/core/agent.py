@@ -3,15 +3,12 @@ interacting with the agent core.
 
 """
 
-from __future__ import with_statement
-
 import os
 import sys
 import time
 import logging
 import threading
 import atexit
-import time
 import warnings
 import traceback
 
@@ -20,8 +17,11 @@ import newrelic.core.log_file
 import newrelic.core.config
 import newrelic.core.application
 
-from newrelic.core.cpu_usage import cpu_usage_data_source
-from newrelic.core.memory_usage import memory_usage_data_source
+import newrelic.packages.six as six
+
+from ..samplers.cpu_usage import cpu_usage_data_source
+from ..samplers.memory_usage import memory_usage_data_source
+
 from newrelic.core.thread_utilization import thread_utilization_data_source
 
 _logger = logging.getLogger(__name__)
@@ -214,6 +214,27 @@ class Agent(object):
         if self._config.enabled:
             atexit.register(self._atexit_shutdown)
 
+            # Register an atexit hook for uwsgi to facilitate the graceful
+            # reload of workers. This is necessary for uwsgi with gevent
+            # workers, since the graceful reload waits for all greenlets to
+            # join, but our NR background greenlet will never join since it has
+            # to stay alive indefinitely. But if we register our agent shutdown
+            # to the uwsgi's atexit hook, then the reload will trigger the
+            # atexit hook, thus shutting down our agent thread. We should
+            # append our atexit hook to any pre-existing ones to prevent
+            # overwriting them.
+
+            if 'uwsgi' in sys.modules:
+                import uwsgi
+                uwsgi_original_atexit_callback = getattr(uwsgi, 'atexit', None)
+
+                def uwsgi_atexit_callback():
+                    self._atexit_shutdown()
+                    if uwsgi_original_atexit_callback:
+                        uwsgi_original_atexit_callback()
+
+                uwsgi.atexit = uwsgi_atexit_callback
+
         self._data_sources = {}
 
     def dump(self, file):
@@ -387,7 +408,7 @@ class Agent(object):
             if application is None:
                 # Bind to any applications that already exist.
 
-                for application in self._applications.values():
+                for application in list(six.itervalues(self._applications)):
                     application.register_data_source(source, name,
                             settings, **properties)
 
@@ -417,7 +438,7 @@ class Agent(object):
         warnings.warn('Internal API change. Use record_custom_metric() '
                 'instead of record_metric().', DeprecationWarning,
                 stacklevel=2)
- 
+
         return self.record_custom_metric(app_name, name, value)
 
     def record_custom_metrics(self, app_name, metrics):
@@ -438,7 +459,7 @@ class Agent(object):
         warnings.warn('Internal API change. Use record_custom_metrics() '
                 'instead of record_metrics().', DeprecationWarning,
                 stacklevel=2)
- 
+
         return self.record_custom_metrics(app_name, metrics)
 
     def record_transaction(self, app_name, data, profile_samples=None):
@@ -508,9 +529,9 @@ class Agent(object):
                 # shutdown.
 
                 delay = self._next_harvest - now
-                self._harvest_shutdown.wait(delay) 
+                self._harvest_shutdown.wait(delay)
 
-                if self._harvest_shutdown.isSet(): 
+                if self._harvest_shutdown.isSet():
                     # Force a final harvest on agent shutdown.
 
                     self._run_harvest(shutdown=True)
@@ -558,7 +579,7 @@ class Agent(object):
         self._harvest_count += 1
         self._last_harvest = time.time()
 
-        for application in self._applications.values():
+        for application in list(six.itervalues(self._applications)):
               try:
                   application.harvest(shutdown)
 

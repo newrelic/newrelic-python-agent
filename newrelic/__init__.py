@@ -1,9 +1,9 @@
-version = '1.13.1'
+version = '2.0.0'
 
 try:
     from newrelic.build import build_number
 except ImportError:
     build_number = 0
 
-version_info = map(int, version.split('.')) + [build_number]
+version_info = list(map(int, version.split('.'))) + [build_number]
 version = '.'.join(map(str, version_info))

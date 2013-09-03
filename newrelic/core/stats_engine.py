@@ -5,15 +5,14 @@ data whereby it is sent to the core application.
 
 """
 
-from __future__ import with_statement
-
 import base64
 import copy
 import logging
 import operator
 import zlib
 
-import newrelic.lib.simplejson as simplejson
+import newrelic.packages.six as six
+import newrelic.packages.simplejson as simplejson
 
 from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
         internal_metric)
@@ -165,7 +164,7 @@ class CustomMetrics(object):
 
         """
 
-        return self.__stats_table.iteritems()
+        return six.iteritems(self.__stats_table)
 
 class SlowSqlStats(list):
 
@@ -631,10 +630,10 @@ class StatsEngine(object):
         if self.__settings.debug.log_raw_metric_data:
             _logger.info('Raw metric data for harvest of %r is %r.',
                     self.__settings.app_name,
-                    list(self.__stats_table.iteritems()))
+                    list(six.iteritems(self.__stats_table)))
 
         if normalizer is not None:
-            for key, value in self.__stats_table.iteritems():
+            for key, value in six.iteritems(self.__stats_table):
                 key = (normalizer(key[0])[0] , key[1])
                 stats = normalized_stats.get(key)
                 if stats is None:
@@ -647,9 +646,9 @@ class StatsEngine(object):
         if self.__settings.debug.log_normalized_metric_data:
             _logger.info('Normalized metric data for harvest of %r is %r.',
                     self.__settings.app_name,
-                    list(normalized_stats.iteritems()))
+                    list(six.iteritems(normalized_stats)))
 
-        for key, value in normalized_stats.iteritems():
+        for key, value in six.iteritems(normalized_stats):
             if key not in self.__metric_ids:
                 key = dict(name=key[0], scope=key[1])
             else:
@@ -691,8 +690,8 @@ class StatsEngine(object):
 
         maximum = self.__settings.agent_limits.slow_sql_data
 
-        slow_sql_nodes = list(sorted(self.__sql_stats_table.values(),
-                key=lambda x: x.max_call_time))[-maximum:]
+        slow_sql_nodes = sorted(six.itervalues(self.__sql_stats_table),
+                key=lambda x: x.max_call_time)[-maximum:]
 
         result = []
 
@@ -712,7 +711,8 @@ class StatsEngine(object):
                     encoding='Latin-1', namedtuple_as_object=False,
                     default=lambda o: list(iter(o)))
 
-            params_data = base64.standard_b64encode(zlib.compress(json_data))
+            params_data = base64.standard_b64encode(
+                    zlib.compress(six.b(json_data)))
 
             data = [node.slow_sql_node.path,
                     node.slow_sql_node.request_uri,
@@ -764,7 +764,7 @@ class StatsEngine(object):
                             trace.trace_node_count)
 
             data = [transaction_trace,
-                    trace.string_table.values()]
+                    list(trace.string_table.values())]
 
             if self.__settings.debug.log_transaction_trace_payload:
                 _logger.debug('Encoding slow transaction data where '
@@ -782,7 +782,7 @@ class StatsEngine(object):
 
             with InternalTrace('Supportability/StatsEngine/ZLIB/Compress/'
                                'transaction_sample_data'):
-                zlib_data = zlib.compress(json_data)
+                zlib_data = zlib.compress(six.b(json_data))
 
             with InternalTrace('Supportability/StatsEngine/BASE64/Encode/'
                                'transaction_sample_data'):
@@ -834,7 +834,7 @@ class StatsEngine(object):
                 self.__slow_transaction.trace_node_count)
 
         data = [transaction_trace,
-                self.__slow_transaction.string_table.values()]
+                list(self.__slow_transaction.string_table.values())]
 
         if self.__settings.debug.log_transaction_trace_payload:
             _logger.debug('Encoding slow transaction data where '
@@ -852,7 +852,7 @@ class StatsEngine(object):
 
         with InternalTrace('Supportability/StatsEngine/ZLIB/Compress/'
                 'transaction_sample_data'):
-            zlib_data = zlib.compress(json_data)
+            zlib_data = zlib.compress(six.b(json_data))
 
         with InternalTrace('Supportability/StatsEngine/BASE64/Encode/'
                 'transaction_sample_data'):
@@ -983,7 +983,7 @@ class StatsEngine(object):
         # Merge back data into any new data which has been
         # accumulated.
 
-        for key, other in snapshot.__stats_table.iteritems():
+        for key, other in six.iteritems(snapshot.__stats_table):
             stats = self.__stats_table.get(key)
             if not stats:
                 self.__stats_table[key] = copy.copy(other)
@@ -1020,7 +1020,7 @@ class StatsEngine(object):
 
         if merge_sql:
             maximum = settings.agent_limits.slow_sql_data
-            for key, other in snapshot.__sql_stats_table.iteritems():
+            for key, other in six.iteritems(snapshot.__sql_stats_table):
                 stats = self.__sql_stats_table.get(key)
                 if not stats:
                     if len(self.__sql_stats_table) < maximum:

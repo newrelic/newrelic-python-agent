@@ -1,7 +1,8 @@
+from __future__ import print_function
+
 import atexit
 import cmd
 import code
-import ConfigParser
 import functools
 import glob
 import inspect
@@ -15,7 +16,15 @@ import traceback
 import os
 import time
 
-import __builtin__
+try:
+    import ConfigParser
+except ImportError:
+    import configparser as ConfigParser
+
+try:
+    import __builtin__
+except ImportError:
+    import builtins as __builtin__
 
 from newrelic.core.agent import agent_instance
 from newrelic.core.config import global_settings, flatten_settings
@@ -152,8 +161,9 @@ class ConsoleShell(cmd.Cmd):
         pass
 
     def help_help(self):
-        print >> self.stdout, """help (command)
-        Output list of commands or help details for named command."""
+        print("""help (command)
+        Output list of commands or help details for named command.""",
+        file=self.stdout)
 
     @shell_command
     def do_prompt(self, flag=None):
@@ -177,21 +187,21 @@ class ConsoleShell(cmd.Cmd):
         """
         Displays the process ID of the process."""
 
-        print >> self.stdout, os.getpid()
+        print(os.getpid(), file=self.stdout)
 
     @shell_command
     def do_sys_prefix(self):
         """
         Displays the value of sys.prefix."""
 
-        print >> self.stdout, sys.prefix
+        print(sys.prefix, file=self.stdout)
 
     @shell_command
     def do_sys_path(self):
         """
         Displays the value of sys.path."""
 
-        print >> self.stdout, sys.path
+        print(sys.path, file=self.stdout)
 
     @shell_command
     def do_sys_modules(self):
@@ -201,14 +211,14 @@ class ConsoleShell(cmd.Cmd):
         for name, module in sorted(sys.modules.items()):
             if module is not None:
                 file = getattr(module, '__file__', None)
-                print >> self.stdout, "%s - %s" % (name, file)
+                print("%s - %s" % (name, file), file=self.stdout)
 
     @shell_command
     def do_sys_meta_path(self):
         """
         Displays the value of sys.meta_path."""
 
-        print >> self.stdout, sys.meta_path
+        print(sys.meta_path, file=self.stdout)
 
     @shell_command
     def do_os_environ(self):
@@ -216,14 +226,14 @@ class ConsoleShell(cmd.Cmd):
         Displays the set of user environment variables."""
 
         for key, name in os.environ.items():
-            print >> self.stdout, "%s = %r" % (key, name)
+            print("%s = %r" % (key, name), file=self.stdout)
 
     @shell_command
     def do_current_time(self):
         """
         Displays the current time."""
 
-        print >> self.stdout, time.asctime()
+        print(time.asctime(), file=self.stdout)
 
     @shell_command
     def do_config_args(self):
@@ -243,7 +253,7 @@ class ConsoleShell(cmd.Cmd):
         except Exception:
             pass
 
-        print >> self.stdout, args
+        print(args, file=self.stdout)
 
     @shell_command
     def do_dump_config(self, name=None):
@@ -260,7 +270,7 @@ class ConsoleShell(cmd.Cmd):
             config = flatten_settings(config)
             keys = sorted(config.keys())
             for key in keys:
-                print >> self.stdout, '%s = %r' % (key, config[key])
+                print('%s = %r' % (key, config[key]), file=self.stdout)
 
     @shell_command
     def do_agent_status(self):
@@ -277,8 +287,8 @@ class ConsoleShell(cmd.Cmd):
         Displays a list of the applications.
         """
 
-        print >> self.stdout, repr(sorted(
-              agent_instance().applications.keys()))
+        print(repr(sorted(
+              agent_instance().applications.keys())), file=self.stdout)
 
     @shell_command
     def do_application_status(self, name=None):
@@ -295,7 +305,7 @@ class ConsoleShell(cmd.Cmd):
         for application in applications:
             if application is not None:
                 application.dump(self.stdout)
-                print >> self.stdout
+                print(file=self.stdout)
 
     @shell_command
     def do_import_hooks(self):
@@ -311,15 +321,15 @@ class ConsoleShell(cmd.Cmd):
             result = results[key]
             if result is None:
                 if key[0] not in sys.modules:
-                    print >> self.stdout, '%s: PENDING' % (key,)
+                    print('%s: PENDING' % (key,), file=self.stdout)
                 else:
-                    print >> self.stdout, '%s: IMPORTED' % (key,)
+                    print('%s: IMPORTED' % (key,), file=self.stdout)
             elif not result:
-                print >> self.stdout, '%s: INSTRUMENTED' % (key,)
+                print('%s: INSTRUMENTED' % (key,), file=self.stdout)
             else:
-                print >> self.stdout, '%s: FAILED' % (key,)
+                print('%s: FAILED' % (key,), file=self.stdout)
                 for line in result:
-                    print >> self.stdout, line,
+                    print(line, end='', file=self.stdout)
 
     @shell_command
     def do_transactions(self):
@@ -328,7 +338,7 @@ class ConsoleShell(cmd.Cmd):
 
         for transaction in Transaction._transactions.values():
             transaction.dump(self.stdout)
-            print >> self.stdout
+            print(file=self.stdout)
 
     @shell_command
     def do_interpreter(self):
@@ -342,8 +352,8 @@ class ConsoleShell(cmd.Cmd):
         _settings = global_settings()
 
         if not _settings.console.allow_interpreter_cmd:
-            print >> self.stdout, 'Sorry, the embedded Python ' \
-                    'interpreter is disabled.'
+            print('Sorry, the embedded Python ' \
+                    'interpreter is disabled.', file=self.stdout)
             return
 
         locals = {}
@@ -366,7 +376,7 @@ class ConsoleShell(cmd.Cmd):
             release_console()
 
     @shell_command
-    def do_threads(self): 
+    def do_threads(self):
         """
         Display stack trace dumps for all threads currently executing
         within the Python interpreter.
@@ -375,23 +385,23 @@ class ConsoleShell(cmd.Cmd):
         on greenlets, then only the thread stack of the currently
         executing coroutine will be displayed."""
 
-        all = [] 
+        all = []
         for threadId, stack in sys._current_frames().items():
             block = []
-            block.append('# ThreadID: %s' % threadId) 
+            block.append('# ThreadID: %s' % threadId)
             thr = threading._active.get(threadId)
             if thr:
-                block.append('# Type: %s' % type(thr).__name__) 
-                block.append('# Name: %s' % thr.name) 
+                block.append('# Type: %s' % type(thr).__name__)
+                block.append('# Name: %s' % thr.name)
             for filename, lineno, name, line in traceback.extract_stack(
-                stack): 
+                stack):
                 block.append('File: \'%s\', line %d, in %s' % (filename,
-                        lineno, name)) 
+                        lineno, name))
                 if line:
                     block.append('  %s' % (line.strip()))
             all.append('\n'.join(block))
 
-        print >> self.stdout, '\n\n'.join(all)
+        print('\n\n'.join(all), file=self.stdout)
 
 class ConnectionManager(object):
 
@@ -431,7 +441,7 @@ class ConnectionManager(object):
             listener.bind(self.__listener_socket)
 
             atexit.register(self.__socket_cleanup, self.__listener_socket)
-            os.chmod(self.__listener_socket, 0600)
+            os.chmod(self.__listener_socket, 0o600)
 
         listener.listen(5)
 
@@ -453,7 +463,7 @@ class ConnectionManager(object):
 
                 except Exception:
                     shell.stdout.flush()
-                    print >> shell.stdout, 'Unexpected exception.'
+                    print('Unexpected exception.', file=self.stdout)
                     exc_info = sys.exc_info()
                     traceback.print_exception(exc_info[0], exc_info[1],
                             exc_info[2], file=shell.stdout)
@@ -500,8 +510,9 @@ class ClientShell(cmd.Cmd):
         pass
 
     def help_help(self):
-        print >> self.stdout, """help (command)
-        Output list of commands or help details for named command."""
+        print("""help (command)
+        Output list of commands or help details for named command.""",
+        file=self.stdout)
 
     def do_exit(self, line):
         """exit
@@ -514,7 +525,7 @@ class ClientShell(cmd.Cmd):
         Display a list of the servers which can be connected to."""
 
         for i in range(len(self.__servers)):
-            print >> self.stdout, '%s: %s' % (i+1, self.__servers[i])
+            print('%s: %s' % (i+1, self.__servers[i]), file=self.stdout)
 
     def do_connect(self, line):
         """connect [index]
@@ -523,12 +534,13 @@ class ClientShell(cmd.Cmd):
         be supplied."""
 
         if len(self.__servers) == 0:
-            print >> self.stdout, 'No servers to connect to.'
+            print('No servers to connect to.', file=self.stdout)
             return
 
         if not line:
             if len(self.__servers) != 1:
-                print >> self.stdout, 'Multiple servers, which should be used?'
+                print('Multiple servers, which should be used?',
+                        file=self.stdout)
                 return
             else:
                 line = '1'
@@ -539,11 +551,11 @@ class ClientShell(cmd.Cmd):
             selection = None
 
         if selection is None:
-            print >> self.stdout, 'Server selection not an integer.'
+            print('Server selection not an integer.', file=self.stdout)
             return
 
         if selection <= 0 or selection > len(self.__servers):
-            print >> self.stdout, 'Invalid server selected.'
+            print('Invalid server selected.', file=self.stdout)
             return
 
         server = self.__servers[selection-1]
@@ -598,7 +610,7 @@ class ClientShell(cmd.Cmd):
 
 def main():
     if len(sys.argv) == 1:
-        print "Usage: newrelic-console config_file"
+        print("Usage: newrelic-console config_file")
         sys.exit(1)
 
     shell = ClientShell(sys.argv[1])

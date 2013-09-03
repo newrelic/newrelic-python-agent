@@ -3,7 +3,7 @@ import warnings
 import newrelic.core.agent
 import newrelic.core.config
 
-import newrelic.core.data_source
+import newrelic.samplers.decorators
 
 import newrelic.api.web_transaction
 import newrelic.api.background_task
@@ -45,7 +45,7 @@ def shutdown_agent(timeout=None):
 def application_settings(name=None):
     instance = application(name)
     return instance.settings
-    
+
 def set_transaction_name(name, group=None, priority=None):
     transaction = current_transaction()
     if transaction:
@@ -148,8 +148,8 @@ def register_data_source(source, application=None, name=None,
             application and application.name or None, name, settings,
             **properties)
 
-data_source_generator = newrelic.core.data_source.data_source_generator
-data_source_factory = newrelic.core.data_source.data_source_factory
+data_source_generator = newrelic.samplers.decorators.data_source_generator
+data_source_factory = newrelic.samplers.decorators.data_source_factory
 
 wsgi_application = newrelic.api.web_transaction.wsgi_application
 WebTransaction = newrelic.api.web_transaction.WebTransaction

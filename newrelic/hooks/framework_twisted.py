@@ -1,8 +1,4 @@
-from __future__ import with_statement
-
 import logging
-import types
-import urllib
 import sys
 import weakref
 import UserList
@@ -19,7 +15,7 @@ _logger = logging.getLogger(__name__)
 class RequestProcessWrapper(object):
 
     def __init__(self, wrapped):
-        if type(wrapped) == types.TupleType:
+        if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
         else:
             instance = None
@@ -64,7 +60,7 @@ class RequestProcessWrapper(object):
         environ['REQUEST_URI'] = self._nr_instance.path
 
         # Now start recording the actual web transaction.
- 
+
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
 
@@ -144,7 +140,7 @@ class RequestProcessWrapper(object):
 class RequestFinishWrapper(object):
 
     def __init__(self, wrapped):
-        if type(wrapped) == types.TupleType:
+        if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
         else:
             instance = None
@@ -263,7 +259,7 @@ class RequestFinishWrapper(object):
 class ResourceRenderWrapper(object):
 
     def __init__(self, wrapped):
-        if type(wrapped) == types.TupleType:
+        if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
         else:
             instance = None
@@ -340,7 +336,7 @@ class DeferredUserList(UserList.UserList):
 class DeferredWrapper(object):
 
     def __init__(self, wrapped):
-        if type(wrapped) == types.TupleType:
+        if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
         else:
             instance = None
@@ -378,7 +374,7 @@ class DeferredWrapper(object):
 class DeferredCallbacksWrapper(object):
 
     def __init__(self, wrapped):
-        if type(wrapped) == types.TupleType:
+        if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
         else:
             instance = None
@@ -429,7 +425,7 @@ class DeferredCallbacksWrapper(object):
 
         if not request:
             return self._nr_next_object()
-        
+
         try:
             # Save the transaction recorded against the deferred as the
             # active transaction.
@@ -502,11 +498,11 @@ class InlineGeneratorWrapper(object):
             with newrelic.api.function_trace.FunctionTrace(
                   transaction, name, group='Python/Twisted/Generator'):
                 yield next(iterable)
-        
+
 class InlineCallbacksWrapper(object):
 
     def __init__(self, wrapped):
-        if type(wrapped) == types.TupleType:
+        if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
         else:
             instance = None

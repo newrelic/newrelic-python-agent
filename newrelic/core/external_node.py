@@ -1,9 +1,9 @@
-import urlparse
-
 try:
-    from collections import namedtuple
+    import urlparse
 except ImportError:
-    from newrelic.lib.namedtuple import namedtuple
+    import urllib.parse as urlparse
+
+from collections import namedtuple
 
 import newrelic.core.trace_node
 

@@ -6,8 +6,8 @@ need a few tools to be able to build it if developing on your local
 machine. These are:
 
 1. A complete installation of Python including sqlite and zlib support.
-   Python 2.6 is recommended. Any code changes made to the Python agent
-   must be compatible with Python 2.5 through 2.7.
+   Python 2.6 or 2.7 is recommended. Any code changes made to the Python
+   agent must be compatible with Python 2.6, 2.7 and 3.3+.
 
 2. The 'virtualenv' package for Python. This should be installed into
    the Python installation being used. It is required to setup a Python
@@ -103,6 +103,14 @@ will be installed into that rather than into the Python install found by
 the 'configure' script. This avoids polluting your main Python installation
 with your development version of the Python agent just to be able to run
 tests.
+
+By default the 'tests.sh' script will currently run tests for Python 2.6
+and Python 2.7. The script can also detect the presence of Python 3.3
+but will not run tests by default. If you want to run tests for Python
+3.3, or to be select about what Python versions to run tests for, the
+identifiers for the Python versions can be passed as separate arguments.
+
+    tests.sh py33
 
 If you need to be able to run a specific unit test, then you can execute
 'tox' directly.

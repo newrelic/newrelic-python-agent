@@ -1,5 +1,7 @@
 import sys
 
+import newrelic.packages.six as six
+
 import newrelic.api.transaction
 import newrelic.api.function_trace
 import newrelic.api.in_function
@@ -12,7 +14,7 @@ from newrelic.api.web_transaction import WSGIApplicationWrapper
 def _name_transaction(*args, **kwargs):
     transaction = newrelic.api.transaction.current_transaction()
     if transaction:
-        if isinstance(args[1], basestring):
+        if isinstance(args[1], six.string_types):
             f = args[1]
         else:
             f = callable_name(args[1])

@@ -1,7 +1,4 @@
-from __future__ import with_statement
-
 import sys
-import types
 
 import newrelic.api.transaction
 import newrelic.api.web_transaction
@@ -56,7 +53,7 @@ class ResourceWrapper(object):
 class ResolverWrapper(object):
 
     def __init__(self, wrapped):
-        if type(wrapped) == types.TupleType:
+        if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
         else:
             instance = None
@@ -96,7 +93,7 @@ class ResolverWrapper(object):
 class RoutesResolverWrapper(object):
 
     def __init__(self, wrapped):
-        if type(wrapped) == types.TupleType:
+        if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
         else:
             instance = None

@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 import os
 import sys
 import unittest
@@ -29,7 +27,6 @@ _logger = logging.getLogger('newrelic')
 settings = newrelic.api.settings.settings()
 
 settings.host = 'staging-collector.newrelic.com'
-settings.port = 80
 settings.license_key = '84325f47e9dec80613e262be4236088a9983d501'
 
 settings.app_name = 'Python Agent Test'
@@ -47,7 +44,10 @@ def handler(environ, start_response):
     status = '200 OK'
     output = 'Hello World!'
 
-    import urllib
+    try:
+        import urllib.request as urllib
+    except:
+        import urllib
 
     opener = urllib.URLopener()
     f = opener.open('http://newrelic.com/')
@@ -84,9 +84,9 @@ class TransactionTests(unittest.TestCase):
 
         newrelic.agent.initialize()
 
-	# Want to force agent initialisation and connection so
-	# we know that data will actually get through to core
-	# and not lost because application not activated.
+        # Want to force agent initialisation and connection so
+        # we know that data will actually get through to core
+        # and not lost because application not activated.
 
         agent = newrelic.core.agent.agent_instance()
 

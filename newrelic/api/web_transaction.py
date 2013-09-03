@@ -1,15 +1,17 @@
-from __future__ import with_statement
-
 import sys
-import types
-import urlparse
 import cgi
 import base64
 import time
 import string
 import re
 
-import newrelic.lib.simplejson as simplejson
+try:
+    import urlparse
+except ImportError:
+    import urllib.parse as urlparse
+
+import newrelic.packages.six as six
+import newrelic.packages.simplejson as simplejson
 
 import newrelic.api.application
 import newrelic.api.transaction
@@ -60,28 +62,53 @@ JAN_1_2000 = time.mktime((2000, 1, 1, 0, 0, 0, 0, 0, 0))
 
 def _encode(name, key):
     s = []
-    for i in range(len(name)):
-        s.append(chr(ord(name[i]) ^ ord(key[i % len(key)])))
+
+    # Convert name and key into bytes which are treated as integers.
+
+    key = list(six.iterbytes(six.b(key)))
+    for i, c in enumerate(six.iterbytes(six.b(name))):
+        s.append(chr(c ^ key[i % len(key)]))
     return s
 
-def obfuscate(name, key):
-    if name is None:
-        return ''
-    return base64.b64encode(''.join(_encode(name, key)))
+if six.PY3:
+    def obfuscate(name, key):
+        if not (name and key):
+            return ''
+
+        # Always pass name and key as str to _encode()
+
+        return str(base64.b64encode(six.b(''.join(_encode(name, key)))),
+                   encoding='Latin-1')
+else:
+    def obfuscate(name, key):
+        if not (name and key):
+            return ''
+
+        # Always pass name and key as str to _encode()
+
+        return base64.b64encode(six.b(''.join(_encode(name, key))))
 
 def deobfuscate(name, key):
-    if name is None:
+    if not (name and key):
         return ''
-    return ''.join(_encode(base64.b64decode(name), key))
+
+    # Always pass name and key as str to _encode()
+
+    return ''.join(_encode(six.text_type(base64.b64decode(six.b(name)),
+        encoding='Latin-1'), key))
 
 def _lookup_environ_setting(environ, name, default=False):
     flag = environ.get(name, default)
     if default is None or default:
-        if isinstance(flag, basestring):
+        try:
             flag = not flag.lower() in ['off', 'false', '0']
+        except AttributeError:
+            pass
     else:
-        if isinstance(flag, basestring):
+        try:
             flag = flag.lower() in ['on', 'true', '1']
+        except AttributeError:
+            pass
     return flag
 
 def _extract_token(cookie):
@@ -257,7 +284,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         for queue_time_header in queue_time_headers:
             value = environ.get(queue_time_header, None)
 
-            if value and isinstance(value, basestring):
+            try:
                 if value.startswith('t='):
                     try:
                         self.queue_start = _parse_time_stamp(float(value[2:]))
@@ -268,6 +295,9 @@ class WebTransaction(newrelic.api.transaction.Transaction):
                         self.queue_start = _parse_time_stamp(float(value))
                     except Exception:
                         pass
+
+            except Exception:
+                pass
 
             if self.queue_start > 0.0:
                 break
@@ -385,8 +415,8 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         # parameters returned for slow transactions and errors.
 
         try:
-            header = filter(lambda x: x[0].lower() == 'content-length',
-                    response_headers)[-1:]
+            header = [x for x in response_headers
+                    if x[0].lower() == 'content-length'][-1:]
 
             if header:
                 self._response_properties['CONTENT_LENGTH'] = header[0][1]
@@ -648,7 +678,7 @@ class WSGIApplicationWrapper(object):
 
     def __init__(self, wrapped, application=None, name=None, group=None,
                framework=None):
-        if type(wrapped) == types.TupleType:
+        if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
         else:
             instance = None
@@ -661,10 +691,12 @@ class WSGIApplicationWrapper(object):
         self._nr_name = name
         self._nr_group = group
 
-        if isinstance(framework, basestring):
-            self._nr_framework = (framework, None)
-        else:
+        if framework is None:
+            self._nr_framework = None
+        elif isinstance(framework, tuple):
             self._nr_framework = framework
+        else:
+            self._nr_framework = (framework, None)
 
         if not hasattr(self, '_nr_last_object'):
             self._nr_last_object = wrapped

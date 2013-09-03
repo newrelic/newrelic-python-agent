@@ -47,6 +47,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/datastore_trace.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/error_trace.py": {
         "hash": "n/a",
         "libraries": [
@@ -227,6 +233,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/tests/test_obfuscate_deobfuscate.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/tests/test_object_wrapper.py": {
         "hash": "n/a",
         "libraries": [
@@ -311,6 +323,60 @@
             "New Relic"
         ]
     },
+    "newrelic/common/__init__.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/_monotonic.c": {
+        "hash": "7ccf45995f7e4a2e22540da428d9f822",
+        "libraries": [
+            "time.monotonic"
+        ]
+    },
+    "newrelic/common/object_names.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/stopwatch.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/system_info.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/__init__.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_object_names.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_stopwatch.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_system_info.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/config.py": {
         "hash": "n/a",
         "libraries": [
@@ -353,19 +419,7 @@
             "New Relic"
         ]
     },
-    "newrelic/core/cpu_usage.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "newrelic/core/data_collector.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/core/data_source.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -378,6 +432,12 @@
         ]
     },
     "newrelic/core/database_utils.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/core/datastore_node.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -426,12 +486,6 @@
         ]
     },
     "newrelic/core/memcache_node.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/core/memory_usage.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -497,12 +551,6 @@
             "New Relic"
         ]
     },
-    "newrelic/core/tests/test_profile_node.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "newrelic/core/tests/test_profile_sessions.py": {
         "hash": "n/a",
         "libraries": [
@@ -510,18 +558,6 @@
         ]
     },
     "newrelic/core/tests/test_rules_engine.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/core/tests/test_thread_profiler.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/core/thread_profiler.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -671,6 +707,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/datastore_pymongo.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/external_dropbox.py": {
         "hash": "n/a",
         "libraries": [
@@ -708,6 +750,12 @@
         ]
     },
     "newrelic/hooks/external_requests.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/external_thrift.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -863,448 +911,28 @@
             "New Relic"
         ]
     },
-    "newrelic/lib/__init__.py": {
+    "newrelic/network/__init__.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
         ]
     },
-    "newrelic/lib/certifi/LICENSE": {
-        "hash": "d2b345aa125b53d6d9d43442ed4c5379",
+    "newrelic/network/addresses.py": {
+        "hash": "n/a",
         "libraries": [
-            "certifi"
+            "New Relic"
         ]
     },
-    "newrelic/lib/certifi/__init__.py": {
-        "hash": "b66d0b0a156b370874c57847309c251d",
+    "newrelic/network/exceptions.py": {
+        "hash": "n/a",
         "libraries": [
-            "certifi"
+            "New Relic"
         ]
     },
-    "newrelic/lib/certifi/cacert.pem": {
-        "hash": "f106f71cc71b873f81ea58f2fd2b2ff6",
+    "newrelic/network/platform_api.py": {
+        "hash": "n/a",
         "libraries": [
-            "certifi"
-        ]
-    },
-    "newrelic/lib/certifi/core.py": {
-        "hash": "087d5238329a503b9c879ff4329564e7",
-        "libraries": [
-            "certifi"
-        ]
-    },
-    "newrelic/lib/namedtuple/__init__.py": {
-        "hash": "15dd487abd4a731bbb398f39d206a11d",
-        "libraries": [
-            "namedtuple"
-        ]
-    },
-    "newrelic/lib/requests/LICENSE": {
-        "hash": "558e4fcd0c1ba25b2b41e127a646cf6a",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/__init__.py": {
-        "hash": "620411fa33ea5b6cfe3f911f41e2e5ef",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/api.py": {
-        "hash": "5db000fa958ad22a555101f46185c4ee",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/async.py": {
-        "hash": "58985aeb1635192baffb21790330bfad",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/auth.py": {
-        "hash": "a2a8e42c8cd1179188231e945e237f53",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/defaults.py": {
-        "hash": "3409bd05de84b70aca0ea0f55bfa2fa9",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/exceptions.py": {
-        "hash": "4dd73564addb5b4412646080fd7061c4",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/hooks.py": {
-        "hash": "54c6f01cf94881358a28899c1a3a73c9",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/models.py": {
-        "hash": "8e06d058976b5747e35821b8811d7090",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/packages/__init__.py": {
-        "hash": "e3a61528df2720827a83ae17b37074ae",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/packages/oreos/__init__.py": {
-        "hash": "7de68ab89f555c1a767f87b3aa9c3193",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/packages/oreos/core.py": {
-        "hash": "41fa58d686f82d481bfbcc8645f2e0a8",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/packages/oreos/monkeys.py": {
-        "hash": "bfbded67c790b10e490ef46bdc12bcb7",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/packages/oreos/structures.py": {
-        "hash": "41effa3b58c67066bb0ede57295412f5",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/packages/urllib3/__init__.py": {
-        "hash": "352048fb769a1aadf52edd15d34156c2",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/packages/urllib3/_collections.py": {
-        "hash": "049f6302480f9f106c447430a6d3d112",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/packages/urllib3/connectionpool.py": {
-        "hash": "d0d0d1c2a34532bd25a8561752c3cf17",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/packages/urllib3/exceptions.py": {
-        "hash": "c44f84d1d20c7c900f2875ab93390eb7",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/packages/urllib3/filepost.py": {
-        "hash": "d5f857ab2a3ef128a72910f4e88e635f",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/packages/urllib3/packages/__init__.py": {
-        "hash": "9ff999f275483e0669aa22417e3a374f",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/packages/urllib3/packages/ssl_match_hostname/__init__.py": {
-        "hash": "b4b0425c9004c342e9e60faf6408e213",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/packages/urllib3/poolmanager.py": {
-        "hash": "8e9592a22c19fc2fc062518572c61b5d",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/packages/urllib3/request.py": {
-        "hash": "1a1fe9efb609cf7a617c89e0bba18302",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/packages/urllib3/response.py": {
-        "hash": "c304a6e2900820bd8c71e092c8b754d2",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/sessions.py": {
-        "hash": "0cb20c41358c0e2b65af1913077912ae",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/setup.py": {
-        "hash": "651ca4b7b5cac8358f6dfd67c3d05028",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/status_codes.py": {
-        "hash": "9188bc1536171d92e41d22952cf41eea",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/structures.py": {
-        "hash": "f17eaac2cef89f509b83ed5d494ac8be",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/test.py": {
-        "hash": "d1365e136e11c56ee874be2f4be5750c",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/test_requests.py": {
-        "hash": "c00d7912eb13cd1677cf06b201fbb1f0",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/test_requests_ext.py": {
-        "hash": "412fe8f7b50685f6b1bcd7d512ed7409",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/toy.py": {
-        "hash": "2e27bcd243ddc0180dcd3542ed5e7c00",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/requests/utils.py": {
-        "hash": "cb407319847328d940c26150c50a2906",
-        "libraries": [
-            "requests"
-        ]
-    },
-    "newrelic/lib/simplejson/CHANGES.txt": {
-        "hash": "aed644a5bf7ad815bab89852a78075f0",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/LICENSE.txt": {
-        "hash": "8a9f8dcfcd28c34daa443e5b1d29813b",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/README.rst": {
-        "hash": "79be9bb20ddf6b72958b73c2db194813",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/__init__.py": {
-        "hash": "41f69030354af7d50065fa723bda01aa",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/_speedups.c": {
-        "hash": "d3e62340914fba944b6d7df709ebed26",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/decoder.py": {
-        "hash": "6f8d49f3f2604a1bc9669bcae4ad415a",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/encoder.py": {
-        "hash": "878ae0de525bb904bb421412bfd3b75c",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/index.rst": {
-        "hash": "00368479361c9608b3020d0a1b43ee5a",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/ordered_dict.py": {
-        "hash": "6bb1869dd9a1c4d221ba0e4b1502ce16",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/scanner.py": {
-        "hash": "61bf1c3178d7b4e385f8e2c44f00b20d",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/tests/__init__.py": {
-        "hash": "485e21796dfdb7d459890285f0efcefc",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/tests/test_bigint_as_string.py": {
-        "hash": "34f85f9816ea5478f78402d0479f2a6f",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/tests/test_check_circular.py": {
-        "hash": "aeda058d40f755cc0578f72e3946c50e",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/tests/test_decimal.py": {
-        "hash": "079d49d1112038808d4bed9f22ec1dd6",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/tests/test_decode.py": {
-        "hash": "e2e4755b087657c73d3496725f53f9eb",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/tests/test_default.py": {
-        "hash": "cb06cb1859a19d03a018405f853cbdf0",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/tests/test_dump.py": {
-        "hash": "2b15cfb55f5a43196fe3e8664c9c639e",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/tests/test_encode_basestring_ascii.py": {
-        "hash": "e7357b0b242bdae57532959c1d726dfc",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/tests/test_encode_for_html.py": {
-        "hash": "ccb223b54224a2ee405bb1547a1fbaf3",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/tests/test_errors.py": {
-        "hash": "d58419e0bde33846bc9f140e23654802",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/tests/test_fail.py": {
-        "hash": "686539af10cd7b166cbb433e68880397",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/tests/test_float.py": {
-        "hash": "d617ff1f81472ec933eed20bd4511df8",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/tests/test_indent.py": {
-        "hash": "2c3ab1b9d2cc7544626094114a075ca5",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/tests/test_item_sort_key.py": {
-        "hash": "75727224fa16d7e5b59952bd73b4562f",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/tests/test_namedtuple.py": {
-        "hash": "893f9d81922ef6a315b549cd0955bc24",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/tests/test_pass1.py": {
-        "hash": "bef42c606395a50cbe8b007047ebf331",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/tests/test_pass2.py": {
-        "hash": "a1592c06d95374ea60d5dabca179b529",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/tests/test_pass3.py": {
-        "hash": "e36076d34fdb86af87af283442682140",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/tests/test_recursion.py": {
-        "hash": "d95e533f528921ebc6820459453e8543",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/tests/test_scanstring.py": {
-        "hash": "eb5a347a999bbc75e810c19923870768",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/tests/test_separators.py": {
-        "hash": "3605396b8661aaff757a61e7816fad2a",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/tests/test_speedups.py": {
-        "hash": "7f11b8f375af4c6c0aff47e00251d98f",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/tests/test_tuple.py": {
-        "hash": "7c5ef3797d88a8721adce5d94f7f1391",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/tests/test_unicode.py": {
-        "hash": "8d52ab90f81af540b6583b0a55b1f9b9",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/lib/simplejson/tool.py": {
-        "hash": "b7efa5a3859384373bcbf8926dd04e54",
-        "libraries": [
-            "simplejson"
+            "New Relic"
         ]
     },
     "newrelic/newrelic.ini": {
@@ -1313,7 +941,535 @@
             "New Relic"
         ]
     },
+    "newrelic/packages/__init__.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/packages/requests/LICENSE": {
+        "hash": "c858703330162aa799141655a10fe120",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/NOTICE": {
+        "hash": "a7fcf1dc2d13f4c1e901564711244fb4",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/__init__.py": {
+        "hash": "3580ff70ef16b40710a36f3186889dcf",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/adapters.py": {
+        "hash": "a7b3a2d359e7ee05bb91751c07720ee4",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/api.py": {
+        "hash": "3e627cfaefaffc664679910e23b21f9d",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/auth.py": {
+        "hash": "0b2f6a6b906323dd8f0dffc46f717cb1",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/cacert.pem": {
+        "hash": "f106f71cc71b873f81ea58f2fd2b2ff6",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/certs.py": {
+        "hash": "c73165057ef7f22c8fa5cd82d51a3b95",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/compat.py": {
+        "hash": "6dafaeb8f4f94e0d161589d49f775c05",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/cookies.py": {
+        "hash": "7e2e7b0b1b29e0df48ae18d017a73ed0",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/exceptions.py": {
+        "hash": "602c014006666041126f035f436b3a17",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/hooks.py": {
+        "hash": "501cb168de269271371a89a1ec7825ed",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/models.py": {
+        "hash": "32beee3aa58e2d455617bd16f24887fc",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/__init__.py": {
+        "hash": "e3a61528df2720827a83ae17b37074ae",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/__init__.py": {
+        "hash": "cba2953ecda64ec9d56293443cfa8fb8",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/big5freq.py": {
+        "hash": "b20f539dc45fa9e514c1eb4f5aa8b5c6",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/big5prober.py": {
+        "hash": "d500a4d8921a6cab7e69478b5d601f0e",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/chardistribution.py": {
+        "hash": "210c3fb4c18ecc1a772078d6b6e1aae8",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/charsetgroupprober.py": {
+        "hash": "c3a51153318b7563134c3730325b926b",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/charsetprober.py": {
+        "hash": "0cb6549c5cf979c8023f8aaf3392a117",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/codingstatemachine.py": {
+        "hash": "a7c13da016cd4ea46effaef65743e833",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/compat.py": {
+        "hash": "73f2b9ae331ab011571a3b3a2c62acc1",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/constants.py": {
+        "hash": "986aa78eafc448b3d5fc05ea72f0fc51",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/cp949prober.py": {
+        "hash": "77a6bc41bdf459477a6ae1944ee391c4",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/escprober.py": {
+        "hash": "7e5331c1c467906df057eb152be138f2",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/escsm.py": {
+        "hash": "6619228cbe1d71f5604ce370b7ac5616",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/eucjpprober.py": {
+        "hash": "0ecc239ea431c1da34b97864ddb7cfc7",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/euckrfreq.py": {
+        "hash": "65b6b3e75845e033ce34c11ccdd85450",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/euckrprober.py": {
+        "hash": "b0185251b7da8df7c334e5dbb2c9b030",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/euctwfreq.py": {
+        "hash": "f13fee8c7bd6db0e8c40030ccacdfbde",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/euctwprober.py": {
+        "hash": "46b200a57059410d7cdee611bf63b032",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/gb2312freq.py": {
+        "hash": "0fb5414fcc0bdb8b04af324015505c06",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/gb2312prober.py": {
+        "hash": "e4f3a1d5cf5bd7fb11cfda4111f16133",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/hebrewprober.py": {
+        "hash": "928074b0e74c726502bf106a522a9917",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/jisfreq.py": {
+        "hash": "03be91b7ead4725af61234d4852bb7ab",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/jpcntx.py": {
+        "hash": "a770c6f871b4d544cf5d342f97aa61cf",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/langbulgarianmodel.py": {
+        "hash": "af97b3a787cbbd9c5394f2ef3a2892b9",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/langcyrillicmodel.py": {
+        "hash": "5ce800a9e39483de540546383e0aecc1",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/langgreekmodel.py": {
+        "hash": "367b117e7637cf593d1418a9eee46acd",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/langhebrewmodel.py": {
+        "hash": "801ea55b50b84baae5ae485eaa120bc5",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/langhungarianmodel.py": {
+        "hash": "cbdce2285ed20552a9ca625851602bbd",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/langthaimodel.py": {
+        "hash": "48a9b9c8cd9faccbef7c7fb04c59ac50",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/latin1prober.py": {
+        "hash": "d75a9a3468804648693ad8dfb5953fe1",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/mbcharsetprober.py": {
+        "hash": "d3d71d3c4b39e06833bc673deca83b23",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/mbcsgroupprober.py": {
+        "hash": "a2bbedbdfc05751b14728ecd7a7cd196",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/mbcssm.py": {
+        "hash": "42623a1e08b9fc25ef2468c422a68311",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/sbcharsetprober.py": {
+        "hash": "01a19ac0ce5587c9325353b86c0f82fe",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/sbcsgroupprober.py": {
+        "hash": "7d5e06b60f4e993fc4054542710c1216",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/sjisprober.py": {
+        "hash": "05a78e210131213b9f3a00cbb11e6f65",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/universaldetector.py": {
+        "hash": "8ed8cc93176d4534aa07c540987c97f3",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/charade/utf8prober.py": {
+        "hash": "fe113f4e09f172895469c9a2da5ed7ad",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/urllib3/__init__.py": {
+        "hash": "da8fcd0b14a8cceea797e7acdb16a8aa",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/urllib3/_collections.py": {
+        "hash": "ea2f5d55e09e114b9e41ff4a07831251",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/urllib3/connectionpool.py": {
+        "hash": "0d205c3fa4d7998a3e900ec6843b38bc",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/urllib3/exceptions.py": {
+        "hash": "8b5f7e62b3130d72ce658c4bfef15018",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/urllib3/filepost.py": {
+        "hash": "9f5a0d68557033d562239018f6d7b728",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/urllib3/packages/__init__.py": {
+        "hash": "9ff999f275483e0669aa22417e3a374f",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/urllib3/packages/ordered_dict.py": {
+        "hash": "77b68f9ab1b803b612b88b0b0b3e72f8",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/urllib3/packages/six.py": {
+        "hash": "a36f9de9934af633a7f47234699e36f5",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/urllib3/packages/ssl_match_hostname/__init__.py": {
+        "hash": "b4b0425c9004c342e9e60faf6408e213",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/urllib3/poolmanager.py": {
+        "hash": "6e36c4df52b75587d1c42f3786c816ad",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/urllib3/request.py": {
+        "hash": "bf6fee7c87ec943f7e493a1810334037",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/urllib3/response.py": {
+        "hash": "6ad07cda1aa208c0e10b2996434d7212",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/urllib3/util.py": {
+        "hash": "52c973ddeaf655b0f348e60706070575",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/sessions.py": {
+        "hash": "76076f2ee9c8e77951d0ab066c2760cc",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/status_codes.py": {
+        "hash": "d595e16bc7e4713da35a873e4a2d85d5",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/structures.py": {
+        "hash": "424c65ea5039348713dcee61c28844a2",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/utils.py": {
+        "hash": "46013b3d638bd24e2e927edd0fd95cb4",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/simplejson/LICENSE.txt": {
+        "hash": "c6338d7abd321c0b50a2a547e441c52e",
+        "libraries": [
+            "simplejson"
+        ]
+    },
+    "newrelic/packages/simplejson/__init__.py": {
+        "hash": "ef65c086a19855b7c4cfee223170fe59",
+        "libraries": [
+            "simplejson"
+        ]
+    },
+    "newrelic/packages/simplejson/_speedups.c": {
+        "hash": "f3dd245e8667d25f9422d1f25bff6f11",
+        "libraries": [
+            "simplejson"
+        ]
+    },
+    "newrelic/packages/simplejson/compat.py": {
+        "hash": "9909f38f8e8aab48609f33e82ceb6fd8",
+        "libraries": [
+            "simplejson"
+        ]
+    },
+    "newrelic/packages/simplejson/decoder.py": {
+        "hash": "247f922c36a71626b53f1dbf8256b3bf",
+        "libraries": [
+            "simplejson"
+        ]
+    },
+    "newrelic/packages/simplejson/encoder.py": {
+        "hash": "321303cc74fdcae938c154869d71ff40",
+        "libraries": [
+            "simplejson"
+        ]
+    },
+    "newrelic/packages/simplejson/ordered_dict.py": {
+        "hash": "6bb1869dd9a1c4d221ba0e4b1502ce16",
+        "libraries": [
+            "simplejson"
+        ]
+    },
+    "newrelic/packages/simplejson/scanner.py": {
+        "hash": "a2d72403e248fabdea0b8c0fbadf165c",
+        "libraries": [
+            "simplejson"
+        ]
+    },
+    "newrelic/packages/simplejson/tool.py": {
+        "hash": "f5e1db72b0ff29276b3afe0f9c9408ad",
+        "libraries": [
+            "simplejson"
+        ]
+    },
+    "newrelic/packages/six.py": {
+        "hash": "653f63e52e678a4f539906b2f2ee61bd",
+        "libraries": [
+            "six"
+        ]
+    },
     "newrelic/platform.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/samplers/__init__.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/samplers/cpu_usage.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/samplers/data_sampler.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/samplers/decorators.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/samplers/memory_usage.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/samplers/tests/test_cpu_usage.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/samplers/tests/test_data_sampler.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/samplers/tests/test_decorators.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/samplers/tests/test_memory_usage.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

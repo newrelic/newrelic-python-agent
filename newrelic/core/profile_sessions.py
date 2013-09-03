@@ -1,7 +1,4 @@
-from __future__ import with_statement
-
 import os
-import sys
 import logging
 import time
 import threading
@@ -9,19 +6,19 @@ import zlib
 import base64
 from collections import deque, defaultdict
 
-import newrelic.lib.simplejson as simplejson
+import newrelic.packages.six as six
+import newrelic.packages.simplejson as simplejson
 import newrelic
 
 from newrelic.core.config import global_settings
 from newrelic.core.transaction_cache import transaction_cache
 
-from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
-        internal_metric)
+from newrelic.core.internal_metrics import (internal_trace, internal_metric)
 
 try:
-    from collections import namedtuple
+    from sys import intern
 except ImportError:
-    from newrelic.lib.namedtuple import namedtuple
+    pass
 
 _logger = logging.getLogger(__name__)
 
@@ -111,17 +108,17 @@ def collect_stack_traces(include_nr_threads=False, include_xrays=False):
 
         stack_trace = format_stack_trace(frame, thread_category)
 
-        # Skip over empty stack traces. This is merely for optimization. 
+        # Skip over empty stack traces. This is merely for optimization.
         #
         # It saves us from adding an empty deque to the txn obj, which will be
-        # discarded later on during call tree merge. 
+        # discarded later on during call tree merge.
 
         if not stack_trace:
             continue
 
         if include_xrays and txn:
             txn.add_profile_sample(stack_trace)
-        
+
         yield thread_category, stack_trace
 
 class ProfileSessionManager(object):
@@ -137,7 +134,7 @@ class ProfileSessionManager(object):
         with ProfileSessionManager._lock:
             if ProfileSessionManager._instance is None:
                 ProfileSessionManager._instance = ProfileSessionManager()
-        
+
         return ProfileSessionManager._instance
 
     def __init__(self):
@@ -234,7 +231,7 @@ class ProfileSessionManager(object):
                 # if it might in future better to return True.
 
                 return False
-            
+
             self.profile_agent_code = profile_agent_code
             self.sample_period_s = sample_period_s
             ps = ProfileSession(profile_id, stop_time, xray_id, key_txn)
@@ -245,7 +242,7 @@ class ProfileSessionManager(object):
                 self.full_profile_app = app_name
                 self._xray_suspended = True
                 _logger.debug('Suspending X-ray profiler.')
-            
+
             # Create a background thread to collect stack traces. Do this only
             # if a background thread doesn't already exist.
 
@@ -353,7 +350,7 @@ class ProfileSessionManager(object):
             start = time.time()
 
             include_xrays = ((not self._xray_suspended) and
-                    any(self.application_xrays.itervalues()))
+                    any(six.itervalues(self.application_xrays)))
 
             for category, stack in collect_stack_traces(
                     self.profile_agent_code, include_xrays):
@@ -370,8 +367,8 @@ class ProfileSessionManager(object):
 
             # Stop the profiler thread if there are no profile sessions.
 
-            if ((self.full_profile_session is None) and 
-                    (not any(self.application_xrays.itervalues()))):
+            if ((self.full_profile_session is None) and
+                    (not any(six.itervalues(self.application_xrays)))):
                 self._profiler_thread_running = False
                 return
 
@@ -398,7 +395,7 @@ class ProfileSessionManager(object):
     def update_profile_sessions(self):
         """Check the current time and decide if any of the profile sessions
         have expired and move it to the finished_sessions list.
-        
+
         """
 
         if self.full_profile_session:
@@ -412,14 +409,16 @@ class ProfileSessionManager(object):
 
         # Clean out the app_name entries with empty values
 
-        for app_name, xray_profile_sessions in self.application_xrays.items():
+        for app_name, xray_profile_sessions in \
+                list(six.iteritems(self.application_xrays)):
             if not xray_profile_sessions:
                 self.application_xrays.pop(app_name)
 
         # Update the xray_profile_sessions for each each application
 
-        for app_name, xray_profile_sessions in self.application_xrays.items():
-            for key_txn, xps in xray_profile_sessions.items():
+        for app_name, xray_profile_sessions in \
+                list(six.iteritems(self.application_xrays)):
+            for key_txn, xps in list(six.iteritems(xray_profile_sessions)):
                 if time.time() >= xps.stop_time_s:
                     self.stop_profile_session(app_name, key_txn)
                     _logger.info('Finished x-ray profiling session for %s',
@@ -435,17 +434,16 @@ class ProfileSessionManager(object):
         if app_name == self.full_profile_app:
             self.stop_profile_session(app_name)
 
-
         # Stop all xray profiler sessions.
 
         try:
             xray_profile_sessions = self.application_xrays[app_name]
         except KeyError:
             return False
-            
-        for key_txn in xray_profile_sessions.keys():
+
+        for key_txn in list(six.iterkeys(xray_profile_sessions)):
             self.stop_profile_session(app_name, key_txn)
-        
+
         return True
 
 
@@ -545,15 +543,15 @@ class ProfileSession(object):
 
         for node in self._node_list[limit:]:
             node.ignore = True
-        
+
     def profile_data(self):
 
         # Generic profiling sessions have to wait for completion before
         # reporting data.
         #
-        # Xray profile session can send partial profile data on every harvest. 
+        # Xray profile session can send partial profile data on every harvest.
 
-        if ((self.profiler_type == SessionType.GENERIC) and 
+        if ((self.profiler_type == SessionType.GENERIC) and
                 (self.state == SessionState.RUNNING)):
             return None
 
@@ -567,7 +565,7 @@ class ProfileSession(object):
         flat_tree = {}
         thread_count = 0
 
-        for category, bucket in self.call_buckets.items():
+        for category, bucket in six.iteritems(self.call_buckets):
 
             # Only flatten buckets that have data in them. No need to send
             # empty buckets.
@@ -577,7 +575,7 @@ class ProfileSession(object):
                 thread_count += len(bucket)
 
         # If no profile data was captured return None instead of sending an
-        # encoded empty data-structure 
+        # encoded empty data-structure
 
         if thread_count == 0:
             return None
@@ -598,7 +596,8 @@ class ProfileSession(object):
 
         json_call_tree = simplejson.dumps(flat_tree, ensure_ascii=True,
                 encoding='Latin-1', namedtuple_as_object=False)
-        encoded_tree = base64.standard_b64encode(zlib.compress(json_call_tree))
+        encoded_tree = base64.standard_b64encode(
+                zlib.compress(six.b(json_call_tree)))
 
         profile = [[self.profile_id, self.start_time_s*1000,
             (self.actual_stop_time_s or time.time()) * 1000, self.sample_count,

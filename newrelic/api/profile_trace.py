@@ -1,10 +1,9 @@
-from __future__ import with_statement
-
 import functools
 import inspect
-import types
 import sys
 import os
+
+import newrelic.packages.six as six
 
 from newrelic.api.transaction import current_transaction
 from newrelic.api.object_wrapper import (ObjectWrapper,
@@ -13,7 +12,7 @@ from newrelic.api.function_trace import FunctionTrace
 
 import newrelic
 
-AGENT_PACKAGE_DIRECTORY = os.path.dirname(newrelic.__file__) + '/'              
+AGENT_PACKAGE_DIRECTORY = os.path.dirname(newrelic.__file__) + '/'
 
 class ProfileTrace(object):
 
@@ -64,7 +63,7 @@ class ProfileTrace(object):
             except Exception:
                 pass
 
-            for name, obj in frame.f_globals.items():
+            for name, obj in six.iteritems(frame.f_globals):
                 try:
                     if obj.__dict__[func_name].func_code is co:
                         return callable_name(obj.__dict__[func_name])

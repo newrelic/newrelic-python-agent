@@ -4,10 +4,9 @@ then to be generated.
 
 """
 
-try:
-    from collections import namedtuple
-except ImportError:
-    from newrelic.lib.namedtuple import namedtuple
+import itertools
+
+from collections import namedtuple
 
 import newrelic.core.error_collector
 import newrelic.core.trace_node

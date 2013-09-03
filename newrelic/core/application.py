@@ -2,8 +2,6 @@
 
 """
 
-from __future__ import with_statement
-
 import logging
 import sys
 import threading
@@ -14,16 +12,19 @@ import imp
 
 from functools import partial
 
+import newrelic.packages.six as six
+
+from newrelic.samplers.data_sampler import DataSampler
+
 from newrelic.core.config import global_settings_dump, global_settings
-from newrelic.core.data_collector import (create_session, ForceAgentRestart,
+from newrelic.core.data_collector import create_session
+from newrelic.network.exceptions import (ForceAgentRestart,
         ForceAgentDisconnect, DiscardDataForRequest, RetryDataForRequest)
 from newrelic.core.environment import environment_settings
 from newrelic.core.rules_engine import RulesEngine
 from newrelic.core.stats_engine import StatsEngine, CustomMetrics
-from newrelic.core.thread_profiler import ThreadProfiler
-from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
+from newrelic.core.internal_metrics import (InternalTrace,
         InternalTraceContext, internal_metric)
-from newrelic.core.data_source import DataSampler
 from newrelic.core.xray_session import XraySession
 from newrelic.core.profile_sessions import profile_session_manager
 
@@ -84,7 +85,7 @@ class Application(object):
         # avoid a race condition in setting it later. Otherwise we have
         # to use unnecessary locking to protect access.
 
-        self._rules_engine = { 'url': RulesEngine([]), 
+        self._rules_engine = { 'url': RulesEngine([]),
                 'transaction': RulesEngine([]), 'metric': RulesEngine([]) }
 
         self._data_samplers = []
@@ -100,9 +101,9 @@ class Application(object):
 
         self.profile_manager = profile_session_manager()
 
-        # This holds a dictionary of currently active xray sessions. 
+        # This holds a dictionary of currently active xray sessions.
         # key = xray_id
-        # value = XraySession object 
+        # value = XraySession object
 
         self._active_xrays = {}
 
@@ -533,7 +534,7 @@ class Application(object):
     def normalize_name(self, name, rule_type):
         """Applies the agent normalization rules of the the specified
         rule type to the supplied name.
-        
+
         """
 
         if not self._active_session:
@@ -838,18 +839,18 @@ class Application(object):
 
         self._stats_engine.xray_sessions[name] = xs
 
-        # Start the xray profiler only if requested by collector. 
-        
+        # Start the xray profiler only if requested by collector.
+
         if run_profiler:
             profiler_status = self.profile_manager.start_profile_session(
                     self._app_name, -1, stop_time_s, sample_period_s, False,
                     name, xray_id)
-            
+
         _logger.info('Starting an xray session for %r. '
                 'duration:%d mins name:%s xray_id:%d', self._app_name,
                 duration_s/60, name, xray_id)
 
-        return {command_id: {}} 
+        return {command_id: {}}
 
     def stop_xray(self, command_id=0, **kwargs):
         """Handler for agent command 'stop_xray_session'. This command
@@ -868,7 +869,7 @@ class Application(object):
                     'to New Relic support for further investigation. '
                     'Provided Params: %r', kwargs)
             return {command_id: {'error': 'Xray session stop error.'}}
-        
+
         # An xray session is deemed as already_running if the xray_id is
         # already present in the self._active_xrays or the key txn is already
         # tracked in the stats_engine.xray_sessions.
@@ -902,7 +903,7 @@ class Application(object):
 
         self.profile_manager.stop_profile_session(self._app_name, xs.key_txn)
 
-        return {command_id: {}} 
+        return {command_id: {}}
 
     def cmd_active_xray_sessions(self, command_id=0, **kwargs):
         """Receives  a list of xray_ids that are currently active in the
@@ -919,7 +920,7 @@ class Application(object):
         if not self._active_session.configuration.xray_session.enabled:
             return None
 
-        # Create a set from the xray_ids received from the collector. 
+        # Create a set from the xray_ids received from the collector.
 
         collector_xray_ids = set(kwargs['xray_ids'])
 
@@ -992,10 +993,10 @@ class Application(object):
                     'in the agent configuration.', self._app_name)
             return {command_id: {'error': 'The profiler service is disabled'}}
 
-        profile_id = kwargs['profile_id'] 
-        sample_period = kwargs['sample_period'] 
-        duration_s = kwargs['duration'] 
-        profile_agent_code = kwargs['profile_agent_code'] 
+        profile_id = kwargs['profile_id']
+        sample_period = kwargs['sample_period']
+        duration_s = kwargs['duration']
+        profile_agent_code = kwargs['profile_agent_code']
 
         stop_time_s = self._period_start + duration_s
 
@@ -1019,7 +1020,7 @@ class Application(object):
         success = self.profile_manager.start_profile_session(self._app_name,
                 profile_id, stop_time_s, sample_period, profile_agent_code)
 
-        if not success: 
+        if not success:
             _logger.warning('A thread profiling session was requested for '
                     '%r but a thread profiling session is already in '
                     'progress. Ignoring the subsequent request. '
@@ -1071,8 +1072,8 @@ class Application(object):
 
         self.profile_manager.stop_profile_session(self._app_name)
 
-        return {command_id: {}} 
-        
+        return {command_id: {}}
+
     def harvest(self, shutdown=False):
         """Performs a harvest, reporting aggregated data for the current
         reporting period to the data collector.
@@ -1484,9 +1485,9 @@ class Application(object):
             if self._active_xrays and no_xray_cmds:
                 _logger.debug('Stopping all X Ray sessions for %r. '
                     'Current sessions running are %r.', self._app_name,
-                    self._active_xrays.keys())
+                    list(six.iterkeys(self._active_xrays)))
 
-                for xs in self._active_xrays.values():
+                for xs in list(six.itervalues(self._active_xrays)):
                     self.stop_xray(x_ray_id=xs.xray_id,
                             key_transaction_name=xs.key_txn)
 

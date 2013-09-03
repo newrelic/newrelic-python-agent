@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 import sys
 import time
@@ -13,7 +15,7 @@ def command(name, options='', desc='', hidden=False):
     return wrapper
 
 def usage(name):
-    print 'Usage: newrelic-admin %s %s' % (name, _commands[name][1])
+    print('Usage: newrelic-admin %s %s' % (name, _commands[name][1]))
 
 def initialize_logging():
     import newrelic.core.log_file
@@ -29,7 +31,7 @@ def initialize_logging():
             if len(logging.root.handlers) != 0:
                 return
 
-            if record.name.startswith('newrelic.lib'):
+            if record.name.startswith('newrelic.packages'):
                 return
 
             if record.levelno < logging.WARNING:
@@ -47,30 +49,30 @@ def initialize_logging():
 @command(None)
 def help(args):
     if not args:
-        print 'Usage: newrelic-admin command [options]'
-        print
-        print "Type 'newrelic-admin help <command>'",
-        print "for help on a specific command."
-        print
-        print "Available commands are:"
+        print('Usage: newrelic-admin command [options]')
+        print()
+        print("Type 'newrelic-admin help <command>'", end='')
+        print("for help on a specific command.")
+        print()
+        print("Available commands are:")
 
         commands = sorted(_commands.keys())
         for name in commands:
             if not _commands[name][3]:
-                print ' ', name
+                print(' ', name)
 
     else:
         name = args[0]
 
         if name not in _commands:
-            print "Unknown command '%s'." % name,
-            print "Type 'newrelic-admin help' for usage."
+            print("Unknown command '%s'." % name, end='')
+            print("Type 'newrelic-admin help' for usage.")
 
         else:
-            print 'Usage: newrelic-admin %s %s' % (name, _commands[name][1])
+            print('Usage: newrelic-admin %s %s' % (name, _commands[name][1]))
             if _commands[name][2]:
-                print
-                print _commands[name][2]
+                print()
+                print(_commands[name][2])
 
 @command('generate-config', 'license_key [output_file]',
 """Generates a sample agent configuration file for <license_key>.""")
@@ -94,7 +96,7 @@ def generate_config(args):
         output_file.write(content)
         output_file.close()
     else:
-        print content
+        print(content)
 
 @command('validate-config', 'config_file [log_file]',
 """Validates the syntax of <config_file>. Also tests connectivity to New
@@ -174,7 +176,7 @@ def validate_config(args):
     def _function3():
         newrelic.agent.add_custom_parameter("key-1", 1)
         raise RuntimeError('This is a test error and can be ignored.')
-     
+
     @newrelic.api.web_transaction.wsgi_application()
     def _wsgi_application(environ, start_response):
         status = '200 OK'
@@ -212,24 +214,24 @@ def validate_config(args):
         pass
 
 
-    print
-    print 'Running Python agent test.'
-    print
-    print 'Any significant errors in performing the test will be shown'
-    print 'below. If no errors occurred in the execution of this script '
-    print 'and data is still not reporting through to the UI against the '
-    print 'application:'
-    print
-    print '  %s' % _settings.app_name
-    print
-    print 'after 5 minutes then check the log file:'
-    print
-    print '  %s' % _settings.log_file
-    print
-    print 'for debugging information. Supply the log file to New Relic'
-    print 'support if requesting help with resolving any issues with'
-    print 'the test not reporting data to the New Relic UI.'
-    print
+    print()
+    print('Running Python agent test.')
+    print()
+    print('Any significant errors in performing the test will be shown')
+    print('below. If no errors occurred in the execution of this script ')
+    print('and data is still not reporting through to the UI against the ')
+    print('application:')
+    print()
+    print('  %s' % _settings.app_name)
+    print()
+    print('after 5 minutes then check the log file:')
+    print()
+    print('  %s' % _settings.log_file)
+    print()
+    print('for debugging information. Supply the log file to New Relic')
+    print('support if requesting help with resolving any issues with')
+    print('the test not reporting data to the New Relic UI.')
+    print()
 
     _logger.debug('Register test application.')
 
@@ -267,10 +269,10 @@ def validate_config(args):
                 if message['message'].startswith('Reporting to:'):
                     parts = message['message'].split('Reporting to:')
                     url = parts[1].strip()
-                    print 'Registration successful. Reporting to:'
-                    print
-                    print '  %s' % url
-                    print
+                    print('Registration successful. Reporting to:')
+                    print()
+                    print('  %s' % url)
+                    print()
                     break
 
     _logger.debug('Registration took %s seconds.', _duration)
@@ -327,11 +329,10 @@ def local_config(args):
 
     config = newrelic.core.config.flatten_settings(_settings)
 
-    keys = config.keys()
-    keys.sort()
+    keys = sorted(config.keys())
 
     for key in keys:
-        print '%s = %s' % (key, repr(config[key]))
+        print('%s = %s' % (key, repr(config[key])))
 
 @command('server-config', 'config_file [log_file]',
 """Dumps out the agent configuration after having loaded the settings
@@ -395,11 +396,10 @@ def remote_config(args):
 
     config = newrelic.core.config.flatten_settings(_application.settings)
 
-    keys = config.keys()
-    keys.sort()
+    keys = sorted(config.keys())
 
     for key in keys:
-        print '%s = %s' % (key, repr(config[key]))
+        print('%s = %s' % (key, repr(config[key])))
 
 @command('license-key', 'config_file [log_file]',
 """Prints out the account license key after having loaded the settings
@@ -441,7 +441,7 @@ def license_key(args):
     newrelic.agent.initialize(config_file, ignore_errors=False,
                log_file=_settings.log_file, log_level=_settings.log_level)
 
-    print 'license_key = %s' % repr(_settings.license_key)
+    print('license_key = %s' % repr(_settings.license_key))
 
 @command('network-config', 'config_file [log_file]',
 """Prints out the network configuration after having loaded the settings
@@ -483,13 +483,13 @@ def network_config(args):
     newrelic.agent.initialize(config_file, ignore_errors=False,
                log_file=_settings.log_file, log_level=_settings.log_level)
 
-    print 'host = %s' % repr(_settings.host)
-    print 'port = %s' % repr(_settings.port)
-    print 'proxy_host = %s' % repr(_settings.proxy_host)
-    print 'proxy_port = %s' % repr(_settings.proxy_port)
-    print 'proxy_user = %s' % repr(_settings.proxy_user)
-    print 'proxy_pass = %s' % repr(_settings.proxy_pass)
-    print 'ssl = %s' % repr(_settings.ssl)
+    print('host = %s' % repr(_settings.host))
+    print('port = %s' % repr(_settings.port))
+    print('proxy_host = %s' % repr(_settings.proxy_host))
+    print('proxy_port = %s' % repr(_settings.proxy_port))
+    print('proxy_user = %s' % repr(_settings.proxy_user))
+    print('proxy_pass = %s' % repr(_settings.proxy_pass))
+    print('ssl = %s' % repr(_settings.ssl))
 
 @command('rum-header', '',
 """Prints out the RUM header.""", hidden=True)
@@ -500,7 +500,7 @@ def rum_footer(args):
 
     import newrelic.api.web_transaction
 
-    print newrelic.api.web_transaction._rum_header_fragment
+    print(newrelic.api.web_transaction._rum_header_fragment)
 
 @command('rum-footer', 'config_file path [log_file]',
 """Prints out the RUM footer for a resource with the supplied path.
@@ -568,14 +568,14 @@ def rum_footer(args):
     name = newrelic.api.web_transaction.obfuscate(metric,
             _application.settings.license_key[:13])
 
-    print str(footer % (_application.settings.episodes_file,
+    print(str(footer % (_application.settings.episodes_file,
         _application.settings.beacon, _application.settings.browser_key,
-        _application.settings.application_id, name, 0, 0))
+        _application.settings.application_id, name, 0, 0)))
 
 @command('run-python', '...',
 """Executes the Python interpreter with the supplied arguments but forces
 the initialisation of the agent automatically at startup.
-         
+
 If using an agent configuration file the path to the file should be
 supplied by the environment variable NEW_RELIC_CONFIG_FILE. Alternatively,
 just the licence key, application and log file details can be supplied via
@@ -639,9 +639,9 @@ def run_python(args):
 
         def _log(text, *args):
             text = text % args
-            print 'NEWRELIC: %s (%d) - %s' % (time.strftime(
+            print('NEWRELIC: %s (%d) - %s' % (time.strftime(
                     '%Y-%m-%d %H:%M:%S', time.localtime()),
-                    os.getpid(), text)
+                    os.getpid(), text))
 
         _log('New Relic Admin Script (%s)', newrelic.version)
 
@@ -652,21 +652,21 @@ def run_python(args):
             if name.startswith('NEW_RELIC_') or name.startswith('PYTHON'):
                 _log('%s = %r', name, os.environ.get(name))
 
-        _log('root_directory = %r', root_directory) 
-        _log('boot_directory = %r', boot_directory) 
+        _log('root_directory = %r', root_directory)
+        _log('boot_directory = %r', boot_directory)
 
         if local_sitecustomize is not None:
-            _log('local_sitecustomize = %r', local_sitecustomize.__file__) 
+            _log('local_sitecustomize = %r', local_sitecustomize.__file__)
 
-        _log('python_exe_path = %r', python_exe_path) 
-        _log('execl_arguments = %r', [python_exe_path, python_exe_path]+args) 
+        _log('python_exe_path = %r', python_exe_path)
+        _log('execl_arguments = %r', [python_exe_path, python_exe_path]+args)
 
     os.execl(python_exe_path, python_exe_path, *args)
 
 @command('run-program', '...',
 """Executes the command line but forces the initialisation of the agent
 automatically at startup.
-         
+
 If using an agent configuration file the path to the file should be
 supplied by the environment variable NEW_RELIC_CONFIG_FILE. Alternatively,
 just the licence key, application and log file details can be supplied via
@@ -674,7 +674,7 @@ environment variables NEW_RELIC_LICENSE_KEY, NEW_RELIC_APP_NAME and
 NEW_RELIC_LOG.""")
 def run_program(args):
     if len(args) == 0:
-        print "Type 'newrelic-admin help run-program' for usage."
+        print("Type 'newrelic-admin help run-program' for usage.")
         sys.exit(1)
 
     import newrelic
@@ -730,9 +730,9 @@ def run_program(args):
 
         def _log(text, *args):
             text = text % args
-            print 'NEWRELIC: %s (%d) - %s' % (time.strftime(
+            print('NEWRELIC: %s (%d) - %s' % (time.strftime(
                     '%Y-%m-%d %H:%M:%S', time.localtime()),
-                    os.getpid(), text)
+                    os.getpid(), text))
 
         _log('New Relic Admin Script (%s)', newrelic.version)
 
@@ -743,14 +743,14 @@ def run_program(args):
             if name.startswith('NEW_RELIC_') or name.startswith('PYTHON'):
                 _log('%s = %r', name, os.environ.get(name))
 
-        _log('root_directory = %r', root_directory) 
-        _log('boot_directory = %r', boot_directory) 
+        _log('root_directory = %r', root_directory)
+        _log('boot_directory = %r', boot_directory)
 
         if local_sitecustomize is not None:
-            _log('local_sitecustomize = %r', local_sitecustomize.__file__) 
+            _log('local_sitecustomize = %r', local_sitecustomize.__file__)
 
-        _log('program_exe_path = %r', program_exe_path) 
-        _log('execl_arguments = %r', [program_exe_path]+args) 
+        _log('program_exe_path = %r', program_exe_path)
+        _log('execl_arguments = %r', [program_exe_path]+args)
 
     os.execl(program_exe_path, *args)
 
@@ -788,7 +788,7 @@ def data_source(args):
 
 def main():
     if len(sys.argv) == 1:
-        print "Type 'newrelic-admin help' for usage."
+        print("Type 'newrelic-admin help' for usage.")
         sys.exit(1)
 
     try:
@@ -799,8 +799,8 @@ def main():
         else:
             function = help
     except Exception:
-        print "Unknown command '%s'." % command,
-        print "Type 'newrelic-admin help' for usage."
+        print("Unknown command '%s'." % command, end='')
+        print("Type 'newrelic-admin help' for usage.")
         sys.exit(1)
 
     function(sys.argv[2:])

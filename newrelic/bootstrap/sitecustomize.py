@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 import sys
 
@@ -49,9 +51,9 @@ if debug_startup:
 
     def _log(text, *args):
         text = text % args
-        print 'NEWRELIC: %s (%d) - %s' % (time.strftime(
+        print('NEWRELIC: %s (%d) - %s' % (time.strftime(
                 '%Y-%m-%d %H:%M:%S', time.localtime()),
-                os.getpid(), text)
+                os.getpid(), text))
 
     _log('New Relic Bootstrap (%s)', newrelic.version)
 
@@ -61,8 +63,8 @@ if debug_startup:
         if name.startswith('NEW_RELIC_') or name.startswith('PYTHON'):
             _log('%s = %r', name, os.environ.get(name))
 
-    _log('root_directory = %r', root_directory) 
-    _log('boot_directory = %r', boot_directory) 
+    _log('root_directory = %r', root_directory)
+    _log('boot_directory = %r', boot_directory)
 
 # We skip agent initialisation if neither the license key or config file
 # environment variables are set. We do this as some people like to use a

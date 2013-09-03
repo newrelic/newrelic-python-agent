@@ -1,8 +1,8 @@
-from __future__ import with_statement
-
 import sys
 import threading
 import types
+
+import newrelic.packages.six as six
 
 from newrelic.api.error_trace import wrap_error_trace
 from newrelic.api.function_trace import (FunctionTrace, wrap_function_trace)
@@ -76,6 +76,8 @@ def browser_timing_middleware(request, response):
     if not header:
         return response
 
+    header = six.b(header)
+
     # Make sure we flatten any content first as it could be
     # stored as a list of strings in the response object. We
     # assign it back to the response object to avoid having
@@ -95,12 +97,12 @@ def browser_timing_middleware(request, response):
     # to avoid multiple copies in memory when we recompose the
     # actual response from list of strings.
 
-    start = content.find('<head')
-    end = content.rfind('</body>', -1024)
+    start = content.find(b'<head')
+    end = content.rfind(b'</body>', -1024)
     if start != -1 and end != -1:
-        offset = content.find('</head>', start)
-        if content.find('X-UA-Compatible', start, offset) == -1:
-            start = content.find('>', start, start+1024)
+        offset = content.find(b'</head>', start)
+        if content.find(b'X-UA-Compatible', start, offset) == -1:
+            start = content.find(b'>', start, start+1024)
         elif offset != -1:
             start = offset - 1
         if start != -1 and start < end:
@@ -108,24 +110,32 @@ def browser_timing_middleware(request, response):
             parts.append(content[0:start+1])
             parts.append(header)
             parts.append(content[start+1:end])
-            parts.append(transaction.browser_timing_footer())
+
+            footer = transaction.browser_timing_footer()
+            footer = six.b(footer)
+
+            parts.append(footer)
             parts.append(content[end:])
-            response.content = ''
-            content = ''.join(parts)
+            response.content = b''
+            content = b''.join(parts)
             response.content = content
     elif start == -1 and end != -1:
-        start = content.find('<body')
+        start = content.find(b'<body')
         if start != -1 and start < end:
             parts = []
             parts.append(content[0:start])
-            parts.append('<head>')
+            parts.append(b'<head>')
             parts.append(header)
-            parts.append('</head>')
+            parts.append(b'</head>')
             parts.append(content[start:end])
-            parts.append(transaction.browser_timing_footer())
+
+            footer = transaction.browser_timing_footer()
+            footer = six.b(footer)
+
+            parts.append(footer)
             parts.append(content[end:])
             response.content = ''
-            content = ''.join(parts)
+            content = b''.join(parts)
             response.content = content
 
     response['Content-Length'] = str(len(response.content))
@@ -755,8 +765,8 @@ def instrument_django_core_servers_basehttp(module):
                         self.bytes_sent = 0
                         self.headers_sent = False
 
-	# Leaving this out for now to see whether weakref solves
-	# the problem.
+        # Leaving this out for now to see whether weakref solves
+        # the problem.
 
         #module.ServerHandler.run = run
         #module.ServerHandler.close = close

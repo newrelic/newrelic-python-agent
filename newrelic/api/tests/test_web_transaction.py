@@ -1,5 +1,3 @@
-from __future__ import with_statement
-  
 import unittest
 import time
 import sys
@@ -13,6 +11,8 @@ import newrelic.api.transaction
 import newrelic.api.web_transaction
 
 import newrelic.agent
+
+is_pypy = '__pypy__' in sys.builtin_module_names
 
 settings = newrelic.api.settings.settings()
 application = newrelic.api.application.application_instance()
@@ -121,6 +121,9 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             self.assertTrue(transaction.background_task)
 
     def test_exit_on_delete(self):
+        if is_pypy:
+            return
+
         environ = { "REQUEST_URI": "/exit_on_delete" }
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
@@ -265,7 +268,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t=%d" % ts},
                 ts),
 
-            # HTTP_X_REQUEST_START seconds 
+            # HTTP_X_REQUEST_START seconds
             ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"%d" % ts},
                 ts),
 
@@ -273,11 +276,11 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             ({"REQUEST_URI":"/queue_start","HTTP_X_QUEUE_START":"t=%d" % ts},
                 ts),
 
-            # HTTP_X_QUEUE_START seconds 
+            # HTTP_X_QUEUE_START seconds
             ({"REQUEST_URI":"/queue_start","HTTP_X_QUEUE_START":"%d" % ts},
                     ts),
 
-            # mod_wsgi.queue_start seconds 
+            # mod_wsgi.queue_start seconds
             ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"%d" % ts},
                     ts),
 
@@ -293,7 +296,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             # All three headers
             ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"%d" % (ts +
                 100),"HTTP_X_REQUEST_START":"%d" % ts,"HTTP_X_QUEUE_START":"%d"
-                % (ts + 100)}, ts) 
+                % (ts + 100)}, ts)
 
             ]
 
@@ -303,7 +306,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"t=%f" % ts},
                 ts),
 
-            # HTTP_X_REQUEST_START seconds 
+            # HTTP_X_REQUEST_START seconds
             ({"REQUEST_URI":"/queue_start","HTTP_X_REQUEST_START":"%f" % ts},
                 ts),
 
@@ -311,11 +314,11 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             ({"REQUEST_URI":"/queue_start","HTTP_X_QUEUE_START":"t=%f" % ts},
                 ts),
 
-            # HTTP_X_QUEUE_START seconds 
+            # HTTP_X_QUEUE_START seconds
             ({"REQUEST_URI":"/queue_start","HTTP_X_QUEUE_START":"%f" % ts},
                     ts),
 
-            # mod_wsgi.queue_start seconds 
+            # mod_wsgi.queue_start seconds
             ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"%f" % ts},
                     ts),
 
@@ -331,7 +334,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             # All three headers
             ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"%f" % (ts +
                 100),"HTTP_X_REQUEST_START":"%f" % ts,"HTTP_X_QUEUE_START":"%f"
-                % (ts + 100)}, ts) 
+                % (ts + 100)}, ts)
 
             ]
 
@@ -360,7 +363,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             # mod_wsgi.queue_start milli-seconds
             ({"REQUEST_URI":"/queue_start","mod_wsgi.queue_start":"%.0f" % (ts *
                 1000)}, ts),
-            
+
             ]
 
         integer_micro_seconds_tests = [

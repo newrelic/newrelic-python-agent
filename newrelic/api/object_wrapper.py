@@ -78,14 +78,32 @@ def object_context(object):
     # FIXME This will die if used on methods of Python objects
     # implemented in C.
 
-    if inspect.isclass(object) or type(object) == types.TypeType:
+    if hasattr(object, '__qualname__'):
+        cname = None                                                            
+        fname = object.__qualname__                                             
+                                                                                
+        mname = _module_name(object)
+                                                                                
+        if mname is None:                                                       
+            if hasattr(object, '__self__'):                                     
+                if hasattr(object.__self__, '__module__'):                      
+                    mname = object.__self__.__class__.__module__                
+                elif hasattr(object.__self__, '__class__'):                     
+                    mname = object.__self__.__class__.__module__                
+                                                                                
+        if mname is None:                                                       
+            if hasattr(object, '__objclass__'):                                 
+                if hasattr(object.__objclass__, '__module__'):                  
+                    mname = object.__objclass__.__module__                      
+
+    elif inspect.isclass(object) or isinstance(object, type):
         # This is called for new and old style class objects.
 
         mname = _module_name(object)
         cname = object.__name__
         fname = None
 
-    elif inspect.ismethod(object):
+    elif hasattr(object, 'im_class') and inspect.ismethod(object):
         # This is called for both bound and unbound class methods.
         # In the case of an unbound method the im_self attribute
         # will be None.
@@ -121,7 +139,7 @@ def object_context(object):
             cname = object.__self__.__class__.__name__
             fname = object.__name__
 
-    elif isinstance(object, types.InstanceType):
+    elif hasattr(types, 'InstanceType') and isinstance(object, types.InstanceType):
         # This is called for instances of old style classes.
 
         mname = _module_name(object)
@@ -166,7 +184,7 @@ def object_context(object):
 
     return (mname, path)
 
-def callable_name(object, separator=':'):
+def _obsolete_callable_name(object, separator=':'):
     if hasattr(object, '_nr_object_path'):
         name = object._nr_object_path
         if name is not None:
@@ -179,8 +197,10 @@ def callable_name(object, separator=':'):
         pass
     return name
 
+from ..common.object_names import callable_name
+
 class ObjectWrapper(object):
-    
+
     def __init__(self, wrapped, instance, wrapper, args=[], kwargs={}):
         self._nr_next_object = wrapped
 
@@ -188,12 +208,12 @@ class ObjectWrapper(object):
         self._nr_wrapper = wrapper
         self._nr_args = args
         self._nr_kwargs = kwargs
-        
+
         try:
             self._nr_last_object = wrapped._nr_last_object
         except Exception:
             self._nr_last_object = wrapped
-        
+
         for attr in WRAPPER_ASSIGNMENTS:
             try:
                 value = getattr(wrapped, attr)
@@ -226,7 +246,7 @@ class ObjectWrapper(object):
     def __exit__(self, *args, **kwargs):
         return self._nr_next_object.__exit__(*args, **kwargs)
 
-    def __dir__(self): 
+    def __dir__(self):
         return dir(self._nr_next_object)
 
     def __iter__(self):
@@ -250,7 +270,7 @@ class ObjectWrapper(object):
     def __hash__(self):
         return hash(self._nr_last_object)
 
-    def __repr__(self): 
+    def __repr__(self):
         return '<ObjectWrapper for %s>' % (str(self._nr_last_object))
 
 def wrap_callable(wrapped, wrapper, *args, **kwargs):

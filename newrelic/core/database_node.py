@@ -1,7 +1,4 @@
-try:
-    from collections import namedtuple
-except ImportError:
-    from newrelic.lib.namedtuple import namedtuple
+from collections import namedtuple
 
 import newrelic.core.trace_node
 
@@ -195,8 +192,8 @@ class DatabaseNode(_DatabaseNode):
             params['sql'] = root.string_table.cache(sql[:limit])
 
             if self.stack_trace:
-                params['backtrace'] = map(root.string_table.cache,
-                        self.stack_trace)
+                params['backtrace'] = [root.string_table.cache(x) for x in
+                        self.stack_trace]
 
             explain_plan = self.explain_plan
             if explain_plan:

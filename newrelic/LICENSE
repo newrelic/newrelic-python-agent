@@ -2,32 +2,14 @@
 
 This product includes:
 
-  'certifi' (http://pypi.python.org/pypi/certifi),
-
-which contains components released under the following license(s):
-
-  Internet Systems Consortium <http://www.isc.org/software/license>
-  Mozilla Public License <http://www.mozilla.org/MPL/>
-
----------------------------------------------------------------------------
-
-This product includes:
-
-  'namedtuple' (http://code.activestate.com/recipes/500261/),
-
-which contains components released under the following license(s):
-
-  Python Software Foundation <http://docs.python.org/2/license.html>
-
----------------------------------------------------------------------------
-
-This product includes:
-
   'requests' (http://pypi.python.org/pypi/requests),
 
 which contains components released under the following license(s):
 
-  Internet Systems Consortium <http://www.isc.org/software/license>
+  The BSD License <https://github.com/idan/oauthlib/blob/master/LICENSE>
+  GNU LESSER GENERAL PUBLIC LICENSE <http://www.gnu.org/licenses/lgpl.html>
+  The MIT License <http://opensource.org/licenses/MIT>
+  Apache License, Version 2.0 <http://www.apache.org/licenses/LICENSE-2.0>
 
 ---------------------------------------------------------------------------
 
@@ -38,6 +20,26 @@ This product includes:
 which contains components released under the following license(s):
 
   The MIT License <http://opensource.org/licenses/MIT>
+
+---------------------------------------------------------------------------
+
+This product includes:
+
+  'six' (https://bitbucket.org/gutworth/six/overview),
+
+which contains components released under the following license(s):
+
+  The MIT License <http://opensource.org/licenses/MIT>
+
+---------------------------------------------------------------------------
+
+This product includes:
+
+  'time.monotonic' (newrelic/common/_monotonic.c),
+
+which contains components released under the following license(s):
+
+  Python Software Foundation <http://docs.python.org/2/license.html>
 
 ---------------------------------------------------------------------------
 

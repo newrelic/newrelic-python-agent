@@ -6,8 +6,6 @@ about this below.
 
 """
 
-from __future__ import with_statement
-
 import functools
 import inspect
 
@@ -95,17 +93,17 @@ def instrument_celery_app_task(module):
 
         # Need to add a wrapper for background task entry point.
 
-	# In Celery 2.2 the 'BaseTask' class actually resided in the
-	# module 'celery.task.base'. In Celery 2.3 the 'BaseTask' class
-	# moved to 'celery.app.task' but an alias to it was retained in
-	# the module 'celery.task.base'. We need to detect both module
-	# imports, but we check the module name associated with
-	# 'BaseTask' to ensure that we do not instrument the class via
-	# the alias in Celery 2.3 and later.
+        # In Celery 2.2 the 'BaseTask' class actually resided in the
+        # module 'celery.task.base'. In Celery 2.3 the 'BaseTask' class
+        # moved to 'celery.app.task' but an alias to it was retained in
+        # the module 'celery.task.base'. We need to detect both module
+        # imports, but we check the module name associated with
+        # 'BaseTask' to ensure that we do not instrument the class via
+        # the alias in Celery 2.3 and later.
 
-	# In Celery 2.5+, although 'BaseTask' still exists execution of
-	# the task doesn't pass through it. For Celery 2.5+ need to wrap
-	# the tracer instead.
+        # In Celery 2.5+, although 'BaseTask' still exists execution of
+        # the task doesn't pass through it. For Celery 2.5+ need to wrap
+        # the tracer instead.
 
         def task_name(task, *args, **kwargs):
             return task.name
@@ -120,7 +118,7 @@ def instrument_celery_execute_trace(module):
 
     if hasattr(module, 'build_tracer'):
 
-	# Need to add a wrapper for background task entry point.
+        # Need to add a wrapper for background task entry point.
 
         # In Celery 2.5+ we need to wrap the task when tracer is being
         # created. Note that in Celery 2.5 the 'build_tracer' function
@@ -146,9 +144,9 @@ def instrument_celery_worker(module):
         # We try and force registration of default application after
         # fork of worker process rather than lazily on first request.
 
-	# Originally the 'process_initializer' function was located in
-	# 'celery.worker'. In Celery 2.5 the function 'process_initializer'
-	# was moved to the module 'celery.concurrency.processes'.
+        # Originally the 'process_initializer' function was located in
+        # 'celery.worker'. In Celery 2.5 the function 'process_initializer'
+        # was moved to the module 'celery.concurrency.processes'.
 
         _process_initializer = module.process_initializer
 

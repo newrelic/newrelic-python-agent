@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 import sys
 import types
 import inspect
@@ -49,10 +47,10 @@ class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
 
         if transaction_tracer.enabled and settings.collect_traces:
             if self.duration >= transaction_tracer.stack_trace_threshold:
-                if (self.transaction._stack_trace_count < 
-                       agent_limits.slow_sql_stack_trace):
-                    self.stack_trace = map(self.transaction._intern_string,
-                                           traceback.format_stack())
+                if (self.transaction._stack_trace_count <
+                        agent_limits.slow_sql_stack_trace):
+                    self.stack_trace = [self.transaction._intern_string(x) for
+                                        x in traceback.format_stack()]
                     self.transaction._stack_trace_count += 1
 
 
@@ -61,7 +59,7 @@ class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
 
             if (transaction_tracer.explain_enabled and
                     self.duration >= transaction_tracer.explain_threshold):
-                if (self.transaction._explain_plan_count < 
+                if (self.transaction._explain_plan_count <
                        agent_limits.sql_explain_plans):
                     connect_params = self.connect_params
                     cursor_params = self.cursor_params
@@ -89,7 +87,7 @@ class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
 class DatabaseTraceWrapper(object):
 
     def __init__(self, wrapped, sql, dbapi=None):
-        if type(wrapped) == types.TupleType:
+        if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
         else:
             instance = None
@@ -117,7 +115,7 @@ class DatabaseTraceWrapper(object):
         if not transaction:
             return self._nr_next_object(*args, **kwargs)
 
-        if not isinstance(self._nr_sql, basestring):
+        if callable(self._nr_sql):
             if self._nr_instance and inspect.ismethod(self._nr_next_object):
                 sql = self._nr_sql(self._nr_instance, *args, **kwargs)
             else:

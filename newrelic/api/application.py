@@ -1,10 +1,10 @@
-from __future__ import with_statement
-
 import threading
 import warnings
 
 import newrelic.core.config
 import newrelic.core.agent
+
+import newrelic.packages.six as six
 
 class Application(object):
 
@@ -90,7 +90,7 @@ class Application(object):
 
     @property
     def linked_applications(self):
-        return self._linked.keys()
+        return list(six.iterkeys(self._linked))
 
     def link_to_application(self, name):
         self._linked[name] = True

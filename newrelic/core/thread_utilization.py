@@ -1,6 +1,6 @@
 import time
 
-from newrelic.core.data_source import data_source_factory
+from newrelic.samplers.decorators import data_source_factory
 
 try:
     from newrelic.core._thread_utilization import ThreadUtilization

@@ -37,6 +37,6 @@ class TestCase(unittest.TestCase):
                 current_time = time.time()
                 period_start = self.application._period_start
                 cycle_duration = current_time - period_start
-                
+
                 if cycle_duration < 1.1:
                     time.sleep(1.1-cycle_duration)

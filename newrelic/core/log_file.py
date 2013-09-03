@@ -37,7 +37,7 @@ class FilteredStreamHandler(logging.StreamHandler):
         # verbose with its INFO messages when creating new socket
         # connections in its pooling mechanism.
 
-        if not record.name.startswith('newrelic.lib'):
+        if not record.name.startswith('newrelic.packages'):
             return logging.StreamHandler.emit(self, record)
 
 class FilteredFileHandler(logging.FileHandler):
@@ -48,7 +48,7 @@ class FilteredFileHandler(logging.FileHandler):
         # verbose with its INFO messages when creating new socket
         # connections in its pooling mechanism.
 
-        if not record.name.startswith('newrelic.lib'):
+        if not record.name.startswith('newrelic.packages'):
             return logging.FileHandler.emit(self, record)
 
 # This is to filter out the overly verbose log messages at INFO level
@@ -60,7 +60,7 @@ class RequestsConnectionFilter(logging.Filter):
         return False
 
 _requests_logger = logging.getLogger(
-    'newrelic.lib.requests.packages.urllib3.connectionpool')
+    'newrelic.packages.requests.packages.urllib3.connectionpool')
 _requests_logger.addFilter(RequestsConnectionFilter())
 
 _initialized = False

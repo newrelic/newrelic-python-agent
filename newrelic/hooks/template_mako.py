@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 import newrelic.api.function_trace
 import newrelic.api.object_wrapper
 

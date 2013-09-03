@@ -3,9 +3,13 @@
 """
 
 import sys
-import thread
 import threading
 import weakref
+
+try:
+    import thread
+except ImportError:
+    import _thread as thread
 
 from newrelic.core.config import global_settings
 

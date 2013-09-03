@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 import sys
 import time
 import unittest
@@ -10,6 +8,8 @@ import newrelic.api.settings
 import newrelic.api.application
 import newrelic.api.transaction
 import newrelic.api.background_task
+
+is_pypy = '__pypy__' in sys.builtin_module_names
 
 settings = newrelic.api.settings.settings()
 application = newrelic.api.application.application_instance()
@@ -68,6 +68,9 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                              'OtherTransaction/'+group+'/'+path)
 
     def test_exit_on_delete(self):
+        if is_pypy:
+            return
+
         name = "exit_on_delete"
         transaction = newrelic.api.background_task.BackgroundTask(
                 application, name)
@@ -81,7 +84,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 application, name)
         with transaction:
             transaction.add_custom_parameter("1", "1")
-            transaction.add_custom_parameter("2", "2") 
+            transaction.add_custom_parameter("2", "2")
             transaction.add_custom_parameter("3", 3)
             transaction.add_custom_parameter("4", 4.0)
             transaction.add_custom_parameter("5", ("5", 5))

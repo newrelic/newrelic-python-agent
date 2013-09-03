@@ -2,8 +2,6 @@
 
 """
 
-from __future__ import with_statement
-
 import logging
 import os
 import socket
@@ -11,14 +9,19 @@ import sys
 import time
 import zlib
 
-import newrelic.lib.requests as requests
-import newrelic.lib.simplejson as simplejson
-import newrelic.lib.certifi as certifi
+import newrelic.packages.six as six
+
+import newrelic.packages.requests as requests
+import newrelic.packages.simplejson as simplejson
 
 from newrelic import version
 from newrelic.core.config import global_settings, create_settings_snapshot
 from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
         internal_metric)
+
+from newrelic.network.exceptions import (NetworkInterfaceException,
+        ForceAgentRestart, ForceAgentDisconnect, DiscardDataForRequest,
+        RetryDataForRequest, ServerIsUnavailable)
 
 _logger = logging.getLogger(__name__)
 
@@ -28,17 +31,6 @@ _logger = logging.getLogger(__name__)
 
 USER_AGENT = 'NewRelic-PythonAgent/%s (Python %s %s)' % (
          version, sys.version.split()[0], sys.platform)
-
-# Internal exceptions that can be generated in network layer. These are
-# use to control what the upper levels should do. Any actual details of
-# errors would already be logged at the network level.
-
-class NetworkInterfaceException(Exception): pass
-class ForceAgentRestart(NetworkInterfaceException): pass
-class ForceAgentDisconnect(NetworkInterfaceException): pass
-class DiscardDataForRequest(NetworkInterfaceException): pass
-class RetryDataForRequest(NetworkInterfaceException): pass
-class ServerIsUnavailable(RetryDataForRequest): pass
 
 # Data collector URL and proxy settings.
 
@@ -99,36 +91,6 @@ def proxy_server():
                 settings.proxy_pass, proxy)
 
     return { scheme: proxy }
-
-# This is a hack to work around a design flaw in the requests/urllib3
-# modules we currently bundle. Together they do not close the socket
-# connections in the connection pool when evicted, nor provide a way to
-# explicitly close connections still in the pool when a session ends. We
-# can get rid of this when we are able to drop Python 2.5 support and
-# upgrade to a newer requests version. When we do upgrade to the newest
-# requests library, we will be able to call close() on the session
-# object to force close connections.
-
-def close_requests_session(session, url=None):
-    try:
-        for connection_pool in session.poolmanager.pools.values():
-            try:
-                connection = connection_pool.pool.get_nowait()
-            except Exception:
-                connection = None
-
-            while connection is not None:
-                try:
-                    connection.close()
-                except Exception:
-                    pass
-
-                try:
-                    connection = connection_pool.pool.get_nowait()
-                except Exception:
-                    connection = None
-    except Exception:
-        pass
 
 # Low level network functions and session management. When connecting to
 # the data collector it is initially done through the main data collector.
@@ -193,13 +155,12 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                     encoding='Latin-1', namedtuple_as_object=False,
                     default=lambda o: list(iter(o)))
 
-    except Exception, exc:
-        _logger.error('Error encoding data for JSON payload for method %r '
-                'with payload of %r. Exception which occurred was %r. '
-                'Please report this problem to New Relic support.', method,
-                payload, exc)
+    except Exception:
+        _logger.exception('Error encoding data for JSON payload for '
+                'method %r with payload of %r. Please report this problem '
+                'to New Relic support.', method, payload)
 
-        raise DiscardDataForRequest(str(exc))
+        raise DiscardDataForRequest(str(sys.exc_info()[1]))
 
     # Log details of call and/or payload for debugging. Use the JSON
     # encoded value so know that what is encoded is correct.
@@ -225,27 +186,16 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
         with InternalTrace('Supportability/Collector/ZLIB/Compress/'
                 '%s' % method):
-            data = zlib.compress(data, level)
+            data = zlib.compress(six.b(data), level)
 
     # If there is no requests session object provided for making
-    # requests create one now. We use a transient session to get around
-    # designed flaws in the requests/urllib3 modules. See notes for
-    # close_requests_session() function above. Note that keep alive
-    # must be set to true at this point to ensure that the pool is
-    # actually used to allow us to be able to close the connection.
+    # requests create one now. We want to close this as soon as we
+    # are done with it.
 
     auto_close_session = False
 
     if not session:
-        session_config = {}
-        session_config['keep_alive'] = True
-        session_config['pool_connections'] = 1
-        session_config['pool_maxsize'] = 1
-
-        cert_loc = certifi.where()
-
-        session = requests.session(config=session_config, verify=cert_loc)
-
+        session = requests.session()
         auto_close_session = True
 
     # The 'requests' library can raise a number of exception derived
@@ -297,14 +247,15 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
         content = r.content
 
-    except requests.RequestException, exc:
+    except requests.RequestException:
         if not settings.proxy_host or not settings.proxy_port:
             _logger.warning('Data collector is not contactable. This can be '
                     'because of a network issue or because of the data '
                     'collector being restarted. In the event that contact '
                     'cannot be made after a period of time then please '
                     'report this problem to New Relic support for further '
-                    'investigation. The error raised was %r.', exc)
+                    'investigation. The error raised was %r.',
+                    sys.exc_info()[1])
         else:
             _logger.warning('Data collector is not contactable via the proxy '
                     'host %r on port %r with proxy user of %r. This can be '
@@ -314,16 +265,13 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                     'report this problem to New Relic support for further '
                     'investigation. The error raised was %r.',
                     settings.proxy_host, settings.proxy_port,
-                    settings.proxy_user, exc)
+                    settings.proxy_user, sys.exc_info()[1])
 
-        raise RetryDataForRequest(str(exc))
+        raise RetryDataForRequest(str(sys.exc_info()[1]))
 
     finally:
-        # This is a hack to work around design flaw in requests/urllib3
-        # which is bundled. See comments against close_requests_session().
-
         if auto_close_session:
-            close_requests_session(session, url)
+            session.close()
             session = None
 
     if r.status_code != 200:
@@ -421,17 +369,16 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         with InternalTrace('Supportability/Collector/JSON/Decode/%s' % method):
             result = simplejson.loads(content, encoding='UTF-8')
 
-    except Exception, exc:
-        _logger.error('Error decoding data for JSON payload for method %r '
-                'with payload of %r. Exception which occurred was %r. '
-                'Please report this problem to New Relic support.', method,
-                content, exc)
+    except Exception:
+        _logger.exception('Error decoding data for JSON payload for '
+                'method %r with payload of %r. Please report this problem '
+                'to New Relic support.', method, content)
 
         if settings.debug.log_malformed_json_data:
             _logger.info('JSON data received from data collector which '
                     'could not be decoded was %r.', content)
 
-        raise DiscardDataForRequest(str(exc))
+        raise DiscardDataForRequest(str(sys.exc_info()[1]))
 
     # The decoded JSON can be either for a successful response or an
     # error. A successful response has a 'return_value' element and an
@@ -523,29 +470,12 @@ class ApplicationSession(object):
     @property
     def requests_session(self):
         if self._requests_session is None:
-            # We force pool size to 1 to ensure that only one
-            # connection to the data collector which will be
-            # maintained due to keep alive and reused.
-
-            config = {}
-            config['keep_alive'] = True
-            config['pool_connections'] = 1
-            config['pool_maxsize'] = 1
-
-            cert_loc = certifi.where()
-
-            self._requests_session = requests.session(config=config,
-                    verify=cert_loc)
-
+            self._requests_session = requests.session()
         return self._requests_session
 
     def close_connection(self):
-        # This is a hack to work around design flaw in requests/urllib3
-        # which is bundled. See comments against close_requests_session().
-
         if self._requests_session:
-            close_requests_session(self._requests_session)
-
+            self._requests_session.close()
         self._requests_session = None
 
     @internal_trace('Supportability/Collector/Calls/shutdown')

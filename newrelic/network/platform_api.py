@@ -110,14 +110,22 @@ class PlatformInterface(object):
             level = (len(data) < 2000000) and 1 or 9
             data = zlib.compress(six.b(data), level)
 
+        # If there is no requests session object provided for making
+        # requests create one now. We want to close this as soon as we
+        # are done with it.
+
+        auto_close_session = False
+
+        if not session:
+            session = requests.session()
+            auto_close_session = True
+
         # The 'requests' library can raise a number of exception derived
         # from 'RequestException' before we even manage to get a connection
         # to the data collector. The data collector can the generate a
         # number of different types of HTTP errors for requests.
 
         try:
-            session = requests.session()
-
             r = session.post(url, headers=headers, proxies=proxies,
                     timeout=self.timeout, data=data)
 
@@ -148,7 +156,9 @@ class PlatformInterface(object):
             raise RetryDataForRequest(str(exc))
 
         finally:
-            session.close()
+            if auto_close_session:
+                session.close()
+                session = None
 
         if r.status_code != 200:
             _logger.debug('Received a non 200 HTTP response from the data '

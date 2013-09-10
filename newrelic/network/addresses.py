@@ -1,3 +1,7 @@
+"""Utility functions for calculating URLs of data collector and proxes.
+
+"""
+
 def platform_url(host='platform-api.newrelic.com', port=None, ssl=True):
     """Returns the URL for talking to the data collector when reporting
     platform metrics.

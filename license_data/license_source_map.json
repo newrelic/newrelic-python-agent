@@ -935,6 +935,24 @@
             "New Relic"
         ]
     },
+    "newrelic/network/tests/__init__.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/network/tests/test_addresses.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/network/tests/test_platform_api.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/newrelic.ini": {
         "hash": "n/a",
         "libraries": [

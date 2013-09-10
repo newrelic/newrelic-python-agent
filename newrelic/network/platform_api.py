@@ -5,6 +5,8 @@ import sys
 import socket
 import os
 
+from ..packages import six
+
 from ..packages import requests
 from ..packages import simplejson as json
 
@@ -106,7 +108,7 @@ class PlatformInterface(object):
         if len(data) > 64*1024:
             headers['Content-Encoding'] = 'deflate'
             level = (len(data) < 2000000) and 1 or 9
-            data = zlib.compress(data, level)
+            data = zlib.compress(six.b(data), level)
 
         # The 'requests' library can raise a number of exception derived
         # from 'RequestException' before we even manage to get a connection

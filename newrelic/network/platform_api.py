@@ -168,7 +168,7 @@ class PlatformInterface(object):
 
         if r.status_code == 400:
             if headers['Content-Encoding'] == 'deflate':
-                data = zlib.uncompress(data)
+                data = zlib.decompress(data)
 
             _logger.error('Data collector is indicating that a bad '
                     'request has been submitted for url %r, headers of %r '

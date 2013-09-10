@@ -308,7 +308,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
         if settings.debug.log_malformed_json_data:
             if headers['Content-Encoding'] == 'deflate':
-                data = zlib.uncompress(data)
+                data = zlib.decompress(data)
 
             _logger.info('JSON data which was rejected by the data '
                     'collector was %r.', data)

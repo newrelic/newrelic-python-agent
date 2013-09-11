@@ -38,6 +38,14 @@ def request_environment(application, request):
     if value:
         result['HTTP_X_NEWRELIC_TRANSACTION'] = value
 
+    value = request.headers.get('X-Request-Start')
+    if value:
+        result['HTTP_X_REQUEST_START'] = value
+
+    value = request.headers.get('X-Queue-Start')
+    if value:
+        result['HTTP_X_QUEUE_START'] = value
+
     settings = application.settings
 
     if not settings:

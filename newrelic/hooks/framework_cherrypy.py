@@ -25,14 +25,13 @@ class HandlerWrapper(object):
         transaction = newrelic.api.transaction.current_transaction()
         if transaction:
             transaction.name_transaction(name=self.__name, priority=2)
-            with newrelic.api.error_trace.ErrorTrace(transaction):
-                with newrelic.api.function_trace.FunctionTrace(
-                        transaction, name=self.__name):
-                    try:
-                        return self.__wrapped(*args, **kwargs)
-                    except:  # Catch all
-                        transaction.record_exception(*sys.exc_info())
-                        raise
+            with newrelic.api.function_trace.FunctionTrace(
+                    transaction, name=self.__name):
+                with newrelic.api.error_trace.ErrorTrace(transaction,
+                            ignore_errors=['cherrypy._cperror:NotFound',
+                                        'cherrypy._cperror:InternalRedirect',
+                                        'cherrypy._cperror:HTTPRedirect']):
+                    return self.__wrapped(*args, **kwargs)
         else:
             return self.__wrapped(*args, **kwargs)
 
@@ -77,12 +76,12 @@ class ResolverWrapper(object):
                 if obj:
                     klass = self.__instance.__class__
                     if klass.__name__ == 'MethodDispatcher':
-                        transaction.name_transaction('405', group='Uri')
+                        transaction.name_transaction('405', group='HTTPError')
                         obj = ResourceWrapper(obj)
                     else:
                         obj = HandlerWrapper(obj)
                 else:
-                    transaction.name_transaction('404', group='Uri')
+                    transaction.name_transaction('404', group='HTTPError')
                 return obj, vpath
             except:  # Catch all
                 transaction.record_exception(*sys.exc_info())

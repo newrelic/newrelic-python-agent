@@ -31,7 +31,8 @@ def view_handler_wrapper(wrapped, instance, args, kwargs):
 
     with FunctionTrace(transaction, name):
         with ErrorTrace(transaction, ignore_errors=[
-                'pyramid.httpexceptions:HTTPNotFound']):
+            'pyramid.httpexceptions:HTTPNotFound',
+            'pyramid.exceptions:PredicateMismatch']):
             return wrapped(*args, **kwargs)
 
 def wrap_view_handler(mapped_view):

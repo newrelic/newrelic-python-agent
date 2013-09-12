@@ -37,6 +37,7 @@ class ConsoleSettings(Settings): pass
 class DebugSettings(Settings): pass
 class CrossApplicationTracerSettings(Settings): pass
 class XraySessionSettings(Settings): pass
+class RequestSamplerSettings(Settings): pass
 
 _settings = Settings()
 _settings.thread_profiler = ThreadProfilerSettings()
@@ -52,6 +53,7 @@ _settings.agent_limits = AgentLimitsSettings()
 _settings.console = ConsoleSettings()
 _settings.debug = DebugSettings()
 _settings.cross_application_tracer = CrossApplicationTracerSettings()
+_settings.request_sampler = RequestSamplerSettings()
 
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
 
@@ -104,6 +106,7 @@ _settings.monitor_mode = _environ_as_bool('NEW_RELIC_MONITOR_MODE', True)
 
 _settings.collect_errors = True
 _settings.collect_traces = True
+_settings.collect_analytics_events = True
 
 _settings.apdex_t = 0.5
 _settings.web_transactions_apdex = {}
@@ -139,6 +142,9 @@ _settings.encoding_key = None
 _settings.thread_profiler.enabled = True
 _settings.cross_application_tracer.enabled = True
 _settings.xray_session.enabled = True
+
+_settings.request_sampler.enabled = True
+_settings.request_sampler.max_samples = 100
 
 _settings.transaction_tracer.enabled = True
 _settings.transaction_tracer.transaction_threshold = None

@@ -619,6 +619,17 @@ class ApplicationSession(object):
                 'get_xray_metadata', self.license_key, self.agent_run_id,
                 payload)
 
+    def analytic_event_data(self, sample_set):
+        """Called to submit sample set for analytics.
+
+        """
+
+        payload = (self.agent_run_id, sample_set)
+
+        return send_request(self.requests_session, self.collector_url,
+                'analytic_event_data', self.license_key, self.agent_run_id,
+                payload)
+
 def create_session(license_key, app_name, linked_applications,
         environment, settings):
 

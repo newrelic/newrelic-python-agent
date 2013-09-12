@@ -278,6 +278,10 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'slow_sql.enabled',
                      'getboolean', None)
+    _process_setting(section, 'request_sampler.enabled',
+                     'getboolean', None),
+    _process_setting(section, 'request_sampler.max_samples',
+                     'getint', None),
     _process_setting(section, 'local_daemon.socket_path',
                      'get', None)
     _process_setting(section, 'local_daemon.synchronous_startup',

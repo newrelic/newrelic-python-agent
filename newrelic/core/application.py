@@ -1194,9 +1194,22 @@ class Application(object):
                         period_end = self._period_start + 1.001
 
                 try:
+                    # Send the transaction and custom metric data.
+
                     configuration = self._active_session.configuration
 
-                    # Send the transaction and custom metric data.
+                    # Report internal metrics about sample data set
+                    # for analytics.
+
+                    if (configuration.collect_analytics_events and
+                            configuration.request_sampler.enabled):
+
+                        sampled_data_set = stats.sampled_data_set
+
+                        internal_metric('Supportability/RequestSampler/'
+                                'requests', sampled_data_set.count)
+                        internal_metric('Supportability/RequestSampler/'
+                                'samples', len(sampled_data_set.samples))
 
                     # Create a metric_normalizer based on normalize_name
                     # If metric rename rules are empty, set normalizer
@@ -1219,6 +1232,14 @@ class Application(object):
 
                     metric_ids = self._active_session.send_metric_data(
                       self._period_start, period_end, metric_data)
+
+                    # Send sample data set for analytics.
+
+                    if (configuration.collect_analytics_events and
+                            configuration.request_sampler.enabled):
+
+                        self._active_session.analytic_event_data(
+                                sampled_data_set.samples)
 
                     # Successful, so we update the stats engine with the
                     # new metric IDs and reset the reporting period

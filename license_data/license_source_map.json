@@ -563,6 +563,12 @@
             "New Relic"
         ]
     },
+    "newrelic/core/tests/test_sampled_data_set.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/core/thread_utilization.py": {
         "hash": "n/a",
         "libraries": [

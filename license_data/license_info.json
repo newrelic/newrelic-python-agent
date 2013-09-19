@@ -11,7 +11,7 @@
             "licenses": [
                 "MIT",
                 "LGPL",
-                "BSD",
+                "BSD (3-Clause)",
                 "apache2"
             ],
             "name": "requests",
@@ -37,12 +37,23 @@
             ],
             "name": "time.monotonic",
             "url": "newrelic/common/_monotonic.c"
+        },
+        "wrapt": {
+            "licenses": [
+                "BSD (2-Clause)"
+            ],
+            "name": "wrapt",
+            "url": "https://pypi.python.org/pypi/wrapt"
         }
     },
     "licenses": {
-        "BSD": {
-            "name": "The BSD License",
-            "url": "https://github.com/idan/oauthlib/blob/master/LICENSE"
+        "BSD (2-Clause)": {
+            "name": "The BSD 2-Clause License",
+            "url": "http://opensource.org/licenses/BSD-2-Clause"
+        },
+        "BSD (3-Clause)": {
+            "name": "The BSD 3-Clause License",
+            "url": "http://opensource.org/licenses/BSD-3-Clause"
         },
         "LGPL": {
             "name": "GNU LESSER GENERAL PUBLIC LICENSE",

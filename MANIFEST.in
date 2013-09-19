@@ -6,3 +6,5 @@ include newrelic/packages/requests/LICENSE
 include newrelic/packages/requests/NOTICE
 include newrelic/packages/requests/cacert.pem
 include newrelic/packages/simplejson/LICENSE.txt
+include newrelic/packages/wrapt/LICENSE
+include newrelic/packages/wrapt/README

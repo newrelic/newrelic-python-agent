@@ -216,10 +216,12 @@ class SampledDataSet(object):
         self.samples = []
         self.capacity = capacity
         self.count = 0
+        self.strings = {}
 
     def reset(self):
         self.samples = []
         self.count = 0
+        self.strings = {}
 
     def add(self, sample):
         if len(self.samples) < self.capacity:
@@ -229,6 +231,9 @@ class SampledDataSet(object):
             if index < self.capacity:
                 self.samples[index] = sample
         self.count += 1
+
+    def intern(self, string):
+        return self.strings.setdefault(string, string)
 
 class StatsEngine(object):
 
@@ -641,8 +646,10 @@ class StatsEngine(object):
             record = {}
 
             if transaction.type == 'WebTransaction':
+                name = self.__sampled_data_set.intern(transaction.path)
+
                 record['type'] = 'Transaction'
-                record['name'] = transaction.path
+                record['name'] = name
                 record['timestamp'] = transaction.start_time
                 record['duration'] = transaction.duration
 

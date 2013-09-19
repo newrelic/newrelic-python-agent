@@ -144,7 +144,7 @@ _settings.cross_application_tracer.enabled = True
 _settings.xray_session.enabled = True
 
 _settings.request_sampler.enabled = True
-_settings.request_sampler.max_samples = 100
+_settings.request_sampler.max_samples = 1200
 
 _settings.transaction_tracer.enabled = True
 _settings.transaction_tracer.transaction_threshold = None

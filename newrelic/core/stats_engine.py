@@ -645,28 +645,31 @@ class StatsEngine(object):
 
             record = {}
 
+            name = self.__sampled_data_set.intern(transaction.path)
+
+            record['type'] = 'Transaction'
+            record['name'] = name
+            record['timestamp'] = transaction.start_time
+            record['duration'] = transaction.duration
+
+            def _update_entry(source, target):
+                try:
+                    record[target] = self.__stats_table[
+                            (source, '')].total_call_time
+                except KeyError:
+                    pass
+
             if transaction.type == 'WebTransaction':
-                name = self.__sampled_data_set.intern(transaction.path)
-
-                record['type'] = 'Transaction'
-                record['name'] = name
-                record['timestamp'] = transaction.start_time
-                record['duration'] = transaction.duration
-
-                def _update_entry(source, target):
-                    try:
-                        record[target] = self.__stats_table[
-                                (source, '')].total_call_time
-                    except KeyError:
-                        pass
-
                 _update_entry('HttpDispatcher', 'webDuration')
                 _update_entry('WebFrontend/QueueTime', 'queueDuration')
-                _update_entry('External/all', 'externalDuration')
-                _update_entry('Database/all', 'databaseDuration')
-                _update_entry('Memcache/all', 'memcacheDuration')
+            else:
+                _update_entry('OtherTransaction/all', 'backgroundDuration')
 
-                self.__sampled_data_set.add([record])
+            _update_entry('External/all', 'externalDuration')
+            _update_entry('Database/all', 'databaseDuration')
+            _update_entry('Memcache/all', 'memcacheDuration')
+
+            self.__sampled_data_set.add([record])
 
     @internal_trace('Supportability/StatsEngine/Calls/metric_data')
     def metric_data(self, normalizer=None):

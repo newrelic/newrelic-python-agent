@@ -35,18 +35,18 @@ class _ObjectWrapperBase(object):
             setattr(self, name, value)
         elif name.startswith('_self_') or name == '__wrapped__':
             ObjectProxy.__setattr__(self, name, value)
-        elif name in ('__name__', '__qualname__'):
-            setattr(self._self_wrapped, name, value)
+        elif name == '__qualname__':
+            setattr(self.__wrapped__, name, value)
             ObjectProxy.__setattr__(self, name, value)
         else:
-            setattr(self._self_wrapped, name, value)
+            setattr(self.__wrapped__, name, value)
 
     def __getattr__(self, name):
         if name.startswith('_nr_'):
             name = name.replace('_nr_', '_self_', 1)
             return getattr(self, name)
         else:
-            return getattr(self._self_wrapped, name)
+            return getattr(self.__wrapped__, name)
 
     def __delattr__(self, name):
         if name.startswith('_nr_'):
@@ -54,23 +54,23 @@ class _ObjectWrapperBase(object):
             delattr(self, name)
         elif name.startswith('_self_') or name == '__wrapped__':
             ObjectProxy.__delattr__(self, name)
-        elif name in ('__name__', '__qualname__'):
+        elif name == '__qualname__':
             ObjectProxy.__delattr__(self, name)
-            delattr(self._self_wrapped, name)
+            delattr(self.__wrapped__, name)
         else:
-            delattr(self._self_wrapped, name)
+            delattr(self.__wrapped__, name)
 
     @property
     def _nr_next_object(self):
-        return self._self_wrapped
+        return self.__wrapped__
 
     @property
     def _nr_last_object(self):
         try:
             return self._self_last_object
         except AttributeError:
-            self._self_last_object = getattr(self._self_wrapped,
-                    '_nr_last_object', self._self_wrapped)
+            self._self_last_object = getattr(self.__wrapped__,
+                    '_nr_last_object', self.__wrapped__)
             return self._self_last_object
 
     @property

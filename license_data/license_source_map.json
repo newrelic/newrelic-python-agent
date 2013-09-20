@@ -1476,19 +1476,19 @@
         ]
     },
     "newrelic/packages/wrapt/__init__.py": {
-        "hash": "26129ad0298ea5927e907050c48e92f8",
+        "hash": "3405258b992c5cdd884d96c47bb7b5a2",
         "libraries": [
             "wrapt"
         ]
     },
     "newrelic/packages/wrapt/_wrappers.c": {
-        "hash": "e2c501ca6045ac451d6fa7e4755b8450",
+        "hash": "7cf7b98c8e3c278c9f6ff46cd271f20b",
         "libraries": [
             "wrapt"
         ]
     },
     "newrelic/packages/wrapt/decorators.py": {
-        "hash": "f9364a2054be3543fc14f2e200b1891e",
+        "hash": "3f718703ac78ced4405111ac7d694bf1",
         "libraries": [
             "wrapt"
         ]
@@ -1500,7 +1500,7 @@
         ]
     },
     "newrelic/packages/wrapt/wrappers.py": {
-        "hash": "9ab5298803cd568ed708d4e6c9f248d1",
+        "hash": "8cc9553809693f7d3f960ccd6430cd06",
         "libraries": [
             "wrapt"
         ]

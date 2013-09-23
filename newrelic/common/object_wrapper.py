@@ -33,32 +33,22 @@ class _ObjectWrapperBase(object):
         if name.startswith('_nr_'):
             name = name.replace('_nr_', '_self_', 1)
             setattr(self, name, value)
-        elif name.startswith('_self_') or name == '__wrapped__':
-            ObjectProxy.__setattr__(self, name, value)
-        elif name == '__qualname__':
-            setattr(self.__wrapped__, name, value)
-            ObjectProxy.__setattr__(self, name, value)
         else:
-            setattr(self.__wrapped__, name, value)
+            ObjectProxy.__setattr__(self, name, value)
 
     def __getattr__(self, name):
         if name.startswith('_nr_'):
             name = name.replace('_nr_', '_self_', 1)
             return getattr(self, name)
         else:
-            return getattr(self.__wrapped__, name)
+            return ObjectProxy.__getattr__(self, name)
 
     def __delattr__(self, name):
         if name.startswith('_nr_'):
             name = name.replace('_nr_', '_self_', 1)
             delattr(self, name)
-        elif name.startswith('_self_') or name == '__wrapped__':
-            ObjectProxy.__delattr__(self, name)
-        elif name == '__qualname__':
-            ObjectProxy.__delattr__(self, name)
-            delattr(self.__wrapped__, name)
         else:
-            delattr(self.__wrapped__, name)
+            ObjectProxy.__delattr__(self, name)
 
     @property
     def _nr_next_object(self):

@@ -208,27 +208,105 @@ def _object_context_py3(object):
 
     return (mname, path)
 
-def object_context(object):
+def object_context(target):
     """Returns a tuple identifying the supplied object. This will be of
     the form (module, object_path).
 
     """
 
+    # Check whether we have previously calculated the name
+    # details for the target object and cached it against the
+    # actual target object.
+
+    details = getattr(target, '_nr_object_path', None)
+
+    if details:
+        return details
+
+    # Check whether this is a bound wrapper and the name details
+    # are cached against the parent wrapper.
+
+    parent = getattr(target, '_nr_parent', None)
+
+    if parent:
+        details = getattr(parent, '_nr_object_path', None)
+
+    if details:
+        return details
+
     # Check whether the object is actually one of our own
     # wrapper classes. For these we use the convention that the
     # attribute _nr_last_object refers to the wrapped object
     # beneath the wrappers, there possibly being more than one
-    # wrapper. We use this object instead and bypass any chained
-    # calls that may occur through the wrappers to get the
-    # attributes of the original.
+    # wrapper. We use the wrapped object when deriving the name
+    # details and so bypass that chained calls that would need
+    # to occur through the wrappers to get the attributes of the
+    # original. For good measure, check that this wrapped object
+    # didn't have the name details cached against it already.
 
-    if hasattr(object, '_nr_last_object'):
-        object = object._nr_last_object
+    source = getattr(target, '_nr_last_object', None)
+
+    if source:
+        details = getattr(target, '_nr_object_path', None)
+
+        if details:
+            return details
+
+    else:
+        source = target
+
+    # If it wasn't cached we generate the name details and then
+    # attempt to cache them against the object.
 
     if six.PY3:
-        return _object_context_py3(object)
+        details = _object_context_py3(source)
     else:
-        return _object_context_py2(object)
+        details = _object_context_py2(source)
+
+    try:
+        # If the original target is not the same as the source we
+        # derive the name details from, then we are dealing with
+        # a wrapper.
+
+        if target is not source:
+            # If the original target was a bound wrapper, then
+            # cache the details against the parent wrapper as
+            # this would likely be persistent, whereas the bound
+            # wrapper is going to be transient usually and the
+            # details would be lost.
+
+            if parent:
+                parent._nr_object_path = details
+
+            # Although the original target could be a bound
+            # wrapper still cache it against it anyway, in case
+            # the bound wrapper is actually cached by the program
+            # and used more than the one time.
+
+            target._nr_object_path = details
+
+        # Finally attempt to cache the name details against what
+        # we derived them from. We may not be able to cache it if
+        # it is a type implemented as C code or an object with
+        # slots, which doesn't allow arbitrary addition of extra
+        # attributes. In that case, if we actually have to rely
+        # on the name details being cached against it and it fails,
+        # we have no choice but to recalculate them every time.
+        #
+        # XXX We could consider for the case where it fails
+        # storing it in a dictionary where the key is a weak
+        # function proxy with a callback to remove the entry if
+        # it ever expires. That would be another lookup we would
+        # have to make and we are already doing a lot so would
+        # have to properly benchmarks overhead before making that
+        # choice.
+
+        source._nr_object_path = details
+
+    except Exception:
+        pass
+
+    return details
 
 def callable_name(object, separator=':'):
     """Returns a string name identifying the supplied object. This will be
@@ -244,27 +322,7 @@ def callable_name(object, separator=':'):
 
     """
 
-    # Check whether we have previously calculated the name
-    # details for this object and cached it against the object.
-    # Do this to avoid recalculating all the time if possible.
-
-    details = getattr(object, '_nr_object_path', None)
-
-    # If it wasn't cached we generate the name details and then
-    # attempt to cache them against the object. We may not be
-    # able to cache it if it is a type implemented as C code or
-    # an object with slots, which doesn't allow arbitrary
-    # addition of extra attributes.
-
-    if details is None:
-        details = object_context(object)
-
-        try:
-            object._nr_object_path = details
-        except Exception:
-            pass
-
     # The details are the module name and path. Join them with
     # the specified separator.
 
-    return separator.join(details)
+    return separator.join(object_context(object))

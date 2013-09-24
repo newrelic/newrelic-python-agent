@@ -6,7 +6,8 @@ from collections import namedtuple
 
 import newrelic.packages.six as six
 
-from newrelic.common.object_wrapper import ObjectWrapper
+from newrelic.common.object_wrapper import ObjectWrapper, decorator
+from newrelic.common.object_names import callable_name, object_context
 
 def Wrapper(wrapped):
 
@@ -90,6 +91,58 @@ class ObjectWrapperTests(unittest.TestCase):
         self.assertEqual(proxy2._nr_next_object.__func__, function)
         self.assertEqual(proxy2._nr_last_object.__func__, function)
         self.assertEqual(proxy2._nr_instance, obj)
+
+@decorator
+def wrapper(wrapped, instance, args, kwargs):
+    return wrapped(*args, **kwargs)
+
+@wrapper
+def _function1():
+    pass
+
+@wrapper
+class Class1(object):
+
+    @wrapper
+    def function(self):
+        pass
+
+def _module_fqdn(path, name=None):
+  name = name or __name__
+  return '%s:%s' % (name, path)
+
+class TestCallableName(unittest.TestCase):
+
+    def test_decorated_function(self):
+        self.assertEqual(callable_name(_function1),
+                _module_fqdn(_function1.__name__))
+
+        details1 = object_context(_function1)
+        details2 = object_context(_function1)
+
+        self.assertTrue(details1 is details2)
+
+    def test_decorated_class(self):
+        self.assertEqual(callable_name(Class1),
+                _module_fqdn(Class1.__name__))
+
+        details1 = object_context(Class1)
+        details2 = object_context(Class1)
+
+        self.assertTrue(details1 is details2)
+
+    def test_decorated_instancemethod(self):
+        self.assertEqual(callable_name(Class1.function),
+                _module_fqdn(Class1.__name__+'.'+Class1.function.__name__))
+
+        if six.PY3:
+            self.assertEqual(callable_name(Class1.function),
+                    _module_fqdn(Class1.function.__qualname__))
+
+        details1 = object_context(Class1.function)
+        details2 = object_context(Class1.function)
+
+        self.assertTrue(details1 is details2)
 
 if __name__ == '__main__':
     unittest.main()

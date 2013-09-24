@@ -71,6 +71,10 @@ class _ObjectWrapperBase(object):
     def _nr_wrapper(self):
         return self._self_wrapper
 
+    @property
+    def _nr_parent(self):
+        return self._self_parent
+
 class _NRBoundFunctionWrapper(_ObjectWrapperBase, _BoundFunctionWrapper):
     pass
 

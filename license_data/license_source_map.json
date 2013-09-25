@@ -1325,6 +1325,12 @@
             "requests"
         ]
     },
+    "newrelic/packages/requests/packages/urllib3/fields.py": {
+        "hash": "bda16c5526525b140f31d886559781b9",
+        "libraries": [
+            "requests"
+        ]
+    },
     "newrelic/packages/requests/packages/urllib3/filepost.py": {
         "hash": "2192b3f42c5806461be54a32720746e9",
         "libraries": [

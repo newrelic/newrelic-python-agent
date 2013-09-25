@@ -23,6 +23,8 @@ from newrelic.network.exceptions import (NetworkInterfaceException,
         ForceAgentRestart, ForceAgentDisconnect, DiscardDataForRequest,
         RetryDataForRequest, ServerIsUnavailable)
 
+from newrelic.network.addresses import proxy_details
+
 _logger = logging.getLogger(__name__)
 
 # User agent string that must be used in all requests. The data collector
@@ -71,26 +73,8 @@ def proxy_server():
 
     settings = global_settings()
 
-    # Require that both proxy host and proxy port are set to work.
-
-    if not settings.proxy_host or not settings.proxy_port:
-        return
-
-    # The agent configuration only provides means to set one proxy so we
-    # assume that it will be set correctly depending on whether SSL
-    # connection requested or not.
-
-    scheme = settings.ssl and 'https' or 'http'
-    proxy = '%s:%d' % (settings.proxy_host, settings.proxy_port)
-
-    # Encode the proxy user name and password into the proxy server value
-    # as requests library will strip it out of there and use that.
-
-    if settings.proxy_user is not None and settings.proxy_pass is not None:
-        proxy = 'http://%s:%s@%s' % (settings.proxy_user,
-                settings.proxy_pass, proxy)
-
-    return { scheme: proxy }
+    return proxy_details(settings.proxy_host, settings.proxy_port,
+            settings.proxy_user, settings.proxy_pass, settings.ssl)
 
 # Low level network functions and session management. When connecting to
 # the data collector it is initially done through the main data collector.

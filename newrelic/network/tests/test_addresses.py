@@ -28,79 +28,106 @@ class TestAddresses(unittest.TestCase):
     def test_proxy_details(self):
         # Nothing to do.
 
-        details = proxy_details(None, None, None, None, False)
+        details = proxy_details(None, None, None, None, None)
 
         self.assertEqual(details, None)
 
-        # HTTP proxy.
+        def proxy_map(url):
+            return { 'http': url, 'https': url }
 
-        details = proxy_details('HOST', 1234, None, None, False)
+        # HTTP proxy scheme.
 
-        self.assertEqual(details, { 'http': 'http://HOST:1234' })
+        details = proxy_details('http', 'HOST', 1234, None, None)
 
-        # HTTPS proxy.
+        self.assertEqual(details, proxy_map('http://HOST:1234'))
 
-        details = proxy_details('HOST', 1234, None, None, True)
+        # HTTPS proxy scheme.
 
-        self.assertEqual(details, { 'https': 'http://HOST:1234' })
+        details = proxy_details('https', 'HOST', 1234, None, None)
 
-        # HTTP proxy with full user credentials.
+        self.assertEqual(details, proxy_map('https://HOST:1234'))
 
-        details = proxy_details('HOST', 1234, 'USER', 'PASS', False)
+        # No proxy scheme.
 
-        self.assertEqual(details, { 'http': 'http://USER:PASS@HOST:1234' })
+        details = proxy_details(None, 'HOST', 1234, None, None)
 
-        # HTTPS proxy with full user credentials.
+        self.assertEqual(details, proxy_map('http://HOST:1234'))
 
-        details = proxy_details('HOST', 1234, 'USER', 'PASS', True)
+        # HTTP proxy scheme with full user credentials.
 
-        self.assertEqual(details, { 'https': 'http://USER:PASS@HOST:1234' })
+        details = proxy_details('http', 'HOST', 1234, 'USER', 'PASS')
 
-        # HTTP proxy with user name.
+        self.assertEqual(details, proxy_map('http://USER:PASS@HOST:1234'))
 
-        details = proxy_details('HOST', 1234, 'USER', None, False)
+        # HTTPS proxy scheme with full user credentials.
 
-        self.assertEqual(details, { 'http': 'http://USER@HOST:1234' })
+        details = proxy_details('https', 'HOST', 1234, 'USER', 'PASS')
 
-        # HTTPS proxy with user name.
+        self.assertEqual(details, proxy_map('https://USER:PASS@HOST:1234'))
 
-        details = proxy_details('HOST', 1234, 'USER', None, True)
+        # HTTP proxy scheme with user name.
 
-        self.assertEqual(details, { 'https': 'http://USER@HOST:1234' })
+        details = proxy_details('http', 'HOST', 1234, 'USER', None)
 
-        # HTTP proxy as HTTP URL including port.
+        self.assertEqual(details, proxy_map('http://USER@HOST:1234'))
 
-        details = proxy_details('http://HOST:1234', None, None, None, False)
+        # HTTPS proxy scheme with user name.
 
-        self.assertEqual(details, { 'http': 'http://HOST:1234' })
+        details = proxy_details('https', 'HOST', 1234, 'USER', None)
 
-        # HTTP proxy as HTTP URL with distinct port.
+        self.assertEqual(details, proxy_map('https://USER@HOST:1234'))
 
-        details = proxy_details('http://HOST', 1234, None, None, False)
+        # HTTP proxy scheme as HTTP URL including port.
 
-        self.assertEqual(details, { 'http': 'http://HOST:1234' })
+        details = proxy_details('http', 'http://HOST:1234', None, None, None)
 
-        # HTTP proxy as HTTP URL with distinct user credentials.
+        self.assertEqual(details, proxy_map('http://HOST:1234'))
 
-        details = proxy_details('http://HOST:1234', None, 'USER', 'PASS',
-                False)
+        # HTTP proxy scheme as HTTP URL with distinct port.
 
-        self.assertEqual(details, { 'http': 'http://USER:PASS@HOST:1234' })
+        details = proxy_details('http', 'http://HOST', 1234, None, None)
 
-        # HTTP proxy as HTTP URL including user credentials.
+        self.assertEqual(details, proxy_map('http://HOST:1234'))
 
-        details = proxy_details('http://USER:PASS@HOST:1234', None, None,
-                None, False)
+        # HTTP proxy scheme as HTTP URL with distinct user credentials.
 
-        self.assertEqual(details, { 'http': 'http://USER:PASS@HOST:1234' })
+        details = proxy_details('http', 'http://HOST:1234', None, 'USER',
+                'PASS')
 
-        # HTTPS proxy as HTTP URL.
+        self.assertEqual(details, proxy_map('http://USER:PASS@HOST:1234'))
 
-        def run(*args):
-            details = proxy_details('https://HOST:1234', None, None,
-                    None, False)
+        # HTTP proxy scheme as HTTP URL including user credentials.
 
-        self.assertRaises(ValueError, run, ())
+        details = proxy_details('http', 'http://USER:PASS@HOST:1234', None,
+                None, None)
+
+        self.assertEqual(details, proxy_map('http://USER:PASS@HOST:1234'))
+
+        # HTTPS proxy scheme as HTTPS URL including port.
+
+        details = proxy_details('http', 'https://HOST:1234', None, None, None)
+
+        self.assertEqual(details, proxy_map('https://HOST:1234'))
+
+        # HTTPS proxy scheme as HTTPS URL with distinct port.
+
+        details = proxy_details('http', 'https://HOST', 1234, None, None)
+
+        self.assertEqual(details, proxy_map('https://HOST:1234'))
+
+        # HTTPS proxy scheme as HTTPS URL with distinct user credentials.
+
+        details = proxy_details('http', 'https://HOST:1234', None, 'USER',
+                'PASS')
+
+        self.assertEqual(details, proxy_map('https://USER:PASS@HOST:1234'))
+
+        # HTTPS proxy scheme as HTTPS URL including user credentials.
+
+        details = proxy_details('http', 'https://USER:PASS@HOST:1234', None,
+                None, None)
+
+        self.assertEqual(details, proxy_map('https://USER:PASS@HOST:1234'))
 
 if __name__ == '__main__':
     unittest.main()

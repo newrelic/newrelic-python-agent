@@ -218,6 +218,8 @@ def _process_configuration(section):
                      'getint', None)
     _process_setting(section, 'ssl',
                      'getboolean', None)
+    _process_setting(section, 'proxy_scheme',
+                     'get', None)
     _process_setting(section, 'proxy_host',
                      'get', None)
     _process_setting(section, 'proxy_port',

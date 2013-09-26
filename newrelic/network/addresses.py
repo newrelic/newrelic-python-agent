@@ -20,7 +20,8 @@ def platform_url(host='platform-api.newrelic.com', port=None, ssl=True):
 
     return url % (scheme, server)
 
-def proxy_details(proxy_host, proxy_port, proxy_user, proxy_pass, ssl):
+def proxy_details(proxy_scheme, proxy_host, proxy_port, proxy_user,
+        proxy_pass):
     """Returns the dictionary of proxy server settings. This is returned
     in form as expected by the 'requests' library when making requests.
 
@@ -39,17 +40,6 @@ def proxy_details(proxy_host, proxy_port, proxy_user, proxy_pass, ssl):
     if not components.scheme and not proxy_port:
         return
 
-    # Requests 2.0+ always used CONNECT over HTTP now and so if a scheme
-    # of 'https' is specified explicitly in the URL for proxy_host, we
-    # raise an error.
-
-    if components.scheme.lower() == 'https':
-        raise ValueError('Python requests module version 2.0 and above '
-                'does not support proxying over a SSL enabled proxy port. '
-                'Use "http" and ensure the proxy port is a standard HTTP '
-                'port. The requests module will then create a SSL tunnel '
-                'using the HTTP CONNECT method type.')
-
     # If a URL was provided for proxy_host which included a port then
     # proxy_port should not also be set. Similarly, if the proxy user
     # and password were supplied within the URL passed as proxy_host,
@@ -58,17 +48,18 @@ def proxy_details(proxy_host, proxy_port, proxy_user, proxy_pass, ssl):
     # anyway. Not sure if the trailing path for a proxy is ever
     # significant so always leave in intact.
 
+    path = ''
+
     if components.scheme:
+        proxy_scheme = components.scheme
         netloc = components.netloc
         path = components.path
 
     elif components.path:
         netloc = components.path
-        path = ''
 
     else:
         netloc = proxy_host
-        path = ''
 
     if proxy_port:
         netloc = '%s:%s' % (netloc, proxy_port)
@@ -82,8 +73,9 @@ def proxy_details(proxy_host, proxy_port, proxy_user, proxy_pass, ssl):
         else:
             netloc = '%s@%s' % (proxy_user, netloc)
 
-    proxy = 'http://%s%s' % (netloc, path)
+    if proxy_scheme is None:
+        proxy_scheme = 'http'
 
-    scheme = ssl and 'https' or 'http'
+    proxy = '%s://%s%s' % (proxy_scheme, netloc, path)
 
-    return { scheme: proxy }
+    return { 'http': proxy, 'https': proxy }

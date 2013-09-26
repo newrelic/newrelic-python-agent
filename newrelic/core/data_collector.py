@@ -23,7 +23,8 @@ from newrelic.network.exceptions import (NetworkInterfaceException,
         ForceAgentRestart, ForceAgentDisconnect, DiscardDataForRequest,
         RetryDataForRequest, ServerIsUnavailable)
 
-from newrelic.network.addresses import proxy_details
+from ..network.addresses import proxy_details
+from ..common.object_wrapper import patch_object
 
 _logger = logging.getLogger(__name__)
 
@@ -71,10 +72,43 @@ def proxy_server():
 
     """
 
+    # For backward compatibility from when using requests prior to 2.0.0,
+    # we take the proxy_scheme as not being set to mean that we should
+    # derive it from whether SSL is being used. This will still be overridden
+    # if the proxy scheme was defined as part of proxy URL in proxy_host.
+
     settings = global_settings()
 
-    return proxy_details(settings.proxy_host, settings.proxy_port,
-            settings.proxy_user, settings.proxy_pass, settings.ssl)
+    ssl = settings.ssl
+    proxy_scheme = settings.proxy_scheme
+
+    if proxy_scheme is None:
+        proxy_scheme = ssl and 'https' or 'http'
+
+    return proxy_details(proxy_scheme, settings.proxy_host,
+            settings.proxy_port, settings.proxy_user, settings.proxy_pass)
+
+# This is a monkey patch for urllib3 contained within our bundled requests
+# library. This is to override the urllib3 behaviour for how the proxy
+# is communicated with so as to allow us to restore the old broken
+# behaviour from before requests 2.0.0 so that we can transition
+# customers over without outright breaking their existing configurations.
+
+@patch_object('newrelic.packages.requests.packages.urllib3.connectionpool',
+        'HTTPSConnectionPool._prepare_conn')
+def _requests_proxy_scheme_workaround(wrapped, instance, args, kwargs):
+    def _params(connection, *args, **kwargs):
+        return connection
+
+    pool, connection = instance, _params(*args, **kwargs)
+
+    settings = global_settings()
+
+    if pool.proxy and pool.proxy.scheme == 'https':
+        if settings.proxy_scheme in (None, 'https'):
+            return connection
+
+    return wrapped(*args, **kwargs)
 
 # Low level network functions and session management. When connecting to
 # the data collector it is initially done through the main data collector.

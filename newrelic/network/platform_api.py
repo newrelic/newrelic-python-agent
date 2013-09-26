@@ -269,8 +269,8 @@ class PlatformInterface(object):
     def create_session(self):
         url = platform_url(self.host, self.port, self.ssl)
 
-        proxies = proxy_details(self.proxy_host, self.proxy_port,
-                self.proxy_user, self.proxy_pass, self.ssl)
+        proxies = proxy_details(None, self.proxy_host, self.proxy_port,
+                self.proxy_user, self.proxy_pass)
 
         return PlatformSession(self, url, proxies)
 

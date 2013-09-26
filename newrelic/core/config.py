@@ -95,6 +95,7 @@ _settings.ssl = _environ_as_bool('NEW_RELIC_SSL', True)
 _settings.host = os.environ.get('NEW_RELIC_HOST', 'collector.newrelic.com')
 _settings.port = int(os.environ.get('NEW_RELIC_PORT', '0'))
 
+_settings.proxy_scheme = os.environ.get('NEW_RELIC_PROXY_SCHEME', None)
 _settings.proxy_host = os.environ.get('NEW_RELIC_PROXY_HOST', None)
 _settings.proxy_port = int(os.environ.get('NEW_RELIC_PROXY_PORT', '0'))
 _settings.proxy_user = os.environ.get('NEW_RELIC_PROXY_USER', None)

@@ -133,6 +133,14 @@ def decorator(wrapper):
         return ObjectWrapper(wrapped, None, wrapper)
     return _wrapper
 
+# Decorator for creating a decorator wrapper and immediately using it
+# to monkey match the specified code.
+
+def patch_object(module, name):
+    def _wrapper(wrapper):
+        return wrap_object(module, name, ObjectWrapper, (None, wrapper))
+    return _wrapper
+
 # Generic decorators for performing actions before and after a wrapped
 # function is called, or modifying the inbound arguments or return value.
 

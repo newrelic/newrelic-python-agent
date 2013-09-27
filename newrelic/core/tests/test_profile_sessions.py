@@ -104,12 +104,13 @@ class TestProfileSession(unittest.TestCase):
         self.assertTrue(prof_data is None,
                 'Profiling has not finished. Data should be None.')
 
-        # Finish the session and then get the profile_data
+        # Finish the session and then get the profile_data. We should get an
+        # empty dictionary struct for the profile tree.
 
         self.g_profile_session.state = SessionState.FINISHED
         prof_data = self.g_profile_session.profile_data()
-        self.assertTrue(prof_data is None, 'Expected None. Instead got %s' %
-                prof_data)
+        self.assertTrue(_unscramble(prof_data[0][4]) == '{}',
+                        'Expected {}. Instead got %s' % _unscramble(prof_data[0][4]))
 
         self.g_profile_session.update_call_tree('REQUEST', self.stack_trace1)
         p = self.g_profile_session.profile_data()[0]
@@ -140,6 +141,12 @@ class TestProfileSession(unittest.TestCase):
 
         self.assertEqual(self.x_profile_session.state,
                 SessionState.RUNNING)
+
+        # Empty tree must return None for profile data.
+
+        prof_data = self.g_profile_session.profile_data()
+        self.assertTrue(prof_data is None,
+                'Expected None. Instead got %s' % prof_data)
 
         self.x_profile_session.update_call_tree('REQUEST', self.stack_trace1)
         self.x_profile_session.update_call_tree('REQUEST', self.stack_trace2)

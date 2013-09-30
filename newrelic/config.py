@@ -560,6 +560,7 @@ def _raise_instrumentation_error(type, locals):
 # Registration of module import hooks defined in configuration file.
 
 _module_import_hook_results = {}
+_module_import_hook_registry = {}
 
 def module_import_hook_results():
     return _module_import_hook_results
@@ -611,14 +612,17 @@ def _process_module_configuration():
 
             target = section.split(':', 1)[1]
 
-            _logger.debug("register module %s" %
-                    ((target, module, function),))
+            if target not in _module_import_hook_registry:
+                _module_import_hook_registry[target] = (module, function)
 
-            hook = _module_import_hook(target, module, function)
-            newrelic.api.import_hook.register_import_hook(target, hook)
+                _logger.debug("register module %s" %
+                        ((target, module, function),))
 
-            _module_import_hook_results.setdefault(
-                    (target, module, function), None)
+                hook = _module_import_hook(target, module, function)
+                newrelic.api.import_hook.register_import_hook(target, hook)
+
+                _module_import_hook_results.setdefault(
+                        (target, module, function), None)
 
         except Exception:
             _raise_configuration_error(section)
@@ -1339,6 +1343,13 @@ def _process_module_definition(target, module, function='instrument'):
     enabled = True
     execute = None
 
+    # XXX This check makes the following checks to see if import hook
+    # was defined in agent configuration file redundant. Leave it as is
+    # for now until can clean up whole configuration system.
+
+    if target in _module_import_hook_registry:
+        return
+
     try:
         section = 'import-hook:%s' % target
         if _config_object.has_section(section):
@@ -1353,6 +1364,8 @@ def _process_module_definition(target, module, function='instrument'):
             execute = _config_object.get(section, 'execute')
 
         if enabled and not execute:
+            _module_import_hook_registry[target] = (module, function)
+
             _logger.debug("register module %s" %
                     ((target, module, function),))
 
@@ -1725,6 +1738,29 @@ def _process_module_builtin_defaults():
     _process_module_definition('thrift.transport.TSocket',
             'newrelic.hooks.external_thrift')
 
+def _process_module_entry_points():
+    try:
+        import pkg_resources
+    except ImportError:
+        return
+
+    group = 'newrelic.hooks'
+
+    for entrypoint in pkg_resources.iter_entry_points(group=group):
+        target = entrypoint.name
+
+        if target in _module_import_hook_registry:
+            continue
+
+        module = entrypoint.module_name
+
+        if entrypoint.attrs:
+            function = '.'.join(entrypoint.attrs)
+        else:
+            function = 'instrument'
+
+        _process_module_definition(target, module, function)
+
 _instrumentation_done = False
 
 def _setup_instrumentation():
@@ -1737,6 +1773,7 @@ def _setup_instrumentation():
     _instrumentation_done = True
 
     _process_module_configuration()
+    _process_module_entry_points()
     _process_module_builtin_defaults()
 
     _process_wsgi_application_configuration()

@@ -338,8 +338,8 @@ class ProfileSessionManager(object):
                     _logger.debug('Returning partial thread profiling data '
                             'for %d transactions with name %r and xray ID of '
                             '%r over a period of %.2f seconds and %d samples.',
-                            self.transaction_count, self.key_txn, self.xray_id,
-                            time.time() - self.start_time_s, self.sample_count)
+                            xps.transaction_count, xps.key_txn, xps.xray_id,
+                            time.time() - xps.start_time_s, xps.sample_count)
 
                     yield xps.profile_data()
 

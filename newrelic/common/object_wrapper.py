@@ -9,7 +9,8 @@ import sys
 import inspect
 import functools
 
-from ..packages.wrapt import ObjectProxy, FunctionWrapper
+from ..packages.wrapt import (ObjectProxy as _ObjectProxy,
+        FunctionWrapper as _FunctionWrapper)
 from ..packages.wrapt.wrappers import (_FunctionWrapperBase,
         _BoundFunctionWrapper, _BoundMethodWrapper)
 
@@ -25,7 +26,9 @@ from ..packages.wrapt.wrappers import (_FunctionWrapperBase,
 # what names everything is accessed. Note that with the code below, the
 # _ObjectWrapperBase class must come first in the base class list of
 # the derived class to ensure correct precedence order on base class
-# method lookup for __setattr__(), __getattr__() and __delattr__().
+# method lookup for __setattr__(), __getattr__() and __delattr__(). Also
+# the intention eventually is that ObjectWrapper is deprecated. Either
+# ObjectProxy or FunctionWrapper should be used going forward.
 
 class _ObjectWrapperBase(object):
 
@@ -34,21 +37,21 @@ class _ObjectWrapperBase(object):
             name = name.replace('_nr_', '_self_', 1)
             setattr(self, name, value)
         else:
-            ObjectProxy.__setattr__(self, name, value)
+            _ObjectProxy.__setattr__(self, name, value)
 
     def __getattr__(self, name):
         if name.startswith('_nr_'):
             name = name.replace('_nr_', '_self_', 1)
             return getattr(self, name)
         else:
-            return ObjectProxy.__getattr__(self, name)
+            return _ObjectProxy.__getattr__(self, name)
 
     def __delattr__(self, name):
         if name.startswith('_nr_'):
             name = name.replace('_nr_', '_self_', 1)
             delattr(self, name)
         else:
-            ObjectProxy.__delattr__(self, name)
+            _ObjectProxy.__delattr__(self, name)
 
     @property
     def _nr_next_object(self):
@@ -92,6 +95,57 @@ class ObjectWrapper(_ObjectWrapperBase, _FunctionWrapperBase):
         super(ObjectWrapper, self).__init__(wrapped, instance, wrapper,
                 None, bound_type)
 
+class ObjectProxy(_ObjectProxy):
+
+    def __setattr__(self, name, value):
+        if name.startswith('_nr_'):
+            name = name.replace('_nr_', '_self_', 1)
+            setattr(self, name, value)
+        else:
+            _ObjectProxy.__setattr__(self, name, value)
+
+    def __getattr__(self, name):
+        if name.startswith('_nr_'):
+            name = name.replace('_nr_', '_self_', 1)
+            return getattr(self, name)
+        else:
+            return _ObjectProxy.__getattr__(self, name)
+
+    def __delattr__(self, name):
+        if name.startswith('_nr_'):
+            name = name.replace('_nr_', '_self_', 1)
+            delattr(self, name)
+        else:
+            _ObjectProxy.__delattr__(self, name)
+
+    @property
+    def _nr_next_object(self):
+        return self.__wrapped__
+
+    @property
+    def _nr_last_object(self):
+        try:
+            return self._self_last_object
+        except AttributeError:
+            self._self_last_object = getattr(self.__wrapped__,
+                    '_nr_last_object', self.__wrapped__)
+            return self._self_last_object
+
+class FunctionWrapper(_ObjectWrapperBase, _FunctionWrapperBase):
+
+    def __init__(self, wrapped, wrapper):
+        if isinstance(wrapped, (classmethod, staticmethod)):
+            bound_type = _NRBoundFunctionWrapper
+        else:
+            bound_type = _NRBoundMethodWrapper
+
+        super(FunctionWrapper, self).__init__(wrapped, None, wrapper,
+                None, bound_type)
+
+# The wrap_callable() alias needs to be deprecated and usage of it removed.
+
+wrap_callable = FunctionWrapper
+
 # Helper functions for performing monkey patching.
 
 def resolve_path(module, name):
@@ -120,32 +174,28 @@ def wrap_object(module, name, factory, args=(), kwargs={}):
     apply_patch(parent, attribute, wrapper)
     return wrapper
 
-def wrap_callable(wrapped, wrapper):
-    return ObjectWrapper(wrapped, None, wrapper)
+# Function for creating a decorator for applying to functions, as well as
+# short cut functions for applying wrapper functions via monkey patching.
 
-# Decorator for creating decorators using our ObjectWrapper. Later on
-# when we have made ObjectWrapper obsolete, we can change this so we use
-# the decorator for creating decorators in the wrapt module.
-
-def decorator(wrapper):
+def function_wrapper(wrapper):
     @functools.wraps(wrapper)
     def _wrapper(wrapped):
-        return ObjectWrapper(wrapped, None, wrapper)
+        return FunctionWrapper(wrapped, wrapper)
     return _wrapper
 
-# Decorator for creating a decorator wrapper and immediately using it
-# to monkey match the specified code.
+def wrap_function_wrapper(module, name, wrapper):
+    return wrap_object(module, name, FunctionWrapper, (wrapper,))
 
-def patch_object(module, name):
+def patch_function_wrapper(module, name):
     def _wrapper(wrapper):
-        return wrap_object(module, name, ObjectWrapper, (None, wrapper))
+        return wrap_object(module, name, FunctionWrapper, (wrapper,))
     return _wrapper
 
 # Generic decorators for performing actions before and after a wrapped
 # function is called, or modifying the inbound arguments or return value.
 
 def pre_function(function):
-    @decorator
+    @function_wrapper
     def _wrapper(wrapped, instance, args, kwargs):
         if instance is not None:
             function(instance, *args, **kwargs)
@@ -161,7 +211,7 @@ def wrap_pre_function(module, object_path, function):
     return wrap_object(module, object_path, PreFunctionWrapper, (function,))
 
 def post_function(function):
-    @decorator
+    @function_wrapper
     def _wrapper(wrapped, instance, args, kwargs):
         result = wrapped(*args, **kwargs)
         if instance is not None:
@@ -178,7 +228,7 @@ def wrap_post_function(module, object_path, function):
     return wrap_object(module, object_path, PostFunctionWrapper, (function,))
 
 def in_function(function):
-    @decorator
+    @function_wrapper
     def _wrapper(wrapped, instance, args, kwargs):
         if instance is not None:
             args, kwargs = function(instance, *args, **kwargs)
@@ -207,7 +257,7 @@ def wrap_in_function(module, object_path, function):
     return wrap_object(module, object_path, InFunctionWrapper, (function,))
 
 def out_function(function):
-    @decorator
+    @function_wrapper
     def _wrapper(wrapped, instance, args, kwargs):
         return function(wrapped(*args, **kwargs))
     return _wrapper

@@ -189,8 +189,9 @@ wrap_transaction_name = newrelic.api.transaction_name.wrap_transaction_name
 
 from .common.object_names import callable_name
 
-from .common.object_wrapper import (
-        ObjectWrapper, wrap_object, wrap_callable,
+from .common.object_wrapper import (ObjectProxy, wrap_object,
+        FunctionWrapper, function_wrapper, wrap_function_wrapper,
+        patch_function_wrapper, ObjectWrapper, wrap_callable,
         pre_function, PreFunctionWrapper, wrap_pre_function,
 	post_function, PostFunctionWrapper, wrap_post_function,
         in_function, InFunctionWrapper, wrap_in_function,

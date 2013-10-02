@@ -6,7 +6,7 @@ from collections import namedtuple
 
 import newrelic.packages.six as six
 
-from newrelic.common.object_wrapper import ObjectWrapper, decorator
+from newrelic.common.object_wrapper import ObjectWrapper, function_wrapper
 from newrelic.common.object_names import callable_name, object_context
 
 def Wrapper(wrapped):
@@ -92,7 +92,68 @@ class ObjectWrapperTests(unittest.TestCase):
         self.assertEqual(proxy2._nr_last_object.__func__, function)
         self.assertEqual(proxy2._nr_instance, obj)
 
-@decorator
+    def test_override_getattr(self):
+
+        def function():
+            pass
+
+        def wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        proxy1 = ObjectWrapper(function, None, wrapper)
+
+        function.attribute = 1
+
+        self.assertEqual(proxy1.attribute, 1)
+
+        class CustomProxy1(ObjectWrapper):
+            def __getattr__(self, name):
+                return 2*super(CustomProxy1, self).__getattr__(name)
+
+        proxy2 = CustomProxy1(function, None, wrapper)
+
+        self.assertEqual(proxy2.attribute, 2)
+
+        proxy1._nr_attribute = 1
+
+        self.assertEqual(proxy1._nr_attribute, 1)
+
+        self.assertFalse(hasattr(function, '_nr_attribute'))
+        self.assertFalse(hasattr(function, '_self_attribute'))
+
+        proxy2._nr_attribute = 2
+
+        self.assertEqual(proxy2._nr_attribute, 4)
+
+        self.assertFalse(hasattr(function, '_nr_attribute'))
+        self.assertFalse(hasattr(function, '_self_attribute'))
+
+        class CustomProxy2a(ObjectWrapper):
+            def __init__(self, wrapped, instance, wrapper):
+                super(CustomProxy2a, self).__init__(wrapped, None, None)
+        class CustomProxy2b(CustomProxy2a):
+            def __getattr__(self, name):
+                return 2*super(CustomProxy2b, self).__getattr__(name)
+
+        proxy3 = CustomProxy2b(function, None, wrapper)
+
+        self.assertEqual(proxy3.attribute, 2)
+
+        proxy1._nr_attribute = 1
+
+        self.assertEqual(proxy1._nr_attribute, 1)
+
+        self.assertFalse(hasattr(function, '_nr_attribute'))
+        self.assertFalse(hasattr(function, '_self_attribute'))
+
+        proxy3._nr_attribute = 2
+
+        self.assertEqual(proxy3._nr_attribute, 4)
+
+        self.assertFalse(hasattr(function, '_nr_attribute'))
+        self.assertFalse(hasattr(function, '_self_attribute'))
+
+@function_wrapper
 def wrapper(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 

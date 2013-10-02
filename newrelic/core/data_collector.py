@@ -24,7 +24,7 @@ from newrelic.network.exceptions import (NetworkInterfaceException,
         RetryDataForRequest, ServerIsUnavailable)
 
 from ..network.addresses import proxy_details
-from ..common.object_wrapper import patch_object
+from ..common.object_wrapper import patch_function_wrapper
 
 _logger = logging.getLogger(__name__)
 
@@ -94,7 +94,8 @@ def proxy_server():
 # behaviour from before requests 2.0.0 so that we can transition
 # customers over without outright breaking their existing configurations.
 
-@patch_object('newrelic.packages.requests.packages.urllib3.connectionpool',
+@patch_function_wrapper(
+        'newrelic.packages.requests.packages.urllib3.connectionpool',
         'HTTPSConnectionPool._prepare_conn')
 def _requests_proxy_scheme_workaround(wrapped, instance, args, kwargs):
     def _params(connection, *args, **kwargs):

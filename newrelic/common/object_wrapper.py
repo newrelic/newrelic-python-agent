@@ -93,7 +93,7 @@ class ObjectWrapper(_ObjectWrapperBase, _FunctionWrapperBase):
             bound_type = _NRBoundMethodWrapper
 
         super(ObjectWrapper, self).__init__(wrapped, instance, wrapper,
-                None, bound_type)
+                adapter=None, bound_type=bound_type)
 
 class ObjectProxy(_ObjectProxy):
 
@@ -140,7 +140,7 @@ class FunctionWrapper(_ObjectWrapperBase, _FunctionWrapperBase):
             bound_type = _NRBoundMethodWrapper
 
         super(FunctionWrapper, self).__init__(wrapped, None, wrapper,
-                None, bound_type)
+                adapter=None, bound_type=bound_type)
 
 # The wrap_callable() alias needs to be deprecated and usage of it removed.
 

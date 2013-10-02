@@ -1462,15 +1462,21 @@ def _process_module_builtin_defaults():
     _process_module_definition('bottle',
             'newrelic.hooks.framework_bottle')
 
+    _process_module_definition('cherrypy._cpreqbody',
+            'newrelic.hooks.framework_cherrypy',
+            'instrument_cherrypy__cpreqbody')
+    _process_module_definition('cherrypy._cprequest',
+            'newrelic.hooks.framework_cherrypy',
+            'instrument_cherrypy__cprequest')
     _process_module_definition('cherrypy._cpdispatch',
             'newrelic.hooks.framework_cherrypy',
-            'instrument_cherrypy_cpdispatch')
+            'instrument_cherrypy__cpdispatch')
     _process_module_definition('cherrypy._cpwsgi',
             'newrelic.hooks.framework_cherrypy',
-            'instrument_cherrypy_cpwsgi')
+            'instrument_cherrypy__cpwsgi')
     _process_module_definition('cherrypy._cptree',
             'newrelic.hooks.framework_cherrypy',
-            'instrument_cherrypy_cptree')
+            'instrument_cherrypy__cptree')
 
     _process_module_definition('tornado.wsgi',
             'newrelic.hooks.framework_tornado',

@@ -2,6 +2,12 @@
 *.pyc
 *.pyo
 
+__pycache__
+
+*.egg-info
+
+.coverage
+
 /config.log
 /config.status
 /autom4te.cache
@@ -35,5 +41,10 @@
 /python-tools/buildout.cfg
 
 /license_data/license_errors.txt
+
+/tests/*/build
+/tests/*/dist
+/tests/*/newrelic.log
+/tests/*/htmlcov
 
 .tox

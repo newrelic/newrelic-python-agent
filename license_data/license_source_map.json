@@ -1488,7 +1488,7 @@
         ]
     },
     "newrelic/packages/wrapt/_wrappers.c": {
-        "hash": "eda0912202ae4d0087b92a7a5787cf81",
+        "hash": "2415719d2d8dbc11e2f0cdc804db6b75",
         "libraries": [
             "wrapt"
         ]

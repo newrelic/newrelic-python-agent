@@ -8,6 +8,7 @@ README.md
 *.pyo
 
 python-tools
+tests
 load-tests
 unit-tests
 test-env

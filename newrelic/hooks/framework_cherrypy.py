@@ -5,8 +5,8 @@
 # TODO
 # 
 # * We don't ignore HTTPError for specific status codes. So if instead of
-#   using NotFound(), user uses HTTPError('404 Not Found'), we would not
-#   ignore it. Similarly for redirects.
+#   using NotFound(), user uses HTTPError(404), we would not ignore it.
+#   Similar problem for redirects.
 # 
 # * We don't track time spent in a user supplied error response callback.
 #   We do track time in the handle_error() function which calls it though.
@@ -64,8 +64,6 @@ def handler_wrapper(wrapped, instance, args, kwargs):
             transaction.record_exception(*sys.exc_info(),
                     ignore_errors=IGNORE_ERRORS)
             raise
-
-from newrelic.packages.wrapt import ObjectProxy
 
 class ResourceProxy(ObjectProxy):
 

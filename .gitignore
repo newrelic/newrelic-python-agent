@@ -6,6 +6,7 @@ __pycache__
 
 *.egg-info
 
+htmlcov
 .coverage
 
 /config.log
@@ -42,9 +43,6 @@ __pycache__
 
 /license_data/license_errors.txt
 
-/tests/*/build
-/tests/*/dist
-/tests/*/newrelic.log
-/tests/*/htmlcov
-
 .tox
+
+testing.log

@@ -27,8 +27,6 @@
 # * We don't handle any sub dispatching that may be occuring due to the
 #   use of XMLRPCDispatcher.
 
-import sys
-
 from newrelic.agent import (current_transaction, wrap_wsgi_application,
         FunctionTrace, callable_name, ObjectProxy, function_wrapper,
         wrap_function_wrapper, wrap_function_trace)
@@ -61,8 +59,7 @@ def handler_wrapper(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
 
         except:  # Catch all
-            transaction.record_exception(*sys.exc_info(),
-                    ignore_errors=IGNORE_ERRORS)
+            transaction.record_exception(ignore_errors=IGNORE_ERRORS)
             raise
 
 class ResourceProxy(ObjectProxy):
@@ -90,7 +87,7 @@ def wrapper_Dispatcher_find_handler(wrapped, instance, args, kwargs):
         # Can end up here when a custom _cp_dispatch() method is
         # used and that raises an exception.
 
-        transaction.record_exception(*sys.exc_info())
+        transaction.record_exception()
         raise
 
     if obj:
@@ -141,7 +138,7 @@ def wrapper_RoutesDispatcher_find_handler(wrapped, instance, args, kwargs):
     except:  # Catch all
         # Can end up here when the URL was invalid in some way.
 
-        transaction.record_exception(*sys.exc_info())
+        transaction.record_exception()
         raise
 
     if handler:

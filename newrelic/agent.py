@@ -89,7 +89,8 @@ def add_user_attribute(key, value):
     if transaction:
         transaction.add_user_attribute(key, value)
 
-def record_exception(exc, value, tb, params={}, ignore_errors=[]):
+def record_exception(exc=None, value=None, tb=None, params={},
+        ignore_errors=[]):
     transaction = current_transaction()
     if transaction:
         transaction.record_exception(exc, value, tb, params, ignore_errors)

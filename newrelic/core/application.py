@@ -1233,6 +1233,8 @@ class Application(object):
                     metric_ids = self._active_session.send_metric_data(
                       self._period_start, period_end, metric_data)
 
+                    stats.reset_metric_stats()
+
                     # Send sample data set for analytics.
 
                     if (configuration.collect_analytics_events and
@@ -1240,6 +1242,8 @@ class Application(object):
 
                         self._active_session.analytic_event_data(
                                 sampled_data_set.samples)
+
+                    stats.reset_sampled_data()
 
                     # Successful, so we update the stats engine with the
                     # new metric IDs and reset the reporting period
@@ -1352,7 +1356,15 @@ class Application(object):
                         maximum = agent_limits.merge_stats_maximum
 
                         if self._merge_count <= maximum:
-                            self._stats_engine.merge_metric_stats(stats)
+                            self._stats_engine.merge_metric_stats(
+                                    stats, rollback=True)
+
+                            # Only merge back sampled data at present.
+
+                            self._stats_engine.merge_other_stats(stats,
+                                    merge_traces=False, merge_errors=False,
+                                    merge_sql=False, merge_samples=True,
+                                    rollback=True)
 
                         else:
                             _logger.error('Unable to report main transaction '

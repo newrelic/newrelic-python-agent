@@ -963,6 +963,26 @@ class StatsEngine(object):
         else:
             self.__sampled_data_set = SampledDataSet()
 
+    def reset_metric_stats(self):
+        """Resets the accumulated statistics back to initial state for
+        metric data.
+
+        """
+
+        self.__stats_table = {}
+
+    def reset_sampled_data(self):
+        """Resets the accumulated statistics back to initial state for
+        sample analytics data.
+
+        """
+
+        if self.__settings is not None:
+            self.__sampled_data_set = SampledDataSet(
+                    self.__settings.request_sampler.max_samples)
+        else:
+            self.__sampled_data_set = SampledDataSet()
+
     def harvest_snapshot(self):
         """Creates a snapshot of the accumulated statistics, error
         details and slow transaction and returns it. This is a shallow
@@ -1046,7 +1066,7 @@ class StatsEngine(object):
 
         return stats
 
-    def merge_metric_stats(self, snapshot):
+    def merge_metric_stats(self, snapshot, rollback=False):
 
         """Merges metric data from a snapshot. This is used when merging
         data from a single transaction into main stats engine. It would
@@ -1059,6 +1079,10 @@ class StatsEngine(object):
         if not self.__settings:
             return
 
+        if rollback:
+            _logger.debug('Performing rollback of metric data into '
+                    'subsequent harvest period.')
+
         # Merge back data into any new data which has been
         # accumulated.
 
@@ -1070,7 +1094,8 @@ class StatsEngine(object):
                 stats.merge_stats(other)
 
     def merge_other_stats(self, snapshot, merge_traces=True,
-            merge_errors=True, merge_sql=True, merge_samples=True):
+            merge_errors=True, merge_sql=True, merge_samples=True,
+            rollback=False):
 
         """Merges non metric data from a snapshot. This would only be
         used when merging data from a single transaction into main
@@ -1083,16 +1108,34 @@ class StatsEngine(object):
         if not self.__settings:
             return
 
+        if rollback:
+            _logger.debug('Performing rollback of non metric data into '
+                    'subsequent harvest period where merge_traces=%r, '
+                    'merge_errors=%r, merge_sql=%r and merge_samples=%r.',
+                    merge_traces, merge_errors, merge_sql, merge_samples)
+
         settings = self.__settings
 
-        # Merge in sampled data set. As this is merging data from a
-        # single transaction, there should only be one. Just to avoid
-        # issues, if there is more than one, don't merge.
+        # Merge in sampled data set. For normal case, as this is merging
+        # data from a single transaction, there should only be one. Just
+        # to avoid issues, if there is more than one, don't merge. In
+        # the case of a rollback merge because of a network issue, then
+        # we have to merge differently, restoring the old sampled data
+        # and applying the new data over the top. This gives precedence
+        # to the newer data.
 
         if merge_samples:
-            if snapshot.__sampled_data_set.count == 1:
-                self.__sampled_data_set.add(
-                        snapshot.__sampled_data_set.samples[0])
+            if rollback:
+                new_sample_data_set = self.__sampled_data_set
+                self.__sampled_data_set = snapshot.__sampled_data_set
+
+                for sample in new_sample_data_set.samples:
+                    self.__sampled_data_set.add(sample)
+
+            else:
+                if snapshot.__sampled_data_set.count == 1:
+                    self.__sampled_data_set.add(
+                            snapshot.__sampled_data_set.samples[0])
 
         # Append snapshot error details at end to maintain time
         # based order and then trim at maximum to be kept.

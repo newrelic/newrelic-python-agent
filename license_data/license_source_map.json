@@ -996,7 +996,7 @@
         ]
     },
     "newrelic/packages/requests/adapters.py": {
-        "hash": "64a4bfa4c3bd4497a56a29fc67df6b8f",
+        "hash": "4f130441bd23fca931667a68a95ebfc4",
         "libraries": [
             "requests"
         ]
@@ -1038,7 +1038,7 @@
         ]
     },
     "newrelic/packages/requests/exceptions.py": {
-        "hash": "8658e2580ff2162cc4ee735b6561fe26",
+        "hash": "7ade8f8ea4e5c1666fa660c2e501c354",
         "libraries": [
             "requests"
         ]

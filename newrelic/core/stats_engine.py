@@ -641,9 +641,11 @@ class StatsEngine(object):
         # names in record are based on web transaction metric names.
 
         if (settings.collect_analytics_events and
-                settings.request_sampler.enabled):
+                settings.analytics_events.enabled):
+            
+            if (transaction.type == 'WebTransaction' and
+                    settings.analytics_events.transactions.enabled):
 
-            if transaction.type == 'WebTransaction':
                 record = {}
 
                 name = self.__sampled_data_set.intern(transaction.path)
@@ -957,7 +959,7 @@ class StatsEngine(object):
 
         if settings is not None:
             self.__sampled_data_set = SampledDataSet(
-                    settings.request_sampler.max_samples)
+                    settings.analytics_events.max_samples_stored)
         else:
             self.__sampled_data_set = SampledDataSet()
 
@@ -977,7 +979,7 @@ class StatsEngine(object):
 
         if self.__settings is not None:
             self.__sampled_data_set = SampledDataSet(
-                    self.__settings.request_sampler.max_samples)
+                    self.__settings.analytics_events.max_samples_stored)
         else:
             self.__sampled_data_set = SampledDataSet()
 
@@ -1044,7 +1046,7 @@ class StatsEngine(object):
 
         if self.__settings is not None:
             self.__sampled_data_set = SampledDataSet(
-                    self.__settings.request_sampler.max_samples)
+                    self.__settings.analytics_events.max_samples_stored)
         else:
             self.__sampled_data_set = SampledDataSet()
 

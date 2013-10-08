@@ -1202,14 +1202,15 @@ class Application(object):
                     # for analytics.
 
                     if (configuration.collect_analytics_events and
-                            configuration.request_sampler.enabled):
+                            configuration.analytics_events.enabled):
+                            
+                        if configuration.analytics_events.transactions.enabled:
+                            sampled_data_set = stats.sampled_data_set
 
-                        sampled_data_set = stats.sampled_data_set
-
-                        internal_metric('Supportability/RequestSampler/'
-                                'requests', sampled_data_set.count)
-                        internal_metric('Supportability/RequestSampler/'
-                                'samples', len(sampled_data_set.samples))
+                            internal_metric('Supportability/RequestSampler/'
+                                    'requests', sampled_data_set.count)
+                            internal_metric('Supportability/RequestSampler/'
+                                    'samples', len(sampled_data_set.samples))
 
                     # Create a metric_normalizer based on normalize_name
                     # If metric rename rules are empty, set normalizer
@@ -1238,10 +1239,12 @@ class Application(object):
                     # Send sample data set for analytics.
 
                     if (configuration.collect_analytics_events and
-                            configuration.request_sampler.enabled):
+                            configuration.analytics_events.enabled):
 
-                        self._active_session.analytic_event_data(
-                                sampled_data_set.samples)
+                        if configuration.analytics_events.transactions.enabled:
+                            if len(sampled_data_set.samples):
+                                self._active_session.analytic_event_data(
+                                        sampled_data_set.samples)
 
                     stats.reset_sampled_data()
 

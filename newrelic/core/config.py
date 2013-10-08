@@ -37,7 +37,8 @@ class ConsoleSettings(Settings): pass
 class DebugSettings(Settings): pass
 class CrossApplicationTracerSettings(Settings): pass
 class XraySessionSettings(Settings): pass
-class RequestSamplerSettings(Settings): pass
+class AnalyticsEventsSettings(Settings): pass
+class AnalyticsEventsTransactionsSettings(Settings): pass
 
 _settings = Settings()
 _settings.thread_profiler = ThreadProfilerSettings()
@@ -53,7 +54,8 @@ _settings.agent_limits = AgentLimitsSettings()
 _settings.console = ConsoleSettings()
 _settings.debug = DebugSettings()
 _settings.cross_application_tracer = CrossApplicationTracerSettings()
-_settings.request_sampler = RequestSamplerSettings()
+_settings.analytics_events = AnalyticsEventsSettings()
+_settings.analytics_events.transactions = AnalyticsEventsTransactionsSettings()
 
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
 
@@ -144,8 +146,9 @@ _settings.thread_profiler.enabled = True
 _settings.cross_application_tracer.enabled = True
 _settings.xray_session.enabled = True
 
-_settings.request_sampler.enabled = True
-_settings.request_sampler.max_samples = 1200
+_settings.analytics_events.enabled = True
+_settings.analytics_events.max_samples_stored = 1200
+_settings.analytics_events.transactions.enabled = True
 
 _settings.transaction_tracer.enabled = True
 _settings.transaction_tracer.transaction_threshold = None

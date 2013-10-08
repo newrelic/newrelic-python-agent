@@ -10,9 +10,10 @@ import inspect
 import functools
 
 from ..packages.wrapt import (ObjectProxy as _ObjectProxy,
-        FunctionWrapper as _FunctionWrapper)
-from ..packages.wrapt.wrappers import (_FunctionWrapperBase,
-        _BoundFunctionWrapper, _BoundMethodWrapper)
+        FunctionWrapper as _FunctionWrapper,
+        BoundFunctionWrapper as _BoundFunctionWrapper)
+
+from ..packages.wrapt.wrappers import _FunctionWrapperBase
 
 # We previously had our own pure Python implementation of the generic
 # object wrapper but we now defer to using the wrapt module as its C
@@ -81,19 +82,8 @@ class _ObjectWrapperBase(object):
 class _NRBoundFunctionWrapper(_ObjectWrapperBase, _BoundFunctionWrapper):
     pass
 
-class _NRBoundMethodWrapper(_ObjectWrapperBase, _BoundMethodWrapper):
-    pass
-
-class ObjectWrapper(_ObjectWrapperBase, _FunctionWrapperBase):
-
-    def __init__(self, wrapped, instance, wrapper):
-        if isinstance(wrapped, (classmethod, staticmethod)):
-            bound_type = _NRBoundFunctionWrapper
-        else:
-            bound_type = _NRBoundMethodWrapper
-
-        super(ObjectWrapper, self).__init__(wrapped, instance, wrapper,
-                adapter=None, bound_type=bound_type)
+class FunctionWrapper(_ObjectWrapperBase, _FunctionWrapper):
+    __bound_function_wrapper__ = _NRBoundFunctionWrapper
 
 class ObjectProxy(_ObjectProxy):
 
@@ -131,16 +121,15 @@ class ObjectProxy(_ObjectProxy):
                     '_nr_last_object', self.__wrapped__)
             return self._self_last_object
 
-class FunctionWrapper(_ObjectWrapperBase, _FunctionWrapperBase):
+# The ObjectWrapper class needs to be deprecated and removed once all our
+# own code no longer uses it. It reaches down into what are wrapt internals
+# at present which shouldn't be doing.
 
-    def __init__(self, wrapped, wrapper):
-        if isinstance(wrapped, (classmethod, staticmethod)):
-            bound_type = _NRBoundFunctionWrapper
-        else:
-            bound_type = _NRBoundMethodWrapper
+class ObjectWrapper(_ObjectWrapperBase, _FunctionWrapperBase):
+    __bound_function_wrapper__ = _NRBoundFunctionWrapper
 
-        super(FunctionWrapper, self).__init__(wrapped, None, wrapper,
-                adapter=None, bound_type=bound_type)
+    def __init__(self, wrapped, instance, wrapper):
+        super(ObjectWrapper, self).__init__(wrapped, instance, wrapper)
 
 # The wrap_callable() alias needs to be deprecated and usage of it removed.
 

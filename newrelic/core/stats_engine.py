@@ -643,33 +643,31 @@ class StatsEngine(object):
         if (settings.collect_analytics_events and
                 settings.request_sampler.enabled):
 
-            record = {}
-
-            name = self.__sampled_data_set.intern(transaction.path)
-
-            record['type'] = 'Transaction'
-            record['name'] = name
-            record['timestamp'] = transaction.start_time
-            record['duration'] = transaction.duration
-
-            def _update_entry(source, target):
-                try:
-                    record[target] = self.__stats_table[
-                            (source, '')].total_call_time
-                except KeyError:
-                    pass
-
             if transaction.type == 'WebTransaction':
+                record = {}
+
+                name = self.__sampled_data_set.intern(transaction.path)
+
+                record['type'] = 'Transaction'
+                record['name'] = name
+                record['timestamp'] = transaction.start_time
+                record['duration'] = transaction.duration
+
+                def _update_entry(source, target):
+                    try:
+                        record[target] = self.__stats_table[
+                                (source, '')].total_call_time
+                    except KeyError:
+                        pass
+
                 _update_entry('HttpDispatcher', 'webDuration')
                 _update_entry('WebFrontend/QueueTime', 'queueDuration')
-            else:
-                _update_entry('OtherTransaction/all', 'backgroundDuration')
 
-            _update_entry('External/all', 'externalDuration')
-            _update_entry('Database/all', 'databaseDuration')
-            _update_entry('Memcache/all', 'memcacheDuration')
+                _update_entry('External/all', 'externalDuration')
+                _update_entry('Database/all', 'databaseDuration')
+                _update_entry('Memcache/all', 'memcacheDuration')
 
-            self.__sampled_data_set.add([record])
+                self.__sampled_data_set.add([record])
 
     @internal_trace('Supportability/StatsEngine/Calls/metric_data')
     def metric_data(self, normalizer=None):

@@ -88,9 +88,48 @@ class ObjectWrapperTests(unittest.TestCase):
 
         proxy2 = proxy1.__get__(obj, type(obj))
 
+        self.assertTrue(proxy2._self_parent is proxy1)
+
         self.assertEqual(proxy2._nr_next_object.__func__, function)
         self.assertEqual(proxy2._nr_last_object.__func__, function)
         self.assertEqual(proxy2._nr_instance, obj)
+
+    def test_rebound_wrapper(self):
+
+        def function():
+            pass
+
+        def wrapper(wrapped, instance, args, kwargs):
+            return wrapped(*args, **kwargs)
+
+        proxy1 = ObjectWrapper(function, None, wrapper)
+
+        self.assertEqual(proxy1._self_binding, 'function')
+
+        obj = object()
+
+        proxy2 = proxy1.__get__(None, type(None))
+
+        self.assertTrue(proxy2._self_parent is proxy1)
+        self.assertTrue(proxy2._self_instance is None)
+        self.assertEqual(proxy2._self_binding, 'function')
+
+        if six.PY2:
+            # No such thing as unbound function in Python 3.
+            self.assertEqual(proxy2._nr_next_object.__func__, function)
+            self.assertEqual(proxy2._nr_last_object.__func__, function)
+
+        self.assertEqual(proxy2._nr_instance, None)
+
+        proxy3 = proxy2.__get__(obj, type(obj))
+
+        self.assertTrue(proxy3._self_parent is proxy1)
+
+        self.assertFalse(proxy2 is proxy3)
+
+        self.assertEqual(proxy3._nr_next_object.__func__, function)
+        self.assertEqual(proxy3._nr_last_object.__func__, function)
+        self.assertEqual(proxy3._nr_instance, obj)
 
     def test_override_getattr(self):
 

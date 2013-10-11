@@ -23,10 +23,17 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
         transaction = current_transaction()
 
         if callable(name):
-            if instance and inspect.ismethod(wrapped):
+            # Start Hotfix v2.2.1.
+            #if instance and inspect.ismethod(wrapped):
+            #    _name = name(instance, *args, **kwargs)
+            #else:
+            #    _name = name(*args, **kwargs)
+
+            if instance:
                 _name = name(instance, *args, **kwargs)
             else:
                 _name = name(*args, **kwargs)
+            # End Hotfix v2.2.1.
 
         elif name is None:
             _name = callable_name(wrapped)
@@ -59,7 +66,9 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
         with BackgroundTask(_application(), _name, 'Celery'):
             return wrapped(*args, **kwargs)
 
-    obj = ObjectWrapper(wrapped, None, wrapper)
+    # Start Hotfix v2.2.1.
+    #obj = ObjectWrapper(wrapped, None, wrapper)
+    # End Hotfix v2.2.1.
 
     # Celery tasks that inherit from celery.app.task must implement a run()
     # method.
@@ -81,7 +90,15 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
     # versions included a monkey-patching provision which did not perform this
     # optimization on functions that were monkey-patched.
 
-    obj.__dict__['run'] = obj.__call__
+    # Start Hotfix v2.2.1.
+    #obj.__dict__['run'] = obj.__call__
+
+    class _ObjectWrapper(ObjectWrapper):
+        def run(self, *args, **kwargs):
+            return self.__call__(*args, **kwargs)
+
+    obj = _ObjectWrapper(wrapped, None, wrapper)
+    # End Hotfix v2.2.1.
 
     return obj
 

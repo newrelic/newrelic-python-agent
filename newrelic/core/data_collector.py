@@ -23,6 +23,9 @@ from newrelic.network.exceptions import (NetworkInterfaceException,
         ForceAgentRestart, ForceAgentDisconnect, DiscardDataForRequest,
         RetryDataForRequest, ServerIsUnavailable)
 
+from ..network.addresses import proxy_details
+from ..common.object_wrapper import patch_function_wrapper
+
 _logger = logging.getLogger(__name__)
 
 # User agent string that must be used in all requests. The data collector
@@ -69,28 +72,44 @@ def proxy_server():
 
     """
 
+    # For backward compatibility from when using requests prior to 2.0.0,
+    # we take the proxy_scheme as not being set to mean that we should
+    # derive it from whether SSL is being used. This will still be overridden
+    # if the proxy scheme was defined as part of proxy URL in proxy_host.
+
     settings = global_settings()
 
-    # Require that both proxy host and proxy port are set to work.
+    ssl = settings.ssl
+    proxy_scheme = settings.proxy_scheme
 
-    if not settings.proxy_host or not settings.proxy_port:
-        return
+    if proxy_scheme is None:
+        proxy_scheme = ssl and 'https' or 'http'
 
-    # The agent configuration only provides means to set one proxy so we
-    # assume that it will be set correctly depending on whether SSL
-    # connection requested or not.
+    return proxy_details(proxy_scheme, settings.proxy_host,
+            settings.proxy_port, settings.proxy_user, settings.proxy_pass)
 
-    scheme = settings.ssl and 'https' or 'http'
-    proxy = '%s:%d' % (settings.proxy_host, settings.proxy_port)
+# This is a monkey patch for urllib3 contained within our bundled requests
+# library. This is to override the urllib3 behaviour for how the proxy
+# is communicated with so as to allow us to restore the old broken
+# behaviour from before requests 2.0.0 so that we can transition
+# customers over without outright breaking their existing configurations.
 
-    # Encode the proxy user name and password into the proxy server value
-    # as requests library will strip it out of there and use that.
+@patch_function_wrapper(
+        'newrelic.packages.requests.packages.urllib3.connectionpool',
+        'HTTPSConnectionPool._prepare_conn')
+def _requests_proxy_scheme_workaround(wrapped, instance, args, kwargs):
+    def _params(connection, *args, **kwargs):
+        return connection
 
-    if settings.proxy_user is not None and settings.proxy_pass is not None:
-        proxy = 'http://%s:%s@%s' % (settings.proxy_user,
-                settings.proxy_pass, proxy)
+    pool, connection = instance, _params(*args, **kwargs)
 
-    return { scheme: proxy }
+    settings = global_settings()
+
+    if pool.proxy and pool.proxy.scheme == 'https':
+        if settings.proxy_scheme in (None, 'https'):
+            return connection
+
+    return wrapped(*args, **kwargs)
 
 # Low level network functions and session management. When connecting to
 # the data collector it is initially done through the main data collector.
@@ -308,7 +327,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
         if settings.debug.log_malformed_json_data:
             if headers['Content-Encoding'] == 'deflate':
-                data = zlib.uncompress(data)
+                data = zlib.decompress(data)
 
             _logger.info('JSON data which was rejected by the data '
                     'collector was %r.', data)
@@ -554,6 +573,7 @@ class ApplicationSession(object):
                 'transaction_sample_data', self.license_key,
                 self.agent_run_id, payload)
 
+    @internal_trace('Supportability/Collector/Calls/send_profile_data')
     def send_profile_data(self, profile_data):
         """Called to submit Profile Data.
         """
@@ -586,6 +606,7 @@ class ApplicationSession(object):
                 'sql_trace_data', self.license_key, self.agent_run_id,
                 payload)
 
+    @internal_trace('Supportability/Collector/Calls/get_agent_commands')
     def get_agent_commands(self):
         """Receive agent commands from the data collector.
 
@@ -597,6 +618,7 @@ class ApplicationSession(object):
                 'get_agent_commands', self.license_key, self.agent_run_id,
                 payload)
 
+    @internal_trace('Supportability/Collector/Calls/send_agent_command_results')
     def send_agent_command_results(self, cmd_results):
         """Acknowledge the receipt of an agent command.
 
@@ -608,6 +630,7 @@ class ApplicationSession(object):
                 'agent_command_results', self.license_key, self.agent_run_id,
                 payload)
 
+    @internal_trace('Supportability/Collector/Calls/get_xray_metadata')
     def get_xray_metadata(self, xray_id):
         """Receive xray metadata from the data collector.
 
@@ -617,6 +640,17 @@ class ApplicationSession(object):
 
         return send_request(self.requests_session, self.collector_url,
                 'get_xray_metadata', self.license_key, self.agent_run_id,
+                payload)
+
+    def analytic_event_data(self, sample_set):
+        """Called to submit sample set for analytics.
+
+        """
+
+        payload = (self.agent_run_id, sample_set)
+
+        return send_request(self.requests_session, self.collector_url,
+                'analytic_event_data', self.license_key, self.agent_run_id,
                 payload)
 
 def create_session(license_key, app_name, linked_applications,

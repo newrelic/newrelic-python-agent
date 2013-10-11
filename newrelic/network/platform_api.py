@@ -5,6 +5,8 @@ import sys
 import socket
 import os
 
+from ..packages import six
+
 from ..packages import requests
 from ..packages import simplejson as json
 
@@ -106,7 +108,17 @@ class PlatformInterface(object):
         if len(data) > 64*1024:
             headers['Content-Encoding'] = 'deflate'
             level = (len(data) < 2000000) and 1 or 9
-            data = zlib.compress(data, level)
+            data = zlib.compress(six.b(data), level)
+
+        # If there is no requests session object provided for making
+        # requests create one now. We want to close this as soon as we
+        # are done with it.
+
+        auto_close_session = False
+
+        if not session:
+            session = requests.session()
+            auto_close_session = True
 
         # The 'requests' library can raise a number of exception derived
         # from 'RequestException' before we even manage to get a connection
@@ -114,8 +126,6 @@ class PlatformInterface(object):
         # number of different types of HTTP errors for requests.
 
         try:
-            session = requests.session()
-
             r = session.post(url, headers=headers, proxies=proxies,
                     timeout=self.timeout, data=data)
 
@@ -146,7 +156,9 @@ class PlatformInterface(object):
             raise RetryDataForRequest(str(exc))
 
         finally:
-            session.close()
+            if auto_close_session:
+                session.close()
+                session = None
 
         if r.status_code != 200:
             _logger.debug('Received a non 200 HTTP response from the data '
@@ -156,7 +168,7 @@ class PlatformInterface(object):
 
         if r.status_code == 400:
             if headers['Content-Encoding'] == 'deflate':
-                data = zlib.uncompress(data)
+                data = zlib.decompress(data)
 
             _logger.error('Data collector is indicating that a bad '
                     'request has been submitted for url %r, headers of %r '
@@ -257,8 +269,8 @@ class PlatformInterface(object):
     def create_session(self):
         url = platform_url(self.host, self.port, self.ssl)
 
-        proxies = proxy_details(self.proxy_host, self.proxy_port,
-                self.proxy_user, self.proxy_pass, self.ssl)
+        proxies = proxy_details(None, self.proxy_host, self.proxy_port,
+                self.proxy_user, self.proxy_pass)
 
         return PlatformSession(self, url, proxies)
 

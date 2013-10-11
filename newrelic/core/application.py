@@ -1194,9 +1194,23 @@ class Application(object):
                         period_end = self._period_start + 1.001
 
                 try:
+                    # Send the transaction and custom metric data.
+
                     configuration = self._active_session.configuration
 
-                    # Send the transaction and custom metric data.
+                    # Report internal metrics about sample data set
+                    # for analytics.
+
+                    if (configuration.collect_analytics_events and
+                            configuration.analytics_events.enabled):
+                            
+                        if configuration.analytics_events.transactions.enabled:
+                            sampled_data_set = stats.sampled_data_set
+
+                            internal_metric('Supportability/RequestSampler/'
+                                    'requests', sampled_data_set.count)
+                            internal_metric('Supportability/RequestSampler/'
+                                    'samples', len(sampled_data_set.samples))
 
                     # Create a metric_normalizer based on normalize_name
                     # If metric rename rules are empty, set normalizer
@@ -1219,6 +1233,20 @@ class Application(object):
 
                     metric_ids = self._active_session.send_metric_data(
                       self._period_start, period_end, metric_data)
+
+                    stats.reset_metric_stats()
+
+                    # Send sample data set for analytics.
+
+                    if (configuration.collect_analytics_events and
+                            configuration.analytics_events.enabled):
+
+                        if configuration.analytics_events.transactions.enabled:
+                            if len(sampled_data_set.samples):
+                                self._active_session.analytic_event_data(
+                                        sampled_data_set.samples)
+
+                    stats.reset_sampled_data()
 
                     # Successful, so we update the stats engine with the
                     # new metric IDs and reset the reporting period
@@ -1331,7 +1359,15 @@ class Application(object):
                         maximum = agent_limits.merge_stats_maximum
 
                         if self._merge_count <= maximum:
-                            self._stats_engine.merge_metric_stats(stats)
+                            self._stats_engine.merge_metric_stats(
+                                    stats, rollback=True)
+
+                            # Only merge back sampled data at present.
+
+                            self._stats_engine.merge_other_stats(stats,
+                                    merge_traces=False, merge_errors=False,
+                                    merge_sql=False, merge_samples=True,
+                                    rollback=True)
 
                         else:
                             _logger.error('Unable to report main transaction '

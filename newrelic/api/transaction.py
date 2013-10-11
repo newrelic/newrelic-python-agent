@@ -643,7 +643,8 @@ class Transaction(object):
 
     set_transaction_name = name_transaction
 
-    def record_exception(self, exc, value, tb, params={}, ignore_errors=[]):
+    def record_exception(self, exc=None, value=None, tb=None,
+            params={}, ignore_errors=[]):
 
         # Bail out if the transaction is not active or
         # collection of errors not enabled.
@@ -656,6 +657,11 @@ class Transaction(object):
 
         if not error_collector.enabled or not settings.collect_errors:
             return
+
+        # If no exception details provided, use current exception.
+
+        if exc is None and value is None and tb is None:
+            exc, value, tb = sys.exc_info()
 
         # Has to be an error to be logged.
 

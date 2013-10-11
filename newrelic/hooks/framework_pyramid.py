@@ -31,7 +31,8 @@ def view_handler_wrapper(wrapped, instance, args, kwargs):
 
     with FunctionTrace(transaction, name):
         with ErrorTrace(transaction, ignore_errors=[
-                'pyramid.httpexceptions:HTTPNotFound']):
+            'pyramid.httpexceptions:HTTPNotFound',
+            'pyramid.exceptions:PredicateMismatch']):
             return wrapped(*args, **kwargs)
 
 def wrap_view_handler(mapped_view):
@@ -59,17 +60,19 @@ def default_view_mapper_wrapper(wrapped, instance, args, kwargs):
             finally:
                 attr = instance.attr
                 if attr:
-                    inst = getattr(request, '__view__')
-                    name = callable_name(getattr(inst, attr))
-                    transaction.set_transaction_name(name, priority=1)
-                    tracer.name = name
-                else:
-                    inst = getattr(request, '__view__')
-                    method = getattr(inst, '__call__')
-                    if method:
-                        name = callable_name(method)
+                    inst = getattr(request, '__view__', None)
+                    if inst is not None:
+                        name = callable_name(getattr(inst, attr))
                         transaction.set_transaction_name(name, priority=1)
                         tracer.name = name
+                else:
+                    inst = getattr(request, '__view__', None)
+                    if inst is not None:
+                        method = getattr(inst, '__call__')
+                        if method:
+                            name = callable_name(method)
+                            transaction.set_transaction_name(name, priority=1)
+                            tracer.name = name
 
     return _wrapper
 

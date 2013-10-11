@@ -2,6 +2,13 @@
 *.pyc
 *.pyo
 
+__pycache__
+
+*.egg-info
+
+htmlcov
+.coverage
+
 /config.log
 /config.status
 /autom4te.cache
@@ -37,3 +44,5 @@
 /license_data/license_errors.txt
 
 .tox
+
+testing.log

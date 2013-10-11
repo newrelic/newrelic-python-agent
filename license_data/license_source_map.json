@@ -215,12 +215,6 @@
             "New Relic"
         ]
     },
-    "newrelic/api/tests/test_in_function.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "newrelic/api/tests/test_memcache_trace.py": {
         "hash": "n/a",
         "libraries": [
@@ -234,30 +228,6 @@
         ]
     },
     "newrelic/api/tests/test_obfuscate_deobfuscate.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/api/tests/test_object_wrapper.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/api/tests/test_out_function.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/api/tests/test_post_function.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/api/tests/test_pre_function.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -341,6 +311,12 @@
             "New Relic"
         ]
     },
+    "newrelic/common/object_wrapper.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/common/stopwatch.py": {
         "hash": "n/a",
         "libraries": [
@@ -359,7 +335,37 @@
             "New Relic"
         ]
     },
+    "newrelic/common/tests/test_in_function.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/common/tests/test_object_names.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_object_wrapper.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_out_function.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_post_function.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_pre_function.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -558,6 +564,12 @@
         ]
     },
     "newrelic/core/tests/test_rules_engine.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/core/tests/test_sampled_data_set.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -935,6 +947,24 @@
             "New Relic"
         ]
     },
+    "newrelic/network/tests/__init__.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/network/tests/test_addresses.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/network/tests/test_platform_api.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/newrelic.ini": {
         "hash": "n/a",
         "libraries": [
@@ -954,19 +984,19 @@
         ]
     },
     "newrelic/packages/requests/NOTICE": {
-        "hash": "a7fcf1dc2d13f4c1e901564711244fb4",
+        "hash": "78f5bacf7f1c81c3c798887c9e94d745",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/__init__.py": {
-        "hash": "3580ff70ef16b40710a36f3186889dcf",
+        "hash": "642350eb5461cbbb11b598f34c6cd440",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/adapters.py": {
-        "hash": "a7b3a2d359e7ee05bb91751c07720ee4",
+        "hash": "4f130441bd23fca931667a68a95ebfc4",
         "libraries": [
             "requests"
         ]
@@ -978,7 +1008,7 @@
         ]
     },
     "newrelic/packages/requests/auth.py": {
-        "hash": "0b2f6a6b906323dd8f0dffc46f717cb1",
+        "hash": "cec722af07b9f90785fe3ea605d9c609",
         "libraries": [
             "requests"
         ]
@@ -996,19 +1026,19 @@
         ]
     },
     "newrelic/packages/requests/compat.py": {
-        "hash": "6dafaeb8f4f94e0d161589d49f775c05",
+        "hash": "571d79b4db2cb411d5421bde9e9605c0",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/cookies.py": {
-        "hash": "7e2e7b0b1b29e0df48ae18d017a73ed0",
+        "hash": "4e3979411371cbee740f9546c6c414c9",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/exceptions.py": {
-        "hash": "602c014006666041126f035f436b3a17",
+        "hash": "7ade8f8ea4e5c1666fa660c2e501c354",
         "libraries": [
             "requests"
         ]
@@ -1020,7 +1050,7 @@
         ]
     },
     "newrelic/packages/requests/models.py": {
-        "hash": "32beee3aa58e2d455617bd16f24887fc",
+        "hash": "519cbda99e716c3e4470279169e0d8cb",
         "libraries": [
             "requests"
         ]
@@ -1254,31 +1284,55 @@
         ]
     },
     "newrelic/packages/requests/packages/urllib3/__init__.py": {
-        "hash": "da8fcd0b14a8cceea797e7acdb16a8aa",
+        "hash": "1204a73ff4a258fbc2bc78155fd3cf7d",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/packages/urllib3/_collections.py": {
-        "hash": "ea2f5d55e09e114b9e41ff4a07831251",
+        "hash": "a1161b052569ab60f321a993591992af",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/packages/urllib3/connectionpool.py": {
-        "hash": "0d205c3fa4d7998a3e900ec6843b38bc",
+        "hash": "8a6434836c4fb8c0eb110268343e64b4",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/urllib3/contrib/__init__.py": {
+        "hash": "d41d8cd98f00b204e9800998ecf8427e",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/urllib3/contrib/ntlmpool.py": {
+        "hash": "5d9af521c38324069bc0ecf6f3ea093f",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/urllib3/contrib/pyopenssl.py": {
+        "hash": "d21af46ecb51753ba02ca0c47aa011e0",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/packages/urllib3/exceptions.py": {
-        "hash": "8b5f7e62b3130d72ce658c4bfef15018",
+        "hash": "657240754c55afa6fd48b3e96049bce5",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/urllib3/fields.py": {
+        "hash": "bda16c5526525b140f31d886559781b9",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/packages/urllib3/filepost.py": {
-        "hash": "9f5a0d68557033d562239018f6d7b728",
+        "hash": "2192b3f42c5806461be54a32720746e9",
         "libraries": [
             "requests"
         ]
@@ -1302,55 +1356,55 @@
         ]
     },
     "newrelic/packages/requests/packages/urllib3/packages/ssl_match_hostname/__init__.py": {
-        "hash": "b4b0425c9004c342e9e60faf6408e213",
+        "hash": "b20d19da11dd6afe8a8c03b7551bb04d",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/packages/urllib3/poolmanager.py": {
-        "hash": "6e36c4df52b75587d1c42f3786c816ad",
+        "hash": "e1420c1f0925780b05cae7df1c0a73a3",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/packages/urllib3/request.py": {
-        "hash": "bf6fee7c87ec943f7e493a1810334037",
+        "hash": "4a5995f77ffa042f434fe9c34f5c1882",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/packages/urllib3/response.py": {
-        "hash": "6ad07cda1aa208c0e10b2996434d7212",
+        "hash": "56a2074bcac0709015d5ee2cbcaf0880",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/packages/urllib3/util.py": {
-        "hash": "52c973ddeaf655b0f348e60706070575",
+        "hash": "c61c3c72708b7147b56406f3dea5e4e3",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/sessions.py": {
-        "hash": "76076f2ee9c8e77951d0ab066c2760cc",
+        "hash": "9e02abae9060e6c4bf25af7c8ec6d90a",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/status_codes.py": {
-        "hash": "d595e16bc7e4713da35a873e4a2d85d5",
+        "hash": "132b741de0ae791e04c11063f592f2e8",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/structures.py": {
-        "hash": "424c65ea5039348713dcee61c28844a2",
+        "hash": "5f089d56ce9911ba6b57df8722d3ac5c",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/utils.py": {
-        "hash": "46013b3d638bd24e2e927edd0fd95cb4",
+        "hash": "9881d4aae91a1a9492bcac390b287313",
         "libraries": [
             "requests"
         ]
@@ -1413,6 +1467,54 @@
         "hash": "653f63e52e678a4f539906b2f2ee61bd",
         "libraries": [
             "six"
+        ]
+    },
+    "newrelic/packages/wrapt/LICENSE": {
+        "hash": "56540ad83482f9346ef40591d7c74d39",
+        "libraries": [
+            "wrapt"
+        ]
+    },
+    "newrelic/packages/wrapt/README": {
+        "hash": "3788fbe8b05a9ee76cda31d8d7ff21a5",
+        "libraries": [
+            "wrapt"
+        ]
+    },
+    "newrelic/packages/wrapt/__init__.py": {
+        "hash": "4a4d2b082f36301a57dbeb6aa32b14d6",
+        "libraries": [
+            "wrapt"
+        ]
+    },
+    "newrelic/packages/wrapt/_wrappers.c": {
+        "hash": "fe6fc813b64d8858be5d25a41b963591",
+        "libraries": [
+            "wrapt"
+        ]
+    },
+    "newrelic/packages/wrapt/decorators.py": {
+        "hash": "378585299acb34e16df1c9107671b4ed",
+        "libraries": [
+            "wrapt"
+        ]
+    },
+    "newrelic/packages/wrapt/importer.py": {
+        "hash": "bb7e737bcd6e9562bc32e3ea3fd46e9f",
+        "libraries": [
+            "wrapt"
+        ]
+    },
+    "newrelic/packages/wrapt/six.py": {
+        "hash": "653f63e52e678a4f539906b2f2ee61bd",
+        "libraries": [
+            "wrapt"
+        ]
+    },
+    "newrelic/packages/wrapt/wrappers.py": {
+        "hash": "3a825f6a97d7ee32be08174d35917677",
+        "libraries": [
+            "wrapt"
         ]
     },
     "newrelic/platform.py": {

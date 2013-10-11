@@ -9,6 +9,7 @@ import base64
 import copy
 import logging
 import operator
+import random
 import zlib
 
 import newrelic.packages.six as six
@@ -209,6 +210,31 @@ class SlowSqlStats(list):
 
         self[0] += 1
 
+class SampledDataSet(object):
+
+    def __init__(self, capacity=100):
+        self.samples = []
+        self.capacity = capacity
+        self.count = 0
+        self.strings = {}
+
+    def reset(self):
+        self.samples = []
+        self.count = 0
+        self.strings = {}
+
+    def add(self, sample):
+        if len(self.samples) < self.capacity:
+            self.samples.append(sample)
+        else:
+            index = random.randint(0, self.count)
+            if index < self.capacity:
+                self.samples[index] = sample
+        self.count += 1
+
+    def intern(self, string):
+        return self.strings.setdefault(string, string)
+
 class StatsEngine(object):
 
     """The stats engine object holds the accumulated transactions metrics,
@@ -240,6 +266,7 @@ class StatsEngine(object):
     def __init__(self):
         self.__settings = None
         self.__stats_table = {}
+        self.__sampled_data_set = SampledDataSet()
         self.__sql_stats_table = {}
         self.__slow_transaction = None
         self.__slow_transaction_map = {}
@@ -266,6 +293,10 @@ class StatsEngine(object):
         """
 
         return self.__metric_ids
+
+    @property
+    def sampled_data_set(self):
+        return self.__sampled_data_set
 
     def update_metric_ids(self, metric_ids):
         """Updates the dictionary containing the mappings from metric
@@ -604,6 +635,42 @@ class StatsEngine(object):
                 self._update_slow_transaction(transaction)
                 self._update_browser_transaction(transaction)
 
+        # Create the transaction record summarising key data for later
+        # analytics. Only do this for web transaction at this point as
+        # not sure if needs to be done for other transactions as field
+        # names in record are based on web transaction metric names.
+
+        if (settings.collect_analytics_events and
+                settings.analytics_events.enabled):
+            
+            if (transaction.type == 'WebTransaction' and
+                    settings.analytics_events.transactions.enabled):
+
+                record = {}
+
+                name = self.__sampled_data_set.intern(transaction.path)
+
+                record['type'] = 'Transaction'
+                record['name'] = name
+                record['timestamp'] = transaction.start_time
+                record['duration'] = transaction.duration
+
+                def _update_entry(source, target):
+                    try:
+                        record[target] = self.__stats_table[
+                                (source, '')].total_call_time
+                    except KeyError:
+                        pass
+
+                _update_entry('HttpDispatcher', 'webDuration')
+                _update_entry('WebFrontend/QueueTime', 'queueDuration')
+
+                _update_entry('External/all', 'externalDuration')
+                _update_entry('Database/all', 'databaseDuration')
+                _update_entry('Memcache/all', 'memcacheDuration')
+
+                self.__sampled_data_set.add([record])
+
     @internal_trace('Supportability/StatsEngine/Calls/metric_data')
     def metric_data(self, normalizer=None):
         """Returns a list containing the low level metric data for
@@ -890,6 +957,32 @@ class StatsEngine(object):
         self.__xray_transactions = []
         self.xray_sessions = {}
 
+        if settings is not None:
+            self.__sampled_data_set = SampledDataSet(
+                    settings.analytics_events.max_samples_stored)
+        else:
+            self.__sampled_data_set = SampledDataSet()
+
+    def reset_metric_stats(self):
+        """Resets the accumulated statistics back to initial state for
+        metric data.
+
+        """
+
+        self.__stats_table = {}
+
+    def reset_sampled_data(self):
+        """Resets the accumulated statistics back to initial state for
+        sample analytics data.
+
+        """
+
+        if self.__settings is not None:
+            self.__sampled_data_set = SampledDataSet(
+                    self.__settings.analytics_events.max_samples_stored)
+        else:
+            self.__sampled_data_set = SampledDataSet()
+
     def harvest_snapshot(self):
         """Creates a snapshot of the accumulated statistics, error
         details and slow transaction and returns it. This is a shallow
@@ -951,6 +1044,12 @@ class StatsEngine(object):
         self.__browser_transactions = []
         self.__xray_transactions = []
 
+        if self.__settings is not None:
+            self.__sampled_data_set = SampledDataSet(
+                    self.__settings.analytics_events.max_samples_stored)
+        else:
+            self.__sampled_data_set = SampledDataSet()
+
         return stats
 
     def create_workarea(self):
@@ -967,7 +1066,7 @@ class StatsEngine(object):
 
         return stats
 
-    def merge_metric_stats(self, snapshot):
+    def merge_metric_stats(self, snapshot, rollback=False):
 
         """Merges metric data from a snapshot. This is used when merging
         data from a single transaction into main stats engine. It would
@@ -980,6 +1079,10 @@ class StatsEngine(object):
         if not self.__settings:
             return
 
+        if rollback:
+            _logger.debug('Performing rollback of metric data into '
+                    'subsequent harvest period.')
+
         # Merge back data into any new data which has been
         # accumulated.
 
@@ -991,7 +1094,8 @@ class StatsEngine(object):
                 stats.merge_stats(other)
 
     def merge_other_stats(self, snapshot, merge_traces=True,
-            merge_errors=True, merge_sql=True):
+            merge_errors=True, merge_sql=True, merge_samples=True,
+            rollback=False):
 
         """Merges non metric data from a snapshot. This would only be
         used when merging data from a single transaction into main
@@ -1004,7 +1108,34 @@ class StatsEngine(object):
         if not self.__settings:
             return
 
+        if rollback:
+            _logger.debug('Performing rollback of non metric data into '
+                    'subsequent harvest period where merge_traces=%r, '
+                    'merge_errors=%r, merge_sql=%r and merge_samples=%r.',
+                    merge_traces, merge_errors, merge_sql, merge_samples)
+
         settings = self.__settings
+
+        # Merge in sampled data set. For normal case, as this is merging
+        # data from a single transaction, there should only be one. Just
+        # to avoid issues, if there is more than one, don't merge. In
+        # the case of a rollback merge because of a network issue, then
+        # we have to merge differently, restoring the old sampled data
+        # and applying the new data over the top. This gives precedence
+        # to the newer data.
+
+        if merge_samples:
+            if rollback:
+                new_sample_data_set = self.__sampled_data_set
+                self.__sampled_data_set = snapshot.__sampled_data_set
+
+                for sample in new_sample_data_set.samples:
+                    self.__sampled_data_set.add(sample)
+
+            else:
+                if snapshot.__sampled_data_set.count == 1:
+                    self.__sampled_data_set.add(
+                            snapshot.__sampled_data_set.samples[0])
 
         # Append snapshot error details at end to maintain time
         # based order and then trim at maximum to be kept.
@@ -1105,7 +1236,6 @@ class StatsEngine(object):
 
                     self.__slow_transaction = transaction
                     self.__slow_transaction_map[name] = duration
-
 
     def merge_custom_metrics(self, metrics):
         """Merges in a set of custom metrics. The metrics should be

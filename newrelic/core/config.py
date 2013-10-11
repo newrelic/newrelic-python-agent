@@ -37,6 +37,8 @@ class ConsoleSettings(Settings): pass
 class DebugSettings(Settings): pass
 class CrossApplicationTracerSettings(Settings): pass
 class XraySessionSettings(Settings): pass
+class AnalyticsEventsSettings(Settings): pass
+class AnalyticsEventsTransactionsSettings(Settings): pass
 
 _settings = Settings()
 _settings.thread_profiler = ThreadProfilerSettings()
@@ -52,6 +54,8 @@ _settings.agent_limits = AgentLimitsSettings()
 _settings.console = ConsoleSettings()
 _settings.debug = DebugSettings()
 _settings.cross_application_tracer = CrossApplicationTracerSettings()
+_settings.analytics_events = AnalyticsEventsSettings()
+_settings.analytics_events.transactions = AnalyticsEventsTransactionsSettings()
 
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
 
@@ -93,6 +97,7 @@ _settings.ssl = _environ_as_bool('NEW_RELIC_SSL', True)
 _settings.host = os.environ.get('NEW_RELIC_HOST', 'collector.newrelic.com')
 _settings.port = int(os.environ.get('NEW_RELIC_PORT', '0'))
 
+_settings.proxy_scheme = os.environ.get('NEW_RELIC_PROXY_SCHEME', None)
 _settings.proxy_host = os.environ.get('NEW_RELIC_PROXY_HOST', None)
 _settings.proxy_port = int(os.environ.get('NEW_RELIC_PROXY_PORT', '0'))
 _settings.proxy_user = os.environ.get('NEW_RELIC_PROXY_USER', None)
@@ -104,6 +109,7 @@ _settings.monitor_mode = _environ_as_bool('NEW_RELIC_MONITOR_MODE', True)
 
 _settings.collect_errors = True
 _settings.collect_traces = True
+_settings.collect_analytics_events = True
 
 _settings.apdex_t = 0.5
 _settings.web_transactions_apdex = {}
@@ -139,6 +145,10 @@ _settings.encoding_key = None
 _settings.thread_profiler.enabled = True
 _settings.cross_application_tracer.enabled = True
 _settings.xray_session.enabled = True
+
+_settings.analytics_events.enabled = True
+_settings.analytics_events.max_samples_stored = 1200
+_settings.analytics_events.transactions.enabled = True
 
 _settings.transaction_tracer.enabled = True
 _settings.transaction_tracer.transaction_threshold = None

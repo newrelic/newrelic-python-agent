@@ -1,9 +1,9 @@
 import warnings
 
+import newrelic.samplers.decorators
+
 import newrelic.core.agent
 import newrelic.core.config
-
-import newrelic.samplers.decorators
 
 import newrelic.api.web_transaction
 import newrelic.api.background_task
@@ -18,13 +18,6 @@ import newrelic.api.generator_trace
 import newrelic.api.profile_trace
 import newrelic.api.external_trace
 import newrelic.api.error_trace
-
-import newrelic.api.in_function
-import newrelic.api.out_function
-import newrelic.api.post_function
-import newrelic.api.pre_function
-
-import newrelic.api.object_wrapper
 
 import newrelic.config
 
@@ -96,7 +89,8 @@ def add_user_attribute(key, value):
     if transaction:
         transaction.add_user_attribute(key, value)
 
-def record_exception(exc, value, tb, params={}, ignore_errors=[]):
+def record_exception(exc=None, value=None, tb=None, params={},
+        ignore_errors=[]):
     transaction = current_transaction()
     if transaction:
         transaction.record_exception(exc, value, tb, params, ignore_errors)
@@ -194,23 +188,12 @@ transaction_name = newrelic.api.transaction_name.transaction_name
 TransactionNameWrapper = newrelic.api.transaction_name.TransactionNameWrapper
 wrap_transaction_name = newrelic.api.transaction_name.wrap_transaction_name
 
-ObjectWrapper = newrelic.api.object_wrapper.ObjectWrapper
-callable_name = newrelic.api.object_wrapper.callable_name
-wrap_object = newrelic.api.object_wrapper.wrap_object
-wrap_callable = newrelic.api.object_wrapper.wrap_callable
+from .common.object_names import callable_name
 
-in_function = newrelic.api.in_function.in_function
-InFunctionWrapper = newrelic.api.in_function.InFunctionWrapper
-wrap_in_function = newrelic.api.in_function.wrap_in_function
-
-out_function = newrelic.api.out_function.out_function
-OutFunctionWrapper = newrelic.api.out_function.OutFunctionWrapper
-wrap_out_function = newrelic.api.out_function.wrap_out_function
-
-post_function = newrelic.api.post_function.post_function
-PostFunctionWrapper = newrelic.api.post_function.PostFunctionWrapper
-wrap_post_function = newrelic.api.post_function.wrap_post_function
-
-pre_function = newrelic.api.pre_function.pre_function
-PreFunctionWrapper = newrelic.api.pre_function.PreFunctionWrapper
-wrap_pre_function = newrelic.api.pre_function.wrap_pre_function
+from .common.object_wrapper import (ObjectProxy, wrap_object,
+        FunctionWrapper, function_wrapper, wrap_function_wrapper,
+        patch_function_wrapper, ObjectWrapper, wrap_callable,
+        pre_function, PreFunctionWrapper, wrap_pre_function,
+	post_function, PostFunctionWrapper, wrap_post_function,
+        in_function, InFunctionWrapper, wrap_in_function,
+        out_function, OutFunctionWrapper, wrap_out_function)

@@ -1,143 +1,177 @@
-import sys
+"""Instrumentation module for CherryPy framework.
 
-import newrelic.api.transaction
-import newrelic.api.web_transaction
-import newrelic.api.function_trace
-import newrelic.api.object_wrapper
-import newrelic.api.error_trace
+"""
 
-class HandlerWrapper(object):
+# TODO
+# 
+# * We don't ignore HTTPError for specific status codes. So if instead of
+#   using NotFound(), user uses HTTPError(404), we would not ignore it.
+#   Similar problem for redirects.
+# 
+# * We don't track time spent in a user supplied error response callback.
+#   We do track time in the handle_error() function which calls it though.
+#   Because the error_response attribute of the request object could be
+#   updated dynamically, is tricky to handle. We would need to replace
+#   error_response attribute at the time the request is created, with a
+#   data descriptor which detects when it is set and saves away value, and
+#   then wraps the value with a function trace when later access. May
+#   have to deal with someone overriding the class attribute version of
+#   error_response as well, which means need a class level data descriptor
+#   which gets trickier as it isn't bound to an instance and has to do
+#   tricks to store the error response handler being set against the
+#   instance if set via an instance.
+# 
+# * We don't track time spent in hook functions which may be registered
+#   for events such as before_handler, on_end_request etc.
+#
+# * We don't handle any sub dispatching that may be occuring due to the
+#   use of XMLRPCDispatcher.
 
-    def __init__(self, wrapped):
-        self.__name = newrelic.api.object_wrapper.callable_name(wrapped)
-        self.__wrapped = wrapped
+from newrelic.agent import (current_transaction, wrap_wsgi_application,
+        FunctionTrace, callable_name, ObjectProxy, function_wrapper,
+        wrap_function_wrapper, wrap_function_trace)
 
-    def __getattr__(self, name):
-        return getattr(self.__wrapped, name)
+def framework_details():
+    import cherrypy
+    return ('CherryPy', getattr(cherrypy, '__version__', None))
 
-    def __get__(self, instance, klass):
-        if instance is None:
-            return self
-        descriptor = self.__wrapped.__get__(instance, klass)
-        return self.__class__(descriptor)
+IGNORE_ERRORS = [
+    'cherrypy._cperror:NotFound',
+    'cherrypy._cperror:InternalRedirect',
+    'cherrypy._cperror:HTTPRedirect'
+]
 
-    def __call__(self, *args, **kwargs):
-        transaction = newrelic.api.transaction.current_transaction()
-        if transaction:
-            transaction.name_transaction(name=self.__name, priority=2)
-            with newrelic.api.error_trace.ErrorTrace(transaction):
-                with newrelic.api.function_trace.FunctionTrace(
-                        transaction, name=self.__name):
-                    try:
-                        return self.__wrapped(*args, **kwargs)
-                    except:  # Catch all
-                        transaction.record_exception(*sys.exc_info())
-                        raise
-        else:
-            return self.__wrapped(*args, **kwargs)
+@function_wrapper
+def handler_wrapper(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
 
-class ResourceWrapper(object):
+    # Name the web transaction after the handler function.
 
-    def __init__(self, wrapped):
-        self.__wrapped = wrapped
+    name = callable_name(wrapped)
+    transaction.set_transaction_name(name=name)
 
-    def __dir__(self):
-        return dir(self.__wrapped)
+    # Track how long is spent in the handler and record any exceptions
+    # except those which are used for controlling the actions of the
+    # application.
 
-    def __getattr__(self, name):
-        attr = getattr(self.__wrapped, name)
-        if name.isupper():
-            return HandlerWrapper(attr)
-        return attr
+    with FunctionTrace(transaction, name=name):
+        try:
+            return wrapped(*args, **kwargs)
 
-class ResolverWrapper(object):
+        except:  # Catch all
+            transaction.record_exception(ignore_errors=IGNORE_ERRORS)
+            raise
 
-    def __init__(self, wrapped):
-        if isinstance(wrapped, tuple):
-            (instance, wrapped) = wrapped
-        else:
-            instance = None
-        self.__instance = instance
-        self.__wrapped = wrapped
-
-    def __getattr__(self, name):
-        return getattr(self.__wrapped, name)
-
-    def __get__(self, instance, klass):
-        if instance is None:
-            return self
-        descriptor = self.__wrapped.__get__(instance, klass)
-        return self.__class__((instance, descriptor))
-
-    def __call__(self, *args, **kwargs):
-        transaction = newrelic.api.transaction.current_transaction()
-        if transaction:
-            try:
-                obj, vpath = self.__wrapped(*args, **kwargs)
-                if obj:
-                    klass = self.__instance.__class__
-                    if klass.__name__ == 'MethodDispatcher':
-                        transaction.name_transaction('405', group='Uri')
-                        obj = ResourceWrapper(obj)
-                    else:
-                        obj = HandlerWrapper(obj)
-                else:
-                    transaction.name_transaction('404', group='Uri')
-                return obj, vpath
-            except:  # Catch all
-                transaction.record_exception(*sys.exc_info())
-                raise
-        else:
-            return self.__wrapped(*args, **kwargs)
-
-class RoutesResolverWrapper(object):
-
-    def __init__(self, wrapped):
-        if isinstance(wrapped, tuple):
-            (instance, wrapped) = wrapped
-        else:
-            instance = None
-        self.__instance = instance
-        self.__wrapped = wrapped
+class ResourceProxy(ObjectProxy):
 
     def __getattr__(self, name):
-        return getattr(self.__wrapped, name)
+        # Methods on the wrapped object corresponding to the HTTP
+        # method will always be upper case. Wrap the method when
+        # returned with the handler wrapper.
 
-    def __get__(self, instance, klass):
-        if instance is None:
-            return self
-        descriptor = self.__wrapped.__get__(instance, klass)
-        return self.__class__((instance, descriptor))
+        attr = super(ResourceProxy, self).__getattr__(name)
+        return name.isupper() and handler_wrapper(attr) or attr
 
-    def __call__(self, *args, **kwargs):
-        transaction = newrelic.api.transaction.current_transaction()
-        if transaction:
-            try:
-                handler = self.__wrapped(*args, **kwargs)
-                if handler:
-                    handler = HandlerWrapper(handler)
-                else:
-                    transaction.name_transaction('404', group='Uri')
-                return handler
-            except:  # Catch all
-                transaction.record_exception(*sys.exc_info())
-                raise
+def wrapper_Dispatcher_find_handler(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    try:
+        # Call the original wrapped function to find the handler.
+
+        obj, vpath = wrapped(*args, **kwargs)
+
+    except:  # Catch all
+        # Can end up here when a custom _cp_dispatch() method is
+        # used and that raises an exception.
+
+        transaction.record_exception()
+        raise
+
+    if obj:
+        if instance.__class__.__name__ == 'MethodDispatcher':
+            # We initially name the web transaction as if the
+            # corresponding method for the HTTP method will not
+            # be found and the request will not be allowed. This
+            # will be overridden with the actual handler name
+            # when the subsequent wrapper around the handler is
+            # executed.
+
+            transaction.set_transaction_name('405', group='StatusCode')
+
+            # We have to use a custom object proxy here in order
+            # to intercept accesses made by the dispatcher on the
+            # returned object, after this function returns, to
+            # retrieve the method of the object corresponding to
+            # the HTTP method. For each such access we wrap what
+            # is returned in the handler wrapper.
+
+            obj = ResourceProxy(obj)
+
         else:
-            return self.__wrapped(*args, **kwargs)
+            # Should be the actual handler, wrap it with the
+            # handler wrapper.
 
-def instrument_cherrypy_cpdispatch(module):
+            obj = handler_wrapper(obj)
 
-    newrelic.api.object_wrapper.wrap_object(module,
-            'Dispatcher.find_handler', ResolverWrapper)
-    newrelic.api.object_wrapper.wrap_object(module,
-            'RoutesDispatcher.find_handler', RoutesResolverWrapper)
+    else:
+        # No handler could be found so name the web transaction
+        # after the 404 status code.
 
-def instrument_cherrypy_cpwsgi(module):
+        transaction.set_transaction_name('404', group='StatusCode')
 
-    newrelic.api.web_transaction.wrap_wsgi_application(
-            module, 'CPWSGIApp.__call__')
+    return obj, vpath
 
-def instrument_cherrypy_cptree(module):
+def wrapper_RoutesDispatcher_find_handler(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
 
-    newrelic.api.web_transaction.wrap_wsgi_application(
-            module, 'Application.__call__')
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    try:
+        # Call the original wrapped function to find the handler.
+
+        handler = wrapped(*args, **kwargs)
+
+    except:  # Catch all
+        # Can end up here when the URL was invalid in some way.
+
+        transaction.record_exception()
+        raise
+
+    if handler:
+        # Should be the actual handler, wrap it with the handler
+        # wrapper.
+
+        handler = handler_wrapper(handler)
+
+    else:
+        # No handler could be found so name the web transaction
+        # after the 404 status code.
+
+        transaction.set_transaction_name('404', group='StatusCode')
+
+    return handler
+
+def instrument_cherrypy__cpreqbody(module):
+    wrap_function_trace(module, 'process_multipart')
+    wrap_function_trace(module, 'process_multipart_form_data')
+
+def instrument_cherrypy__cprequest(module):
+    wrap_function_trace(module, 'Request.handle_error')
+
+def instrument_cherrypy__cpdispatch(module):
+    wrap_function_wrapper(module, 'Dispatcher.find_handler',
+            wrapper_Dispatcher_find_handler)
+    wrap_function_wrapper(module, 'RoutesDispatcher.find_handler',
+            wrapper_RoutesDispatcher_find_handler)
+
+def instrument_cherrypy__cpwsgi(module):
+    wrap_wsgi_application(module, 'CPWSGIApp.__call__',
+            framework=framework_details())
+
+def instrument_cherrypy__cptree(module):
+    wrap_wsgi_application(module, 'Application.__call__',
+            framework=framework_details())

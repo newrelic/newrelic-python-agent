@@ -1,0 +1,7 @@
+TODO
+----
+
+* Tests for raising exceptions.
+
+* Look at whether should be doing anything about not found and redirect
+  exceptions.

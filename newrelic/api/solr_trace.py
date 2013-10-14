@@ -1,6 +1,5 @@
 import sys
 import types
-import inspect
 import time
 
 import newrelic.core.solr_node
@@ -64,7 +63,7 @@ class SolrTraceWrapper(object):
             return self._nr_next_object(*args, **kwargs)
 
         if callable(self._nr_library):
-            if self._nr_instance and inspect.ismethod(self._nr_next_object):
+            if self._nr_instance is not None:
                 library = self._nr_library(self._nr_instance, *args,
                                            **kwargs)
             else:
@@ -73,7 +72,7 @@ class SolrTraceWrapper(object):
             library = self._nr_library
 
         if callable(self._nr_command):
-            if self._nr_instance and inspect.ismethod(self._nr_next_object):
+            if self._nr_instance is not None:
                 command = self._nr_command(self._nr_instance, *args,
                                            **kwargs)
             else:

@@ -1,5 +1,4 @@
 import functools
-import inspect
 
 from newrelic.api.transaction import current_transaction
 from newrelic.api.object_wrapper import (ObjectWrapper,
@@ -14,7 +13,7 @@ def TransactionNameWrapper(wrapped, name=None, group=None, priority=None):
             return wrapped(*args, **kwargs)
 
         if callable(name):
-            if instance and inspect.ismethod(wrapped):
+            if instance is not None:
                 _name = name(instance, *args, **kwargs)
             else:
                 _name = name(*args, **kwargs)
@@ -26,7 +25,7 @@ def TransactionNameWrapper(wrapped, name=None, group=None, priority=None):
             _name = name
 
         if callable(group):
-            if instance and inspect.ismethod(wrapped):
+            if instance is not None:
                 _group = group(instance, *args, **kwargs)
             else:
                 _group = group(*args, **kwargs)

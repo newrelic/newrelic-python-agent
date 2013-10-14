@@ -1,5 +1,4 @@
 import types
-import inspect
 
 import newrelic.core.datastore_node
 
@@ -75,7 +74,7 @@ class DatastoreTraceWrapper(object):
             return self._nr_next_object(*args, **kwargs)
 
         if callable(self._nr_target):
-            if self._nr_instance and inspect.ismethod(self._nr_next_object):
+            if self._nr_instance is not None:
                 _target = self._nr_target(self._nr_instance, *args, **kwargs)
             else:
                 _target = self._nr_target(*args, **kwargs)

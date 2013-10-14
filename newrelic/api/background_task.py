@@ -1,5 +1,4 @@
 import functools
-import inspect
 import sys
 
 from newrelic.api.application import (Application, application_instance)
@@ -36,7 +35,7 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
         transaction = current_transaction()
 
         if callable(name):
-            if instance and inspect.ismethod(wrapped):
+            if instance is not None:
                 _name = name(instance, *args, **kwargs)
             else:
                 _name = name(*args, **kwargs)
@@ -48,7 +47,7 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
             _name = name
 
         if callable(group):
-            if instance and inspect.ismethod(wrapped):
+            if instance is not None:
                 _group = group(instance, *args, **kwargs)
             else:
                 _group = group(*args, **kwargs)

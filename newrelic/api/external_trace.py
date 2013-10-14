@@ -1,5 +1,4 @@
 import functools
-import inspect
 
 import newrelic.packages.simplejson as simplejson
 from newrelic.api.time_trace import TimeTrace
@@ -100,7 +99,7 @@ def ExternalTraceWrapper(wrapped, library, url, method=None):
             return wrapped(*args, **kwargs)
 
         if callable(url):
-            if instance and inspect.ismethod(wrapped):
+            if instance is not None:
                 _url = url(instance, *args, **kwargs)
             else:
                 _url = url(*args, **kwargs)
@@ -109,7 +108,7 @@ def ExternalTraceWrapper(wrapped, library, url, method=None):
             _url = url
 
         if callable(method):
-            if instance and inspect.ismethod(wrapped):
+            if instance is not None:
                 _method = method(instance, *args, **kwargs)
             else:
                 _method = method(*args, **kwargs)

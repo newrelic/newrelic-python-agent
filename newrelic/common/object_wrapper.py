@@ -129,7 +129,15 @@ class ObjectWrapper(_ObjectWrapperBase, _FunctionWrapperBase):
     __bound_function_wrapper__ = _NRBoundFunctionWrapper
 
     def __init__(self, wrapped, instance, wrapper):
-        super(ObjectWrapper, self).__init__(wrapped, instance, wrapper)
+        if isinstance(wrapped, classmethod):
+            binding = 'classmethod'
+        elif isinstance(wrapped, staticmethod):
+            binding = 'staticmethod'
+        else:
+            binding = 'function'
+
+        super(ObjectWrapper, self).__init__(wrapped, instance, wrapper,
+                binding=binding)
 
 # The wrap_callable() alias needs to be deprecated and usage of it removed.
 

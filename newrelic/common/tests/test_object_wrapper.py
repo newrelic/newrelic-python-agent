@@ -244,9 +244,14 @@ class TestCallableName(unittest.TestCase):
 
         self.assertTrue(details1 is details2)
 
+def object_wrapper(wrapper):
+    @functools.wraps(wrapper)
+    def _wrapper(wrapped):
+        return ObjectWrapper(wrapped, None, wrapper)
+    return _wrapper
 
 def delegating_wrapper(function):
-    @function_wrapper
+    @object_wrapper
     def _wrapper(wrapped, instance, args, kwargs):
         if instance is not None:
             function(instance, *args, **kwargs)

@@ -7,8 +7,6 @@ from ..common.object_wrapper import FunctionWrapper, wrap_object
 class ErrorTrace(object):
 
     def __init__(self, transaction, ignore_errors=None):
-        assert transaction is not None
-
         self._transaction = transaction
         self._ignore_errors = ignore_errors
 
@@ -16,6 +14,9 @@ class ErrorTrace(object):
         return self
 
     def __exit__(self, exc, value, tb):
+        if self._transaction is None:
+            return
+
         if exc is None or value is None or tb is None:
             return
 

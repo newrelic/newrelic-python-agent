@@ -248,7 +248,7 @@ class TestCallableName(unittest.TestCase):
 def delegating_wrapper(function):
     @function_wrapper
     def _wrapper(wrapped, instance, args, kwargs):
-        if instance:
+        if instance is not None:
             function(instance, *args, **kwargs)
         else:
             function(*args, **kwargs)
@@ -423,6 +423,37 @@ class TestInstanceChecks(unittest.TestCase):
         _instance = Class()
 
         result = Class.function(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_instance_with_nonzero(self):
+
+        _args = (1, 2)
+        _kwargs = { "one": 1, "two": 2 }
+
+        def _function(instance, *args, **kwargs):
+            self.assertEqual(instance, _instance)
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
+
+        class Class(object):
+
+            @delegating_wrapper(_function)
+            def function(_self, *args, **kwargs):
+                self.assertEqual(_self, _instance)
+                self.assertEqual(args, _args)
+                self.assertEqual(kwargs, _kwargs)
+                return args, kwargs
+
+            def __nonzero__(_self):
+                return False
+
+            def __bool__(_self):
+                return False
+
+        _instance = Class()
+
+        result = _instance.function(*_args, **_kwargs)
 
         self.assertEqual(result, (_args, _kwargs))
 

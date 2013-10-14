@@ -1,11 +1,10 @@
 import functools
-import inspect
 
-from newrelic.api.time_trace import TimeTrace
-from newrelic.api.transaction import current_transaction
-from newrelic.api.object_wrapper import (ObjectWrapper,
-        callable_name, wrap_object)
-from newrelic.core.function_node import FunctionNode
+from .time_trace import TimeTrace
+from .transaction import current_transaction
+from ..core.function_node import FunctionNode
+from ..common.object_wrapper import FunctionWrapper, wrap_object
+from ..common.object_names import callable_name
 
 class FunctionTrace(TimeTrace):
 
@@ -38,7 +37,7 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
             return wrapped(*args, **kwargs)
 
         if callable(name):
-            if instance and inspect.ismethod(wrapped):
+            if instance is not None:
                 _name = name(instance, *args, **kwargs)
             else:
                 _name = name(*args, **kwargs)
@@ -50,7 +49,7 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
             _name = name
 
         if callable(group):
-            if instance and inspect.ismethod(wrapped):
+            if instance is not None:
                 _group = group(instance, *args, **kwargs)
             else:
                 _group = group(*args, **kwargs)
@@ -59,7 +58,7 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
             _group = group
 
         if callable(label):
-            if instance and inspect.ismethod(wrapped):
+            if instance is not None:
                 _label = label(instance, *args, **kwargs)
             else:
                 _label = label(*args, **kwargs)
@@ -68,7 +67,7 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
             _label = label
 
         if callable(params):
-            if instance and inspect.ismethod(wrapped):
+            if instance is not None:
                 _params = params(instance, *args, **kwargs)
             else:
                 _params = params(*args, **kwargs)
@@ -92,9 +91,9 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
 
     if (callable(name) or callable(group) or callable(label) or
             callable(params)):
-        return ObjectWrapper(wrapped, None, dynamic_wrapper)
+        return FunctionWrapper(wrapped, dynamic_wrapper)
 
-    return ObjectWrapper(wrapped, None, literal_wrapper)
+    return FunctionWrapper(wrapped, literal_wrapper)
 
 def function_trace(name=None, group=None, label=None, params=None):
     return functools.partial(FunctionTraceWrapper, name=name,

@@ -1,6 +1,5 @@
 import sys
 import types
-import inspect
 import time
 
 import newrelic.core.memcache_node
@@ -59,7 +58,7 @@ class MemcacheTraceWrapper(object):
             return self._nr_next_object(*args, **kwargs)
 
         if callable(self._nr_command):
-            if self._nr_instance and inspect.ismethod(self._nr_next_object):
+            if self._nr_instance is not None:
                 command = self._nr_command(self._nr_instance, *args,
                                            **kwargs)
             else:

@@ -4,13 +4,13 @@ import newrelic.api.transaction
 import newrelic.api.function_trace
 import newrelic.api.in_function
 import newrelic.api.pre_function
-import newrelic.api.name_transaction
+import newrelic.api.transaction_name
 import newrelic.api.web_transaction
 
 def wrap_add_url_rule_input(app, rule, endpoint=None, view_func=None,
         **options):
     if view_func is not None:
-        view_func = newrelic.api.name_transaction.NameTransactionWrapper(view_func)
+        view_func = newrelic.api.transaction_name.TransactionNameWrapper(view_func)
         view_func = newrelic.api.function_trace.FunctionTraceWrapper(view_func)
     return ((app, rule, endpoint, view_func), options)
 

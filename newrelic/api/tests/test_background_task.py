@@ -60,7 +60,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         with transaction:
             group = "Function"
             path = "named_background_task"
-            transaction.name_transaction(path, group)
+            transaction.set_transaction_name(path, group)
             self.assertTrue(transaction.enabled)
             self.assertEqual(newrelic.api.transaction.current_transaction(),
                              transaction)

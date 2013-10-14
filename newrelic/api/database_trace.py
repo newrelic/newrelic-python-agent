@@ -1,6 +1,5 @@
 import sys
 import types
-import inspect
 import time
 import traceback
 
@@ -116,7 +115,7 @@ class DatabaseTraceWrapper(object):
             return self._nr_next_object(*args, **kwargs)
 
         if callable(self._nr_sql):
-            if self._nr_instance and inspect.ismethod(self._nr_next_object):
+            if self._nr_instance is not None:
                 sql = self._nr_sql(self._nr_instance, *args, **kwargs)
             else:
                 sql = self._nr_sql(*args, **kwargs)

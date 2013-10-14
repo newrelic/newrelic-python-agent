@@ -1,6 +1,4 @@
 import sys
-import types
-import inspect
 
 # These have been moved. They are retained here until all references to
 # them are moved at which point will mark as deprecated to ensure users

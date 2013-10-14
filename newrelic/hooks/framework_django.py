@@ -8,7 +8,7 @@ from newrelic.api.error_trace import wrap_error_trace
 from newrelic.api.function_trace import (FunctionTrace, wrap_function_trace)
 from newrelic.api.in_function import wrap_in_function
 from newrelic.api.object_wrapper import (ObjectWrapper, callable_name)
-from newrelic.api.name_transaction import wrap_name_transaction
+from newrelic.api.transaction_name import wrap_transaction_name
 from newrelic.api.post_function import wrap_post_function
 from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import WSGIApplicationWrapper
@@ -220,7 +220,7 @@ def wrap_leading_middleware(middleware):
 
                     after = (transaction.name, transaction.group)
                     if before == after:
-                        transaction.name_transaction(name, priority=2)
+                        transaction.set_transaction_name(name, priority=2)
 
         return ObjectWrapper(wrapped, None, wrapper)
 
@@ -285,7 +285,7 @@ def wrap_view_middleware(middleware):
 
                     after = (transaction.name, transaction.group)
                     if before == after:
-                        transaction.name_transaction(name, priority=2)
+                        transaction.set_transaction_name(name, priority=2)
 
         return ObjectWrapper(wrapped, None, wrapper)
 
@@ -420,7 +420,7 @@ def wrap_handle_uncaught_exception(middleware):
             return wrapped(*args, **kwargs)
 
         def _wrapped(request, resolver, exc_info):
-            transaction.name_transaction(name, priority=1)
+            transaction.set_transaction_name(name, priority=1)
             transaction.record_exception(*exc_info)
 
             try:
@@ -478,7 +478,7 @@ def wrap_view_handler(wrapped, priority=3):
         if transaction is None:
             return wrapped(*args, **kwargs)
 
-        transaction.name_transaction(name, priority=priority)
+        transaction.set_transaction_name(name, priority=priority)
 
         with FunctionTrace(transaction, name=name):
             try:
@@ -781,7 +781,7 @@ def instrument_django_contrib_staticfiles_views(module):
         module.serve = wrap_view_handler(module.serve, priority=3)
 
 def instrument_django_contrib_staticfiles_handlers(module):
-    wrap_name_transaction(module, 'StaticFilesHandler.serve')
+    wrap_transaction_name(module, 'StaticFilesHandler.serve')
 
 def instrument_django_views_debug(module):
 

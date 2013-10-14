@@ -244,5 +244,223 @@ class TestCallableName(unittest.TestCase):
 
         self.assertTrue(details1 is details2)
 
+def object_wrapper(wrapper):
+    @functools.wraps(wrapper)
+    def _wrapper(wrapped):
+        return ObjectWrapper(wrapped, None, wrapper)
+    return _wrapper
+
+def delegating_wrapper(function):
+    @object_wrapper
+    def _wrapper(wrapped, instance, args, kwargs):
+        if instance is not None:
+            function(instance, *args, **kwargs)
+        else:
+            function(*args, **kwargs)
+        return wrapped(*args, **kwargs)
+    return _wrapper
+
+class TestInstanceChecks(unittest.TestCase):
+
+    def test_function(self):
+
+        _args = (1, 2)
+        _kwargs = { "one": 1, "two": 2 }
+
+        def _function(*args, **kwargs):
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
+
+        @delegating_wrapper(_function)
+        def function(*args, **kwargs):
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
+            return args, kwargs
+
+        result = function(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_instancemethod_via_instance(self):
+
+        _args = (1, 2)
+        _kwargs = { "one": 1, "two": 2 }
+
+        def _function(instance, *args, **kwargs):
+            self.assertEqual(instance, _instance)
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
+
+        class Class(object):
+
+            @delegating_wrapper(_function)
+            def function(_self, *args, **kwargs):
+                self.assertEqual(_self, _instance)
+                self.assertEqual(args, _args)
+                self.assertEqual(kwargs, _kwargs)
+                return args, kwargs
+
+        _instance = Class()
+
+        result = _instance.function(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_instancemethod_via_class(self):
+
+        _args = (1, 2)
+        _kwargs = { "one": 1, "two": 2 }
+
+        def _function(instance, *args, **kwargs):
+            self.assertEqual(instance, _instance)
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
+
+        class Class(object):
+
+            @delegating_wrapper(_function)
+            def function(_self, *args, **kwargs):
+                self.assertEqual(_self, _instance)
+                self.assertEqual(args, _args)
+                self.assertEqual(kwargs, _kwargs)
+                return args, kwargs
+
+        _instance = Class()
+
+        result = Class.function(_instance, *_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_classmethod_instance(self):
+
+        _args = (1, 2)
+        _kwargs = { "one": 1, "two": 2 }
+
+        def _function(instance, *args, **kwargs):
+            self.assertEqual(instance, Class)
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
+
+        class Class(object):
+
+            @delegating_wrapper(_function)
+            @classmethod
+            def function(cls, *args, **kwargs):
+                self.assertEqual(cls, Class)
+                self.assertEqual(args, _args)
+                self.assertEqual(kwargs, _kwargs)
+                return args, kwargs
+
+        _instance = Class()
+
+        result = _instance.function(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_classmethod_via_class(self):
+
+        _args = (1, 2)
+        _kwargs = { "one": 1, "two": 2 }
+
+        def _function(instance, *args, **kwargs):
+            self.assertEqual(instance, Class)
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
+
+        class Class(object):
+
+            @delegating_wrapper(_function)
+            @classmethod
+            def function(cls, *args, **kwargs):
+                self.assertEqual(cls, Class)
+                self.assertEqual(args, _args)
+                self.assertEqual(kwargs, _kwargs)
+                return args, kwargs
+
+        _instance = Class()
+
+        result = Class.function(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_staticmethod_instance(self):
+
+        _args = (1, 2)
+        _kwargs = { "one": 1, "two": 2 }
+
+        def _function(*args, **kwargs):
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
+
+        class Class(object):
+
+            @delegating_wrapper(_function)
+            @staticmethod
+            def function(*args, **kwargs):
+                self.assertEqual(args, _args)
+                self.assertEqual(kwargs, _kwargs)
+                return args, kwargs
+
+        _instance = Class()
+
+        result = _instance.function(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_staticmethod_via_class(self):
+
+        _args = (1, 2)
+        _kwargs = { "one": 1, "two": 2 }
+
+        def _function(*args, **kwargs):
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
+
+        class Class(object):
+
+            @delegating_wrapper(_function)
+            @staticmethod
+            def function(*args, **kwargs):
+                self.assertEqual(args, _args)
+                self.assertEqual(kwargs, _kwargs)
+                return args, kwargs
+
+        _instance = Class()
+
+        result = Class.function(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
+    def test_instance_with_nonzero(self):
+
+        _args = (1, 2)
+        _kwargs = { "one": 1, "two": 2 }
+
+        def _function(instance, *args, **kwargs):
+            self.assertEqual(instance, _instance)
+            self.assertEqual(args, _args)
+            self.assertEqual(kwargs, _kwargs)
+
+        class Class(object):
+
+            @delegating_wrapper(_function)
+            def function(_self, *args, **kwargs):
+                self.assertEqual(_self, _instance)
+                self.assertEqual(args, _args)
+                self.assertEqual(kwargs, _kwargs)
+                return args, kwargs
+
+            def __nonzero__(_self):
+                return False
+
+            def __bool__(_self):
+                return False
+
+        _instance = Class()
+
+        result = _instance.function(*_args, **_kwargs)
+
+        self.assertEqual(result, (_args, _kwargs))
+
 if __name__ == '__main__':
     unittest.main()

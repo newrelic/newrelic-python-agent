@@ -1,18 +1,16 @@
 import functools
-import inspect
 import sys
 import os
 
-import newrelic.packages.six as six
+from ..packages import six
 
-from newrelic.api.transaction import current_transaction
-from newrelic.api.object_wrapper import (ObjectWrapper,
-        callable_name, wrap_object)
-from newrelic.api.function_trace import FunctionTrace
+from .transaction import current_transaction
+from .function_trace import FunctionTrace
+from ..common.object_wrapper import FunctionWrapper, wrap_object
+from ..common.object_names import callable_name
 
-import newrelic
-
-AGENT_PACKAGE_DIRECTORY = os.path.dirname(newrelic.__file__) + '/'
+from .. import __file__ as AGENT_PACKAGE_FILE
+AGENT_PACKAGE_DIRECTORY = os.path.dirname(AGENT_PACKAGE_FILE) + '/'
 
 class ProfileTrace(object):
 
@@ -129,7 +127,7 @@ def ProfileTraceWrapper(wrapped, name=None, group=None, label=None,
             return wrapped(*args, **kwargs)
 
         if callable(name):
-            if instance and inspect.ismethod(wrapped):
+            if instance is not None:
                 _name = name(instance, *args, **kwargs)
             else:
                 _name = name(*args, **kwargs)
@@ -141,7 +139,7 @@ def ProfileTraceWrapper(wrapped, name=None, group=None, label=None,
             _name = name
 
         if callable(group):
-            if instance and inspect.ismethod(wrapped):
+            if instance is not None:
                 _group = group(instance, *args, **kwargs)
             else:
                 _group = group(*args, **kwargs)
@@ -150,7 +148,7 @@ def ProfileTraceWrapper(wrapped, name=None, group=None, label=None,
             _group = group
 
         if callable(label):
-            if instance and inspect.ismethod(wrapped):
+            if instance is not None:
                 _label = label(instance, *args, **kwargs)
             else:
                 _label = label(*args, **kwargs)
@@ -159,7 +157,7 @@ def ProfileTraceWrapper(wrapped, name=None, group=None, label=None,
             _label = label
 
         if callable(params):
-            if instance and inspect.ismethod(wrapped):
+            if instance is not None:
                 _params = params(instance, *args, **kwargs)
             else:
                 _params = params(*args, **kwargs)
@@ -184,7 +182,7 @@ def ProfileTraceWrapper(wrapped, name=None, group=None, label=None,
             finally:
                 sys.setprofile(None)
 
-    return ObjectWrapper(wrapped, None, wrapper)
+    return FunctionWrapper(wrapped, wrapper)
 
 def profile_trace(name=None, group=None, label=None, params=None, depth=3):
     return functools.partial(ProfileTraceWrapper, name=name,

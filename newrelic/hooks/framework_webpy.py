@@ -7,18 +7,17 @@ import newrelic.api.function_trace
 import newrelic.api.in_function
 import newrelic.api.out_function
 import newrelic.api.pre_function
-import newrelic.api.name_transaction
 from newrelic.api.object_wrapper import callable_name
 from newrelic.api.web_transaction import WSGIApplicationWrapper
 
-def _name_transaction(*args, **kwargs):
+def transaction_name_delegate(*args, **kwargs):
     transaction = newrelic.api.transaction.current_transaction()
     if transaction:
         if isinstance(args[1], six.string_types):
             f = args[1]
         else:
             f = callable_name(args[1])
-        transaction.name_transaction(f)
+        transaction.set_transaction_name(f)
     return (args, kwargs)
 
 def wrap_handle_exception(self):
@@ -35,7 +34,7 @@ def instrument(module):
         newrelic.api.out_function.wrap_out_function(
                 module, 'application.wsgifunc', WSGIApplicationWrapper)
         newrelic.api.in_function.wrap_in_function(
-                module, 'application._delegate', _name_transaction)
+                module, 'application._delegate', transaction_name_delegate)
         newrelic.api.pre_function.wrap_pre_function(
                 module, 'application.internalerror', wrap_handle_exception)
 

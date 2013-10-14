@@ -78,7 +78,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         with transaction:
             group = "Function"
             path = "/named_web_transaction"
-            transaction.name_transaction(path, group)
+            transaction.set_transaction_name(path, group)
             self.assertTrue(transaction.enabled)
             self.assertEqual(newrelic.api.transaction.current_transaction(),
                     transaction)
@@ -91,7 +91,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 application, environ)
         with transaction:
             path = "background_web_transaction"
-            transaction.name_transaction(path)
+            transaction.set_transaction_name(path)
             self.assertFalse(transaction.background_task)
             transaction.background_task = True
             self.assertTrue(transaction.background_task)
@@ -107,7 +107,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 application, environ)
         with transaction:
             path = "environ_background_web_transaction_bool"
-            transaction.name_transaction(path)
+            transaction.set_transaction_name(path)
             self.assertTrue(transaction.background_task)
 
     def test_environ_background_web_transaction_string(self):
@@ -117,7 +117,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 application, environ)
         with transaction:
             path = "environ_background_web_transaction_string"
-            transaction.name_transaction(path)
+            transaction.set_transaction_name(path)
             self.assertTrue(transaction.background_task)
 
     def test_exit_on_delete(self):

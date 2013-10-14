@@ -1,10 +1,8 @@
 import warnings
 
-import newrelic.api.transaction_name
+from .transaction_name import (transaction_name as name_transaction,
+        TransactionNameWrapper as NameTransactionWrapper,
+        wrap_transaction_name as wrap_name_transaction)
 
 #warnings.warn('API change. Use transaction_name module instead of '
 #       'name_transaction module.', DeprecationWarning, stacklevel=2)
-
-NameTransactionWrapper = newrelic.api.transaction_name.TransactionNameWrapper
-name_transaction = newrelic.api.transaction_name.transaction_name
-wrap_name_transaction = newrelic.api.transaction_name.wrap_transaction_name

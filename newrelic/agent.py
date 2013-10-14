@@ -33,7 +33,7 @@ def application_settings(name=None):
 def set_transaction_name(name, group=None, priority=None):
     transaction = current_transaction()
     if transaction:
-        transaction.name_transaction(name, group, priority)
+        transaction.set_transaction_name(name, group, priority)
 
 # DEPRECATED - The name_transaction() call is deprecated and the
 # set_transaction_name() function should be used instead.
@@ -43,7 +43,7 @@ def name_transaction(name, group=None, priority=None):
     #        'name_transaction().', DeprecationWarning, stacklevel=2)
     transaction = current_transaction()
     if transaction:
-        transaction.name_transaction(name, group, priority)
+        transaction.set_transaction_name(name, group, priority)
 
 def end_of_transaction():
     transaction = current_transaction()

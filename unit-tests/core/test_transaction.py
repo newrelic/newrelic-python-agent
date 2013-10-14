@@ -22,7 +22,6 @@ import newrelic.api.memcache_trace
 import newrelic.api.solr_trace
 
 import newrelic.api.error_trace
-import newrelic.api.name_transaction
 
 import newrelic.agent
 
@@ -157,7 +156,7 @@ def handler(environ, start_response):
     if name is not None:
         transaction = newrelic.api.transaction.current_transaction()
         if transaction:
-            transaction.name_transaction(name, group)
+            transaction.set_transaction_name(name, group)
 
     time.sleep(0.5)
 
@@ -194,7 +193,7 @@ def task(name=None, group=None):
     if name is not None:
         transaction = newrelic.api.transaction.current_transaction()
         if transaction:
-            transaction.name_transaction(name, group)
+            transaction.set_transaction_name(name, group)
 
     my_function()
 

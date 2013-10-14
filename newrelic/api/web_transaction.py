@@ -206,13 +206,13 @@ class WebTransaction(newrelic.api.transaction.Transaction):
             else:
                 path = script_name + path_info
 
-            self.name_transaction(path, 'Uri', priority=1)
+            self.set_transaction_name(path, 'Uri', priority=1)
 
             if self._request_uri is None:
                 self._request_uri = path
         else:
             if self._request_uri is not None:
-                self.name_transaction(self._request_uri, 'Uri', priority=1)
+                self.set_transaction_name(self._request_uri, 'Uri', priority=1)
 
         # See if the WSGI environ dictionary includes the
         # special 'X-Request-Start' or 'X-Queue-Start' HTTP
@@ -740,11 +740,11 @@ class WSGIApplicationWrapper(object):
                     if naming_scheme in (None, 'framework'):
                         name = newrelic.api.object_wrapper.callable_name(
                                 self._nr_next_object)
-                        transaction.name_transaction(name, priority=1)
+                        transaction.set_transaction_name(name, priority=1)
 
             elif self._nr_name:
-                transaction.name_transaction(self._nr_name, self._nr_group,
-                      priority=1)
+                transaction.set_transaction_name(self._nr_name,
+                        self._nr_group, priority=1)
 
             return self._nr_next_object(environ, start_response)
 
@@ -811,15 +811,15 @@ class WSGIApplicationWrapper(object):
                 if naming_scheme in (None, 'framework'):
                     name = newrelic.api.object_wrapper.callable_name(
                             self._nr_next_object)
-                    transaction.name_transaction(name, priority=1)
+                    transaction.set_transaction_name(name, priority=1)
 
             elif naming_scheme in ('component', 'framework'):
                 name = newrelic.api.object_wrapper.callable_name(
                         self._nr_next_object)
-                transaction.name_transaction(name, priority=1)
+                transaction.set_transaction_name(name, priority=1)
 
         elif self._nr_name:
-            transaction.name_transaction(self._nr_name, self._nr_group,
+            transaction.set_transaction_name(self._nr_name, self._nr_group,
                   priority=1)
 
         def _start_response(status, response_headers, *args):

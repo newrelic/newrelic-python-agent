@@ -1,6 +1,6 @@
 import newrelic.api.web_transaction
 import newrelic.api.out_function
-import newrelic.api.name_transaction
+import newrelic.api.transaction_name
 import newrelic.api.error_trace
 import newrelic.api.function_trace
 
@@ -17,7 +17,7 @@ def instrument(module):
 
     def out_Bottle_match(result):
         callback, args = result
-        callback = newrelic.api.name_transaction.NameTransactionWrapper(
+        callback = newrelic.api.transaction_name.TransactionNameWrapper(
                 callback)
         callback = newrelic.api.error_trace.ErrorTraceWrapper(callback,
                 ignore_errors=['bottle:HTTPResponse', 'bottle:RouteReset',
@@ -25,7 +25,7 @@ def instrument(module):
         return callback, args
 
     def out_Route_make_callback(callback):
-        callback = newrelic.api.name_transaction.NameTransactionWrapper(
+        callback = newrelic.api.transaction_name.TransactionNameWrapper(
                 callback)
         callback = newrelic.api.error_trace.ErrorTraceWrapper(callback,
                 ignore_errors=['bottle:HTTPResponse', 'bottle:RouteReset',

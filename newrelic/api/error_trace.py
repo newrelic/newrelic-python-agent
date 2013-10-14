@@ -1,8 +1,8 @@
 import functools
 import sys
 
-from newrelic.api.transaction import current_transaction
-from newrelic.api.object_wrapper import (ObjectWrapper, wrap_object)
+from .transaction import current_transaction
+from ..common.object_wrapper import FunctionWrapper, wrap_object
 
 class ErrorTrace(object):
 
@@ -58,7 +58,7 @@ def ErrorTraceWrapper(wrapped, ignore_errors=None):
         with ErrorTrace(transaction, ignore_errors):
             return wrapped(*args, **kwargs)
 
-    return ObjectWrapper(wrapped, None, wrapper)
+    return FunctionWrapper(wrapped, wrapper)
 
 def error_trace(ignore_errors=None):
     return functools.partial(ErrorTraceWrapper, ignore_errors=ignore_errors)

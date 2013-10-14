@@ -2,16 +2,15 @@ import functools
 import sys
 import os
 
-import newrelic.packages.six as six
+from ..packages import six
 
-from newrelic.api.transaction import current_transaction
-from newrelic.api.object_wrapper import (ObjectWrapper,
-        callable_name, wrap_object)
-from newrelic.api.function_trace import FunctionTrace
+from .transaction import current_transaction
+from .function_trace import FunctionTrace
+from ..common.object_wrapper import FunctionWrapper, wrap_object
+from ..common.object_names import callable_name
 
-import newrelic
-
-AGENT_PACKAGE_DIRECTORY = os.path.dirname(newrelic.__file__) + '/'
+from .. import __file__ as AGENT_PACKAGE_FILE
+AGENT_PACKAGE_DIRECTORY = os.path.dirname(AGENT_PACKAGE_FILE) + '/'
 
 class ProfileTrace(object):
 
@@ -183,7 +182,7 @@ def ProfileTraceWrapper(wrapped, name=None, group=None, label=None,
             finally:
                 sys.setprofile(None)
 
-    return ObjectWrapper(wrapped, None, wrapper)
+    return FunctionWrapper(wrapped, wrapper)
 
 def profile_trace(name=None, group=None, label=None, params=None, depth=3):
     return functools.partial(ProfileTraceWrapper, name=name,

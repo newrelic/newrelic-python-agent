@@ -1,11 +1,12 @@
 import functools
 
 import newrelic.packages.simplejson as simplejson
-from newrelic.api.time_trace import TimeTrace
-from newrelic.api.transaction import current_transaction
-from newrelic.api.object_wrapper import (ObjectWrapper, wrap_object)
-from newrelic.api.web_transaction import obfuscate, deobfuscate
-from newrelic.core.external_node import ExternalNode
+
+from .time_trace import TimeTrace
+from .transaction import current_transaction
+from .web_transaction import obfuscate, deobfuscate
+from ..core.external_node import ExternalNode
+from ..common.object_wrapper import FunctionWrapper, wrap_object
 
 class ExternalTrace(TimeTrace):
 
@@ -129,9 +130,9 @@ def ExternalTraceWrapper(wrapped, library, url, method=None):
             return wrapped(*args, **kwargs)
 
     if callable(url) or callable(method):
-        return ObjectWrapper(wrapped, None, dynamic_wrapper)
+        return FunctionWrapper(wrapped, dynamic_wrapper)
 
-    return ObjectWrapper(wrapped, None, literal_wrapper)
+    return FunctionWrapper(wrapped, literal_wrapper)
 
 def external_trace(library, url, method=None):
     return functools.partial(ExternalTraceWrapper, library=library,

@@ -1,9 +1,10 @@
 import functools
-from newrelic.api.time_trace import TimeTrace
-from newrelic.api.transaction import current_transaction
-from newrelic.api.object_wrapper import (ObjectWrapper,
-        callable_name, wrap_object)
-from newrelic.core.function_node import FunctionNode
+
+from .time_trace import TimeTrace
+from .transaction import current_transaction
+from ..core.function_node import FunctionNode
+from ..common.object_wrapper import FunctionWrapper, wrap_object
+from ..common.object_names import callable_name
 
 class FunctionTrace(TimeTrace):
 
@@ -90,9 +91,9 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
 
     if (callable(name) or callable(group) or callable(label) or
             callable(params)):
-        return ObjectWrapper(wrapped, None, dynamic_wrapper)
+        return FunctionWrapper(wrapped, dynamic_wrapper)
 
-    return ObjectWrapper(wrapped, None, literal_wrapper)
+    return FunctionWrapper(wrapped, literal_wrapper)
 
 def function_trace(name=None, group=None, label=None, params=None):
     return functools.partial(FunctionTraceWrapper, name=name,

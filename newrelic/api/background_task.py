@@ -1,11 +1,11 @@
 import functools
 import sys
 
-from newrelic.api.application import (Application, application_instance)
-from newrelic.api.object_wrapper import (ObjectWrapper,
-        callable_name, wrap_object)
-from newrelic.api.transaction import (Transaction, current_transaction)
-from newrelic.api.web_transaction import WebTransaction
+from .application import Application, application_instance
+from .transaction import Transaction, current_transaction
+from .web_transaction import WebTransaction
+from ..common.object_wrapper import FunctionWrapper, wrap_object
+from ..common.object_names import callable_name
 
 class BackgroundTask(Transaction):
 
@@ -93,7 +93,7 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
             if success:
                 manager.__exit__(None, None, None)
 
-    return ObjectWrapper(wrapped, None, wrapper)
+    return FunctionWrapper(wrapped, wrapper)
 
 def background_task(application=None, name=None, group=None):
     return functools.partial(BackgroundTaskWrapper,

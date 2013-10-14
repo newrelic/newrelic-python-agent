@@ -1,8 +1,8 @@
 import functools
 
-from newrelic.api.transaction import current_transaction
-from newrelic.api.object_wrapper import (ObjectWrapper,
-        callable_name, wrap_object)
+from .transaction import current_transaction
+from ..common.object_wrapper import FunctionWrapper, wrap_object
+from ..common.object_names import callable_name
 
 def TransactionNameWrapper(wrapped, name=None, group=None, priority=None):
 
@@ -50,9 +50,9 @@ def TransactionNameWrapper(wrapped, name=None, group=None, priority=None):
         return wrapped(*args, **kwargs)
 
     if callable(name) or callable(group):
-        return ObjectWrapper(wrapped, None, dynamic_wrapper)
+        return FunctionWrapper(wrapped, dynamic_wrapper)
 
-    return ObjectWrapper(wrapped, None, literal_wrapper)
+    return FunctionWrapper(wrapped, literal_wrapper)
 
 def transaction_name(name=None, group=None, priority=None):
     return functools.partial(TransactionNameWrapper, name=name,

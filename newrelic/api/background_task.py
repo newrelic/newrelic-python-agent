@@ -27,7 +27,7 @@ class BackgroundTask(Transaction):
 
         # Name the web transaction from supplied values.
 
-        self.name_transaction(name, group, priority=1)
+        self.set_transaction_name(name, group, priority=1)
 
 def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
 
@@ -68,7 +68,7 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
             if type(transaction) == WebTransaction:
                 if not transaction.background_task:
                     transaction.background_task = True
-                    transaction.name_transaction(_name, _group)
+                    transaction.set_transaction_name(_name, _group)
 
             return wrapped(*args, **kwargs)
 

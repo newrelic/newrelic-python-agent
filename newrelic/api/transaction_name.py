@@ -33,7 +33,7 @@ def TransactionNameWrapper(wrapped, name=None, group=None, priority=None):
         else:
             _group = group
 
-        transaction.name_transaction(_name, _group, priority)
+        transaction.set_transaction_name(_name, _group, priority)
 
         return wrapped(*args, **kwargs)
 
@@ -45,7 +45,7 @@ def TransactionNameWrapper(wrapped, name=None, group=None, priority=None):
 
         _name = name or callable_name(wrapped)
 
-        transaction.name_transaction(_name, group, priority)
+        transaction.set_transaction_name(_name, group, priority)
 
         return wrapped(*args, **kwargs)
 

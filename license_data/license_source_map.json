@@ -1583,6 +1583,12 @@
             "New Relic"
         ]
     },
+    "newrelic/tests/test_agent_api.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/tests/test_cases.py": {
         "hash": "n/a",
         "libraries": [

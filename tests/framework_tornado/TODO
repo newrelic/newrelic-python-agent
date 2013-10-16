@@ -1,0 +1,10 @@
+TODO
+----
+
+* The tornado.wsgi.WSGIApplication() object should be automatically wrapped
+  as WSGI application entrypoint so it doesn't need to be manually wrapped
+  or always used with WSGI server/container that wraps it.
+
+* When using WSGIContainer() to wrap a WSGI application in a mixed async
+  application, the web transaction gets named after the URL. Most likely
+  this is because not yet using framework mode for name transaction.

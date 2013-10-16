@@ -1,7 +1,23 @@
 TODO
 ----
 
-* Tests for raising exceptions.
+* Need to add a framework definition for bottle so that name after WGSI
+  application entry point by default. At the moment a request against a
+  non existent URL gets passed through as raw URL and so could get metric
+  explosion.
 
-* Look at whether should be doing anything about not found and redirect
-  exceptions.
+* If custom error handlers are specified, such as for 404 in particular,
+  then web transaction should be named after that if appropriate.
+
+* Currently instrumentation ignores HTTPResponse and HTTPError with HTTPError
+  deriving from HTTPResponse. Needs to be more selective and not ignore all
+  HTTPError exceptions and restrict to typical subset such as not found
+  and redirects.
+
+* Need a test example for RouteReset exceptions.
+
+* Need tests for all the template engines supported.
+
+* Need to look at Werkzeug plugin and how that affects what exceptions need
+  to be ignored as it is possible to raise Werkzeug exceptions to do the
+  same thing as bottle exceptions.

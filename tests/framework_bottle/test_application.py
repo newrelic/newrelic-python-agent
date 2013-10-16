@@ -14,7 +14,7 @@ def error_page():
 def error404_page(error):
     return 'NOT FOUND'
 
-application = application = default_app()
+application = default_app()
 test_application = webtest.TestApp(application)
 
 def test_application_index():

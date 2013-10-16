@@ -4,13 +4,27 @@ import time
 
 import tornado.ioloop
 import tornado.web
+import tornado.wsgi
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
         self.write("MAIN RESPONSE")
 
+def wsgi_application(environ, start_response):
+    status = '200 OK'
+    output = b'WSGI RESPONSE'
+
+    response_headers = [('Content-type', 'text/plain'),
+                        ('Content-Length', str(len(output)))]
+    start_response(status, response_headers)
+
+    return [output]
+
+wsgi_application = tornado.wsgi.WSGIContainer(wsgi_application)
+
 application = tornado.web.Application([
     (r"/main", MainHandler),
+    (r"/wsgi", tornado.web.FallbackHandler, dict(fallback=wsgi_application)),
 ])
 
 server_thread = None
@@ -26,7 +40,7 @@ def setup_module(module):
 
     server_thread = threading.Thread(target=run)
     server_thread.start()
-    server_ready.wait()
+    server_ready.wait(10.0)
 
 def teardown_module(module):
     tornado.ioloop.IOLoop.instance().stop()
@@ -34,6 +48,10 @@ def teardown_module(module):
 
 test_application = webtest.TestApp('http://localhost:8888')
 
-def test_async_application_main():
+def test_mixed_application_main():
     response = test_application.get('/main')
     response.mustcontain('MAIN RESPONSE')
+
+def test_mixed_application_wsgi():
+    response = test_application.get('/wsgi')
+    response.mustcontain('WSGI RESPONSE')

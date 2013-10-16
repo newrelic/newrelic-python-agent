@@ -1,12 +1,11 @@
 import functools
-import inspect
 import sys
 
-from newrelic.api.application import (Application, application_instance)
-from newrelic.api.object_wrapper import (ObjectWrapper,
-        callable_name, wrap_object)
-from newrelic.api.transaction import (Transaction, current_transaction)
-from newrelic.api.web_transaction import WebTransaction
+from .application import Application, application_instance
+from .transaction import Transaction, current_transaction
+from .web_transaction import WebTransaction
+from ..common.object_wrapper import FunctionWrapper, wrap_object
+from ..common.object_names import callable_name
 
 class BackgroundTask(Transaction):
 
@@ -28,7 +27,7 @@ class BackgroundTask(Transaction):
 
         # Name the web transaction from supplied values.
 
-        self.name_transaction(name, group, priority=1)
+        self.set_transaction_name(name, group, priority=1)
 
 def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
 
@@ -36,7 +35,7 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
         transaction = current_transaction()
 
         if callable(name):
-            if instance and inspect.ismethod(wrapped):
+            if instance is not None:
                 _name = name(instance, *args, **kwargs)
             else:
                 _name = name(*args, **kwargs)
@@ -48,7 +47,7 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
             _name = name
 
         if callable(group):
-            if instance and inspect.ismethod(wrapped):
+            if instance is not None:
                 _group = group(instance, *args, **kwargs)
             else:
                 _group = group(*args, **kwargs)
@@ -69,7 +68,7 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
             if type(transaction) == WebTransaction:
                 if not transaction.background_task:
                     transaction.background_task = True
-                    transaction.name_transaction(_name, _group)
+                    transaction.set_transaction_name(_name, _group)
 
             return wrapped(*args, **kwargs)
 
@@ -94,7 +93,7 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
             if success:
                 manager.__exit__(None, None, None)
 
-    return ObjectWrapper(wrapped, None, wrapper)
+    return FunctionWrapper(wrapped, wrapper)
 
 def background_task(application=None, name=None, group=None):
     return functools.partial(BackgroundTaskWrapper,

@@ -1,9 +1,8 @@
 import functools
-import inspect
 
-from newrelic.api.transaction import current_transaction
-from newrelic.api.object_wrapper import (ObjectWrapper,
-        callable_name, wrap_object)
+from .transaction import current_transaction
+from ..common.object_wrapper import FunctionWrapper, wrap_object
+from ..common.object_names import callable_name
 
 def TransactionNameWrapper(wrapped, name=None, group=None, priority=None):
 
@@ -14,7 +13,7 @@ def TransactionNameWrapper(wrapped, name=None, group=None, priority=None):
             return wrapped(*args, **kwargs)
 
         if callable(name):
-            if instance and inspect.ismethod(wrapped):
+            if instance is not None:
                 _name = name(instance, *args, **kwargs)
             else:
                 _name = name(*args, **kwargs)
@@ -26,7 +25,7 @@ def TransactionNameWrapper(wrapped, name=None, group=None, priority=None):
             _name = name
 
         if callable(group):
-            if instance and inspect.ismethod(wrapped):
+            if instance is not None:
                 _group = group(instance, *args, **kwargs)
             else:
                 _group = group(*args, **kwargs)
@@ -34,7 +33,7 @@ def TransactionNameWrapper(wrapped, name=None, group=None, priority=None):
         else:
             _group = group
 
-        transaction.name_transaction(_name, _group, priority)
+        transaction.set_transaction_name(_name, _group, priority)
 
         return wrapped(*args, **kwargs)
 
@@ -46,14 +45,14 @@ def TransactionNameWrapper(wrapped, name=None, group=None, priority=None):
 
         _name = name or callable_name(wrapped)
 
-        transaction.name_transaction(_name, group, priority)
+        transaction.set_transaction_name(_name, group, priority)
 
         return wrapped(*args, **kwargs)
 
     if callable(name) or callable(group):
-        return ObjectWrapper(wrapped, None, dynamic_wrapper)
+        return FunctionWrapper(wrapped, dynamic_wrapper)
 
-    return ObjectWrapper(wrapped, None, literal_wrapper)
+    return FunctionWrapper(wrapped, literal_wrapper)
 
 def transaction_name(name=None, group=None, priority=None):
     return functools.partial(TransactionNameWrapper, name=name,

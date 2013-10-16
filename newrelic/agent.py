@@ -6,18 +6,9 @@ import newrelic.core.agent
 import newrelic.core.config
 
 import newrelic.api.web_transaction
-import newrelic.api.background_task
 
 import newrelic.api.transaction
 import newrelic.api.application
-
-import newrelic.api.transaction_name
-
-import newrelic.api.function_trace
-import newrelic.api.generator_trace
-import newrelic.api.profile_trace
-import newrelic.api.external_trace
-import newrelic.api.error_trace
 
 import newrelic.config
 
@@ -42,7 +33,7 @@ def application_settings(name=None):
 def set_transaction_name(name, group=None, priority=None):
     transaction = current_transaction()
     if transaction:
-        transaction.name_transaction(name, group, priority)
+        transaction.set_transaction_name(name, group, priority)
 
 # DEPRECATED - The name_transaction() call is deprecated and the
 # set_transaction_name() function should be used instead.
@@ -52,7 +43,7 @@ def name_transaction(name, group=None, priority=None):
     #        'name_transaction().', DeprecationWarning, stacklevel=2)
     transaction = current_transaction()
     if transaction:
-        transaction.name_transaction(name, group, priority)
+        transaction.set_transaction_name(name, group, priority)
 
 def end_of_transaction():
     transaction = current_transaction()
@@ -150,43 +141,32 @@ WebTransaction = newrelic.api.web_transaction.WebTransaction
 WSGIApplicationWrapper = newrelic.api.web_transaction.WSGIApplicationWrapper
 wrap_wsgi_application = newrelic.api.web_transaction.wrap_wsgi_application
 
-background_task = newrelic.api.background_task.background_task
-BackgroundTask = newrelic.api.background_task.BackgroundTask
-BackgroundTaskWrapper = newrelic.api.background_task.BackgroundTaskWrapper
-wrap_background_task = newrelic.api.background_task.wrap_background_task
+from .api.background_task import (background_task, BackgroundTask,
+        BackgroundTaskWrapper, wrap_background_task)
 
-function_trace = newrelic.api.function_trace.function_trace
-FunctionTrace = newrelic.api.function_trace.FunctionTrace
-FunctionTraceWrapper = newrelic.api.function_trace.FunctionTraceWrapper
-wrap_function_trace = newrelic.api.function_trace.wrap_function_trace
+from .api.function_trace import (function_trace, FunctionTrace,
+        FunctionTraceWrapper, wrap_function_trace)
 
 # EXPERIMENTAL - Generator traces are currently experimental and may not
 # exist in this form in future versions of the agent.
 
-generator_trace = newrelic.api.generator_trace.generator_trace
-GeneratorTraceWrapper = newrelic.api.generator_trace.GeneratorTraceWrapper
-wrap_generator_trace = newrelic.api.generator_trace.wrap_generator_trace
+from .api.generator_trace import (generator_trace, GeneratorTraceWrapper,
+        wrap_generator_trace)
 
 # EXPERIMENTAL - Profile traces are currently experimental and may not
 # exist in this form in future versions of the agent.
 
-profile_trace = newrelic.api.profile_trace.profile_trace
-ProfileTraceWrapper = newrelic.api.profile_trace.ProfileTraceWrapper
-wrap_profile_trace = newrelic.api.profile_trace.wrap_profile_trace
+from .api.profile_trace import (profile_trace, ProfileTraceWrapper,
+        wrap_profile_trace)
 
-external_trace = newrelic.api.external_trace.external_trace
-ExternalTrace = newrelic.api.external_trace.ExternalTrace
-ExternalTraceWrapper = newrelic.api.external_trace.ExternalTraceWrapper
-wrap_external_trace = newrelic.api.external_trace.wrap_external_trace
+from .api.external_trace import (external_trace, ExternalTrace,
+        ExternalTraceWrapper, wrap_external_trace)
 
-error_trace = newrelic.api.error_trace.error_trace
-ErrorTrace = newrelic.api.error_trace.ErrorTrace
-ErrorTraceWrapper = newrelic.api.error_trace.ErrorTraceWrapper
-wrap_error_trace = newrelic.api.error_trace.wrap_error_trace
+from .api.error_trace import (error_trace, ErrorTrace, ErrorTraceWrapper,
+        wrap_error_trace)
 
-transaction_name = newrelic.api.transaction_name.transaction_name
-TransactionNameWrapper = newrelic.api.transaction_name.TransactionNameWrapper
-wrap_transaction_name = newrelic.api.transaction_name.wrap_transaction_name
+from .api.transaction_name import (transaction_name,
+        TransactionNameWrapper, wrap_transaction_name)
 
 from .common.object_names import callable_name
 

@@ -26,7 +26,7 @@ class MethodWrapper(object):
     def __call__(self, *args, **kwargs):
         transaction = newrelic.api.transaction.current_transaction()
         if transaction:
-            transaction.name_transaction(self._nr_name,
+            transaction.set_transaction_name(self._nr_name,
                     priority=self._nr_priority)
             with newrelic.api.function_trace.FunctionTrace(
                     transaction, name=self._nr_name):

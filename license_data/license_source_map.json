@@ -1482,13 +1482,13 @@
         ]
     },
     "newrelic/packages/wrapt/__init__.py": {
-        "hash": "4a4d2b082f36301a57dbeb6aa32b14d6",
+        "hash": "be785d58d3ca9bab1b4277495864876f",
         "libraries": [
             "wrapt"
         ]
     },
     "newrelic/packages/wrapt/_wrappers.c": {
-        "hash": "fe6fc813b64d8858be5d25a41b963591",
+        "hash": "9a6ed674078189e391b1c860a1cafbbb",
         "libraries": [
             "wrapt"
         ]
@@ -1578,6 +1578,12 @@
         ]
     },
     "newrelic/tests/__init__.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/tests/test_agent_api.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

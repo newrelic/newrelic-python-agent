@@ -4,7 +4,7 @@ import os
 import threading
 import time
 
-from newrelic.api.object_wrapper import (ObjectWrapper, wrap_object)
+from ..common.object_wrapper import FunctionWrapper, wrap_object
 
 class FunctionProfile(object):
 
@@ -60,7 +60,7 @@ class FunctionProfileSession(object):
 
 def FunctionProfileWrapper(wrapped, filename, delay=1.0, checkpoint=30):
     wrapper = FunctionProfileSession(filename, delay, checkpoint)
-    return ObjectWrapper(wrapped, None, wrapper)
+    return FunctionWrapper(wrapped, wrapper)
 
 def function_profile(filename, delay=1.0, checkpoint=30):
     return functools.partial(FunctionProfileWrapper, filename=filename,

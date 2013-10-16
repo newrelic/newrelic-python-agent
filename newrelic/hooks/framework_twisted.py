@@ -307,7 +307,7 @@ class ResourceRenderWrapper(object):
         name = "%s.render_%s" % (
                 newrelic.api.object_wrapper.callable_name(
                 instance), request.method)
-        transaction.name_transaction(name, priority=1)
+        transaction.set_transaction_name(name, priority=1)
 
         with newrelic.api.function_trace.FunctionTrace(transaction, name):
             return self._nr_next_object(*args)

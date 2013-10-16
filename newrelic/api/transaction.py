@@ -603,7 +603,7 @@ class Transaction(object):
             self.apdex = (self._settings.web_transactions_apdex.get(
                 self.path) or self._settings.apdex_t)
 
-    def name_transaction(self, name, group=None, priority=None):
+    def set_transaction_name(self, name, group=None, priority=None):
 
         # Always perform this operation even if the transaction
         # is not active at the time as will be called from
@@ -639,9 +639,12 @@ class Transaction(object):
         self._group = group
         self._name = name
 
-    # XXX Preparing for transition to new name.
+    def name_transaction(self, name, group=None, priority=None):
+        #warnings.warn('Internal API change. Use set_transaction_name() '
+        #        'instead of name_transaction().', DeprecationWarning,
+        #        stacklevel=2)
 
-    set_transaction_name = name_transaction
+        return self.set_transaction_name(name, group, priority)
 
     def record_exception(self, exc=None, value=None, tb=None,
             params={}, ignore_errors=[]):

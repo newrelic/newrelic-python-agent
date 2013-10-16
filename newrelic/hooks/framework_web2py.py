@@ -6,7 +6,7 @@ import newrelic.api.import_hook
 import newrelic.api.web_transaction
 import newrelic.api.external_trace
 import newrelic.api.function_trace
-import newrelic.api.name_transaction
+import newrelic.api.transaction_name
 import newrelic.api.object_wrapper
 import newrelic.api.pre_function
 
@@ -18,12 +18,12 @@ def instrument_gluon_compileapp(module):
     # transaction is combination of the application name
     # and view path.
 
-    def name_transaction_run_models_in(environment):
+    def transaction_name_run_models_in(environment):
         return '%s::%s' % (environment['request'].application,
                 environment['response'].view)
 
-    newrelic.api.name_transaction.wrap_name_transaction(module,
-            'run_models_in', name=name_transaction_run_models_in,
+    newrelic.api.transaction_name.wrap_transaction_name(module,
+            'run_models_in', name=transaction_name_run_models_in,
             group='Web2Py')
 
     # Wrap functions which coordinate the execution of
@@ -185,7 +185,7 @@ def instrument_gluon_http(module):
     # fact that arbitrary rewrite rules can be used may
     # mean that isn't always the case.
 
-    def name_transaction_name_not_found(response, *args, **kwargs):
+    def transaction_name_name_not_found(response, *args, **kwargs):
         txn = newrelic.api.transaction.current_transaction()
         if not txn:
             return
@@ -202,11 +202,11 @@ def instrument_gluon_http(module):
             return
 
         if response.status == 400:
-            txn.name_transaction('400', 'Uri')
+            txn.set_transaction_name('400', 'Uri')
             return
 
         if response.status == 404:
-            txn.name_transaction('404', 'Uri')
+            txn.set_transaction_name('404', 'Uri')
             return
 
         if 'static_file' not in frame.f_locals:
@@ -221,19 +221,19 @@ def instrument_gluon_http(module):
                     parts = os.path.split(path_info)
                     if parts[1] == '':
                         if parts[0] == '/':
-                            txn.name_transaction('*', 'Web2Py')
+                            txn.set_transaction_name('*', 'Web2Py')
                         else:
                             name = '%s/*' % parts[0].lstrip('/')
-                            txn.name_transaction(name, 'Web2Py')
+                            txn.set_transaction_name(name, 'Web2Py')
                     else:
                         extension = os.path.splitext(parts[1])[-1]
                         name = '%s/*%s' % (parts[0].lstrip('/'), extension)
-                        txn.name_transaction(name, 'Web2Py')
+                        txn.set_transaction_name(name, 'Web2Py')
                 else:
-                    txn.name_transaction('*', 'Web2Py')
+                    txn.set_transaction_name('*', 'Web2Py')
 
             else:
-                txn.name_transaction('*', 'Web2Py')
+                txn.set_transaction_name('*', 'Web2Py')
 
     newrelic.api.pre_function.wrap_pre_function(
-            module, 'HTTP.to', name_transaction_name_not_found)
+            module, 'HTTP.to', transaction_name_name_not_found)

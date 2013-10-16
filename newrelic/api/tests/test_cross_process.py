@@ -62,7 +62,7 @@ class TestCase(unittest.TestCase):
 
         self.assertTrue(transaction.enabled)
 
-        transaction.name_transaction(transaction_name)
+        transaction.set_transaction_name(transaction_name)
 
         transaction.queue_start = queue_start
         transaction.start_time = start_time

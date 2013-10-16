@@ -2,7 +2,7 @@ import sys
 import types
 
 import newrelic.api.transaction
-import newrelic.api.name_transaction
+import newrelic.api.transaction_name
 import newrelic.api.function_trace
 import newrelic.api.error_trace
 import newrelic.api.object_wrapper
@@ -50,7 +50,7 @@ def instrument(module):
         newrelic.api.error_trace.wrap_error_trace(module, 'PylonsApp.__call__')
 
     elif module.__name__ == 'pylons.controllers.core':
-        newrelic.api.name_transaction.wrap_name_transaction(
+        newrelic.api.transaction_name.wrap_transaction_name(
                 module, 'WSGIController.__call__', name_controller)
         newrelic.api.function_trace.wrap_function_trace(
                 module, 'WSGIController.__call__')

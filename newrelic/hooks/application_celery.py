@@ -7,7 +7,6 @@ about this below.
 """
 
 import functools
-import inspect
 
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTask
@@ -29,7 +28,7 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
             #else:
             #    _name = name(*args, **kwargs)
 
-            if instance:
+            if instance is not None:
                 _name = name(instance, *args, **kwargs)
             else:
                 _name = name(*args, **kwargs)

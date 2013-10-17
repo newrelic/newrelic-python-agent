@@ -305,6 +305,12 @@
             "time.monotonic"
         ]
     },
+    "newrelic/common/log_file.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/common/object_names.py": {
         "hash": "n/a",
         "libraries": [
@@ -480,12 +486,6 @@
         ]
     },
     "newrelic/core/internal_metrics.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/core/log_file.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

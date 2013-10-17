@@ -13,12 +13,12 @@ import warnings
 import traceback
 
 import newrelic
-import newrelic.core.log_file
 import newrelic.core.config
 import newrelic.core.application
 
 import newrelic.packages.six as six
 
+from ..common.log_file import initialize_logging
 from ..samplers.cpu_usage import cpu_usage_data_source
 from ..samplers.memory_usage import memory_usage_data_source
 
@@ -131,7 +131,7 @@ class Agent(object):
         # such the logging system was not initialised already,
         # we trigger initialisation again here.
 
-        newrelic.core.log_file.initialize()
+        initialize_logging(settings.log_file, settings.log_level)
 
         _logger.info('New Relic Python Agent (%s)' % newrelic.version)
 

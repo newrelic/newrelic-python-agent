@@ -101,6 +101,50 @@ class _wsgiapp_class_decorator:
         assert transaction != None
 _wsgiapp_class_decorator = newrelic.api.web_transaction.wsgi_application(_application.name)(_wsgiapp_class_decorator)
 
+class Generator2:
+    def __init__(self, iterable, callback, environ):
+        self.__iterable = iterable
+        self.__callback = callback
+        self.__environ = environ
+    def __iter__(self):
+        for item in self.__iterable:
+            yield item
+    def close(self):
+        try:
+            if hasattr(self.__iterable, 'close'):
+                self.__iterable.close()
+        finally:
+            self.__callback(self.__environ)
+
+class ExecuteOnCompletion2:
+    def __init__(self, application, callback):
+        self.__application = application
+        self.__callback = callback
+    def __call__(self, environ, start_response):
+        try:
+            result = self.__application(environ, start_response)
+        except:
+            self.__callback(environ)
+            raise
+        return Generator2(result, self.__callback, environ)
+
+@newrelic.api.web_transaction.wsgi_application()
+def _wsgi_app_yield_exception(environ, start_response):
+    def application(environ, start_response):
+        start_response('200 OK', [])
+        yield "1\n"
+        yield "2\n"
+        raise RuntimeError('error between yields')
+        yield "3\n"
+        yield "4\n"
+        yield "5\n"
+
+    def callback(environ):
+        raise NotImplementedError('error in close')
+
+    _application = ExecuteOnCompletion2(application, callback)
+    return _application(environ, start_response)
+
 class TestCase(newrelic.tests.test_cases.TestCase):
 
     requires_collector = True
@@ -202,6 +246,19 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         environ = { "REQUEST_URI": "/wsgiapp_function_realines_exception",
                     "wsgi.input": Input() }
         _wsgiapp_function(environ, None).close()
+
+    def test_wsgiapp_yield_exception(self):
+        environ = { "REQUEST_URI": "/wsgiapp_yield_exception" }
+        def start_response(*args): pass
+        iterable = _wsgi_app_yield_exception(environ, start_response)
+        try:
+            try:
+                for item in iterable:
+                    pass
+            finally:
+                iterable.close()
+        except Exception:
+            pass
 
 if __name__ == '__main__':
     unittest.main()

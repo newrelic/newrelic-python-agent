@@ -598,15 +598,19 @@ class _WSGIApplicationIterable(object):
     def __iter__(self):
         if not self.transaction._sent_start:
             self.transaction._sent_start = time.time()
-        with newrelic.api.function_trace.FunctionTrace(
-                self.transaction, name='Response', group='Python/WSGI'):
-            for item in self.generator:
-                yield item
-                try:
-                    self.transaction._calls_yield += 1
-                    self.transaction._bytes_sent += len(item)
-                except Exception:
-                    pass
+        try:
+            with newrelic.api.function_trace.FunctionTrace(
+                    self.transaction, name='Response', group='Python/WSGI'):
+                for item in self.generator:
+                    yield item
+                    try:
+                        self.transaction._calls_yield += 1
+                        self.transaction._bytes_sent += len(item)
+                    except Exception:
+                        pass
+        except:  # Catch all
+            self.transaction.record_exception(*sys.exc_info())
+            raise
 
     def close(self):
         try:

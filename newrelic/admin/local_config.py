@@ -15,7 +15,6 @@ def local_config(args):
         sys.exit(1)
 
     from newrelic.agent import global_settings, initialize
-    from newrelic.core.config import flatten_settings
 
     if len(args) >= 2:
         log_file = args[1]
@@ -37,9 +36,5 @@ def local_config(args):
     initialize(config_file, ignore_errors=False, log_file=log_file,
             log_level=log_level)
 
-    config = flatten_settings(global_settings())
-
-    keys = sorted(config.keys())
-
-    for key in keys:
-        print('%s = %r' % (key, config[key]))
+    for key, value in sorted(global_settings()):
+        print('%s = %r' % (key, value))

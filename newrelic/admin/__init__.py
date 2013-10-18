@@ -3,16 +3,30 @@ from __future__ import print_function
 import sys
 import logging
 
-from collections import namedtuple
+_builtin_plugins = [
+    'data_source',
+    'debug_console',
+    'generate_config',
+    'license_key',
+    'local_config',
+    'network_config',
+    'rum_footer',
+    'rum_header',
+    'run_program',
+    'run_python',
+    'server_config',
+    'validate_config'
+]
 
 _commands = {}
 
-_Command = namedtuple('_Command', 'callback name options description hidden')
-
 def command(name, options='', description='', hidden=False):
     def wrapper(callback):
-        details = _Command(callback, name, options, description, hidden)
-        _commands[name] = details
+        callback.name = name
+        callback.options = options
+        callback.description = description
+        callback.hidden = hidden
+        _commands[name] = callback
         return callback
     return wrapper
 
@@ -40,7 +54,7 @@ def help(args):
         name = args[0]
 
         if name not in _commands:
-            print("Unknown command '%s'." % name, end='')
+            print("Unknown command '%s'." % name, end=' ')
             print("Type 'newrelic-admin help' for usage.")
 
         else:
@@ -52,21 +66,20 @@ def help(args):
                 print(details.description)
 
 def load_internal_plugins():
-    from . import data_source
-    from . import debug_console
-    from . import generate_config
-    from . import license_key
-    from . import local_config
-    from . import network_config
-    from . import rum_footer
-    from . import rum_header
-    from . import run_program
-    from . import run_python
-    from . import server_config
-    from . import validate_config
+    for name in _builtin_plugins:
+        module_name = '%s.%s' % (__name__, name)
+        __import__(module_name)
 
 def load_external_plugins():
-    pass
+    try:
+        import pkg_resources
+    except ImportError:
+        return
+
+    group = 'newrelic.admin'
+
+    for entrypoint in pkg_resources.iter_entry_points(group=group):
+        __import__(entrypoint.module_name)
 
 def main():
     try:
@@ -75,7 +88,7 @@ def main():
         else:
             command = 'help'
 
-        callback = _commands[command].callback
+        callback = _commands[command]
 
     except Exception:
         print("Unknown command '%s'." % command, end='')

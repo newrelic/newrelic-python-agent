@@ -4,7 +4,7 @@ from newrelic.admin import command, usage
 
 @command('rum-header', '',
 """Prints out the RUM header.""", hidden=True)
-def rum_footer(args):
+def rum_header(args):
     import sys
 
     if len(args) != 0:

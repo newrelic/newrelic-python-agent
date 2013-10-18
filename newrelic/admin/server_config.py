@@ -18,7 +18,6 @@ def server_config(args):
         sys.exit(1)
 
     from newrelic.agent import initialize, register_application
-    from newrelic.core.config import flatten_settings
 
     if len(args) >= 2:
         log_file = args[1]
@@ -58,9 +57,5 @@ def server_config(args):
 
     _logger.debug('Registration took %s seconds.', _duration)
 
-    config = flatten_settings(_application.settings)
-
-    keys = sorted(config.keys())
-
-    for key in keys:
-        print('%s = %r' % (key, config[key]))
+    for key, value in sorted(_application.settings):
+        print('%s = %r' % (key, value))

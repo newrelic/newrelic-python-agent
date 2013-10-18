@@ -23,6 +23,8 @@ import copy
 class Settings(object):
     def __repr__(self):
         return repr(self.__dict__)
+    def __iter__(self):
+        return iter(flatten_settings(self).items())
 
 class ThreadProfilerSettings(Settings): pass
 class TransactionTracerSettings(Settings): pass

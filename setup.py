@@ -67,6 +67,7 @@ class optional_build_ext(build_ext):
 
 packages = [
   "newrelic",
+  "newrelic.admin",
   "newrelic.api",
   "newrelic.bootstrap",
   "newrelic.common",

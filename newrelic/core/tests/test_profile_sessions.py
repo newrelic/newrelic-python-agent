@@ -3,8 +3,6 @@ import zlib
 import base64
 import time
 
-import newrelic.packages.simplejson as simplejson
-
 from newrelic.core.profile_sessions import (
         ProfileSessionManager, ProfileSession, CallTree,
         SessionState, SessionType, profile_session_manager)

@@ -48,10 +48,10 @@ def teardown_module(module):
 
 test_application = webtest.TestApp('http://localhost:8888')
 
-def test_mixed_application_main():
+def test_async_application_main():
     response = test_application.get('/main')
     response.mustcontain('MAIN RESPONSE')
 
-def test_mixed_application_wsgi():
+def test_async_application_wsgi():
     response = test_application.get('/wsgi')
     response.mustcontain('WSGI RESPONSE')

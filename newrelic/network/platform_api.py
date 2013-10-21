@@ -4,11 +4,11 @@ import zlib
 import sys
 import socket
 import os
+import json
 
 from ..packages import six
 
 from ..packages import requests
-from ..packages import simplejson as json
 
 from .. import version as agent_version
 
@@ -68,23 +68,16 @@ class PlatformInterface(object):
         headers['X-License-Key'] = license_key
 
         # At this time we use JSON content encoding for the data being
-        # sent. Ensure that normal byte strings are interpreted as Latin-1
-        # and that the final result is ASCII so that don't need to worry
-        # about converting back to bytes again. We set the default fallback
-        # encoder to treat any iterable as a list. Unfortunately the JSON
-        # library can't use it as an iterable and so means that generator
-        # will be consumed up front and everything collected in memory as a
-        # list before then converting to JSON.
-        #
-        # If an error does occur when encoding the JSON, then it isn't
-        # likely going to work later on in a subsequent request with same
-        # data, even if aggregated with other data, so we need to log the
-        # details and then flag that data should be thrown away. Don't mind
-        # being noisy in the the log in this situation as it would indicate
-        # a problem with the implementation of the agent.
+        # sent. If an error does occur when encoding the JSON, then it
+        # isn't likely going to work later on in a subsequent request
+        # with same data, even if aggregated with other data, so we need
+        # to log the details and then flag that data should be thrown
+        # away. Don't mind being noisy in the the log in this situation
+        # as it would indicate a problem with the implementation of the
+        # agent.
 
         try:
-            data = json.dumps(payload, ensure_ascii=True, encoding='Latin-1')
+            data = json.dumps(payload)
 
         except Exception as exc:
             _logger.error('Error encoding data for JSON payload '
@@ -164,7 +157,7 @@ class PlatformInterface(object):
             _logger.debug('Received a non 200 HTTP response from the data '
                     'collector where url=%r, license_key=%r, headers=%r, '
                     'status_code=%r and content=%r.', url, license_key,
-                    headers, r.status_code, r.content)
+                    headers, r.status_code, content)
 
         if r.status_code == 400:
             if headers['Content-Encoding'] == 'deflate':
@@ -174,7 +167,7 @@ class PlatformInterface(object):
                     'request has been submitted for url %r, headers of %r '
                     'and payload of %r with response of %r. Please report '
                     'this problem to New Relic support.', url, headers, data,
-                    r.content)
+                    content)
 
             raise DiscardDataForRequest()
 
@@ -230,21 +223,23 @@ class PlatformInterface(object):
         duration = time.time() - start
 
         _logger.debug('Valid response from data collector after %.2f '
-                'seconds with content=%r.', duration, r.content)
+                'seconds with content=%r.', duration, content)
 
         # If we got this far we should have a legitimate response from the
         # data collector. The response is JSON so need to decode it.
-        # Everything will come back as Unicode. Make sure all strings are
-        # decoded as 'UTF-8'.
+        # Everything will come back as Unicode.
 
         try:
-            result = json.loads(r.content, encoding='UTF-8')
+            if six.PY3:
+                content = content.decode('UTF-8')
+
+            result = json.loads(content)
 
         except Exception as exc:
             _logger.error('Error decoding data for JSON payload '
                     'with payload of %r. Exception which occurred was %r. '
                     'Please report this problem to New Relic support.',
-                    r.content, exc)
+                    content, exc)
 
             raise DiscardDataForRequest(str(exc))
 

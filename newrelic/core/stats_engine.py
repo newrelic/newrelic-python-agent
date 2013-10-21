@@ -11,9 +11,9 @@ import logging
 import operator
 import random
 import zlib
+import json
 
 import newrelic.packages.six as six
-import newrelic.packages.simplejson as simplejson
 
 from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
         internal_metric)
@@ -774,12 +774,13 @@ class StatsEngine(object):
             if explain_plan:
                 params['explain_plan'] = explain_plan
 
-            json_data = simplejson.dumps(params, ensure_ascii=True,
-                    encoding='Latin-1', namedtuple_as_object=False,
-                    default=lambda o: list(iter(o)))
+            json_data = json.dumps(params, default=lambda o: list(iter(o)))
 
             params_data = base64.standard_b64encode(
                     zlib.compress(six.b(json_data)))
+
+            if six.PY3:
+                params_data = params_data.decode('Latin-1')
 
             data = [node.slow_sql_node.path,
                     node.slow_sql_node.request_uri,
@@ -840,9 +841,7 @@ class StatsEngine(object):
             with InternalTrace('Supportability/StatsEngine/JSON/Encode/'
                                'transaction_sample_data'):
 
-                json_data = simplejson.dumps(data, ensure_ascii=True,
-                        encoding='Latin-1', namedtuple_as_object=False,
-                        default=lambda o: list(iter(o)))
+                json_data = json.dumps(data, default=lambda o: list(iter(o)))
 
             internal_metric('Supportability/StatsEngine/ZLIB/Bytes/'
                             'transaction_sample_data', len(json_data))
@@ -854,6 +853,9 @@ class StatsEngine(object):
             with InternalTrace('Supportability/StatsEngine/BASE64/Encode/'
                                'transaction_sample_data'):
                 pack_data = base64.standard_b64encode(zlib_data)
+
+                if six.PY3:
+                    pack_data = pack_data.decode('Latin-1')
 
             root = transaction_trace.root
             xray_id = getattr(trace, 'xray_id', None)
@@ -910,9 +912,7 @@ class StatsEngine(object):
         with InternalTrace('Supportability/StatsEngine/JSON/Encode/'
                 'transaction_sample_data'):
 
-            json_data = simplejson.dumps(data, ensure_ascii=True,
-                    encoding='Latin-1', namedtuple_as_object=False,
-                    default=lambda o: list(iter(o)))
+            json_data = json.dumps(data, default=lambda o: list(iter(o)))
 
         internal_metric('Supportability/StatsEngine/ZLIB/Bytes/'
                 'transaction_sample_data', len(json_data))
@@ -924,6 +924,9 @@ class StatsEngine(object):
         with InternalTrace('Supportability/StatsEngine/BASE64/Encode/'
                 'transaction_sample_data'):
             pack_data = base64.standard_b64encode(zlib_data)
+
+            if six.PY3:
+                pack_data = pack_data.decode('Latin-1')
 
         root = transaction_trace.root
 

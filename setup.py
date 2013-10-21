@@ -84,7 +84,6 @@ packages = [
   "newrelic/packages/requests/packages/urllib3",
   "newrelic/packages/requests/packages/urllib3/packages",
   "newrelic/packages/requests/packages/urllib3/packages/ssl_match_hostname",
-  "newrelic/packages/simplejson",
   "newrelic/packages/wrapt",
   "newrelic.samplers",
 ]
@@ -100,7 +99,7 @@ kwargs = dict(
   packages = packages,
   package_data = { 'newrelic': ['newrelic.ini', 'LICENSE',
           'packages/requests/LICENSE', 'packages/requests/NOTICE',
-          'packages/requests/cacert.pem', 'packages/simplejson/LICENSE.txt'] },
+          'packages/requests/cacert.pem'] },
   extra_path = ( "newrelic", "newrelic-%s" % package_version ),
   scripts = [ 'scripts/newrelic-admin' ],
 )
@@ -119,8 +118,6 @@ def run_setup(with_extensions):
             monotonic_libraries = ['rt']
 
         kwargs_tmp['ext_modules'] = [
-                Extension("newrelic.packages.simplejson._speedups",
-                    ["newrelic/packages/simplejson/_speedups.c"]),
                 Extension("newrelic.packages.wrapt._wrappers",
                     ["newrelic/packages/wrapt/_wrappers.c"]),
                 Extension("newrelic.common._monotonic",

@@ -8,11 +8,11 @@ import socket
 import sys
 import time
 import zlib
+import json
 
 import newrelic.packages.six as six
 
 import newrelic.packages.requests as requests
-import newrelic.packages.simplejson as simplejson
 
 from newrelic import version
 from newrelic.core.config import global_settings, create_settings_snapshot
@@ -152,15 +152,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
     proxies = proxy_server()
 
-    # At this time we use JSON content encoding for the data being
-    # sent. Ensure that normal byte strings are interpreted as Latin-1
-    # and that the final result is ASCII so that don't need to worry
-    # about converting back to bytes again. We set the default fallback
-    # encoder to treat any iterable as a list. Unfortunately the JSON
-    # library can't use it as an iterable and so means that generator
-    # will be consumed up front and everything collected in memory as a
-    # list before then converting to JSON.
-    #
+    # At this time we use JSON content encoding for the data being sent.
     # If an error does occur when encoding the JSON, then it isn't
     # likely going to work later on in a subsequent request with same
     # data, even if aggregated with other data, so we need to log the
@@ -170,9 +162,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
     try:
         with InternalTrace('Supportability/Collector/JSON/Encode/%s' % method):
-            data = simplejson.dumps(payload, ensure_ascii=True,
-                    encoding='Latin-1', namedtuple_as_object=False,
-                    default=lambda o: list(iter(o)))
+            data = json.dumps(payload, default=lambda o: list(iter(o)))
 
     except Exception:
         _logger.exception('Error encoding data for JSON payload for '
@@ -378,15 +368,16 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
     # If we got this far we should have a legitimate response from the
     # data collector. The response is JSON so need to decode it.
-    # Everything will come back as Unicode. Make sure all strings are
-    # decoded as 'UTF-8'.
 
     internal_metric('Supportability/Collector/Input/Bytes/%s' % method,
             len(content))
 
     try:
         with InternalTrace('Supportability/Collector/JSON/Decode/%s' % method):
-            result = simplejson.loads(content, encoding='UTF-8')
+            if six.PY3:
+                content = content.decode('UTF-8')
+
+            result = json.loads(content)
 
     except Exception:
         _logger.exception('Error decoding data for JSON payload for '

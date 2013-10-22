@@ -32,12 +32,13 @@ def server_config(args):
         pass
 
     config_file = args[0]
+    environment = os.environ.get('NEW_RELIC_ENVIRONMENT')
 
     if config_file == '-':
-        config_file = None
+        config_file = os.environ.get('NEW_RELIC_CONFIG_FILE')
 
-    initialize(config_file, ignore_errors=False, log_file=log_file,
-            log_level=log_level)
+    initialize(config_file, environment, ignore_errors=False,
+            log_file=log_file, log_level=log_level)
 
     _timeout = 30.0
 

@@ -403,7 +403,7 @@ def _load_configuration(config_file=None, environment=None,
         if log_level is None:
             log_level = _settings.log_level
 
-        initialize_logging(_settings.log_file, _settings.log_level)
+        initialize_logging(log_file, log_level)
 
         return
 

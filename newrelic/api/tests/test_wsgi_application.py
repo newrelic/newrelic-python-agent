@@ -260,5 +260,18 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         except Exception:
             pass
 
+    def test_wsgiapp_generator_exit(self):
+        environ = { "REQUEST_URI": "/wsgiapp_generator_exit" }
+        def start_response(*args): pass
+        iterable = _wsgi_app_yield_exception(environ, start_response)
+        try:
+            try:
+                for item in iterable:
+                    break
+            finally:
+                iterable.close()
+        except Exception:
+            pass
+
 if __name__ == '__main__':
     unittest.main()

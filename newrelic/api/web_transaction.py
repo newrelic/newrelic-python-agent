@@ -605,6 +605,8 @@ class _WSGIApplicationIterable(object):
                         self.transaction._bytes_sent += len(item)
                     except Exception:
                         pass
+        except GeneratorExit:
+            raise
         except:  # Catch all
             self.transaction.record_exception(*sys.exc_info())
             raise

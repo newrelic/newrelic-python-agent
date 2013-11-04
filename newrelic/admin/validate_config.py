@@ -7,7 +7,7 @@ def _run_validation_test():
 
     from newrelic.agent import (background_task, error_trace,
             external_trace, function_trace, wsgi_application,
-            add_custom_parameter)
+            add_custom_parameter, record_exception)
 
     @external_trace(library='test',
             url='http://localhost/test', method='GET')
@@ -15,7 +15,7 @@ def _run_validation_test():
         time.sleep(0.1)
 
     @function_trace(label='label',
-            params={'key-1': '1', 'key-2': 2, 'key-3': 3.0})
+            params={'fun-key-1': '1', 'fun-key-2': 2, 'fun-key-3': 3.0})
     def _function1():
         _external1()
 
@@ -27,7 +27,14 @@ def _run_validation_test():
     @error_trace()
     @function_trace()
     def _function3():
-        add_custom_parameter("key-1", 1)
+        add_custom_parameter('txn-key-1', 1)
+
+        try:
+            raise NotImplementedError(
+                    'This is a test error and can be ignored.')
+        except:
+            record_exception(params={'err-key-2': 2, 'err-key-3': 3.0})
+
         raise RuntimeError('This is a test error and can be ignored.')
 
     @wsgi_application()

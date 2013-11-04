@@ -201,15 +201,6 @@ class TransactionNode(_TransactionNode):
         if not self.errors:
             return
 
-        custom_params = self.custom_params and dict(self.custom_params) or {}
-
-        if self.client_cross_process_id:
-            custom_params['client_cross_process_id'] = \
-                    self.client_cross_process_id
-        if self.referring_transaction_guid:
-            custom_params['referring_transaction_guid'] = \
-                    self.referring_transaction_guid
-
         for error in self.errors:
             params = {}
             params["request_uri"] = self.request_uri
@@ -218,6 +209,17 @@ class TransactionNode(_TransactionNode):
                 params["request_params"] = self.request_params
             if self.parameter_groups:
                 params["parameter_groups"] = self.parameter_groups
+
+            custom_params = (error.custom_params and dict(
+                error.custom_params) or {})
+
+            if self.client_cross_process_id:
+                custom_params['client_cross_process_id'] = \
+                        self.client_cross_process_id
+            if self.referring_transaction_guid:
+                custom_params['referring_transaction_guid'] = \
+                        self.referring_transaction_guid
+
             if custom_params:
                 params["custom_params"] = custom_params
 

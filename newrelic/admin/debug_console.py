@@ -4,7 +4,7 @@ from newrelic.admin import command, usage
 
 @command('debug-console', 'config_file [session_log]',
 """Runs the client for the embedded agent debugging console.
-""", hidden=True)
+""", hidden=True, log_intercept=False)
 def debug_console(args):
     import sys
 

@@ -20,12 +20,14 @@ _builtin_plugins = [
 
 _commands = {}
 
-def command(name, options='', description='', hidden=False):
+def command(name, options='', description='', hidden=False,
+        log_intercept=True):
     def wrapper(callback):
         callback.name = name
         callback.options = options
         callback.description = description
         callback.hidden = hidden
+        callback.log_intercept = log_intercept
         _commands[name] = callback
         return callback
     return wrapper
@@ -65,6 +67,31 @@ def help(args):
                 print()
                 print(details.description)
 
+def setup_log_intercept():
+    # Send any errors or warnings to standard output as well so more
+    # obvious as use may have trouble finding the relevant messages in
+    # the agent log as it will be full of debug output as well.
+
+    class FilteredStreamHandler(logging.StreamHandler):
+        def emit(self, record):
+            if len(logging.root.handlers) != 0:
+                return
+
+            if record.name.startswith('newrelic.packages'):
+                return
+
+            if record.levelno < logging.WARNING:
+                return
+
+            return logging.StreamHandler.emit(self, record)
+
+    _stdout_logger = logging.getLogger('newrelic')
+    _stdout_handler = FilteredStreamHandler(sys.stdout)
+    _stdout_format = '%(levelname)s - %(message)s\n'
+    _stdout_formatter = logging.Formatter(_stdout_format)
+    _stdout_handler.setFormatter(_stdout_formatter)
+    _stdout_logger.addHandler(_stdout_handler)
+
 def load_internal_plugins():
     for name in _builtin_plugins:
         module_name = '%s.%s' % (__name__, name)
@@ -94,6 +121,9 @@ def main():
         print("Unknown command '%s'." % command, end='')
         print("Type 'newrelic-admin help' for usage.")
         sys.exit(1)
+
+    if callback.log_intercept:
+        setup_log_intercept()
 
     callback(sys.argv[2:])
 

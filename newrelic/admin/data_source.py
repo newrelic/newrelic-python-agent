@@ -5,7 +5,7 @@ from newrelic.admin import command, usage
 @command('data-source', 'config_file',
 """Loads the data sources specified in the agent configuration file and
 reports data from those data sources using the platform API.
-""")
+""", log_intercept=False)
 def data_source(args):
     import sys
 

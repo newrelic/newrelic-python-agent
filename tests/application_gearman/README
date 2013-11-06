@@ -1,0 +1,18 @@
+TESTING
+-------
+
+To test you will need to have the 'gearman' server installed. This is
+distinct from the Python client and worker packages. The easiest way is
+to install 'gearman' using 'brew'.
+
+Before running the actual test, first run in a separate window:
+
+    /usr/local/sbin/gearmand --verbose DEBUG
+
+Then run 'tox' as usual.
+
+All results are recorded as background tasks under 'Function' and 'Gearman'
+categories. The first being client side and the latter server side.
+
+Note that gearman currently does not support Python 3.X and so only tests
+for Python 2.X and pypy are run.

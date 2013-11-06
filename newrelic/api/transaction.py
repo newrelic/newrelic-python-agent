@@ -784,7 +784,7 @@ class Transaction(object):
 
         return self.record_custom_metric(name, value)
 
-    def _parent_node(self):
+    def active_node(self):
         if self._node_stack:
             return self._node_stack[-1]
 

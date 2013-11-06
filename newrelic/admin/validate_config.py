@@ -152,7 +152,6 @@ def validate_config(args):
 
     _settings.app_name = app_name
     _settings.transaction_tracer.transaction_threshold = 0
-    _settings.capture_params = False
     _settings.shutdown_timeout = 30.0
 
     _settings.debug.log_malformed_json_data = True

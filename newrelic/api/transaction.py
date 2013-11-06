@@ -671,14 +671,19 @@ class Transaction(object):
         if exc is None or value is None or tb is None:
             return
 
-        if callable(ignore_errors):
-            # Return Value:
-            # 'True'  - ignore the error.
-            # 'False' - record the error.
-            if ignore_errors(exc, value, tb):
-                return
-        else:
+        # 'should_ignore' is a tri-state variable with the following behavior.
+        # 'True' - ignore the error.
+        # 'False'- record the error.
+        # 'None' - Use the default ignore rules.
 
+        should_ignore = None
+
+        if callable(ignore_errors):
+            should_ignore = ignore_errors(exc, value, tb)
+            if should_ignore:
+                return
+
+        if should_ignore is None:
             # We need to check for module.name and module:name.
             # Originally we used module.class but that was
             # inconsistent with everything else which used
@@ -695,7 +700,7 @@ class Transaction(object):
             else:
                 fullname = name
 
-            if fullname in ignore_errors:
+            if isinstance(ignore_errors, list) and fullname in ignore_errors:
                 return
 
             if fullname in error_collector.ignore_errors:
@@ -706,7 +711,7 @@ class Transaction(object):
             else:
                 fullname = name
 
-            if fullname in ignore_errors:
+            if isinstance(ignore_errors, list) and fullname in ignore_errors:
                 return
 
             if fullname in error_collector.ignore_errors:

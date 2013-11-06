@@ -39,7 +39,7 @@ def framework_details():
 
 def should_ignore(exc, value, tb):
 
-    # Ignore the exceptions based on some HTTP status codes. The default list
+    # Ignore certain exceptions based on HTTP status codes. The default list
     # of status codes are defined in the settings.error_collector object.
 
     settings = global_settings()
@@ -58,9 +58,7 @@ def should_ignore(exc, value, tb):
                              'cherrypy._cperror:HTTPRedirect']
                             )
 
-    ignore_exceptions.update(settings.error_collector.ignore_errors)
-
-    if (fullname in ignore_exceptions):
+    if fullname in ignore_exceptions:
         return True
 
 @function_wrapper

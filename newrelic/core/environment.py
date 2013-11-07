@@ -145,7 +145,7 @@ def environment_settings():
 
     plugins = []
 
-    for name, module in list(six.iteritems(sys.modules)):
+    for name, module in list(sys.modules.items()):
         if name.startswith('newrelic.hooks.'):
             plugins.append(name)
 

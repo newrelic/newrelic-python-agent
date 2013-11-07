@@ -756,7 +756,7 @@
         ]
     },
     "newrelic/hooks/application_gearman.py": {
-        "hash": "d038e7b0466d47b609ff316f098bb6b8",
+        "hash": "n/a",
         "libraries": [
             "New Relic"
         ]

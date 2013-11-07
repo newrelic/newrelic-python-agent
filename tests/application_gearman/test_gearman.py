@@ -21,7 +21,7 @@ class GearmanWorker(gearman.GearmanWorker):
 def setup_module(module):
     global worker_thread
 
-    gm_worker = GearmanWorker(['localhost:4730'])
+    gm_worker = GearmanWorker(['localhost:4730','localhost:4731'])
 
     def task_listener_reverse(gearman_worker, gearman_job):
         return ''.join(reversed(gearman_job.data))
@@ -41,7 +41,7 @@ def setup_module(module):
 
     global gm_client
 
-    gm_client = gearman.GearmanClient(['localhost:4730'])
+    gm_client = gearman.GearmanClient(['localhost:4730','localhost:4731'])
 
 def teardown_module(module):
     worker_event.set()

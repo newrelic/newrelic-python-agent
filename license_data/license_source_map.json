@@ -755,6 +755,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/application_gearman.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/component_piston.py": {
         "hash": "n/a",
         "libraries": [

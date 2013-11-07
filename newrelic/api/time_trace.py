@@ -25,7 +25,7 @@ class TimeTrace(object):
         # Don't do any tracing if parent is designated
         # as a terminal node.
 
-        parent = self.transaction._parent_node()
+        parent = self.transaction.active_node()
 
         if not parent or parent.terminal_node():
             self.transaction = None

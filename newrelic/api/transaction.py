@@ -700,7 +700,7 @@ class Transaction(object):
             else:
                 fullname = name
 
-            if isinstance(ignore_errors, list) and fullname in ignore_errors:
+            if (not callable(ignore_errors)) and (fullname in ignore_errors):
                 return
 
             if fullname in error_collector.ignore_errors:
@@ -711,7 +711,7 @@ class Transaction(object):
             else:
                 fullname = name
 
-            if isinstance(ignore_errors, list) and fullname in ignore_errors:
+            if (not callable(ignore_errors)) and (fullname in ignore_errors):
                 return
 
             if fullname in error_collector.ignore_errors:

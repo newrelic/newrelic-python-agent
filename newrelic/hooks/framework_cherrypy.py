@@ -4,10 +4,6 @@
 
 # TODO
 #
-# * We don't ignore HTTPError for specific status codes. So if instead of
-#   using NotFound(), user uses HTTPError(404), we would not ignore it.
-#   Similar problem for redirects.
-#
 # * We don't track time spent in a user supplied error response callback.
 #   We do track time in the handle_error() function which calls it though.
 #   Because the error_response attribute of the request object could be
@@ -38,13 +34,12 @@ def framework_details():
     return ('CherryPy', getattr(cherrypy, '__version__', None))
 
 def should_ignore(exc, value, tb):
-
     # Ignore certain exceptions based on HTTP status codes. The default list
     # of status codes are defined in the settings.error_collector object.
 
     settings = global_settings()
-    if isinstance(value, HTTPError) \
-       and (value.status in settings.error_collector.ignore_status_codes):
+    if (isinstance(value, HTTPError)
+            and value.status in settings.error_collector.ignore_status_codes):
         return True
 
     # Ignore certain exceptions based on their name.
@@ -53,10 +48,10 @@ def should_ignore(exc, value, tb):
     name = value.__class__.__name__
     fullname = '%s:%s' % (module, name)
 
-    ignore_exceptions = set(['cherrypy._cperror:NotFound',
-                             'cherrypy._cperror:InternalRedirect',
-                             'cherrypy._cperror:HTTPRedirect']
-                            )
+    ignore_exceptions = ('cherrypy._cperror:NotFound',
+                         'cherrypy._cperror:InternalRedirect',
+                         'cherrypy._cperror:HTTPRedirect'
+                         )
 
     if fullname in ignore_exceptions:
         return True

@@ -27,8 +27,6 @@ try:
 except ImportError:
     pass
 
-import newrelic.packages.six as six
-
 def environment_settings():
     """Returns an array of arrays of environment settings
 
@@ -144,6 +142,15 @@ def environment_settings():
     # Module information.
 
     plugins = []
+
+    # Using six to create create a snapshot of sys.modules can occassionally
+    # fail in a rare case when modules are imported in parallel by different
+    # threads. This is because list(six.iteritems(sys.modules)) results in
+    # list(iter(sys.modules.iteritems())), which means sys.modules could change
+    # between the time when the iterable is handed over from the iter() to
+    # list().
+    #
+    # TL;DR: Do NOT use six module for the following iteration.
 
     for name, module in list(sys.modules.items()):
         if name.startswith('newrelic.hooks.'):

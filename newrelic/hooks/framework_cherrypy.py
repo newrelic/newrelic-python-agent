@@ -3,11 +3,7 @@
 """
 
 # TODO
-# 
-# * We don't ignore HTTPError for specific status codes. So if instead of
-#   using NotFound(), user uses HTTPError(404), we would not ignore it.
-#   Similar problem for redirects.
-# 
+#
 # * We don't track time spent in a user supplied error response callback.
 #   We do track time in the handle_error() function which calls it though.
 #   Because the error_response attribute of the request object could be
@@ -20,26 +16,45 @@
 #   which gets trickier as it isn't bound to an instance and has to do
 #   tricks to store the error response handler being set against the
 #   instance if set via an instance.
-# 
+#
 # * We don't track time spent in hook functions which may be registered
 #   for events such as before_handler, on_end_request etc.
 #
 # * We don't handle any sub dispatching that may be occuring due to the
 #   use of XMLRPCDispatcher.
 
+from cherrypy import HTTPError
+
 from newrelic.agent import (current_transaction, wrap_wsgi_application,
         FunctionTrace, callable_name, ObjectProxy, function_wrapper,
-        wrap_function_wrapper, wrap_function_trace)
+        wrap_function_wrapper, wrap_function_trace, global_settings)
 
 def framework_details():
     import cherrypy
     return ('CherryPy', getattr(cherrypy, '__version__', None))
 
-IGNORE_ERRORS = [
-    'cherrypy._cperror:NotFound',
-    'cherrypy._cperror:InternalRedirect',
-    'cherrypy._cperror:HTTPRedirect'
-]
+def should_ignore(exc, value, tb):
+    # Ignore certain exceptions based on HTTP status codes. The default list
+    # of status codes are defined in the settings.error_collector object.
+
+    settings = global_settings()
+    if (isinstance(value, HTTPError)
+            and value.status in settings.error_collector.ignore_status_codes):
+        return True
+
+    # Ignore certain exceptions based on their name.
+
+    module = value.__class__.__module__
+    name = value.__class__.__name__
+    fullname = '%s:%s' % (module, name)
+
+    ignore_exceptions = ('cherrypy._cperror:NotFound',
+                         'cherrypy._cperror:InternalRedirect',
+                         'cherrypy._cperror:HTTPRedirect'
+                         )
+
+    if fullname in ignore_exceptions:
+        return True
 
 @function_wrapper
 def handler_wrapper(wrapped, instance, args, kwargs):
@@ -59,7 +74,7 @@ def handler_wrapper(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
 
         except:  # Catch all
-            transaction.record_exception(ignore_errors=IGNORE_ERRORS)
+            transaction.record_exception(ignore_errors=should_ignore)
             raise
 
 class ResourceProxy(ObjectProxy):

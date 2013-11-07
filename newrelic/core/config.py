@@ -165,6 +165,8 @@ _settings.transaction_tracer.top_n = 20
 _settings.error_collector.enabled = True
 _settings.error_collector.capture_source = False
 _settings.error_collector.ignore_errors = []
+_settings.error_collector.ignore_status_codes = set([300, 301, 302, 303, 304,
+                                                     305, 306, 307, 308, 404])
 
 _settings.browser_monitoring.auto_instrument = True
 
@@ -211,6 +213,7 @@ _settings.debug.log_raw_metric_data = False
 _settings.debug.log_normalized_metric_data = False
 
 _settings.debug.enable_coroutine_profiling = False
+
 
 def global_settings():
     """This returns the default global settings. Generally only used

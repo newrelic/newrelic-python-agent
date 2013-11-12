@@ -4,6 +4,7 @@ import base64
 import time
 import string
 import re
+import json
 
 try:
     import urlparse
@@ -11,7 +12,6 @@ except ImportError:
     import urllib.parse as urlparse
 
 import newrelic.packages.six as six
-import newrelic.packages.simplejson as simplejson
 
 import newrelic.api.application
 import newrelic.api.transaction
@@ -386,10 +386,8 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         if encoded_txn_header:
             try:
-                decoded_txn_header = simplejson.loads(
-                        deobfuscate(encoded_txn_header,
-                            self._settings.encoding_key),
-                        encoding='UTF-8')
+                decoded_txn_header = json.loads(deobfuscate(
+                        encoded_txn_header, self._settings.encoding_key))
             except Exception:
                 decoded_txn_header = None
 
@@ -458,8 +456,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
             payload = (self._settings.cross_process_id, self.path, queue_time,
                     duration, self._read_length, self.guid, self.record_tt)
-            app_data = simplejson.dumps(payload, ensure_ascii=True,
-                    encoding='Latin-1')
+            app_data = json.dumps(payload)
 
             additional_headers.append(('X-NewRelic-App-Data', obfuscate(
                     app_data, self._settings.encoding_key)))
@@ -598,15 +595,21 @@ class _WSGIApplicationIterable(object):
     def __iter__(self):
         if not self.transaction._sent_start:
             self.transaction._sent_start = time.time()
-        with newrelic.api.function_trace.FunctionTrace(
-                self.transaction, name='Response', group='Python/WSGI'):
-            for item in self.generator:
-                yield item
-                try:
-                    self.transaction._calls_yield += 1
-                    self.transaction._bytes_sent += len(item)
-                except Exception:
-                    pass
+        try:
+            with newrelic.api.function_trace.FunctionTrace(
+                    self.transaction, name='Response', group='Python/WSGI'):
+                for item in self.generator:
+                    yield item
+                    try:
+                        self.transaction._calls_yield += 1
+                        self.transaction._bytes_sent += len(item)
+                    except Exception:
+                        pass
+        except GeneratorExit:
+            raise
+        except:  # Catch all
+            self.transaction.record_exception(*sys.exc_info())
+            raise
 
     def close(self):
         try:

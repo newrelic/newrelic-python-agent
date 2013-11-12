@@ -11,7 +11,79 @@
             "New Relic"
         ]
     },
-    "newrelic/admin.py": {
+    "newrelic/admin/__init__.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/admin/data_source.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/admin/debug_console.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/admin/generate_config.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/admin/license_key.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/admin/local_config.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/admin/network_config.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/admin/rum_footer.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/admin/rum_header.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/admin/run_program.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/admin/run_python.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/admin/server_config.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/admin/validate_config.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -305,6 +377,12 @@
             "time.monotonic"
         ]
     },
+    "newrelic/common/log_file.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/common/object_names.py": {
         "hash": "n/a",
         "libraries": [
@@ -480,12 +558,6 @@
         ]
     },
     "newrelic/core/internal_metrics.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/core/log_file.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -678,6 +750,12 @@
         ]
     },
     "newrelic/hooks/application_celery.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/application_gearman.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -1407,60 +1485,6 @@
         "hash": "9881d4aae91a1a9492bcac390b287313",
         "libraries": [
             "requests"
-        ]
-    },
-    "newrelic/packages/simplejson/LICENSE.txt": {
-        "hash": "c6338d7abd321c0b50a2a547e441c52e",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/packages/simplejson/__init__.py": {
-        "hash": "ef65c086a19855b7c4cfee223170fe59",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/packages/simplejson/_speedups.c": {
-        "hash": "f3dd245e8667d25f9422d1f25bff6f11",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/packages/simplejson/compat.py": {
-        "hash": "9909f38f8e8aab48609f33e82ceb6fd8",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/packages/simplejson/decoder.py": {
-        "hash": "247f922c36a71626b53f1dbf8256b3bf",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/packages/simplejson/encoder.py": {
-        "hash": "321303cc74fdcae938c154869d71ff40",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/packages/simplejson/ordered_dict.py": {
-        "hash": "6bb1869dd9a1c4d221ba0e4b1502ce16",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/packages/simplejson/scanner.py": {
-        "hash": "a2d72403e248fabdea0b8c0fbadf165c",
-        "libraries": [
-            "simplejson"
-        ]
-    },
-    "newrelic/packages/simplejson/tool.py": {
-        "hash": "f5e1db72b0ff29276b3afe0f9c9408ad",
-        "libraries": [
-            "simplejson"
         ]
     },
     "newrelic/packages/six.py": {

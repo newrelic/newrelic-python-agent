@@ -216,6 +216,22 @@ class Agent(object):
     def register(self, source, name=None, settings=None, **properties):
         self._data_sources.append((source, name, settings, properties))
 
+    def harvest(self, data_aggregators):
+        _logger.debug('Commencing data harvest.')
+
+        session = self._interface.create_session()
+
+        try:
+            for data_aggregator in data_aggregators:
+                _logger.debug('Harvest data source %r with guid %r. '
+                        'Reporting data to %r.', data_aggregator.name,
+                        data_aggregator.guid, data_aggregator.consumer)
+
+                data_aggregator.upload(session)
+
+        finally:
+            session.close_connection()
+
     def run(self):
         """Means of running standalone process to consume data sources and
         post custom metrics collected.
@@ -258,20 +274,6 @@ class Agent(object):
 
         next_harvest = time.time()
 
-        def _do_harvest():
-            _logger.debug('Commencing data harvest.')
-
-            session = self._interface.create_session()
-
-            for data_aggregator in data_aggregators:
-                _logger.debug('Harvest data source %r with guid %r. '
-                        'Reporting data to %r.', data_aggregator.name,
-                        data_aggregator.guid, data_aggregator.consumer)
-
-                data_aggregator.upload(session)
-
-            session.close_connection()
-
         try:
             _logger.debug('Starting main harvest loop.')
 
@@ -286,10 +288,10 @@ class Agent(object):
 
                 if self._harvest_shutdown.isSet():
                     _logger.info('New Relic Python Agent Shutdown')
-                    _do_harvest()
+                    self.harvest(data_aggregators)
                     return
 
-                _do_harvest()
+                self.harvest(data_aggregators)
 
         except Exception:
             _logger.exception('Unexpected exception when attempting '

@@ -17,13 +17,6 @@
             "name": "requests",
             "url": "http://pypi.python.org/pypi/requests"
         },
-        "simplejson": {
-            "licenses": [
-                "MIT"
-            ],
-            "name": "simplejson",
-            "url": "http://pypi.python.org/pypi/simplejson"
-        },
         "six": {
             "licenses": [
                 "MIT"

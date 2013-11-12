@@ -4,10 +4,11 @@ import time
 import threading
 import zlib
 import base64
+import json
+
 from collections import deque, defaultdict
 
 import newrelic.packages.six as six
-import newrelic.packages.simplejson as simplejson
 import newrelic
 
 from newrelic.core.config import global_settings
@@ -606,10 +607,12 @@ class ProfileSession(object):
             _logger.debug('Encoding thread profile data where '
                     'payload=%r.', flat_tree)
 
-        json_call_tree = simplejson.dumps(flat_tree, ensure_ascii=True,
-                encoding='Latin-1', namedtuple_as_object=False)
+        json_call_tree = json.dumps(flat_tree)
         encoded_tree = base64.standard_b64encode(
                 zlib.compress(six.b(json_call_tree)))
+
+        if six.PY3:
+            encoded_tree = encoded_tree.decode('Latin-1')
 
         profile = [[self.profile_id, self.start_time_s * 1000,
             (self.actual_stop_time_s or time.time()) * 1000, self.sample_count,

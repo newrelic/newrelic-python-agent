@@ -8,7 +8,8 @@ try:
 except ImportError:
     import configparser as ConfigParser
 
-import newrelic.core.log_file
+from .common.log_file import initialize_logging
+
 import newrelic.core.agent
 
 import newrelic.api.settings
@@ -396,7 +397,13 @@ def _load_configuration(config_file=None, environment=None,
         # Force initialisation of the logging system now in case
         # setup provided by environment variables.
 
-        newrelic.core.log_file.initialize()
+        if log_file is None:
+            log_file = _settings.log_file
+
+        if log_level is None:
+            log_level = _settings.log_level
+
+        initialize_logging(log_file, log_level)
 
         return
 
@@ -420,8 +427,8 @@ def _load_configuration(config_file=None, environment=None,
         _process_setting('newrelic:%s' % environment,
                          'log_file', 'get', None)
 
-    if log_file is not None:
-        _settings.log_file = log_file
+    if log_file is None:
+        log_file = _settings.log_file
 
     _process_setting('newrelic', 'log_level', 'get', _map_log_level)
 
@@ -429,14 +436,13 @@ def _load_configuration(config_file=None, environment=None,
         _process_setting('newrelic:%s' % environment,
                          'log_level', 'get', _map_log_level)
 
-    if log_level is not None:
-        _settings.log_level = log_level
-
+    if log_level is None:
+        log_level = _settings.log_level
 
     # Force initialisation of the logging system now that we
     # have the log file and log level.
 
-    newrelic.core.log_file.initialize()
+    initialize_logging(log_file, log_level)
 
     # Now process the remainder of the global configuration
     # settings.
@@ -1745,6 +1751,16 @@ def _process_module_builtin_defaults():
 
     _process_module_definition('thrift.transport.TSocket',
             'newrelic.hooks.external_thrift')
+
+    _process_module_definition('gearman.client',
+            'newrelic.hooks.application_gearman',
+            'instrument_gearman_client')
+    _process_module_definition('gearman.connection_manager',
+            'newrelic.hooks.application_gearman',
+            'instrument_gearman_connection_manager')
+    _process_module_definition('gearman.worker',
+            'newrelic.hooks.application_gearman',
+            'instrument_gearman_worker')
 
 def _process_module_entry_points():
     try:

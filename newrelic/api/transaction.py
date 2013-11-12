@@ -647,7 +647,7 @@ class Transaction(object):
         return self.set_transaction_name(name, group, priority)
 
     def record_exception(self, exc=None, value=None, tb=None,
-            params={}, ignore_errors=[]):
+                         params={}, ignore_errors=[]):
 
         # Bail out if the transaction is not active or
         # collection of errors not enabled.
@@ -671,38 +671,51 @@ class Transaction(object):
         if exc is None or value is None or tb is None:
             return
 
-        module = value.__class__.__module__
-        name = value.__class__.__name__
+        # 'should_ignore' is a tri-state variable with the following behavior.
+        # 'True' - ignore the error.
+        # 'False'- record the error.
+        # 'None' - Use the default ignore rules.
 
-        # We need to check for module.name and module:name.
-        # Originally we used module.class but that was
-        # inconsistent with everything else which used
-        # module:name. So changed to use ':' as separator, but
-        # for backward compatability need to support '.' as
-        # separator for time being. Check that with the ':'
-        # last as we will use that name as the exception type.
+        should_ignore = None
 
-        if module:
-            fullname = '%s.%s' % (module, name)
-        else:
-            fullname = name
+        if callable(ignore_errors):
+            should_ignore = ignore_errors(exc, value, tb)
+            if should_ignore:
+                return
 
-        if fullname in ignore_errors:
-            return
+        if should_ignore is None:
+            # We need to check for module.name and module:name.
+            # Originally we used module.class but that was
+            # inconsistent with everything else which used
+            # module:name. So changed to use ':' as separator, but
+            # for backward compatability need to support '.' as
+            # separator for time being. Check that with the ':'
+            # last as we will use that name as the exception type.
 
-        if fullname in error_collector.ignore_errors:
-            return
+            module = value.__class__.__module__
+            name = value.__class__.__name__
 
-        if module:
-            fullname = '%s:%s' % (module, name)
-        else:
-            fullname = name
+            if module:
+                fullname = '%s.%s' % (module, name)
+            else:
+                fullname = name
 
-        if fullname in ignore_errors:
-            return
+            if (not callable(ignore_errors)) and (fullname in ignore_errors):
+                return
 
-        if fullname in error_collector.ignore_errors:
-            return
+            if fullname in error_collector.ignore_errors:
+                return
+
+            if module:
+                fullname = '%s:%s' % (module, name)
+            else:
+                fullname = name
+
+            if (not callable(ignore_errors)) and (fullname in ignore_errors):
+                return
+
+            if fullname in error_collector.ignore_errors:
+                return
 
         # Only remember up to limit of what can be caught for a
         # single transaction. This could be trimmed further
@@ -784,7 +797,7 @@ class Transaction(object):
 
         return self.record_custom_metric(name, value)
 
-    def _parent_node(self):
+    def active_node(self):
         if self._node_stack:
             return self._node_stack[-1]
 

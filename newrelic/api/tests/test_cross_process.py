@@ -1,8 +1,8 @@
 import unittest
 import time
+import json
 
 import newrelic.packages.six as six
-import newrelic.packages.simplejson as simplejson
 
 from newrelic.api.application import application_instance
 from newrelic.core.config import global_settings, create_settings_snapshot
@@ -108,7 +108,7 @@ class TestCase(unittest.TestCase):
 
         header_value = headers['X-NewRelic-App-Data']
         deobfuscated_header = deobfuscate(header_value, encoding_key)
-        decoded_data = simplejson.loads(deobfuscated_header)
+        decoded_data = json.loads(deobfuscated_header)
 
         if queue_start:
             queue_time = start_time - queue_start

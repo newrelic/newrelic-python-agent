@@ -1,6 +1,5 @@
 import functools
-
-import newrelic.packages.simplejson as simplejson
+import json
 
 from .time_trace import TimeTrace
 from .transaction import current_transaction
@@ -49,9 +48,8 @@ class ExternalTrace(TimeTrace):
         try:
             for k, v in response_headers:
                 if k.upper() == 'X-NEWRELIC-APP-DATA':
-                    appdata = simplejson.loads(
-                            deobfuscate(v, self.settings.encoding_key),
-                            encoding='UTF-8')
+                    appdata = json.loads(deobfuscate(v,
+                            self.settings.encoding_key))
                     break
 
             if appdata:
@@ -82,8 +80,7 @@ class ExternalTrace(TimeTrace):
                 settings.encoding_key)
 
         transaction_data = [transaction.guid, transaction.record_tt]
-        encoded_transaction = obfuscate(simplejson.dumps(transaction_data,
-                    ensure_ascii=True, encoding='Latin-1'),
+        encoded_transaction = obfuscate(json.dumps(transaction_data),
                 settings.encoding_key)
 
         nr_headers = [('X-NewRelic-ID', encoded_cross_process_id),

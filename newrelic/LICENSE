@@ -15,16 +15,6 @@ which contains components released under the following license(s):
 
 This product includes:
 
-  'simplejson' (http://pypi.python.org/pypi/simplejson),
-
-which contains components released under the following license(s):
-
-  The MIT License <http://opensource.org/licenses/MIT>
-
----------------------------------------------------------------------------
-
-This product includes:
-
   'six' (https://bitbucket.org/gutworth/six/overview),
 
 which contains components released under the following license(s):

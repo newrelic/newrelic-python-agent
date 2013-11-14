@@ -463,12 +463,18 @@ class WebTransaction(newrelic.api.transaction.Transaction):
             return ''
 
         # Return header only if the agent received a valid js_agent_loader from
-        # collector. Collector will send an empty string or null when
+        # collector. Collector won't send any js_agent_loader if
         # browser_monitoring.loader is set to 'none'.
+        #
+        # js_agent_loader will have values as Unicode strings and the result
+        # here will be Unicode so need to convert back to normal string. Using
+        # str() and default encoding should be fine as should all be ASCII
+        # anyway.
 
         if self._settings.js_agent_loader:
             self._rum_header = True
-            return _js_agent_header_fragment % self._settings.js_agent_loader
+            return str(_js_agent_header_fragment %
+                    self._settings.js_agent_loader)
         else:
             return ''
 
@@ -543,7 +549,8 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         # normal string. Using str() and default encoding should
         # be fine as should all be ASCII anyway.
 
-        return str(_js_agent_footer_fragment % json.dumps(footer))
+        return str(_js_agent_footer_fragment %
+                json.dumps(footer, separators=(',', ':')))
 
 class _WSGIApplicationIterable(object):
 

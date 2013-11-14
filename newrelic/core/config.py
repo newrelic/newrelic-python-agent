@@ -132,9 +132,13 @@ _settings.shutdown_timeout = float(
        os.environ.get('NEW_RELIC_SHUTDOWN_TIMEOUT', '2.5'))
 
 _settings.beacon = None
+_settings.error_beacon = None
 _settings.application_id = None
 _settings.browser_key = None
 _settings.episodes_url = None
+_settings.js_agent_loader_version = None
+_settings.js_agent_loader = None
+_settings.js_agent_file = None
 
 _settings.url_rules = []
 _settings.metric_name_rules = []
@@ -169,6 +173,8 @@ _settings.error_collector.ignore_status_codes = set([300, 301, 302, 303, 304,
                                                      305, 306, 307, 308, 404])
 
 _settings.browser_monitoring.auto_instrument = True
+_settings.browser_monitoring.loader = 'rum'  # Valid values: 'full', 'none'
+_settings.browser_monitoring.debug = False
 
 _settings.transaction_name.limit = None
 _settings.transaction_name.naming_scheme = os.environ.get(

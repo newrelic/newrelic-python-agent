@@ -18,43 +18,9 @@ import newrelic.api.transaction
 import newrelic.api.object_wrapper
 import newrelic.api.function_trace
 
-_rum_header_fragment = '<script type="text/javascript">' \
-        'var NREUMQ=NREUMQ||[];NREUMQ.push(["mark","firstbyte",' \
-        'new Date().getTime()]);</script>'
-
-_rum_footer_short_fragment = '<script type="text/javascript">' \
-        'if(!NREUMQ.f){NREUMQ.f=function(){NREUMQ.push(["load",' \
-        'new Date().getTime()]);if(NREUMQ.a)NREUMQ.a();};' \
-        'NREUMQ.a=window.onload;window.onload=NREUMQ.f;};' \
-        'NREUMQ.push(["nrf2","%s","%s","%s","%s",%d,%d,' \
-        'new Date().getTime()]);</script>'
-
-_rum2_footer_short_fragment = '<script type="text/javascript">' \
-        'if(!NREUMQ.f){NREUMQ.f=function(){NREUMQ.push(["load",' \
-        'new Date().getTime()]);if(NREUMQ.a)NREUMQ.a();};' \
-        'NREUMQ.a=window.onload;window.onload=NREUMQ.f;};' \
-        'NREUMQ.push(["nrfj","%s","%s","%s","%s",%d,%d,' \
-        'new Date().getTime(),"%s","%s","%s","%s","%s"]);</script>'
-
-_rum_footer_long_fragment = '<script type="text/javascript">' \
-        'if(!NREUMQ.f){NREUMQ.f=function(){NREUMQ.push(["load",' \
-        'new Date().getTime()]);var e=document.createElement("script");' \
-        'e.type="text/javascript";' \
-        'e.src=(("http:"===document.location.protocol)?"http:":"https:")' \
-        '+"//"+"%s";document.body.appendChild(e);if(NREUMQ.a)NREUMQ.a();};' \
-        'NREUMQ.a=window.onload;window.onload=NREUMQ.f;};' \
-        'NREUMQ.push(["nrf2","%s","%s","%s","%s",%d,%d,' \
-        'new Date().getTime()]);</script>'
-
-_rum2_footer_long_fragment = '<script type="text/javascript">' \
-        'if(!NREUMQ.f){NREUMQ.f=function(){NREUMQ.push(["load",' \
-        'new Date().getTime()]);var e=document.createElement("script");' \
-        'e.type="text/javascript";' \
-        'e.src=(("http:"===document.location.protocol)?"http:":"https:")' \
-        '+"//"+"%s";document.body.appendChild(e);if(NREUMQ.a)NREUMQ.a();};' \
-        'NREUMQ.a=window.onload;window.onload=NREUMQ.f;};' \
-        'NREUMQ.push(["nrfj","%s","%s","%s","%s",%d,%d,' \
-        'new Date().getTime(),"%s","%s","%s","%s","%s"]);</script>'
+_js_agent_header_fragment = '<script type="text/javascript">%s</script>'
+_js_agent_footer_fragment = '<script type="text/javascript>'\
+        'window.NREUM||(NREUM={});NREUM.info=%s</script>'
 
 # Seconds since epoch for Jan 1 2000
 
@@ -476,16 +442,13 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         if self.background_task:
             return ''
 
-        if not self._settings.rum.enabled:
-            return ''
-
         if self.ignore_transaction:
             return ''
 
         if not self._settings:
             return ''
 
-        if not self._settings.episodes_url:
+        if not self._settings.rum.enabled:
             return ''
 
         if not self._settings.license_key:
@@ -499,9 +462,15 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         if len(self._settings.license_key) < 13:
             return ''
 
-        self._rum_header = True
+        # Return header only if the agent received a valid js_agent_loader from
+        # collector. Collector will send an empty string or null when
+        # browser_monitoring.loader is set to 'none'.
 
-        return _rum_header_fragment
+        if self._settings.js_agent_loader:
+            self._rum_header = True
+            return _js_agent_header_fragment % self._settings.js_agent_loader
+        else:
+            return ''
 
     def browser_timing_footer(self):
         if not self.enabled:
@@ -525,7 +494,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         obfuscation_key = self._settings.license_key[:13]
 
-        name = obfuscate(self.path, obfuscation_key)
+        txn_name = obfuscate(self.path, obfuscation_key)
 
         queue_start = self.queue_start or self.start_time
         start_time = self.start_time
@@ -542,7 +511,9 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         threshold = self._settings.transaction_tracer.transaction_threshold
         if threshold is None:
-            threshold = self.apdex *4
+            threshold = self.apdex * 4
+
+        # Only include the guid if the request_duration is above the threshold.
 
         guid = guid if request_duration >= threshold else ''
 
@@ -550,41 +521,29 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         account = obfuscate(self._user_attrs.get('account'), obfuscation_key)
         product = obfuscate(self._user_attrs.get('product'), obfuscation_key)
 
+        footer = {
+            "txnParam": "nrfj",
+            "beacon": self._settings.beacon,
+            "errorBeacon": self._settings.error_beacon,
+            "licenseKey": self._settings.browser_key,
+            "applicationID": self._settings.application_id,
+            "transactionName": txn_name,
+            "queueTime": queue_duration,
+            "applicationTime": request_duration,
+            "ttGuid": guid,
+            "agentToken": rum_token,
+            "agent": self._settings.js_agent_file,
+            "user": user,
+            "account": account,
+            "product": product,
+        }
+
         # Settings will have values as Unicode strings and the
         # result here will be Unicode so need to convert back to
         # normal string. Using str() and default encoding should
         # be fine as should all be ASCII anyway.
 
-        if not self._settings.rum.load_episodes_file:
-            if self._settings.rum.jsonp:
-                return str(_rum2_footer_short_fragment % (
-                    self._settings.beacon,
-                    self._settings.browser_key,
-                    self._settings.application_id,
-                    name, queue_duration, request_duration, guid,
-                    rum_token, user, account, product))
-            else:
-                return str(_rum_footer_short_fragment % (
-                    self._settings.beacon,
-                    self._settings.browser_key,
-                    self._settings.application_id,
-                    name, queue_duration, request_duration))
-        else:
-            if self._settings.rum.jsonp:
-                return str(_rum2_footer_long_fragment % (
-                    self._settings.episodes_file,
-                    self._settings.beacon,
-                    self._settings.browser_key,
-                    self._settings.application_id,
-                    name, queue_duration, request_duration, guid,
-                    rum_token, user, account, product))
-            else:
-                return str(_rum_footer_long_fragment % (
-                    self._settings.episodes_file,
-                    self._settings.beacon,
-                    self._settings.browser_key,
-                    self._settings.application_id,
-                    name, queue_duration, request_duration))
+        return str(_js_agent_footer_fragment % json.dumps(footer))
 
 class _WSGIApplicationIterable(object):
 

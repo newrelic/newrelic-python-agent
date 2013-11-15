@@ -1835,8 +1835,12 @@ def _setup_agent_console():
     if _settings.console.listener_socket:
         newrelic.core.agent.Agent.run_on_startup(_startup_agent_console)
 
-def initialize(config_file=None, environment=None, ignore_errors=True,
+def initialize(config_file=None, environment=None, ignore_errors=None,
             log_file=None, log_level=None):
+
+    if ignore_errors is None:
+        ignore_errors = newrelic.core.config._environ_as_bool(
+                'NEW_RELIC_IGNORE_INSTRUMENTATION_ERRORS', True)
 
     _load_configuration(config_file, environment, ignore_errors,
             log_file, log_level)

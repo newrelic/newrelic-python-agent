@@ -110,6 +110,14 @@ def instrument_flask_app(module):
 
     wrap_function_wrapper(module, 'Flask.handle_http_exception',
             wrapper_Flask_handle_http_exception)
+
+    # Use the same wrapper for initial user exception processing and
+    # fallback for unhandled exceptions.
+
+    if hasattr(module.Flask, 'handle_user_exception'):
+        wrap_function_wrapper(module, 'Flask.handle_user_exception',
+                wrapper_Flask_handle_exception)
+
     wrap_function_wrapper(module, 'Flask.handle_exception',
             wrapper_Flask_handle_exception)
 

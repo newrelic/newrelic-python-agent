@@ -1427,9 +1427,11 @@ def _process_module_builtin_defaults():
             'instrument_django_views_generic_base')
 
     _process_module_definition('flask.app',
-            'newrelic.hooks.framework_flask')
+            'newrelic.hooks.framework_flask',
+            'instrument_flask_app')
     _process_module_definition('flask.templating',
-            'newrelic.hooks.framework_flask')
+            'newrelic.hooks.framework_flask',
+            'instrument_flask_templating')
 
     #_process_module_definition('web.application',
     #        'newrelic.hooks.framework_webpy')

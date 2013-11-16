@@ -53,18 +53,6 @@
             "New Relic"
         ]
     },
-    "newrelic/admin/rum_footer.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/admin/rum_header.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "newrelic/admin/run_program.py": {
         "hash": "n/a",
         "libraries": [

@@ -531,7 +531,6 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         if request_duration >= threshold:
 
-            print request_duration, threshold
             # Add the agentToken and ttGuid only when we a rum_token was issued
             # by beacon.
 

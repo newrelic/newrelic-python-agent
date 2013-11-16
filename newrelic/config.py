@@ -277,8 +277,6 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'rum.enabled',
                      'getboolean', None)
-    _process_setting(section, 'rum.load_episodes_file',
-                     'getboolean', None)
     _process_setting(section, 'slow_sql.enabled',
                      'getboolean', None)
     _process_setting(section, 'analytics_events.enabled',

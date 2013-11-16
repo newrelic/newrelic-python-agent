@@ -509,26 +509,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         queue_duration = int((start_time - queue_start) * 1000)
         request_duration = int((end_time - start_time) * 1000)
 
-        rum_token = self.rum_token or ''
-
-        # Only include the guid if the rum_token is not empty.
-
-        guid = self.guid if self.rum_token else ''
-
-        threshold = self._settings.transaction_tracer.transaction_threshold
-        if threshold is None:
-            threshold = self.apdex * 4
-
-        # Only include the guid if the request_duration is above the threshold.
-
-        guid = guid if request_duration >= threshold else ''
-
-        user = obfuscate(self._user_attrs.get('user'), obfuscation_key)
-        account = obfuscate(self._user_attrs.get('account'), obfuscation_key)
-        product = obfuscate(self._user_attrs.get('product'), obfuscation_key)
-
         footer = {
-            "txnParam": "nrfj",
             "beacon": self._settings.beacon,
             "errorBeacon": self._settings.error_beacon,
             "licenseKey": self._settings.browser_key,
@@ -536,13 +517,50 @@ class WebTransaction(newrelic.api.transaction.Transaction):
             "transactionName": txn_name,
             "queueTime": queue_duration,
             "applicationTime": request_duration,
-            "ttGuid": guid,
-            "agentToken": rum_token,
             "agent": self._settings.js_agent_file,
-            "user": user,
-            "account": account,
-            "product": product,
         }
+
+        additional_params = []
+
+        threshold = self._settings.transaction_tracer.transaction_threshold
+        if threshold is None:
+            threshold = self.apdex * 4
+
+        # The rum_token and guid are only added if the request time is above
+        # threshold
+
+        if request_duration >= threshold:
+
+            print request_duration, threshold
+            # Add the agentToken and ttGuid only when we a rum_token was issued
+            # by beacon.
+
+            if self.rum_token:
+                additional_params.append(('agentToken', self.rum_token))
+                additional_params.append(('ttGuid', self.guid))
+
+        # Add user, acccount and product keys when provided.
+
+        user = self._user_attrs.get('user')
+        account = self._user_attrs.get('account')
+        product = self._user_attrs.get('product')
+
+        if user:
+            additional_params.append(('user',
+                                      obfuscate('user', obfuscation_key)))
+        if account:
+            additional_params.append(('account',
+                                      obfuscate('account', obfuscation_key)))
+        if product:
+            additional_params.append(('product',
+                                      obfuscate('product', obfuscation_key)))
+
+        if self._settings.browser_monitoring.ssl_for_http:
+            additional_params.append(('sslForHttp', True))
+
+        # Add in the additional params to the footer config dictionary.
+
+        footer.update(additional_params)
 
         # Settings will have values as Unicode strings and the
         # result here will be Unicode so need to convert back to

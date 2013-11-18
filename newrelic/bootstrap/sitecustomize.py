@@ -38,10 +38,7 @@ try:
 except Exception:
     pass
 
-license_key = os.environ.get('NEW_RELIC_LICENSE_KEY', None)
-
-config_file = os.environ.get('NEW_RELIC_CONFIG_FILE', None)
-environment = os.environ.get('NEW_RELIC_ENVIRONMENT', None)
+# Dump out various information if we are trying to debug startup.
 
 debug_startup = os.environ.get('NEW_RELIC_STARTUP_DEBUG',
         'off').lower() in ('on', 'true', '1')
@@ -66,11 +63,30 @@ if debug_startup:
     _log('root_directory = %r', root_directory)
     _log('boot_directory = %r', boot_directory)
 
+# We now need to make sure we strip out the bootstrap directory from the
+# PYTHONPATH environment variable. If we do not do this and a distinct
+# Python interpreter is executed in a sub process, it will cause various
+# problems if that is a different Python installation.
+
+python_path = os.environ.get('PYTHONPATH', '').split(os.pathsep)
+
+if boot_directory in python_path:
+    del python_path[python_path.index(boot_directory)]
+    if python_path:
+        os.environ['PYTHONPATH'] = os.pathsep.join(python_path)
+    else:
+        del os.environ['PYTHONPATH']
+
 # We skip agent initialisation if neither the license key or config file
 # environment variables are set. We do this as some people like to use a
 # common startup script which always uses the wrapper script, and which
 # controls whether the agent is actually run based on the presence of
 # the environment variables.
+
+license_key = os.environ.get('NEW_RELIC_LICENSE_KEY', None)
+
+config_file = os.environ.get('NEW_RELIC_CONFIG_FILE', None)
+environment = os.environ.get('NEW_RELIC_ENVIRONMENT', None)
 
 if license_key or config_file:
     newrelic.agent.initialize(config_file, environment)

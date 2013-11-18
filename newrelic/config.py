@@ -1838,6 +1838,12 @@ def _setup_agent_console():
 def initialize(config_file=None, environment=None, ignore_errors=None,
             log_file=None, log_level=None):
 
+    if config_file is None:
+        config_file = os.environ.get('NEW_RELIC_CONFIG_FILE', None)
+
+    if environment is None:
+        environment = os.environ.get('NEW_RELIC_ENVIRONMENT', None)
+
     if ignore_errors is None:
         ignore_errors = newrelic.core.config._environ_as_bool(
                 'NEW_RELIC_IGNORE_INSTRUMENTATION_ERRORS', True)

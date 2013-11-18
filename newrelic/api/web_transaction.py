@@ -1,6 +1,5 @@
 import sys
 import cgi
-import base64
 import time
 import string
 import re
@@ -11,12 +10,12 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
-import newrelic.packages.six as six
-
 import newrelic.api.application
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
 import newrelic.api.function_trace
+
+from ..common.encoding_utils import obfuscate, deobfuscate
 
 _js_agent_header_fragment = '<script type="text/javascript">%s</script>'
 _js_agent_footer_fragment = '<script type="text/javascript>'\
@@ -25,43 +24,6 @@ _js_agent_footer_fragment = '<script type="text/javascript>'\
 # Seconds since epoch for Jan 1 2000
 
 JAN_1_2000 = time.mktime((2000, 1, 1, 0, 0, 0, 0, 0, 0))
-
-def _encode(name, key):
-    s = []
-
-    # Convert name and key into bytes which are treated as integers.
-
-    key = list(six.iterbytes(six.b(key)))
-    for i, c in enumerate(six.iterbytes(six.b(name))):
-        s.append(chr(c ^ key[i % len(key)]))
-    return s
-
-if six.PY3:
-    def obfuscate(name, key):
-        if not (name and key):
-            return ''
-
-        # Always pass name and key as str to _encode()
-
-        return str(base64.b64encode(six.b(''.join(_encode(name, key)))),
-                   encoding='Latin-1')
-else:
-    def obfuscate(name, key):
-        if not (name and key):
-            return ''
-
-        # Always pass name and key as str to _encode()
-
-        return base64.b64encode(six.b(''.join(_encode(name, key))))
-
-def deobfuscate(name, key):
-    if not (name and key):
-        return ''
-
-    # Always pass name and key as str to _encode()
-
-    return ''.join(_encode(six.text_type(base64.b64decode(six.b(name)),
-        encoding='Latin-1'), key))
 
 def _lookup_environ_setting(environ, name, default=False):
     flag = environ.get(name, default)

@@ -395,6 +395,12 @@
             "New Relic"
         ]
     },
+    "newrelic/common/helpers.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/common/tests/__init__.py": {
         "hash": "n/a",
         "libraries": [

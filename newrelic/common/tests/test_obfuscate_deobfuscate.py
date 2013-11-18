@@ -1,6 +1,6 @@
 import unittest
 
-from newrelic.api.web_transaction import obfuscate, deobfuscate
+from newrelic.common.encoding_utils import obfuscate, deobfuscate
 
 class TestCase(unittest.TestCase):
 

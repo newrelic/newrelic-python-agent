@@ -72,14 +72,14 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             _test_function_1a("http://a:b@external_trace_decorator_1/c?d=e")
             o = TestObject()
             o._test_function_2("http://a:b@external_trace_decorator_2/c?d=e")
-            o._test_function_3("http://a:b@external_trace_decorator_3/c?d=e")
-            o._test_function_4("http://a:b@external_trace_decorator_4/c?d=e")
+            o._test_function_3("https://a:b@external_trace_decorator_3/c?d=e")
+            o._test_function_4("https://a:b@external_trace_decorator_4/c?d=e")
             time.sleep(0.1)
             _test_function_1a("http://a:b@external_trace_decorator_1:80/c?d=e")
             o = TestObject()
             o._test_function_2("http://a:b@external_trace_decorator_2:80/c?d=e")
-            o._test_function_3("http://a:b@external_trace_decorator_3:80/c?d=e")
-            o._test_function_4("http://a:b@external_trace_decorator_4:80/c?d=e")
+            o._test_function_3("https://a:b@external_trace_decorator_3:443/c?d=e")
+            o._test_function_4("https://a:b@external_trace_decorator_4:443/c?d=e")
             time.sleep(0.1)
 
     def test_external_trace_decorator_error(self):

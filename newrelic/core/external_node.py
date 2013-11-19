@@ -43,8 +43,13 @@ class ExternalNode(_ExternalNode):
         hostname = self.details.hostname or 'unknown'
 
         try:
+            scheme = self.details.scheme.lower()
             port = self.details.port
         except Exception:
+            scheme = None
+            port = None
+
+        if (scheme, port) in (('http', 80), ('https', 443)):
             port = None
 
         netloc = port and ('%s:%s' % (hostname, port)) or hostname
@@ -96,8 +101,13 @@ class ExternalNode(_ExternalNode):
         hostname = self.details.hostname or 'unknown'
 
         try:
+            scheme = self.details.scheme.lower()
             port = self.details.port
         except Exception:
+            scheme = None
+            port = None
+
+        if (scheme, port) in (('http', 80), ('https', 443)):
             port = None
 
         netloc = port and ('%s:%s' % (hostname, port)) or hostname

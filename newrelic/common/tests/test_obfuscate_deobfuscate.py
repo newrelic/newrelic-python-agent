@@ -1,3 +1,5 @@
+# vim: set fileencoding=utf-8 :
+
 import unittest
 
 from newrelic.common.encoding_utils import obfuscate, deobfuscate
@@ -24,6 +26,15 @@ class TestCase(unittest.TestCase):
         key = '0123456789'
         string = 'abcd'
         result = 'UVNRVw=='
+
+        self.assertEqual(obfuscate(string, key), result)
+        self.assertEqual(deobfuscate(result, key), string)
+        self.assertEqual(type(obfuscate(string, key)), type(result))
+
+    def test_unicode_strings(self):
+        key = '0123456789'
+        string = "√√ಠ_ಠ☂☭√√"
+        result = '0rmo0byv1oWYZtCDktGst9Svldu4q9C7rg=='
 
         self.assertEqual(obfuscate(string, key), result)
         self.assertEqual(deobfuscate(result, key), string)

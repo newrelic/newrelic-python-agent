@@ -287,12 +287,6 @@
             "New Relic"
         ]
     },
-    "newrelic/api/tests/test_obfuscate_deobfuscate.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "newrelic/api/tests/test_transaction_name.py": {
         "hash": "n/a",
         "libraries": [
@@ -395,7 +389,7 @@
             "New Relic"
         ]
     },
-    "newrelic/common/helpers.py": {
+    "newrelic/common/encoding_utils.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -450,6 +444,12 @@
         ]
     },
     "newrelic/common/tests/test_system_info.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_obfuscate_deobfuscate.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

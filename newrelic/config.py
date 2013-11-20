@@ -579,6 +579,18 @@ def _module_import_hook(target, module, function):
                 ((target, module, function),))
 
         try:
+            instrumented = target._nr_instrumented
+        except AttributeError:
+            instrumented = target._nr_instrumented = set()
+
+        if (module, function) in instrumented:
+            _logger.debug("instrumentation already run %s" %
+                    ((target, module, function),))
+            return
+
+        instrumented.add((module, function))
+
+        try:
             getattr(newrelic.api.import_hook.import_module(module),
                     function)(target)
 

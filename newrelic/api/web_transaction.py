@@ -18,8 +18,8 @@ import newrelic.api.function_trace
 from ..common.encoding_utils import obfuscate, deobfuscate
 
 _js_agent_header_fragment = '<script type="text/javascript">%s</script>'
-_js_agent_footer_fragment = '<script type="text/javascript>'\
-        'window.NREUM||(NREUM={});NREUM.info=%s</script>'
+_js_agent_footer_fragment = '<script type="text/javascript">'\
+                            'window.NREUM||(NREUM={});NREUM.info=%s</script>'
 
 # Seconds since epoch for Jan 1 2000
 

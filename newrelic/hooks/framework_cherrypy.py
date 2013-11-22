@@ -48,8 +48,7 @@ def should_ignore(exc, value, tb):
     name = value.__class__.__name__
     fullname = '%s:%s' % (module, name)
 
-    ignore_exceptions = ('cherrypy._cperror:NotFound',
-                         'cherrypy._cperror:InternalRedirect',
+    ignore_exceptions = ('cherrypy._cperror:InternalRedirect',
                          'cherrypy._cperror:HTTPRedirect'
                          )
 

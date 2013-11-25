@@ -1383,6 +1383,10 @@ def _process_module_definition(target, module, function='instrument'):
         if _config_object.has_option(section, 'execute'):
             execute = _config_object.get(section, 'execute')
 
+    except Exception:
+        _raise_configuration_error(section)
+
+    try:
         if enabled and not execute:
             _module_import_hook_registry[target] = (module, function)
 
@@ -1394,8 +1398,9 @@ def _process_module_definition(target, module, function='instrument'):
 
             _module_import_hook_results.setdefault(
                     (target, module, function), None)
+
     except Exception:
-        _raise_configuration_error(section)
+        _raise_instrumentation_error('import-hook', locals())
 
 def _process_module_builtin_defaults():
     _process_module_definition('django.core.handlers.base',

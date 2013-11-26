@@ -516,8 +516,9 @@ class WebTransaction(newrelic.api.transaction.Transaction):
             additional_params.append(('product',
                                       obfuscate('product', obfuscation_key)))
 
-        if self._settings.browser_monitoring.ssl_for_http:
-            additional_params.append(('sslForHttp', True))
+        if self._settings.browser_monitoring.ssl_for_http is not None:
+            additional_params.append(('sslForHttp',
+                self._settings.browser_monitoring.ssl_for_http))
 
         # Add in the additional params to the footer config dictionary.
 

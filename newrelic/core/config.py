@@ -175,7 +175,7 @@ _settings.error_collector.ignore_status_codes = set([300, 301, 302, 303, 304,
 _settings.browser_monitoring.auto_instrument = True
 _settings.browser_monitoring.loader = 'rum'  # Valid values: 'full', 'none'
 _settings.browser_monitoring.debug = False
-_settings.browser_monitoring.ssl_for_http = False
+_settings.browser_monitoring.ssl_for_http = None
 
 _settings.transaction_name.limit = None
 _settings.transaction_name.naming_scheme = os.environ.get(

@@ -44,6 +44,8 @@ then
         ENVIRONMENTS="$ENVIRONMENTS,pypy"
         PYPY="$HOME/pypy-2.2/bin/pypy"
         PATH="$HOME/pypy-2.2/bin:$PATH"
+        LD_LIBRARY_PATH="$HOME/pypy-2.2/lib:$LD_LIBRARY_PATH"
+        export LD_LIBRARY_PATH
     fi
 fi
 

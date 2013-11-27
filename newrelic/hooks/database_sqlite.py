@@ -56,8 +56,7 @@ class ConnectionFactory(DBAPI2ConnectionFactory):
     __connection_wrapper__ = ConnectionWrapper
 
 def instrument_sqlite3_dbapi2(module):
-    register_database_client(module, 'SQLite', 'single',
-            'explain query plan', ('select',))
+    register_database_client(module, 'SQLite', 'single')
 
     wrap_object(module, 'connect', ConnectionFactory, (module,))
 
@@ -70,7 +69,6 @@ def instrument_sqlite3(module):
     # be applied.
 
     if not isinstance(module.connect, ConnectionFactory):
-        register_database_client(module, 'SQLite', 'single',
-                'explain query plan', ('select',))
+        register_database_client(module, 'SQLite')
 
         wrap_object(module, 'connect', ConnectionFactory, (module,))

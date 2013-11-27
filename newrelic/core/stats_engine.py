@@ -782,10 +782,16 @@ class StatsEngine(object):
             if six.PY3:
                 params_data = params_data.decode('Latin-1')
 
+            # Limit the length of any SQL that is reported back.
+
+            limit = self.__settings.agent_limits.sql_query_length_maximum
+
+            sql = node.slow_sql_node.formatted[:limit]
+
             data = [node.slow_sql_node.path,
                     node.slow_sql_node.request_uri,
                     node.slow_sql_node.identifier,
-                    node.slow_sql_node.formatted,
+                    sql,
                     node.slow_sql_node.metric,
                     node.call_count,
                     node.total_call_time * 1000,

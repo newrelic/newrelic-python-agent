@@ -15,6 +15,7 @@ def instrument_pyramid_router(module):
             framework=('Pyramid', pyramid_version))
 
 def should_ignore(exc, value, tb):
+    from pyramid.httpexceptions import HTTPException
     # Ignore certain exceptions based on HTTP status codes. The default list
     # of status codes are defined in the settings.error_collector object.
     #
@@ -24,7 +25,7 @@ def should_ignore(exc, value, tb):
     # exception would never bubble up to the level where we can capture it.
 
     settings = global_settings()
-    if (hasattr(value, 'status_code') and (value.status_code in
+    if (isinstance(value, HTTPException) and (value.code in
                     settings.error_collector.ignore_status_codes)):
         return True
 

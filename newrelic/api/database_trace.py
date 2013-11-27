@@ -51,7 +51,7 @@ class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
     def dump(self, file):
         print >> file, self.__class__.__name__, dict(sql=self.sql)
 
-    def finalize_data(self):
+    def finalize_data(self, exc=None, value=None, tb=None):
         self.stack_trace = None
 
         connect_params = None
@@ -72,9 +72,13 @@ class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
 
 
             # Only remember all the params for the calls if know
-            # there is a chance we will need to do an explain plan.
+            # there is a chance we will need to do an explain
+            # plan. We never allow an explain plan to be done if
+            # an exception occurred in doing the query in case
+            # doing the explain plan with the same inputs could
+            # cause further problems.
 
-            if (transaction_tracer.explain_enabled and
+            if (exc is None and transaction_tracer.explain_enabled and
                     self.duration >= transaction_tracer.explain_threshold):
                 if (self.transaction._explain_plan_count <
                        agent_limits.sql_explain_plans):

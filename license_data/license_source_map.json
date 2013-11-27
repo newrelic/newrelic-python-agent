@@ -785,6 +785,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/database_mysqldb.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/database_psycopg2.py": {
         "hash": "n/a",
         "libraries": [

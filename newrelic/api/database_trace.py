@@ -3,17 +3,35 @@ import types
 import time
 import traceback
 
+import logging
+
 import newrelic.core.database_node
 
 import newrelic.api.transaction
 import newrelic.api.time_trace
 import newrelic.api.object_wrapper
 
+_logger = logging.getLogger(__name__)
+
+def register_database_client(dbapi2_module, database_name,
+        quoting_style='single', explain_query=None, explain_stmts=[]):
+
+    _logger.debug('Registering database client module %r where database '
+            'is %r, quoting style is %r, explain query statement is %r and '
+            'the SQL statements on which explain plans can be run are %r.',
+            dbapi2_module, database_name, quoting_style, explain_query,
+            explain_stmts)
+
+    dbapi2_module._nr_database_name = database_name
+    dbapi2_module._nr_quoting_style = quoting_style
+    dbapi2_module._nr_explain_query = explain_query
+    dbapi2_module._nr_explain_stmts = explain_stmts
+
 class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
 
     node = newrelic.core.database_node.DatabaseNode
 
-    def __init__(self, transaction, sql, dbapi=None,
+    def __init__(self, transaction, sql, dbapi2_module=None,
                  connect_params=None, cursor_params=None,
                  execute_params=None):
 
@@ -24,7 +42,7 @@ class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
         else:
             self.sql = sql
 
-        self.dbapi = dbapi
+        self.dbapi2_module = dbapi2_module
 
         self.connect_params = connect_params
         self.cursor_params = cursor_params
@@ -72,7 +90,7 @@ class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
         self.execute_params = execute_params
 
     def create_node(self):
-        return self.node(dbapi=self.dbapi, sql=self.sql,
+        return self.node(dbapi2_module=self.dbapi2_module, sql=self.sql,
                 children=self.children, start_time=self.start_time,
                 end_time=self.end_time, duration=self.duration,
                 exclusive=self.exclusive, stack_trace=self.stack_trace,
@@ -85,7 +103,7 @@ class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
 
 class DatabaseTraceWrapper(object):
 
-    def __init__(self, wrapped, sql, dbapi=None):
+    def __init__(self, wrapped, sql, dbapi2_module=None):
         if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
         else:
@@ -100,14 +118,14 @@ class DatabaseTraceWrapper(object):
             self._nr_last_object = wrapped
 
         self._nr_sql = sql
-        self._nr_dbapi = dbapi
+        self._nr_dbapi2_module = dbapi2_module
 
     def __get__(self, instance, klass):
         if instance is None:
             return self
         descriptor = self._nr_next_object.__get__(instance, klass)
         return self.__class__((instance, descriptor), self._nr_sql,
-                              self._nr_dbapi)
+                              self._nr_dbapi2_module)
 
     def __call__(self, *args, **kwargs):
         transaction = newrelic.api.transaction.current_transaction()
@@ -122,14 +140,14 @@ class DatabaseTraceWrapper(object):
         else:
             sql = self._nr_sql
 
-        with DatabaseTrace(transaction, sql, self._nr_dbapi):
+        with DatabaseTrace(transaction, sql, self._nr_dbapi2_module):
             return self._nr_next_object(*args, **kwargs)
 
-def database_trace(sql, dbapi=None):
+def database_trace(sql, dbapi2_module=None):
     def decorator(wrapped):
-        return DatabaseTraceWrapper(wrapped, sql, dbapi=None)
+        return DatabaseTraceWrapper(wrapped, sql, dbapi2_module=None)
     return decorator
 
-def wrap_database_trace(module, object_path, sql, dbapi=None):
+def wrap_database_trace(module, object_path, sql, dbapi2_module=None):
     newrelic.api.object_wrapper.wrap_object(module, object_path,
-            DatabaseTraceWrapper, (sql, dbapi))
+            DatabaseTraceWrapper, (sql, dbapi2_module))

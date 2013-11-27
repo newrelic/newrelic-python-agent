@@ -159,6 +159,9 @@ from .api.generator_trace import (generator_trace, GeneratorTraceWrapper,
 from .api.profile_trace import (profile_trace, ProfileTraceWrapper,
         wrap_profile_trace)
 
+from .api.database_trace import (database_trace, DatabaseTrace,
+        DatabaseTraceWrapper, wrap_database_trace, register_database_client)
+
 from .api.external_trace import (external_trace, ExternalTrace,
         ExternalTraceWrapper, wrap_external_trace)
 

@@ -7,14 +7,14 @@ from newrelic.core.database_utils import sql_statement
 
 _SlowSqlNode = namedtuple('_SlowSqlNode',
         ['duration', 'path', 'request_uri', 'sql', 'sql_format',
-        'metric', 'dbapi', 'stack_trace', 'connect_params',
+        'metric', 'dbapi2_module', 'stack_trace', 'connect_params',
         'cursor_params', 'execute_params'])
 
 class SlowSqlNode(_SlowSqlNode):
 
     def __new__(cls, *args, **kwargs):
         node = _SlowSqlNode.__new__(cls, *args, **kwargs)
-        node.statement = sql_statement(node.sql, node.dbapi)
+        node.statement = sql_statement(node.sql, node.dbapi2_module)
         return node
 
     @property
@@ -31,15 +31,15 @@ class SlowSqlNode(_SlowSqlNode):
                 self.cursor_params, self.execute_params)
 
 _DatabaseNode = namedtuple('_DatabaseNode',
-        ['dbapi',  'sql', 'children', 'start_time', 'end_time', 'duration',
-        'exclusive', 'stack_trace', 'sql_format', 'connect_params',
-        'cursor_params', 'execute_params'])
+        ['dbapi2_module',  'sql', 'children', 'start_time', 'end_time',
+        'duration', 'exclusive', 'stack_trace', 'sql_format',
+        'connect_params', 'cursor_params', 'execute_params'])
 
 class DatabaseNode(_DatabaseNode):
 
     def __new__(cls, *args, **kwargs):
         node = _DatabaseNode.__new__(cls, *args, **kwargs)
-        node.statement = sql_statement(node.sql, node.dbapi)
+        node.statement = sql_statement(node.sql, node.dbapi2_module)
         return node
 
     @property
@@ -148,7 +148,8 @@ class DatabaseNode(_DatabaseNode):
         return SlowSqlNode(duration=self.duration, path=root.path,
                 request_uri=request_uri, sql=sql,
                 sql_format=self.sql_format, metric=name,
-                dbapi=self.dbapi, stack_trace=self.stack_trace,
+                dbapi2_module=self.dbapi2_module,
+                stack_trace=self.stack_trace,
                 connect_params=self.connect_params,
                 cursor_params=self.cursor_params,
                 execute_params=self.execute_params)

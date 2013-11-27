@@ -1550,21 +1550,25 @@ def _process_module_builtin_defaults():
 
     _process_module_definition('cx_Oracle',
             'newrelic.hooks.database_dbapi2')
-    _process_module_definition('MySQLdb',
-            'newrelic.hooks.database_dbapi2')
     _process_module_definition('ibm_db_dbi',
             'newrelic.hooks.database_dbapi2')
+
+    _process_module_definition('MySQLdb',
+            'newrelic.hooks.database_mysqldb',
+            'instrument_mysqldb')
     _process_module_definition('oursql',
-            'newrelic.hooks.database_dbapi2')
-    _process_module_definition('postgresql.interface.proboscis.dbapi2',
-            'newrelic.hooks.database_dbapi2')
+            'newrelic.hooks.database_mysqldb',
+            'instrument_mysqldb')
     _process_module_definition('pymysql',
-            'newrelic.hooks.database_dbapi2')
+            'newrelic.hooks.database_mysqldb',
+            'instrument_mysqldb')
+
     _process_module_definition('pyodbc',
             'newrelic.hooks.database_dbapi2')
 
     _process_module_definition('psycopg2',
-            'newrelic.hooks.database_dbapi2')
+            'newrelic.hooks.database_psycopg2',
+            'instrument_psycopg2')
     _process_module_definition('psycopg2.extensions',
             'newrelic.hooks.database_psycopg2',
             'instrument_psycopg2_extensions')
@@ -1576,15 +1580,32 @@ def _process_module_builtin_defaults():
             'instrument_psycopg2_extensions')
 
     _process_module_definition('psycopg2cffi',
-            'newrelic.hooks.database_dbapi2')
+            'newrelic.hooks.database_psycopg2',
+            'instrument_psycopg2')
     _process_module_definition('psycopg2cffi.extensions',
             'newrelic.hooks.database_psycopg2',
             'instrument_psycopg2_extensions')
 
-    _process_module_definition('pysqlite2.dbapi2',
-            'newrelic.hooks.database_sqlite')
+    _process_module_definition('postgresql.driver.dbapi20',
+            'newrelic.hooks.database_psycopg2',
+            'instrument_psycopg2')
+
+    _process_module_definition('postgresql.interface.proboscis.dbapi2',
+            'newrelic.hooks.database_dbapi2')
+
+    _process_module_definition('sqlite3',
+            'newrelic.hooks.database_sqlite',
+            'instrument_sqlite3')
     _process_module_definition('sqlite3.dbapi2',
-            'newrelic.hooks.database_sqlite')
+            'newrelic.hooks.database_sqlite',
+            'instrument_sqlite3_dbapi2')
+
+    _process_module_definition('pysqlite2',
+            'newrelic.hooks.database_sqlite',
+            'instrument_sqlite3')
+    _process_module_definition('pysqlite2.dbapi2',
+            'newrelic.hooks.database_sqlite',
+            'instrument_sqlite3_dbapi2')
 
     _process_module_definition('memcache',
             'newrelic.hooks.memcache_memcache')

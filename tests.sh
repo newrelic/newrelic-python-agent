@@ -39,6 +39,12 @@ then
         PYTHON27="$HOME/python-tools/python-3.3-ucs4/bin/python3.3"
         PATH="$HOME/python-tools/python-3.3-ucs4/bin:$PATH"
     fi
+    if test -x $HOME/pypy-2.2/bin/pypy
+    then
+        ENVIRONMENTS="$ENVIRONMENTS,pypy"
+        PYPY="$HOME/pypy-2.2/bin/pypy"
+        PATH="$HOME/pypy-2.2/bin:$PATH"
+    fi
 fi
 
 # Now fallback to system provided Python installations if we haven't
@@ -97,7 +103,7 @@ if test x"$PYPY" = x""
 then
     if test -x /usr/local/bin/pypy
     then
-        #ENVIRONMENTS="$ENVIRONMENTS,pypy"
+        ENVIRONMENTS="$ENVIRONMENTS,pypy"
         PYPY="/usr/local/bin/pypy"
     fi
 fi

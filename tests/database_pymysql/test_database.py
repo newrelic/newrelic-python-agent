@@ -54,23 +54,23 @@ def test_execute_via_cursor():
             passwd=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT)
     
     with connection as cursor:
-        cursor.execute("""drop table if exists database_pymsql""")
+        cursor.execute("""drop table if exists database_pymysql""")
 
-        cursor.execute("""create table database_pymsql """
+        cursor.execute("""create table database_pymysql """
                """(a integer, b real, c text)""")
 
-        cursor.executemany("""insert into database_pymsql """
+        cursor.executemany("""insert into database_pymysql """
                 """values (%s, %s, %s)""", [(1, 1.0, '1.0'),
                 (2, 2.2, '2.2'), (3, 3.3, '3.3')])
 
-        cursor.execute("""select * from database_pymsql""")
+        cursor.execute("""select * from database_pymysql""")
 
         for row in cursor: pass
 
-        cursor.execute("""update database_pymsql set a=%s, b=%s, """
+        cursor.execute("""update database_pymysql set a=%s, b=%s, """
                 """c=%s where a=%s""", (4, 4.0, '4.0', 1))
 
-        cursor.execute("""delete from database_pymsql where a=2""")
+        cursor.execute("""delete from database_pymysql where a=2""")
 
     connection.rollback()
     connection.commit()

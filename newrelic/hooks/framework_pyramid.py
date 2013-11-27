@@ -1,6 +1,6 @@
 from newrelic.agent import (callable_name, current_transaction,
         wrap_callable, wrap_out_function, wrap_wsgi_application,
-        ErrorTrace, FunctionTrace)
+        FunctionTrace, global_settings)
 
 def instrument_pyramid_router(module):
     pyramid_version = None
@@ -13,6 +13,20 @@ def instrument_pyramid_router(module):
 
     wrap_wsgi_application(module, 'Router.__call__',
             framework=('Pyramid', pyramid_version))
+
+def should_ignore(exc, value, tb):
+    # Ignore certain exceptions based on HTTP status codes. The default list
+    # of status codes are defined in the settings.error_collector object.
+    #
+    # No need to ignore any exceptions based on name. Previously pyramid
+    # instrumentation used to ignore the PredicateMismatch exception. But
+    # that's not required anymore, because in the new way the PredicateMismatch
+    # exception would never bubble up to the level where we can capture it.
+
+    settings = global_settings()
+    if (hasattr(value, 'status_code') and (value.status_code in
+                    settings.error_collector.ignore_status_codes)):
+        return True
 
 def view_handler_wrapper(wrapped, instance, args, kwargs):
     transaction = current_transaction()
@@ -30,10 +44,12 @@ def view_handler_wrapper(wrapped, instance, args, kwargs):
     transaction.set_transaction_name(name)
 
     with FunctionTrace(transaction, name):
-        with ErrorTrace(transaction, ignore_errors=[
-            'pyramid.httpexceptions:HTTPNotFound',
-            'pyramid.exceptions:PredicateMismatch']):
+        try:
             return wrapped(*args, **kwargs)
+
+        except:  # Catch all
+            transaction.record_exception(ignore_errors=should_ignore)
+            raise
 
 def wrap_view_handler(mapped_view):
     return wrap_callable(mapped_view, view_handler_wrapper)

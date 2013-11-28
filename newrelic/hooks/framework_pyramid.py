@@ -18,15 +18,36 @@ def should_ignore(exc, value, tb):
     from pyramid.httpexceptions import HTTPException
     # Ignore certain exceptions based on HTTP status codes. The default list
     # of status codes are defined in the settings.error_collector object.
-    #
-    # No need to ignore any exceptions based on name. Previously pyramid
-    # instrumentation used to ignore the PredicateMismatch exception. But
-    # that's not required anymore, because in the new way the PredicateMismatch
-    # exception would never bubble up to the level where we can capture it.
 
     settings = global_settings()
     if (isinstance(value, HTTPException) and (value.code in
                     settings.error_collector.ignore_status_codes)):
+        return True
+
+    # TODO: In a pyramid application, a class with a get and post method will
+    # raise a PredicateMismatch exception whenever a GET or POST request is
+    # made to that class in order to route the request to the right method.
+    # Since PredicateMismatch is a derived class from NotFound exception it
+    # will automatically ignored by the status code match above. But if a
+    # customer chooses to not ignore 404 then he will get a bunch of
+    # PredicateMismatch exceptions each time a request is routed to the class.
+    # So we're ignoring PredicateMismatch by name.
+    #
+    # The risk here is when a method (such as DELETE) is not defined on the
+    # class, it will raise a PredicateMismatch exception which will be
+    # suppressed. So there is no current distinction between a
+    # PredicateMismatch thrown to route the request and a PredicateMismatch
+    # thrown as a result of missing method.
+
+    # Ignore based on exception name.
+
+    module = value.__class__.__module__
+    name = value.__class__.__name__
+    fullname = '%s:%s' % (module, name)
+
+    ignore_exceptions = ('pyramid.exceptions.PredicateMismatch',)
+
+    if fullname in ignore_exceptions:
         return True
 
 def view_handler_wrapper(wrapped, instance, args, kwargs):

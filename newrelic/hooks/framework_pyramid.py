@@ -1,3 +1,35 @@
+"""Instrumentation module for Pyramid framework.
+
+"""
+
+# TODO
+#
+# * When using multi views, the PredicateMismatch exception will be
+#   raised when one view cannot handle a request. This will be caught and
+#   subsequent views then checked. If no view can handle the request,
+#   by virtue of PredicateMismatch deriving from NotFound/HTTPException,
+#   it would then finally be interpreted as a 404.
+#
+#   The problem is that exceptions are picked up around the attempt to
+#   match the request against each view and it is not possible to know
+#   if the PredicateMismatch is being raised against the last view or
+#   an earlier one. This is important as it should be ignored for all but
+#   the last view to be checked unless error_collector.ignore_status_codes
+#   includes 404. In this case where 404 is to be ignored, it is ignored
+#   for the last view as well.
+#
+#   As it stands, 404 will normally be ignored and so not an issue. If
+#   however 404 was configured not to be ignored, then PredicateMismatch
+#   as raised by views other than the last will be logged as an error when
+#   it technically isn't. As a result, we always need to ignore the
+#   PredicateMismatch exception. This does though then mean that if it
+#   was actually raised by the last view to be checked, then we would
+#   still ignore it, even though configured not to ignore 404.
+#
+#   The instrumentation could be improved to deal with this corner case
+#   but since likely that error_collector.ignore_status_codes would not
+#   be overridden, so tolerate it for now.
+
 from newrelic.agent import (callable_name, current_transaction,
         wrap_callable, wrap_out_function, wrap_wsgi_application,
         FunctionTrace, global_settings)
@@ -16,38 +48,25 @@ def instrument_pyramid_router(module):
 
 def should_ignore(exc, value, tb):
     from pyramid.httpexceptions import HTTPException
-    # Ignore certain exceptions based on HTTP status codes. The default list
-    # of status codes are defined in the settings.error_collector object.
+    from pyramid.exceptions import PredicateMismatch
+
+    # Ignore certain exceptions based on HTTP status codes. The default
+    # list of status codes are defined in the settings.error_collector
+    # object.
 
     settings = global_settings()
+
     if (isinstance(value, HTTPException) and (value.code in
                     settings.error_collector.ignore_status_codes)):
         return True
 
-    # TODO: In a pyramid application, a class with a get and post method will
-    # raise a PredicateMismatch exception whenever a GET or POST request is
-    # made to that class in order to route the request to the right method.
-    # Since PredicateMismatch is a derived class from NotFound exception it
-    # will automatically ignored by the status code match above. But if a
-    # customer chooses to not ignore 404 then he will get a bunch of
-    # PredicateMismatch exceptions each time a request is routed to the class.
-    # So we're ignoring PredicateMismatch by name.
-    #
-    # The risk here is when a method (such as DELETE) is not defined on the
-    # class, it will raise a PredicateMismatch exception which will be
-    # suppressed. So there is no current distinction between a
-    # PredicateMismatch thrown to route the request and a PredicateMismatch
-    # thrown as a result of missing method.
+    # Always ignore PredicateMismatch as it is raised by views to force
+    # subsequent views to be consulted when multi views are being used.
+    # It isn't therefore strictly an error as such as a subsequent view
+    # could still handle the request. See TODO items though for a corner
+    # case where this can mean an error isn't logged when it should.
 
-    # Ignore based on exception name.
-
-    module = value.__class__.__module__
-    name = value.__class__.__name__
-    fullname = '%s:%s' % (module, name)
-
-    ignore_exceptions = ('pyramid.exceptions.PredicateMismatch',)
-
-    if fullname in ignore_exceptions:
+    if isinstance(value, PredicateMismatch):
         return True
 
 def view_handler_wrapper(wrapped, instance, args, kwargs):

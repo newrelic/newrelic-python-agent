@@ -1,6 +1,5 @@
 import sys
 import threading
-import types
 
 import newrelic.packages.six as six
 
@@ -12,6 +11,12 @@ from newrelic.api.transaction_name import wrap_transaction_name
 from newrelic.api.post_function import wrap_post_function
 from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import WSGIApplicationWrapper
+
+def should_ignore(exc, value, tb):
+    from django.http import Http404
+
+    if isinstance(value, Http404):
+        return True
 
 # Response middleware for automatically inserting RUM header and
 # footer into HTML response returned by application
@@ -489,8 +494,7 @@ def wrap_view_handler(wrapped, priority=3):
                 # See http://bugs.python.org/issue3473.
                 exc_info = sys.exc_info()
                 transaction.record_exception(exc_info[0], exc_info[1],
-                        exc_info[2], ignore_errors=['django.http:Http404',
-                        'django.http.response:Http404'])
+                        exc_info[2], ignore_errors=should_ignore)
                 raise
 
             finally:
@@ -601,8 +605,7 @@ def instrument_django_core_urlresolvers(module):
     # a Http404 exception here, it probably is never the
     # case that one can be raised by get_callable().
 
-    wrap_error_trace(module, 'get_callable', ignore_errors=[
-            'django.http:Http404', 'django.http.response:Http404'])
+    wrap_error_trace(module, 'get_callable', ignore_errors=should_ignore)
 
     # Wrap methods which resolves a request to a view handler.
     # This can be called against a resolver initialised against

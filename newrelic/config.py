@@ -1674,6 +1674,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('celery.concurrency.processes',
             'newrelic.hooks.application_celery',
             'instrument_celery_worker')
+    _process_module_definition('celery.concurrency.prefork',
+            'newrelic.hooks.application_celery',
+            'instrument_celery_worker')
     #_process_module_definition('celery.loaders.base',
     #        'newrelic.hooks.application_celery',
     #        'instrument_celery_loaders_base')
@@ -1681,6 +1684,9 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.application_celery',
             'instrument_celery_execute_trace')
     _process_module_definition('celery.task.trace',
+            'newrelic.hooks.application_celery',
+            'instrument_celery_execute_trace')
+    _process_module_definition('celery.app.trace',
             'newrelic.hooks.application_celery',
             'instrument_celery_execute_trace')
 

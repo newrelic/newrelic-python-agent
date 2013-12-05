@@ -16,7 +16,8 @@ class ErrorTrace(object):
         if self._transaction is None:
             return
 
-        self._transaction.record_exception(ignore_errors=self._ignore_errors)
+        self._transaction.record_exception(exc=exc, value=value, tb=tb,
+                ignore_errors=self._ignore_errors)
 
 def ErrorTraceWrapper(wrapped, ignore_errors=None):
 

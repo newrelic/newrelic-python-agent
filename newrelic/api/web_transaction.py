@@ -435,21 +435,27 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         #
         # js_agent_loader will have values as Unicode strings. Convert back to
         # normal string using ascii encoding. If encoding fails return an empty
-        # string
+        # string.
+        #
+        # Set self._rum_header to true only if a valid header was generated.
+        # This flag will be checked by the footer generation.
 
         if self._settings.js_agent_loader:
-            self._rum_header = True
             header = _js_agent_header_fragment % self._settings.js_agent_loader
             try:
-                return header.encode(encoding='ascii')
+                header = header.encode(encoding='ascii')
             except UnicodeError:
                 if not WebTransaction.unicode_error_reported:
                     _logger.error('ASCII encoding of js-agent-header failed.',
                             header)
                     WebTransaction.unicode_error_reported = True
-                return ''
+                header = ''
+            else:  # Successfully encoded.
+                self._rum_header = True
         else:
-            return ''
+            header = ''
+
+        return header
 
     def browser_timing_footer(self):
         if not self.enabled:

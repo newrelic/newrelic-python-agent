@@ -4,6 +4,7 @@ import time
 import string
 import re
 import json
+import logging
 
 try:
     import urlparse
@@ -16,6 +17,8 @@ import newrelic.api.object_wrapper
 import newrelic.api.function_trace
 
 from ..common.encoding_utils import obfuscate, deobfuscate
+
+_logger = logging.getLogger(__name__)
 
 _js_agent_header_fragment = '<script type="text/javascript">%s</script>'
 _js_agent_footer_fragment = '<script type="text/javascript">'\
@@ -49,6 +52,8 @@ def _extract_token(cookie):
 
 
 class WebTransaction(newrelic.api.transaction.Transaction):
+
+    report_unicode_error = True
 
     def __init__(self, application, environ):
 
@@ -428,15 +433,21 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         # collector. Collector won't send any js_agent_loader if
         # browser_monitoring.loader is set to 'none'.
         #
-        # js_agent_loader will have values as Unicode strings and the result
-        # here will be Unicode so need to convert back to normal string. Using
-        # str() and default encoding should be fine as should all be ASCII
-        # anyway.
+        # js_agent_loader will have values as Unicode strings. Convert back to
+        # normal string using ascii encoding. If encoding fails return an empty
+        # string
 
         if self._settings.js_agent_loader:
             self._rum_header = True
-            return str(_js_agent_header_fragment %
-                    self._settings.js_agent_loader)
+            header = _js_agent_header_fragment % self._settings.js_agent_loader
+            try:
+                return header.encode(encoding='ascii')
+            except UnicodeError:
+                if not WebTransaction.unicode_error_reported:
+                    _logger.error('ASCII encoding of js-agent-header failed.',
+                            header)
+                    WebTransaction.unicode_error_reported = True
+                return ''
         else:
             return ''
 
@@ -471,7 +482,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         queue_duration = int((start_time - queue_start) * 1000)
         request_duration = int((end_time - start_time) * 1000)
 
-        footer = {
+        config_dict = {
             "beacon": self._settings.beacon,
             "errorBeacon": self._settings.error_beacon,
             "licenseKey": self._settings.browser_key,
@@ -522,15 +533,22 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         # Add in the additional params to the footer config dictionary.
 
-        footer.update(additional_params)
+        config_dict.update(additional_params)
+        footer = (_js_agent_footer_fragment %
+                json.dumps(config_dict, separators=(',', ':')))
 
-        # Settings will have values as Unicode strings and the
-        # result here will be Unicode so need to convert back to
-        # normal string. Using str() and default encoding should
-        # be fine as should all be ASCII anyway.
+        # Footer dictionary will have values as Unicode strings.  Convert it
+        # back to normal string using ascii encoding. If encoding fails return
+        # an empty string.
 
-        return str(_js_agent_footer_fragment %
-                json.dumps(footer, separators=(',', ':')))
+        try:
+            return footer.encode(encoding='ascii')
+        except UnicodeError:
+            if not WebTransaction.unicode_error_reported:
+                _logger.error('ASCII encoding of js-agent-footer failed.',
+                        footer)
+                WebTransaction.unicode_error_reported = True
+            return ''
 
 class _WSGIApplicationIterable(object):
 

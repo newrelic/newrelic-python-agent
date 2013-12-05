@@ -136,7 +136,6 @@ _settings.error_beacon = None
 _settings.application_id = None
 _settings.browser_key = None
 _settings.episodes_url = None
-_settings.js_agent_loader_version = None
 _settings.js_agent_loader = None
 _settings.js_agent_file = None
 
@@ -174,6 +173,7 @@ _settings.error_collector.ignore_status_codes = set([300, 301, 302, 303, 304,
 
 _settings.browser_monitoring.auto_instrument = True
 _settings.browser_monitoring.loader = 'rum'  # Valid values: 'full', 'none'
+_settings.browser_monitoring.loader_version = None
 _settings.browser_monitoring.debug = False
 _settings.browser_monitoring.ssl_for_http = None
 

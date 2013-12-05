@@ -2,7 +2,6 @@ import sys
 import threading
 import types
 
-import newrelic.packages.six as six
 
 from newrelic.api.error_trace import wrap_error_trace
 from newrelic.api.function_trace import (FunctionTrace, wrap_function_trace)
@@ -76,7 +75,6 @@ def browser_timing_middleware(request, response):
     if not header:
         return response
 
-    header = six.b(header)
 
     # Make sure we flatten any content first as it could be
     # stored as a list of strings in the response object. We
@@ -112,7 +110,6 @@ def browser_timing_middleware(request, response):
             parts.append(content[start+1:end])
 
             footer = transaction.browser_timing_footer()
-            footer = six.b(footer)
 
             parts.append(footer)
             parts.append(content[end:])
@@ -130,8 +127,6 @@ def browser_timing_middleware(request, response):
             parts.append(content[start:end])
 
             footer = transaction.browser_timing_footer()
-            footer = six.b(footer)
-
             parts.append(footer)
             parts.append(content[end:])
             response.content = ''

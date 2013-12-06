@@ -58,10 +58,13 @@ def run_program(args):
     log_message('root_directory = %r', root_directory)
     log_message('boot_directory = %r', boot_directory)
 
+    python_path = boot_directory
+
     if 'PYTHONPATH' in os.environ:
-        python_path = "%s:%s" % (boot_directory, os.environ['PYTHONPATH'])
-    else:
-        python_path = boot_directory
+        path = os.environ['PYTHONPATH'].split(os.path.pathsep)
+        if not boot_directory in path:
+            python_path = "%s%s%s" % (boot_directory, os.path.pathsep,
+                    os.environ['PYTHONPATH'])
 
     os.environ['PYTHONPATH'] = python_path
 
@@ -79,7 +82,7 @@ def run_program(args):
     program_exe_path = args[0]
 
     if not os.path.dirname(program_exe_path):
-        program_search_path = os.environ.get('PATH', '').split(':')
+        program_search_path = os.environ.get('PATH', '').split(os.path.pathsep)
         for path in program_search_path:
             path = os.path.join(path, program_exe_path)
             if os.path.exists(path) and os.access(path, os.X_OK):

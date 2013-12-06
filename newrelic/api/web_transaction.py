@@ -525,13 +525,13 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         if user:
             additional_params.append(('user',
-                                      obfuscate('user', obfuscation_key)))
+                                      obfuscate(user, obfuscation_key)))
         if account:
             additional_params.append(('account',
-                                      obfuscate('account', obfuscation_key)))
+                                      obfuscate(account, obfuscation_key)))
         if product:
             additional_params.append(('product',
-                                      obfuscate('product', obfuscation_key)))
+                                      obfuscate(product, obfuscation_key)))
 
         if self._settings.browser_monitoring.ssl_for_http is not None:
             additional_params.append(('sslForHttp',

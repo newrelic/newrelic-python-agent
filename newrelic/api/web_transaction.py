@@ -400,6 +400,11 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         return additional_headers
 
     def browser_timing_header(self):
+        """This function returns the header as a native python string.
+           In Python 2 native strings are stored as bytes.
+           In Python 3 native strings are stored as unicode.
+
+         """
         if not self.enabled:
             return ''
 
@@ -433,17 +438,16 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         # collector. Collector won't send any js_agent_loader if
         # browser_monitoring.loader is set to 'none'.
         #
-        # js_agent_loader will have values as Unicode strings. Convert back to
-        # normal string using ascii encoding. If encoding fails return an empty
-        # string.
+        # JS Agent Loader is supposed to be ascii. Verify that by encoding it
+        # as ascii. If encoding fails return an empty string.
         #
-        # Set self._rum_header to true only if a valid header was generated.
+        # Set self._rum_header to true only if a valid header was returned.
         # This flag will be checked by the footer generation.
 
         if self._settings.js_agent_loader:
             header = _js_agent_header_fragment % self._settings.js_agent_loader
             try:
-                header = header.encode(encoding='ascii')
+                header.encode('ascii')
             except UnicodeError:
                 if not WebTransaction.unicode_error_reported:
                     _logger.error('ASCII encoding of js-agent-header failed.',
@@ -455,9 +459,18 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         else:
             header = ''
 
-        return header
+        # Since encoding it as ascii was successful, return the string version
+        # of header.
+
+        return str(header)
 
     def browser_timing_footer(self):
+        """This function returns the footer script as a native python string.
+           In Python 2 native strings are stored as bytes.
+           In Python 3 native strings are stored as unicode.
+
+         """
+
         if not self.enabled:
             return ''
 
@@ -543,18 +556,22 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         footer = (_js_agent_footer_fragment %
                 json.dumps(config_dict, separators=(',', ':')))
 
-        # Footer dictionary will have values as Unicode strings.  Convert it
-        # back to normal string using ascii encoding. If encoding fails return
-        # an empty string.
+        # Footer dictionary is only supposed to have ascii chars. Verify that
+        # by encoding it as ascii. If encoding fails return an empty string.
 
         try:
-            return footer.encode(encoding='ascii')
+            footer.encode('ascii')
         except UnicodeError:
             if not WebTransaction.unicode_error_reported:
                 _logger.error('ASCII encoding of js-agent-footer failed.',
                         footer)
                 WebTransaction.unicode_error_reported = True
             return ''
+
+        # Since encoding it as ascii was successful, return the string version
+        # of footer.
+
+        return str(footer)
 
 class _WSGIApplicationIterable(object):
 

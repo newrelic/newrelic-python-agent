@@ -1,6 +1,5 @@
 import sys
 import threading
-import types
 
 
 from newrelic.api.error_trace import wrap_error_trace
@@ -11,6 +10,7 @@ from newrelic.api.transaction_name import wrap_transaction_name
 from newrelic.api.post_function import wrap_post_function
 from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import WSGIApplicationWrapper
+import newrelic.packages.six as six
 
 # Response middleware for automatically inserting RUM header and
 # footer into HTML response returned by application
@@ -75,6 +75,7 @@ def browser_timing_middleware(request, response):
     if not header:
         return response
 
+    header = six.b(header)
 
     # Make sure we flatten any content first as it could be
     # stored as a list of strings in the response object. We
@@ -110,6 +111,7 @@ def browser_timing_middleware(request, response):
             parts.append(content[start+1:end])
 
             footer = transaction.browser_timing_footer()
+            footer = six.b(footer)
 
             parts.append(footer)
             parts.append(content[end:])
@@ -127,6 +129,7 @@ def browser_timing_middleware(request, response):
             parts.append(content[start:end])
 
             footer = transaction.browser_timing_footer()
+            footer = six.b(footer)
             parts.append(footer)
             parts.append(content[end:])
             response.content = ''

@@ -17,6 +17,12 @@
             "New Relic"
         ]
     },
+    "newrelic/admin/__main__.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/admin/data_source.py": {
         "hash": "n/a",
         "libraries": [

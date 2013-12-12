@@ -13,6 +13,9 @@ class ErrorTrace(object):
         return self
 
     def __exit__(self, exc, value, tb):
+        if exc is None or value is None or tb is None:
+            return
+
         if self._transaction is None:
             return
 

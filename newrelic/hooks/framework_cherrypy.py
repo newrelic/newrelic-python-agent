@@ -23,7 +23,6 @@
 # * We don't handle any sub dispatching that may be occuring due to the
 #   use of XMLRPCDispatcher.
 
-from cherrypy import HTTPError
 
 from newrelic.agent import (current_transaction, wrap_wsgi_application,
         FunctionTrace, callable_name, ObjectProxy, function_wrapper,
@@ -34,11 +33,13 @@ def framework_details():
     return ('CherryPy', getattr(cherrypy, '__version__', None))
 
 def should_ignore(exc, value, tb):
+    from cherrypy import HTTPError, HTTPRedirect
+
     # Ignore certain exceptions based on HTTP status codes. The default list
     # of status codes are defined in the settings.error_collector object.
 
     settings = global_settings()
-    if (isinstance(value, HTTPError)
+    if (isinstance(value, (HTTPError, HTTPRedirect))
             and value.status in settings.error_collector.ignore_status_codes):
         return True
 
@@ -48,10 +49,7 @@ def should_ignore(exc, value, tb):
     name = value.__class__.__name__
     fullname = '%s:%s' % (module, name)
 
-    ignore_exceptions = ('cherrypy._cperror:NotFound',
-                         'cherrypy._cperror:InternalRedirect',
-                         'cherrypy._cperror:HTTPRedirect'
-                         )
+    ignore_exceptions = ('cherrypy._cperror:InternalRedirect',)
 
     if fullname in ignore_exceptions:
         return True

@@ -3,90 +3,129 @@ from __future__ import print_function
 import os
 import sys
 
-# First see if the user had defined any sitecustomize.py file which are
-# are overriding. If they are, then load it so it is still executed.
+# Define some debug logging routines to help sort out things when this
+# all doesn't work as expected.
 
-site_customize = os.environ.get('NEW_RELIC_SITE_CUSTOMIZE')
+import time
 
-if site_customize:
-    import imp
+startup_debug = os.environ.get('NEW_RELIC_STARTUP_DEBUG',
+        'off').lower() in ('on', 'true', '1')
 
-    if site_customize.endswith('.py'):
-        imp.load_source('_newrelic_sitecustomize', site_customize)
-    elif site_customize.endswith('.pyc') or site_customize.endswith('.pyo'):
-        imp.load_compiled('_newrelic_sitecustomize', site_customize)
+def log_message(text, *args):
+    if startup_debug:
+        text = text % args
+        timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+        print('NEWRELIC: %s (%d) - %s' % (timestamp, os.getpid(), text))
 
-# When installed as egg with buildout, the root directory for packages
-# is not listed in sys.path and scripts instead set after Python has
-# started up. This will cause importing of 'newrelic' module to fail.
-# What we do is see if the root directory where package is held is in
-# sys.path and if not insert it. For good measure we remove it after
-# having import 'newrelic' module to reduce chance that will cause any
-# issues. If it is a buildout created script, it will replace the whole
-# sys.path again later anyway.
+log_message('New Relic Bootstrap (%s)', __file__)
+
+log_message('working_directory = %r', os.getcwd())
+
+log_message('sys.prefix = %r', os.path.normpath(sys.prefix))
+
+try:
+    log_message('sys.real_prefix = %r', sys.real_prefix)
+except AttributeError:
+    pass
+
+log_message('sys.version_info = %r', sys.version_info)
+log_message('sys.executable = %r', sys.executable)
+log_message('sys.flags = %r', sys.flags)
+log_message('sys.path = %r', sys.path)
+
+for name in sorted(os.environ.keys()):
+    if name.startswith('NEW_RELIC_') or name.startswith('PYTHON'):
+        log_message('%s = %r', name, os.environ.get(name))
+
+# We need to import the original sitecustomize.py file if it exists. We
+# can't just try and import the existing one as we will pick up
+# ourselves again. Even if we remove ourselves from sys.modules and
+# remove the bootstrap directory from sys.path, still not sure that the
+# import system will not have cached something and return a reference to
+# ourselves rather than searching again. What we therefore do is use the
+# imp module to find the module, excluding the bootstrap directory from
+# the search, and then load what was found.
+
+import imp
 
 boot_directory = os.path.dirname(__file__)
 root_directory = os.path.dirname(os.path.dirname(boot_directory))
 
-if root_directory not in sys.path:
-    sys.path.insert(0, root_directory)
+log_message('root_directory = %r', root_directory)
+log_message('boot_directory = %r', boot_directory)
 
-import newrelic.agent
+path = list(sys.path)
+
+if boot_directory in path:
+    del path[path.index(boot_directory)]
 
 try:
-    del sys.path[sys.path.index(root_directory)]
-except Exception:
+    (file, pathname, description) = imp.find_module('sitecustomize', path)
+except ImportError:
     pass
+else:
+    log_message('sitecustomize = %r', (file, pathname, description))
 
-# Dump out various information if we are trying to debug startup.
+    imp.load_module('sitecustomize', file, pathname, description)
 
-debug_startup = os.environ.get('NEW_RELIC_STARTUP_DEBUG',
-        'off').lower() in ('on', 'true', '1')
+# Because the PYTHONPATH environment variable has been amended and the
+# bootstrap directory added, if a Python application creates a sub
+# process which runs a different Python interpreter, then it will still
+# load this sitecustomize.py. If that is for a different Python version
+# it will cause problems if we then try and import and initialize the
+# agent. We therefore need to try our best to verify that we are running
+# in the same Python installation as the original newrelic-admin script
+# which was run and only continue if we are.
 
-if debug_startup:
-    import time
+expected_python_prefix = os.environ.get('NEW_RELIC_PYTHON_PREFIX')
+actual_python_prefix = os.path.normpath(sys.prefix)
 
-    def _log(text, *args):
-        text = text % args
-        print('NEWRELIC: %s (%d) - %s' % (time.strftime(
-                '%Y-%m-%d %H:%M:%S', time.localtime()),
-                os.getpid(), text))
+expected_python_version = os.environ.get('NEW_RELIC_PYTHON_VERSION')
+actual_python_version = '.'.join(map(str, sys.version_info[:2]))
 
-    _log('New Relic Bootstrap (%s)', newrelic.version)
+python_prefix_matches = expected_python_prefix == actual_python_prefix
+python_version_matches = expected_python_version == actual_python_version
 
-    _log('working_directory = %r', os.getcwd())
+log_message('python_prefix_matches = %r', python_prefix_matches)
+log_message('python_version_matches = %r', python_version_matches)
 
-    for name in sorted(os.environ.keys()):
-        if name.startswith('NEW_RELIC_') or name.startswith('PYTHON'):
-            _log('%s = %r', name, os.environ.get(name))
+if python_prefix_matches and python_version_matches:
+    # We also need to skip agent initialisation if neither the license
+    # key or config file environment variables are set. We do this as
+    # some people like to use a common startup script which always uses
+    # the wrapper script, and which controls whether the agent is
+    # actually run based on the presence of the environment variables.
 
-    _log('root_directory = %r', root_directory)
-    _log('boot_directory = %r', boot_directory)
+    license_key = os.environ.get('NEW_RELIC_LICENSE_KEY', None)
 
-# We now need to make sure we strip out the bootstrap directory from the
-# PYTHONPATH environment variable. If we do not do this and a distinct
-# Python interpreter is executed in a sub process, it will cause various
-# problems if that is a different Python installation.
+    config_file = os.environ.get('NEW_RELIC_CONFIG_FILE', None)
+    environment = os.environ.get('NEW_RELIC_ENVIRONMENT', None)
 
-python_path = os.environ.get('PYTHONPATH', '').split(os.pathsep)
+    log_message('initialize_agent = %r', bool(license_key or config_file))
 
-if boot_directory in python_path:
-    del python_path[python_path.index(boot_directory)]
-    if python_path:
-        os.environ['PYTHONPATH'] = os.pathsep.join(python_path)
-    else:
-        del os.environ['PYTHONPATH']
+    if license_key or config_file:
+        # When installed as an egg with buildout, the root directory for
+        # packages is not listed in sys.path and scripts instead set it
+        # after Python has started up. This will cause importing of
+        # 'newrelic' module to fail. What we do is see if the root
+        # directory where the package is held is in sys.path and if not
+        # insert it. For good measure we remove it after having imported
+        # 'newrelic' module to reduce chance that will cause any issues.
+        # If it is a buildout created script, it will replace the whole
+        # sys.path again later anyway.
 
-# We skip agent initialisation if neither the license key or config file
-# environment variables are set. We do this as some people like to use a
-# common startup script which always uses the wrapper script, and which
-# controls whether the agent is actually run based on the presence of
-# the environment variables.
+        if root_directory not in sys.path:
+            sys.path.insert(0, root_directory)
 
-license_key = os.environ.get('NEW_RELIC_LICENSE_KEY', None)
+        import newrelic.agent
 
-config_file = os.environ.get('NEW_RELIC_CONFIG_FILE', None)
-environment = os.environ.get('NEW_RELIC_ENVIRONMENT', None)
+        log_message('agent_version = %r', newrelic.version)
 
-if license_key or config_file:
-    newrelic.agent.initialize(config_file, environment)
+        try:
+            del sys.path[sys.path.index(root_directory)]
+        except Exception:
+            pass
+
+        # Finally initialize the agent.
+
+        newrelic.agent.initialize(config_file, environment)

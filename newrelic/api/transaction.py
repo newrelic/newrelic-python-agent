@@ -777,7 +777,7 @@ class Transaction(object):
         self._errors.append(node)
 
     def notice_error(self, exc, value, tb, params={}, ignore_errors=[]):
-        warnings.warn('Internal API change. Use record_transaction() '
+        warnings.warn('Internal API change. Use record_exception() '
                 'instead of notice_error().', DeprecationWarning,
                 stacklevel=2)
 

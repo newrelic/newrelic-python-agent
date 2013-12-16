@@ -46,3 +46,4 @@ htmlcov
 .tox
 
 testing.log
+.tddium*

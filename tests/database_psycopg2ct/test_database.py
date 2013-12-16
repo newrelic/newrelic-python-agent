@@ -11,11 +11,11 @@ from newrelic.common.object_wrapper import resolve_path
 
 USER = pwd.getpwuid(os.getuid()).pw_name
 
-DATABASE_NAME = os.environ.get('TDDIUM_DB_NAME', USER)
-DATABASE_USER = os.environ.get('TDDIUM_DB_USER', USER)
-DATABASE_PASSWORD = os.environ.get('TDDIUM_DB_PASSWORD')
-DATABASE_HOST = os.environ.get('TDDIUM_DB_HOST', 'localhost')
-DATABASE_PORT = int(os.environ.get('TDDIUM_DB_PORT', '5432'))
+DATABASE_NAME = os.environ.get('TDDIUM_DB_PG_NAME', USER)
+DATABASE_USER = os.environ.get('TDDIUM_DB_PG_USER', USER)
+DATABASE_PASSWORD = os.environ.get('TDDIUM_DB_PG_PASSWORD')
+DATABASE_HOST = os.environ.get('TDDIUM_DB_PG_HOST', 'localhost')
+DATABASE_PORT = int(os.environ.get('TDDIUM_DB_PG_PORT', '5432'))
 
 @transient_function_wrapper('newrelic.api.database_trace',
         'DatabaseTrace.__init__')

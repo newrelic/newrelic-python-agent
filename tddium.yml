@@ -1,0 +1,21 @@
+:tddium:
+  :tests:
+    - tox -c tests/database_mysqldb/tox.ini
+    - tox -c tests/database_oursql/tox.ini
+    - tox -c tests/database_proboscis/tox.ini
+    - tox -c tests/database_postgresql/tox.ini
+    - tox -c tests/database_psycopg2/tox.ini
+    - tox -c tests/database_psycopg2cffi/tox.ini
+    - tox -c tests/database_psycopg2ct/tox.ini
+    - tox -c tests/database_pymysql/tox.ini
+    - tox -c tests/database_sqlite/tox.ini
+    - tox -c tests/framework_cherrypy/tox.ini
+    - tox -c tests/framework_flask/tox.ini
+    - tox -c tests/framework_tornado/tox.ini
+  :python:
+    :python_version: 2.7
+    :pip_requirements_file: requirements.txt
+  :postgresql:
+    :version: '9.1'
+  :mysql:
+    :version: '5.1'

@@ -47,8 +47,51 @@ def validate_database_trace_inputs(wrapped, instance, args, kwargs):
 
     return wrapped(*args, **kwargs)
 
-@background_task()
+def validate_transaction_metrics(scope):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_transaction_metrics(wrapped, instance, args, kwargs):
+        try:
+            return wrapped(*args, **kwargs)
+        finally:
+            metrics = instance.stats_table
+
+            assert metrics[('Database/all', '')].call_count == 9
+            assert metrics[('Database/allOther', '')].call_count == 9
+
+            assert metrics[('Database/select', '')].call_count == 1
+            assert metrics[
+                    ('Database/database_oursql/select', '')].call_count == 1
+            assert metrics[
+                    ('Database/database_oursql/select', scope)].call_count == 1
+
+            assert metrics[('Database/insert', '')].call_count == 1
+            assert metrics[
+                    ('Database/database_oursql/insert', '')].call_count == 1
+            assert metrics[
+                    ('Database/database_oursql/insert', scope)].call_count == 1
+
+            assert metrics[('Database/update', '')].call_count == 1
+            assert metrics[
+                    ('Database/database_oursql/update', '')].call_count == 1
+            assert metrics[
+                    ('Database/database_oursql/update', scope)].call_count == 1
+
+            assert metrics[('Database/delete', '')].call_count == 1
+            assert metrics[
+                    ('Database/database_oursql/delete', '')].call_count == 1
+            assert metrics[
+                    ('Database/database_oursql/delete', scope)].call_count == 1
+
+            assert metrics[('Database/other', '')].call_count == 5
+            assert metrics[('Database/other/sql', '')].call_count == 5
+
+    return _validate_transaction_metrics
+
+@validate_transaction_metrics('OtherTransaction/Function/test_database:'
+        'test_execute_via_cursor')
 @validate_database_trace_inputs
+@background_task()
 def test_execute_via_cursor():
     connection = oursql.connect(db=DATABASE_NAME, user=DATABASE_USER,
             passwd=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT)
@@ -71,5 +114,6 @@ def test_execute_via_cursor():
 
         cursor.execute("""delete from database_oursql where a=2""")
 
+    connection.commit()
     connection.rollback()
     connection.commit()

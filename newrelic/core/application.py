@@ -674,7 +674,9 @@ class Application(object):
         if not self._active_session:
             return
 
-        if self._stats_engine.settings is None:
+        settings = self._stats_engine.settings
+
+        if settings is None:
             return
 
         # Do checks to see whether trying to record a transaction in a
@@ -701,6 +703,9 @@ class Application(object):
                         'this problem to New Relic support for further '
                         'investigation.')
 
+                if settings.debug.record_transaction_failure:
+                    raise
+
             if profile_samples and data.path in \
                     self._stats_engine.xray_sessions:
 
@@ -720,6 +725,9 @@ class Application(object):
                             'implementation issue with the agent. Please '
                             'report this problem to New Relic support for '
                             'further investigation.')
+
+                    if settings.debug.record_transaction_failure:
+                        raise
 
             with self._stats_lock:
                 try:
@@ -747,6 +755,9 @@ class Application(object):
                             'internal implementation issue with the agent. '
                             'Please report this problem to New Relic support '
                             'for further investigation.')
+
+                    if settings.debug.record_transaction_failure:
+                        raise
 
     def start_xray(self, command_id=0, **kwargs):
         """Handler for agent command 'start_xray_session'. """

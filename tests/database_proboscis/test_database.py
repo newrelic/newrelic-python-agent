@@ -47,8 +47,51 @@ def validate_database_trace_inputs(wrapped, instance, args, kwargs):
 
     return wrapped(*args, **kwargs)
 
-@background_task()
+def validate_transaction_metrics(scope):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_transaction_metrics(wrapped, instance, args, kwargs):
+        try:
+            return wrapped(*args, **kwargs)
+        finally:
+            metrics = instance.stats_table
+
+            assert metrics[('Database/all', '')].call_count == 11
+            assert metrics[('Database/allOther', '')].call_count == 11
+
+            assert metrics[('Database/select', '')].call_count == 1
+            assert metrics[
+                    ('Database/database_proboscis/select', '')].call_count == 1
+            assert metrics[
+                    ('Database/database_proboscis/select', scope)].call_count == 1
+
+            assert metrics[('Database/insert', '')].call_count == 1
+            assert metrics[
+                    ('Database/database_proboscis/insert', '')].call_count == 1
+            assert metrics[
+                    ('Database/database_proboscis/insert', scope)].call_count == 1
+
+            assert metrics[('Database/update', '')].call_count == 1
+            assert metrics[
+                    ('Database/database_proboscis/update', '')].call_count == 1
+            assert metrics[
+                    ('Database/database_proboscis/update', scope)].call_count == 1
+
+            assert metrics[('Database/delete', '')].call_count == 1
+            assert metrics[
+                    ('Database/database_proboscis/delete', '')].call_count == 1
+            assert metrics[
+                    ('Database/database_proboscis/delete', scope)].call_count == 1
+
+            assert metrics[('Database/other', '')].call_count == 7
+            assert metrics[('Database/other/sql', '')].call_count == 7
+
+    return _validate_transaction_metrics
+
+@validate_transaction_metrics('OtherTransaction/Function/test_database:'
+        'test_execute_via_cursor')
 @validate_database_trace_inputs
+@background_task()
 def test_execute_via_cursor():
     connection = postgresql.interface.proboscis.dbapi2.connect(
             database=DATABASE_NAME, user=DATABASE_USER,

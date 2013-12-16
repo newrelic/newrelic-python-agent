@@ -283,6 +283,10 @@ class StatsEngine(object):
         return self.__settings
 
     @property
+    def stats_table(self):
+        return self.__stats_table
+
+    @property
     def metric_ids(self):
         """Returns a reference to the dictionary containing the mappings
         from metric (name, scope) to the integer identifier supplied

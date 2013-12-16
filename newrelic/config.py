@@ -1892,7 +1892,7 @@ def initialize(config_file=None, environment=None, ignore_errors=None,
 
     if ignore_errors is None:
         ignore_errors = newrelic.core.config._environ_as_bool(
-                'NEW_RELIC_IGNORE_INSTRUMENTATION_ERRORS', True)
+                'NEW_RELIC_IGNORE_STARTUP_ERRORS', True)
 
     _load_configuration(config_file, environment, ignore_errors,
             log_file, log_level)

@@ -1,5 +1,6 @@
 :tddium:
   :tests:
+    - tox -c tests/database_mysql/tox.ini
     - tox -c tests/database_mysqldb/tox.ini
     - tox -c tests/database_oursql/tox.ini
     - tox -c tests/database_proboscis/tox.ini

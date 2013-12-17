@@ -11,6 +11,7 @@
     - tox -c tests/database_sqlite/tox.ini
     - tox -c tests/framework_cherrypy/tox.ini
     - tox -c tests/framework_flask/tox.ini
+    - tox -c tests/framework_pyramid/tox.ini
     - tox -c tests/framework_tornado/tox.ini
   :python:
     :python_version: 2.7

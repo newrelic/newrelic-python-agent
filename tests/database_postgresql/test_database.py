@@ -53,7 +53,9 @@ def validate_transaction_metrics(scope):
     def _validate_transaction_metrics(wrapped, instance, args, kwargs):
         try:
             return wrapped(*args, **kwargs)
-        finally:
+        except:
+            raise
+        else:
             metrics = instance.stats_table
 
             assert metrics[('Database/all', '')].call_count == 11

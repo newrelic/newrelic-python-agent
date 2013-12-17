@@ -1555,6 +1555,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('ibm_db_dbi',
             'newrelic.hooks.database_dbapi2')
 
+    _process_module_definition('mysql.connector',
+            'newrelic.hooks.database_mysql',
+            'instrument_mysql_connector')
     _process_module_definition('MySQLdb',
             'newrelic.hooks.database_mysqldb',
             'instrument_mysqldb')

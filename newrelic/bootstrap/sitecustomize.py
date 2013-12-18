@@ -78,7 +78,7 @@ else:
 # which was run and only continue if we are.
 
 expected_python_prefix = os.environ.get('NEW_RELIC_PYTHON_PREFIX')
-actual_python_prefix = os.path.normpath(sys.prefix)
+actual_python_prefix = os.path.realpath(os.path.normpath(sys.prefix))
 
 expected_python_version = os.environ.get('NEW_RELIC_PYTHON_VERSION')
 actual_python_version = '.'.join(map(str, sys.version_info[:2]))

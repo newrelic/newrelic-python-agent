@@ -791,6 +791,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/database_mysql.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/database_mysqldb.py": {
         "hash": "n/a",
         "libraries": [
@@ -1626,6 +1632,18 @@
         ]
     },
     "newrelic/tests/test_cases.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "requirements.txt": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "tddium.yml": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

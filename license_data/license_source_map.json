@@ -1643,6 +1643,12 @@
             "New Relic"
         ]
     },
+    "services.sh": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "tddium.yml": {
         "hash": "n/a",
         "libraries": [

@@ -4,7 +4,7 @@ import os
 import sys
 
 from newrelic.agent import (initialize, register_application,
-        global_settings, shutdown_agent)
+        global_settings, shutdown_agent, application as application_instance)
 
 from newrelic.core.config import apply_config_setting
 
@@ -17,8 +17,8 @@ def collector_agent_registration_fixture(app_name=None, default_settings={}):
         settings.license_key = '84325f47e9dec80613e262be4236088a9983d501'
         settings.host = 'staging-collector.newrelic.com'
 
-        settings.startup_timeout = 10.0
-        settings.shutdown_timeout = 10.0
+        settings.startup_timeout = 20.0
+        settings.shutdown_timeout = 20.0
 
         if app_name is not None:
             settings.app_name = app_name
@@ -73,6 +73,11 @@ def collector_agent_registration_fixture(app_name=None, default_settings={}):
         return application
 
     return _collector_agent_registration_fixture
+
+@pytest.fixture(scope='function')
+def collector_available_fixture(request):
+    application = application_instance()
+    assert application.active
 
 def code_coverage_fixture(source=['newrelic']):
     @pytest.fixture(scope='session')

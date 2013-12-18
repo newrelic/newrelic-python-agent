@@ -21,10 +21,12 @@ DATABASE_HOST = os.environ.get('TDDIUM_DB_PG_HOST', 'localhost')
 DATABASE_PORT = int(os.environ.get('TDDIUM_DB_PG_PORT', '5432'))
 
 _test_execute_via_cursor_scoped_metrics = [
+        ('Function/psycopg2:connect', 1),
         ('Database/database_psycopg2/select', 1),
         ('Database/database_psycopg2/insert', 1),
         ('Database/database_psycopg2/update', 1),
-        ('Database/database_psycopg2/delete', 1)]
+        ('Database/database_psycopg2/delete', 1),
+        ('Database/other/sql', 7)]
 
 _test_execute_via_cursor_rollup_metrics = [
         ('Database/all', 11),

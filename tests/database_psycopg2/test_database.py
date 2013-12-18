@@ -4,6 +4,8 @@ import psycopg2.extensions
 import pwd
 import os
 
+from testing_support.fixtures import validate_transaction_metrics
+
 from newrelic.agent import (background_task, current_transaction,
     transient_function_wrapper)
 
@@ -48,51 +50,30 @@ def validate_database_trace_inputs(wrapped, instance, args, kwargs):
 
     return wrapped(*args, **kwargs)
 
-def validate_transaction_metrics(scope):
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
-    def _validate_transaction_metrics(wrapped, instance, args, kwargs):
-        try:
-            return wrapped(*args, **kwargs)
-        except:
-            raise
-        else:
-            metrics = instance.stats_table
+_test_execute_via_cursor_scoped_metrics = [
+        ('Database/database_psycopg2/select', 1),
+        ('Database/database_psycopg2/insert', 1),
+        ('Database/database_psycopg2/update', 1),
+        ('Database/database_psycopg2/delete', 1)]
 
-            assert metrics[('Database/all', '')].call_count == 11
-            assert metrics[('Database/allOther', '')].call_count == 11
+_test_execute_via_cursor_rollup_metrics = [
+        ('Database/all', 11),
+        ('Database/allOther', 11),
+        ('Database/select', 1),
+        ('Database/database_psycopg2/select', 1),
+        ('Database/insert', 1),
+        ('Database/database_psycopg2/insert', 1),
+        ('Database/update', 1),
+        ('Database/database_psycopg2/update', 1),
+        ('Database/delete', 1),
+        ('Database/database_psycopg2/delete', 1),
+        ('Database/other', 7),
+        ('Database/other/sql', 7)]
 
-            assert metrics[('Database/select', '')].call_count == 1
-            assert metrics[
-                    ('Database/database_psycopg2/select', '')].call_count == 1
-            assert metrics[
-                    ('Database/database_psycopg2/select', scope)].call_count == 1
-
-            assert metrics[('Database/insert', '')].call_count == 1
-            assert metrics[
-                    ('Database/database_psycopg2/insert', '')].call_count == 1
-            assert metrics[
-                    ('Database/database_psycopg2/insert', scope)].call_count == 1
-
-            assert metrics[('Database/update', '')].call_count == 1
-            assert metrics[
-                    ('Database/database_psycopg2/update', '')].call_count == 1
-            assert metrics[
-                    ('Database/database_psycopg2/update', scope)].call_count == 1
-
-            assert metrics[('Database/delete', '')].call_count == 1
-            assert metrics[
-                    ('Database/database_psycopg2/delete', '')].call_count == 1
-            assert metrics[
-                    ('Database/database_psycopg2/delete', scope)].call_count == 1
-
-            assert metrics[('Database/other', '')].call_count == 7
-            assert metrics[('Database/other/sql', '')].call_count == 7
-
-    return _validate_transaction_metrics
-
-@validate_transaction_metrics('OtherTransaction/Function/test_database:'
-        'test_execute_via_cursor')
+@validate_transaction_metrics('test_database:test_execute_via_cursor',
+        scoped_metrics=_test_execute_via_cursor_scoped_metrics,
+        rollup_metrics=_test_execute_via_cursor_rollup_metrics,
+        background_task=True)
 @validate_database_trace_inputs
 @background_task()
 def test_execute_via_cursor():

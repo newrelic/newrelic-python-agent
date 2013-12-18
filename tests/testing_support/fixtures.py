@@ -4,7 +4,8 @@ import os
 import sys
 
 from newrelic.agent import (initialize, register_application,
-        global_settings, shutdown_agent, application as application_instance)
+        global_settings, shutdown_agent, application as application_instance,
+        transient_function_wrapper)
 
 from newrelic.core.config import apply_config_setting
 
@@ -78,6 +79,37 @@ def collector_agent_registration_fixture(app_name=None, default_settings={}):
 def collector_available_fixture(request):
     application = application_instance()
     assert application.active
+
+def validate_transaction_metrics(name, group='Function',
+        background_task=False, scoped_metrics=[], rollup_metrics=[]):
+
+    if background_task:
+        transaction_metric = 'OtherTransaction/%s/%s' % (group, name)
+    else:
+        transaction_metric = 'WebTransaction/%s/%s' % (group, name)
+
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_transaction_metrics(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            metrics = instance.stats_table
+
+            assert metrics[(transaction_metric, '')].call_count == 1
+
+            for scoped_name, scoped_count in scoped_metrics:
+                assert metrics[(scoped_name,
+                    transaction_metric)].call_count == scoped_count
+
+            for rollup_name, rollup_count in rollup_metrics:
+                assert metrics[(rollup_name, '')].call_count == rollup_count
+
+        return result
+
+    return _validate_transaction_metrics
 
 def code_coverage_fixture(source=['newrelic']):
     @pytest.fixture(scope='session')

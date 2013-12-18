@@ -111,6 +111,41 @@ def validate_transaction_metrics(name, group='Function',
 
     return _validate_transaction_metrics
 
+def validate_database_trace_inputs(execute_params_type):
+    @transient_function_wrapper('newrelic.api.database_trace',
+            'DatabaseTrace.__init__')
+    def _validate_database_trace_inputs(wrapped, instance, args, kwargs):
+        def _bind_params(transaction, sql, dbapi2_module=None,
+                connect_params=None, cursor_params=None, execute_params=None):
+            return (transaction, sql, dbapi2_module, connect_params,
+                    cursor_params, execute_params)
+
+        (transaction, sql, dbapi2_module, connect_params,
+                cursor_params, execute_params) = _bind_params(*args, **kwargs)
+
+        assert hasattr(dbapi2_module, 'connect')
+
+        assert connect_params is None or isinstance(connect_params, tuple)
+
+        if connect_params is not None:
+            assert len(connect_params) == 2
+            assert isinstance(connect_params[0], tuple)
+            assert isinstance(connect_params[1], dict)
+
+        assert cursor_params is None or isinstance(cursor_params, tuple)
+
+        if cursor_params is not None:
+            assert len(cursor_params) == 2
+            assert isinstance(cursor_params[0], tuple)
+            assert isinstance(cursor_params[1], dict)
+
+        assert execute_params is None or isinstance(
+                execute_params, execute_params_type)
+
+        return wrapped(*args, **kwargs)
+
+    return _validate_database_trace_inputs
+
 def code_coverage_fixture(source=['newrelic']):
     @pytest.fixture(scope='session')
     def _code_coverage_fixture(request):

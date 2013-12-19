@@ -43,7 +43,7 @@ htmlcov
 
 /license_data/license_errors.txt
 
-.tox
+.tox*
 
 testing.log
 .tddium*

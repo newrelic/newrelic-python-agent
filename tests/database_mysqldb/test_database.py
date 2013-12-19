@@ -3,6 +3,9 @@ import MySQLdb
 import pwd
 import os
 
+from testing_support.fixtures import (validate_transaction_metrics,
+    validate_database_trace_inputs)
+
 from newrelic.agent import (background_task, current_transaction,
     transient_function_wrapper)
 
@@ -16,83 +19,33 @@ DATABASE_PASSWORD = os.environ.get('TDDIUM_DB_MYSQL_PASSWORD', '')
 DATABASE_HOST = os.environ.get('TDDIUM_DB_MYSQL_HOST', 'localhost')
 DATABASE_PORT = int(os.environ.get('TDDIUM_DB_MYSQL_PORT', '3306'))
 
-@transient_function_wrapper('newrelic.api.database_trace',
-        'DatabaseTrace.__init__')
-def validate_database_trace_inputs(wrapped, instance, args, kwargs):
-    def _bind_params(transaction, sql, dbapi2_module=None,
-            connect_params=None, cursor_params=None, execute_params=None):
-        return (transaction, sql, dbapi2_module, connect_params,
-                cursor_params, execute_params)
+_test_execute_via_cursor_scoped_metrics = [
+        ('Function/MySQLdb:Connect', 1),
+        ('Database/database_mysqldb/select', 1),
+        ('Database/database_mysqldb/insert', 1),
+        ('Database/database_mysqldb/update', 1),
+        ('Database/database_mysqldb/delete', 1),
+        ('Database/other/sql', 5)]
 
-    (transaction, sql, dbapi2_module, connect_params,
-            cursor_params, execute_params) = _bind_params(*args, **kwargs)
+_test_execute_via_cursor_rollup_metrics = [
+        ('Database/all', 9),
+        ('Database/allOther', 9),
+        ('Database/select', 1),
+        ('Database/database_mysqldb/select', 1),
+        ('Database/insert', 1),
+        ('Database/database_mysqldb/insert', 1),
+        ('Database/update', 1),
+        ('Database/database_mysqldb/update', 1),
+        ('Database/delete', 1),
+        ('Database/database_mysqldb/delete', 1),
+        ('Database/other', 5),
+        ('Database/other/sql', 5)]
 
-    assert hasattr(dbapi2_module, 'connect')
-
-    assert connect_params is None or isinstance(connect_params, tuple)
-
-    if connect_params is not None:
-        assert len(connect_params) == 2
-        assert isinstance(connect_params[0], tuple)
-        assert isinstance(connect_params[1], dict)
-
-    assert cursor_params is None or isinstance(cursor_params, tuple)
-
-    if cursor_params is not None:
-        assert len(cursor_params) == 2
-        assert isinstance(cursor_params[0], tuple)
-        assert isinstance(cursor_params[1], dict)
-
-    assert execute_params is None or isinstance(execute_params, tuple)
-
-    return wrapped(*args, **kwargs)
-
-def validate_transaction_metrics(scope):
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
-    def _validate_transaction_metrics(wrapped, instance, args, kwargs):
-        try:
-            return wrapped(*args, **kwargs)
-        except:
-            raise
-        else:
-            metrics = instance.stats_table
-
-            assert metrics[('Database/all', '')].call_count == 9
-            assert metrics[('Database/allOther', '')].call_count == 9
-
-            assert metrics[('Database/select', '')].call_count == 1
-            assert metrics[
-                    ('Database/database_mysqldb/select', '')].call_count == 1
-            assert metrics[
-                    ('Database/database_mysqldb/select', scope)].call_count == 1
-
-            assert metrics[('Database/insert', '')].call_count == 1
-            assert metrics[
-                    ('Database/database_mysqldb/insert', '')].call_count == 1
-            assert metrics[
-                    ('Database/database_mysqldb/insert', scope)].call_count == 1
-
-            assert metrics[('Database/update', '')].call_count == 1
-            assert metrics[
-                    ('Database/database_mysqldb/update', '')].call_count == 1
-            assert metrics[
-                    ('Database/database_mysqldb/update', scope)].call_count == 1
-
-            assert metrics[('Database/delete', '')].call_count == 1
-            assert metrics[
-                    ('Database/database_mysqldb/delete', '')].call_count == 1
-            assert metrics[
-                    ('Database/database_mysqldb/delete', scope)].call_count == 1
-
-            assert metrics[('Database/other', '')].call_count == 5
-            assert metrics[('Database/other/sql', '')].call_count == 5
-
-    return _validate_transaction_metrics
-
-@validate_transaction_metrics('OtherTransaction/Function/test_database:'
-        'test_execute_via_cursor')
-@validate_database_trace_inputs
+@validate_transaction_metrics('test_database:test_execute_via_cursor',
+        scoped_metrics=_test_execute_via_cursor_scoped_metrics,
+        rollup_metrics=_test_execute_via_cursor_rollup_metrics,
+        background_task=True)
+@validate_database_trace_inputs(tuple)
 @background_task()
 def test_execute_via_cursor():
     connection = MySQLdb.connect(db=DATABASE_NAME, user=DATABASE_USER,

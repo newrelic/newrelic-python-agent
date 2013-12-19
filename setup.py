@@ -110,25 +110,40 @@ if with_setuptools:
             }
 
 def run_setup(with_extensions):
-    kwargs_tmp = dict(kwargs)
+    def _run_setup():
+        kwargs_tmp = dict(kwargs)
 
-    if with_extensions:
-        monotonic_libraries = []
-        if sys.platform == 'linux2':
-            monotonic_libraries = ['rt']
+        if with_extensions:
+            monotonic_libraries = []
+            if sys.platform == 'linux2':
+                monotonic_libraries = ['rt']
 
-        kwargs_tmp['ext_modules'] = [
-                Extension("newrelic.packages.wrapt._wrappers",
-                    ["newrelic/packages/wrapt/_wrappers.c"]),
-                Extension("newrelic.common._monotonic",
-                    ["newrelic/common/_monotonic.c"],
-                    libraries=monotonic_libraries),
-                Extension("newrelic.core._thread_utilization",
-                    ["newrelic/core/_thread_utilization.c"]),
-                ]
-        kwargs_tmp['cmdclass'] = dict(build_ext=optional_build_ext)
+            kwargs_tmp['ext_modules'] = [
+                    Extension("newrelic.packages.wrapt._wrappers",
+                        ["newrelic/packages/wrapt/_wrappers.c"]),
+                    Extension("newrelic.common._monotonic",
+                        ["newrelic/common/_monotonic.c"],
+                        libraries=monotonic_libraries),
+                    Extension("newrelic.core._thread_utilization",
+                        ["newrelic/core/_thread_utilization.c"]),
+                    ]
+            kwargs_tmp['cmdclass'] = dict(build_ext=optional_build_ext)
 
-    setup(**kwargs_tmp)
+        setup(**kwargs_tmp)
+
+    if os.environ.get('TDDIUM') is not None:
+        try:
+            print('INFO: Running under tddium. Use lock.')
+            from lock_file import LockFile
+        except ImportError:
+            print('ERROR: Cannot import locking mechanism.')
+            _run_setup()
+        else:
+            print('INFO: Attempting to create lock file.')
+            with LockFile('setup.lock', wait=True):
+                _run_setup()
+    else:
+        _run_setup()
 
 WARNING = """
 WARNING: The optional C extension components of the Python agent could

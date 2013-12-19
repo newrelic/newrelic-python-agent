@@ -15,8 +15,19 @@ def collector_agent_registration_fixture(app_name=None, default_settings={}):
         settings = global_settings()
 
         settings.app_name = 'Python Agent Test'
-        settings.license_key = '84325f47e9dec80613e262be4236088a9983d501'
-        settings.host = 'staging-collector.newrelic.com'
+
+        settings.license_key = os.environ.get('NEW_RELIC_LICENSE_KEY',
+                '84325f47e9dec80613e262be4236088a9983d501')
+
+        settings.host = os.environ.get('NEW_RELIC_HOST',
+                'staging-collector.newrelic.com')
+        settings.port = int(os.environ.get('NEW_RELIC_PORT', '0'))
+
+        if settings.host == 'localhost':
+            settings.license_key = 'bootstrap_newrelic_admin_license_key_000'
+            if settings.port == 0:
+                settings.port = 8081
+            settings.ssl = False
 
         settings.startup_timeout = 20.0
         settings.shutdown_timeout = 20.0

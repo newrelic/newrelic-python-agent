@@ -20,7 +20,7 @@ DATABASE_HOST = os.environ.get('TDDIUM_DB_MYSQL_HOST', 'localhost')
 DATABASE_PORT = int(os.environ.get('TDDIUM_DB_MYSQL_PORT', '3306'))
 
 _test_execute_via_cursor_scoped_metrics = [
-        ('Function/mysql.connector:Connect', 1),
+        ('Function/mysql.connector:connect', 1),
         ('Database/database_mysql/select', 1),
         ('Database/database_mysql/insert', 1),
         ('Database/database_mysql/update', 1),

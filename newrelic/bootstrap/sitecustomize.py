@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import os
 import sys
 
@@ -15,7 +13,9 @@ def log_message(text, *args):
     if startup_debug:
         text = text % args
         timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-        print('NEWRELIC: %s (%d) - %s' % (timestamp, os.getpid(), text))
+        sys.stdout.write('NEWRELIC: %s (%d) - %s\n' % (timestamp,
+                os.getpid(), text))
+        sys.stdout.flush()
 
 log_message('New Relic Bootstrap (%s)', __file__)
 
@@ -30,7 +30,10 @@ except AttributeError:
 
 log_message('sys.version_info = %r', sys.version_info)
 log_message('sys.executable = %r', sys.executable)
-log_message('sys.flags = %r', sys.flags)
+
+if hasattr(sys, 'flags'):
+    log_message('sys.flags = %r', sys.flags)
+
 log_message('sys.path = %r', sys.path)
 
 for name in sorted(os.environ.keys()):

@@ -7,7 +7,8 @@ from newrelic.agent import (initialize, register_application,
         global_settings, shutdown_agent, application as application_instance,
         transient_function_wrapper)
 
-from newrelic.core.config import apply_config_setting
+from newrelic.core.config import (apply_config_setting,
+        create_settings_snapshot)
 
 def collector_agent_registration_fixture(app_name=None, default_settings={}):
     @pytest.fixture(scope='session')
@@ -157,9 +158,20 @@ def validate_database_trace_inputs(execute_params_type):
 
     return _validate_database_trace_inputs
 
+def override_application_settings(settings):
+    @transient_function_wrapper('newrelic.core.agent',
+            'Agent.application_settings')
+    def _override_application_settings(wrapped, instance, args, kwargs):
+        return create_settings_snapshot(settings, wrapped(*args, **kwargs))
+
+    return _override_application_settings
+
 def code_coverage_fixture(source=['newrelic']):
     @pytest.fixture(scope='session')
     def _code_coverage_fixture(request):
+        if not source:
+            return
+
         from coverage import coverage
 
         env_directory = os.environ.get('TOX_ENVDIR', None)

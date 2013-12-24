@@ -275,9 +275,13 @@ def _process_configuration(section):
                      'get', _map_ignore_errors)
     _process_setting(section, 'browser_monitoring.auto_instrument',
                      'getboolean', None)
-    _process_setting(section, 'rum.enabled',
+    _process_setting(section, 'browser_monitoring.loader',
+                     'get', None)
+    _process_setting(section, 'browser_monitoring.debug',
                      'getboolean', None)
-    _process_setting(section, 'rum.load_episodes_file',
+    _process_setting(section, 'browser_monitoring.ssl_for_http',
+                     'getboolean', None)
+    _process_setting(section, 'rum.enabled',
                      'getboolean', None)
     _process_setting(section, 'slow_sql.enabled',
                      'getboolean', None)

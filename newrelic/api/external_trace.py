@@ -3,9 +3,9 @@ import json
 
 from .time_trace import TimeTrace
 from .transaction import current_transaction
-from .web_transaction import obfuscate, deobfuscate
 from ..core.external_node import ExternalNode
 from ..common.object_wrapper import FunctionWrapper, wrap_object
+from ..common.encoding_utils import obfuscate, deobfuscate
 
 class ExternalTrace(TimeTrace):
 

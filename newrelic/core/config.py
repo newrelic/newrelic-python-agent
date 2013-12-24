@@ -132,9 +132,12 @@ _settings.shutdown_timeout = float(
        os.environ.get('NEW_RELIC_SHUTDOWN_TIMEOUT', '2.5'))
 
 _settings.beacon = None
+_settings.error_beacon = None
 _settings.application_id = None
 _settings.browser_key = None
 _settings.episodes_url = None
+_settings.js_agent_loader = None
+_settings.js_agent_file = None
 
 _settings.url_rules = []
 _settings.metric_name_rules = []
@@ -169,14 +172,16 @@ _settings.error_collector.ignore_status_codes = set([300, 301, 302, 303, 304,
                                                      305, 306, 307, 308, 404])
 
 _settings.browser_monitoring.auto_instrument = True
+_settings.browser_monitoring.loader = 'rum'  # Valid values: 'full', 'none'
+_settings.browser_monitoring.loader_version = None
+_settings.browser_monitoring.debug = False
+_settings.browser_monitoring.ssl_for_http = None
 
 _settings.transaction_name.limit = None
 _settings.transaction_name.naming_scheme = os.environ.get(
         'NEW_RELIC_TRANSACTION_NAMING_SCHEME')
 
 _settings.rum.enabled = True
-_settings.rum.load_episodes_file = True
-_settings.rum.jsonp = True
 
 _settings.slow_sql.enabled = True
 
@@ -326,7 +331,7 @@ def fetch_config_setting(settings_object, name):
 
     return target
 
-def create_settings_snapshot(server_side_config={}):
+def create_settings_snapshot(server_side_config={}, settings=_settings):
     """Create a snapshot of the global default settings and overlay it
     with any server side configuration settings. Any local settings
     overrides to take precedence over server side configuration settings
@@ -340,7 +345,7 @@ def create_settings_snapshot(server_side_config={}):
 
     """
 
-    settings_snapshot = copy.deepcopy(_settings)
+    settings_snapshot = copy.deepcopy(settings)
 
     # Break out the server side agent config settings which
     # are stored under 'agent_config' key.

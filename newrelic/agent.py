@@ -159,6 +159,9 @@ from .api.generator_trace import (generator_trace, GeneratorTraceWrapper,
 from .api.profile_trace import (profile_trace, ProfileTraceWrapper,
         wrap_profile_trace)
 
+from .api.database_trace import (database_trace, DatabaseTrace,
+        DatabaseTraceWrapper, wrap_database_trace, register_database_client)
+
 from .api.external_trace import (external_trace, ExternalTrace,
         ExternalTraceWrapper, wrap_external_trace)
 
@@ -171,6 +174,7 @@ from .api.transaction_name import (transaction_name,
 from .common.object_names import callable_name
 
 from .common.object_wrapper import (ObjectProxy, wrap_object,
+        resolve_path, transient_function_wrapper,
         FunctionWrapper, function_wrapper, wrap_function_wrapper,
         patch_function_wrapper, ObjectWrapper, wrap_callable,
         pre_function, PreFunctionWrapper, wrap_pre_function,

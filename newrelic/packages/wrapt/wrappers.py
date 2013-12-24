@@ -586,10 +586,16 @@ def wrap_object(module, name, factory, args=(), kwargs={}):
 # creating decorators see the decorator decorator instead.
 
 def function_wrapper(wrapper):
-    @functools.wraps(wrapper)
-    def _wrapper(wrapped):
-        return FunctionWrapper(wrapped, wrapper)
-    return _wrapper
+    def _wrapper(wrapped, instance, args, kwargs):
+        target_wrapped = args[0]
+        if instance is None:
+            target_wrapper = wrapper
+        elif inspect.isclass(instance):
+            target_wrapper = wrapper.__get__(None, instance)
+        else:
+            target_wrapper = wrapper.__get__(instance, type(instance))
+        return FunctionWrapper(target_wrapped, target_wrapper)
+    return FunctionWrapper(wrapper, _wrapper)
 
 def wrap_function_wrapper(module, name, wrapper):
     return wrap_object(module, name, FunctionWrapper, (wrapper,))
@@ -598,6 +604,20 @@ def patch_function_wrapper(module, name):
     def _wrapper(wrapper):
         return wrap_object(module, name, FunctionWrapper, (wrapper,))
     return _wrapper
+
+def transient_function_wrapper(module, name):
+    def _decorator(wrapper):
+        @function_wrapper
+        def _wrapper(wrapped, instance, args, kwargs):
+            try:
+                (parent, attribute, original) = resolve_path(module, name)
+                replacement = FunctionWrapper(original, wrapper)
+                setattr(parent, attribute, replacement)
+                return wrapped(*args, **kwargs)
+            finally:
+                setattr(parent, attribute, original)
+        return _wrapper
+    return _decorator
 
 # A weak function proxy. This will work on instance methods, class
 # methods, static methods and regular functions. Special treatment is

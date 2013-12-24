@@ -14,35 +14,62 @@ NEW_RELIC_LOG.""")
 def run_python(args):
     import os
     import sys
+    import time
+
+    startup_debug = os.environ.get('NEW_RELIC_STARTUP_DEBUG',
+            'off').lower() in ('on', 'true', '1')
+
+    def log_message(text, *args):
+        if startup_debug:
+            text = text % args
+            timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+            print('NEWRELIC: %s (%d) - %s' % (timestamp, os.getpid(), text))
+
+    log_message('New Relic Admin Script (%s)', __file__)
+
+    log_message('working_directory = %r', os.getcwd())
+    log_message('current_command = %r', sys.argv)
+
+    log_message('sys.prefix = %r', os.path.normpath(sys.prefix))
+
+    try:
+        log_message('sys.real_prefix = %r', sys.real_prefix)
+    except AttributeError:
+        pass
+
+    log_message('sys.version_info = %r', sys.version_info)
+    log_message('sys.executable = %r', sys.executable)
+    log_message('sys.flags = %r', sys.flags)
+    log_message('sys.path = %r', sys.path)
+
+    for name in sorted(os.environ.keys()):
+        if name.startswith('NEW_RELIC_') or name.startswith('PYTHON'):
+            log_message('%s = %r', name, os.environ.get(name))
 
     from newrelic import version, __file__ as root_directory
+
     root_directory = os.path.dirname(root_directory)
     boot_directory = os.path.join(root_directory, 'bootstrap')
 
+    log_message('root_directory = %r', root_directory)
+    log_message('boot_directory = %r', boot_directory)
+
+    python_path = boot_directory
+
     if 'PYTHONPATH' in os.environ:
-        python_path = "%s:%s" % (boot_directory, os.environ['PYTHONPATH'])
-    else:
-        python_path = boot_directory
+        path = os.environ['PYTHONPATH'].split(os.path.pathsep)
+        if not boot_directory in path:
+            python_path = "%s%s%s" % (boot_directory, os.path.pathsep,
+                    os.environ['PYTHONPATH'])
 
     os.environ['PYTHONPATH'] = python_path
 
     os.environ['NEW_RELIC_ADMIN_COMMAND'] = repr(sys.argv)
 
-    # We want to still call any local sitecustomize.py file
-    # that we are overriding.
-
-    local_sitecustomize = None
-
-    if 'NEW_RELIC_SITE_CUSTOMIZE' in os.environ:
-        del os.environ['NEW_RELIC_SITE_CUSTOMIZE']
-
-    if 'sitecustomize' in sys.modules:
-        local_sitecustomize = sys.modules['sitecustomize']
-        if hasattr(local_sitecustomize, '__file__'):
-            os.environ['NEW_RELIC_SITE_CUSTOMIZE'] = (
-                    local_sitecustomize.__file__)
-        else:
-            local_sitecustomize = None
+    os.environ['NEW_RELIC_PYTHON_PREFIX'] = os.path.realpath(
+            os.path.normpath(sys.prefix))
+    os.environ['NEW_RELIC_PYTHON_VERSION'] = '.'.join(
+            map(str, sys.version_info[:2]))
 
     # Heroku does not set #! line on installed Python scripts
     # correctly and instead does an activate_this fiddle once
@@ -63,34 +90,7 @@ def run_python(args):
     else:
         python_exe_path = sys.executable
 
-    debug_startup = os.environ.get('NEW_RELIC_STARTUP_DEBUG',
-            'off').lower() in ('on', 'true', '1')
-
-    if debug_startup:
-        import time
-
-        def _log(text, *args):
-            text = text % args
-            print('NEWRELIC: %s (%d) - %s' % (time.strftime(
-                    '%Y-%m-%d %H:%M:%S', time.localtime()),
-                    os.getpid(), text))
-
-        _log('New Relic Admin Script (%s)', version)
-
-        _log('working_directory = %r', os.getcwd())
-        _log('current_command = %r', sys.argv)
-
-        for name in sorted(os.environ.keys()):
-            if name.startswith('NEW_RELIC_') or name.startswith('PYTHON'):
-                _log('%s = %r', name, os.environ.get(name))
-
-        _log('root_directory = %r', root_directory)
-        _log('boot_directory = %r', boot_directory)
-
-        if local_sitecustomize is not None:
-            _log('local_sitecustomize = %r', local_sitecustomize.__file__)
-
-        _log('python_exe_path = %r', python_exe_path)
-        _log('execl_arguments = %r', [python_exe_path, python_exe_path]+args)
+    log_message('python_exe_path = %r', python_exe_path)
+    log_message('execl_arguments = %r', [python_exe_path, python_exe_path]+args)
 
     os.execl(python_exe_path, python_exe_path, *args)

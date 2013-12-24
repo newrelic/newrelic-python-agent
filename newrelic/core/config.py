@@ -331,7 +331,7 @@ def fetch_config_setting(settings_object, name):
 
     return target
 
-def create_settings_snapshot(server_side_config={}):
+def create_settings_snapshot(server_side_config={}, settings=_settings):
     """Create a snapshot of the global default settings and overlay it
     with any server side configuration settings. Any local settings
     overrides to take precedence over server side configuration settings
@@ -345,7 +345,7 @@ def create_settings_snapshot(server_side_config={}):
 
     """
 
-    settings_snapshot = copy.deepcopy(_settings)
+    settings_snapshot = copy.deepcopy(settings)
 
     # Break out the server side agent config settings which
     # are stored under 'agent_config' key.

@@ -26,10 +26,19 @@ class CursorWrapper(ObjectProxy):
 
     def executemany(self, sql, seq_of_parameters):
         transaction = current_transaction()
-        with DatabaseTrace(transaction, sql, self._nr_dbapi2_module,
-                self._nr_connect_params, self._nr_cursor_params,
-                list(seq_of_parameters)[0]):
-            return self.__wrapped__.executemany(sql, seq_of_parameters)
+        try:
+            parameters = seq_of_parameters[0]
+        except TypeError, IndexError:
+            parameters = DEFAULT
+        if parameters is not DEFAULT:
+            with DatabaseTrace(transaction, sql, self._nr_dbapi2_module,
+                    self._nr_connect_params, self._nr_cursor_params,
+                    parameters):
+                return self.__wrapped__.executemany(sql, seq_of_parameters)
+        else:
+            with DatabaseTrace(transaction, sql, self._nr_dbapi2_module,
+                    self._nr_connect_params, self._nr_cursor_params):
+                return self.__wrapped__.executemany(sql, seq_of_parameters)
 
     def callproc(self, procname, parameters=DEFAULT):
         transaction = current_transaction()

@@ -18,6 +18,10 @@
 # OS X - Run a shell command
 # CPU : /usr/sbin/sysctl -n hw.physicalcpu
 # MEM : /usr/sbin/sysctl -n hw.memsize
+#
+# JSON Format for 'connect'
+# ["Logical Processors",8],["Physical Processors",4],["Total Physical Memory (MB)",8192.0]
+#
 
 import os
 from subprocess import Popen, PIPE

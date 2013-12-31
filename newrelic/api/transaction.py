@@ -24,8 +24,6 @@ import newrelic.core.error_node
 
 import newrelic.api.time_trace
 
-from newrelic.core.environment import cpu_count
-
 from newrelic.core.stats_engine import CustomMetrics
 from newrelic.core.transaction_cache import transaction_cache
 from newrelic.core.thread_utilization import utilization_tracker

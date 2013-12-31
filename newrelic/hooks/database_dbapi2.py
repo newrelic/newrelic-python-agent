@@ -28,7 +28,7 @@ class CursorWrapper(ObjectProxy):
         transaction = current_transaction()
         try:
             parameters = seq_of_parameters[0]
-        except TypeError, IndexError:
+        except (TypeError, IndexError):
             parameters = DEFAULT
         if parameters is not DEFAULT:
             with DatabaseTrace(transaction, sql, self._nr_dbapi2_module,

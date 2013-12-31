@@ -365,6 +365,12 @@
             "time.monotonic"
         ]
     },
+    "newrelic/common/encoding_utils.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/common/log_file.py": {
         "hash": "n/a",
         "libraries": [
@@ -390,12 +396,6 @@
         ]
     },
     "newrelic/common/system_info.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/encoding_utils.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -455,7 +455,7 @@
             "New Relic"
         ]
     },
-    "newrelic/common/tests/test_obfuscate_deobfuscate.py": {
+    "newrelic/common/tests/test_xor_cipher.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

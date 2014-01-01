@@ -172,6 +172,9 @@ def code_coverage_fixture(source=['newrelic']):
         if not source:
             return
 
+        if os.environ.get('TDDIUM') is not None:
+            return
+
         from coverage import coverage
 
         env_directory = os.environ.get('TOX_ENVDIR', None)

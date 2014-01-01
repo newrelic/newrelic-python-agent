@@ -1,4 +1,6 @@
 :tddium:
+  :environment:
+    'TDDIUM_SKIP_NONCE': ''
   :tests:
     - tox -c tests/agent_browser/tox.ini
     - tox -c tests/database_mysql/tox.ini

@@ -413,6 +413,12 @@
             "New Relic"
         ]
     },
+    "newrelic/common/tests/test_json_wrappers.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/common/tests/test_object_names.py": {
         "hash": "n/a",
         "libraries": [

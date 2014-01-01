@@ -3,7 +3,81 @@ of data.
 
 """
 
+import types
 import base64
+import json
+
+# Functions for encoding/decoding JSON. These wrappers are used in order
+# to hide the differences between Python 2 and Python 3 implementations
+# of the json module functions as well as instigate some better defaults
+# for the handling on unknown objects. All but the first argument must
+# be supplied as key word arguments to allow the wrappers to supply
+# defaults.
+
+def json_encode(obj, **kwargs):
+    _kwargs = {}
+
+    # This wrapper function needs to deal with a few issues.
+    #
+    # The first is that when a byte string is provided, we need to
+    # ensure that it is interpreted as being Latin-1. This is necessary
+    # as by default JSON will treat it as UTF-8, which means if an
+    # invalid UTF-8 byte string is provided, a failure will occur when
+    # encoding the value.
+    #
+    # The json.dumps() function in Python 2 had an encoding argument
+    # which needs to be used to dictate what encoding a byte string
+    # should be interpreted as being. We need to supply this and set it
+    # to Latin-1 to avoid the failures if the byte string is not valid
+    # UTF-8.
+    #
+    # For Python 3, it will simply fail if provided any byte string. To
+    # be compatible with Python 2, we still want to accept them, but as
+    # before interpret it as being Latin-1. For Python 3 we can only do
+    # this by overriding the fallback encoder used when a type is
+    # encountered that the JSON encoder doesn't know what to do with.
+    #
+    # The second issue we want to deal with is allowing generators or
+    # iterables to be supplied and for them to be automatically expanded
+    # and treated as lists. This also entails overriding the fallback
+    # encoder.
+    #
+    # The third is eliminate white space after separators to trim the
+    # size of the data being sent.
+
+    if type(b'') is type(''):
+        _kwargs['encoding'] = 'latin-1'
+
+    def _encode(o):
+        if isinstance(o, bytes):
+            return o.decode('latin-1')
+        elif isinstance(o, types.GeneratorType):
+            return list(o)
+        elif hasattr(o, '__iter__'):
+            return list(iter(o))
+        raise TypeError(repr(o) + ' is not JSON serializable')
+
+    _kwargs['default'] = _encode
+
+    _kwargs['separators'] = (',', ':')
+
+    # We still allow supplied arguments to override internal defaults if
+    # necessary, but the caller must be sure they aren't dependent on
+    # the new defaults. In particular, if they supply 'default' it will
+    # override our default fallback encoder.
+
+    _kwargs.update(kwargs)
+
+    return json.dumps(obj, **_kwargs)
+
+def json_decode(s, **kwargs):
+    # Nothing special to do here at this point but use a wrapper to be
+    # consistent with encoding and allow for changes later.
+
+    return json.loads(s, **kwargs)
+
+# Functions for obfuscating/deobfuscating text string based on an XOR
+# cipher.
 
 def xor_cipher_genkey(key, length=None):
     """Generates a byte array for use in XOR cipher encrypt and decrypt

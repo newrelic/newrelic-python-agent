@@ -1,11 +1,11 @@
 import functools
-import json
 
 from .time_trace import TimeTrace
 from .transaction import current_transaction
 from ..core.external_node import ExternalNode
 from ..common.object_wrapper import FunctionWrapper, wrap_object
-from ..common.encoding_utils import obfuscate, deobfuscate
+from ..common.encoding_utils import (obfuscate, deobfuscate, json_encode,
+    json_decode)
 
 class ExternalTrace(TimeTrace):
 
@@ -48,7 +48,7 @@ class ExternalTrace(TimeTrace):
         try:
             for k, v in response_headers:
                 if k.upper() == 'X-NEWRELIC-APP-DATA':
-                    appdata = json.loads(deobfuscate(v,
+                    appdata = json_decode(deobfuscate(v,
                             self.settings.encoding_key))
                     break
 
@@ -80,7 +80,7 @@ class ExternalTrace(TimeTrace):
                 settings.encoding_key)
 
         transaction_data = [transaction.guid, transaction.record_tt]
-        encoded_transaction = obfuscate(json.dumps(transaction_data),
+        encoded_transaction = obfuscate(json_encode(transaction_data),
                 settings.encoding_key)
 
         nr_headers = [('X-NewRelic-ID', encoded_cross_process_id),

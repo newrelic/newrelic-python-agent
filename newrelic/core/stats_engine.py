@@ -11,12 +11,13 @@ import logging
 import operator
 import random
 import zlib
-import json
 
 import newrelic.packages.six as six
 
 from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
         internal_metric)
+
+from ..common.encoding_utils import json_encode
 
 _logger = logging.getLogger(__name__)
 
@@ -778,7 +779,7 @@ class StatsEngine(object):
             if explain_plan:
                 params['explain_plan'] = explain_plan
 
-            json_data = json.dumps(params, default=lambda o: list(iter(o)))
+            json_data = json_encode(params)
 
             params_data = base64.standard_b64encode(
                     zlib.compress(six.b(json_data)))
@@ -851,7 +852,7 @@ class StatsEngine(object):
             with InternalTrace('Supportability/StatsEngine/JSON/Encode/'
                                'transaction_sample_data'):
 
-                json_data = json.dumps(data, default=lambda o: list(iter(o)))
+                json_data = json_encode(data)
 
             internal_metric('Supportability/StatsEngine/ZLIB/Bytes/'
                             'transaction_sample_data', len(json_data))
@@ -922,7 +923,7 @@ class StatsEngine(object):
         with InternalTrace('Supportability/StatsEngine/JSON/Encode/'
                 'transaction_sample_data'):
 
-            json_data = json.dumps(data, default=lambda o: list(iter(o)))
+            json_data = json_encode(data)
 
         internal_metric('Supportability/StatsEngine/ZLIB/Bytes/'
                 'transaction_sample_data', len(json_data))

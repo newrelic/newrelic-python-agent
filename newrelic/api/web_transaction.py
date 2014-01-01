@@ -3,7 +3,6 @@ import cgi
 import time
 import string
 import re
-import json
 import logging
 
 try:
@@ -16,7 +15,8 @@ import newrelic.api.transaction
 import newrelic.api.object_wrapper
 import newrelic.api.function_trace
 
-from ..common.encoding_utils import obfuscate, deobfuscate
+from ..common.encoding_utils import (obfuscate, deobfuscate, json_encode,
+    json_decode)
 
 _logger = logging.getLogger(__name__)
 
@@ -319,7 +319,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         if encoded_txn_header:
             try:
-                decoded_txn_header = json.loads(deobfuscate(
+                decoded_txn_header = json_decode(deobfuscate(
                         encoded_txn_header, self._settings.encoding_key))
             except Exception:
                 decoded_txn_header = None
@@ -389,7 +389,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
             payload = (self._settings.cross_process_id, self.path, queue_time,
                     duration, self._read_length, self.guid, self.record_tt)
-            app_data = json.dumps(payload)
+            app_data = json_encode(payload)
 
             additional_headers.append(('X-NewRelic-App-Data', obfuscate(
                     app_data, self._settings.encoding_key)))
@@ -553,8 +553,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         # Add in the additional params to the footer config dictionary.
 
         config_dict.update(additional_params)
-        footer = (_js_agent_footer_fragment %
-                json.dumps(config_dict, separators=(',', ':')))
+        footer = _js_agent_footer_fragment % json_encode(config_dict)
 
         # Footer dictionary is only supposed to have ascii chars. Verify that
         # by encoding it as ascii. If encoding fails return an empty string.

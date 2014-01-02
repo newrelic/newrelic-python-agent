@@ -1652,7 +1652,8 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.external_urllib') # Python 3
 
     _process_module_definition('urllib2',
-            'newrelic.hooks.external_urllib2')
+            'newrelic.hooks.external_urllib2') # Python 2
+
     _process_module_definition('urllib3.request',
             'newrelic.hooks.external_urllib3')
 

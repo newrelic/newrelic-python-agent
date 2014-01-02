@@ -123,6 +123,22 @@ def validate_transaction_metrics(name, group='Function',
 
     return _validate_transaction_metrics
 
+def validate_custom_parameters(custom_params=[]):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_custom_parameters(wrapped, instance, args, kwargs):
+        def _bind_params(transaction, *args, **kwargs):
+            return transaction
+
+        transaction = _bind_params(*args, **kwargs)
+
+        for name, value in custom_params:
+            assert transaction.custom_params[name] == value
+
+        return wrapped(*args, **kwargs)
+
+    return _validate_custom_parameters
+
 def validate_database_trace_inputs(execute_params_type):
     @transient_function_wrapper('newrelic.api.database_trace',
             'DatabaseTrace.__init__')

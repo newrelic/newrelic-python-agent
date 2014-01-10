@@ -152,6 +152,7 @@ _settings.cross_application_tracer.enabled = True
 _settings.xray_session.enabled = True
 
 _settings.analytics_events.enabled = True
+_settings.analytics_events.capture_attributes = True
 _settings.analytics_events.max_samples_stored = 1200
 _settings.analytics_events.transactions.enabled = True
 
@@ -164,24 +165,26 @@ _settings.transaction_tracer.explain_threshold = 0.5
 _settings.transaction_tracer.function_trace = []
 _settings.transaction_tracer.generator_trace = []
 _settings.transaction_tracer.top_n = 20
+_settings.transaction_tracer.capture_attributes = True
 
 _settings.error_collector.enabled = True
 _settings.error_collector.capture_source = False
 _settings.error_collector.ignore_errors = []
 _settings.error_collector.ignore_status_codes = set([300, 301, 302, 303, 304,
                                                      305, 306, 307, 308, 404])
+_settings.error_collector.capture_attributes = True
 
+_settings.browser_monitoring.enabled = True
 _settings.browser_monitoring.auto_instrument = True
 _settings.browser_monitoring.loader = 'rum'  # Valid values: 'full', 'none'
 _settings.browser_monitoring.loader_version = None
 _settings.browser_monitoring.debug = False
 _settings.browser_monitoring.ssl_for_http = None
+_settings.browser_monitoring.capture_attributes = False
 
 _settings.transaction_name.limit = None
 _settings.transaction_name.naming_scheme = os.environ.get(
         'NEW_RELIC_TRANSACTION_NAMING_SCHEME')
-
-_settings.rum.enabled = True
 
 _settings.slow_sql.enabled = True
 

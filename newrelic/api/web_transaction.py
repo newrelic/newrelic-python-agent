@@ -18,6 +18,8 @@ import newrelic.api.function_trace
 from ..common.encoding_utils import (obfuscate, deobfuscate, json_encode,
     json_decode)
 
+from ..packages import six
+
 _logger = logging.getLogger(__name__)
 
 _js_agent_header_fragment = '<script type="text/javascript">%s</script>'
@@ -49,7 +51,6 @@ def _extract_token(cookie):
         return token and token.group(1)
     except Exception:
         pass
-
 
 class WebTransaction(newrelic.api.transaction.Transaction):
 
@@ -420,7 +421,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         if not self._settings:
             return ''
 
-        if not self._settings.rum.enabled:
+        if not self._settings.browser_monitoring.enabled:
             return ''
 
         if not self._settings.license_key:
@@ -518,33 +519,26 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         if threshold is None:
             threshold = self.apdex * 4
 
-        # The rum_token and guid are only added if the request time is above
-        # threshold
-
         if request_duration >= threshold:
-
-            # Add the agentToken and ttGuid only when we a rum_token was issued
-            # by beacon.
-
             if self.rum_token:
                 additional_params.append(('agentToken', self.rum_token))
                 additional_params.append(('ttGuid', self.guid))
 
-        # Add user, acccount and product keys when provided.
+        if self._settings.browser_monitoring.capture_attributes:
+            def _filter(params):
+                for key, value in params.items():
+                    if not isinstance(key, six.string_types):
+                        continue
+                    if (not isinstance(value, six.string_types) and
+                            not isinstance(value, float) and
+                            not isinstance(value, six.integer_types)):
+                        continue
+                    yield key, value
 
-        user = self._user_attrs.get('user')
-        account = self._user_attrs.get('account')
-        product = self._user_attrs.get('product')
+            user_attributes = obfuscate(json_encode(dict(
+                    _filter(self._custom_params))), obfuscation_key)
 
-        if user:
-            additional_params.append(('user',
-                                      obfuscate(user, obfuscation_key)))
-        if account:
-            additional_params.append(('account',
-                                      obfuscate(account, obfuscation_key)))
-        if product:
-            additional_params.append(('product',
-                                      obfuscate(product, obfuscation_key)))
+            additional_params.append(('userAttributes', user_attributes))
 
         if self._settings.browser_monitoring.ssl_for_http is not None:
             additional_params.append(('sslForHttp',

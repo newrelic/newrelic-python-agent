@@ -267,12 +267,18 @@ def _process_configuration(section):
                      'get', _map_function_trace)
     _process_setting(section, 'transaction_tracer.top_n',
                      'getint', None)
+    _process_setting(section, 'transaction_tracer.capture_attributes',
+                     'getboolean', None),
     _process_setting(section, 'error_collector.enabled',
                      'getboolean', None),
     _process_setting(section, 'error_collector.capture_source',
                      'getboolean', None),
     _process_setting(section, 'error_collector.ignore_errors',
                      'get', _map_ignore_errors)
+    _process_setting(section, 'error_collector.capture_attributes',
+                     'getboolean', None),
+    _process_setting(section, 'browser_monitoring.enabled',
+                     'getboolean', None)
     _process_setting(section, 'browser_monitoring.auto_instrument',
                      'getboolean', None)
     _process_setting(section, 'browser_monitoring.loader',
@@ -281,11 +287,13 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'browser_monitoring.ssl_for_http',
                      'getboolean', None)
-    _process_setting(section, 'rum.enabled',
-                     'getboolean', None)
+    _process_setting(section, 'browser_monitoring.capture_attributes',
+                     'getboolean', None),
     _process_setting(section, 'slow_sql.enabled',
                      'getboolean', None)
     _process_setting(section, 'analytics_events.enabled',
+                     'getboolean', None),
+    _process_setting(section, 'analytics_events.capture_attributes',
                      'getboolean', None),
     _process_setting(section, 'analytics_events.max_samples_stored',
                      'getint', None),

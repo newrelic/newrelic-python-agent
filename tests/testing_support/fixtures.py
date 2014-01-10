@@ -5,7 +5,7 @@ import sys
 
 from newrelic.agent import (initialize, register_application,
         global_settings, shutdown_agent, application as application_instance,
-        transient_function_wrapper)
+        transient_function_wrapper, function_wrapper, application_settings)
 
 from newrelic.core.config import (apply_config_setting,
         create_settings_snapshot)
@@ -175,10 +175,24 @@ def validate_database_trace_inputs(execute_params_type):
     return _validate_database_trace_inputs
 
 def override_application_settings(settings):
-    @transient_function_wrapper('newrelic.core.agent',
-            'Agent.application_settings')
+    @function_wrapper
     def _override_application_settings(wrapped, instance, args, kwargs):
-        return create_settings_snapshot(settings, wrapped(*args, **kwargs))
+        try:
+            # This is a bit horrible as the one settings object, has
+            # references from a number of different places. We have to
+            # create a copy, overlay the temporary settings and then
+            # when done clear the top level settings object and rebuild
+            # it when done.
+
+            original = application_settings()
+            backup = dict(original)
+            for name, value in settings.items():
+                apply_config_setting(original, name, value)
+            return wrapped(*args, **kwargs)
+        finally:
+            original.__dict__.clear()
+            for name, value in backup.items():
+                apply_config_setting(original, name, value)
 
     return _override_application_settings
 

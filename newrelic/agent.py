@@ -76,9 +76,9 @@ def add_custom_parameter(key, value):
         transaction.add_custom_parameter(key, value)
 
 def add_user_attribute(key, value):
-    transaction = current_transaction()
-    if transaction:
-        transaction.add_user_attribute(key, value)
+    #warnings.warn('API change. Use add_custom_parameter() instead of '
+    #        'add_user_attribute().', DeprecationWarning, stacklevel=2)
+    return add_custom_parameter(key, value)
 
 def record_exception(exc=None, value=None, tb=None, params={},
         ignore_errors=[]):

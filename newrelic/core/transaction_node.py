@@ -20,8 +20,9 @@ _TransactionNode = namedtuple('_TransactionNode',
         'response_code', 'request_params', 'custom_params', 'queue_start',
         'start_time', 'end_time', 'duration', 'exclusive', 'children',
         'errors', 'slow_sql', 'apdex_t', 'suppress_apdex', 'custom_metrics',
-        'parameter_groups', 'guid', 'rum_trace', 'cpu_time', 'suppress_transaction_trace',
-        'client_cross_process_id', 'referring_transaction_guid', 'record_tt'])
+        'parameter_groups', 'guid', 'rum_trace', 'cpu_time',
+        'suppress_transaction_trace', 'client_cross_process_id',
+        'referring_transaction_guid', 'record_tt'])
 
 class TransactionNode(_TransactionNode):
 
@@ -210,8 +211,11 @@ class TransactionNode(_TransactionNode):
             if self.parameter_groups:
                 params["parameter_groups"] = self.parameter_groups
 
-            custom_params = (error.custom_params and dict(
-                error.custom_params) or {})
+            if self.settings.error_collector.capture_attributes:
+                custom_params = (error.custom_params and dict(
+                    error.custom_params) or {})
+            else:
+                custom_params = {}
 
             if self.client_cross_process_id:
                 custom_params['client_cross_process_id'] = \
@@ -264,7 +268,10 @@ class TransactionNode(_TransactionNode):
 
         # Add in special CPU time value for UI to display CPU burn.
 
-        custom_params = custom_params and dict(custom_params) or {}
+        if self.settings.transaction_tracer.capture_attributes:
+            custom_params = custom_params and dict(custom_params) or {}
+        else:
+            custom_params = {}
 
         # XXX Disable cpu time value for CPU burn as was
         # previously reporting incorrect value and we need to

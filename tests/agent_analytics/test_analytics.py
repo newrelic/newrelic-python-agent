@@ -16,28 +16,30 @@ from newrelic.common.encoding_utils import deobfuscate
 def target_wsgi_application(environ, start_response):
     status = '200 OK'
 
-    # The add_user_attribute() call is now just an alias for
-    # calling add_custom_parameter() but for backward compatibility
-    # still need to check it works.
+    if environ.get('record_attributes', 'TRUE') == 'TRUE':
+        # The add_user_attribute() call is now just an alias for
+        # calling add_custom_parameter() but for backward compatibility
+        # still need to check it works.
 
-    add_user_attribute('user', 'user-name')
-    add_user_attribute('account', 'account-name')
-    add_user_attribute('product', 'product-name')
+        add_user_attribute('user', 'user-name')
+        add_user_attribute('account', 'account-name')
+        add_user_attribute('product', 'product-name')
 
-    add_custom_parameter('bytes', b'bytes-value')
-    add_custom_parameter('string', 'string-value')
-    add_custom_parameter('unicode', u'unicode-value')
+        add_custom_parameter('bytes', b'bytes-value')
+        add_custom_parameter('string', 'string-value')
+        add_custom_parameter('unicode', u'unicode-value')
 
-    add_custom_parameter('integer', 1)
-    add_custom_parameter('float', 1.0)
+        add_custom_parameter('integer', 1)
+        add_custom_parameter('float', 1.0)
 
-    add_custom_parameter('invalid-utf8', b'\xe2')
-    add_custom_parameter('multibyte-utf8', b'\xe2\x88\x9a')
-    add_custom_parameter('multibyte-unicode', b'\xe2\x88\x9a'.decode('utf-8'))
+        add_custom_parameter('invalid-utf8', b'\xe2')
+        add_custom_parameter('multibyte-utf8', b'\xe2\x88\x9a')
+        add_custom_parameter('multibyte-unicode',
+                b'\xe2\x88\x9a'.decode('utf-8'))
 
-    add_custom_parameter('list', [])
-    add_custom_parameter('tuple', ())
-    add_custom_parameter('dict', {})
+        add_custom_parameter('list', [])
+        add_custom_parameter('tuple', ())
+        add_custom_parameter('dict', {})
 
     text = '<html><head>%s</head><body><p>RESPONSE</p>%s</body></html>'
 
@@ -176,6 +178,47 @@ def test_capture_attributes_enabled():
         assert 'multibyte-utf8' not in attributes
 
     assert attributes['multibyte-unicode'] == b'\xe2\x88\x9a'.decode('utf-8')
+
+_test_no_attributes_recorded_settings = {
+    'browser_monitoring.capture_attributes': True }
+
+@validate_analytics_sample_data(name='WebTransaction/Uri/',
+        capture_attributes=False)
+@override_application_settings(_test_no_attributes_recorded_settings)
+def test_no_attributes_recorded():
+    settings = application_settings()
+
+    assert settings.browser_monitoring.enabled
+    assert settings.browser_monitoring.capture_attributes
+
+    assert settings.js_agent_loader
+
+    response = target_application.get('/', extra_environ={
+            'record_attributes': 'FALSE'})
+
+    header = response.html.html.head.script.text
+    content = response.html.html.body.p.text
+    footer = response.html.html.body.script.text
+
+    # Validate actual body content as sansity check.
+
+    assert content == 'RESPONSE'
+
+    # We no longer are in control of the JS contents of the header so
+    # just check to make sure it contains at least the magic string
+    # 'NREUM'.
+
+    assert header.find('NREUM') != -1
+
+    # Now validate the various fields of the footer related to analytics.
+    # The fields are held by a JSON dictionary.
+
+    data = json.loads(footer.split('NREUM.info=')[1])
+
+    # As we are not recording any user attributes, we should not
+    # actually have an entry at all in the footer.
+
+    assert 'userAttributes' not in data 
 
 _test_analytic_events_capture_attributes_disabled_settings = {
     'analytics_events.capture_attributes': False,

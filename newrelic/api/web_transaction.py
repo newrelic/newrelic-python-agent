@@ -535,10 +535,13 @@ class WebTransaction(newrelic.api.transaction.Transaction):
                         continue
                     yield key, value
 
-            user_attributes = obfuscate(json_encode(dict(
-                    _filter(self._custom_params))), obfuscation_key)
+            user_attributes = dict(_filter(self._custom_params))
 
-            additional_params.append(('userAttributes', user_attributes))
+            if user_attributes:
+                user_attributes = obfuscate(json_encode(user_attributes),
+                        obfuscation_key)
+
+                additional_params.append(('userAttributes', user_attributes))
 
         if self._settings.browser_monitoring.ssl_for_http is not None:
             additional_params.append(('sslForHttp',

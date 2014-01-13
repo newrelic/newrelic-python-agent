@@ -2,4 +2,3 @@ tox
 lock_file
 devpi-server
 eventlet
-pip<1.5

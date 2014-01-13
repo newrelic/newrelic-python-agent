@@ -24,7 +24,9 @@ _test_application_index_scoped_metrics = [
         ('Function/flask.app:Flask.wsgi_app', 1),
         ('Python/WSGI/Application', 1),
         ('Python/WSGI/Response', 1),
-        ('Function/_test_application:index_page', 1)]
+        ('Python/WSGI/Finalize', 1),
+        ('Function/_test_application:index_page', 1),
+        ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
 
 @validate_transaction_metrics('_test_application:index_page',
         scoped_metrics=_test_application_index_scoped_metrics)
@@ -37,8 +39,10 @@ _test_application_error_scoped_metrics = [
         ('Function/flask.app:Flask.wsgi_app', 1),
         ('Python/WSGI/Application', 1),
         ('Python/WSGI/Response', 1),
+        ('Python/WSGI/Finalize', 1),
         ('Function/_test_application:error_page', 1),
-        ('Function/flask.app:Flask.handle_exception', 1)]
+        ('Function/flask.app:Flask.handle_exception', 1),
+        ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
 
 if is_gt_flask060:
     _test_application_error_scoped_metrics.extend([
@@ -54,8 +58,10 @@ _test_application_abort_404_scoped_metrics = [
         ('Function/flask.app:Flask.wsgi_app', 1),
         ('Python/WSGI/Application', 1),
         ('Python/WSGI/Response', 1),
+        ('Python/WSGI/Finalize', 1),
         ('Function/_test_application:abort_404_page', 1),
-        ('Function/flask.app:Flask.handle_http_exception', 1)]
+        ('Function/flask.app:Flask.handle_http_exception', 1),
+        ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
 
 if is_gt_flask060:
     _test_application_abort_404_scoped_metrics.extend([
@@ -71,7 +77,9 @@ _test_application_not_found_scoped_metrics = [
         ('Function/flask.app:Flask.wsgi_app', 1),
         ('Python/WSGI/Application', 1),
         ('Python/WSGI/Response', 1),
-        ('Function/flask.app:Flask.handle_http_exception', 1)]
+        ('Python/WSGI/Finalize', 1),
+        ('Function/flask.app:Flask.handle_http_exception', 1),
+        ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
 
 if is_gt_flask060:
     _test_application_not_found_scoped_metrics.extend([
@@ -87,7 +95,9 @@ _test_application_render_template_string_scoped_metrics = [
         ('Function/flask.app:Flask.wsgi_app', 1),
         ('Python/WSGI/Application', 1),
         ('Python/WSGI/Response', 1),
+        ('Python/WSGI/Finalize', 1),
         ('Function/_test_application:template_string', 1),
+        ('Function/werkzeug.wsgi:ClosingIterator.close', 1),
         ('Template/Compile/<template>', 1),
         ('Template/Render/<template>', 1)]
 
@@ -101,8 +111,10 @@ _test_application_render_template_not_found_scoped_metrics = [
         ('Function/flask.app:Flask.wsgi_app', 1),
         ('Python/WSGI/Application', 1),
         ('Python/WSGI/Response', 1),
+        ('Python/WSGI/Finalize', 1),
         ('Function/_test_application:template_not_found', 1),
-        ('Function/flask.app:Flask.handle_exception', 1)]
+        ('Function/flask.app:Flask.handle_exception', 1),
+        ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
 
 if is_gt_flask060:
     _test_application_render_template_not_found_scoped_metrics.extend([

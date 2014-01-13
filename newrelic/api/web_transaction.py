@@ -596,8 +596,15 @@ class _WSGIApplicationIterable(object):
 
     def close(self):
         try:
-            if hasattr(self.generator, 'close'):
-                self.generator.close()
+            with newrelic.api.function_trace.FunctionTrace(
+                    self.transaction, name='Finalize', group='Python/WSGI'):
+                if hasattr(self.generator, 'close'):
+                    name = newrelic.api.object_wrapper.callable_name(
+                            self.generator.close)
+                    with newrelic.api.function_trace.FunctionTrace(
+                            self.transaction, name):
+                        self.generator.close()
+
         except:  # Catch all
             self.transaction.__exit__(*sys.exc_info())
             raise

@@ -29,8 +29,10 @@ _test_error_handler_not_found_scoped_metrics = [
         ('Function/flask.app:Flask.wsgi_app', 1),
         ('Python/WSGI/Application', 1),
         ('Python/WSGI/Response', 1),
+        ('Python/WSGI/Finalize', 1),
         ('Function/_test_not_found:page_not_found', 1),
-        ('Function/flask.app:Flask.handle_http_exception', 1)]
+        ('Function/flask.app:Flask.handle_http_exception', 1),
+        ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
 
 if is_gt_flask060:
     _test_error_handler_not_found_scoped_metrics.extend([

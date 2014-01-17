@@ -79,7 +79,7 @@ class TimeTrace(object):
         # Give chance for derived class to finalize any data in
         # this object instance.
 
-        self.finalize_data()
+        self.finalize_data(exc, value, tb)
 
         # Give chance for derived class to create a standin node
         # object to be used in the transaction trace. If we get
@@ -96,7 +96,7 @@ class TimeTrace(object):
 
         self.transaction = None
 
-    def finalize_data(self):
+    def finalize_data(self, exc=None, value=None, tb=None):
         pass
 
     def create_node(self):

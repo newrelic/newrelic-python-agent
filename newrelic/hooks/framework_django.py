@@ -1,7 +1,6 @@
 import sys
 import threading
 
-import newrelic.packages.six as six
 
 from newrelic.api.error_trace import wrap_error_trace
 from newrelic.api.function_trace import (FunctionTrace, wrap_function_trace)
@@ -12,6 +11,8 @@ from newrelic.api.post_function import wrap_post_function
 from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import WSGIApplicationWrapper
 from newrelic.agent import global_settings
+
+import newrelic.packages.six as six
 
 def should_ignore(exc, value, tb):
     from django.http import Http404
@@ -51,7 +52,7 @@ def browser_timing_middleware(request, response):
     # Only insert RUM JavaScript headers and footers if enabled
     # in configuration.
 
-    if not transaction.settings.rum.enabled:
+    if not transaction.settings.browser_monitoring.enabled:
         return response
 
     if transaction.autorum_disabled:
@@ -140,7 +141,6 @@ def browser_timing_middleware(request, response):
 
             footer = transaction.browser_timing_footer()
             footer = six.b(footer)
-
             parts.append(footer)
             parts.append(content[end:])
             response.content = ''

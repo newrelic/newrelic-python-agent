@@ -6,8 +6,8 @@ import newrelic.packages.six as six
 
 from newrelic.api.application import application_instance
 from newrelic.core.config import global_settings, create_settings_snapshot
-from newrelic.api.web_transaction import (deobfuscate, obfuscate,
-        WebTransaction)
+from newrelic.api.web_transaction import WebTransaction
+from newrelic.common.encoding_utils import deobfuscate, obfuscate
 
 class TestCase(unittest.TestCase):
 

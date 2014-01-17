@@ -132,9 +132,12 @@ _settings.shutdown_timeout = float(
        os.environ.get('NEW_RELIC_SHUTDOWN_TIMEOUT', '2.5'))
 
 _settings.beacon = None
+_settings.error_beacon = None
 _settings.application_id = None
 _settings.browser_key = None
 _settings.episodes_url = None
+_settings.js_agent_loader = None
+_settings.js_agent_file = None
 
 _settings.url_rules = []
 _settings.metric_name_rules = []
@@ -149,6 +152,7 @@ _settings.cross_application_tracer.enabled = True
 _settings.xray_session.enabled = True
 
 _settings.analytics_events.enabled = True
+_settings.analytics_events.capture_attributes = True
 _settings.analytics_events.max_samples_stored = 1200
 _settings.analytics_events.transactions.enabled = True
 
@@ -161,22 +165,26 @@ _settings.transaction_tracer.explain_threshold = 0.5
 _settings.transaction_tracer.function_trace = []
 _settings.transaction_tracer.generator_trace = []
 _settings.transaction_tracer.top_n = 20
+_settings.transaction_tracer.capture_attributes = True
 
 _settings.error_collector.enabled = True
 _settings.error_collector.capture_source = False
 _settings.error_collector.ignore_errors = []
 _settings.error_collector.ignore_status_codes = set([300, 301, 302, 303, 304,
                                                      305, 306, 307, 308, 404])
+_settings.error_collector.capture_attributes = True
 
+_settings.browser_monitoring.enabled = True
 _settings.browser_monitoring.auto_instrument = True
+_settings.browser_monitoring.loader = 'rum'  # Valid values: 'full', 'none'
+_settings.browser_monitoring.loader_version = None
+_settings.browser_monitoring.debug = False
+_settings.browser_monitoring.ssl_for_http = None
+_settings.browser_monitoring.capture_attributes = False
 
 _settings.transaction_name.limit = None
 _settings.transaction_name.naming_scheme = os.environ.get(
         'NEW_RELIC_TRANSACTION_NAMING_SCHEME')
-
-_settings.rum.enabled = True
-_settings.rum.load_episodes_file = True
-_settings.rum.jsonp = True
 
 _settings.slow_sql.enabled = True
 
@@ -211,6 +219,7 @@ _settings.debug.log_thread_profile_payload = False
 _settings.debug.log_normalization_rules = False
 _settings.debug.log_raw_metric_data = False
 _settings.debug.log_normalized_metric_data = False
+_settings.debug.record_transaction_failure = False
 
 _settings.debug.enable_coroutine_profiling = False
 
@@ -325,7 +334,7 @@ def fetch_config_setting(settings_object, name):
 
     return target
 
-def create_settings_snapshot(server_side_config={}):
+def create_settings_snapshot(server_side_config={}, settings=_settings):
     """Create a snapshot of the global default settings and overlay it
     with any server side configuration settings. Any local settings
     overrides to take precedence over server side configuration settings
@@ -339,7 +348,7 @@ def create_settings_snapshot(server_side_config={}):
 
     """
 
-    settings_snapshot = copy.deepcopy(_settings)
+    settings_snapshot = copy.deepcopy(settings)
 
     # Break out the server side agent config settings which
     # are stored under 'agent_config' key.

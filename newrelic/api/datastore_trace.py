@@ -27,11 +27,6 @@ class DatastoreTrace(newrelic.api.time_trace.TimeTrace):
         print >> file, self.__class__.__name__, dict(product=self.product,
                 target=self.target, operation=self.operation)
 
-    def finalize_data(self):
-        settings = self.transaction.settings
-        transaction_tracer = settings.transaction_tracer
-        agent_limits = settings.agent_limits
-
     def create_node(self):
         return self.node(product=self.product, target=self.target,
                 operation=self.operation, children=self.children,

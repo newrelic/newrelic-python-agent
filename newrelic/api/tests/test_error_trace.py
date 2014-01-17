@@ -97,7 +97,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             except Exception:
                 pass
 
-    def test_implicit_runtime_unicode(self):
+    def test_implicit_runtime_error_unicode(self):
         environ = { "REQUEST_URI": "/error_trace_unicode" }
         transaction = newrelic.api.web_transaction.WebTransaction(
                 application, environ)
@@ -107,6 +107,20 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 with newrelic.api.error_trace.ErrorTrace(transaction):
                     import sys
                     raise RuntimeError(u"runtime_error %s √√√√" %
+                                       sys.getdefaultencoding())
+            except Exception:
+                pass
+
+    def test_implicit_runtime_error_invalid_utf8_byte_string(self):
+        environ = { "REQUEST_URI": "/error_trace_invalid_utf8" }
+        transaction = newrelic.api.web_transaction.WebTransaction(
+                application, environ)
+        with transaction:
+            time.sleep(0.5)
+            try:
+                with newrelic.api.error_trace.ErrorTrace(transaction):
+                    import sys
+                    raise RuntimeError(b"runtime_error %s \xe2" %
                                        sys.getdefaultencoding())
             except Exception:
                 pass

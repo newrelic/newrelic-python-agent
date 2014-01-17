@@ -66,7 +66,8 @@ def run_python(args):
 
     os.environ['NEW_RELIC_ADMIN_COMMAND'] = repr(sys.argv)
 
-    os.environ['NEW_RELIC_PYTHON_PREFIX'] = os.path.normpath(sys.prefix)
+    os.environ['NEW_RELIC_PYTHON_PREFIX'] = os.path.realpath(
+            os.path.normpath(sys.prefix))
     os.environ['NEW_RELIC_PYTHON_VERSION'] = '.'.join(
             map(str, sys.version_info[:2]))
 

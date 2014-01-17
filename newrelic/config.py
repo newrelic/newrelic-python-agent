@@ -267,21 +267,33 @@ def _process_configuration(section):
                      'get', _map_function_trace)
     _process_setting(section, 'transaction_tracer.top_n',
                      'getint', None)
+    _process_setting(section, 'transaction_tracer.capture_attributes',
+                     'getboolean', None),
     _process_setting(section, 'error_collector.enabled',
                      'getboolean', None),
     _process_setting(section, 'error_collector.capture_source',
                      'getboolean', None),
     _process_setting(section, 'error_collector.ignore_errors',
                      'get', _map_ignore_errors)
+    _process_setting(section, 'error_collector.capture_attributes',
+                     'getboolean', None),
+    _process_setting(section, 'browser_monitoring.enabled',
+                     'getboolean', None)
     _process_setting(section, 'browser_monitoring.auto_instrument',
                      'getboolean', None)
-    _process_setting(section, 'rum.enabled',
+    _process_setting(section, 'browser_monitoring.loader',
+                     'get', None)
+    _process_setting(section, 'browser_monitoring.debug',
                      'getboolean', None)
-    _process_setting(section, 'rum.load_episodes_file',
+    _process_setting(section, 'browser_monitoring.ssl_for_http',
                      'getboolean', None)
+    _process_setting(section, 'browser_monitoring.capture_attributes',
+                     'getboolean', None),
     _process_setting(section, 'slow_sql.enabled',
                      'getboolean', None)
     _process_setting(section, 'analytics_events.enabled',
+                     'getboolean', None),
+    _process_setting(section, 'analytics_events.capture_attributes',
                      'getboolean', None),
     _process_setting(section, 'analytics_events.max_samples_stored',
                      'getint', None),
@@ -342,6 +354,8 @@ def _process_configuration(section):
     _process_setting(section, 'debug.log_agent_initialization',
                      'getboolean', None)
     _process_setting(section, 'debug.enable_coroutine_profiling',
+                     'getboolean', None)
+    _process_setting(section, 'debug.record_transaction_failure',
                      'getboolean', None)
     _process_setting(section, 'cross_application_tracer.enabled',
                      'getboolean', None)
@@ -577,6 +591,18 @@ def _module_import_hook(target, module, function):
     def _instrument(target):
         _logger.debug("instrument module %s" %
                 ((target, module, function),))
+
+        try:
+            instrumented = target._nr_instrumented
+        except AttributeError:
+            instrumented = target._nr_instrumented = set()
+
+        if (module, function) in instrumented:
+            _logger.debug("instrumentation already run %s" %
+                    ((target, module, function),))
+            return
+
+        instrumented.add((module, function))
 
         try:
             getattr(newrelic.api.import_hook.import_module(module),
@@ -1371,6 +1397,10 @@ def _process_module_definition(target, module, function='instrument'):
         if _config_object.has_option(section, 'execute'):
             execute = _config_object.get(section, 'execute')
 
+    except Exception:
+        _raise_configuration_error(section)
+
+    try:
         if enabled and not execute:
             _module_import_hook_registry[target] = (module, function)
 
@@ -1382,8 +1412,9 @@ def _process_module_definition(target, module, function='instrument'):
 
             _module_import_hook_results.setdefault(
                     (target, module, function), None)
+
     except Exception:
-        _raise_configuration_error(section)
+        _raise_instrumentation_error('import-hook', locals())
 
 def _process_module_builtin_defaults():
     _process_module_definition('django.core.handlers.base',
@@ -1533,21 +1564,28 @@ def _process_module_builtin_defaults():
 
     _process_module_definition('cx_Oracle',
             'newrelic.hooks.database_dbapi2')
-    _process_module_definition('MySQLdb',
-            'newrelic.hooks.database_dbapi2')
     _process_module_definition('ibm_db_dbi',
             'newrelic.hooks.database_dbapi2')
+
+    _process_module_definition('mysql.connector',
+            'newrelic.hooks.database_mysql',
+            'instrument_mysql_connector')
+    _process_module_definition('MySQLdb',
+            'newrelic.hooks.database_mysqldb',
+            'instrument_mysqldb')
     _process_module_definition('oursql',
-            'newrelic.hooks.database_dbapi2')
-    _process_module_definition('postgresql.interface.proboscis.dbapi2',
-            'newrelic.hooks.database_dbapi2')
+            'newrelic.hooks.database_mysqldb',
+            'instrument_mysqldb')
     _process_module_definition('pymysql',
-            'newrelic.hooks.database_dbapi2')
+            'newrelic.hooks.database_mysqldb',
+            'instrument_mysqldb')
+
     _process_module_definition('pyodbc',
             'newrelic.hooks.database_dbapi2')
 
     _process_module_definition('psycopg2',
-            'newrelic.hooks.database_dbapi2')
+            'newrelic.hooks.database_psycopg2',
+            'instrument_psycopg2')
     _process_module_definition('psycopg2.extensions',
             'newrelic.hooks.database_psycopg2',
             'instrument_psycopg2_extensions')
@@ -1559,15 +1597,32 @@ def _process_module_builtin_defaults():
             'instrument_psycopg2_extensions')
 
     _process_module_definition('psycopg2cffi',
-            'newrelic.hooks.database_dbapi2')
+            'newrelic.hooks.database_psycopg2',
+            'instrument_psycopg2')
     _process_module_definition('psycopg2cffi.extensions',
             'newrelic.hooks.database_psycopg2',
             'instrument_psycopg2_extensions')
 
-    _process_module_definition('pysqlite2.dbapi2',
-            'newrelic.hooks.database_sqlite')
+    _process_module_definition('postgresql.driver.dbapi20',
+            'newrelic.hooks.database_psycopg2',
+            'instrument_psycopg2')
+
+    _process_module_definition('postgresql.interface.proboscis.dbapi2',
+            'newrelic.hooks.database_dbapi2')
+
+    _process_module_definition('sqlite3',
+            'newrelic.hooks.database_sqlite',
+            'instrument_sqlite3')
     _process_module_definition('sqlite3.dbapi2',
-            'newrelic.hooks.database_sqlite')
+            'newrelic.hooks.database_sqlite',
+            'instrument_sqlite3_dbapi2')
+
+    _process_module_definition('pysqlite2',
+            'newrelic.hooks.database_sqlite',
+            'instrument_sqlite3')
+    _process_module_definition('pysqlite2.dbapi2',
+            'newrelic.hooks.database_sqlite',
+            'instrument_sqlite3_dbapi2')
 
     _process_module_definition('memcache',
             'newrelic.hooks.memcache_memcache')
@@ -1605,7 +1660,8 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.external_urllib') # Python 3
 
     _process_module_definition('urllib2',
-            'newrelic.hooks.external_urllib2')
+            'newrelic.hooks.external_urllib2') # Python 2
+
     _process_module_definition('urllib3.request',
             'newrelic.hooks.external_urllib3')
 
@@ -1852,7 +1908,7 @@ def initialize(config_file=None, environment=None, ignore_errors=None,
 
     if ignore_errors is None:
         ignore_errors = newrelic.core.config._environ_as_bool(
-                'NEW_RELIC_IGNORE_INSTRUMENTATION_ERRORS', True)
+                'NEW_RELIC_IGNORE_STARTUP_ERRORS', True)
 
     _load_configuration(config_file, environment, ignore_errors,
             log_file, log_level)

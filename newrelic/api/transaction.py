@@ -80,7 +80,6 @@ class Transaction(object):
         self._string_cache = {}
 
         self._custom_params = {}
-        self._user_attrs = {}
         self._request_params = {}
 
         self._utilization_tracker = None
@@ -777,7 +776,7 @@ class Transaction(object):
         self._errors.append(node)
 
     def notice_error(self, exc, value, tb, params={}, ignore_errors=[]):
-        warnings.warn('Internal API change. Use record_transaction() '
+        warnings.warn('Internal API change. Use record_exception() '
                 'instead of notice_error().', DeprecationWarning,
                 stacklevel=2)
 
@@ -855,11 +854,16 @@ class Transaction(object):
             self._custom_params[name] = value
 
     def add_user_attribute(self, name, value):
-        self._user_attrs[name] = value
+        #warnings.warn('Internal API change. Use add_custom_parameter() '
+        #        'instead of add_user_attribute().', DeprecationWarning,
+        #        stacklevel=2)
+        self.add_custom_parameter(name, value)
 
     def add_user_attributes(self, items):
-        for name, value in items:
-            self._user_attrs[name] = value
+        #warnings.warn('Internal API change. Use add_custom_parameters() '
+        #        'instead of add_user_attributes().', DeprecationWarning,
+        #        stacklevel=2)
+        self.add_custom_parameters(items)
 
     def dump(self, file):
         """Dumps details about the transaction to the file object."""

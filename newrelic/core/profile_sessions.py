@@ -4,7 +4,6 @@ import time
 import threading
 import zlib
 import base64
-import json
 
 from collections import deque, defaultdict
 
@@ -15,6 +14,8 @@ from newrelic.core.config import global_settings
 from newrelic.core.transaction_cache import transaction_cache
 
 from newrelic.core.internal_metrics import (internal_trace, internal_metric)
+
+from ..common.encoding_utils import json_encode
 
 try:
     from sys import intern
@@ -607,7 +608,7 @@ class ProfileSession(object):
             _logger.debug('Encoding thread profile data where '
                     'payload=%r.', flat_tree)
 
-        json_call_tree = json.dumps(flat_tree)
+        json_call_tree = json_encode(flat_tree)
         encoded_tree = base64.standard_b64encode(
                 zlib.compress(six.b(json_call_tree)))
 

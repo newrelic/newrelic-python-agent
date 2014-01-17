@@ -1,46 +1,127 @@
-import webtest
+from testing_support.fixtures import validate_transaction_metrics
 
-from flask import Flask, render_template_string, render_template, abort
+try:
+    # The __version__ attribute was only added in 0.7.0.
+    from flask import __version__ as flask_version
+    is_gt_flask060 = True
+except ImportError:
+    is_gt_flask060 = False
 
-application = Flask(__name__)
+def target_application():
+    # We need to delay Flask application creation because of ordering
+    # issues whereby the agent needs to be initialised before Flask is
+    # imported and the routes configured. Normally pytest only runs the
+    # global fixture which will initialise the agent after each test
+    # file is imported, which is too late. We also can't do application
+    # creation within a function as we will then get view handler
+    # functions are different between Python 2 and 3, with the latter
+    # showing <local> scope in path.
 
-@application.route('/index')
-def index_page():
-    return 'INDEX RESPONSE'
+    from _test_application import _test_application
+    return _test_application
 
-@application.route('/error')
-def error_page():
-    raise RuntimeError('RUNTIME ERROR')
+_test_application_index_scoped_metrics = [
+        ('Function/flask.app:Flask.wsgi_app', 1),
+        ('Python/WSGI/Application', 1),
+        ('Python/WSGI/Response', 1),
+        ('Python/WSGI/Finalize', 1),
+        ('Function/_test_application:index_page', 1),
+        ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
 
-@application.route('/abort_404')
-def abort_404_page():
-    abort(404)
-
-@application.route('/template_string')
-def template_string():
-    return render_template_string('<body><p>INDEX RESPONSE</p></body>')
-
-@application.route('/template_not_found')
-def template_not_found():
-    return render_template('not_found')
-
-test_application = webtest.TestApp(application)
-
+@validate_transaction_metrics('_test_application:index_page',
+        scoped_metrics=_test_application_index_scoped_metrics)
 def test_application_index():
-    response = test_application.get('/index')
+    application = target_application()
+    response = application.get('/index')
     response.mustcontain('INDEX RESPONSE')
 
+_test_application_error_scoped_metrics = [
+        ('Function/flask.app:Flask.wsgi_app', 1),
+        ('Python/WSGI/Application', 1),
+        ('Python/WSGI/Response', 1),
+        ('Python/WSGI/Finalize', 1),
+        ('Function/_test_application:error_page', 1),
+        ('Function/flask.app:Flask.handle_exception', 1),
+        ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
+
+if is_gt_flask060:
+    _test_application_error_scoped_metrics.extend([
+            ('Function/flask.app:Flask.handle_user_exception', 1)])
+
+@validate_transaction_metrics('_test_application:error_page',
+        scoped_metrics=_test_application_error_scoped_metrics)
 def test_application_error():
-    response = test_application.get('/error', status=500, expect_errors=True)
+    application = target_application()
+    response = application.get('/error', status=500, expect_errors=True)
 
+_test_application_abort_404_scoped_metrics = [
+        ('Function/flask.app:Flask.wsgi_app', 1),
+        ('Python/WSGI/Application', 1),
+        ('Python/WSGI/Response', 1),
+        ('Python/WSGI/Finalize', 1),
+        ('Function/_test_application:abort_404_page', 1),
+        ('Function/flask.app:Flask.handle_http_exception', 1),
+        ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
+
+if is_gt_flask060:
+    _test_application_abort_404_scoped_metrics.extend([
+            ('Function/flask.app:Flask.handle_user_exception', 1)])
+
+@validate_transaction_metrics('_test_application:abort_404_page',
+        scoped_metrics=_test_application_abort_404_scoped_metrics)
 def test_application_abort_404():
-    response = test_application.get('/abort_404', status=404)
+    application = target_application()
+    response = application.get('/abort_404', status=404)
 
+_test_application_not_found_scoped_metrics = [
+        ('Function/flask.app:Flask.wsgi_app', 1),
+        ('Python/WSGI/Application', 1),
+        ('Python/WSGI/Response', 1),
+        ('Python/WSGI/Finalize', 1),
+        ('Function/flask.app:Flask.handle_http_exception', 1),
+        ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
+
+if is_gt_flask060:
+    _test_application_not_found_scoped_metrics.extend([
+            ('Function/flask.app:Flask.handle_user_exception', 1)])
+
+@validate_transaction_metrics('flask.app:Flask.handle_http_exception',
+        scoped_metrics=_test_application_not_found_scoped_metrics)
 def test_application_not_found():
-    response = test_application.get('/missing', status=404)
+    application = target_application()
+    response = application.get('/missing', status=404)
 
+_test_application_render_template_string_scoped_metrics = [
+        ('Function/flask.app:Flask.wsgi_app', 1),
+        ('Python/WSGI/Application', 1),
+        ('Python/WSGI/Response', 1),
+        ('Python/WSGI/Finalize', 1),
+        ('Function/_test_application:template_string', 1),
+        ('Function/werkzeug.wsgi:ClosingIterator.close', 1),
+        ('Template/Compile/<template>', 1),
+        ('Template/Render/<template>', 1)]
+
+@validate_transaction_metrics('_test_application:template_string',
+        scoped_metrics=_test_application_render_template_string_scoped_metrics)
 def test_application_render_template_string():
-    response = test_application.get('/template_string')
+    application = target_application()
+    response = application.get('/template_string')
 
+_test_application_render_template_not_found_scoped_metrics = [
+        ('Function/flask.app:Flask.wsgi_app', 1),
+        ('Python/WSGI/Application', 1),
+        ('Python/WSGI/Response', 1),
+        ('Python/WSGI/Finalize', 1),
+        ('Function/_test_application:template_not_found', 1),
+        ('Function/flask.app:Flask.handle_exception', 1),
+        ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
+
+if is_gt_flask060:
+    _test_application_render_template_not_found_scoped_metrics.extend([
+            ('Function/flask.app:Flask.handle_user_exception', 1)])
+
+@validate_transaction_metrics('_test_application:template_not_found',
+        scoped_metrics=_test_application_render_template_not_found_scoped_metrics)
 def test_application_render_template_not_found():
-    response = test_application.get('/template_not_found', status=500)
+    application = target_application()
+    response = application.get('/template_not_found', status=500)

@@ -1,101 +1,34 @@
 import sys
 import cgi
-import base64
 import time
 import string
 import re
-import json
+import logging
 
 try:
     import urlparse
 except ImportError:
     import urllib.parse as urlparse
 
-import newrelic.packages.six as six
-
 import newrelic.api.application
 import newrelic.api.transaction
 import newrelic.api.object_wrapper
 import newrelic.api.function_trace
 
-_rum_header_fragment = '<script type="text/javascript">' \
-        'var NREUMQ=NREUMQ||[];NREUMQ.push(["mark","firstbyte",' \
-        'new Date().getTime()]);</script>'
+from ..common.encoding_utils import (obfuscate, deobfuscate, json_encode,
+    json_decode)
 
-_rum_footer_short_fragment = '<script type="text/javascript">' \
-        'if(!NREUMQ.f){NREUMQ.f=function(){NREUMQ.push(["load",' \
-        'new Date().getTime()]);if(NREUMQ.a)NREUMQ.a();};' \
-        'NREUMQ.a=window.onload;window.onload=NREUMQ.f;};' \
-        'NREUMQ.push(["nrf2","%s","%s","%s","%s",%d,%d,' \
-        'new Date().getTime()]);</script>'
+from ..packages import six
 
-_rum2_footer_short_fragment = '<script type="text/javascript">' \
-        'if(!NREUMQ.f){NREUMQ.f=function(){NREUMQ.push(["load",' \
-        'new Date().getTime()]);if(NREUMQ.a)NREUMQ.a();};' \
-        'NREUMQ.a=window.onload;window.onload=NREUMQ.f;};' \
-        'NREUMQ.push(["nrfj","%s","%s","%s","%s",%d,%d,' \
-        'new Date().getTime(),"%s","%s","%s","%s","%s"]);</script>'
+_logger = logging.getLogger(__name__)
 
-_rum_footer_long_fragment = '<script type="text/javascript">' \
-        'if(!NREUMQ.f){NREUMQ.f=function(){NREUMQ.push(["load",' \
-        'new Date().getTime()]);var e=document.createElement("script");' \
-        'e.type="text/javascript";' \
-        'e.src=(("http:"===document.location.protocol)?"http:":"https:")' \
-        '+"//"+"%s";document.body.appendChild(e);if(NREUMQ.a)NREUMQ.a();};' \
-        'NREUMQ.a=window.onload;window.onload=NREUMQ.f;};' \
-        'NREUMQ.push(["nrf2","%s","%s","%s","%s",%d,%d,' \
-        'new Date().getTime()]);</script>'
-
-_rum2_footer_long_fragment = '<script type="text/javascript">' \
-        'if(!NREUMQ.f){NREUMQ.f=function(){NREUMQ.push(["load",' \
-        'new Date().getTime()]);var e=document.createElement("script");' \
-        'e.type="text/javascript";' \
-        'e.src=(("http:"===document.location.protocol)?"http:":"https:")' \
-        '+"//"+"%s";document.body.appendChild(e);if(NREUMQ.a)NREUMQ.a();};' \
-        'NREUMQ.a=window.onload;window.onload=NREUMQ.f;};' \
-        'NREUMQ.push(["nrfj","%s","%s","%s","%s",%d,%d,' \
-        'new Date().getTime(),"%s","%s","%s","%s","%s"]);</script>'
+_js_agent_header_fragment = '<script type="text/javascript">%s</script>'
+_js_agent_footer_fragment = '<script type="text/javascript">'\
+                            'window.NREUM||(NREUM={});NREUM.info=%s</script>'
 
 # Seconds since epoch for Jan 1 2000
 
 JAN_1_2000 = time.mktime((2000, 1, 1, 0, 0, 0, 0, 0, 0))
-
-def _encode(name, key):
-    s = []
-
-    # Convert name and key into bytes which are treated as integers.
-
-    key = list(six.iterbytes(six.b(key)))
-    for i, c in enumerate(six.iterbytes(six.b(name))):
-        s.append(chr(c ^ key[i % len(key)]))
-    return s
-
-if six.PY3:
-    def obfuscate(name, key):
-        if not (name and key):
-            return ''
-
-        # Always pass name and key as str to _encode()
-
-        return str(base64.b64encode(six.b(''.join(_encode(name, key)))),
-                   encoding='Latin-1')
-else:
-    def obfuscate(name, key):
-        if not (name and key):
-            return ''
-
-        # Always pass name and key as str to _encode()
-
-        return base64.b64encode(six.b(''.join(_encode(name, key))))
-
-def deobfuscate(name, key):
-    if not (name and key):
-        return ''
-
-    # Always pass name and key as str to _encode()
-
-    return ''.join(_encode(six.text_type(base64.b64decode(six.b(name)),
-        encoding='Latin-1'), key))
 
 def _lookup_environ_setting(environ, name, default=False):
     flag = environ.get(name, default)
@@ -119,8 +52,9 @@ def _extract_token(cookie):
     except Exception:
         pass
 
-
 class WebTransaction(newrelic.api.transaction.Transaction):
+
+    report_unicode_error = True
 
     def __init__(self, application, environ):
 
@@ -386,7 +320,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         if encoded_txn_header:
             try:
-                decoded_txn_header = json.loads(deobfuscate(
+                decoded_txn_header = json_decode(deobfuscate(
                         encoded_txn_header, self._settings.encoding_key))
             except Exception:
                 decoded_txn_header = None
@@ -456,7 +390,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
             payload = (self._settings.cross_process_id, self.path, queue_time,
                     duration, self._read_length, self.guid, self.record_tt)
-            app_data = json.dumps(payload)
+            app_data = json_encode(payload)
 
             additional_headers.append(('X-NewRelic-App-Data', obfuscate(
                     app_data, self._settings.encoding_key)))
@@ -467,6 +401,11 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         return additional_headers
 
     def browser_timing_header(self):
+        """This function returns the header as a native python string.
+           In Python 2 native strings are stored as bytes.
+           In Python 3 native strings are stored as unicode.
+
+         """
         if not self.enabled:
             return ''
 
@@ -476,16 +415,13 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         if self.background_task:
             return ''
 
-        if not self._settings.rum.enabled:
-            return ''
-
         if self.ignore_transaction:
             return ''
 
         if not self._settings:
             return ''
 
-        if not self._settings.episodes_url:
+        if not self._settings.browser_monitoring.enabled:
             return ''
 
         if not self._settings.license_key:
@@ -499,11 +435,43 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         if len(self._settings.license_key) < 13:
             return ''
 
-        self._rum_header = True
+        # Return header only if the agent received a valid js_agent_loader from
+        # collector. Collector won't send any js_agent_loader if
+        # browser_monitoring.loader is set to 'none'.
+        #
+        # JS Agent Loader is supposed to be ascii. Verify that by encoding it
+        # as ascii. If encoding fails return an empty string.
+        #
+        # Set self._rum_header to true only if a valid header was returned.
+        # This flag will be checked by the footer generation.
 
-        return _rum_header_fragment
+        if self._settings.js_agent_loader:
+            header = _js_agent_header_fragment % self._settings.js_agent_loader
+            try:
+                header.encode('ascii')
+            except UnicodeError:
+                if not WebTransaction.unicode_error_reported:
+                    _logger.error('ASCII encoding of js-agent-header failed.',
+                            header)
+                    WebTransaction.unicode_error_reported = True
+                header = ''
+            else:  # Successfully encoded.
+                self._rum_header = True
+        else:
+            header = ''
+
+        # Since encoding it as ascii was successful, return the string version
+        # of header.
+
+        return str(header)
 
     def browser_timing_footer(self):
+        """This function returns the footer script as a native python string.
+           In Python 2 native strings are stored as bytes.
+           In Python 3 native strings are stored as unicode.
+
+         """
+
         if not self.enabled:
             return ''
 
@@ -525,7 +493,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         obfuscation_key = self._settings.license_key[:13]
 
-        name = obfuscate(self.path, obfuscation_key)
+        txn_name = obfuscate(self.path, obfuscation_key)
 
         queue_start = self.queue_start or self.start_time
         start_time = self.start_time
@@ -534,57 +502,72 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         queue_duration = int((start_time - queue_start) * 1000)
         request_duration = int((end_time - start_time) * 1000)
 
-        rum_token = self.rum_token or ''
+        config_dict = {
+            "beacon": self._settings.beacon,
+            "errorBeacon": self._settings.error_beacon,
+            "licenseKey": self._settings.browser_key,
+            "applicationID": self._settings.application_id,
+            "transactionName": txn_name,
+            "queueTime": queue_duration,
+            "applicationTime": request_duration,
+            "agent": self._settings.js_agent_file,
+        }
 
-        # Only include the guid if the rum_token is not empty.
-
-        guid = self.guid if self.rum_token else ''
+        additional_params = []
 
         threshold = self._settings.transaction_tracer.transaction_threshold
         if threshold is None:
-            threshold = self.apdex *4
+            threshold = self.apdex * 4
 
-        guid = guid if request_duration >= threshold else ''
+        if request_duration >= threshold:
+            if self.rum_token:
+                additional_params.append(('agentToken', self.rum_token))
+                additional_params.append(('ttGuid', self.guid))
 
-        user = obfuscate(self._user_attrs.get('user'), obfuscation_key)
-        account = obfuscate(self._user_attrs.get('account'), obfuscation_key)
-        product = obfuscate(self._user_attrs.get('product'), obfuscation_key)
+        if self._settings.browser_monitoring.capture_attributes:
+            def _filter(params):
+                for key, value in params.items():
+                    if not isinstance(key, six.string_types):
+                        continue
+                    if (not isinstance(value, six.string_types) and
+                            not isinstance(value, float) and
+                            not isinstance(value, six.integer_types)):
+                        continue
+                    yield key, value
 
-        # Settings will have values as Unicode strings and the
-        # result here will be Unicode so need to convert back to
-        # normal string. Using str() and default encoding should
-        # be fine as should all be ASCII anyway.
+            user_attributes = dict(_filter(self._custom_params))
 
-        if not self._settings.rum.load_episodes_file:
-            if self._settings.rum.jsonp:
-                return str(_rum2_footer_short_fragment % (
-                    self._settings.beacon,
-                    self._settings.browser_key,
-                    self._settings.application_id,
-                    name, queue_duration, request_duration, guid,
-                    rum_token, user, account, product))
-            else:
-                return str(_rum_footer_short_fragment % (
-                    self._settings.beacon,
-                    self._settings.browser_key,
-                    self._settings.application_id,
-                    name, queue_duration, request_duration))
-        else:
-            if self._settings.rum.jsonp:
-                return str(_rum2_footer_long_fragment % (
-                    self._settings.episodes_file,
-                    self._settings.beacon,
-                    self._settings.browser_key,
-                    self._settings.application_id,
-                    name, queue_duration, request_duration, guid,
-                    rum_token, user, account, product))
-            else:
-                return str(_rum_footer_long_fragment % (
-                    self._settings.episodes_file,
-                    self._settings.beacon,
-                    self._settings.browser_key,
-                    self._settings.application_id,
-                    name, queue_duration, request_duration))
+            if user_attributes:
+                user_attributes = obfuscate(json_encode(user_attributes),
+                        obfuscation_key)
+
+                additional_params.append(('userAttributes', user_attributes))
+
+        if self._settings.browser_monitoring.ssl_for_http is not None:
+            additional_params.append(('sslForHttp',
+                self._settings.browser_monitoring.ssl_for_http))
+
+        # Add in the additional params to the footer config dictionary.
+
+        config_dict.update(additional_params)
+        footer = _js_agent_footer_fragment % json_encode(config_dict)
+
+        # Footer dictionary is only supposed to have ascii chars. Verify that
+        # by encoding it as ascii. If encoding fails return an empty string.
+
+        try:
+            footer.encode('ascii')
+        except UnicodeError:
+            if not WebTransaction.unicode_error_reported:
+                _logger.error('ASCII encoding of js-agent-footer failed.',
+                        footer)
+                WebTransaction.unicode_error_reported = True
+            return ''
+
+        # Since encoding it as ascii was successful, return the string version
+        # of footer.
+
+        return str(footer)
 
 class _WSGIApplicationIterable(object):
 
@@ -613,8 +596,15 @@ class _WSGIApplicationIterable(object):
 
     def close(self):
         try:
-            if hasattr(self.generator, 'close'):
-                self.generator.close()
+            with newrelic.api.function_trace.FunctionTrace(
+                    self.transaction, name='Finalize', group='Python/WSGI'):
+                if hasattr(self.generator, 'close'):
+                    name = newrelic.api.object_wrapper.callable_name(
+                            self.generator.close)
+                    with newrelic.api.function_trace.FunctionTrace(
+                            self.transaction, name):
+                        self.generator.close()
+
         except:  # Catch all
             self.transaction.__exit__(*sys.exc_info())
             raise

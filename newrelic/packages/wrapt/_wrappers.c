@@ -150,6 +150,8 @@ static int WraptObjectProxy_clear(WraptObjectProxyObject *self)
 
 static void WraptObjectProxy_dealloc(WraptObjectProxyObject *self)
 {
+    PyObject_GC_UnTrack(self);
+
     WraptObjectProxy_clear(self);
 
     Py_TYPE(self)->tp_free(self);
@@ -991,7 +993,7 @@ static PyObject *WraptObjectProxy_enter(
 
     result = PyObject_Call(method, args, kwds);
 
-    Py_XDECREF(method);
+    Py_DECREF(method);
 
     return result;
 }
@@ -1016,7 +1018,7 @@ static PyObject *WraptObjectProxy_exit(
 
     result = PyObject_Call(method, args, kwds);
 
-    Py_XDECREF(method);
+    Py_DECREF(method);
 
     return result;
 }
@@ -1301,6 +1303,8 @@ static int WraptObjectProxy_setattro(
 
         return PyObject_GenericSetAttr((PyObject *)self, name, value);
     }
+    else if (!match)
+        PyErr_Clear();
 
     Py_XDECREF(match);
 
@@ -1312,15 +1316,11 @@ static int WraptObjectProxy_setattro(
 #endif
     }
 
-    if (PyObject_RichCompareBool(name, wrapped_str, Py_EQ) == 1) {
-        Py_DECREF(wrapped_str);
-
+    if (PyObject_RichCompareBool(name, wrapped_str, Py_EQ) == 1)
         return PyObject_GenericSetAttr((PyObject *)self, name, value);
-    }
 
-    if (PyObject_HasAttr((PyObject *)Py_TYPE(self), name)) {
+    if (PyObject_HasAttr((PyObject *)Py_TYPE(self), name))
         return PyObject_GenericSetAttr((PyObject *)self, name, value);
-    }
 
     if (!self->wrapped) {
       PyErr_SetString(PyExc_ValueError, "wrapper has not been initialized");
@@ -1502,9 +1502,9 @@ PyTypeObject WraptObjectProxy_Type = {
     0,                      /*tp_descr_set*/
     offsetof(WraptObjectProxyObject, dict), /*tp_dictoffset*/
     (initproc)WraptObjectProxy_init, /*tp_init*/
-    0,                      /*tp_alloc*/
-    WraptObjectProxy_new,  /*tp_new*/
-    0,                      /*tp_free*/
+    PyType_GenericAlloc,    /*tp_alloc*/
+    WraptObjectProxy_new,   /*tp_new*/
+    PyObject_GC_Del,        /*tp_free*/
     0,                      /*tp_is_gc*/
 };
 
@@ -1718,8 +1718,18 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
     }
 
     if (self->parent == Py_None) {
+        if (Py_TYPE(self->object_proxy.wrapped)->tp_descr_get == NULL) {
+            PyErr_Format(PyExc_AttributeError,
+                    "'%s' object has no attribute '__get__'",
+                    Py_TYPE(self->object_proxy.wrapped)->tp_name);
+            return NULL;
+        }
+
         descriptor = (Py_TYPE(self->object_proxy.wrapped)->tp_descr_get)(
                 self->object_proxy.wrapped, obj, type);
+
+        if (!descriptor)
+            return NULL;
 
         if (Py_TYPE(self) != &WraptFunctionWrapper_Type) {
             bound_type = PyObject_GenericGetAttr((PyObject *)self,
@@ -1729,18 +1739,16 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
                 PyErr_Clear();
         }
 
-        if (descriptor) {
-            if (obj == NULL)
-                obj = Py_None;
+        if (obj == NULL)
+            obj = Py_None;
 
-            result = PyObject_CallFunctionObjArgs(bound_type ? bound_type :
-                    (PyObject *)&WraptBoundFunctionWrapper_Type, descriptor,
-                    obj, self->wrapper, self->enabled, self->binding,
-                    self, NULL);
-        }
+        result = PyObject_CallFunctionObjArgs(bound_type ? bound_type :
+                (PyObject *)&WraptBoundFunctionWrapper_Type, descriptor,
+                obj, self->wrapper, self->enabled, self->binding,
+                self, NULL);
 
         Py_XDECREF(bound_type);
-        Py_XDECREF(descriptor);
+        Py_DECREF(descriptor);
 
         return result;
     }
@@ -1766,9 +1774,20 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
         if (!wrapped)
             return NULL;
 
+        if (Py_TYPE(wrapped)->tp_descr_get == NULL) {
+            PyErr_Format(PyExc_AttributeError,
+                    "'%s' object has no attribute '__get__'",
+                    Py_TYPE(wrapped)->tp_name);
+            Py_DECREF(wrapped);
+            return NULL;
+        }
+
         descriptor = (Py_TYPE(wrapped)->tp_descr_get)(wrapped, obj, type);
 
         Py_DECREF(wrapped);
+
+        if (!descriptor)
+            return NULL;
 
         if (Py_TYPE(self->parent) != &WraptFunctionWrapper_Type) {
             bound_type = PyObject_GenericGetAttr((PyObject *)self->parent,
@@ -1778,18 +1797,16 @@ static PyObject *WraptFunctionWrapperBase_descr_get(
                 PyErr_Clear();
         }
 
-        if (descriptor) {
-            if (obj == NULL)
-                obj = Py_None;
+        if (obj == NULL)
+            obj = Py_None;
 
-            result = PyObject_CallFunctionObjArgs(bound_type ? bound_type :
-                    (PyObject *)&WraptBoundFunctionWrapper_Type, descriptor,
-                    obj, self->wrapper, self->enabled, self->binding,
-                    self->parent, NULL);
-        }
+        result = PyObject_CallFunctionObjArgs(bound_type ? bound_type :
+                (PyObject *)&WraptBoundFunctionWrapper_Type, descriptor,
+                obj, self->wrapper, self->enabled, self->binding,
+                self->parent, NULL);
 
         Py_XDECREF(bound_type);
-        Py_XDECREF(descriptor);
+        Py_DECREF(descriptor);
 
         return result;
     }
@@ -1982,11 +1999,6 @@ static PyObject *WraptBoundFunctionWrapper_call(
 #endif
     }
 
-    if (!kwds) {
-        param_kwds = PyDict_New();
-        kwds = param_kwds;
-    }
-
     /* 
     * We need to do things different depending on whether we are likely
     * wrapping an instance method vs a static method or class method.
@@ -2006,52 +2018,60 @@ static PyObject *WraptBoundFunctionWrapper_call(
              */
 
             PyObject *module = NULL;
+            PyObject *dict = NULL;
             PyObject *partial = NULL;
-            PyObject *object = NULL;
 
             module = PyImport_ImportModule("functools");
 
-            if (module) {
-                PyObject *dict = NULL;
+            if (!module)
+                return NULL;
 
-                dict = PyModule_GetDict(module);
-                partial = PyDict_GetItemString(dict, "partial");
+            dict = PyModule_GetDict(module);
+            partial = PyDict_GetItemString(dict, "partial");
 
+            if (!partial) {
                 Py_DECREF(module);
+                return NULL;
             }
 
-            if (!partial)
-                return NULL;
+            Py_INCREF(partial);
+            Py_DECREF(module);
 
             instance = PyTuple_GetItem(args, 0);
 
-            if (!instance)
+            if (!instance) {
+                Py_DECREF(partial);
                 return NULL;
+            }
 
-            object = PyObject_CallFunctionObjArgs(partial,
+            wrapped = PyObject_CallFunctionObjArgs(partial,
                     self->object_proxy.wrapped, instance, NULL);
 
-            if (!object)
-                return NULL;
+            Py_DECREF(partial);
 
-            wrapped = object;
+            if (!wrapped)
+                return NULL;
 
             param_args = PyTuple_GetSlice(args, 1, PyTuple_Size(args));
-            if (!param_args)
+
+            if (!param_args) {
+                Py_DECREF(wrapped);
                 return NULL;
+            }
+
             args = param_args;
         }
         else
             instance = self->instance;
 
-        if (!kwds) {
-            param_kwds = PyDict_New();
-            kwds = param_kwds;
-        }
-
         if (!wrapped) {
             Py_INCREF(self->object_proxy.wrapped);
             wrapped = self->object_proxy.wrapped;
+        }
+
+        if (!kwds) {
+            param_kwds = PyDict_New();
+            kwds = param_kwds;
         }
 
         result = PyObject_CallFunctionObjArgs(self->wrapper, wrapped,
@@ -2086,6 +2106,11 @@ static PyObject *WraptBoundFunctionWrapper_call(
             PyErr_Clear();
             Py_INCREF(Py_None);
             instance = Py_None;
+        }
+
+        if (!kwds) {
+            param_kwds = PyDict_New();
+            kwds = param_kwds;
         }
 
         result = PyObject_CallFunctionObjArgs(self->wrapper,

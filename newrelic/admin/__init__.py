@@ -10,8 +10,6 @@ _builtin_plugins = [
     'license_key',
     'local_config',
     'network_config',
-    'rum_footer',
-    'rum_header',
     'run_program',
     'run_python',
     'server_config',

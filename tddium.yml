@@ -1,0 +1,46 @@
+:tddium:
+  :environment:
+    'TDDIUM_SKIP_NONCE': ''
+  :tests:
+    - tox -c tests/agent_analytics/tox.ini
+    - tox -c tests/agent_browser/tox.ini
+    - tox -c tests/database_mysql/tox.ini
+    - tox -c tests/database_mysqldb/tox.ini
+    - tox -c tests/database_oursql/tox.ini
+    - tox -c tests/database_proboscis/tox.ini
+    - tox -c tests/database_postgresql/tox.ini
+    - tox -c tests/database_psycopg2/tox.ini
+    - tox -c tests/database_psycopg2cffi/tox.ini
+    - tox -c tests/database_psycopg2ct/tox.ini
+    - tox -c tests/database_pymysql/tox.ini
+    - tox -c tests/database_sqlite/tox.ini
+    - tox -c tests/external_httplib/tox.ini
+    - tox -c tests/framework_bottle/tox-0008.ini
+    - tox -c tests/framework_bottle/tox-0009.ini
+    - tox -c tests/framework_bottle/tox-0010.ini
+    - tox -c tests/framework_bottle/tox-0011.ini
+    - tox -c tests/framework_cherrypy/tox-0301.ini
+    - tox -c tests/framework_cherrypy/tox-0302.ini
+    - tox -c tests/framework_django/tox-0103.ini
+    - tox -c tests/framework_django/tox-0104.ini
+    - tox -c tests/framework_django/tox-0105.ini
+    - tox -c tests/framework_flask/tox-0006.ini
+    - tox -c tests/framework_flask/tox-0007.ini
+    - tox -c tests/framework_flask/tox-0008.ini
+    - tox -c tests/framework_flask/tox-0009.ini
+    - tox -c tests/framework_flask/tox-0010.ini
+    - tox -c tests/framework_pyramid/tox-0102.ini
+    - tox -c tests/framework_pyramid/tox-0103.ini
+    - tox -c tests/framework_pyramid/tox-0104.ini
+    - tox -c tests/framework_tornado/tox-0301.ini
+  :python:
+    :python_version: 2.7
+    :pip_requirements_file: requirements.txt
+  :postgresql:
+    :version: '9.1'
+  :mysql:
+    :version: '5.1'
+  #:custom_service:
+  #  :command: 'services.sh'
+  #  :ping: true
+  #  :parallel: false

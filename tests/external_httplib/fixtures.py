@@ -48,6 +48,8 @@ def validate_cross_process_headers(wrapped, instance, args, kwargs):
     values = headers['X-NewRelic-ID']
     assert len(values) == 1
 
+    assert type(values[0]) == type('')
+
     cross_process_id = deobfuscate(values[0], encoding_key)
     assert cross_process_id == settings.cross_process_id
 
@@ -55,6 +57,8 @@ def validate_cross_process_headers(wrapped, instance, args, kwargs):
 
     values = headers['X-NewRelic-Transaction']
     assert len(values) == 1
+
+    assert type(values[0]) == type('')
 
     guid, record_tt = json_decode(deobfuscate(values[0], encoding_key))
 
@@ -87,7 +91,11 @@ def insert_incoming_headers(wrapped, instance, args, kwargs):
             guid, record_tt)
     app_data = json_encode(payload)
 
-    headers.append(('X-NewRelic-App-Data', obfuscate(app_data, encoding_key)))
+    value = obfuscate(app_data, encoding_key)
+
+    assert type(value) == type('')
+
+    headers.append(('X-NewRelic-App-Data', value))
 
     return headers
 

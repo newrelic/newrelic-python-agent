@@ -74,6 +74,8 @@ def test_footer_attributes():
 
     obfuscation_key = settings.license_key[:13]
 
+    assert type(data['transactionName']) == type(u'')
+
     txn_name = deobfuscate(data['transactionName'], obfuscation_key)
 
     assert txn_name == u'WebTransaction/Uri/'

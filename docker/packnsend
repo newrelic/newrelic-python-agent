@@ -156,7 +156,7 @@ launch_remote_command()
         echo "Starting interactive debug shell."
         echo
 
-        docker run -t -i -rm -volumes-from $CONTAINER_ID \
+        docker run -t -i -rm -u guest -volumes-from $CONTAINER_ID \
             -w /data/$WORK_DIRECTORY $TEST_IMAGE_NAME bash
     fi
 }

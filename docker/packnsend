@@ -1,0 +1,238 @@
+#!/bin/sh
+
+ROOT_DIRECTORY=$(git rev-parse --show-toplevel)
+WORK_DIRECTORY=".`pwd | sed -e s%$ROOT_DIRECTORY%%`"
+
+TEST_IMAGE_NAME=python-base
+
+IMAGE_ID=""
+CONTAINER_ID=""
+
+cleanup_containers()
+{
+    # Remove any docker containers/images and the working directory
+    # where we exported the git repository for use in creating the
+    # docker image.
+
+    echo "Removing test container."
+
+    test -n "$CONTAINER_ID" && docker kill $CONTAINER_ID
+    test -n "$CONTAINER_ID" && docker rm $CONTAINER_ID
+
+    echo "Removing test image."
+
+    test -n "$IMAGE_ID" && docker rmi $IMAGE_ID
+
+    echo "Removing data directory."
+
+    rm -r $DATA_DIRECTORY
+}
+
+trap "cleanup_containers && exit 255" SIGINT SIGQUIT SIGTERM
+
+create_work_directory()
+{
+    # Create the work directory where all the files to be included in
+    # the docker image will be placed.
+
+    echo "Creating data directory."
+
+    DATA_DIRECTORY=`mktemp -d -t packnsend`
+
+    echo "Data directory: $DATA_DIRECTORY"
+}
+
+export_git_repository()
+{
+    # We need to be in the root directory of the repository workarea for
+    # 'git checkout-index' to include everything in the package By using
+    # 'git checkout-index' rather than 'git archive' then we can also
+    # include anything staged in the git index.
+
+    echo "Exporting local git workarea."
+
+    (cd $ROOT_DIRECTORY; git checkout-index --prefix=$DATA_DIRECTORY/ -a)
+}
+
+create_remote_launcher()
+{
+    # Create the remote launcher script to be included in docker image
+    # containing the code to be tested.
+    #
+    # XXX Still cannot seem to copy back files from /data of container
+    # after finished but can copy from /tmp. Can't even symlink or hard
+    # link file from /data into /tmp to allow it to be copied. So make
+    # an actual copy of the log file output into /tmp so it can be
+    # copied back when done.
+
+    echo "Creating remote launcher script."
+
+    cat > $DATA_DIRECTORY/packnsend-remote << EOF
+#!/bin/sh
+"\$@" > /data/packnsend.log 2>&1
+STATUS=\$?
+cp /data/packnsend.log /tmp/packnsend.log
+exit \`expr \$STATUS\`
+EOF
+
+    # Shouldn't strictly need to do this as all files add to the image
+    # by docker will have execute permissions anyway.
+
+    chmod +x $DATA_DIRECTORY/packnsend-remote
+}
+
+create_docker_file()
+{
+    # Create the Dockerfile used to create our image which contains the
+    # code to be tested and our remote launcher script.
+
+    echo "Creating Dockerfile for test image."
+
+    cat > $DATA_DIRECTORY/Dockerfile << EOF
+FROM $TEST_IMAGE_NAME
+ADD . /data
+RUN chown -R guest.users /data
+RUN chmod 0775 /data
+USER guest
+ENV HOME /home/guest
+VOLUME /data
+EOF
+}
+
+create_docker_test_image()
+{
+    # Build the docker image containing the code to be tested.
+
+    echo "Building test image."
+
+    DATA_IMAGE_NAME="packnsend.`date '+%Y%m%d%H%M%S'`.$$"
+    (cd $DATA_DIRECTORY && docker build -rm -t $DATA_IMAGE_NAME .)
+    IMAGE_ID=$(docker inspect -format='{{.id}}' $DATA_IMAGE_NAME)
+}
+
+launch_remote_command()
+{
+    # Launch the remote command, wait for it to complete and display
+    # the output.
+
+    INTERACTIVE=""
+
+    while test "$#" -ne 0
+    do
+        case $1 in
+            -i)
+                INTERACTIVE=1
+                shift
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
+
+    echo "Starting test container and running command."
+    echo "Command: $@"
+
+    CONTAINER_ID=$(docker run -d -name $DATA_IMAGE_NAME \
+        -w /data/$WORK_DIRECTORY $DATA_IMAGE_NAME \
+        /data/packnsend-remote "$@")
+
+    STATUS=$(time docker wait $CONTAINER_ID)
+
+    echo
+    echo "Copying back command output."
+
+    docker cp $CONTAINER_ID:/tmp/packnsend.log $DATA_DIRECTORY
+
+    echo "Command output:"
+    echo
+
+    cat $DATA_DIRECTORY/packnsend.log
+
+    echo
+
+    if test -n "$INTERACTIVE"
+    then
+        echo "Starting interactive debug shell."
+        echo
+
+        docker run -t -i -rm -volumes-from $CONTAINER_ID \
+            -w /data/$WORK_DIRECTORY $TEST_IMAGE_NAME bash
+    fi
+}
+
+launch_remote_shell()
+{
+    # Launch a remote shell in the container without actually running
+    # and command.
+
+    echo "Starting test container and running interactive shell."
+
+    docker run -t -i -rm -name $DATA_IMAGE_NAME \
+        -w /data/$WORK_DIRECTORY $DATA_IMAGE_NAME bash
+}
+
+create_docker_base_images()
+{
+    echo "Creating docker base images."
+
+    echo "Image: python-base"
+
+    (cd $ROOT_DIRECTORY; docker build -rm -t python-base docker/python-base)
+}
+
+delete_docker_base_images()
+{
+    echo "Removing docker base images."
+
+    echo "Image: python-base"
+
+    docker rmi python-base
+}
+
+if test $# -lt 1
+then
+    echo "Usage: `basename $0`: COMMAND [arg...]"
+    exit 1
+fi
+
+COMMAND=$1
+
+shift
+
+case "$COMMAND" in
+    run)
+        create_work_directory
+        export_git_repository
+        create_remote_launcher
+        create_docker_file
+        create_docker_test_image
+        launch_remote_command "$@"
+        cleanup_containers
+        exit `expr $STATUS`
+        ;;
+
+    shell)
+        create_work_directory
+        export_git_repository
+        create_remote_launcher
+        create_docker_file
+        create_docker_test_image
+        launch_remote_shell
+        cleanup_containers
+        exit 0
+        ;;
+
+    init)
+        create_docker_base_images
+        ;;
+
+    cleanup)
+        delete_docker_base_images
+        ;;
+
+    *)
+        echo "`basename $0`: Unknown command $COMMAND"
+        exit 1
+        ;;
+esac

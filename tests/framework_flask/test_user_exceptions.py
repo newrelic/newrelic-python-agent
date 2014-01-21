@@ -1,6 +1,7 @@
 import pytest
 
-from testing_support.fixtures import validate_transaction_metrics
+from testing_support.fixtures import (validate_transaction_metrics,
+    validate_transaction_errors)
 
 try:
     # The __version__ attribute was only added in 0.7.0.
@@ -39,6 +40,7 @@ if is_gt_flask060:
             ('Function/flask.app:Flask.handle_user_exception', 1)])
 
 @requires_error_handler
+@validate_transaction_errors(errors=['_test_user_exceptions:UserException'])
 @validate_transaction_metrics('_test_user_exceptions:error_page',
         scoped_metrics=_test_user_exception_handler_scoped_metrics)
 def test_user_exception_handler():

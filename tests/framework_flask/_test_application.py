@@ -1,6 +1,7 @@
 import webtest
 
 from flask import Flask, render_template_string, render_template, abort
+from werkzeug.exceptions import NotFound
 
 application = Flask(__name__)
 
@@ -15,6 +16,10 @@ def error_page():
 @application.route('/abort_404')
 def abort_404_page():
     abort(404)
+
+@application.route('/exception_404')
+def exception_404_page():
+    raise NotFound()
 
 @application.route('/template_string')
 def template_string():

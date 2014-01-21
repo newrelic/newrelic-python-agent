@@ -750,7 +750,7 @@ class Transaction(object):
         # multiple times.
 
         for error in self._errors:
-            if error.type == exc_type and error.message == message:
+            if error.type == fullname and error.message == message:
                 return
 
         stack_trace = traceback.format_exception(exc, value, tb)

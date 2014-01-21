@@ -123,6 +123,26 @@ def validate_transaction_metrics(name, group='Function',
 
     return _validate_transaction_metrics
 
+def validate_transaction_errors(errors=[]):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_transaction_errors(wrapped, instance, args, kwargs):
+        def _bind_params(transaction, *args, **kwargs):
+            return transaction
+
+        transaction = _bind_params(*args, **kwargs)
+
+        expected = sorted(errors)
+        captured = sorted([e.type for e in transaction.errors])
+
+        assert expected == captured, 'expected=%r, captured=%r' % (
+                expected, captured)
+
+        return wrapped(*args, **kwargs)
+
+    return _validate_transaction_errors
+
+
 def validate_custom_parameters(custom_params=[]):
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')

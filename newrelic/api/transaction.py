@@ -716,6 +716,15 @@ class Transaction(object):
             if fullname in error_collector.ignore_errors:
                 return
 
+        else:
+            module = value.__class__.__module__
+            name = value.__class__.__name__
+
+            if module:
+                fullname = '%s:%s' % (module, name)
+            else:
+                fullname = name
+
         # Only remember up to limit of what can be caught for a
         # single transaction. This could be trimmed further
         # later if there are already recorded errors and would

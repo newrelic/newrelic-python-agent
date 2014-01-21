@@ -5,8 +5,9 @@ RUN adduser --system --shell `which bash` guest
 
 RUN apt-get install -y bzip2
 RUN apt-get install -y vim
+RUN apt-get install -y wget
 
-RUN apt-get install -y python-software-properties wget
+RUN apt-get install -y python-software-properties
 RUN add-apt-repository ppa:fkrull/deadsnakes
 
 RUN apt-get update

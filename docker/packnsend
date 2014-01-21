@@ -105,7 +105,7 @@ create_docker_test_image()
 
     echo "Building test image."
 
-    DATA_IMAGE_NAME="packnsend.`date '+%Y%m%d%H%M%S'`.$$"
+    DATA_IMAGE_NAME="packnsend-`date '+%Y%m%d%H%M%S'`-$$"
     (cd $DATA_DIRECTORY && docker build -rm -t $DATA_IMAGE_NAME .)
     IMAGE_ID=$(docker inspect -format='{{.id}}' $DATA_IMAGE_NAME)
 }
@@ -134,8 +134,8 @@ launch_remote_command()
     echo "Command: $@"
 
     CONTAINER_ID=$(docker run -d -name $DATA_IMAGE_NAME \
-        -w /data/$WORK_DIRECTORY $DATA_IMAGE_NAME \
-        /data/packnsend-remote "$@")
+        -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
+        $DATA_IMAGE_NAME /data/packnsend-remote "$@")
 
     STATUS=$(time docker wait $CONTAINER_ID)
 
@@ -157,7 +157,8 @@ launch_remote_command()
         echo
 
         docker run -t -i -rm -u guest -volumes-from $CONTAINER_ID \
-            -w /data/$WORK_DIRECTORY $TEST_IMAGE_NAME bash
+            -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
+            $TEST_IMAGE_NAME bash
     fi
 }
 
@@ -167,9 +168,11 @@ launch_remote_shell()
     # and command.
 
     echo "Starting test container and running interactive shell."
+    echo
 
     docker run -t -i -rm -name $DATA_IMAGE_NAME \
-        -w /data/$WORK_DIRECTORY $DATA_IMAGE_NAME bash
+        -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
+        $DATA_IMAGE_NAME bash
 }
 
 create_docker_base_images()
@@ -179,6 +182,30 @@ create_docker_base_images()
     echo "Image: python-base"
 
     (cd $ROOT_DIRECTORY; docker build -rm -t python-base docker/python-base)
+
+    echo "Image: gearmand"
+
+    (cd $ROOT_DIRECTORY; docker build -rm -t gearmand docker/gearmand)
+}
+
+start_application_services()
+{
+    echo "Start application services."
+
+    echo "Application: gearmand"
+
+    docker run -d -name packnsend-gearmand gearmand
+}
+
+stop_application_services()
+{
+    echo "Stop application services."
+
+    echo "Application: gearmand"
+
+    docker stop -t=10 packnsend-gearmand
+    docker kill packnsend-gearmand
+    docker rm packnsend-gearmand
 }
 
 delete_docker_base_images()
@@ -186,6 +213,10 @@ delete_docker_base_images()
     echo "Removing docker base images."
 
     echo "Image: python-base"
+
+    docker rmi gearmand
+
+    echo "Image: gearmand"
 
     docker rmi python-base
 }
@@ -225,6 +256,14 @@ case "$COMMAND" in
 
     init)
         create_docker_base_images
+        ;;
+
+    start)
+        start_application_services
+        ;;
+
+    stop)
+        stop_application_services
         ;;
 
     cleanup)

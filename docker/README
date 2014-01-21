@@ -63,6 +63,11 @@ This will take a while.
 Running a test in docker
 ------------------------
 
+Before running any tests, you first need to start up any required
+application services. This is done by running:
+
+    packnsend start
+
 To run a command in the test docker instance you can use the 'run' command
 with 'packnsend'.
 
@@ -100,6 +105,10 @@ will be done as the UNIX user 'guest'.
 
 After any command, the container and any temporary images will be cleaned
 up and deleted so that the docker service doesn't fill up with garbage.
+
+When done testing, the application services can be shutdown by running:
+
+    packnsend stop
 
 Cleaning up images
 ------------------

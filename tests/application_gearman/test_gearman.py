@@ -4,6 +4,7 @@ import gearman
 import threading
 import sys
 import time
+import os
 
 from newrelic.agent import (background_task, record_exception,
         add_custom_parameter)
@@ -13,6 +14,11 @@ worker_event = threading.Event()
 
 gm_client = None
 
+GEARMAND_HOST = os.environ.get('GEARMAND_PORT_4730_TCP_ADDR', 'localhost')
+GEARMAND_PORT = os.environ.get('GEARMAND_PORT_4730_TCP_PORT', '4730')
+
+GEARMAND_ADDR = '%s:%s' % (GEARMAND_HOST, GEARMAND_PORT)
+
 class GearmanWorker(gearman.GearmanWorker):
 
     def after_poll(self, any_activity):
@@ -21,7 +27,7 @@ class GearmanWorker(gearman.GearmanWorker):
 def setup_module(module):
     global worker_thread
 
-    gm_worker = GearmanWorker(['localhost:4730','localhost:4731'])
+    gm_worker = GearmanWorker([GEARMAND_ADDR])
 
     def task_listener_reverse(gearman_worker, gearman_job):
         return ''.join(reversed(gearman_job.data))
@@ -41,7 +47,7 @@ def setup_module(module):
 
     global gm_client
 
-    gm_client = gearman.GearmanClient(['localhost:4730','localhost:4731'])
+    gm_client = gearman.GearmanClient([GEARMAND_ADDR])
 
 def teardown_module(module):
     worker_event.set()

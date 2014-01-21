@@ -1,6 +1,8 @@
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors)
 
+from newrelic.packages import six
+
 try:
     # The __version__ attribute was only added in 0.7.0.
     from flask import __version__ as flask_version
@@ -50,7 +52,12 @@ if is_gt_flask060:
     _test_application_error_scoped_metrics.extend([
             ('Function/flask.app:Flask.handle_user_exception', 1)])
 
-@validate_transaction_errors(errors=['exceptions:RuntimeError'])
+if six.PY3:
+    _test_application_error_errors = ['builtins:RuntimeError']
+else:
+    _test_application_error_errors = ['exceptions:RuntimeError']
+
+@validate_transaction_errors(errors=_test_application_error_errors)
 @validate_transaction_metrics('_test_application:error_page',
         scoped_metrics=_test_application_error_scoped_metrics)
 def test_application_error():

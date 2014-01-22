@@ -41,9 +41,11 @@ again to start over in order to upgrade, you will need to do this each
 time.
 
 Once you have boot2docker running you need the MacOS X binary for the docker
-client. You can download it using:
+client. You can download it from the docker site, ensuring you make it
+executable.
 
     wget https://get.docker.io/builds/Darwin/x86_64/docker-latest -O docker
+    chmod +x docker
 
 Before using it or the 'packnsend' script, you need to set and export
 DOCKER_HOST environment variable to 'localhost'. To test it works run:

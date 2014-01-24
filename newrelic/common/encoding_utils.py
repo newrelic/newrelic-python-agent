@@ -7,6 +7,8 @@ import types
 import base64
 import json
 
+from ..packages import six
+
 # Functions for encoding/decoding JSON. These wrappers are used in order
 # to hide the differences between Python 2 and Python 3 implementations
 # of the json module functions as well as instigate some better defaults
@@ -162,7 +164,10 @@ def xor_cipher_encrypt_base64(text, key):
     # use ASCII when decoding the byte string as base64 encoding only
     # produces characters within that codeset.
 
-    return result.decode('ascii')
+    if six.PY3:
+        return result.decode('ascii')
+
+    return result
 
 def xor_cipher_decrypt_base64(text, key):
     """Decrypts the text using an XOR cipher where the key is provided

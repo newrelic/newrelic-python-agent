@@ -87,16 +87,16 @@ class TestCase(unittest.TestCase):
         key = xor_cipher_genkey('0123456789')
 
         result = xor_cipher_encrypt_base64(b'', key)
-        self.assertEqual(result, u'')
-        self.assertEqual(type(result), type(u''))
+        self.assertEqual(result, '')
+        self.assertEqual(type(result), type(''))
 
         result = xor_cipher_encrypt_base64('', key)
-        self.assertEqual(result, u'')
-        self.assertEqual(type(result), type(u''))
+        self.assertEqual(result, '')
+        self.assertEqual(type(result), type(''))
 
         result = xor_cipher_encrypt_base64(u'', key)
-        self.assertEqual(result, u'')
-        self.assertEqual(type(result), type(u''))
+        self.assertEqual(result, '')
+        self.assertEqual(type(result), type(''))
 
     def test_xor_cipher_decrypt_base64_empty_string(self):
         key = xor_cipher_genkey('0123456789')
@@ -114,16 +114,16 @@ class TestCase(unittest.TestCase):
         key = xor_cipher_genkey('0123456789')
 
         result = xor_cipher_encrypt_base64(b'abcdefghij', key)
-        self.assertEqual(result, u'UVNRV1FTUV9RUw==')
-        self.assertEqual(type(result), type(u''))
+        self.assertEqual(result, 'UVNRV1FTUV9RUw==')
+        self.assertEqual(type(result), type(''))
 
         result = xor_cipher_encrypt_base64('abcdefghij', key)
-        self.assertEqual(result, u'UVNRV1FTUV9RUw==')
-        self.assertEqual(type(result), type(u''))
+        self.assertEqual(result, 'UVNRV1FTUV9RUw==')
+        self.assertEqual(type(result), type(''))
 
         result = xor_cipher_encrypt_base64(u'abcdefghij', key)
-        self.assertEqual(result, u'UVNRV1FTUV9RUw==')
-        self.assertEqual(type(result), type(u''))
+        self.assertEqual(result, 'UVNRV1FTUV9RUw==')
+        self.assertEqual(type(result), type(''))
 
     def test_xor_cipher_decrypt_base64_same_length_as_key(self):
         key = xor_cipher_genkey('0123456789')
@@ -144,16 +144,16 @@ class TestCase(unittest.TestCase):
         key = '0123456789'
 
         result = xor_cipher_encrypt_base64(b'abcdefghij', key)
-        self.assertEqual(result, u'UVNRV1FTUV9RUw==')
-        self.assertEqual(type(result), type(u''))
+        self.assertEqual(result, 'UVNRV1FTUV9RUw==')
+        self.assertEqual(type(result), type(''))
 
         result = xor_cipher_encrypt_base64('abcdefghij', key)
-        self.assertEqual(result, u'UVNRV1FTUV9RUw==')
-        self.assertEqual(type(result), type(u''))
+        self.assertEqual(result, 'UVNRV1FTUV9RUw==')
+        self.assertEqual(type(result), type(''))
 
         result = xor_cipher_encrypt_base64(u'abcdefghij', key)
-        self.assertEqual(result, u'UVNRV1FTUV9RUw==')
-        self.assertEqual(type(result), type(u''))
+        self.assertEqual(result, 'UVNRV1FTUV9RUw==')
+        self.assertEqual(type(result), type(''))
 
     def test_xor_cipher_decrypt_base64_auto_genkey(self):
         key = '0123456789'
@@ -174,16 +174,16 @@ class TestCase(unittest.TestCase):
         key = xor_cipher_genkey('0123456789')
 
         result = xor_cipher_encrypt_base64(b'abcd', key)
-        self.assertEqual(result, u'UVNRVw==')
-        self.assertEqual(type(result), type(u''))
+        self.assertEqual(result, 'UVNRVw==')
+        self.assertEqual(type(result), type(''))
 
         result = xor_cipher_encrypt_base64('abcd', key)
-        self.assertEqual(result, u'UVNRVw==')
-        self.assertEqual(type(result), type(u''))
+        self.assertEqual(result, 'UVNRVw==')
+        self.assertEqual(type(result), type(''))
 
         result = xor_cipher_encrypt_base64(u'abcd', key)
-        self.assertEqual(result, u'UVNRVw==')
-        self.assertEqual(type(result), type(u''))
+        self.assertEqual(result, 'UVNRVw==')
+        self.assertEqual(type(result), type(''))
 
     def test_xor_cipher_decrypt_base64_longer_key(self):
         key = xor_cipher_genkey('0123456789')
@@ -204,16 +204,16 @@ class TestCase(unittest.TestCase):
         key = xor_cipher_genkey('0123456789')
 
         result = xor_cipher_encrypt_base64(b'abcdefghijkl', key)
-        self.assertEqual(result, u'UVNRV1FTUV9RU1td')
-        self.assertEqual(type(result), type(u''))
+        self.assertEqual(result, 'UVNRV1FTUV9RU1td')
+        self.assertEqual(type(result), type(''))
 
         result = xor_cipher_encrypt_base64('abcdefghijkl', key)
-        self.assertEqual(result, u'UVNRV1FTUV9RU1td')
-        self.assertEqual(type(result), type(u''))
+        self.assertEqual(result, 'UVNRV1FTUV9RU1td')
+        self.assertEqual(type(result), type(''))
 
         result = xor_cipher_encrypt_base64(u'abcdefghijkl', key)
-        self.assertEqual(result, u'UVNRV1FTUV9RU1td')
-        self.assertEqual(type(result), type(u''))
+        self.assertEqual(result, 'UVNRV1FTUV9RU1td')
+        self.assertEqual(type(result), type(''))
 
     def test_xor_cipher_decrypt_base64_shorter_key(self):
         key = xor_cipher_genkey('0123456789')
@@ -234,8 +234,8 @@ class TestCase(unittest.TestCase):
         key = xor_cipher_genkey('0123456789')
 
         result = xor_cipher_encrypt_base64(b'\xe2\x88\x9a'.decode('utf-8'), key)
-        self.assertEqual(result, u'0rmo')
-        self.assertEqual(type(result), type(u''))
+        self.assertEqual(result, '0rmo')
+        self.assertEqual(type(result), type(''))
 
     def test_xor_cipher_decrypt_base64_multibyte_unicode_characters(self):
         key = xor_cipher_genkey('0123456789')
@@ -256,8 +256,8 @@ class TestCase(unittest.TestCase):
         key = xor_cipher_genkey('0123456789')
 
         result = xor_cipher_encrypt_base64(b'\xe2', key)
-        self.assertEqual(result, u'85M=')
-        self.assertEqual(type(result), type(u''))
+        self.assertEqual(result, '85M=')
+        self.assertEqual(type(result), type(''))
 
     def test_xor_cipher_decrypt_base64_invalid_utf8_byte_string(self):
         key = xor_cipher_genkey('0123456789')

@@ -70,7 +70,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             try:
                 with newrelic.api.error_trace.ErrorTrace(transaction):
                     raise RuntimeError("runtime_error")
-            except Exception:
+            except RuntimeError:
                 pass
 
     def test_implicit_runtime_error_decorator(self):
@@ -81,7 +81,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             time.sleep(0.5)
             try:
                 function_1()
-            except Exception:
+            except RuntimeError:
                 pass
 
     def test_implicit_runtime_error_wrap(self):
@@ -93,7 +93,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             time.sleep(0.5)
             try:
                 function_2()
-            except Exception:
+            except Error:
                 pass
 
     def test_implicit_runtime_error_ignore_dot(self):
@@ -104,7 +104,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             time.sleep(0.5)
             try:
                 function_3()
-            except Exception:
+            except Error:
                 pass
 
     def test_implicit_runtime_error_ignore_colon(self):
@@ -115,7 +115,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             time.sleep(0.5)
             try:
                 function_4()
-            except Exception:
+            except Error:
                 pass
 
     def test_implicit_runtime_error_ignore_errors_true(self):
@@ -126,7 +126,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             time.sleep(0.5)
             try:
                 function_5()
-            except Exception:
+            except Error:
                 pass
 
     def test_implicit_runtime_error_ignore_errors_false(self):
@@ -137,7 +137,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             time.sleep(0.5)
             try:
                 function_6()
-            except Exception:
+            except Error:
                 pass
 
     def test_implicit_runtime_error_ignore_errors_none(self):
@@ -148,7 +148,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             time.sleep(0.5)
             try:
                 function_6()
-            except Exception:
+            except Error:
                 pass
 
     def test_implicit_runtime_error_unicode(self):
@@ -162,7 +162,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                     import sys
                     raise RuntimeError(u"runtime_error %s √√√√" %
                                        sys.getdefaultencoding())
-            except Exception:
+            except RuntimeError:
                 pass
 
     def test_implicit_runtime_error_invalid_utf8_byte_string(self):
@@ -176,7 +176,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                     import sys
                     raise RuntimeError(b"runtime_error %s \xe2" %
                                        sys.getdefaultencoding())
-            except Exception:
+            except RuntimeError:
                 pass
 
     # These have 'zzz' and numbers in names to force them to be last
@@ -192,7 +192,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                 try:
                     with newrelic.api.error_trace.ErrorTrace(transaction):
                         raise RuntimeError("runtime_error %d" % i)
-                except Exception:
+                except RuntimeError:
                     pass
 
     def test_zzz_error_limit_2(self):
@@ -206,7 +206,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                     try:
                         with newrelic.api.error_trace.ErrorTrace(transaction):
                             raise RuntimeError("runtime_error %d" % i)
-                    except Exception:
+                    except RuntimeError:
                         pass
 
 if __name__ == '__main__':

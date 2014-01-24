@@ -36,6 +36,27 @@ def function_3():
 def function_4():
     raise Error("runtime_error 4")
 
+def _ignore_errors_true(*args):
+    return True
+
+@newrelic.api.error_trace.error_trace(ignore_errors=_ignore_errors_true)
+def function_5():
+    raise Error("runtime_error 5")
+
+def _ignore_errors_false(*args):
+    return False
+
+@newrelic.api.error_trace.error_trace(ignore_errors=_ignore_errors_false)
+def function_6():
+    raise Error("runtime_error 6")
+
+def _ignore_errors_none(*args):
+    return None
+
+@newrelic.api.error_trace.error_trace(ignore_errors=_ignore_errors_false)
+def function_7():
+    raise Error("runtime_error 7")
+
 class TestCase(newrelic.tests.test_cases.TestCase):
 
     requires_collector = True
@@ -94,6 +115,39 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             time.sleep(0.5)
             try:
                 function_4()
+            except Exception:
+                pass
+
+    def test_implicit_runtime_error_ignore_errors_true(self):
+        environ = { "REQUEST_URI": "/error_trace_ignore_errors_true" }
+        transaction = newrelic.api.web_transaction.WebTransaction(
+                application, environ)
+        with transaction:
+            time.sleep(0.5)
+            try:
+                function_5()
+            except Exception:
+                pass
+
+    def test_implicit_runtime_error_ignore_errors_false(self):
+        environ = { "REQUEST_URI": "/error_trace_ignore_errors_false" }
+        transaction = newrelic.api.web_transaction.WebTransaction(
+                application, environ)
+        with transaction:
+            time.sleep(0.5)
+            try:
+                function_6()
+            except Exception:
+                pass
+
+    def test_implicit_runtime_error_ignore_errors_none(self):
+        environ = { "REQUEST_URI": "/error_trace_ignore_errors_none" }
+        transaction = newrelic.api.web_transaction.WebTransaction(
+                application, environ)
+        with transaction:
+            time.sleep(0.5)
+            try:
+                function_6()
             except Exception:
                 pass
 

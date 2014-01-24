@@ -173,9 +173,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             time.sleep(0.5)
             try:
                 with newrelic.api.error_trace.ErrorTrace(transaction):
-                    import sys
-                    raise RuntimeError(b"runtime_error %s \xe2" %
-                                       sys.getdefaultencoding())
+                    raise RuntimeError(b"runtime_error \xe2")
             except RuntimeError:
                 pass
 

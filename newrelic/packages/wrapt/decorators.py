@@ -13,7 +13,8 @@ from threading import Lock, RLock
 if not six.PY2:
     from inspect import signature
 
-from .wrappers import FunctionWrapper, BoundFunctionWrapper, ObjectProxy
+from .wrappers import (FunctionWrapper, BoundFunctionWrapper, ObjectProxy,
+    CallableObjectProxy)
 
 # Adapter wrapper for the wrapped function which will overlay certain
 # properties from the adapter function onto the wrapped function so that
@@ -21,7 +22,7 @@ from .wrappers import FunctionWrapper, BoundFunctionWrapper, ObjectProxy
 # inspect.signature() and inspect.getsource() return the correct results
 # one would expect.
 
-class _AdapterFunctionCode(ObjectProxy):
+class _AdapterFunctionCode(CallableObjectProxy):
 
     def __init__(self, wrapped_code, adapter_code):
         super(_AdapterFunctionCode, self).__init__(wrapped_code)
@@ -47,7 +48,7 @@ class _AdapterFunctionCode(ObjectProxy):
     def co_varnames(self):
         return self._self_adapter_code.co_varnames
 
-class _AdapterFunctionSurrogate(ObjectProxy):
+class _AdapterFunctionSurrogate(CallableObjectProxy):
 
     def __init__(self, wrapped, adapter):
         super(_AdapterFunctionSurrogate, self).__init__(wrapped)
@@ -228,7 +229,7 @@ def synchronized(wrapped):
             with lock:
                 return wrapped(*args, **kwargs)
 
-        class _PartialDecorator(ObjectProxy):
+        class _PartialDecorator(CallableObjectProxy):
 
             def __enter__(self):
                 lock.acquire()
@@ -248,7 +249,7 @@ def synchronized(wrapped):
     def _synchronized_lock(context):
         # Attempt to retrieve the lock for the specific context.
 
-        lock = getattr(context, '_synchronized_lock', None)
+        lock = vars(context).get('_synchronized_lock', None)
 
         if lock is None:
             # There is no existing lock defined for the context we
@@ -272,7 +273,7 @@ def synchronized(wrapped):
                 # at the same time and were competing to create the
                 # meta lock.
 
-                lock = getattr(context, '_synchronized_lock', None)
+                lock = vars(context).get('_synchronized_lock', None)
 
                 if lock is None:
                     lock = RLock()

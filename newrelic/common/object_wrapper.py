@@ -121,6 +121,11 @@ class ObjectProxy(_ObjectProxy):
                     '_nr_last_object', self.__wrapped__)
             return self._self_last_object
 
+class CallableObjectProxy(ObjectProxy):
+
+    def __call__(self, *args, **kwargs):
+        return self.__wrapped__(*args, **kwargs)
+
 # The ObjectWrapper class needs to be deprecated and removed once all our
 # own code no longer uses it. It reaches down into what are wrapt internals
 # at present which shouldn't be doing.

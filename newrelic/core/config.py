@@ -382,3 +382,7 @@ def create_settings_snapshot(server_side_config={}, settings=_settings):
         apply_config_setting(settings_snapshot, name, value)
 
     return settings_snapshot
+
+def ignore_status_code(status):
+    return (status < 300 or status in
+            _settings.error_collector.ignore_status_codes)

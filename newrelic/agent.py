@@ -13,9 +13,10 @@ import newrelic.api.application
 import newrelic.config
 
 initialize = newrelic.config.initialize
-global_settings = newrelic.core.config.global_settings
 application = newrelic.api.application.application_instance
 current_transaction = newrelic.api.transaction.current_transaction
+
+from newrelic.core.config import global_settings, ignore_status_code
 
 def register_application(name=None, timeout=None):
     instance = application(name)

@@ -1771,6 +1771,13 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.adapter_waitress',
             'instrument_waitress_server')
 
+    _process_module_definition('gevent.wsgi',
+            'newrelic.hooks.adapter_gevent',
+            'instrument_gevent_wsgi')
+    _process_module_definition('gevent.pywsgi',
+            'newrelic.hooks.adapter_gevent',
+            'instrument_gevent_pywsgi')
+
     _process_module_definition('wsgiref.simple_server',
             'newrelic.hooks.adapter_wsgiref',
             'instrument_wsgiref_simple_server')

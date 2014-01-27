@@ -725,6 +725,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/adapter_gevent.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/adapter_gunicorn.py": {
         "hash": "n/a",
         "libraries": [

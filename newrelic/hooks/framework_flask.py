@@ -4,7 +4,8 @@
 
 from newrelic.agent import (current_transaction, wrap_wsgi_application,
     wrap_function_wrapper,  callable_name, wrap_function_trace,
-    FunctionTrace, TransactionNameWrapper, function_wrapper, global_settings)
+    FunctionTrace, TransactionNameWrapper, function_wrapper,
+    ignore_status_code)
 
 def framework_details():
     import flask
@@ -17,13 +18,9 @@ def should_ignore(exc, value, tb):
     # user code if they mix Flask with Werkzeug. Filter based on the
     # HTTP status code.
 
-    settings = global_settings()
-
-    ignore_status_codes = settings.error_collector.ignore_status_codes
-
-    if (isinstance(value, HTTPException)
-            and value.code in ignore_status_codes):
-        return True
+    if isinstance(value, HTTPException):
+        if ignore_status_code(value.code):
+            return True
 
 @function_wrapper
 def handler_wrapper(wrapped, instance, args, kwargs):

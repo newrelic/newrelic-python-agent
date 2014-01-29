@@ -11,6 +11,7 @@ except ImportError:
 from .common.log_file import initialize_logging
 
 import newrelic.core.agent
+import newrelic.core.config
 
 import newrelic.api.settings
 import newrelic.api.import_hook
@@ -116,6 +117,10 @@ def _map_function_trace(s):
 
 def _map_console_listener_socket(s):
     return s % {'pid': os.getpid()}
+
+def _merge_ignore_status_codes(s):
+    return newrelic.core.config._parse_ignore_status_codes(
+            s, _settings.error_collector.ignore_status_codes)
 
 # Processing of a single setting from configuration file.
 
@@ -275,6 +280,8 @@ def _process_configuration(section):
                      'getboolean', None),
     _process_setting(section, 'error_collector.ignore_errors',
                      'get', _map_ignore_errors)
+    _process_setting(section, 'error_collector.ignore_status_codes',
+                     'get', _merge_ignore_status_codes)
     _process_setting(section, 'error_collector.capture_attributes',
                      'getboolean', None),
     _process_setting(section, 'browser_monitoring.enabled',

@@ -75,6 +75,30 @@ def _environ_as_bool(name, default=False):
             pass
     return flag
 
+def _parse_ignore_status_codes(value, target):
+    items = value.split()
+    for item in items:
+        try:
+            negate = item.startswith('!')
+            if negate:
+                item = item[1:]
+
+            start, end = item.split('-')
+
+            values = set(range(int(start), int(end)+1))
+
+            if negate:
+                target.symmetric_difference_update(values)
+            else:
+                target.update(values)
+
+        except ValueError:
+            if negate:
+                target.remove(int(item))
+            else:
+                target.add(int(item))
+    return target
+
 _LOG_LEVEL = {
     'CRITICAL': logging.CRITICAL,
     'ERROR': logging.ERROR,
@@ -170,8 +194,8 @@ _settings.transaction_tracer.capture_attributes = True
 _settings.error_collector.enabled = True
 _settings.error_collector.capture_source = False
 _settings.error_collector.ignore_errors = []
-_settings.error_collector.ignore_status_codes = set([300, 301, 302, 303, 304,
-                                                     305, 306, 307, 308, 404])
+_settings.error_collector.ignore_status_codes = _parse_ignore_status_codes(
+        '100-102 200-208 226 300-308 404', set())
 _settings.error_collector.capture_attributes = True
 
 _settings.browser_monitoring.enabled = True
@@ -384,5 +408,4 @@ def create_settings_snapshot(server_side_config={}, settings=_settings):
     return settings_snapshot
 
 def ignore_status_code(status):
-    return (status < 300 or status in
-            _settings.error_collector.ignore_status_codes)
+    return status in _settings.error_collector.ignore_status_codes

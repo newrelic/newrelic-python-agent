@@ -1398,7 +1398,7 @@
         ]
     },
     "newrelic/packages/requests/packages/urllib3/connectionpool.py": {
-        "hash": "8a6434836c4fb8c0eb110268343e64b4",
+        "hash": "acba7f44d64bbd5821f6b1da93f84938",
         "libraries": [
             "requests"
         ]

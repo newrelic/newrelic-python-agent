@@ -175,7 +175,7 @@ from .api.transaction_name import (transaction_name,
 from .common.object_names import callable_name
 
 from .common.object_wrapper import (ObjectProxy, wrap_object,
-        resolve_path, transient_function_wrapper,
+        wrap_object_attribute, resolve_path, transient_function_wrapper,
         FunctionWrapper, function_wrapper, wrap_function_wrapper,
         patch_function_wrapper, ObjectWrapper, wrap_callable,
         pre_function, PreFunctionWrapper, wrap_pre_function,

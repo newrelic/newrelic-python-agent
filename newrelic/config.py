@@ -92,9 +92,6 @@ _RECORD_SQL = {
 def _map_log_level(s):
     return _LOG_LEVEL[s.upper()]
 
-def _map_app_name(s):
-    return s.split(';')[0].strip() or "Python Application"
-
 def _map_ignored_params(s):
     return s.split()
 
@@ -215,7 +212,7 @@ def _process_setting(section, option, getter, mapper):
 
 def _process_configuration(section):
     _process_setting(section, 'app_name',
-                     'get', _map_app_name)
+                     'get', None)
     _process_setting(section, 'license_key',
                      'get', None)
     _process_setting(section, 'host',
@@ -373,6 +370,37 @@ def _process_configuration(section):
 
 _configuration_done = False
 
+def _process_app_name_setting():
+    # Do special processing to handle the case where the application
+    # name was actually a semicolon separated list of names. In this
+    # case the first application name is the primary and the others are
+    # linked applications the application also reports to. What we need
+    # to do is explicitly retrieve the application object for the
+    # primary application name and link it with the other applications.
+    # When activating the application the linked names will be sent
+    # along to the core application where the association will be
+    # created if the do not exist.
+
+    name = _settings.app_name.split(';')[0].strip() or 'Python Application'
+
+    linked = []
+    for altname in _settings.app_name.split(';')[1:]:
+        altname = altname.strip()
+        if altname:
+            linked.append(altname)
+
+    def _link_applications(application):
+        for altname in linked:
+            _logger.debug("link to %s" % ((name, altname),))
+            application.link_to_application(altname)
+
+    if linked:
+        newrelic.api.application.Application.run_on_initialization(
+                name, _link_applications)
+        _settings.linked_applications = linked
+
+    _settings.app_name = name
+
 def _load_configuration(config_file=None, environment=None,
         ignore_errors=True, log_file=None, log_level=None):
 
@@ -425,6 +453,12 @@ def _load_configuration(config_file=None, environment=None,
             log_level = _settings.log_level
 
         initialize_logging(log_file, log_level)
+
+        # Look for an app_name setting which is actually a semi colon
+        # list of application names and adjust app_name setting and
+        # registered linked applications for later handling.
+
+        _process_app_name_setting()
 
         return
 
@@ -484,56 +518,11 @@ def _load_configuration(config_file=None, environment=None,
     for option, value in _cache_object:
         _logger.debug("agent config %s = %s" % (option, repr(value)))
 
-    # Now do special processing to handle the case where the
-    # application name was actually a semicolon separated list
-    # of names. In this case the first application name is the
-    # primary and the others are linked applications the application
-    # also reports to. What we need to do is explicitly retrieve
-    # the application object for the primary application name
-    # and link it with the other applications. When activating the
-    # application the linked names will be sent along to the
-    # core application where the association will be created if the
-    # do not exist.
+    # Look for an app_name setting which is actually a semi colon
+    # list of application names and adjust app_name setting and
+    # registered linked applications for later handling.
 
-    def _process_app_name(section):
-        try:
-            value = _config_object.get(section, 'app_name')
-        except ConfigParser.NoOptionError:
-            return False
-        except ConfigParser.NoSectionError:
-            return False
-        else:
-            # XXX Note that because ';' with a preceding space is
-            # interpreted as the start of an embedded comment in the
-            # Python ini file format, there can never be a space
-            # preceding the ';' in a list of applications, although
-            # there can be a space after the ';'.
-
-            name = value.split(';')[0].strip() or 'Python Application'
-
-            linked = []
-            for altname in value.split(';')[1:]:
-                altname = altname.strip()
-                if altname:
-                    linked.append(altname)
-
-            def _link_applications(application):
-                for altname in linked:
-                    _logger.debug("link to %s" % ((name, altname),))
-                    application.link_to_application(altname)
-
-            if linked:
-                newrelic.api.application.Application.run_on_initialization(
-                        name, _link_applications)
-                _settings.linked_applications = linked
-
-            return True
-
-    if environment:
-        if not _process_app_name('newrelic:%s' % environment):
-            _process_app_name('newrelic')
-    else:
-        _process_app_name('newrelic')
+    _process_app_name_setting()
 
     # Instrument with function trace any callables supplied by the
     # user in the configuration.

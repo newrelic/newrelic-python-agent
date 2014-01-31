@@ -1,4 +1,4 @@
-tox
+tox<1.7.0
 lock_file
 devpi-server
 eventlet

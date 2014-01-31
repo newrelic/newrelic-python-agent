@@ -1508,7 +1508,8 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.framework_pylons')
 
     _process_module_definition('bottle',
-            'newrelic.hooks.framework_bottle')
+            'newrelic.hooks.framework_bottle',
+            'instrument_bottle')
 
     _process_module_definition('cherrypy._cpreqbody',
             'newrelic.hooks.framework_cherrypy',

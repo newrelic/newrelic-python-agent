@@ -1,74 +1,125 @@
-import newrelic.api.web_transaction
-import newrelic.api.out_function
-import newrelic.api.transaction_name
-import newrelic.api.error_trace
-import newrelic.api.function_trace
+"""Instrumentation module for Bottle framework.
 
-def instrument(module):
+"""
 
-    # Note that dev versions have '-dev' suffix rather than '.?' where
-    # '?' is the patch level revision number. In that case can only
-    # add back a 0 for patch level revision number.
+from newrelic.agent import (wrap_function_trace, wrap_out_function,
+    wrap_wsgi_application, function_wrapper, current_transaction,
+    FunctionTrace, callable_name, ignore_status_code, ObjectProxy,
+    FunctionTraceWrapper, wrap_object_attribute)
 
-    version = [int(x) for x in module.__version__.split('-')[0].split('.')]
+module_bottle = None
 
-    if len(version) == 2:
-        version.append(0)
+def should_ignore(exc, value, tb):
+    # The HTTPError class derives from HTTPResponse and so we do not
+    # need to check for it seperately as isinstance() will pick it up.
 
-    def out_Bottle_match(result):
-        callback, args = result
-        callback = newrelic.api.transaction_name.TransactionNameWrapper(
-                callback)
-        callback = newrelic.api.error_trace.ErrorTraceWrapper(callback,
-                ignore_errors=['bottle:HTTPResponse', 'bottle:RouteReset',
-                               'bottle:HTTPError'])
-        return callback, args
+    if isinstance(value, module_bottle.HTTPResponse):
+        if ignore_status_code(value.status):
+            return True
 
-    def out_Route_make_callback(callback):
-        callback = newrelic.api.transaction_name.TransactionNameWrapper(
-                callback)
-        callback = newrelic.api.error_trace.ErrorTraceWrapper(callback,
-                ignore_errors=['bottle:HTTPResponse', 'bottle:RouteReset',
-                               'bottle:HTTPError'])
-        return callback
+    elif hasattr(module_bottle, 'RouteReset'):
+        if isinstance(value, module_bottle.RouteReset):
+            return True
 
-    if version >= [0, 10, 0]:
-        newrelic.api.web_transaction.wrap_wsgi_application(
-                module, 'Bottle.wsgi')
+@function_wrapper
+def callback_wrapper(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
 
-        newrelic.api.out_function.wrap_out_function(
-                module, 'Route._make_callback', out_Route_make_callback)
+    if transaction is None:
+        return wrapped(*args, **kwargs)
 
-    elif version >= [0, 9, 0]:
-        newrelic.api.web_transaction.wrap_wsgi_application(
-                module, 'Bottle.wsgi')
+    name = callable_name(wrapped)
 
-        newrelic.api.out_function.wrap_out_function(
-                module, 'Bottle._match', out_Bottle_match)
+    # Needs to be at a higher priority so that error handler processing
+    # below will not override the web transaction being named after the
+    # actual request handler.
 
-    else:
-        newrelic.api.web_transaction.wrap_wsgi_application(
-                module, 'Bottle.__call__')
+    transaction.set_transaction_name(name, priority=2)
 
-        newrelic.api.out_function.wrap_out_function(
-                module, 'Bottle.match_url', out_Bottle_match)
+    with FunctionTrace(transaction, name):
+        try:
+            return wrapped(*args, **kwargs)
+
+        except:  # Catch all
+            transaction.record_exception(ignore_errors=should_ignore)
+            raise
+
+def output_wrapper_Bottle_match(result):
+    callback, args = result
+    return callback_wrapper(callback), args
+
+def output_wrapper_Route_make_callback(callback):
+    return callback_wrapper(callback)
+
+class proxy_Bottle_error_handler(ObjectProxy):
+
+    # This proxy wraps the error_handler attribute of the Bottle class.
+    # The attribute is a dictionary of handlers for HTTP status codes.
+    # We specifically override the get() method of the dictionary so
+    # that we can determine if the dictionary actually held a handler
+    # for a specific HTTP status code. If it didn't, we name the web
+    # transaction based on the status code as a fallback if not already
+    # set based on a specific request handler. Otherwise, if there was
+    # an error handler we will name the web transaction after the error
+    # handler instead if not already set based on a specific request
+    # handler.
+
+    def get(self, status, default=None):
+        transaction = current_transaction()
+
+        if transaction is None:
+            return self.__wrapped.get(status, default)
+
+        handler = self.__wrapped__.get(status)
+
+        if handler:
+            name = callable_name(handler)
+            transaction.set_transaction_name(name, priority=1)
+            handler = FunctionTraceWrapper(handler, name=name)
+        else:
+            transaction.set_transaction_name(str(status),
+                    group='StatusCode', priority=1)
+
+        return handler or default
+
+def instrument_bottle(module):
+    global module_bottle
+    module_bottle = module
+
+    framework_details = ('Bottle', getattr(module, '__version__'))
+
+    if hasattr(module.Bottle, 'wsgi'): # version >= 0.9
+        wrap_wsgi_application(module, 'Bottle.wsgi',
+                framework=framework_details)
+    elif hasattr(module.Bottle, '__call__'): # version < 0.9
+        wrap_wsgi_application(module, 'Bottle.__call__',
+                framework=framework_details)
+
+    if (hasattr(module, 'Route') and
+            hasattr(module.Route, '_make_callback')): # version >= 0.10
+        wrap_out_function(module, 'Route._make_callback',
+                output_wrapper_Route_make_callback)
+    elif hasattr(module.Bottle, '_match'): # version >= 0.9
+        wrap_out_function(module, 'Bottle._match',
+                output_wrapper_Bottle_match)
+    elif hasattr(module.Bottle, 'match_url'): # version < 0.9
+        wrap_out_function(module, 'Bottle.match_url',
+                output_wrapper_Bottle_match)
+
+    wrap_object_attribute(module, 'Bottle.error_handler',
+            proxy_Bottle_error_handler)
 
     if hasattr(module, 'SimpleTemplate'):
-        newrelic.api.function_trace.wrap_function_trace(
-                module, 'SimpleTemplate.render')
+        wrap_function_trace(module, 'SimpleTemplate.render')
 
     if hasattr(module, 'MakoTemplate'):
-        newrelic.api.function_trace.wrap_function_trace(
-                module, 'MakoTemplate.render')
+        wrap_function_trace(module, 'MakoTemplate.render')
 
     if hasattr(module, 'CheetahTemplate'):
-        newrelic.api.function_trace.wrap_function_trace(
-                module, 'CheetahTemplate.render')
+        wrap_function_trace(module, 'CheetahTemplate.render')
 
     if hasattr(module, 'Jinja2Template'):
-        newrelic.api.function_trace.wrap_function_trace(
-                module, 'Jinja2Template.render')
+        wrap_function_trace(module, 'Jinja2Template.render')
 
     if hasattr(module, 'SimpleTALTemplate'):
-        newrelic.api.function_trace.wrap_function_trace(
-                module, 'SimpleTALTemplate.render')
+        wrap_function_trace(module, 'SimpleTALTemplate.render')

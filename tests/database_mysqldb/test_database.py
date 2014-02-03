@@ -73,3 +73,58 @@ def test_execute_via_cursor():
     connection.commit()
     connection.rollback()
     connection.commit()
+
+_test_connect_using_alias_scoped_metrics = [
+        ('Function/MySQLdb:Connect', 1),
+        ('Database/database_mysqldb/select', 1),
+        ('Database/database_mysqldb/insert', 1),
+        ('Database/database_mysqldb/update', 1),
+        ('Database/database_mysqldb/delete', 1),
+        ('Database/other/sql', 5)]
+
+_test_connect_using_alias_rollup_metrics = [
+        ('Database/all', 9),
+        ('Database/allOther', 9),
+        ('Database/select', 1),
+        ('Database/database_mysqldb/select', 1),
+        ('Database/insert', 1),
+        ('Database/database_mysqldb/insert', 1),
+        ('Database/update', 1),
+        ('Database/database_mysqldb/update', 1),
+        ('Database/delete', 1),
+        ('Database/database_mysqldb/delete', 1),
+        ('Database/other', 5),
+        ('Database/other/sql', 5)]
+
+@validate_transaction_metrics('test_database:test_connect_using_alias',
+        scoped_metrics=_test_connect_using_alias_scoped_metrics,
+        rollup_metrics=_test_connect_using_alias_rollup_metrics,
+        background_task=True)
+@validate_database_trace_inputs(tuple)
+@background_task()
+def test_connect_using_alias():
+    connection = MySQLdb.Connect(db=DATABASE_NAME, user=DATABASE_USER,
+            passwd=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT)
+    
+    with connection as cursor:
+        cursor.execute("""drop table if exists database_mysqldb""")
+
+        cursor.execute("""create table database_mysqldb """
+                """(a integer, b real, c text)""")
+
+        cursor.executemany("""insert into database_mysqldb """
+                """values (%s, %s, %s)""", [(1, 1.0, '1.0'),
+                (2, 2.2, '2.2'), (3, 3.3, '3.3')])
+
+        cursor.execute("""select * from database_mysqldb""")
+
+        for row in cursor: pass
+
+        cursor.execute("""update database_mysqldb set a=%s, b=%s, """
+                """c=%s where a=%s""", (4, 4.0, '4.0', 1))
+
+        cursor.execute("""delete from database_mysqldb where a=2""")
+
+    connection.commit()
+    connection.rollback()
+    connection.commit()

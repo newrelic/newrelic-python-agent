@@ -32,7 +32,7 @@
 
 from newrelic.agent import (callable_name, current_transaction,
         wrap_callable, wrap_out_function, wrap_wsgi_application,
-        FunctionTrace, global_settings)
+        FunctionTrace, ignore_status_code)
 
 def instrument_pyramid_router(module):
     pyramid_version = None
@@ -50,15 +50,11 @@ def should_ignore(exc, value, tb):
     from pyramid.httpexceptions import HTTPException
     from pyramid.exceptions import PredicateMismatch
 
-    # Ignore certain exceptions based on HTTP status codes. The default
-    # list of status codes are defined in the settings.error_collector
-    # object.
+    # Ignore certain exceptions based on HTTP status codes.
 
-    settings = global_settings()
-
-    if (isinstance(value, HTTPException) and (value.code in
-                    settings.error_collector.ignore_status_codes)):
-        return True
+    if isinstance(value, HTTPException):
+        if ignore_status_code(value.code):
+            return True
 
     # Always ignore PredicateMismatch as it is raised by views to force
     # subsequent views to be consulted when multi views are being used.

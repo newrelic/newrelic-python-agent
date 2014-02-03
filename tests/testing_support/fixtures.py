@@ -93,7 +93,8 @@ def collector_available_fixture(request):
     assert application.active
 
 def validate_transaction_metrics(name, group='Function',
-        background_task=False, scoped_metrics=[], rollup_metrics=[]):
+        background_task=False, scoped_metrics=[], rollup_metrics=[],
+        custom_metrics=[]):
 
     if background_task:
         transaction_metric = 'OtherTransaction/%s/%s' % (group, name)
@@ -110,18 +111,53 @@ def validate_transaction_metrics(name, group='Function',
         else:
             metrics = instance.stats_table
 
-            assert metrics[(transaction_metric, '')].call_count == 1
+            def _validate(name, scope, count):
+                key = (name, scope)
+                metric = metrics.get(key)
+
+                def _metrics_table():
+                    return 'metric=%r, metrics=%r' % (key, metrics)
+
+                def _metric_details():
+                    return 'metric=%r, count=%r' % (key, metric.call_count)
+
+                assert metric is not None, _metrics_table()
+                assert metric.call_count == count, _metric_details()
+
+            _validate(transaction_metric, '', 1)
 
             for scoped_name, scoped_count in scoped_metrics:
-                assert metrics[(scoped_name,
-                    transaction_metric)].call_count == scoped_count
+                _validate(scoped_name, transaction_metric, scoped_count)
 
             for rollup_name, rollup_count in rollup_metrics:
-                assert metrics[(rollup_name, '')].call_count == rollup_count
+                _validate(rollup_name, '', rollup_count)
+
+            for custom_name, custom_count in custom_metrics:
+                _validate(custom_name, '', custom_count)
 
         return result
 
     return _validate_transaction_metrics
+
+def validate_transaction_errors(errors=[]):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_transaction_errors(wrapped, instance, args, kwargs):
+        def _bind_params(transaction, *args, **kwargs):
+            return transaction
+
+        transaction = _bind_params(*args, **kwargs)
+
+        expected = sorted(errors)
+        captured = sorted([e.type for e in transaction.errors])
+
+        assert expected == captured, 'expected=%r, captured=%r' % (
+                expected, captured)
+
+        return wrapped(*args, **kwargs)
+
+    return _validate_transaction_errors
+
 
 def validate_custom_parameters(custom_params=[]):
     @transient_function_wrapper('newrelic.core.stats_engine',

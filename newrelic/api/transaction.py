@@ -682,6 +682,9 @@ class Transaction(object):
             if should_ignore:
                 return
 
+        module = value.__class__.__module__
+        name = value.__class__.__name__
+
         if should_ignore is None:
             # We need to check for module.name and module:name.
             # Originally we used module.class but that was
@@ -691,15 +694,12 @@ class Transaction(object):
             # separator for time being. Check that with the ':'
             # last as we will use that name as the exception type.
 
-            module = value.__class__.__module__
-            name = value.__class__.__name__
-
             if module:
                 fullname = '%s.%s' % (module, name)
             else:
                 fullname = name
 
-            if (not callable(ignore_errors)) and (fullname in ignore_errors):
+            if not callable(ignore_errors) and fullname in ignore_errors:
                 return
 
             if fullname in error_collector.ignore_errors:
@@ -710,11 +710,17 @@ class Transaction(object):
             else:
                 fullname = name
 
-            if (not callable(ignore_errors)) and (fullname in ignore_errors):
+            if not callable(ignore_errors) and fullname in ignore_errors:
                 return
 
             if fullname in error_collector.ignore_errors:
                 return
+
+        else:
+            if module:
+                fullname = '%s:%s' % (module, name)
+            else:
+                fullname = name
 
         # Only remember up to limit of what can be caught for a
         # single transaction. This could be trimmed further
@@ -750,7 +756,7 @@ class Transaction(object):
         # multiple times.
 
         for error in self._errors:
-            if error.type == exc_type and error.message == message:
+            if error.type == fullname and error.message == message:
                 return
 
         stack_trace = traceback.format_exception(exc, value, tb)

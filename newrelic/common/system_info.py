@@ -95,17 +95,25 @@ def memory_total():
         except IOError:
             pass
 
-    # For other platforms, how total system memory is calculated
-    # varies and can't always be done using just what is
-    # available in the Python standard library. Take a punt here
-    # and see if 'psutil' is available and use the value it
-    # generates for total memory.
+    # For other platforms, how total system memory is calculated varies
+    # and can't always be done using just what is available in the
+    # Python standard library. Take a punt here and see if 'psutil' is
+    # available and use the value it generates for total memory. We
+    # simply ignore any exception that may occur because even though
+    # psutil may be available it can fail badly if used on a
+    # containerised Linux hosting service where they don't for example
+    # make the /proc filesystem available.
 
-    try:
-        import psutil
-        return psutil.virtual_memory().total
-    except (ImportError, AttributeError):
-        pass
+    # NOTE Although now ignore any exceptions which can result if psutil
+    # fails, in most cases never get here and if we do likely will still
+    # fail. Only case where might get used is Solaris and have so few
+    # deploys for that is likely not worth it at this point.
+
+    #try:
+    #    import psutil
+    #    return psutil.virtual_memory().total
+    #except Exception:
+    #    pass
 
     return 0
 

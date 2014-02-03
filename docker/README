@@ -1,0 +1,123 @@
+Using docker for testing
+========================
+
+This file describes how to perform testing of the agent using docker.
+
+Initial setup of docker
+-----------------------
+
+You need to have a docker service running somewhere. If this is not on your
+local host, then you need to at least have the docker client available in
+your PATH and the 'DOCKER_HOST' environment variable set to the name of the
+docker service host.
+
+Running docker on MacOS X
+-------------------------
+
+The docker service cannot be run natively on MacOS X. Instead you need
+to run it under VirtualBox. Make sure you have up to date VirtualBox
+installed.
+
+The procedure documented on docker.io for actually now running docker also
+involves using Vagrant, but there is a simpler way using a tool called
+boot2docker.
+
+The boot2docker project can be found at:
+
+* https://github.com/steeve/boot2docker
+
+Skip the initial instructions and follow the instructions for MacOS X in
+that page at:
+
+* https://github.com/steeve/boot2docker#init-script-osx-and-linux
+
+Note that because we want to build new images and that can take a lot of
+disk space within the image run by boot2docker, you need to ensure you
+repartition the disk drive as explained in section 'Hard Disk
+Persistence using Virtualbox' of the FAQ section of the document.
+
+If you ever delete the boot2docker vm and iso and download boot2docker
+again to start over in order to upgrade, you will need to do this each
+time.
+
+Once you have boot2docker running you need the MacOS X binary for the docker
+client. You can download it from the docker site, ensuring you make it
+executable.
+
+    wget https://get.docker.io/builds/Darwin/x86_64/docker-latest -O docker
+    chmod +x docker
+
+Before using it or the 'packnsend' script, you need to set and export
+DOCKER_HOST environment variable to 'localhost'. To test it works run:
+
+    docker version
+
+Setting up base images
+----------------------
+
+To setup the required base images needed for testing run 'packnsend' with
+the 'init' command:
+
+    packnsend init
+
+This will take a while.
+
+Running a test in docker
+------------------------
+
+Before running any tests, you first need to start up any required
+application services. This is done by running:
+
+    packnsend start
+
+To run a command in the test docker instance you can use the 'run' command
+with 'packnsend'.
+
+    packnsend run tox -c tests/database_sqlite/tox.ini
+
+Note that right now the output isn't streamed and will only be shown once
+the command has completed. For some tests this can take up to 5 minutes.
+Even more if you ran './tests.sh' from top level directory of the agent
+repository.
+
+You can actually supply any UNIX command after 'run'. The result will be
+that the local HEAD of the git repository contents, including anything that
+you have staged in the git index, will be copied up to the docker instance
+and then the command run.
+
+In other words, you don't have to commit changes, but you do need to have
+staged them in the git index. This allows you to indicate what are the
+changes without commit so commit history not polluted while iterating over
+changes during testing.
+
+The command when run will be from the same relative directory within the
+source code as you were in when you can the 'packnsend' command.
+
+If a test has been failing, you can launch into a shell with the results of
+running the test using the '-i' option.
+
+    packnsend run -i tox -c tests/database_sqlite/tox.ini
+
+If you don't want to run a test and simply want a shell, use:
+
+    packnsend shell
+
+In all cases when a command or shell is run up in the test container, it
+will be done as the UNIX user 'guest'.
+
+After any command, the container and any temporary images will be cleaned
+up and deleted so that the docker service doesn't fill up with garbage.
+
+When done testing, the application services can be shutdown by running:
+
+    packnsend stop
+
+Cleaning up images
+------------------
+
+If the base images have been changed and need updating, you can remove the
+old ones by running:
+
+    packnsend cleanup
+
+You can then run 'init' again to recreate them.

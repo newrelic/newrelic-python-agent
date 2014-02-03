@@ -121,6 +121,11 @@ class ObjectProxy(_ObjectProxy):
                     '_nr_last_object', self.__wrapped__)
             return self._self_last_object
 
+class CallableObjectProxy(ObjectProxy):
+
+    def __call__(self, *args, **kwargs):
+        return self.__wrapped__(*args, **kwargs)
+
 # The ObjectWrapper class needs to be deprecated and removed once all our
 # own code no longer uses it. It reaches down into what are wrapt internals
 # at present which shouldn't be doing.
@@ -168,6 +173,37 @@ def apply_patch(parent, attribute, replacement):
 def wrap_object(module, name, factory, args=(), kwargs={}):
     (parent, attribute, original) = resolve_path(module, name)
     wrapper = factory(original, *args, **kwargs)
+    apply_patch(parent, attribute, wrapper)
+    return wrapper
+
+# Function for apply a proxy object to an attribute of a class instance.
+# The wrapper works by defining an attribute of the same name on the
+# class which is a descriptor and which intercepts access to the
+# instance attribute. Note that this cannot be used on attributes which
+# are themselves defined by a property object.
+
+class AttributeWrapper(object):
+
+    def __init__(self, attribute, factory, args, kwargs):
+        self.attribute = attribute
+        self.factory = factory
+        self.args = args
+        self.kwargs = kwargs
+
+    def __get__(self, instance, owner):
+        value = instance.__dict__[self.attribute]
+        return self.factory(value, *self.args, **self.kwargs)
+
+    def __set__(self, instance, value):
+        instance.__dict__[self.attribute] = value
+
+    def __del__(self, instance):
+        del instance.__dict__[self.attribute]
+
+def wrap_object_attribute(module, name, factory, args=(), kwargs={}):
+    path, attribute = name.rsplit('.', 1)
+    parent = resolve_path(module, path)[2]
+    wrapper = AttributeWrapper(attribute, factory, args, kwargs)
     apply_patch(parent, attribute, wrapper)
     return wrapper
 

@@ -26,7 +26,7 @@
 
 from newrelic.agent import (current_transaction, wrap_wsgi_application,
         FunctionTrace, callable_name, ObjectProxy, function_wrapper,
-        wrap_function_wrapper, wrap_function_trace, global_settings)
+        wrap_function_wrapper, wrap_function_trace, ignore_status_code)
 
 def framework_details():
     import cherrypy
@@ -35,13 +35,11 @@ def framework_details():
 def should_ignore(exc, value, tb):
     from cherrypy import HTTPError, HTTPRedirect
 
-    # Ignore certain exceptions based on HTTP status codes. The default list
-    # of status codes are defined in the settings.error_collector object.
+    # Ignore certain exceptions based on HTTP status codes.
 
-    settings = global_settings()
-    if (isinstance(value, (HTTPError, HTTPRedirect))
-            and value.status in settings.error_collector.ignore_status_codes):
-        return True
+    if isinstance(value, (HTTPError, HTTPRedirect)):
+        if ignore_status_code(value.status):
+            return True
 
     # Ignore certain exceptions based on their name.
 

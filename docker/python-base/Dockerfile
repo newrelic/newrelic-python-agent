@@ -27,4 +27,4 @@ RUN python ez_setup.py
 RUN wget https://raw.github.com/pypa/pip/master/contrib/get-pip.py
 RUN python get-pip.py
 
-RUN pip install 'pip<1.5' 'virtualenv<1.11' tox
+RUN pip install 'pip<1.5' 'virtualenv<1.11' 'tox<1.7.0'

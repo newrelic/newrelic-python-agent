@@ -1,4 +1,4 @@
-FROM ubuntu:precise
+FROM ubuntu:12.04
 MAINTAINER Graham Dumpleton <grahamd@newrelic.com>
 
 RUN adduser --system --shell `which bash` guest
@@ -6,6 +6,8 @@ RUN adduser --system --shell `which bash` guest
 RUN apt-get install -y bzip2
 RUN apt-get install -y vim
 RUN apt-get install -y wget
+
+RUN apt-get update
 
 RUN apt-get install -y python-software-properties
 RUN add-apt-repository ppa:fkrull/deadsnakes

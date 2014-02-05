@@ -1,4 +1,6 @@
-FROM ubuntu:precise
+FROM ubuntu:12.04
+
+RUN apt-get update
 
 RUN apt-get install -y python-software-properties
 RUN add-apt-repository ppa:gearman-developers/ppa

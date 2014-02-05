@@ -12,3 +12,4 @@ RUN apt-get install -y gearman-job-server gearman-tools
 EXPOSE 4730 
 ENTRYPOINT ["gearmand"]
 CMD ["-p", "4730"]
+USER daemon

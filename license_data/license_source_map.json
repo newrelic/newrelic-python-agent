@@ -1,4 +1,10 @@
 {
+    "newrelic/hooks/component_cornice.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/LICENSE": {
         "hash": "n/a",
         "libraries": [

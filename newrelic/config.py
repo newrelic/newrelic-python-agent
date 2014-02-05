@@ -1793,6 +1793,10 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.framework_pyramid',
             'instrument_pyramid_config_views')
 
+    _process_module_definition('cornice.service',
+            'newrelic.hooks.component_cornice',
+            'instrument_cornice_service')
+
     #_process_module_definition('twisted.web.server',
     #        'newrelic.hooks.framework_twisted',
     #        'instrument_twisted_web_server')

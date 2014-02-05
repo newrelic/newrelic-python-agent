@@ -4,6 +4,7 @@
   :tests:
     - tox -c tests/agent_analytics/tox.ini
     - tox -c tests/agent_browser/tox.ini
+    - tox -c tests/component_cornice/tox-0016.ini
     - tox -c tests/database_mysql/tox.ini
     - tox -c tests/database_mysqldb/tox.ini
     - tox -c tests/database_oursql/tox.ini

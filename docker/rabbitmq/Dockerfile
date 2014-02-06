@@ -23,6 +23,10 @@ RUN echo "deb http://www.rabbitmq.com/debian/ testing main" > /etc/apt/sources.l
 RUN apt-get update 
 RUN apt-get -y install rabbitmq-server 
 
-EXPOSE 5672 15672 4369
+# CMD /usr/sbin/rabbitmq-server
 
-ENTRYPOINT ["service rabbitmq-server start"]
+ENTRYPOINT ["/usr/sbin/rabbitmq-server"]
+
+USER root
+
+EXPOSE 5672 15672 4369

@@ -3,12 +3,24 @@
 """
 
 from newrelic.agent import (current_transaction, wrap_wsgi_application,
-        wrap_function_wrapper,  callable_name, wrap_function_trace,
-        FunctionTrace, TransactionNameWrapper, function_wrapper)
+    wrap_function_wrapper,  callable_name, wrap_function_trace,
+    FunctionTrace, TransactionNameWrapper, function_wrapper,
+    ignore_status_code)
 
 def framework_details():
     import flask
     return ('Flask', getattr(flask, '__version__', None))
+
+def should_ignore(exc, value, tb):
+    from werkzeug.exceptions import HTTPException
+
+    # Werkzeug HTTPException can be raised internally by Flask or in
+    # user code if they mix Flask with Werkzeug. Filter based on the
+    # HTTP status code.
+
+    if isinstance(value, HTTPException):
+        if ignore_status_code(value.code):
+            return True
 
 @function_wrapper
 def handler_wrapper(wrapped, instance, args, kwargs):
@@ -66,7 +78,7 @@ def wrapper_Flask_handle_exception(wrapped, instance, args, kwargs):
     # rely on grabbing current exception details so we have access to
     # the addition stack trace information.
 
-    transaction.record_exception()
+    transaction.record_exception(ignore_errors=should_ignore)
 
     name = callable_name(wrapped)
 

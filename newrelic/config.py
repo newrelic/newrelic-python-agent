@@ -11,6 +11,7 @@ except ImportError:
 from .common.log_file import initialize_logging
 
 import newrelic.core.agent
+import newrelic.core.config
 
 import newrelic.api.settings
 import newrelic.api.import_hook
@@ -91,9 +92,6 @@ _RECORD_SQL = {
 def _map_log_level(s):
     return _LOG_LEVEL[s.upper()]
 
-def _map_app_name(s):
-    return s.split(';')[0].strip() or "Python Application"
-
 def _map_ignored_params(s):
     return s.split()
 
@@ -116,6 +114,10 @@ def _map_function_trace(s):
 
 def _map_console_listener_socket(s):
     return s % {'pid': os.getpid()}
+
+def _merge_ignore_status_codes(s):
+    return newrelic.core.config._parse_ignore_status_codes(
+            s, _settings.error_collector.ignore_status_codes)
 
 # Processing of a single setting from configuration file.
 
@@ -210,7 +212,7 @@ def _process_setting(section, option, getter, mapper):
 
 def _process_configuration(section):
     _process_setting(section, 'app_name',
-                     'get', _map_app_name)
+                     'get', None)
     _process_setting(section, 'license_key',
                      'get', None)
     _process_setting(section, 'host',
@@ -267,12 +269,20 @@ def _process_configuration(section):
                      'get', _map_function_trace)
     _process_setting(section, 'transaction_tracer.top_n',
                      'getint', None)
+    _process_setting(section, 'transaction_tracer.capture_attributes',
+                     'getboolean', None),
     _process_setting(section, 'error_collector.enabled',
                      'getboolean', None),
     _process_setting(section, 'error_collector.capture_source',
                      'getboolean', None),
     _process_setting(section, 'error_collector.ignore_errors',
                      'get', _map_ignore_errors)
+    _process_setting(section, 'error_collector.ignore_status_codes',
+                     'get', _merge_ignore_status_codes)
+    _process_setting(section, 'error_collector.capture_attributes',
+                     'getboolean', None),
+    _process_setting(section, 'browser_monitoring.enabled',
+                     'getboolean', None)
     _process_setting(section, 'browser_monitoring.auto_instrument',
                      'getboolean', None)
     _process_setting(section, 'browser_monitoring.loader',
@@ -281,11 +291,13 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'browser_monitoring.ssl_for_http',
                      'getboolean', None)
-    _process_setting(section, 'rum.enabled',
-                     'getboolean', None)
+    _process_setting(section, 'browser_monitoring.capture_attributes',
+                     'getboolean', None),
     _process_setting(section, 'slow_sql.enabled',
                      'getboolean', None)
     _process_setting(section, 'analytics_events.enabled',
+                     'getboolean', None),
+    _process_setting(section, 'analytics_events.capture_attributes',
                      'getboolean', None),
     _process_setting(section, 'analytics_events.max_samples_stored',
                      'getint', None),
@@ -358,6 +370,37 @@ def _process_configuration(section):
 
 _configuration_done = False
 
+def _process_app_name_setting():
+    # Do special processing to handle the case where the application
+    # name was actually a semicolon separated list of names. In this
+    # case the first application name is the primary and the others are
+    # linked applications the application also reports to. What we need
+    # to do is explicitly retrieve the application object for the
+    # primary application name and link it with the other applications.
+    # When activating the application the linked names will be sent
+    # along to the core application where the association will be
+    # created if the do not exist.
+
+    name = _settings.app_name.split(';')[0].strip() or 'Python Application'
+
+    linked = []
+    for altname in _settings.app_name.split(';')[1:]:
+        altname = altname.strip()
+        if altname:
+            linked.append(altname)
+
+    def _link_applications(application):
+        for altname in linked:
+            _logger.debug("link to %s" % ((name, altname),))
+            application.link_to_application(altname)
+
+    if linked:
+        newrelic.api.application.Application.run_on_initialization(
+                name, _link_applications)
+        _settings.linked_applications = linked
+
+    _settings.app_name = name
+
 def _load_configuration(config_file=None, environment=None,
         ignore_errors=True, log_file=None, log_level=None):
 
@@ -410,6 +453,12 @@ def _load_configuration(config_file=None, environment=None,
             log_level = _settings.log_level
 
         initialize_logging(log_file, log_level)
+
+        # Look for an app_name setting which is actually a semi colon
+        # list of application names and adjust app_name setting and
+        # registered linked applications for later handling.
+
+        _process_app_name_setting()
 
         return
 
@@ -469,56 +518,11 @@ def _load_configuration(config_file=None, environment=None,
     for option, value in _cache_object:
         _logger.debug("agent config %s = %s" % (option, repr(value)))
 
-    # Now do special processing to handle the case where the
-    # application name was actually a semicolon separated list
-    # of names. In this case the first application name is the
-    # primary and the others are linked applications the application
-    # also reports to. What we need to do is explicitly retrieve
-    # the application object for the primary application name
-    # and link it with the other applications. When activating the
-    # application the linked names will be sent along to the
-    # core application where the association will be created if the
-    # do not exist.
+    # Look for an app_name setting which is actually a semi colon
+    # list of application names and adjust app_name setting and
+    # registered linked applications for later handling.
 
-    def _process_app_name(section):
-        try:
-            value = _config_object.get(section, 'app_name')
-        except ConfigParser.NoOptionError:
-            return False
-        except ConfigParser.NoSectionError:
-            return False
-        else:
-            # XXX Note that because ';' with a preceding space is
-            # interpreted as the start of an embedded comment in the
-            # Python ini file format, there can never be a space
-            # preceding the ';' in a list of applications, although
-            # there can be a space after the ';'.
-
-            name = value.split(';')[0].strip() or 'Python Application'
-
-            linked = []
-            for altname in value.split(';')[1:]:
-                altname = altname.strip()
-                if altname:
-                    linked.append(altname)
-
-            def _link_applications(application):
-                for altname in linked:
-                    _logger.debug("link to %s" % ((name, altname),))
-                    application.link_to_application(altname)
-
-            if linked:
-                newrelic.api.application.Application.run_on_initialization(
-                        name, _link_applications)
-                _settings.linked_applications = linked
-
-            return True
-
-    if environment:
-        if not _process_app_name('newrelic:%s' % environment):
-            _process_app_name('newrelic')
-    else:
-        _process_app_name('newrelic')
+    _process_app_name_setting()
 
     # Instrument with function trace any callables supplied by the
     # user in the configuration.
@@ -1493,7 +1497,8 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.framework_pylons')
 
     _process_module_definition('bottle',
-            'newrelic.hooks.framework_bottle')
+            'newrelic.hooks.framework_bottle',
+            'instrument_bottle')
 
     _process_module_definition('cherrypy._cpreqbody',
             'newrelic.hooks.framework_cherrypy',
@@ -1652,7 +1657,8 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.external_urllib') # Python 3
 
     _process_module_definition('urllib2',
-            'newrelic.hooks.external_urllib2')
+            'newrelic.hooks.external_urllib2') # Python 2
+
     _process_module_definition('urllib3.request',
             'newrelic.hooks.external_urllib3')
 
@@ -1762,6 +1768,13 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.adapter_waitress',
             'instrument_waitress_server')
 
+    _process_module_definition('gevent.wsgi',
+            'newrelic.hooks.adapter_gevent',
+            'instrument_gevent_wsgi')
+    _process_module_definition('gevent.pywsgi',
+            'newrelic.hooks.adapter_gevent',
+            'instrument_gevent_pywsgi')
+
     _process_module_definition('wsgiref.simple_server',
             'newrelic.hooks.adapter_wsgiref',
             'instrument_wsgiref_simple_server')
@@ -1779,6 +1792,10 @@ def _process_module_builtin_defaults():
     _process_module_definition('pyramid.config.views',
             'newrelic.hooks.framework_pyramid',
             'instrument_pyramid_config_views')
+
+    _process_module_definition('cornice.service',
+            'newrelic.hooks.component_cornice',
+            'instrument_cornice_service')
 
     #_process_module_definition('twisted.web.server',
     #        'newrelic.hooks.framework_twisted',

@@ -4,22 +4,19 @@ import json
 
 from testing_support.fixtures import override_application_settings
 
-import newrelic.agent
+from newrelic.agent import (wsgi_application, get_browser_timing_header,
+    get_browser_timing_footer, application_settings)
 
-from newrelic.common.encoding_utils import deobfuscate
+from newrelic.common.encoding_utils import deobfuscate, json_decode
 
-@newrelic.agent.wsgi_application()
-def wsgi_application(environ, start_response):
+@wsgi_application()
+def target_wsgi_application(environ, start_response):
     status = '200 OK'
-
-    newrelic.agent.add_user_attribute('user', 'user-name')
-    newrelic.agent.add_user_attribute('account', 'account-name')
-    newrelic.agent.add_user_attribute('product', 'product-name')
 
     text = '<html><head>%s</head><body><p>RESPONSE</p>%s</body></html>'
 
-    output = (text % (newrelic.agent.get_browser_timing_header(),
-            newrelic.agent.get_browser_timing_footer())).encode('UTF-8')
+    output = (text % (get_browser_timing_header(),
+            get_browser_timing_footer())).encode('UTF-8')
 
     response_headers = [('Content-type', 'text/html; charset=utf-8'),
                         ('Content-Length', str(len(output)))]
@@ -27,12 +24,13 @@ def wsgi_application(environ, start_response):
 
     return [output]
 
-target_application = webtest.TestApp(wsgi_application)
+target_application = webtest.TestApp(target_wsgi_application)
 
-def test_rum_insertion():
-    settings = newrelic.agent.application_settings()
+def test_footer_attributes():
+    settings = application_settings()
 
-    assert settings.rum.enabled
+    assert settings.browser_monitoring.enabled
+
     assert settings.browser_key
     assert settings.browser_monitoring.loader_version
     assert settings.js_agent_loader
@@ -76,31 +74,23 @@ def test_rum_insertion():
 
     obfuscation_key = settings.license_key[:13]
 
+    assert type(data['transactionName']) == type(u'')
+
     txn_name = deobfuscate(data['transactionName'], obfuscation_key)
 
-    assert txn_name == 'WebTransaction/Uri/'
+    assert txn_name == u'WebTransaction/Uri/'
 
     assert data['agentToken'] == token
     assert len(data['ttGuid']) == 16
 
-    # This is the prevailing way of sending back user attributes. That
-    # is, as separate fields. This will be changed to use a single field
-    # where attributes are encoded as obfuscated JSON.
-
-    user = deobfuscate(data['user'], obfuscation_key)
-    account = deobfuscate(data['account'], obfuscation_key)
-    product = deobfuscate(data['product'], obfuscation_key)
-
-    assert user == 'user-name'
-    assert account == 'account-name'
-    assert product == 'product-name'
+    assert 'userAttributes' not in data
 
 _test_rum_ssl_for_http_is_none = {
     'browser_monitoring.ssl_for_http': None }
 
 @override_application_settings(_test_rum_ssl_for_http_is_none)
-def test_rum_ssl_for_http_is_none():
-    settings = newrelic.agent.application_settings()
+def test_ssl_for_http_is_none():
+    settings = application_settings()
 
     assert settings.browser_monitoring.ssl_for_http is None
 
@@ -114,8 +104,8 @@ _test_rum_ssl_for_http_is_true = {
     'browser_monitoring.ssl_for_http': True }
 
 @override_application_settings(_test_rum_ssl_for_http_is_true)
-def test_rum_ssl_for_http_is_true():
-    settings = newrelic.agent.application_settings()
+def test_ssl_for_http_is_true():
+    settings = application_settings()
 
     assert settings.browser_monitoring.ssl_for_http is True
 
@@ -129,8 +119,8 @@ _test_rum_ssl_for_http_is_false = {
     'browser_monitoring.ssl_for_http': False }
 
 @override_application_settings(_test_rum_ssl_for_http_is_false)
-def test_rum_ssl_for_http_is_false():
-    settings = newrelic.agent.application_settings()
+def test_ssl_for_http_is_false():
+    settings = application_settings()
 
     assert settings.browser_monitoring.ssl_for_http is False
 

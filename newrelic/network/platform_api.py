@@ -4,7 +4,6 @@ import zlib
 import sys
 import socket
 import os
-import json
 
 from ..packages import six
 
@@ -16,6 +15,8 @@ from .addresses import platform_url, proxy_details
 from .exceptions import (NetworkInterfaceException, ForceAgentRestart,
         ForceAgentDisconnect, DiscardDataForRequest, RetryDataForRequest,
         ServerIsUnavailable)
+
+from ..common.encoding_utils import json_encode, json_decode
 
 _logger = logging.getLogger(__name__)
 
@@ -77,7 +78,7 @@ class PlatformInterface(object):
         # agent.
 
         try:
-            data = json.dumps(payload)
+            data = json_encode(payload)
 
         except Exception as exc:
             _logger.error('Error encoding data for JSON payload '
@@ -233,7 +234,7 @@ class PlatformInterface(object):
             if six.PY3:
                 content = content.decode('UTF-8')
 
-            result = json.loads(content)
+            result = json_decode(content)
 
         except Exception as exc:
             _logger.error('Error decoding data for JSON payload '

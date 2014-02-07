@@ -78,7 +78,6 @@ class Transaction(object):
         self._string_cache = {}
 
         self._custom_params = {}
-        self._user_attrs = {}
         self._request_params = {}
 
         self._utilization_tracker = None
@@ -681,6 +680,9 @@ class Transaction(object):
             if should_ignore:
                 return
 
+        module = value.__class__.__module__
+        name = value.__class__.__name__
+
         if should_ignore is None:
             # We need to check for module.name and module:name.
             # Originally we used module.class but that was
@@ -690,15 +692,12 @@ class Transaction(object):
             # separator for time being. Check that with the ':'
             # last as we will use that name as the exception type.
 
-            module = value.__class__.__module__
-            name = value.__class__.__name__
-
             if module:
                 fullname = '%s.%s' % (module, name)
             else:
                 fullname = name
 
-            if (not callable(ignore_errors)) and (fullname in ignore_errors):
+            if not callable(ignore_errors) and fullname in ignore_errors:
                 return
 
             if fullname in error_collector.ignore_errors:
@@ -709,11 +708,17 @@ class Transaction(object):
             else:
                 fullname = name
 
-            if (not callable(ignore_errors)) and (fullname in ignore_errors):
+            if not callable(ignore_errors) and fullname in ignore_errors:
                 return
 
             if fullname in error_collector.ignore_errors:
                 return
+
+        else:
+            if module:
+                fullname = '%s:%s' % (module, name)
+            else:
+                fullname = name
 
         # Only remember up to limit of what can be caught for a
         # single transaction. This could be trimmed further
@@ -749,7 +754,7 @@ class Transaction(object):
         # multiple times.
 
         for error in self._errors:
-            if error.type == exc_type and error.message == message:
+            if error.type == fullname and error.message == message:
                 return
 
         stack_trace = traceback.format_exception(exc, value, tb)
@@ -853,11 +858,16 @@ class Transaction(object):
             self._custom_params[name] = value
 
     def add_user_attribute(self, name, value):
-        self._user_attrs[name] = value
+        #warnings.warn('Internal API change. Use add_custom_parameter() '
+        #        'instead of add_user_attribute().', DeprecationWarning,
+        #        stacklevel=2)
+        self.add_custom_parameter(name, value)
 
     def add_user_attributes(self, items):
-        for name, value in items:
-            self._user_attrs[name] = value
+        #warnings.warn('Internal API change. Use add_custom_parameters() '
+        #        'instead of add_user_attributes().', DeprecationWarning,
+        #        stacklevel=2)
+        self.add_custom_parameters(items)
 
     def dump(self, file):
         """Dumps details about the transaction to the file object."""

@@ -11,12 +11,13 @@ import logging
 import operator
 import random
 import zlib
-import json
 
 import newrelic.packages.six as six
 
 from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
         internal_metric)
+
+from ..common.encoding_utils import json_encode
 
 _logger = logging.getLogger(__name__)
 
@@ -651,6 +652,24 @@ class StatsEngine(object):
                     settings.analytics_events.transactions.enabled):
 
                 record = {}
+                params = {}
+
+                # First remember users custom parameters. We only
+                # retain any which have string type for key and
+                # string or numeric for value.
+
+                if settings.analytics_events.capture_attributes:
+                    for key, value in transaction.custom_params.items():
+                        if not isinstance(key, six.string_types):
+                            continue
+                        if (not isinstance(value, six.string_types) and
+                                not isinstance(value, float) and
+                                not isinstance(value, six.integer_types)):
+                            continue
+                        params[key] = value
+
+                # Now we add the agents own values so they
+                # overwrite users values if same key name used.
 
                 name = self.__sampled_data_set.intern(transaction.path)
 
@@ -673,7 +692,7 @@ class StatsEngine(object):
                 _update_entry('Database/all', 'databaseDuration')
                 _update_entry('Memcache/all', 'memcacheDuration')
 
-                self.__sampled_data_set.add([record])
+                self.__sampled_data_set.add([record, params])
 
     @internal_trace('Supportability/StatsEngine/Calls/metric_data')
     def metric_data(self, normalizer=None):
@@ -778,7 +797,7 @@ class StatsEngine(object):
             if explain_plan:
                 params['explain_plan'] = explain_plan
 
-            json_data = json.dumps(params, default=lambda o: list(iter(o)))
+            json_data = json_encode(params)
 
             params_data = base64.standard_b64encode(
                     zlib.compress(six.b(json_data)))
@@ -851,7 +870,7 @@ class StatsEngine(object):
             with InternalTrace('Supportability/StatsEngine/JSON/Encode/'
                                'transaction_sample_data'):
 
-                json_data = json.dumps(data, default=lambda o: list(iter(o)))
+                json_data = json_encode(data)
 
             internal_metric('Supportability/StatsEngine/ZLIB/Bytes/'
                             'transaction_sample_data', len(json_data))
@@ -922,7 +941,7 @@ class StatsEngine(object):
         with InternalTrace('Supportability/StatsEngine/JSON/Encode/'
                 'transaction_sample_data'):
 
-            json_data = json.dumps(data, default=lambda o: list(iter(o)))
+            json_data = json_encode(data)
 
         internal_metric('Supportability/StatsEngine/ZLIB/Bytes/'
                 'transaction_sample_data', len(json_data))

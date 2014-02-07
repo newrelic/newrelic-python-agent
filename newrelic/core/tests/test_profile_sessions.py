@@ -126,9 +126,9 @@ class TestProfileSession(unittest.TestCase):
         # xray_id
         self.assertEqual(p[7], None)
 
-        expected = '{"REQUEST": [[["file_a", "@method_a#10", 10],'\
-                ' 1, 0, [[["file_b", "@method_b#20", 20], 1, 0, [[["file_c", '\
-                '"@method_c#25", 25], 1, 0, []]]]]]]}'
+        expected = '{"REQUEST":[[["file_a","@method_a#10",10],' \
+                '1,0,[[["file_b","@method_b#20",20],1,0,[[["file_c",' \
+                '"@method_c#25",25],1,0,[]]]]]]]}'
         self.assertEqual(_unscramble(p[4]), expected)
 
 
@@ -162,10 +162,10 @@ class TestProfileSession(unittest.TestCase):
         self.assertEqual(p[6], 0)
         # xray_id
         self.assertEqual(p[7], 7)
-        expected = '{"REQUEST": [[["file_a", "@method_a#10", 10], 2,'\
-                ' 0, [[["file_b", "@method_b#20", 20], 1, 0, [[["file_c",'\
-                ' "@method_c#25", 25], 1, 0, []]]], [["file_d", "@method_d#15", 15],'\
-                ' 1, 0, [[["file_c", "@method_c#25", 25], 1, 0, []]]]]]]}'
+        expected = '{"REQUEST":[[["file_a","@method_a#10",10],2,' \
+                '0,[[["file_b","@method_b#20",20],1,0,[[["file_c",' \
+                '"@method_c#25",25],1,0,[]]]],[["file_d","@method_d#15",15],' \
+                '1,0,[[["file_c","@method_c#25",25],1,0,[]]]]]]]}'
         self.assertEqual(_unscramble(p[4]), expected)
 
 

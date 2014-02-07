@@ -3,7 +3,6 @@ import cgi
 import time
 import string
 import re
-import json
 import logging
 
 try:
@@ -16,7 +15,10 @@ import newrelic.api.transaction
 import newrelic.api.object_wrapper
 import newrelic.api.function_trace
 
-from ..common.encoding_utils import obfuscate, deobfuscate
+from ..common.encoding_utils import (obfuscate, deobfuscate, json_encode,
+    json_decode)
+
+from ..packages import six
 
 _logger = logging.getLogger(__name__)
 
@@ -49,7 +51,6 @@ def _extract_token(cookie):
         return token and token.group(1)
     except Exception:
         pass
-
 
 class WebTransaction(newrelic.api.transaction.Transaction):
 
@@ -319,7 +320,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         if encoded_txn_header:
             try:
-                decoded_txn_header = json.loads(deobfuscate(
+                decoded_txn_header = json_decode(deobfuscate(
                         encoded_txn_header, self._settings.encoding_key))
             except Exception:
                 decoded_txn_header = None
@@ -389,7 +390,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
             payload = (self._settings.cross_process_id, self.path, queue_time,
                     duration, self._read_length, self.guid, self.record_tt)
-            app_data = json.dumps(payload)
+            app_data = json_encode(payload)
 
             additional_headers.append(('X-NewRelic-App-Data', obfuscate(
                     app_data, self._settings.encoding_key)))
@@ -420,7 +421,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         if not self._settings:
             return ''
 
-        if not self._settings.rum.enabled:
+        if not self._settings.browser_monitoring.enabled:
             return ''
 
         if not self._settings.license_key:
@@ -518,33 +519,29 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         if threshold is None:
             threshold = self.apdex * 4
 
-        # The rum_token and guid are only added if the request time is above
-        # threshold
-
         if request_duration >= threshold:
-
-            # Add the agentToken and ttGuid only when we a rum_token was issued
-            # by beacon.
-
             if self.rum_token:
                 additional_params.append(('agentToken', self.rum_token))
                 additional_params.append(('ttGuid', self.guid))
 
-        # Add user, acccount and product keys when provided.
+        if self._settings.browser_monitoring.capture_attributes:
+            def _filter(params):
+                for key, value in params.items():
+                    if not isinstance(key, six.string_types):
+                        continue
+                    if (not isinstance(value, six.string_types) and
+                            not isinstance(value, float) and
+                            not isinstance(value, six.integer_types)):
+                        continue
+                    yield key, value
 
-        user = self._user_attrs.get('user')
-        account = self._user_attrs.get('account')
-        product = self._user_attrs.get('product')
+            user_attributes = dict(_filter(self._custom_params))
 
-        if user:
-            additional_params.append(('user',
-                                      obfuscate(user, obfuscation_key)))
-        if account:
-            additional_params.append(('account',
-                                      obfuscate(account, obfuscation_key)))
-        if product:
-            additional_params.append(('product',
-                                      obfuscate(product, obfuscation_key)))
+            if user_attributes:
+                user_attributes = obfuscate(json_encode(user_attributes),
+                        obfuscation_key)
+
+                additional_params.append(('userAttributes', user_attributes))
 
         if self._settings.browser_monitoring.ssl_for_http is not None:
             additional_params.append(('sslForHttp',
@@ -553,8 +550,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         # Add in the additional params to the footer config dictionary.
 
         config_dict.update(additional_params)
-        footer = (_js_agent_footer_fragment %
-                json.dumps(config_dict, separators=(',', ':')))
+        footer = _js_agent_footer_fragment % json_encode(config_dict)
 
         # Footer dictionary is only supposed to have ascii chars. Verify that
         # by encoding it as ascii. If encoding fails return an empty string.
@@ -600,8 +596,15 @@ class _WSGIApplicationIterable(object):
 
     def close(self):
         try:
-            if hasattr(self.generator, 'close'):
-                self.generator.close()
+            with newrelic.api.function_trace.FunctionTrace(
+                    self.transaction, name='Finalize', group='Python/WSGI'):
+                if hasattr(self.generator, 'close'):
+                    name = newrelic.api.object_wrapper.callable_name(
+                            self.generator.close)
+                    with newrelic.api.function_trace.FunctionTrace(
+                            self.transaction, name):
+                        self.generator.close()
+
         except:  # Catch all
             self.transaction.__exit__(*sys.exc_info())
             raise

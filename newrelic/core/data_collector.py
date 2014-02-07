@@ -8,7 +8,6 @@ import socket
 import sys
 import time
 import zlib
-import json
 
 import newrelic.packages.six as six
 
@@ -25,6 +24,7 @@ from newrelic.network.exceptions import (NetworkInterfaceException,
 
 from ..network.addresses import proxy_details
 from ..common.object_wrapper import patch_function_wrapper
+from ..common.encoding_utils import json_encode, json_decode
 
 _logger = logging.getLogger(__name__)
 
@@ -162,7 +162,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
     try:
         with InternalTrace('Supportability/Collector/JSON/Encode/%s' % method):
-            data = json.dumps(payload, default=lambda o: list(iter(o)))
+            data = json_encode(payload)
 
     except Exception:
         _logger.exception('Error encoding data for JSON payload for '
@@ -377,7 +377,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
             if six.PY3:
                 content = content.decode('UTF-8')
 
-            result = json.loads(content)
+            result = json_decode(content)
 
     except Exception:
         _logger.exception('Error decoding data for JSON payload for '

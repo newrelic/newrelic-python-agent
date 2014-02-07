@@ -5,7 +5,7 @@ import sys
 
 from newrelic.agent import (initialize, register_application,
         global_settings, shutdown_agent, application as application_instance,
-        transient_function_wrapper)
+        transient_function_wrapper, function_wrapper, application_settings)
 
 from newrelic.core.config import (apply_config_setting,
         create_settings_snapshot)
@@ -93,7 +93,8 @@ def collector_available_fixture(request):
     assert application.active
 
 def validate_transaction_metrics(name, group='Function',
-        background_task=False, scoped_metrics=[], rollup_metrics=[]):
+        background_task=False, scoped_metrics=[], rollup_metrics=[],
+        custom_metrics=[]):
 
     if background_task:
         transaction_metric = 'OtherTransaction/%s/%s' % (group, name)
@@ -110,18 +111,69 @@ def validate_transaction_metrics(name, group='Function',
         else:
             metrics = instance.stats_table
 
-            assert metrics[(transaction_metric, '')].call_count == 1
+            def _validate(name, scope, count):
+                key = (name, scope)
+                metric = metrics.get(key)
+
+                def _metrics_table():
+                    return 'metric=%r, metrics=%r' % (key, metrics)
+
+                def _metric_details():
+                    return 'metric=%r, count=%r' % (key, metric.call_count)
+
+                assert metric is not None, _metrics_table()
+                assert metric.call_count == count, _metric_details()
+
+            _validate(transaction_metric, '', 1)
 
             for scoped_name, scoped_count in scoped_metrics:
-                assert metrics[(scoped_name,
-                    transaction_metric)].call_count == scoped_count
+                _validate(scoped_name, transaction_metric, scoped_count)
 
             for rollup_name, rollup_count in rollup_metrics:
-                assert metrics[(rollup_name, '')].call_count == rollup_count
+                _validate(rollup_name, '', rollup_count)
+
+            for custom_name, custom_count in custom_metrics:
+                _validate(custom_name, '', custom_count)
 
         return result
 
     return _validate_transaction_metrics
+
+def validate_transaction_errors(errors=[]):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_transaction_errors(wrapped, instance, args, kwargs):
+        def _bind_params(transaction, *args, **kwargs):
+            return transaction
+
+        transaction = _bind_params(*args, **kwargs)
+
+        expected = sorted(errors)
+        captured = sorted([e.type for e in transaction.errors])
+
+        assert expected == captured, 'expected=%r, captured=%r' % (
+                expected, captured)
+
+        return wrapped(*args, **kwargs)
+
+    return _validate_transaction_errors
+
+
+def validate_custom_parameters(custom_params=[]):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_custom_parameters(wrapped, instance, args, kwargs):
+        def _bind_params(transaction, *args, **kwargs):
+            return transaction
+
+        transaction = _bind_params(*args, **kwargs)
+
+        for name, value in custom_params:
+            assert transaction.custom_params[name] == value
+
+        return wrapped(*args, **kwargs)
+
+    return _validate_custom_parameters
 
 def validate_database_trace_inputs(execute_params_type):
     @transient_function_wrapper('newrelic.api.database_trace',
@@ -159,10 +211,24 @@ def validate_database_trace_inputs(execute_params_type):
     return _validate_database_trace_inputs
 
 def override_application_settings(settings):
-    @transient_function_wrapper('newrelic.core.agent',
-            'Agent.application_settings')
+    @function_wrapper
     def _override_application_settings(wrapped, instance, args, kwargs):
-        return create_settings_snapshot(settings, wrapped(*args, **kwargs))
+        try:
+            # This is a bit horrible as the one settings object, has
+            # references from a number of different places. We have to
+            # create a copy, overlay the temporary settings and then
+            # when done clear the top level settings object and rebuild
+            # it when done.
+
+            original = application_settings()
+            backup = dict(original)
+            for name, value in settings.items():
+                apply_config_setting(original, name, value)
+            return wrapped(*args, **kwargs)
+        finally:
+            original.__dict__.clear()
+            for name, value in backup.items():
+                apply_config_setting(original, name, value)
 
     return _override_application_settings
 
@@ -170,6 +236,9 @@ def code_coverage_fixture(source=['newrelic']):
     @pytest.fixture(scope='session')
     def _code_coverage_fixture(request):
         if not source:
+            return
+
+        if os.environ.get('TDDIUM') is not None:
             return
 
         from coverage import coverage

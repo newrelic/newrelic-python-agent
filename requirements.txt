@@ -1,4 +1,6 @@
-tox
+tox<1.7.0
 lock_file
 devpi-server
 eventlet
+pip<1.5
+virtualenv<1.11

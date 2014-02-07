@@ -10,18 +10,16 @@ from newrelic.api.transaction_name import wrap_transaction_name
 from newrelic.api.post_function import wrap_post_function
 from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import WSGIApplicationWrapper
-from newrelic.agent import global_settings
+from newrelic.agent import ignore_status_code
 
 import newrelic.packages.six as six
 
 def should_ignore(exc, value, tb):
     from django.http import Http404
 
-    settings = global_settings()
-
-    if (isinstance(value, Http404) and
-            (404 in settings.error_collector.ignore_status_codes)):
-        return True
+    if isinstance(value, Http404):
+        if ignore_status_code(404):
+            return True
 
 # Response middleware for automatically inserting RUM header and
 # footer into HTML response returned by application
@@ -52,7 +50,7 @@ def browser_timing_middleware(request, response):
     # Only insert RUM JavaScript headers and footers if enabled
     # in configuration.
 
-    if not transaction.settings.rum.enabled:
+    if not transaction.settings.browser_monitoring.enabled:
         return response
 
     if transaction.autorum_disabled:

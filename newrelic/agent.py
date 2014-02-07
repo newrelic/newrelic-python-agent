@@ -13,9 +13,10 @@ import newrelic.api.application
 import newrelic.config
 
 initialize = newrelic.config.initialize
-global_settings = newrelic.core.config.global_settings
 application = newrelic.api.application.application_instance
 current_transaction = newrelic.api.transaction.current_transaction
+
+from newrelic.core.config import global_settings, ignore_status_code
 
 def register_application(name=None, timeout=None):
     instance = application(name)
@@ -76,9 +77,9 @@ def add_custom_parameter(key, value):
         transaction.add_custom_parameter(key, value)
 
 def add_user_attribute(key, value):
-    transaction = current_transaction()
-    if transaction:
-        transaction.add_user_attribute(key, value)
+    #warnings.warn('API change. Use add_custom_parameter() instead of '
+    #        'add_user_attribute().', DeprecationWarning, stacklevel=2)
+    return add_custom_parameter(key, value)
 
 def record_exception(exc=None, value=None, tb=None, params={},
         ignore_errors=[]):
@@ -174,7 +175,7 @@ from .api.transaction_name import (transaction_name,
 from .common.object_names import callable_name
 
 from .common.object_wrapper import (ObjectProxy, wrap_object,
-        resolve_path, transient_function_wrapper,
+        wrap_object_attribute, resolve_path, transient_function_wrapper,
         FunctionWrapper, function_wrapper, wrap_function_wrapper,
         patch_function_wrapper, ObjectWrapper, wrap_callable,
         pre_function, PreFunctionWrapper, wrap_pre_function,

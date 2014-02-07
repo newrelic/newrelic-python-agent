@@ -121,6 +121,11 @@ class ObjectProxy(_ObjectProxy):
                     '_nr_last_object', self.__wrapped__)
             return self._self_last_object
 
+class CallableObjectProxy(ObjectProxy):
+
+    def __call__(self, *args, **kwargs):
+        return self.__wrapped__(*args, **kwargs)
+
 # The ObjectWrapper class needs to be deprecated and removed once all our
 # own code no longer uses it. It reaches down into what are wrapt internals
 # at present which shouldn't be doing.
@@ -171,14 +176,51 @@ def wrap_object(module, name, factory, args=(), kwargs={}):
     apply_patch(parent, attribute, wrapper)
     return wrapper
 
+# Function for apply a proxy object to an attribute of a class instance.
+# The wrapper works by defining an attribute of the same name on the
+# class which is a descriptor and which intercepts access to the
+# instance attribute. Note that this cannot be used on attributes which
+# are themselves defined by a property object.
+
+class AttributeWrapper(object):
+
+    def __init__(self, attribute, factory, args, kwargs):
+        self.attribute = attribute
+        self.factory = factory
+        self.args = args
+        self.kwargs = kwargs
+
+    def __get__(self, instance, owner):
+        value = instance.__dict__[self.attribute]
+        return self.factory(value, *self.args, **self.kwargs)
+
+    def __set__(self, instance, value):
+        instance.__dict__[self.attribute] = value
+
+    def __del__(self, instance):
+        del instance.__dict__[self.attribute]
+
+def wrap_object_attribute(module, name, factory, args=(), kwargs={}):
+    path, attribute = name.rsplit('.', 1)
+    parent = resolve_path(module, path)[2]
+    wrapper = AttributeWrapper(attribute, factory, args, kwargs)
+    apply_patch(parent, attribute, wrapper)
+    return wrapper
+
 # Function for creating a decorator for applying to functions, as well as
 # short cut functions for applying wrapper functions via monkey patching.
 
 def function_wrapper(wrapper):
-    @functools.wraps(wrapper)
-    def _wrapper(wrapped):
-        return FunctionWrapper(wrapped, wrapper)
-    return _wrapper
+    def _wrapper(wrapped, instance, args, kwargs):
+        target_wrapped = args[0]
+        if instance is None:
+            target_wrapper = wrapper
+        elif inspect.isclass(instance):
+            target_wrapper = wrapper.__get__(None, instance)
+        else:
+            target_wrapper = wrapper.__get__(instance, type(instance))
+        return FunctionWrapper(target_wrapped, target_wrapper)
+    return FunctionWrapper(wrapper, _wrapper)
 
 def wrap_function_wrapper(module, name, wrapper):
     return wrap_object(module, name, FunctionWrapper, (wrapper,))
@@ -190,16 +232,24 @@ def patch_function_wrapper(module, name):
 
 def transient_function_wrapper(module, name):
     def _decorator(wrapper):
-        @function_wrapper
         def _wrapper(wrapped, instance, args, kwargs):
-            try:
+            target_wrapped = args[0]
+            if instance is None:
+                target_wrapper = wrapper
+            elif inspect.isclass(instance):
+                target_wrapper = wrapper.__get__(None, instance)
+            else:
+                target_wrapper = wrapper.__get__(instance, type(instance))
+            def _execute(wrapped, instance, args, kwargs):
                 (parent, attribute, original) = resolve_path(module, name)
-                replacement = FunctionWrapper(original, wrapper)
+                replacement = FunctionWrapper(original, target_wrapper)
                 setattr(parent, attribute, replacement)
-                return wrapped(*args, **kwargs)
-            finally:
-                setattr(parent, attribute, original)
-        return _wrapper
+                try:
+                    return wrapped(*args, **kwargs)
+                finally:
+                    setattr(parent, attribute, original)
+            return FunctionWrapper(target_wrapped, _execute)
+        return FunctionWrapper(wrapper, _wrapper)
     return _decorator
 
 # Generic decorators for performing actions before and after a wrapped

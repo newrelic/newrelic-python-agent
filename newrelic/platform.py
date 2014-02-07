@@ -125,6 +125,9 @@ class DataAggregator(object):
         metrics = self.metrics_table or {}
         self.metrics_table = None
 
+        def c2t(count=0, total=0.0, min=0.0, max=0.0, sum_of_squares=0.0):
+            return (count, total, min, max, sum_of_squares)
+
         try:
             for name, value in self.metrics():
                 stats = metrics.get(name)
@@ -134,7 +137,7 @@ class DataAggregator(object):
 
                 try:
                     try:
-                        stats.merge_stats(Stats(*value))
+                        stats.merge_stats(Stats(*c2t(**value)))
                     except Exception:
                         stats.merge_value(value)
 

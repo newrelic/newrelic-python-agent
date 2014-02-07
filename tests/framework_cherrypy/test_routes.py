@@ -2,6 +2,8 @@ import pytest
 import sys
 import webtest
 
+from testing_support.fixtures import validate_transaction_errors
+
 import cherrypy
 
 is_lt_python30 = sys.version_info[:2] < (3,0)
@@ -25,20 +27,24 @@ if is_lt_python30:
     test_application = webtest.TestApp(application)
 
 @requires_routes
+@validate_transaction_errors(errors=[])
 def test_routes_index():
     response = test_application.get('/endpoint')
     response.mustcontain('INDEX RESPONSE')
 
 @requires_routes
+@validate_transaction_errors(errors=[])
 def test_on_index_agent_disabled():
     environ = { 'newrelic.enabled': False }
     response = test_application.get('/endpoint', extra_environ=environ)
     response.mustcontain('INDEX RESPONSE')
 
 @requires_routes
+@validate_transaction_errors(errors=[])
 def test_routes_not_found():
     response = test_application.get('/missing', status=404)
 
 @requires_routes
+@validate_transaction_errors(errors=['routes.util:RoutesException'])
 def test_routes_missing_url():
     response = test_application.get('', status=500)

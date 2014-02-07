@@ -34,6 +34,7 @@
     - tox -c tests/framework_pyramid/tox-0103.ini
     - tox -c tests/framework_pyramid/tox-0104.ini
     - tox -c tests/framework_tornado/tox-0301.ini
+    - tox -c tests/memcache_memcache/tox.ini
   :python:
     :python_version: 2.7
     :pip_requirements_file: requirements.txt

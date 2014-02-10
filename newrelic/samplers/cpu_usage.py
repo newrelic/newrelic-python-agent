@@ -6,7 +6,7 @@ usage.
 import os
 import time
 
-from ..common.system_info import logical_cpu_count
+from ..common.system_info import logical_processor_count
 from ..common.stopwatch import start_timer
 
 from .decorators import data_source_factory
@@ -37,7 +37,7 @@ class _CPUUsageDataSource(object):
         user_time = new_times[0] - self._times[0]
 
         elapsed_time = self._timer.restart_timer()
-        utilization = user_time / (elapsed_time*logical_cpu_count())
+        utilization = user_time / (elapsed_time*logical_processor_count())
 
         self._times = new_times
 

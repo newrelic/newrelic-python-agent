@@ -5,7 +5,8 @@ system, Python and hosting environment.
 
 import newrelic
 
-from ..common.system_info import cpu_count, total_memory
+from ..common.system_info import (total_physical_memory,
+    logical_processor_count, physical_processor_count)
 
 import sys
 import os
@@ -38,15 +39,13 @@ def environment_settings():
 
     # System information.
 
-    physical_cores, logical_cores = cpu_count()
-
     env.append(('Arch', platform.machine()))
     env.append(('OS', platform.system()))
     env.append(('OS version', platform.release()))
 
-    env.append(('Total Physical Memory (MB)', total_memory()))
-    env.append(('Logical Processors', logical_cores))
-    env.append(('Physical Processors', physical_cores))
+    env.append(('Total Physical Memory (MB)', total_physical_memory()))
+    env.append(('Logical Processors', logical_processor_count()))
+    env.append(('Physical Processors', physical_processor_count()))
 
     # Python information.
 

@@ -5,17 +5,38 @@ system or for the specific process the code is running in.
 
 import os
 import sys
-import multiprocessing
 import re
-from subprocess import Popen, PIPE
+import multiprocessing
+import subprocess
+
+try:
+    from subprocess import check_output as _execute_program
+except ImportError:
+    def _execute_program(*popenargs, **kwargs):
+        # Replicates check_output() implementation from Python 2.7+.
+        # Should only be used for Python 2.6.
+
+        if 'stdout' in kwargs:
+            raise ValueError(
+                    'stdout argument not allowed, it will be overridden.')
+        process = subprocess.Popen(stdout=subprocess.PIPE,
+                *popenargs, **kwargs)
+        output, unused_err = process.communicate()
+        retcode = process.poll()
+        if retcode:
+            cmd = kwargs.get("args")
+            if cmd is None:
+                cmd = popenargs[0]
+            raise subprocess.CalledProcessError(retcode, cmd, output=output)
+        return output
 
 try:
     import resource
 except ImportError:
     pass
 
-def logical_cpu_count():
-    """Returns the number of CPUs in the system.
+def logical_processor_count():
+    """Returns the number of logical processors in the system.
 
     """
 
@@ -61,72 +82,150 @@ def logical_cpu_count():
 
     return 1
 
-# TODO: This function is not used anymore. Remove.
-def memory_total():
-    """Returns the total physical memory available in the system.
+def _linux_physical_processor_count(filename=None):
+    # For Linux we can use information from '/proc/cpuinfo.
+
+    # A line in the file that starts with 'processor' marks the
+    # beginning of a section.
+    #
+    # Multi-core processors will have a 'processor' section for each
+    # core. There is usually a 'physical id' field and a 'cpu cores'
+    # field as well.  The 'physical id' field in each 'processor'
+    # section will have the same value for all cores in a physical
+    # processor. The 'cpu cores' field for each 'processor' section will
+    # provide the total number of cores for that physical processor.
+    # The 'cpu cores' field is duplicated, so only remember the last
+
+    filename = filename or '/proc/cpuinfo'
+
+    processors = 0
+    physical_cores = {}
+
+    try:
+        with open(filename, 'r') as fp:
+            physical_id = None
+            cores = None
+
+            for line in fp:
+                try:
+                    key, value = line.split(':')
+                    key = key.lower().strip()
+                    value = value.strip()
+
+                except ValueError:
+                    continue
+
+                if key == 'processor':
+                    processors += 1
+
+                    # If this is not the first processor section
+                    # and prior sections specified a physical ID
+                    # and number of cores, we want to remember
+                    # the number of cores corresponding to that
+                    # physical core. Note that we may see details
+                    # for the same phyiscal ID more than one and
+                    # thus we only end up remember the number of
+                    # cores from the last one we see.
+
+                    if cores and physical_id:
+                        physical_cores[physical_id] = cores
+
+                        physical_id = None
+                        cores = None
+
+                elif key == 'physical id':
+                    physical_id = value
+
+                elif key == 'cpu cores':
+                    cores = int(value)
+
+        # When we have reached the end of the file, we now need to save
+        # away the number of cores for the physical ID we saw in the
+        # last processor section.
+
+        if cores and physical_id:
+            physical_cores[physical_id] = cores
+
+    except Exception:
+        pass
+
+    return sum(physical_cores.values()) or processors or None
+
+def _darwin_physical_processor_count():
+    # For MacOS X we can use sysctl.
+
+    command = ['/usr/sbin/sysctl', '-n', 'hw.physicalcpu']
+
+    try:
+        return int(_execute_program(command, stderr=subprocess.PIPE))
+    except subprocess.CalledProcessError:
+        pass
+    except ValueError:
+        pass
+
+def physical_processor_count():
+    """Returns the number of physical processors in the system. If the
+    value cannot be determined, then None is returned.
 
     """
 
-    # For Linux we can determine it from the proc filesystem.
+    if sys.platform in ('linux', 'linux2'):
+        return _linux_physical_processor_count()
+    elif sys.platform == 'darwin':
+        return _darwin_physical_processor_count()
 
-    if sys.platform == 'linux2':
-        try:
-            parser = re.compile(r'^(?P<key>\S*):\s*(?P<value>\d*)\s*kB')
+def _linux_total_physical_memory(filename=None):
+    # For Linux we can use information from /proc/meminfo. Although the
+    # units is given in the file, it is always in kilobytes so we do not
+    # need to accomodate any other unit types beside 'kB'.
 
-            fp = None
+    filename = filename or '/proc/meminfo'
 
-            try:
-                fp = open('/proc/meminfo')
+    try:
+        parser = re.compile(r'^(?P<key>\S*):\s*(?P<value>\d*)\s*kB')
 
-                for line in fp.readlines():
-                    match = parser.match(line)
-                    if not match:
-                        continue
-                    key, value = match.groups(['key', 'value'])
-                    if key == 'MemTotal':
-                        memory_bytes = float(value) * 1024
-                        return memory_bytes / (1024*1024)
+        with open(filename, 'r') as fp:
+            for line in fp.readlines():
+                match = parser.match(line)
+                if not match:
+                    continue
+                key, value = match.groups(['key', 'value'])
+                if key == 'MemTotal':
+                    memory_bytes = float(value) * 1024
+                    return memory_bytes / (1024*1024)
 
-            except Exception:
-                pass
+    except Exception:
+        pass
 
-            finally:
-                if fp:
-                    fp.close()
+def _darwin_total_physical_memory():
+    # For MacOS X we can use sysctl. The value queried from sysctl is
+    # always bytes.
 
-        except IOError:
-            pass
+    command = ['/usr/sbin/sysctl', '-n', 'hw.memsize']
 
-    # For other platforms, how total system memory is calculated varies
-    # and can't always be done using just what is available in the
-    # Python standard library. Take a punt here and see if 'psutil' is
-    # available and use the value it generates for total memory. We
-    # simply ignore any exception that may occur because even though
-    # psutil may be available it can fail badly if used on a
-    # containerised Linux hosting service where they don't for example
-    # make the /proc filesystem available.
+    try:
+        return float(_execute_program(command,
+                stderr=subprocess.PIPE)) / (1024*1024)
+    except subprocess.CalledProcessError:
+        pass
+    except ValueError:
+        pass
 
-    # NOTE Although now ignore any exceptions which can result if psutil
-    # fails, in most cases never get here and if we do likely will still
-    # fail. Only case where might get used is Solaris and have so few
-    # deploys for that is likely not worth it at this point.
-
-    #try:
-    #    import psutil
-    #    return psutil.virtual_memory().total
-    #except Exception:
-    #    pass
-
-    return 0
-
-def memory_used():
-    """Returns the memory used in MBs. Calculated differently depending
-    on the platform and designed for informational purposes only.
+def total_physical_memory():
+    """Returns the total physical memory available in the system. Returns
+    None if the value cannot be calculated.
 
     """
 
-    # For Linux use the proc filesystem. Use 'statm' as easier
-    # to parse than 'status' file.
+    if sys.platform in ('linux', 'linux2'):
+        return _linux_total_physical_memory()
+    elif sys.platform == 'darwin':
+        return _darwin_total_physical_memory()
+
+def _linux_physical_memory_used(filename=None):
+    # For Linux we can use information from the proc filesystem. We use
+    # '/proc/statm' as it easier to parse than '/proc/status' file. The
+    # value queried from the file is always in bytes.
     #
     #   /proc/[number]/statm
     #          Provides information about memory usage, measured
@@ -142,28 +241,34 @@ def memory_used():
     #              data       data + stack
     #              dt         dirty pages (unused in Linux 2.6)
 
-    if sys.platform == 'linux2':
-        pid = os.getpid()
-        statm = '/proc/%d/statm' % pid
-        fp = None
+    filename = filename or '/proc/%d/statm' % os.getpid()
 
-        try:
-            fp = open(statm, 'r')
+    try:
+        with open(filename, 'r') as fp:
             rss_pages = float(fp.read().split()[1])
             memory_bytes = rss_pages * resource.getpagesize()
             return memory_bytes / (1024*1024)
-        except Exception:
-            pass
-        finally:
-            if fp:
-                fp.close()
 
-    # Try using getrusage() if we have the resource module
-    # available. The units returned can differ based on
-    # platform. Assume 1024 byte blocks as default. Some
-    # platforms such as Solaris will report zero for
-    # 'ru_maxrss', so we skip those.
+    except Exception:
+        return 0
 
+def physical_memory_used():
+    """Returns the amount of physical memory used in MBs. Returns 0 if
+    the value cannot be calculated.
+
+    """
+
+    # A value of 0 is returned by default rather than None as this value
+    # can be used in metrics. As such has traditionally always been
+    # returned as an integer to avoid checks at the point is used.
+
+    if sys.platform in ('linux', 'linux2'):
+        return _linux_physical_memory_used()
+
+    # For all other platforms try using getrusage() if we have the
+    # resource module available. The units returned can differ based on
+    # platform. Assume 1024 byte blocks as default. Some platforms such
+    # as Solaris will report zero for 'ru_maxrss', so we skip those.
 
     try:
         rusage = resource.getrusage(resource.RUSAGE_SELF)
@@ -181,159 +286,4 @@ def memory_used():
             memory_kbytes = float(rusage.ru_maxrss)
             return memory_kbytes / 1024
 
-    # For other platforms, how used memory is calculated varies
-    # and can't always be done using just what is available in
-    # the Python standard library. Take a punt here and see if
-    # 'psutil' is available and use the value it generates for
-    # total memory.
-
-    # NOTE This is currently not used as this isn't generally
-    # going to return resident memory usage (RSS) and what it
-    # does return can be very much greater than what one would
-    # expect. As a result it can be misleading/confusing and so
-    # figure it is best not to use it.
-
-    #try:
-    #    import psutil
-    #    memory_bytes = psutil.virtual_memory().used
-    #    return memory_bytes / (1024*1024)
-    #except ImportError, AttributeError:
-    #    pass
-
-    # Fallback to indicating no memory usage.
-
     return 0
-
-# Requirements: Capture the number of physical cores, number of logical
-# processors and total physical memory. When a value can't be reliably obtained
-# return 'null'
-#
-# Examples:
-#        Processor               Physical    Logical
-# 1 processor 1 core No HT          1           1
-# 1 processor 2 core No HT          2           2
-# 2 processor 2 core No HT          4           8
-# 1 processor 1 core with HT        1           2
-# 1 processor 2 core with HT        2           4
-# 2 processor 2 core with HT        4           8
-#
-# Linux - Parse a file
-# CPU : Parse /proc/cpuinfo
-# MEM : Parse /proc/meminfo
-#
-# OS X - Run a shell command
-# CPU : /usr/sbin/sysctl -n hw.physicalcpu
-# MEM : /usr/sbin/sysctl -n hw.memsize
-#
-# JSON Format for 'connect'
-# ["Logical Processors",8],["Physical Processors",4],["Total Physical Memory (MB)",8192.0]
-#
-
-LINUX_CPU = '/proc/cpuinfo'
-LINUX_MEM = '/proc/meminfo'
-
-DARWIN_CPU = '/usr/sbin/sysctl'
-DARWIN_MEM = '/usr/sbin/sysctl'
-
-def _extract_shell_results(*command):
-    """
-    Run a shell command and cast the output to an integer. Returns None on
-    failure.
-    """
-    output, err = Popen(command, stdout=PIPE, stderr=PIPE).communicate()
-    if not err:
-        try:
-            return int(output)
-        except ValueError:
-            return None
-
-class CpuInfo(object):
-    """
-    Handles the parsing of a cpuinfo file to obtain the number of physical
-    cores.
-    """
-    def __init__(self, filename=None):
-        self.filename = filename or '/proc/cpuinfo'
-        self.processors = 0
-        self.physical_cores = {}
-        self._reset()
-        self._parse_file()
-
-    def _reset(self):
-        self.physical_id = None
-        self.cores = None
-
-    def _parse_file(self):
-        # A line that starts with 'processor' marks the beginning of a
-        # section.
-        #
-        # Multi-core processors will have a 'processor' section for each core.
-        # There is usually a 'physical id' field and a 'cpu cores' field as
-        # well.  The 'physical id' field in each 'processor' section will have
-        # the same value for all cores in a physical processor. The 'cpu cores' field for each
-        # 'processor' section will provide the total number of cores for that
-        # physical processor.
-
-        try:
-            with open(self.filename) as f:
-                for original_line in f:
-                    line = original_line.lower()
-                    if line.startswith('processor'):
-                        self.processors += 1
-                        if (self.cores and self.physical_id):
-                            self.physical_cores[self.physical_id] = self.cores
-                            self._reset()
-                    elif line.startswith('physical id'):
-                        self.physical_id = line.split(':')[1]
-                    elif line.startswith('cpu cores'):
-                        self.cores = int(line.split(':')[1])
-        except:
-            pass
-
-    def number_of_cores(self):
-        return sum(self.physical_cores.values()) or self.processors or None
-
-def _parse_meminfo(meminfo):
-    # Parse /proc/meminfo for 'memtotal'. Return the result as an int (MB).
-
-    normalizer = {'kb': 1024, 'mb': 1}
-    try:
-        with open(meminfo) as f:
-            for line in f:
-                if line.lower().startswith('memtotal'):
-                    mem = line.split(":")[1]
-                    value, units = mem.split()
-                    return int(value)//normalizer[units.lower()]
-    except:
-        return None
-
-def cpu_count():
-    """
-    Return a tuple (physical_cores, logical_cores)
-    """
-    if os.path.isfile(LINUX_CPU):
-        cpu_info = CpuInfo(LINUX_CPU)
-        physical_cores = cpu_info.number_of_cores()
-    elif os.path.isfile(DARWIN_CPU):
-        command = (DARWIN_CPU, "-n", "hw.physicalcpu")
-        physical_cores = _extract_shell_results(*command)
-
-    logical_cores = logical_cpu_count()
-
-    return (physical_cores, logical_cores)
-
-def total_memory():
-    """
-    Return the size of RAM in MB.
-    """
-    ram = None
-    if os.path.isfile(DARWIN_MEM):
-        command = (DARWIN_CPU, "-n", "hw.memsize")
-        try:
-            ram = int(_extract_shell_results(*command)/(1024 * 1024))
-        except TypeError:
-            pass
-    elif os.path.isfile(LINUX_MEM):
-        ram = _parse_meminfo(LINUX_MEM)
-
-    return ram

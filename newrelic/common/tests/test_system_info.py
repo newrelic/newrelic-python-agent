@@ -1,39 +1,55 @@
-from ..system_info import CpuInfo, _parse_meminfo
 import os
+import pytest
 
-from ..system_info import logical_cpu_count, memory_total, memory_used
+from ..system_info import (logical_processor_count, physical_processor_count,
+        total_physical_memory, physical_memory_used,
+        _linux_physical_processor_count, _linux_total_physical_memory)
 
-def test_cpu_count():
-    assert (logical_cpu_count() >= 1)
+def test_logical_processor_count():
+    assert logical_processor_count() >= 1
 
-def test_memory_total():
-    assert (memory_total() >= 0)
+def test_physical_processor_count():
+    count = physical_processor_count()
 
-def test_memory_used():
-    assert (memory_used() >= 0)
+    assert count is None or count >= 0
 
-    if memory_total() > 0:
-        assert (memory_used() <= memory_total())
+def test_total_physical_memory():
+    assert total_physical_memory() >= 0
 
-HERE = os.path.dirname(__file__)
-def test_linux_cpu():
-    assert 1 == CpuInfo(HERE + '/cpuinfo_samples/1proc1coreNoHt.txt').number_of_cores()
-    assert 1 == CpuInfo(HERE + '/cpuinfo_samples/1proc1coreNoHtCentos.txt').number_of_cores()
-    assert 1 == CpuInfo(HERE + '/cpuinfo_samples/1proc1coreNoHtAws.txt').number_of_cores()
-    assert 1 == CpuInfo(HERE + '/cpuinfo_samples/1proc1coreWithHt.txt').number_of_cores()
-    assert 2 == CpuInfo(HERE + '/cpuinfo_samples/1proc2coreNoHt.txt').number_of_cores()
-    assert 4 == CpuInfo(HERE + '/cpuinfo_samples/1proc4coreNoHt.txt').number_of_cores()
-    assert 2 == CpuInfo(HERE + '/cpuinfo_samples/2proc1coreWithHt.txt').number_of_cores()
-    assert 4 == CpuInfo(HERE + '/cpuinfo_samples/2proc2coreNoHt.txt').number_of_cores()
-    assert 8 == CpuInfo(HERE + '/cpuinfo_samples/2proc4coreNoHt.txt').number_of_cores()
-    assert 1 == CpuInfo(HERE + '/cpuinfo_samples/1proc1coreNoHtARMv6.txt').number_of_cores()
-    assert 4 == CpuInfo(HERE + '/cpuinfo_samples/UnknownProc4coreUnknownHtVmwareCentOS.txt').number_of_cores()
-    assert None == CpuInfo(HERE + '/cpuinfo_samples/non-existent.txt').number_of_cores()
-    assert None == CpuInfo(HERE + '/cpuinfo_samples/malformed-file.txt').number_of_cores()
+def test_physical_memory_used():
+    assert physical_memory_used() >= 0
 
-def test_linux_ram():
-    assert 2012 == _parse_meminfo(HERE + '/cpuinfo_samples/meminfo.txt')
-    assert None == _parse_meminfo(HERE + '/cpuinfo_samples/non-exitent.txt')
-    assert None == _parse_meminfo(HERE + '/cpuinfo_samples/malformed-file.txt')
+    if total_physical_memory() > 0:
+        assert physical_memory_used() <= total_physical_memory()
 
+@pytest.mark.parametrize('filename,expected', [
+    ('1proc1coreNoHt.txt', 1),
+    ('1proc1coreNoHtCentos.txt', 1),
+    ('1proc1coreNoHtAws.txt', 1),
+    ('1proc1coreWithHt.txt', 1),
+    ('1proc2coreNoHt.txt', 2),
+    ('1proc4coreNoHt.txt', 4),
+    ('2proc1coreWithHt.txt', 2),
+    ('2proc2coreNoHt.txt', 4),
+    ('2proc4coreNoHt.txt', 8),
+    ('1proc1coreNoHtARMv6.txt', 1),
+    ('UnknownProc4coreUnknownHtVmwareCentOS.txt', 4),
+    ('malformed-file.txt', None),
+    ('non-existant-file.txt', None)])
+def test_linux_physical_processor_count(filename, expected):
+    here = os.path.dirname(__file__)
+    path = os.path.join(here, 'system_info', filename)
 
+    count = _linux_physical_processor_count(path)
+    assert count == expected
+
+@pytest.mark.parametrize('filename,expected', [
+    ('meminfo.txt', 2061052/1024.0),
+    ('malformed-file', None),
+    ('non-existant-file.txt', None)])
+def test_linux_total_physical_memory(filename, expected):
+    here = os.path.dirname(__file__)
+    path = os.path.join(here, 'system_info', filename)
+
+    value = _linux_total_physical_memory(path)
+    assert value == expected

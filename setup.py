@@ -3,6 +3,11 @@ from __future__ import print_function
 import sys
 import os
 
+python_version = sys.version_info[:2]
+
+assert python_version in ((2, 6), (2, 7)) or python_version >= (3, 3), \
+        'The New Relic Python agent only supports Python 2.6, 2.7 and 3.3+.'
+
 with_setuptools = False
 
 try:
@@ -42,7 +47,7 @@ else:
 
     package_version = open(version_file, 'r').read().strip()
 
-if sys.platform == 'win32' and sys.version_info[:2] > (2, 6):
+if sys.platform == 'win32' and python_version > (2, 6):
     build_ext_errors = (CCompilerError, DistutilsExecError,
             DistutilsPlatformError, IOError)
 else:

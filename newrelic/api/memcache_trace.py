@@ -25,7 +25,7 @@ class MemcacheTrace(TimeTrace):
 
 def MemcacheTraceWrapper(wrapped, command):
 
-    def _nr_wrapper_memcache_trace(wrapped, instance, args, kwargs):
+    def _nr_wrapper_memcache_trace_(wrapped, instance, args, kwargs):
         transaction = current_transaction()
 
         if transaction is None:
@@ -42,7 +42,7 @@ def MemcacheTraceWrapper(wrapped, command):
         with MemcacheTrace(transaction, _command):
             return wrapped(*args, **kwargs)
 
-    return FunctionWrapper(wrapped, _nr_wrapper_memcache_trace)
+    return FunctionWrapper(wrapped, _nr_wrapper_memcache_trace_)
 
 def memcache_trace(command):
     return functools.partial(MemcacheTraceWrapper, command=command)

@@ -42,7 +42,7 @@ else:
 
     package_version = open(version_file, 'r').read().strip()
 
-if sys.platform == 'win32' and sys.version_info > (2, 6):
+if sys.platform == 'win32' and sys.version_info[:2] > (2, 6):
     build_ext_errors = (CCompilerError, DistutilsExecError,
             DistutilsPlatformError, IOError)
 else:

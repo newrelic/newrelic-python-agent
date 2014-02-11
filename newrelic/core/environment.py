@@ -59,7 +59,11 @@ def environment_settings():
     env.append(('Python Prefix', sys.prefix))
     env.append(('Python Exec Prefix', sys.exec_prefix))
 
+    env.append(('Python Runtime', '.'.join(platform.python_version_tuple())))
+
+    env.append(('Python Implementation', platform.python_implementation()))
     env.append(('Python Version', sys.version))
+
     env.append(('Python Platform', sys.platform))
 
     env.append(('Python Max Unicode', sys.maxunicode))

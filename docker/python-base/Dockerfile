@@ -8,11 +8,13 @@ RUN apt-get install -y language-pack-en-base
 ENV LANG en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
 
+RUN apt-get update
+
 RUN apt-get install -y bzip2
 RUN apt-get install -y vim
 RUN apt-get install -y wget
 
-RUN apt-get update
+RUN apt-get install -y apache2-mpm-worker apache2-threaded-dev
 
 RUN apt-get install -y python-software-properties
 RUN add-apt-repository ppa:fkrull/deadsnakes

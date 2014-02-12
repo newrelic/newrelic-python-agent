@@ -1,8 +1,7 @@
 import unittest
 import functools
-import sqlite3
 import sys
-import os
+import datetime
 
 from collections import namedtuple
 
@@ -308,31 +307,16 @@ class TestCallableName(unittest.TestCase):
                     _module_fqdn('_class6._function1'))
 
     def test_extension_class_type(self):
-        is_pypy = hasattr(sys, 'pypy_version_info')
-        module = is_pypy and '_sqlite3' or 'sqlite3'
-
-        self.assertEqual(callable_name(sqlite3.Connection),
-                _module_fqdn('Connection', module))
+        self.assertEqual(callable_name(datetime.date),
+                _module_fqdn('date', 'datetime'))
 
     def test_extension_method_via_class(self):
-        is_pypy = hasattr(sys, 'pypy_version_info')
-        module = is_pypy and '_sqlite3' or 'sqlite3'
-
-        self.assertEqual(callable_name(sqlite3.Connection.__exit__),
-                _module_fqdn('Connection.__exit__', module))
+        self.assertEqual(callable_name(datetime.date.strftime),
+                _module_fqdn('date.strftime', 'datetime'))
 
     def test_extension_method_via_instance(self):
-        is_pypy = hasattr(sys, 'pypy_version_info')
-        module = is_pypy and '_sqlite3' or 'sqlite3'
-
-        db = os.path.join(os.path.dirname(__file__), 'object_names.db')
-        self.assertEqual(callable_name(sqlite3.Connection(db).__exit__),
-                _module_fqdn('Connection.__exit__', module))
-
-        try:
-            os.unlink(db)
-        except Exception:
-            pass
+        self.assertEqual(callable_name(datetime.date(200, 1, 1).strftime),
+                _module_fqdn('date.strftime', 'datetime'))
 
 if __name__ == '__main__':
     unittest.main()

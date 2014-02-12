@@ -1,5 +1,8 @@
 import sqlite3 as database
 import os
+import sys
+
+is_pypy = hasattr(sys, 'pypy_version_info')
 
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_database_trace_inputs)
@@ -18,11 +21,11 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Database/database_sqlite/insert', 1),
         ('Database/database_sqlite/update', 1),
         ('Database/database_sqlite/delete', 1),
-        ('Database/other/sql', 5)]
+        ('Database/other/sql', 6)]
 
 _test_execute_via_cursor_rollup_metrics = [
-        ('Database/all', 9),
-        ('Database/allOther', 9),
+        ('Database/all', 10),
+        ('Database/allOther', 10),
         ('Database/select', 1),
         ('Database/database_sqlite/select', 1),
         ('Database/insert', 1),
@@ -31,8 +34,19 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Database/database_sqlite/update', 1),
         ('Database/delete', 1),
         ('Database/database_sqlite/delete', 1),
-        ('Database/other', 5),
-        ('Database/other/sql', 5)]
+        ('Database/other', 6),
+        ('Database/other/sql', 6)]
+
+if is_pypy:
+    _test_execute_via_cursor_scoped_metrics.extend([
+        ('Function/_sqlite3:Connection.__exit__', 1)])
+    _test_execute_via_cursor_rollup_metrics.extend([
+        ('Function/_sqlite3:Connection.__exit__', 1)])
+else:
+    _test_execute_via_cursor_scoped_metrics.extend([
+        ('Function/sqlite3:Connection.__exit__', 1)])
+    _test_execute_via_cursor_rollup_metrics.extend([
+        ('Function/sqlite3:Connection.__exit__', 1)])
 
 @validate_transaction_metrics('test_database:test_execute_via_cursor',
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
@@ -71,11 +85,11 @@ _test_execute_via_connection_scoped_metrics = [
         ('Database/database_sqlite/insert', 1),
         ('Database/database_sqlite/update', 1),
         ('Database/database_sqlite/delete', 1),
-        ('Database/other/sql', 5)]
+        ('Database/other/sql', 6)]
 
 _test_execute_via_connection_rollup_metrics = [
-        ('Database/all', 9),
-        ('Database/allOther', 9),
+        ('Database/all', 10),
+        ('Database/allOther', 10),
         ('Database/select', 1),
         ('Database/database_sqlite/select', 1),
         ('Database/insert', 1),
@@ -84,8 +98,23 @@ _test_execute_via_connection_rollup_metrics = [
         ('Database/database_sqlite/update', 1),
         ('Database/delete', 1),
         ('Database/database_sqlite/delete', 1),
-        ('Database/other', 5),
-        ('Database/other/sql', 5)]
+        ('Database/other', 6),
+        ('Database/other/sql', 6)]
+
+if is_pypy:
+    _test_execute_via_connection_scoped_metrics.extend([
+        ('Function/_sqlite3:Connection.__enter__', 1),
+        ('Function/_sqlite3:Connection.__exit__', 1)])
+    _test_execute_via_connection_rollup_metrics.extend([
+        ('Function/_sqlite3:Connection.__enter__', 1),
+        ('Function/_sqlite3:Connection.__exit__', 1)])
+else:
+    _test_execute_via_connection_scoped_metrics.extend([
+        ('Function/sqlite3:Connection.__enter__', 1),
+        ('Function/sqlite3:Connection.__exit__', 1)])
+    _test_execute_via_connection_rollup_metrics.extend([
+        ('Function/sqlite3:Connection.__enter__', 1),
+        ('Function/sqlite3:Connection.__exit__', 1)])
 
 @validate_transaction_metrics('test_database:test_execute_via_connection',
         scoped_metrics=_test_execute_via_connection_scoped_metrics,
@@ -114,3 +143,41 @@ def test_execute_via_connection():
         connection.commit()
         connection.rollback()
         connection.commit()
+
+_test_rollback_on_exception_scoped_metrics = [
+        ('Function/_sqlite3:connect', 1),
+        ('Database/other/sql', 1)]
+
+_test_rollback_on_exception_rollup_metrics = [
+        ('Database/all', 1),
+        ('Database/allOther', 1),
+        ('Database/other', 1),
+        ('Database/other/sql', 1)]
+
+if is_pypy:
+    _test_rollback_on_exception_scoped_metrics.extend([
+        ('Function/_sqlite3:Connection.__enter__', 1),
+        ('Function/_sqlite3:Connection.__exit__', 1)])
+    _test_rollback_on_exception_rollup_metrics.extend([
+        ('Function/_sqlite3:Connection.__enter__', 1),
+        ('Function/_sqlite3:Connection.__exit__', 1)])
+else:
+    _test_rollback_on_exception_scoped_metrics.extend([
+        ('Function/sqlite3:Connection.__enter__', 1),
+        ('Function/sqlite3:Connection.__exit__', 1)])
+    _test_rollback_on_exception_rollup_metrics.extend([
+        ('Function/sqlite3:Connection.__enter__', 1),
+        ('Function/sqlite3:Connection.__exit__', 1)])
+
+@validate_transaction_metrics('test_database:test_rollback_on_exception',
+        scoped_metrics=_test_rollback_on_exception_scoped_metrics,
+        rollup_metrics=_test_rollback_on_exception_rollup_metrics,
+        background_task=True)
+@validate_database_trace_inputs(execute_params_type=tuple)
+@background_task()
+def test_rollback_on_exception():
+    try:
+        with database.connect(DATABASE_NAME) as connection:
+            raise RuntimeError('error')
+    except RuntimeError:
+        pass

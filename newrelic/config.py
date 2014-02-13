@@ -916,14 +916,6 @@ def _process_function_trace_configuration():
             function = _config_object.get(section, 'function')
             (module, object_path) = function.split(':', 1)
 
-            # FIXME Temporary work around to exclude Django stuff
-            # that was given as example in early agent configuration
-            # file but now being included by default.
-
-            if function in ['django.template:NodeList.render_node',
-                    'django.template.debug:DebugNodeList.render_node']:
-                continue
-
             name = None
             group = 'Function'
 

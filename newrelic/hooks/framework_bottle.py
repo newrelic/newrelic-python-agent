@@ -2,10 +2,12 @@
 
 """
 
+import functools
+
 from newrelic.agent import (wrap_function_trace, wrap_out_function,
     wrap_wsgi_application, function_wrapper, current_transaction,
     FunctionTrace, callable_name, ignore_status_code, ObjectProxy,
-    FunctionTraceWrapper, wrap_object_attribute)
+    FunctionTraceWrapper, wrap_object_attribute, wrap_function_wrapper)
 
 module_bottle = None
 
@@ -52,7 +54,6 @@ def output_wrapper_Route_make_callback(callback):
     return callback_wrapper(callback)
 
 class proxy_Bottle_error_handler(ObjectProxy):
-
     # This proxy wraps the error_handler attribute of the Bottle class.
     # The attribute is a dictionary of handlers for HTTP status codes.
     # We specifically override the get() method of the dictionary so
@@ -82,6 +83,22 @@ class proxy_Bottle_error_handler(ObjectProxy):
 
         return handler or default
 
+def wrapper_auth_basic(wrapped, instance, args, kwargs):
+    # Bottle has a bug whereby functools.wraps() is not used on the
+    # nested wrapper function in the implementation of auth_basic()
+    # decorator. We apply it ourself to try and workaround the issue.
+    # Note that this is dependent though on the agent having been
+    # initialised before the auth_basic() decorator is used. The issue
+    # exists in bottle up to version 0.12.3, but shouldn't matter that
+    # we reapply wraps() even in newer versions which address issue.
+
+    decorator = wrapped(*args, **kwargs)
+
+    def _decorator(func):
+        return functools.wraps(func)(decorator(func))
+
+    return _decorator
+
 def instrument_bottle(module):
     global module_bottle
     module_bottle = module
@@ -108,6 +125,9 @@ def instrument_bottle(module):
 
     wrap_object_attribute(module, 'Bottle.error_handler',
             proxy_Bottle_error_handler)
+
+    if hasattr(module, 'auth_basic'):
+        wrap_function_wrapper(module, 'auth_basic', wrapper_auth_basic)
 
     if hasattr(module, 'SimpleTemplate'):
         wrap_function_trace(module, 'SimpleTemplate.render')

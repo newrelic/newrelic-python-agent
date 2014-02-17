@@ -68,7 +68,15 @@ def _module_name(object):
 
     # An exception to that is builtins or any types which are
     # implemented in C code. For that we need to grab the module
-    # name from the __class__.
+    # name from the __class__. In doing this though, we need to
+    # ensure we check for case of a bound method. In that case
+    # we need to grab the module from the class of the instance
+    # to which the method is bound.
+
+    if mname is None:
+        self = getattr(object, '__self__', None)
+        if self is not None and hasattr(self, '__class__'):
+            mname = getattr(self.__class__, '__module__', None)
 
     if mname is None and hasattr(object, '__class__'):
         mname = getattr(object.__class__, '__module__', None)

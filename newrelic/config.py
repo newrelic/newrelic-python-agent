@@ -916,14 +916,6 @@ def _process_function_trace_configuration():
             function = _config_object.get(section, 'function')
             (module, object_path) = function.split(':', 1)
 
-            # FIXME Temporary work around to exclude Django stuff
-            # that was given as example in early agent configuration
-            # file but now being included by default.
-
-            if function in ['django.template:NodeList.render_node',
-                    'django.template.debug:DebugNodeList.render_node']:
-                continue
-
             name = None
             group = 'Function'
 
@@ -1792,6 +1784,10 @@ def _process_module_builtin_defaults():
     _process_module_definition('pyramid.config.views',
             'newrelic.hooks.framework_pyramid',
             'instrument_pyramid_config_views')
+
+    _process_module_definition('cornice.service',
+            'newrelic.hooks.component_cornice',
+            'instrument_cornice_service')
 
     #_process_module_definition('twisted.web.server',
     #        'newrelic.hooks.framework_twisted',

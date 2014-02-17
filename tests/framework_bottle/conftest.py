@@ -28,3 +28,8 @@ def session_initialization(code_coverage, collector_agent_registration):
 @pytest.fixture(scope='function')
 def requires_data_collector(collector_available_fixture):
     pass
+
+@pytest.fixture(scope='function')
+def target_application():
+    import _target_application
+    return _target_application.target_application

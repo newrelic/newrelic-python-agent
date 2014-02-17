@@ -1,5 +1,7 @@
 import unittest
 import functools
+import sys
+import datetime
 
 from collections import namedtuple
 
@@ -303,6 +305,18 @@ class TestCallableName(unittest.TestCase):
             # Cannot work out nested contexts for Python 2.
             self.assertEqual(callable_name(_class5._class6()._function1),
                     _module_fqdn('_class6._function1'))
+
+    def test_extension_class_type(self):
+        self.assertEqual(callable_name(datetime.date),
+                _module_fqdn('date', 'datetime'))
+
+    def test_extension_method_via_class(self):
+        self.assertEqual(callable_name(datetime.date.strftime),
+                _module_fqdn('date.strftime', 'datetime'))
+
+    def test_extension_method_via_instance(self):
+        self.assertEqual(callable_name(datetime.date(200, 1, 1).strftime),
+                _module_fqdn('date.strftime', 'datetime'))
 
 if __name__ == '__main__':
     unittest.main()

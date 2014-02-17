@@ -92,7 +92,7 @@ create_docker_file()
 FROM $TEST_IMAGE_NAME
 ADD . /data
 RUN chown -R guest.users /data
-RUN chmod 0775 /data
+RUN chmod 0755 /data
 USER guest
 ENV HOME /home/guest
 VOLUME /data
@@ -135,6 +135,7 @@ launch_remote_command()
 
     CONTAINER_ID=$(docker run -d -name $DATA_IMAGE_NAME \
         -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
+        -link packnsend-memcached:memcached \
         $DATA_IMAGE_NAME /data/packnsend-remote "$@")
 
     STATUS=$(time docker wait $CONTAINER_ID)
@@ -158,6 +159,7 @@ launch_remote_command()
 
         docker run -t -i -rm -u guest -volumes-from $CONTAINER_ID \
             -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
+            -link packnsend-memcached:memcached \
             $TEST_IMAGE_NAME bash
     fi
 }
@@ -172,6 +174,7 @@ launch_remote_shell()
 
     docker run -t -i -rm -name $DATA_IMAGE_NAME \
         -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
+        -link packnsend-memcached:memcached \
         $DATA_IMAGE_NAME bash
 }
 
@@ -183,6 +186,10 @@ create_docker_base_images()
 
     (cd $ROOT_DIRECTORY; docker build -rm -t python-base docker/python-base)
 
+    echo "Image: memcached"
+
+    (cd $ROOT_DIRECTORY; docker build -rm -t memcached docker/memcached)
+
     echo "Image: gearmand"
 
     (cd $ROOT_DIRECTORY; docker build -rm -t gearmand docker/gearmand)
@@ -191,6 +198,10 @@ create_docker_base_images()
 start_application_services()
 {
     echo "Start application services."
+
+    echo "Application: memcached"
+
+    docker run -d -name packnsend-memcached memcached
 
     echo "Application: gearmand"
 
@@ -206,17 +217,27 @@ stop_application_services()
     docker stop -t=10 packnsend-gearmand
     docker kill packnsend-gearmand
     docker rm packnsend-gearmand
+
+    echo "Application: memcached"
+
+    docker stop -t=10 packnsend-memcached
+    docker kill packnsend-memcached
+    docker rm packnsend-memcached
 }
 
 delete_docker_base_images()
 {
     echo "Removing docker base images."
 
-    echo "Image: python-base"
+    echo "Image: gearmand"
 
     docker rmi gearmand
 
-    echo "Image: gearmand"
+    echo "Image: memcached"
+
+    docker rmi memcached
+
+    echo "Image: python-base"
 
     docker rmi python-base
 }

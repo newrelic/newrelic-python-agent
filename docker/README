@@ -27,18 +27,35 @@ The boot2docker project can be found at:
 * https://github.com/steeve/boot2docker
 
 Skip the initial instructions and follow the instructions for MacOS X in
-that page at:
+that page at, but first read the note below.
 
 * https://github.com/steeve/boot2docker#init-script-osx-and-linux
 
-Note that because we want to build new images and that can take a lot of
-disk space within the image run by boot2docker, you need to ensure you
-repartition the disk drive as explained in section 'Hard Disk
-Persistence using Virtualbox' of the FAQ section of the document.
+Note that if you are using a New Relic managed MacBook, then CrashPlan
+runs on the same port as the docker service wants to use. As a result you
+will need to override what port the docker service is exported on from
+the virtual machine.
 
-If you ever delete the boot2docker vm and iso and download boot2docker
-again to start over in order to upgrade, you will need to do this each
-time.
+To do this, before even running boot2docker, you need to create in your
+home directory a subdirectory called '.boot2docker' and create within that
+the file 'profile'. In that file add:
+
+    DOCKER_PORT=14243
+
+    VM_DISK=$HOME/.boot2docker/boot2docker.vmdk
+    BOOT2DOCKER_ISO=$HOME/.boot2docker/boot2docker.iso
+
+Even if not needing to override the docker service port, set the locations
+for the boot2docker VM image and ISO so they are located in this directory
+also.
+
+Now follow the steps to create the boot2docker instance. Copying the
+boot2docker script into your PATH somewhere. A good idea might be to
+actually copy it into $HOME/.boot2docker as well and then add:
+
+    export PATH="$HOME/.boot2docker:$PATH"
+
+into your .bash_profile script.
 
 Once you have boot2docker running you need the MacOS X binary for the docker
 client. You can download it from the docker site, ensuring you make it
@@ -47,8 +64,22 @@ executable.
     wget https://get.docker.io/builds/Darwin/x86_64/docker-latest -O docker
     chmod +x docker
 
+This also can be placed into $HOME/.boot2docker if you added that directory
+to PATH.
+
 Before using it or the 'packnsend' script, you need to set and export
-DOCKER_HOST environment variable to 'localhost'. To test it works run:
+DOCKER_HOST environment variable to 'localhost'.
+
+    export DOCKER_HOST="localhost"
+    
+If you had to override the docker service port however, include the port
+as part of the DOCKER_HOST environment variable:
+
+    export DOCKER_HOST="localhost:14243"
+
+Set this permanently in your .bash_profile as well.
+
+To test it works run:
 
     docker version
 

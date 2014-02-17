@@ -1,11 +1,20 @@
-FROM ubuntu:precise
+FROM ubuntu:12.04
 MAINTAINER Graham Dumpleton <grahamd@newrelic.com>
 
 RUN adduser --system --shell `which bash` guest
 
+RUN apt-get install -y language-pack-en-base
+
+ENV LANG en_US.UTF-8
+ENV LC_ALL en_US.UTF-8
+
+RUN apt-get update
+
 RUN apt-get install -y bzip2
 RUN apt-get install -y vim
 RUN apt-get install -y wget
+
+RUN apt-get install -y apache2-mpm-worker apache2-threaded-dev
 
 RUN apt-get install -y python-software-properties
 RUN add-apt-repository ppa:fkrull/deadsnakes
@@ -27,4 +36,4 @@ RUN python ez_setup.py
 RUN wget https://raw.github.com/pypa/pip/master/contrib/get-pip.py
 RUN python get-pip.py
 
-RUN pip install 'pip<1.5' 'virtualenv<1.11' tox
+RUN pip install 'pip<1.5' 'virtualenv<1.11' 'tox<1.7.0'

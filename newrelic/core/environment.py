@@ -5,17 +5,12 @@ system, Python and hosting environment.
 
 import newrelic
 
-from ..common.system_info import cpu_count, memory_total
+from ..common.system_info import (total_physical_memory,
+    logical_processor_count, physical_processor_count)
 
 import sys
 import os
 import platform
-import re
-
-try:
-    import multiprocessing
-except ImportError:
-    pass
 
 try:
     import pkg_resources
@@ -47,8 +42,10 @@ def environment_settings():
     env.append(('Arch', platform.machine()))
     env.append(('OS', platform.system()))
     env.append(('OS version', platform.release()))
-    env.append(('CPU Count', cpu_count()))
-    env.append(('System Memory', memory_total()))
+
+    env.append(('Total Physical Memory (MB)', total_physical_memory()))
+    env.append(('Logical Processors', logical_processor_count()))
+    env.append(('Physical Processors', physical_processor_count()))
 
     # Python information.
 
@@ -62,7 +59,11 @@ def environment_settings():
     env.append(('Python Prefix', sys.prefix))
     env.append(('Python Exec Prefix', sys.exec_prefix))
 
+    env.append(('Python Runtime', '.'.join(platform.python_version_tuple())))
+
+    env.append(('Python Implementation', platform.python_implementation()))
     env.append(('Python Version', sys.version))
+
     env.append(('Python Platform', sys.platform))
 
     env.append(('Python Max Unicode', sys.maxunicode))

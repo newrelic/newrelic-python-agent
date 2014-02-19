@@ -1,5 +1,5 @@
-from newrelic.agent import (wrap_object, ObjectProxy, wrap_function_wrapper,
-        register_database_client)
+from newrelic.agent import (current_transaction, wrap_object, DatabaseTrace,
+        register_database_client, FunctionTrace, callable_name)
 
 from .database_dbapi2 import (ConnectionWrapper as DBAPI2ConnectionWrapper,
         ConnectionFactory as DBAPI2ConnectionFactory)
@@ -7,7 +7,10 @@ from .database_dbapi2 import (ConnectionWrapper as DBAPI2ConnectionWrapper,
 class ConnectionWrapper(DBAPI2ConnectionWrapper):
 
     def __enter__(self):
-        cursor = self.__wrapped__.__enter__()
+        transaction = current_transaction()
+        name = callable_name(self.__wrapped__.__enter__)
+        with FunctionTrace(transaction, name):
+            cursor = self.__wrapped__.__enter__()
 
         # The __enter__() method of original connection object returns
         # a new cursor instance for use with 'as' assignment. We need
@@ -16,6 +19,19 @@ class ConnectionWrapper(DBAPI2ConnectionWrapper):
 
         return self.__cursor_wrapper__(cursor, self._nr_dbapi2_module,
                 self._nr_connect_params, None)
+
+    def __exit__(self, exc, value, tb):
+        transaction = current_transaction()
+        name = callable_name(self.__wrapped__.__exit__)
+        with FunctionTrace(transaction, name):
+            if exc is None:
+                with DatabaseTrace(transaction, 'COMMIT',
+                        self._nr_dbapi2_module):
+                    return self.__wrapped__.__exit__(exc, value, tb)
+            else:
+                with DatabaseTrace(transaction, 'ROLLBACK',
+                        self._nr_dbapi2_module):
+                    return self.__wrapped__.__exit__(exc, value, tb)
 
 class ConnectionFactory(DBAPI2ConnectionFactory):
 

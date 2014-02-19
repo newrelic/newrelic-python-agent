@@ -21,15 +21,17 @@ DATABASE_PORT = int(os.environ.get('TDDIUM_DB_MYSQL_PORT', '3306'))
 
 _test_execute_via_cursor_scoped_metrics = [
         ('Function/MySQLdb:Connect', 1),
+        ('Function/MySQLdb.connections:Connection.__enter__', 1),
+        ('Function/MySQLdb.connections:Connection.__exit__', 1),
         ('Database/database_mysqldb/select', 1),
         ('Database/database_mysqldb/insert', 1),
         ('Database/database_mysqldb/update', 1),
         ('Database/database_mysqldb/delete', 1),
-        ('Database/other/sql', 5)]
+        ('Database/other/sql', 6)]
 
 _test_execute_via_cursor_rollup_metrics = [
-        ('Database/all', 9),
-        ('Database/allOther', 9),
+        ('Database/all', 10),
+        ('Database/allOther', 10),
         ('Database/select', 1),
         ('Database/database_mysqldb/select', 1),
         ('Database/insert', 1),
@@ -38,8 +40,8 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Database/database_mysqldb/update', 1),
         ('Database/delete', 1),
         ('Database/database_mysqldb/delete', 1),
-        ('Database/other', 5),
-        ('Database/other/sql', 5)]
+        ('Database/other', 6),
+        ('Database/other/sql', 6)]
 
 @validate_transaction_metrics('test_database:test_execute_via_cursor',
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
@@ -80,11 +82,11 @@ _test_connect_using_alias_scoped_metrics = [
         ('Database/database_mysqldb/insert', 1),
         ('Database/database_mysqldb/update', 1),
         ('Database/database_mysqldb/delete', 1),
-        ('Database/other/sql', 5)]
+        ('Database/other/sql', 6)]
 
 _test_connect_using_alias_rollup_metrics = [
-        ('Database/all', 9),
-        ('Database/allOther', 9),
+        ('Database/all', 10),
+        ('Database/allOther', 10),
         ('Database/select', 1),
         ('Database/database_mysqldb/select', 1),
         ('Database/insert', 1),
@@ -93,8 +95,8 @@ _test_connect_using_alias_rollup_metrics = [
         ('Database/database_mysqldb/update', 1),
         ('Database/delete', 1),
         ('Database/database_mysqldb/delete', 1),
-        ('Database/other', 5),
-        ('Database/other/sql', 5)]
+        ('Database/other', 6),
+        ('Database/other/sql', 6)]
 
 @validate_transaction_metrics('test_database:test_connect_using_alias',
         scoped_metrics=_test_connect_using_alias_scoped_metrics,
@@ -128,3 +130,30 @@ def test_connect_using_alias():
     connection.commit()
     connection.rollback()
     connection.commit()
+
+_test_rollback_on_exception_scoped_metrics = [
+        ('Function/MySQLdb:Connect', 1),
+        ('Function/MySQLdb.connections:Connection.__enter__', 1),
+        ('Function/MySQLdb.connections:Connection.__exit__', 1),
+        ('Database/other/sql', 1)]
+
+_test_rollback_on_exception_rollup_metrics = [
+        ('Database/all', 1),
+        ('Database/allOther', 1),
+        ('Database/other', 1),
+        ('Database/other/sql', 1)]
+
+@validate_transaction_metrics('test_database:test_rollback_on_exception',
+        scoped_metrics=_test_rollback_on_exception_scoped_metrics,
+        rollup_metrics=_test_rollback_on_exception_rollup_metrics,
+        background_task=True)
+@validate_database_trace_inputs(execute_params_type=tuple)
+@background_task()
+def test_rollback_on_exception():
+    try:
+        with MySQLdb.Connect(db=DATABASE_NAME, user=DATABASE_USER,
+                passwd=DATABASE_PASSWORD, host=DATABASE_HOST,
+                port=DATABASE_PORT) as connection:
+            raise RuntimeError('error')
+    except RuntimeError:
+        pass

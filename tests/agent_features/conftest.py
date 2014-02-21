@@ -17,7 +17,7 @@ _default_settings = {
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
-        app_name='Python Agent Test (agent_browser)',
+        app_name='Python Agent Test (agent_features)',
         default_settings=_default_settings)
 
 @pytest.fixture(scope='session')

@@ -1,5 +1,4 @@
 import webtest
-import threading
 import json
 
 from testing_support.fixtures import override_application_settings

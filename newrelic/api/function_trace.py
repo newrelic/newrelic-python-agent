@@ -11,8 +11,18 @@ class FunctionTrace(TimeTrace):
     def __init__(self, transaction, name, group=None, label=None, params=None):
         super(FunctionTrace, self).__init__(transaction)
 
+        # Deal with users who use group wrongly and add a leading
+        # slash on it. This will cause an empty segment which we
+        # want to avoid. In that case insert back in Function as
+        # the leading segment.
+
+        group = group or 'Function'
+
+        if group.startswith('/'):
+            group = 'Function' + group
+
         self.name = name
-        self.group = group or 'Function'
+        self.group = group
         self.label = label
         self.params = params
 

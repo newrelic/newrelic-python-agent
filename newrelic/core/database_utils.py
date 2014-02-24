@@ -360,16 +360,17 @@ def _parse_target(sql, dbapi2_module, operation):
     return parse and parse(sql, dbapi2_module) or ''
 
 # The regular expression for matching the explain plan needs to give
-# precedence to replacing any quoted string value. We will swap these
+# precedence to replacing any typed string value. We will swap these
 # with a token value. Next up we want to match anything we want to keep.
 # Finally match all remaining numeric values. These we will also swap
 # with a token value.
 
 _explain_plan_postgresql_re = re.compile(
-    r"((?P<swap_quoted_string>'(?:[^']|'')*')|"
-    r"(?P<keep_cost_analysis>\(cost=[^)]*\))|"
-    r"(?P<keep_sub_plan_ref>\bSubPlan\w+\d+\b)|"
-    r"(?P<swap_numeric_value>\b[-+]?\d*\.?\d+([eE][-+]?\d+)?\b))")
+    r"""((?P<typed_string>'([^']|'')*'(?P<type>::("\w+"|\w+)))|"""
+    r"""(?P<double_quotes>"[^"]*")|"""
+    r"""(?P<cost_analysis>\(cost=[^)]*\))|"""
+    r"""(?P<sub_plan_ref>\bSubPlan\s+\d+\b)|"""
+    r"""(?P<numeric_value>\b[-+]?\d*\.?\d+([eE][-+]?\d+)?\b))""")
 
 def _obfuscate_explain_plan_postgresql(columns, rows):
     # Only deal with where we get back the one expected column. If we
@@ -402,9 +403,11 @@ def _obfuscate_explain_plan_postgresql(columns, rows):
 
         for name, value in list(matchobj.groupdict().items()):
             if value is not None:
-                if name.startswith('keep_'):
-                    return value
-                return '?'
+                if name == 'typed_string':
+                    return '?%s' % matchobj.group('type')
+                elif name == 'numeric_value':
+                    return '?'
+                return value
 
     text = _explain_plan_postgresql_re.sub(replacement, text)
 

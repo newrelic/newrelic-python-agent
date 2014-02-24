@@ -359,18 +359,76 @@ def _parse_target(sql, dbapi2_module, operation):
     parse = _operation_table.get(operation, None)
     return parse and parse(sql, dbapi2_module) or ''
 
+# The regular expression for matching the explain plan needs to give
+# precedence to replacing any quoted string value. We will swap these
+# with a token value. Next up we want to match anything we want to keep.
+# Finally match all remaining numeric values. These we will also swap
+# with a token value.
+
+_explain_plan_postgresql_re = re.compile(
+    r"((?P<swap_quoted_string>'(?:[^']|'')*')|"
+    r"(?P<keep_cost_analysis>\(cost=[^)]*\))|"
+    r"(?P<keep_sub_plan_ref>\bSubPlan\w+\d+\b)|"
+    r"(?P<swap_numeric_value>\b[-+]?\d*\.?\d+([eE][-+]?\d+)?\b))")
+
+def _obfuscate_explain_plan_postgresql(columns, rows):
+    # Only deal with where we get back the one expected column. If we
+    # get more than one column just ignore the whole explain plan. Need
+    # to confirm whether we would always definitely only get one column.
+    # The reason we do this is that swapping the value of quoted strings
+    # could result in the collapsing of multiple rows and in that case
+    # not sure what we would do with values from any other columns.
+
+    if len(columns) != 1:
+        return None
+
+    # We need to join together all the separate rows of the explain plan
+    # back together again. This is because an embedded newline within
+    # any text quoted from the original SQL can result in that line of
+    # the explain plan being split across multiple rows.
+
+    text = '\n'.join(item[0] for item in rows)
+
+    # Now need to perform the replacements on the complete text of the
+    # explain plan.
+
+    def replacement(matchobj):
+        # The replacement function is called for each match. The group
+        # dict of the match object will have a key corresponding to all
+        # groups that could have matched, but only the first encountered
+        # based on order of sub patterns will have non None value. We
+        # use the name of the sub pattern to determine if we keep the
+        # original value or swap it with our token value.
+
+        for name, value in list(matchobj.groupdict().items()):
+            if value is not None:
+                if name.startswith('keep_'):
+                    return value
+                return '?'
+
+    text = _explain_plan_postgresql_re.sub(replacement, text)
+
+    # Now regenerate the list of rows by splitting again on newline.
+
+    rows = [(_,) for _ in text.split('\n')]
+
+    return columns, rows
+
 _explain_plan_table = {
-    'MySQLdb': ('EXPLAIN', ('select',)),
+    'MySQLdb': ('EXPLAIN', ('select',), None),
     'ibm_db_dbi': ('EXPLAIN',
-            ('select', 'insert', 'update', 'delete')),
-    'oursql': ('EXPLAIN', ('select',)),
-    'pymysql': ('EXPLAIN', ('select',)),
+            ('select', 'insert', 'update', 'delete'), None),
+    'oursql': ('EXPLAIN', ('select',), None),
+    'pymysql': ('EXPLAIN', ('select',), None),
     'postgresql.interface.proboscis.dbapi2': ('EXPLAIN',
-            ('select', 'insert', 'update', 'delete')),
+            ('select', 'insert', 'update', 'delete'),
+            _obfuscate_explain_plan_postgresql),
     'psycopg2': ('EXPLAIN',
-            ('select', 'insert', 'update', 'delete')),
+            ('select', 'insert', 'update', 'delete'),
+            _obfuscate_explain_plan_postgresql),
     'psycopg2ct': ('EXPLAIN',
-            ('select', 'insert', 'update', 'delete')),
+            ('select', 'insert', 'update', 'delete'),
+            _obfuscate_explain_plan_postgresql),
     'sqlite3.dbapi2': ('EXPLAIN QUERY PLAN',
             ('select', 'insert', 'update', 'delete')),
 }
@@ -391,13 +449,17 @@ def _explain_plan(sql, dbapi2_module, connect_params, cursor_params,
         return None
 
     query = None
+    obfuscator = None
 
     command = getattr(dbapi2_module, '_nr_explain_query', None)
 
     if command:
         operations = dbapi2_module._nr_explain_stmts
+        if dbapi2_module._nr_database_name == 'PostgreSQL':
+            obfuscator = _obfuscate_explain_plan_postgresql
     else:
-        command, operations = _explain_plan_table.get(name, (None, None))
+        command, operations, obfuscator = _explain_plan_table.get(
+            name, (None, None, None))
 
     if not command:
         return None
@@ -438,6 +500,8 @@ def _explain_plan(sql, dbapi2_module, connect_params, cursor_params,
                 rows = cursor.fetchall()
                 if not columns and not rows:
                     return None
+                if obfuscator:
+                    columns, rows = obfuscator(columns, rows)
                 return (columns, rows)
             except Exception:
                 pass

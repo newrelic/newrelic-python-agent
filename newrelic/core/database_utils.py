@@ -368,8 +368,11 @@ def _parse_target(sql, dbapi2_module, operation):
 _explain_plan_postgresql_re = re.compile(
     r"""((?P<typed_string>'([^']|'')*'(?P<type>::("\w+"|\w+)))|"""
     r"""(?P<double_quotes>"[^"]*")|"""
+    r"""(?P<single_quotes>'([^']|'')*')|"""
     r"""(?P<cost_analysis>\(cost=[^)]*\))|"""
     r"""(?P<sub_plan_ref>\bSubPlan\s+\d+\b)|"""
+    r"""(?P<init_plan_ref>\bInitPlan\s+\d+\b)|"""
+    r"""(?P<dollar_var_ref>\$\d+\b)|"""
     r"""(?P<numeric_value>\b[-+]?\d*\.?\d+([eE][-+]?\d+)?\b))""")
 
 def _obfuscate_explain_plan_postgresql(columns, rows):
@@ -405,7 +408,7 @@ def _obfuscate_explain_plan_postgresql(columns, rows):
             if value is not None:
                 if name == 'typed_string':
                     return '?%s' % matchobj.group('type')
-                elif name == 'numeric_value':
+                elif name in ('numeric_value', 'single_quotes'):
                     return '?'
                 return value
 

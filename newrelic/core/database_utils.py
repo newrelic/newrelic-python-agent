@@ -366,14 +366,35 @@ def _parse_target(sql, dbapi2_module, operation):
 # with a token value.
 
 _explain_plan_postgresql_re = re.compile(
-    r"""((?P<typed_string>'([^']|'')*'(?P<type>::("\w+"|\w+)))|"""
+    r"""((?P<typed_string>'([^']|'')*'(?P<_type_>::("\w+"|\w+)))|"""
     r"""(?P<double_quotes>"[^"]*")|"""
     r"""(?P<single_quotes>'([^']|'')*')|"""
     r"""(?P<cost_analysis>\(cost=[^)]*\))|"""
     r"""(?P<sub_plan_ref>\bSubPlan\s+\d+\b)|"""
     r"""(?P<init_plan_ref>\bInitPlan\s+\d+\b)|"""
     r"""(?P<dollar_var_ref>\$\d+\b)|"""
-    r"""(?P<numeric_value>\b[-+]?\d*\.?\d+([eE][-+]?\d+)?\b))""")
+    r"""(?P<numeric_value>(?<![\w])[-+]?\d*\.?\d+([eE][-+]?\d+)?\b))""")
+
+def _obfuscate_explain_plan_postgresql_substitute(text):
+    # Perform substitutions for the explain plan on the text string.
+
+    def replacement(matchobj):
+        # The replacement function is called for each match. The group
+        # dict of the match object will have a key corresponding to all
+        # groups that could have matched, but only the first encountered
+        # based on order of sub patterns will have non None value. We
+        # use the name of the sub pattern to determine if we keep the
+        # original value or swap it with our token value.
+
+        for name, value in list(matchobj.groupdict().items()):
+            if value is not None and not name.startswith('_'):
+                if name == 'typed_string':
+                    return '?%s' % matchobj.group('_type_')
+                elif name in ('numeric_value', 'single_quotes'):
+                    return '?'
+                return value
+
+    return _explain_plan_postgresql_re.sub(replacement, text)
 
 def _obfuscate_explain_plan_postgresql(columns, rows):
     # Only deal with where we get back the one expected column. If we
@@ -396,23 +417,7 @@ def _obfuscate_explain_plan_postgresql(columns, rows):
     # Now need to perform the replacements on the complete text of the
     # explain plan.
 
-    def replacement(matchobj):
-        # The replacement function is called for each match. The group
-        # dict of the match object will have a key corresponding to all
-        # groups that could have matched, but only the first encountered
-        # based on order of sub patterns will have non None value. We
-        # use the name of the sub pattern to determine if we keep the
-        # original value or swap it with our token value.
-
-        for name, value in list(matchobj.groupdict().items()):
-            if value is not None:
-                if name == 'typed_string':
-                    return '?%s' % matchobj.group('type')
-                elif name in ('numeric_value', 'single_quotes'):
-                    return '?'
-                return value
-
-    text = _explain_plan_postgresql_re.sub(replacement, text)
+    text = _obfuscate_explain_plan_postgresql_substitute(text)
 
     # Now regenerate the list of rows by splitting again on newline.
 

@@ -1,10 +1,4 @@
 {
-    "newrelic/hooks/component_cornice.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "newrelic/LICENSE": {
         "hash": "n/a",
         "libraries": [
@@ -413,73 +407,12 @@
             "New Relic"
         ]
     },
-    "newrelic/common/tests/test_in_function.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/tests/test_json_wrappers.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/tests/test_object_names.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/tests/test_object_wrapper.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/tests/test_out_function.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/tests/test_post_function.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/tests/test_pre_function.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/tests/test_stopwatch.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/tests/test_system_info.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/tests/test_xor_cipher.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "newrelic/common/tests/system_info/1proc1coreNoHt.txt": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
         ]
     },
-
     "newrelic/common/tests/system_info/1proc1coreNoHtARMv6.txt": {
         "hash": "n/a",
         "libraries": [
@@ -547,6 +480,66 @@
         ]
     },
     "newrelic/common/tests/system_info/meminfo.txt": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_in_function.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_json_wrappers.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_object_names.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_object_wrapper.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_out_function.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_post_function.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_pre_function.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_stopwatch.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_system_info.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_xor_cipher.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -720,6 +713,12 @@
             "New Relic"
         ]
     },
+    "newrelic/core/tests/test_explain_plans.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/core/tests/test_profile_sessions.py": {
         "hash": "n/a",
         "libraries": [
@@ -853,6 +852,12 @@
         ]
     },
     "newrelic/hooks/application_gearman.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/component_cornice.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

@@ -359,11 +359,11 @@ def _parse_target(sql, dbapi2_module, operation):
     parse = _operation_table.get(operation, None)
     return parse and parse(sql, dbapi2_module) or ''
 
-# The regular expression for matching the explain plan needs to give
-# precedence to replacing any typed string value. We will swap these
-# with a token value. Next up we want to match anything we want to keep.
-# Finally match all remaining numeric values. These we will also swap
-# with a token value.
+# For explain plan obfuscation, the regular expression for matching the
+# explain plan needs to give precedence to replacing any typed string
+# value. We will swap these with a token value. Next up we want to match
+# anything we want to keep. Finally match all remaining numeric values.
+# These we will also swap with a token value.
 
 _explain_plan_postgresql_re = re.compile(
     r"""((?P<typed_string>'([^']|'')*'(?P<_type_>::("\w+"|\w+)))|"""
@@ -418,6 +418,45 @@ def _obfuscate_explain_plan_postgresql(columns, rows):
     # explain plan.
 
     text = _obfuscate_explain_plan_postgresql_substitute(text)
+
+    # Now regenerate the list of rows by splitting again on newline.
+
+    rows = [(_,) for _ in text.split('\n')]
+
+    return columns, rows
+
+# This is a simplified version of the explain plan ofuscation that simply
+# masks out any line which may contain information from the original query.
+
+_explain_plan_postgresql_simple_re_1 = re.compile(
+    r"""'([^']|'')*'""")
+
+_explain_plan_postgresql_simple_re_2 = re.compile(
+    r"""^(?P<_label_>[^:]*:\s+).*$""", re.MULTILINE)
+
+def _obfuscate_explain_plan_postgresql_simple(columns, rows):
+    # Only deal with where we get back the one expected column. If we
+    # get more than one column just ignore the whole explain plan. Need
+    # to confirm whether we would always definitely only get one column.
+    # The reason we do this is that swapping the value of quoted strings
+    # could result in the collapsing of multiple rows and in that case
+    # not sure what we would do with values from any other columns.
+
+    if len(columns) != 1:
+        return None
+
+    # We need to join together all the separate rows of the explain plan
+    # back together again. This is because an embedded newline within
+    # any text quoted from the original SQL can result in that line of
+    # the explain plan being split across multiple rows.
+
+    text = '\n'.join(item[0] for item in rows)
+
+    # Now need to perform the replacements on the complete text of the
+    # explain plan.
+
+    text = _explain_plan_postgresql_simple_re_1.sub('?', text)
+    text = _explain_plan_postgresql_simple_re_2.sub('\g<_label_>?', text)
 
     # Now regenerate the list of rows by splitting again on newline.
 

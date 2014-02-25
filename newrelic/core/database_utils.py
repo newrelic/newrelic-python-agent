@@ -360,20 +360,23 @@ def _parse_target(sql, dbapi2_module, operation):
     return parse and parse(sql, dbapi2_module) or ''
 
 # For explain plan obfuscation, the regular expression for matching the
-# explain plan needs to give precedence to replacing any typed string
-# value. We will swap these with a token value. Next up we want to match
-# anything we want to keep. Finally match all remaining numeric values.
-# These we will also swap with a token value.
+# explain plan needs to give precedence to replacing double quotes from
+# around table names, then single quotes from any text, typed or
+# otherwise. We will swap single quotes with a token value. Next up we
+# want to match anything we want to keep. Finally match all remaining
+# numeric values. These we will also swap with a token value.
 
-_explain_plan_postgresql_re = re.compile(
-    r"""((?P<typed_string>'([^']|'')*'(?P<_type_>::("\w+"|\w+)))|"""
-    r"""(?P<double_quotes>"[^"]*")|"""
+_explain_plan_postgresql_re_1 = re.compile(
+    r"""((?P<double_quotes>"[^"]*")|"""
     r"""(?P<single_quotes>'([^']|'')*')|"""
     r"""(?P<cost_analysis>\(cost=[^)]*\))|"""
     r"""(?P<sub_plan_ref>\bSubPlan\s+\d+\b)|"""
     r"""(?P<init_plan_ref>\bInitPlan\s+\d+\b)|"""
     r"""(?P<dollar_var_ref>\$\d+\b)|"""
     r"""(?P<numeric_value>(?<![\w])[-+]?\d*\.?\d+([eE][-+]?\d+)?\b))""")
+
+_explain_plan_postgresql_re_2 = re.compile(
+    r"""^(?P<label>[^:]*:\s+).*$""", re.MULTILINE)
 
 def _obfuscate_explain_plan_postgresql_substitute(text):
     # Perform substitutions for the explain plan on the text string.
@@ -387,16 +390,14 @@ def _obfuscate_explain_plan_postgresql_substitute(text):
         # original value or swap it with our token value.
 
         for name, value in list(matchobj.groupdict().items()):
-            if value is not None and not name.startswith('_'):
-                if name == 'typed_string':
-                    return '?%s' % matchobj.group('_type_')
-                elif name in ('numeric_value', 'single_quotes'):
+            if value is not None:
+                if name in ('numeric_value', 'single_quotes'):
                     return '?'
                 return value
 
-    return _explain_plan_postgresql_re.sub(replacement, text)
+    return _explain_plan_postgresql_re_1.sub(replacement, text)
 
-def _obfuscate_explain_plan_postgresql(columns, rows):
+def _obfuscate_explain_plan_postgresql(columns, rows, mask=False):
     # Only deal with where we get back the one expected column. If we
     # get more than one column just ignore the whole explain plan. Need
     # to confirm whether we would always definitely only get one column.
@@ -419,44 +420,11 @@ def _obfuscate_explain_plan_postgresql(columns, rows):
 
     text = _obfuscate_explain_plan_postgresql_substitute(text)
 
-    # Now regenerate the list of rows by splitting again on newline.
+    # The mask option dictates whether we use the slightly more aggresive
+    # obfuscation and simply mask out any line preceded by a label.
 
-    rows = [(_,) for _ in text.split('\n')]
-
-    return columns, rows
-
-# This is a simplified version of the explain plan ofuscation that simply
-# masks out any line which may contain information from the original query.
-
-_explain_plan_postgresql_simple_re_1 = re.compile(
-    r"""'([^']|'')*'""")
-
-_explain_plan_postgresql_simple_re_2 = re.compile(
-    r"""^(?P<_label_>[^:]*:\s+).*$""", re.MULTILINE)
-
-def _obfuscate_explain_plan_postgresql_simple(columns, rows):
-    # Only deal with where we get back the one expected column. If we
-    # get more than one column just ignore the whole explain plan. Need
-    # to confirm whether we would always definitely only get one column.
-    # The reason we do this is that swapping the value of quoted strings
-    # could result in the collapsing of multiple rows and in that case
-    # not sure what we would do with values from any other columns.
-
-    if len(columns) != 1:
-        return None
-
-    # We need to join together all the separate rows of the explain plan
-    # back together again. This is because an embedded newline within
-    # any text quoted from the original SQL can result in that line of
-    # the explain plan being split across multiple rows.
-
-    text = '\n'.join(item[0] for item in rows)
-
-    # Now need to perform the replacements on the complete text of the
-    # explain plan.
-
-    text = _explain_plan_postgresql_simple_re_1.sub('?', text)
-    text = _explain_plan_postgresql_simple_re_2.sub('\g<_label_>?', text)
+    if mask:
+        text = _explain_plan_postgresql_re_2.sub('\g<label>?', text)
 
     # Now regenerate the list of rows by splitting again on newline.
 

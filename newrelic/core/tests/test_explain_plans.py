@@ -2,10 +2,8 @@ import os
 import sys
 import pytest
 
-from newrelic.core.database_utils import (
-    _obfuscate_explain_plan_postgresql,
-    _obfuscate_explain_plan_postgresql_substitute,
-    _obfuscate_explain_plan_postgresql_simple)
+from newrelic.core.database_utils import (_obfuscate_explain_plan_postgresql,
+    _obfuscate_explain_plan_postgresql_substitute)
 
 _test_explain_plan_obfuscation_postgresql_tests = [
 
@@ -837,37 +835,37 @@ _add_explain_plan_test(
 Seq Scan on "explain_plan'1"  (cost=0.00..26.38 rows=7 width=32)
   Filter: (c1 = 'abcdef'::text)
 """,
-# XXX THIS ONE GIVES BROKEN OUTPUT ON SIMPLE OBFUSCATION.
 """
-Seq Scan on "explain_plan?abcdef\'::text)
+Seq Scan on "explain_plan'1"  (cost=0.00..26.38 rows=7 width=32)
+  Filter: ?
 """,
-# XXX
 """
 Seq Scan on "explain_plan'1"  (cost=0.00..26.38 rows=7 width=32)
   Filter: (c1 = ?::text)
 """
 )
 
-@pytest.mark.parametrize('original,expected_simple,expected_complete',
+@pytest.mark.parametrize('original,expected_masked,expected_complete',
         _test_explain_plan_obfuscation_postgresql_complete_tests)
-def test_explain_plan_obfuscation_postgresql_simple(original,
-        expected_simple, expected_complete):
+def test_explain_plan_obfuscation_postgresql_mask_true(original,
+        expected_masked, expected_complete):
 
     input_columns = ('Query Plan',)
     input_rows = [(_,) for _ in original.split('\n')]
 
-    output = _obfuscate_explain_plan_postgresql_simple(input_columns, input_rows)
+    output = _obfuscate_explain_plan_postgresql(input_columns, input_rows,
+            mask=True)
 
     output_rows = output[1]
 
     generated = '\n'.join(item[0] for item in output_rows)
 
-    assert expected_simple == generated
+    assert expected_masked == generated
 
-@pytest.mark.parametrize('original,expected_simple,expected_complete',
+@pytest.mark.parametrize('original,expected_masked,expected_complete',
         _test_explain_plan_obfuscation_postgresql_complete_tests)
-def test_explain_plan_obfuscation_postgresql_complete(original,
-        expected_simple, expected_complete):
+def test_explain_plan_obfuscation_postgresql_mask_false(original,
+        expected_masked, expected_complete):
 
     input_columns = ('Query Plan',)
     input_rows = [(_,) for _ in original.split('\n')]

@@ -5,7 +5,7 @@ import pytest
 from newrelic.core.database_utils import (_obfuscate_explain_plan_postgresql,
     _obfuscate_explain_plan_postgresql_substitute)
 
-_test_explain_plan_obfuscation_postgresql_tests = [
+_test_explain_plan_obfuscation_postgresql_mask_true_tests = [
 
     # typed_string
 
@@ -69,6 +69,13 @@ _test_explain_plan_obfuscation_postgresql_tests = [
     (""" $1 """, """ $1 """),
     ("""$1 """, """$1 """),
     ("""$123""", """$123"""),
+
+]
+
+_test_explain_plan_obfuscation_postgresql_mask_false_tests = list(
+        _test_explain_plan_obfuscation_postgresql_mask_true_tests)
+
+_test_explain_plan_obfuscation_postgresql_mask_false_tests.extend([
 
     # numeric_value
 
@@ -140,14 +147,24 @@ _test_explain_plan_obfuscation_postgresql_tests = [
     ("""abc1.0e22 """, """abc1.? """),
     ("""abc_1.0e22 """, """abc_1.? """),
     ("""abc-1.0e22 """, """abc-? """),
-]
+
+])
 
 @pytest.mark.parametrize('value,expected',
-        _test_explain_plan_obfuscation_postgresql_tests)
-def test_explain_plan_obfuscation_postgresql_substitute(value, expected):
-    output = _obfuscate_explain_plan_postgresql_substitute(value)
+        _test_explain_plan_obfuscation_postgresql_mask_false_tests)
+def test_explain_plan_obfuscation_postgresql_substitute_mask_false(
+        value, expected):
+
+    output = _obfuscate_explain_plan_postgresql_substitute(value, mask=False)
     assert output == expected
 
+@pytest.mark.parametrize('value,expected',
+        _test_explain_plan_obfuscation_postgresql_mask_true_tests)
+def test_explain_plan_obfuscation_postgresql_substitute_mask_true(
+        value, expected):
+
+    output = _obfuscate_explain_plan_postgresql_substitute(value, mask=True)
+    assert output == expected
 
 _test_explain_plan_obfuscation_postgresql_complete_tests = []
 
@@ -870,7 +887,8 @@ def test_explain_plan_obfuscation_postgresql_mask_false(original,
     input_columns = ('Query Plan',)
     input_rows = [(_,) for _ in original.split('\n')]
 
-    output = _obfuscate_explain_plan_postgresql(input_columns, input_rows)
+    output = _obfuscate_explain_plan_postgresql(input_columns, input_rows,
+            mask=False)
 
     output_rows = output[1]
 

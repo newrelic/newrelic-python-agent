@@ -361,6 +361,8 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'debug.record_transaction_failure',
                      'getboolean', None)
+    _process_setting(section, 'debug.explain_plan_obfuscation',
+                     'get', None)
     _process_setting(section, 'cross_application_tracer.enabled',
                      'getboolean', None)
 

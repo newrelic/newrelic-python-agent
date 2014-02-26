@@ -9,6 +9,7 @@ import time
 import weakref
 
 from newrelic.core.internal_metrics import (internal_trace, internal_metric)
+from newrelic.core.config import global_settings
 
 # Various actions are dependent on the database being used. For most
 # flexibility we use the name of the Python module used as client.
@@ -366,7 +367,7 @@ def _parse_target(sql, dbapi2_module, operation):
 # want to match anything we want to keep. Finally match all remaining
 # numeric values. These we will also swap with a token value.
 
-_explain_plan_postgresql_re_1 = re.compile(
+_explain_plan_postgresql_re_1_mask_false = re.compile(
     r"""((?P<double_quotes>"[^"]*")|"""
     r"""(?P<single_quotes>'([^']|'')*')|"""
     r"""(?P<cost_analysis>\(cost=[^)]*\))|"""
@@ -375,10 +376,14 @@ _explain_plan_postgresql_re_1 = re.compile(
     r"""(?P<dollar_var_ref>\$\d+\b)|"""
     r"""(?P<numeric_value>(?<![\w])[-+]?\d*\.?\d+([eE][-+]?\d+)?\b))""")
 
+_explain_plan_postgresql_re_1_mask_true = re.compile(
+    r"""((?P<double_quotes>"[^"]*")|"""
+    r"""(?P<single_quotes>'([^']|'')*'))""")
+
 _explain_plan_postgresql_re_2 = re.compile(
     r"""^(?P<label>[^:]*:\s+).*$""", re.MULTILINE)
 
-def _obfuscate_explain_plan_postgresql_substitute(text):
+def _obfuscate_explain_plan_postgresql_substitute(text, mask):
     # Perform substitutions for the explain plan on the text string.
 
     def replacement(matchobj):
@@ -395,9 +400,17 @@ def _obfuscate_explain_plan_postgresql_substitute(text):
                     return '?'
                 return value
 
-    return _explain_plan_postgresql_re_1.sub(replacement, text)
+    if mask:
+        return _explain_plan_postgresql_re_1_mask_true.sub(replacement, text)
+    else:
+        return _explain_plan_postgresql_re_1_mask_false.sub(replacement, text)
 
-def _obfuscate_explain_plan_postgresql(columns, rows, mask=False):
+def _obfuscate_explain_plan_postgresql(columns, rows, mask=None):
+    settings = global_settings()
+
+    if mask is None:
+        mask = (settings.debug.explain_plan_obfuscation == 'simple')
+
     # Only deal with where we get back the one expected column. If we
     # get more than one column just ignore the whole explain plan. Need
     # to confirm whether we would always definitely only get one column.
@@ -418,7 +431,7 @@ def _obfuscate_explain_plan_postgresql(columns, rows, mask=False):
     # Now need to perform the replacements on the complete text of the
     # explain plan.
 
-    text = _obfuscate_explain_plan_postgresql_substitute(text)
+    text = _obfuscate_explain_plan_postgresql_substitute(text, mask)
 
     # The mask option dictates whether we use the slightly more aggresive
     # obfuscation and simply mask out any line preceded by a label.
@@ -453,7 +466,7 @@ _explain_plan_table = {
 
 @internal_trace('Supportability/DatabaseUtils/Calls/explain_plan')
 def _explain_plan(sql, dbapi2_module, connect_params, cursor_params,
-        execute_params):
+        execute_params, format):
 
     if dbapi2_module is None:
         return None
@@ -518,7 +531,7 @@ def _explain_plan(sql, dbapi2_module, connect_params, cursor_params,
                 rows = cursor.fetchall()
                 if not columns and not rows:
                     return None
-                if obfuscator:
+                if obfuscator and format != 'raw':
                     columns, rows = obfuscator(columns, rows)
                 return (columns, rows)
             except Exception:
@@ -599,9 +612,10 @@ class SQLStatement(object):
         else:
             return self.obfuscated
 
-    def explain_plan(self, connect_params, cursor_params, execute_params):
+    def explain_plan(self, connect_params, cursor_params, execute_params,
+            format):
         return _explain_plan(self.sql, self.dbapi2_module, connect_params,
-                cursor_params, execute_params)
+                cursor_params, execute_params, format)
 
 _sql_statements = weakref.WeakValueDictionary()
 

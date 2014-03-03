@@ -1,5 +1,4 @@
 import webtest
-import threading
 import json
 
 from newrelic.packages import six

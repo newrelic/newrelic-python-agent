@@ -615,9 +615,6 @@ class Transaction(object):
         if priority is not None and priority < self._priority:
             return
 
-        if group is None:
-            group = 'Function'
-
         if priority is not None:
             self._priority = priority
 
@@ -632,6 +629,16 @@ class Transaction(object):
 
         if isinstance(name, bytes):
             name = name.decode('Latin-1')
+
+        # Deal with users who use group wrongly and add a leading
+        # slash on it. This will cause an empty segment which we
+        # want to avoid. In that case insert back in Function as
+        # the leading segment.
+
+        group = group or 'Function'
+
+        if group.startswith('/'):
+            group = 'Function' + group
 
         self._group = group
         self._name = name

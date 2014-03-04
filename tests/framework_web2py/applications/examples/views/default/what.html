@@ -1,0 +1,58 @@
+{{extend 'layout.html'}} {{import os}}
+<div class="contentleft">
+    <h2>What is web2py<sup style="font-size:0.5em;">TM</sup></h2>
+    <blockquote>
+    <p>The best way to understand web2py is to try it.
+    You can try it online <a href="http://www.web2py.com/demo_admin">here</a>.<br /> 
+    This online version is identical to the actual web2py although some functions are disabled for security reasons.</p>
+    </blockquote>
+    <p>web2py was inspired by Ruby on Rails and, as Rails, it focuses on rapid development and follows a Model View Controller design. web2py differs from Rails because it is based on Python (thus it is faster and more scalable), because it provides a comprehensive web-based administrative interface (thus there is no need to ever type shell commands unless you wish), includes libraries to handle more protocols (for example XML-RPC and RSS feeds), and can run on the Google App Engine.</p>
+
+    <p>web2py was also inspired by Django and, as Django, it has the ability to generate forms from database tables and it includes an extensive set of validators. web2py differs from Django because it is more compact, easier to learn and does not have any project-level configuration files.</p>
+
+    <p>web2py is less verbose than Java-based frameworks and its syntax is much cleaner than PHP-based frameworks. This makes applications simpler to develop, and easier to read
+    and maintain.</p>
+    <blockquote>
+        <p><a href="http://www.web2py.com/examples/static/web2py_vs_others.pdf">Here</a> is a features comparison of web2py vs other popular web frameworks</a>
+    </blockquote>
+    <p>web2py comes in source code version (for any Operating System that runs Python) and in binary versions for OSX and Windows. web2py does not need to be installed. You unzip it, click on it, and choose a one-time administrator password. It then opens the browser for you and directs you to the administrative interface. Everything it needs to make this happen (the Python interpreter, the web-server, the relational database, etc.) is already packaged with web2py. If you need more power you customize your applications to use your preferred web-server (for example Apache) and your preferred database engine (for example PostgreSQL or Oracle).</p>
+
+    <p>Via the admin interface you can upload a packed application, create a new application, design an application, maintain an existing application, bytecode-compile an application, pack and download an application. Everything can be done via the web-based admin interface, including editing the files that comprise your applications, clearing temp files, browsing past tickets/errors, run tests, interact with the database. If you so choose, it is also possible to interact with web2py via the Operating System shell or the Python shell.</p>
+
+    <p>Any web2py application is comprised of Models (files that contain a description of the data representation), Views (files that contain a description of the data presentation), Controllers (files that contain a description of the business logic and workflow), Cron Jobs (tasks that need to be executed regularly in background), Modules (collections of reusable classes and functions), and Static Files (images, scripts, stylesheets, etc.).
+    </p>
+
+    <p>Controllers consist of functions that are associated to a URL and are called when the associated URL is visited. Models are executed before the function is called, independently on the visited URL (for each app). Views are called when the function returns data other than a string, and renders the data in the proper format (for example html).</p>
+
+    <p>
+    <h4>A web2py application can be as simple as a single file (controllers/default.py) containing:</h4></p>
+    
+    {{=CODE('def index(): return "Hello World"',counter=None,_class='boxCode')}}
+    
+    <p>When <b>http://localhost:8000/app/default/index</b> is visited the function is called and it displays the message "Hello World".</p>
+    
+    <p><h4>Here is a more complex complete application that lets the visitor upload images into a database:</h4></p>
+    
+    {{=CODE("""# in Model
+db=DAL('sqlite://storage.db')
+db.define_table('image', 
+                Field('name'),
+                Field('file','upload'))""",counter=None,_class='boxCode')}}
+    {{=CODE("""# in Controller
+def index():
+    form = SQLFORM(db.image)
+    if form.accepts(request.vars, session):
+        response.flash = 'image uploaded'
+    return dict(form = form)""",counter=None,_class='boxCode')}}
+    
+    {{=CODE(
+    """# in View
+[[extend 'layout.html']]
+<h1>Image upload form</h1>
+[[= form]]""".replace('[','{').replace(']','}'),counter=None,_class='boxCode')}}
+   
+    <p>Uploaded images are safely renamed to avoid directory traversal vulnerabilities, stored on the filesystem (or database) and a corresponding entry is inserted in the database, linking the file. A built-in mechanism prevents involuntary double form submission. All DB IO is transaction safe by default. Any exception in the code causes the transaction to rollback.</p>
+    <blockquote>
+    <p>Examples of more complex sample applications can be found <a href="{{=URL(r=request,c='default',f='examples')}}">here</a></p>
+     </blockquote>
+</div>

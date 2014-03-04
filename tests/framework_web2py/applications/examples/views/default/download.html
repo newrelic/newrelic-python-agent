@@ -1,0 +1,100 @@
+{{response.files.append(URL('static','css/artwork.css'))}}
+{{extend 'layout.html'}}
+{{import os}}
+{{version = request.env.web2py_version.split('(')}}
+<div class="onecolcontent">
+  <h2>web2py<sup style="font-size:0.5em;">TM</sup> Download</h2>
+  <blockquote>
+    <center>
+      <table style="width:50%;">
+	<tr>
+	  <th style="white-space:nowrap;padding-left:10px;">Current (for everybody)<br/>{{=version[0]}}<br />({{=version[1]}}</th>
+	  <th style="padding-left:30px;">Nightly Built (for testers)</th>
+	  <th style="padding-left:30px;">Trunk (for developers)</th>
+	</tr>
+	<tr>
+	  <td style="text-align:center">
+	    <ul class="downloadb">
+	      <li><span></span><a href="http://www.web2py.com/examples/static/web2py_win.zip">For Windows</a></li>
+	      <li><span></span><a href="http://www.web2py.com/examples/static/web2py_osx.zip">For Mac</a></li>
+	      <li><span></span><a href="http://www.web2py.com/examples/static/web2py_src.zip">Source Code</a></li>
+	      <li><a href="{{=URL('changelog')}}">Change Log</a></li>
+	    </ul>
+	  </td>
+	  <td style="text-align:center">
+	    <ul class="downloadb">
+	      <li><span></span><a href="http://www.web2py.com/examples/static/nightly/web2py_win.zip">For Windows</a></li>
+	      <li><span></span><a href="http://www.web2py.com/examples/static/nightly/web2py_osx.zip">For Mac</a></li>
+	      <li><span></span><a href="http://www.web2py.com/examples/static/nightly/web2py_src.zip">Source Code</a></li>
+	      <li><a href="http://www.web2py.com/examples/static/nightly/tests.log">Unittest Log</a></li>
+	    </ul>
+	  </td>
+	  <td style="text-align:center">
+	    <ul class="downloadb">
+	      <li><span></span><a href="http://code.google.com/p/web2py/">Mercurial Repository</a></li>
+	      <li><span></span><a href="https://launchpad.net/web2py">Bazaar Repository</a></li>
+	      <li><span></span><a href="http://web2py.com/examples/static/web2py.plugin.wiki.w2p">plugin_wiki (add-on)</a></li>
+	      <li><a href="http://vimeo.com/13485916">What is plugin_wiki?</a></li>  
+	    </ul>
+	  </td>
+	</tr>
+      </table>
+    </center>
+    <p style="text-align:left;">
+      The source code version works on all supported platforms, including Linux, but it requires Python 2.5, 2.6, or 2.7. 
+      It runs on Windows and most Unix systems, including <b>Linux</b> and <b>BSD</b>.
+    </p>    
+  </blockquote>
+
+  <h3>Instructions</h3>
+  <p>After download, unzip it and click on web2py.exe (windows) or web2py.app (osx).
+    To run from source type:</p>
+  {{=CODE("python2.5 web2py.py",language=None,counter='>',_class='boxCode')}}
+  <p>or for more info type:</p>
+  {{=CODE("python2.5 web2py.py -h",language=None,counter='>',_class='boxCode')}}
+  
+  
+  <h3>Caveats</h3>
+  <p>After installation, every time you run it, web2py asks you to choose a password. This password is your administrative password. If the password is left blank, the administrative interface is disabled. The administrative interface /admin/default/index is only accessible via localhost and always requires a password.<br/>Any url /a/b/c maps into a call to application a, controller b.py and function c in that controller.<br/>You are strongly advised to also use Apache with mod_proxy or mod_wsgi to access applications in the framework. This allows better security and concurrency.</p>
+  
+  <h3 id="license">License</h3>
+  <p>Web2py code is released under <a href="http://www.gnu.org/licenses/lgpl.html">LGPLv3 License</a>. This license does not extend to third party libraries distributed with web2py (which can be MIT, BSD or Apache type licenses) nor does it extend to applications built with web2py (under the terms of the LGPL.</p>
+  <p>Applications built with web2py can be released under any license the author wishes as long they do not contain web2py code. They can link unmodified web2py libraries and they can be distributed with official web2py binaries. In particular web2py applications can be distributed in closed source. The admin interface provides a button to byte-code compile.</p>
+  <p>It is fine to distribute web2py (source or compiled) with your applications as long as you make it clear in the license where your application ends and web2py starts.</p>
+  <p>web2py is copyrighted by Massimo Di Pierro. The web2py trademark is owned by Massimo Di Pierro.</p>
+  [<a href="{{=URL('license')}}">read more</a>]
+  
+  <h3>Applications</h3>
+  <p>You can find many free and ready to use web2py applications with source code <a href="http://www.web2py.com/appliances">here</a>.
+    <div style="width:96.5%">
+      <br />
+      <div class="logosDow WH1">
+	<span>web2py artwork</span>  
+	<a href="{{=URL('static', 'img/logo_lb.png')}}" class="box-A logoDow1" ><span></span></a>
+	<a href="{{=URL('static', 'img/logo_db.png')}}" class="box-A logoDow2" ><span></span></a>
+	<a href="{{=URL('static', 'img/logo_bw.png')}}" class="box-A logoDow3" ><span></span></a>
+      </div>
+      <div class="logosDow WH2">
+	<span>Stickers</span>  
+	<a  href="{{=URL('static', 'img/Stickers1.png')}}" class="stikImage stikimage1"><span></span></a>
+	<a  href="{{=URL('static', 'img/Stickers2.png')}}" class="stikImage stikimage2"><span></span></a>  
+	<a  href="{{=URL('static', 'img/Stickers3.png')}}" class="stikImage stikimage3"><span></span></a> 
+	<a  href="{{=URL('static', 'img/Stickers4.png')}}" class="stikImage stikimage4"><span></span></a> 
+	<a  href="{{=URL('static', 'img/Stickers5.png')}}" class="stikImage stikimage5"><span></span></a> 
+	<a  href="{{=URL('static', 'img/Stickers6.png')}}" class="stikImage stikimage6"><span></span></a> 
+	<a  href="{{=URL('static', 'img/Stickers7.png')}}" class="stikImage stikimage7"><span></span></a> 
+      </div>
+      <a href="{{=URL('static', 'artwork.tar.gz')}}" >Download WEB2PY artwork pack in editable .png format</a>
+    </div>  
+    
+    <br />
+   
+    Logo, Stickers and Layout developed by <a target="_blank" href="http://twitter.com/josev2010">José V. Sousa</a> and <a target="_blank" href="http://twitter.com/rochacbruno">Bruno Rocha</a> (at <a target="_blank" href="http://www.blouweb.com">Blouweb</a>) All rights reserved by  <a target="_blank" href="http://mycti.cti.depaul.edu/people/facultyInfo_mycti.asp?id=343">Massimo Di Pierro</a> &copy; 2010
+    <br />
+    Favicon and HTML5 compatibility  by <a target="_blank" href="">Martin Mulone</a>
+    <br />
+    Icon set made by <a href="http://chrfb.deviantart.com">Christian Burprich</a> licensed under a <a rel="license" target="_blank" href="http://creativecommons.org/licenses/by-nc-sa/3.0/">Creative Commons Attribution-Noncommercial-Share Alike 3.0 License</a>
+    <br />
+</div>
+{{block sidebar}}{{end}}
+{{block leftbadges}}{{end}}

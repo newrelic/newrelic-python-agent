@@ -1,0 +1,136 @@
+/*********** MENU COMPLETO **********/
+.headermenu{
+	position:absolute;
+	margin:10px 10px;
+	background-image:url(../img/Menu-2.png);
+	background-repeat:no-repeat;
+	background-position:0px 0px;
+    width:655px;
+    height:37px;
+	left:290px;
+	top: 30px;
+	z-index:200px;
+}	 
+a.home{
+	position:absolute;
+	top:0px;
+	left:0px;
+	z-index:0;
+	width:109px;
+	height:36px;
+}
+a:hover.home {
+	background-image:url(../img/Menu-2.png);
+	background-repeat:no-repeat;
+	background-position:0px -38px;
+}
+a:active.home {
+	background-image:url(../img/Menu-2.png);
+	background-repeat:no-repeat;
+	background-position:-0px -76px;
+	border-collapse:inherit;
+	
+}
+a.about{
+	position:absolute;
+	top:0px;
+	left:108px;
+	z-index:1;
+	width:104px;
+	height:36px;
+}
+a:hover.about {
+	background-image:url(../img/Menu-2.png);
+	background-repeat:no-repeat;
+	background-position:-108px -37px;
+}
+a:active.about {
+	background-image:url(../img/Menu-2.png);
+	background-repeat:no-repeat;
+	background-position:-108px -76px
+}
+
+
+a.download{
+	position:absolute;
+	top:0px;
+	left:211px;
+	z-index:2;
+	width:104px;
+	height:36px;
+}
+a:hover.download {
+	background-image:url(../img/Menu-2.png);
+	background-repeat:no-repeat;
+	background-position:-211px -37px;
+}
+a:active.download {
+	background-image:url(../img/Menu-2.png);
+	background-repeat:no-repeat;
+	background-position:-211px -76px
+}
+a.staff{
+	position:absolute;
+	top:0px;
+	left:315px;
+	z-index:3;
+	width:103px;
+	height:36px;
+}
+a:hover.staff {
+	background-image:url(../img/Menu-2.png);
+	background-repeat:no-repeat;
+	background-position:-315px -37px;
+}
+a:active.staff {
+	background-image:url(../img/Menu-2.png);
+	background-repeat:no-repeat;
+	background-position:-315px -76px
+}
+a.support{
+	position:absolute;
+	top:0px;
+	left:418px;
+	z-index:4;
+	width:103px;
+	height:36px;
+}
+a:hover.support {
+	background-image:url(../img/Menu-2.png);
+	background-repeat:no-repeat;
+	background-position:-418px -37px;
+}
+a:active.support {
+	background-image:url(../img/Menu-2.png);
+	background-repeat:no-repeat;
+	background-position:-418px -76px
+}
+a.documentation{
+	position:absolute;
+	top:0px;
+	left:520px;
+	z-index:5;
+	width:133px;
+	height:36px;
+}
+a:hover.documentation {
+	background-image:url(../img/Menu-2.png);
+	background-repeat:no-repeat;
+	background-position:-520px -37px
+}
+a:active.documentation {
+	background-image:url(../img/Menu-2.png);
+	background-repeat:no-repeat;
+	background-position:-520px -76px;
+}
+
+.pressed{
+    z-index:0;
+    background-image:url(../img/Menu-2.png);
+	background-repeat:no-repeat;
+	   
+    }
+
+/*************** FIM DO MENU COMPLETO **********************/
+		
+		

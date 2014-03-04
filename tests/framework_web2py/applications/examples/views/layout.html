@@ -1,0 +1,138 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xml:lang="{{=T.accepted_language or 'en'}}">
+  <head>
+    <title>{{=response.title or request.application}}</title>
+    <link rel="shortcut icon"
+	  href="{{=URL(request.application,'static','favicon.ico')}}" 
+	  type="image/vnd.microsoft.icon" />
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+      {{
+      #---- (CSS) -----)
+      import random
+      response.files.append(URL('static','css/menu.css'))
+      response.files.append(URL('static','css/home.css'))
+      
+      #------ include web2py specific js code (jquery, calendar, form stuff) ------
+      }}
+      {{include 'web2py_ajax.html'}}      
+      {{=toggle_menuclass()}}
+  <!-- script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-20457543-1']);
+  _gaq.push(['_trackPageview']);
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = t\
+rue;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '\
+.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(ga, s);
+  })();
+  </script //-->
+  </head>
+  <body>
+    <div class="flashdiv">
+      <blockquote class="flash boxInfo">{{=response.flash or ''}}</blockquote>
+    </div>
+    <div class="general">
+      <!-- HEADER -->
+      <div class="headerExt">
+	<div class="headerInt">
+	  <a href="{{=URL('default','index')}}" class="logo"><em style="display:none;">web2py web framework</em></a>
+	  <div class="headermenu">
+            <a href="{{=URL('default','index')}}"
+	       class="home"><em style="display:none;">{{=T('Home')}}</em></a> 
+            <a href="{{=URL('default','what')}}"  
+	       class="about what"><em style="display:none;">{{=T('About')}}</em></a> 
+            <a href="{{=URL('default','download')}}"  
+	       class="download"><em style="display:none;">{{=T('Download')}}</em></a>
+            <a href="{{=URL('default','who')}}"
+	       class="staff who"><em style="display:none;">{{=T('Staff')}}</em></a> 
+            <a href="{{=URL('default','support')}}"
+	       class="support"><em style="display:none;">{{=T('Support')}}</em></a> 
+            <a href="{{=URL('default','documentation')}}"
+	       class="documentation"><em style="display:none;">{{=T('Documentation')}}</em></a> 
+	  </div>
+	</div>
+      </div>
+      
+      <!-- MAIN CONTENT -->
+      <div class="content">	  
+	
+	{{include}}
+	
+	{{block sidebar}}
+	<div class="contentright">   
+          <div class="boxBtDownload">
+	    <a href="{{=URL('default','download')}}"  class="btDownload btDownloadPosicao1">
+	      <div class="boxBtDownloadICO"></div>
+      	      <span id="textBtDownload1">
+		  {{=T('Download')}}    
+	      </span>
+	      <span id="textBtDownload2">
+		{{=T('Latest Stable ')}}{{=request.env.web2py_version[:15]}}
+	      </span>
+	    </a>
+	  </div>     
+	  
+          <!-- div class="boxSearch1">
+	       <div class="boxSearch2"></div>
+          </div ****uncomment to show search input***-->
+	  
+          <div onclick="window.open('http://www.web2py.com/book')" class="boxInfoBanner" style="margin-top:35px;"></div> 
+          
+          <div class="leftlink leftlinkIcoA" style="margin-top:35px;">
+            <a href="{{=URL('default','usergroups')}}" class="btleftlink"> {{=T('User groups')}}</a>
+          </div>   
+	  <div class="leftlink leftlinkIcoF">
+            <a href="http://web2py.uservoice.com/" target="_blank" class="btleftlink">{{=T('User Voice')}}</a>
+          </div>
+          <div class="leftlink leftlinkIcoB">
+            <a href="http://twitter.com/web2py" target="_blank" class="btleftlink">Twitter</a>
+          </div> 
+          <div class="leftlink leftlinkIcoK">
+            <a href="http://webchat.freenode.net/?channels=web2py" target="_blank" class="btleftlink">{{=T('Live Chat (IRC)')}}</a>
+          </div>
+          <div class="leftlink leftlinkIcoC">
+            <a href="http://www.web2py.com/AlterEgo" target="_blank" class="btleftlink">{{=T('F.A.Q.')}}</a>
+          </div>
+          <div class="leftlink leftlinkIcoE">
+            <a href="{{=URL('default','examples')}}" class="btleftlink">{{=T('Quick Examples')}}</a>
+          </div>
+          <div class="leftlink leftlinkIcoD">
+            <a href="{{=URL('default','videos')}}" class="btleftlink">{{=T('Videos')}}</a>
+          </div>
+          
+          <div class="leftlink leftlinkIcoG">
+            <a href="http://www.web2pyslices.com/main/default/index" target="_blank" class="btleftlink">web2py Slices</a>
+          </div>
+          <div class="leftlink leftlinkIcoH">
+            <a href="http://www.web2py.com/demo_admin" target="_blank" class="btleftlink">{{=T('Interactive demo')}}</a>
+          </div>
+          <div class="leftlink leftlinkIcoI">
+            <a href="http://www.web2py.com/appliances" target="_blank" class="btleftlink">{{=T('Free appliances')}}</a>
+          </div>
+          <div class="leftlink leftlinkIcoJ">
+            <a href="http://www.web2py.com/plugins" target="_blank" class="btleftlink">{{=T('Plugins')}}</a>
+          </div>
+	 
+	</div>
+	
+	{{end}}
+      </div>
+      
+      <!-- RODAPE -->   
+      <div class="footerExt">
+	<div class="footerInt">
+    	  <!-- div class="Boxfooter1" id="font1">contact</div -->
+    	  <!-- div class="Boxfooter2" id="font1">mobile</div -->
+    	  <div class="Boxfooter3" id="font1">&copy; 2010 by Massimo Di Pierro</div>
+    	  <!-- a href="" class="Boxfooter4"></a> <a href="" class="Boxfooter5"></a -->
+    	  <div class="Boxfooter6"></div>    	  
+  	</div>
+      </div>
+    </div>    
+  </body>
+</html>
+  

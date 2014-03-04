@@ -1,0 +1,48 @@
+(dp1
+S'product_id'
+p2
+(dp3
+S'type'
+p4
+S'reference products'
+p5
+sS'sortable'
+p6
+I3
+sS'sql'
+p7
+S'INTEGER REFERENCES products(id) ON DELETE CASCADE'
+p8
+ssS'id'
+p9
+(dp10
+g4
+g9
+sg6
+I1
+sg7
+S'INTEGER PRIMARY KEY AUTOINCREMENT'
+p11
+ssS'quantity'
+p12
+(dp13
+g4
+S'integer'
+p14
+sg6
+I4
+sg7
+S'INTEGER'
+p15
+ssS'buyer_id'
+p16
+(dp17
+g4
+S'reference users'
+p18
+sg6
+I2
+sg7
+S'INTEGER REFERENCES users(id) ON DELETE CASCADE'
+p19
+ss.

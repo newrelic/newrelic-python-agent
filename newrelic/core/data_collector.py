@@ -13,6 +13,8 @@ import newrelic.packages.six as six
 
 import newrelic.packages.requests as requests
 
+from newrelic.packages.requests import certs
+
 from newrelic import version
 from newrelic.core.config import global_settings, create_settings_snapshot
 from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
@@ -245,10 +247,12 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         # the initial connection and doesn't apply to how long
         # it takes to get back a response.
 
+        cert_loc = certs.where()
         timeout = settings.agent_limits.data_collector_timeout
 
         r = session.post(url, params=params, headers=headers,
-                proxies=proxies, timeout=timeout, data=data)
+                proxies=proxies, timeout=timeout, data=data,
+                verify=cert_loc)
 
         # Read the content now so we can force close the socket
         # connection if this is a transient session as quickly

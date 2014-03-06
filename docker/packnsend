@@ -37,7 +37,7 @@ create_work_directory()
 
     echo "Creating data directory."
 
-    DATA_DIRECTORY=`mktemp -d -t packnsend`
+    DATA_DIRECTORY=`mktemp -d -t packnsend.XXXX`
 
     echo "Data directory: $DATA_DIRECTORY"
 }

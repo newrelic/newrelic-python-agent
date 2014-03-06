@@ -5,6 +5,8 @@ WORK_DIRECTORY=".`pwd | sed -e s%$ROOT_DIRECTORY%%`"
 
 TEST_IMAGE_NAME=python-base
 
+TMPDIR=${TMPDIR:-/tmp}
+
 IMAGE_ID=""
 CONTAINER_ID=""
 
@@ -28,7 +30,7 @@ cleanup_containers()
     rm -r $DATA_DIRECTORY
 }
 
-trap "cleanup_containers && exit 255" SIGINT SIGQUIT SIGTERM
+trap "cleanup_containers && exit 255" INT QUIT TERM
 
 create_work_directory()
 {
@@ -37,7 +39,7 @@ create_work_directory()
 
     echo "Creating data directory."
 
-    DATA_DIRECTORY=`mktemp -d -t packnsend.XXXX`
+    DATA_DIRECTORY=`mktemp -d $TMPDIR/packnsend.XXXXXXXX`
 
     echo "Data directory: $DATA_DIRECTORY"
 }

@@ -1,6 +1,8 @@
 FROM ubuntu:12.04
 MAINTAINER Graham Dumpleton <grahamd@newrelic.com>
 
+RUN apt-get update
+
 RUN adduser --system --shell `which bash` guest
 
 RUN apt-get install -y language-pack-en-base

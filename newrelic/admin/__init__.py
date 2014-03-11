@@ -10,6 +10,7 @@ _builtin_plugins = [
     'license_key',
     'local_config',
     'network_config',
+    'record_deploy',
     'run_program',
     'run_python',
     'server_config',

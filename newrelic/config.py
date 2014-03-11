@@ -215,6 +215,8 @@ def _process_configuration(section):
                      'get', None)
     _process_setting(section, 'license_key',
                      'get', None)
+    _process_setting(section, 'api_key',
+                     'get', None)
     _process_setting(section, 'host',
                      'get', None)
     _process_setting(section, 'port',

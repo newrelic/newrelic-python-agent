@@ -118,6 +118,7 @@ else:
     _settings.log_level = logging.INFO
 
 _settings.license_key = os.environ.get('NEW_RELIC_LICENSE_KEY', None)
+_settings.api_key = os.environ.get('NEW_RELIC_API_KEY', None)
 
 _settings.ssl = _environ_as_bool('NEW_RELIC_SSL', True)
 
@@ -304,6 +305,7 @@ def global_settings_dump():
     # it again.
 
     del settings['license_key']
+    del settings['api_key']
 
     del settings['proxy_user']
     del settings['proxy_pass']

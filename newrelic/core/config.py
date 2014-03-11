@@ -60,6 +60,7 @@ _settings.analytics_events = AnalyticsEventsSettings()
 _settings.analytics_events.transactions = AnalyticsEventsTransactionsSettings()
 
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
+_settings.audit_log_file = os.environ.get('NEW_RELIC_AUDIT_LOG', None)
 
 def _environ_as_bool(name, default=False):
     flag = os.environ.get(name, default)

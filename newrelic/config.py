@@ -231,6 +231,8 @@ def _process_configuration(section):
                      'get', None)
     _process_setting(section, 'proxy_pass',
                      'get', None)
+    _process_setting(section, 'audit_log_file',
+                     'get', None)
     _process_setting(section, 'monitor_mode',
                      'getboolean', None)
     _process_setting(section, 'capture_params',

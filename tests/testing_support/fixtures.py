@@ -2,6 +2,7 @@ import pytest
 import logging
 import os
 import sys
+import pwd
 
 from newrelic.agent import (initialize, register_application,
         global_settings, shutdown_agent, application as application_instance,
@@ -10,6 +11,9 @@ from newrelic.agent import (initialize, register_application,
 from newrelic.core.config import (apply_config_setting,
         create_settings_snapshot)
 
+from newrelic.network.addresses import proxy_details
+from newrelic.packages import requests
+
 def collector_agent_registration_fixture(app_name=None, default_settings={}):
     @pytest.fixture(scope='session')
     def _collector_agent_registration_fixture(request):
@@ -17,6 +21,8 @@ def collector_agent_registration_fixture(app_name=None, default_settings={}):
 
         settings.app_name = 'Python Agent Test'
 
+        settings.api_key = os.environ.get('NEW_RELIC_API_KEY',
+                'acb213ed488e0e4b623c005a9811a5113c916c4f983d501')
         settings.license_key = os.environ.get('NEW_RELIC_LICENSE_KEY',
                 '84325f47e9dec80613e262be4236088a9983d501')
 
@@ -75,6 +81,52 @@ def collector_agent_registration_fixture(app_name=None, default_settings={}):
         _stdout_logger.addHandler(_stdout_handler)
 
         initialize(log_file=log_file, log_level=log_level, ignore_errors=False)
+
+        # Attempt to record deployment marker for test. We don't
+        # care if it fails.
+
+        api_host = settings.host
+
+        if api_host is None:
+            api_host = 'api.newrelic.com'
+        elif api_host == 'staging-collector.newrelic.com':
+            api_host = 'staging-api.newrelic.com'
+
+        url = '%s://%s/deployments.xml'
+
+        scheme = settings.ssl and 'https' or 'http'
+        server = settings.port and '%s:%d' % (api_host,
+                settings.port) or api_host
+
+        url = url % (scheme, server)
+
+        proxy_host = settings.proxy_host
+        proxy_port = settings.proxy_port
+        proxy_user = settings.proxy_user
+        proxy_pass = settings.proxy_pass
+
+        timeout = settings.agent_limits.data_collector_timeout
+
+        proxies = proxy_details(None, proxy_host, proxy_port, proxy_user,
+                proxy_pass)
+
+        user = pwd.getpwuid(os.getuid()).pw_gecos
+
+        data = {}
+
+        data['deployment[app_name]'] = settings.app_name
+        data['deployment[description]'] = os.path.basename(
+                os.path.normpath(sys.prefix))
+        data['deployment[user]'] = user
+
+        headers = {}
+
+        headers['X-API-Key'] = settings.api_key
+
+        r = requests.post(url, proxies=proxies, headers=headers,
+                timeout=timeout, data=data)
+
+        # Force registration of the application.
 
         application = register_application()
 

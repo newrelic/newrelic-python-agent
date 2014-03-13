@@ -307,6 +307,10 @@ delete_docker_base_images()
 
     docker rmi memcached
 
+    echo "Image: postgresql-9.1"
+
+    docker rmi postgresql-9.1
+
     echo "Image: python-base"
 
     docker rmi python-base

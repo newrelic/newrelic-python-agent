@@ -287,6 +287,12 @@ stop_application_services()
     docker stop -t=10 packnsend-memcached
     docker kill packnsend-memcached
     docker rm packnsend-memcached
+
+    echo "Application: postgresql-9.1"
+
+    docker stop -t=10 packnsend-postgresql-9.1
+    docker kill packnsend-postgresql-9.1
+    docker rm packnsend-postgresql-9.1
 }
 
 delete_docker_base_images()

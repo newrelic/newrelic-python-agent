@@ -266,6 +266,10 @@ start_application_services()
     echo "Application: gearmand"
 
     docker run -d -name packnsend-gearmand gearmand
+
+    echo "Application: postgresql-9.1"
+
+    docker run -d -name packnsend-postgresql-9.1 postgresql-9.1
 }
 
 stop_application_services()

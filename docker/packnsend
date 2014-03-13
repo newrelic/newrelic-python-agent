@@ -249,6 +249,10 @@ create_docker_base_images()
     echo "Image: gearmand"
 
     (cd $ROOT_DIRECTORY; docker build -rm -t gearmand docker/gearmand)
+
+    echo "Image: postgresql-9.1"
+
+    (cd $ROOT_DIRECTORY; docker build -rm -t postgresql-9.1 docker/postgresql-9.1)
 }
 
 start_application_services()

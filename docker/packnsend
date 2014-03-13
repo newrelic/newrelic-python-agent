@@ -184,6 +184,7 @@ launch_remote_command()
         $DOCKER_EXTRA_ARGS \
         -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
         -link packnsend-memcached:memcached \
+        -link packnsend-postgresql-9.1:postgresql-9.1 \
         $DATA_IMAGE_NAME /data/packnsend-remote "$@")
 
     STATUS=$(time docker wait $CONTAINER_ID)
@@ -209,6 +210,7 @@ launch_remote_command()
             $DOCKER_EXTRA_ARGS \
             -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
             -link packnsend-memcached:memcached \
+            -link packnsend-postgresql-9.1:postgresql-9.1 \
             $TEST_IMAGE_NAME bash
     fi
 }
@@ -231,6 +233,7 @@ launch_remote_shell()
         $DOCKER_EXTRA_ARGS \
         -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
         -link packnsend-memcached:memcached \
+        -link packnsend-postgresql-9.1:postgresql-9.1 \
         $DATA_IMAGE_NAME bash
 }
 

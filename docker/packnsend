@@ -129,6 +129,12 @@ launch_remote_command()
     # Launch the remote command, wait for it to complete and display
     # the output.
 
+    echo "Setting env vars to pass to test container."
+    set_docker_env_vars
+
+    echo "DOCKER_ENV_VARS: $DOCKER_ENV_VARS"
+    echo
+
     INTERACTIVE=""
 
     while test "$#" -ne 0
@@ -148,6 +154,7 @@ launch_remote_command()
     echo "Command: $@"
 
     CONTAINER_ID=$(docker run -d -name $DATA_IMAGE_NAME \
+        -e "$DOCKER_ENV_VARS" \
         -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
         -link packnsend-memcached:memcached \
         $DATA_IMAGE_NAME /data/packnsend-remote "$@")
@@ -172,6 +179,7 @@ launch_remote_command()
         echo
 
         docker run -t -i -rm -u guest -volumes-from $CONTAINER_ID \
+            -e "$DOCKER_ENV_VARS" \
             -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
             -link packnsend-memcached:memcached \
             $TEST_IMAGE_NAME bash

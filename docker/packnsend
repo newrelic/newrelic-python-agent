@@ -112,6 +112,18 @@ create_docker_test_image()
     IMAGE_ID=$(docker inspect -format='{{.id}}' $DATA_IMAGE_NAME)
 }
 
+set_docker_env_vars()
+{
+    # Read selected env vars from the current environment
+    # in order to pass them to the docker run commands.
+
+    # Currently, NEW_RELIC_STARTUP_TIMEOUT is the only env var
+    # supported.
+
+    # Set env vars
+    DOCKER_ENV_VARS=`/usr/bin/env | grep NEW_RELIC_STARTUP_TIMEOUT`
+}
+
 launch_remote_command()
 {
     # Launch the remote command, wait for it to complete and display

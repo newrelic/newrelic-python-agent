@@ -36,7 +36,7 @@ def collector_agent_registration_fixture(app_name=None, default_settings={}):
                 settings.port = 8081
             settings.ssl = False
 
-        settings.startup_timeout = 20.0
+        settings.startup_timeout = float(os.environ.get('NEW_RELIC_STARTUP_TIMEOUT', 20.0))
         settings.shutdown_timeout = 20.0
 
         if app_name is not None:

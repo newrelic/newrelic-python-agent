@@ -183,10 +183,17 @@ launch_remote_shell()
     # Launch a remote shell in the container without actually running
     # and command.
 
+    echo "Setting env vars to pass to test container."
+    set_docker_env_vars
+
+    echo "DOCKER_ENV_VARS: $DOCKER_ENV_VARS"
+    echo
+
     echo "Starting test container and running interactive shell."
     echo
 
     docker run -t -i -rm -name $DATA_IMAGE_NAME \
+        -e "$DOCKER_ENV_VARS" \
         -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
         -link packnsend-memcached:memcached \
         $DATA_IMAGE_NAME bash

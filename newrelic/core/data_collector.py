@@ -162,32 +162,33 @@ def _log_request(url, params, headers, data):
 
     pprint(object_from_json, stream=_audit_log_fp)
 
+    def _decode_field(field):
+        if not isinstance(field, bytes):
+            field = field.encode('UTF-8')
+        data = base64.decodestring(field)
+        data = zlib.decompress(data)
+        if isinstance(data, bytes):
+            data = data.decode('Latin-1')
+        data = json_decode(data)
+        return data
+
     if params.get('method') == 'transaction_sample_data':
         for i, sample in enumerate(object_from_json[1]):
-            field = sample[4]
-            field = base64.decodestring(field)
-            field = zlib.decompress(field)
-            field_as_json = json_decode(field)
+            field_as_json = _decode_field(sample[4])
             print(file=_audit_log_fp)
             print('DATA[1][%d][4]:' % i, end=' ', file=_audit_log_fp)
             pprint(field_as_json, stream=_audit_log_fp)
 
     elif params.get('method') == 'profile_data':
         for i, sample in enumerate(object_from_json[1]):
-            field = sample[4]
-            field = base64.decodestring(field)
-            field = zlib.decompress(field)
-            field_as_json = json_decode(field)
+            field_as_json = _decode_field(sample[4])
             print(file=_audit_log_fp)
             print('DATA[1][%d][4]:' % i, end=' ', file=_audit_log_fp)
             pprint(field_as_json, stream=_audit_log_fp)
 
     elif params.get('method') == 'sql_trace_data':
         for i, sample in enumerate(object_from_json[0]):
-            field = sample[9]
-            field = base64.decodestring(field)
-            field = zlib.decompress(field)
-            field_as_json = json_decode(field)
+            field_as_json = _decode_field(sample[9])
             print(file=_audit_log_fp)
             print('DATA[0][%d][9]:' % i, end=' ', file=_audit_log_fp)
             pprint(field_as_json, stream=_audit_log_fp)

@@ -1,9 +1,6 @@
 import psycopg2cffi
 import psycopg2cffi.extensions
 
-import pwd
-import os
-
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_database_trace_inputs)
 
@@ -12,13 +9,7 @@ from newrelic.agent import (background_task, current_transaction,
 
 from newrelic.common.object_wrapper import resolve_path
 
-USER = pwd.getpwuid(os.getuid()).pw_name
-
-DATABASE_NAME = os.environ.get('TDDIUM_DB_PG_NAME', USER)
-DATABASE_USER = os.environ.get('TDDIUM_DB_PG_USER', USER)
-DATABASE_PASSWORD = os.environ.get('TDDIUM_DB_PG_PASSWORD')
-DATABASE_HOST = os.environ.get('TDDIUM_DB_PG_HOST', 'localhost')
-DATABASE_PORT = int(os.environ.get('TDDIUM_DB_PG_PORT', '5432'))
+DB_SETTINGS = postgresql_settings()
 
 _test_execute_via_cursor_scoped_metrics = [
         ('Function/psycopg2cffi:connect', 1),
@@ -49,9 +40,10 @@ _test_execute_via_cursor_rollup_metrics = [
 @validate_database_trace_inputs(execute_params_type=tuple)
 @background_task()
 def test_execute_via_cursor():
-    with psycopg2cffi.connect(database=DATABASE_NAME, user=DATABASE_USER,
-            password=DATABASE_PASSWORD, host=DATABASE_HOST,
-            port=DATABASE_PORT) as connection:
+    with psycopg2cffi.connect(
+            database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
+            password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
+            port=DB_SETTINGS['port']) as connection:
 
         cursor = connection.cursor()
 

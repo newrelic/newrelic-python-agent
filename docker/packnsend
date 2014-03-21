@@ -112,10 +112,55 @@ create_docker_test_image()
     IMAGE_ID=$(docker inspect -format='{{.id}}' $DATA_IMAGE_NAME)
 }
 
+set_docker_env_vars()
+{
+    # Read selected env vars from the current environment
+    # in order to pass them to the docker run commands.
+
+    # Env vars looked for:
+    #       NEW_RELIC_STARTUP_TIMEOUT
+    #       NEW_RELIC_SHUTDOWN_TIMEOUT
+
+    DOCKER_ENV_VARS=""
+
+    if test -n "$NEW_RELIC_STARTUP_TIMEOUT"
+    then
+        KEY_VAL="NEW_RELIC_STARTUP_TIMEOUT=$NEW_RELIC_STARTUP_TIMEOUT"
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
+    fi
+
+    if test -n "$NEW_RELIC_SHUTDOWN_TIMEOUT"
+    then
+        KEY_VAL="NEW_RELIC_SHUTDOWN_TIMEOUT=$NEW_RELIC_SHUTDOWN_TIMEOUT"
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
+    fi
+}
+
+set_docker_extra_args()
+{
+    # Set DOCKER_EXTRA_ARGS to contain a string of extra arguments that
+    # will be passed to the docker run command.
+
+    DOCKER_EXTRA_ARGS=""
+
+    set_docker_env_vars
+
+    if test -n "$DOCKER_ENV_VARS"
+    then
+        DOCKER_EXTRA_ARGS="$DOCKER_EXTRA_ARGS $DOCKER_ENV_VARS"
+    fi
+}
+
 launch_remote_command()
 {
     # Launch the remote command, wait for it to complete and display
     # the output.
+
+    echo "Setting extra arguments to pass to docker run command."
+    set_docker_extra_args
+
+    echo "DOCKER_EXTRA_ARGS:$DOCKER_EXTRA_ARGS"
+    echo
 
     INTERACTIVE=""
 
@@ -136,6 +181,7 @@ launch_remote_command()
     echo "Command: $@"
 
     CONTAINER_ID=$(docker run -d -name $DATA_IMAGE_NAME \
+        $DOCKER_EXTRA_ARGS \
         -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
         -link packnsend-memcached:memcached \
         $DATA_IMAGE_NAME /data/packnsend-remote "$@")
@@ -160,6 +206,7 @@ launch_remote_command()
         echo
 
         docker run -t -i -rm -u guest -volumes-from $CONTAINER_ID \
+            $DOCKER_EXTRA_ARGS \
             -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
             -link packnsend-memcached:memcached \
             $TEST_IMAGE_NAME bash
@@ -171,10 +218,17 @@ launch_remote_shell()
     # Launch a remote shell in the container without actually running
     # and command.
 
+    echo "Setting extra vars to pass to test container."
+    set_docker_extra_args
+
+    echo "DOCKER_EXTRA_ARGS:$DOCKER_EXTRA_ARGS"
+    echo
+
     echo "Starting test container and running interactive shell."
     echo
 
     docker run -t -i -rm -name $DATA_IMAGE_NAME \
+        $DOCKER_EXTRA_ARGS \
         -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
         -link packnsend-memcached:memcached \
         $DATA_IMAGE_NAME bash

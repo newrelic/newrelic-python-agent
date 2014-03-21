@@ -149,6 +149,11 @@ set_docker_extra_args()
     then
         DOCKER_EXTRA_ARGS="$DOCKER_EXTRA_ARGS $DOCKER_ENV_VARS"
     fi
+
+    # Always pass PACKNSEND_DB_USER, which is used to construct database
+    # settings. Both the postgresql and mysql containers use PACKNSEND_DB_USER
+    # as the database name, user, and password.
+    DOCKER_EXTRA_ARGS="$DOCKER_EXTRA_ARGS -e PACKNSEND_DB_USER=python_agent"
 }
 
 launch_remote_command()

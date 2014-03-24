@@ -4,6 +4,8 @@ import psycopg2cffi.extensions
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_database_trace_inputs)
 
+from testing_support.settings import postgresql_settings
+
 from newrelic.agent import (background_task, current_transaction,
     transient_function_wrapper)
 

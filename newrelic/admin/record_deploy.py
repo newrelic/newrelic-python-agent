@@ -40,7 +40,7 @@ def local_config(args):
 
     if host is None:
         host = 'api.newrelic.com'
-    elif host == 'staging.collector.com':
+    elif host == 'staging-collector.newrelic.com':
         host = 'staging-api.newrelic.com'
 
     port = settings.port

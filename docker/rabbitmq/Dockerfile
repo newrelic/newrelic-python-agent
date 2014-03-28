@@ -2,6 +2,7 @@ FROM ubuntu:precise
 
 MAINTAINER bbytes  "info@beyondbytes.co.in"
 
+# change to test jenkins auto build with amazon SNS
 # Make sure that Upstart won't try to start RabbitMQ after apt-get installs it
 # https://github.com/dotcloud/docker/issues/446
 ADD policy-rc.d /usr/sbin/policy-rc.d

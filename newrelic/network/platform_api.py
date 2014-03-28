@@ -8,6 +8,7 @@ import os
 from ..packages import six
 
 from ..packages import requests
+from ..packages.requests import certs
 
 from .. import version as agent_version
 
@@ -120,8 +121,10 @@ class PlatformInterface(object):
         # number of different types of HTTP errors for requests.
 
         try:
+            cert_loc = certs.where()
+
             r = session.post(url, headers=headers, proxies=proxies,
-                    timeout=self.timeout, data=data)
+                    timeout=self.timeout, data=data, verify=cert_loc)
 
             # Read the content now so we can force close the socket
             # connection if this is a transient session as quickly

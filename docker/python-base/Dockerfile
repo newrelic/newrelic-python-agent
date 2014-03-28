@@ -1,6 +1,8 @@
 FROM ubuntu:12.04
 MAINTAINER Graham Dumpleton <grahamd@newrelic.com>
 
+RUN apt-get update
+
 RUN adduser --system --shell `which bash` guest
 
 RUN apt-get install -y language-pack-en-base
@@ -24,6 +26,9 @@ RUN apt-get update
 RUN apt-get install -y python2.6 python2.6-dev
 RUN apt-get install -y python2.7 python2.7-dev
 RUN apt-get install -y python3.3 python3.3-dev
+
+# Needed for psycopg2cffi tests.
+RUN apt-get install -y libffi-dev
 
 RUN wget https://bitbucket.org/pypy/pypy/downloads/pypy-2.2.1-linux64.tar.bz2
 RUN tar -C /usr/local -xf pypy-2.2.1-linux64.tar.bz2

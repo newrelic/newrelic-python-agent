@@ -215,6 +215,8 @@ def _process_configuration(section):
                      'get', None)
     _process_setting(section, 'license_key',
                      'get', None)
+    _process_setting(section, 'api_key',
+                     'get', None)
     _process_setting(section, 'host',
                      'get', None)
     _process_setting(section, 'port',
@@ -230,6 +232,8 @@ def _process_configuration(section):
     _process_setting(section, 'proxy_user',
                      'get', None)
     _process_setting(section, 'proxy_pass',
+                     'get', None)
+    _process_setting(section, 'audit_log_file',
                      'get', None)
     _process_setting(section, 'monitor_mode',
                      'getboolean', None)

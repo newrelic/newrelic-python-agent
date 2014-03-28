@@ -59,6 +59,12 @@
             "New Relic"
         ]
     },
+    "newrelic/admin/record_deploy.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/admin/run_program.py": {
         "hash": "n/a",
         "libraries": [

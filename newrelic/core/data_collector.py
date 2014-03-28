@@ -2,16 +2,23 @@
 
 """
 
+from __future__ import print_function
+
 import logging
 import os
 import socket
 import sys
 import time
 import zlib
+import base64
+
+from pprint import pprint
 
 import newrelic.packages.six as six
 
 import newrelic.packages.requests as requests
+
+from newrelic.packages.requests import certs
 
 from newrelic import version
 from newrelic.core.config import global_settings, create_settings_snapshot
@@ -115,6 +122,82 @@ def _requests_proxy_scheme_workaround(wrapped, instance, args, kwargs):
 # the data collector it is initially done through the main data collector.
 # It is though then necessary to ask the data collector for the per
 # session data collector to use. Subsequent calls are then made to it.
+
+_audit_log_fp = None
+
+def _log_request(url, params, headers, data):
+    settings = global_settings()
+
+    if not settings.audit_log_file:
+        return
+
+    global _audit_log_fp
+
+    if not _audit_log_fp:
+        log_file = settings.audit_log_file
+        try:
+            _audit_log_fp = open(log_file, 'a')
+        except Exception:
+            _logger.exception('Unable to open audit log file %r.', log_file)
+            settings.audit_log_file = None
+            return
+
+    print('TIME: %r' % time.strftime('%Y-%m-%d %H:%M:%S',
+            time.localtime()), file=_audit_log_fp)
+    print(file=_audit_log_fp)
+    print('PID: %r' % os.getpid(), file=_audit_log_fp)
+    print(file=_audit_log_fp)
+    print('URL: %r' % url, file=_audit_log_fp)
+    print(file=_audit_log_fp)
+    print('PARAMS: %r' % params, file=_audit_log_fp)
+    print(file=_audit_log_fp)
+    print('HEADERS: %r' % headers, file=_audit_log_fp)
+    print(file=_audit_log_fp)
+    print('DATA:', end=' ', file=_audit_log_fp)
+
+    if headers.get('Content-Encoding') == 'deflate':
+        data = zlib.decompress(data)
+
+    object_from_json = json_decode(data)
+
+    pprint(object_from_json, stream=_audit_log_fp)
+
+    def _decode_field(field):
+        if not isinstance(field, bytes):
+            field = field.encode('UTF-8')
+        data = base64.decodestring(field)
+        data = zlib.decompress(data)
+        if isinstance(data, bytes):
+            data = data.decode('Latin-1')
+        data = json_decode(data)
+        return data
+
+    if params.get('method') == 'transaction_sample_data':
+        for i, sample in enumerate(object_from_json[1]):
+            field_as_json = _decode_field(sample[4])
+            print(file=_audit_log_fp)
+            print('DATA[1][%d][4]:' % i, end=' ', file=_audit_log_fp)
+            pprint(field_as_json, stream=_audit_log_fp)
+
+    elif params.get('method') == 'profile_data':
+        for i, sample in enumerate(object_from_json[1]):
+            field_as_json = _decode_field(sample[4])
+            print(file=_audit_log_fp)
+            print('DATA[1][%d][4]:' % i, end=' ', file=_audit_log_fp)
+            pprint(field_as_json, stream=_audit_log_fp)
+
+    elif params.get('method') == 'sql_trace_data':
+        for i, sample in enumerate(object_from_json[0]):
+            field_as_json = _decode_field(sample[9])
+            print(file=_audit_log_fp)
+            print('DATA[0][%d][9]:' % i, end=' ', file=_audit_log_fp)
+            pprint(field_as_json, stream=_audit_log_fp)
+
+    print(file=_audit_log_fp)
+    print(78*'=', file=_audit_log_fp)
+    print(file=_audit_log_fp)
+
+    _audit_log_fp.flush()
 
 def send_request(session, url, method, license_key, agent_run_id=None,
             payload=()):
@@ -240,15 +323,21 @@ def send_request(session, url, method, license_key, agent_run_id=None,
     internal_metric('Supportability/Collector/Output/Bytes/%s' % method,
             len(data))
 
+    # If audit logging is enabled, log the requetss details.
+
+    _log_request(url, params, headers, data)
+
     try:
         # The timeout value in the requests module is only on
         # the initial connection and doesn't apply to how long
         # it takes to get back a response.
 
+        cert_loc = certs.where()
         timeout = settings.agent_limits.data_collector_timeout
 
         r = session.post(url, params=params, headers=headers,
-                proxies=proxies, timeout=timeout, data=data)
+                proxies=proxies, timeout=timeout, data=data,
+                verify=cert_loc)
 
         # Read the content now so we can force close the socket
         # connection if this is a transient session as quickly

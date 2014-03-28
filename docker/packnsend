@@ -5,6 +5,8 @@ WORK_DIRECTORY=".`pwd | sed -e s%$ROOT_DIRECTORY%%`"
 
 TEST_IMAGE_NAME=python-base
 
+TMPDIR=${TMPDIR:-/tmp}
+
 IMAGE_ID=""
 CONTAINER_ID=""
 
@@ -28,7 +30,7 @@ cleanup_containers()
     rm -r $DATA_DIRECTORY
 }
 
-trap "cleanup_containers && exit 255" SIGINT SIGQUIT SIGTERM
+trap "cleanup_containers && exit 255" INT QUIT TERM
 
 create_work_directory()
 {
@@ -37,7 +39,7 @@ create_work_directory()
 
     echo "Creating data directory."
 
-    DATA_DIRECTORY=`mktemp -d -t packnsend`
+    DATA_DIRECTORY=`mktemp -d $TMPDIR/packnsend.XXXXXXXX`
 
     echo "Data directory: $DATA_DIRECTORY"
 }
@@ -110,10 +112,60 @@ create_docker_test_image()
     IMAGE_ID=$(docker inspect -format='{{.id}}' $DATA_IMAGE_NAME)
 }
 
+set_docker_env_vars()
+{
+    # Read selected env vars from the current environment
+    # in order to pass them to the docker run commands.
+
+    # Env vars looked for:
+    #       NEW_RELIC_STARTUP_TIMEOUT
+    #       NEW_RELIC_SHUTDOWN_TIMEOUT
+
+    DOCKER_ENV_VARS=""
+
+    if test -n "$NEW_RELIC_STARTUP_TIMEOUT"
+    then
+        KEY_VAL="NEW_RELIC_STARTUP_TIMEOUT=$NEW_RELIC_STARTUP_TIMEOUT"
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
+    fi
+
+    if test -n "$NEW_RELIC_SHUTDOWN_TIMEOUT"
+    then
+        KEY_VAL="NEW_RELIC_SHUTDOWN_TIMEOUT=$NEW_RELIC_SHUTDOWN_TIMEOUT"
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
+    fi
+}
+
+set_docker_extra_args()
+{
+    # Set DOCKER_EXTRA_ARGS to contain a string of extra arguments that
+    # will be passed to the docker run command.
+
+    DOCKER_EXTRA_ARGS=""
+
+    set_docker_env_vars
+
+    if test -n "$DOCKER_ENV_VARS"
+    then
+        DOCKER_EXTRA_ARGS="$DOCKER_EXTRA_ARGS $DOCKER_ENV_VARS"
+    fi
+
+    # Always pass PACKNSEND_DB_USER, which is used to construct database
+    # settings. Both the postgresql and mysql containers use PACKNSEND_DB_USER
+    # as the database name, user, and password.
+    DOCKER_EXTRA_ARGS="$DOCKER_EXTRA_ARGS -e PACKNSEND_DB_USER=python_agent"
+}
+
 launch_remote_command()
 {
     # Launch the remote command, wait for it to complete and display
     # the output.
+
+    echo "Setting extra arguments to pass to docker run command."
+    set_docker_extra_args
+
+    echo "DOCKER_EXTRA_ARGS:$DOCKER_EXTRA_ARGS"
+    echo
 
     INTERACTIVE=""
 
@@ -134,8 +186,10 @@ launch_remote_command()
     echo "Command: $@"
 
     CONTAINER_ID=$(docker run -d -name $DATA_IMAGE_NAME \
+        $DOCKER_EXTRA_ARGS \
         -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
         -link packnsend-memcached:memcached \
+        -link packnsend-postgresql-9.1:postgresql-9.1 \
         $DATA_IMAGE_NAME /data/packnsend-remote "$@")
 
     STATUS=$(time docker wait $CONTAINER_ID)
@@ -158,8 +212,10 @@ launch_remote_command()
         echo
 
         docker run -t -i -rm -u guest -volumes-from $CONTAINER_ID \
+            $DOCKER_EXTRA_ARGS \
             -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
             -link packnsend-memcached:memcached \
+            -link packnsend-postgresql-9.1:postgresql-9.1 \
             $TEST_IMAGE_NAME bash
     fi
 }
@@ -169,12 +225,20 @@ launch_remote_shell()
     # Launch a remote shell in the container without actually running
     # and command.
 
+    echo "Setting extra vars to pass to test container."
+    set_docker_extra_args
+
+    echo "DOCKER_EXTRA_ARGS:$DOCKER_EXTRA_ARGS"
+    echo
+
     echo "Starting test container and running interactive shell."
     echo
 
     docker run -t -i -rm -name $DATA_IMAGE_NAME \
+        $DOCKER_EXTRA_ARGS \
         -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
         -link packnsend-memcached:memcached \
+        -link packnsend-postgresql-9.1:postgresql-9.1 \
         $DATA_IMAGE_NAME bash
 }
 
@@ -193,6 +257,10 @@ create_docker_base_images()
     echo "Image: gearmand"
 
     (cd $ROOT_DIRECTORY; docker build -rm -t gearmand docker/gearmand)
+
+    echo "Image: postgresql-9.1"
+
+    (cd $ROOT_DIRECTORY; docker build -rm -t postgresql-9.1 docker/postgresql-9.1)
 }
 
 start_application_services()
@@ -206,6 +274,10 @@ start_application_services()
     echo "Application: gearmand"
 
     docker run -d -name packnsend-gearmand gearmand
+
+    echo "Application: postgresql-9.1"
+
+    docker run -d -name packnsend-postgresql-9.1 postgresql-9.1
 }
 
 stop_application_services()
@@ -223,6 +295,12 @@ stop_application_services()
     docker stop -t=10 packnsend-memcached
     docker kill packnsend-memcached
     docker rm packnsend-memcached
+
+    echo "Application: postgresql-9.1"
+
+    docker stop -t=10 packnsend-postgresql-9.1
+    docker kill packnsend-postgresql-9.1
+    docker rm packnsend-postgresql-9.1
 }
 
 delete_docker_base_images()
@@ -236,6 +314,10 @@ delete_docker_base_images()
     echo "Image: memcached"
 
     docker rmi memcached
+
+    echo "Image: postgresql-9.1"
+
+    docker rmi postgresql-9.1
 
     echo "Image: python-base"
 

@@ -1,23 +1,16 @@
 import postgresql.interface.proboscis.dbapi2
 
-import pwd
-import os
-
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_database_trace_inputs)
+
+from testing_support.settings import postgresql_settings
 
 from newrelic.agent import (background_task, current_transaction,
     transient_function_wrapper)
 
 from newrelic.common.object_wrapper import resolve_path
 
-USER = pwd.getpwuid(os.getuid()).pw_name
-
-DATABASE_NAME = os.environ.get('TDDIUM_DB_PG_NAME', USER)
-DATABASE_USER = os.environ.get('TDDIUM_DB_PG_USER', USER)
-DATABASE_PASSWORD = os.environ.get('TDDIUM_DB_PG_PASSWORD')
-DATABASE_HOST = os.environ.get('TDDIUM_DB_PG_HOST', 'localhost')
-DATABASE_PORT = int(os.environ.get('TDDIUM_DB_PG_PORT', '5432'))
+DB_SETTINGS = postgresql_settings()
 
 _test_execute_via_cursor_scoped_metrics = [
         ('Function/postgresql.interface.proboscis.dbapi2:connect', 1),
@@ -49,9 +42,9 @@ _test_execute_via_cursor_rollup_metrics = [
 @background_task()
 def test_execute_via_cursor():
     connection = postgresql.interface.proboscis.dbapi2.connect(
-            database=DATABASE_NAME, user=DATABASE_USER,
-            password=DATABASE_PASSWORD, host=DATABASE_HOST,
-            port=DATABASE_PORT)
+            database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
+            password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
+            port=DB_SETTINGS['port'])
 
     cursor = connection.cursor()
 

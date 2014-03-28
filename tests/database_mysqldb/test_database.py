@@ -6,18 +6,14 @@ import os
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_database_trace_inputs)
 
+from testing_support.settings import mysql_settings
+
 from newrelic.agent import (background_task, current_transaction,
     transient_function_wrapper)
 
 from newrelic.common.object_wrapper import resolve_path
 
-USER = pwd.getpwuid(os.getuid()).pw_name
-
-DATABASE_NAME = os.environ.get('TDDIUM_DB_MYSQL_NAME', USER)
-DATABASE_USER = os.environ.get('TDDIUM_DB_MYSQL_USER', USER)
-DATABASE_PASSWORD = os.environ.get('TDDIUM_DB_MYSQL_PASSWORD', '')
-DATABASE_HOST = os.environ.get('TDDIUM_DB_MYSQL_HOST', 'localhost')
-DATABASE_PORT = int(os.environ.get('TDDIUM_DB_MYSQL_PORT', '3306'))
+DB_SETTINGS = mysql_settings()
 
 _test_execute_via_cursor_scoped_metrics = [
         ('Function/MySQLdb:Connect', 1),
@@ -50,9 +46,10 @@ _test_execute_via_cursor_rollup_metrics = [
 @validate_database_trace_inputs(tuple)
 @background_task()
 def test_execute_via_cursor():
-    connection = MySQLdb.connect(db=DATABASE_NAME, user=DATABASE_USER,
-            passwd=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT)
-    
+    connection = MySQLdb.connect(db=DB_SETTINGS['name'],
+            user=DB_SETTINGS['user'], passwd=DB_SETTINGS['password'],
+            host=DB_SETTINGS['host'], port=DB_SETTINGS['port'])
+
     with connection as cursor:
         cursor.execute("""drop table if exists database_mysqldb""")
 
@@ -105,9 +102,10 @@ _test_connect_using_alias_rollup_metrics = [
 @validate_database_trace_inputs(tuple)
 @background_task()
 def test_connect_using_alias():
-    connection = MySQLdb.Connect(db=DATABASE_NAME, user=DATABASE_USER,
-            passwd=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT)
-    
+    connection = MySQLdb.connect(db=DB_SETTINGS['name'],
+            user=DB_SETTINGS['user'], passwd=DB_SETTINGS['password'],
+            host=DB_SETTINGS['host'], port=DB_SETTINGS['port'])
+
     with connection as cursor:
         cursor.execute("""drop table if exists database_mysqldb""")
 
@@ -151,9 +149,11 @@ _test_rollback_on_exception_rollup_metrics = [
 @background_task()
 def test_rollback_on_exception():
     try:
-        with MySQLdb.Connect(db=DATABASE_NAME, user=DATABASE_USER,
-                passwd=DATABASE_PASSWORD, host=DATABASE_HOST,
-                port=DATABASE_PORT) as connection:
+        with MySQLdb.connect(
+            db=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
+            passwd=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
+            port=DB_SETTINGS['port']) as connection:
+
             raise RuntimeError('error')
     except RuntimeError:
         pass

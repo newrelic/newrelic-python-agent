@@ -38,7 +38,7 @@ def local_config(args):
 
     host = settings.host
 
-    if host is None:
+    if host == 'collector.newrelic.com':
         host = 'api.newrelic.com'
     elif host == 'staging-collector.newrelic.com':
         host = 'staging-api.newrelic.com'

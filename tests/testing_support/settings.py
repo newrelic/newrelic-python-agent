@@ -24,6 +24,7 @@ def postgresql_settings():
     settings = {}
 
     # Use local defaults, if TDDIUM vars aren't present.
+
     settings['name'] = _e('TDDIUM_DB_PG_NAME', USER)
     settings['user'] = _e('TDDIUM_DB_PG_USER', USER)
     settings['password'] = _e('TDDIUM_DB_PG_PASSWORD', '')
@@ -31,6 +32,7 @@ def postgresql_settings():
     settings['port'] = int(_e('TDDIUM_DB_PG_PORT', '5432'))
 
     # Look for env vars in test docker container.
+
     settings['name'] = _e('PACKNSEND_DB_USER', settings['name'])
     settings['user'] = _e('PACKNSEND_DB_USER', settings['user'])
     settings['password'] = _e('PACKNSEND_DB_USER', settings['password'])
@@ -57,6 +59,7 @@ def mysql_settings():
     settings = {}
 
     # Use local defaults, if TDDIUM vars aren't present.
+
     settings['name'] = _e('TDDIUM_DB_MYSQL_NAME', USER)
     settings['user'] = _e('TDDIUM_DB_MYSQL_USER', USER)
     settings['password'] = _e('TDDIUM_DB_MYSQL_PASSWORD', '')
@@ -64,6 +67,7 @@ def mysql_settings():
     settings['port'] = int(_e('TDDIUM_DB_MYSQL_PORT', '5432'))
 
     # Look for env vars in test docker container.
+
     settings['name'] = _e('PACKNSEND_DB_USER', settings['name'])
     settings['user'] = _e('PACKNSEND_DB_USER', settings['user'])
     settings['password'] = _e('PACKNSEND_DB_USER', settings['password'])

@@ -6,13 +6,63 @@ import pwd
 
 from newrelic.agent import (initialize, register_application,
         global_settings, shutdown_agent, application as application_instance,
-        transient_function_wrapper, function_wrapper, application_settings)
+        transient_function_wrapper, function_wrapper, application_settings,
+        wrap_function_wrapper)
 
 from newrelic.core.config import (apply_config_setting,
         create_settings_snapshot)
 
 from newrelic.network.addresses import proxy_details
 from newrelic.packages import requests
+
+_fake_collector_responses = {
+    'get_redirect_host': 'fake-collector.newrelic.com',
+
+    'connect': {
+        'js_agent_loader': '',
+        'apdex_t': 0.5,
+        'encoding_key': 'd67afc830dab717fd163bfcb0b8b88423e9a1a3b',
+        'agent_run_id': 1234567,
+        'product_level': 50,
+        'trusted_account_ids':[12345],
+        'url_rules': [],
+        'collect_errors': True,
+        'cross_process_id': '12345#67890',
+        'messages': [{'message': 'Reporting to fake collector',
+            'level': 'INFO' }],
+        'sampling_rate': 0,
+        'collect_traces': True,
+        'data_report_period': 60
+    },
+
+    'metric_data': [],
+
+    'get_agent_commands': [],
+
+    'error_data': None,
+
+    'transaction_sample_data': None,
+
+    'sql_trace_data': None,
+
+    'analytic_event_data': None,
+
+    'shutdown': None,
+}
+
+
+def fake_collector_wrapper(wrapped, instance, args, kwargs):
+    def _bind_params(session, url, method, license_key, agent_run_id=None,
+            payload=()):
+        return session, url, method, license_key, agent_run_id, payload
+
+    session, url, method, license_key, agent_run_id, payload = _bind_params(
+            *args, **kwargs)
+
+    if method in _fake_collector_responses:
+        return _fake_collector_responses[method]
+
+    return wrapped(*args, **kwargs)
 
 def collector_agent_registration_fixture(app_name=None, default_settings={}):
     @pytest.fixture(scope='session')
@@ -84,6 +134,15 @@ def collector_agent_registration_fixture(app_name=None, default_settings={}):
 
         initialize(log_file=log_file, log_level=log_level, ignore_errors=False)
 
+        # Determine if should be using an internal fake local
+        # collector for the test.
+
+        use_fake_collector = os.environ.get('NEW_RELIC_FAKE_COLLECTOR')
+
+        if use_fake_collector:
+            wrap_function_wrapper('newrelic.core.data_collector',
+                    'send_request', fake_collector_wrapper)
+
         # Attempt to record deployment marker for test. We don't
         # care if it fails.
 
@@ -125,8 +184,9 @@ def collector_agent_registration_fixture(app_name=None, default_settings={}):
 
         headers['X-API-Key'] = settings.api_key
 
-        r = requests.post(url, proxies=proxies, headers=headers,
-                timeout=timeout, data=data)
+        if not use_fake_collector:
+            r = requests.post(url, proxies=proxies, headers=headers,
+                    timeout=timeout, data=data)
 
         # Force registration of the application.
 

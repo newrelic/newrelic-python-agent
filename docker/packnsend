@@ -120,6 +120,7 @@ set_docker_env_vars()
     # Env vars looked for:
     #       NEW_RELIC_STARTUP_TIMEOUT
     #       NEW_RELIC_SHUTDOWN_TIMEOUT
+    #       NEW_RELIC_FAKE_COLLECTOR
 
     DOCKER_ENV_VARS=""
 
@@ -132,6 +133,12 @@ set_docker_env_vars()
     if test -n "$NEW_RELIC_SHUTDOWN_TIMEOUT"
     then
         KEY_VAL="NEW_RELIC_SHUTDOWN_TIMEOUT=$NEW_RELIC_SHUTDOWN_TIMEOUT"
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
+    fi
+
+    if test -n "$NEW_RELIC_FAKE_COLLECTOR"
+    then
+        KEY_VAL="NEW_RELIC_FAKE_COLLECTOR=$NEW_RELIC_FAKE_COLLECTOR"
         DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
     fi
 }

@@ -197,6 +197,7 @@ launch_remote_command()
         -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
         -link packnsend-memcached:memcached \
         -link packnsend-postgresql-9.1:postgresql-9.1 \
+        -link packnsend-mysql-5.5:mysql-5.5 \
         $DATA_IMAGE_NAME /data/packnsend-remote "$@")
 
     STATUS=$(time docker wait $CONTAINER_ID)
@@ -223,6 +224,7 @@ launch_remote_command()
             -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
             -link packnsend-memcached:memcached \
             -link packnsend-postgresql-9.1:postgresql-9.1 \
+            -link packnsend-mysql-5.5:mysql-5.5 \
             $TEST_IMAGE_NAME bash
     fi
 }
@@ -246,6 +248,7 @@ launch_remote_shell()
         -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
         -link packnsend-memcached:memcached \
         -link packnsend-postgresql-9.1:postgresql-9.1 \
+        -link packnsend-mysql-5.5:mysql-5.5 \
         $DATA_IMAGE_NAME bash
 }
 
@@ -268,6 +271,10 @@ create_docker_base_images()
     echo "Image: postgresql-9.1"
 
     (cd $ROOT_DIRECTORY; docker build -rm -t postgresql-9.1 docker/postgresql-9.1)
+
+    echo "Image: mysql-5.5"
+
+    (cd $ROOT_DIRECTORY; docker build -rm -t mysql-5.5 docker/mysql-5.5)
 }
 
 start_application_services()
@@ -285,6 +292,10 @@ start_application_services()
     echo "Application: postgresql-9.1"
 
     docker run -d -name packnsend-postgresql-9.1 postgresql-9.1
+
+    echo "Application: mysql-5.5"
+
+    docker run -d -name packnsend-mysql-5.5 mysql-5.5
 }
 
 stop_application_services()
@@ -308,6 +319,12 @@ stop_application_services()
     docker stop -t=10 packnsend-postgresql-9.1
     docker kill packnsend-postgresql-9.1
     docker rm packnsend-postgresql-9.1
+
+    echo "Application: mysql-5.5"
+
+    docker stop -t=10 packnsend-mysql-5.5
+    docker kill packnsend-mysql-5.5
+    docker rm packnsend-mysql-5.5
 }
 
 delete_docker_base_images()
@@ -325,6 +342,10 @@ delete_docker_base_images()
     echo "Image: postgresql-9.1"
 
     docker rmi postgresql-9.1
+
+    echo "Image: mysql-5.5"
+
+    docker rmi mysql-5.5
 
     echo "Image: python-base"
 

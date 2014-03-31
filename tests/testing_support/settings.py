@@ -41,7 +41,6 @@ def postgresql_settings():
 
     return settings
 
-
 def mysql_settings():
     """
     Return a dict of settings for connecting to mysql.

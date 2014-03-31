@@ -8,8 +8,7 @@ def _e(key, default):
 USER = pwd.getpwuid(os.getuid()).pw_name
 
 def postgresql_settings():
-    """
-    Return a dict of settings for connecting to postgresql.
+    """Return a dict of settings for connecting to postgresql.
 
     Will return the correct settings, depending on which of the
     three environments it is running in. It attempts to set variables
@@ -19,8 +18,8 @@ def postgresql_settings():
         1. Local
         2. Tddium
         3. Test Docker container
-
     """
+
     settings = {}
 
     # Use local defaults, if TDDIUM vars aren't present.
@@ -42,8 +41,7 @@ def postgresql_settings():
     return settings
 
 def mysql_settings():
-    """
-    Return a dict of settings for connecting to mysql.
+    """Return a dict of settings for connecting to mysql.
 
     Will return the correct settings, depending on which of the
     three environments it is running in. It attempts to set variables
@@ -53,8 +51,8 @@ def mysql_settings():
         1. Local
         2. Tddium
         3. Test Docker container
-
     """
+
     settings = {}
 
     # Use local defaults, if TDDIUM vars aren't present.

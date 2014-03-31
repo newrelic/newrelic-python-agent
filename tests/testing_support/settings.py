@@ -63,7 +63,7 @@ def mysql_settings():
     settings['user'] = _e('TDDIUM_DB_MYSQL_USER', USER)
     settings['password'] = _e('TDDIUM_DB_MYSQL_PASSWORD', '')
     settings['host'] = _e('TDDIUM_DB_MYSQL_HOST', 'localhost')
-    settings['port'] = int(_e('TDDIUM_DB_MYSQL_PORT', '5432'))
+    settings['port'] = int(_e('TDDIUM_DB_MYSQL_PORT', '3306'))
 
     # Look for env vars in test docker container.
 

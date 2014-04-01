@@ -142,6 +142,7 @@ to the test docker instance:
 
     NEW_RELIC_STARTUP_TIMEOUT
     NEW_RELIC_SHUTDOWN_TIMEOUT
+    NEW_RELIC_FAKE_COLLECTOR
 
 Launching a shell in docker
 ---------------------------

@@ -18,6 +18,7 @@ def postgresql_settings():
         1. Local
         2. Tddium
         3. Test Docker container
+
     """
 
     settings = {}
@@ -53,6 +54,7 @@ def mysql_settings():
         1. Local
         2. Tddium
         3. Test Docker container
+
     """
 
     settings = {}

@@ -15,6 +15,8 @@ from newrelic.core.config import (apply_config_setting,
 from newrelic.network.addresses import proxy_details
 from newrelic.packages import requests
 
+_logger = logging.getLogger('newrelic.tests')
+
 _fake_collector_responses = {
     'get_redirect_host': 'fake-collector.newrelic.com',
 
@@ -185,8 +187,13 @@ def collector_agent_registration_fixture(app_name=None, default_settings={}):
         headers['X-API-Key'] = settings.api_key
 
         if not use_fake_collector:
-            r = requests.post(url, proxies=proxies, headers=headers,
-                    timeout=timeout, data=data)
+            try:
+                _logger.debug("Record deployment marker at %s" % url)
+                r = requests.post(url, proxies=proxies, headers=headers,
+                        timeout=timeout, data=data)
+            except Exception:
+                _logger.exception("Unable to record deployment marker.")
+                pass
 
         # Force registration of the application.
 

@@ -71,7 +71,7 @@ Before using it or the 'packnsend' script, you need to set and export
 DOCKER_HOST environment variable to 'localhost'.
 
     export DOCKER_HOST="localhost"
-    
+
 If you had to override the docker service port however, include the port
 as part of the DOCKER_HOST environment variable:
 
@@ -124,10 +124,40 @@ changes during testing.
 The command when run will be from the same relative directory within the
 source code as you were in when you can the 'packnsend' command.
 
-If a test has been failing, you can launch into a shell with the results of
-running the test using the '-i' option.
+Passing environment variables
+-----------------------------
+
+Certain variables that are present in your current environment will
+be passed as environment variables to the test docker instance. This
+allows you to configure selected settings when you run a test.
+
+For example, to change `settings.startup_timeout`, you should set the
+`NEW_RELIC_STARTUP_TIMEOUT` environment variable:
+
+    export NEW_RELIC_STARTUP_TIMEOUT=60
+    packnsend run tox -c tests/database_psycopg2/tox.ini
+
+Only the following environment variables are passed from your environment
+to the test docker instance:
+
+    NEW_RELIC_STARTUP_TIMEOUT
+    NEW_RELIC_SHUTDOWN_TIMEOUT
+    NEW_RELIC_FAKE_COLLECTOR
+
+Launching a shell in docker
+---------------------------
+
+There are two different options for launching a shell in a test docker
+instance.
+
+1. Connect after a test has run.
+
+For instance, if a test has been failing, you can launch into a shell
+with the results of running the test using the '-i' option.
 
     packnsend run -i tox -c tests/database_sqlite/tox.ini
+
+2. Connect without running any commands.
 
 If you don't want to run a test and simply want a shell, use:
 
@@ -136,19 +166,30 @@ If you don't want to run a test and simply want a shell, use:
 In all cases when a command or shell is run up in the test container, it
 will be done as the UNIX user 'guest'.
 
+Cleaning up containers
+----------------------
+
 After any command, the container and any temporary images will be cleaned
-up and deleted so that the docker service doesn't fill up with garbage.
+up and deleted automatically, so that the docker service doesn't fill up
+with garbage.
+
+Stopping application services
+-----------------------------
 
 When done testing, the application services can be shutdown by running:
 
     packnsend stop
 
-Cleaning up images
-------------------
+Updating images
+---------------
 
-If the base images have been changed and need updating, you can remove the
-old ones by running:
+If the base images have been changed, the way to update them is to remove the old ones,
+and then create them anew.
+
+Remove base images:
 
     packnsend cleanup
 
-You can then run 'init' again to recreate them.
+Create base images:
+
+    packnsend init

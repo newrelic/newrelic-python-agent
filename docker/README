@@ -124,6 +124,25 @@ changes during testing.
 The command when run will be from the same relative directory within the
 source code as you were in when you can the 'packnsend' command.
 
+Passing environment variables
+-----------------------------
+
+Certain variables that are present in your current environment will
+be passed as environment variables to the test docker instance. This
+allows you to configure selected settings when you run a test.
+
+For example, to change `settings.startup_timeout`, you should set the
+`NEW_RELIC_STARTUP_TIMEOUT` environment variable:
+
+    export NEW_RELIC_STARTUP_TIMEOUT=60
+    packnsend run tox -c tests/database_psycopg2/tox.ini
+
+Only the following environment variables are passed from your environment
+to the test docker instance:
+
+    NEW_RELIC_STARTUP_TIMEOUT
+    NEW_RELIC_SHUTDOWN_TIMEOUT
+
 Launching a shell in docker
 ---------------------------
 

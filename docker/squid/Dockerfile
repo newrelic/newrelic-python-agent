@@ -40,3 +40,23 @@ RUN sed -i 's/--enable-ecap/--enable-ecap --enable-ssl --enable-ssl-crtd/' \
 
 RUN apt-get -y install devscripts
 RUN cd /src/squid3-3.3.8 && debuild -us -uc -b
+
+# Install debs
+
+RUN dpkg -i /src/*.deb
+
+# Install configuration files
+
+ADD squid.conf /etc/squid3/squid.conf
+ADD openssl.cnf /etc/squid3/openssl.cnf
+
+# Generate certs
+
+ADD make-certs.sh /usr/local/bin/make-certs.sh
+RUN chmod 755 /usr/local/bin/make-certs.sh
+RUN mkdir -p /etc/squid3/certs
+RUN /usr/local/bin/make-certs.sh
+
+
+EXPOSE 3128 3129
+CMD ["/usr/sbin/squid3", "-N", "-f", "/etc/squid3/squid.conf"]

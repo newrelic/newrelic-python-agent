@@ -202,6 +202,7 @@ launch_remote_command()
         --link packnsend-postgresql-9.1:postgresql-9.1 \
         --link packnsend-mysql-5.5:mysql-5.5 \
         --link packnsend-devpi:devpi \
+        --link packnsend-squid:squid \
         $DATA_IMAGE_NAME /data/packnsend-remote "$@")
 
     STATUS=$(time docker wait $CONTAINER_ID)
@@ -230,6 +231,7 @@ launch_remote_command()
             --link packnsend-postgresql-9.1:postgresql-9.1 \
             --link packnsend-mysql-5.5:mysql-5.5 \
             --link packnsend-devpi:devpi \
+            --link packnsend-squid:squid \
             $TEST_IMAGE_NAME /data/packnsend-bash
     fi
 }
@@ -255,6 +257,7 @@ launch_remote_shell()
         --link packnsend-postgresql-9.1:postgresql-9.1 \
         --link packnsend-mysql-5.5:mysql-5.5 \
         --link packnsend-devpi:devpi \
+        --link packnsend-squid:squid \
         $DATA_IMAGE_NAME /data/packnsend-bash
 }
 
@@ -285,6 +288,10 @@ create_docker_base_images()
     echo "Image: devpi-server"
 
     (cd $ROOT_DIRECTORY; docker build --rm -t devpi docker/devpi-server)
+
+    echo "Image: squid"
+
+    (cd $ROOT_DIRECTORY; docker build --rm -t squid docker/squid)
 }
 
 start_application_services()
@@ -311,6 +318,9 @@ start_application_services()
 
     docker run -d --name packnsend-devpi devpi
 
+    echo "Application: squid"
+
+    docker run -d -name packnsend-squid squid
 }
 
 stop_application_services()
@@ -346,6 +356,12 @@ stop_application_services()
     docker stop -t=10 packnsend-devpi
     docker kill packnsend-devpi
     docker rm packnsend-devpi
+
+    echo "Application: squid"
+
+    docker stop -t=10 packnsend-squid
+    docker kill packnsend-squid
+    docker rm packnsend-squid
 }
 
 delete_docker_base_images()
@@ -371,6 +387,10 @@ delete_docker_base_images()
     echo "Image: devpi"
 
     docker rmi devpi
+
+    echo "Image: squid"
+
+    docker rmi squid
 
     echo "Image: python-base"
 

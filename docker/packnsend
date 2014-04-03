@@ -129,6 +129,11 @@ set_docker_env_vars()
     #       NEW_RELIC_STARTUP_TIMEOUT
     #       NEW_RELIC_SHUTDOWN_TIMEOUT
     #       NEW_RELIC_FAKE_COLLECTOR
+    #       NEW_RELIC_PROXY_SCHEME
+    #       NEW_RELIC_PROXY_HOST
+    #       NEW_RELIC_PROXY_PORT
+    #       NEW_RELIC_PROXY_USER
+    #       NEW_RELIC_PROXY_PASS
 
     DOCKER_ENV_VARS=""
 
@@ -147,6 +152,35 @@ set_docker_env_vars()
     if test -n "$NEW_RELIC_FAKE_COLLECTOR"
     then
         KEY_VAL="NEW_RELIC_FAKE_COLLECTOR=$NEW_RELIC_FAKE_COLLECTOR"
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
+    fi
+
+    if test -n "$NEW_RELIC_PROXY_SCHEME"
+    then
+        KEY_VAL="NEW_RELIC_PROXY_SCHEME=$NEW_RELIC_PROXY_SCHEME"
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
+    fi
+
+    if test -n "$NEW_RELIC_PROXY_HOST"
+    then
+        KEY_VAL="NEW_RELIC_PROXY_HOST=$NEW_RELIC_PROXY_HOST"
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
+    fi
+
+    if test -n "$NEW_RELIC_PROXY_PORT"
+    then
+        KEY_VAL="NEW_RELIC_PROXY_PORT=$NEW_RELIC_PROXY_PORT"
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
+    fi
+
+    if test -n "$NEW_RELIC_PROXY_USER"
+    then
+        KEY_VAL="NEW_RELIC_PROXY_USER=$NEW_RELIC_PROXY_USER"
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
+    fi
+    if test -n "$NEW_RELIC_PROXY_PASS"
+    then
+        KEY_VAL="NEW_RELIC_PROXY_PASS=$NEW_RELIC_PROXY_PASS"
         DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
     fi
 }

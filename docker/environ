@@ -1,5 +1,35 @@
 #!/bin/sh
 
+# Export environment variables in the docker test container.
+
+# Some environment variables are already passed to the docker container,
+# and they remain unchanged. Some new environment variables need to be
+# set. In addition, some environment variables need to be modified before
+# the command is run.
+
+#
+# UNCHANGED ENVIRONMENT VARIABLES
+#
+
+# These variables remain unchanged:
+#
+#       NEW_RELIC_STARTUP_TIMEOUT
+#       NEW_RELIC_SHUTDOWN_TIMEOUT
+#       NEW_RELIC_FAKE_COLLECTOR
+#       NEW_RELIC_PROXY_SCHEME
+#       NEW_RELIC_PROXY_USER
+#       NEW_RELIC_PROXY_PASS
+
+# These variables remain unchanged, except dummy values are replaced
+# with actual host and port of the squid docker container.
+#
+#       NEW_RELIC_PROXY_HOST
+#       NEW_RELIC_PROXY_PORT
+
+#
+# NEW ENVIRONMENT VARIABLES
+#
+
 # Always pass PACKNSEND_DB_USER, which is used to construct database
 # settings. Both the postgresql and mysql containers use PACKNSEND_DB_USER
 # as the database name, user, and password.

@@ -56,9 +56,9 @@ export_git_repository()
     (cd $ROOT_DIRECTORY; git checkout-index --prefix=$DATA_DIRECTORY/ -a)
 }
 
-create_remote_launcher()
+create_remote_launchers()
 {
-    # Create the remote launcher script to be included in docker image
+    # Create the remote launcher scripts to be included in docker image
     # containing the code to be tested.
     #
     # XXX Still cannot seem to copy back files from /data of container
@@ -67,20 +67,28 @@ create_remote_launcher()
     # an actual copy of the log file output into /tmp so it can be
     # copied back when done.
 
-    echo "Creating remote launcher script."
+    echo "Creating remote launcher scripts."
 
     cat > $DATA_DIRECTORY/packnsend-remote << EOF
 #!/bin/sh
+. /data/docker/environ
 "\$@" > /data/packnsend.log 2>&1
 STATUS=\$?
 cp /data/packnsend.log /tmp/packnsend.log
 exit \`expr \$STATUS\`
 EOF
 
+    cat > $DATA_DIRECTORY/packnsend-bash << EOF
+#!/bin/sh
+. /data/docker/environ
+exec bash
+EOF
+
     # Shouldn't strictly need to do this as all files add to the image
     # by docker will have execute permissions anyway.
 
     chmod +x $DATA_DIRECTORY/packnsend-remote
+    chmod +x $DATA_DIRECTORY/packnsend-bash
 }
 
 create_docker_file()
@@ -156,11 +164,6 @@ set_docker_extra_args()
     then
         DOCKER_EXTRA_ARGS="$DOCKER_EXTRA_ARGS $DOCKER_ENV_VARS"
     fi
-
-    # Always pass PACKNSEND_DB_USER, which is used to construct database
-    # settings. Both the postgresql and mysql containers use PACKNSEND_DB_USER
-    # as the database name, user, and password.
-    DOCKER_EXTRA_ARGS="$DOCKER_EXTRA_ARGS -e PACKNSEND_DB_USER=python_agent"
 }
 
 launch_remote_command()
@@ -225,7 +228,7 @@ launch_remote_command()
             -link packnsend-memcached:memcached \
             -link packnsend-postgresql-9.1:postgresql-9.1 \
             -link packnsend-mysql-5.5:mysql-5.5 \
-            $TEST_IMAGE_NAME bash
+            $TEST_IMAGE_NAME /data/packnsend-bash
     fi
 }
 
@@ -249,7 +252,7 @@ launch_remote_shell()
         -link packnsend-memcached:memcached \
         -link packnsend-postgresql-9.1:postgresql-9.1 \
         -link packnsend-mysql-5.5:mysql-5.5 \
-        $DATA_IMAGE_NAME bash
+        $DATA_IMAGE_NAME /data/packnsend-bash
 }
 
 create_docker_base_images()
@@ -366,7 +369,7 @@ case "$COMMAND" in
     run)
         create_work_directory
         export_git_repository
-        create_remote_launcher
+        create_remote_launchers
         create_docker_file
         create_docker_test_image
         launch_remote_command "$@"
@@ -377,7 +380,7 @@ case "$COMMAND" in
     shell)
         create_work_directory
         export_git_repository
-        create_remote_launcher
+        create_remote_launchers
         create_docker_file
         create_docker_test_image
         launch_remote_shell

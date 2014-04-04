@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# Always pass PACKNSEND_DB_USER, which is used to construct database
+# settings. Both the postgresql and mysql containers use PACKNSEND_DB_USER
+# as the database name, user, and password.
+
+export PACKNSEND_DB_USER=python_agent
+

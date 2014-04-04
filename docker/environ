@@ -6,3 +6,10 @@
 
 export PACKNSEND_DB_USER=python_agent
 
+# Make pip use the devpi-server to install packages.
+
+if test -n "$DEVPI_PORT"
+then
+    DEVPI_BASE=`echo $DEVPI_PORT | sed -e 's/tcp/http/'`
+    export PIP_INDEX_URL=$DEVPI_BASE/root/pypi/+simple/
+fi

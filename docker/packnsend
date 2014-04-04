@@ -201,6 +201,7 @@ launch_remote_command()
         -link packnsend-memcached:memcached \
         -link packnsend-postgresql-9.1:postgresql-9.1 \
         -link packnsend-mysql-5.5:mysql-5.5 \
+        -link packnsend-devpi:devpi \
         $DATA_IMAGE_NAME /data/packnsend-remote "$@")
 
     STATUS=$(time docker wait $CONTAINER_ID)
@@ -228,6 +229,7 @@ launch_remote_command()
             -link packnsend-memcached:memcached \
             -link packnsend-postgresql-9.1:postgresql-9.1 \
             -link packnsend-mysql-5.5:mysql-5.5 \
+            -link packnsend-devpi:devpi \
             $TEST_IMAGE_NAME /data/packnsend-bash
     fi
 }
@@ -252,6 +254,7 @@ launch_remote_shell()
         -link packnsend-memcached:memcached \
         -link packnsend-postgresql-9.1:postgresql-9.1 \
         -link packnsend-mysql-5.5:mysql-5.5 \
+        -link packnsend-devpi:devpi \
         $DATA_IMAGE_NAME /data/packnsend-bash
 }
 
@@ -278,6 +281,10 @@ create_docker_base_images()
     echo "Image: mysql-5.5"
 
     (cd $ROOT_DIRECTORY; docker build -rm -t mysql-5.5 docker/mysql-5.5)
+
+    echo "Image: devpi-server"
+
+    (cd $ROOT_DIRECTORY; docker build -rm -t devpi docker/devpi-server)
 }
 
 start_application_services()
@@ -299,6 +306,11 @@ start_application_services()
     echo "Application: mysql-5.5"
 
     docker run -d -name packnsend-mysql-5.5 mysql-5.5
+
+    echo "Application: devpi"
+
+    docker run -d -name packnsend-devpi devpi
+
 }
 
 stop_application_services()
@@ -328,6 +340,12 @@ stop_application_services()
     docker stop -t=10 packnsend-mysql-5.5
     docker kill packnsend-mysql-5.5
     docker rm packnsend-mysql-5.5
+
+    echo "Application: devpi"
+
+    docker stop -t=10 packnsend-devpi
+    docker kill packnsend-devpi
+    docker rm packnsend-devpi
 }
 
 delete_docker_base_images()
@@ -349,6 +367,10 @@ delete_docker_base_images()
     echo "Image: mysql-5.5"
 
     docker rmi mysql-5.5
+
+    echo "Image: devpi"
+
+    docker rmi devpi
 
     echo "Image: python-base"
 

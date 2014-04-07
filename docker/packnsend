@@ -325,7 +325,11 @@ create_docker_base_images()
 
     echo "Image: squid"
 
-    (cd $ROOT_DIRECTORY; docker build --rm -t squid docker/squid)
+    # Commenting out build command. Will pull image from quay.io, instead.
+
+    # (cd $ROOT_DIRECTORY; docker build --rm -t squid docker/squid)
+
+    docker pull quay.io/newrelic/python-agent-squid
 }
 
 start_application_services()
@@ -354,7 +358,7 @@ start_application_services()
 
     echo "Application: squid"
 
-    docker run -d -name packnsend-squid squid
+    docker run -d --name packnsend-squid quay.io/newrelic/python-agent-squid
 }
 
 stop_application_services()

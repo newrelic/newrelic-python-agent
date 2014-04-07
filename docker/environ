@@ -71,21 +71,21 @@ then
     if `echo $NEW_RELIC_PROXY_HOST | grep -q '//'`
     then
 
-    # This regex will only work with a complete URL that contains
-    # all three components:
-    #
-    #       scheme://host:port
-    #
-    # It does not handle user or password.
+        # This regex will only work with a complete URL that contains
+        # all three components:
+        #
+        #       scheme://host:port
+        #
+        # It does not handle user or password.
 
-    SPLIT_URL=`echo $NEW_RELIC_PROXY_HOST | \
+        SPLIT_URL=`echo $NEW_RELIC_PROXY_HOST | \
             sed -e 's@\([a-z]*\)://\(.*\):\(proxy_port\|[0-9]*\).*@\1 \2 \3@'`
 
-    SCHEME=`echo $SPLIT_URL | awk '{print $1}'`
-    PORT=`echo $SPLIT_URL | awk '{print $3}'`
+        SCHEME=`echo $SPLIT_URL | awk '{print $1}'`
+        PORT=`echo $SPLIT_URL | awk '{print $3}'`
 
-    NEW_RELIC_PROXY_SCHEME=${NEW_RELIC_PROXY_SCHEME:-$SCHEME}
-    NEW_RELIC_PROXY_PORT=${NEW_RELIC_PROXY_PORT:-$PORT}
+        NEW_RELIC_PROXY_SCHEME=${NEW_RELIC_PROXY_SCHEME:-$SCHEME}
+        NEW_RELIC_PROXY_PORT=${NEW_RELIC_PROXY_PORT:-$PORT}
 
     fi
 fi

@@ -116,8 +116,8 @@ create_docker_test_image()
     echo "Building test image."
 
     DATA_IMAGE_NAME="packnsend-`date '+%Y%m%d%H%M%S'`-$$"
-    (cd $DATA_DIRECTORY && docker build -rm -t $DATA_IMAGE_NAME .)
-    IMAGE_ID=$(docker inspect -format='{{.id}}' $DATA_IMAGE_NAME)
+    (cd $DATA_DIRECTORY && docker build --rm -t $DATA_IMAGE_NAME .)
+    IMAGE_ID=$(docker inspect --format='{{.id}}' $DATA_IMAGE_NAME)
 }
 
 set_docker_env_vars()
@@ -195,13 +195,13 @@ launch_remote_command()
     echo "Starting test container and running command."
     echo "Command: $@"
 
-    CONTAINER_ID=$(docker run -d -name $DATA_IMAGE_NAME \
+    CONTAINER_ID=$(docker run -d --name $DATA_IMAGE_NAME \
         $DOCKER_EXTRA_ARGS \
-        -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
-        -link packnsend-memcached:memcached \
-        -link packnsend-postgresql-9.1:postgresql-9.1 \
-        -link packnsend-mysql-5.5:mysql-5.5 \
-        -link packnsend-devpi:devpi \
+        -w /data/$WORK_DIRECTORY --link packnsend-gearmand:gearmand \
+        --link packnsend-memcached:memcached \
+        --link packnsend-postgresql-9.1:postgresql-9.1 \
+        --link packnsend-mysql-5.5:mysql-5.5 \
+        --link packnsend-devpi:devpi \
         $DATA_IMAGE_NAME /data/packnsend-remote "$@")
 
     STATUS=$(time docker wait $CONTAINER_ID)
@@ -223,13 +223,13 @@ launch_remote_command()
         echo "Starting interactive debug shell."
         echo
 
-        docker run -t -i -rm -u guest -volumes-from $CONTAINER_ID \
+        docker run -t -i --rm -u guest -volumes-from $CONTAINER_ID \
             $DOCKER_EXTRA_ARGS \
-            -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
-            -link packnsend-memcached:memcached \
-            -link packnsend-postgresql-9.1:postgresql-9.1 \
-            -link packnsend-mysql-5.5:mysql-5.5 \
-            -link packnsend-devpi:devpi \
+            -w /data/$WORK_DIRECTORY --link packnsend-gearmand:gearmand \
+            --link packnsend-memcached:memcached \
+            --link packnsend-postgresql-9.1:postgresql-9.1 \
+            --link packnsend-mysql-5.5:mysql-5.5 \
+            --link packnsend-devpi:devpi \
             $TEST_IMAGE_NAME /data/packnsend-bash
     fi
 }
@@ -248,13 +248,13 @@ launch_remote_shell()
     echo "Starting test container and running interactive shell."
     echo
 
-    docker run -t -i -rm -name $DATA_IMAGE_NAME \
+    docker run -t -i --rm --name $DATA_IMAGE_NAME \
         $DOCKER_EXTRA_ARGS \
-        -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
-        -link packnsend-memcached:memcached \
-        -link packnsend-postgresql-9.1:postgresql-9.1 \
-        -link packnsend-mysql-5.5:mysql-5.5 \
-        -link packnsend-devpi:devpi \
+        -w /data/$WORK_DIRECTORY --link packnsend-gearmand:gearmand \
+        --link packnsend-memcached:memcached \
+        --link packnsend-postgresql-9.1:postgresql-9.1 \
+        --link packnsend-mysql-5.5:mysql-5.5 \
+        --link packnsend-devpi:devpi \
         $DATA_IMAGE_NAME /data/packnsend-bash
 }
 
@@ -264,27 +264,27 @@ create_docker_base_images()
 
     echo "Image: python-base"
 
-    (cd $ROOT_DIRECTORY; docker build -rm -t python-base docker/python-base)
+    (cd $ROOT_DIRECTORY; docker build --rm -t python-base docker/python-base)
 
     echo "Image: memcached"
 
-    (cd $ROOT_DIRECTORY; docker build -rm -t memcached docker/memcached)
+    (cd $ROOT_DIRECTORY; docker build --rm -t memcached docker/memcached)
 
     echo "Image: gearmand"
 
-    (cd $ROOT_DIRECTORY; docker build -rm -t gearmand docker/gearmand)
+    (cd $ROOT_DIRECTORY; docker build --rm -t gearmand docker/gearmand)
 
     echo "Image: postgresql-9.1"
 
-    (cd $ROOT_DIRECTORY; docker build -rm -t postgresql-9.1 docker/postgresql-9.1)
+    (cd $ROOT_DIRECTORY; docker build --rm -t postgresql-9.1 docker/postgresql-9.1)
 
     echo "Image: mysql-5.5"
 
-    (cd $ROOT_DIRECTORY; docker build -rm -t mysql-5.5 docker/mysql-5.5)
+    (cd $ROOT_DIRECTORY; docker build --rm -t mysql-5.5 docker/mysql-5.5)
 
     echo "Image: devpi-server"
 
-    (cd $ROOT_DIRECTORY; docker build -rm -t devpi docker/devpi-server)
+    (cd $ROOT_DIRECTORY; docker build --rm -t devpi docker/devpi-server)
 }
 
 start_application_services()
@@ -293,23 +293,23 @@ start_application_services()
 
     echo "Application: memcached"
 
-    docker run -d -name packnsend-memcached memcached
+    docker run -d --name packnsend-memcached memcached
 
     echo "Application: gearmand"
 
-    docker run -d -name packnsend-gearmand gearmand
+    docker run -d --name packnsend-gearmand gearmand
 
     echo "Application: postgresql-9.1"
 
-    docker run -d -name packnsend-postgresql-9.1 postgresql-9.1
+    docker run -d --name packnsend-postgresql-9.1 postgresql-9.1
 
     echo "Application: mysql-5.5"
 
-    docker run -d -name packnsend-mysql-5.5 mysql-5.5
+    docker run -d --name packnsend-mysql-5.5 mysql-5.5
 
     echo "Application: devpi"
 
-    docker run -d -name packnsend-devpi devpi
+    docker run -d --name packnsend-devpi devpi
 
 }
 

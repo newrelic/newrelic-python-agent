@@ -129,6 +129,11 @@ set_docker_env_vars()
     #       NEW_RELIC_STARTUP_TIMEOUT
     #       NEW_RELIC_SHUTDOWN_TIMEOUT
     #       NEW_RELIC_FAKE_COLLECTOR
+    #       NEW_RELIC_PROXY_SCHEME
+    #       NEW_RELIC_PROXY_HOST
+    #       NEW_RELIC_PROXY_PORT
+    #       NEW_RELIC_PROXY_USER
+    #       NEW_RELIC_PROXY_PASS
 
     DOCKER_ENV_VARS=""
 
@@ -147,6 +152,35 @@ set_docker_env_vars()
     if test -n "$NEW_RELIC_FAKE_COLLECTOR"
     then
         KEY_VAL="NEW_RELIC_FAKE_COLLECTOR=$NEW_RELIC_FAKE_COLLECTOR"
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
+    fi
+
+    if test -n "$NEW_RELIC_PROXY_SCHEME"
+    then
+        KEY_VAL="NEW_RELIC_PROXY_SCHEME=$NEW_RELIC_PROXY_SCHEME"
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
+    fi
+
+    if test -n "$NEW_RELIC_PROXY_HOST"
+    then
+        KEY_VAL="NEW_RELIC_PROXY_HOST=$NEW_RELIC_PROXY_HOST"
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
+    fi
+
+    if test -n "$NEW_RELIC_PROXY_PORT"
+    then
+        KEY_VAL="NEW_RELIC_PROXY_PORT=$NEW_RELIC_PROXY_PORT"
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
+    fi
+
+    if test -n "$NEW_RELIC_PROXY_USER"
+    then
+        KEY_VAL="NEW_RELIC_PROXY_USER=$NEW_RELIC_PROXY_USER"
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
+    fi
+    if test -n "$NEW_RELIC_PROXY_PASS"
+    then
+        KEY_VAL="NEW_RELIC_PROXY_PASS=$NEW_RELIC_PROXY_PASS"
         DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
     fi
 }
@@ -202,6 +236,7 @@ launch_remote_command()
         --link packnsend-postgresql-9.1:postgresql-9.1 \
         --link packnsend-mysql-5.5:mysql-5.5 \
         --link packnsend-devpi:devpi \
+        --link packnsend-squid:squid \
         $DATA_IMAGE_NAME /data/packnsend-remote "$@")
 
     STATUS=$(time docker wait $CONTAINER_ID)
@@ -230,6 +265,7 @@ launch_remote_command()
             --link packnsend-postgresql-9.1:postgresql-9.1 \
             --link packnsend-mysql-5.5:mysql-5.5 \
             --link packnsend-devpi:devpi \
+            --link packnsend-squid:squid \
             $TEST_IMAGE_NAME /data/packnsend-bash
     fi
 }
@@ -255,6 +291,7 @@ launch_remote_shell()
         --link packnsend-postgresql-9.1:postgresql-9.1 \
         --link packnsend-mysql-5.5:mysql-5.5 \
         --link packnsend-devpi:devpi \
+        --link packnsend-squid:squid \
         $DATA_IMAGE_NAME /data/packnsend-bash
 }
 
@@ -285,6 +322,14 @@ create_docker_base_images()
     echo "Image: devpi-server"
 
     (cd $ROOT_DIRECTORY; docker build --rm -t devpi docker/devpi-server)
+
+    echo "Image: squid"
+
+    # Commenting out build command. Will pull image from quay.io, instead.
+
+    # (cd $ROOT_DIRECTORY; docker build --rm -t squid docker/squid)
+
+    docker pull quay.io/newrelic/python-agent-squid
 }
 
 start_application_services()
@@ -311,6 +356,9 @@ start_application_services()
 
     docker run -d --name packnsend-devpi devpi
 
+    echo "Application: squid"
+
+    docker run -d --name packnsend-squid quay.io/newrelic/python-agent-squid
 }
 
 stop_application_services()
@@ -346,6 +394,12 @@ stop_application_services()
     docker stop -t=10 packnsend-devpi
     docker kill packnsend-devpi
     docker rm packnsend-devpi
+
+    echo "Application: squid"
+
+    docker stop -t=10 packnsend-squid
+    docker kill packnsend-squid
+    docker rm packnsend-squid
 }
 
 delete_docker_base_images()
@@ -371,6 +425,10 @@ delete_docker_base_images()
     echo "Image: devpi"
 
     docker rmi devpi
+
+    echo "Image: squid"
+
+    docker rmi squid
 
     echo "Image: python-base"
 

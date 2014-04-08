@@ -36,9 +36,9 @@ def postgresql_settings():
     settings['name'] = _e('PACKNSEND_DB_USER', settings['name'])
     settings['user'] = _e('PACKNSEND_DB_USER', settings['user'])
     settings['password'] = _e('PACKNSEND_DB_USER', settings['password'])
-    settings['host'] = _e('POSTGRESQL-9.1_PORT_5432_TCP_ADDR',
+    settings['host'] = _e('POSTGRESQL_PORT_5432_TCP_ADDR',
             settings['host'])
-    settings['port'] = int(_e('POSTGRESQL-9.1_PORT_5432_TCP_PORT',
+    settings['port'] = int(_e('POSTGRESQL_PORT_5432_TCP_PORT',
             settings['port']))
 
     return settings

@@ -233,7 +233,7 @@ launch_remote_command()
         $DOCKER_EXTRA_ARGS \
         -w /data/$WORK_DIRECTORY --link packnsend-gearmand:gearmand \
         --link packnsend-memcached:memcached \
-        --link packnsend-postgresql-9.1:postgresql-9.1 \
+        --link packnsend-postgresql:postgresql \
         --link packnsend-mysql-5.5:mysql-5.5 \
         --link packnsend-devpi:devpi \
         --link packnsend-squid:squid \
@@ -262,7 +262,7 @@ launch_remote_command()
             $DOCKER_EXTRA_ARGS \
             -w /data/$WORK_DIRECTORY --link packnsend-gearmand:gearmand \
             --link packnsend-memcached:memcached \
-            --link packnsend-postgresql-9.1:postgresql-9.1 \
+            --link packnsend-postgresql:postgresql \
             --link packnsend-mysql-5.5:mysql-5.5 \
             --link packnsend-devpi:devpi \
             --link packnsend-squid:squid \
@@ -288,7 +288,7 @@ launch_remote_shell()
         $DOCKER_EXTRA_ARGS \
         -w /data/$WORK_DIRECTORY --link packnsend-gearmand:gearmand \
         --link packnsend-memcached:memcached \
-        --link packnsend-postgresql-9.1:postgresql-9.1 \
+        --link packnsend-postgresql:postgresql \
         --link packnsend-mysql-5.5:mysql-5.5 \
         --link packnsend-devpi:devpi \
         --link packnsend-squid:squid \
@@ -311,9 +311,9 @@ create_docker_base_images()
 
     (cd $ROOT_DIRECTORY; docker build --rm -t gearmand docker/gearmand)
 
-    echo "Image: postgresql-9.1"
+    echo "Image: postgresql"
 
-    (cd $ROOT_DIRECTORY; docker build --rm -t postgresql-9.1 docker/postgresql-9.1)
+    (cd $ROOT_DIRECTORY; docker build --rm -t postgresql docker/postgresql-9.1)
 
     echo "Image: mysql-5.5"
 
@@ -344,9 +344,9 @@ start_application_services()
 
     docker run -d --name packnsend-gearmand gearmand
 
-    echo "Application: postgresql-9.1"
+    echo "Application: postgresql"
 
-    docker run -d --name packnsend-postgresql-9.1 postgresql-9.1
+    docker run -d --name packnsend-postgresql postgresql
 
     echo "Application: mysql-5.5"
 
@@ -377,11 +377,11 @@ stop_application_services()
     docker kill packnsend-memcached
     docker rm packnsend-memcached
 
-    echo "Application: postgresql-9.1"
+    echo "Application: postgresql"
 
-    docker stop -t=10 packnsend-postgresql-9.1
-    docker kill packnsend-postgresql-9.1
-    docker rm packnsend-postgresql-9.1
+    docker stop -t=10 packnsend-postgresql
+    docker kill packnsend-postgresql
+    docker rm packnsend-postgresql
 
     echo "Application: mysql-5.5"
 
@@ -414,9 +414,9 @@ delete_docker_base_images()
 
     docker rmi memcached
 
-    echo "Image: postgresql-9.1"
+    echo "Image: postgresql"
 
-    docker rmi postgresql-9.1
+    docker rmi postgresql
 
     echo "Image: mysql-5.5"
 

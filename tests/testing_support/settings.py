@@ -72,8 +72,8 @@ def mysql_settings():
     settings['name'] = _e('PACKNSEND_DB_USER', settings['name'])
     settings['user'] = _e('PACKNSEND_DB_USER', settings['user'])
     settings['password'] = _e('PACKNSEND_DB_USER', settings['password'])
-    settings['host'] = _e('MYSQL-5.5_PORT_3306_TCP_ADDR', settings['host'])
-    settings['port'] = int(_e('MYSQL-5.5_PORT_3306_TCP_PORT',
+    settings['host'] = _e('MYSQL_PORT_3306_TCP_ADDR', settings['host'])
+    settings['port'] = int(_e('MYSQL_PORT_3306_TCP_PORT',
             settings['port']))
 
     return settings

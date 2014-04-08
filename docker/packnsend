@@ -234,7 +234,7 @@ launch_remote_command()
         -w /data/$WORK_DIRECTORY --link packnsend-gearmand:gearmand \
         --link packnsend-memcached:memcached \
         --link packnsend-postgresql:postgresql \
-        --link packnsend-mysql-5.5:mysql-5.5 \
+        --link packnsend-mysql:mysql \
         --link packnsend-devpi:devpi \
         --link packnsend-squid:squid \
         $DATA_IMAGE_NAME /data/packnsend-remote "$@")
@@ -263,7 +263,7 @@ launch_remote_command()
             -w /data/$WORK_DIRECTORY --link packnsend-gearmand:gearmand \
             --link packnsend-memcached:memcached \
             --link packnsend-postgresql:postgresql \
-            --link packnsend-mysql-5.5:mysql-5.5 \
+            --link packnsend-mysql:mysql \
             --link packnsend-devpi:devpi \
             --link packnsend-squid:squid \
             $TEST_IMAGE_NAME /data/packnsend-bash
@@ -289,7 +289,7 @@ launch_remote_shell()
         -w /data/$WORK_DIRECTORY --link packnsend-gearmand:gearmand \
         --link packnsend-memcached:memcached \
         --link packnsend-postgresql:postgresql \
-        --link packnsend-mysql-5.5:mysql-5.5 \
+        --link packnsend-mysql:mysql \
         --link packnsend-devpi:devpi \
         --link packnsend-squid:squid \
         $DATA_IMAGE_NAME /data/packnsend-bash
@@ -315,9 +315,9 @@ create_docker_base_images()
 
     (cd $ROOT_DIRECTORY; docker build --rm -t postgresql docker/postgresql-9.1)
 
-    echo "Image: mysql-5.5"
+    echo "Image: mysql"
 
-    (cd $ROOT_DIRECTORY; docker build --rm -t mysql-5.5 docker/mysql-5.5)
+    (cd $ROOT_DIRECTORY; docker build --rm -t mysql docker/mysql-5.5)
 
     echo "Image: devpi-server"
 
@@ -348,9 +348,9 @@ start_application_services()
 
     docker run -d --name packnsend-postgresql postgresql
 
-    echo "Application: mysql-5.5"
+    echo "Application: mysql"
 
-    docker run -d --name packnsend-mysql-5.5 mysql-5.5
+    docker run -d --name packnsend-mysql mysql
 
     echo "Application: devpi"
 
@@ -383,11 +383,11 @@ stop_application_services()
     docker kill packnsend-postgresql
     docker rm packnsend-postgresql
 
-    echo "Application: mysql-5.5"
+    echo "Application: mysql"
 
-    docker stop -t=10 packnsend-mysql-5.5
-    docker kill packnsend-mysql-5.5
-    docker rm packnsend-mysql-5.5
+    docker stop -t=10 packnsend-mysql
+    docker kill packnsend-mysql
+    docker rm packnsend-mysql
 
     echo "Application: devpi"
 
@@ -418,9 +418,9 @@ delete_docker_base_images()
 
     docker rmi postgresql
 
-    echo "Image: mysql-5.5"
+    echo "Image: mysql"
 
-    docker rmi mysql-5.5
+    docker rmi mysql
 
     echo "Image: devpi"
 

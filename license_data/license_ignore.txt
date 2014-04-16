@@ -7,6 +7,7 @@ README.md
 *.pyc
 *.pyo
 
+notebooks
 docker
 python-tools
 tests

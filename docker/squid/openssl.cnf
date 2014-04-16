@@ -1,0 +1,27 @@
+prompt          = no
+HOME            = .
+RANDFILE        = $ENV::HOME/.rnd
+oid_section     = new_oids
+extensions      = v3_req
+
+[ new_oids ]
+tsa_policy1     = 1.2.3.4.1
+tsa_policy2     = 1.2.3.4.5.6
+tsa_policy3     = 1.2.3.4.5.7
+
+[ req ]
+default_bits        = 1024
+default_keyfile     = privkey.pem
+distinguished_name  = req_distinguished_name
+attributes          = req_attributes
+string_mask         = utf8only
+
+[ req_distinguished_name ]
+0.organizationName  = squid.packnsend
+commonName          = squid.packnsend
+
+[ req_attributes ]
+
+[ v3_req ]
+basicConstraints    = critical,CA:TRUE
+keyUsage            = keyCertSign, cRLSign

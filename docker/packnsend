@@ -116,8 +116,8 @@ create_docker_test_image()
     echo "Building test image."
 
     DATA_IMAGE_NAME="packnsend-`date '+%Y%m%d%H%M%S'`-$$"
-    (cd $DATA_DIRECTORY && docker build -rm -t $DATA_IMAGE_NAME .)
-    IMAGE_ID=$(docker inspect -format='{{.id}}' $DATA_IMAGE_NAME)
+    (cd $DATA_DIRECTORY && docker build --rm -t $DATA_IMAGE_NAME .)
+    IMAGE_ID=$(docker inspect --format='{{.id}}' $DATA_IMAGE_NAME)
 }
 
 set_docker_env_vars()
@@ -129,6 +129,11 @@ set_docker_env_vars()
     #       NEW_RELIC_STARTUP_TIMEOUT
     #       NEW_RELIC_SHUTDOWN_TIMEOUT
     #       NEW_RELIC_FAKE_COLLECTOR
+    #       NEW_RELIC_PROXY_SCHEME
+    #       NEW_RELIC_PROXY_HOST
+    #       NEW_RELIC_PROXY_PORT
+    #       NEW_RELIC_PROXY_USER
+    #       NEW_RELIC_PROXY_PASS
 
     DOCKER_ENV_VARS=""
 
@@ -147,6 +152,35 @@ set_docker_env_vars()
     if test -n "$NEW_RELIC_FAKE_COLLECTOR"
     then
         KEY_VAL="NEW_RELIC_FAKE_COLLECTOR=$NEW_RELIC_FAKE_COLLECTOR"
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
+    fi
+
+    if test -n "$NEW_RELIC_PROXY_SCHEME"
+    then
+        KEY_VAL="NEW_RELIC_PROXY_SCHEME=$NEW_RELIC_PROXY_SCHEME"
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
+    fi
+
+    if test -n "$NEW_RELIC_PROXY_HOST"
+    then
+        KEY_VAL="NEW_RELIC_PROXY_HOST=$NEW_RELIC_PROXY_HOST"
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
+    fi
+
+    if test -n "$NEW_RELIC_PROXY_PORT"
+    then
+        KEY_VAL="NEW_RELIC_PROXY_PORT=$NEW_RELIC_PROXY_PORT"
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
+    fi
+
+    if test -n "$NEW_RELIC_PROXY_USER"
+    then
+        KEY_VAL="NEW_RELIC_PROXY_USER=$NEW_RELIC_PROXY_USER"
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
+    fi
+    if test -n "$NEW_RELIC_PROXY_PASS"
+    then
+        KEY_VAL="NEW_RELIC_PROXY_PASS=$NEW_RELIC_PROXY_PASS"
         DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
     fi
 }
@@ -195,13 +229,14 @@ launch_remote_command()
     echo "Starting test container and running command."
     echo "Command: $@"
 
-    CONTAINER_ID=$(docker run -d -name $DATA_IMAGE_NAME \
+    CONTAINER_ID=$(docker run -d --name $DATA_IMAGE_NAME \
         $DOCKER_EXTRA_ARGS \
-        -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
-        -link packnsend-memcached:memcached \
-        -link packnsend-postgresql-9.1:postgresql-9.1 \
-        -link packnsend-mysql-5.5:mysql-5.5 \
-        -link packnsend-devpi:devpi \
+        -w /data/$WORK_DIRECTORY --link packnsend-gearmand:gearmand \
+        --link packnsend-memcached:memcached \
+        --link packnsend-postgresql:postgresql \
+        --link packnsend-mysql:mysql \
+        --link packnsend-devpi:devpi \
+        --link packnsend-squid:squid \
         $DATA_IMAGE_NAME /data/packnsend-remote "$@")
 
     STATUS=$(time docker wait $CONTAINER_ID)
@@ -223,13 +258,14 @@ launch_remote_command()
         echo "Starting interactive debug shell."
         echo
 
-        docker run -t -i -rm -u guest -volumes-from $CONTAINER_ID \
+        docker run -t -i --rm -u guest -volumes-from $CONTAINER_ID \
             $DOCKER_EXTRA_ARGS \
-            -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
-            -link packnsend-memcached:memcached \
-            -link packnsend-postgresql-9.1:postgresql-9.1 \
-            -link packnsend-mysql-5.5:mysql-5.5 \
-            -link packnsend-devpi:devpi \
+            -w /data/$WORK_DIRECTORY --link packnsend-gearmand:gearmand \
+            --link packnsend-memcached:memcached \
+            --link packnsend-postgresql:postgresql \
+            --link packnsend-mysql:mysql \
+            --link packnsend-devpi:devpi \
+            --link packnsend-squid:squid \
             $TEST_IMAGE_NAME /data/packnsend-bash
     fi
 }
@@ -248,13 +284,14 @@ launch_remote_shell()
     echo "Starting test container and running interactive shell."
     echo
 
-    docker run -t -i -rm -name $DATA_IMAGE_NAME \
+    docker run -t -i --rm --name $DATA_IMAGE_NAME \
         $DOCKER_EXTRA_ARGS \
-        -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
-        -link packnsend-memcached:memcached \
-        -link packnsend-postgresql-9.1:postgresql-9.1 \
-        -link packnsend-mysql-5.5:mysql-5.5 \
-        -link packnsend-devpi:devpi \
+        -w /data/$WORK_DIRECTORY --link packnsend-gearmand:gearmand \
+        --link packnsend-memcached:memcached \
+        --link packnsend-postgresql:postgresql \
+        --link packnsend-mysql:mysql \
+        --link packnsend-devpi:devpi \
+        --link packnsend-squid:squid \
         $DATA_IMAGE_NAME /data/packnsend-bash
 }
 
@@ -264,27 +301,45 @@ create_docker_base_images()
 
     echo "Image: python-base"
 
-    (cd $ROOT_DIRECTORY; docker build -rm -t python-base docker/python-base)
+    (cd $ROOT_DIRECTORY; docker build --rm -t python-base docker/python-base)
 
     echo "Image: memcached"
 
-    (cd $ROOT_DIRECTORY; docker build -rm -t memcached docker/memcached)
+    (cd $ROOT_DIRECTORY; docker build --rm -t memcached docker/memcached)
 
     echo "Image: gearmand"
 
-    (cd $ROOT_DIRECTORY; docker build -rm -t gearmand docker/gearmand)
+    (cd $ROOT_DIRECTORY; docker build --rm -t gearmand docker/gearmand)
 
-    echo "Image: postgresql-9.1"
+    echo "Image: postgresql"
 
-    (cd $ROOT_DIRECTORY; docker build -rm -t postgresql-9.1 docker/postgresql-9.1)
+    (cd $ROOT_DIRECTORY; docker build --rm -t postgresql docker/postgresql-9.1)
 
-    echo "Image: mysql-5.5"
+    echo "Image: mysql"
 
-    (cd $ROOT_DIRECTORY; docker build -rm -t mysql-5.5 docker/mysql-5.5)
+    (cd $ROOT_DIRECTORY; docker build --rm -t mysql docker/mysql-5.5)
 
     echo "Image: devpi-server"
 
-    (cd $ROOT_DIRECTORY; docker build -rm -t devpi docker/devpi-server)
+    (cd $ROOT_DIRECTORY; docker build --rm -t devpi docker/devpi-server)
+
+    echo "Image: squid"
+
+    # Try pulling the squid image from quay.io before building it.
+
+    # If the pull succeeds, tag it and build it, so we end up with an image
+    # named 'squid'. Even though the build step is redundant after a successful
+    # pull, it doesn't hurt to run 'docker build', since the presence of the
+    # cached layers will make the build step very fast.
+
+    # If the pull and/or tag fails, ignore the errors and build it the slow
+    # way, without the benefit of cached layers.
+
+    docker pull quay.io/newrelic/python-agent-squid || true
+
+    docker tag quay.io/newrelic/python-agent-squid squid || true
+
+    (cd $ROOT_DIRECTORY; docker build --rm -t squid docker/squid)
 }
 
 start_application_services()
@@ -293,24 +348,27 @@ start_application_services()
 
     echo "Application: memcached"
 
-    docker run -d -name packnsend-memcached memcached
+    docker run -d --name packnsend-memcached memcached
 
     echo "Application: gearmand"
 
-    docker run -d -name packnsend-gearmand gearmand
+    docker run -d --name packnsend-gearmand gearmand
 
-    echo "Application: postgresql-9.1"
+    echo "Application: postgresql"
 
-    docker run -d -name packnsend-postgresql-9.1 postgresql-9.1
+    docker run -d --name packnsend-postgresql postgresql
 
-    echo "Application: mysql-5.5"
+    echo "Application: mysql"
 
-    docker run -d -name packnsend-mysql-5.5 mysql-5.5
+    docker run -d --name packnsend-mysql mysql
 
     echo "Application: devpi"
 
-    docker run -d -name packnsend-devpi devpi
+    docker run -d --name packnsend-devpi devpi
 
+    echo "Application: squid"
+
+    docker run -d --name packnsend-squid squid
 }
 
 stop_application_services()
@@ -329,23 +387,29 @@ stop_application_services()
     docker kill packnsend-memcached
     docker rm packnsend-memcached
 
-    echo "Application: postgresql-9.1"
+    echo "Application: postgresql"
 
-    docker stop -t=10 packnsend-postgresql-9.1
-    docker kill packnsend-postgresql-9.1
-    docker rm packnsend-postgresql-9.1
+    docker stop -t=10 packnsend-postgresql
+    docker kill packnsend-postgresql
+    docker rm packnsend-postgresql
 
-    echo "Application: mysql-5.5"
+    echo "Application: mysql"
 
-    docker stop -t=10 packnsend-mysql-5.5
-    docker kill packnsend-mysql-5.5
-    docker rm packnsend-mysql-5.5
+    docker stop -t=10 packnsend-mysql
+    docker kill packnsend-mysql
+    docker rm packnsend-mysql
 
     echo "Application: devpi"
 
     docker stop -t=10 packnsend-devpi
     docker kill packnsend-devpi
     docker rm packnsend-devpi
+
+    echo "Application: squid"
+
+    docker stop -t=10 packnsend-squid
+    docker kill packnsend-squid
+    docker rm packnsend-squid
 }
 
 delete_docker_base_images()
@@ -360,17 +424,21 @@ delete_docker_base_images()
 
     docker rmi memcached
 
-    echo "Image: postgresql-9.1"
+    echo "Image: postgresql"
 
-    docker rmi postgresql-9.1
+    docker rmi postgresql
 
-    echo "Image: mysql-5.5"
+    echo "Image: mysql"
 
-    docker rmi mysql-5.5
+    docker rmi mysql
 
     echo "Image: devpi"
 
     docker rmi devpi
+
+    echo "Image: squid"
+
+    docker rmi squid
 
     echo "Image: python-base"
 

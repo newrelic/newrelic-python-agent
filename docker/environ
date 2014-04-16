@@ -1,5 +1,35 @@
 #!/bin/sh
 
+# Export environment variables in the docker test container.
+
+# Some environment variables are already passed to the docker container,
+# and they remain unchanged. Some new environment variables need to be
+# set. In addition, some environment variables need to be modified before
+# the command is run.
+
+#
+# UNCHANGED ENVIRONMENT VARIABLES
+#
+
+# These variables remain unchanged:
+#
+#       NEW_RELIC_STARTUP_TIMEOUT
+#       NEW_RELIC_SHUTDOWN_TIMEOUT
+#       NEW_RELIC_FAKE_COLLECTOR
+#       NEW_RELIC_PROXY_SCHEME
+#       NEW_RELIC_PROXY_USER
+#       NEW_RELIC_PROXY_PASS
+
+# These variables remain unchanged, except dummy values are replaced
+# with actual host and port of the squid docker container.
+#
+#       NEW_RELIC_PROXY_HOST
+#       NEW_RELIC_PROXY_PORT
+
+#
+# NEW ENVIRONMENT VARIABLES
+#
+
 # Always pass PACKNSEND_DB_USER, which is used to construct database
 # settings. Both the postgresql and mysql containers use PACKNSEND_DB_USER
 # as the database name, user, and password.
@@ -12,4 +42,99 @@ if test -n "$DEVPI_PORT"
 then
     DEVPI_BASE=`echo $DEVPI_PORT | sed -e 's/tcp/http/'`
     export PIP_INDEX_URL=$DEVPI_BASE/root/pypi/+simple/
+fi
+
+#
+# MODIFIED ENVIRONMENT VARIABLES
+#
+
+# Modify the proxy variables
+
+# If NEW_RELIC_PROXY_HOST is in URL format, then the NEW_RELIC_PROXY_HOST
+# URL will be split, and the split values will be assigned to individual
+# NEW_RELIC_PROXY_* vars that do not already have values. If the individual
+# NEW_RELIC_PROXY_* vars already have values, then those values will not be
+# overwritten.
+
+# In addition, the dummy values of 'proxy_host' and 'proxy_port' will be
+# replaced with the actual host and port of the squid docker container.
+
+if test -n "$NEW_RELIC_PROXY_HOST"
+then
+
+    # Warning! Fragile URL parsing ahead!
+    #
+    # If NEW_RELIC_PROXY_HOST is in URL form, split it into separate
+    # PROXY_* variables. (Heuristic to determine if NEW_RELIC_PROXY_HOST
+    # contains a URL is if it contains '//'.)
+
+    if `echo $NEW_RELIC_PROXY_HOST | grep -q '//'`
+    then
+
+        # This regex will only work with a complete URL that contains
+        # all three components:
+        #
+        #       scheme://host:port
+        #
+        # It does not handle user or password.
+
+        SPLIT_URL=`echo $NEW_RELIC_PROXY_HOST | \
+            sed -e 's@\([a-z]*\)://\(.*\):\(proxy_port\|[0-9]*\).*@\1 \2 \3@'`
+
+        SCHEME=`echo $SPLIT_URL | awk '{print $1}'`
+        PORT=`echo $SPLIT_URL | awk '{print $3}'`
+
+        NEW_RELIC_PROXY_SCHEME=${NEW_RELIC_PROXY_SCHEME:-$SCHEME}
+        NEW_RELIC_PROXY_PORT=${NEW_RELIC_PROXY_PORT:-$PORT}
+
+    fi
+fi
+
+# Replace 'proxy_host' dummy value with actual host.
+
+NEW_RELIC_PROXY_HOST=`echo $NEW_RELIC_PROXY_HOST | \
+    sed -e "s/proxy_host/$SQUID_PORT_3128_TCP_ADDR/"`
+
+# Replace 'proxy_port' dummy value with actual port. Port differs
+# depending on scheme:
+#
+#       'http'  => 3128
+#       'https' => 3129
+#
+# Since docker env var has port number in name, I don't see the value
+# of using $SQUID_PORT_3128_TCP_PORT or $SQUID_PORT_3129_TCP_PORT,
+# instead of just using 3128 or 3129.
+
+if test "$NEW_RELIC_PROXY_SCHEME" = "http"
+then
+    NEW_RELIC_PROXY_HOST=`echo $NEW_RELIC_PROXY_HOST | \
+        sed -e "s/proxy_port/3128/"`
+    NEW_RELIC_PROXY_PORT=`echo $NEW_RELIC_PROXY_PORT | \
+        sed -e "s/proxy_port/3128/"`
+fi
+
+if test "$NEW_RELIC_PROXY_SCHEME" = "https"
+then
+    NEW_RELIC_PROXY_HOST=`echo $NEW_RELIC_PROXY_HOST | \
+        sed -e "s/proxy_port/3129/"`
+    NEW_RELIC_PROXY_PORT=`echo $NEW_RELIC_PROXY_PORT | \
+        sed -e "s/proxy_port/3129/"`
+fi
+
+# Export proxy variables, now that we're done modifying them.
+# But, don't export blank values.
+
+if test -n "$NEW_RELIC_PROXY_SCHEME"
+then
+    export NEW_RELIC_PROXY_SCHEME=$NEW_RELIC_PROXY_SCHEME
+fi
+
+if test -n "$NEW_RELIC_PROXY_HOST"
+then
+    export NEW_RELIC_PROXY_HOST=$NEW_RELIC_PROXY_HOST
+fi
+
+if test -n "$NEW_RELIC_PROXY_PORT"
+then
+    export NEW_RELIC_PROXY_PORT=$NEW_RELIC_PROXY_PORT
 fi

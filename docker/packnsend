@@ -237,6 +237,7 @@ launch_remote_command()
         --link packnsend-mysql:mysql \
         --link packnsend-devpi:devpi \
         --link packnsend-squid:squid \
+        --link packnsend-mongodb:mongodb \
         $DATA_IMAGE_NAME /data/packnsend-remote "$@")
 
     STATUS=$(time docker wait $CONTAINER_ID)
@@ -266,6 +267,7 @@ launch_remote_command()
             --link packnsend-mysql:mysql \
             --link packnsend-devpi:devpi \
             --link packnsend-squid:squid \
+            --link packnsend-mongodb:mongodb \
             $TEST_IMAGE_NAME /data/packnsend-bash
     fi
 }
@@ -292,6 +294,7 @@ launch_remote_shell()
         --link packnsend-mysql:mysql \
         --link packnsend-devpi:devpi \
         --link packnsend-squid:squid \
+        --link packnsend-mongodb:mongodb \
         $DATA_IMAGE_NAME /data/packnsend-bash
 }
 
@@ -340,6 +343,10 @@ create_docker_base_images()
     docker tag quay.io/newrelic/python-agent-squid squid || true
 
     (cd $ROOT_DIRECTORY; docker build --rm -t squid docker/squid)
+
+    echo "Image: mongodb"
+
+    (cd $ROOT_DIRECTORY; docker build --rm -t mongodb docker/mongodb)
 }
 
 start_application_services()
@@ -369,6 +376,10 @@ start_application_services()
     echo "Application: squid"
 
     docker run -d --name packnsend-squid squid
+
+    echo "Application: mongodb"
+
+    docker run -d --name packnsend-mongodb mongodb
 }
 
 stop_application_services()
@@ -410,6 +421,12 @@ stop_application_services()
     docker stop -t=10 packnsend-squid
     docker kill packnsend-squid
     docker rm packnsend-squid
+
+    echo "Application: mongodb"
+
+    docker stop -t=10 packnsend-mongodb
+    docker kill packnsend-mongodb
+    docker rm packnsend-mongodb
 }
 
 delete_docker_base_images()
@@ -439,6 +456,10 @@ delete_docker_base_images()
     echo "Image: squid"
 
     docker rmi squid
+
+    echo "Image: mongodb"
+
+    docker rmi mongodb
 
     echo "Image: python-base"
 

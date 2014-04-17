@@ -231,7 +231,8 @@ launch_remote_command()
 
     CONTAINER_ID=$(docker run -d --name $DATA_IMAGE_NAME \
         $DOCKER_EXTRA_ARGS \
-        -w /data/$WORK_DIRECTORY --link packnsend-gearmand:gearmand \
+        -w /data/$WORK_DIRECTORY \
+        --link packnsend-gearmand:gearmand \
         --link packnsend-memcached:memcached \
         --link packnsend-postgresql:postgresql \
         --link packnsend-mysql:mysql \
@@ -261,7 +262,8 @@ launch_remote_command()
 
         docker run -t -i --rm -u guest --volumes-from $CONTAINER_ID \
             $DOCKER_EXTRA_ARGS \
-            -w /data/$WORK_DIRECTORY --link packnsend-gearmand:gearmand \
+            -w /data/$WORK_DIRECTORY \
+            --link packnsend-gearmand:gearmand \
             --link packnsend-memcached:memcached \
             --link packnsend-postgresql:postgresql \
             --link packnsend-mysql:mysql \
@@ -288,7 +290,8 @@ launch_remote_shell()
 
     docker run -t -i --rm --name $DATA_IMAGE_NAME \
         $DOCKER_EXTRA_ARGS \
-        -w /data/$WORK_DIRECTORY --link packnsend-gearmand:gearmand \
+        -w /data/$WORK_DIRECTORY \
+        --link packnsend-gearmand:gearmand \
         --link packnsend-memcached:memcached \
         --link packnsend-postgresql:postgresql \
         --link packnsend-mysql:mysql \

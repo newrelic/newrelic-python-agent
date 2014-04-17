@@ -41,7 +41,7 @@ When installing it, make sure you do not install it as your default Python
 installation as you don't want it replacing the Apple version when working
 with the agent.
 
-Once installed, run the Enthough Canopy application and do an update of all
+Once installed, run the Enthought Canopy application and do an update of all
 packages to ensure you get the newest IPython version.
 
 When wish to start up the notebook server run:

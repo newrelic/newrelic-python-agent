@@ -26,6 +26,10 @@ include a directory containing a ``sitecustomize.py`` file. When Python finds
 that ``sitecustomize.py`` file it will automatically import it, allowing us to
 perform actions on interpreter startup before any user code is run.
 
+As it relies on ``PYTHONPATH`` being set, if the command being run under
+``newrelic-admin`` replaces ``PYTHONPATH`` completely, then the bootstrapping
+will not work. Specifically ``sitecustomize.py`` is not imported and run.
+
 ## Location of newrelic-admin script commands
 
 Code for ``run-program`` is in repository at:
@@ -443,4 +447,47 @@ Type "help", "copyright", "credits" or "license" for more information.
 >>>
 ```
 
-So both ``sys.prefix`` and ``sys.version_info[:3]`` tests failed.
+So both ``sys.prefix`` and ``sys.version_info[:2]`` tests failed.
+
+A final case is where ``PYTHONPATH`` was overridden by the script being run and
+so ``sitecustomize.py`` isn't imported. In this case, you will only see half of
+the above log output.
+
+```
+(test-env)grumpy-old-man:python_agent graham$ NEW_RELIC_STARTUP_DEBUG=true
+newrelic-admin run-program /bin/sh
+NEWRELIC: 2014-04-17 11:19:14 (34913) - New Relic Admin Script
+(/Users/graham/Work/python_agent/test-env/lib/python2.7/site-packages/newrelic-2
+.19.0.0-py2.7-macosx-10.8-intel.egg/newrelic/admin/run_program.pyc)
+NEWRELIC: 2014-04-17 11:19:14 (34913) - working_directory =
+'/Users/graham/Work/python_agent'
+NEWRELIC: 2014-04-17 11:19:14 (34913) - current_command =
+['/Users/graham/Work/python_agent/test-env/bin/newrelic-admin', 'run-program',
+'/bin/sh']
+NEWRELIC: 2014-04-17 11:19:14 (34913) - sys.prefix =
+'/Users/graham/Work/python_agent/test-env'
+NEWRELIC: 2014-04-17 11:19:14 (34913) - sys.real_prefix =
+'/System/Library/Frameworks/Python.framework/Versions/2.7'
+NEWRELIC: 2014-04-17 11:19:14 (34913) - sys.version_info =
+sys.version_info(major=2, minor=7, micro=2, releaselevel='final', serial=0)
+NEWRELIC: 2014-04-17 11:19:14 (34913) - sys.executable =
+'/Users/graham/Work/python_agent/test-env/bin/python'
+NEWRELIC: 2014-04-17 11:19:14 (34913) - sys.flags = sys.flags(debug=0,
+py3k_warning=0, division_warning=0, division_new=0, inspect=0, interactive=0,
+optimize=0, dont_write_bytecode=0, no_user_site=0, no_site=0,
+ignore_environment=0, tabcheck=0, verbose=0, unicode=0, bytes_warning=0)
+NEWRELIC: 2014-04-17 11:19:14 (34913) - sys.path = [...]
+NEWRELIC: 2014-04-17 11:19:14 (34913) - NEW_RELIC_STARTUP_DEBUG = 'true'
+NEWRELIC: 2014-04-17 11:19:14 (34913) - root_directory =
+'/Users/graham/Work/python_agent/test-env/lib/python2.7/site-
+packages/newrelic-2.19.0.0-py2.7-macosx-10.8-intel.egg/newrelic'
+NEWRELIC: 2014-04-17 11:19:14 (34913) - boot_directory =
+'/Users/graham/Work/python_agent/test-env/lib/python2.7/site-
+packages/newrelic-2.19.0.0-py2.7-macosx-10.8-intel.egg/newrelic/bootstrap'
+NEWRELIC: 2014-04-17 11:19:14 (34913) - program_exe_path = '/bin/sh'
+NEWRELIC: 2014-04-17 11:19:14 (34913) - execl_arguments = ['/bin/sh', '/bin/sh']
+```
+
+In this case, the last line will be ``execl_arguments`` value. There will be no
+'New Relic Bootstrap' section in the output as ``sitecustomize.py`` was never
+imported.

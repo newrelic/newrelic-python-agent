@@ -239,6 +239,7 @@ launch_remote_command()
         --link packnsend-devpi:devpi \
         --link packnsend-squid:squid \
         --link packnsend-mongodb:mongodb \
+        --link packnsend-redis:redis \
         $DATA_IMAGE_NAME /data/packnsend-remote "$@")
 
     STATUS=$(time docker wait $CONTAINER_ID)
@@ -270,6 +271,7 @@ launch_remote_command()
             --link packnsend-devpi:devpi \
             --link packnsend-squid:squid \
             --link packnsend-mongodb:mongodb \
+            --link packnsend-redis:redis \
             $TEST_IMAGE_NAME /data/packnsend-bash
     fi
 }
@@ -298,6 +300,7 @@ launch_remote_shell()
         --link packnsend-devpi:devpi \
         --link packnsend-squid:squid \
         --link packnsend-mongodb:mongodb \
+        --link packnsend-redis:redis \
         $DATA_IMAGE_NAME /data/packnsend-bash
 }
 
@@ -350,6 +353,10 @@ create_docker_base_images()
     echo "Image: mongodb"
 
     (cd $ROOT_DIRECTORY; docker build --rm -t mongodb docker/mongodb)
+
+    echo "Image: redis"
+
+    (cd $ROOT_DIRECTORY; docker build --rm -t redis docker/redis)
 }
 
 start_application_services()
@@ -383,6 +390,10 @@ start_application_services()
     echo "Application: mongodb"
 
     docker run -d --name packnsend-mongodb mongodb
+
+    echo "Application: redis"
+
+    docker run -d --name packnsend-redis redis
 }
 
 stop_application_services()
@@ -430,6 +441,12 @@ stop_application_services()
     docker stop -t=10 packnsend-mongodb
     docker kill packnsend-mongodb
     docker rm packnsend-mongodb
+
+    echo "Application: redis"
+
+    docker stop -t=10 packnsend-redis
+    docker kill packnsend-redis
+    docker rm packnsend-redis
 }
 
 delete_docker_base_images()
@@ -463,6 +480,10 @@ delete_docker_base_images()
     echo "Image: mongodb"
 
     docker rmi mongodb
+
+    echo "Image: redis"
+
+    docker rmi redis
 
     echo "Image: python-base"
 

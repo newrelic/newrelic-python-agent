@@ -359,6 +359,54 @@ create_docker_base_images()
     (cd $ROOT_DIRECTORY; docker build --rm -t redis docker/redis)
 }
 
+query_push_pull_authorization()
+{
+    # Determine if we are authorized to push and pull to the docker
+    # repository by attempting to pull a non-existent image and checking
+    # the HTTP status code in the response.
+    #
+    #       If we are authorized, status code is 404.
+    #       If we are not authorized, status code is 403.
+    #
+    # Set IS_AUTHORIZED_TO_PUSH_PULL to 'true' or 'false', depending on
+    # the response
+
+    DOCKER_REPO=quay.io
+    NONEXISTENT_IMAGE=$DOCKER_REPO/newrelic/python-agent-nonexistent
+
+    # Stderr will contain HTTP status code of response. Since we are pulling
+    # a non-existent image, we'll always get an error code of some sort.
+
+    PULL_RESPONSE=$(docker pull $NONEXISTENT_IMAGE 2>&1 >/dev/null)
+
+    PULL_RESPONSE_HTTP_STATUS=$(echo "$PULL_RESPONSE" | \
+        sed "s/.*HTTP code://" | tr -d [:space:])
+
+    if test $PULL_RESPONSE_HTTP_STATUS = '404'
+    then
+        IS_AUTHORIZED_TO_PUSH_PULL='true'
+
+    elif test $PULL_RESPONSE_HTTP_STATUS = '403'
+    then
+        IS_AUTHORIZED_TO_PUSH_PULL='false'
+
+        echo "You are not authorized to push or pull to the docker repository."
+        echo "To become authorized, create an account, then run 'docker login'"
+        echo "to create a .dockercfg file."
+        echo
+
+    else
+        # Any HTTP response code except 403 or 404 most likely means push/pull
+        # won't work, so set to false and display response code.
+
+        IS_AUTHORIZED_TO_PUSH_PULL='false'
+
+        echo "Error connecting to Docker repository:"
+        echo "$PULL_RESPONSE"
+        echo
+    fi
+}
+
 start_application_services()
 {
     echo "Start application services."

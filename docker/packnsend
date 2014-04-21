@@ -334,20 +334,6 @@ create_docker_base_images()
 
     echo "Image: squid"
 
-    # Try pulling the squid image from quay.io before building it.
-
-    # If the pull succeeds, tag it and build it, so we end up with an image
-    # named 'squid'. Even though the build step is redundant after a successful
-    # pull, it doesn't hurt to run 'docker build', since the presence of the
-    # cached layers will make the build step very fast.
-
-    # If the pull and/or tag fails, ignore the errors and build it the slow
-    # way, without the benefit of cached layers.
-
-    docker pull quay.io/newrelic/python-agent-squid || true
-
-    docker tag quay.io/newrelic/python-agent-squid squid || true
-
     (cd $ROOT_DIRECTORY; docker build --rm -t squid docker/squid)
 
     echo "Image: mongodb"

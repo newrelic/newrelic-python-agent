@@ -13,35 +13,40 @@
 set -e
 
 # Create directory to hold package tarballs temporarily
+
 mkdir -p /downloads
 
 # Install most packages in python 2.7 virtualenv
+
 while read PACKAGE
 do
-    /root/venv/bin/pip install \
+    /venvs/py27/bin/pip install \
         -i http://localhost:3141/root/pypi/ \
         --download /downloads \
         -U $PACKAGE
 
     # Clean out /downloads, so it's possible to install multiple versions
     # of the same package
+
     rm -rf /downloads
     mkdir -p /downloads
 
-done < /root/packages-py2.txt
+done < /root/package-lists/packages-py2.txt
 
 # Some packages must be installed in python 3 virtualenv
+
 while read PACKAGE
 do
-    /root/venv-py3/bin/pip install \
+    /venvs/py33/bin/pip install \
         -i http://localhost:3141/root/pypi/ \
         --download /downloads \
         -U $PACKAGE
 
     # Make it possible to install multiple versions of the same package
+
     rm -rf /downloads
     mkdir -p /downloads
 
-done < /root/packages-py3.txt
+done < /root/package-lists/packages-py3.txt
 
 rm -rf /downloads

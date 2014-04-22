@@ -334,20 +334,6 @@ create_docker_base_images()
 
     echo "Image: squid"
 
-    # Try pulling the squid image from quay.io before building it.
-
-    # If the pull succeeds, tag it and build it, so we end up with an image
-    # named 'squid'. Even though the build step is redundant after a successful
-    # pull, it doesn't hurt to run 'docker build', since the presence of the
-    # cached layers will make the build step very fast.
-
-    # If the pull and/or tag fails, ignore the errors and build it the slow
-    # way, without the benefit of cached layers.
-
-    docker pull quay.io/newrelic/python-agent-squid || true
-
-    docker tag quay.io/newrelic/python-agent-squid squid || true
-
     (cd $ROOT_DIRECTORY; docker build --rm -t squid docker/squid)
 
     echo "Image: mongodb"
@@ -357,6 +343,192 @@ create_docker_base_images()
     echo "Image: redis"
 
     (cd $ROOT_DIRECTORY; docker build --rm -t redis docker/redis)
+}
+
+query_push_pull_authorization()
+{
+    # Determine if we are authorized to push and pull to the docker
+    # repository by attempting to pull a non-existent image and checking
+    # the HTTP status code in the response.
+    #
+    #       If we are authorized, status code is 404.
+    #       If we are not authorized, status code is 403.
+    #
+    # Set IS_AUTHORIZED_TO_PUSH_PULL to 'true' or 'false', depending on
+    # the response
+
+    DOCKER_REPO=quay.io
+    NONEXISTENT_IMAGE=$DOCKER_REPO/newrelic/python-agent-nonexistent
+
+    # Stderr will contain HTTP status code of response. Since we are pulling
+    # a non-existent image, we'll always get an error code of some sort.
+
+    PULL_RESPONSE=$(docker pull $NONEXISTENT_IMAGE 2>&1 >/dev/null)
+
+    PULL_RESPONSE_HTTP_STATUS=$(echo "$PULL_RESPONSE" | \
+        sed "s/.*HTTP code://" | tr -d [:space:])
+
+    if test $PULL_RESPONSE_HTTP_STATUS = '404'
+    then
+        IS_AUTHORIZED_TO_PUSH_PULL='true'
+
+    elif test $PULL_RESPONSE_HTTP_STATUS = '403'
+    then
+        IS_AUTHORIZED_TO_PUSH_PULL='false'
+
+        echo "You are not authorized to push or pull to the docker repository."
+        echo "To become authorized, create an account, then run 'docker login'"
+        echo "to create a .dockercfg file."
+        echo
+
+    else
+        # Any HTTP response code except 403 or 404 most likely means push/pull
+        # won't work, so set to false and display response code.
+
+        IS_AUTHORIZED_TO_PUSH_PULL='false'
+
+        echo "Error connecting to Docker repository:"
+        echo "$PULL_RESPONSE"
+        echo
+    fi
+}
+
+push_docker_base_images()
+{
+    echo "Push docker base images."
+    echo
+
+    query_push_pull_authorization
+
+    if test $IS_AUTHORIZED_TO_PUSH_PULL = 'true'
+    then
+        echo "Push image: python-base"
+        echo
+        docker tag python-base quay.io/newrelic/python-agent-python-base
+        docker push quay.io/newrelic/python-agent-python-base
+        echo
+
+        echo "Push image: memcached"
+        echo
+        docker tag memcached quay.io/newrelic/python-agent-memcached
+        docker push quay.io/newrelic/python-agent-memcached
+        echo
+
+        echo "Push image: gearmand"
+        echo
+        docker tag gearmand quay.io/newrelic/python-agent-gearmand
+        docker push quay.io/newrelic/python-agent-gearmand
+        echo
+
+        echo "Push image: postgresql"
+        echo
+        docker tag postgresql quay.io/newrelic/python-agent-postgresql
+        docker push quay.io/newrelic/python-agent-postgresql
+        echo
+
+        echo "Push image: mysql"
+        echo
+        docker tag mysql quay.io/newrelic/python-agent-mysql
+        docker push quay.io/newrelic/python-agent-mysql
+        echo
+
+        echo "Push image: devpi"
+        echo
+        docker tag devpi quay.io/newrelic/python-agent-devpi
+        docker push quay.io/newrelic/python-agent-devpi
+        echo
+
+        echo "Push image: squid"
+        echo
+        docker tag squid quay.io/newrelic/python-agent-squid
+        docker push quay.io/newrelic/python-agent-squid
+        echo
+
+        echo "Push image: mongodb"
+        echo
+        docker tag mongodb quay.io/newrelic/python-agent-mongodb
+        docker push quay.io/newrelic/python-agent-mongodb
+        echo
+
+        echo "Push image: redis"
+        echo
+        docker tag redis quay.io/newrelic/python-agent-redis
+        docker push quay.io/newrelic/python-agent-redis
+        echo
+
+    else
+        echo "Skipping docker push."
+        echo
+    fi
+}
+
+pull_docker_base_images()
+{
+    echo "Pull docker base images."
+    echo
+
+    query_push_pull_authorization
+
+    if test $IS_AUTHORIZED_TO_PUSH_PULL = 'true'
+    then
+        echo "Pull image: python-base"
+        echo
+        docker pull quay.io/newrelic/python-agent-python-base
+        docker tag quay.io/newrelic/python-agent-python-base python-base
+        echo
+
+        echo "Pull image: memcached"
+        echo
+        docker pull quay.io/newrelic/python-agent-memcached
+        docker tag quay.io/newrelic/python-agent-memcached memcached
+        echo
+
+        echo "Pull image: gearmand"
+        echo
+        docker pull quay.io/newrelic/python-agent-gearmand
+        docker tag quay.io/newrelic/python-agent-gearmand gearmand
+        echo
+
+        echo "Pull image: postgresql"
+        echo
+        docker pull quay.io/newrelic/python-agent-postgresql
+        docker tag quay.io/newrelic/python-agent-postgresql postgresql
+        echo
+
+        echo "Pull image: mysql"
+        echo
+        docker pull quay.io/newrelic/python-agent-mysql
+        docker tag quay.io/newrelic/python-agent-mysql mysql
+        echo
+
+        echo "Pull image: devpi"
+        echo
+        docker pull quay.io/newrelic/python-agent-devpi
+        docker tag quay.io/newrelic/python-agent-devpi devpi
+        echo
+
+        echo "Pull image: squid"
+        echo
+        docker pull quay.io/newrelic/python-agent-squid
+        docker tag quay.io/newrelic/python-agent-squid squid
+        echo
+
+        echo "Pull image: mongodb"
+        echo
+        docker pull quay.io/newrelic/python-agent-mongodb
+        docker tag quay.io/newrelic/python-agent-mongodb mongodb
+        echo
+
+        echo "Pull image: redis"
+        echo
+        docker pull quay.io/newrelic/python-agent-redis
+        docker tag quay.io/newrelic/python-agent-redis redis
+        echo
+
+    else
+        echo "Skipping docker pull."
+        echo
+    fi
 }
 
 start_application_services()
@@ -524,7 +696,16 @@ case "$COMMAND" in
         ;;
 
     init)
+        pull_docker_base_images
         create_docker_base_images
+        ;;
+
+    push)
+        push_docker_base_images
+        ;;
+
+    pull)
+        pull_docker_base_images
         ;;
 
     start)

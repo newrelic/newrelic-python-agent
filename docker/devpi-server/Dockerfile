@@ -1,6 +1,6 @@
 FROM python-base
 
-RUN pip install devpi-server eventlet
+RUN pip install devpi eventlet
 
 # Build a virtualenv for each python version
 
@@ -23,6 +23,16 @@ ADD package-lists /root/package-lists/
 
 RUN devpi-server --start && \
     /root/seed_packages.sh
+
+# Add script to build wheels
+
+ADD build_wheels.sh /root/build_wheels.sh
+RUN chmod 755 /root/build_wheels.sh
+
+# RUN script to build wheels
+
+RUN devpi-server --start && \
+    /root/build_wheels.sh
 
 EXPOSE 3141
 ENTRYPOINT ["devpi-server"]

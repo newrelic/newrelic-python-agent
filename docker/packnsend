@@ -697,7 +697,10 @@ case "$COMMAND" in
 
     init)
         pull_docker_base_images
-        create_docker_base_images
+        if test $IS_AUTHORIZED_TO_PUSH_PULL = 'false'
+        then
+            create_docker_base_images
+        fi
         ;;
 
     build)

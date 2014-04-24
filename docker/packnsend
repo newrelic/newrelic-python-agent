@@ -662,9 +662,27 @@ delete_docker_base_images()
     docker rmi python-base
 }
 
+print_usage()
+{
+    echo "`basename $0`: COMMAND [arg...]"
+    echo
+    echo "Commands:"
+    echo "    run      Run command on test container."
+    echo "    shell    Launch a shell on test container."
+    echo "    init     Pull images, if authorized, else build."
+    echo "    build    Build base images."
+    echo "    push     Push base images."
+    echo "    pull     Pull base images."
+    echo "    start    Start base containers."
+    echo "    stop     Stop base containers."
+    echo "    cleanup  Delete base images."
+    echo "    help     Print help message."
+    echo
+}
+
 if test $# -lt 1
 then
-    echo "Usage: `basename $0`: COMMAND [arg...]"
+    print_usage
     exit 1
 fi
 
@@ -727,8 +745,12 @@ case "$COMMAND" in
         delete_docker_base_images
         ;;
 
+    help)
+        print_usage
+        ;;
+
     *)
-        echo "`basename $0`: Unknown command $COMMAND"
+        print_usage
         exit 1
         ;;
 esac

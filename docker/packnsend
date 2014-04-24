@@ -700,6 +700,10 @@ case "$COMMAND" in
         create_docker_base_images
         ;;
 
+    build)
+        create_docker_base_images
+        ;;
+
     push)
         push_docker_base_images
         ;;

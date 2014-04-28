@@ -19,6 +19,4 @@ def license_info(args):
 
     license = open(license_file, 'r').read()
 
-    print()
-    print("LICENSE for the New Relic Python Agent")
-    print(license)
+    print(license, end='')

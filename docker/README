@@ -83,6 +83,44 @@ To test it works run:
 
     docker version
 
+Setting up a Quay.io Account
+----------------------------
+
+Quay.io is a private docker repository where we store the docker images that
+we use for testing. Only authorized quay.io users have access to the images.
+Since, pulling the images from quay.io is typically faster than building them
+from the Dockerfiles, it's worth setting up an account.
+
+Account setup steps:
+
+1. Create a quay.io account at https://quay.io. Use your newrelic.com email
+address.
+
+2. Have someone with admin rights on the quay.io account add you to the
+python team on quay.io, which is a sub-group of the newrelic organization.
+(Currently, Tom Offermann is the admin for the Python team.) You should get
+permissions to pull from the repo, push to the repo, and create new repos.
+
+3. Login to your quay.io account from the command line:
+
+    docker login quay.io
+
+You will be prompted to enter your quay.io username, password, and email
+address. Once you do that, you will be logged in, and a .dockercfg file
+will be created and installed automatically for you. This file stores your
+login credentials, so you do not have to run `docker login` every time you
+want to access the images hosted on quay.io.
+
+Using Quay.io on Jenkins
+------------------------
+
+There is a special "Robot account" set up for use by Jenkins to pull images
+from quay.io. The account name is 'newrelic+pythonagentbot'.
+
+To get the the login credentials for the Robot account, someone with admin
+rights on the quay.io account needs to download the .dockercfg file from the
+quay.io web site.
+
 Setting up base images
 ----------------------
 
@@ -91,7 +129,38 @@ the 'init' command:
 
     packnsend init
 
-This will take a while.
+If you have a quay.io account set up, this command will pull the images from
+the private docker image repository. Otherwise, this command will build the
+images from the Dockerfiles.
+
+In either case, this will take awhile.
+
+Building the images
+-------------------
+
+If you know you want to build the images from the Dockerfiles, and not pull
+them, you can run `packnsend` with the `build` command:
+
+    packnsend build
+
+Pulling the images from Quay.io
+-------------------------------
+
+To pull all of the images from quay.io (assuming you have set up your quay.io
+account), use the `pull` command:
+
+    packnsend pull
+
+Pulling the images is typically faster than building them.
+
+Pushing the images to Quay.io
+-----------------------------
+
+To update the images hosted in the quay.io repository, use the `push` command.
+(Again, this requires that you have set up your quay.io account.) This command
+will push all images to quay.io:
+
+    packnsend push
 
 Running a test in docker
 ------------------------
@@ -143,6 +212,10 @@ to the test docker instance:
     NEW_RELIC_STARTUP_TIMEOUT
     NEW_RELIC_SHUTDOWN_TIMEOUT
     NEW_RELIC_FAKE_COLLECTOR
+    NEW_RELIC_PROXY_HOST
+    NEW_RELIC_PROXY_PORT
+    NEW_RELIC_PROXY_USER
+    NEW_RELIC_PROXY_PASS
 
 Launching a shell in docker
 ---------------------------

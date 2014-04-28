@@ -1,5 +1,6 @@
 from newrelic.agent import (wrap_object, ObjectProxy, wrap_function_wrapper,
-        register_database_client)
+        register_database_client, FunctionTrace, callable_name,
+        DatabaseTrace, current_transaction)
 
 from .database_dbapi2 import (ConnectionWrapper as DBAPI2ConnectionWrapper,
         ConnectionFactory as DBAPI2ConnectionFactory)
@@ -7,7 +8,10 @@ from .database_dbapi2 import (ConnectionWrapper as DBAPI2ConnectionWrapper,
 class ConnectionWrapper(DBAPI2ConnectionWrapper):
 
     def __enter__(self):
-        self.__wrapped__.__enter__()
+        transaction = current_transaction()
+        name = callable_name(self.__wrapped__.__enter__)
+        with FunctionTrace(transaction, name):
+            self.__wrapped__.__enter__()
 
         # Must return a reference to self as otherwise will be
         # returning the inner connection object. If 'as' is used
@@ -16,6 +20,19 @@ class ConnectionWrapper(DBAPI2ConnectionWrapper):
         # tracked.
 
         return self
+
+    def __exit__(self, exc, value, tb):
+        transaction = current_transaction()
+        name = callable_name(self.__wrapped__.__exit__)
+        with FunctionTrace(transaction, name):
+            if exc is None:
+                with DatabaseTrace(transaction, 'COMMIT',
+                        self._nr_dbapi2_module):
+                    return self.__wrapped__.__exit__(exc, value, tb)
+            else:
+                with DatabaseTrace(transaction, 'ROLLBACK',
+                        self._nr_dbapi2_module):
+                    return self.__wrapped__.__exit__(exc, value, tb)
 
 class ConnectionFactory(DBAPI2ConnectionFactory):
 

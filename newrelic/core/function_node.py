@@ -6,7 +6,7 @@ from newrelic.core.metric import TimeMetric
 
 _FunctionNode = namedtuple('_FunctionNode',
         ['group', 'name', 'children', 'start_time', 'end_time',
-        'duration', 'exclusive', 'label', 'params'])
+        'duration', 'exclusive', 'label', 'params', 'rollup'])
 
 class FunctionNode(_FunctionNode):
 
@@ -23,6 +23,14 @@ class FunctionNode(_FunctionNode):
 
         yield TimeMetric(name=name, scope=root.path,
                 duration=self.duration, exclusive=self.exclusive)
+
+        # The rollup metric with scope corresponding to the
+        # transaction type allows us to force a new category on
+        # the overview dashboard breakdown charts.
+
+        if self.rollup:
+            yield TimeMetric(name=self.rollup, scope=root.type,
+                    duration=self.duration, exclusive=None)
 
         # Now for the children.
 

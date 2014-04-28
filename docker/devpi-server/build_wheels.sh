@@ -2,6 +2,8 @@
 
 # Build wheels for each package for all python version
 
+set -e
+
 DEVPI_SERVER=http://localhost:3141
 
 echo

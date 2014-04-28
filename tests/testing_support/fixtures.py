@@ -21,7 +21,12 @@ _fake_collector_responses = {
     'get_redirect_host': 'fake-collector.newrelic.com',
 
     'connect': {
-        'js_agent_loader': '',
+        'js_agent_loader': '<!-- NREUM -->',
+        'js_agent_file': 'js-agent.newrelic.com/nr-0.min.js',
+        'browser_key': '1234567890',
+        'browser_monitoring.loader_version': '0',
+        'beacon': 'fake-beacon.newrelic.com',
+        'error_beacon': 'fake-jserror.newrelic.com',
         'apdex_t': 0.5,
         'encoding_key': 'd67afc830dab717fd163bfcb0b8b88423e9a1a3b',
         'agent_run_id': 1234567,

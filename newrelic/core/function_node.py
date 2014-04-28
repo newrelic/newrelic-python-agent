@@ -24,13 +24,35 @@ class FunctionNode(_FunctionNode):
         yield TimeMetric(name=name, scope=root.path,
                 duration=self.duration, exclusive=self.exclusive)
 
-        # The rollup metric with scope corresponding to the
-        # transaction type allows us to force a new category on
-        # the overview dashboard breakdown charts.
+        # Generate a rollup metric if one has been specified.
+        #
+        # We actually implement two cases here. If the rollup name ends
+        # with /all, then we implement the old style, which is to
+        # generate an unscoped /all metric, plus if a web transaction
+        # then /allWeb. For non web transaction also generate /allOther.
+        #
+        # If not the old style, but new style, the rollup metric
+        # has scope corresponding to the transaction type.
+        #
+        # For the old style it must match one of the existing rollup
+        # categories recognised by the UI. For the new, we can add our
+        # own rollup categories.
 
         if self.rollup:
-            yield TimeMetric(name=self.rollup, scope=root.type,
-                    duration=self.duration, exclusive=None)
+            if self.rollup.endswith('/all'):
+                yield TimeMetric(name=self.rollup, scope='',
+                        duration=self.duration, exclusive=None)
+
+                if root.type == 'WebTransaction':
+                    yield TimeMetric(name=self.rollup+'Web', scope='',
+                            duration=self.duration, exclusive=None)
+                else:
+                    yield TimeMetric(name=self.rollup+'Other', scope='',
+                            duration=self.duration, exclusive=None)
+
+            else:
+                yield TimeMetric(name=self.rollup, scope=root.type,
+                        duration=self.duration, exclusive=None)
 
         # Now for the children.
 

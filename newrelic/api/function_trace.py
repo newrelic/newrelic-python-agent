@@ -8,7 +8,8 @@ from ..common.object_names import callable_name
 
 class FunctionTrace(TimeTrace):
 
-    def __init__(self, transaction, name, group=None, label=None, params=None):
+    def __init__(self, transaction, name, group=None, label=None,
+            params=None, terminal=False, rollup=None):
         super(FunctionTrace, self).__init__(transaction)
 
         # Deal with users who use group wrongly and add a leading
@@ -25,6 +26,8 @@ class FunctionTrace(TimeTrace):
         self.group = group
         self.label = label
         self.params = params
+        self.terminal = terminal
+        self.rollup = terminal and rollup or None
 
     def dump(self, file):
         print >> file, self.__class__.__name__, dict(name=self.name,
@@ -35,10 +38,13 @@ class FunctionTrace(TimeTrace):
                 children=self.children, start_time=self.start_time,
                 end_time=self.end_time, duration=self.duration,
                 exclusive=self.exclusive, label=self.label,
-                params=self.params)
+                params=self.params, rollup=self.rollup)
+
+    def terminal_node(self):
+        return self.terminal
 
 def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
-            params=None):
+            params=None, terminal=False, rollup=None):
 
     def dynamic_wrapper(wrapped, instance, args, kwargs):
         transaction = current_transaction()
@@ -85,7 +91,8 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
         else:
             _params = params
 
-        with FunctionTrace(transaction, _name, _group, _label, _params):
+        with FunctionTrace(transaction, _name, _group, _label, _params,
+                terminal, rollup):
             return wrapped(*args, **kwargs)
 
     def literal_wrapper(wrapped, instance, args, kwargs):
@@ -96,7 +103,8 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
 
         _name = name or callable_name(wrapped)
 
-        with FunctionTrace(transaction, _name, group, label, params):
+        with FunctionTrace(transaction, _name, group, label, params,
+                terminal, rollup):
             return wrapped(*args, **kwargs)
 
     if (callable(name) or callable(group) or callable(label) or
@@ -105,11 +113,13 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None,
 
     return FunctionWrapper(wrapped, literal_wrapper)
 
-def function_trace(name=None, group=None, label=None, params=None):
+def function_trace(name=None, group=None, label=None, params=None,
+        terminal=False, rollup=None):
     return functools.partial(FunctionTraceWrapper, name=name,
-            group=group, label=label, params=params)
+            group=group, label=label, params=params, terminal=terminal,
+            rollup=rollup)
 
 def wrap_function_trace(module, object_path, name=None,
-        group=None, label=None, params=None):
+        group=None, label=None, params=None, terminal=False, rollup=None):
     return wrap_object(module, object_path, FunctionTraceWrapper,
-            (name, group, label, params))
+            (name, group, label, params, terminal, rollup))

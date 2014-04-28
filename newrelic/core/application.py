@@ -706,8 +706,10 @@ class Application(object):
                 if settings.debug.record_transaction_failure:
                     raise
 
-            if profile_samples and data.path in \
-                    self._stats_engine.xray_sessions:
+            if (profile_samples and (data.path in
+                    self._stats_engine.xray_sessions or
+                    'WebTransaction/Agent/__profiler__' in
+                    self._stats_engine.xray_sessions)):
 
                 try:
                     background_task, samples = profile_samples
@@ -716,8 +718,16 @@ class Application(object):
                             'stack_traces[sample]', len(samples))
 
                     tr_type = 'BACKGROUND' if background_task else 'REQUEST'
-                    self.profile_manager.add_stack_traces(self._app_name,
-                            data.path, tr_type, samples)
+
+                    if data.path in self._stats_engine.xray_sessions:
+                        self.profile_manager.add_stack_traces(self._app_name,
+                                data.path, tr_type, samples)
+
+                    if ('WebTransaction/Agent/__profiler__' in
+                            self._stats_engine.xray_sessions):
+                        self.profile_manager.add_stack_traces(self._app_name,
+                                'WebTransaction/Agent/__profiler__', tr_type,
+                                samples)
 
                 except Exception:
                     _logger.exception('Building xray profile tree has failed.'

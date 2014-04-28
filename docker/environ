@@ -41,7 +41,8 @@ export PACKNSEND_DB_USER=python_agent
 if test -n "$DEVPI_PORT"
 then
     DEVPI_BASE=`echo $DEVPI_PORT | sed -e 's/tcp/http/'`
-    export PIP_INDEX_URL=$DEVPI_BASE/root/pypi/+simple/
+    export PIP_INDEX_URL=$DEVPI_BASE/packnsend/testing/+simple/
+    export PIP_USE_WHEEL=True
 fi
 
 #

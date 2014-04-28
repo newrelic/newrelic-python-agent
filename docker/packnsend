@@ -231,12 +231,15 @@ launch_remote_command()
 
     CONTAINER_ID=$(docker run -d --name $DATA_IMAGE_NAME \
         $DOCKER_EXTRA_ARGS \
-        -w /data/$WORK_DIRECTORY --link packnsend-gearmand:gearmand \
+        -w /data/$WORK_DIRECTORY \
+        --link packnsend-gearmand:gearmand \
         --link packnsend-memcached:memcached \
-        --link packnsend-postgresql-9.1:postgresql-9.1 \
-        --link packnsend-mysql-5.5:mysql-5.5 \
+        --link packnsend-postgresql:postgresql \
+        --link packnsend-mysql:mysql \
         --link packnsend-devpi:devpi \
         --link packnsend-squid:squid \
+        --link packnsend-mongodb:mongodb \
+        --link packnsend-redis:redis \
         $DATA_IMAGE_NAME /data/packnsend-remote "$@")
 
     STATUS=$(time docker wait $CONTAINER_ID)
@@ -258,14 +261,17 @@ launch_remote_command()
         echo "Starting interactive debug shell."
         echo
 
-        docker run -t -i --rm -u guest -volumes-from $CONTAINER_ID \
+        docker run -t -i --rm -u guest --volumes-from $CONTAINER_ID \
             $DOCKER_EXTRA_ARGS \
-            -w /data/$WORK_DIRECTORY --link packnsend-gearmand:gearmand \
+            -w /data/$WORK_DIRECTORY \
+            --link packnsend-gearmand:gearmand \
             --link packnsend-memcached:memcached \
-            --link packnsend-postgresql-9.1:postgresql-9.1 \
-            --link packnsend-mysql-5.5:mysql-5.5 \
+            --link packnsend-postgresql:postgresql \
+            --link packnsend-mysql:mysql \
             --link packnsend-devpi:devpi \
             --link packnsend-squid:squid \
+            --link packnsend-mongodb:mongodb \
+            --link packnsend-redis:redis \
             $TEST_IMAGE_NAME /data/packnsend-bash
     fi
 }
@@ -286,12 +292,15 @@ launch_remote_shell()
 
     docker run -t -i --rm --name $DATA_IMAGE_NAME \
         $DOCKER_EXTRA_ARGS \
-        -w /data/$WORK_DIRECTORY --link packnsend-gearmand:gearmand \
+        -w /data/$WORK_DIRECTORY \
+        --link packnsend-gearmand:gearmand \
         --link packnsend-memcached:memcached \
-        --link packnsend-postgresql-9.1:postgresql-9.1 \
-        --link packnsend-mysql-5.5:mysql-5.5 \
+        --link packnsend-postgresql:postgresql \
+        --link packnsend-mysql:mysql \
         --link packnsend-devpi:devpi \
         --link packnsend-squid:squid \
+        --link packnsend-mongodb:mongodb \
+        --link packnsend-redis:redis \
         $DATA_IMAGE_NAME /data/packnsend-bash
 }
 
@@ -311,13 +320,13 @@ create_docker_base_images()
 
     (cd $ROOT_DIRECTORY; docker build --rm -t gearmand docker/gearmand)
 
-    echo "Image: postgresql-9.1"
+    echo "Image: postgresql"
 
-    (cd $ROOT_DIRECTORY; docker build --rm -t postgresql-9.1 docker/postgresql-9.1)
+    (cd $ROOT_DIRECTORY; docker build --rm -t postgresql docker/postgresql-9.1)
 
-    echo "Image: mysql-5.5"
+    echo "Image: mysql"
 
-    (cd $ROOT_DIRECTORY; docker build --rm -t mysql-5.5 docker/mysql-5.5)
+    (cd $ROOT_DIRECTORY; docker build --rm -t mysql docker/mysql-5.5)
 
     echo "Image: devpi-server"
 
@@ -325,11 +334,201 @@ create_docker_base_images()
 
     echo "Image: squid"
 
-    # Commenting out build command. Will pull image from quay.io, instead.
+    (cd $ROOT_DIRECTORY; docker build --rm -t squid docker/squid)
 
-    # (cd $ROOT_DIRECTORY; docker build --rm -t squid docker/squid)
+    echo "Image: mongodb"
 
-    docker pull quay.io/newrelic/python-agent-squid
+    (cd $ROOT_DIRECTORY; docker build --rm -t mongodb docker/mongodb)
+
+    echo "Image: redis"
+
+    (cd $ROOT_DIRECTORY; docker build --rm -t redis docker/redis)
+}
+
+query_push_pull_authorization()
+{
+    # Determine if we are authorized to push and pull to the docker
+    # repository by attempting to pull a non-existent image and checking
+    # the HTTP status code in the response.
+    #
+    #       If we are authorized, status code is 404.
+    #       If we are not authorized, status code is 403.
+    #
+    # Set IS_AUTHORIZED_TO_PUSH_PULL to 'true' or 'false', depending on
+    # the response
+
+    DOCKER_REPO=quay.io
+    NONEXISTENT_IMAGE=$DOCKER_REPO/newrelic/python-agent-nonexistent
+
+    # Stderr will contain HTTP status code of response. Since we are pulling
+    # a non-existent image, we'll always get an error code of some sort.
+
+    PULL_RESPONSE=$(docker pull $NONEXISTENT_IMAGE 2>&1 >/dev/null)
+
+    PULL_RESPONSE_HTTP_STATUS=$(echo "$PULL_RESPONSE" | \
+        sed "s/.*HTTP code://" | tr -d [:space:])
+
+    if test $PULL_RESPONSE_HTTP_STATUS = '404'
+    then
+        IS_AUTHORIZED_TO_PUSH_PULL='true'
+
+    elif test $PULL_RESPONSE_HTTP_STATUS = '403'
+    then
+        IS_AUTHORIZED_TO_PUSH_PULL='false'
+
+        echo "You are not authorized to push or pull to the docker repository."
+        echo "To become authorized, create an account, then run 'docker login'"
+        echo "to create a .dockercfg file."
+        echo
+
+    else
+        # Any HTTP response code except 403 or 404 most likely means push/pull
+        # won't work, so set to false and display response code.
+
+        IS_AUTHORIZED_TO_PUSH_PULL='false'
+
+        echo "Error connecting to Docker repository:"
+        echo "$PULL_RESPONSE"
+        echo
+    fi
+}
+
+push_docker_base_images()
+{
+    echo "Push docker base images."
+    echo
+
+    query_push_pull_authorization
+
+    if test $IS_AUTHORIZED_TO_PUSH_PULL = 'true'
+    then
+        echo "Push image: python-base"
+        echo
+        docker tag python-base quay.io/newrelic/python-agent-python-base
+        docker push quay.io/newrelic/python-agent-python-base
+        echo
+
+        echo "Push image: memcached"
+        echo
+        docker tag memcached quay.io/newrelic/python-agent-memcached
+        docker push quay.io/newrelic/python-agent-memcached
+        echo
+
+        echo "Push image: gearmand"
+        echo
+        docker tag gearmand quay.io/newrelic/python-agent-gearmand
+        docker push quay.io/newrelic/python-agent-gearmand
+        echo
+
+        echo "Push image: postgresql"
+        echo
+        docker tag postgresql quay.io/newrelic/python-agent-postgresql
+        docker push quay.io/newrelic/python-agent-postgresql
+        echo
+
+        echo "Push image: mysql"
+        echo
+        docker tag mysql quay.io/newrelic/python-agent-mysql
+        docker push quay.io/newrelic/python-agent-mysql
+        echo
+
+        echo "Push image: devpi"
+        echo
+        docker tag devpi quay.io/newrelic/python-agent-devpi
+        docker push quay.io/newrelic/python-agent-devpi
+        echo
+
+        echo "Push image: squid"
+        echo
+        docker tag squid quay.io/newrelic/python-agent-squid
+        docker push quay.io/newrelic/python-agent-squid
+        echo
+
+        echo "Push image: mongodb"
+        echo
+        docker tag mongodb quay.io/newrelic/python-agent-mongodb
+        docker push quay.io/newrelic/python-agent-mongodb
+        echo
+
+        echo "Push image: redis"
+        echo
+        docker tag redis quay.io/newrelic/python-agent-redis
+        docker push quay.io/newrelic/python-agent-redis
+        echo
+
+    else
+        echo "Skipping docker push."
+        echo
+    fi
+}
+
+pull_docker_base_images()
+{
+    echo "Pull docker base images."
+    echo
+
+    query_push_pull_authorization
+
+    if test $IS_AUTHORIZED_TO_PUSH_PULL = 'true'
+    then
+        echo "Pull image: python-base"
+        echo
+        docker pull quay.io/newrelic/python-agent-python-base
+        docker tag quay.io/newrelic/python-agent-python-base python-base
+        echo
+
+        echo "Pull image: memcached"
+        echo
+        docker pull quay.io/newrelic/python-agent-memcached
+        docker tag quay.io/newrelic/python-agent-memcached memcached
+        echo
+
+        echo "Pull image: gearmand"
+        echo
+        docker pull quay.io/newrelic/python-agent-gearmand
+        docker tag quay.io/newrelic/python-agent-gearmand gearmand
+        echo
+
+        echo "Pull image: postgresql"
+        echo
+        docker pull quay.io/newrelic/python-agent-postgresql
+        docker tag quay.io/newrelic/python-agent-postgresql postgresql
+        echo
+
+        echo "Pull image: mysql"
+        echo
+        docker pull quay.io/newrelic/python-agent-mysql
+        docker tag quay.io/newrelic/python-agent-mysql mysql
+        echo
+
+        echo "Pull image: devpi"
+        echo
+        docker pull quay.io/newrelic/python-agent-devpi
+        docker tag quay.io/newrelic/python-agent-devpi devpi
+        echo
+
+        echo "Pull image: squid"
+        echo
+        docker pull quay.io/newrelic/python-agent-squid
+        docker tag quay.io/newrelic/python-agent-squid squid
+        echo
+
+        echo "Pull image: mongodb"
+        echo
+        docker pull quay.io/newrelic/python-agent-mongodb
+        docker tag quay.io/newrelic/python-agent-mongodb mongodb
+        echo
+
+        echo "Pull image: redis"
+        echo
+        docker pull quay.io/newrelic/python-agent-redis
+        docker tag quay.io/newrelic/python-agent-redis redis
+        echo
+
+    else
+        echo "Skipping docker pull."
+        echo
+    fi
 }
 
 start_application_services()
@@ -344,13 +543,13 @@ start_application_services()
 
     docker run -d --name packnsend-gearmand gearmand
 
-    echo "Application: postgresql-9.1"
+    echo "Application: postgresql"
 
-    docker run -d --name packnsend-postgresql-9.1 postgresql-9.1
+    docker run -d --name packnsend-postgresql postgresql
 
-    echo "Application: mysql-5.5"
+    echo "Application: mysql"
 
-    docker run -d --name packnsend-mysql-5.5 mysql-5.5
+    docker run -d --name packnsend-mysql mysql
 
     echo "Application: devpi"
 
@@ -358,7 +557,15 @@ start_application_services()
 
     echo "Application: squid"
 
-    docker run -d --name packnsend-squid quay.io/newrelic/python-agent-squid
+    docker run -d --name packnsend-squid squid
+
+    echo "Application: mongodb"
+
+    docker run -d --name packnsend-mongodb mongodb
+
+    echo "Application: redis"
+
+    docker run -d --name packnsend-redis redis
 }
 
 stop_application_services()
@@ -377,17 +584,17 @@ stop_application_services()
     docker kill packnsend-memcached
     docker rm packnsend-memcached
 
-    echo "Application: postgresql-9.1"
+    echo "Application: postgresql"
 
-    docker stop -t=10 packnsend-postgresql-9.1
-    docker kill packnsend-postgresql-9.1
-    docker rm packnsend-postgresql-9.1
+    docker stop -t=10 packnsend-postgresql
+    docker kill packnsend-postgresql
+    docker rm packnsend-postgresql
 
-    echo "Application: mysql-5.5"
+    echo "Application: mysql"
 
-    docker stop -t=10 packnsend-mysql-5.5
-    docker kill packnsend-mysql-5.5
-    docker rm packnsend-mysql-5.5
+    docker stop -t=10 packnsend-mysql
+    docker kill packnsend-mysql
+    docker rm packnsend-mysql
 
     echo "Application: devpi"
 
@@ -400,6 +607,18 @@ stop_application_services()
     docker stop -t=10 packnsend-squid
     docker kill packnsend-squid
     docker rm packnsend-squid
+
+    echo "Application: mongodb"
+
+    docker stop -t=10 packnsend-mongodb
+    docker kill packnsend-mongodb
+    docker rm packnsend-mongodb
+
+    echo "Application: redis"
+
+    docker stop -t=10 packnsend-redis
+    docker kill packnsend-redis
+    docker rm packnsend-redis
 }
 
 delete_docker_base_images()
@@ -414,13 +633,13 @@ delete_docker_base_images()
 
     docker rmi memcached
 
-    echo "Image: postgresql-9.1"
+    echo "Image: postgresql"
 
-    docker rmi postgresql-9.1
+    docker rmi postgresql
 
-    echo "Image: mysql-5.5"
+    echo "Image: mysql"
 
-    docker rmi mysql-5.5
+    docker rmi mysql
 
     echo "Image: devpi"
 
@@ -430,14 +649,40 @@ delete_docker_base_images()
 
     docker rmi squid
 
+    echo "Image: mongodb"
+
+    docker rmi mongodb
+
+    echo "Image: redis"
+
+    docker rmi redis
+
     echo "Image: python-base"
 
     docker rmi python-base
 }
 
+print_usage()
+{
+    echo "`basename $0`: COMMAND [arg...]"
+    echo
+    echo "Commands:"
+    echo "    run      Run command on test container."
+    echo "    shell    Launch a shell on test container."
+    echo "    init     Pull images, if authorized, else build."
+    echo "    build    Build base images."
+    echo "    push     Push base images."
+    echo "    pull     Pull base images."
+    echo "    start    Start base containers."
+    echo "    stop     Stop base containers."
+    echo "    cleanup  Delete base images."
+    echo "    help     Print help message."
+    echo
+}
+
 if test $# -lt 1
 then
-    echo "Usage: `basename $0`: COMMAND [arg...]"
+    print_usage
     exit 1
 fi
 
@@ -469,7 +714,23 @@ case "$COMMAND" in
         ;;
 
     init)
+        pull_docker_base_images
+        if test $IS_AUTHORIZED_TO_PUSH_PULL = 'false'
+        then
+            create_docker_base_images
+        fi
+        ;;
+
+    build)
         create_docker_base_images
+        ;;
+
+    push)
+        push_docker_base_images
+        ;;
+
+    pull)
+        pull_docker_base_images
         ;;
 
     start)
@@ -484,8 +745,12 @@ case "$COMMAND" in
         delete_docker_base_images
         ;;
 
+    help)
+        print_usage
+        ;;
+
     *)
-        echo "`basename $0`: Unknown command $COMMAND"
+        print_usage
         exit 1
         ;;
 esac

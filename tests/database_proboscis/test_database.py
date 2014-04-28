@@ -21,8 +21,8 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Database/other/sql', 7)]
 
 _test_execute_via_cursor_rollup_metrics = [
-        ('Database/all', 11),
-        ('Database/allOther', 11),
+        ('Database/all', 12),
+        ('Database/allOther', 12),
         ('Database/select', 1),
         ('Database/database_proboscis/select', 1),
         ('Database/insert', 1),

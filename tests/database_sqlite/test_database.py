@@ -24,8 +24,8 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Database/other/sql', 6)]
 
 _test_execute_via_cursor_rollup_metrics = [
-        ('Database/all', 10),
-        ('Database/allOther', 10),
+        ('Database/all', 11),
+        ('Database/allOther', 11),
         ('Database/select', 1),
         ('Database/database_sqlite/select', 1),
         ('Database/insert', 1),
@@ -88,8 +88,8 @@ _test_execute_via_connection_scoped_metrics = [
         ('Database/other/sql', 6)]
 
 _test_execute_via_connection_rollup_metrics = [
-        ('Database/all', 10),
-        ('Database/allOther', 10),
+        ('Database/all', 11),
+        ('Database/allOther', 11),
         ('Database/select', 1),
         ('Database/database_sqlite/select', 1),
         ('Database/insert', 1),
@@ -149,8 +149,8 @@ _test_rollback_on_exception_scoped_metrics = [
         ('Database/other/sql', 1)]
 
 _test_rollback_on_exception_rollup_metrics = [
-        ('Database/all', 1),
-        ('Database/allOther', 1),
+        ('Database/all', 2),
+        ('Database/allOther', 2),
         ('Database/other', 1),
         ('Database/other/sql', 1)]
 

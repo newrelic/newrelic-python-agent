@@ -24,8 +24,8 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Database/other/sql', 8)]
 
 _test_execute_via_cursor_rollup_metrics = [
-        ('Database/all', 12),
-        ('Database/allOther', 12),
+        ('Database/all', 13),
+        ('Database/allOther', 13),
         ('Database/select', 1),
         ('Database/database_psycopg2cffi/select', 1),
         ('Database/insert', 1),
@@ -88,8 +88,8 @@ _test_rollback_on_exception_scoped_metrics = [
         ('Database/other/sql', 1)]
 
 _test_rollback_on_exception_rollup_metrics = [
-        ('Database/all', 1),
-        ('Database/allOther', 1),
+        ('Database/all', 2),
+        ('Database/allOther', 2),
         ('Database/other', 1),
         ('Database/other/sql', 1)]
 

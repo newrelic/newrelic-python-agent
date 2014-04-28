@@ -83,7 +83,8 @@ class ConnectionFactory(ObjectProxy):
 
     def __call__(self, *args, **kwargs):
         transaction = current_transaction()
-        with FunctionTrace(transaction, callable_name(self.__wrapped__)):
+        with FunctionTrace(transaction, callable_name(self.__wrapped__),
+                terminal=True, rollup='Database/all'):
             return self.__connection_wrapper__(self.__wrapped__(
                     *args, **kwargs), self._nr_dbapi2_module, (args, kwargs))
 

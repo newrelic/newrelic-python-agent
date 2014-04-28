@@ -24,8 +24,8 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Database/other/sql', 5)]
 
 _test_execute_via_cursor_rollup_metrics = [
-        ('Database/all', 9),
-        ('Database/allOther', 9),
+        ('Database/all', 10),
+        ('Database/allOther', 10),
         ('Database/select', 1),
         ('Database/database_mysql/select', 1),
         ('Database/insert', 1),
@@ -82,8 +82,8 @@ _test_connect_using_alias_scoped_metrics = [
         ('Database/other/sql', 5)]
 
 _test_connect_using_alias_rollup_metrics = [
-        ('Database/all', 9),
-        ('Database/allOther', 9),
+        ('Database/all', 10),
+        ('Database/allOther', 10),
         ('Database/select', 1),
         ('Database/database_mysql/select', 1),
         ('Database/insert', 1),

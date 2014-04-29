@@ -306,17 +306,18 @@ def validate_custom_parameters(custom_params=[]):
 
     return _validate_custom_parameters
 
-def validate_database_trace_inputs(execute_params_type):
+def validate_database_trace_inputs(sql_parameters_type):
     @transient_function_wrapper('newrelic.api.database_trace',
             'DatabaseTrace.__init__')
     def _validate_database_trace_inputs(wrapped, instance, args, kwargs):
         def _bind_params(transaction, sql, dbapi2_module=None,
-                connect_params=None, cursor_params=None, execute_params=None):
+                connect_params=None, cursor_params=None, sql_parameters=None,
+                execute_params=None):
             return (transaction, sql, dbapi2_module, connect_params,
-                    cursor_params, execute_params)
+                    cursor_params, sql_parameters, execute_params)
 
-        (transaction, sql, dbapi2_module, connect_params,
-                cursor_params, execute_params) = _bind_params(*args, **kwargs)
+        (transaction, sql, dbapi2_module, connect_params, cursor_params,
+                sql_parameters, execute_params) = _bind_params(*args, **kwargs)
 
         assert hasattr(dbapi2_module, 'connect')
 
@@ -334,8 +335,13 @@ def validate_database_trace_inputs(execute_params_type):
             assert isinstance(cursor_params[0], tuple)
             assert isinstance(cursor_params[1], dict)
 
-        assert execute_params is None or isinstance(
-                execute_params, execute_params_type)
+        assert sql_parameters is None or isinstance(
+                sql_parameters, sql_parameters_type)
+
+        if execute_params is not None:
+            assert len(execute_params) == 2
+            assert isinstance(execute_params[0], tuple)
+            assert isinstance(execute_params[1], dict)
 
         return wrapped(*args, **kwargs)
 

@@ -466,7 +466,7 @@ _explain_plan_table = {
 
 @internal_trace('Supportability/DatabaseUtils/Calls/explain_plan')
 def _explain_plan(sql, dbapi2_module, connect_params, cursor_params,
-        execute_params, format):
+        sql_parameters, execute_params, format):
 
     if dbapi2_module is None:
         return None
@@ -519,31 +519,56 @@ def _explain_plan(sql, dbapi2_module, connect_params, cursor_params,
                 cursor = connection.cursor(*args, **kwargs)
             else:
                 cursor = connection.cursor()
+
             try:
                 if execute_params is not None:
-                    cursor.execute(query, execute_params)
+                    args, kwargs = execute_params
                 else:
-                    cursor.execute(query)
+                    args, kwargs = ((), {})
+
+                # If sql_parameters is None them args would need
+                # to be an empty sequence. Don't pass it just in
+                # case it wasn't for some reason, and only supply
+                # kwargs. Right now the only time we believe that
+                # passing in further params is needed is with
+                # oursql cursor execute() method, which has
+                # proprietary arguments outside of the DBAPI2
+                # specification.
+
+                if sql_parameters is not None:
+                    cursor.execute(query, sql_parameters, *args, **kwargs)
+                else:
+                    cursor.execute(query, **kwargs)
+
                 columns = []
+
                 if cursor.description:
                     for column in cursor.description:
                         columns.append(column[0])
+
                 rows = cursor.fetchall()
+
                 if not columns and not rows:
                     return None
+
                 if obfuscator and format != 'raw':
                     columns, rows = obfuscator(columns, rows)
+
                 return (columns, rows)
+
             except Exception:
                 pass
+
             finally:
                 cursor.close()
+
         finally:
             try:
                 connection.rollback()
             except (AttributeError, dbapi2_module.NotSupportedError):
                 pass
             connection.close()
+
     except Exception:
         pass
 
@@ -612,10 +637,10 @@ class SQLStatement(object):
         else:
             return self.obfuscated
 
-    def explain_plan(self, connect_params, cursor_params, execute_params,
-            format):
+    def explain_plan(self, connect_params, cursor_params, sql_parameters,
+            execute_params, format):
         return _explain_plan(self.sql, self.dbapi2_module, connect_params,
-                cursor_params, execute_params, format)
+                cursor_params, sql_parameters, execute_params, format)
 
 _sql_statements = weakref.WeakValueDictionary()
 

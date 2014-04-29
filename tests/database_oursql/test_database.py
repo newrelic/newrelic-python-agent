@@ -19,17 +19,17 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Function/oursql:Connection', 1),
         ('Function/oursql:Connection.__enter__', 1),
         ('Function/oursql:Connection.__exit__', 1),
-        ('Database/database_oursql/select', 1),
+        ('Database/database_oursql/select', 2),
         ('Database/database_oursql/insert', 1),
         ('Database/database_oursql/update', 1),
         ('Database/database_oursql/delete', 1),
         ('Database/other/sql', 6)]
 
 _test_execute_via_cursor_rollup_metrics = [
-        ('Database/all', 11),
-        ('Database/allOther', 11),
-        ('Database/select', 1),
-        ('Database/database_oursql/select', 1),
+        ('Database/all', 12),
+        ('Database/allOther', 12),
+        ('Database/select', 2),
+        ('Database/database_oursql/select', 2),
         ('Database/insert', 1),
         ('Database/database_oursql/insert', 1),
         ('Database/update', 1),
@@ -43,7 +43,7 @@ _test_execute_via_cursor_rollup_metrics = [
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
         rollup_metrics=_test_execute_via_cursor_rollup_metrics,
         background_task=True)
-@validate_database_trace_inputs(execute_params_type=tuple)
+@validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_execute_via_cursor():
     connection = oursql.connect(db=DB_SETTINGS['name'],
@@ -60,6 +60,14 @@ def test_execute_via_cursor():
                 [(1, 1.0, '1.0'), (2, 2.2, '2.2'), (3, 3.3, '3.3')])
 
         cursor.execute("""select * from database_oursql""")
+
+        # The oursql cursor execute() method takes a non DBAPI2
+        # argument to disable parameter interpolation. Also
+        # changes other behaviour and actually results in a
+        # speedup in execution because the default way creates a
+        # prepared statement every time and then throws it away.
+
+        cursor.execute("""select * from database_oursql""", plain_query=True)
 
         for row in cursor: pass
 
@@ -88,7 +96,7 @@ _test_rollback_on_exception_rollup_metrics = [
         scoped_metrics=_test_rollback_on_exception_scoped_metrics,
         rollup_metrics=_test_rollback_on_exception_rollup_metrics,
         background_task=True)
-@validate_database_trace_inputs(execute_params_type=tuple)
+@validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_rollback_on_exception():
     try:

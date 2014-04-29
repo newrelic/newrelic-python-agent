@@ -8,7 +8,7 @@ from newrelic.core.database_utils import sql_statement
 _SlowSqlNode = namedtuple('_SlowSqlNode',
         ['duration', 'path', 'request_uri', 'sql', 'sql_format',
         'metric', 'dbapi2_module', 'stack_trace', 'connect_params',
-        'cursor_params', 'execute_params'])
+        'cursor_params', 'sql_parameters', 'execute_params'])
 
 class SlowSqlNode(_SlowSqlNode):
 
@@ -28,12 +28,14 @@ class SlowSqlNode(_SlowSqlNode):
     @property
     def explain_plan(self):
         return self.statement.explain_plan(self.connect_params,
-                self.cursor_params, self.execute_params, self.sql_format)
+                self.cursor_params, self.sql_parameters,
+                self.execute_params, self.sql_format)
 
 _DatabaseNode = namedtuple('_DatabaseNode',
         ['dbapi2_module',  'sql', 'children', 'start_time', 'end_time',
         'duration', 'exclusive', 'stack_trace', 'sql_format',
-        'connect_params', 'cursor_params', 'execute_params'])
+        'connect_params', 'cursor_params', 'sql_parameters',
+        'execute_params'])
 
 class DatabaseNode(_DatabaseNode):
 
@@ -57,7 +59,8 @@ class DatabaseNode(_DatabaseNode):
     @property
     def explain_plan(self):
         return self.statement.explain_plan(self.connect_params,
-                self.cursor_params, self.execute_params, self.sql_format)
+                self.cursor_params, self.sql_parameters,
+                self.execute_params, self.sql_format)
 
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
@@ -151,6 +154,7 @@ class DatabaseNode(_DatabaseNode):
                 stack_trace=self.stack_trace,
                 connect_params=self.connect_params,
                 cursor_params=self.cursor_params,
+                sql_parameters=self.sql_parameters,
                 execute_params=self.execute_params)
 
     def trace_node(self, stats, root):

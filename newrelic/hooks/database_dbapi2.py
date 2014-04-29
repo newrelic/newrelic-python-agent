@@ -12,16 +12,17 @@ class CursorWrapper(ObjectProxy):
         self._nr_connect_params = connect_params
         self._nr_cursor_params = cursor_params
 
-    def execute(self, sql, parameters=DEFAULT):
+    def execute(self, sql, parameters=DEFAULT, *args, **kwargs):
         transaction = current_transaction()
         if parameters is not DEFAULT:
             with DatabaseTrace(transaction, sql, self._nr_dbapi2_module,
                     self._nr_connect_params, self._nr_cursor_params,
-                    parameters):
+                    parameters, (args, kwargs)):
                 return self.__wrapped__.execute(sql, parameters)
         else:
             with DatabaseTrace(transaction, sql, self._nr_dbapi2_module,
-                    self._nr_connect_params, self._nr_cursor_params):
+                    self._nr_connect_params, self._nr_cursor_params,
+                    None, (args, kwargs)):
                 return self.__wrapped__.execute(sql)
 
     def executemany(self, sql, seq_of_parameters):

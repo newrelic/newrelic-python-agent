@@ -52,7 +52,7 @@ else:
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
         rollup_metrics=_test_execute_via_cursor_rollup_metrics,
         background_task=True)
-@validate_database_trace_inputs(execute_params_type=tuple)
+@validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_execute_via_cursor():
     with database.connect(DATABASE_NAME) as connection:
@@ -120,7 +120,7 @@ else:
         scoped_metrics=_test_execute_via_connection_scoped_metrics,
         rollup_metrics=_test_execute_via_connection_rollup_metrics,
         background_task=True)
-@validate_database_trace_inputs(execute_params_type=tuple)
+@validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_execute_via_connection():
     with database.connect(DATABASE_NAME) as connection:
@@ -173,7 +173,7 @@ else:
         scoped_metrics=_test_rollback_on_exception_scoped_metrics,
         rollup_metrics=_test_rollback_on_exception_rollup_metrics,
         background_task=True)
-@validate_database_trace_inputs(execute_params_type=tuple)
+@validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_rollback_on_exception():
     try:

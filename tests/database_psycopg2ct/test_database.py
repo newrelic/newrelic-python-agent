@@ -39,7 +39,7 @@ _test_execute_via_cursor_rollup_metrics = [
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
         rollup_metrics=_test_execute_via_cursor_rollup_metrics,
         background_task=True)
-@validate_database_trace_inputs(execute_params_type=tuple)
+@validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_execute_via_cursor():
     connection = psycopg2ct.connect(database=DB_SETTINGS['name'],

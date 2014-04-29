@@ -10,6 +10,19 @@ TMPDIR=${TMPDIR:-/tmp}
 IMAGE_ID=""
 CONTAINER_ID=""
 
+RUNNABLE_IMAGES="
+    memcached \
+    gearmand \
+    postgresql \
+    mysql \
+    devpi \
+    squid \
+    mongodb \
+    redis
+    "
+
+ALL_IMAGES="python-base $RUNNABLE_IMAGES"
+
 cleanup_containers()
 {
     # Remove any docker containers/images and the working directory
@@ -676,8 +689,21 @@ print_usage()
     echo "    start    Start base containers."
     echo "    stop     Stop base containers."
     echo "    cleanup  Delete base images."
+    echo "    list     List available base images."
     echo "    help     Print help message."
     echo
+}
+
+list_docker_base_images()
+{
+    echo
+    echo "Available base images:"
+    echo
+
+    for IMG in $ALL_IMAGES
+    do
+        echo "    $IMG"
+    done
 }
 
 if test $# -lt 1
@@ -743,6 +769,9 @@ case "$COMMAND" in
 
     cleanup)
         delete_docker_base_images
+
+    list)
+        list_docker_base_images
         ;;
 
     help)

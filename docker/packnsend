@@ -507,43 +507,20 @@ stop_application_services()
 
 delete_docker_base_images()
 {
+    IMAGE_LIST=${@:-$ALL_IMAGES}
+
     echo "Removing docker base images."
+    echo "$IMAGE_LIST"
 
-    echo "Image: gearmand"
+    for IMG in $IMAGE_LIST
+    do
+        echo
+        echo "Remove image: $IMG"
+        echo
 
-    docker rmi gearmand
+        docker rmi $IMG
 
-    echo "Image: memcached"
-
-    docker rmi memcached
-
-    echo "Image: postgresql"
-
-    docker rmi postgresql
-
-    echo "Image: mysql"
-
-    docker rmi mysql
-
-    echo "Image: devpi"
-
-    docker rmi devpi
-
-    echo "Image: squid"
-
-    docker rmi squid
-
-    echo "Image: mongodb"
-
-    docker rmi mongodb
-
-    echo "Image: redis"
-
-    docker rmi redis
-
-    echo "Image: python-base"
-
-    docker rmi python-base
+    done
 }
 
 print_usage()
@@ -639,7 +616,8 @@ case "$COMMAND" in
         ;;
 
     cleanup)
-        delete_docker_base_images
+        delete_docker_base_images "$@"
+        ;;
 
     list)
         list_docker_base_images

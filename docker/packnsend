@@ -470,55 +470,39 @@ start_application_services()
 
 stop_application_services()
 {
+    IMAGE_LIST=${@:-$RUNNABLE_IMAGES}
+    IMAGE_LIST=$(echo $IMAGE_LIST | sed 's/ \+/ /g')
+
+    echo
     echo "Stop application services."
 
-    echo "Application: gearmand"
+    for IMG in $IMAGE_LIST
+    do
 
-    docker stop -t=10 packnsend-gearmand
-    docker kill packnsend-gearmand
-    docker rm packnsend-gearmand
+        docker stop -t=0 packnsend-$IMG
 
-    echo "Application: memcached"
+    done
 
-    docker stop -t=10 packnsend-memcached
-    docker kill packnsend-memcached
-    docker rm packnsend-memcached
+    echo
+    echo "Kill application services."
 
-    echo "Application: postgresql"
+    for IMG in $IMAGE_LIST
+    do
 
-    docker stop -t=10 packnsend-postgresql
-    docker kill packnsend-postgresql
-    docker rm packnsend-postgresql
+        docker kill packnsend-$IMG
 
-    echo "Application: mysql"
+    done
 
-    docker stop -t=10 packnsend-mysql
-    docker kill packnsend-mysql
-    docker rm packnsend-mysql
+    echo
+    echo "Remove application services."
 
-    echo "Application: devpi"
+    for IMG in $IMAGE_LIST
+    do
 
-    docker stop -t=10 packnsend-devpi
-    docker kill packnsend-devpi
-    docker rm packnsend-devpi
+        docker rm packnsend-$IMG
 
-    echo "Application: squid"
+    done
 
-    docker stop -t=10 packnsend-squid
-    docker kill packnsend-squid
-    docker rm packnsend-squid
-
-    echo "Application: mongodb"
-
-    docker stop -t=10 packnsend-mongodb
-    docker kill packnsend-mongodb
-    docker rm packnsend-mongodb
-
-    echo "Application: redis"
-
-    docker stop -t=10 packnsend-redis
-    docker kill packnsend-redis
-    docker rm packnsend-redis
 }
 
 delete_docker_base_images()
@@ -651,7 +635,7 @@ case "$COMMAND" in
         ;;
 
     stop)
-        stop_application_services
+        stop_application_services "$@"
         ;;
 
     cleanup)

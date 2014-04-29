@@ -282,8 +282,8 @@ def validate_transaction_errors(errors=[]):
             expected = sorted(errors)
             captured = sorted([e.type for e in transaction.errors])
 
-        assert expected == captured, 'expected=%r, captured=%r' % (
-                expected, captured)
+        assert expected == captured, 'expected=%r, captured=%r, errors=%r' % (
+                expected, captured, transaction.errors)
 
         return wrapped(*args, **kwargs)
 

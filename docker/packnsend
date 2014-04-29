@@ -452,39 +452,20 @@ pull_docker_base_images()
 
 start_application_services()
 {
+    IMAGE_LIST=${@:-$RUNNABLE_IMAGES}
+    IMAGE_LIST=$(echo $IMAGE_LIST | sed 's/ \+/ /g')
+
     echo "Start application services."
 
-    echo "Application: memcached"
+    for IMG in $IMAGE_LIST
+    do
 
-    docker run -d --name packnsend-memcached memcached
+        echo
+        echo "Start: $IMG"
 
-    echo "Application: gearmand"
+        docker run -d --name packnsend-$IMG $IMG
 
-    docker run -d --name packnsend-gearmand gearmand
-
-    echo "Application: postgresql"
-
-    docker run -d --name packnsend-postgresql postgresql
-
-    echo "Application: mysql"
-
-    docker run -d --name packnsend-mysql mysql
-
-    echo "Application: devpi"
-
-    docker run -d --name packnsend-devpi devpi
-
-    echo "Application: squid"
-
-    docker run -d --name packnsend-squid squid
-
-    echo "Application: mongodb"
-
-    docker run -d --name packnsend-mongodb mongodb
-
-    echo "Application: redis"
-
-    docker run -d --name packnsend-redis redis
+    done
 }
 
 stop_application_services()
@@ -666,7 +647,7 @@ case "$COMMAND" in
         ;;
 
     start)
-        start_application_services
+        start_application_services "$@"
         ;;
 
     stop)

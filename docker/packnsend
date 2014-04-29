@@ -386,66 +386,29 @@ query_push_pull_authorization()
 
 push_docker_base_images()
 {
+    IMAGE_LIST=${@:-$ALL_IMAGES}
+    IMAGE_LIST=$(echo $IMAGE_LIST | sed 's/ \+/ /g')
+
     echo "Push docker base images."
-    echo
+    echo "$IMAGE_LIST"
 
     query_push_pull_authorization
 
     if test $IS_AUTHORIZED_TO_PUSH_PULL = 'true'
     then
-        echo "Push image: python-base"
-        echo
-        docker tag python-base quay.io/newrelic/python-agent-python-base
-        docker push quay.io/newrelic/python-agent-python-base
-        echo
 
-        echo "Push image: memcached"
-        echo
-        docker tag memcached quay.io/newrelic/python-agent-memcached
-        docker push quay.io/newrelic/python-agent-memcached
-        echo
 
-        echo "Push image: gearmand"
-        echo
-        docker tag gearmand quay.io/newrelic/python-agent-gearmand
-        docker push quay.io/newrelic/python-agent-gearmand
-        echo
+        for IMG in $IMAGE_LIST
+        do
 
-        echo "Push image: postgresql"
-        echo
-        docker tag postgresql quay.io/newrelic/python-agent-postgresql
-        docker push quay.io/newrelic/python-agent-postgresql
-        echo
+            echo
+            echo "Push image: $IMG"
+            echo
 
-        echo "Push image: mysql"
-        echo
-        docker tag mysql quay.io/newrelic/python-agent-mysql
-        docker push quay.io/newrelic/python-agent-mysql
-        echo
+            docker tag $IMG quay.io/newrelic/python-agent-$IMG
+            docker push quay.io/newrelic/python-agent-$IMG
 
-        echo "Push image: devpi"
-        echo
-        docker tag devpi quay.io/newrelic/python-agent-devpi
-        docker push quay.io/newrelic/python-agent-devpi
-        echo
-
-        echo "Push image: squid"
-        echo
-        docker tag squid quay.io/newrelic/python-agent-squid
-        docker push quay.io/newrelic/python-agent-squid
-        echo
-
-        echo "Push image: mongodb"
-        echo
-        docker tag mongodb quay.io/newrelic/python-agent-mongodb
-        docker push quay.io/newrelic/python-agent-mongodb
-        echo
-
-        echo "Push image: redis"
-        echo
-        docker tag redis quay.io/newrelic/python-agent-redis
-        docker push quay.io/newrelic/python-agent-redis
-        echo
+        done
 
     else
         echo "Skipping docker push."
@@ -695,7 +658,7 @@ case "$COMMAND" in
         ;;
 
     push)
-        push_docker_base_images
+        push_docker_base_images "$@"
         ;;
 
     pull)

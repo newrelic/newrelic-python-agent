@@ -319,43 +319,21 @@ launch_remote_shell()
 
 create_docker_base_images()
 {
+    IMAGE_LIST=${@:-$ALL_IMAGES}
+    IMAGE_LIST=$(echo $IMAGE_LIST | sed 's/ \+/ /g')
+
     echo "Creating docker base images."
+    echo "$IMAGE_LIST"
 
-    echo "Image: python-base"
+    for IMG in $IMAGE_LIST
+    do
+        echo
+        echo "Create image: $IMG"
+        echo
 
-    (cd $ROOT_DIRECTORY; docker build --rm -t python-base docker/python-base)
+        (cd $ROOT_DIRECTORY; docker build --rm -t $IMG docker/$IMG)
 
-    echo "Image: memcached"
-
-    (cd $ROOT_DIRECTORY; docker build --rm -t memcached docker/memcached)
-
-    echo "Image: gearmand"
-
-    (cd $ROOT_DIRECTORY; docker build --rm -t gearmand docker/gearmand)
-
-    echo "Image: postgresql"
-
-    (cd $ROOT_DIRECTORY; docker build --rm -t postgresql docker/postgresql-9.1)
-
-    echo "Image: mysql"
-
-    (cd $ROOT_DIRECTORY; docker build --rm -t mysql docker/mysql-5.5)
-
-    echo "Image: devpi-server"
-
-    (cd $ROOT_DIRECTORY; docker build --rm -t devpi docker/devpi-server)
-
-    echo "Image: squid"
-
-    (cd $ROOT_DIRECTORY; docker build --rm -t squid docker/squid)
-
-    echo "Image: mongodb"
-
-    (cd $ROOT_DIRECTORY; docker build --rm -t mongodb docker/mongodb)
-
-    echo "Image: redis"
-
-    (cd $ROOT_DIRECTORY; docker build --rm -t redis docker/redis)
+    done
 }
 
 query_push_pull_authorization()
@@ -743,12 +721,12 @@ case "$COMMAND" in
         pull_docker_base_images
         if test $IS_AUTHORIZED_TO_PUSH_PULL = 'false'
         then
-            create_docker_base_images
+            create_docker_base_images "$@"
         fi
         ;;
 
     build)
-        create_docker_base_images
+        create_docker_base_images "$@"
         ;;
 
     push)

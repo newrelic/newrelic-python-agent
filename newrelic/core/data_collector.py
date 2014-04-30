@@ -784,9 +784,13 @@ def create_session(license_key, app_name, linked_applications,
 
         local_config = {}
 
+        local_config['host'] = socket.gethostname()
+
+        local_config['display_host'] = settings.get(
+                'process_host.display_name', local_config['host'])
+
         local_config['pid'] = os.getpid()
         local_config['language'] = 'python'
-        local_config['host'] = socket.gethostname()
         local_config['app_name'] = app_names
         local_config['identifier'] = ','.join(app_names)
         local_config['agent_version'] = version

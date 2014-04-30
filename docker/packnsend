@@ -19,7 +19,7 @@ cleanup_containers()
     echo "Removing test container."
 
     test -n "$CONTAINER_ID" && docker kill $CONTAINER_ID
-    test -n "$CONTAINER_ID" && docker rm $CONTAINER_ID
+    test -n "$CONTAINER_ID" && docker rm --volumes $CONTAINER_ID
 
     echo "Removing test image."
 

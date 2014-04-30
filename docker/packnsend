@@ -10,7 +10,7 @@ TMPDIR=${TMPDIR:-/tmp}
 IMAGE_ID=""
 CONTAINER_ID=""
 
-RUNNABLE_IMAGES="
+APP_SERVICE_IMAGES="
     memcached \
     gearmand \
     postgresql \
@@ -21,7 +21,7 @@ RUNNABLE_IMAGES="
     redis
     "
 
-ALL_IMAGES="python-base $RUNNABLE_IMAGES"
+ALL_IMAGES="python-base $APP_SERVICE_IMAGES"
 
 cleanup_containers()
 {
@@ -452,7 +452,7 @@ pull_docker_base_images()
 
 start_application_services()
 {
-    IMAGE_LIST=${@:-$RUNNABLE_IMAGES}
+    IMAGE_LIST=${@:-$APP_SERVICE_IMAGES}
     IMAGE_LIST=$(echo $IMAGE_LIST | sed 's/ \+/ /g')
 
     echo "Start application services."
@@ -470,7 +470,7 @@ start_application_services()
 
 stop_application_services()
 {
-    IMAGE_LIST=${@:-$RUNNABLE_IMAGES}
+    IMAGE_LIST=${@:-$APP_SERVICE_IMAGES}
     IMAGE_LIST=$(echo $IMAGE_LIST | sed 's/ \+/ /g')
 
     echo

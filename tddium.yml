@@ -2,6 +2,7 @@
   :environment:
     'TDDIUM_SKIP_NONCE': ''
     'PIP_INDEX_URL': 'http://localhost:3141/root/pypi/'
+    'NEW_RELIC_FAKE_COLLECTOR': 'true'
   :tests:
     - tox -c tests/agent_features/tox.ini
     - tox -c tests/component_cornice/tox-0016.ini

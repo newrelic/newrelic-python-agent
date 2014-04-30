@@ -17,6 +17,20 @@ from newrelic.packages import requests
 
 _logger = logging.getLogger('newrelic.tests')
 
+def _environ_as_bool(name, default=False):
+    flag = os.environ.get(name, default)
+    if default is None or default:
+        try:
+            flag = not flag.lower() in ['off', 'false', '0']
+        except AttributeError:
+            pass
+    else:
+        try:
+            flag = flag.lower() in ['on', 'true', '1']
+        except AttributeError:
+            pass
+    return flag
+
 _fake_collector_responses = {
     'get_redirect_host': 'fake-collector.newrelic.com',
 
@@ -56,7 +70,6 @@ _fake_collector_responses = {
 
     'shutdown': None,
 }
-
 
 def fake_collector_wrapper(wrapped, instance, args, kwargs):
     def _bind_params(session, url, method, license_key, agent_run_id=None,
@@ -144,7 +157,8 @@ def collector_agent_registration_fixture(app_name=None, default_settings={}):
         # Determine if should be using an internal fake local
         # collector for the test.
 
-        use_fake_collector = os.environ.get('NEW_RELIC_FAKE_COLLECTOR')
+        use_fake_collector = _environ_as_bool(
+                'NEW_RELIC_FAKE_COLLECTOR', False)
 
         if use_fake_collector:
             wrap_function_wrapper('newrelic.core.data_collector',

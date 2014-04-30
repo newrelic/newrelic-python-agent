@@ -1,7 +1,8 @@
 Using docker for testing
 ========================
 
-This file describes how to perform testing of the agent using docker.
+This file describes how to perform testing of the agent using docker
+and a test runner/management script called "packnsend".
 
 Initial setup of docker
 -----------------------
@@ -121,6 +122,52 @@ To get the the login credentials for the Robot account, someone with admin
 rights on the quay.io account needs to download the .dockercfg file from the
 quay.io web site.
 
+Using Packnsend
+===============
+
+The "packnsend" script simplifies the management of a set of base docker
+image and the running of tests in a docker container. The workflow consists
+of:
+
+1. Pull or build the base images.
+2. Start the application services in separate docker containers.
+3. Run the test in a test container that links to the application services.
+4. Stop the application services.
+
+Packnsend commands
+------------------
+
+Packnsend comes with a help command:
+
+    $ packnsend help
+
+    packnsend: COMMAND [arg...]
+
+    Run Commands:
+        run      Run command on test container.
+        run -i   Run command interactively
+        shell    Launch a shell on test container.
+
+    Management Commands:
+
+    To operate on a subset of images/containers, pass a list of
+    space-separated names of images to the management commands.
+    Otherwise, they operate on all images/containers.
+
+        init     Pull images, if authorized, else build.
+        build    Build base images.
+        push     Push base images.
+        pull     Pull base images.
+        start    Start base containers.
+        stop     Stop base containers.
+        cleanup  Delete base images.
+
+    Help commands:
+        list     List available base images.
+        help     Print help message.
+
+The various packnsend commands are described in more detail below.
+
 Setting up base images
 ----------------------
 
@@ -143,6 +190,11 @@ them, you can run `packnsend` with the `build` command:
 
     packnsend build
 
+The build command accepts a image names as arguments, if you want to build a
+subset of images:
+
+    packnsend build memcached mysql
+
 Pulling the images from Quay.io
 -------------------------------
 
@@ -150,6 +202,10 @@ To pull all of the images from quay.io (assuming you have set up your quay.io
 account), use the `pull` command:
 
     packnsend pull
+
+Pulling a subset of images is possible:
+
+    packnsend pull squid
 
 Pulling the images is typically faster than building them.
 
@@ -161,6 +217,10 @@ To update the images hosted in the quay.io repository, use the `push` command.
 will push all images to quay.io:
 
     packnsend push
+
+To push a subset of images:
+
+    packnsend push python-base postgresql
 
 Running a test in docker
 ------------------------
@@ -253,16 +313,35 @@ When done testing, the application services can be shutdown by running:
 
     packnsend stop
 
+To stop only some of the services, pass the image names to the stop command:
+
+    packnsend stop redis mongodb
+
 Updating images
 ---------------
 
-If the base images have been changed, the way to update them is to remove the old ones,
-and then create them anew.
+If the base images have been changed, the way to update them is to remove the
+old ones, and then create them anew.
 
 Remove base images:
 
     packnsend cleanup
 
+Or, Remove a subset of images:
+
+    packnsend cleanup squid
+
 Create base images:
 
     packnsend init
+
+Listing images
+--------------
+
+The list command shows all base images on which packnsend can operate.
+
+It is *NOT* a list of images that exist in the local docker repository.
+Instead, it is a list of all images that packnsend knows how to pull, or
+build, or push, etc.
+
+    packnsend list

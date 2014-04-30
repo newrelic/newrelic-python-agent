@@ -10,6 +10,19 @@ TMPDIR=${TMPDIR:-/tmp}
 IMAGE_ID=""
 CONTAINER_ID=""
 
+APP_SERVICE_IMAGES="
+    memcached \
+    gearmand \
+    postgresql \
+    mysql \
+    devpi \
+    squid \
+    mongodb \
+    redis
+    "
+
+ALL_IMAGES="python-base $APP_SERVICE_IMAGES"
+
 cleanup_containers()
 {
     # Remove any docker containers/images and the working directory
@@ -306,43 +319,21 @@ launch_remote_shell()
 
 create_docker_base_images()
 {
+    IMAGE_LIST=${@:-$ALL_IMAGES}
+    IMAGE_LIST=$(echo $IMAGE_LIST | sed 's/ \+/ /g')
+
     echo "Creating docker base images."
+    echo "$IMAGE_LIST"
 
-    echo "Image: python-base"
+    for IMG in $IMAGE_LIST
+    do
+        echo
+        echo "Create image: $IMG"
+        echo
 
-    (cd $ROOT_DIRECTORY; docker build --rm -t python-base docker/python-base)
+        (cd $ROOT_DIRECTORY; docker build --rm -t $IMG docker/$IMG)
 
-    echo "Image: memcached"
-
-    (cd $ROOT_DIRECTORY; docker build --rm -t memcached docker/memcached)
-
-    echo "Image: gearmand"
-
-    (cd $ROOT_DIRECTORY; docker build --rm -t gearmand docker/gearmand)
-
-    echo "Image: postgresql"
-
-    (cd $ROOT_DIRECTORY; docker build --rm -t postgresql docker/postgresql-9.1)
-
-    echo "Image: mysql"
-
-    (cd $ROOT_DIRECTORY; docker build --rm -t mysql docker/mysql-5.5)
-
-    echo "Image: devpi-server"
-
-    (cd $ROOT_DIRECTORY; docker build --rm -t devpi docker/devpi-server)
-
-    echo "Image: squid"
-
-    (cd $ROOT_DIRECTORY; docker build --rm -t squid docker/squid)
-
-    echo "Image: mongodb"
-
-    (cd $ROOT_DIRECTORY; docker build --rm -t mongodb docker/mongodb)
-
-    echo "Image: redis"
-
-    (cd $ROOT_DIRECTORY; docker build --rm -t redis docker/redis)
+    done
 }
 
 query_push_pull_authorization()
@@ -395,66 +386,29 @@ query_push_pull_authorization()
 
 push_docker_base_images()
 {
+    IMAGE_LIST=${@:-$ALL_IMAGES}
+    IMAGE_LIST=$(echo $IMAGE_LIST | sed 's/ \+/ /g')
+
     echo "Push docker base images."
-    echo
+    echo "$IMAGE_LIST"
 
     query_push_pull_authorization
 
     if test $IS_AUTHORIZED_TO_PUSH_PULL = 'true'
     then
-        echo "Push image: python-base"
-        echo
-        docker tag python-base quay.io/newrelic/python-agent-python-base
-        docker push quay.io/newrelic/python-agent-python-base
-        echo
 
-        echo "Push image: memcached"
-        echo
-        docker tag memcached quay.io/newrelic/python-agent-memcached
-        docker push quay.io/newrelic/python-agent-memcached
-        echo
 
-        echo "Push image: gearmand"
-        echo
-        docker tag gearmand quay.io/newrelic/python-agent-gearmand
-        docker push quay.io/newrelic/python-agent-gearmand
-        echo
+        for IMG in $IMAGE_LIST
+        do
 
-        echo "Push image: postgresql"
-        echo
-        docker tag postgresql quay.io/newrelic/python-agent-postgresql
-        docker push quay.io/newrelic/python-agent-postgresql
-        echo
+            echo
+            echo "Push image: $IMG"
+            echo
 
-        echo "Push image: mysql"
-        echo
-        docker tag mysql quay.io/newrelic/python-agent-mysql
-        docker push quay.io/newrelic/python-agent-mysql
-        echo
+            docker tag $IMG quay.io/newrelic/python-agent-$IMG
+            docker push quay.io/newrelic/python-agent-$IMG
 
-        echo "Push image: devpi"
-        echo
-        docker tag devpi quay.io/newrelic/python-agent-devpi
-        docker push quay.io/newrelic/python-agent-devpi
-        echo
-
-        echo "Push image: squid"
-        echo
-        docker tag squid quay.io/newrelic/python-agent-squid
-        docker push quay.io/newrelic/python-agent-squid
-        echo
-
-        echo "Push image: mongodb"
-        echo
-        docker tag mongodb quay.io/newrelic/python-agent-mongodb
-        docker push quay.io/newrelic/python-agent-mongodb
-        echo
-
-        echo "Push image: redis"
-        echo
-        docker tag redis quay.io/newrelic/python-agent-redis
-        docker push quay.io/newrelic/python-agent-redis
-        echo
+        done
 
     else
         echo "Skipping docker push."
@@ -464,66 +418,31 @@ push_docker_base_images()
 
 pull_docker_base_images()
 {
+    IMAGE_LIST=${@:-$ALL_IMAGES}
+    IMAGE_LIST=$(echo $IMAGE_LIST | sed 's/ \+/ /g')
+
     echo "Pull docker base images."
-    echo
+    echo "$IMAGE_LIST"
 
     query_push_pull_authorization
 
     if test $IS_AUTHORIZED_TO_PUSH_PULL = 'true'
     then
-        echo "Pull image: python-base"
-        echo
-        docker pull quay.io/newrelic/python-agent-python-base
-        docker tag quay.io/newrelic/python-agent-python-base python-base
-        echo
 
-        echo "Pull image: memcached"
-        echo
-        docker pull quay.io/newrelic/python-agent-memcached
-        docker tag quay.io/newrelic/python-agent-memcached memcached
-        echo
+        IMAGE_LIST=${@:-$ALL_IMAGES}
+        IMAGE_LIST=$(echo $IMAGE_LIST | sed 's/ \+/ /g')
 
-        echo "Pull image: gearmand"
-        echo
-        docker pull quay.io/newrelic/python-agent-gearmand
-        docker tag quay.io/newrelic/python-agent-gearmand gearmand
-        echo
+        for IMG in $IMAGE_LIST
+        do
 
-        echo "Pull image: postgresql"
-        echo
-        docker pull quay.io/newrelic/python-agent-postgresql
-        docker tag quay.io/newrelic/python-agent-postgresql postgresql
-        echo
+            echo
+            echo "Pull image: $IMG"
+            echo
 
-        echo "Pull image: mysql"
-        echo
-        docker pull quay.io/newrelic/python-agent-mysql
-        docker tag quay.io/newrelic/python-agent-mysql mysql
-        echo
+            docker pull quay.io/newrelic/python-agent-$IMG
+            docker tag quay.io/newrelic/python-agent-$IMG $IMG
 
-        echo "Pull image: devpi"
-        echo
-        docker pull quay.io/newrelic/python-agent-devpi
-        docker tag quay.io/newrelic/python-agent-devpi devpi
-        echo
-
-        echo "Pull image: squid"
-        echo
-        docker pull quay.io/newrelic/python-agent-squid
-        docker tag quay.io/newrelic/python-agent-squid squid
-        echo
-
-        echo "Pull image: mongodb"
-        echo
-        docker pull quay.io/newrelic/python-agent-mongodb
-        docker tag quay.io/newrelic/python-agent-mongodb mongodb
-        echo
-
-        echo "Pull image: redis"
-        echo
-        docker pull quay.io/newrelic/python-agent-redis
-        docker tag quay.io/newrelic/python-agent-redis redis
-        echo
+        done
 
     else
         echo "Skipping docker pull."
@@ -533,142 +452,94 @@ pull_docker_base_images()
 
 start_application_services()
 {
+    IMAGE_LIST=${@:-$APP_SERVICE_IMAGES}
+    IMAGE_LIST=$(echo $IMAGE_LIST | sed 's/ \+/ /g')
+
     echo "Start application services."
 
-    echo "Application: memcached"
+    for IMG in $IMAGE_LIST
+    do
 
-    docker run -d --name packnsend-memcached memcached
+        echo
+        echo "Start: $IMG"
 
-    echo "Application: gearmand"
+        docker run -d --name packnsend-$IMG $IMG
 
-    docker run -d --name packnsend-gearmand gearmand
-
-    echo "Application: postgresql"
-
-    docker run -d --name packnsend-postgresql postgresql
-
-    echo "Application: mysql"
-
-    docker run -d --name packnsend-mysql mysql
-
-    echo "Application: devpi"
-
-    docker run -d --name packnsend-devpi devpi
-
-    echo "Application: squid"
-
-    docker run -d --name packnsend-squid squid
-
-    echo "Application: mongodb"
-
-    docker run -d --name packnsend-mongodb mongodb
-
-    echo "Application: redis"
-
-    docker run -d --name packnsend-redis redis
+    done
 }
 
 stop_application_services()
 {
+    IMAGE_LIST=${@:-$APP_SERVICE_IMAGES}
+    IMAGE_LIST=$(echo $IMAGE_LIST | sed 's/ \+/ /g')
+
+    echo
     echo "Stop application services."
 
-    echo "Application: gearmand"
+    for IMG in $IMAGE_LIST
+    do
 
-    docker stop -t=10 packnsend-gearmand
-    docker kill packnsend-gearmand
-    docker rm packnsend-gearmand
+        docker stop -t=0 packnsend-$IMG
 
-    echo "Application: memcached"
+    done
 
-    docker stop -t=10 packnsend-memcached
-    docker kill packnsend-memcached
-    docker rm packnsend-memcached
+    echo
+    echo "Kill application services."
 
-    echo "Application: postgresql"
+    for IMG in $IMAGE_LIST
+    do
 
-    docker stop -t=10 packnsend-postgresql
-    docker kill packnsend-postgresql
-    docker rm packnsend-postgresql
+        docker kill packnsend-$IMG
 
-    echo "Application: mysql"
+    done
 
-    docker stop -t=10 packnsend-mysql
-    docker kill packnsend-mysql
-    docker rm packnsend-mysql
+    echo
+    echo "Remove application services."
 
-    echo "Application: devpi"
+    for IMG in $IMAGE_LIST
+    do
 
-    docker stop -t=10 packnsend-devpi
-    docker kill packnsend-devpi
-    docker rm packnsend-devpi
+        docker rm packnsend-$IMG
 
-    echo "Application: squid"
+    done
 
-    docker stop -t=10 packnsend-squid
-    docker kill packnsend-squid
-    docker rm packnsend-squid
-
-    echo "Application: mongodb"
-
-    docker stop -t=10 packnsend-mongodb
-    docker kill packnsend-mongodb
-    docker rm packnsend-mongodb
-
-    echo "Application: redis"
-
-    docker stop -t=10 packnsend-redis
-    docker kill packnsend-redis
-    docker rm packnsend-redis
 }
 
 delete_docker_base_images()
 {
+    IMAGE_LIST=${@:-$ALL_IMAGES}
+
     echo "Removing docker base images."
+    echo "$IMAGE_LIST"
 
-    echo "Image: gearmand"
+    for IMG in $IMAGE_LIST
+    do
+        echo
+        echo "Remove image: $IMG"
+        echo
 
-    docker rmi gearmand
+        docker rmi $IMG
 
-    echo "Image: memcached"
-
-    docker rmi memcached
-
-    echo "Image: postgresql"
-
-    docker rmi postgresql
-
-    echo "Image: mysql"
-
-    docker rmi mysql
-
-    echo "Image: devpi"
-
-    docker rmi devpi
-
-    echo "Image: squid"
-
-    docker rmi squid
-
-    echo "Image: mongodb"
-
-    docker rmi mongodb
-
-    echo "Image: redis"
-
-    docker rmi redis
-
-    echo "Image: python-base"
-
-    docker rmi python-base
+    done
 }
 
 print_usage()
 {
+    echo
     echo "`basename $0`: COMMAND [arg...]"
     echo
-    echo "Commands:"
+    echo "Run Commands:"
     echo "    run      Run command on test container."
+    echo "    run -i   Run command interactively."
     echo "    shell    Launch a shell on test container."
+    echo
+    echo "Management Commands:"
+    echo
+    echo "To operate on a subset of images/containers, pass a list"
+    echo "of space-separated names of images as arguments to the"
+    echo "management commands. Otherwise, management commands operate"
+    echo "on all images/containers."
+    echo
     echo "    init     Pull images, if authorized, else build."
     echo "    build    Build base images."
     echo "    push     Push base images."
@@ -676,8 +547,23 @@ print_usage()
     echo "    start    Start base containers."
     echo "    stop     Stop base containers."
     echo "    cleanup  Delete base images."
+    echo
+    echo "Help commands:"
+    echo "    list     List base images."
     echo "    help     Print help message."
     echo
+}
+
+list_docker_base_images()
+{
+    echo
+    echo "Available base images:"
+    echo
+
+    for IMG in $ALL_IMAGES
+    do
+        echo "    $IMG"
+    done
 }
 
 if test $# -lt 1
@@ -714,35 +600,39 @@ case "$COMMAND" in
         ;;
 
     init)
-        pull_docker_base_images
+        pull_docker_base_images "$@"
         if test $IS_AUTHORIZED_TO_PUSH_PULL = 'false'
         then
-            create_docker_base_images
+            create_docker_base_images "$@"
         fi
         ;;
 
     build)
-        create_docker_base_images
+        create_docker_base_images "$@"
         ;;
 
     push)
-        push_docker_base_images
+        push_docker_base_images "$@"
         ;;
 
     pull)
-        pull_docker_base_images
+        pull_docker_base_images "$@"
         ;;
 
     start)
-        start_application_services
+        start_application_services "$@"
         ;;
 
     stop)
-        stop_application_services
+        stop_application_services "$@"
         ;;
 
     cleanup)
-        delete_docker_base_images
+        delete_docker_base_images "$@"
+        ;;
+
+    list)
+        list_docker_base_images
         ;;
 
     help)

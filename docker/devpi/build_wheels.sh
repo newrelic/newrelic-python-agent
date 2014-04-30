@@ -2,6 +2,8 @@
 
 # Build wheels for each package for all python version
 
+set -e
+
 DEVPI_SERVER=http://localhost:3141
 
 echo
@@ -92,8 +94,9 @@ devpi upload --from-dir /wheels
 
 devpi remove -y pytest
 
-# Remove the WebTest wheel, since it uses orderereddict, which is a separate package
-# in Python 2.6, and installing the WebTest wheel in 2.6 doesn't install ordereddict.
+# Remove the WebTest wheel, since it uses orderereddict, which is a separate
+# package in Python 2.6, and installing the WebTest wheel in 2.6 doesn't
+# install ordereddict.
 
 devpi remove -y WebTest
 

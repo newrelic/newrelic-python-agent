@@ -2,6 +2,8 @@
 
 # Generate a private key and a self-signed certificate.
 
+set -e
+
 CERTS_DIR='/etc/squid3/certs'
 CONFIG='/etc/squid3/openssl.cnf'
 

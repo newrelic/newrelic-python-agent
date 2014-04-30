@@ -525,11 +525,21 @@ delete_docker_base_images()
 
 print_usage()
 {
+    echo
     echo "`basename $0`: COMMAND [arg...]"
     echo
-    echo "Commands:"
+    echo "Run Commands:"
     echo "    run      Run command on test container."
+    echo "    run -i   Run command interactively."
     echo "    shell    Launch a shell on test container."
+    echo
+    echo "Management Commands:"
+    echo
+    echo "To operate on a subset of images/containers, pass a list"
+    echo "of space-separated names of images as arguments to the"
+    echo "management commands. Otherwise, management commands operate"
+    echo "on all images/containers."
+    echo
     echo "    init     Pull images, if authorized, else build."
     echo "    build    Build base images."
     echo "    push     Push base images."
@@ -537,7 +547,9 @@ print_usage()
     echo "    start    Start base containers."
     echo "    stop     Stop base containers."
     echo "    cleanup  Delete base images."
-    echo "    list     List available base images."
+    echo
+    echo "Help commands:"
+    echo "    list     List base images."
     echo "    help     Print help message."
     echo
 }

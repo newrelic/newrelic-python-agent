@@ -7,8 +7,11 @@ from testing_support.fixtures import validate_transaction_metrics
 
 from newrelic.agent import background_task
 
-REDIS_HOST = os.environ.get('REDIS_PORT_6379_TCP_ADDR', 'localhost')
-REDIS_PORT = int(os.environ.get('REDIS_PORT_6379_TCP_PORT', '6379'))
+REDIS_HOST = os.environ.get('TDIUM_REDIS_PORT', 'localhost')
+REDIS_PORT = int(os.environ.get('TDIUM_REDIS_PORT', '6379'))
+
+REDIS_HOST = os.environ.get('REDIS_PORT_6379_TCP_ADDR', REDIS_HOST)
+REDIS_PORT = int(os.environ.get('REDIS_PORT_6379_TCP_PORT', REDIS_PORT))
 
 _test_httplib_http_request_scoped_metrics = [
         ('Function/redis.connection:Connection.connect', 1),

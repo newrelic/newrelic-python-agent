@@ -46,6 +46,8 @@
     :version: '9.1'
   :mysql:
     :version: '5.1'
+  :redis:
+    :version: '2.16.6' 
   :custom_service:
     :command: 'services.sh'
     :ping: true

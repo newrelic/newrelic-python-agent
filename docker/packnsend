@@ -359,11 +359,11 @@ query_push_pull_authorization()
     PULL_RESPONSE_HTTP_STATUS=$(echo "$PULL_RESPONSE" | \
         sed "s/.*HTTP code://" | tr -d [:space:])
 
-    if test $PULL_RESPONSE_HTTP_STATUS = '404'
+    if test $PULL_RESPONSE_HTTP_STATUS == '404'
     then
         IS_AUTHORIZED_TO_PUSH_PULL='true'
 
-    elif test $PULL_RESPONSE_HTTP_STATUS = '403'
+    elif test $PULL_RESPONSE_HTTP_STATUS == '403'
     then
         IS_AUTHORIZED_TO_PUSH_PULL='false'
 

@@ -17,6 +17,7 @@
     - tox -c tests/database_pymysql/tox.ini
     - tox -c tests/database_sqlite/tox.ini
     - tox -c tests/datastore_redis/tox.ini
+    - tox -c tests/datastore_mongodb/tox.ini
     - tox -c tests/external_httplib/tox.ini
     - tox -c tests/framework_bottle/tox-0008.ini
     - tox -c tests/framework_bottle/tox-0009.ini
@@ -48,6 +49,15 @@
     :version: '5.1'
   :redis:
     :version: '2.16.6' 
+  :mongodb:
+    :version: '2.0'
+    :append:
+      persist_in_safe_mode: true
+      allow_dynamic_fields: false
+      logger: false
+    :config:
+      raise_not_found_error: false
+      allow_dynamic_fields: false
   :custom_service:
     :command: 'services.sh'
     :ping: true

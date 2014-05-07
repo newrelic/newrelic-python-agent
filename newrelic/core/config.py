@@ -136,8 +136,7 @@ _settings.proxy_pass = os.environ.get('NEW_RELIC_PROXY_PASS', None)
 
 _settings.app_name = os.environ.get('NEW_RELIC_APP_NAME', 'Python Application')
 
-_settings.process_host.display_name = os.environ.get(
-        'NEW_RELIC_PROCESS_HOST_DISPLAY_NAME', socket.gethostname())
+_settings.process_host.display_name = None
 
 _settings.monitor_mode = _environ_as_bool('NEW_RELIC_MONITOR_MODE', True)
 

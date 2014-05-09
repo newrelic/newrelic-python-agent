@@ -27,9 +27,10 @@ class SlowSqlNode(_SlowSqlNode):
 
     @property
     def explain_plan(self):
-        return self.statement.explain_plan(self.connect_params,
-                self.cursor_params, self.sql_parameters,
-                self.execute_params, self.sql_format)
+        if self.connect_params is not None:
+            return self.statement.explain_plan(self.connect_params,
+                    self.cursor_params, self.sql_parameters,
+                    self.execute_params, self.sql_format)
 
 _DatabaseNode = namedtuple('_DatabaseNode',
         ['dbapi2_module',  'sql', 'children', 'start_time', 'end_time',
@@ -58,9 +59,10 @@ class DatabaseNode(_DatabaseNode):
 
     @property
     def explain_plan(self):
-        return self.statement.explain_plan(self.connect_params,
-                self.cursor_params, self.sql_parameters,
-                self.execute_params, self.sql_format)
+        if self.connect_params is not None:
+            return self.statement.explain_plan(self.connect_params,
+                    self.cursor_params, self.sql_parameters,
+                    self.execute_params, self.sql_format)
 
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this

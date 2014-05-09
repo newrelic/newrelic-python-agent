@@ -3,7 +3,7 @@ from collections import namedtuple
 import newrelic.core.trace_node
 
 from newrelic.core.metric import TimeMetric
-from newrelic.core.database_utils import sql_statement
+from newrelic.core.database_utils import sql_statement, explain_plan
 
 _SlowSqlNode = namedtuple('_SlowSqlNode',
         ['duration', 'path', 'request_uri', 'sql', 'sql_format',
@@ -27,10 +27,9 @@ class SlowSqlNode(_SlowSqlNode):
 
     @property
     def explain_plan(self):
-        if self.connect_params is not None:
-            return self.statement.explain_plan(self.connect_params,
-                    self.cursor_params, self.sql_parameters,
-                    self.execute_params, self.sql_format)
+        return explain_plan(self.statement, self.connect_params,
+                self.cursor_params, self.sql_parameters,
+                self.execute_params, self.sql_format)
 
 _DatabaseNode = namedtuple('_DatabaseNode',
         ['dbapi2_module',  'sql', 'children', 'start_time', 'end_time',
@@ -59,10 +58,9 @@ class DatabaseNode(_DatabaseNode):
 
     @property
     def explain_plan(self):
-        if self.connect_params is not None:
-            return self.statement.explain_plan(self.connect_params,
-                    self.cursor_params, self.sql_parameters,
-                    self.execute_params, self.sql_format)
+        return explain_plan(self.statement, self.connect_params,
+                self.cursor_params, self.sql_parameters,
+                self.execute_params, self.sql_format)
 
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this

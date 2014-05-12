@@ -415,6 +415,26 @@ def _process_app_name_setting():
 
     _settings.app_name = name
 
+def _process_high_security_mode():
+    # When High Security Mode is activated, certain settings must be
+    # set to be secure, even if that requires overriding a setting that
+    # has been individually configured as insecure.
+
+    log_template = ("Overriding setting for '{name}' because High "
+                    "Security Mode has been activated. High Security "
+                    "Mode requires that the setting for '{name}' be "
+                    "secure. The original setting for '{name}' was "
+                    "'{orig_setting}'. The new setting for '{name}' "
+                    "is '{secure_setting}'.")
+
+    if _settings.high_security:
+
+        if not _settings.ssl:
+
+            _settings.ssl = True
+            _logger.info(log_template.format(name='ssl',
+                    orig_setting=False, secure_setting=True))
+
 def _load_configuration(config_file=None, environment=None,
         ignore_errors=True, log_file=None, log_level=None):
 
@@ -524,6 +544,10 @@ def _load_configuration(config_file=None, environment=None,
     if environment:
         _settings.environment = environment
         _process_configuration('newrelic:%s' % environment)
+
+    # Apply High Security Mode
+
+    _process_high_security_mode()
 
     # Log details of the configuration options which were
     # read and the values they have as would be applied

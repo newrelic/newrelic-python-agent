@@ -441,6 +441,14 @@ def _process_high_security_mode():
             _logger.info(log_template.format(name='capture_params',
                     orig_setting=True, secure_setting=False))
 
+        if _settings.transaction_tracer.record_sql == 'raw':
+
+            _settings.transaction_tracer.record_sql = 'obfuscated'
+            _logger.info(log_template.format(
+                    name='transaction_tracer.record_sql',
+                    orig_setting='raw',
+                    secure_setting='obfuscated'))
+
 def _load_configuration(config_file=None, environment=None,
         ignore_errors=True, log_file=None, log_level=None):
 

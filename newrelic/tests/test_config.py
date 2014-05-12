@@ -37,5 +37,25 @@ class TestProcessHighSecurityMode(unittest.TestCase):
         newrelic.config._process_high_security_mode()
         self.assertFalse(self.settings.capture_params)
 
+    def test_hsm_on_record_sql_obfuscated(self):
+        self.settings.high_security = True
+        newrelic.config._process_high_security_mode()
+        record_sql = self.settings.transaction_tracer.record_sql
+        self.assertEqual(record_sql, 'obfuscated')
+
+    def test_hsm_on_record_sql_off(self):
+        self.settings.high_security = True
+        self.settings.transaction_tracer.record_sql = 'off'
+        newrelic.config._process_high_security_mode()
+        record_sql = self.settings.transaction_tracer.record_sql
+        self.assertEqual(record_sql, 'off')
+
+    def test_hsm_on_record_sql_raw(self):
+        self.settings.high_security = True
+        self.settings.transaction_tracer.record_sql = 'raw'
+        newrelic.config._process_high_security_mode()
+        record_sql = self.settings.transaction_tracer.record_sql
+        self.assertEqual(record_sql, 'obfuscated')
+
 if __name__ == "__main__":
     unittest.main()

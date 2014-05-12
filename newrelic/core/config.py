@@ -135,6 +135,8 @@ _settings.app_name = os.environ.get('NEW_RELIC_APP_NAME', 'Python Application')
 
 _settings.monitor_mode = _environ_as_bool('NEW_RELIC_MONITOR_MODE', True)
 
+_settings.high_security = False
+
 _settings.collect_errors = True
 _settings.collect_traces = True
 _settings.collect_analytics_events = True

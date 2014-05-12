@@ -435,6 +435,12 @@ def _process_high_security_mode():
             _logger.info(log_template.format(name='ssl',
                     orig_setting=False, secure_setting=True))
 
+        if _settings.capture_params:
+
+            _settings.capture_params = False
+            _logger.info(log_template.format(name='capture_params',
+                    orig_setting=True, secure_setting=False))
+
 def _load_configuration(config_file=None, environment=None,
         ignore_errors=True, log_file=None, log_level=None):
 

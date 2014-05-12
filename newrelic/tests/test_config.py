@@ -26,5 +26,16 @@ class TestProcessHighSecurityMode(unittest.TestCase):
         newrelic.config._process_high_security_mode()
         self.assertTrue(self.settings.ssl)
 
+    def test_hsm_on_config_params_disabled(self):
+        self.settings.high_security = True
+        newrelic.config._process_high_security_mode()
+        self.assertFalse(self.settings.capture_params)
+
+    def test_hsm_on_config_params_enabled(self):
+        self.settings.high_security = True
+        self.settings.capture_params = True
+        newrelic.config._process_high_security_mode()
+        self.assertFalse(self.settings.capture_params)
+
 if __name__ == "__main__":
     unittest.main()

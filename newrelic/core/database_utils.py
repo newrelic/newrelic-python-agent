@@ -11,6 +11,8 @@ import weakref
 from newrelic.core.internal_metrics import (internal_trace, internal_metric)
 from newrelic.core.config import global_settings
 
+_logger = logging.getLogger(__name__)
+
 # Obfuscation of SQL is done when reporting SQL statements back to the
 # data collector so that sensitive information is not being passed.
 # Obfuscation consists of replacing any quoted strings, integer or float
@@ -433,72 +435,159 @@ def _obfuscate_explain_plan(database, columns, rows):
         return obfuscator(columns, rows)
     return columns, rows
 
+class SQLConnection(object):
+
+    def __init__(self, database, connection):
+        self.database = database
+        self.connection = connection
+        self.cursors = {}
+
+    def cursor(self, args=(), kwargs={}):
+        key = (args, frozenset(kwargs.items()))
+
+        cursor = self.cursors.get(key)
+
+        if cursor is None:
+            cursor = self.connection.cursor(*args, **kwargs)
+            self.cursors[key] = cursor
+
+        return cursor
+
+    def cleanup(self):
+        _logger.debug('Cleanup database connection %r for %r.',
+                self.connection, self.database)
+
+        try:
+            self.connection.rollback()
+            pass
+        except (AttributeError, self.database.NotSupportedError):
+            pass
+
+        self.connection.close()
+
+class SQLConnections(object):
+
+    def __init__(self):
+        self.connections = {}
+
+        _logger.debug('Creating SQL connections cache %r.', self)
+
+    def connection(self, database, args, kwargs):
+        key = (database.client, args, frozenset(kwargs.items()))
+
+        connection = self.connections.get(key)
+
+        if connection is None:
+            connection = SQLConnection(database,
+                    database.connect(*args, **kwargs))
+            self.connections[key] = connection
+
+            _logger.debug('Created database connection %r for %r with '
+                    'connect params of %r.', connection.connection,
+                    database, (args, kwargs))
+
+        return connection
+
+    def cleanup(self):
+        _logger.debug('Cleaning up SQL connections cache %r.', self)
+
+        for connection in self.connections.values():
+            connection.cleanup()
+
+        self.connections.clear()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc, value, tb):
+        self.cleanup()
+
 @internal_trace('Supportability/DatabaseUtils/Calls/explain_plan')
-def _explain_plan(sql, database, connect_params, cursor_params,
+def _explain_plan(connections, sql, database, connect_params, cursor_params,
         sql_parameters, execute_params):
 
     query = '%s %s' % (database.explain_query, sql)
 
-    args, kwargs = connect_params
+    settings = global_settings()
+
+    if settings.debug.log_explain_plan_queries:
+        _logger.debug('Executing explain plan for %r on %r.', query,
+                database.client)
+
     try:
-        connection = database.connect(*args, **kwargs)
-        try:
-            if cursor_params is not None:
-                args, kwargs = cursor_params
-                cursor = connection.cursor(*args, **kwargs)
-            else:
-                cursor = connection.cursor()
+        args, kwargs = connect_params
+        connection = connections.connection(database, args, kwargs)
 
-            try:
-                if execute_params is not None:
-                    args, kwargs = execute_params
-                else:
-                    args, kwargs = ((), {})
+        if cursor_params is not None:
+            args, kwargs = cursor_params
+            cursor = connection.cursor(args, kwargs)
+        else:
+            cursor = connection.cursor()
 
-                # If sql_parameters is None them args would need
-                # to be an empty sequence. Don't pass it just in
-                # case it wasn't for some reason, and only supply
-                # kwargs. Right now the only time we believe that
-                # passing in further params is needed is with
-                # oursql cursor execute() method, which has
-                # proprietary arguments outside of the DBAPI2
-                # specification.
+        if execute_params is not None:
+            args, kwargs = execute_params
+        else:
+            args, kwargs = ((), {})
 
-                if sql_parameters is not None:
-                    cursor.execute(query, sql_parameters, *args, **kwargs)
-                else:
-                    cursor.execute(query, **kwargs)
+        # If sql_parameters is None them args would need
+        # to be an empty sequence. Don't pass it just in
+        # case it wasn't for some reason, and only supply
+        # kwargs. Right now the only time we believe that
+        # passing in further params is needed is with
+        # oursql cursor execute() method, which has
+        # proprietary arguments outside of the DBAPI2
+        # specification.
 
-                columns = []
+        if sql_parameters is not None:
+            cursor.execute(query, sql_parameters, *args, **kwargs)
+        else:
+            cursor.execute(query, **kwargs)
 
-                if cursor.description:
-                    for column in cursor.description:
-                        columns.append(column[0])
+        columns = []
 
-                rows = cursor.fetchall()
+        if cursor.description:
+            for column in cursor.description:
+                columns.append(column[0])
 
-                if not columns and not rows:
-                    return None
+        rows = cursor.fetchall()
 
-                return (columns, rows)
+        if not columns and not rows:
+            return None
 
-            except Exception:
-                pass
-
-            finally:
-                cursor.close()
-
-        finally:
-            try:
-                connection.rollback()
-            except (AttributeError, database.NotSupportedError):
-                pass
-            connection.close()
+        return (columns, rows)
 
     except Exception:
-        pass
+        if settings.debug.log_explain_plan_queries:
+            _logger.exception('Error occurred when executing explain '
+                    'plan for %r.', query)
 
     return None
+
+def explain_plan(connections, sql_statement, connect_params, cursor_params,
+        sql_parameters, execute_params, sql_format):
+
+    # If no parameters supplied for creating database connection
+    # then mustn't have been a candidate for explain plans in the
+    # first place, so skip it.
+
+    if connect_params is None:
+        return
+
+    # Determine if we even know how to perform explain plans for
+    # this particular database.
+
+    database = sql_statement.database
+
+    if sql_statement.operation not in database.explain_stmts:
+        return
+
+    details = _explain_plan(connections, sql_statement.sql, database,
+            connect_params, cursor_params, sql_parameters, execute_params)
+
+    if details is not None and sql_format != 'raw':
+        return _obfuscate_explain_plan(database, *details)
+
+    return details
 
 # Wrapper for information about a specific database. We haven't yet
 # added high level instrumentation modules for all databases we know
@@ -535,6 +624,15 @@ class SQLDatabase(object):
             if name:
                 name = DATABASE_MODULES.get(name)
 
+        return name
+
+    @property
+    def client(self):
+        name = getattr(self.dbapi2_module, '__name__', None)
+        if name is None:
+            name = getattr(self.dbapi2_module, '__file__', None)
+        if name is None:
+            name = str(self.dbapi2_module)
         return name
 
     @property
@@ -649,29 +747,3 @@ def sql_statement(sql, dbapi2_module):
     _sql_statements[key] = result
 
     return result
-
-def explain_plan(sql_statement, connect_params, cursor_params,
-        sql_parameters, execute_params, sql_format):
-
-    # If no parameters supplied for creating database connection
-    # then mustn't have been a candidate for explain plans in the
-    # first place, so skip it.
-
-    if connect_params is None:
-        return
-
-    # Determine if we even know how to perform explain plans for
-    # this particular database.
-
-    database = sql_statement.database
-
-    if sql_statement.operation not in database.explain_stmts:
-        return
-
-    details = _explain_plan(sql_statement.sql, database, connect_params,
-            cursor_params, sql_parameters, execute_params)
-
-    if details is not None and sql_format != 'raw':
-        return _obfuscate_explain_plan(database, *details)
-
-    return details

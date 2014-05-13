@@ -60,7 +60,7 @@ class FunctionNode(_FunctionNode):
             for metric in child.time_metrics(stats, root, self):
                 yield metric
 
-    def trace_node(self, stats, root):
+    def trace_node(self, stats, root, connections):
 
         name = '%s/%s' % (self.group, self.name)
 
@@ -76,7 +76,7 @@ class FunctionNode(_FunctionNode):
         for child in self.children:
             if root.trace_node_count > root.trace_node_limit:
                 break
-            children.append(child.trace_node(stats, root))
+            children.append(child.trace_node(stats, root, connections))
 
         params = self.params or None
 

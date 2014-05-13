@@ -25,12 +25,6 @@ class SlowSqlNode(_SlowSqlNode):
     def identifier(self):
         return self.statement.identifier
 
-    @property
-    def explain_plan(self):
-        return explain_plan(self.statement, self.connect_params,
-                self.cursor_params, self.sql_parameters,
-                self.execute_params, self.sql_format)
-
 _DatabaseNode = namedtuple('_DatabaseNode',
         ['dbapi2_module',  'sql', 'children', 'start_time', 'end_time',
         'duration', 'exclusive', 'stack_trace', 'sql_format',
@@ -55,12 +49,6 @@ class DatabaseNode(_DatabaseNode):
     @property
     def formatted(self):
         return self.statement.formatted(self.sql_format)
-
-    @property
-    def explain_plan(self):
-        return explain_plan(self.statement, self.connect_params,
-                self.cursor_params, self.sql_parameters,
-                self.execute_params, self.sql_format)
 
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
@@ -157,7 +145,7 @@ class DatabaseNode(_DatabaseNode):
                 sql_parameters=self.sql_parameters,
                 execute_params=self.execute_params)
 
-    def trace_node(self, stats, root):
+    def trace_node(self, stats, root, connections):
 
         operation = self.operation
 
@@ -199,9 +187,14 @@ class DatabaseNode(_DatabaseNode):
                 params['backtrace'] = [root.string_table.cache(x) for x in
                         self.stack_trace]
 
-            explain_plan = self.explain_plan
-            if explain_plan:
-                params['explain_plan'] = explain_plan
+            if self.connect_params is not None:
+                explain_plan_data = explain_plan(connections,
+                        self.statement, self.connect_params,
+                        self.cursor_params, self.sql_parameters,
+                        self.execute_params, self.sql_format)
+
+                if explain_plan_data:
+                    params['explain_plan'] = explain_plan_data
 
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children,

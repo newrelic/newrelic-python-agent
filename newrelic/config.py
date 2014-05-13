@@ -361,6 +361,8 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'debug.log_agent_initialization',
                      'getboolean', None)
+    _process_setting(section, 'debug.log_explain_plan_queries',
+                     'getboolean', None)
     _process_setting(section, 'debug.enable_coroutine_profiling',
                      'getboolean', None)
     _process_setting(section, 'debug.record_transaction_failure',

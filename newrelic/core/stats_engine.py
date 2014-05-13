@@ -14,9 +14,8 @@ import zlib
 
 import newrelic.packages.six as six
 
-from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
-        internal_metric)
-
+from .internal_metrics import (internal_trace, InternalTrace, internal_metric)
+from .database_utils import SQLConnections, explain_plan
 from ..common.encoding_utils import json_encode
 
 _logger = logging.getLogger(__name__)
@@ -772,6 +771,8 @@ class StatsEngine(object):
     @internal_trace('Supportability/StatsEngine/Calls/slow_sql_data')
     def slow_sql_data(self):
 
+        _logger.debug('Generating slow SQL data.')
+
         if not self.__settings:
             return []
 
@@ -785,46 +786,57 @@ class StatsEngine(object):
 
         result = []
 
-        for node in slow_sql_nodes:
+        connections = SQLConnections()
 
-            params = {}
+        with connections:
+            for stats_node in slow_sql_nodes:
 
-            if node.slow_sql_node.stack_trace:
-                params['backtrace'] = node.slow_sql_node.stack_trace
+                params = {}
 
-            explain_plan = node.slow_sql_node.explain_plan
+                slow_sql_node = stats_node.slow_sql_node
 
-            if explain_plan:
-                params['explain_plan'] = explain_plan
+                if slow_sql_node.stack_trace:
+                    params['backtrace'] = slow_sql_node.stack_trace
 
-            json_data = json_encode(params)
+                explain_plan_data = explain_plan(connections,
+                        slow_sql_node.statement,
+                        slow_sql_node.connect_params,
+                        slow_sql_node.cursor_params,
+                        slow_sql_node.sql_parameters,
+                        slow_sql_node.execute_params,
+                        slow_sql_node.sql_format)
 
-            params_data = base64.standard_b64encode(
-                    zlib.compress(six.b(json_data)))
+                if explain_plan_data:
+                    params['explain_plan'] = explain_plan_data
 
-            if six.PY3:
-                params_data = params_data.decode('Latin-1')
+                json_data = json_encode(params)
 
-            # Limit the length of any SQL that is reported back.
+                params_data = base64.standard_b64encode(
+                        zlib.compress(six.b(json_data)))
 
-            limit = self.__settings.agent_limits.sql_query_length_maximum
+                if six.PY3:
+                    params_data = params_data.decode('Latin-1')
 
-            sql = node.slow_sql_node.formatted[:limit]
+                # Limit the length of any SQL that is reported back.
 
-            data = [node.slow_sql_node.path,
-                    node.slow_sql_node.request_uri,
-                    node.slow_sql_node.identifier,
-                    sql,
-                    node.slow_sql_node.metric,
-                    node.call_count,
-                    node.total_call_time * 1000,
-                    node.min_call_time * 1000,
-                    node.max_call_time * 1000,
-                    params_data]
+                limit = self.__settings.agent_limits.sql_query_length_maximum
 
-            result.append(data)
+                sql = slow_sql_node.formatted[:limit]
 
-        return result
+                data = [slow_sql_node.path,
+                        slow_sql_node.request_uri,
+                        slow_sql_node.identifier,
+                        sql,
+                        slow_sql_node.metric,
+                        stats_node.call_count,
+                        stats_node.total_call_time * 1000,
+                        stats_node.min_call_time * 1000,
+                        stats_node.max_call_time * 1000,
+                        params_data]
+
+                result.append(data)
+
+            return result
 
     @internal_trace('Supportability/StatsEngine/Calls/transaction_trace_data')
     def transaction_trace_data(self):
@@ -832,6 +844,9 @@ class StatsEngine(object):
         during the reporting period.
 
         """
+
+        _logger.debug('Generating transaction trace data.')
+
         if not self.__settings:
             return []
 
@@ -850,61 +865,72 @@ class StatsEngine(object):
         if not traces:
             return []
 
+        # We want to limit the number of explain plans we do across
+        # these. So work out what were the slowest and tag them.
+        # Later the explain plan will only be run on this which are
+        # tagged.
+
+        explain_plan_limit = self.__settings.agent_limits.sql_explain_plans
+
         trace_data = []
         maximum = self.__settings.agent_limits.transaction_traces_nodes
 
-        for trace in traces:
-            transaction_trace = trace.transaction_trace(self, maximum)
+        connections = SQLConnections()
 
-            internal_metric('Supportability/StatsEngine/Counts/'
-                            'transaction_sample_data',
-                            trace.trace_node_count)
+        with connections:
+            for trace in traces:
+                transaction_trace = trace.transaction_trace(self, maximum,
+                        connections)
 
-            data = [transaction_trace,
-                    list(trace.string_table.values())]
+                internal_metric('Supportability/StatsEngine/Counts/'
+                                'transaction_sample_data',
+                                trace.trace_node_count)
 
-            if self.__settings.debug.log_transaction_trace_payload:
-                _logger.debug('Encoding slow transaction data where '
-                              'payload=%r.', data)
+                data = [transaction_trace,
+                        list(trace.string_table.values())]
 
-            with InternalTrace('Supportability/StatsEngine/JSON/Encode/'
-                               'transaction_sample_data'):
+                if self.__settings.debug.log_transaction_trace_payload:
+                    _logger.debug('Encoding slow transaction data where '
+                                  'payload=%r.', data)
 
-                json_data = json_encode(data)
+                with InternalTrace('Supportability/StatsEngine/JSON/Encode/'
+                                   'transaction_sample_data'):
 
-            internal_metric('Supportability/StatsEngine/ZLIB/Bytes/'
-                            'transaction_sample_data', len(json_data))
+                    json_data = json_encode(data)
 
-            with InternalTrace('Supportability/StatsEngine/ZLIB/Compress/'
-                               'transaction_sample_data'):
-                zlib_data = zlib.compress(six.b(json_data))
+                internal_metric('Supportability/StatsEngine/ZLIB/Bytes/'
+                                'transaction_sample_data', len(json_data))
 
-            with InternalTrace('Supportability/StatsEngine/BASE64/Encode/'
-                               'transaction_sample_data'):
-                pack_data = base64.standard_b64encode(zlib_data)
+                with InternalTrace('Supportability/StatsEngine/ZLIB/Compress/'
+                                   'transaction_sample_data'):
+                    zlib_data = zlib.compress(six.b(json_data))
 
-                if six.PY3:
-                    pack_data = pack_data.decode('Latin-1')
+                with InternalTrace('Supportability/StatsEngine/BASE64/Encode/'
+                                   'transaction_sample_data'):
+                    pack_data = base64.standard_b64encode(zlib_data)
 
-            root = transaction_trace.root
-            xray_id = getattr(trace, 'xray_id', None)
+                    if six.PY3:
+                        pack_data = pack_data.decode('Latin-1')
 
-            if (xray_id or trace.rum_trace or trace.record_tt):
-                force_persist = True
-            else:
-                force_persist = False
+                root = transaction_trace.root
+                xray_id = getattr(trace, 'xray_id', None)
 
-            trace_data.append([root.start_time,
-                    root.end_time - root.start_time,
-                    trace.path,
-                    trace.request_uri,
-                    pack_data,
-                    trace.guid,
-                    None,
-                    force_persist,
-                    xray_id,])
+                if (xray_id or trace.rum_trace or trace.record_tt):
+                    force_persist = True
+                else:
+                    force_persist = False
 
-        return trace_data
+                trace_data.append([root.start_time,
+                        root.end_time - root.start_time,
+                        trace.path,
+                        trace.request_uri,
+                        pack_data,
+                        trace.guid,
+                        None,
+                        force_persist,
+                        xray_id,])
+
+            return trace_data
 
     @internal_trace('Supportability/StatsEngine/Calls/slow_transaction_data')
     def slow_transaction_data(self):
@@ -915,6 +941,9 @@ class StatsEngine(object):
         period is retained.
 
         """
+
+        # XXX This method no longer appears to be used. Being replaced
+        # by the transaction_trace_data() method.
 
         if not self.__settings:
             return []

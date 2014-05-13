@@ -792,6 +792,7 @@ def create_session(license_key, app_name, linked_applications,
         local_config['agent_version'] = version
         local_config['environment'] = environment
         local_config['settings'] = settings
+        local_config['high_security'] = settings['high_security']
 
         payload = (local_config,)
 

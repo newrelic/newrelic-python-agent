@@ -559,16 +559,16 @@ def _load_configuration(config_file=None, environment=None,
         _settings.environment = environment
         _process_configuration('newrelic:%s' % environment)
 
-    # Apply High Security Mode
-
-    _process_high_security_mode()
-
     # Log details of the configuration options which were
     # read and the values they have as would be applied
     # against the internal settings object.
 
     for option, value in _cache_object:
         _logger.debug("agent config %s = %s" % (option, repr(value)))
+
+    # Apply High Security Mode
+
+    _process_high_security_mode()
 
     # Look for an app_name setting which is actually a semi colon
     # list of application names and adjust app_name setting and

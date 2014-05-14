@@ -733,6 +733,46 @@ class ApplicationSession(object):
                 'analytic_event_data', self.license_key, self.agent_run_id,
                 payload)
 
+def apply_high_security_mode(local_settings, server_settings):
+    """Apply High Security Mode to server_settings.
+
+    When High Security Mode is True in local_settings, then all
+    security related settings should be removed from server_settings.
+    That way, when the local and server-side settings are merged, the
+    local security settings will not get overwritten by the server-side
+    settings.
+
+    Returns updated server_settings.
+
+    """
+
+    if local_settings['high_security']:
+
+        # Remove top-level 'high_security' setting
+
+        if 'high_security' in server_settings:
+            del server_settings['high_security']
+
+        # Remove individual security settings
+
+        security_settings = [
+            'ssl',
+            'capture_params',
+            'transaction_tracer.record_sql']
+
+        for setting in security_settings:
+            if setting in server_settings.get('agent_config', {}):
+
+                del server_settings['agent_config'][setting]
+
+                _logger.debug("Ignoring server-side setting for {name}, "
+                              "because High Security Mode has been "
+                              "activated. Using local setting: {name} = "
+                              "{value}.".format(name=setting,
+                                                value=local_settings[setting]))
+
+    return server_settings
+
 def create_session(license_key, app_name, linked_applications,
         environment, settings):
 
@@ -800,30 +840,11 @@ def create_session(license_key, app_name, linked_applications,
         server_config = send_request(None, url, 'connect',
                 license_key, None, payload)
 
-        # If High Security Mode is on, then remove security settings
-        # from server_config, so the local security settings won't
-        # get overwritten when we overlay the server settings on top
-        # of them.
+        # Apply High Security Mode to server_config, so the local security
+        # settings won't get overwritten when we overlay the server settings
+        # on top of them.
 
-        security_settings = [
-                'high_security',
-                'ssl',
-                'capture_params',
-                'transaction_tracer.record_sql']
-
-        if settings['high_security']:
-
-            for setting in security_settings:
-
-                if setting in server_config.get('agent_config', {}):
-
-                    del server_config['agent_config'][setting]
-
-                    _logger.debug("Ignoring server-side setting for {name}, "
-                                  "because High Security Mode has been "
-                                  "activated. Using local setting: {name} = "
-                                  "{value}.".format(name=setting,
-                                                    value=settings[setting]))
+        server_config = apply_high_security_mode(settings, server_config)
 
         # The agent configuration for the application in constructed
         # by taking a snapshot of the locally constructed configuration

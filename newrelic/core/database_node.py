@@ -187,7 +187,13 @@ class DatabaseNode(_DatabaseNode):
                 params['backtrace'] = [root.string_table.cache(x) for x in
                         self.stack_trace]
 
-            if self.connect_params is not None:
+            # Only perform an explain plan if this node ended up being
+            # flagged to have an explain plan. This is applied when cap
+            # on number of explain plans for whole harvest period is
+            # applied across all transaction traces just prior to the
+            # transaction traces being generated.
+
+            if getattr(self, 'generate_explain_plan', None):
                 explain_plan_data = explain_plan(connections,
                         self.statement, self.connect_params,
                         self.cursor_params, self.sql_parameters,

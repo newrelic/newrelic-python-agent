@@ -82,7 +82,8 @@ class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
             # cause further problems.
 
             if (exc is None and transaction_tracer.explain_enabled and
-                    self.duration >= transaction_tracer.explain_threshold):
+                    self.duration >= transaction_tracer.explain_threshold and
+                    self.connect_params is not None):
                 if (self.transaction._explain_plan_count <
                        agent_limits.sql_explain_plans):
                     connect_params = self.connect_params

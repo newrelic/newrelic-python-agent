@@ -219,6 +219,7 @@ _settings.agent_limits.transaction_traces_nodes = 2000
 _settings.agent_limits.sql_query_length_maximum = 16384
 _settings.agent_limits.slow_sql_stack_trace = 30
 _settings.agent_limits.sql_explain_plans = 30
+_settings.agent_limits.sql_explain_plans_per_harvest = 60
 _settings.agent_limits.slow_sql_data = 10
 _settings.agent_limits.merge_stats_maximum = 5
 _settings.agent_limits.errors_per_transaction = 5

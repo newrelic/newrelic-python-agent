@@ -28,6 +28,8 @@ from newrelic.core.internal_metrics import (InternalTrace,
 from newrelic.core.xray_session import XraySession
 from newrelic.core.profile_sessions import profile_session_manager
 
+from .database_utils import SQLConnections
+
 _logger = logging.getLogger(__name__)
 
 class Application(object):
@@ -1294,23 +1296,32 @@ class Application(object):
                             self._active_session.send_errors(error_data)
 
                     if configuration.collect_traces:
-                        slow_sql_data = stats.slow_sql_data()
+                        connections = SQLConnections()
 
-                        internal_metric('Supportability/Harvest/Counts/'
-                                'sql_trace_data', len(slow_sql_data))
+                        with connections:
+                            if configuration.slow_sql.enabled:
+                                slow_sql_data = stats.slow_sql_data(
+                                        connections)
 
-                        if slow_sql_data:
-                            self._active_session.send_sql_traces(slow_sql_data)
+                                internal_metric('Supportability/Harvest/'
+                                        'Counts/sql_trace_data',
+                                        len(slow_sql_data))
 
-                        slow_transaction_data = stats.transaction_trace_data()
+                                if slow_sql_data:
+                                    self._active_session.send_sql_traces(
+                                            slow_sql_data)
 
-                        internal_metric('Supportability/Harvest/Counts/'
-                                'transaction_sample_data',
-                                len(slow_transaction_data))
+                            slow_transaction_data = (
+                                    stats.transaction_trace_data(
+                                    connections))
 
-                        if slow_transaction_data:
-                            self._active_session.send_transaction_traces(
-                                    slow_transaction_data)
+                            internal_metric('Supportability/Harvest/Counts/'
+                                    'transaction_sample_data',
+                                    len(slow_transaction_data))
+
+                            if slow_transaction_data:
+                                self._active_session.send_transaction_traces(
+                                        slow_transaction_data)
 
                     # Fetch agent commands sent from the data collector
                     # and process them.

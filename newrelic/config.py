@@ -319,6 +319,8 @@ def _process_configuration(section):
                      'getint', None)
     _process_setting(section, 'agent_limits.sql_explain_plans',
                      'getint', None)
+    _process_setting(section, 'agent_limits.sql_explain_plans_per_harvest',
+                     'getint', None)
     _process_setting(section, 'agent_limits.slow_sql_data',
                      'getint', None)
     _process_setting(section, 'agent_limits.merge_stats_maximum',

@@ -886,7 +886,7 @@ def create_session(license_key, app_name, linked_applications,
                 'agent_run_id=%r, in %.2f seconds.', app_name, os.getpid(),
                 redirect_host, session.agent_run_id, duration)
 
-        if hasattr(application_config, 'high_security'):
+        if getattr(application_config, 'high_security', False):
             _logger.info('High security mode is being applied to all '
                     'communications between the agent and the data '
                     'collector for this session.')

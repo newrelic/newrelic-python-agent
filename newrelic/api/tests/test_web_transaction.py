@@ -193,6 +193,33 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         except RuntimeError:
             pass
 
+    def test_high_security_off_add_error_parameters(self):
+        environ = { "REQUEST_URI": "/test_high_security_off_add_error_parameters" }
+        transaction = newrelic.api.web_transaction.WebTransaction(
+                application, environ)
+        with transaction:
+            try:
+                raise RuntimeError("runtime_error")
+            except RuntimeError:
+                transaction.record_exception(*sys.exc_info(),
+                        params={'a': 'b'})
+        self.assertEqual(len(transaction._errors), 1)
+        self.assertEqual(transaction._errors[0].custom_params, {'a': 'b'})
+
+    def test_high_security_on_ignore_error_parameters(self):
+        environ = { "REQUEST_URI": "/high_security_on_ignore_error_parameters" }
+        transaction = newrelic.api.web_transaction.WebTransaction(
+                application, environ)
+        transaction._settings.high_security = True
+        with transaction:
+            try:
+                raise RuntimeError("runtime_error")
+            except RuntimeError:
+                transaction.record_exception(*sys.exc_info(),
+                        params={'custom_param': 'custom_value'})
+        self.assertEqual(len(transaction._errors), 1)
+        self.assertEqual(transaction._errors[0].custom_params, {})
+
     def test_application_disabled(self):
         application.enabled = False
         environ = { "REQUEST_URI": "/application_disabled" }

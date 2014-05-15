@@ -218,6 +218,7 @@ _settings.agent_limits.data_collector_timeout = 30.0
 _settings.agent_limits.transaction_traces_nodes = 2000
 _settings.agent_limits.sql_query_length_maximum = 16384
 _settings.agent_limits.slow_sql_stack_trace = 30
+_settings.agent_limits.max_sql_connections = 4
 _settings.agent_limits.sql_explain_plans = 30
 _settings.agent_limits.sql_explain_plans_per_harvest = 60
 _settings.agent_limits.slow_sql_data = 10

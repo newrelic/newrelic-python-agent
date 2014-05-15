@@ -317,6 +317,8 @@ def _process_configuration(section):
                      'getint', None)
     _process_setting(section, 'agent_limits.slow_sql_stack_trace',
                      'getint', None)
+    _process_setting(section, 'agent_limits.max_sql_connections',
+                     'getint', None)
     _process_setting(section, 'agent_limits.sql_explain_plans',
                      'getint', None)
     _process_setting(section, 'agent_limits.sql_explain_plans_per_harvest',

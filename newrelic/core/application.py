@@ -1296,7 +1296,8 @@ class Application(object):
                             self._active_session.send_errors(error_data)
 
                     if configuration.collect_traces:
-                        connections = SQLConnections()
+                        connections = SQLConnections(
+                                configuration.agent_limits.max_sql_connections)
 
                         with connections:
                             if configuration.slow_sql.enabled:

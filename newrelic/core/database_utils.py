@@ -467,34 +467,67 @@ class SQLConnection(object):
 
 class SQLConnections(object):
 
-    def __init__(self):
-        self.connections = {}
+    def __init__(self, maximum=4):
+        self.connections = []
+        self.maximum = maximum
 
         _logger.debug('Creating SQL connections cache %r.', self)
 
     def connection(self, database, args, kwargs):
-        key = (database.client, args, frozenset(kwargs.items()))
+        key = (database.client, args, kwargs)
 
-        connection = self.connections.get(key)
+        connection = None
+
+        for i, item in enumerate(self.connections):
+            if item[0] == key:
+                connection = item[1]
+
+                # Move to back of list so we know which is the
+                # most recently used all the time.
+
+                item = self.connections.pop(i)
+                self.connections.append(item)
+
+                break
 
         if connection is None:
+            # If we are at the maximum number of connections to
+            # keep hold of, pop the one which has been used the
+            # longest amount of time.
+
+            if len(self.connections) == self.maximum:
+                connection = self.connections.pop(0)[1]
+
+                internal_metric('Supportability/DatabaseUtils/Counts/'
+                                'drop_database_connection', 1)
+
+                _logger.debug('Drop database connection %r for %r as '
+                        'reached maximum of %r.', connection.connection,
+                        connection.database.client, self.maximum)
+
+                connection.cleanup()
+
             connection = SQLConnection(database,
                     database.connect(*args, **kwargs))
-            self.connections[key] = connection
+
+            self.connections.append((key, connection))
+
+            internal_metric('Supportability/DatabaseUtils/Counts/'
+                            'create_database_connection', 1)
 
             _logger.debug('Created database connection %r for %r with '
                     'connect params of %r.', connection.connection,
-                    database, (args, kwargs))
+                    database.client, (args, kwargs))
 
         return connection
 
     def cleanup(self):
         _logger.debug('Cleaning up SQL connections cache %r.', self)
 
-        for connection in self.connections.values():
+        for key, connection in self.connections:
             connection.cleanup()
 
-        self.connections.clear()
+        self.connections = []
 
     def __enter__(self):
         return self
@@ -559,7 +592,10 @@ def _explain_plan(connections, sql, database, connect_params, cursor_params,
     except Exception:
         if settings.debug.log_explain_plan_queries:
             _logger.exception('Error occurred when executing explain '
-                    'plan for %r.', query)
+                    'plan for %r on %r where connect_params=%r, '
+                    'cursor_params=%r and execute_params=%r.', query,
+                    database.client, connect_params, cursor_params,
+                    execute_params)
 
     return None
 

@@ -154,6 +154,23 @@ class TestCase(newrelic.tests.test_cases.TestCase):
             transaction._custom_params[8] = "8"
             transaction._custom_params[9.0] = "9.0"
 
+    def test_high_security_off_add_custom_parameter(self):
+        environ = { "REQUEST_URI": "/high_security_off_add_custom_parameter" }
+        transaction = newrelic.api.web_transaction.WebTransaction(
+                application, environ)
+        with transaction:
+            transaction.add_custom_parameter('foo', 'blah')
+        self.assertEqual(transaction._custom_params, {'foo': 'blah'})
+
+    def test_high_security_on_ignore_custom_parameter(self):
+        environ = { "REQUEST_URI": "/high_security_on_ignore_custom_parameter" }
+        transaction = newrelic.api.web_transaction.WebTransaction(
+                application, environ)
+        transaction._settings.high_security = True
+        with transaction:
+            transaction.add_custom_parameter('foo', 'blah')
+        self.assertEqual(transaction._custom_params, {})
+
     def test_explicit_runtime_error(self):
         environ = { "REQUEST_URI": "/explicit_runtime_error" }
         transaction = newrelic.api.web_transaction.WebTransaction(

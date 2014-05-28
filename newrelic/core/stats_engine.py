@@ -14,9 +14,8 @@ import zlib
 
 import newrelic.packages.six as six
 
-from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
-        internal_metric)
-
+from .internal_metrics import (internal_trace, InternalTrace, internal_metric)
+from .database_utils import explain_plan
 from ..common.encoding_utils import json_encode
 
 _logger = logging.getLogger(__name__)
@@ -770,12 +769,17 @@ class StatsEngine(object):
         return self.__transaction_errors
 
     @internal_trace('Supportability/StatsEngine/Calls/slow_sql_data')
-    def slow_sql_data(self):
+    def slow_sql_data(self, connections):
+
+        _logger.debug('Generating slow SQL data.')
 
         if not self.__settings:
             return []
 
         if not self.__sql_stats_table:
+            return []
+
+        if not self.__settings.slow_sql.enabled:
             return []
 
         maximum = self.__settings.agent_limits.slow_sql_data
@@ -785,17 +789,25 @@ class StatsEngine(object):
 
         result = []
 
-        for node in slow_sql_nodes:
+        for stats_node in slow_sql_nodes:
 
             params = {}
 
-            if node.slow_sql_node.stack_trace:
-                params['backtrace'] = node.slow_sql_node.stack_trace
+            slow_sql_node = stats_node.slow_sql_node
 
-            explain_plan = node.slow_sql_node.explain_plan
+            if slow_sql_node.stack_trace:
+                params['backtrace'] = slow_sql_node.stack_trace
 
-            if explain_plan:
-                params['explain_plan'] = explain_plan
+            explain_plan_data = explain_plan(connections,
+                    slow_sql_node.statement,
+                    slow_sql_node.connect_params,
+                    slow_sql_node.cursor_params,
+                    slow_sql_node.sql_parameters,
+                    slow_sql_node.execute_params,
+                    slow_sql_node.sql_format)
+
+            if explain_plan_data:
+                params['explain_plan'] = explain_plan_data
 
             json_data = json_encode(params)
 
@@ -809,17 +821,17 @@ class StatsEngine(object):
 
             limit = self.__settings.agent_limits.sql_query_length_maximum
 
-            sql = node.slow_sql_node.formatted[:limit]
+            sql = slow_sql_node.formatted[:limit]
 
-            data = [node.slow_sql_node.path,
-                    node.slow_sql_node.request_uri,
-                    node.slow_sql_node.identifier,
+            data = [slow_sql_node.path,
+                    slow_sql_node.request_uri,
+                    slow_sql_node.identifier,
                     sql,
-                    node.slow_sql_node.metric,
-                    node.call_count,
-                    node.total_call_time * 1000,
-                    node.min_call_time * 1000,
-                    node.max_call_time * 1000,
+                    slow_sql_node.metric,
+                    stats_node.call_count,
+                    stats_node.total_call_time * 1000,
+                    stats_node.min_call_time * 1000,
+                    stats_node.max_call_time * 1000,
                     params_data]
 
             result.append(data)
@@ -827,11 +839,14 @@ class StatsEngine(object):
         return result
 
     @internal_trace('Supportability/StatsEngine/Calls/transaction_trace_data')
-    def transaction_trace_data(self):
+    def transaction_trace_data(self, connections):
         """Returns a list of slow transaction data collected
         during the reporting period.
 
         """
+
+        _logger.debug('Generating transaction trace data.')
+
         if not self.__settings:
             return []
 
@@ -850,11 +865,56 @@ class StatsEngine(object):
         if not traces:
             return []
 
+        # We want to limit the number of explain plans we do across
+        # these. So work out what were the slowest and tag them.
+        # Later the explain plan will only be run on those which are
+        # tagged.
+
+        agent_limits = self.__settings.agent_limits
+        explain_plan_limit = agent_limits.sql_explain_plans_per_harvest
+        maximum_nodes = agent_limits.transaction_traces_nodes
+
+        database_nodes = []
+
+        if explain_plan_limit != 0:
+            for trace in traces:
+                for node in trace.slow_sql:
+                    # Make sure we clear any flag for explain plans on
+                    # the nodes in case a transaction trace was merged
+                    # in from previous harvest period.
+
+                    node.generate_explain_plan = False
+
+                    # Node should be excluded if not for an operation
+                    # that we can't do an explain plan on. Also should
+                    # not be one which would not be included in the
+                    # transaction trace because limit was reached.
+
+                    if (node.node_count < maximum_nodes and
+                            node.connect_params and node.statement.operation in
+                            node.statement.database.explain_stmts):
+                        database_nodes.append(node)
+
+            database_nodes = sorted(database_nodes,
+                    key=lambda x: x.duration)[-explain_plan_limit:]
+
+            for node in database_nodes:
+                node.generate_explain_plan = True
+
+        else:
+            for trace in traces:
+                for node in trace.slow_sql:
+                    node.generate_explain_plan = True
+                    database_nodes.append(node)
+
+        # Now generate the transaction traces. We need to cap the
+        # number of nodes capture to the specified limit.
+
         trace_data = []
-        maximum = self.__settings.agent_limits.transaction_traces_nodes
 
         for trace in traces:
-            transaction_trace = trace.transaction_trace(self, maximum)
+            transaction_trace = trace.transaction_trace(
+                    self, maximum_nodes, connections)
 
             internal_metric('Supportability/StatsEngine/Counts/'
                             'transaction_sample_data',
@@ -915,6 +975,9 @@ class StatsEngine(object):
         period is retained.
 
         """
+
+        # XXX This method no longer appears to be used. Being replaced
+        # by the transaction_trace_data() method.
 
         if not self.__settings:
             return []

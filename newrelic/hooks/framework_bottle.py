@@ -69,7 +69,7 @@ class proxy_Bottle_error_handler(ObjectProxy):
         transaction = current_transaction()
 
         if transaction is None:
-            return self.__wrapped.get(status, default)
+            return self.__wrapped__.get(status, default)
 
         handler = self.__wrapped__.get(status)
 

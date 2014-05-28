@@ -3,12 +3,12 @@ from collections import namedtuple
 import newrelic.core.trace_node
 
 from newrelic.core.metric import TimeMetric
-from newrelic.core.database_utils import sql_statement
+from newrelic.core.database_utils import sql_statement, explain_plan
 
 _SlowSqlNode = namedtuple('_SlowSqlNode',
         ['duration', 'path', 'request_uri', 'sql', 'sql_format',
         'metric', 'dbapi2_module', 'stack_trace', 'connect_params',
-        'cursor_params', 'execute_params'])
+        'cursor_params', 'sql_parameters', 'execute_params'])
 
 class SlowSqlNode(_SlowSqlNode):
 
@@ -25,15 +25,11 @@ class SlowSqlNode(_SlowSqlNode):
     def identifier(self):
         return self.statement.identifier
 
-    @property
-    def explain_plan(self):
-        return self.statement.explain_plan(self.connect_params,
-                self.cursor_params, self.execute_params, self.sql_format)
-
 _DatabaseNode = namedtuple('_DatabaseNode',
         ['dbapi2_module',  'sql', 'children', 'start_time', 'end_time',
         'duration', 'exclusive', 'stack_trace', 'sql_format',
-        'connect_params', 'cursor_params', 'execute_params'])
+        'connect_params', 'cursor_params', 'sql_parameters',
+        'execute_params'])
 
 class DatabaseNode(_DatabaseNode):
 
@@ -53,11 +49,6 @@ class DatabaseNode(_DatabaseNode):
     @property
     def formatted(self):
         return self.statement.formatted(self.sql_format)
-
-    @property
-    def explain_plan(self):
-        return self.statement.explain_plan(self.connect_params,
-                self.cursor_params, self.execute_params, self.sql_format)
 
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
@@ -151,9 +142,10 @@ class DatabaseNode(_DatabaseNode):
                 stack_trace=self.stack_trace,
                 connect_params=self.connect_params,
                 cursor_params=self.cursor_params,
+                sql_parameters=self.sql_parameters,
                 execute_params=self.execute_params)
 
-    def trace_node(self, stats, root):
+    def trace_node(self, stats, root, connections):
 
         operation = self.operation
 
@@ -195,9 +187,20 @@ class DatabaseNode(_DatabaseNode):
                 params['backtrace'] = [root.string_table.cache(x) for x in
                         self.stack_trace]
 
-            explain_plan = self.explain_plan
-            if explain_plan:
-                params['explain_plan'] = explain_plan
+            # Only perform an explain plan if this node ended up being
+            # flagged to have an explain plan. This is applied when cap
+            # on number of explain plans for whole harvest period is
+            # applied across all transaction traces just prior to the
+            # transaction traces being generated.
+
+            if getattr(self, 'generate_explain_plan', None):
+                explain_plan_data = explain_plan(connections,
+                        self.statement, self.connect_params,
+                        self.cursor_params, self.sql_parameters,
+                        self.execute_params, self.sql_format)
+
+                if explain_plan_data:
+                    params['explain_plan'] = explain_plan_data
 
         return newrelic.core.trace_node.TraceNode(start_time=start_time,
                 end_time=end_time, name=name, params=params, children=children,

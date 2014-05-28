@@ -55,7 +55,7 @@ class DatastoreNode(_DatastoreNode):
         yield TimeMetric(name=name, scope='', duration=self.duration,
                 exclusive=self.exclusive)
 
-    def trace_node(self, stats, root):
+    def trace_node(self, stats, root, connections):
 
         product = self.product
         target = self.target or '*'

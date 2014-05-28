@@ -22,8 +22,8 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Database/other/sql', 7)]
 
 _test_execute_via_cursor_rollup_metrics = [
-        ('Database/all', 11),
-        ('Database/allOther', 11),
+        ('Database/all', 12),
+        ('Database/allOther', 12),
         ('Database/select', 1),
         ('Database/database_psycopg2ct/select', 1),
         ('Database/insert', 1),
@@ -39,7 +39,7 @@ _test_execute_via_cursor_rollup_metrics = [
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
         rollup_metrics=_test_execute_via_cursor_rollup_metrics,
         background_task=True)
-@validate_database_trace_inputs(execute_params_type=tuple)
+@validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_execute_via_cursor():
     connection = psycopg2ct.connect(database=DB_SETTINGS['name'],

@@ -778,23 +778,31 @@ SQL_NORMALIZE_TESTS = [
   """SELECT c1 FROM t1 WHERE c1 IN (""" + (50000*"""%(name)s,""") + """%s)""",
 ]
 
+class DummySQLDatabase(object):
+    database_name = 'PostgreSQL'
+    quoting_style = 'single'
+    explain_query = None
+    explain_stmts = ()
+
+DUMMY_DATABASE = DummySQLDatabase()
+
 class TestDatabase(unittest.TestCase):
 
     def test_parse_general_statements(self):
         for expected_result, sql in GENERAL_PARSE_TESTS:
-            statement = SQLStatement(sql, 'pyscopg2')
+            statement = SQLStatement(sql, DUMMY_DATABASE)
             actual_result = statement.target, statement.operation
             self.assertEqual(expected_result, actual_result)
 
     def test_parse_comment_statements(self):
         for expected_result, sql in COMMENT_PARSE_TESTS:
-            statement = SQLStatement(sql, 'pyscopg2')
+            statement = SQLStatement(sql, DUMMY_DATABASE)
             actual_result = statement.target, statement.operation
             self.assertEqual(expected_result, actual_result)
 
     def test_parse_select_statements(self):
         for expected_result, sql in SELECT_PARSE_TESTS:
-            statement = SQLStatement(sql, 'pyscopg2')
+            statement = SQLStatement(sql, DUMMY_DATABASE)
             actual_result = statement.target, statement.operation
             if expected_result != actual_result:
                 print('XXX', expected_result == actual_result, sql)
@@ -802,89 +810,89 @@ class TestDatabase(unittest.TestCase):
 
     def test_parse_delete_tests(self):
         for expected_result, sql in DELETE_PARSE_TESTS:
-            statement = SQLStatement(sql, 'pyscopg2')
+            statement = SQLStatement(sql, DUMMY_DATABASE)
             actual_result = statement.target, statement.operation
             self.assertEqual(expected_result, actual_result)
 
     def test_parse_insert_tests(self):
         for expected_result, sql in INSERT_PARSE_TESTS:
-            statement = SQLStatement(sql, 'pyscopg2')
+            statement = SQLStatement(sql, DUMMY_DATABASE)
             actual_result = statement.target, statement.operation
             self.assertEqual(expected_result, actual_result)
 
     def test_parse_update_tests(self):
         for expected_result, sql in UPDATE_PARSE_TESTS:
-            statement = SQLStatement(sql, 'pyscopg2')
+            statement = SQLStatement(sql, DUMMY_DATABASE)
             actual_result = statement.target, statement.operation
             self.assertEqual(expected_result, actual_result)
 
     def test_parse_create_tests(self):
         for expected_result, sql in CREATE_PARSE_TESTS:
-            statement = SQLStatement(sql, 'pyscopg2')
+            statement = SQLStatement(sql, DUMMY_DATABASE)
             actual_result = statement.target, statement.operation
             self.assertEqual(expected_result, actual_result)
 
     def test_parse_call_tests(self):
         for expected_result, sql in CALL_PARSE_TESTS:
-            statement = SQLStatement(sql, 'pyscopg2')
+            statement = SQLStatement(sql, DUMMY_DATABASE)
             actual_result = statement.target, statement.operation
             self.assertEqual(expected_result, actual_result)
 
     def test_parse_exec_tests(self):
         for expected_result, sql in EXEC_PARSE_TESTS:
-            statement = SQLStatement(sql, 'pyscopg2')
+            statement = SQLStatement(sql, DUMMY_DATABASE)
             actual_result = statement.target, statement.operation
             self.assertEqual(expected_result, actual_result)
 
     def test_parse_alter_tests(self):
         for expected_result, sql in ALTER_PARSE_TESTS:
-            statement = SQLStatement(sql, 'pyscopg2')
+            statement = SQLStatement(sql, DUMMY_DATABASE)
             actual_result = statement.target, statement.operation
             self.assertEqual(expected_result, actual_result)
 
     def test_parse_show_tests(self):
         for expected_result, sql in SHOW_PARSE_TESTS:
-            statement = SQLStatement(sql, 'pyscopg2')
+            statement = SQLStatement(sql, DUMMY_DATABASE)
             actual_result = statement.target, statement.operation
             self.assertEqual(expected_result, actual_result)
 
     def test_parse_set_tests(self):
         for expected_result, sql in SET_PARSE_TESTS:
-            statement = SQLStatement(sql, 'pyscopg2')
+            statement = SQLStatement(sql, DUMMY_DATABASE)
             actual_result = statement.target, statement.operation
             self.assertEqual(expected_result, actual_result)
 
     def test_obfuscate_numeric_literals(self):
         sql = 'SELECT * FROM t1 WHERE t2.c3 = 1 AND 2 = 3'
-        statement = SQLStatement(sql, 'pyscopg2')
+        statement = SQLStatement(sql, DUMMY_DATABASE)
         expected_result = 'SELECT * FROM t1 WHERE t2.c3 = ? AND ? = ?'
         actual_result = statement.obfuscated
         self.assertEqual(expected_result, actual_result)
 
     def test_obfuscate_integer_word_boundaries(self):
         sql = 'A1 #2 ,3 .4 (5) =6 <7 /9 B9C'
-        statement = SQLStatement(sql, 'pyscopg2')
+        statement = SQLStatement(sql, DUMMY_DATABASE)
         expected_result = 'A1 #? ,? .? (?) =? <? /? B9C'
         actual_result = statement.obfuscated
         self.assertEqual(expected_result, actual_result)
 
     def test_obfuscate_string_literals(self):
         sql = "INSERT INTO X values('', 'a''b c',0, 1 , 'd''e f''s h')"
-        statement = SQLStatement(sql, 'pyscopg2')
+        statement = SQLStatement(sql, DUMMY_DATABASE)
         expected_result = "INSERT INTO X values(?, ?,?, ? , ?)"
         actual_result = statement.obfuscated
         self.assertEqual(expected_result, actual_result)
 
     def test_obfuscate_table_and_column_names(self):
         sql = 'SELECT "t"."c" FROM "t" WHERE "t"."c" = \'value\' LIMIT 1'
-        statement = SQLStatement(sql, 'pyscopg2')
+        statement = SQLStatement(sql, DUMMY_DATABASE)
         expected_result = 'SELECT "t"."c" FROM "t" WHERE "t"."c" = ? LIMIT ?'
         actual_result = statement.obfuscated
         self.assertEqual(expected_result, actual_result)
 
     def test_obfuscate_mysql_table_and_column_names(self):
         sql = 'SELECT `t`.`c` FROM `t` WHERE `t`.`c` = \'value\' LIMIT 1'
-        statement = SQLStatement(sql, 'pyscopg2')
+        statement = SQLStatement(sql, DUMMY_DATABASE)
         expected_result = 'SELECT `t`.`c` FROM `t` WHERE `t`.`c` = ? LIMIT ?'
         actual_result = statement.obfuscated
         self.assertEqual(expected_result, actual_result)
@@ -892,7 +900,7 @@ class TestDatabase(unittest.TestCase):
     def test_normalize_sql_tests(self):
         expected_result = 'SELECT c1 FROM t1 WHERE c1 IN(?)'
         for sql in SQL_NORMALIZE_TESTS:
-            statement = SQLStatement(sql, 'pyscopg2')
+            statement = SQLStatement(sql, DUMMY_DATABASE)
             actual_result = statement.normalized
             self.assertEqual(expected_result, actual_result)
             self.assertEqual(hash(expected_result), hash(actual_result))

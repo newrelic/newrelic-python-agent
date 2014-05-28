@@ -1,6 +1,8 @@
 :tddium:
   :environment:
     'TDDIUM_SKIP_NONCE': ''
+    'PIP_INDEX_URL': 'http://localhost:3141/root/pypi/'
+    'NEW_RELIC_FAKE_COLLECTOR': 'true'
   :tests:
     - tox -c tests/agent_features/tox.ini
     - tox -c tests/component_cornice/tox-0016.ini
@@ -14,6 +16,8 @@
     - tox -c tests/database_psycopg2ct/tox.ini
     - tox -c tests/database_pymysql/tox.ini
     - tox -c tests/database_sqlite/tox.ini
+    - tox -c tests/datastore_redis/tox.ini
+    - tox -c tests/datastore_mongodb/tox.ini
     - tox -c tests/external_httplib/tox.ini
     - tox -c tests/framework_bottle/tox-0008.ini
     - tox -c tests/framework_bottle/tox-0009.ini
@@ -24,6 +28,7 @@
     - tox -c tests/framework_django/tox-0103.ini
     - tox -c tests/framework_django/tox-0104.ini
     - tox -c tests/framework_django/tox-0105.ini
+    - tox -c tests/framework_django/tox-0106.ini
     - tox -c tests/framework_flask/tox-0006.ini
     - tox -c tests/framework_flask/tox-0007.ini
     - tox -c tests/framework_flask/tox-0008.ini
@@ -42,7 +47,18 @@
     :version: '9.1'
   :mysql:
     :version: '5.1'
-  #:custom_service:
-  #  :command: 'services.sh'
-  #  :ping: true
-  #  :parallel: false
+  :redis:
+    :version: '2.16.6' 
+  :mongodb:
+    :version: '2.0'
+    :append:
+      persist_in_safe_mode: true
+      allow_dynamic_fields: false
+      logger: false
+    :config:
+      raise_not_found_error: false
+      allow_dynamic_fields: false
+  :custom_service:
+    :command: 'services.sh'
+    :ping: true
+    :parallel: false

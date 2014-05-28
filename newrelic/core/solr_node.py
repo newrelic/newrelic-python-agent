@@ -34,7 +34,7 @@ class SolrNode(_SolrNode):
         yield TimeMetric(name=name, scope=root.path,
                 duration=self.duration, exclusive=self.exclusive)
 
-    def trace_node(self, stats, root):
+    def trace_node(self, stats, root, connections):
 
         name = 'SolrClient/%s/%s' % (self.library, self.command)
 

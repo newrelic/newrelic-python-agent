@@ -69,6 +69,8 @@ class Transaction(object):
 
         self.stopped = False
 
+        self._trace_node_count = 0
+
         self._errors = []
         self._slow_sql = []
 
@@ -824,11 +826,15 @@ class Transaction(object):
         return parent
 
     def _process_node(self, node):
+        self._trace_node_count += 1
+        node.node_count = self._trace_node_count
+
         if type(node) is newrelic.core.database_node.DatabaseNode:
             settings = self._settings
             if not settings.collect_traces:
                 return
-            if not settings.slow_sql.enabled:
+            if (not settings.slow_sql.enabled and
+                    not settings.transaction_tracer.explain_enabled):
                 return
             if settings.transaction_tracer.record_sql == 'off':
                 return

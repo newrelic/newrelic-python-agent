@@ -317,7 +317,11 @@ def _process_configuration(section):
                      'getint', None)
     _process_setting(section, 'agent_limits.slow_sql_stack_trace',
                      'getint', None)
+    _process_setting(section, 'agent_limits.max_sql_connections',
+                     'getint', None)
     _process_setting(section, 'agent_limits.sql_explain_plans',
+                     'getint', None)
+    _process_setting(section, 'agent_limits.sql_explain_plans_per_harvest',
                      'getint', None)
     _process_setting(section, 'agent_limits.slow_sql_data',
                      'getint', None)
@@ -360,6 +364,8 @@ def _process_configuration(section):
     _process_setting(section, 'debug.log_normalization_rules',
                      'getboolean', None)
     _process_setting(section, 'debug.log_agent_initialization',
+                     'getboolean', None)
+    _process_setting(section, 'debug.log_explain_plan_queries',
                      'getboolean', None)
     _process_setting(section, 'debug.enable_coroutine_profiling',
                      'getboolean', None)

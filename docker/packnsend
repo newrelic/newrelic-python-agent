@@ -10,6 +10,19 @@ TMPDIR=${TMPDIR:-/tmp}
 IMAGE_ID=""
 CONTAINER_ID=""
 
+APP_SERVICE_IMAGES="
+    memcached \
+    gearmand \
+    postgresql \
+    mysql \
+    devpi \
+    squid \
+    mongodb \
+    redis
+    "
+
+ALL_IMAGES="python-base $APP_SERVICE_IMAGES"
+
 cleanup_containers()
 {
     # Remove any docker containers/images and the working directory
@@ -19,7 +32,7 @@ cleanup_containers()
     echo "Removing test container."
 
     test -n "$CONTAINER_ID" && docker kill $CONTAINER_ID
-    test -n "$CONTAINER_ID" && docker rm $CONTAINER_ID
+    test -n "$CONTAINER_ID" && docker rm --volumes $CONTAINER_ID
 
     echo "Removing test image."
 
@@ -56,9 +69,9 @@ export_git_repository()
     (cd $ROOT_DIRECTORY; git checkout-index --prefix=$DATA_DIRECTORY/ -a)
 }
 
-create_remote_launcher()
+create_remote_launchers()
 {
-    # Create the remote launcher script to be included in docker image
+    # Create the remote launcher scripts to be included in docker image
     # containing the code to be tested.
     #
     # XXX Still cannot seem to copy back files from /data of container
@@ -67,20 +80,28 @@ create_remote_launcher()
     # an actual copy of the log file output into /tmp so it can be
     # copied back when done.
 
-    echo "Creating remote launcher script."
+    echo "Creating remote launcher scripts."
 
     cat > $DATA_DIRECTORY/packnsend-remote << EOF
 #!/bin/sh
+. /data/docker/environ
 "\$@" > /data/packnsend.log 2>&1
 STATUS=\$?
 cp /data/packnsend.log /tmp/packnsend.log
 exit \`expr \$STATUS\`
 EOF
 
+    cat > $DATA_DIRECTORY/packnsend-bash << EOF
+#!/bin/sh
+. /data/docker/environ
+exec bash
+EOF
+
     # Shouldn't strictly need to do this as all files add to the image
     # by docker will have execute permissions anyway.
 
     chmod +x $DATA_DIRECTORY/packnsend-remote
+    chmod +x $DATA_DIRECTORY/packnsend-bash
 }
 
 create_docker_file()
@@ -108,8 +129,8 @@ create_docker_test_image()
     echo "Building test image."
 
     DATA_IMAGE_NAME="packnsend-`date '+%Y%m%d%H%M%S'`-$$"
-    (cd $DATA_DIRECTORY && docker build -rm -t $DATA_IMAGE_NAME .)
-    IMAGE_ID=$(docker inspect -format='{{.id}}' $DATA_IMAGE_NAME)
+    (cd $DATA_DIRECTORY && docker build --rm -t $DATA_IMAGE_NAME .)
+    IMAGE_ID=$(docker inspect --format='{{.id}}' $DATA_IMAGE_NAME)
 }
 
 set_docker_env_vars()
@@ -120,6 +141,12 @@ set_docker_env_vars()
     # Env vars looked for:
     #       NEW_RELIC_STARTUP_TIMEOUT
     #       NEW_RELIC_SHUTDOWN_TIMEOUT
+    #       NEW_RELIC_FAKE_COLLECTOR
+    #       NEW_RELIC_PROXY_SCHEME
+    #       NEW_RELIC_PROXY_HOST
+    #       NEW_RELIC_PROXY_PORT
+    #       NEW_RELIC_PROXY_USER
+    #       NEW_RELIC_PROXY_PASS
 
     DOCKER_ENV_VARS=""
 
@@ -132,6 +159,41 @@ set_docker_env_vars()
     if test -n "$NEW_RELIC_SHUTDOWN_TIMEOUT"
     then
         KEY_VAL="NEW_RELIC_SHUTDOWN_TIMEOUT=$NEW_RELIC_SHUTDOWN_TIMEOUT"
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
+    fi
+
+    if test -n "$NEW_RELIC_FAKE_COLLECTOR"
+    then
+        KEY_VAL="NEW_RELIC_FAKE_COLLECTOR=$NEW_RELIC_FAKE_COLLECTOR"
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
+    fi
+
+    if test -n "$NEW_RELIC_PROXY_SCHEME"
+    then
+        KEY_VAL="NEW_RELIC_PROXY_SCHEME=$NEW_RELIC_PROXY_SCHEME"
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
+    fi
+
+    if test -n "$NEW_RELIC_PROXY_HOST"
+    then
+        KEY_VAL="NEW_RELIC_PROXY_HOST=$NEW_RELIC_PROXY_HOST"
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
+    fi
+
+    if test -n "$NEW_RELIC_PROXY_PORT"
+    then
+        KEY_VAL="NEW_RELIC_PROXY_PORT=$NEW_RELIC_PROXY_PORT"
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
+    fi
+
+    if test -n "$NEW_RELIC_PROXY_USER"
+    then
+        KEY_VAL="NEW_RELIC_PROXY_USER=$NEW_RELIC_PROXY_USER"
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
+    fi
+    if test -n "$NEW_RELIC_PROXY_PASS"
+    then
+        KEY_VAL="NEW_RELIC_PROXY_PASS=$NEW_RELIC_PROXY_PASS"
         DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
     fi
 }
@@ -149,11 +211,6 @@ set_docker_extra_args()
     then
         DOCKER_EXTRA_ARGS="$DOCKER_EXTRA_ARGS $DOCKER_ENV_VARS"
     fi
-
-    # Always pass PACKNSEND_DB_USER, which is used to construct database
-    # settings. Both the postgresql and mysql containers use PACKNSEND_DB_USER
-    # as the database name, user, and password.
-    DOCKER_EXTRA_ARGS="$DOCKER_EXTRA_ARGS -e PACKNSEND_DB_USER=python_agent"
 }
 
 launch_remote_command()
@@ -185,11 +242,17 @@ launch_remote_command()
     echo "Starting test container and running command."
     echo "Command: $@"
 
-    CONTAINER_ID=$(docker run -d -name $DATA_IMAGE_NAME \
+    CONTAINER_ID=$(docker run -d --name $DATA_IMAGE_NAME \
         $DOCKER_EXTRA_ARGS \
-        -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
-        -link packnsend-memcached:memcached \
-        -link packnsend-postgresql-9.1:postgresql-9.1 \
+        -w /data/$WORK_DIRECTORY \
+        --link packnsend-gearmand:gearmand \
+        --link packnsend-memcached:memcached \
+        --link packnsend-postgresql:postgresql \
+        --link packnsend-mysql:mysql \
+        --link packnsend-devpi:devpi \
+        --link packnsend-squid:squid \
+        --link packnsend-mongodb:mongodb \
+        --link packnsend-redis:redis \
         $DATA_IMAGE_NAME /data/packnsend-remote "$@")
 
     STATUS=$(time docker wait $CONTAINER_ID)
@@ -211,12 +274,18 @@ launch_remote_command()
         echo "Starting interactive debug shell."
         echo
 
-        docker run -t -i -rm -u guest -volumes-from $CONTAINER_ID \
+        docker run -t -i --rm -u guest --volumes-from $CONTAINER_ID \
             $DOCKER_EXTRA_ARGS \
-            -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
-            -link packnsend-memcached:memcached \
-            -link packnsend-postgresql-9.1:postgresql-9.1 \
-            $TEST_IMAGE_NAME bash
+            -w /data/$WORK_DIRECTORY \
+            --link packnsend-gearmand:gearmand \
+            --link packnsend-memcached:memcached \
+            --link packnsend-postgresql:postgresql \
+            --link packnsend-mysql:mysql \
+            --link packnsend-devpi:devpi \
+            --link packnsend-squid:squid \
+            --link packnsend-mongodb:mongodb \
+            --link packnsend-redis:redis \
+            $TEST_IMAGE_NAME /data/packnsend-bash
     fi
 }
 
@@ -234,99 +303,272 @@ launch_remote_shell()
     echo "Starting test container and running interactive shell."
     echo
 
-    docker run -t -i -rm -name $DATA_IMAGE_NAME \
+    docker run -t -i --rm --name $DATA_IMAGE_NAME \
         $DOCKER_EXTRA_ARGS \
-        -w /data/$WORK_DIRECTORY -link packnsend-gearmand:gearmand \
-        -link packnsend-memcached:memcached \
-        -link packnsend-postgresql-9.1:postgresql-9.1 \
-        $DATA_IMAGE_NAME bash
+        -w /data/$WORK_DIRECTORY \
+        --link packnsend-gearmand:gearmand \
+        --link packnsend-memcached:memcached \
+        --link packnsend-postgresql:postgresql \
+        --link packnsend-mysql:mysql \
+        --link packnsend-devpi:devpi \
+        --link packnsend-squid:squid \
+        --link packnsend-mongodb:mongodb \
+        --link packnsend-redis:redis \
+        $DATA_IMAGE_NAME /data/packnsend-bash
 }
 
 create_docker_base_images()
 {
+    IMAGE_LIST=${@:-$ALL_IMAGES}
+    IMAGE_LIST=$(echo $IMAGE_LIST | sed 's/ \+/ /g')
+
     echo "Creating docker base images."
+    echo "$IMAGE_LIST"
 
-    echo "Image: python-base"
+    for IMG in $IMAGE_LIST
+    do
+        echo
+        echo "Create image: $IMG"
+        echo
 
-    (cd $ROOT_DIRECTORY; docker build -rm -t python-base docker/python-base)
+        (cd $ROOT_DIRECTORY; docker build --rm -t $IMG docker/$IMG)
 
-    echo "Image: memcached"
+    done
+}
 
-    (cd $ROOT_DIRECTORY; docker build -rm -t memcached docker/memcached)
+query_push_pull_authorization()
+{
+    # Determine if we are authorized to push and pull to the docker
+    # repository by attempting to pull a non-existent image and checking
+    # the HTTP status code in the response.
+    #
+    #       If we are authorized, status code is 404.
+    #       If we are not authorized, status code is 403.
+    #
+    # Set IS_AUTHORIZED_TO_PUSH_PULL to 'true' or 'false', depending on
+    # the response
 
-    echo "Image: gearmand"
+    DOCKER_REPO=quay.io
+    NONEXISTENT_IMAGE=$DOCKER_REPO/newrelic/python-agent-nonexistent
 
-    (cd $ROOT_DIRECTORY; docker build -rm -t gearmand docker/gearmand)
+    # Stderr will contain HTTP status code of response. Since we are pulling
+    # a non-existent image, we'll always get an error code of some sort.
 
-    echo "Image: postgresql-9.1"
+    PULL_RESPONSE=$(docker pull $NONEXISTENT_IMAGE 2>&1 >/dev/null)
 
-    (cd $ROOT_DIRECTORY; docker build -rm -t postgresql-9.1 docker/postgresql-9.1)
+    PULL_RESPONSE_HTTP_STATUS=$(echo "$PULL_RESPONSE" | \
+        sed "s/.*HTTP code://" | tr -d [:space:])
+
+    if test $PULL_RESPONSE_HTTP_STATUS == '404'
+    then
+        IS_AUTHORIZED_TO_PUSH_PULL='true'
+
+    elif test $PULL_RESPONSE_HTTP_STATUS == '403'
+    then
+        IS_AUTHORIZED_TO_PUSH_PULL='false'
+
+        echo "You are not authorized to push or pull to the docker repository."
+        echo "To become authorized, create an account, then run 'docker login'"
+        echo "to create a .dockercfg file."
+        echo
+
+    else
+        # Any HTTP response code except 403 or 404 most likely means push/pull
+        # won't work, so set to false and display response code.
+
+        IS_AUTHORIZED_TO_PUSH_PULL='false'
+
+        echo "Error connecting to Docker repository:"
+        echo "$PULL_RESPONSE"
+        echo
+    fi
+}
+
+push_docker_base_images()
+{
+    IMAGE_LIST=${@:-$ALL_IMAGES}
+    IMAGE_LIST=$(echo $IMAGE_LIST | sed 's/ \+/ /g')
+
+    echo "Push docker base images."
+    echo "$IMAGE_LIST"
+
+    query_push_pull_authorization
+
+    if test $IS_AUTHORIZED_TO_PUSH_PULL = 'true'
+    then
+
+
+        for IMG in $IMAGE_LIST
+        do
+
+            echo
+            echo "Push image: $IMG"
+            echo
+
+            docker tag $IMG quay.io/newrelic/python-agent-$IMG
+            docker push quay.io/newrelic/python-agent-$IMG
+
+        done
+
+    else
+        echo "Skipping docker push."
+        echo
+    fi
+}
+
+pull_docker_base_images()
+{
+    IMAGE_LIST=${@:-$ALL_IMAGES}
+    IMAGE_LIST=$(echo $IMAGE_LIST | sed 's/ \+/ /g')
+
+    echo "Pull docker base images."
+    echo "$IMAGE_LIST"
+
+    query_push_pull_authorization
+
+    if test $IS_AUTHORIZED_TO_PUSH_PULL = 'true'
+    then
+
+        IMAGE_LIST=${@:-$ALL_IMAGES}
+        IMAGE_LIST=$(echo $IMAGE_LIST | sed 's/ \+/ /g')
+
+        for IMG in $IMAGE_LIST
+        do
+
+            echo
+            echo "Pull image: $IMG"
+            echo
+
+            docker pull quay.io/newrelic/python-agent-$IMG
+            docker tag quay.io/newrelic/python-agent-$IMG $IMG
+
+        done
+
+    else
+        echo "Skipping docker pull."
+        echo
+    fi
 }
 
 start_application_services()
 {
+    IMAGE_LIST=${@:-$APP_SERVICE_IMAGES}
+    IMAGE_LIST=$(echo $IMAGE_LIST | sed 's/ \+/ /g')
+
     echo "Start application services."
 
-    echo "Application: memcached"
+    for IMG in $IMAGE_LIST
+    do
 
-    docker run -d -name packnsend-memcached memcached
+        echo
+        echo "Start: $IMG"
 
-    echo "Application: gearmand"
+        docker run -d --name packnsend-$IMG $IMG
 
-    docker run -d -name packnsend-gearmand gearmand
-
-    echo "Application: postgresql-9.1"
-
-    docker run -d -name packnsend-postgresql-9.1 postgresql-9.1
+    done
 }
 
 stop_application_services()
 {
+    IMAGE_LIST=${@:-$APP_SERVICE_IMAGES}
+    IMAGE_LIST=$(echo $IMAGE_LIST | sed 's/ \+/ /g')
+
+    echo
     echo "Stop application services."
 
-    echo "Application: gearmand"
+    for IMG in $IMAGE_LIST
+    do
 
-    docker stop -t=10 packnsend-gearmand
-    docker kill packnsend-gearmand
-    docker rm packnsend-gearmand
+        docker stop -t=0 packnsend-$IMG
 
-    echo "Application: memcached"
+    done
 
-    docker stop -t=10 packnsend-memcached
-    docker kill packnsend-memcached
-    docker rm packnsend-memcached
+    echo
+    echo "Kill application services."
 
-    echo "Application: postgresql-9.1"
+    for IMG in $IMAGE_LIST
+    do
 
-    docker stop -t=10 packnsend-postgresql-9.1
-    docker kill packnsend-postgresql-9.1
-    docker rm packnsend-postgresql-9.1
+        docker kill packnsend-$IMG
+
+    done
+
+    echo
+    echo "Remove application services."
+
+    for IMG in $IMAGE_LIST
+    do
+
+        docker rm packnsend-$IMG
+
+    done
+
 }
 
 delete_docker_base_images()
 {
+    IMAGE_LIST=${@:-$ALL_IMAGES}
+
     echo "Removing docker base images."
+    echo "$IMAGE_LIST"
 
-    echo "Image: gearmand"
+    for IMG in $IMAGE_LIST
+    do
+        echo
+        echo "Remove image: $IMG"
+        echo
 
-    docker rmi gearmand
+        docker rmi $IMG
 
-    echo "Image: memcached"
+    done
+}
 
-    docker rmi memcached
+print_usage()
+{
+    echo
+    echo "`basename $0`: COMMAND [arg...]"
+    echo
+    echo "Run Commands:"
+    echo "    run      Run command on test container."
+    echo "    run -i   Run command interactively."
+    echo "    shell    Launch a shell on test container."
+    echo
+    echo "Management Commands:"
+    echo
+    echo "To operate on a subset of images/containers, pass a list"
+    echo "of space-separated names of images as arguments to the"
+    echo "management commands. Otherwise, management commands operate"
+    echo "on all images/containers."
+    echo
+    echo "    init     Pull images, if authorized, else build."
+    echo "    build    Build base images."
+    echo "    push     Push base images."
+    echo "    pull     Pull base images."
+    echo "    start    Start base containers."
+    echo "    stop     Stop base containers."
+    echo "    cleanup  Delete base images."
+    echo
+    echo "Help commands:"
+    echo "    list     List base images."
+    echo "    help     Print help message."
+    echo
+}
 
-    echo "Image: postgresql-9.1"
+list_docker_base_images()
+{
+    echo
+    echo "Available base images:"
+    echo
 
-    docker rmi postgresql-9.1
-
-    echo "Image: python-base"
-
-    docker rmi python-base
+    for IMG in $ALL_IMAGES
+    do
+        echo "    $IMG"
+    done
 }
 
 if test $# -lt 1
 then
-    echo "Usage: `basename $0`: COMMAND [arg...]"
+    print_usage
     exit 1
 fi
 
@@ -338,7 +580,7 @@ case "$COMMAND" in
     run)
         create_work_directory
         export_git_repository
-        create_remote_launcher
+        create_remote_launchers
         create_docker_file
         create_docker_test_image
         launch_remote_command "$@"
@@ -349,7 +591,7 @@ case "$COMMAND" in
     shell)
         create_work_directory
         export_git_repository
-        create_remote_launcher
+        create_remote_launchers
         create_docker_file
         create_docker_test_image
         launch_remote_shell
@@ -358,23 +600,47 @@ case "$COMMAND" in
         ;;
 
     init)
-        create_docker_base_images
+        pull_docker_base_images "$@"
+        if test $IS_AUTHORIZED_TO_PUSH_PULL = 'false'
+        then
+            create_docker_base_images "$@"
+        fi
+        ;;
+
+    build)
+        create_docker_base_images "$@"
+        ;;
+
+    push)
+        push_docker_base_images "$@"
+        ;;
+
+    pull)
+        pull_docker_base_images "$@"
         ;;
 
     start)
-        start_application_services
+        start_application_services "$@"
         ;;
 
     stop)
-        stop_application_services
+        stop_application_services "$@"
         ;;
 
     cleanup)
-        delete_docker_base_images
+        delete_docker_base_images "$@"
+        ;;
+
+    list)
+        list_docker_base_images
+        ;;
+
+    help)
+        print_usage
         ;;
 
     *)
-        echo "`basename $0`: Unknown command $COMMAND"
+        print_usage
         exit 1
         ;;
 esac

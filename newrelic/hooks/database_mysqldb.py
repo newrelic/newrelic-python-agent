@@ -15,7 +15,7 @@ class ConnectionWrapper(DBAPI2ConnectionWrapper):
         # The __enter__() method of original connection object returns
         # a new cursor instance for use with 'as' assignment. We need
         # to wrap that in a cursor wrapper otherwise we will not track
-        # and queries done via it.
+        # any queries done via it.
 
         return self.__cursor_wrapper__(cursor, self._nr_dbapi2_module,
                 self._nr_connect_params, None)

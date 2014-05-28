@@ -232,7 +232,7 @@ class TransactionNode(_TransactionNode):
                     message=error.message, type=error.type,
                     parameters=params)
 
-    def trace_node(self, stats, root):
+    def trace_node(self, stats, root, connections):
 
         name = self.path
 
@@ -246,7 +246,7 @@ class TransactionNode(_TransactionNode):
         for child in self.children:
             if root.trace_node_count > root.trace_node_limit:
                 break
-            children.append(child.trace_node(stats, root))
+            children.append(child.trace_node(stats, root, connections))
 
         params = {}
 
@@ -255,7 +255,7 @@ class TransactionNode(_TransactionNode):
                 label=None)
 
     @internal_trace('Supportability/TransactionNode/Calls/transaction_trace')
-    def transaction_trace(self, stats, limit):
+    def transaction_trace(self, stats, limit, connections):
 
         self.trace_node_count = 0
         self.trace_node_limit = limit
@@ -264,7 +264,8 @@ class TransactionNode(_TransactionNode):
         request_params = self.request_params or None
         custom_params = self.custom_params or None
         parameter_groups = self.parameter_groups or None
-        trace_node = self.trace_node(stats, self)
+
+        trace_node = self.trace_node(stats, self, connections)
 
         # Add in special CPU time value for UI to display CPU burn.
 

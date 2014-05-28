@@ -96,7 +96,7 @@ class ExternalNode(_ExternalNode):
             yield TimeMetric(name=name, scope='', duration=self.duration,
                     exclusive=self.exclusive)
 
-    def trace_node(self, stats, root):
+    def trace_node(self, stats, root, connections):
 
         hostname = self.details.hostname or 'unknown'
 

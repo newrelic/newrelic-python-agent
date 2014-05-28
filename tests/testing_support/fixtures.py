@@ -6,13 +6,83 @@ import pwd
 
 from newrelic.agent import (initialize, register_application,
         global_settings, shutdown_agent, application as application_instance,
-        transient_function_wrapper, function_wrapper, application_settings)
+        transient_function_wrapper, function_wrapper, application_settings,
+        wrap_function_wrapper)
 
 from newrelic.core.config import (apply_config_setting,
         create_settings_snapshot)
 
 from newrelic.network.addresses import proxy_details
 from newrelic.packages import requests
+
+_logger = logging.getLogger('newrelic.tests')
+
+def _environ_as_bool(name, default=False):
+    flag = os.environ.get(name, default)
+    if default is None or default:
+        try:
+            flag = not flag.lower() in ['off', 'false', '0']
+        except AttributeError:
+            pass
+    else:
+        try:
+            flag = flag.lower() in ['on', 'true', '1']
+        except AttributeError:
+            pass
+    return flag
+
+_fake_collector_responses = {
+    'get_redirect_host': 'fake-collector.newrelic.com',
+
+    'connect': {
+        'js_agent_loader': '<!-- NREUM -->',
+        'js_agent_file': 'js-agent.newrelic.com/nr-0.min.js',
+        'browser_key': '1234567890',
+        'browser_monitoring.loader_version': '0',
+        'beacon': 'fake-beacon.newrelic.com',
+        'error_beacon': 'fake-jserror.newrelic.com',
+        'apdex_t': 0.5,
+        'encoding_key': 'd67afc830dab717fd163bfcb0b8b88423e9a1a3b',
+        'agent_run_id': 1234567,
+        'product_level': 50,
+        'trusted_account_ids':[12345],
+        'url_rules': [],
+        'collect_errors': True,
+        'cross_process_id': '12345#67890',
+        'messages': [{'message': 'Reporting to fake collector',
+            'level': 'INFO' }],
+        'sampling_rate': 0,
+        'collect_traces': True,
+        'data_report_period': 60
+    },
+
+    'metric_data': [],
+
+    'get_agent_commands': [],
+
+    'error_data': None,
+
+    'transaction_sample_data': None,
+
+    'sql_trace_data': None,
+
+    'analytic_event_data': None,
+
+    'shutdown': None,
+}
+
+def fake_collector_wrapper(wrapped, instance, args, kwargs):
+    def _bind_params(session, url, method, license_key, agent_run_id=None,
+            payload=()):
+        return session, url, method, license_key, agent_run_id, payload
+
+    session, url, method, license_key, agent_run_id, payload = _bind_params(
+            *args, **kwargs)
+
+    if method in _fake_collector_responses:
+        return _fake_collector_responses[method]
+
+    return wrapped(*args, **kwargs)
 
 def collector_agent_registration_fixture(app_name=None, default_settings={}):
     @pytest.fixture(scope='session')
@@ -84,6 +154,16 @@ def collector_agent_registration_fixture(app_name=None, default_settings={}):
 
         initialize(log_file=log_file, log_level=log_level, ignore_errors=False)
 
+        # Determine if should be using an internal fake local
+        # collector for the test.
+
+        use_fake_collector = _environ_as_bool(
+                'NEW_RELIC_FAKE_COLLECTOR', False)
+
+        if use_fake_collector:
+            wrap_function_wrapper('newrelic.core.data_collector',
+                    'send_request', fake_collector_wrapper)
+
         # Attempt to record deployment marker for test. We don't
         # care if it fails.
 
@@ -125,8 +205,14 @@ def collector_agent_registration_fixture(app_name=None, default_settings={}):
 
         headers['X-API-Key'] = settings.api_key
 
-        r = requests.post(url, proxies=proxies, headers=headers,
-                timeout=timeout, data=data)
+        if not use_fake_collector:
+            try:
+                _logger.debug("Record deployment marker at %s" % url)
+                r = requests.post(url, proxies=proxies, headers=headers,
+                        timeout=timeout, data=data)
+            except Exception:
+                _logger.exception("Unable to record deployment marker.")
+                pass
 
         # Force registration of the application.
 
@@ -210,8 +296,8 @@ def validate_transaction_errors(errors=[]):
             expected = sorted(errors)
             captured = sorted([e.type for e in transaction.errors])
 
-        assert expected == captured, 'expected=%r, captured=%r' % (
-                expected, captured)
+        assert expected == captured, 'expected=%r, captured=%r, errors=%r' % (
+                expected, captured, transaction.errors)
 
         return wrapped(*args, **kwargs)
 
@@ -234,17 +320,18 @@ def validate_custom_parameters(custom_params=[]):
 
     return _validate_custom_parameters
 
-def validate_database_trace_inputs(execute_params_type):
+def validate_database_trace_inputs(sql_parameters_type):
     @transient_function_wrapper('newrelic.api.database_trace',
             'DatabaseTrace.__init__')
     def _validate_database_trace_inputs(wrapped, instance, args, kwargs):
         def _bind_params(transaction, sql, dbapi2_module=None,
-                connect_params=None, cursor_params=None, execute_params=None):
+                connect_params=None, cursor_params=None, sql_parameters=None,
+                execute_params=None):
             return (transaction, sql, dbapi2_module, connect_params,
-                    cursor_params, execute_params)
+                    cursor_params, sql_parameters, execute_params)
 
-        (transaction, sql, dbapi2_module, connect_params,
-                cursor_params, execute_params) = _bind_params(*args, **kwargs)
+        (transaction, sql, dbapi2_module, connect_params, cursor_params,
+                sql_parameters, execute_params) = _bind_params(*args, **kwargs)
 
         assert hasattr(dbapi2_module, 'connect')
 
@@ -262,8 +349,13 @@ def validate_database_trace_inputs(execute_params_type):
             assert isinstance(cursor_params[0], tuple)
             assert isinstance(cursor_params[1], dict)
 
-        assert execute_params is None or isinstance(
-                execute_params, execute_params_type)
+        assert sql_parameters is None or isinstance(
+                sql_parameters, sql_parameters_type)
+
+        if execute_params is not None:
+            assert len(execute_params) == 2
+            assert isinstance(execute_params[0], tuple)
+            assert isinstance(execute_params[1], dict)
 
         return wrapped(*args, **kwargs)
 

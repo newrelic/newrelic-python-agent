@@ -1,7 +1,8 @@
 Using docker for testing
 ========================
 
-This file describes how to perform testing of the agent using docker.
+This file describes how to perform testing of the agent using docker
+and a test runner/management script called "packnsend".
 
 Initial setup of docker
 -----------------------
@@ -71,7 +72,7 @@ Before using it or the 'packnsend' script, you need to set and export
 DOCKER_HOST environment variable to 'localhost'.
 
     export DOCKER_HOST="localhost"
-    
+
 If you had to override the docker service port however, include the port
 as part of the DOCKER_HOST environment variable:
 
@@ -83,6 +84,90 @@ To test it works run:
 
     docker version
 
+Setting up a Quay.io Account
+----------------------------
+
+Quay.io is a private docker repository where we store the docker images that
+we use for testing. Only authorized quay.io users have access to the images.
+Since, pulling the images from quay.io is typically faster than building them
+from the Dockerfiles, it's worth setting up an account.
+
+Account setup steps:
+
+1. Create a quay.io account at https://quay.io. Use your newrelic.com email
+address.
+
+2. Have someone with admin rights on the quay.io account add you to the
+python team on quay.io, which is a sub-group of the newrelic organization.
+(Currently, Tom Offermann is the admin for the Python team.) You should get
+permissions to pull from the repo, push to the repo, and create new repos.
+
+3. Login to your quay.io account from the command line:
+
+    docker login quay.io
+
+You will be prompted to enter your quay.io username, password, and email
+address. Once you do that, you will be logged in, and a .dockercfg file
+will be created and installed automatically for you. This file stores your
+login credentials, so you do not have to run `docker login` every time you
+want to access the images hosted on quay.io.
+
+Using Quay.io on Jenkins
+------------------------
+
+There is a special "Robot account" set up for use by Jenkins to pull images
+from quay.io. The account name is 'newrelic+pythonagentbot'.
+
+To get the the login credentials for the Robot account, someone with admin
+rights on the quay.io account needs to download the .dockercfg file from the
+quay.io web site.
+
+Using Packnsend
+===============
+
+The "packnsend" script simplifies the management of a set of base docker
+image and the running of tests in a docker container. The workflow consists
+of:
+
+1. Pull or build the base images.
+2. Start the application services in separate docker containers.
+3. Run the test in a test container that links to the application services.
+4. Stop the application services.
+
+Packnsend commands
+------------------
+
+Packnsend comes with a help command:
+
+    $ packnsend help
+
+    packnsend: COMMAND [arg...]
+
+    Run Commands:
+        run      Run command on test container.
+        run -i   Run command interactively
+        shell    Launch a shell on test container.
+
+    Management Commands:
+
+    To operate on a subset of images/containers, pass a list of
+    space-separated names of images to the management commands.
+    Otherwise, they operate on all images/containers.
+
+        init     Pull images, if authorized, else build.
+        build    Build base images.
+        push     Push base images.
+        pull     Pull base images.
+        start    Start base containers.
+        stop     Stop base containers.
+        cleanup  Delete base images.
+
+    Help commands:
+        list     List available base images.
+        help     Print help message.
+
+The various packnsend commands are described in more detail below.
+
 Setting up base images
 ----------------------
 
@@ -91,7 +176,51 @@ the 'init' command:
 
     packnsend init
 
-This will take a while.
+If you have a quay.io account set up, this command will pull the images from
+the private docker image repository. Otherwise, this command will build the
+images from the Dockerfiles.
+
+In either case, this will take awhile.
+
+Building the images
+-------------------
+
+If you know you want to build the images from the Dockerfiles, and not pull
+them, you can run `packnsend` with the `build` command:
+
+    packnsend build
+
+The build command accepts a image names as arguments, if you want to build a
+subset of images:
+
+    packnsend build memcached mysql
+
+Pulling the images from Quay.io
+-------------------------------
+
+To pull all of the images from quay.io (assuming you have set up your quay.io
+account), use the `pull` command:
+
+    packnsend pull
+
+Pulling a subset of images is possible:
+
+    packnsend pull squid
+
+Pulling the images is typically faster than building them.
+
+Pushing the images to Quay.io
+-----------------------------
+
+To update the images hosted in the quay.io repository, use the `push` command.
+(Again, this requires that you have set up your quay.io account.) This command
+will push all images to quay.io:
+
+    packnsend push
+
+To push a subset of images:
+
+    packnsend push python-base postgresql
 
 Running a test in docker
 ------------------------
@@ -124,10 +253,44 @@ changes during testing.
 The command when run will be from the same relative directory within the
 source code as you were in when you can the 'packnsend' command.
 
-If a test has been failing, you can launch into a shell with the results of
-running the test using the '-i' option.
+Passing environment variables
+-----------------------------
+
+Certain variables that are present in your current environment will
+be passed as environment variables to the test docker instance. This
+allows you to configure selected settings when you run a test.
+
+For example, to change `settings.startup_timeout`, you should set the
+`NEW_RELIC_STARTUP_TIMEOUT` environment variable:
+
+    export NEW_RELIC_STARTUP_TIMEOUT=60
+    packnsend run tox -c tests/database_psycopg2/tox.ini
+
+Only the following environment variables are passed from your environment
+to the test docker instance:
+
+    NEW_RELIC_STARTUP_TIMEOUT
+    NEW_RELIC_SHUTDOWN_TIMEOUT
+    NEW_RELIC_FAKE_COLLECTOR
+    NEW_RELIC_PROXY_HOST
+    NEW_RELIC_PROXY_PORT
+    NEW_RELIC_PROXY_USER
+    NEW_RELIC_PROXY_PASS
+
+Launching a shell in docker
+---------------------------
+
+There are two different options for launching a shell in a test docker
+instance.
+
+1. Connect after a test has run.
+
+For instance, if a test has been failing, you can launch into a shell
+with the results of running the test using the '-i' option.
 
     packnsend run -i tox -c tests/database_sqlite/tox.ini
+
+2. Connect without running any commands.
 
 If you don't want to run a test and simply want a shell, use:
 
@@ -136,19 +299,49 @@ If you don't want to run a test and simply want a shell, use:
 In all cases when a command or shell is run up in the test container, it
 will be done as the UNIX user 'guest'.
 
+Cleaning up containers
+----------------------
+
 After any command, the container and any temporary images will be cleaned
-up and deleted so that the docker service doesn't fill up with garbage.
+up and deleted automatically, so that the docker service doesn't fill up
+with garbage.
+
+Stopping application services
+-----------------------------
 
 When done testing, the application services can be shutdown by running:
 
     packnsend stop
 
-Cleaning up images
-------------------
+To stop only some of the services, pass the image names to the stop command:
 
-If the base images have been changed and need updating, you can remove the
-old ones by running:
+    packnsend stop redis mongodb
+
+Updating images
+---------------
+
+If the base images have been changed, the way to update them is to remove the
+old ones, and then create them anew.
+
+Remove base images:
 
     packnsend cleanup
 
-You can then run 'init' again to recreate them.
+Or, Remove a subset of images:
+
+    packnsend cleanup squid
+
+Create base images:
+
+    packnsend init
+
+Listing images
+--------------
+
+The list command shows all base images on which packnsend can operate.
+
+It is *NOT* a list of images that exist in the local docker repository.
+Instead, it is a list of all images that packnsend knows how to pull, or
+build, or push, etc.
+
+    packnsend list

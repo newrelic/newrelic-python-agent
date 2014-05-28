@@ -34,7 +34,7 @@ class MemcacheNode(_MemcacheNode):
         yield TimeMetric(name=name, scope=root.path,
                 duration=self.duration, exclusive=self.exclusive)
 
-    def trace_node(self, stats, root):
+    def trace_node(self, stats, root, connections):
 
         name = 'Memcache/%s' % self.command
 

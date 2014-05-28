@@ -6,18 +6,14 @@ import os
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_database_trace_inputs)
 
+from testing_support.settings import mysql_settings
+
 from newrelic.agent import (background_task, current_transaction,
     transient_function_wrapper)
 
 from newrelic.common.object_wrapper import resolve_path
 
-USER = pwd.getpwuid(os.getuid()).pw_name
-
-DATABASE_NAME = os.environ.get('TDDIUM_DB_MYSQL_NAME', USER)
-DATABASE_USER = os.environ.get('TDDIUM_DB_MYSQL_USER', USER)
-DATABASE_PASSWORD = os.environ.get('TDDIUM_DB_MYSQL_PASSWORD', '')
-DATABASE_HOST = os.environ.get('TDDIUM_DB_MYSQL_HOST', 'localhost')
-DATABASE_PORT = int(os.environ.get('TDDIUM_DB_MYSQL_PORT', '3306'))
+DB_SETTINGS = mysql_settings()
 
 _test_execute_via_cursor_scoped_metrics = [
         ('Function/mysql.connector:connect', 1),
@@ -28,8 +24,8 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Database/other/sql', 5)]
 
 _test_execute_via_cursor_rollup_metrics = [
-        ('Database/all', 9),
-        ('Database/allOther', 9),
+        ('Database/all', 10),
+        ('Database/allOther', 10),
         ('Database/select', 1),
         ('Database/database_mysql/select', 1),
         ('Database/insert', 1),
@@ -45,11 +41,12 @@ _test_execute_via_cursor_rollup_metrics = [
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
         rollup_metrics=_test_execute_via_cursor_rollup_metrics,
         background_task=True)
-@validate_database_trace_inputs(execute_params_type=dict)
+@validate_database_trace_inputs(sql_parameters_type=dict)
 @background_task()
 def test_execute_via_cursor():
-    connection = mysql.connector.connect(db=DATABASE_NAME, user=DATABASE_USER,
-            passwd=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT)
+    connection = mysql.connector.connect(db=DB_SETTINGS['name'],
+            user=DB_SETTINGS['user'], passwd=DB_SETTINGS['password'],
+            host=DB_SETTINGS['host'], port=DB_SETTINGS['port'])
 
     cursor = connection.cursor()
 
@@ -85,8 +82,8 @@ _test_connect_using_alias_scoped_metrics = [
         ('Database/other/sql', 5)]
 
 _test_connect_using_alias_rollup_metrics = [
-        ('Database/all', 9),
-        ('Database/allOther', 9),
+        ('Database/all', 10),
+        ('Database/allOther', 10),
         ('Database/select', 1),
         ('Database/database_mysql/select', 1),
         ('Database/insert', 1),
@@ -102,11 +99,12 @@ _test_connect_using_alias_rollup_metrics = [
         scoped_metrics=_test_connect_using_alias_scoped_metrics,
         rollup_metrics=_test_connect_using_alias_rollup_metrics,
         background_task=True)
-@validate_database_trace_inputs(execute_params_type=dict)
+@validate_database_trace_inputs(sql_parameters_type=dict)
 @background_task()
 def test_connect_using_alias():
-    connection = mysql.connector.Connect(db=DATABASE_NAME, user=DATABASE_USER,
-            passwd=DATABASE_PASSWORD, host=DATABASE_HOST, port=DATABASE_PORT)
+    connection = mysql.connector.connect(db=DB_SETTINGS['name'],
+            user=DB_SETTINGS['user'], passwd=DB_SETTINGS['password'],
+            host=DB_SETTINGS['host'], port=DB_SETTINGS['port'])
 
     cursor = connection.cursor()
 

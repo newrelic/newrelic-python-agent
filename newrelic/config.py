@@ -375,6 +375,8 @@ def _process_configuration(section):
                      'get', None)
     _process_setting(section, 'cross_application_tracer.enabled',
                      'getboolean', None)
+    _process_setting(section, 'process_host.display_name',
+                     'get', None)
 
 # Loading of configuration from specified file and for specified
 # deployment environment. Can also indicate whether configuration

@@ -784,14 +784,21 @@ def create_session(license_key, app_name, linked_applications,
 
         local_config = {}
 
+        local_config['host'] = socket.gethostname()
         local_config['pid'] = os.getpid()
         local_config['language'] = 'python'
-        local_config['host'] = socket.gethostname()
         local_config['app_name'] = app_names
         local_config['identifier'] = ','.join(app_names)
         local_config['agent_version'] = version
         local_config['environment'] = environment
         local_config['settings'] = settings
+
+        display_name = settings['process_host.display_name']
+
+        if display_name is None:
+            local_config['display_name'] = local_config['host']
+        else:
+            local_config['display_name'] = display_name
 
         payload = (local_config,)
 

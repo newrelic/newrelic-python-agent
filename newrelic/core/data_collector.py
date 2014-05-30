@@ -765,11 +765,10 @@ def apply_high_security_mode(local_settings, server_settings):
 
                 del server_settings['agent_config'][setting]
 
-                _logger.debug("Ignoring server-side setting for {name}, "
+                _logger.info("Ignoring server-side setting for %s, "
                               "because High Security Mode has been "
-                              "activated. Using local setting: {name} = "
-                              "{value}.".format(name=setting,
-                                                value=local_settings[setting]))
+                              "activated. Using local setting: %s = %s.",
+                              setting, setting, local_settings[setting])
 
     return server_settings
 
@@ -887,7 +886,7 @@ def create_session(license_key, app_name, linked_applications,
                 redirect_host, session.agent_run_id, duration)
 
         if getattr(application_config, 'high_security', False):
-            _logger.info('High security mode is being applied to all '
+            _logger.info('High Security Mode is being applied to all '
                     'communications between the agent and the data '
                     'collector for this session.')
 

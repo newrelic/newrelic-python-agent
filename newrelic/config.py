@@ -420,34 +420,27 @@ def _process_high_security_mode():
     # set to be secure, even if that requires overriding a setting that
     # has been individually configured as insecure.
 
-    log_template = ("Overriding setting for '{name}' because High "
-                    "Security Mode has been activated. High Security "
-                    "Mode requires that the setting for '{name}' be "
-                    "secure. The original setting for '{name}' was "
-                    "'{orig_setting}'. The new setting for '{name}' "
-                    "is '{secure_setting}'.")
+    log_template = ("Overriding setting for '%s' because High "
+                    "Security Mode has been activated. The original "
+                    "setting was '%s'. The new setting is '%s'.")
 
     if _settings.high_security:
 
         if not _settings.ssl:
 
             _settings.ssl = True
-            _logger.info(log_template.format(name='ssl',
-                    orig_setting=False, secure_setting=True))
+            _logger.info(log_template, 'ssl', False, True)
 
         if _settings.capture_params:
 
             _settings.capture_params = False
-            _logger.info(log_template.format(name='capture_params',
-                    orig_setting=True, secure_setting=False))
+            _logger.info(log_template, 'capture_params', True, False)
 
         if _settings.transaction_tracer.record_sql == 'raw':
 
             _settings.transaction_tracer.record_sql = 'obfuscated'
-            _logger.info(log_template.format(
-                    name='transaction_tracer.record_sql',
-                    orig_setting='raw',
-                    secure_setting='obfuscated'))
+            _logger.info(log_template, 'transaction_tracer.record_sql',
+                'raw', 'obfuscated')
 
 def _load_configuration(config_file=None, environment=None,
         ignore_errors=True, log_file=None, log_level=None):

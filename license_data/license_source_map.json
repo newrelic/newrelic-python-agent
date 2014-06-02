@@ -713,6 +713,12 @@
             "New Relic"
         ]
     },
+    "newrelic/core/tests/test_data_collector.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/core/tests/test_database_utils.py": {
         "hash": "n/a",
         "libraries": [
@@ -1740,6 +1746,12 @@
         ]
     },
     "newrelic/tests/test_cases.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/tests/test_config.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

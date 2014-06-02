@@ -415,32 +415,30 @@ def _process_app_name_setting():
 
     _settings.app_name = name
 
-def _process_high_security_mode():
+def apply_local_high_security_mode_setting(settings):
     # When High Security Mode is activated, certain settings must be
     # set to be secure, even if that requires overriding a setting that
     # has been individually configured as insecure.
 
-    log_template = ("Overriding setting for '%s' because High "
-                    "Security Mode has been activated. The original "
-                    "setting was '%s'. The new setting is '%s'.")
+    log_template = ('Overriding setting for %r because High '
+                    'Security Mode has been activated. The original '
+                    'setting was %r. The new setting is %r.')
 
-    if _settings.high_security:
+    if not settings.ssl:
+        settings.ssl = True
+        _logger.info(log_template, 'ssl', settings.ssl, True)
 
-        if not _settings.ssl:
+    if settings.capture_params:
+        settings.capture_params = False
+        _logger.info(log_template, 'capture_params',
+                settings.capture_params, False)
 
-            _settings.ssl = True
-            _logger.info(log_template, 'ssl', False, True)
+    if settings.transaction_tracer.record_sql == 'raw':
+        settings.transaction_tracer.record_sql = 'obfuscated'
+        _logger.info(log_template, 'transaction_tracer.record_sql',
+            'raw', 'obfuscated')
 
-        if _settings.capture_params:
-
-            _settings.capture_params = False
-            _logger.info(log_template, 'capture_params', True, False)
-
-        if _settings.transaction_tracer.record_sql == 'raw':
-
-            _settings.transaction_tracer.record_sql = 'obfuscated'
-            _logger.info(log_template, 'transaction_tracer.record_sql',
-                'raw', 'obfuscated')
+    return settings
 
 def _load_configuration(config_file=None, environment=None,
         ignore_errors=True, log_file=None, log_level=None):
@@ -559,9 +557,11 @@ def _load_configuration(config_file=None, environment=None,
     for option, value in _cache_object:
         _logger.debug("agent config %s = %s" % (option, repr(value)))
 
-    # Apply High Security Mode
+    # Apply High Security Mode policy if enabled in local agent
+    # configuration file.
 
-    _process_high_security_mode()
+    if _settings.high_security:
+        apply_local_high_security_mode_setting(_settings)
 
     # Look for an app_name setting which is actually a semi colon
     # list of application names and adjust app_name setting and

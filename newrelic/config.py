@@ -422,6 +422,9 @@ def apply_local_high_security_mode_setting(settings):
     # set to be secure, even if that requires overriding a setting that
     # has been individually configured as insecure.
 
+    if not settings.high_security:
+        return settings
+
     log_template = ('Overriding setting for %r because High '
                     'Security Mode has been activated. The original '
                     'setting was %r. The new setting is %r.')
@@ -562,8 +565,7 @@ def _load_configuration(config_file=None, environment=None,
     # Apply High Security Mode policy if enabled in local agent
     # configuration file.
 
-    if _settings.high_security:
-        apply_local_high_security_mode_setting(_settings)
+    apply_local_high_security_mode_setting(_settings)
 
     # Look for an app_name setting which is actually a semi colon
     # list of application names and adjust app_name setting and

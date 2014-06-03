@@ -733,42 +733,38 @@ class ApplicationSession(object):
                 'analytic_event_data', self.license_key, self.agent_run_id,
                 payload)
 
-def apply_high_security_mode(local_settings, server_settings):
-    """Apply High Security Mode to server_settings.
+def apply_high_security_mode_fixups(local_settings, server_settings):
+    # When High Security Mode is True in local_settings, then all
+    # security related settings should be removed from server_settings.
+    # That way, when the local and server side configuration settings
+    # are merged, the local security settings will not get overwritten
+    # by the server side configuration settings.
 
-    When High Security Mode is True in local_settings, then all
-    security related settings should be removed from server_settings.
-    That way, when the local and server-side settings are merged, the
-    local security settings will not get overwritten by the server-side
-    settings.
+    if not local_settings['high_security']:
+        return server_settings
 
-    Returns updated server_settings.
+    # Remove top-level 'high_security' setting. This will only exist
+    # if it had been enabled server side.
 
-    """
+    if 'high_security' in server_settings:
+        del server_settings['high_security']
 
-    if local_settings['high_security']:
+    # Remove individual security settings from agent server side
+    # configuration settings. The agent_config should always exist.
 
-        # Remove top-level 'high_security' setting
+    security_settings = ('capture_params',
+            'transaction_tracer.record_sql')
 
-        if 'high_security' in server_settings:
-            del server_settings['high_security']
+    agent_config = server_settings['agent_config']
 
-        # Remove individual security settings
+    for setting in security_settings:
+        if setting in agent_config:
+            del server_settings['agent_config'][setting]
 
-        security_settings = [
-            'ssl',
-            'capture_params',
-            'transaction_tracer.record_sql']
-
-        for setting in security_settings:
-            if setting in server_settings.get('agent_config', {}):
-
-                del server_settings['agent_config'][setting]
-
-                _logger.info("Ignoring server-side setting for %s, "
-                              "because High Security Mode has been "
-                              "activated. Using local setting: %s = %s.",
-                              setting, setting, local_settings[setting])
+            _logger.info('Ignoring server side configuration setting for '
+                    '%r, because High Security Mode has been activated. '
+                    'Using local setting %s=%r.', setting, setting,
+                    local_settings[setting])
 
     return server_settings
 
@@ -850,7 +846,8 @@ def create_session(license_key, app_name, linked_applications,
         # settings won't get overwritten when we overlay the server settings
         # on top of them.
 
-        server_config = apply_high_security_mode(settings, server_config)
+        server_config = apply_high_security_mode_fixups(settings,
+                server_config)
 
         # The agent configuration for the application in constructed
         # by taking a snapshot of the locally constructed configuration

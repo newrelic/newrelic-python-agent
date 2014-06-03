@@ -1751,12 +1751,6 @@
             "New Relic"
         ]
     },
-    "newrelic/tests/test_config.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "requirements.txt": {
         "hash": "n/a",
         "libraries": [

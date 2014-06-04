@@ -1,6 +1,12 @@
 import os
 import pytest
 
+from testing_support.fixtures import (override_application_settings,
+    validate_custom_parameters, validate_transaction_errors)
+
+from newrelic.agent import (background_task, add_custom_parameter,
+    record_exception)
+
 from newrelic.core.config import (global_settings, Settings,
     apply_config_setting)
 
@@ -203,3 +209,47 @@ def test_remote_config_hsm_fixups_enabled(local_settings, server_settings):
 
     assert u'capture_params' not in agent_config
     assert u'transaction_tracer.record_sql' not in agent_config
+
+_test_transaction_settings_hsm_disabled = {
+    'high_security': False }
+
+_test_transaction_settings_hsm_enabled = {
+    'high_security': True }
+
+@override_application_settings(_test_transaction_settings_hsm_disabled)
+@validate_custom_parameters(required_params=[('key', 'value')])
+@background_task()
+def test_other_transaction_hsm_custom_parameters_disabled():
+    add_custom_parameter('key', 'value')
+
+@override_application_settings(_test_transaction_settings_hsm_enabled)
+@validate_custom_parameters(forgone_params=[('key', 'value')])
+@background_task()
+def test_other_transaction_hsm_custom_parameters_enabled():
+    add_custom_parameter('key', 'value')
+
+class TestException(Exception): pass
+
+_test_exception_name = '%s:%s' % (__name__, TestException.__name__)
+
+@override_application_settings(_test_transaction_settings_hsm_disabled)
+@validate_transaction_errors(errors=[_test_exception_name],
+    required_params=[('key-1', 'value-1'), ('key-2', 'value-2')])
+@background_task()
+def test_other_transaction_hsm_error_parameters_disabled():
+    add_custom_parameter('key-1', 'value-1')
+    try:
+        raise TestException()
+    except Exception:
+        record_exception(params={'key-2': 'value-2'})
+
+@override_application_settings(_test_transaction_settings_hsm_enabled)
+@validate_transaction_errors(errors=[_test_exception_name],
+    forgone_params=[('key-1', 'value-1'), ('key-2', 'value-2')])
+@background_task()
+def test_other_transaction_hsm_error_parameters_enabled():
+    add_custom_parameter('key-1', 'value-1')
+    try:
+        raise TestException()
+    except Exception:
+        record_exception(params={'key-2': 'value-2'})

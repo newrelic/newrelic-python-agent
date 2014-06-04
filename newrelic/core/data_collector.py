@@ -733,6 +733,41 @@ class ApplicationSession(object):
                 'analytic_event_data', self.license_key, self.agent_run_id,
                 payload)
 
+def apply_high_security_mode_fixups(local_settings, server_settings):
+    # When High Security Mode is True in local_settings, then all
+    # security related settings should be removed from server_settings.
+    # That way, when the local and server side configuration settings
+    # are merged, the local security settings will not get overwritten
+    # by the server side configuration settings.
+
+    if not local_settings['high_security']:
+        return server_settings
+
+    # Remove top-level 'high_security' setting. This will only exist
+    # if it had been enabled server side.
+
+    if 'high_security' in server_settings:
+        del server_settings['high_security']
+
+    # Remove individual security settings from agent server side
+    # configuration settings. The agent_config should always exist.
+
+    security_settings = ('capture_params',
+            'transaction_tracer.record_sql')
+
+    agent_config = server_settings['agent_config']
+
+    for setting in security_settings:
+        if setting in agent_config:
+            del server_settings['agent_config'][setting]
+
+            _logger.info('Ignoring server side configuration setting for '
+                    '%r, because High Security Mode has been activated. '
+                    'Using local setting %s=%r.', setting, setting,
+                    local_settings[setting])
+
+    return server_settings
+
 def create_session(license_key, app_name, linked_applications,
         environment, settings):
 
@@ -792,6 +827,7 @@ def create_session(license_key, app_name, linked_applications,
         local_config['agent_version'] = version
         local_config['environment'] = environment
         local_config['settings'] = settings
+        local_config['high_security'] = settings['high_security']
 
         display_name = settings['process_host.display_name']
 
@@ -805,6 +841,13 @@ def create_session(license_key, app_name, linked_applications,
         url = collector_url(redirect_host)
         server_config = send_request(None, url, 'connect',
                 license_key, None, payload)
+
+        # Apply High Security Mode to server_config, so the local security
+        # settings won't get overwritten when we overlay the server settings
+        # on top of them.
+
+        server_config = apply_high_security_mode_fixups(settings,
+                server_config)
 
         # The agent configuration for the application in constructed
         # by taking a snapshot of the locally constructed configuration
@@ -846,8 +889,8 @@ def create_session(license_key, app_name, linked_applications,
                 'agent_run_id=%r, in %.2f seconds.', app_name, os.getpid(),
                 redirect_host, session.agent_run_id, duration)
 
-        if hasattr(application_config, 'high_security'):
-            _logger.info('High security mode is being applied to all '
+        if getattr(application_config, 'high_security', False):
+            _logger.info('High Security Mode is being applied to all '
                     'communications between the agent and the data '
                     'collector for this session.')
 

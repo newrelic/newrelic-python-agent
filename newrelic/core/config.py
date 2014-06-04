@@ -140,6 +140,8 @@ _settings.process_host.display_name = None
 
 _settings.monitor_mode = _environ_as_bool('NEW_RELIC_MONITOR_MODE', True)
 
+_settings.high_security = _environ_as_bool('NEW_RELIC_HIGH_SECURITY', False)
+
 _settings.collect_errors = True
 _settings.collect_traces = True
 _settings.collect_analytics_events = True

@@ -737,11 +737,17 @@ class Transaction(object):
         if len(self._errors) >= settings.agent_limits.errors_per_transaction:
             return
 
-        if params:
-            custom_params = dict(self._custom_params)
-            custom_params.update(params)
+        # Only add params if High Security Mode is off.
+
+        if settings.high_security:
+            custom_params = {}
+
         else:
-            custom_params = self._custom_params
+            if params:
+                custom_params = dict(self._custom_params)
+                custom_params.update(params)
+            else:
+                custom_params = self._custom_params
 
         exc_type = exc.__name__
 
@@ -864,7 +870,10 @@ class Transaction(object):
         self._cpu_user_time_end = os.times()[0]
 
     def add_custom_parameter(self, name, value):
-        self._custom_params[name] = value
+        settings = self._settings
+
+        if not settings.high_security:
+            self._custom_params[name] = value
 
     def add_custom_parameters(self, items):
         for name, value in items:

@@ -237,6 +237,8 @@ def _process_configuration(section):
                      'get', None)
     _process_setting(section, 'monitor_mode',
                      'getboolean', None)
+    _process_setting(section, 'high_security',
+                     'getboolean', None)
     _process_setting(section, 'capture_params',
                      'getboolean', None)
     _process_setting(section, 'ignored_params',
@@ -415,6 +417,34 @@ def _process_app_name_setting():
 
     _settings.app_name = name
 
+def apply_local_high_security_mode_setting(settings):
+    # When High Security Mode is activated, certain settings must be
+    # set to be secure, even if that requires overriding a setting that
+    # has been individually configured as insecure.
+
+    if not settings.high_security:
+        return settings
+
+    log_template = ('Overriding setting for %r because High '
+                    'Security Mode has been activated. The original '
+                    'setting was %r. The new setting is %r.')
+
+    if not settings.ssl:
+        settings.ssl = True
+        _logger.info(log_template, 'ssl', settings.ssl, True)
+
+    if settings.capture_params:
+        settings.capture_params = False
+        _logger.info(log_template, 'capture_params',
+                settings.capture_params, False)
+
+    if settings.transaction_tracer.record_sql == 'raw':
+        settings.transaction_tracer.record_sql = 'obfuscated'
+        _logger.info(log_template, 'transaction_tracer.record_sql',
+            'raw', 'obfuscated')
+
+    return settings
+
 def _load_configuration(config_file=None, environment=None,
         ignore_errors=True, log_file=None, log_level=None):
 
@@ -531,6 +561,11 @@ def _load_configuration(config_file=None, environment=None,
 
     for option, value in _cache_object:
         _logger.debug("agent config %s = %s" % (option, repr(value)))
+
+    # Apply High Security Mode policy if enabled in local agent
+    # configuration file.
+
+    apply_local_high_security_mode_setting(_settings)
 
     # Look for an app_name setting which is actually a semi colon
     # list of application names and adjust app_name setting and

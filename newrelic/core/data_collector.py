@@ -750,12 +750,13 @@ def apply_high_security_mode_fixups(local_settings, server_settings):
         del server_settings['high_security']
 
     # Remove individual security settings from agent server side
-    # configuration settings. The agent_config should always exist.
+    # configuration settings. The agent_config only exists if the
+    # user has activated server side configuration.
 
     security_settings = ('capture_params',
             'transaction_tracer.record_sql')
 
-    agent_config = server_settings['agent_config']
+    agent_config = server_config.get('agent_config', {}):
 
     for setting in security_settings:
         if setting in agent_config:

@@ -57,7 +57,7 @@ class Application(object):
         self._transaction_count = 0
         self._last_transaction = 0.0
 
-        self._custom_metrics_count = 0
+        self._global_events_account = 0
 
         self._harvest_count = 0
 
@@ -160,8 +160,8 @@ class Application(object):
                     self._transaction_count)
             print >> file, 'Last Transaction: %s' % (
                     time.asctime(time.localtime(self._last_transaction)))
-            print >> file, 'Custom Metrics Count: %d' % (
-                    self._custom_metrics_count)
+            print >> file, 'Global Events Count: %d' % (
+                    self._global_events_account)
             print >> file, 'Harvest Metrics Count: %d' % (
                     self._stats_engine.metrics_count())
             print >> file, 'Harvest Merge Count: %d' % (
@@ -419,7 +419,7 @@ class Application(object):
             self._transaction_count = 0
             self._last_transaction = 0.0
 
-            self._custom_metrics_count = 0
+            self._global_events_account = 0
 
             # Clear any prior count of harvest merges due to failures.
 
@@ -629,6 +629,27 @@ class Application(object):
                              'problem to the provider of the data source.',
                              data_sampler.name)
 
+    def record_exception(self, exc=None, value=None, tb=None, params={},
+            ignore_errors=[]):
+
+        """Record a global exception against the application independent
+        of a specific transaction.
+
+        """
+
+        if not self._active_session:
+            return
+
+        with self._stats_lock:
+            # It may still actually be rejected if no exception
+            # supplied or if was in the ignored list. For now
+            # always attempt anyway and also increment the events
+            # count still so that short harvest is extended.
+
+            self._global_events_account += 1
+            self._stats_engine.record_exception(exc, value, tb,
+                    params, ignore_errors)
+
     def record_custom_metric(self, name, value):
         """Record a custom metric against the application independent
         of a specific transaction.
@@ -646,7 +667,7 @@ class Application(object):
             return
 
         with self._stats_custom_lock:
-            self._custom_metrics_count += 1
+            self._global_events_account += 1
             self._stats_custom_engine.record_custom_metric(name, value)
 
     def record_custom_metrics(self, metrics):
@@ -667,7 +688,7 @@ class Application(object):
 
         with self._stats_custom_lock:
             for name, value in metrics:
-                self._custom_metrics_count += 1
+                self._global_events_account += 1
                 self._stats_custom_engine.record_custom_metric(name, value)
 
     def record_transaction(self, data, profile_samples=None):
@@ -1135,7 +1156,7 @@ class Application(object):
                 # bucket.
 
                 transaction_count = self._transaction_count
-                custom_metrics_count = self._custom_metrics_count
+                global_events_account = self._global_events_account
 
                 with self._stats_lock:
                     self._transaction_count = 0
@@ -1144,7 +1165,7 @@ class Application(object):
                     stats = self._stats_engine.harvest_snapshot()
 
                 with self._stats_custom_lock:
-                    self._custom_metrics_count = 0
+                    self._global_events_account = 0
 
                     stats_custom = self._stats_custom_engine.harvest_snapshot()
 
@@ -1210,7 +1231,7 @@ class Application(object):
                 # and then immediately exit. Also useful when running
                 # test scripts.
 
-                if shutdown and (transaction_count or custom_metrics_count):
+                if shutdown and (transaction_count or global_events_account):
                     if period_end - self._period_start < 1.0:
                         _logger.debug('Stretching harvest duration for '
                                 'forced harvest on shutdown.')

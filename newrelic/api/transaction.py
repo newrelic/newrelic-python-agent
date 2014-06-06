@@ -677,10 +677,12 @@ class Transaction(object):
         if exc is None or value is None or tb is None:
             return
 
-        # 'should_ignore' is a tri-state variable with the following behavior.
-        # 'True' - ignore the error.
-        # 'False'- record the error.
-        # 'None' - Use the default ignore rules.
+        # Where ignore_errors is a callable it should return a
+        # tri-state variable with the following behavior.
+        #
+        #   True - Ignore the error.
+        #   False- Record the error.
+        #   None - Use the default ignore rules.
 
         should_ignore = None
 

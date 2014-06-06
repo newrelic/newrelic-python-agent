@@ -82,10 +82,16 @@ def add_user_attribute(key, value):
     return add_custom_parameter(key, value)
 
 def record_exception(exc=None, value=None, tb=None, params={},
-        ignore_errors=[]):
-    transaction = current_transaction()
-    if transaction:
-        transaction.record_exception(exc, value, tb, params, ignore_errors)
+        ignore_errors=[], application=None):
+    if application is None:
+        transaction = current_transaction()
+        if transaction:
+            transaction.record_exception(exc, value, tb, params,
+                    ignore_errors)
+    else:
+        if application.enabled:
+            application.record_exception(exc, value, tb, params,
+                    ignore_errors)
 
 def get_browser_timing_header():
     transaction = current_transaction()

@@ -210,6 +210,14 @@ def test_remote_config_hsm_fixups_enabled(local_settings, server_settings):
     assert u'capture_params' not in agent_config
     assert u'transaction_tracer.record_sql' not in agent_config
 
+def test_remote_config_hsm_fixups_server_side_disabled():
+    local_settings = {'high_security': True}
+    server_settings = {'high_security': True}
+
+    settings = apply_high_security_mode_fixups(local_settings, server_settings)
+
+    assert 'high_security' not in settings
+
 _test_transaction_settings_hsm_disabled = {
     'high_security': False }
 

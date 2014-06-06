@@ -647,9 +647,7 @@ class StatsEngine(object):
         if (settings.collect_analytics_events and
                 settings.analytics_events.enabled):
             
-            if (transaction.type == 'WebTransaction' and
-                    settings.analytics_events.transactions.enabled):
-
+            if settings.analytics_events.transactions.enabled:
                 record = {}
                 params = {}
 
@@ -684,7 +682,6 @@ class StatsEngine(object):
                     except KeyError:
                         pass
 
-                _update_entry('HttpDispatcher', 'webDuration')
                 _update_entry('WebFrontend/QueueTime', 'queueDuration')
 
                 _update_entry('External/all', 'externalDuration')

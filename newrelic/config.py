@@ -931,14 +931,17 @@ def _process_external_trace_configuration():
 
 # Setup function traces defined in configuration file.
 
-def _function_trace_import_hook(object_path, name, group):
+def _function_trace_import_hook(object_path, name, group, label, params,
+        terminal, rollup):
     def _instrument(target):
         _logger.debug("wrap function-trace %s" %
-                ((target, object_path, name, group),))
+                ((target, object_path, name, group, label, params,
+                terminal, rollup),))
 
         try:
             newrelic.api.function_trace.wrap_function_trace(
-                    target, object_path, name, group)
+                    target, object_path, name, group, label, params,
+                    terminal, rollup)
         except Exception:
             _raise_instrumentation_error('function-trace', locals())
 
@@ -967,11 +970,21 @@ def _process_function_trace_configuration():
 
             name = None
             group = 'Function'
+            label = None
+            params = None
+            terminal = False
+            rollup = None
 
             if _config_object.has_option(section, 'name'):
                 name = _config_object.get(section, 'name')
             if _config_object.has_option(section, 'group'):
                 group = _config_object.get(section, 'group')
+            if _config_object.has_option(section, 'label'):
+                label = _config_object.get(section, 'label')
+            if _config_object.has_option(section, 'terminal'):
+                terminal = _config_object.getboolean(section, 'terminal')
+            if _config_object.has_option(section, 'rollup'):
+                rollup = _config_object.get(section, 'rollup')
 
             if name and name.startswith('lambda '):
                 vars = {"callable_name":
@@ -979,9 +992,11 @@ def _process_function_trace_configuration():
                 name = eval(name, vars)
 
             _logger.debug("register function-trace %s" %
-                    ((module, object_path, name, group),))
+                    ((module, object_path, name, group, label, params,
+                    terminal, rollup),))
 
-            hook = _function_trace_import_hook(object_path, name, group)
+            hook = _function_trace_import_hook(object_path, name, group,
+                    label, params, terminal, rollup)
             newrelic.api.import_hook.register_import_hook(module, hook)
         except Exception:
             _raise_configuration_error(section)

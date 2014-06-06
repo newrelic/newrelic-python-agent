@@ -756,7 +756,7 @@ def apply_high_security_mode_fixups(local_settings, server_settings):
     security_settings = ('capture_params',
             'transaction_tracer.record_sql')
 
-    agent_config = server_config.get('agent_config', {}):
+    agent_config = server_settings.get('agent_config', {})
 
     for setting in security_settings:
         if setting in agent_config:

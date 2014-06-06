@@ -749,7 +749,7 @@ def apply_high_security_mode_fixups(local_settings, server_settings):
     if 'high_security' in server_settings:
         del server_settings['high_security']
 
-    # When server side configuration is disabled, there will be not
+    # When server side configuration is disabled, there will be no
     # agent_config value in server_settings, so no more fixups
     # are required.
 

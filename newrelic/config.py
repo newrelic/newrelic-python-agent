@@ -1202,7 +1202,7 @@ def _process_transaction_name_configuration():
             if _config_object.has_option(section, 'group'):
                 group = _config_object.get(section, 'group')
             if _config_object.has_option(section, 'priority'):
-                priority = int(_config_object.get(section, 'priority'))
+                priority = _config_object.getint(section, 'priority')
 
             if name and name.startswith('lambda '):
                 vars = {"callable_name":

@@ -1157,14 +1157,14 @@ def _process_memcache_trace_configuration():
 
 # Setup name transaction wrapper defined in configuration file.
 
-def _transaction_name_import_hook(object_path, name, group):
+def _transaction_name_import_hook(object_path, name, group, priority):
     def _instrument(target):
         _logger.debug("wrap transaction-name %s" %
-                ((target, object_path, name, group),))
+                ((target, object_path, name, group, priority),))
 
         try:
             newrelic.api.transaction_name.wrap_transaction_name(
-                    target, object_path, name, group)
+                    target, object_path, name, group, priority)
         except Exception:
             _raise_instrumentation_error('transaction-name', locals())
 
@@ -1195,11 +1195,14 @@ def _process_transaction_name_configuration():
 
             name = None
             group = 'Function'
+            priority = None
 
             if _config_object.has_option(section, 'name'):
                 name = _config_object.get(section, 'name')
             if _config_object.has_option(section, 'group'):
                 group = _config_object.get(section, 'group')
+            if _config_object.has_option(section, 'priority'):
+                priority = int(_config_object.get(section, 'priority'))
 
             if name and name.startswith('lambda '):
                 vars = {"callable_name":
@@ -1207,10 +1210,10 @@ def _process_transaction_name_configuration():
                 name = eval(name, vars)
 
             _logger.debug("register transaction-name %s" %
-                    ((module, object_path, name, group),))
+                    ((module, object_path, name, group, priority),))
 
             hook = _transaction_name_import_hook(object_path, name,
-                                                 group)
+                                                 group, priority)
             newrelic.api.import_hook.register_import_hook(module, hook)
         except Exception:
             _raise_configuration_error(section)

@@ -293,6 +293,28 @@ def test_capture_attributes_default():
 
     assert 'userAttributes' not in data
 
+_test_analytic_events_background_task_settings = {
+    'browser_monitoring.capture_attributes': True }
+
+@override_application_settings(
+        _test_analytic_events_background_task_settings)
+def test_analytic_events_background_task():
+    settings = application_settings()
+
+    assert settings.collect_analytics_events
+    assert settings.analytics_events.enabled
+    assert settings.analytics_events.transactions.enabled
+
+    assert settings.browser_monitoring.enabled
+    assert settings.browser_monitoring.capture_attributes
+
+    assert settings.js_agent_loader
+
+    response = target_application.get('/', extra_environ={
+            'newrelic.set_background_task': True})
+
+    assert response.html.html.head.script is None
+
 _test_capture_attributes_disabled_settings = {
     'browser_monitoring.capture_attributes': False }
 
@@ -455,25 +477,3 @@ def test_analytic_events_transactions_disabled():
     data = json.loads(footer.split('NREUM.info=')[1])
 
     assert 'userAttributes' in data
-
-_test_analytic_events_background_task_settings = {
-    'browser_monitoring.capture_attributes': True }
-
-@override_application_settings(
-        _test_analytic_events_background_task_settings)
-def test_analytic_events_background_task():
-    settings = application_settings()
-
-    assert settings.collect_analytics_events
-    assert settings.analytics_events.enabled
-    assert settings.analytics_events.transactions.enabled
-
-    assert settings.browser_monitoring.enabled
-    assert settings.browser_monitoring.capture_attributes
-
-    assert settings.js_agent_loader
-
-    response = target_application.get('/', extra_environ={
-            'newrelic.set_background_task': True})
-
-    assert response.html.html.head.script is None

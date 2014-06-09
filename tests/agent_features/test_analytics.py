@@ -72,8 +72,6 @@ def validate_analytics_sample_data(name, capture_attributes=True):
         assert record['timestamp'] >= 0.0
         assert record['duration'] >= 0.0
 
-        assert record['webDuration'] >= 0.0
-
         assert 'queueDuration' not in record
         assert 'externalDuration' not in record
         assert 'databaseDuration' not in record
@@ -461,7 +459,6 @@ def test_analytic_events_transactions_disabled():
 _test_analytic_events_background_task_settings = {
     'browser_monitoring.capture_attributes': True }
 
-@validate_no_analytics_sample_data
 @override_application_settings(
         _test_analytic_events_background_task_settings)
 def test_analytic_events_background_task():

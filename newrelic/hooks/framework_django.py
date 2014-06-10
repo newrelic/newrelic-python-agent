@@ -535,10 +535,10 @@ def wrap_url_resolver(wrapped):
 
                 if type(result) == type(()):
                     callback, callback_args, callback_kwargs = result
-                    result = (wrap_view_handler(callback, priority=3),
+                    result = (wrap_view_handler(callback, priority=5),
                             callback_args, callback_kwargs)
                 else:
-                    result.func = wrap_view_handler(result.func, priority=3)
+                    result.func = wrap_view_handler(result.func, priority=5)
 
                 return result
 
@@ -823,7 +823,7 @@ def wrap_view_dispatch(wrapped):
             handler = view.http_method_not_allowed
 
         name = callable_name(handler)
-        transaction.set_transaction_name(name)
+        transaction.set_transaction_name(name, priority=4)
 
         with FunctionTrace(transaction, name=name):
             return wrapped(*args, **kwargs)

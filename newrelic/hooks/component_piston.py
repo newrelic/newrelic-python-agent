@@ -59,7 +59,7 @@ class ResourceInitWrapper(object):
         for name in six.itervalues(self.__instance.callmap):
             if hasattr(handler, name):
                 setattr(handler, name, MethodWrapper(
-                        getattr(handler, name)))
+                        getattr(handler, name), priority=6))
 
 def instrument_piston_resource(module):
 

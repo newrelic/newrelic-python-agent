@@ -535,6 +535,19 @@ class SQLConnections(object):
     def __exit__(self, exc, value, tb):
         self.cleanup()
 
+def _query_result_dicts_to_tuples(columns, rows):
+    # Query results come back as a list of rows. If each row is a
+    # dict, then its keys can be found in the columns list. Here, we
+    # transform each row from a dict to a tuple, ordering the items
+    # in the row in the same order as that found in columns.
+
+    # Handle case where query results are empty.
+
+    if not columns or not rows:
+        return None
+
+    return [tuple([row[col] for col in columns]) for row in rows]
+
 @internal_trace('Supportability/DatabaseUtils/Calls/explain_plan')
 def _explain_plan(connections, sql, database, connect_params, cursor_params,
         sql_parameters, execute_params):
@@ -583,6 +596,12 @@ def _explain_plan(connections, sql, database, connect_params, cursor_params,
                 columns.append(column[0])
 
         rows = cursor.fetchall()
+
+        # If rows have been returned as a list of dicts, then convert
+        # them to a list of tuples before returning.
+
+        if rows and isinstance(rows[0], dict):
+            rows = _query_result_dicts_to_tuples(columns, rows)
 
         if not columns and not rows:
             return None

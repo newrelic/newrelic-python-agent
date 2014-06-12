@@ -1145,7 +1145,7 @@ class Application(object):
 
                 start = time.time()
 
-                _logger.debug('Commencing data harvest for %r.',
+                _logger.debug('Commencing data harvest of %r.',
                         self._app_name)
 
                 # Create a snapshot of the transaction stats and
@@ -1154,6 +1154,9 @@ class Application(object):
                 # this is done so that any new metrics that come in from
                 # this point onwards will be accumulated in a fresh
                 # bucket.
+
+                _logger.debug('Snapshotting metrics for harvest of %r.',
+                        self._app_name)
 
                 transaction_count = self._transaction_count
                 global_events_account = self._global_events_account
@@ -1182,6 +1185,9 @@ class Application(object):
                 # with every harvest. If data sampler is a user provided
                 # data sampler, then should perhaps deregister it if it
                 # keeps having problems.
+
+                _logger.debug('Fetching metrics from data sources for '
+                        'harvest of %r.', self._app_name)
 
                 for data_sampler in self._data_samplers:
                     try:
@@ -1270,10 +1276,16 @@ class Application(object):
                     # Pass the metric_normalizer to stats.metric_data to
                     # do metric renaming.
 
+                    _logger.debug('Normalizing metrics for harvest of %r.',
+                            self._app_name)
+
                     metric_data = stats.metric_data(metric_normalizer)
 
                     internal_metric('Supportability/Harvest/Counts/'
                             'metric_data', len(metric_data))
+
+                    _logger.debug('Sending metric data for harvest of %r.',
+                            self._app_name)
 
                     metric_ids = self._active_session.send_metric_data(
                       self._period_start, period_end, metric_data)
@@ -1287,6 +1299,9 @@ class Application(object):
 
                         if configuration.analytics_events.transactions.enabled:
                             if len(sampled_data_set.samples):
+                                _logger.debug('Sending analytics event data '
+                                        'for harvest of %r.', self._app_name)
+
                                 self._active_session.analytic_event_data(
                                         sampled_data_set.samples)
 
@@ -1314,6 +1329,9 @@ class Application(object):
                                 'error_data', len(error_data))
 
                         if error_data:
+                            _logger.debug('Sending error data for harvest '
+                                    'of %r.', self._app_name)
+
                             self._active_session.send_errors(error_data)
 
                     if configuration.collect_traces:
@@ -1322,6 +1340,9 @@ class Application(object):
 
                         with connections:
                             if configuration.slow_sql.enabled:
+                                _logger.debug('Processing slow SQL data '
+                                        'for harvest of %r.', self._app_name)
+
                                 slow_sql_data = stats.slow_sql_data(
                                         connections)
 
@@ -1330,6 +1351,9 @@ class Application(object):
                                         len(slow_sql_data))
 
                                 if slow_sql_data:
+                                    _logger.debug('Sending slow SQL data for '
+                                            'harvest of %r.', self._app_name)
+
                                     self._active_session.send_sql_traces(
                                             slow_sql_data)
 
@@ -1342,11 +1366,18 @@ class Application(object):
                                     len(slow_transaction_data))
 
                             if slow_transaction_data:
+                                _logger.debug('Sending slow transaction '
+                                        'data for harvest of %r.',
+                                        self._app_name)
+
                                 self._active_session.send_transaction_traces(
                                         slow_transaction_data)
 
                     # Fetch agent commands sent from the data collector
                     # and process them.
+
+                    _logger.debug('Process agent commands during '
+                            'harvest of %r.', self._app_name)
 
                     self.process_agent_commands()
 
@@ -1358,7 +1389,13 @@ class Application(object):
                     # results last ensures we send back that data from
                     # the stopped profiling session immediately.
 
+                    _logger.debug('Send profiling data for harvest of '
+                            '%r.', self._app_name)
+
                     self.report_profile_data()
+
+                    _logger.debug('Done sending data for harvest of '
+                            '%r.', self._app_name)
 
                     # If this is a final forced harvest for the process
                     # then attempt to shutdown the session.

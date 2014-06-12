@@ -431,12 +431,11 @@ def apply_local_high_security_mode_setting(settings):
 
     if not settings.ssl:
         settings.ssl = True
-        _logger.info(log_template, 'ssl', settings.ssl, True)
+        _logger.info(log_template, 'ssl', False, True)
 
     if settings.capture_params:
         settings.capture_params = False
-        _logger.info(log_template, 'capture_params',
-                settings.capture_params, False)
+        _logger.info(log_template, 'capture_params', True, False)
 
     if settings.transaction_tracer.record_sql == 'raw':
         settings.transaction_tracer.record_sql = 'obfuscated'

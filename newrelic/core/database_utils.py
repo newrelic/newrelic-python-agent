@@ -591,10 +591,9 @@ def _explain_plan(connections, sql, database, connect_params, cursor_params,
     except Exception:
         if settings.debug.log_explain_plan_queries:
             _logger.exception('Error occurred when executing explain '
-                    'plan for %r on %r where connect_params=%r, '
-                    'cursor_params=%r and execute_params=%r.', query,
-                    database.client, connect_params, cursor_params,
-                    execute_params)
+                    'plan for %r on %r where cursor_params=%r and '
+                    'execute_params=%r.', query, database.client,
+                    cursor_params, execute_params)
 
     return None
 

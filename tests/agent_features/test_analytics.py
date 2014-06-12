@@ -296,6 +296,7 @@ def test_capture_attributes_default():
 _test_analytic_events_background_task_settings = {
     'browser_monitoring.capture_attributes': True }
 
+@validate_analytics_sample_data(name='OtherTransaction/Uri/')
 @override_application_settings(
         _test_analytic_events_background_task_settings)
 def test_analytic_events_background_task():

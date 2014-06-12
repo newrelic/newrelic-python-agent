@@ -454,8 +454,8 @@ class SQLConnection(object):
         return cursor
 
     def cleanup(self):
-        _logger.debug('Cleanup database connection %r for %r.',
-                self.connection, self.database)
+        _logger.debug('Cleanup database connection for %r.',
+                self.database)
 
         try:
             self.connection.rollback()
@@ -501,9 +501,9 @@ class SQLConnections(object):
                 internal_metric('Supportability/DatabaseUtils/Counts/'
                                 'drop_database_connection', 1)
 
-                _logger.debug('Drop database connection %r for %r as '
-                        'reached maximum of %r.', connection.connection,
-                        connection.database.client, self.maximum)
+                _logger.debug('Drop database connection for %r as '
+                        'reached maximum of %r.', connection.database.client,
+                        self.maximum)
 
                 connection.cleanup()
 
@@ -515,9 +515,8 @@ class SQLConnections(object):
             internal_metric('Supportability/DatabaseUtils/Counts/'
                             'create_database_connection', 1)
 
-            _logger.debug('Created database connection %r for %r with '
-                    'connect params of %r.', connection.connection,
-                    database.client, (args, kwargs))
+            _logger.debug('Created database connection for %r.',
+                    database.client)
 
         return connection
 

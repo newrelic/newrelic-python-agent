@@ -770,6 +770,13 @@ def apply_high_security_mode_fixups(local_settings, server_settings):
     # That way, when the local and server side configuration settings
     # are merged, the local security settings will not get overwritten
     # by the server side configuration settings.
+    #
+    # Note that security settings we may want to remove can appear at
+    # both the top level of the server settings, but also nested within
+    # the 'agent_config' sub dictionary. Those settings at the top level
+    # represent how the settings were previously overriden for high
+    # security mode. Those in 'agent_config' correspond to server side
+    # configuration as set by the user.
 
     if not local_settings['high_security']:
         return server_settings
@@ -780,6 +787,15 @@ def apply_high_security_mode_fixups(local_settings, server_settings):
     if 'high_security' in server_settings:
         del server_settings['high_security']
 
+    # Remove individual security settings from top level of configuration
+    # settings returned.
+
+    security_settings = ('capture_params', 'transaction_tracer.record_sql')
+
+    for setting in security_settings:
+        if setting in server_settings:
+            del server_settings[setting]
+
     # When server side configuration is disabled, there will be no
     # agent_config value in server_settings, so no more fixups
     # are required.
@@ -789,9 +805,6 @@ def apply_high_security_mode_fixups(local_settings, server_settings):
 
     # Remove individual security settings from agent server side
     # configuration settings.
-
-    security_settings = ('capture_params',
-            'transaction_tracer.record_sql')
 
     agent_config = server_settings['agent_config']
 

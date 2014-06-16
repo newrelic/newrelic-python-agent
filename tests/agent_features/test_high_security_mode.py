@@ -149,6 +149,8 @@ _hsm_server_side_config_settings_enabled = [
         },
         {
             u'high_security': True,
+            u'capture_params': False,
+            u'transaction_tracer.record_sql': u'obfuscated',
             u'agent_config': {
                 u'capture_params': False,
                 u'transaction_tracer.record_sql': u'obfuscated',
@@ -163,6 +165,8 @@ _hsm_server_side_config_settings_enabled = [
         },
         {
             u'high_security': True,
+            u'capture_params': False,
+            u'transaction_tracer.record_sql': u'obfuscated',
             u'agent_config': {
                 u'capture_params': True,
                 u'transaction_tracer.record_sql': u'raw',
@@ -206,6 +210,8 @@ def test_remote_config_hsm_fixups_enabled(local_settings, server_settings):
     agent_config = server_settings['agent_config']
 
     assert u'high_security' not in settings
+    assert u'capture_params' not in settings
+    assert u'transaction_tracer.record_sql' not in settings
 
     assert u'capture_params' not in agent_config
     assert u'transaction_tracer.record_sql' not in agent_config

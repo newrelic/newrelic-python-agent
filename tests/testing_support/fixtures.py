@@ -71,6 +71,9 @@ _fake_collector_responses = {
     'shutdown': None,
 }
 
+if _environ_as_bool('NEW_RELIC_HIGH_SECURITY'):
+    _fake_collector_responses['connect']['high_security'] = True
+
 def fake_collector_wrapper(wrapped, instance, args, kwargs):
     def _bind_params(session, url, method, license_key, agent_run_id=None,
             payload=()):

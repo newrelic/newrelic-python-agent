@@ -124,6 +124,7 @@ def _requests_proxy_scheme_workaround(wrapped, instance, args, kwargs):
 # session data collector to use. Subsequent calls are then made to it.
 
 _audit_log_fp = None
+_audit_log_id = 0
 
 def _log_request(url, params, headers, data):
     settings = global_settings()
@@ -142,8 +143,14 @@ def _log_request(url, params, headers, data):
             settings.audit_log_file = None
             return
 
+    global _audit_log_id
+
+    _audit_log_id += 1
+
     print('TIME: %r' % time.strftime('%Y-%m-%d %H:%M:%S',
             time.localtime()), file=_audit_log_fp)
+    print(file=_audit_log_fp)
+    print('ID: %r' % _audit_log_id, file=_audit_log_fp)
     print(file=_audit_log_fp)
     print('PID: %r' % os.getpid(), file=_audit_log_fp)
     print(file=_audit_log_fp)
@@ -192,6 +199,27 @@ def _log_request(url, params, headers, data):
             print(file=_audit_log_fp)
             print('DATA[0][%d][9]:' % i, end=' ', file=_audit_log_fp)
             pprint(field_as_json, stream=_audit_log_fp)
+
+    print(file=_audit_log_fp)
+    print(78*'=', file=_audit_log_fp)
+    print(file=_audit_log_fp)
+
+    _audit_log_fp.flush()
+
+    return _audit_log_id
+
+def _log_response(log_id, result):
+
+    print('TIME: %r' % time.strftime('%Y-%m-%d %H:%M:%S',
+            time.localtime()), file=_audit_log_fp)
+    print(file=_audit_log_fp)
+    print('ID: %r' % _audit_log_id, file=_audit_log_fp)
+    print(file=_audit_log_fp)
+    print('PID: %r' % os.getpid(), file=_audit_log_fp)
+    print(file=_audit_log_fp)
+    print('RESULT:', end=' ', file=_audit_log_fp)
+
+    pprint(result, stream=_audit_log_fp)
 
     print(file=_audit_log_fp)
     print(78*'=', file=_audit_log_fp)
@@ -325,7 +353,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
     # If audit logging is enabled, log the requetss details.
 
-    _log_request(url, params, headers, data)
+    log_id = _log_request(url, params, headers, data)
 
     try:
         # The timeout value in the requests module is only on
@@ -480,8 +508,11 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         raise DiscardDataForRequest(str(sys.exc_info()[1]))
 
     # The decoded JSON can be either for a successful response or an
-    # error. A successful response has a 'return_value' element and an
+    # error. A successful response has a 'return_value' element and on
     # error an 'exception' element.
+
+    if log_id is not None:
+        _log_response(log_id, result)
 
     if 'return_value' in result:
         return result['return_value']

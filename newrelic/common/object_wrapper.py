@@ -9,6 +9,8 @@ import sys
 import inspect
 import functools
 
+from ..packages import six
+
 from ..packages.wrapt import (ObjectProxy as _ObjectProxy,
         FunctionWrapper as _FunctionWrapper,
         BoundFunctionWrapper as _BoundFunctionWrapper)
@@ -151,7 +153,7 @@ wrap_callable = FunctionWrapper
 # Helper functions for performing monkey patching.
 
 def resolve_path(module, name):
-    if not inspect.ismodule(module):
+    if isinstance(module, six.string_types):
         __import__(module)
         module = sys.modules[module]
 
@@ -163,7 +165,17 @@ def resolve_path(module, name):
     original = getattr(parent, attribute)
     for attribute in path[1:]:
         parent = original
-        original = getattr(original, attribute)
+
+        # We can't just always use getattr() because in doing
+        # that on a class it will cause binding to occur which
+        # will complicate things later and cause some things not
+        # to work. For the case of a class we therefore access
+        # the __dict__ directly.
+
+        if inspect.isclass(original):
+            original = vars(original)[attribute]
+        else:
+            original = getattr(original, attribute)
 
     return (parent, attribute, original)
 

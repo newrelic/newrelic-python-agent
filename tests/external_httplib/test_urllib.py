@@ -49,6 +49,19 @@ def test_urlopener_https_request():
     opener = urllib.URLopener()
     connection = opener.open('https://www.example.com/')
 
+_test_urlopener_file_request_scoped_metrics = [
+        ('Function/urllib:URLopener.open', 1)]
+
+@validate_transaction_metrics(
+        'test_urllib:test_urlopener_file_request',
+        scoped_metrics=_test_urlopener_file_request_scoped_metrics,
+        background_task=True)
+@background_task()
+def test_urlopener_file_request():
+    file_uri = 'file://%s' % (os.path.realpath(__file__))
+    opener = urllib.URLopener()
+    connection = opener.open(file_uri)
+
 @background_task()
 @cache_outgoing_headers
 @validate_cross_process_headers

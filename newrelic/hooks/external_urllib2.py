@@ -1,15 +1,38 @@
+try:
+    import urlparse
+except ImportError:
+    import urllib.parse as urlparse
+
 import newrelic.packages.six as six
 
-import newrelic.api.external_trace
+from newrelic.agent import (current_transaction,
+    wrap_function_wrapper, ExternalTrace, FunctionTrace)
 
-def instrument(module):
+def _nr_wrapper_opener_director_open_(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
 
-    def url_opener_open(opener, fullurl, *args, **kwargs):
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    def _bind_params(fullurl, *args, **kwargs):
         if isinstance(fullurl, six.string_types):
             return fullurl
         else:
             return fullurl.get_full_url()
 
-    newrelic.api.external_trace.wrap_external_trace(
-        module, 'OpenerDirector.open', 'urllib2',
-        url_opener_open)
+    url = _bind_params(*args, **kwargs)
+
+    details = urlparse.urlparse(url)
+
+    if details.hostname is None:
+        with FunctionTrace(transaction, 'urllib2:OpenerDirector.open'):
+            return wrapped(*args, **kwargs)
+
+    with ExternalTrace(transaction, 'urllib2', url):
+        return wrapped(*args, **kwargs)
+
+def instrument(module):
+
+    if hasattr(module, 'OpenerDirector'):
+        wrap_function_wrapper(module, 'OpenerDirector.open',
+            _nr_wrapper_opener_director_open_)

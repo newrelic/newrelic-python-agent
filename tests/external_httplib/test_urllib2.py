@@ -1,3 +1,5 @@
+import os
+
 try:
     import urllib.request as urllib2
 except:
@@ -44,6 +46,18 @@ _test_urlopen_https_request_rollup_metrics = [
 @background_task()
 def test_urlopen_https_request():
     urllib2.urlopen('https://www.example.com/')
+
+_test_urlopen_file_request_scoped_metrics = [
+        ('Function/urllib2:OpenerDirector.open', 1)]
+
+@validate_transaction_metrics(
+        'test_urllib2:test_urlopen_file_request',
+        scoped_metrics=_test_urlopen_file_request_scoped_metrics,
+        background_task=True)
+@background_task()
+def test_urlopen_file_request():
+    file_uri = 'file://%s' % (os.path.realpath(__file__))
+    urllib2.urlopen(file_uri)
 
 @background_task()
 @cache_outgoing_headers

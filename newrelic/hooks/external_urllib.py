@@ -3,7 +3,6 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
-import newrelic.api.external_trace
 import newrelic.packages.six as six
 
 from newrelic.agent import (current_transaction,
@@ -52,25 +51,38 @@ def _nr_wrapper_url_opener_open_(wrapped, instance, args, kwargs):
     with ExternalTrace(transaction, 'urllib', url):
         return wrapped(*args, **kwargs)
 
-def instrument(module):
+def _nr_wrapper_opener_director_open_(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
 
-    if hasattr(module, 'urlretrieve'):
-        wrap_function_wrapper(module, 'urlretrieve', _nr_wrapper_urlretrieve_)
+    if transaction is None:
+        return wrapped(*args, **kwargs)
 
-    def url_opener_open(opener, url, *args, **kwargs):
-        return url
-
-    if hasattr(module, 'URLopener'):
-        wrap_function_wrapper(module, 'URLopener.open',
-            _nr_wrapper_url_opener_open_)
-
-    def url_opener_open(opener, fullurl, *args, **kwargs):
+    def _bind_params(fullurl, *args, **kwargs):
         if isinstance(fullurl, six.string_types):
             return fullurl
         else:
             return fullurl.get_full_url()
 
+    url = _bind_params(*args, **kwargs)
+
+    details = urlparse.urlparse(url)
+
+    if details.hostname is None:
+        with FunctionTrace(transaction, 'urllib2:OpenerDirector.open'):
+            return wrapped(*args, **kwargs)
+
+    with ExternalTrace(transaction, 'urllib2', url):
+        return wrapped(*args, **kwargs)
+
+def instrument(module):
+
+    if hasattr(module, 'urlretrieve'):
+        wrap_function_wrapper(module, 'urlretrieve', _nr_wrapper_urlretrieve_)
+
+    if hasattr(module, 'URLopener'):
+        wrap_function_wrapper(module, 'URLopener.open',
+            _nr_wrapper_url_opener_open_)
+
     if hasattr(module, 'OpenerDirector'):
-        newrelic.api.external_trace.wrap_external_trace(
-            module, 'OpenerDirector.open', 'urllib2',
-            url_opener_open)
+        wrap_function_wrapper(module, 'OpenerDirector.open',
+            _nr_wrapper_opener_director_open_)

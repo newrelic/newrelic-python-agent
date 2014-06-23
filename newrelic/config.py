@@ -237,6 +237,8 @@ def _process_configuration(section):
                      'get', None)
     _process_setting(section, 'monitor_mode',
                      'getboolean', None)
+    _process_setting(section, 'developer_mode', 
+                     'getboolean', None)
     _process_setting(section, 'high_security',
                      'getboolean', None)
     _process_setting(section, 'capture_params',

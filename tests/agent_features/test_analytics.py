@@ -72,8 +72,6 @@ def validate_analytics_sample_data(name, capture_attributes=True):
         assert record['timestamp'] >= 0.0
         assert record['duration'] >= 0.0
 
-        assert record['webDuration'] >= 0.0
-
         assert 'queueDuration' not in record
         assert 'externalDuration' not in record
         assert 'databaseDuration' not in record
@@ -295,6 +293,29 @@ def test_capture_attributes_default():
 
     assert 'userAttributes' not in data
 
+_test_analytic_events_background_task_settings = {
+    'browser_monitoring.capture_attributes': True }
+
+@validate_analytics_sample_data(name='OtherTransaction/Uri/')
+@override_application_settings(
+        _test_analytic_events_background_task_settings)
+def test_analytic_events_background_task():
+    settings = application_settings()
+
+    assert settings.collect_analytics_events
+    assert settings.analytics_events.enabled
+    assert settings.analytics_events.transactions.enabled
+
+    assert settings.browser_monitoring.enabled
+    assert settings.browser_monitoring.capture_attributes
+
+    assert settings.js_agent_loader
+
+    response = target_application.get('/', extra_environ={
+            'newrelic.set_background_task': True})
+
+    assert response.html.html.head.script is None
+
 _test_capture_attributes_disabled_settings = {
     'browser_monitoring.capture_attributes': False }
 
@@ -457,26 +478,3 @@ def test_analytic_events_transactions_disabled():
     data = json.loads(footer.split('NREUM.info=')[1])
 
     assert 'userAttributes' in data
-
-_test_analytic_events_background_task_settings = {
-    'browser_monitoring.capture_attributes': True }
-
-@validate_no_analytics_sample_data
-@override_application_settings(
-        _test_analytic_events_background_task_settings)
-def test_analytic_events_background_task():
-    settings = application_settings()
-
-    assert settings.collect_analytics_events
-    assert settings.analytics_events.enabled
-    assert settings.analytics_events.transactions.enabled
-
-    assert settings.browser_monitoring.enabled
-    assert settings.browser_monitoring.capture_attributes
-
-    assert settings.js_agent_loader
-
-    response = target_application.get('/', extra_environ={
-            'newrelic.set_background_task': True})
-
-    assert response.html.html.head.script is None

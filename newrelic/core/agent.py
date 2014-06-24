@@ -421,6 +421,15 @@ class Agent(object):
                     instance.register_data_source(source, name,
                             settings, **properties)
 
+    def record_exception(self, app_name, exc=None, value=None, tb=None,
+            params={}, ignore_errors=[]):
+
+        application = self._applications.get(app_name, None)
+        if application is None or not application.active:
+            return
+
+        application.record_exception(exc, value, tb, params, ignore_errors)
+
     def record_custom_metric(self, app_name, name, value):
         """Records a basic metric for the named application. If there has
         been no prior request to activate the application, the metric is

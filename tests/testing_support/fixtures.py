@@ -71,6 +71,9 @@ _fake_collector_responses = {
     'shutdown': None,
 }
 
+if _environ_as_bool('NEW_RELIC_HIGH_SECURITY'):
+    _fake_collector_responses['connect']['high_security'] = True
+
 def fake_collector_wrapper(wrapped, instance, args, kwargs):
     def _bind_params(session, url, method, license_key, agent_run_id=None,
             payload=()):
@@ -279,7 +282,8 @@ def validate_transaction_metrics(name, group='Function',
 
     return _validate_transaction_metrics
 
-def validate_transaction_errors(errors=[]):
+def validate_transaction_errors(errors=[], required_params=[],
+        forgone_params=[]):
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
     def _validate_transaction_errors(wrapped, instance, args, kwargs):
@@ -299,12 +303,22 @@ def validate_transaction_errors(errors=[]):
         assert expected == captured, 'expected=%r, captured=%r, errors=%r' % (
                 expected, captured, transaction.errors)
 
+        for e in transaction.errors:
+            for name, value in required_params:
+                assert name in e.custom_params, ('name=%r, '
+                        'params=%r' % (name, e.custom_params))
+                assert e.custom_params[name] == value, ('name=%r, value=%r, '
+                        'params=%r' % (name, value, e.custom_params))
+
+            for name, value in forgone_params:
+                assert name not in e.custom_params, ('name=%r, '
+                        'params=%r' % (name, e.custom_params))
+
         return wrapped(*args, **kwargs)
 
     return _validate_transaction_errors
 
-
-def validate_custom_parameters(custom_params=[]):
+def validate_custom_parameters(required_params=[], forgone_params=[]):
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
     def _validate_custom_parameters(wrapped, instance, args, kwargs):
@@ -313,8 +327,16 @@ def validate_custom_parameters(custom_params=[]):
 
         transaction = _bind_params(*args, **kwargs)
 
-        for name, value in custom_params:
-            assert transaction.custom_params[name] == value
+        for name, value in required_params:
+            assert name in transaction.custom_params, ('name=%r, '
+                    'params=%r' % (name, transaction.custom_params))
+            assert transaction.custom_params[name] == value, (
+                    'name=%r, value=%r, params=%r' % (name, value,
+                    transaction.custom_params))
+
+        for name, value in forgone_params:
+            assert name not in transaction.custom_params, ('name=%r, '
+                    'params=%r' % (name, transaction.custom_params))
 
         return wrapped(*args, **kwargs)
 

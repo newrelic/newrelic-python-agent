@@ -237,6 +237,8 @@ def _process_configuration(section):
                      'get', None)
     _process_setting(section, 'monitor_mode',
                      'getboolean', None)
+    _process_setting(section, 'high_security',
+                     'getboolean', None)
     _process_setting(section, 'capture_params',
                      'getboolean', None)
     _process_setting(section, 'ignored_params',
@@ -375,6 +377,8 @@ def _process_configuration(section):
                      'get', None)
     _process_setting(section, 'cross_application_tracer.enabled',
                      'getboolean', None)
+    _process_setting(section, 'process_host.display_name',
+                     'get', None)
 
 # Loading of configuration from specified file and for specified
 # deployment environment. Can also indicate whether configuration
@@ -412,6 +416,33 @@ def _process_app_name_setting():
         _settings.linked_applications = linked
 
     _settings.app_name = name
+
+def apply_local_high_security_mode_setting(settings):
+    # When High Security Mode is activated, certain settings must be
+    # set to be secure, even if that requires overriding a setting that
+    # has been individually configured as insecure.
+
+    if not settings.high_security:
+        return settings
+
+    log_template = ('Overriding setting for %r because High '
+                    'Security Mode has been activated. The original '
+                    'setting was %r. The new setting is %r.')
+
+    if not settings.ssl:
+        settings.ssl = True
+        _logger.info(log_template, 'ssl', False, True)
+
+    if settings.capture_params:
+        settings.capture_params = False
+        _logger.info(log_template, 'capture_params', True, False)
+
+    if settings.transaction_tracer.record_sql == 'raw':
+        settings.transaction_tracer.record_sql = 'obfuscated'
+        _logger.info(log_template, 'transaction_tracer.record_sql',
+            'raw', 'obfuscated')
+
+    return settings
 
 def _load_configuration(config_file=None, environment=None,
         ignore_errors=True, log_file=None, log_level=None):
@@ -529,6 +560,11 @@ def _load_configuration(config_file=None, environment=None,
 
     for option, value in _cache_object:
         _logger.debug("agent config %s = %s" % (option, repr(value)))
+
+    # Apply High Security Mode policy if enabled in local agent
+    # configuration file.
+
+    apply_local_high_security_mode_setting(_settings)
 
     # Look for an app_name setting which is actually a semi colon
     # list of application names and adjust app_name setting and
@@ -894,14 +930,17 @@ def _process_external_trace_configuration():
 
 # Setup function traces defined in configuration file.
 
-def _function_trace_import_hook(object_path, name, group):
+def _function_trace_import_hook(object_path, name, group, label, params,
+        terminal, rollup):
     def _instrument(target):
         _logger.debug("wrap function-trace %s" %
-                ((target, object_path, name, group),))
+                ((target, object_path, name, group, label, params,
+                terminal, rollup),))
 
         try:
             newrelic.api.function_trace.wrap_function_trace(
-                    target, object_path, name, group)
+                    target, object_path, name, group, label, params,
+                    terminal, rollup)
         except Exception:
             _raise_instrumentation_error('function-trace', locals())
 
@@ -930,11 +969,21 @@ def _process_function_trace_configuration():
 
             name = None
             group = 'Function'
+            label = None
+            params = None
+            terminal = False
+            rollup = None
 
             if _config_object.has_option(section, 'name'):
                 name = _config_object.get(section, 'name')
             if _config_object.has_option(section, 'group'):
                 group = _config_object.get(section, 'group')
+            if _config_object.has_option(section, 'label'):
+                label = _config_object.get(section, 'label')
+            if _config_object.has_option(section, 'terminal'):
+                terminal = _config_object.getboolean(section, 'terminal')
+            if _config_object.has_option(section, 'rollup'):
+                rollup = _config_object.get(section, 'rollup')
 
             if name and name.startswith('lambda '):
                 vars = {"callable_name":
@@ -942,9 +991,11 @@ def _process_function_trace_configuration():
                 name = eval(name, vars)
 
             _logger.debug("register function-trace %s" %
-                    ((module, object_path, name, group),))
+                    ((module, object_path, name, group, label, params,
+                    terminal, rollup),))
 
-            hook = _function_trace_import_hook(object_path, name, group)
+            hook = _function_trace_import_hook(object_path, name, group,
+                    label, params, terminal, rollup)
             newrelic.api.import_hook.register_import_hook(module, hook)
         except Exception:
             _raise_configuration_error(section)
@@ -1120,14 +1171,14 @@ def _process_memcache_trace_configuration():
 
 # Setup name transaction wrapper defined in configuration file.
 
-def _transaction_name_import_hook(object_path, name, group):
+def _transaction_name_import_hook(object_path, name, group, priority):
     def _instrument(target):
         _logger.debug("wrap transaction-name %s" %
-                ((target, object_path, name, group),))
+                ((target, object_path, name, group, priority),))
 
         try:
             newrelic.api.transaction_name.wrap_transaction_name(
-                    target, object_path, name, group)
+                    target, object_path, name, group, priority)
         except Exception:
             _raise_instrumentation_error('transaction-name', locals())
 
@@ -1158,11 +1209,14 @@ def _process_transaction_name_configuration():
 
             name = None
             group = 'Function'
+            priority = None
 
             if _config_object.has_option(section, 'name'):
                 name = _config_object.get(section, 'name')
             if _config_object.has_option(section, 'group'):
                 group = _config_object.get(section, 'group')
+            if _config_object.has_option(section, 'priority'):
+                priority = _config_object.getint(section, 'priority')
 
             if name and name.startswith('lambda '):
                 vars = {"callable_name":
@@ -1170,10 +1224,10 @@ def _process_transaction_name_configuration():
                 name = eval(name, vars)
 
             _logger.debug("register transaction-name %s" %
-                    ((module, object_path, name, group),))
+                    ((module, object_path, name, group, priority),))
 
             hook = _transaction_name_import_hook(object_path, name,
-                                                 group)
+                                                 group, priority)
             newrelic.api.import_hook.register_import_hook(module, hook)
         except Exception:
             _raise_configuration_error(section)

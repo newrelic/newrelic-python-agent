@@ -14,8 +14,8 @@ DB_SETTINGS = postgresql_settings()
 
 _test_execute_via_cursor_scoped_metrics = [
         ('Function/postgresql.driver.dbapi20:connect', 1),
-        ('Function/postgresql.driver.pq3:Connection.__enter__', 1),
-        ('Function/postgresql.driver.pq3:Connection.__exit__', 1),
+        ('Function/postgresql.driver.dbapi20:Connection.__enter__', 1),
+        ('Function/postgresql.driver.dbapi20:Connection.__exit__', 1),
         ('Database/database_postgresql/select', 1),
         ('Database/database_postgresql/insert', 1),
         ('Database/database_postgresql/update', 1),
@@ -77,8 +77,8 @@ def test_execute_via_cursor():
 
 _test_rollback_on_exception_scoped_metrics = [
         ('Function/postgresql.driver.dbapi20:connect', 1),
-        ('Function/postgresql.driver.pq3:Connection.__enter__', 1),
-        ('Function/postgresql.driver.pq3:Connection.__exit__', 1),
+        ('Function/postgresql.driver.dbapi20:Connection.__enter__', 1),
+        ('Function/postgresql.driver.dbapi20:Connection.__exit__', 1),
         ('Database/other/sql', 1)]
 
 _test_rollback_on_exception_rollup_metrics = [

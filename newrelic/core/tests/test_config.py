@@ -1,3 +1,4 @@
+import copy
 import unittest
 
 import newrelic.core.config
@@ -90,6 +91,53 @@ class TestIgnoreStatusCodes(unittest.TestCase):
         newrelic.core.config._parse_ignore_status_codes(
                 '100-110 200 201 202 !201 !101-109', values)
         self.assertEqual(values, set([100, 110, 200, 202]))
+
+class TestCreateSettingsSnapshot(unittest.TestCase):
+
+    def setUp(self):
+        self.local = copy.deepcopy(newrelic.core.config.global_settings())
+
+    def test_high_security_off_override_ssl(self):
+        server = {'ssl': False}
+        self.local.high_security = False
+        self.local.ssl = True
+        c = newrelic.core.config.create_settings_snapshot(server, self.local)
+        self.assertFalse(c.ssl)
+
+    def test_high_security_off_override_capture_params(self):
+        server = {'capture_params': False}
+        self.local.high_security = False
+        self.local.capture_params = True
+        c = newrelic.core.config.create_settings_snapshot(server, self.local)
+        self.assertFalse(c.capture_params)
+
+    def test_high_security_off_override_record_sql(self):
+        server = {'transaction_tracer.record_sql': 'off'}
+        self.local.high_security = False
+        self.local.transaction_tracer.record_sql = 'raw'
+        c = newrelic.core.config.create_settings_snapshot(server, self.local)
+        self.assertEqual(c.transaction_tracer.record_sql, 'off')
+
+    def test_high_security_on_keep_local_ssl(self):
+        server = {}
+        self.local.high_security = True
+        self.local.ssl = True
+        c = newrelic.core.config.create_settings_snapshot(server, self.local)
+        self.assertTrue(c.ssl)
+
+    def test_high_security_on_keep_local_capture_params(self):
+        server = {}
+        self.local.high_security = True
+        self.local.capture_params = False
+        c = newrelic.core.config.create_settings_snapshot(server, self.local)
+        self.assertFalse(c.capture_params)
+
+    def test_high_security_on_keep_local_record_sql(self):
+        server = {}
+        self.local.high_security = True
+        self.local.transaction_tracer.record_sql = 'obfuscated'
+        c = newrelic.core.config.create_settings_snapshot(server, self.local)
+        self.assertEqual(c.transaction_tracer.record_sql, 'obfuscated')
 
 if __name__ == "__main__":
     unittest.main()

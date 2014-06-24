@@ -448,14 +448,23 @@ class SQLConnection(object):
         cursor = self.cursors.get(key)
 
         if cursor is None:
+            settings = global_settings()
+
+            if settings.debug.log_explain_plan_queries:
+                _logger.debug('Created database cursor for %r.',
+                        self.database.client)
+
             cursor = self.connection.cursor(*args, **kwargs)
             self.cursors[key] = cursor
 
         return cursor
 
     def cleanup(self):
-        _logger.debug('Cleanup database connection for %r.',
-                self.database)
+        settings = global_settings()
+
+        if settings.debug.log_explain_plan_queries:
+            _logger.debug('Cleanup database connection for %r.',
+                    self.database)
 
         try:
             self.connection.rollback()
@@ -471,12 +480,17 @@ class SQLConnections(object):
         self.connections = []
         self.maximum = maximum
 
-        _logger.debug('Creating SQL connections cache %r.', self)
+        settings = global_settings()
+
+        if settings.debug.log_explain_plan_queries:
+            _logger.debug('Creating SQL connections cache %r.', self)
 
     def connection(self, database, args, kwargs):
         key = (database.client, args, kwargs)
 
         connection = None
+
+        settings = global_settings()
 
         for i, item in enumerate(self.connections):
             if item[0] == key:
@@ -501,9 +515,10 @@ class SQLConnections(object):
                 internal_metric('Supportability/DatabaseUtils/Counts/'
                                 'drop_database_connection', 1)
 
-                _logger.debug('Drop database connection for %r as '
-                        'reached maximum of %r.', connection.database.client,
-                        self.maximum)
+                if settings.debug.log_explain_plan_queries:
+                    _logger.debug('Drop database connection for %r as '
+                            'reached maximum of %r.',
+                            connection.database.client, self.maximum)
 
                 connection.cleanup()
 
@@ -515,13 +530,17 @@ class SQLConnections(object):
             internal_metric('Supportability/DatabaseUtils/Counts/'
                             'create_database_connection', 1)
 
-            _logger.debug('Created database connection for %r.',
-                    database.client)
+            if settings.debug.log_explain_plan_queries:
+                _logger.debug('Created database connection for %r.',
+                        database.client)
 
         return connection
 
     def cleanup(self):
-        _logger.debug('Cleaning up SQL connections cache %r.', self)
+        settings = global_settings()
+
+        if settings.debug.log_explain_plan_queries:
+            _logger.debug('Cleaning up SQL connections cache %r.', self)
 
         for key, connection in self.connections:
             connection.cleanup()
@@ -533,6 +552,19 @@ class SQLConnections(object):
 
     def __exit__(self, exc, value, tb):
         self.cleanup()
+
+def _query_result_dicts_to_tuples(columns, rows):
+    # Query results come back as a list of rows. If each row is a
+    # dict, then its keys can be found in the columns list. Here, we
+    # transform each row from a dict to a tuple, ordering the items
+    # in the row in the same order as that found in columns.
+
+    # Handle case where query results are empty.
+
+    if not columns or not rows:
+        return None
+
+    return [tuple([row[col] for col in columns]) for row in rows]
 
 @internal_trace('Supportability/DatabaseUtils/Calls/explain_plan')
 def _explain_plan(connections, sql, database, connect_params, cursor_params,
@@ -582,6 +614,16 @@ def _explain_plan(connections, sql, database, connect_params, cursor_params,
                 columns.append(column[0])
 
         rows = cursor.fetchall()
+
+        # If rows have been returned as a list of dicts, then convert
+        # them to a list of tuples before returning.
+
+        if settings.debug.log_explain_plan_queries:
+            _logger.debug('Explain plan row data type is %r',
+                    rows and type(rows[0]))
+
+        if rows and isinstance(rows[0], dict):
+            rows = _query_result_dicts_to_tuples(columns, rows)
 
         if not columns and not rows:
             return None

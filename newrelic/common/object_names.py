@@ -188,7 +188,20 @@ def _object_context_py2(object):
 
     # Now calculate the name of the module object is defined in.
 
-    mname = _module_name(object)
+    owner = None
+
+    if inspect.ismethod(object):
+        if object.__self__ is not None:
+            cname = getattr(object.__self__, '__name__', None)
+            if cname is None:
+                owner = object.__self__.__class__
+            else:
+                owner = object.__self__
+
+        else:
+            owner = object.__self__
+
+    mname = _module_name(owner or object)
 
     return (mname, path)
 
@@ -212,7 +225,20 @@ def _object_context_py3(object):
 
     # Now calculate the name of the module object is defined in.
 
-    mname = _module_name(object)
+    owner = None
+
+    if inspect.ismethod(object):
+        if object.__self__ is not None:
+            cname = getattr(object.__self__, '__name__', None)
+            if cname is None:
+                owner = object.__self__.__class__
+            else:
+                owner = object.__self__
+
+        else:
+            owner = object.__self__
+
+    mname = _module_name(owner or object)
 
     return (mname, path)
 

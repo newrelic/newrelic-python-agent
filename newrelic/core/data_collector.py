@@ -124,6 +124,7 @@ def _requests_proxy_scheme_workaround(wrapped, instance, args, kwargs):
 # session data collector to use. Subsequent calls are then made to it.
 
 _audit_log_fp = None
+_audit_log_id = 0
 
 def _log_request(url, params, headers, data):
     settings = global_settings()
@@ -142,8 +143,14 @@ def _log_request(url, params, headers, data):
             settings.audit_log_file = None
             return
 
+    global _audit_log_id
+
+    _audit_log_id += 1
+
     print('TIME: %r' % time.strftime('%Y-%m-%d %H:%M:%S',
             time.localtime()), file=_audit_log_fp)
+    print(file=_audit_log_fp)
+    print('ID: %r' % _audit_log_id, file=_audit_log_fp)
     print(file=_audit_log_fp)
     print('PID: %r' % os.getpid(), file=_audit_log_fp)
     print(file=_audit_log_fp)
@@ -192,6 +199,27 @@ def _log_request(url, params, headers, data):
             print(file=_audit_log_fp)
             print('DATA[0][%d][9]:' % i, end=' ', file=_audit_log_fp)
             pprint(field_as_json, stream=_audit_log_fp)
+
+    print(file=_audit_log_fp)
+    print(78*'=', file=_audit_log_fp)
+    print(file=_audit_log_fp)
+
+    _audit_log_fp.flush()
+
+    return _audit_log_id
+
+def _log_response(log_id, result):
+
+    print('TIME: %r' % time.strftime('%Y-%m-%d %H:%M:%S',
+            time.localtime()), file=_audit_log_fp)
+    print(file=_audit_log_fp)
+    print('ID: %r' % _audit_log_id, file=_audit_log_fp)
+    print(file=_audit_log_fp)
+    print('PID: %r' % os.getpid(), file=_audit_log_fp)
+    print(file=_audit_log_fp)
+    print('RESULT:', end=' ', file=_audit_log_fp)
+
+    pprint(result, stream=_audit_log_fp)
 
     print(file=_audit_log_fp)
     print(78*'=', file=_audit_log_fp)
@@ -325,7 +353,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
     # If audit logging is enabled, log the requetss details.
 
-    _log_request(url, params, headers, data)
+    log_id = _log_request(url, params, headers, data)
 
     try:
         # The timeout value in the requests module is only on
@@ -480,8 +508,11 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         raise DiscardDataForRequest(str(sys.exc_info()[1]))
 
     # The decoded JSON can be either for a successful response or an
-    # error. A successful response has a 'return_value' element and an
+    # error. A successful response has a 'return_value' element and on
     # error an 'exception' element.
+
+    if log_id is not None:
+        _log_response(log_id, result)
 
     if 'return_value' in result:
         return result['return_value']
@@ -733,6 +764,61 @@ class ApplicationSession(object):
                 'analytic_event_data', self.license_key, self.agent_run_id,
                 payload)
 
+def apply_high_security_mode_fixups(local_settings, server_settings):
+    # When High Security Mode is True in local_settings, then all
+    # security related settings should be removed from server_settings.
+    # That way, when the local and server side configuration settings
+    # are merged, the local security settings will not get overwritten
+    # by the server side configuration settings.
+    #
+    # Note that security settings we may want to remove can appear at
+    # both the top level of the server settings, but also nested within
+    # the 'agent_config' sub dictionary. Those settings at the top level
+    # represent how the settings were previously overriden for high
+    # security mode. Those in 'agent_config' correspond to server side
+    # configuration as set by the user.
+
+    if not local_settings['high_security']:
+        return server_settings
+
+    # Remove top-level 'high_security' setting. This will only exist
+    # if it had been enabled server side.
+
+    if 'high_security' in server_settings:
+        del server_settings['high_security']
+
+    # Remove individual security settings from top level of configuration
+    # settings returned.
+
+    security_settings = ('capture_params', 'transaction_tracer.record_sql')
+
+    for setting in security_settings:
+        if setting in server_settings:
+            del server_settings[setting]
+
+    # When server side configuration is disabled, there will be no
+    # agent_config value in server_settings, so no more fixups
+    # are required.
+
+    if 'agent_config' not in server_settings:
+        return server_settings
+
+    # Remove individual security settings from agent server side
+    # configuration settings.
+
+    agent_config = server_settings['agent_config']
+
+    for setting in security_settings:
+        if setting in agent_config:
+            del server_settings['agent_config'][setting]
+
+            _logger.info('Ignoring server side configuration setting for '
+                    '%r, because High Security Mode has been activated. '
+                    'Using local setting %s=%r.', setting, setting,
+                    local_settings[setting])
+
+    return server_settings
+
 def create_session(license_key, app_name, linked_applications,
         environment, settings):
 
@@ -784,20 +870,35 @@ def create_session(license_key, app_name, linked_applications,
 
         local_config = {}
 
+        local_config['host'] = socket.gethostname()
         local_config['pid'] = os.getpid()
         local_config['language'] = 'python'
-        local_config['host'] = socket.gethostname()
         local_config['app_name'] = app_names
         local_config['identifier'] = ','.join(app_names)
         local_config['agent_version'] = version
         local_config['environment'] = environment
         local_config['settings'] = settings
+        local_config['high_security'] = settings['high_security']
+
+        display_name = settings['process_host.display_name']
+
+        if display_name is None:
+            local_config['display_name'] = local_config['host']
+        else:
+            local_config['display_name'] = display_name
 
         payload = (local_config,)
 
         url = collector_url(redirect_host)
         server_config = send_request(None, url, 'connect',
                 license_key, None, payload)
+
+        # Apply High Security Mode to server_config, so the local security
+        # settings won't get overwritten when we overlay the server settings
+        # on top of them.
+
+        server_config = apply_high_security_mode_fixups(settings,
+                server_config)
 
         # The agent configuration for the application in constructed
         # by taking a snapshot of the locally constructed configuration
@@ -839,8 +940,8 @@ def create_session(license_key, app_name, linked_applications,
                 'agent_run_id=%r, in %.2f seconds.', app_name, os.getpid(),
                 redirect_host, session.agent_run_id, duration)
 
-        if hasattr(application_config, 'high_security'):
-            _logger.info('High security mode is being applied to all '
+        if getattr(application_config, 'high_security', False):
+            _logger.info('High Security Mode is being applied to all '
                     'communications between the agent and the data '
                     'collector for this session.')
 

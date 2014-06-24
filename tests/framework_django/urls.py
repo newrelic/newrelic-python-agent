@@ -3,7 +3,10 @@ try:
 except ImportError:    
     from django.conf.urls import patterns, url
 
+from views import MyView
+
 urlpatterns = patterns('',
-    # Examples:
     url(r'^$', 'views.index', name='index'),
+    url(r'^cbv$', MyView.as_view()),
+    url(r'^deferred_cbv$', 'views.deferred_cbv')
 )

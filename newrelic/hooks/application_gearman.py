@@ -52,7 +52,7 @@ def wrapper_GearmanConnectionManager_poll_connections_until_stopped(
     if not submitted_connections:
         return wrapped(*args, **kwargs)
 
-    first_connection = submitted_connections[0]
+    first_connection = list(submitted_connections)[0]
 
     url = 'gearman://%s:%s' % (first_connection.gearman_host,
             first_connection.gearman_port)

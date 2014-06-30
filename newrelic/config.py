@@ -581,11 +581,16 @@ def _load_configuration(config_file=None, environment=None,
 
             name = None
             group = 'Function'
+            label = None
+            params = None
+            terminal = False
+            rollup = None
 
             _logger.debug("register function-trace %s" %
                     ((module, object_path, name, group),))
 
-            hook = _function_trace_import_hook(object_path, name, group)
+            hook = _function_trace_import_hook(object_path, name, group,
+                    label, params, terminal, rollup)
             newrelic.api.import_hook.register_import_hook(module, hook)
         except Exception:
             _raise_configuration_error(section=None,

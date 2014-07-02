@@ -1723,7 +1723,11 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.external_urllib2') # Python 2
 
     _process_module_definition('urllib3',
-            'newrelic.hooks.external_urllib3')
+            'newrelic.hooks.external_urllib3',
+            'instrument_urllib3_make_request')
+    _process_module_definition('urllib3.connection',
+            'newrelic.hooks.external_urllib3',
+            'instrument_urllib3_connect')
 
     _process_module_definition('requests.api',
             'newrelic.hooks.external_requests',
@@ -1731,6 +1735,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('requests.sessions',
             'newrelic.hooks.external_requests',
             'instrument_requests_sessions')
+    _process_module_definition('requests.packages.urllib3.connection',
+            'newrelic.hooks.external_urllib3',
+            'instrument_urllib3_connect')
 
     _process_module_definition('feedparser',
             'newrelic.hooks.external_feedparser')

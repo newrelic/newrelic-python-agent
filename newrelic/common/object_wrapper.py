@@ -170,10 +170,23 @@ def resolve_path(module, name):
         # that on a class it will cause binding to occur which
         # will complicate things later and cause some things not
         # to work. For the case of a class we therefore access
-        # the __dict__ directly.
+        # the __dict__ directly. To cope though with the wrong
+        # class being given to us, or a method being moved into
+        # a base class, we need to walk the class heirarchy to
+        # work out exactly which __dict__ the method was defined
+        # in, as accessing it from __dict__ will fail if it was
+        # not actually on the class given. Fallback to using
+        # getattr() if we can't find it. If it truly doesn't
+        # exist, then that will fail.
 
         if inspect.isclass(original):
-            original = vars(original)[attribute]
+            for cls in inspect.getmro(original):
+                if attribute in vars(original):
+                    original = vars(original)[attribute]
+                    break
+            else:
+                original = getattr(original, attribute)
+
         else:
             original = getattr(original, attribute)
 

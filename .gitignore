@@ -47,3 +47,5 @@ htmlcov
 
 testing.log
 .tddium*
+
+.tags

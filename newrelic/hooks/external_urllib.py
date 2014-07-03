@@ -51,22 +51,22 @@ def instrument(module):
     if hasattr(module, 'urlretrieve'):
 
         _nr_wrapper_urlretrieve_ = _nr_wrapper_factory(
-            bind_params_urlretrieve, 'urllib')
+                bind_params_urlretrieve, 'urllib')
 
         wrap_function_wrapper(module, 'urlretrieve', _nr_wrapper_urlretrieve_)
 
     if hasattr(module, 'URLopener'):
 
         _nr_wrapper_url_opener_open_ = _nr_wrapper_factory(
-            bind_params_open, 'urllib')
+                bind_params_open, 'urllib')
 
         wrap_function_wrapper(module, 'URLopener.open',
-            _nr_wrapper_url_opener_open_)
+                _nr_wrapper_url_opener_open_)
 
     if hasattr(module, 'OpenerDirector'):
 
         _nr_wrapper_opener_director_open_ = _nr_wrapper_factory(
-            bind_params_open, 'urllib2')
+                bind_params_open, 'urllib2')
 
         wrap_function_wrapper(module, 'OpenerDirector.open',
-            _nr_wrapper_opener_director_open_)
+                _nr_wrapper_opener_director_open_)

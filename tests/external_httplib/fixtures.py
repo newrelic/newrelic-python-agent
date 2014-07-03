@@ -11,7 +11,8 @@ from newrelic.agent import (transient_function_wrapper, current_transaction,
 from newrelic.common.encoding_utils import (json_encode, json_decode,
     obfuscate, deobfuscate)
 
-def cache_outgoing_headers_fn(wrapped, instance, args, kwargs):
+@transient_function_wrapper(httplib.__name__, 'HTTPConnection.putheader')
+def cache_outgoing_headers(wrapped, instance, args, kwargs):
     def _bind_params(header, *values):
         return header, values
 
@@ -33,14 +34,6 @@ def cache_outgoing_headers_fn(wrapped, instance, args, kwargs):
         transaction._test_request_headers[header] = list(values)
 
     return wrapped(*args, **kwargs)
-
-@transient_function_wrapper(httplib.__name__, 'HTTPConnection.putheader')
-def cache_outgoing_headers(wrapped, instance, args, kwargs):
-    return cache_outgoing_headers_fn(wrapped, instance, args, kwargs)
-
-@transient_function_wrapper(urllib3.__name__, 'connection.HTTPConnection.putheader')
-def cache_outgoing_headers_urllib3(wrapped, instance, args, kwargs):
-    return cache_outgoing_headers_fn(wrapped, instance, args, kwargs)
 
 @function_wrapper
 def validate_cross_process_headers(wrapped, instance, args, kwargs):

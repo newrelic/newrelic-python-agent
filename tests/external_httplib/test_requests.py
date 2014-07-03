@@ -1,9 +1,8 @@
 import requests
 
 from testing_support.fixtures import validate_transaction_metrics
-from fixtures import (cache_outgoing_headers, cache_outgoing_headers_urllib3,
-    validate_cross_process_headers, insert_incoming_headers,
-    validate_external_node_params)
+from fixtures import (cache_outgoing_headers, validate_cross_process_headers,
+    insert_incoming_headers, validate_external_node_params)
 
 from newrelic.agent import background_task
 

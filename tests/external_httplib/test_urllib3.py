@@ -1,9 +1,8 @@
 import urllib3
 
 from testing_support.fixtures import validate_transaction_metrics
-from fixtures import (cache_outgoing_headers, cache_outgoing_headers_urllib3,
-    validate_cross_process_headers, insert_incoming_headers,
-    validate_external_node_params)
+from fixtures import (cache_outgoing_headers, validate_cross_process_headers,
+    insert_incoming_headers, validate_external_node_params)
 
 from newrelic.agent import background_task
 
@@ -77,7 +76,7 @@ def test_https_request_connection_pool_request():
     pool.request('GET', '/index.html')
 
 @background_task()
-@cache_outgoing_headers_urllib3
+@cache_outgoing_headers
 @validate_cross_process_headers
 def test_urlopen_cross_process_request():
     pool = urllib3.HTTPConnectionPool('www.example.com')

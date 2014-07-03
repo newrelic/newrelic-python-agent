@@ -8,7 +8,7 @@ import newrelic.packages.six as six
 from newrelic.agent import (current_transaction,
     wrap_function_wrapper, ExternalTrace, FunctionTrace)
 
-def _nr_wrapper_factory(bind_params_fn, function_name, external_name):
+def _nr_wrapper_factory(bind_params_fn, external_name):
     # Wrapper functions will be similar for monkeypatching the different
     # urllib functions and methods, so a factory function to create them is
     # used to reduce repetitiveness.
@@ -16,7 +16,6 @@ def _nr_wrapper_factory(bind_params_fn, function_name, external_name):
     # Parameters:
     #
     # bind_params_fn: Function that returns the URL.
-    # function_name: String. The name to be used by FunctionTrace.
     # external_name: String. The name to be used by ExternalTrace.
 
     def _nr_wrapper(wrapped, instance, args, kwargs):
@@ -30,8 +29,7 @@ def _nr_wrapper_factory(bind_params_fn, function_name, external_name):
         details = urlparse.urlparse(url)
 
         if details.hostname is None:
-            with FunctionTrace(transaction, function_name):
-                return wrapped(*args, **kwargs)
+            return wrapped(*args, **kwargs)
 
         with ExternalTrace(transaction, external_name, url):
             return wrapped(*args, **kwargs)
@@ -53,14 +51,14 @@ def instrument(module):
     if hasattr(module, 'urlretrieve'):
 
         _nr_wrapper_urlretrieve_ = _nr_wrapper_factory(
-            bind_params_urlretrieve, 'urllib:urlretrieve', 'urllib')
+            bind_params_urlretrieve, 'urllib')
 
         wrap_function_wrapper(module, 'urlretrieve', _nr_wrapper_urlretrieve_)
 
     if hasattr(module, 'URLopener'):
 
         _nr_wrapper_url_opener_open_ = _nr_wrapper_factory(
-            bind_params_open, 'urllib:URLopener.open', 'urllib')
+            bind_params_open, 'urllib')
 
         wrap_function_wrapper(module, 'URLopener.open',
             _nr_wrapper_url_opener_open_)
@@ -68,7 +66,7 @@ def instrument(module):
     if hasattr(module, 'OpenerDirector'):
 
         _nr_wrapper_opener_director_open_ = _nr_wrapper_factory(
-            bind_params_open, 'urllib2:OpenerDirector.open', 'urllib2')
+            bind_params_open, 'urllib2')
 
         wrap_function_wrapper(module, 'OpenerDirector.open',
             _nr_wrapper_opener_director_open_)

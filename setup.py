@@ -81,6 +81,7 @@ packages = [
   "newrelic.extras.framework_django",
   "newrelic.extras.framework_django.templatetags",
   "newrelic.hooks",
+  "newrelic.hooks.framework_tornado",
   "newrelic.network",
   "newrelic/packages",
   "newrelic/packages/requests",

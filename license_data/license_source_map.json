@@ -1037,7 +1037,13 @@
             "New Relic"
         ]
     },
-    "newrelic/hooks/framework_tornado.py": {
+    "newrelic/hooks/framework_tornado/__init__.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/framework_tornado/wsgi.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

@@ -1580,7 +1580,7 @@ def _process_module_builtin_defaults():
             'instrument_cherrypy__cptree')
 
     _process_module_definition('tornado.wsgi',
-            'newrelic.hooks.framework_tornado',
+            'newrelic.hooks.framework_tornado.wsgi',
             'instrument_tornado_wsgi')
 
     _process_module_definition('tornado.httpserver',

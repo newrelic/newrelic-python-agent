@@ -3,6 +3,7 @@ import sys
 import weakref
 import types
 import itertools
+import traceback
 
 from newrelic.agent import (wrap_function_wrapper, current_transaction,
         FunctionTrace, wrap_function_trace, WebTransaction, callable_name,
@@ -23,7 +24,21 @@ def record_exception(transaction, exc_info):
     transaction.record_exception(*exc_info)
 
 def request_environment(application, request):
-    result = {}
+    # This creates a WSGI environ dictionary from a Tornado request.
+
+    result = getattr(request, '_nr_request_environ', None)
+
+    if result is not None:
+        return result
+
+    # We don't bother if the agent hasn't as yet been registered.
+
+    settings = application.settings
+
+    if not settings:
+        return {}
+
+    request._nr_request_environ = result = {}
 
     result['REQUEST_URI'] = request.uri
     result['QUERY_STRING'] = request.query
@@ -43,11 +58,6 @@ def request_environment(application, request):
     value = request.headers.get('X-Queue-Start')
     if value:
         result['HTTP_X_QUEUE_START'] = value
-
-    settings = application.settings
-
-    if not settings:
-        return result
 
     for key in settings.include_environ:
         if key == 'REQUEST_METHOD':
@@ -71,6 +81,130 @@ def request_environment(application, request):
 
     return result
 
+def retrieve_request_transaction(request):
+    # Retrieves any transaction already associated with the request.
+
+    return getattr(request, '_nr_transaction', None)
+
+def initiate_request_monitoring(request):
+    # Creates a new transaction and associates it with the request.
+    # We always use the default application specified in the agent
+    # configuration.
+
+    application = application_instance()
+
+    # We need to fake up a WSGI like environ dictionary with the key
+    # bits of information we need.
+
+    environ = request_environment(application, request)
+
+    # We now start recording the actual web transaction. Bail out though
+    # if it turns out that recording of transactions is not enabled.
+
+    transaction = WebTransaction(application, environ)
+
+    if not transaction.enabled:
+        return
+
+    transaction.__enter__()
+
+    request._nr_transaction = transaction
+
+    request._nr_wait_function_trace = None
+    request._nr_request_finished = False
+
+    # We also need to add a reference to the request object in to the
+    # transaction object so we can later access it in a deferred. We
+    # need to use a weakref to avoid an object cycle which may prevent
+    # cleanup of the transaction.
+
+    transaction._nr_current_request = weakref.ref(request)
+
+    return transaction
+
+def suspend_request_monitoring(request, name, group='Python/Tornado',
+        terminal=True, rollup='Async Wait'):
+
+    # Suspend the monitoring of the transaction. We do this because
+    # we can't rely on thread local data to separate transactions for
+    # requests. We thus have to move it out of the way.
+
+    transaction = retrieve_request_transaction(request)
+
+    if transaction is None:
+        _logger.error('Runtime instrumentation error. Suspending the '
+                'Tornado transaction but there was no transaction cached '
+                'against the request object. Report this issue to New Relic '
+                'support.\n%s', ''.join(traceback.format_stack()[:-1]))
+
+        return
+
+    # Create a function trace to track the time while monitoring of
+    # this transaction is suspended.
+
+    request._nr_wait_function_trace = FunctionTrace(transaction,
+            name=name, group=group, terminal=terminal, rollup=rollup)
+
+    request._nr_wait_function_trace.__enter__()
+
+    transaction.drop_transaction()
+
+def resume_request_monitoring(request, required=False):
+    # Resume the monitoring of the transaction. This is moving the
+    # transaction stored against the request as the active one.
+
+    transaction = retrieve_request_transaction(request)
+
+    if transaction is None:
+        if not required:
+            return
+
+        _logger.error('Runtime instrumentation error. Resuming the '
+                'Tornado transaction but there was no transaction cached '
+                'against the request object. Report this issue to New Relic '
+                'support.\n%s', ''.join(traceback.format_stack()[:-1]))
+
+        return
+
+    transaction.save_transaction()
+
+    # Close out any active function trace used to track the time while
+    # monitoring of the transaction was suspended. Technically there
+    # should always be an active function trace but check and ignore
+    # it if there isn't for now.
+
+    try:
+        if request._nr_wait_function_trace:
+            request._nr_wait_function_trace.__exit__(None, None, None)
+
+    finally:
+        request._nr_wait_function_trace = None
+
+    return transaction
+
+def finalize_request_monitoring(request, exc=None, value=None, tb=None):
+    # Finalize monitoring of the transaction.
+
+    transaction = retrieve_request_transaction(request)
+
+    if transaction is None:
+        _logger.error('Runtime instrumentation error. Finalizing the '
+                'Tornado transaction but there was no transaction cached '
+                'against the request object. Report this issue to New Relic '
+                'support.\n%s', ''.join(traceback.format_stack()[:-1]))
+
+        return
+
+    # If all nodes hadn't been popped from the transaction stack then
+    # error messages will be logged by the transaction. We therefore do
+    # not need to check here.
+
+    transaction.__exit__(exc, value, tb)
+
+    request._nr_transaction = None
+    request._nr_wait_function_trace = None
+    request._nr_request_finished = True
+
 def instrument_tornado_httpserver(module):
 
     def on_headers_wrapper(wrapped, instance, args, kwargs):
@@ -89,75 +223,52 @@ def instrument_tornado_httpserver(module):
             return wrapped(*args, **kwargs)
 
         # Execute the wrapped function as we are only going to do
-        # something after it has been called. The function doesn't
-        # return anything.
+        # something after it has been called.
 
-        wrapped(*args, **kwargs)
+        result = wrapped(*args, **kwargs)
 
         # Check to see if the connection has already been closed or the
         # request finished. The connection can be closed where request
         # content length was too big.
 
         if connection.stream.closed():
-            return
+            return result
 
         if connection._request_finished:
-            return
+            return result
 
-        # Check to see if have already associated a transaction with
+        # Check to see if we have already associated a transaction with
         # the request, because if we have, even if not finished, then
         # do not need to do anything.
 
         request = connection._request
 
         if request is None:
-            return
+            return result
 
-        if hasattr(request, '_nr_transaction'):
-            return
+        transaction = retrieve_request_transaction(request)
 
-        # Always use the default application specified in the agent
-        # configuration.
+        if transaction is not None:
+            return result
 
-        application = application_instance()
+        # Create the transaction but if it is None then it means
+        # recording of transactions is not enabled then do not need to
+        # to anything.
 
-        # We need to fake up a WSGI like environ dictionary with the
-        # key bits of information we need.
+        transaction = initiate_request_monitoring(request)
 
-        environ = request_environment(application, request)
-
-        # Now start recording the actual web transaction. Bail out
-        # though if turns out that recording transactions is not
-        # enabled.
-
-        transaction = WebTransaction(application, environ)
-
-        if not transaction.enabled:
-            return
-
-        transaction.__enter__()
-
-        request._nr_transaction = transaction
-
-        request._nr_wait_function_trace = None
-        request._nr_request_finished = False
+        if transaction is None:
+            return result
 
         # Add a callback variable to the connection object so we can
         # be notified when the connection is closed before all content
         # has been read.
 
         def _close():
-            transaction.save_transaction()
+            transaction = resume_request_monitoring(request)
 
-            try:
-                if request._nr_wait_function_trace:
-                    request._nr_wait_function_trace.__exit__(None, None, None)
-
-            finally:
-                request._nr_wait_function_trace = None
-
-            transaction.__exit__(None, None, None)
-            request._nr_transaction = None
+            if transaction is not None:
+                finalize_request_monitoring(request)
 
         connection.stream._nr_close_callback = _close
 
@@ -167,38 +278,11 @@ def instrument_tornado_httpserver(module):
         # after the URL.
 
         name = callable_name(wrapped)
-
         transaction.set_transaction_name(name)
 
-        # We need to add a reference to the request object in to the
-        # transaction object as only able to stash the transaction
-        # in a deferred. Need to use a weakref to avoid an object
-        # cycle which may prevent cleanup of transaction.
+        suspend_request_monitoring(request, name='Request/Input')
 
-        transaction._nr_current_request = weakref.ref(request)
-
-        try:
-            request._nr_wait_function_trace = FunctionTrace(
-                    transaction, name='Request/Input',
-                    group='Python/Tornado')
-
-            request._nr_wait_function_trace.__enter__()
-            transaction.drop_transaction()
-
-        except:  # Catch all
-            # If an error occurs assume that transaction should be
-            # exited. Technically don't believe this should ever occur
-            # unless our code here has an error.
-
-            connection.stream._nr_close_callback = None
-
-            _logger.exception('Unexpected exception raised by Tornado '
-                    'HTTPConnection._on_headers().')
-
-            transaction.__exit__(*sys.exc_info())
-            request._nr_transaction = None
-
-            raise
+        return result
 
     module.HTTPConnection._on_headers = ObjectWrapper(
             module.HTTPConnection._on_headers, None, on_headers_wrapper)
@@ -214,53 +298,15 @@ def instrument_tornado_httpserver(module):
 
         connection.stream._nr_close_callback = None
 
-        # If no transaction associated with the request we can call
-        # through straight away. There should also be a current function
-        # trace node.
+        # Restore any transaction which may have been suspended.
 
-        if not hasattr(request, '_nr_transaction'):
-            return wrapped(*args, **kwargs)
+        resume_request_monitoring(request)
 
-        if not request._nr_transaction:
-            return wrapped(*args, **kwargs)
+        # Now call the orginal wrapped function. It will in turn
+        # call the application which will ensure any transaction
+        # which was resumed here is popped off.
 
-        if not request._nr_wait_function_trace:
-            return wrapped(*args, **kwargs)
-
-        # Restore the transaction.
-
-        transaction = request._nr_transaction
-
-        transaction.save_transaction()
-
-        # Exit the function trace node. This should correspond to the
-        # reading of the request input.
-
-        try:
-            request._nr_wait_function_trace.__exit__(None, None, None)
-
-        finally:
-            request._nr_wait_function_trace = None
-
-        try:
-            # Now call the orginal wrapped function. It will in turn
-            # call the application which will ensure the transaction
-            # started here is popped off.
-
-            return wrapped(*args, **kwargs)
-
-        except:  # Catch all
-            # If an error occurs assume that transaction should be
-            # exited. Technically don't believe this should ever occur
-            # unless our code here has an error.
-
-            _logger.exception('Unexpected exception raised by Tornado '
-                    'HTTPConnection._on_request_body().')
-
-            transaction.__exit__(*sys.exc_info())
-            request._nr_transaction = None
-
-            raise
+        return wrapped(*args, **kwargs)
 
     module.HTTPConnection._on_request_body = ObjectWrapper(
             module.HTTPConnection._on_request_body, None,
@@ -272,6 +318,8 @@ def instrument_tornado_httpserver(module):
         request = instance._request
 
         transaction = current_transaction()
+
+        # XXX All looks very wrong.
 
         if transaction:
             request._nr_request_finished = True
@@ -289,33 +337,18 @@ def instrument_tornado_httpserver(module):
             return result
 
         else:
-            if not hasattr(request, '_nr_transaction'):
-                return wrapped(*args, **kwargs)
-
-            transaction = request._nr_transaction
+            transaction = resume_request_monitoring(request)
 
             if transaction is None:
                 return wrapped(*args, **kwargs)
 
-            transaction.save_transaction()
-
-            request._nr_request_finished = True
-
             try:
                 result = wrapped(*args, **kwargs)
-
-                if request._nr_wait_function_trace:
-                    request._nr_wait_function_trace.__exit__(None, None, None)
-
-                transaction.__exit__(None, None, None)
+                finalize_request_monitoring(request)
 
             except:  # Catch all
-                transaction.__exit__(*sys.exc_info())
+                finalize_request_monitoring(request, *sys.exc_info())
                 raise
-
-            finally:
-                request._nr_wait_function_trace = None
-                request._nr_transaction = None
 
             return result
 
@@ -331,7 +364,7 @@ def instrument_tornado_httpserver(module):
         # Call finish() method straight away if request object it is
         # being called on is not even associated with a transaction.
 
-        transaction = getattr(request, '_nr_transaction', None)
+        transaction = retrieve_request_transaction(request)
 
         if not transaction:
             return wrapped(*args, **kwargs)
@@ -394,12 +427,7 @@ def instrument_tornado_httpserver(module):
                 transaction.__exit__(None, None, None)
 
             else:
-                request._nr_wait_function_trace = FunctionTrace(
-                        transaction, name='Request/Output',
-                        group='Python/Tornado')
-
-                request._nr_wait_function_trace.__enter__()
-                transaction.drop_transaction()
+                suspend_request_monitoring(request, name='Request/Output')
 
                 complete = False
 
@@ -526,24 +554,13 @@ def instrument_tornado_web(module):
 
             if handler._finished:
                 if not request.connection.stream.writing():
-                    transaction.__exit__(None, None, None)
-                    request._nr_transaction = None
+                    finalize_request_monitoring()
 
                 else:
-                    request._nr_wait_function_trace = FunctionTrace(
-                            transaction, name='Request/Output',
-                            group='Python/Tornado')
-
-                    request._nr_wait_function_trace.__enter__()
-                    transaction.drop_transaction()
+                    suspend_request_monitoring(request, name='Request/Output')
 
             else:
-                request._nr_wait_function_trace = FunctionTrace(
-                        transaction, name='Callback/Wait',
-                        group='Python/Tornado')
-
-                request._nr_wait_function_trace.__enter__()
-                transaction.drop_transaction()
+                suspend_request_monitoring(request, name='Callback/Wait')
 
         except:  # Catch all
             # If an error occurs assume that transaction should be
@@ -553,8 +570,7 @@ def instrument_tornado_web(module):
             _logger.exception('Unexpected exception raised by Tornado '
                     'Application.__call__().')
 
-            transaction.__exit__(*sys.exc_info())
-            request._nr_transaction = None
+            finalize_request_monitoring(*sys.exc_info())
 
             raise
 
@@ -714,12 +730,7 @@ def instrument_tornado_web(module):
                 transaction.__exit__(None, None, None)
 
             else:
-                request._nr_wait_function_trace = FunctionTrace(
-                        transaction, name='Request/Output',
-                        group='Python/Tornado')
-
-                request._nr_wait_function_trace.__enter__()
-                transaction.drop_transaction()
+                suspend_request_monitoring(request, name='Request/Output')
 
                 complete = False
 
@@ -922,24 +933,13 @@ def instrument_tornado_stack_context(module):
 
             finally:
                 if not request._nr_request_finished:
-                    request._nr_wait_function_trace = FunctionTrace(
-                            transaction, name='Callback/Wait',
-                            group='Python/Tornado')
-
-                    request._nr_wait_function_trace.__enter__()
-                    transaction.drop_transaction()
+                    suspend_request_monitoring(request, name='Callback/Wait')
 
                 elif not request.connection.stream.writing():
-                    transaction.__exit__(None, None, None)
-                    request._nr_transaction = None
+                    finalize_request_monitoring()
 
                 else:
-                    request._nr_wait_function_trace = FunctionTrace(
-                            transaction, name='Request/Output',
-                            group='Python/Tornado')
-
-                    request._nr_wait_function_trace.__enter__()
-                    transaction.drop_transaction()
+                    suspend_request_monitoring(request, name='Request/Output')
 
         def _fn(fn, *args, **kwargs):
             return fn
@@ -1103,163 +1103,3 @@ def instrument_tornado_gen(module):
     if hasattr(module, 'engine'):
         module.engine = ObjectWrapper(module.engine, None,
                 coroutine_wrapper)
-
-def wsgi_container_call_wrapper(wrapped, instance, args, kwargs):
-    def _args(request, *args, **kwargs):
-        return request
-
-    request = _args(*args, **kwargs)
-
-    transaction = getattr(request, '_nr_transaction', None)
-
-    name = callable_name(instance.wsgi_application)
-
-    if not transaction:
-        # It will come into here with a transaction already active if
-        # there was request content being sent, in which case it was pre
-        # read and so the transaction had to be created to cover that.
-
-        # transaction should really exist already by now.
-
-        # Always use the default application specified in the agent
-        # configuration.
-
-        application = application_instance()
-
-        # We need to fake up a WSGI like environ dictionary with the
-        # key bits of information we need.
-
-        environ = request_environment(application, request)
-
-        # Now start recording the actual web transaction. Bail out
-        # though if turns out that recording transactions is not
-        # enabled.
-
-        transaction = WebTransaction(application, environ)
-
-        if not transaction.enabled:
-            return wrapped(*args, **kwargs)
-
-        transaction.__enter__()
-
-        request._nr_transaction = transaction
-
-        request._nr_wait_function_trace = None
-        request._nr_request_finished = False
-
-        # We need to add a reference to the request object in to the
-        # transaction object as only able to stash the transaction
-        # in a deferred. Need to use a weakref to avoid an object
-        # cycle which may prevent cleanup of transaction.
-
-        transaction._nr_current_request = weakref.ref(request)
-
-        try:
-            # Call the original method in a trace object to give better
-            # context in transaction traces.
-
-            # XXX This is a temporary fiddle to preserve old default
-            # URL naming convention until we move away from that
-            # as a default.
-
-            if transaction._request_uri is not None:
-                transaction.set_transaction_name(
-                        transaction._request_uri, 'Uri', priority=1)
-
-                wrapped(*args, **kwargs)
-
-            if not request.connection.stream.writing():
-                transaction.__exit__(None, None, None)
-                request._nr_transaction = None
-
-            else:
-                request._nr_wait_function_trace = FunctionTrace(
-                        transaction, name='Request/Output',
-                        group='Python/Tornado')
-
-                request._nr_wait_function_trace.__enter__()
-                transaction.drop_transaction()
-
-        except:  # Catch all
-            # If an error occurs assume that transaction should be
-            # exited.
-
-            transaction.__exit__(*sys.exc_info())
-            request._nr_transaction = None
-
-            raise
-
-    else:
-        # XXX This is a temporary fiddle to preserve old default
-        # URL naming convention until we move away from that
-        # as a default.
-
-        if transaction._request_uri is not None:
-             transaction.set_transaction_name(
-                     transaction._request_uri, 'Uri', priority=1)
-
-        wrapped(*args, **kwargs)
-
-class _WSGIApplicationIterable(object): 
-
-    def __init__(self, transaction, generator): 
-        self.transaction = transaction 
-        self.generator = generator 
-
-    def __iter__(self): 
-        try: 
-            with FunctionTrace(self.transaction, name='Response', 
-                    group='Python/WSGI'): 
-                for item in self.generator: 
-                    yield item 
-        except GeneratorExit: 
-            raise 
-        except: # Catch all 
-            self.transaction.record_exception() 
-            raise 
-
-    def close(self): 
-        try: 
-            with FunctionTrace(self.transaction, name='Finalize', 
-                    group='Python/WSGI'): 
-                if hasattr(self.generator, 'close'): 
-                    name = callable_name(self.generator.close) 
-                    with FunctionTrace(self.transaction, name): 
-                        self.generator.close() 
-
-        except: # Catch all 
-            self.transaction.record_exception() 
-
-class _WSGIApplication(object): 
-
-    def __init__(self, wsgi_application): 
-        self.wsgi_application = wsgi_application 
-
-    def __call__(self, environ, start_response): 
-        transaction = current_transaction() 
-
-        if transaction is None: 
-            return self.wsgi_application(environ, start_response) 
-
-        name = callable_name(self.wsgi_application) 
-
-        with FunctionTrace(transaction, name='Application', 
-                group='Python/WSGI'): 
-            with FunctionTrace(transaction, name=name): 
-                result = self.wsgi_application(environ, start_response) 
-
-        return _WSGIApplicationIterable(transaction, result)
-
-def wsgi_container_init_wrapper(wrapped, instance, args, kwargs):
-    def _args(wsgi_application, *args, **kwargs):
-        return wsgi_application
-
-    wsgi_application = _args(*args, **kwargs)
-
-    return wrapped(_WSGIApplication(wsgi_application))
-
-def instrument_tornado_wsgi(module):
-    wrap_function_wrapper(module, 'WSGIContainer.__init__',
-            wsgi_container_init_wrapper)
-    wrap_function_wrapper(module, 'WSGIContainer.__call__',
-            wsgi_container_call_wrapper)

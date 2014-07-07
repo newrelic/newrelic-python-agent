@@ -4,11 +4,9 @@ import weakref
 import types
 import itertools
 
-from newrelic.api.application import application_instance
-from newrelic.api.transaction import current_transaction
-from newrelic.api.object_wrapper import ObjectWrapper, callable_name
-from newrelic.api.web_transaction import WebTransaction
-from newrelic.api.function_trace import FunctionTrace, wrap_function_trace
+from newrelic.agent import (wrap_function_wrapper, current_transaction,
+        FunctionTrace, wrap_function_trace, WebTransaction, callable_name,
+        ObjectWrapper, application as application_instance)
 
 _logger = logging.getLogger(__name__)
 
@@ -1117,6 +1115,12 @@ def wsgi_container_call_wrapper(wrapped, instance, args, kwargs):
     name = callable_name(instance.wsgi_application)
 
     if not transaction:
+        # It will come into here with a transaction already active if
+        # there was request content being sent, in which case it was pre
+        # read and so the transaction had to be created to cover that.
+
+        # transaction should really exist already by now.
+
         # Always use the default application specified in the agent
         # configuration.
 
@@ -1155,17 +1159,14 @@ def wsgi_container_call_wrapper(wrapped, instance, args, kwargs):
             # context in transaction traces.
 
             # XXX This is a temporary fiddle to preserve old default
-            # URL naming convention until will move away from that
+            # URL naming convention until we move away from that
             # as a default.
 
             if transaction._request_uri is not None:
-                 transaction.set_transaction_name(
-                         transaction._request_uri, 'Uri', priority=1)
+                transaction.set_transaction_name(
+                        transaction._request_uri, 'Uri', priority=1)
 
-            with FunctionTrace(transaction, name='WSGI/Application',
-                    group='Python/Tornado'):
-                with FunctionTrace(transaction, name=name):
-                    wrapped(*args, **kwargs)
+                wrapped(*args, **kwargs)
 
             if not request.connection.stream.writing():
                 transaction.__exit__(None, None, None)
@@ -1189,43 +1190,76 @@ def wsgi_container_call_wrapper(wrapped, instance, args, kwargs):
             raise
 
     else:
-        try:
-            # XXX This is a temporary fiddle to preserve old default
-            # URL naming convention until will move away from that
-            # as a default.
+        # XXX This is a temporary fiddle to preserve old default
+        # URL naming convention until we move away from that
+        # as a default.
 
-            if transaction._request_uri is not None:
-                 transaction.set_transaction_name(
-                         transaction._request_uri, 'Uri', priority=1)
+        if transaction._request_uri is not None:
+             transaction.set_transaction_name(
+                     transaction._request_uri, 'Uri', priority=1)
 
-            with FunctionTrace(transaction, name='WSGI/Application',
-                    group='Python/Tornado'):
-                with FunctionTrace(transaction, name=name):
-                    wrapped(*args, **kwargs)
+        wrapped(*args, **kwargs)
 
-            if not request.connection.stream.writing():
-                transaction.__exit__(None, None, None)
-                request._nr_transaction = None
+class _WSGIApplicationIterable(object): 
 
-            else:
-                request._nr_wait_function_trace = FunctionTrace(
-                        transaction, name='Request/Output',
-                        group='Python/Tornado')
+    def __init__(self, transaction, generator): 
+        self.transaction = transaction 
+        self.generator = generator 
 
-                request._nr_wait_function_trace.__enter__()
-                transaction.drop_transaction()
+    def __iter__(self): 
+        try: 
+            with FunctionTrace(self.transaction, name='Response', 
+                    group='Python/WSGI'): 
+                for item in self.generator: 
+                    yield item 
+        except GeneratorExit: 
+            raise 
+        except: # Catch all 
+            self.transaction.record_exception() 
+            raise 
 
-        except:  # Catch all
-            # If an error occurs assume that transaction should be
-            # exited.
+    def close(self): 
+        try: 
+            with FunctionTrace(self.transaction, name='Finalize', 
+                    group='Python/WSGI'): 
+                if hasattr(self.generator, 'close'): 
+                    name = callable_name(self.generator.close) 
+                    with FunctionTrace(self.transaction, name): 
+                        self.generator.close() 
 
-            transaction.__exit__(*sys.exc_info())
-            request._nr_transaction = None
+        except: # Catch all 
+            self.transaction.record_exception() 
 
-            raise
+class _WSGIApplication(object): 
+
+    def __init__(self, wsgi_application): 
+        self.wsgi_application = wsgi_application 
+
+    def __call__(self, environ, start_response): 
+        transaction = current_transaction() 
+
+        if transaction is None: 
+            return self.wsgi_application(environ, start_response) 
+
+        name = callable_name(self.wsgi_application) 
+
+        with FunctionTrace(transaction, name='Application', 
+                group='Python/WSGI'): 
+            with FunctionTrace(transaction, name=name): 
+                result = self.wsgi_application(environ, start_response) 
+
+        return _WSGIApplicationIterable(transaction, result)
+
+def wsgi_container_init_wrapper(wrapped, instance, args, kwargs):
+    def _args(wsgi_application, *args, **kwargs):
+        return wsgi_application
+
+    wsgi_application = _args(*args, **kwargs)
+
+    return wrapped(_WSGIApplication(wsgi_application))
 
 def instrument_tornado_wsgi(module):
-
-    module.WSGIContainer.__call__ = ObjectWrapper(
-            module.WSGIContainer.__call__, None,
+    wrap_function_wrapper(module, 'WSGIContainer.__init__',
+            wsgi_container_init_wrapper)
+    wrap_function_wrapper(module, 'WSGIContainer.__call__',
             wsgi_container_call_wrapper)

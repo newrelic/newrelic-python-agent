@@ -8,7 +8,7 @@ import newrelic.packages.six as six
 from newrelic.agent import (current_transaction,
     wrap_function_wrapper, ExternalTrace, FunctionTrace)
 
-def _nr_wrapper_factory(bind_params_fn, external_name):
+def _nr_wrapper_factory(bind_params_fn, library):
     # Wrapper functions will be similar for monkeypatching the different
     # urllib functions and methods, so a factory function to create them is
     # used to reduce repetitiveness.
@@ -16,7 +16,8 @@ def _nr_wrapper_factory(bind_params_fn, external_name):
     # Parameters:
     #
     # bind_params_fn: Function that returns the URL.
-    # external_name: String. The name to be used by ExternalTrace.
+    # library: String. The library name to be used for display in the UI
+    # by ExternalTrace.
 
     def _nr_wrapper(wrapped, instance, args, kwargs):
         transaction = current_transaction()
@@ -31,7 +32,7 @@ def _nr_wrapper_factory(bind_params_fn, external_name):
         if details.hostname is None:
             return wrapped(*args, **kwargs)
 
-        with ExternalTrace(transaction, external_name, url):
+        with ExternalTrace(transaction, library, url):
             return wrapped(*args, **kwargs)
 
     return _nr_wrapper

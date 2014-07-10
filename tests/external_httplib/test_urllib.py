@@ -49,6 +49,25 @@ def test_urlopener_https_request():
     opener = urllib.URLopener()
     connection = opener.open('https://www.example.com/')
 
+_test_urlopener_file_request_scoped_metrics = [
+        ('External/unknown/urllib/', None)]
+
+_test_urlopener_file_request_rollup_metrics = [
+        ('External/all', None),
+        ('External/allOther', None),
+        ('External/unknown/urllib/', None)]
+
+@validate_transaction_metrics(
+        'test_urllib:test_urlopener_file_request',
+        scoped_metrics=_test_urlopener_file_request_scoped_metrics,
+        rollup_metrics=_test_urlopener_file_request_rollup_metrics,
+        background_task=True)
+@background_task()
+def test_urlopener_file_request():
+    filename = os.path.join('file://', __file__)
+    opener = urllib.URLopener()
+    connection = opener.open(filename)
+
 @background_task()
 @cache_outgoing_headers
 @validate_cross_process_headers

@@ -6,7 +6,7 @@ except ImportError:
 import newrelic.packages.six as six
 
 from newrelic.agent import (current_transaction,
-    wrap_function_wrapper, ExternalTrace, FunctionTrace)
+    wrap_function_wrapper, ExternalTrace)
 
 def _nr_wrapper_factory(bind_params_fn, library):
     # Wrapper functions will be similar for monkeypatching the different

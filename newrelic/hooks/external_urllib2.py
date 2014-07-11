@@ -6,7 +6,7 @@ except ImportError:
 import newrelic.packages.six as six
 
 from newrelic.agent import (current_transaction,
-    wrap_function_wrapper, ExternalTrace, FunctionTrace)
+    wrap_function_wrapper, ExternalTrace)
 
 def _nr_wrapper_opener_director_open_(wrapped, instance, args, kwargs):
     transaction = current_transaction()
@@ -25,8 +25,7 @@ def _nr_wrapper_opener_director_open_(wrapped, instance, args, kwargs):
     details = urlparse.urlparse(url)
 
     if details.hostname is None:
-        with FunctionTrace(transaction, 'urllib2:OpenerDirector.open'):
-            return wrapped(*args, **kwargs)
+        return wrapped(*args, **kwargs)
 
     with ExternalTrace(transaction, 'urllib2', url):
         return wrapped(*args, **kwargs)

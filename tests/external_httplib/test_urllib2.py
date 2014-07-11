@@ -47,6 +47,25 @@ _test_urlopen_https_request_rollup_metrics = [
 def test_urlopen_https_request():
     urllib2.urlopen('https://www.example.com/')
 
+_test_urlopen_file_request_scoped_metrics = [
+        ('External/unknown/urllib2/', None)]
+
+_test_urlopen_file_request_rollup_metrics = [
+        ('External/all', None),
+        ('External/allOther', None),
+        ('External/unknown/urllib2/', None)]
+
+@validate_transaction_metrics(
+        'test_urllib2:test_urlopen_file_request',
+        scoped_metrics=_test_urlopen_file_request_scoped_metrics,
+        rollup_metrics=_test_urlopen_file_request_rollup_metrics,
+        background_task=True)
+@background_task()
+def test_urlopen_file_request():
+    path = os.path.abspath(__file__)
+    file_uri = 'file://%s' % path
+    urllib2.urlopen(file_uri)
+
 @background_task()
 @cache_outgoing_headers
 @validate_cross_process_headers

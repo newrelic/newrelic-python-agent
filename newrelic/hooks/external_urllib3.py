@@ -19,12 +19,11 @@ def _nr_wrapper_make_request_(wrapped, instance, args, kwargs):
     with ExternalTrace(transaction, 'urllib3', url_for_apm_ui):
         return wrapped(*args, **kwargs)
 
-def instrument_urllib3_make_request(module):
-
+def instrument_urllib3_connectionpool(module):
     wrap_function_wrapper(module, 'HTTPConnectionPool._make_request',
             _nr_wrapper_make_request_)
 
-def instrument_urllib3_connect(module):
+def instrument_urllib3_connection(module):
 
     # Don't combine the instrument functions into a single function. Keep
     # the 'connect' monkey patch separate, because it is also used to patch

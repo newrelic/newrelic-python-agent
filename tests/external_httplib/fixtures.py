@@ -3,8 +3,6 @@ try:
 except ImportError:
     import httplib
 
-import urllib3
-
 from newrelic.agent import (transient_function_wrapper, current_transaction,
     function_wrapper)
 

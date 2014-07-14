@@ -264,8 +264,11 @@ def validate_transaction_metrics(name, group='Function',
                 def _metric_details():
                     return 'metric=%r, count=%r' % (key, metric.call_count)
 
-                assert metric is not None, _metrics_table()
-                assert metric.call_count == count, _metric_details()
+                if count is not None:
+                    assert metric is not None, _metrics_table()
+                    assert metric.call_count == count, _metric_details()
+                else:
+                    assert metric is None, _metrics_table()
 
             _validate(transaction_metric, '', 1)
 

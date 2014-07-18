@@ -7,6 +7,10 @@ from wsgi import application
 
 from newrelic.packages import six
 
+from newrelic.agent import application_settings
+
+import json
+
 import django
 
 DJANGO_VERSION = tuple(map(int, django.get_version().split('.')[:2]))
@@ -75,3 +79,15 @@ if DJANGO_VERSION >= (1, 5):
         scoped_metrics=_test_application_not_found_scoped_metrics)
 def test_application_not_found():
     response = test_application.get('/not_found', status=404)
+
+
+def test_insert_html_snippet():
+    response = test_application.get('/html_snippet', status=200)
+
+    # Because we don't know exactly what the header will look like,
+    # we search for: the magic string 'NREUM', one string from the original header,
+    # and one string from the original footer. (original meaning before header/footer
+    # were combined into one string)
+
+    response.mustcontain('NREUM', '__nr_require=function', 'errorBeacon')
+

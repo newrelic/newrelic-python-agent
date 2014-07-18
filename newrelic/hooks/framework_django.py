@@ -1,5 +1,6 @@
 import sys
 import threading
+from newrelic.packages import six
 
 
 from newrelic.api.error_trace import wrap_error_trace
@@ -12,7 +13,8 @@ from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import WSGIApplicationWrapper
 from newrelic.agent import ignore_status_code
 
-import newrelic.packages.six as six
+from newrelic.api.verify_body_exists import verify_body_exists
+from newrelic.api.insert_html_snippet import insert_html_snippet
 
 def should_ignore(exc, value, tb):
     from django.http import Http404
@@ -23,6 +25,8 @@ def should_ignore(exc, value, tb):
 
 # Response middleware for automatically inserting RUM header and
 # footer into HTML response returned by application
+
+
 
 def browser_timing_middleware(request, response):
 
@@ -68,7 +72,7 @@ def browser_timing_middleware(request, response):
     if response.has_header('Content-Encoding'):
         return response
 
-    # No point continuing if header is empty. This can occur if
+     # No point continuing if header is empty. This can occur if
     # RUM is not enabled within the UI. It is assumed at this
     # point that if header is not empty, then footer will be not
     # empty. We don't want to generate the footer just yet as
@@ -79,12 +83,19 @@ def browser_timing_middleware(request, response):
     # and we want to track that. We thus generate footer below
     # at point of insertion.
 
-    header = transaction.browser_timing_header()
+    # XXX We need a transaction function for knowing it RUM is
+    # enabled and/or whether header/footer already been generated.
+    # XXX if not header:
+    #    return content
 
-    if not header:
-        return response
+    def html_to_be_inserted():
+        header = transaction.browser_timing_header()
+        header = six.b(header)
 
-    header = six.b(header)
+        footer = transaction.browser_timing_footer()
+        footer = six.b(footer)
+
+        return header+footer
 
     # Make sure we flatten any content first as it could be
     # stored as a list of strings in the response object. We
@@ -92,60 +103,15 @@ def browser_timing_middleware(request, response):
     # multiple copies of the string in memory at the same time
     # as we progress through steps below.
 
-    content = response.content
-    response.content = content
 
-    # Insert the JavaScript. If there is no <head> element we
-    # insert our own containing the JavaScript. If we detect
-    # possibility of IE compatibility mode then we insert
-    # JavaScript at end of the <head> element. In other cases
-    # insert at the start of the <head> element.
-    #
-    # When updating response content we null the original first
-    # to avoid multiple copies in memory when we recompose the
-    # actual response from list of strings.
+    result = insert_html_snippet(response.content, html_to_be_inserted)
 
-    start = content.find(b'<head')
-    end = content.rfind(b'</body>', -1024)
-    if start != -1 and end != -1:
-        offset = content.find(b'</head>', start)
-        if content.find(b'X-UA-Compatible', start, offset) == -1:
-            start = content.find(b'>', start, start+1024)
-        elif offset != -1:
-            start = offset - 1
-        if start != -1 and start < end:
-            parts = []
-            parts.append(content[0:start+1])
-            parts.append(header)
-            parts.append(content[start+1:end])
+    print(result)
+    print(type(result))
 
-            footer = transaction.browser_timing_footer()
-            footer = six.b(footer)
-
-            parts.append(footer)
-            parts.append(content[end:])
-            response.content = b''
-            content = b''.join(parts)
-            response.content = content
-    elif start == -1 and end != -1:
-        start = content.find(b'<body')
-        if start != -1 and start < end:
-            parts = []
-            parts.append(content[0:start])
-            parts.append(b'<head>')
-            parts.append(header)
-            parts.append(b'</head>')
-            parts.append(content[start:end])
-
-            footer = transaction.browser_timing_footer()
-            footer = six.b(footer)
-            parts.append(footer)
-            parts.append(content[end:])
-            response.content = ''
-            content = b''.join(parts)
-            response.content = content
-
-    response['Content-Length'] = str(len(response.content))
+    if result is not None:
+        response.content = result
+        response['Content-Length'] = str(len(response.content))
 
     return response
 

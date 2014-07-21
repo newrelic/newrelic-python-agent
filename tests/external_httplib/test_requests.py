@@ -33,6 +33,19 @@ def test_http_request_get():
 def test_https_request_get():
     requests.get('https://www.example.com/', verify=False)
 
+@validate_transaction_metrics(
+        'test_requests:test_http_session_send',
+        scoped_metrics=_test_urlopen_http_request_scoped_metrics,
+        rollup_metrics=_test_urlopen_http_request_rollup_metrics,
+        background_task=True)
+@background_task()
+def test_http_session_send():
+    adapter = requests.adapters.HTTPAdapter()
+    session = requests.Session()
+    req = requests.Request('GET', 'http://www.example.com/')
+    prep_req = req.prepare()
+    session.send(prep_req)
+
 @background_task()
 @cache_outgoing_headers
 @validate_cross_process_headers

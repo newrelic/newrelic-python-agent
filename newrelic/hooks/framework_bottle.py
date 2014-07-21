@@ -16,8 +16,15 @@ def should_ignore(exc, value, tb):
     # need to check for it seperately as isinstance() will pick it up.
 
     if isinstance(value, module_bottle.HTTPResponse):
-        if ignore_status_code(value.status):
-            return True
+        if hasattr(value, 'status_code'):
+            if ignore_status_code(value.status_code):
+                return True
+        elif hasattr(value, 'status'):
+            if ignore_status_code(value.status):
+                return True
+        elif hasattr(value, 'http_status_code'):
+            if ignore_status_code(value.http_status_code):
+                return True
 
     elif hasattr(module_bottle, 'RouteReset'):
         if isinstance(value, module_bottle.RouteReset):
@@ -43,6 +50,13 @@ def callback_wrapper(wrapped, instance, args, kwargs):
             return wrapped(*args, **kwargs)
 
         except:  # Catch all
+            # In most cases this seems like it will never be invoked as
+            # bottle will internally capture the exception before we
+            # get a chance and rather than propagate the exception will
+            # return it instead. This doesn't always seem to be the case
+            # though when plugins are used, although that may depend on
+            # the specific bottle version being used.
+
             transaction.record_exception(ignore_errors=should_ignore)
             raise
 

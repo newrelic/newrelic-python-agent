@@ -2,7 +2,7 @@ import pytest
 import base64
 
 from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors)
+    validate_transaction_errors, override_ignore_status_codes)
 
 from newrelic.packages import six
 
@@ -18,6 +18,8 @@ if len(version) == 2:
 version = tuple(version)
 
 requires_auth_basic = pytest.mark.skipif(version < (0, 9, 0),
+        reason="Bottle only added auth_basic in 0.9.0.")
+requires_plugins = pytest.mark.skipif(version < (0, 9, 0),
         reason="Bottle only added auth_basic in 0.9.0.")
 
 _test_application_index_scoped_metrics = [
@@ -148,3 +150,40 @@ def test_application_auth_basic_okay(target_application):
     environ = { 'HTTP_AUTHORIZATION': 'Basic ' + authorization_value }
     response = target_application.get('/auth', extra_environ=environ)
     response.mustcontain('AUTH OKAY')
+
+_test_application_plugin_error_scoped_metrics = [
+        ('Python/WSGI/Application', 1),
+        ('Python/WSGI/Response', 1),
+        ('Python/WSGI/Finalize', 1),
+        ('Function/_target_application:plugin_error_page', 1)]
+
+if version >= (0, 9, 0):
+    _test_application_plugin_error_scoped_metrics.extend([
+        ('Function/bottle:Bottle.wsgi', 1)])
+else:
+    _test_application_plugin_error_scoped_metrics.extend([
+        ('Function/bottle:Bottle.__call__', 1)])
+
+_test_application_plugin_error_custom_metrics = [
+        ('Python/Framework/Bottle/%s.%s.%s' % version, 1)]
+
+@requires_plugins
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics('_target_application:plugin_error_page',
+        scoped_metrics=_test_application_plugin_error_scoped_metrics,
+        custom_metrics=_test_application_plugin_error_custom_metrics)
+@override_ignore_status_codes([403])
+def test_application_plugin_error_ignore(target_application):
+    response = target_application.get('/plugin_error', status=403,
+            expect_errors=True)
+
+@requires_plugins
+@validate_transaction_errors(errors=['bottle:HTTPError'])
+@validate_transaction_metrics('_target_application:plugin_error_page',
+        scoped_metrics=_test_application_plugin_error_scoped_metrics,
+        custom_metrics=_test_application_plugin_error_custom_metrics)
+def test_application_plugin_error_capture(target_application):
+    import newrelic.agent
+    response = target_application.get('/plugin_error', status=403,
+            expect_errors=True)
+

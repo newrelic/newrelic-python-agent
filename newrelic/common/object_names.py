@@ -227,6 +227,7 @@ def _object_context_py3(object):
 
     owner = None
 
+    """
     if inspect.ismethod(object):
         if object.__self__ is not None:
             cname = getattr(object.__self__, '__name__', None)
@@ -237,6 +238,7 @@ def _object_context_py3(object):
 
         else:
             owner = object.__self__
+    """
 
     mname = _module_name(owner or object)
 

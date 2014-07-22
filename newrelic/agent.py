@@ -10,13 +10,11 @@ import newrelic.api.web_transaction
 import newrelic.api.transaction
 import newrelic.api.application
 
-import newrelic.config
-
-initialize = newrelic.config.initialize
 application = newrelic.api.application.application_instance
 current_transaction = newrelic.api.transaction.current_transaction
 
-from newrelic.core.config import global_settings, ignore_status_code
+from .config import initialize, extra_settings
+from .core.config import global_settings, ignore_status_code
 
 def register_application(name=None, timeout=None):
     instance = application(name)

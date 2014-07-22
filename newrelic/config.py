@@ -1975,6 +1975,19 @@ def _setup_instrumentation():
 
     _process_function_profile_configuration()
 
+def _setup_extensions(): 
+    try: 
+        import pkg_resources 
+    except ImportError: 
+        return 
+
+    group = 'newrelic.extension' 
+
+    for entrypoint in pkg_resources.iter_entry_points(group=group): 
+        __import__(entrypoint.module_name) 
+        module = sys.modules[entrypoint.module_name] 
+        module.initialize()
+
 _console = None
 
 def _startup_agent_console():
@@ -2010,6 +2023,7 @@ def initialize(config_file=None, environment=None, ignore_errors=None,
         _settings.enabled = True
         _setup_instrumentation()
         _setup_data_source()
+        _setup_extensions()
         _setup_agent_console()
     else:
         _settings.enabled = False

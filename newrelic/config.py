@@ -1981,7 +1981,7 @@ def initialize(config_file=None, environment=None, ignore_errors=None,
     _load_configuration(config_file, environment, ignore_errors,
             log_file, log_level)
 
-    if _settings.monitor_mode:
+    if _settings.monitor_mode or _settings.developer_mode:
         _settings.enabled = True
         _setup_instrumentation()
         _setup_data_source()

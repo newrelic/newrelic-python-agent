@@ -72,6 +72,13 @@ def browser_timing_middleware(request, response):
     if response.has_header('Content-Encoding'):
         return response
 
+    # Don't instrument if it is an attachment content type
+
+    cdisposition = response.get('Content-Disposition', '').lower()
+
+    if cdisposition.startswith('attachment;'):
+        return response
+
      # No point continuing if header is empty. This can occur if
     # RUM is not enabled within the UI. It is assumed at this
     # point that if header is not empty, then footer will be not

@@ -9,6 +9,7 @@ except ImportError:
     import configparser as ConfigParser
 
 from .common.log_file import initialize_logging
+from .core.config import Settings, apply_config_setting
 
 import newrelic.core.agent
 import newrelic.core.config
@@ -70,6 +71,25 @@ _config_object = ConfigParser.RawConfigParser()
 # all the settings have been read.
 
 _cache_object = []
+
+# Mechanism for extracting settings from the configuration for use in
+# instrumentation modules and extensions.
+
+def extra_settings(section, types={}):
+    settings = {}
+
+    if _config_object.has_section(section):
+        settings.update(_config_object.items(section))
+
+    settings_object = Settings()
+
+    for name, value in settings.items():
+        if name in types:
+            value = types[name](value)
+
+        apply_config_setting(settings_object, name, value)
+
+    return settings_object
 
 # Define some mapping functions to convert raw values read from
 # configuration file into the internal types expected by the

@@ -3,6 +3,10 @@ import logging
 import os
 import sys
 import pwd
+import threading
+import time
+
+from newrelic.packages import six
 
 from newrelic.agent import (initialize, register_application,
         global_settings, shutdown_agent, application as application_instance,
@@ -235,17 +239,73 @@ def collector_available_fixture(request):
     application = application_instance()
     assert application.active
 
+def raise_background_exceptions(timeout=5.0):
+    @function_wrapper
+    def _raise_background_exceptions(wrapped, instance, args, kwargs):
+        time.sleep(0.1)
+
+        if getattr(raise_background_exceptions, 'enabled', None) is None:
+            raise_background_exceptions.event = threading.Event()
+        else:
+            assert raise_background_exceptions.count == 0
+
+        raise_background_exceptions.enabled = True
+        raise_background_exceptions.count = 0
+        raise_background_exceptions.exception = None
+        raise_background_exceptions.event.clear()
+
+        try:
+            return wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            if raise_background_exceptions.exception is not None:
+                tp, value, tb = raise_background_exceptions.exception
+                raise_background_exceptions.exception = None
+                six.reraise(tp, value, tb)
+        finally:
+            time.sleep(0.1)
+
+            raise_background_exceptions.enabled = False
+            result = raise_background_exceptions.event.wait(timeout)
+            done = raise_background_exceptions.event.is_set()
+            raise_background_exceptions.event.clear()
+
+            assert done, 'Timeout waiting for background task to finish.'
+
+    return _raise_background_exceptions
+
+@function_wrapper
+def catch_background_exceptions(wrapped, instance, args, kwargs):
+    if not getattr(raise_background_exceptions, 'enabled', False):
+        return wrapped(*args, **kwargs)
+
+    raise_background_exceptions.count += 1
+
+    try:
+        return wrapped(*args, **kwargs)
+    except:
+        raise_background_exceptions.exception = sys.exc_info()
+        raise
+    finally:
+        raise_background_exceptions.count -= 1
+        if raise_background_exceptions.count == 0:
+            raise_background_exceptions.event.set()
+
 def validate_transaction_metrics(name, group='Function',
         background_task=False, scoped_metrics=[], rollup_metrics=[],
         custom_metrics=[]):
 
     if background_task:
+        rollup_metric = 'OtherTransaction/all'
         transaction_metric = 'OtherTransaction/%s/%s' % (group, name)
     else:
+        rollup_metric = 'WebTransaction'
         transaction_metric = 'WebTransaction/%s/%s' % (group, name)
 
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
+    @catch_background_exceptions
     def _validate_transaction_metrics(wrapped, instance, args, kwargs):
         try:
             result = wrapped(*args, **kwargs)
@@ -267,6 +327,7 @@ def validate_transaction_metrics(name, group='Function',
                 assert metric is not None, _metrics_table()
                 assert metric.call_count == count, _metric_details()
 
+            _validate(rollup_metric, '', 1)
             _validate(transaction_metric, '', 1)
 
             for scoped_name, scoped_count in scoped_metrics:
@@ -284,8 +345,10 @@ def validate_transaction_metrics(name, group='Function',
 
 def validate_transaction_errors(errors=[], required_params=[],
         forgone_params=[]):
+
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
+    @catch_background_exceptions
     def _validate_transaction_errors(wrapped, instance, args, kwargs):
         def _bind_params(transaction, *args, **kwargs):
             return transaction
@@ -319,8 +382,10 @@ def validate_transaction_errors(errors=[], required_params=[],
     return _validate_transaction_errors
 
 def validate_custom_parameters(required_params=[], forgone_params=[]):
+
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
+    @catch_background_exceptions
     def _validate_custom_parameters(wrapped, instance, args, kwargs):
         def _bind_params(transaction, *args, **kwargs):
             return transaction
@@ -343,8 +408,10 @@ def validate_custom_parameters(required_params=[], forgone_params=[]):
     return _validate_custom_parameters
 
 def validate_database_trace_inputs(sql_parameters_type):
+
     @transient_function_wrapper('newrelic.api.database_trace',
             'DatabaseTrace.__init__')
+    @catch_background_exceptions
     def _validate_database_trace_inputs(wrapped, instance, args, kwargs):
         def _bind_params(transaction, sql, dbapi2_module=None,
                 connect_params=None, cursor_params=None, sql_parameters=None,

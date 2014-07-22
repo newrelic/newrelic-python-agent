@@ -1584,32 +1584,33 @@ def _process_module_builtin_defaults():
             'instrument_tornado_wsgi')
 
     _process_module_definition('tornado.httpserver',
-            'newrelic.hooks.framework_tornado',
+            'newrelic.hooks.framework_tornado.httpserver',
             'instrument_tornado_httpserver')
+    _process_module_definition('tornado.iostream',
+            'newrelic.hooks.framework_tornado.iostream',
+            'instrument_tornado_iostream')
+    _process_module_definition('tornado.ioloop',
+            'newrelic.hooks.framework_tornado.ioloop',
+            'instrument_tornado_ioloop')
     _process_module_definition('tornado.httputil',
-            'newrelic.hooks.framework_tornado',
+            'newrelic.hooks.framework_tornado.httputil',
             'instrument_tornado_httputil')
+    _process_module_definition('tornado.curl_httpclient',
+            'newrelic.hooks.framework_tornado.curl_httpclient',
+            'instrument_tornado_curl_httpclient')
+    _process_module_definition('tornado.simple_httpclient',
+            'newrelic.hooks.framework_tornado.simple_httpclient',
+            'instrument_tornado_simple_httpclient')
     _process_module_definition('tornado.web',
-            'newrelic.hooks.framework_tornado',
+            'newrelic.hooks.framework_tornado.web',
             'instrument_tornado_web')
+    _process_module_definition('tornado.stack_context',
+            'newrelic.hooks.framework_tornado.stack_context',
+            'instrument_tornado_stack_context')
+
     _process_module_definition('tornado.template',
             'newrelic.hooks.framework_tornado',
             'instrument_tornado_template')
-    _process_module_definition('tornado.stack_context',
-            'newrelic.hooks.framework_tornado',
-            'instrument_tornado_stack_context')
-    _process_module_definition('tornado.ioloop',
-            'newrelic.hooks.framework_tornado',
-            'instrument_tornado_ioloop')
-    _process_module_definition('tornado.iostream',
-            'newrelic.hooks.framework_tornado',
-            'instrument_tornado_iostream')
-    _process_module_definition('tornado.curl_httpclient',
-            'newrelic.hooks.framework_tornado',
-            'instrument_tornado_curl_httpclient')
-    _process_module_definition('tornado.simple_httpclient',
-            'newrelic.hooks.framework_tornado',
-            'instrument_tornado_simple_httpclient')
     _process_module_definition('tornado.gen',
             'newrelic.hooks.framework_tornado',
             'instrument_tornado_gen')

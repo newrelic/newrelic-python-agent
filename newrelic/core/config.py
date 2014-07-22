@@ -140,6 +140,8 @@ _settings.process_host.display_name = None
 
 _settings.monitor_mode = _environ_as_bool('NEW_RELIC_MONITOR_MODE', True)
 
+_settings.developer_mode = _environ_as_bool('NEW_RELIC_DEVELOPER_MODE', False)
+
 _settings.high_security = _environ_as_bool('NEW_RELIC_HIGH_SECURITY', False)
 
 _settings.collect_errors = True

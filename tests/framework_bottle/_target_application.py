@@ -1,6 +1,7 @@
 import webtest
 
-from bottle import route, error, default_app, __version__ as version
+from bottle import __version__ as version
+from bottle import route, error, default_app, HTTPError
 
 version = [int(x) for x in version.split('-')[0].split('.')]
 
@@ -31,6 +32,15 @@ if version >= (0, 9, 0):
     @auth_basic(auth_check)
     def auth_basic_page():
         return 'AUTH OKAY'
+
+    def plugin_error(callback):
+        def wrapper(*args, **kwargs):
+            raise HTTPError(403, 'Go Away')
+        return wrapper
+
+    @route('/plugin_error', apply=[plugin_error], skip=['json'])
+    def plugin_error_page():
+        return 'PLUGIN RESPONSE'
 
 application = default_app()
 target_application = webtest.TestApp(application)

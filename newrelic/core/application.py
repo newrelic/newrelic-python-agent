@@ -702,6 +702,19 @@ class Application(object):
         if settings is None:
             return
 
+        # Validate that the transaction was started against the same
+        # agent run ID as we are now recording data for. They might be
+        # different where a long running transaction covered multiple
+        # agent runs due to a server side configuration change.
+
+        if settings.agent_run_id != data.settings.agent_run_id:
+            _logger.debug('Discard transaction for application %r as '
+                    'runs over multiple agent runs. Initial agent run ID '
+                    'is %r and the current agent run ID is %r.',
+                    self._app_name, data.settings.agent_run_id,
+                    settings.agent_run_id)
+            return
+
         # Do checks to see whether trying to record a transaction in a
         # different process to that the application was activated in.
 

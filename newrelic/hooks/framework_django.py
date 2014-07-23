@@ -111,9 +111,6 @@ def browser_timing_middleware(request, response):
 
     result = insert_html_snippet(response.content, html_to_be_inserted)
 
-    print(result)
-    print(type(result))
-
     if result is not None:
         response.content = result
         response['Content-Length'] = str(len(response.content))

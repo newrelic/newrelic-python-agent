@@ -2,19 +2,17 @@ import sys
 import threading
 from newrelic.packages import six
 
-
-from newrelic.api.error_trace import wrap_error_trace
-from newrelic.api.function_trace import (FunctionTrace, wrap_function_trace)
-from newrelic.api.in_function import wrap_in_function
-from newrelic.api.object_wrapper import (ObjectWrapper, callable_name)
-from newrelic.api.transaction_name import wrap_transaction_name
-from newrelic.api.post_function import wrap_post_function
-from newrelic.api.transaction import current_transaction
-from newrelic.api.web_transaction import WSGIApplicationWrapper
-from newrelic.agent import ignore_status_code
-
-from newrelic.api.verify_body_exists import verify_body_exists
-from newrelic.api.insert_html_snippet import insert_html_snippet
+from newrelic.agent import (FunctionWrapper, callable_name,
+        wrap_error_trace,
+        FunctionTrace, wrap_function_trace,
+        wrap_in_function,
+        wrap_transaction_name,
+        wrap_post_function,
+        current_transaction,
+        WSGIApplicationWrapper,
+        ignore_status_code,
+        insert_html_snippet, verify_body_exists
+        )
 
 def should_ignore(exc, value, tb):
     from django.http import Http404
@@ -202,7 +200,7 @@ def wrap_leading_middleware(middleware):
                     if before == after:
                         transaction.set_transaction_name(name, priority=2)
 
-        return ObjectWrapper(wrapped, None, wrapper)
+        return FunctionWrapper(wrapped, wrapper)
 
     for wrapped in middleware:
         yield wrapper(wrapped)
@@ -267,7 +265,7 @@ def wrap_view_middleware(middleware):
                     if before == after:
                         transaction.set_transaction_name(name, priority=2)
 
-        return ObjectWrapper(wrapped, None, wrapper)
+        return FunctionWrapper(wrapped, wrapper)
 
     for wrapped in middleware:
         yield wrapper(wrapped)
@@ -296,7 +294,7 @@ def wrap_trailing_middleware(middleware):
             with FunctionTrace(transaction, name=name):
                 return wrapped(*args, **kwargs)
 
-        return ObjectWrapper(wrapped, None, wrapper)
+        return FunctionWrapper(wrapped, wrapper)
 
     for wrapped in middleware:
         yield wrapper(wrapped)
@@ -413,7 +411,7 @@ def wrap_handle_uncaught_exception(middleware):
         with FunctionTrace(transaction, name=name):
             return _wrapped(*args, **kwargs)
 
-    return ObjectWrapper(middleware, None, wrapper)
+    return FunctionWrapper(middleware, wrapper)
 
 def instrument_django_core_handlers_wsgi(module):
 
@@ -468,7 +466,7 @@ def wrap_view_handler(wrapped, priority=3):
                 transaction.record_exception(ignore_errors=should_ignore)
                 raise
 
-    result = ObjectWrapper(wrapped, None, wrapper)
+    result = FunctionWrapper(wrapped, wrapper)
     result._nr_django_view_handler = True
 
     return result
@@ -521,7 +519,7 @@ def wrap_url_resolver(wrapped):
         finally:
             del transaction._nr_django_url_resolver
 
-    return ObjectWrapper(wrapped, None, wrapper)
+    return FunctionWrapper(wrapped, wrapper)
 
 def wrap_url_resolver_nnn(wrapped, priority=1):
 
@@ -540,7 +538,7 @@ def wrap_url_resolver_nnn(wrapped, priority=1):
             return (wrap_view_handler(callback, priority=priority),
                     param_dict)
 
-    return ObjectWrapper(wrapped, None, wrapper)
+    return FunctionWrapper(wrapped, wrapper)
 
 def wrap_url_reverse(wrapped):
 
@@ -558,7 +556,7 @@ def wrap_url_reverse(wrapped):
             return wrapped(viewname, *args, **kwargs)
         return execute(*args, **kwargs)
 
-    return ObjectWrapper(wrapped, None, wrapper)
+    return FunctionWrapper(wrapped, wrapper)
 
 def instrument_django_core_urlresolvers(module):
 
@@ -655,7 +653,7 @@ def wrap_template_block(wrapped):
                 group='Template/Block'):
             return wrapped(*args, **kwargs)
 
-    return ObjectWrapper(wrapped, None, wrapper)
+    return FunctionWrapper(wrapped, wrapper)
 
 def instrument_django_template_loader_tags(module):
 
@@ -801,7 +799,7 @@ def wrap_view_dispatch(wrapped):
         with FunctionTrace(transaction, name=name):
             return wrapped(*args, **kwargs)
 
-    return ObjectWrapper(wrapped, None, wrapper)
+    return FunctionWrapper(wrapped, wrapper)
 
 def instrument_django_views_generic_base(module):
     module.View.dispatch = wrap_view_dispatch(module.View.dispatch)

@@ -169,6 +169,8 @@ from .api.external_trace import (external_trace, ExternalTrace,
 from .api.error_trace import (error_trace, ErrorTrace, ErrorTraceWrapper,
         wrap_error_trace)
 
+from .api.html_insertion import (insert_html_snippet, verify_body_exists)
+
 from .api.transaction_name import (transaction_name,
         TransactionNameWrapper, wrap_transaction_name)
 
@@ -179,6 +181,6 @@ from .common.object_wrapper import (ObjectProxy, wrap_object,
         FunctionWrapper, function_wrapper, wrap_function_wrapper,
         patch_function_wrapper, ObjectWrapper, wrap_callable,
         pre_function, PreFunctionWrapper, wrap_pre_function,
-	post_function, PostFunctionWrapper, wrap_post_function,
+    post_function, PostFunctionWrapper, wrap_post_function,
         in_function, InFunctionWrapper, wrap_in_function,
         out_function, OutFunctionWrapper, wrap_out_function)

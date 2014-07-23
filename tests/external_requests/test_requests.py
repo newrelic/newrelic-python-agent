@@ -33,7 +33,7 @@ def test_http_request_get():
     requests.get('http://www.example.com/')
 
 @pytest.mark.skipif(get_requests_version() < (0, 8),
-                    reason="Requests 0.7 does not work with this function")
+        reason="Can't set verify=False for requests.get() in v0.7")
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(
         'test_requests:test_https_request_get',
@@ -45,7 +45,7 @@ def test_https_request_get():
     requests.get('https://www.example.com/', verify=False)
 
 @pytest.mark.skipif(get_requests_version() < (1, 0),
-                    reason="Older requests version don't have this function")
+        reason="Session.send() doesn't exist for requests < v1.0.")
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(
         'test_requests:test_http_session_send',

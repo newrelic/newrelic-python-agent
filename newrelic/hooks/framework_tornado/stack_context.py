@@ -64,7 +64,7 @@ def stack_context_wrap_wrapper(wrapped, instance, args, kwargs):
     # bit more fragile.
 
     if hasattr(module_stack_context, '_StackContextWrapper'):
-        if fn is None or fn.__class__ is module._StackContextWrapper:
+        if fn is None or fn.__class__ is module_stack_context._StackContextWrapper:
             return fn
     else:
         if fn is None or hasattr(fn, '_wrapped'):

@@ -408,6 +408,24 @@ def override_application_settings(settings):
 
     return _override_application_settings
 
+def override_ignore_status_codes(status_codes):
+    @function_wrapper
+    def _override_ignore_status_codes(wrapped, instance, args, kwargs):
+        try:
+            # This is a bit horrible as ignore_status_codes is only
+            # used direct from the global settings and not the
+            # application settings. We therefore need to patch the
+            # global settings directly.
+
+            settings = global_settings()
+            original = settings.error_collector.ignore_status_codes
+            settings.error_collector.ignore_status_codes = status_codes
+            return wrapped(*args, **kwargs)
+        finally:
+            settings.error_collector.ignore_status_codes = original
+
+    return _override_ignore_status_codes
+
 def code_coverage_fixture(source=['newrelic']):
     @pytest.fixture(scope='session')
     def _code_coverage_fixture(request):

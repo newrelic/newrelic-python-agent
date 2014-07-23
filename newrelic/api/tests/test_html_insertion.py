@@ -5,7 +5,7 @@ from newrelic.api.html_insertion import (insert_html_snippet,
         verify_body_exists)
 
 input_files_directory = os.path.join(os.path.dirname(
-   os.path.abspath(__file__)), 'htmls')
+        os.path.abspath(__file__)), 'html_insertion')
 
 input_files = [
    'basic.html',

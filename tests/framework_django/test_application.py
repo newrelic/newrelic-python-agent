@@ -1,7 +1,7 @@
 import webtest
 
 from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors)
+    validate_transaction_errors, override_application_settings)
 
 from wsgi import application
 
@@ -80,14 +80,17 @@ if DJANGO_VERSION >= (1, 5):
 def test_application_not_found():
     response = test_application.get('/not_found', status=404)
 
+_test_insert_html_snippet_settings = {
+    'js_agent_loader': '<!-- NREUM HEADER -->',
+}
 
+@override_application_settings(_test_insert_html_snippet_settings)
 def test_insert_html_snippet():
     response = test_application.get('/html_snippet', status=200)
 
-    # Because we don't know exactly what the header will look like,
-    # we search for: the magic string 'NREUM', one string from the original header,
-    # and one string from the original footer. (original meaning before header/footer
-    # were combined into one string)
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
 
-    response.mustcontain('NREUM', '__nr_require=function', 'errorBeacon')
+    response.mustcontain('NREUM HEADER', 'NREUM.info')
 

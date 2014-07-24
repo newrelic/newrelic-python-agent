@@ -38,8 +38,13 @@ def insert_html_snippet(data, html_to_be_inserted):
 
    for name in ('xua3', 'charset3', 'xua2', 'charset2', 'head'):
        end = matchobj.end(name)
+
        if end != -1:
            text = html_to_be_inserted()
+
+           if not text:
+               return data
+
            return text.join((data[:end], data[end:]))
 
    # Fallback to inserting text prior to the body element.
@@ -47,6 +52,10 @@ def insert_html_snippet(data, html_to_be_inserted):
    start = matchobj.start('body')
    if start != -1:
        text = html_to_be_inserted()
+
+       if not text:
+           return data
+
        return text.join((data[:start], data[start:]))
 
    # Something went very wrong as we should never get here.

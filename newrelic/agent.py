@@ -181,6 +181,6 @@ from .common.object_wrapper import (ObjectProxy, wrap_object,
         FunctionWrapper, function_wrapper, wrap_function_wrapper,
         patch_function_wrapper, ObjectWrapper, wrap_callable,
         pre_function, PreFunctionWrapper, wrap_pre_function,
-    post_function, PostFunctionWrapper, wrap_post_function,
+        post_function, PostFunctionWrapper, wrap_post_function,
         in_function, InFunctionWrapper, wrap_in_function,
         out_function, OutFunctionWrapper, wrap_out_function)

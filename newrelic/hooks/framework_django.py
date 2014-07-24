@@ -1,18 +1,13 @@
 import sys
 import threading
+
 from newrelic.packages import six
 
 from newrelic.agent import (FunctionWrapper, callable_name,
-        wrap_error_trace,
-        FunctionTrace, wrap_function_trace,
-        wrap_in_function,
-        wrap_transaction_name,
-        wrap_post_function,
-        current_transaction,
-        WSGIApplicationWrapper,
-        ignore_status_code,
-        insert_html_snippet, verify_body_exists
-        )
+    wrap_error_trace, FunctionTrace, wrap_function_trace, wrap_in_function,
+    wrap_transaction_name, wrap_post_function, current_transaction,
+    WSGIApplicationWrapper, ignore_status_code, insert_html_snippet,
+    verify_body_exists)
 
 def should_ignore(exc, value, tb):
     from django.http import Http404
@@ -23,8 +18,6 @@ def should_ignore(exc, value, tb):
 
 # Response middleware for automatically inserting RUM header and
 # footer into HTML response returned by application
-
-
 
 def browser_timing_middleware(request, response):
 
@@ -77,9 +70,9 @@ def browser_timing_middleware(request, response):
     if cdisposition.startswith('attachment;'):
         return response
 
-     # No point continuing if header is empty. This can occur if
+    # No point continuing if header is empty. This can occur if
     # RUM is not enabled within the UI. It is assumed at this
-    # point that if header is not empty, then footer will be not
+    # point that if header is not empty, then footer will not be
     # empty. We don't want to generate the footer just yet as
     # want to do that as late as possible so that application
     # server time in footer is as accurate as possible. In
@@ -88,26 +81,19 @@ def browser_timing_middleware(request, response):
     # and we want to track that. We thus generate footer below
     # at point of insertion.
 
-    # XXX We need a transaction function for knowing it RUM is
-    # enabled and/or whether header/footer already been generated.
-    # XXX if not header:
-    #    return content
+    header = transaction.browser_timing_header()
+
+    if not header:
+        return response
 
     def html_to_be_inserted():
-        header = transaction.browser_timing_header()
-        header = six.b(header)
-
-        footer = transaction.browser_timing_footer()
-        footer = six.b(footer)
-
-        return header+footer
+        return six.b(header) + six.b(transaction.browser_timing_footer())
 
     # Make sure we flatten any content first as it could be
     # stored as a list of strings in the response object. We
     # assign it back to the response object to avoid having
     # multiple copies of the string in memory at the same time
     # as we progress through steps below.
-
 
     result = insert_html_snippet(response.content, html_to_be_inserted)
 

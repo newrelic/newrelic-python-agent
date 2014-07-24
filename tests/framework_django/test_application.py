@@ -1,11 +1,15 @@
 import webtest
 
 from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors)
+    validate_transaction_errors, override_application_settings)
 
 from wsgi import application
 
 from newrelic.packages import six
+
+from newrelic.agent import application_settings
+
+import json
 
 import django
 
@@ -143,3 +147,17 @@ if DJANGO_VERSION >= (1, 5):
 def test_application_deferred_cbv():
     response = test_application.get('/deferred_cbv')
     response.mustcontain('CBV RESPONSE')
+
+_test_insert_html_snippet_settings = {
+    'js_agent_loader': '<!-- NREUM HEADER -->',
+}
+
+@override_application_settings(_test_insert_html_snippet_settings)
+def test_insert_html_snippet():
+    response = test_application.get('/html_snippet', status=200)
+
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
+
+    response.mustcontain('NREUM HEADER', 'NREUM.info')

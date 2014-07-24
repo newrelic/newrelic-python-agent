@@ -1,18 +1,13 @@
 import sys
 import threading
 
+from newrelic.packages import six
 
-from newrelic.api.error_trace import wrap_error_trace
-from newrelic.api.function_trace import (FunctionTrace, wrap_function_trace)
-from newrelic.api.in_function import wrap_in_function
-from newrelic.api.object_wrapper import (ObjectWrapper, callable_name)
-from newrelic.api.transaction_name import wrap_transaction_name
-from newrelic.api.post_function import wrap_post_function
-from newrelic.api.transaction import current_transaction
-from newrelic.api.web_transaction import WSGIApplicationWrapper
-from newrelic.agent import ignore_status_code
-
-import newrelic.packages.six as six
+from newrelic.agent import (FunctionWrapper, callable_name,
+    wrap_error_trace, FunctionTrace, wrap_function_trace, wrap_in_function,
+    wrap_transaction_name, wrap_post_function, current_transaction,
+    WSGIApplicationWrapper, ignore_status_code, insert_html_snippet,
+    verify_body_exists)
 
 def should_ignore(exc, value, tb):
     from django.http import Http404
@@ -68,9 +63,16 @@ def browser_timing_middleware(request, response):
     if response.has_header('Content-Encoding'):
         return response
 
+    # Don't instrument if it is an attachment content type
+
+    cdisposition = response.get('Content-Disposition', '').lower()
+
+    if cdisposition.startswith('attachment;'):
+        return response
+
     # No point continuing if header is empty. This can occur if
     # RUM is not enabled within the UI. It is assumed at this
-    # point that if header is not empty, then footer will be not
+    # point that if header is not empty, then footer will not be
     # empty. We don't want to generate the footer just yet as
     # want to do that as late as possible so that application
     # server time in footer is as accurate as possible. In
@@ -84,7 +86,8 @@ def browser_timing_middleware(request, response):
     if not header:
         return response
 
-    header = six.b(header)
+    def html_to_be_inserted():
+        return six.b(header) + six.b(transaction.browser_timing_footer())
 
     # Make sure we flatten any content first as it could be
     # stored as a list of strings in the response object. We
@@ -92,60 +95,11 @@ def browser_timing_middleware(request, response):
     # multiple copies of the string in memory at the same time
     # as we progress through steps below.
 
-    content = response.content
-    response.content = content
+    result = insert_html_snippet(response.content, html_to_be_inserted)
 
-    # Insert the JavaScript. If there is no <head> element we
-    # insert our own containing the JavaScript. If we detect
-    # possibility of IE compatibility mode then we insert
-    # JavaScript at end of the <head> element. In other cases
-    # insert at the start of the <head> element.
-    #
-    # When updating response content we null the original first
-    # to avoid multiple copies in memory when we recompose the
-    # actual response from list of strings.
-
-    start = content.find(b'<head')
-    end = content.rfind(b'</body>', -1024)
-    if start != -1 and end != -1:
-        offset = content.find(b'</head>', start)
-        if content.find(b'X-UA-Compatible', start, offset) == -1:
-            start = content.find(b'>', start, start+1024)
-        elif offset != -1:
-            start = offset - 1
-        if start != -1 and start < end:
-            parts = []
-            parts.append(content[0:start+1])
-            parts.append(header)
-            parts.append(content[start+1:end])
-
-            footer = transaction.browser_timing_footer()
-            footer = six.b(footer)
-
-            parts.append(footer)
-            parts.append(content[end:])
-            response.content = b''
-            content = b''.join(parts)
-            response.content = content
-    elif start == -1 and end != -1:
-        start = content.find(b'<body')
-        if start != -1 and start < end:
-            parts = []
-            parts.append(content[0:start])
-            parts.append(b'<head>')
-            parts.append(header)
-            parts.append(b'</head>')
-            parts.append(content[start:end])
-
-            footer = transaction.browser_timing_footer()
-            footer = six.b(footer)
-            parts.append(footer)
-            parts.append(content[end:])
-            response.content = ''
-            content = b''.join(parts)
-            response.content = content
-
-    response['Content-Length'] = str(len(response.content))
+    if result is not None:
+        response.content = result
+        response['Content-Length'] = str(len(response.content))
 
     return response
 
@@ -229,7 +183,7 @@ def wrap_leading_middleware(middleware):
                     if before == after:
                         transaction.set_transaction_name(name, priority=2)
 
-        return ObjectWrapper(wrapped, None, wrapper)
+        return FunctionWrapper(wrapped, wrapper)
 
     for wrapped in middleware:
         yield wrapper(wrapped)
@@ -294,7 +248,7 @@ def wrap_view_middleware(middleware):
                     if before == after:
                         transaction.set_transaction_name(name, priority=2)
 
-        return ObjectWrapper(wrapped, None, wrapper)
+        return FunctionWrapper(wrapped, wrapper)
 
     for wrapped in middleware:
         yield wrapper(wrapped)
@@ -323,7 +277,7 @@ def wrap_trailing_middleware(middleware):
             with FunctionTrace(transaction, name=name):
                 return wrapped(*args, **kwargs)
 
-        return ObjectWrapper(wrapped, None, wrapper)
+        return FunctionWrapper(wrapped, wrapper)
 
     for wrapped in middleware:
         yield wrapper(wrapped)
@@ -440,7 +394,7 @@ def wrap_handle_uncaught_exception(middleware):
         with FunctionTrace(transaction, name=name):
             return _wrapped(*args, **kwargs)
 
-    return ObjectWrapper(middleware, None, wrapper)
+    return FunctionWrapper(middleware, wrapper)
 
 def instrument_django_core_handlers_wsgi(module):
 
@@ -495,7 +449,7 @@ def wrap_view_handler(wrapped, priority=3):
                 transaction.record_exception(ignore_errors=should_ignore)
                 raise
 
-    result = ObjectWrapper(wrapped, None, wrapper)
+    result = FunctionWrapper(wrapped, wrapper)
     result._nr_django_view_handler = True
 
     return result
@@ -548,7 +502,7 @@ def wrap_url_resolver(wrapped):
         finally:
             del transaction._nr_django_url_resolver
 
-    return ObjectWrapper(wrapped, None, wrapper)
+    return FunctionWrapper(wrapped, wrapper)
 
 def wrap_url_resolver_nnn(wrapped, priority=1):
 
@@ -567,7 +521,7 @@ def wrap_url_resolver_nnn(wrapped, priority=1):
             return (wrap_view_handler(callback, priority=priority),
                     param_dict)
 
-    return ObjectWrapper(wrapped, None, wrapper)
+    return FunctionWrapper(wrapped, wrapper)
 
 def wrap_url_reverse(wrapped):
 
@@ -585,7 +539,7 @@ def wrap_url_reverse(wrapped):
             return wrapped(viewname, *args, **kwargs)
         return execute(*args, **kwargs)
 
-    return ObjectWrapper(wrapped, None, wrapper)
+    return FunctionWrapper(wrapped, wrapper)
 
 def instrument_django_core_urlresolvers(module):
 
@@ -682,7 +636,7 @@ def wrap_template_block(wrapped):
                 group='Template/Block'):
             return wrapped(*args, **kwargs)
 
-    return ObjectWrapper(wrapped, None, wrapper)
+    return FunctionWrapper(wrapped, wrapper)
 
 def instrument_django_template_loader_tags(module):
 
@@ -828,7 +782,7 @@ def wrap_view_dispatch(wrapped):
         with FunctionTrace(transaction, name=name):
             return wrapped(*args, **kwargs)
 
-    return ObjectWrapper(wrapped, None, wrapper)
+    return FunctionWrapper(wrapped, wrapper)
 
 def instrument_django_views_generic_base(module):
     module.View.dispatch = wrap_view_dispatch(module.View.dispatch)

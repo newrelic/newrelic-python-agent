@@ -124,6 +124,7 @@ def _requests_proxy_scheme_workaround(wrapped, instance, args, kwargs):
 # session data collector to use. Subsequent calls are then made to it.
 
 _audit_log_fp = None
+_audit_log_id = 0
 
 def _log_request(url, params, headers, data):
     settings = global_settings()
@@ -142,8 +143,14 @@ def _log_request(url, params, headers, data):
             settings.audit_log_file = None
             return
 
+    global _audit_log_id
+
+    _audit_log_id += 1
+
     print('TIME: %r' % time.strftime('%Y-%m-%d %H:%M:%S',
             time.localtime()), file=_audit_log_fp)
+    print(file=_audit_log_fp)
+    print('ID: %r' % _audit_log_id, file=_audit_log_fp)
     print(file=_audit_log_fp)
     print('PID: %r' % os.getpid(), file=_audit_log_fp)
     print(file=_audit_log_fp)
@@ -192,6 +199,27 @@ def _log_request(url, params, headers, data):
             print(file=_audit_log_fp)
             print('DATA[0][%d][9]:' % i, end=' ', file=_audit_log_fp)
             pprint(field_as_json, stream=_audit_log_fp)
+
+    print(file=_audit_log_fp)
+    print(78*'=', file=_audit_log_fp)
+    print(file=_audit_log_fp)
+
+    _audit_log_fp.flush()
+
+    return _audit_log_id
+
+def _log_response(log_id, result):
+
+    print('TIME: %r' % time.strftime('%Y-%m-%d %H:%M:%S',
+            time.localtime()), file=_audit_log_fp)
+    print(file=_audit_log_fp)
+    print('ID: %r' % _audit_log_id, file=_audit_log_fp)
+    print(file=_audit_log_fp)
+    print('PID: %r' % os.getpid(), file=_audit_log_fp)
+    print(file=_audit_log_fp)
+    print('RESULT:', end=' ', file=_audit_log_fp)
+
+    pprint(result, stream=_audit_log_fp)
 
     print(file=_audit_log_fp)
     print(78*'=', file=_audit_log_fp)
@@ -323,9 +351,9 @@ def send_request(session, url, method, license_key, agent_run_id=None,
     internal_metric('Supportability/Collector/Output/Bytes/%s' % method,
             len(data))
 
-    # If audit logging is enabled, log the requetss details.
+    # If audit logging is enabled, log the requests details.
 
-    _log_request(url, params, headers, data)
+    log_id = _log_request(url, params, headers, data)
 
     try:
         # The timeout value in the requests module is only on
@@ -480,8 +508,11 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         raise DiscardDataForRequest(str(sys.exc_info()[1]))
 
     # The decoded JSON can be either for a successful response or an
-    # error. A successful response has a 'return_value' element and an
+    # error. A successful response has a 'return_value' element and on
     # error an 'exception' element.
+
+    if log_id is not None:
+        _log_response(log_id, result)
 
     if 'return_value' in result:
         return result['return_value']
@@ -550,6 +581,60 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
     raise DiscardDataForRequest(message)
 
+def apply_high_security_mode_fixups(local_settings, server_settings):
+    # When High Security Mode is True in local_settings, then all
+    # security related settings should be removed from server_settings.
+    # That way, when the local and server side configuration settings
+    # are merged, the local security settings will not get overwritten
+    # by the server side configuration settings.
+    #
+    # Note that security settings we may want to remove can appear at
+    # both the top level of the server settings, but also nested within
+    # the 'agent_config' sub dictionary. Those settings at the top level
+    # represent how the settings were previously overriden for high
+    # security mode. Those in 'agent_config' correspond to server side
+    # configuration as set by the user.
+
+    if not local_settings['high_security']:
+        return server_settings
+
+    # Remove top-level 'high_security' setting. This will only exist
+    # if it had been enabled server side.
+
+    if 'high_security' in server_settings:
+        del server_settings['high_security']
+
+    # Remove individual security settings from top level of configuration
+    # settings returned.
+
+    security_settings = ('capture_params', 'transaction_tracer.record_sql')
+
+    for setting in security_settings:
+        if setting in server_settings:
+            del server_settings[setting]
+
+    # When server side configuration is disabled, there will be no
+    # agent_config value in server_settings, so no more fixups
+    # are required.
+
+    if 'agent_config' not in server_settings:
+        return server_settings
+
+    # Remove individual security settings from agent server side
+    # configuration settings.
+
+    agent_config = server_settings['agent_config']
+
+    for setting in security_settings:
+        if setting in agent_config:
+            del server_settings['agent_config'][setting]
+
+            _logger.info('Ignoring server side configuration setting for '
+                    '%r, because High Security Mode has been activated. '
+                    'Using local setting %s=%r.', setting, setting,
+                    local_settings[setting])
+
+    return server_settings
 
 class ApplicationSession(object):
 
@@ -577,6 +662,12 @@ class ApplicationSession(object):
             self._requests_session.close()
         self._requests_session = None
 
+    @classmethod
+    def send_request(cls, session, url, method, license_key,
+            agent_run_id=None, payload=()):
+        return send_request(session, url, method, license_key,
+            agent_run_id, payload)
+
     @internal_trace('Supportability/Collector/Calls/shutdown')
     def shutdown_session(self):
         """Called to perform orderly deregistration of agent run against
@@ -589,7 +680,7 @@ class ApplicationSession(object):
         _logger.debug('Connecting to data collector to terminate session '
                 'for agent run %r.', self.agent_run_id)
 
-        result = send_request(self.requests_session, self.collector_url,
+        result = self.send_request(self.requests_session, self.collector_url,
                 'shutdown', self.license_key, self.agent_run_id)
 
         _logger.info('Successfully shutdown New Relic Python agent '
@@ -610,7 +701,7 @@ class ApplicationSession(object):
 
         payload = (self.agent_run_id, start_time, end_time, metric_data)
 
-        return send_request(self.requests_session, self.collector_url,
+        return self.send_request(self.requests_session, self.collector_url,
                 'metric_data', self.license_key, self.agent_run_id, payload)
 
     @internal_trace('Supportability/Collector/Calls/error_data')
@@ -629,9 +720,8 @@ class ApplicationSession(object):
 
         payload = (self.agent_run_id, errors)
 
-        return send_request(self.requests_session, self.collector_url,
-                'error_data',
-                self.license_key, self.agent_run_id, payload)
+        return self.send_request(self.requests_session, self.collector_url,
+                'error_data', self.license_key, self.agent_run_id, payload)
 
     @internal_trace('Supportability/Collector/Calls/transaction_sample_data')
     def send_transaction_traces(self, transaction_traces):
@@ -649,7 +739,7 @@ class ApplicationSession(object):
 
         payload = (self.agent_run_id, transaction_traces)
 
-        return send_request(self.requests_session, self.collector_url,
+        return self.send_request(self.requests_session, self.collector_url,
                 'transaction_sample_data', self.license_key,
                 self.agent_run_id, payload)
 
@@ -663,7 +753,7 @@ class ApplicationSession(object):
 
         payload = (self.agent_run_id, profile_data)
 
-        return send_request(self.requests_session, self.collector_url,
+        return self.send_request(self.requests_session, self.collector_url,
                 'profile_data', self.license_key,
                 self.agent_run_id, payload)
 
@@ -682,7 +772,7 @@ class ApplicationSession(object):
 
         payload = (sql_traces,)
 
-        return send_request(self.requests_session, self.collector_url,
+        return self.send_request(self.requests_session, self.collector_url,
                 'sql_trace_data', self.license_key, self.agent_run_id,
                 payload)
 
@@ -694,7 +784,7 @@ class ApplicationSession(object):
 
         payload = (self.agent_run_id,)
 
-        return send_request(self.requests_session, self.collector_url,
+        return self.send_request(self.requests_session, self.collector_url,
                 'get_agent_commands', self.license_key, self.agent_run_id,
                 payload)
 
@@ -706,7 +796,7 @@ class ApplicationSession(object):
 
         payload = (self.agent_run_id, cmd_results)
 
-        return send_request(self.requests_session, self.collector_url,
+        return self.send_request(self.requests_session, self.collector_url,
                 'agent_command_results', self.license_key, self.agent_run_id,
                 payload)
 
@@ -718,7 +808,7 @@ class ApplicationSession(object):
 
         payload = (self.agent_run_id, xray_id)
 
-        return send_request(self.requests_session, self.collector_url,
+        return self.send_request(self.requests_session, self.collector_url,
                 'get_xray_metadata', self.license_key, self.agent_run_id,
                 payload)
 
@@ -729,134 +819,252 @@ class ApplicationSession(object):
 
         payload = (self.agent_run_id, sample_set)
 
-        return send_request(self.requests_session, self.collector_url,
+        return self.send_request(self.requests_session, self.collector_url,
                 'analytic_event_data', self.license_key, self.agent_run_id,
                 payload)
+
+    @classmethod
+    def create_session(cls, license_key, app_name, linked_applications,
+            environment, settings):
+
+        """Registers the agent for the specified application with the data
+        collector and retrieves the server side configuration. Returns a
+        session object if successful through which subsequent calls to the
+        data collector are made. If unsucessful then None is returned.
+
+        """
+
+        start = time.time()
+
+        # If no license key provided in the call, fallback to using that
+        # from the agent configuration file or environment variables.
+        # Flag an error if the result still seems invalid.
+
+        if not license_key:
+            license_key = global_settings().license_key
+
+        if not license_key:
+            _logger.error('A valid account license key cannot be found. '
+                'Has a license key been specified in the agent configuration '
+                'file or via the NEW_RELIC_LICENSE_KEY environment variable?')
+
+        try:
+            # First need to ask the primary data collector which of the many
+            # data collector instances we should use for this agent run.
+
+            _logger.debug('Connecting to data collector to register agent '
+                    'with license_key=%r, app_name=%r, '
+                    'linked_applications=%r, environment=%r and settings=%r.',
+                    license_key, app_name, linked_applications, environment,
+                    settings)
+
+            url = collector_url()
+            redirect_host = cls.send_request(None, url, 'get_redirect_host',
+                    license_key)
+
+            # Then we perform a connect to the actual data collector host
+            # we need to use. All communications after this point should go
+            # to the secondary data collector.
+            #
+            # We use the global requests session object for now as harvest
+            # for different applications are all done in turn. We will need
+            # to change this if use multiple threads as currently force
+            # session object to maintain only single connection to ensure
+            # that keep alive is effective.
+
+            app_names = [app_name] + linked_applications
+
+            local_config = {}
+
+            local_config['host'] = socket.gethostname()
+            local_config['pid'] = os.getpid()
+            local_config['language'] = 'python'
+            local_config['app_name'] = app_names
+            local_config['identifier'] = ','.join(app_names)
+            local_config['agent_version'] = version
+            local_config['environment'] = environment
+            local_config['settings'] = settings
+            local_config['high_security'] = settings['high_security']
+
+            display_name = settings['process_host.display_name']
+
+            if display_name is None:
+                local_config['display_name'] = local_config['host']
+            else:
+                local_config['display_name'] = display_name
+
+            payload = (local_config,)
+
+            url = collector_url(redirect_host)
+            server_config = cls.send_request(None, url, 'connect',
+                    license_key, None, payload)
+
+            # Apply High Security Mode to server_config, so the local
+            # security settings won't get overwritten when we overlay
+            # the server settings on top of them.
+
+            server_config = apply_high_security_mode_fixups(settings,
+                    server_config)
+
+            # The agent configuration for the application in constructed
+            # by taking a snapshot of the locally constructed
+            # configuration and overlaying it with that from the server.
+
+            application_config = create_settings_snapshot(server_config)
+
+        except NetworkInterfaceException:
+            # The reason for errors of this type have already been logged.
+            # No matter what the error we just pass back None. The upper
+            # layer needs to count how many success times this has failed
+            # and escalate things with a more sever error.
+
+            pass
+
+        except Exception:
+            # Any other errors are going to be unexpected and likely will
+            # indicate an issue with the implementation of the agent.
+
+            _logger.exception('Unexpected exception when attempting to '
+                    'register the agent with the data collector. Please '
+                    'report this problem to New Relic support for further '
+                    'investigation.')
+
+            pass
+
+        else:
+            # Everything fine so we create the session object through which
+            # subsequent communication with data collector will be done.
+
+            session = cls(url, license_key, application_config)
+
+            duration = time.time() - start
+
+            # Log successful agent registration and any server side messages.
+
+            _logger.info('Successfully registered New Relic Python agent '
+                    'where app_name=%r, pid=%r, redirect_host=%r and '
+                    'agent_run_id=%r, in %.2f seconds.', app_name,
+                    os.getpid(), redirect_host, session.agent_run_id,
+                    duration)
+
+            if getattr(application_config, 'high_security', False):
+                _logger.info('High Security Mode is being applied to all '
+                        'communications between the agent and the data '
+                        'collector for this session.')
+
+            logger_func_mapping = {
+                'ERROR': _logger.error,
+                'WARN': _logger.warning,
+                'INFO': _logger.info,
+                'VERBOSE': _logger.debug,
+            }
+
+            if 'messages' in server_config:
+                for item in server_config['messages']:
+                    message = item['message']
+                    level = item['level']
+                    logger_func = logger_func_mapping.get(level, None)
+                    if logger_func:
+                        logger_func('%s', message)
+
+            return session
+
+_developer_mode_responses = {
+    'get_redirect_host': 'fake-collector.newrelic.com',
+
+    'connect': {
+        'js_agent_loader': '<!-- NREUM -->',
+        'js_agent_file': 'fake-js-agent.newrelic.com/nr-0.min.js',
+        'browser_key': '1234567890',
+        'browser_monitoring.loader_version': '0',
+        'beacon': 'fake-beacon.newrelic.com',
+        'error_beacon': 'fake-jserror.newrelic.com',
+        'apdex_t': 0.5,
+        'encoding_key': '1111111111111111111111111111111111111111',
+        'agent_run_id': 1234567,
+        'product_level': 50,
+        'trusted_account_ids':[12345],
+        'url_rules': [],
+        'collect_errors': True,
+        'cross_process_id': '12345#67890',
+        'messages': [{'message': 'Reporting to fake collector',
+            'level': 'INFO' }],
+        'sampling_rate': 0,
+        'collect_traces': True,
+        'data_report_period': 60
+    },
+
+    'metric_data': [],
+
+    'get_agent_commands': [],
+
+    'error_data': None,
+
+    'transaction_sample_data': None,
+
+    'sql_trace_data': None,
+
+    'analytic_event_data': None,
+
+    'shutdown': None,
+}
+
+class DeveloperModeSession(ApplicationSession):
+
+    @classmethod
+    def send_request(cls, session, url, method, license_key,
+            agent_run_id=None, payload=()):
+
+        assert method in _developer_mode_responses
+
+        # Create fake details for the request being made so that we
+        # can use the same audit logging functionality.
+
+        params = {}
+        headers = {}
+
+        if not license_key:
+            license_key = 'NO LICENSE KEY WAS SET IN AGENT CONFIGURATION'
+
+        params['method'] = method
+        params['license_key'] = license_key
+        params['protocol_version'] = '12'
+        params['marshal_format'] = 'json'
+
+        if agent_run_id:
+            params['run_id'] = str(agent_run_id)
+
+        headers['User-Agent'] = USER_AGENT
+        headers['Content-Encoding'] = 'identity'
+
+        data = json_encode(payload)
+
+        log_id = _log_request(url, params, headers, data)
+
+        # Now create the fake responses so the agent still runs okay.
+
+        result = _developer_mode_responses[method]
+
+        if method == 'connect':
+            settings = global_settings()
+            if settings.high_security:
+                result = dict(result)
+                result['high_security'] = True
+
+        # Even though they are always fake responses, still log them.
+
+        _log_response(log_id, dict(return_value=result))
+
+        return result
 
 def create_session(license_key, app_name, linked_applications,
         environment, settings):
 
-    """Registers the agent for the specified application with the data
-    collector and retrieves the server side configuration. Returns a
-    session object if successful through which subsequent calls to the
-    data collector are made. If unsucessful then None is returned.
+    _global_settings = global_settings()
 
-    """
-
-    start = time.time()
-
-    # If no license key provided in the call, fallback to using that
-    # from the agent configuration file or environment variables. Flag
-    # an error if the result still seems invalid.
-
-    if not license_key:
-        license_key = global_settings().license_key
-
-    if not license_key:
-        _logger.error('A valid account license key cannot be found. '
-            'Has a license key been specified in the agent configuration '
-            'file or via the NEW_RELIC_LICENSE_KEY environment variable?')
-
-    try:
-        # First need to ask the primary data collector which of the many
-        # data collector instances we should use for this agent run.
-
-        _logger.debug('Connecting to data collector to register agent with '
-                'license_key=%r, app_name=%r, linked_applications=%r, '
-                'environment=%r and settings=%r.', license_key, app_name,
+    if _global_settings.developer_mode:
+        return DeveloperModeSession.create_session(license_key, app_name,
                 linked_applications, environment, settings)
 
-        url = collector_url()
-        redirect_host = send_request(None, url, 'get_redirect_host',
-                license_key)
-
-        # Then we perform a connect to the actual data collector host
-        # we need to use. All communications after this point should go
-        # to the secondary data collector.
-        #
-        # We use the global requests session object for now as harvest
-        # for different applications are all done in turn. We will need
-        # to change this if use multiple threads as currently force
-        # session object to maintain only single connection to ensure
-        # that keep alive is effective.
-
-        app_names = [app_name] + linked_applications
-
-        local_config = {}
-
-        local_config['pid'] = os.getpid()
-        local_config['language'] = 'python'
-        local_config['host'] = socket.gethostname()
-        local_config['app_name'] = app_names
-        local_config['identifier'] = ','.join(app_names)
-        local_config['agent_version'] = version
-        local_config['environment'] = environment
-        local_config['settings'] = settings
-
-        payload = (local_config,)
-
-        url = collector_url(redirect_host)
-        server_config = send_request(None, url, 'connect',
-                license_key, None, payload)
-
-        # The agent configuration for the application in constructed
-        # by taking a snapshot of the locally constructed configuration
-        # and overlaying it with that from the server.
-
-        application_config = create_settings_snapshot(server_config)
-
-    except NetworkInterfaceException:
-        # The reason for errors of this type have already been logged.
-        # No matter what the error we just pass back None. The upper
-        # layer needs to count how many success times this has failed
-        # and escalate things with a more sever error.
-
-        pass
-
-    except Exception:
-        # Any other errors are going to be unexpected and likely will
-        # indicate an issue with the implementation of the agent.
-
-        _logger.exception('Unexpected exception when attempting to '
-                'register the agent with the data collector. Please '
-                'report this problem to New Relic support for further '
-                'investigation.')
-
-        pass
-
-    else:
-        # Everything fine so we create the session object through which
-        # subsequent communication with data collector will be done.
-
-        session = ApplicationSession(url, license_key, application_config)
-
-        duration = time.time() - start
-
-        # Log successful agent registration and any server side messages.
-
-        _logger.info('Successfully registered New Relic Python agent '
-                'where app_name=%r, pid=%r, redirect_host=%r and '
-                'agent_run_id=%r, in %.2f seconds.', app_name, os.getpid(),
-                redirect_host, session.agent_run_id, duration)
-
-        if hasattr(application_config, 'high_security'):
-            _logger.info('High security mode is being applied to all '
-                    'communications between the agent and the data '
-                    'collector for this session.')
-
-        logger_func_mapping = {
-            'ERROR': _logger.error,
-            'WARN': _logger.warning,
-            'INFO': _logger.info,
-            'VERBOSE': _logger.debug,
-        }
-
-        if 'messages' in server_config:
-            for item in server_config['messages']:
-                message = item['message']
-                level = item['level']
-                logger_func = logger_func_mapping.get(level, None)
-                if logger_func:
-                    logger_func('%s', message)
-
-        return session
+    return ApplicationSession.create_session(license_key, app_name,
+            linked_applications, environment, settings)

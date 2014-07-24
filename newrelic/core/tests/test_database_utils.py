@@ -2,7 +2,8 @@ from __future__ import print_function
 
 import unittest
 
-from newrelic.core.database_utils import SQLStatement
+from newrelic.core.database_utils import (SQLStatement,
+    _query_result_dicts_to_tuples)
 
 GENERAL_PARSE_TESTS = [
     (
@@ -904,6 +905,30 @@ class TestDatabase(unittest.TestCase):
             actual_result = statement.normalized
             self.assertEqual(expected_result, actual_result)
             self.assertEqual(hash(expected_result), hash(actual_result))
+
+class TestDatabaseHelpers(unittest.TestCase):
+
+    def test_explain_plan_results(self):
+        columns = ['QUERY PLAN']
+        rows = [{'QUERY PLAN': 'Index scan'}]
+        expected = [('Index scan',)]
+        actual = _query_result_dicts_to_tuples(columns, rows)
+        self.assertEqual(expected, actual)
+
+    def test_preserve_order(self):
+        columns = ['first', 'middle', 'last']
+        rows = [{'last': 'c', 'middle': 'b', 'first': 'a'},
+                {'middle': '2', 'last': '3', 'first': '1'}]
+        expected = [('a', 'b', 'c'), ('1', '2', '3')]
+        actual = _query_result_dicts_to_tuples(columns, rows)
+        self.assertEqual(expected, actual)
+
+    def test_empty_columns_and_rows(self):
+        columns = None
+        rows = []
+        expected = None
+        actual = _query_result_dicts_to_tuples(columns, rows)
+        self.assertEqual(expected, actual)
 
 if __name__ == "__main__":
     unittest.main()

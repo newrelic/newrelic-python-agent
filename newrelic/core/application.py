@@ -57,7 +57,7 @@ class Application(object):
         self._transaction_count = 0
         self._last_transaction = 0.0
 
-        self._custom_metrics_count = 0
+        self._global_events_account = 0
 
         self._harvest_count = 0
 
@@ -160,8 +160,8 @@ class Application(object):
                     self._transaction_count)
             print >> file, 'Last Transaction: %s' % (
                     time.asctime(time.localtime(self._last_transaction)))
-            print >> file, 'Custom Metrics Count: %d' % (
-                    self._custom_metrics_count)
+            print >> file, 'Global Events Count: %d' % (
+                    self._global_events_account)
             print >> file, 'Harvest Metrics Count: %d' % (
                     self._stats_engine.metrics_count())
             print >> file, 'Harvest Merge Count: %d' % (
@@ -419,7 +419,7 @@ class Application(object):
             self._transaction_count = 0
             self._last_transaction = 0.0
 
-            self._custom_metrics_count = 0
+            self._global_events_account = 0
 
             # Clear any prior count of harvest merges due to failures.
 
@@ -629,6 +629,27 @@ class Application(object):
                              'problem to the provider of the data source.',
                              data_sampler.name)
 
+    def record_exception(self, exc=None, value=None, tb=None, params={},
+            ignore_errors=[]):
+
+        """Record a global exception against the application independent
+        of a specific transaction.
+
+        """
+
+        if not self._active_session:
+            return
+
+        with self._stats_lock:
+            # It may still actually be rejected if no exception
+            # supplied or if was in the ignored list. For now
+            # always attempt anyway and also increment the events
+            # count still so that short harvest is extended.
+
+            self._global_events_account += 1
+            self._stats_engine.record_exception(exc, value, tb,
+                    params, ignore_errors)
+
     def record_custom_metric(self, name, value):
         """Record a custom metric against the application independent
         of a specific transaction.
@@ -646,7 +667,7 @@ class Application(object):
             return
 
         with self._stats_custom_lock:
-            self._custom_metrics_count += 1
+            self._global_events_account += 1
             self._stats_custom_engine.record_custom_metric(name, value)
 
     def record_custom_metrics(self, metrics):
@@ -667,7 +688,7 @@ class Application(object):
 
         with self._stats_custom_lock:
             for name, value in metrics:
-                self._custom_metrics_count += 1
+                self._global_events_account += 1
                 self._stats_custom_engine.record_custom_metric(name, value)
 
     def record_transaction(self, data, profile_samples=None):
@@ -679,6 +700,19 @@ class Application(object):
         settings = self._stats_engine.settings
 
         if settings is None:
+            return
+
+        # Validate that the transaction was started against the same
+        # agent run ID as we are now recording data for. They might be
+        # different where a long running transaction covered multiple
+        # agent runs due to a server side configuration change.
+
+        if settings.agent_run_id != data.settings.agent_run_id:
+            _logger.debug('Discard transaction for application %r as '
+                    'runs over multiple agent runs. Initial agent run ID '
+                    'is %r and the current agent run ID is %r.',
+                    self._app_name, data.settings.agent_run_id,
+                    settings.agent_run_id)
             return
 
         # Do checks to see whether trying to record a transaction in a
@@ -1124,7 +1158,7 @@ class Application(object):
 
                 start = time.time()
 
-                _logger.debug('Commencing data harvest for %r.',
+                _logger.debug('Commencing data harvest of %r.',
                         self._app_name)
 
                 # Create a snapshot of the transaction stats and
@@ -1134,8 +1168,11 @@ class Application(object):
                 # this point onwards will be accumulated in a fresh
                 # bucket.
 
+                _logger.debug('Snapshotting metrics for harvest of %r.',
+                        self._app_name)
+
                 transaction_count = self._transaction_count
-                custom_metrics_count = self._custom_metrics_count
+                global_events_account = self._global_events_account
 
                 with self._stats_lock:
                     self._transaction_count = 0
@@ -1144,7 +1181,7 @@ class Application(object):
                     stats = self._stats_engine.harvest_snapshot()
 
                 with self._stats_custom_lock:
-                    self._custom_metrics_count = 0
+                    self._global_events_account = 0
 
                     stats_custom = self._stats_custom_engine.harvest_snapshot()
 
@@ -1161,6 +1198,9 @@ class Application(object):
                 # with every harvest. If data sampler is a user provided
                 # data sampler, then should perhaps deregister it if it
                 # keeps having problems.
+
+                _logger.debug('Fetching metrics from data sources for '
+                        'harvest of %r.', self._app_name)
 
                 for data_sampler in self._data_samplers:
                     try:
@@ -1210,7 +1250,7 @@ class Application(object):
                 # and then immediately exit. Also useful when running
                 # test scripts.
 
-                if shutdown and (transaction_count or custom_metrics_count):
+                if shutdown and (transaction_count or global_events_account):
                     if period_end - self._period_start < 1.0:
                         _logger.debug('Stretching harvest duration for '
                                 'forced harvest on shutdown.')
@@ -1249,10 +1289,16 @@ class Application(object):
                     # Pass the metric_normalizer to stats.metric_data to
                     # do metric renaming.
 
+                    _logger.debug('Normalizing metrics for harvest of %r.',
+                            self._app_name)
+
                     metric_data = stats.metric_data(metric_normalizer)
 
                     internal_metric('Supportability/Harvest/Counts/'
                             'metric_data', len(metric_data))
+
+                    _logger.debug('Sending metric data for harvest of %r.',
+                            self._app_name)
 
                     metric_ids = self._active_session.send_metric_data(
                       self._period_start, period_end, metric_data)
@@ -1266,6 +1312,9 @@ class Application(object):
 
                         if configuration.analytics_events.transactions.enabled:
                             if len(sampled_data_set.samples):
+                                _logger.debug('Sending analytics event data '
+                                        'for harvest of %r.', self._app_name)
+
                                 self._active_session.analytic_event_data(
                                         sampled_data_set.samples)
 
@@ -1293,6 +1342,9 @@ class Application(object):
                                 'error_data', len(error_data))
 
                         if error_data:
+                            _logger.debug('Sending error data for harvest '
+                                    'of %r.', self._app_name)
+
                             self._active_session.send_errors(error_data)
 
                     if configuration.collect_traces:
@@ -1301,6 +1353,9 @@ class Application(object):
 
                         with connections:
                             if configuration.slow_sql.enabled:
+                                _logger.debug('Processing slow SQL data '
+                                        'for harvest of %r.', self._app_name)
+
                                 slow_sql_data = stats.slow_sql_data(
                                         connections)
 
@@ -1309,6 +1364,9 @@ class Application(object):
                                         len(slow_sql_data))
 
                                 if slow_sql_data:
+                                    _logger.debug('Sending slow SQL data for '
+                                            'harvest of %r.', self._app_name)
+
                                     self._active_session.send_sql_traces(
                                             slow_sql_data)
 
@@ -1321,11 +1379,18 @@ class Application(object):
                                     len(slow_transaction_data))
 
                             if slow_transaction_data:
+                                _logger.debug('Sending slow transaction '
+                                        'data for harvest of %r.',
+                                        self._app_name)
+
                                 self._active_session.send_transaction_traces(
                                         slow_transaction_data)
 
                     # Fetch agent commands sent from the data collector
                     # and process them.
+
+                    _logger.debug('Process agent commands during '
+                            'harvest of %r.', self._app_name)
 
                     self.process_agent_commands()
 
@@ -1337,7 +1402,13 @@ class Application(object):
                     # results last ensures we send back that data from
                     # the stopped profiling session immediately.
 
+                    _logger.debug('Send profiling data for harvest of '
+                            '%r.', self._app_name)
+
                     self.report_profile_data()
+
+                    _logger.debug('Done sending data for harvest of '
+                            '%r.', self._app_name)
 
                     # If this is a final forced harvest for the process
                     # then attempt to shutdown the session.

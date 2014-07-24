@@ -12,6 +12,7 @@ the global defaults or those from local agent configuration.
 import os
 import logging
 import copy
+import socket
 
 # The Settings objects and the global default settings. We create a
 # distinct type for each sub category of settings that the agent knows
@@ -41,6 +42,7 @@ class CrossApplicationTracerSettings(Settings): pass
 class XraySessionSettings(Settings): pass
 class AnalyticsEventsSettings(Settings): pass
 class AnalyticsEventsTransactionsSettings(Settings): pass
+class ProcessHostSettings(Settings): pass
 
 _settings = Settings()
 _settings.thread_profiler = ThreadProfilerSettings()
@@ -58,6 +60,7 @@ _settings.debug = DebugSettings()
 _settings.cross_application_tracer = CrossApplicationTracerSettings()
 _settings.analytics_events = AnalyticsEventsSettings()
 _settings.analytics_events.transactions = AnalyticsEventsTransactionsSettings()
+_settings.process_host = ProcessHostSettings()
 
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
 _settings.audit_log_file = os.environ.get('NEW_RELIC_AUDIT_LOG', None)
@@ -133,7 +136,13 @@ _settings.proxy_pass = os.environ.get('NEW_RELIC_PROXY_PASS', None)
 
 _settings.app_name = os.environ.get('NEW_RELIC_APP_NAME', 'Python Application')
 
+_settings.process_host.display_name = None
+
 _settings.monitor_mode = _environ_as_bool('NEW_RELIC_MONITOR_MODE', True)
+
+_settings.developer_mode = _environ_as_bool('NEW_RELIC_DEVELOPER_MODE', False)
+
+_settings.high_security = _environ_as_bool('NEW_RELIC_HIGH_SECURITY', False)
 
 _settings.collect_errors = True
 _settings.collect_traces = True

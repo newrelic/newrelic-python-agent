@@ -11,13 +11,16 @@ import logging
 import operator
 import random
 import zlib
+import traceback
+import time
+import sys
 
 import newrelic.packages.six as six
 
+from .error_collector import TracedError
 from .internal_metrics import (internal_trace, InternalTrace, internal_metric)
 from .database_utils import explain_plan
 from ..common.encoding_utils import json_encode
-
 _logger = logging.getLogger(__name__)
 
 class ApdexStats(list):
@@ -397,6 +400,123 @@ class StatsEngine(object):
         for metric in metrics:
             self.record_time_metric(metric)
 
+    def record_exception(self, exc=None, value=None, tb=None, params={},
+            ignore_errors=[]):
+
+        settings = self.__settings
+
+        if not settings:
+            return
+
+        error_collector = settings.error_collector
+
+        if not error_collector.enabled or not settings.collect_errors:
+            return
+
+        if (len(self.__transaction_errors) >=
+                settings.agent_limits.errors_per_harvest):
+            return
+
+        # If no exception details provided, use current exception.
+
+        if exc is None and value is None and tb is None:
+            exc, value, tb = sys.exc_info()
+
+        # Has to be an error to be logged.
+
+        if exc is None or value is None or tb is None:
+            return
+
+        # Where ignore_errors is a callable it should return a
+        # tri-state variable with the following behavior.
+        #
+        #   True - Ignore the error.
+        #   False- Record the error.
+        #   None - Use the default ignore rules.
+
+        should_ignore = None
+
+        if callable(ignore_errors):
+            should_ignore = ignore_errors(exc, value, tb)
+            if should_ignore:
+                return
+
+        module = value.__class__.__module__
+        name = value.__class__.__name__
+
+        if should_ignore is None:
+            # We need to check for module.name and module:name.
+            # Originally we used module.class but that was
+            # inconsistent with everything else which used
+            # module:name. So changed to use ':' as separator, but
+            # for backward compatability need to support '.' as
+            # separator for time being. Check that with the ':'
+            # last as we will use that name as the exception type.
+
+            if module:
+                fullname = '%s.%s' % (module, name)
+            else:
+                fullname = name
+
+            if not callable(ignore_errors) and fullname in ignore_errors:
+                return
+
+            if fullname in error_collector.ignore_errors:
+                return
+
+            if module:
+                fullname = '%s:%s' % (module, name)
+            else:
+                fullname = name
+
+            if not callable(ignore_errors) and fullname in ignore_errors:
+                return
+
+            if fullname in error_collector.ignore_errors:
+                return
+
+        else:
+            if module:
+                fullname = '%s:%s' % (module, name)
+            else:
+                fullname = name
+
+        # Only add params if High Security Mode is off.
+
+        if settings.high_security:
+            custom_params = {}
+
+        else:
+            custom_params = params
+
+        exc_type = exc.__name__
+
+        try:
+            message = str(value)
+        except Exception:
+            try:
+                # Assume JSON encoding can handle unicode.
+                message = six.text_type(value)
+            except Exception:
+                message = '<unprintable %s object>' % type(value).__name__
+
+        stack_trace = traceback.format_exception(exc, value, tb)
+
+        # Record the exception details.
+
+        params = {}
+
+        params["stack_trace"] = stack_trace
+
+        if settings.error_collector.capture_attributes:
+            params["custom_params"] = custom_params
+
+        error_details =TracedError(start_time=time.time(),
+                path='Exception', message=message,
+                type=fullname, parameters=params)
+
+        self.__transaction_errors.append(error_details)
+
     def record_custom_metric(self, name, value):
         """Record a single value metric, merging the data with any data
         from prior value metrics with the same name.
@@ -647,9 +767,7 @@ class StatsEngine(object):
         if (settings.collect_analytics_events and
                 settings.analytics_events.enabled):
             
-            if (transaction.type == 'WebTransaction' and
-                    settings.analytics_events.transactions.enabled):
-
+            if settings.analytics_events.transactions.enabled:
                 record = {}
                 params = {}
 
@@ -684,7 +802,6 @@ class StatsEngine(object):
                     except KeyError:
                         pass
 
-                _update_entry('HttpDispatcher', 'webDuration')
                 _update_entry('WebFrontend/QueueTime', 'queueDuration')
 
                 _update_entry('External/all', 'externalDuration')

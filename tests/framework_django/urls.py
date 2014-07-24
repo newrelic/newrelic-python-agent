@@ -3,8 +3,11 @@ try:
 except ImportError:
     from django.conf.urls import patterns, url
 
+from views import MyView
+
 urlpatterns = patterns('',
-    # Examples:
     url(r'^$', 'views.index', name='index'),
-    url(r'html_snippet$', 'views.html_snippet', name='html_snippet'),
+    url(r'^cbv$', MyView.as_view()),
+    url(r'^deferred_cbv$', 'views.deferred_cbv'),
+    url(r'html_snippet$', 'views.html_snippet', name='html_snippet')
 )

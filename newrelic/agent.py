@@ -10,13 +10,11 @@ import newrelic.api.web_transaction
 import newrelic.api.transaction
 import newrelic.api.application
 
-import newrelic.config
-
-initialize = newrelic.config.initialize
 application = newrelic.api.application.application_instance
 current_transaction = newrelic.api.transaction.current_transaction
 
-from newrelic.core.config import global_settings, ignore_status_code
+from .config import initialize, extra_settings
+from .core.config import global_settings, ignore_status_code
 
 def register_application(name=None, timeout=None):
     instance = application(name)
@@ -82,10 +80,16 @@ def add_user_attribute(key, value):
     return add_custom_parameter(key, value)
 
 def record_exception(exc=None, value=None, tb=None, params={},
-        ignore_errors=[]):
-    transaction = current_transaction()
-    if transaction:
-        transaction.record_exception(exc, value, tb, params, ignore_errors)
+        ignore_errors=[], application=None):
+    if application is None:
+        transaction = current_transaction()
+        if transaction:
+            transaction.record_exception(exc, value, tb, params,
+                    ignore_errors)
+    else:
+        if application.enabled:
+            application.record_exception(exc, value, tb, params,
+                    ignore_errors)
 
 def get_browser_timing_header():
     transaction = current_transaction()

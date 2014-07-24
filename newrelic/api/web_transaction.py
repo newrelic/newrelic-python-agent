@@ -113,6 +113,14 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         # otherwise.
 
         request_uri = environ.get('REQUEST_URI', None)
+
+        if request_uri is None:
+            # The gunicorn WSGI server uses RAW_URI instead
+            # of the more typical REQUEST_URI used by Apache
+            # and other web servers.
+
+            request_uri = environ.get('RAW_URI', None)
+
         script_name = environ.get('SCRIPT_NAME', None)
         path_info = environ.get('PATH_INFO', None)
         http_cookie = environ.get('HTTP_COOKIE', None)

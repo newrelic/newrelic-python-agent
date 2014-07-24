@@ -7,7 +7,7 @@ def _run_validation_test():
 
     from newrelic.agent import (background_task, error_trace,
             external_trace, function_trace, wsgi_application,
-            add_custom_parameter, record_exception)
+            add_custom_parameter, record_exception, application)
 
     @external_trace(library='test',
             url='http://localhost/test', method='GET')
@@ -84,6 +84,11 @@ def _run_validation_test():
     _iterable.close()
 
     _background_task()
+
+    try:
+        raise NotImplementedError('This is a test error and can be ignored.')
+    except Exception:
+        record_exception(params={'err-key-4': 4}, application=application())
 
 _user_message = """
 Running Python agent test.

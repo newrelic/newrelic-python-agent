@@ -1,11 +1,14 @@
+import os
+
 try:
     import urllib.request as urllib2
 except:
     import urllib2
 
 from testing_support.fixtures import validate_transaction_metrics
-from fixtures import (cache_outgoing_headers, validate_cross_process_headers,
-    insert_incoming_headers, validate_external_node_params)
+from testing_support.external_fixtures import (cache_outgoing_headers,
+    validate_cross_process_headers, insert_incoming_headers,
+    validate_external_node_params)
 
 from newrelic.agent import background_task
 
@@ -44,6 +47,25 @@ _test_urlopen_https_request_rollup_metrics = [
 @background_task()
 def test_urlopen_https_request():
     urllib2.urlopen('https://www.example.com/')
+
+_test_urlopen_file_request_scoped_metrics = [
+        ('External/unknown/urllib2/', None)]
+
+_test_urlopen_file_request_rollup_metrics = [
+        ('External/all', None),
+        ('External/allOther', None),
+        ('External/unknown/urllib2/', None)]
+
+@validate_transaction_metrics(
+        'test_urllib2:test_urlopen_file_request',
+        scoped_metrics=_test_urlopen_file_request_scoped_metrics,
+        rollup_metrics=_test_urlopen_file_request_rollup_metrics,
+        background_task=True)
+@background_task()
+def test_urlopen_file_request():
+    path = os.path.abspath(__file__)
+    file_uri = 'file://%s' % path
+    urllib2.urlopen(file_uri)
 
 @background_task()
 @cache_outgoing_headers

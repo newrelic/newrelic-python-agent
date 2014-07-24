@@ -95,6 +95,15 @@ class Application(object):
     def link_to_application(self, name):
         self._linked[name] = True
 
+    def record_exception(self, exc=None, value=None, tb=None, params={},
+            ignore_errors=[]):
+
+        if not self.active:
+            return
+
+        self._agent.record_exception(self._name, exc, value, tb, params,
+                ignore_errors)
+
     def record_custom_metric(self, name, value):
         if self.active:
             self._agent.record_custom_metric(self._name, name, value)

@@ -42,7 +42,7 @@ def outer_fn_wrapper(outer_fn, instance, args, kwargs):
         if transaction is None or name is None:
             return inner_fn(*args, **kwargs)
 
-        transaction.set_transaction_name(name, group, priority=4)
+        transaction.set_transaction_name(name, group, priority=5)
 
         with FunctionTrace(transaction, name, group):
             try:

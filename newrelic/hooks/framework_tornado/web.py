@@ -1,17 +1,12 @@
-import logging
 import sys
-import weakref
 import itertools
 
 from newrelic.agent import (wrap_function_wrapper, current_transaction,
-    FunctionTrace, wrap_function_trace, callable_name,
-    application as application_instance)
+    FunctionTrace, callable_name)
 
 from . import (retrieve_request_transaction, initiate_request_monitoring,
     suspend_request_monitoring, resume_request_monitoring,
     finalize_request_monitoring, record_exception)
-
-_logger = logging.getLogger(__name__)
 
 def call_wrapper(wrapped, instance, args, kwargs):
     def _args(request, *args, **kwargs):
@@ -48,6 +43,11 @@ def call_wrapper(wrapped, instance, args, kwargs):
                 group='Python/Tornado'):
             handler = wrapped(*args, **kwargs)
 
+    except:  # Catch all
+        finalize_request_monitoring(request, *sys.exc_info())
+        raise
+
+    else:
         # In the case of an immediate result or an exception
         # occuring, then finish() will have been called on the
         # request already. We can't just exit the transaction in the
@@ -69,19 +69,7 @@ def call_wrapper(wrapped, instance, args, kwargs):
         else:
             suspend_request_monitoring(request, name='Callback/Wait')
 
-    except:  # Catch all
-        # If an error occurs assume that transaction should be
-        # exited. Technically don't believe this should ever occur
-        # unless our code here has an error.
-
-        _logger.exception('Unexpected exception raised by Tornado '
-                'Application.__call__().')
-
-        finalize_request_monitoring(request, *sys.exc_info())
-
-        raise
-
-    return handler
+        return handler
 
 def execute_wrapper(wrapped, instance, args, kwargs):
     assert instance is not None
@@ -132,7 +120,7 @@ def finish_wrapper(wrapped, instance, args, kwargs):
     handler = instance
     request = handler.request
 
-    # Call finish() method straight away if request object it is
+    # Call wrapped method straight away if request object it is
     # being called on is not even associated with a transaction.
     # If we were in a running transaction we still want to record
     # the call though. This will occur when calling finish on
@@ -188,48 +176,32 @@ def finish_wrapper(wrapped, instance, args, kwargs):
             with FunctionTrace(transaction, name):
                 return wrapped(*args, **kwargs)
 
-    # No current running transaction. If we aren't in a wait state
-    # we call finish() straight away.
+    # Attempt to resume the transaction, calling the wrapped method
+    # straight away if there isn't one. Otherwise trace the call.
 
-    if not request._nr_wait_function_trace:
+    transaction = resume_request_monitoring(request)
+
+    if transaction is None:
         return wrapped(*args, **kwargs)
 
-    # Now handle the special case where finish() was called while in
-    # the wait state. We need to restore the transaction for the
-    # request and then call finish(). When it returns we need to
-    # either end the transaction or go into a new wait state where
-    # we wait on output to be sent.
-
-    transaction.save_transaction()
-
     try:
-        complete = True
-
-        request._nr_wait_function_trace.__exit__(None, None, None)
-
         name = callable_name(wrapped)
 
         with FunctionTrace(transaction, name):
             result = wrapped(*args, **kwargs)
 
+    except:  # Catch all
+        finalize_request_monitoring(request, *sys.exc_info())
+        raise
+
+    else:
         if not request.connection.stream.writing():
-            transaction.__exit__(None, None, None)
+            finalize_request_monitoring(request)
 
         else:
             suspend_request_monitoring(request, name='Request/Output')
 
-            complete = False
-
         return result
-
-    except:  # Catch all
-        transaction.__exit__(*sys.exc_info())
-        raise
-
-    finally:
-        if complete:
-            request._nr_wait_function_trace = None
-            request._nr_transaction = None
 
 def generate_headers_wrapper(wrapped, instance, args, kwargs):
     transaction = current_transaction()
@@ -276,27 +248,25 @@ def on_connection_close_wrapper(wrapped, instance, args, kwargs):
     handler = instance
     request = handler.request
 
-    transaction = getattr(request, '_nr_transaction', None)
+    transaction = resume_request_monitoring(request)
 
-    if not transaction:
+    if transaction is None:
         return wrapped(*args, **kwargs)
-
-    transaction.save_transaction()
-
-    if request._nr_wait_function_trace:
-        request._nr_wait_function_trace.__exit__(None, None, None)
 
     name = callable_name(wrapped)
 
     try:
         with FunctionTrace(transaction, name):
-            return wrapped(*args, **kwargs)
+            result = wrapped(*args, **kwargs)
 
-    except Exception:
-        transaction.record_exception(*sys.exc_info())
+    except:  # Catch all
+        finalize_request_monitoring(request, *sys.exc_info())
+        raise
 
-    finally:
-        transaction.__exit__(None, None, None)
+    else:
+        finalize_request_monitoring(request)
+
+        return result
 
 def init_wrapper(wrapped, instance, args, kwargs):
     # In this case we are actually wrapping the instance method on an

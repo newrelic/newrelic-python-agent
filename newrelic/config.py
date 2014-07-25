@@ -1629,12 +1629,11 @@ def _process_module_builtin_defaults():
     _process_module_definition('tornado.stack_context',
             'newrelic.hooks.framework_tornado.stack_context',
             'instrument_tornado_stack_context')
-
     _process_module_definition('tornado.template',
-            'newrelic.hooks.framework_tornado',
+            'newrelic.hooks.framework_tornado.template',
             'instrument_tornado_template')
     _process_module_definition('tornado.gen',
-            'newrelic.hooks.framework_tornado',
+            'newrelic.hooks.framework_tornado.gen',
             'instrument_tornado_gen')
 
     _process_module_definition('paste.httpserver',

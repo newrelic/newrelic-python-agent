@@ -58,6 +58,21 @@ def test_async_application_main_get():
     response = _test_application.get('/main')
     response.mustcontain('MAIN RESPONSE')
 
+_test_async_application_template_get_scoped_metrics = [
+        ('Python/Tornado/Request/Process', 1),
+        ('Template/Render/<string>', 1),
+        ('Template/Block/body', 1),
+        ('Function/_test_async_application:TemplateHandler.get', 1)]
+
+@setup_application_server
+@raise_background_exceptions()
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics('_test_async_application:TemplateHandler.get',
+        scoped_metrics=_test_async_application_template_get_scoped_metrics)
+def test_async_application_template_get():
+    response = _test_application.get('/template')
+    response.mustcontain('TEMPLATE RESPONSE')
+
 _test_async_application_delay_get_scoped_metrics = [
         ('Python/Tornado/Request/Process', 1),
         ('Function/_test_async_application:DelayHandler.get', 1),
@@ -80,6 +95,7 @@ _test_async_application_engine_get_scoped_metrics = [
         ('Function/_test_async_application:get', 1),
         #('Function/_test_async_application:EngineHandler.get (generator)', 2),
         ('Function/_test_async_application:get (generator)', 2),
+        ('Function/_test_async_application:EngineHandler.callback', 1),
         #('Python/Tornado/Callback/Wait', 1)]
         ]
 
@@ -99,6 +115,59 @@ else:
 def test_async_application_engine_get():
     response = _test_application.get('/engine')
     response.mustcontain('DELAY RESPONSE')
+
+_test_async_application_engine_return_get_scoped_metrics = [
+        ('Python/Tornado/Request/Process', 1),
+        #('Function/_test_async_application:EngineReturnHandler.get', 1),
+        ('Function/_test_async_application:get', 1),
+        #('Function/_test_async_application:EngineReturnHandler.get (generator)', 2),
+        ('Function/_test_async_application:get (generator)', 2),
+        ('Function/_test_async_application:EngineReturnHandler.callback', 1),
+        #('Python/Tornado/Callback/Wait', 1)]
+        ]
+
+if six.PY3:
+    _test_async_application_engine_return_get_scoped_metrics.extend([
+        ('Function/tornado.web:RequestHandler.finish', 1)])
+else:
+    _test_async_application_engine_return_get_scoped_metrics.extend([
+        ('Function/_test_async_application:EngineReturnHandler.finish', 1)])
+
+@setup_application_server
+@raise_background_exceptions()
+@validate_transaction_errors(errors=[])
+#@validate_transaction_metrics('_test_async_application:EngineReturnHandler.get',
+@validate_transaction_metrics('_test_async_application:get',
+        scoped_metrics=_test_async_application_engine_return_get_scoped_metrics)
+def test_async_application_engine_return_get():
+    response = _test_application.get('/engine_return')
+    response.mustcontain('RETURN RESPONSE')
+
+_test_async_application_engine_error_get_scoped_metrics = [
+        ('Python/Tornado/Request/Process', 1),
+        #('Function/_test_async_application:EngineErrorHandler.get', 1),
+        ('Function/_test_async_application:get', 1),
+        #('Function/_test_async_application:EngineErrorHandler.get (generator)', 2),
+        ('Function/_test_async_application:get (generator)', 2),
+        ('Function/_test_async_application:EngineErrorHandler.callback', 1),
+        #('Python/Tornado/Callback/Wait', 1)]
+        ]
+
+if six.PY3:
+    _test_async_application_engine_error_get_scoped_metrics.extend([
+        ('Function/tornado.web:RequestHandler.finish', 1)])
+else:
+    _test_async_application_engine_error_get_scoped_metrics.extend([
+        ('Function/_test_async_application:EngineErrorHandler.finish', 1)])
+
+@setup_application_server
+@raise_background_exceptions()
+@validate_transaction_errors(errors=['exceptions:RuntimeError'])
+#@validate_transaction_metrics('_test_async_application:EngineErrorHandler.get',
+@validate_transaction_metrics('_test_async_application:get',
+        scoped_metrics=_test_async_application_engine_error_get_scoped_metrics)
+def test_async_application_engine_error_get():
+    response = _test_application.get('/engine_error', status=500)
 
 _test_async_application_coroutine_get_scoped_metrics = [
         ('Python/Tornado/Request/Process', 1),
@@ -126,6 +195,61 @@ else:
 def test_async_application_coroutine_get():
     response = _test_application.get('/coroutine')
     response.mustcontain('DELAY RESPONSE')
+
+_test_async_application_coroutine_return_get_scoped_metrics = [
+        ('Python/Tornado/Request/Process', 1),
+        #('Function/_test_async_application:CoroutineHandler.get', 1),
+        ('Function/_test_async_application:get', 1),
+        #('Function/_test_async_application:CoroutineHandler.get (generator)', 2),
+        ('Function/_test_async_application:get (generator)', 2),
+        ('Function/_test_async_application:CoroutineHandler.callback', 1),
+        #('Python/Tornado/Callback/Wait', 1)]
+        ]
+
+if six.PY3:
+    _test_async_application_coroutine_return_get_scoped_metrics.extend([
+        ('Function/tornado.web:RequestHandler.finish', 1)])
+else:
+    _test_async_application_coroutine_return_get_scoped_metrics.extend([
+        ('Function/_test_async_application:CoroutineReturnHandler.finish', 1)])
+
+@requires_coroutine
+@setup_application_server
+@raise_background_exceptions()
+@validate_transaction_errors(errors=[])
+#@validate_transaction_metrics('_test_async_application:CoroutineReturnHandler.get',
+@validate_transaction_metrics('_test_async_application:get',
+        scoped_metrics=_test_async_application_coroutine_return_get_scoped_metrics)
+def test_async_application_coroutine_return_get():
+    response = _test_application.get('/coroutine_return')
+    response.mustcontain('RETURN RESPONSE')
+
+_test_async_application_coroutine_error_get_scoped_metrics = [
+        ('Python/Tornado/Request/Process', 1),
+        #('Function/_test_async_application:CoroutineReturnHandler.get', 1),
+        ('Function/_test_async_application:get', 1),
+        #('Function/_test_async_application:CoroutineReturnHandler.get (generator)', 2),
+        ('Function/_test_async_application:get (generator)', 2),
+        ('Function/_test_async_application:CoroutineReturnHandler.callback', 1),
+        #('Python/Tornado/Callback/Wait', 1)]
+        ]
+
+if six.PY3:
+    _test_async_application_coroutine_error_get_scoped_metrics.extend([
+        ('Function/tornado.web:RequestHandler.finish', 1)])
+else:
+    _test_async_application_coroutine_error_get_scoped_metrics.extend([
+        ('Function/_test_async_application:CoroutineErrorHandler.finish', 1)])
+
+@requires_coroutine
+@setup_application_server
+@raise_background_exceptions()
+@validate_transaction_errors(errors=['exceptions:RuntimeError'])
+#@validate_transaction_metrics('_test_async_application:CoroutineErrorHandler.get',
+@validate_transaction_metrics('_test_async_application:get',
+        scoped_metrics=_test_async_application_coroutine_error_get_scoped_metrics)
+def test_async_application_coroutine_error_get():
+    response = _test_application.get('/coroutine_error', status=500)
 
 if six.PY3:
     _test_async_application_404_name = (

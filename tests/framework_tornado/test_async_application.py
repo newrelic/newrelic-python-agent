@@ -202,7 +202,7 @@ _test_async_application_coroutine_return_get_scoped_metrics = [
         ('Function/_test_async_application:get', 1),
         #('Function/_test_async_application:CoroutineHandler.get (generator)', 2),
         ('Function/_test_async_application:get (generator)', 2),
-        ('Function/_test_async_application:CoroutineHandler.callback', 1),
+        ('Function/_test_async_application:CoroutineReturnHandler.callback', 1),
         #('Python/Tornado/Callback/Wait', 1)]
         ]
 
@@ -230,7 +230,7 @@ _test_async_application_coroutine_error_get_scoped_metrics = [
         ('Function/_test_async_application:get', 1),
         #('Function/_test_async_application:CoroutineReturnHandler.get (generator)', 2),
         ('Function/_test_async_application:get (generator)', 2),
-        ('Function/_test_async_application:CoroutineReturnHandler.callback', 1),
+        ('Function/_test_async_application:CoroutineErrorHandler.callback', 1),
         #('Python/Tornado/Callback/Wait', 1)]
         ]
 

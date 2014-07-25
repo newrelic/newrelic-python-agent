@@ -14,24 +14,10 @@ from . import (retrieve_request_transaction, initiate_request_monitoring,
 _logger = logging.getLogger(__name__)
 
 def call_wrapper(wrapped, instance, args, kwargs):
-    # We have to deal with a special case here because when using
-    # tornado.wsgi.WSGIApplication() to host the async API within
-    # a WSGI application, Tornado will call the wrapped method via
-    # the class method rather than via an instance. This means the
-    # instance will be None and the self argument will actually
-    # be the first argument. The args are still left intact for
-    # when we call the wrapped function.
-
-    def _request_unbound(instance, request, *args, **kwargs):
-        return instance, request
-
-    def _request_bound(request, *args, **kwargs):
+    def _args(request, *args, **kwargs):
         return request
 
-    if instance is None:
-        instance, request = _request_unbound(*args, **kwargs)
-    else:
-        request = _request_bound(*args, **kwargs)
+    request = _args(*args, **kwargs)
 
     # If no transaction associated with request already, need to
     # create a new one. The exception is when the the ASYNC API is
@@ -320,24 +306,7 @@ def on_connection_close_wrapper(wrapped, instance, args, kwargs):
         transaction.__exit__(None, None, None)
 
 def init_wrapper(wrapped, instance, args, kwargs):
-    if instance:
-        # Bound method when RequestHandler instantiated
-        # directly.
-
-        handler = instance
-
-    elif args:
-        # When called from derived class constructor it is
-        # not done so as a bound method. Instead the self
-        # object will be passed as the first argument.
-
-        handler = args[0]
-
-    else:
-        # Incorrect number of arguments. Pass it through so
-        # it fails on call.
-
-        return wrapped(*args, **kwargs)
+    handler = instance
 
     handler.on_connection_close = ObjectWrapper(
             handler.on_connection_close, None,

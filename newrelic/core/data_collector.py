@@ -1053,7 +1053,8 @@ class DeveloperModeSession(ApplicationSession):
 
         # Even though they are always fake responses, still log them.
 
-        _log_response(log_id, dict(return_value=result))
+        if log_id is not None:
+            _log_response(log_id, dict(return_value=result))
 
         return result
 

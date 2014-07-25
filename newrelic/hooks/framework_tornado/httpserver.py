@@ -278,4 +278,4 @@ def instrument_tornado_httpserver(module):
             finish_wrapper)
 
     if hasattr(module.HTTPRequest, '_parse_mime_body'):
-        wrap_function_trace(module.HTTPRequest, '_parse_mime_body')
+        wrap_function_trace(module, 'HTTPRequest._parse_mime_body')

@@ -39,7 +39,7 @@ _fake_collector_responses = {
     'get_redirect_host': 'fake-collector.newrelic.com',
 
     'connect': {
-        'js_agent_loader': '<!-- NREUM -->',
+        'js_agent_loader': '<!-- NREUM HEADER -->',
         'js_agent_file': 'js-agent.newrelic.com/nr-0.min.js',
         'browser_key': '1234567890',
         'browser_monitoring.loader_version': '0',

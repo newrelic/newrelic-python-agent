@@ -4,8 +4,8 @@ import weakref
 import itertools
 
 from newrelic.agent import (wrap_function_wrapper, current_transaction,
-        FunctionTrace, wrap_function_trace, callable_name,
-        ObjectWrapper, application as application_instance)
+    FunctionTrace, wrap_function_trace, callable_name,
+    application as application_instance)
 
 from . import (retrieve_request_transaction, initiate_request_monitoring,
     suspend_request_monitoring, resume_request_monitoring,
@@ -299,10 +299,12 @@ def on_connection_close_wrapper(wrapped, instance, args, kwargs):
         transaction.__exit__(None, None, None)
 
 def init_wrapper(wrapped, instance, args, kwargs):
-    handler = instance
+    # In this case we are actually wrapping the instance method on an
+    # actual instance of a handler class rather than the class itself.
+    # This is so we can wrap any derived version of this method when
+    # it has been overridden in a handler class.
 
-    handler.on_connection_close = ObjectWrapper(
-            handler.on_connection_close, None,
+    wrap_function_wrapper(instance, 'on_connection_close',
             on_connection_close_wrapper)
 
     return wrapped(*args, **kwargs)

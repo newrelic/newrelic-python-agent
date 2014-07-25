@@ -32,20 +32,13 @@ def call_wrapper(wrapped, instance, args, kwargs):
                 group='Python/Tornado'):
             return wrapped(*args, **kwargs)
 
-    elif not hasattr(request, '_nr_transaction'):
+    transaction = retrieve_request_transaction(request)
+
+    if transaction is None:
         transaction = initiate_request_monitoring(request)
 
-        if transaction is None:
-            return wrapped(*args, **kwargs)
-
-    else:
-        # If there was a transaction associated with the request,
-        # only continue if a transaction is active though.
-
-        transaction = current_transaction()
-
-        if not transaction:
-            return wrapped(*args, **kwargs)
+    if not transaction:
+        return wrapped(*args, **kwargs)
 
     try:
         # Call the original method in a trace object to give better

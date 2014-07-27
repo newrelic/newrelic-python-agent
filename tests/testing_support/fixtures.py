@@ -32,28 +32,28 @@ def _environ_as_bool(name, default=False):
     return flag
 
 _fake_collector_responses = {
-    'get_redirect_host': 'fake-collector.newrelic.com',
+    'get_redirect_host': u'fake-collector.newrelic.com',
 
     'connect': {
-        'js_agent_loader': '<!-- NREUM HEADER -->',
-        'js_agent_file': 'js-agent.newrelic.com/nr-0.min.js',
-        'browser_key': '1234567890',
-        'browser_monitoring.loader_version': '0',
-        'beacon': 'fake-beacon.newrelic.com',
-        'error_beacon': 'fake-jserror.newrelic.com',
-        'apdex_t': 0.5,
-        'encoding_key': 'd67afc830dab717fd163bfcb0b8b88423e9a1a3b',
-        'agent_run_id': 1234567,
-        'product_level': 50,
-        'trusted_account_ids':[12345],
-        'url_rules': [],
-        'collect_errors': True,
-        'cross_process_id': '12345#67890',
-        'messages': [{'message': 'Reporting to fake collector',
-            'level': 'INFO' }],
-        'sampling_rate': 0,
-        'collect_traces': True,
-        'data_report_period': 60
+        u'js_agent_loader': u'<!-- NREUM HEADER -->',
+        u'js_agent_file': u'js-agent.newrelic.com/nr-0.min.js',
+        u'browser_key': u'1234567890',
+        u'browser_monitoring.loader_version': u'0',
+        u'beacon': u'fake-beacon.newrelic.com',
+        u'error_beacon': u'fake-jserror.newrelic.com',
+        u'apdex_t': 0.5,
+        u'encoding_key': u'd67afc830dab717fd163bfcb0b8b88423e9a1a3b',
+        u'agent_run_id': 1234567,
+        u'product_level': 50,
+        u'trusted_account_ids': [12345],
+        u'url_rules': [],
+        u'collect_errors': True,
+        u'cross_process_id': u'12345#67890',
+        u'messages': [{u'message': u'Reporting to fake collector',
+            u'level': u'INFO' }],
+        u'sampling_rate': 0,
+        u'collect_traces': True,
+        u'data_report_period': 60
     },
 
     'metric_data': [],

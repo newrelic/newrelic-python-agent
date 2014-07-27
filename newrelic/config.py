@@ -139,6 +139,9 @@ def _merge_ignore_status_codes(s):
     return newrelic.core.config._parse_ignore_status_codes(
             s, _settings.error_collector.ignore_status_codes)
 
+def _map_browser_monitoring_content_type(s):
+    return s.split()
+
 # Processing of a single setting from configuration file.
 
 def _raise_configuration_error(section, option=None):
@@ -321,6 +324,8 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'browser_monitoring.capture_attributes',
                      'getboolean', None),
+    _process_setting(section, 'browser_monitoring.content_type',
+                     'get', _map_browser_monitoring_content_type),
     _process_setting(section, 'slow_sql.enabled',
                      'getboolean', None)
     _process_setting(section, 'analytics_events.enabled',

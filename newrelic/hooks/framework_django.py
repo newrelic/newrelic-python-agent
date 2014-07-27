@@ -51,19 +51,23 @@ def browser_timing_middleware(request, response):
     if transaction.autorum_disabled:
         return response
 
-    # Only possible if the content type is text/html.
+    # Only possible if the content type is one of the allowed
+    # values. Normally this is just text/html, but optionally
+    # could be defined to be list of further types. For example
+    # a user may want to also perform insertion for
+    # 'application/xhtml+xml'.
 
-    ctype = response.get('Content-Type', '').lower()
+    ctype = response.get('Content-Type', '').lower().split(';')[0]
 
-    if ctype != 'text/html' and not ctype.startswith('text/html;'):
-        return response
+    if ctype not in transaction.settings.browser_monitoring.content_type:
+        return
 
     # Don't risk it if content encoding already set.
 
     if response.has_header('Content-Encoding'):
         return response
 
-    # Don't instrument if it is an attachment content type
+    # Don't risk it if content is actually within an attachment.
 
     cdisposition = response.get('Content-Disposition', '').lower()
 

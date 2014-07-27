@@ -26,7 +26,7 @@ def target_wsgi_application(environ, start_response):
 target_application = webtest.TestApp(target_wsgi_application)
 
 _test_footer_attributes = {
-    'js_agent_loader': '<!-- NREUM HEADER -->',
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
 }
 
 @override_application_settings(_test_footer_attributes)

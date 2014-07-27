@@ -149,7 +149,7 @@ def test_application_deferred_cbv():
     response.mustcontain('CBV RESPONSE')
 
 _test_insert_html_snippet_settings = {
-    'js_agent_loader': '<!-- NREUM HEADER -->',
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
 }
 
 @override_application_settings(_test_insert_html_snippet_settings)

@@ -4,17 +4,19 @@ import time
 import string
 import re
 import logging
+import functools
 
 try:
     import urlparse
 except ImportError:
     import urllib.parse as urlparse
 
-import newrelic.api.application
-import newrelic.api.transaction
-import newrelic.api.object_wrapper
-import newrelic.api.function_trace
+from .application import application_instance
+from .transaction import Transaction, current_transaction
+from .function_trace import FunctionTrace
 
+from ..common.object_names import callable_name
+from ..common.object_wrapper import wrap_object, FunctionWrapper
 from ..common.encoding_utils import (obfuscate, deobfuscate, json_encode,
     json_decode)
 
@@ -52,7 +54,7 @@ def _extract_token(cookie):
     except Exception:
         pass
 
-class WebTransaction(newrelic.api.transaction.Transaction):
+class WebTransaction(Transaction):
 
     report_unicode_error = True
 
@@ -72,8 +74,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         # Initialise the common transaction base class.
 
-        newrelic.api.transaction.Transaction.__init__(self,
-                application, enabled)
+        super(WebTransaction, self).__init__(application, enabled)
 
         # Bail out if the transaction is running in a
         # disabled state.
@@ -422,7 +423,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         if not self.enabled:
             return ''
 
-        if self._state != newrelic.api.transaction.STATE_RUNNING:
+        if self._state != self.STATE_RUNNING:
             return ''
 
         if self.background_task:
@@ -507,7 +508,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         if not self.enabled:
             return ''
 
-        if self._state != newrelic.api.transaction.STATE_RUNNING:
+        if self._state != self.STATE_RUNNING:
             return ''
 
         if self.ignore_transaction:
@@ -628,8 +629,8 @@ class _WSGIApplicationIterable(object):
         if not self.transaction._sent_start:
             self.transaction._sent_start = time.time()
         try:
-            with newrelic.api.function_trace.FunctionTrace(
-                    self.transaction, name='Response', group='Python/WSGI'):
+            with FunctionTrace(self.transaction, name='Response',
+                    group='Python/WSGI'):
                 for item in self.generator:
                     yield item
                     try:
@@ -645,13 +646,11 @@ class _WSGIApplicationIterable(object):
 
     def close(self):
         try:
-            with newrelic.api.function_trace.FunctionTrace(
-                    self.transaction, name='Finalize', group='Python/WSGI'):
+            with FunctionTrace(self.transaction, name='Finalize',
+                    group='Python/WSGI'):
                 if hasattr(self.generator, 'close'):
-                    name = newrelic.api.object_wrapper.callable_name(
-                            self.generator.close)
-                    with newrelic.api.function_trace.FunctionTrace(
-                            self.transaction, name):
+                    name = callable_name(self.generator.close)
+                    with FunctionTrace(self.transaction, name):
                         self.generator.close()
 
         except:  # Catch all
@@ -716,56 +715,25 @@ class WSGIInputWrapper(object):
             self.__transaction._read_end = time.time()
         return lines
 
-class WSGIApplicationWrapper(object):
+def WSGIApplicationWrapper(wrapped, application=None, name=None,
+        group=None, framework=None):
 
-    def __init__(self, wrapped, application=None, name=None, group=None,
-               framework=None):
-        if isinstance(wrapped, tuple):
-            (instance, wrapped) = wrapped
-        else:
-            instance = None
+    if framework is not None and not isinstance(framework, tuple):
+        framework = (framework, None)
 
-        newrelic.api.object_wrapper.update_wrapper(self, wrapped)
+    def _nr_wsgi_application_wrapper_(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
 
-        self._nr_instance = instance
-        self._nr_next_object = wrapped
-
-        self._nr_name = name
-        self._nr_group = group
-
-        if framework is None:
-            self._nr_framework = None
-        elif isinstance(framework, tuple):
-            self._nr_framework = framework
-        else:
-            self._nr_framework = (framework, None)
-
-        if not hasattr(self, '_nr_last_object'):
-            self._nr_last_object = wrapped
-
-        self._nr_application = application
-
-    def __get__(self, instance, klass):
-        if instance is None:
-            return self
-        descriptor = self._nr_next_object.__get__(instance, klass)
-        return self.__class__((instance, descriptor), self._nr_application,
-                self._nr_name, self._nr_group, self._nr_framework)
-
-    def __call__(self, environ, start_response):
-        transaction = newrelic.api.transaction.current_transaction()
-
-        # Check to see if we are being called within the
-        # context of any sort of transaction. If we are,
-        # then we don't bother doing anything and just
-        # call the wrapped function.
+        # Check to see if we are being called within the context of any
+        # sort of transaction. If we are, then we don't bother doing
+        # anything and just call the wrapped function.
 
         if transaction:
-            # Record details of framework against the transaction
-            # for later reporting as supportability metrics.
+            # Record details of framework against the transaction for
+            # later reporting as supportability metrics.
 
-            if self._nr_framework:
-                transaction._frameworks.add(self._nr_framework)
+            if framework:
+                transaction._frameworks.add(framework)
 
             # Override the web transaction name to be the name of the
             # wrapped callable if not explicitly named, and we want the
@@ -776,41 +744,41 @@ class WSGIApplicationWrapper(object):
 
             settings = transaction._settings
 
-            if self._nr_name is None and settings:
-                if self._nr_framework is not None:
+            if name is None and settings:
+                if framework is not None:
                     naming_scheme = settings.transaction_name.naming_scheme
                     if naming_scheme in (None, 'framework'):
-                        name = newrelic.api.object_wrapper.callable_name(
-                                self._nr_next_object)
-                        transaction.set_transaction_name(name, priority=1)
+                        transaction.set_transaction_name(
+                                callable_name(wrapped), priority=1)
 
-            elif self._nr_name:
-                transaction.set_transaction_name(self._nr_name,
-                        self._nr_group, priority=1)
+            elif name:
+                transaction.set_transaction_name(name, group, priority=1)
 
-            return self._nr_next_object(environ, start_response)
+            return wrapped(*args, **kwargs)
 
-        # Otherwise treat it as top level transaction.
-        # We have to though look first to see whether the
-        # application name has been overridden through
-        # the WSGI environ dictionary.
+        # Otherwise treat it as top level transaction. We have to though
+        # look first to see whether the application name has been
+        # overridden through the WSGI environ dictionary.
+
+        def _args(environ, start_response, *args, **kwargs):
+            return environ, start_response
+
+        environ, start_response = _args(*args, **kwargs)
 
         app_name = environ.get('newrelic.app_name')
+
+        target_application = application
 
         if app_name:
             if app_name.find(';') != -1:
                 app_names = [string.strip(n) for n in app_name.split(';')]
                 app_name = app_names[0]
-                application = newrelic.api.application.application_instance(
-                        app_name)
+                target_application = application_instance(app_name)
                 for altname in app_names[1:]:
-                    application.link_to_application(altname)
+                    target_application.link_to_application(altname)
             else:
-                application = newrelic.api.application.application_instance(
-                        app_name)
+                target_application = application_instance(app_name)
         else:
-            application = self._nr_application
-
             # If application has an activate() method we assume it is an
             # actual application. Do this rather than check type so that
             # can easily mock it for testing.
@@ -818,19 +786,18 @@ class WSGIApplicationWrapper(object):
             # FIXME Should this allow for multiple apps if a string.
 
             if not hasattr(application, 'activate'):
-                application = newrelic.api.application.application_instance(
-                        application)
+                target_application = application_instance(application)
 
         # Now start recording the actual web transaction.
 
-        transaction = WebTransaction(application, environ)
+        transaction = WebTransaction(target_application, environ)
         transaction.__enter__()
 
-        # Record details of framework against the transaction
-        # for later reporting as supportability metrics.
+        # Record details of framework against the transaction for later
+        # reporting as supportability metrics.
 
-        if self._nr_framework:
-            transaction._frameworks.add(self._nr_framework)
+        if framework:
+            transaction._frameworks.add(framework)
 
         # Override the initial web transaction name to be the supplied
         # name, or the name of the wrapped callable if wanting to use
@@ -846,23 +813,20 @@ class WSGIApplicationWrapper(object):
 
         settings = transaction._settings
 
-        if self._nr_name is None and settings:
+        if name is None and settings:
             naming_scheme = settings.transaction_name.naming_scheme
 
-            if self._nr_framework is not None:
+            if framework is not None:
                 if naming_scheme in (None, 'framework'):
-                    name = newrelic.api.object_wrapper.callable_name(
-                            self._nr_next_object)
-                    transaction.set_transaction_name(name, priority=1)
+                    transaction.set_transaction_name(
+                            callable_name(wrapped), priority=1)
 
             elif naming_scheme in ('component', 'framework'):
-                name = newrelic.api.object_wrapper.callable_name(
-                        self._nr_next_object)
-                transaction.set_transaction_name(name, priority=1)
+                transaction.set_transaction_name(
+                        callable_name(wrapped), priority=1)
 
-        elif self._nr_name:
-            transaction.set_transaction_name(self._nr_name, self._nr_group,
-                  priority=1)
+        elif name:
+            transaction.set_transaction_name(name, group, priority=1)
 
         def _start_response(status, response_headers, *args):
 
@@ -894,25 +858,24 @@ class WSGIApplicationWrapper(object):
                 environ['wsgi.input'] = WSGIInputWrapper(transaction,
                         environ['wsgi.input'])
 
-            application = newrelic.api.function_trace.FunctionTraceWrapper(
-                    self._nr_next_object)
+            with FunctionTrace(transaction, name='Application',
+                    group='Python/WSGI'):
+                with FunctionTrace(transaction, name=callable_name(wrapped)):
+                    result = wrapped(environ, _start_response)
 
-            with newrelic.api.function_trace.FunctionTrace(
-                    transaction, name='Application', group='Python/WSGI'):
-                result = application(environ, _start_response)
         except:  # Catch all
             transaction.__exit__(*sys.exc_info())
             raise
 
         return _WSGIApplicationIterable(transaction, result)
 
+    return FunctionWrapper(wrapped, _nr_wsgi_application_wrapper_)
+
 def wsgi_application(application=None, name=None, group=None, framework=None):
-    def decorator(wrapped):
-        return WSGIApplicationWrapper(wrapped, application, name, group,
-            framework)
-    return decorator
+    return functools.partial(WSGIApplicationWrapper, application=application,
+            name=name, group=group, framework=framework)
 
 def wrap_wsgi_application(module, object_path, application=None,
             name=None, group=None, framework=None):
-    newrelic.api.object_wrapper.wrap_object(module, object_path,
-            WSGIApplicationWrapper, (application, name, group, framework))
+    wrap_object(module, object_path, WSGIApplicationWrapper,
+            (application, name, group, framework))

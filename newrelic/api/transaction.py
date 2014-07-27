@@ -30,11 +30,11 @@ from newrelic.core.thread_utilization import utilization_tracker
 
 _logger = logging.getLogger(__name__)
 
-STATE_PENDING = 0
-STATE_RUNNING = 1
-STATE_STOPPED = 2
-
 class Transaction(object):
+
+    STATE_PENDING = 0
+    STATE_RUNNING = 1
+    STATE_STOPPED = 2
 
     def __init__(self, application, enabled=None):
 
@@ -47,7 +47,7 @@ class Transaction(object):
 
         self._dead = False
 
-        self._state = STATE_PENDING
+        self._state = self.STATE_PENDING
         self._settings = None
 
         self._priority = 0
@@ -169,7 +169,7 @@ class Transaction(object):
 
     def __del__(self):
         self._dead = True
-        if self._state == STATE_RUNNING:
+        if self._state == self.STATE_RUNNING:
             self.__exit__(None, None, None)
 
     def save_transaction(self):
@@ -180,7 +180,7 @@ class Transaction(object):
 
     def __enter__(self):
 
-        assert(self._state == STATE_PENDING)
+        assert(self._state == self.STATE_PENDING)
 
         # Bail out if the transaction is not enabled.
 
@@ -190,7 +190,7 @@ class Transaction(object):
         # Mark transaction as active and update state
         # used to validate correct usage of class.
 
-        self._state = STATE_RUNNING
+        self._state = self.STATE_RUNNING
 
         # Cache transaction in thread/coroutine local
         # storage so that it can be accessed from
@@ -199,7 +199,7 @@ class Transaction(object):
         try:
             self.save_transaction()
         except:  # Catch all
-            self._state = STATE_PENDING
+            self._state = self.STATE_PENDING
             self.enabled = False
             raise
 
@@ -258,7 +258,7 @@ class Transaction(object):
         # this function and cause a deadlock if it occurs
         # while original transaction was being recorded.
 
-        self._state = STATE_STOPPED
+        self._state = self.STATE_STOPPED
 
         if self._transaction_id != id(self):
             return
@@ -542,7 +542,7 @@ class Transaction(object):
         return self._profile_samples
 
     def add_profile_sample(self, stack_trace):
-        if self._state != STATE_RUNNING:
+        if self._state != self.STATE_RUNNING:
             return
 
         self._profile_count += 1

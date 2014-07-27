@@ -319,9 +319,11 @@ class WebTransaction(newrelic.api.transaction.Transaction):
                 if name in environ:
                     self._request_environment[name] = environ[name]
 
-        # Flags for tracking whether RUM header inserted.
+        # Flags for tracking whether RUM header and footer have been
+        # generated.
 
-        self._rum_header = False
+        self._rum_header_generated = False
+        self._rum_footer_generated = False
 
     def process_txn_header(self, environ):
         encoded_txn_header = environ.get('HTTP_X_NEWRELIC_TRANSACTION')
@@ -409,11 +411,14 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         return additional_headers
 
     def browser_timing_header(self):
-        """This function returns the header as a native python string.
-           In Python 2 native strings are stored as bytes.
-           In Python 3 native strings are stored as unicode.
+        """Returns the JavaScript header to be included in any HTML
+        response to perform real user monitoring. This function returns
+        the header as a native Python string. In Python 2 native strings
+        are stored as bytes. In Python 3 native strings are stored as
+        unicode.
 
-         """
+        """
+
         if not self.enabled:
             return ''
 
@@ -435,6 +440,12 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         if not self._settings.license_key:
             return ''
 
+        # Don't return the header a second time if it has already
+        # been generated.
+
+        if self._rum_header_generated:
+            return ''
+
         # Requirement is that the first 13 characters of the account
         # license key is used as the key when obfuscating values for
         # the RUM footer. Will not be able to perform the obfuscation
@@ -443,42 +454,55 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         if len(self._settings.license_key) < 13:
             return ''
 
-        # Return header only if the agent received a valid js_agent_loader from
-        # collector. Collector won't send any js_agent_loader if
-        # browser_monitoring.loader is set to 'none'.
+        # Return the RUM header only if the agent received a valid value
+        # for js_agent_loader from the data collector. The data
+        # collector is not meant to send a non empty value for the
+        # js_agent_loader value if browser_monitoring.loader is set to
+        # 'none'.
         #
-        # JS Agent Loader is supposed to be ascii. Verify that by encoding it
-        # as ascii. If encoding fails return an empty string.
-        #
-        # Set self._rum_header to true only if a valid header was returned.
-        # This flag will be checked by the footer generation.
+        # The JavaScript agent loader is supposed to be ASCII. We verify
+        # that is the case by encoding it as ASCII to get a byte string.
+        # In the case of Python 2, we actually then use the encoded value
+        # as we need a native string, which for Python 2 is a byte string.
+        # If encoding as ASCII fails we will return an empty string.
 
         if self._settings.js_agent_loader:
             header = _js_agent_header_fragment % self._settings.js_agent_loader
             try:
-                header.encode('ascii')
+                if six.PY2:
+                    header = header.encode('ascii')
+                else:
+                    header.encode('ascii')
+
             except UnicodeError:
                 if not WebTransaction.unicode_error_reported:
                     _logger.error('ASCII encoding of js-agent-header failed.',
                             header)
                     WebTransaction.unicode_error_reported = True
+
                 header = ''
-            else:  # Successfully encoded.
-                self._rum_header = True
+
         else:
             header = ''
 
-        # Since encoding it as ascii was successful, return the string version
-        # of header.
+        # We remember if we have returned a non empty string value and
+        # if called a second time we will not return it again. The flag
+        # will also be used to check whether the footer should be
+        # generated.
 
-        return str(header)
+        if header:
+            self._rum_header_generated = True
+
+        return header
 
     def browser_timing_footer(self):
-        """This function returns the footer script as a native python string.
-           In Python 2 native strings are stored as bytes.
-           In Python 3 native strings are stored as unicode.
+        """Returns the JavaScript footer to be included in any HTML
+        response to perform real user monitoring. This function returns
+        the header as a native Python string. In Python 2 native strings
+        are stored as bytes. In Python 3 native strings are stored as
+        unicode.
 
-         """
+        """
 
         if not self.enabled:
             return ''
@@ -489,7 +513,13 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         if self.ignore_transaction:
             return ''
 
-        if not self._rum_header:
+        # Only generate a footer if the header had already been
+        # generated and we haven't already generated the footer.
+
+        if not self._rum_header_generated:
+            return ''
+
+        if self._rum_footer_generated:
             return ''
 
         # Make sure we freeze the path.
@@ -560,22 +590,33 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         config_dict.update(additional_params)
         footer = _js_agent_footer_fragment % json_encode(config_dict)
 
-        # Footer dictionary is only supposed to have ascii chars. Verify that
-        # by encoding it as ascii. If encoding fails return an empty string.
+        # The JavaScript agent loader is supposed to be ASCII. We verify
+        # that is the case by encoding it as ASCII to get a byte string.
+        # In the case of Python 2, we actually then use the encoded value
+        # as we need a native string, which for Python 2 is a byte string.
+        # If encoding as ASCII fails we will return an empty string.
 
         try:
-            footer.encode('ascii')
+            if six.PY2:
+                footer = footer.encode('ascii')
+            else:
+                footer.encode('ascii')
+
         except UnicodeError:
             if not WebTransaction.unicode_error_reported:
                 _logger.error('ASCII encoding of js-agent-footer failed.',
                         footer)
                 WebTransaction.unicode_error_reported = True
-            return ''
 
-        # Since encoding it as ascii was successful, return the string version
-        # of footer.
+            footer = ''
 
-        return str(footer)
+        # We remember if we have returned a non empty string value and
+        # if called a second time we will not return it again.
+
+        if footer:
+            self._rum_footer_generated = True
+
+        return footer
 
 class _WSGIApplicationIterable(object):
 

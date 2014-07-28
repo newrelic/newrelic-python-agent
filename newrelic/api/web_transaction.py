@@ -14,6 +14,7 @@ except ImportError:
 from .application import application_instance
 from .transaction import Transaction, current_transaction
 from .function_trace import FunctionTrace
+from .html_insertion import insert_html_snippet, verify_body_exists
 
 from ..common.object_names import callable_name
 from ..common.object_wrapper import wrap_object, FunctionWrapper
@@ -660,7 +661,7 @@ class _WSGIApplicationIterable(object):
             self.transaction.__exit__(None, None, None)
             self.transaction._sent_end = time.time()
 
-class WSGIInputWrapper(object):
+class _WSGIInputWrapper(object):
 
     def __init__(self, transaction, input):
         self.__transaction = transaction
@@ -714,6 +715,301 @@ class WSGIInputWrapper(object):
         finally:
             self.__transaction._read_end = time.time()
         return lines
+
+class _WSGIApplicationMiddleware(object):
+
+    search_maximum = 64*1024
+
+    def __init__(self, application, environ, start_response, transaction):
+        self.application = application
+
+        self.pass_through = True
+
+        self.request_environ = environ
+        self.outer_start_response = start_response
+        self.outer_write = None
+
+        self.transaction = transaction
+
+        self.response_status = None
+        self.response_headers = []
+        self.response_args = ()
+
+        self.content_length = None
+
+        self.response_length = 0
+        self.response_data = []
+
+    def process_data(self, data):
+        # If this is the first data block, then immediately try
+        # for an insertion using full set of criteria. If this
+        # works then we are done, else we move to next phase of
+        # buffering up content until we find the body element.
+
+        print('PROCESS_DATA', data)
+
+        def html_to_be_inserted():
+            header = self.transaction.browser_timing_header()
+
+            if not header:
+                return ''
+
+            footer = self.transaction.browser_timing_footer()
+
+            return six.b(header) + six.b(footer)
+
+        if not self.response_data:
+            modified = insert_html_snippet(data, html_to_be_inserted)
+
+            print('INITIAL', data, modified)
+
+            if modified is not None:
+                if self.content_length is not None:
+                    length = len(modified) - len(data)
+                    self.content_length += length
+                return [modified]
+
+        # Buffer up the data. If we haven't found the start of
+        # the body element, that is all we do. If we have reached
+        # the limit of buffering allowed, then give up and return
+        # the buffered data.
+
+        if not self.response_data or not verify_body_exists(data):
+            self.response_length += len(data)
+            self.response_data.append(data)
+
+            print('BUFFER', self.response_data)
+
+            if self.response_length > self.search_maximum:
+                buffered_data = self.response_data
+                self.response_data = []
+                return buffered_data
+
+            return
+
+        # Now join back together any buffered data into a single
+        # string. This makes it easier to process, but there is a
+        # risk that we could temporarily double memory use for
+        # the response content if had small data blocks followed
+        # by very large data block. Expect that the risk of this
+        # occuring is very small.
+
+        if self.response_data:
+            self.response_data.append(data)
+            data = b''.join(self.response_data)
+            self.response_data = []
+
+        # Perform the insertion of the HTML. This should always
+        # succeed as we would only have got here if we had found
+        # the body element, which is the fallback point for
+        # insertion.
+
+        modified = insert_html_snippet(data, html_to_be_inserted)
+
+        if modified is not None:
+            if self.content_length is not None:
+                length = len(modified) - len(data)
+                self.content_length += length
+            return [modified]
+
+        # Something went very wrong as we should never get here.
+
+        return [data]
+
+    def flush_headers(self):
+        # Add back in any response content length header. It will
+        # have been updated with the adjusted length by now if
+        # additional data was inserted into the response.
+
+        if self.content_length is not None:
+            header = (('Content-Length', str(self.content_length)))
+            self.response_headers.append(header)
+
+        self.outer_write = self.outer_start_response(self.response_status,
+                self.response_headers, *self.response_args)
+
+    def inner_write(self, data):
+        if self.outer_write is None:
+            self.pass_through = False
+            self.flush_headers()
+
+        # First write out any buffered response data in case the
+        # WSGI application was doing something evil where it
+        # mixed use of yield and write.
+
+        if self.response_data:
+            for buffered_data in self.response_data:
+                self.outer_write(buffered_data)
+            self.response_data = []
+
+        return self.outer_write(data)
+
+    def start_response(self, status, response_headers, *args):
+        # The start_response() function can be called more than
+        # once. In that case, the values derived from the most
+        # recent call are used. We therefore need to reset any
+        # calculated values.
+
+        self.pass_through = True
+
+        self.response_status = status
+        self.response_headers = response_headers
+        self.response_args = args
+
+        self.content_length = None
+
+        # Extract values for response headers we need to work. Do
+        # not copy across the content length header at this time
+        # as we will need to adjust the length later if we are
+        # able to inject our Javascript.
+
+        pass_through = False
+
+        headers = []
+
+        content_type = None
+        content_length = None
+        content_encoding = None
+        content_disposition = None
+
+        for (name, value) in response_headers:
+            _name = name.lower()
+
+            if _name == 'content-length':
+                try:
+                    content_length = int(value)
+                except ValueError:
+                    pass_through = True
+
+                else:
+                    continue
+
+            elif _name == 'content-type':
+                content_type = value
+
+            elif _name == 'content-encoding':
+                content_encoding = value
+
+            elif _name == 'content-disposition':
+                content_disposition = value
+
+            headers.append((name, value))
+
+        # We can only inject our Javascript if the content type
+        # is an allowed value, no content encoding has been set
+        # and an attachment isn't being used.
+
+        def should_insert_html():
+            if pass_through:
+                return False
+
+            if content_encoding is not None:
+                return False
+
+            if (content_disposition is not None and
+                    content_disposition.startswith('attachment;')):
+                return False
+
+            if content_type is None:
+                return False
+
+            settings = self.transaction.settings
+            allowed_content_type = settings.browser_monitoring.content_type
+
+            if content_type.split(';')[0] not in allowed_content_type:
+                return False
+
+            return True
+
+        if should_insert_html():
+            self.pass_through = False
+
+            self.content_length = content_length
+            self.response_headers = headers
+
+        # If in pass through mode at this point, we need to flush
+        # out the headers. We technically might do this again
+        # later if start_response() was called more than once.
+
+        if self.pass_through:
+            self.flush_headers()
+
+        return self.inner_write
+
+    def __call__(self):
+        iterable = None
+
+        try:
+            # Grab the iterable returned by the wrapped WSGI
+            # application.
+
+            iterable = self.application(self.request_environ,
+                    self.start_response)
+
+            # Process the response content from the iterable.
+
+            for data in iterable:
+                # If we are in pass through mode, simply pass it
+                # through. If we are in pass through mode then
+                # the headers should already have been flushed.
+
+                if self.pass_through:
+                    yield data
+
+                    continue
+
+                # If the headers haven't been flushed we need to
+                # check for the potential insertion point and
+                # buffer up data as necessary if we can't find it.
+
+                if self.outer_write is None:
+                    # Ignore any empty strings.
+
+                    if not data:
+                        continue
+
+                    # Check for the insertion point. Will return
+                    # None if data was buffered.
+
+                    buffered_data = self.process_data(data)
+
+                    if buffered_data is None:
+                        continue
+
+                    # The data was returned, with it being
+                    # potentially modified. It would not have
+                    # been modified if we had reached maximum to
+                    # be buffer. Flush out the headers, switch to
+                    # pass through mode and yield the data.
+
+                    self.flush_headers()
+                    self.pass_through = True
+
+                    for data in buffered_data:
+                        yield data
+
+                else:
+                    yield data
+
+            # Ensure that if all data was buffered that it is
+            # flushed out.
+
+            if self.response_data:
+                if self.outer_write is None:
+                    self.flush_headers()
+                    self.pass_through = True
+
+                for data in self.response_data:
+                    yield data
+
+        finally:
+            # Call close() on the iterable as required by the
+            # WSGI specification.
+
+            if hasattr(iterable, 'close'):
+                name = callable_name(iterable.close)
+                with FunctionTrace(self.transaction, name):
+                    iterable.close()
 
 def WSGIApplicationWrapper(wrapped, application=None, name=None,
         group=None, framework=None):
@@ -855,13 +1151,19 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None,
             # have it.
 
             if 'wsgi.input' in environ:
-                environ['wsgi.input'] = WSGIInputWrapper(transaction,
+                environ['wsgi.input'] = _WSGIInputWrapper(transaction,
                         environ['wsgi.input'])
 
             with FunctionTrace(transaction, name='Application',
                     group='Python/WSGI'):
                 with FunctionTrace(transaction, name=callable_name(wrapped)):
-                    result = wrapped(environ, _start_response)
+                    if (settings.browser_monitoring.enabled and
+                            not transaction.autorum_disabled):
+                        middleware = _WSGIApplicationMiddleware(wrapped,
+                                environ, _start_response, transaction)
+                        result = middleware()
+                    else:
+                        result = wrapped(environ, _start_response)
 
         except:  # Catch all
             transaction.__exit__(*sys.exc_info())

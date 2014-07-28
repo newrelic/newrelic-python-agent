@@ -746,8 +746,6 @@ class _WSGIApplicationMiddleware(object):
         # works then we are done, else we move to next phase of
         # buffering up content until we find the body element.
 
-        print('PROCESS_DATA', data)
-
         def html_to_be_inserted():
             header = self.transaction.browser_timing_header()
 
@@ -760,8 +758,6 @@ class _WSGIApplicationMiddleware(object):
 
         if not self.response_data:
             modified = insert_html_snippet(data, html_to_be_inserted)
-
-            print('INITIAL', data, modified)
 
             if modified is not None:
                 if self.content_length is not None:
@@ -777,8 +773,6 @@ class _WSGIApplicationMiddleware(object):
         if not self.response_data or not verify_body_exists(data):
             self.response_length += len(data)
             self.response_data.append(data)
-
-            print('BUFFER', self.response_data)
 
             if self.response_length > self.search_maximum:
                 buffered_data = self.response_data

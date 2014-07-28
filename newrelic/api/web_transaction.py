@@ -1151,13 +1151,13 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None,
             with FunctionTrace(transaction, name='Application',
                     group='Python/WSGI'):
                 with FunctionTrace(transaction, name=callable_name(wrapped)):
-                    if (settings.browser_monitoring.enabled and
+                    if (settings and settings.browser_monitoring.enabled and
                             not transaction.autorum_disabled):
                         middleware = _WSGIApplicationMiddleware(wrapped,
                                 environ, _start_response, transaction)
                         result = middleware()
                     else:
-                        result = wrapped(environ, _start_response)
+                        result = wrapped(*args, **kwargs)
 
         except:  # Catch all
             transaction.__exit__(*sys.exc_info())

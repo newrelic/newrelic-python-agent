@@ -148,13 +148,15 @@ def test_application_deferred_cbv():
     response = test_application.get('/deferred_cbv')
     response.mustcontain('CBV RESPONSE')
 
-_test_insert_html_snippet_settings = {
+_test_html_insertion_settings = {
+    'browser_monitoring.enabled': True,
+    'browser_monitoring.auto_instrument': True,
     'js_agent_loader': u'<!-- NREUM HEADER -->',
 }
 
-@override_application_settings(_test_insert_html_snippet_settings)
-def test_insert_html_snippet():
-    response = test_application.get('/html_snippet', status=200)
+@override_application_settings(_test_html_insertion_settings)
+def test_html_insertion_django_middleware():
+    response = test_application.get('/html_insertion', status=200)
 
     # The 'NREUM HEADER' value comes from our override for the header.
     # The 'NREUM.info' value comes from the programmatically generated

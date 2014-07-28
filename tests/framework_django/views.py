@@ -11,7 +11,7 @@ class MyView(View):
 def deferred_cbv(request):
     return MyView.as_view()(request)
 
-def html_snippet(request):
+def html_insertion(request):
     return HttpResponse('<!DOCTYPE html><html><head>Some header</head>'
             '<body><h1>My First Heading</h1><p>My first paragraph.</p>'
             '</body></html>')

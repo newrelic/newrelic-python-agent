@@ -38,14 +38,7 @@ input_files = [
    'x_ua_meta_tag_with_others.html',
    'x_ua_meta_tag_with_spaces.html',
    'x_ua_meta_with_uppercase.html',
-
-   # The following test file fails as the insertion code
-   # will insert after the second meta tag. Given that is
-   # just how the code works, would probably suggest the
-   # test input be modified to match what we actually
-   # calculate.
-
-   # 'x_ua_meta_tag_multiple_tags.html',
+   'x_ua_meta_tag_multiple_tags.html',
 ]
 
 @pytest.mark.parametrize('input_file', input_files)
@@ -61,4 +54,5 @@ def test_rum_insertion(input_file):
 
    content = insert_html_snippet(original, get_header)
 
-   assert content == expected
+   assert content == expected, ('expected=%r, modified=%r' %
+           (expected, content))

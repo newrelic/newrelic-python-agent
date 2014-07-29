@@ -2,7 +2,8 @@ import pytest
 import base64
 
 from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors, override_ignore_status_codes)
+    validate_transaction_errors, override_ignore_status_codes,
+    override_application_settings)
 
 from newrelic.packages import six
 
@@ -186,4 +187,20 @@ def test_application_plugin_error_capture(target_application):
     import newrelic.agent
     response = target_application.get('/plugin_error', status=403,
             expect_errors=True)
+
+_test_html_insertion_settings = {
+    'browser_monitoring.enabled': True,
+    'browser_monitoring.auto_instrument': True,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
+}
+
+@override_application_settings(_test_html_insertion_settings)
+def test_html_insertion(target_application):
+    response = target_application.get('/html_insertion')
+
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
+
+    response.mustcontain('NREUM HEADER', 'NREUM.info')
 

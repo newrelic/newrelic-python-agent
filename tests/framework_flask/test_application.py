@@ -167,7 +167,7 @@ _test_html_insertion_settings = {
 }
 
 @override_application_settings(_test_html_insertion_settings)
-def test_application_index():
+def test_html_insertion():
     application = target_application()
     response = application.get('/html_insertion', status=200)
 

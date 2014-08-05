@@ -208,3 +208,70 @@ def test_html_insertion_yield_multi_no_head():
     # footer added by the agent.
 
     response.mustcontain('NREUM HEADER', 'NREUM.info')
+
+@wsgi_application()
+def target_wsgi_application_unnamed_attachment_header(environ, start_response):
+    status = '200 OK'
+
+    output = b'<html><body><p>RESPONSE</p></body></html>'
+
+    response_headers = [('Content-type', 'text/html; charset=utf-8'),
+                        ('Content-Length', str(len(output))),
+                        ('Content-Disposition', 'attachment')]
+    start_response(status, response_headers)
+
+    yield output
+
+target_application_unnamed_attachment_header = webtest.TestApp(
+        target_wsgi_application_unnamed_attachment_header)
+
+_test_html_insertion_unnamed_attachment_header_settings = {
+    'browser_monitoring.enabled': True,
+    'browser_monitoring.auto_instrument': True,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
+}
+
+@override_application_settings(
+    _test_html_insertion_unnamed_attachment_header_settings)
+def test_html_insertion_unnamed_attachment_header():
+    response = target_application_unnamed_attachment_header.get('/', status=200)
+
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
+
+    response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])
+
+@wsgi_application()
+def target_wsgi_application_named_attachment_header(environ, start_response):
+    status = '200 OK'
+
+    output = b'<html><body><p>RESPONSE</p></body></html>'
+
+    response_headers = [('Content-type', 'text/html; charset=utf-8'),
+                        ('Content-Length', str(len(output))),
+                        ('Content-Disposition', 'attachment; filename="X"')]
+    start_response(status, response_headers)
+
+    yield output
+
+target_application_named_attachment_header = webtest.TestApp(
+        target_wsgi_application_named_attachment_header)
+
+_test_html_insertion_named_attachment_header_settings = {
+    'browser_monitoring.enabled': True,
+    'browser_monitoring.auto_instrument': True,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
+}
+
+@override_application_settings(
+    _test_html_insertion_named_attachment_header_settings)
+def test_html_insertion_named_attachment_header():
+    response = target_application_named_attachment_header.get('/', status=200)
+
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
+
+    response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])
+

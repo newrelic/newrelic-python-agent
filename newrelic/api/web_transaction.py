@@ -901,7 +901,7 @@ class _WSGIApplicationMiddleware(object):
                 return False
 
             if (content_disposition is not None and
-                    content_disposition.startswith('attachment;')):
+                    content_disposition.split(';')[0].strip() == 'attachment'):
                 return False
 
             if content_type is None:

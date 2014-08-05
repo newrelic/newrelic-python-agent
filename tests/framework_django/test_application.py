@@ -163,3 +163,25 @@ def test_html_insertion_django_middleware():
     # footer added by the agent.
 
     response.mustcontain('NREUM HEADER', 'NREUM.info')
+
+@override_application_settings(_test_html_insertion_settings)
+def test_html_insertion_unnamed_attachment_header_django_middleware():
+    response = test_application.get(
+            '/html_insertion_unnamed_attachment_header', status=200)
+
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
+
+    response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])
+
+@override_application_settings(_test_html_insertion_settings)
+def test_html_insertion_named_attachment_header_django_middleware():
+    response = test_application.get(
+            '/html_insertion_named_attachment_header', status=200)
+
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
+
+    response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])

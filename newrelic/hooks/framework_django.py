@@ -71,7 +71,7 @@ def browser_timing_middleware(request, response):
 
     cdisposition = response.get('Content-Disposition', '').lower()
 
-    if cdisposition.startswith('attachment;'):
+    if cdisposition.split(';')[0].strip() == 'attachment': 
         return response
 
     # No point continuing if header is empty. This can occur if

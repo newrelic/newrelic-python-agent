@@ -9,6 +9,7 @@ except ImportError:
     import configparser as ConfigParser
 
 from .common.log_file import initialize_logging
+from .core.config import Settings, apply_config_setting
 
 import newrelic.core.agent
 import newrelic.core.config
@@ -70,6 +71,25 @@ _config_object = ConfigParser.RawConfigParser()
 # all the settings have been read.
 
 _cache_object = []
+
+# Mechanism for extracting settings from the configuration for use in
+# instrumentation modules and extensions.
+
+def extra_settings(section, types={}):
+    settings = {}
+
+    if _config_object.has_section(section):
+        settings.update(_config_object.items(section))
+
+    settings_object = Settings()
+
+    for name, value in settings.items():
+        if name in types:
+            value = types[name](value)
+
+        apply_config_setting(settings_object, name, value)
+
+    return settings_object
 
 # Define some mapping functions to convert raw values read from
 # configuration file into the internal types expected by the
@@ -236,6 +256,8 @@ def _process_configuration(section):
     _process_setting(section, 'audit_log_file',
                      'get', None)
     _process_setting(section, 'monitor_mode',
+                     'getboolean', None)
+    _process_setting(section, 'developer_mode',
                      'getboolean', None)
     _process_setting(section, 'high_security',
                      'getboolean', None)
@@ -1722,8 +1744,12 @@ def _process_module_builtin_defaults():
     _process_module_definition('urllib2',
             'newrelic.hooks.external_urllib2') # Python 2
 
-    _process_module_definition('urllib3.request',
-            'newrelic.hooks.external_urllib3')
+    _process_module_definition('urllib3.connectionpool',
+            'newrelic.hooks.external_urllib3',
+            'instrument_urllib3_connectionpool')
+    _process_module_definition('urllib3.connection',
+            'newrelic.hooks.external_urllib3',
+            'instrument_urllib3_connection')
 
     _process_module_definition('requests.api',
             'newrelic.hooks.external_requests',
@@ -1731,6 +1757,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('requests.sessions',
             'newrelic.hooks.external_requests',
             'instrument_requests_sessions')
+    _process_module_definition('requests.packages.urllib3.connection',
+            'newrelic.hooks.external_urllib3',
+            'instrument_urllib3_connection')
 
     _process_module_definition('feedparser',
             'newrelic.hooks.external_feedparser')
@@ -1953,6 +1982,19 @@ def _setup_instrumentation():
 
     _process_function_profile_configuration()
 
+def _setup_extensions(): 
+    try: 
+        import pkg_resources 
+    except ImportError: 
+        return 
+
+    group = 'newrelic.extension' 
+
+    for entrypoint in pkg_resources.iter_entry_points(group=group): 
+        __import__(entrypoint.module_name) 
+        module = sys.modules[entrypoint.module_name] 
+        module.initialize()
+
 _console = None
 
 def _startup_agent_console():
@@ -1984,10 +2026,11 @@ def initialize(config_file=None, environment=None, ignore_errors=None,
     _load_configuration(config_file, environment, ignore_errors,
             log_file, log_level)
 
-    if _settings.monitor_mode:
+    if _settings.monitor_mode or _settings.developer_mode:
         _settings.enabled = True
         _setup_instrumentation()
         _setup_data_source()
+        _setup_extensions()
         _setup_agent_console()
     else:
         _settings.enabled = False

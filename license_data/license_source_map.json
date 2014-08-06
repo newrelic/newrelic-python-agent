@@ -167,6 +167,12 @@
             "New Relic"
         ]
     },
+    "newrelic/api/html_insertion.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/import_hook.py": {
         "hash": "n/a",
         "libraries": [
@@ -239,6 +245,192 @@
             "New Relic"
         ]
     },
+    "newrelic/api/tests/html_insertion/basic.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/body_with_attributes.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/charset_tag.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/charset_tag_after_x_ua_tag.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/charset_tag_before_x_ua_tag.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/charset_tag_with_spaces.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/comments1.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/comments2.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/content_type_charset_tag.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/content_type_charset_tag_after_x_ua_tag.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/content_type_charset_tag_before_x_ua_tag.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/gt_in_quotes1.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/gt_in_quotes2.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/gt_in_quotes_mismatch.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/gt_in_single_quotes1.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/gt_in_single_quotes_mismatch.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/head_with_attributes.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/incomplete_non_meta_tags.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/no_end_header.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/no_header.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/no_html_and_no_header.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/no_start_header.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/script1.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/script2.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/x_ua_meta_tag.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/x_ua_meta_tag_multiline.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/x_ua_meta_tag_multiple_tags.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/x_ua_meta_tag_spaces_around_equals.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/x_ua_meta_tag_with_others.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/x_ua_meta_tag_with_spaces.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/x_ua_meta_with_uppercase.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/tests/test_application.py": {
         "hash": "n/a",
         "libraries": [
@@ -288,6 +480,12 @@
         ]
     },
     "newrelic/api/tests/test_generator_trace.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/test_html_insertion.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

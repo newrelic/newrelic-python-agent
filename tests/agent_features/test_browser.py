@@ -25,6 +25,11 @@ def target_wsgi_application(environ, start_response):
 
 target_application = webtest.TestApp(target_wsgi_application)
 
+_test_footer_attributes = {
+    'js_agent_loader': '<!-- NREUM HEADER -->',
+}
+
+@override_application_settings(_test_footer_attributes)
 def test_footer_attributes():
     settings = application_settings()
 
@@ -50,11 +55,9 @@ def test_footer_attributes():
 
     assert content == 'RESPONSE'
 
-    # We no longer are in control of the JS contents of the header so
-    # just check to make sure it contains at least the magic string
-    # 'NREUM'.
+    # Validate the insertion of RUM header.
 
-    assert header.find('NREUM') != -1
+    assert header.find('NREUM HEADER') != -1
 
     # Now validate the various fields of the footer. The fields are
     # held by a JSON dictionary.

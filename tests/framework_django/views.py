@@ -27,5 +27,5 @@ def html_insertion_named_attachment_header(request):
     response = HttpResponse('<!DOCTYPE html><html><head>Some header</head>'
             '<body><h1>My First Heading</h1><p>My first paragraph.</p>'
             '</body></html>')
-    response['Content-Disposition'] = 'attachment; filename="X"'
+    response['Content-Disposition'] = 'Attachment; filename="X"'
     return response

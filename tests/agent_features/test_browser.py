@@ -250,7 +250,7 @@ def target_wsgi_application_named_attachment_header(environ, start_response):
 
     response_headers = [('Content-type', 'text/html; charset=utf-8'),
                         ('Content-Length', str(len(output))),
-                        ('Content-Disposition', 'attachment; filename="X"')]
+                        ('Content-Disposition', 'Attachment; filename="X"')]
     start_response(status, response_headers)
 
     yield output

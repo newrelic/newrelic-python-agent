@@ -22,6 +22,12 @@ def error_page():
 def error404_page(error):
     return 'NOT FOUND'
 
+@route('/html_insertion')
+def index_page():
+    return ('<!DOCTYPE html><html><head>Some header</head>'
+            '<body><h1>My First Heading</h1><p>My first paragraph.</p>'
+            '</body></html>')
+
 if version >= (0, 9, 0):
     from bottle import auth_basic
 

@@ -29,4 +29,10 @@ def template_string():
 def template_not_found():
     return render_template('not_found')
 
+@application.route('/html_insertion')
+def html_insertion():
+    return ('<!DOCTYPE html><html><head>Some header</head>'
+            '<body><h1>My First Heading</h1><p>My first paragraph.</p>'
+            '</body></html>')
+
 _test_application = webtest.TestApp(application)

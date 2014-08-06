@@ -2,7 +2,7 @@ import webtest
 import pytest
 
 from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors)
+    validate_transaction_errors, override_application_settings)
 
 @pytest.fixture()
 def target_application(request):
@@ -49,3 +49,19 @@ _test_application_index_scoped_metrics = [
 def test_application_controller(target_application):
     response = target_application.get('/examples/simple_examples/hello1')
     #response.mustcontain('INDEX RESPONSE')
+
+_test_html_insertion_settings = {
+    'browser_monitoring.enabled': True,
+    'browser_monitoring.auto_instrument': True,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
+}
+
+@override_application_settings(_test_html_insertion_settings)
+def test_html_insertion(target_application):
+    response = target_application.get('/welcome/default/index')
+
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
+
+    response.mustcontain('NREUM HEADER', 'NREUM.info')

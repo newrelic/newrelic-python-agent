@@ -750,7 +750,7 @@ class _WSGIApplicationMiddleware(object):
             header = self.transaction.browser_timing_header()
 
             if not header:
-                return ''
+                return b''
 
             footer = self.transaction.browser_timing_footer()
 

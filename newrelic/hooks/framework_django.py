@@ -7,7 +7,28 @@ from newrelic.agent import (FunctionWrapper, callable_name,
     wrap_error_trace, FunctionTrace, wrap_function_trace, wrap_in_function,
     wrap_transaction_name, wrap_post_function, current_transaction,
     WSGIApplicationWrapper, ignore_status_code, insert_html_snippet,
-    verify_body_exists)
+    verify_body_exists, extra_settings)
+
+_boolean_states = {
+   '1': True, 'yes': True, 'true': True, 'on': True,
+   '0': False, 'no': False, 'false': False, 'off': False 
+}
+
+def _setting_boolean(value):
+    if value.lower() not in _boolean_states:
+        raise ValueError('Not a boolean: %s' % value)
+    return _boolean_states[value.lower()]
+
+_settings_types = {
+    'browser_monitoring.auto_instrument': _setting_boolean,
+}
+
+_settings_defaults = {
+    'browser_monitoring.auto_instrument': True,
+}
+
+django_settings = extra_settings('import-hook:django',
+        types=_settings_types, defaults=_settings_defaults)
 
 def should_ignore(exc, value, tb):
     from django.http import Http404
@@ -49,6 +70,9 @@ def browser_timing_middleware(request, response):
         return response
 
     if transaction.autorum_disabled:
+        return response
+
+    if not django_settings.browser_monitoring.auto_instrument:
         return response
 
     # Only possible if the content type is one of the allowed

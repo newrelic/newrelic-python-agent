@@ -8,6 +8,11 @@ input_files_directory = os.path.join(os.path.dirname(
         os.path.abspath(__file__)), 'html_insertion')
 
 input_files = [
+    'attachment_mentioned_in_inline.html',
+    'attachment_named_meta_tag.html',
+    'attachment_unnamed_meta_tag.html',
+    'attachment_unnamed_meta_tag_spaces_around_equals.html',
+    'attachment_unnamed_meta_tag_with_spaces.html',
     'basic.html',
     'body_with_attributes.html',
     'charset_tag.html',

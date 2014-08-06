@@ -75,13 +75,16 @@ _cache_object = []
 # Mechanism for extracting settings from the configuration for use in
 # instrumentation modules and extensions.
 
-def extra_settings(section, types={}):
+def extra_settings(section, types={}, defaults={}):
     settings = {}
 
     if _config_object.has_section(section):
         settings.update(_config_object.items(section))
 
     settings_object = Settings()
+
+    for name, value in defaults.items():
+        apply_config_setting(settings_object, name, value)
 
     for name, value in settings.items():
         if name in types:

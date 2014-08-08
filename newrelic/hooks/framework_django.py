@@ -84,7 +84,7 @@ def browser_timing_middleware(request, response):
     ctype = response.get('Content-Type', '').lower().split(';')[0]
 
     if ctype not in transaction.settings.browser_monitoring.content_type:
-        return
+        return response
 
     # Don't risk it if content encoding already set.
 

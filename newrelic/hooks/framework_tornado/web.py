@@ -15,19 +15,37 @@ def call_wrapper(wrapped, instance, args, kwargs):
     request = _args(*args, **kwargs)
 
     # If no transaction associated with request already, need to
-    # create a new one. The exception is when the the ASYNC API is
-    # being executed within a WSGI application, in which case a
-    # transaction will already be active. For that we execute
+    # create a new one. The exception is when the the ASYNC API
+    # is being executed within a WSGI application, in which case
+    # a transaction will already be active. For that we execute
     # straight away.
 
-    if instance._wsgi:
-        transaction = current_transaction()
-
-        with FunctionTrace(transaction, name='Request/Process',
-                group='Python/Tornado'):
-            return wrapped(*args, **kwargs)
-
     transaction = retrieve_request_transaction(request)
+
+    if hasattr(instance, '_wsgi'):
+        # For Tornado prior to 4.0 the _wsgi attribute existed.
+        # If that attribute is True then it is a WSGI application.
+
+        if instance._wsgi:
+            transaction = current_transaction()
+
+            with FunctionTrace(transaction, name='Request/Process',
+                    group='Python/Tornado'):
+                return wrapped(*args, **kwargs)
+
+    else:
+        # For Tornado 4.0 and later, if there is no transaction
+        # associated with the current Tornado request object,
+        # then we assume that if there is still a current
+        # transaction that we are handling a WSGI application.
+
+        if transaction is None:
+            transaction = current_transaction()
+
+            if transaction is not None:
+                with FunctionTrace(transaction, name='Request/Process',
+                        group='Python/Tornado'):
+                    return wrapped(*args, **kwargs)
 
     if transaction is None:
         transaction = initiate_request_monitoring(request)

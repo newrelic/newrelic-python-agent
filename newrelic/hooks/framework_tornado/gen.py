@@ -115,4 +115,7 @@ def instrument_tornado_gen(module):
         wrap_function_wrapper(module, 'engine', coroutine_wrapper)
 
     if hasattr(module, 'Task'):
-        wrap_function_wrapper(module, 'Task.start', task_wrapper)
+        if hasattr(module.Task, 'start'):
+            # The start() method only existed prior to Tornado 4.0.
+
+            wrap_function_wrapper(module, 'Task.start', task_wrapper)

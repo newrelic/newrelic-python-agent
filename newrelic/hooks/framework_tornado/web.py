@@ -294,8 +294,12 @@ def instrument_tornado_web(module):
     #        render_wrapper)
 
     wrap_function_wrapper(module, 'RequestHandler.finish', finish_wrapper)
-    wrap_function_wrapper(module, 'RequestHandler._generate_headers',
-            generate_headers_wrapper)
+
+    if hasattr(module.RequestHandler, '_generate_headers'):
+        # The _generate_headers() method only existed prior to Tornado 4.0.
+
+        wrap_function_wrapper(module, 'RequestHandler._generate_headers',
+                generate_headers_wrapper)
 
     wrap_function_wrapper(module, 'RequestHandler.__init__', init_wrapper)
 

@@ -260,14 +260,17 @@ def finish_wrapper(wrapped, instance, args, kwargs):
     return result
 
 def instrument_tornado_httpserver(module):
-    wrap_function_wrapper(module, 'HTTPConnection._on_headers',
-            on_headers_wrapper)
-    wrap_function_wrapper(module, 'HTTPConnection._on_request_body',
-            on_request_body_wrapper)
-    wrap_function_wrapper(module, 'HTTPConnection._finish_request',
-            finish_request_wrapper)
-    wrap_function_wrapper(module, 'HTTPConnection.finish',
-            finish_wrapper)
+    if hasattr(module, 'HTTPConnection'):
+        # The HTTPConnection class only existed prior to Tornado 4.0.
+
+        wrap_function_wrapper(module, 'HTTPConnection._on_headers',
+                on_headers_wrapper)
+        wrap_function_wrapper(module, 'HTTPConnection._on_request_body',
+                on_request_body_wrapper)
+        wrap_function_wrapper(module, 'HTTPConnection._finish_request',
+                finish_request_wrapper)
+        wrap_function_wrapper(module, 'HTTPConnection.finish',
+                finish_wrapper)
 
     if hasattr(module.HTTPRequest, '_parse_mime_body'):
         wrap_function_trace(module, 'HTTPRequest._parse_mime_body')

@@ -1277,6 +1277,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/framework_tornado/gen.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/framework_tornado/httpserver.py": {
         "hash": "n/a",
         "libraries": [
@@ -1308,6 +1314,12 @@
         ]
     },
     "newrelic/hooks/framework_tornado/stack_context.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/framework_tornado/template.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

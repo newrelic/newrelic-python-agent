@@ -3,10 +3,15 @@ import re
 _head_re = re.compile(b'<head[^>]*>', re.IGNORECASE)
 
 _xua_meta_re = re.compile(b"""<\s*meta[^>]+http-equiv\s*=\s*['"]"""
-          b"""x-ua-compatible['"][^>]*>""", re.IGNORECASE)
+    b"""x-ua-compatible['"][^>]*>""", re.IGNORECASE)
 
 _charset_meta_re = re.compile(b"""<\s*meta[^>]+charset\s*=[^>]*>""",
-        re.IGNORECASE)
+    re.IGNORECASE)
+
+_attachment_meta_re = re.compile(b"""<\s*meta[^>]+http-equiv\s*=\s*['"]"""
+    b"""content-disposition['"][^>]*content\s*=\s*(?P<quote>['"])"""
+    b"""\s*attachment(\s*;[^>]*)?(?P=quote)[^>]*>""",
+    re.IGNORECASE)
 
 _body_re = re.compile(b'<body[^>]*>', re.IGNORECASE)
 
@@ -42,6 +47,14 @@ def insert_html_snippet(data, html_to_be_inserted, search_limit=64*1024):
 
     def insert_at_index(index):
        return b''.join((data[:index], text, data[index:], tail))
+
+    # Search for instance of a content disposition meta tag
+    # indicating that the response is actually being served up
+    # as an attachment and would be saved as a file and not
+    # actually interpreted by a browser.
+
+    if _attachment_meta_re.search(data):
+        return data + tail
 
     # Search for instances of X-UA or charset meta tags. We will
     # use whichever is the last to appear in the data.

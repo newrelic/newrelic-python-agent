@@ -4,7 +4,7 @@ from newrelic.agent import (wrap_function_wrapper, current_transaction,
         FunctionTrace, callable_name, FunctionWrapper)
 
 from . import (retrieve_transaction_request, retrieve_request_transaction,
-    suspend_request_monitoring, resume_request_monitoring,
+    request_finished, suspend_request_monitoring, resume_request_monitoring,
     finalize_request_monitoring)
 
 module_stack_context = None
@@ -32,7 +32,7 @@ def callback_wrapper(request):
             raise
 
         finally:
-            if not request._nr_request_finished:
+            if not request_finished(request):
                 suspend_request_monitoring(request, name='Callback/Wait')
 
             elif not request.connection.stream.writing():

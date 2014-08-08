@@ -10,7 +10,7 @@ from newrelic.agent import (wrap_function_wrapper, current_transaction,
 
 from . import (retrieve_request_transaction, initiate_request_monitoring,
     suspend_request_monitoring, resume_request_monitoring,
-    finalize_request_monitoring)
+    finish_request_monitoring, finalize_request_monitoring)
 
 _logger = logging.getLogger(__name__)
 
@@ -151,11 +151,7 @@ def finish_request_wrapper(wrapped, instance, args, kwargs):
     transaction = retrieve_request_transaction(request)
 
     if transaction == current_transaction():
-        # XXX Old code has stuff to undo a function trace????
-
-        # XXX FINISH
-
-        request._nr_request_finished = True
+        finish_request_monitoring(request)
 
         return wrapped(*args, **kwargs)
 
@@ -170,11 +166,7 @@ def finish_request_wrapper(wrapped, instance, args, kwargs):
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    # XXX Old code has stuff to undo a function trace????
-
-    # XXX FINISH
-
-    request._nr_request_finished = True
+    finish_request_monitoring(request)
 
     try:
         result = wrapped(*args, **kwargs)

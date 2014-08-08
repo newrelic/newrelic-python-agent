@@ -84,6 +84,11 @@ def retrieve_request_transaction(request):
 
     return getattr(request, '_nr_transaction', None)
 
+def request_finished(request):
+    # Returns where the request is in the process of being finished.
+
+    return request._nr_request_finished
+
 def initiate_request_monitoring(request):
     # Creates a new transaction and associates it with the request.
     # We always use the default application specified in the agent
@@ -140,6 +145,12 @@ def suspend_request_monitoring(request, name, group='Python/Tornado',
     # Create a function trace to track the time while monitoring of
     # this transaction is suspended.
 
+    if request._nr_wait_function_trace:
+        _logger.error('Runtime instrumentation error. Suspending the '
+                'Tornado transaction when it has already been suspended. '
+                'Report this issue to New Relic support.\n%s',
+                ''.join(traceback.format_stack()[:-1]))
+
     request._nr_wait_function_trace = FunctionTrace(transaction,
             name=name, group=group, terminal=terminal, rollup=rollup)
 
@@ -182,6 +193,11 @@ def resume_request_monitoring(request, required=False):
         request._nr_wait_function_trace = None
 
     return transaction
+
+def finish_request_monitoring(request):
+    # Marks that the request should be finishing up.
+
+    request._nr_request_finished = True
 
 def finalize_request_monitoring(request, exc=None, value=None, tb=None):
     # Finalize monitoring of the transaction.

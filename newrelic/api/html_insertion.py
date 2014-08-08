@@ -1,66 +1,83 @@
 import re
 
-_head_start_p = b"""(?P<head><head[^>]*>)"""
+_head_re = re.compile(b'<head[^>]*>', re.IGNORECASE)
 
-def _xua_meta_p(tag):
-  return (b"""(?P<xuaTAG><\s*meta[^>]+http-equiv\s*=\s*['"]"""
-          b"""x-ua-compatible['"][^>]*>)""".replace(b'TAG', tag))
+_xua_meta_re = re.compile(b"""<\s*meta[^>]+http-equiv\s*=\s*['"]"""
+    b"""x-ua-compatible['"][^>]*>""", re.IGNORECASE)
 
-def _charset_meta_p(tag):
-  return (b"""(?P<charsetTAG><\s*meta[^>]+charset\s*=[^>]*>)""".replace(
-      b'TAG', tag))
+_charset_meta_re = re.compile(b"""<\s*meta[^>]+charset\s*=[^>]*>""",
+    re.IGNORECASE)
 
-_body_start_p = b"""(?P<body><body[^>]*>)"""
+_attachment_meta_re = re.compile(b"""<\s*meta[^>]+http-equiv\s*=\s*['"]"""
+    b"""content-disposition['"][^>]*content\s*=\s*(?P<quote>['"])"""
+    b"""\s*attachment(\s*;[^>]*)?(?P=quote)[^>]*>""",
+    re.IGNORECASE)
 
-_body_start_re = re.compile(b""".*""" + _body_start_p + b""".*""",
-       re.IGNORECASE | re.DOTALL)
+_body_re = re.compile(b'<body[^>]*>', re.IGNORECASE)
 
-_insertion_point_re = re.compile(b'('
-   b'(.*' + _charset_meta_p(b'1') + b'.*' + _xua_meta_p(b'2') + b')|'
-   b'(.*' + _xua_meta_p(b'1') + b'.*' + _charset_meta_p(b'2') + b')|'
-   b'(.*' + _charset_meta_p(b'3') + b')|'
-   b'(.*' + _xua_meta_p(b'3') + b')|'
-   b'(.*' + _head_start_p + b'))?'
-   b'(.*' + _body_start_p + b'.*)?',
-   re.IGNORECASE | re.DOTALL)
+def insert_html_snippet(data, html_to_be_inserted, search_limit=64*1024):
+    # First determine if we have a body tag. If we don't we
+    # always give up even though strictly speaking we may not
+    # actually need it to exist. This is to ensure that we have
+    # all the HTML needed to perform the match correctly. In
+    # doing this initial search, we only do up to the specified
+    # search limit.
 
-def insert_html_snippet(data, html_to_be_inserted):
-   matchobj = _insertion_point_re.match(data)
+    body = _body_re.search(data[:search_limit])
 
-   if not matchobj:
-       return data
+    if not body:
+        return data if len(data) > search_limit else None
 
-   if matchobj.start('body') == -1:
-       return None
+    # We are definitely doing to insert something now, so
+    # generate the text to be inserted. Bail out if is empty but
+    # return the data to indicate we did insert something.
 
-   # Use the best match we have from the head element for
-   # the place to insert the text.
+    text = html_to_be_inserted()
 
-   for name in ('xua3', 'charset3', 'xua2', 'charset2', 'head'):
-       end = matchobj.end(name)
+    if not text:
+        return data
 
-       if end != -1:
-           text = html_to_be_inserted()
+    # We are now going to split out everything before the body
+    # to limit searches when applying the regex patterns. We
+    # could have just used up to the search limit, but the
+    # patterns which follow seem to be expensive enough that a
+    # short a string as possible helps.
 
-           if not text:
-               return data
+    tail, data = data[body.start():], data[:body.start()]
 
-           return text.join((data[:end], data[end:]))
+    def insert_at_index(index):
+       return b''.join((data[:index], text, data[index:], tail))
 
-   # Fallback to inserting text prior to the body element.
+    # Search for instance of a content disposition meta tag
+    # indicating that the response is actually being served up
+    # as an attachment and would be saved as a file and not
+    # actually interpreted by a browser.
 
-   start = matchobj.start('body')
-   if start != -1:
-       text = html_to_be_inserted()
+    if _attachment_meta_re.search(data):
+        return data + tail
 
-       if not text:
-           return data
+    # Search for instances of X-UA or charset meta tags. We will
+    # use whichever is the last to appear in the data.
 
-       return text.join((data[:start], data[start:]))
+    xua_meta = _xua_meta_re.search(data)
+    charset_meta = _charset_meta_re.search(data)
 
-   # Something went very wrong as we should never get here.
+    index = max(xua_meta and xua_meta.end() or 0,
+            charset_meta and charset_meta.end() or 0)
 
-   return None
+    if index:
+       return insert_at_index(index)
+
+    # Next try for the start of head section.
+
+    head = _head_re.search(data)
+
+    if head:
+       return insert_at_index(head.end())
+
+    # Finally if no joy, insert before the start of the body.
+
+    return insert_at_index(body.start())
 
 def verify_body_exists(data):
-    return _body_start_re.match(data) != -1
+    return _body_re.search(data)

@@ -1,7 +1,7 @@
 import pytest
 
 from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors)
+    validate_transaction_errors, override_application_settings)
 
 from newrelic.packages import six
 
@@ -150,3 +150,20 @@ def test_application_rest_post():
     application = target_application()
     response = application.post('/rest') # Raises PredicateMismatch
     response.mustcontain('Called POST')
+
+_test_html_insertion_settings = {
+    'browser_monitoring.enabled': True,
+    'browser_monitoring.auto_instrument': True,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
+}
+
+@override_application_settings(_test_html_insertion_settings)
+def test_html_insertion():
+    application = target_application()
+    response = application.get('/html_insertion', status=200)
+
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
+
+    response.mustcontain('NREUM HEADER', 'NREUM.info')

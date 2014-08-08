@@ -245,6 +245,36 @@
             "New Relic"
         ]
     },
+    "newrelic/api/tests/html_insertion/attachment_mentioned_in_inline.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/attachment_named_meta_tag.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/attachment_unnamed_meta_tag.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/attachment_unnamed_meta_tag_spaces_around_equals.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/api/tests/html_insertion/attachment_unnamed_meta_tag_with_spaces.html": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/api/tests/html_insertion/basic.html": {
         "hash": "n/a",
         "libraries": [

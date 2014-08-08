@@ -9,7 +9,7 @@ from newrelic.agent import (wsgi_application, get_browser_timing_header,
 from newrelic.common.encoding_utils import deobfuscate, json_decode
 
 @wsgi_application()
-def target_wsgi_application(environ, start_response):
+def target_wsgi_application_manual_rum(environ, start_response):
     status = '200 OK'
 
     text = '<html><head>%s</head><body><p>RESPONSE</p>%s</body></html>'
@@ -23,10 +23,12 @@ def target_wsgi_application(environ, start_response):
 
     return [output]
 
-target_application = webtest.TestApp(target_wsgi_application)
+target_application_manual_rum = webtest.TestApp(target_wsgi_application_manual_rum)
 
 _test_footer_attributes = {
-    'js_agent_loader': '<!-- NREUM HEADER -->',
+    'browser_monitoring.enabled': True,
+    'browser_monitoring.auto_instrument': False,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
 }
 
 @override_application_settings(_test_footer_attributes)
@@ -45,7 +47,7 @@ def test_footer_attributes():
     token = '0123456789ABCDEF'
     headers = { 'Cookie': 'NRAGENT=tk=%s' % token }
 
-    response = target_application.get('/', headers=headers)
+    response = target_application_manual_rum.get('/', headers=headers)
 
     header = response.html.html.head.script.text
     content = response.html.html.body.p.text
@@ -88,7 +90,11 @@ def test_footer_attributes():
     assert 'userAttributes' not in data
 
 _test_rum_ssl_for_http_is_none = {
-    'browser_monitoring.ssl_for_http': None }
+    'browser_monitoring.enabled': True,
+    'browser_monitoring.auto_instrument': False,
+    'browser_monitoring.ssl_for_http': None,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
+}
 
 @override_application_settings(_test_rum_ssl_for_http_is_none)
 def test_ssl_for_http_is_none():
@@ -96,14 +102,18 @@ def test_ssl_for_http_is_none():
 
     assert settings.browser_monitoring.ssl_for_http is None
 
-    response = target_application.get('/')
+    response = target_application_manual_rum.get('/')
     footer = response.html.html.body.script.text
     data = json.loads(footer.split('NREUM.info=')[1])
 
     assert 'sslForHttp' not in data
 
 _test_rum_ssl_for_http_is_true = {
-    'browser_monitoring.ssl_for_http': True }
+    'browser_monitoring.enabled': True,
+    'browser_monitoring.auto_instrument': False,
+    'browser_monitoring.ssl_for_http': True,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
+}
 
 @override_application_settings(_test_rum_ssl_for_http_is_true)
 def test_ssl_for_http_is_true():
@@ -111,14 +121,18 @@ def test_ssl_for_http_is_true():
 
     assert settings.browser_monitoring.ssl_for_http is True
 
-    response = target_application.get('/')
+    response = target_application_manual_rum.get('/')
     footer = response.html.html.body.script.text
     data = json.loads(footer.split('NREUM.info=')[1])
 
     assert data['sslForHttp'] is True
 
 _test_rum_ssl_for_http_is_false = {
-    'browser_monitoring.ssl_for_http': False }
+    'browser_monitoring.enabled': True,
+    'browser_monitoring.auto_instrument': False,
+    'browser_monitoring.ssl_for_http': False,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
+}
 
 @override_application_settings(_test_rum_ssl_for_http_is_false)
 def test_ssl_for_http_is_false():
@@ -126,8 +140,171 @@ def test_ssl_for_http_is_false():
 
     assert settings.browser_monitoring.ssl_for_http is False
 
-    response = target_application.get('/')
+    response = target_application_manual_rum.get('/')
     footer = response.html.html.body.script.text
     data = json.loads(footer.split('NREUM.info=')[1])
 
     assert data['sslForHttp'] is False
+
+@wsgi_application()
+def target_wsgi_application_yield_single_no_head(environ, start_response):
+    status = '200 OK'
+
+    output = b'<html><body><p>RESPONSE</p></body></html>'
+
+    response_headers = [('Content-type', 'text/html; charset=utf-8'),
+                        ('Content-Length', str(len(output)))]
+    start_response(status, response_headers)
+
+    yield output
+
+target_application_yield_single_no_head = webtest.TestApp(
+        target_wsgi_application_yield_single_no_head)
+
+_test_html_insertion_yield_single_no_head_settings = {
+    'browser_monitoring.enabled': True,
+    'browser_monitoring.auto_instrument': True,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
+}
+
+@override_application_settings(_test_html_insertion_yield_single_no_head_settings)
+def test_html_insertion_yield_single_no_head():
+    response = target_application_yield_single_no_head.get('/', status=200)
+
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
+
+    response.mustcontain('NREUM HEADER', 'NREUM.info')
+
+@wsgi_application()
+def target_wsgi_application_yield_multi_no_head(environ, start_response):
+    status = '200 OK'
+
+    output = [ b'<html>', b'<body><p>RESPONSE</p></body></html>' ]
+
+    response_headers = [('Content-type', 'text/html; charset=utf-8'),
+                        ('Content-Length', str(len(b''.join(output))))]
+    start_response(status, response_headers)
+
+    for data in output:
+        yield data
+
+target_application_yield_multi_no_head = webtest.TestApp(
+        target_wsgi_application_yield_multi_no_head)
+
+_test_html_insertion_yield_multi_no_head_settings = {
+    'browser_monitoring.enabled': True,
+    'browser_monitoring.auto_instrument': True,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
+}
+
+@override_application_settings(_test_html_insertion_yield_multi_no_head_settings)
+def test_html_insertion_yield_multi_no_head():
+    response = target_application_yield_multi_no_head.get('/', status=200)
+
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
+
+    response.mustcontain('NREUM HEADER', 'NREUM.info')
+
+@wsgi_application()
+def target_wsgi_application_unnamed_attachment_header(environ, start_response):
+    status = '200 OK'
+
+    output = b'<html><body><p>RESPONSE</p></body></html>'
+
+    response_headers = [('Content-type', 'text/html; charset=utf-8'),
+                        ('Content-Length', str(len(output))),
+                        ('Content-Disposition', 'attachment')]
+    start_response(status, response_headers)
+
+    yield output
+
+target_application_unnamed_attachment_header = webtest.TestApp(
+        target_wsgi_application_unnamed_attachment_header)
+
+_test_html_insertion_unnamed_attachment_header_settings = {
+    'browser_monitoring.enabled': True,
+    'browser_monitoring.auto_instrument': True,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
+}
+
+@override_application_settings(
+    _test_html_insertion_unnamed_attachment_header_settings)
+def test_html_insertion_unnamed_attachment_header():
+    response = target_application_unnamed_attachment_header.get('/', status=200)
+
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
+
+    response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])
+
+@wsgi_application()
+def target_wsgi_application_named_attachment_header(environ, start_response):
+    status = '200 OK'
+
+    output = b'<html><body><p>RESPONSE</p></body></html>'
+
+    response_headers = [('Content-type', 'text/html; charset=utf-8'),
+                        ('Content-Length', str(len(output))),
+                        ('Content-Disposition', 'Attachment; filename="X"')]
+    start_response(status, response_headers)
+
+    yield output
+
+target_application_named_attachment_header = webtest.TestApp(
+        target_wsgi_application_named_attachment_header)
+
+_test_html_insertion_named_attachment_header_settings = {
+    'browser_monitoring.enabled': True,
+    'browser_monitoring.auto_instrument': True,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
+}
+
+@override_application_settings(
+    _test_html_insertion_named_attachment_header_settings)
+def test_html_insertion_named_attachment_header():
+    response = target_application_named_attachment_header.get('/', status=200)
+
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
+
+    response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])
+
+@wsgi_application()
+def target_wsgi_application_inline_attachment_header(environ, start_response):
+    status = '200 OK'
+
+    output = b'<html><body><p>RESPONSE</p></body></html>'
+
+    response_headers = [('Content-type', 'text/html; charset=utf-8'),
+                        ('Content-Length', str(len(output))),
+                        ('Content-Disposition', 'inline; filename="attachment"')]
+    start_response(status, response_headers)
+
+    yield output
+
+target_application_inline_attachment_header = webtest.TestApp(
+        target_wsgi_application_inline_attachment_header)
+
+_test_html_insertion_inline_attachment_header_settings = {
+    'browser_monitoring.enabled': True,
+    'browser_monitoring.auto_instrument': True,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
+}
+
+@override_application_settings(
+    _test_html_insertion_inline_attachment_header_settings)
+def test_html_insertion_inline_attachment_header():
+    response = target_application_inline_attachment_header.get('/', status=200)
+
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
+
+    response.mustcontain('NREUM HEADER', 'NREUM.info')
+

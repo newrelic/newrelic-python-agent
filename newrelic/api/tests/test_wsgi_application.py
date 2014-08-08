@@ -156,7 +156,7 @@ class TestCase(newrelic.tests.test_cases.TestCase):
     def test_wsgiapp_function_error(self):
         environ = { "REQUEST_URI": "/wsgiapp_function_error" }
         try:
-            _wsgiapp_function_error(environ, None)
+            _wsgiapp_function_error(environ, None).close()
         except RuntimeError:
             pass
 

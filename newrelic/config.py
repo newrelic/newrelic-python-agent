@@ -75,13 +75,16 @@ _cache_object = []
 # Mechanism for extracting settings from the configuration for use in
 # instrumentation modules and extensions.
 
-def extra_settings(section, types={}):
+def extra_settings(section, types={}, defaults={}):
     settings = {}
 
     if _config_object.has_section(section):
         settings.update(_config_object.items(section))
 
     settings_object = Settings()
+
+    for name, value in defaults.items():
+        apply_config_setting(settings_object, name, value)
 
     for name, value in settings.items():
         if name in types:
@@ -138,6 +141,9 @@ def _map_console_listener_socket(s):
 def _merge_ignore_status_codes(s):
     return newrelic.core.config._parse_ignore_status_codes(
             s, _settings.error_collector.ignore_status_codes)
+
+def _map_browser_monitoring_content_type(s):
+    return s.split()
 
 # Processing of a single setting from configuration file.
 
@@ -321,6 +327,8 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'browser_monitoring.capture_attributes',
                      'getboolean', None),
+    _process_setting(section, 'browser_monitoring.content_type',
+                     'get', _map_browser_monitoring_content_type),
     _process_setting(section, 'slow_sql.enabled',
                      'getboolean', None)
     _process_setting(section, 'analytics_events.enabled',

@@ -29,6 +29,12 @@ def return_not_found(request):
 def redirect(request):
     raise exc.HTTPFound(request.route_url('home'))
 
+@view_config(route_name='html_insertion')
+def html_insertion(request):
+    return Response('<!DOCTYPE html><html><head>Some header</head>'
+            '<body><h1>My First Heading</h1><p>My first paragraph.</p>'
+            '</body></html>')
+
 @view_defaults(route_name='rest')
 class RestView:
     def __init__(self, request):
@@ -44,6 +50,7 @@ class RestView:
 
 config = Configurator()
 config.add_route('home', '/')
+config.add_route('html_insertion', '/html_insertion')
 config.add_route('error', '/error')
 config.add_route('not_found_exception_response', '/nf1')
 config.add_route('raise_not_found', '/nf2')

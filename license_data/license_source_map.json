@@ -1926,25 +1926,31 @@
         ]
     },
     "newrelic/packages/wrapt/__init__.py": {
-        "hash": "cb48cd0a15d98acf949df08d54d960d2",
+        "hash": "122766fd1d018b3f59d18d725d4d610b",
         "libraries": [
             "wrapt"
         ]
     },
     "newrelic/packages/wrapt/_wrappers.c": {
-        "hash": "4150b94cb81a0427bdc866235d64fddc",
+        "hash": "4153eac1e7d550f95848799e09c62b77",
+        "libraries": [
+            "wrapt"
+        ]
+    },
+    "newrelic/packages/wrapt/arguments.py": {
+        "hash": "dfa66c7cd77033547e8622f285bc7c83",
         "libraries": [
             "wrapt"
         ]
     },
     "newrelic/packages/wrapt/decorators.py": {
-        "hash": "c1fc531f72b3e12bd27c82b83616ab2d",
+        "hash": "2fed0cdfc7f992d35dbb513ee458c18c",
         "libraries": [
             "wrapt"
         ]
     },
     "newrelic/packages/wrapt/importer.py": {
-        "hash": "bb7e737bcd6e9562bc32e3ea3fd46e9f",
+        "hash": "996371ea4b5173cefb386730d7d38d0a",
         "libraries": [
             "wrapt"
         ]
@@ -1956,7 +1962,7 @@
         ]
     },
     "newrelic/packages/wrapt/wrappers.py": {
-        "hash": "6c3c387acbe0c87e4f629528e8021bed",
+        "hash": "71bf176fdb72b37d8dccafd8de81ad04",
         "libraries": [
             "wrapt"
         ]

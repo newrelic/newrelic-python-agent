@@ -3,14 +3,17 @@ as well as some commonly used decorators.
 
 """
 
-from . import six
+import sys
+
+PY2 = sys.version_info[0] == 2
+PY3 = sys.version_info[0] == 3
 
 from functools import partial
 from inspect import getargspec, ismethod, isclass
 from collections import namedtuple
 from threading import Lock, RLock
 
-if not six.PY2:
+if not PY2:
     from inspect import signature
 
 from .wrappers import (FunctionWrapper, BoundFunctionWrapper, ObjectProxy,
@@ -69,7 +72,7 @@ class _AdapterFunctionSurrogate(CallableObjectProxy):
 
     @property
     def __signature__(self):
-        if six.PY2:
+        if PY2:
             return self._self_adapter.__signature__
         else:
             # Can't allow this to fail on Python 3 else it falls
@@ -79,7 +82,7 @@ class _AdapterFunctionSurrogate(CallableObjectProxy):
 
             return signature(self._self_adapter)
 
-    if six.PY2:
+    if PY2:
         func_code = __code__
         func_defaults = __defaults__
 
@@ -90,7 +93,7 @@ class _BoundAdapterWrapper(BoundFunctionWrapper):
         return _AdapterFunctionSurrogate(self.__wrapped__.__func__,
                 self._self_parent._self_adapter)
 
-    if six.PY2:
+    if PY2:
         im_func = __func__
 
 class AdapterWrapper(FunctionWrapper):
@@ -116,7 +119,7 @@ class AdapterWrapper(FunctionWrapper):
     def __kwdefaults__(self):
         return self._self_surrogate.__kwdefaults__
 
-    if six.PY2:
+    if PY2:
         func_code = __code__
         func_defaults = __defaults__
 
@@ -154,6 +157,17 @@ def decorator(wrapper=None, enabled=None, adapter=None):
     # function will be called directly instead.
 
     if wrapper is not None:
+        # Helper function for creating wrapper of the appropriate
+        # time when we need it down below.
+
+        def _build(wrapped, wrapper, enabled=None, adapter=None):
+            if adapter:
+                return AdapterWrapper(wrapped=wrapped, wrapper=wrapper,
+                        enabled=enabled, adapter=adapter)
+
+            return FunctionWrapper(wrapped=wrapped, wrapper=wrapper,
+                    enabled=enabled)
+
         # The wrapper has been provided so return the final decorator.
         # The decorator is itself one of our function wrappers so we
         # can determine when it is applied to functions, instance methods
@@ -162,7 +176,67 @@ def decorator(wrapper=None, enabled=None, adapter=None):
         # when it is finally called.
 
         def _wrapper(wrapped, instance, args, kwargs):
+            # We first check for the case where the decorator was applied
+            # to a class type.
+            #
+            #     @decorator
+            #     class mydecoratorclass(object):
+            #         def __init__(self, arg=None):
+            #             self.arg = arg
+            #         def __call__(self, wrapped, instance, args, kwargs):
+            #             return wrapped(*args, **kwargs)
+            #
+            #     @mydecoratorclass(arg=1)
+            #     def function():
+            #         pass
+            #
+            # In this case an instance of the class is to be used as the
+            # decorator wrapper function. If args was empty at this point,
+            # then it means that there were optional keyword arguments
+            # supplied to be used when creating an instance of the class
+            # to be used as the wrapper function.
+
+            if instance is None and isclass(wrapped) and not args:
+                # We still need to be passed the target function to be
+                # wrapped as yet, so we need to return a further function
+                # to be able to capture it.
+
+                def _capture(target_wrapped):
+                    # Now have the target function to be wrapped and need
+                    # to create an instance of the class which is to act
+                    # as the decorator wrapper function. Before we do that,
+                    # we need to first check that use of the decorator
+                    # hadn't been disabled by a simple boolean. If it was,
+                    # the target function to be wrapped is returned instead.
+                    
+                    _enabled = enabled
+                    if type(_enabled) is bool:
+                        if not _enabled:
+                            return target_wrapped
+                        _enabled = None
+
+                    # Now create an instance of the class which is to act
+                    # as the decorator wrapper function. Any arguments had
+                    # to be supplied as keyword only arguments so that is
+                    # all we pass when creating it.
+
+                    target_wrapper = wrapped(**kwargs)
+
+                    # Finally build the wrapper itself and return it.
+
+                    return _build(target_wrapped, target_wrapper,
+                            _enabled, adapter)
+
+                return _capture
+
+            # We should always have the target function to be wrapped at
+            # this point as the first (and only) value in args.
+
             target_wrapped = args[0]
+
+            # Need to now check that use of the decorator hadn't been
+            # disabled by a simple boolean. If it was, then target
+            # function to be wrapped is returned instead.
 
             _enabled = enabled
             if type(_enabled) is bool:
@@ -170,22 +244,111 @@ def decorator(wrapper=None, enabled=None, adapter=None):
                     return target_wrapped
                 _enabled = None
 
+            # We now need to build the wrapper, but there are a couple of
+            # different cases we need to consider.
+
             if instance is None:
-                target_wrapper = wrapper
-            elif isclass(instance):
-                target_wrapper = wrapper.__get__(None, instance)
+                if isclass(wrapped):
+                    # In this case the decorator was applied to a class
+                    # type but optional keyword arguments were not supplied
+                    # for initialising an instance of the class to be used
+                    # as the decorator wrapper function.
+                    #
+                    #     @decorator
+                    #     class mydecoratorclass(object):
+                    #         def __init__(self, arg=None):
+                    #             self.arg = arg
+                    #         def __call__(self, wrapped, instance,
+                    #                 args, kwargs):
+                    #             return wrapped(*args, **kwargs)
+                    #
+                    #     @mydecoratorclass
+                    #     def function():
+                    #         pass
+                    #
+                    # We still need to create an instance of the class to
+                    # be used as the decorator wrapper function, but no
+                    # arguments are pass.
+
+                    target_wrapper = wrapped()
+
+                else:
+                    # In this case the decorator was applied to a normal
+                    # function, or possibly a static method of a class.
+                    #
+                    #     @decorator
+                    #     def mydecoratorfuntion(wrapped, instance,
+                    #             args, kwargs):
+                    #         return wrapped(*args, **kwargs)
+                    #
+                    #     @mydecoratorfunction
+                    #     def function():
+                    #         pass
+                    #
+                    # That normal function becomes the decorator wrapper
+                    # function.
+
+                    target_wrapper = wrapper
+
             else:
-                target_wrapper = wrapper.__get__(instance, type(instance))
+                if isclass(instance):
+                    # In this case the decorator was applied to a class
+                    # method.
+                    #
+                    #     class myclass(object):
+                    #         @decorator
+                    #         @classmethod
+                    #         def decoratorclassmethod(cls, wrapped,
+                    #                 instance, args, kwargs):
+                    #             return wrapped(*args, **kwargs)
+                    #
+                    #     instance = myclass()
+                    #
+                    #     @instance.decoratorclassmethod
+                    #     def function():
+                    #         pass
+                    #
+                    # This one is a bit strange because binding was actually
+                    # performed on the wrapper created by our decorator
+                    # factory. We need to apply that binding to the decorator
+                    # wrapper function which which the decorator factory
+                    # was applied to.
 
-            if adapter:
-                return AdapterWrapper(wrapped=target_wrapped,
-                        wrapper=target_wrapper, enabled=_enabled,
-                        adapter=adapter)
+                    target_wrapper = wrapper.__get__(None, instance)
 
-            return FunctionWrapper(wrapped=target_wrapped,
-                    wrapper=target_wrapper, enabled=_enabled)
+                else:
+                    # In this case the decorator was applied to an instance
+                    # method.
+                    #
+                    #     class myclass(object):
+                    #         @decorator
+                    #         def decoratorclassmethod(self, wrapped,
+                    #                 instance, args, kwargs):
+                    #             return wrapped(*args, **kwargs)
+                    #
+                    #     instance = myclass()
+                    #
+                    #     @instance.decoratorclassmethod
+                    #     def function():
+                    #         pass
+                    #
+                    # This one is a bit strange because binding was actually
+                    # performed on the wrapper created by our decorator
+                    # factory. We need to apply that binding to the decorator
+                    # wrapper function which which the decorator factory
+                    # was applied to.
 
-        return FunctionWrapper(wrapper, _wrapper)
+                    target_wrapper = wrapper.__get__(instance, type(instance))
+
+            # Finally build the wrapper itself and return it.
+
+            return _build(target_wrapped, target_wrapper, _enabled, adapter)
+
+        # We first return our magic function wrapper here so we can
+        # determine in what context the decorator factory was used. In
+        # other words, it is itself a universal decorator.
+
+        return _build(wrapper, _wrapper)
 
     else:
         # The wrapper still has not been provided, so we are just

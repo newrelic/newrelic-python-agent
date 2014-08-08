@@ -7,7 +7,9 @@ from newrelic.agent import (FunctionWrapper, callable_name,
     wrap_error_trace, FunctionTrace, wrap_function_trace, wrap_in_function,
     wrap_transaction_name, wrap_post_function, current_transaction,
     WSGIApplicationWrapper, ignore_status_code, insert_html_snippet,
-    verify_body_exists, extra_settings)
+    verify_body_exists, BackgroundTask, register_application,
+    wrap_function_wrapper, FunctionTraceWrapper, function_wrapper,
+    extra_settings)
 
 _boolean_states = {
    '1': True, 'yes': True, 'true': True, 'on': True,
@@ -825,3 +827,45 @@ def instrument_django_core_mail(module):
 
 def instrument_django_core_mail_message(module):
     wrap_function_trace(module, 'EmailMessage.send')
+
+def _nr_wrapper_BaseCommand___init___(wrapped, instance, args, kwargs):
+    instance.handle = FunctionTraceWrapper(instance.handle)
+    if hasattr(instance, 'handle_noargs'):
+        instance.handle_noargs = FunctionTraceWrapper(instance.handle_noargs)
+    return wrapped(*args, **kwargs)
+
+def _nr_wrapper_BaseCommand_run_from_argv_(wrapped, instance, args, kwargs):
+    def _args(argv, *args, **kwargs):
+        return argv
+
+    _argv = _args(*args, **kwargs)
+
+    subcommand = _argv[1]
+
+    settings = extra_settings('import-hook:django.core.management')
+
+    try:
+        commands = settings.django_admin.background_task.split()
+
+    except AttributeError:
+        return wrapped(*args, **kwargs)
+
+    if subcommand not in commands:
+        return wrapped(*args, **kwargs)
+
+    try:
+        startup_timeout = float(settings.django_admin.startup_timeout)
+
+    except AttributeError:
+        startup_timeout = 10.0
+
+    application = register_application(timeout=startup_timeout)
+
+    with BackgroundTask(application, subcommand, 'Django'):
+        return wrapped(*args, **kwargs)
+
+def instrument_django_core_management_base(module):
+    wrap_function_wrapper(module, 'BaseCommand.__init__',
+            _nr_wrapper_BaseCommand___init___)
+    wrap_function_wrapper(module, 'BaseCommand.run_from_argv',
+            _nr_wrapper_BaseCommand_run_from_argv_)

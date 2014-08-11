@@ -4,6 +4,8 @@ from testing_support.fixtures import (code_coverage_fixture,
         collector_agent_registration_fixture, collector_available_fixture)
 
 _coverage_source = [
+    'newrelic.api.transaction',
+    'newrelic.api.web_transaction',
 ]
 
 code_coverage = code_coverage_fixture(source=_coverage_source)

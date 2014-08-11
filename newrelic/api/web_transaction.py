@@ -718,6 +718,20 @@ class _WSGIInputWrapper(object):
 
 class _WSGIApplicationMiddleware(object):
 
+    # This is a WSGI middleware for automatically inserting RUM into
+    # HTML responses. It only works for where a WSGI application is
+    # returning response content via a iterable/generator. It does not
+    # work if the WSGI application write() callable is being used. It
+    # will buffer response content up to the start of <body>. This is
+    # technically in violation of the WSGI specification if one is
+    # strict, but will still work with all known WSGI servers. Because
+    # it does buffer, then technically it may cause a problem with
+    # streamed responses. For that to occur then it would have to be a
+    # HTML response that doesn't actually use <body> and so technically
+    # is not a valid HTML response. It is assumed though that in
+    # streaming a response, the <head> itself isn't streamed out only
+    # gradually.
+
     search_maximum = 64*1024
 
     def __init__(self, application, environ, start_response, transaction):
@@ -774,7 +788,7 @@ class _WSGIApplicationMiddleware(object):
             self.response_length += len(data)
             self.response_data.append(data)
 
-            if self.response_length > self.search_maximum:
+            if self.response_length >= self.search_maximum:
                 buffered_data = self.response_data
                 self.response_data = []
                 return buffered_data
@@ -823,13 +837,21 @@ class _WSGIApplicationMiddleware(object):
                 self.response_headers, *self.response_args)
 
     def inner_write(self, data):
+        # If the write() callable is used, we do not attempt to
+        # do any insertion at all here after.
+
+        self.pass_through = True
+
+        # Flush the response headers if this hasn't yet been done.
+
         if self.outer_write is None:
-            self.pass_through = False
             self.flush_headers()
 
-        # First write out any buffered response data in case the
+        # Now write out any buffered response data in case the
         # WSGI application was doing something evil where it
-        # mixed use of yield and write.
+        # mixed use of yield and write. Technically if write()
+        # is used, it is supposed to be before any attempt to
+        # yield a string. When done switch to pass through mode.
 
         if self.response_data:
             for buffered_data in self.response_data:
@@ -872,11 +894,10 @@ class _WSGIApplicationMiddleware(object):
             if _name == 'content-length':
                 try:
                     content_length = int(value)
+                    continue
+
                 except ValueError:
                     pass_through = True
-
-                else:
-                    continue
 
             elif _name == 'content-type':
                 content_type = value
@@ -898,6 +919,14 @@ class _WSGIApplicationMiddleware(object):
                 return False
 
             if content_encoding is not None:
+                # This will match any encoding, including if the
+                # value 'identity' is used. Technically the value
+                # 'identity' should only be used in the header
+                # Accept-Encoding and not Content-Encoding. In
+                # other words, a WSGI application should not be
+                # returning identity. We could check and allow it
+                # anyway and still do RUM insertion, but don't.
+
                 return False
 
             if (content_disposition is not None and
@@ -984,16 +1013,28 @@ class _WSGIApplicationMiddleware(object):
                         yield data
 
                 else:
+                    # Depending on how the WSGI specification is
+                    # interpreted, this shouldn't occur. That is,
+                    # nothing should be yielded prior to the
+                    # start_response() function being called. The
+                    # CGI/WSGI example in the WSGI specification
+                    # does allow that though as do various WSGI
+                    # servers that followed that example.
+
                     yield data
 
-            # Ensure that if all data was buffered that it is
-            # flushed out.
+            # Ensure that headers have been written if the
+            # response was actually empty.
+
+            if self.outer_write is None:
+                self.flush_headers()
+                self.pass_through = True
+
+            # Ensure that any remaining buffered data is also
+            # written. Technically this should never be able
+            # to occur at this point, but do it just in case.
 
             if self.response_data:
-                if self.outer_write is None:
-                    self.flush_headers()
-                    self.pass_through = True
-
                 for data in self.response_data:
                     yield data
 

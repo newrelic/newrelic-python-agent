@@ -646,8 +646,10 @@ def test_html_insertion_no_content_type():
         # WebTest doesn't like Content-Type being missing. Can't find
         # any way to prevent it from complaining.
 
-        if e.message.startswith('No Content-Type header found in headers'):
+        if str(e).startswith('No Content-Type header found in headers'):
             return
+        else:
+            raise
 
     # Technically 'identity' should not be used in Content-Encoding
     # but clients will still accept it. Use this fact to disable auto

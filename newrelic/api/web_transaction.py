@@ -754,6 +754,10 @@ class _WSGIApplicationMiddleware(object):
         self.response_length = 0
         self.response_data = []
 
+        settings = transaction.settings
+
+        self.debug = settings and settings.debug.log_autorum_middleware
+
     def process_data(self, data):
         # If this is the first data block, then immediately try
         # for an insertion using full set of criteria. If this
@@ -774,9 +778,16 @@ class _WSGIApplicationMiddleware(object):
             modified = insert_html_snippet(data, html_to_be_inserted)
 
             if modified is not None:
+                if self.debug:
+                    _logger.debug('RUM insertion from WSGI middleware '
+                            'triggered on first yielded string from '
+                            'response. Bytes added was %r.',
+                            len(modified) - len(data))
+
                 if self.content_length is not None:
                     length = len(modified) - len(data)
                     self.content_length += length
+
                 return [modified]
 
         # Buffer up the data. If we haven't found the start of
@@ -815,9 +826,16 @@ class _WSGIApplicationMiddleware(object):
         modified = insert_html_snippet(data, html_to_be_inserted)
 
         if modified is not None:
+            if self.debug:
+                _logger.debug('RUM insertion from WSGI middleware '
+                        'triggered on subsequent string yielded from '
+                        'response. Bytes added was %r.',
+                        len(modified) - len(data))
+
             if self.content_length is not None:
                 length = len(modified) - len(data)
                 self.content_length += length
+
             return [modified]
 
         # Something went very wrong as we should never get here.

@@ -24,12 +24,17 @@ def _setting_boolean(value):
         raise ValueError('Not a boolean: %s' % value)
     return _boolean_states[value.lower()]
 
+def _setting_set(value):
+    return set(value.split())
+
 _settings_types = {
     'browser_monitoring.auto_instrument': _setting_boolean,
+    'instrumentation.templates.inclusion_tag' : _setting_set,
 }
 
 _settings_defaults = {
     'browser_monitoring.auto_instrument': True,
+    'instrumentation.templates.inclusion_tag': set(),
 }
 
 django_settings = extra_settings('import-hook:django',
@@ -877,3 +882,53 @@ def instrument_django_core_management_base(module):
             _nr_wrapper_BaseCommand___init___)
     wrap_function_wrapper(module, 'BaseCommand.run_from_argv',
             _nr_wrapper_BaseCommand_run_from_argv_)
+
+@function_wrapper
+def _nr_wrapper_django_inclusion_tag_wrapper_(wrapped, instance,
+        args, kwargs):
+
+    transaction = current_transaction()
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    name = hasattr(wrapped, '__name__') and wrapped.__name__
+
+    if name is None:
+        return wrapped(*args, **kwargs)
+
+    qualname = callable_name(wrapped)
+
+    tags = django_settings.instrumentation.templates.inclusion_tag
+
+    if '*' not in tags and name not in tags and qualname not in tags:
+        return wrapped(*args, **kwargs)
+
+    with FunctionTrace(transaction, name, group='Template/Tag'):
+        return wrapped(*args, **kwargs)
+
+@function_wrapper
+def _nr_wrapper_django_inclusion_tag_decorator_(wrapped, instance,
+        args, kwargs):
+
+    def _bind_params(func, *args, **kwargs):
+        return func, args, kwargs
+
+    func, _args, _kwargs = _bind_params(*args, **kwargs)
+
+    func = _nr_wrapper_django_inclusion_tag_wrapper_(func)
+
+    return wrapped(func, *_args, **_kwargs)
+
+def _nr_wrapper_django_template_base_Library_inclusion_tag_(wrapped,
+        instance, args, kwargs):
+
+    return _nr_wrapper_django_inclusion_tag_decorator_(
+            wrapped(*args, **kwargs))
+
+def instrument_django_template_base(module):
+    global module_django_template_base
+    module_django_template_base = module
+
+    wrap_function_wrapper(module, 'Library.inclusion_tag',
+            _nr_wrapper_django_template_base_Library_inclusion_tag_)

@@ -1,5 +1,6 @@
 import sys
 import threading
+import logging
 
 from newrelic.packages import six
 
@@ -8,6 +9,8 @@ from newrelic.agent import (FunctionWrapper, callable_name,
     wrap_transaction_name, wrap_post_function, current_transaction,
     WSGIApplicationWrapper, ignore_status_code, insert_html_snippet,
     verify_body_exists, extra_settings)
+
+_logger = logging.getLogger(__name__)
 
 _boolean_states = {
    '1': True, 'yes': True, 'true': True, 'on': True,
@@ -84,7 +87,7 @@ def browser_timing_middleware(request, response):
     ctype = response.get('Content-Type', '').lower().split(';')[0]
 
     if ctype not in transaction.settings.browser_monitoring.content_type:
-        return
+        return response
 
     # Don't risk it if content encoding already set.
 
@@ -126,6 +129,11 @@ def browser_timing_middleware(request, response):
     result = insert_html_snippet(response.content, html_to_be_inserted)
 
     if result is not None:
+        if transaction.settings.debug.log_autorum_middleware:
+            _logger.debug('RUM insertion from Django middleware '
+                    'triggered. Bytes added was %r.',
+                    len(result) - len(response.content))
+
         response.content = result
         response['Content-Length'] = str(len(response.content))
 

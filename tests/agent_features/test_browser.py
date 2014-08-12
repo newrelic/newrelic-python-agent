@@ -793,3 +793,33 @@ def test_html_insertion_write_before_yield():
     expected = b'<html><body><p>RESPONSE</p></body></html>'
 
     assert response.body == expected
+
+@wsgi_application()
+def target_wsgi_application_multiple_yields(environ, start_response):
+    output = [b'<html>', b'<body><p>RESPONSE</p></body></html>']
+
+    response_headers = [('Content-Type', 'text/html; charset=utf-8'),
+            ('Content-Length', str(len(b''.join(output))))]
+
+    start_response('200 OK', response_headers)
+
+    yield output.pop(0)
+    yield output.pop(0)
+
+target_application_multiple_yields = webtest.TestApp(
+        target_wsgi_application_multiple_yields)
+
+_test_html_insertion_multiple_yields_settings = {
+    'browser_monitoring.enabled': True,
+    'browser_monitoring.auto_instrument': True,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
+}
+
+@override_application_settings(_test_html_insertion_multiple_yields_settings)
+def test_html_insertion_multiple_yields():
+    response = target_application_multiple_yields.get('/', status=200)
+
+    assert 'Content-Type' in response.headers
+    assert 'Content-Length' in response.headers
+
+    response.mustcontain('NREUM HEADER', 'NREUM.info')

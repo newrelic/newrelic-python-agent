@@ -30,11 +30,15 @@ def _setting_set(value):
 _settings_types = {
     'browser_monitoring.auto_instrument': _setting_boolean,
     'instrumentation.templates.inclusion_tag' : _setting_set,
+    'instrumentation.background_task.startup_timeout': float,
+    'instrumentation.scripts.django_admin' : _setting_set,
 }
 
 _settings_defaults = {
     'browser_monitoring.auto_instrument': True,
     'instrumentation.templates.inclusion_tag': set(),
+    'instrumentation.background_task.startup_timeout': 10.0,
+    'instrumentation.scripts.django_admin' : set(),
 }
 
 django_settings = extra_settings('import-hook:django',
@@ -855,22 +859,12 @@ def _nr_wrapper_BaseCommand_run_from_argv_(wrapped, instance, args, kwargs):
 
     subcommand = _argv[1]
 
-    settings = extra_settings('import-hook:django.core.management')
-
-    try:
-        commands = settings.django_admin.background_task.split()
-
-    except AttributeError:
-        return wrapped(*args, **kwargs)
+    commands = django_settings.instrumentation.scripts.django_admin
+    startup_timeout = \
+            django_settings.instrumentation.background_task.startup_timeout
 
     if subcommand not in commands:
         return wrapped(*args, **kwargs)
-
-    try:
-        startup_timeout = float(settings.django_admin.startup_timeout)
-
-    except AttributeError:
-        startup_timeout = 10.0
 
     application = register_application(timeout=startup_timeout)
 

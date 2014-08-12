@@ -433,7 +433,46 @@ def test_html_insertion_multiple_empty_string():
     assert len(response.body) == 0
 
 @wsgi_application()
-def target_wsgi_application_large_whitespace_prelude(environ, start_response):
+def target_wsgi_application_single_large_prelude(environ, start_response):
+    status = '200 OK'
+
+    output = [64*1024*b' ' + b'<body></body>']
+
+    response_headers = [('Content-Type', 'text/html; charset=utf-8'),
+                        ('Content-Length', str(len(b''.join(output))))]
+    start_response(status, response_headers)
+
+    return output
+
+target_application_single_large_prelude = webtest.TestApp(
+        target_wsgi_application_single_large_prelude)
+
+_test_html_insertion_single_large_prelude_settings = {
+    'browser_monitoring.enabled': True,
+    'browser_monitoring.auto_instrument': True,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
+}
+
+@override_application_settings(
+    _test_html_insertion_single_large_prelude_settings)
+def test_html_insertion_single_large_prelude():
+    response = target_application_single_large_prelude.get('/', status=200)
+
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
+
+    assert 'Content-Type' in response.headers
+    assert 'Content-Length' in response.headers
+
+    response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])
+
+    output = [32*1024*b' ', 32*1024*b' ', b'<body></body>']
+
+    assert len(response.body) == len(b''.join(output))
+
+@wsgi_application()
+def target_wsgi_application_multi_large_prelude(environ, start_response):
     status = '200 OK'
 
     output = [32*1024*b' ', 32*1024*b' ', b'<body></body>']
@@ -444,19 +483,19 @@ def target_wsgi_application_large_whitespace_prelude(environ, start_response):
 
     return output
 
-target_application_large_whitespace_prelude = webtest.TestApp(
-        target_wsgi_application_large_whitespace_prelude)
+target_application_multi_large_prelude = webtest.TestApp(
+        target_wsgi_application_multi_large_prelude)
 
-_test_html_insertion_large_whitespace_prelude_settings = {
+_test_html_insertion_multi_large_prelude_settings = {
     'browser_monitoring.enabled': True,
     'browser_monitoring.auto_instrument': True,
     'js_agent_loader': u'<!-- NREUM HEADER -->',
 }
 
 @override_application_settings(
-    _test_html_insertion_large_whitespace_prelude_settings)
-def test_html_insertion_large_whitespace_prelude():
-    response = target_application_large_whitespace_prelude.get('/', status=200)
+    _test_html_insertion_multi_large_prelude_settings)
+def test_html_insertion_multi_large_prelude():
+    response = target_application_multi_large_prelude.get('/', status=200)
 
     # The 'NREUM HEADER' value comes from our override for the header.
     # The 'NREUM.info' value comes from the programmatically generated
@@ -474,6 +513,9 @@ def test_html_insertion_large_whitespace_prelude():
 @wsgi_application()
 def target_wsgi_application_yield_before_start(environ, start_response):
     status = '200 OK'
+
+    # Ambiguous whether yield an empty string before calling
+    # start_response() is legal. Various WSGI servers allow it.
 
     yield ''
 
@@ -793,33 +835,3 @@ def test_html_insertion_write_before_yield():
     expected = b'<html><body><p>RESPONSE</p></body></html>'
 
     assert response.body == expected
-
-@wsgi_application()
-def target_wsgi_application_multiple_yields(environ, start_response):
-    output = [b'<html>', b'<body><p>RESPONSE</p></body></html>']
-
-    response_headers = [('Content-Type', 'text/html; charset=utf-8'),
-            ('Content-Length', str(len(b''.join(output))))]
-
-    start_response('200 OK', response_headers)
-
-    yield output.pop(0)
-    yield output.pop(0)
-
-target_application_multiple_yields = webtest.TestApp(
-        target_wsgi_application_multiple_yields)
-
-_test_html_insertion_multiple_yields_settings = {
-    'browser_monitoring.enabled': True,
-    'browser_monitoring.auto_instrument': True,
-    'js_agent_loader': u'<!-- NREUM HEADER -->',
-}
-
-@override_application_settings(_test_html_insertion_multiple_yields_settings)
-def test_html_insertion_multiple_yields():
-    response = target_application_multiple_yields.get('/', status=200)
-
-    assert 'Content-Type' in response.headers
-    assert 'Content-Length' in response.headers
-
-    response.mustcontain('NREUM HEADER', 'NREUM.info')

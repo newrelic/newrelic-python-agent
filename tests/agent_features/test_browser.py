@@ -2,12 +2,15 @@ import sys
 import webtest
 import json
 
-from testing_support.fixtures import override_application_settings
+from testing_support.fixtures import (override_application_settings,
+    validate_transaction_errors, validate_custom_parameters)
 
 from newrelic.agent import (wsgi_application, get_browser_timing_header,
-    get_browser_timing_footer, application_settings)
+    get_browser_timing_footer, application_settings, add_custom_parameter)
 
 from newrelic.common.encoding_utils import deobfuscate, json_decode
+
+_runtime_error_name = (RuntimeError.__module__ + ':' + RuntimeError.__name__)
 
 @wsgi_application()
 def target_wsgi_application_manual_rum(environ, start_response):
@@ -515,9 +518,10 @@ def target_wsgi_application_yield_before_start(environ, start_response):
     status = '200 OK'
 
     # Ambiguous whether yield an empty string before calling
-    # start_response() is legal. Various WSGI servers allow it.
+    # start_response() is legal. Various WSGI servers allow it
+    # We have to disable WebTest lint check to get this to run.
 
-    yield ''
+    yield b''
 
     output = b'<html><body><p>RESPONSE</p></body></html>'
 
@@ -528,7 +532,7 @@ def target_wsgi_application_yield_before_start(environ, start_response):
     yield output
 
 target_application_yield_before_start = webtest.TestApp(
-        target_wsgi_application_yield_before_start)
+        target_wsgi_application_yield_before_start, lint=False)
 
 _test_html_insertion_yield_before_start_settings = {
     'browser_monitoring.enabled': True,
@@ -536,17 +540,15 @@ _test_html_insertion_yield_before_start_settings = {
     'js_agent_loader': u'<!-- NREUM HEADER -->',
 }
 
-# WebTest prohibits this and says not allowed by WSGI specification.
-#
-# @override_application_settings(_test_html_insertion_yield_before_start_settings)
-# def test_html_insertion_yield_before_start():
-#     response = target_application_yield_before_start.get('/', status=200)
-# 
-#     # The 'NREUM HEADER' value comes from our override for the header.
-#     # The 'NREUM.info' value comes from the programmatically generated
-#     # footer added by the agent.
-# 
-#     response.mustcontain('NREUM HEADER', 'NREUM.info')
+@override_application_settings(_test_html_insertion_yield_before_start_settings)
+def test_html_insertion_yield_before_start():
+    response = target_application_yield_before_start.get('/', status=200)
+
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
+
+    response.mustcontain('NREUM HEADER', 'NREUM.info')
 
 @wsgi_application()
 def target_wsgi_application_start_yield_start(environ, start_response):
@@ -835,3 +837,70 @@ def test_html_insertion_write_before_yield():
     expected = b'<html><body><p>RESPONSE</p></body></html>'
 
     assert response.body == expected
+
+@wsgi_application()
+def target_wsgi_application_param_on_close(environ, start_response):
+    output = b'<html><body><p>RESPONSE</p></body></html>'
+
+    response_headers = [('Content-Type', 'text/html; charset=utf-8'),
+            ('Content-Length', str(len(output)))]
+
+    start_response('200 OK', response_headers)
+
+    try:
+        yield output
+
+    finally:
+        add_custom_parameter('key', 'value')
+
+target_application_param_on_close = webtest.TestApp(
+        target_wsgi_application_param_on_close)
+
+_test_html_insertion_param_on_close_settings = {
+    'browser_monitoring.enabled': True,
+    'browser_monitoring.auto_instrument': True,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
+}
+
+@override_application_settings(_test_html_insertion_param_on_close_settings)
+@validate_custom_parameters(required_params=[('key', 'value')])
+def test_html_insertion_param_on_close():
+    response = target_application_param_on_close.get('/', status=200)
+
+    response.mustcontain('NREUM HEADER', 'NREUM.info')
+
+@wsgi_application()
+def target_wsgi_application_param_on_error(environ, start_response):
+    output = b'<html><body><p>RESPONSE</p></body></html>'
+
+    response_headers = [('Content-Type', 'text/html; charset=utf-8'),
+            ('Content-Length', str(len(output)))]
+
+    start_response('200 OK', response_headers)
+
+    try:
+        raise RuntimeError('ERROR')
+
+        yield output
+
+    finally:
+        add_custom_parameter('key', 'value')
+
+target_application_param_on_error = webtest.TestApp(
+        target_wsgi_application_param_on_error)
+
+_test_html_insertion_param_on_error_settings = {
+    'browser_monitoring.enabled': True,
+    'browser_monitoring.auto_instrument': True,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
+}
+
+@override_application_settings(_test_html_insertion_param_on_error_settings)
+@validate_transaction_errors(errors=[_runtime_error_name],
+        required_params=[('key', 'value')])
+def test_html_insertion_param_on_error():
+    try:
+        response = target_application_param_on_error.get('/', status=500)
+
+    except RuntimeError:
+        pass

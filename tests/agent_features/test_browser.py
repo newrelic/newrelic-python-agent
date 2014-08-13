@@ -673,7 +673,7 @@ def target_wsgi_application_no_content_type(environ, start_response):
     yield output
 
 target_application_no_content_type = webtest.TestApp(
-        target_wsgi_application_no_content_type)
+        target_wsgi_application_no_content_type, lint=False)
 
 _test_html_insertion_no_content_type_settings = {
     'browser_monitoring.enabled': True,
@@ -683,22 +683,7 @@ _test_html_insertion_no_content_type_settings = {
 
 @override_application_settings(_test_html_insertion_no_content_type_settings)
 def test_html_insertion_no_content_type():
-    try:
-        response = target_application_no_content_type.get('/', status=200)
-
-    except AssertionError as e:
-        # WebTest doesn't like Content-Type being missing. Can't find
-        # any way to prevent it from complaining.
-
-        if str(e).startswith('No Content-Type header found in headers'):
-            return
-        else:
-            raise
-
-    # Technically 'identity' should not be used in Content-Encoding
-    # but clients will still accept it. Use this fact to disable auto
-    # RUM for this test. Other option is to compress the response
-    # and use 'gzip'.
+    response = target_application_no_content_type.get('/', status=200)
 
     assert 'Content-Type' not in response.headers
     assert 'Content-Length' in response.headers

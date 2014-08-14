@@ -324,8 +324,8 @@ class WebTransaction(Transaction):
         # Flags for tracking whether RUM header and footer have been
         # generated.
 
-        self._rum_header_generated = False
-        self._rum_footer_generated = False
+        self.rum_header_generated = False
+        self.rum_footer_generated = False
 
     def process_txn_header(self, environ):
         encoded_txn_header = environ.get('HTTP_X_NEWRELIC_TRANSACTION')
@@ -445,7 +445,7 @@ class WebTransaction(Transaction):
         # Don't return the header a second time if it has already
         # been generated.
 
-        if self._rum_header_generated:
+        if self.rum_header_generated:
             return ''
 
         # Requirement is that the first 13 characters of the account
@@ -493,7 +493,7 @@ class WebTransaction(Transaction):
         # generated.
 
         if header:
-            self._rum_header_generated = True
+            self.rum_header_generated = True
 
         return header
 
@@ -518,10 +518,10 @@ class WebTransaction(Transaction):
         # Only generate a footer if the header had already been
         # generated and we haven't already generated the footer.
 
-        if not self._rum_header_generated:
+        if not self.rum_header_generated:
             return ''
 
-        if self._rum_footer_generated:
+        if self.rum_footer_generated:
             return ''
 
         # Make sure we freeze the path.
@@ -616,7 +616,7 @@ class WebTransaction(Transaction):
         # if called a second time we will not return it again.
 
         if footer:
-            self._rum_footer_generated = True
+            self.rum_footer_generated = True
 
         return footer
 
@@ -894,8 +894,11 @@ class _WSGIApplicationMiddleware(object):
 
         # We need to check again if auto RUM has been disabled.
         # This is because it can be disabled using an API call.
+        # Also check whether RUM insertion has already occurred.
 
-        if self.transaction.autorum_disabled:
+        if (self.transaction.autorum_disabled or
+                self.transaction.rum_header_generated):
+
             self.flush_headers()
             self.pass_through = True
 

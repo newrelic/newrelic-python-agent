@@ -927,3 +927,47 @@ def test_html_insertion_disable_autorum_via_api():
     # footer added by the agent.
 
     response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])
+
+@wsgi_application()
+def target_wsgi_application_manual_rum_insertion(environ, start_response):
+    status = '200 OK'
+
+    output = b'<html><body><p>RESPONSE</p></body></html>'
+
+    header = get_browser_timing_header()
+    footer = get_browser_timing_footer()
+
+    header = get_browser_timing_header()
+    footer = get_browser_timing_footer()
+
+    assert header == ''
+    assert footer == ''
+
+    response_headers = [('Content-Type', 'text/html; charset=utf-8'),
+                        ('Content-Length', str(len(output)))]
+    start_response(status, response_headers)
+
+    yield output
+
+target_application_manual_rum_insertion = webtest.TestApp(
+        target_wsgi_application_manual_rum_insertion)
+
+_test_html_insertion_manual_rum_insertion_settings = {
+    'browser_monitoring.enabled': True,
+    'browser_monitoring.auto_instrument': True,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
+}
+
+@override_application_settings(
+    _test_html_insertion_manual_rum_insertion_settings)
+def test_html_insertion_manual_rum_insertion():
+    response = target_application_manual_rum_insertion.get('/', status=200)
+
+    assert 'Content-Type' in response.headers
+    assert 'Content-Length' in response.headers
+
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
+
+    response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])

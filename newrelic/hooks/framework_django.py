@@ -67,7 +67,7 @@ def browser_timing_middleware(request, response):
         return response
 
     # Only insert RUM JavaScript headers and footers if enabled
-    # in configuration.
+    # in configuration and not already likely inserted.
 
     if not transaction.settings.browser_monitoring.enabled:
         return response
@@ -76,6 +76,9 @@ def browser_timing_middleware(request, response):
         return response
 
     if not django_settings.browser_monitoring.auto_instrument:
+        return response
+
+    if transaction.rum_header_generated:
         return response
 
     # Only possible if the content type is one of the allowed

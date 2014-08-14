@@ -6,7 +6,8 @@ from testing_support.fixtures import (override_application_settings,
     validate_transaction_errors, validate_custom_parameters)
 
 from newrelic.agent import (wsgi_application, get_browser_timing_header,
-    get_browser_timing_footer, application_settings, add_custom_parameter)
+    get_browser_timing_footer, application_settings, add_custom_parameter,
+    disable_browser_autorum)
 
 from newrelic.common.encoding_utils import deobfuscate, json_decode
 
@@ -889,3 +890,40 @@ def test_html_insertion_param_on_error():
 
     except RuntimeError:
         pass
+
+@wsgi_application()
+def target_wsgi_application_disable_autorum_via_api(environ, start_response):
+    status = '200 OK'
+
+    output = b'<html><body><p>RESPONSE</p></body></html>'
+
+    disable_browser_autorum()
+
+    response_headers = [('Content-Type', 'text/html; charset=utf-8'),
+                        ('Content-Length', str(len(output)))]
+    start_response(status, response_headers)
+
+    yield output
+
+target_application_disable_autorum_via_api = webtest.TestApp(
+        target_wsgi_application_disable_autorum_via_api)
+
+_test_html_insertion_disable_autorum_via_api_settings = {
+    'browser_monitoring.enabled': True,
+    'browser_monitoring.auto_instrument': True,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
+}
+
+@override_application_settings(
+    _test_html_insertion_disable_autorum_via_api_settings)
+def test_html_insertion_disable_autorum_via_api():
+    response = target_application_disable_autorum_via_api.get('/', status=200)
+
+    assert 'Content-Type' in response.headers
+    assert 'Content-Length' in response.headers
+
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
+
+    response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])

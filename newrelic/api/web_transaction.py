@@ -892,6 +892,15 @@ class _WSGIApplicationMiddleware(object):
 
         self.content_length = None
 
+        # We need to check again if auto RUM has been disabled.
+        # This is because it can be disabled using an API call.
+
+        if self.transaction.autorum_disabled:
+            self.flush_headers()
+            self.pass_through = True
+
+            return self.inner_write
+
         # Extract values for response headers we need to work. Do
         # not copy across the content length header at this time
         # as we will need to adjust the length later if we are

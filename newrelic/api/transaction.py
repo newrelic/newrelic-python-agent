@@ -872,8 +872,8 @@ class Transaction(object):
         self._cpu_user_time_end = os.times()[0]
 
     def add_custom_parameter(self, name, value):
-        if not self._settings: 
-            return 
+        if not self._settings:
+            return
 
         if not self._settings.high_security:
             self._custom_params[name] = value

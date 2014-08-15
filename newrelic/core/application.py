@@ -1266,7 +1266,7 @@ class Application(object):
 
                     if (configuration.collect_analytics_events and
                             configuration.analytics_events.enabled):
-                            
+
                         if configuration.analytics_events.transactions.enabled:
                             sampled_data_set = stats.sampled_data_set
 

@@ -1992,17 +1992,17 @@ def _setup_instrumentation():
 
     _process_function_profile_configuration()
 
-def _setup_extensions(): 
-    try: 
-        import pkg_resources 
-    except ImportError: 
-        return 
+def _setup_extensions():
+    try:
+        import pkg_resources
+    except ImportError:
+        return
 
-    group = 'newrelic.extension' 
+    group = 'newrelic.extension'
 
-    for entrypoint in pkg_resources.iter_entry_points(group=group): 
-        __import__(entrypoint.module_name) 
-        module = sys.modules[entrypoint.module_name] 
+    for entrypoint in pkg_resources.iter_entry_points(group=group):
+        __import__(entrypoint.module_name)
+        module = sys.modules[entrypoint.module_name]
         module.initialize()
 
 _console = None

@@ -1823,6 +1823,10 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.component_tastypie',
             'instrument_tastypie_api')
 
+    _process_module_definition('rest_framework.views',
+            'newrelic.hooks.component_djangorestframework',
+            'instrument_rest_framework_views')
+
     _process_module_definition('celery.task.base',
             'newrelic.hooks.application_celery',
             'instrument_celery_app_task')

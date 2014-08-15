@@ -295,7 +295,8 @@ class WebTransaction(Transaction):
                         self.client_account_id = client_account_id
                         self.client_application_id = client_application_id
 
-                        txn_header = self.process_txn_header(environ)
+                        header_name = 'HTTP_X_NEWRELIC_TRANSACTION'
+                        txn_header = self.process_header(environ, header_name)
                         if txn_header:
                             self.referring_transaction_guid = txn_header[0]
 
@@ -327,17 +328,16 @@ class WebTransaction(Transaction):
         self.rum_header_generated = False
         self.rum_footer_generated = False
 
-    def process_txn_header(self, environ):
-        encoded_txn_header = environ.get('HTTP_X_NEWRELIC_TRANSACTION')
-
-        if encoded_txn_header:
+    def process_header(self, environ, header_name):
+        encoded_header = environ.get(header_name)
+        if encoded_header:
             try:
-                decoded_txn_header = json_decode(deobfuscate(
-                        encoded_txn_header, self._settings.encoding_key))
+                decoded_header = json_decode(deobfuscate(
+                        encoded_header, self._settings.encoding_key))
             except Exception:
-                decoded_txn_header = None
+                decoded_header = None
 
-        return decoded_txn_header
+        return decoded_header
 
     def process_response(self, status, response_headers, *args):
         """Processes response status and headers, extracting any

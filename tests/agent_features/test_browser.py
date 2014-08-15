@@ -2,12 +2,16 @@ import sys
 import webtest
 import json
 
-from testing_support.fixtures import override_application_settings
+from testing_support.fixtures import (override_application_settings,
+    validate_transaction_errors, validate_custom_parameters)
 
 from newrelic.agent import (wsgi_application, get_browser_timing_header,
-    get_browser_timing_footer, application_settings)
+    get_browser_timing_footer, application_settings, add_custom_parameter,
+    disable_browser_autorum)
 
 from newrelic.common.encoding_utils import deobfuscate, json_decode
+
+_runtime_error_name = (RuntimeError.__module__ + ':' + RuntimeError.__name__)
 
 @wsgi_application()
 def target_wsgi_application_manual_rum(environ, start_response):
@@ -515,9 +519,10 @@ def target_wsgi_application_yield_before_start(environ, start_response):
     status = '200 OK'
 
     # Ambiguous whether yield an empty string before calling
-    # start_response() is legal. Various WSGI servers allow it.
+    # start_response() is legal. Various WSGI servers allow it
+    # We have to disable WebTest lint check to get this to run.
 
-    yield ''
+    yield b''
 
     output = b'<html><body><p>RESPONSE</p></body></html>'
 
@@ -528,7 +533,7 @@ def target_wsgi_application_yield_before_start(environ, start_response):
     yield output
 
 target_application_yield_before_start = webtest.TestApp(
-        target_wsgi_application_yield_before_start)
+        target_wsgi_application_yield_before_start, lint=False)
 
 _test_html_insertion_yield_before_start_settings = {
     'browser_monitoring.enabled': True,
@@ -536,17 +541,15 @@ _test_html_insertion_yield_before_start_settings = {
     'js_agent_loader': u'<!-- NREUM HEADER -->',
 }
 
-# WebTest prohibits this and says not allowed by WSGI specification.
-#
-# @override_application_settings(_test_html_insertion_yield_before_start_settings)
-# def test_html_insertion_yield_before_start():
-#     response = target_application_yield_before_start.get('/', status=200)
-# 
-#     # The 'NREUM HEADER' value comes from our override for the header.
-#     # The 'NREUM.info' value comes from the programmatically generated
-#     # footer added by the agent.
-# 
-#     response.mustcontain('NREUM HEADER', 'NREUM.info')
+@override_application_settings(_test_html_insertion_yield_before_start_settings)
+def test_html_insertion_yield_before_start():
+    response = target_application_yield_before_start.get('/', status=200)
+
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
+
+    response.mustcontain('NREUM HEADER', 'NREUM.info')
 
 @wsgi_application()
 def target_wsgi_application_start_yield_start(environ, start_response):
@@ -671,7 +674,7 @@ def target_wsgi_application_no_content_type(environ, start_response):
     yield output
 
 target_application_no_content_type = webtest.TestApp(
-        target_wsgi_application_no_content_type)
+        target_wsgi_application_no_content_type, lint=False)
 
 _test_html_insertion_no_content_type_settings = {
     'browser_monitoring.enabled': True,
@@ -681,22 +684,7 @@ _test_html_insertion_no_content_type_settings = {
 
 @override_application_settings(_test_html_insertion_no_content_type_settings)
 def test_html_insertion_no_content_type():
-    try:
-        response = target_application_no_content_type.get('/', status=200)
-
-    except AssertionError as e:
-        # WebTest doesn't like Content-Type being missing. Can't find
-        # any way to prevent it from complaining.
-
-        if str(e).startswith('No Content-Type header found in headers'):
-            return
-        else:
-            raise
-
-    # Technically 'identity' should not be used in Content-Encoding
-    # but clients will still accept it. Use this fact to disable auto
-    # RUM for this test. Other option is to compress the response
-    # and use 'gzip'.
+    response = target_application_no_content_type.get('/', status=200)
 
     assert 'Content-Type' not in response.headers
     assert 'Content-Length' in response.headers
@@ -835,3 +823,151 @@ def test_html_insertion_write_before_yield():
     expected = b'<html><body><p>RESPONSE</p></body></html>'
 
     assert response.body == expected
+
+@wsgi_application()
+def target_wsgi_application_param_on_close(environ, start_response):
+    output = b'<html><body><p>RESPONSE</p></body></html>'
+
+    response_headers = [('Content-Type', 'text/html; charset=utf-8'),
+            ('Content-Length', str(len(output)))]
+
+    start_response('200 OK', response_headers)
+
+    try:
+        yield output
+
+    finally:
+        add_custom_parameter('key', 'value')
+
+target_application_param_on_close = webtest.TestApp(
+        target_wsgi_application_param_on_close)
+
+_test_html_insertion_param_on_close_settings = {
+    'browser_monitoring.enabled': True,
+    'browser_monitoring.auto_instrument': True,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
+}
+
+@override_application_settings(_test_html_insertion_param_on_close_settings)
+@validate_custom_parameters(required_params=[('key', 'value')])
+def test_html_insertion_param_on_close():
+    response = target_application_param_on_close.get('/', status=200)
+
+    response.mustcontain('NREUM HEADER', 'NREUM.info')
+
+@wsgi_application()
+def target_wsgi_application_param_on_error(environ, start_response):
+    output = b'<html><body><p>RESPONSE</p></body></html>'
+
+    response_headers = [('Content-Type', 'text/html; charset=utf-8'),
+            ('Content-Length', str(len(output)))]
+
+    start_response('200 OK', response_headers)
+
+    try:
+        raise RuntimeError('ERROR')
+
+        yield output
+
+    finally:
+        add_custom_parameter('key', 'value')
+
+target_application_param_on_error = webtest.TestApp(
+        target_wsgi_application_param_on_error)
+
+_test_html_insertion_param_on_error_settings = {
+    'browser_monitoring.enabled': True,
+    'browser_monitoring.auto_instrument': True,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
+}
+
+@override_application_settings(_test_html_insertion_param_on_error_settings)
+@validate_transaction_errors(errors=[_runtime_error_name],
+        required_params=[('key', 'value')])
+def test_html_insertion_param_on_error():
+    try:
+        response = target_application_param_on_error.get('/', status=500)
+
+    except RuntimeError:
+        pass
+
+@wsgi_application()
+def target_wsgi_application_disable_autorum_via_api(environ, start_response):
+    status = '200 OK'
+
+    output = b'<html><body><p>RESPONSE</p></body></html>'
+
+    disable_browser_autorum()
+
+    response_headers = [('Content-Type', 'text/html; charset=utf-8'),
+                        ('Content-Length', str(len(output)))]
+    start_response(status, response_headers)
+
+    yield output
+
+target_application_disable_autorum_via_api = webtest.TestApp(
+        target_wsgi_application_disable_autorum_via_api)
+
+_test_html_insertion_disable_autorum_via_api_settings = {
+    'browser_monitoring.enabled': True,
+    'browser_monitoring.auto_instrument': True,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
+}
+
+@override_application_settings(
+    _test_html_insertion_disable_autorum_via_api_settings)
+def test_html_insertion_disable_autorum_via_api():
+    response = target_application_disable_autorum_via_api.get('/', status=200)
+
+    assert 'Content-Type' in response.headers
+    assert 'Content-Length' in response.headers
+
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
+
+    response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])
+
+@wsgi_application()
+def target_wsgi_application_manual_rum_insertion(environ, start_response):
+    status = '200 OK'
+
+    output = b'<html><body><p>RESPONSE</p></body></html>'
+
+    header = get_browser_timing_header()
+    footer = get_browser_timing_footer()
+
+    header = get_browser_timing_header()
+    footer = get_browser_timing_footer()
+
+    assert header == ''
+    assert footer == ''
+
+    response_headers = [('Content-Type', 'text/html; charset=utf-8'),
+                        ('Content-Length', str(len(output)))]
+    start_response(status, response_headers)
+
+    yield output
+
+target_application_manual_rum_insertion = webtest.TestApp(
+        target_wsgi_application_manual_rum_insertion)
+
+_test_html_insertion_manual_rum_insertion_settings = {
+    'browser_monitoring.enabled': True,
+    'browser_monitoring.auto_instrument': True,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
+}
+
+@override_application_settings(
+    _test_html_insertion_manual_rum_insertion_settings)
+def test_html_insertion_manual_rum_insertion():
+    response = target_application_manual_rum_insertion.get('/', status=200)
+
+    assert 'Content-Type' in response.headers
+    assert 'Content-Length' in response.headers
+
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
+
+    response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])

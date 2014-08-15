@@ -22,7 +22,8 @@ _TransactionNode = namedtuple('_TransactionNode',
         'errors', 'slow_sql', 'apdex_t', 'suppress_apdex', 'custom_metrics',
         'parameter_groups', 'guid', 'rum_trace', 'cpu_time',
         'suppress_transaction_trace', 'client_cross_process_id',
-        'referring_transaction_guid', 'record_tt'])
+        'referring_transaction_guid', 'record_tt', 'synthetics_resource_id',
+        'synthetics_job_id', 'synthetics_monitor_id'])
 
 class TransactionNode(_TransactionNode):
 

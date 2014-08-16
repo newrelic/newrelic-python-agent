@@ -408,7 +408,9 @@ class WebTransaction(Transaction):
         # Generate metrics and response headers for inbound cross
         # process web external calls.
 
-        if self.client_cross_process_id is not None:
+        if (self.client_cross_process_id is not None or
+            self.synthetics_resource_id is not None):
+
             # Need to work out queueing time and duration up to this
             # point for inclusion in metrics and response header. If the
             # recording of the transaction had been prematurely stopped

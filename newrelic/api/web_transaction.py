@@ -55,6 +55,25 @@ def _extract_token(cookie):
     except Exception:
         pass
 
+def _parse_synthetics_header(header):
+    # Return a dictionary of values from Synthetics header
+    # Returns empty dict, if version is not supported.
+
+    synthetics = {}
+    version = None
+
+    if len(header) > 0:
+        version = int(header[0])
+
+    if version == 1:
+        synthetics['version'] = version
+        synthetics['account_id'] = int(header[1])
+        synthetics['resource_id'] = header[2]
+        synthetics['job_id'] = header[3]
+        synthetics['monitor_id'] = header[4]
+
+    return synthetics
+
 class WebTransaction(Transaction):
 
     report_unicode_error = True
@@ -261,6 +280,25 @@ class WebTransaction(Transaction):
                     del params[name]
 
             self._request_params.update(params)
+
+        # Check for Synthetics header
+
+        if settings.trusted_account_ids and settings.encoding_key:
+
+            try:
+                header_name = 'HTTP_X_NEWRELIC_SYNTHETICS'
+                header = self.process_header(environ, header_name)
+                synthetics = _parse_synthetics_header(header)
+
+                if synthetics['account_id'] in settings.trusted_account_ids:
+
+                    if synthetics['version'] == 1:
+                        self.synthetics_resource_id = synthetics['resource_id']
+                        self.synthetics_job_id = synthetics['job_id']
+                        self.synthetics_monitor_id = synthetics['monitor_id']
+
+            except Exception:
+                pass
 
         # Check for the New Relic cross process ID header and extract
         # the relevant details.

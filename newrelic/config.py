@@ -375,7 +375,7 @@ def _process_configuration(section):
                      'getfloat', None)
     _process_setting(section, 'agent_limits.xray_profile_maximum',
                      'getint', None)
-    _process_setting(section, 'agent_limits.synthetics_analytic_events',
+    _process_setting(section, 'agent_limits.synthetics_events',
                      'getint', None)
     _process_setting(section, 'console.listener_socket',
                      'get', _map_console_listener_socket)

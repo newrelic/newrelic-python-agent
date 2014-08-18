@@ -277,7 +277,7 @@ class StatsEngine(object):
         self.__slow_transaction_dry_harvests = 0
         self.__transaction_errors = []
         self.__metric_ids = {}
-        self.__synthetics_analytic_events = []
+        self.__synthetics_events = []
         self.__browser_transactions = []
         self.__xray_transactions = []
         self.xray_sessions = {}
@@ -765,11 +765,11 @@ class StatsEngine(object):
         # while transactions from regular requests are saved in another.
 
         if transaction.synthetics_resource_id:
-            if (len(self.__synthetics_analytic_events) <
-                    settings.agent_limits.synthetics_analytic_events):
+            if (len(self.__synthetics_events) <
+                    settings.agent_limits.synthetics_events):
 
                 event = self.create_analytic_event(transaction)
-                self.__synthetics_analytic_events.append(event)
+                self.__synthetics_events.append(event)
 
         elif (settings.collect_analytics_events and
                 settings.analytics_events.enabled):

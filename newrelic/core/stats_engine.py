@@ -1202,6 +1202,7 @@ class StatsEngine(object):
         self.__slow_transaction_old_duration = None
         self.__transaction_errors = []
         self.__metric_ids = {}
+        self.__synthetics_events = []
         self.__browser_transactions = []
         self.__xray_transactions = []
         self.xray_sessions = {}
@@ -1231,6 +1232,13 @@ class StatsEngine(object):
                     self.__settings.analytics_events.max_samples_stored)
         else:
             self.__sampled_data_set = SampledDataSet()
+
+    def reset_synthetics_events(self):
+        """Resets the accumulated statistics back to initial state for
+        Synthetics events data.
+
+        """
+        self.__synthetics_events = []
 
     def harvest_snapshot(self):
         """Creates a snapshot of the accumulated statistics, error
@@ -1292,6 +1300,7 @@ class StatsEngine(object):
         self.__transaction_errors = []
         self.__browser_transactions = []
         self.__xray_transactions = []
+        self.__synthetics_events = []
 
         if self.__settings is not None:
             self.__sampled_data_set = SampledDataSet(

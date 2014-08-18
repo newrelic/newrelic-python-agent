@@ -1329,6 +1329,7 @@ class Application(object):
                                 all_analytic_events)
 
                     stats.reset_sampled_data()
+                    stats.reset_synthetics_events()
 
                     # Successful, so we update the stats engine with the
                     # new metric IDs and reset the reporting period

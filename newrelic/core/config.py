@@ -241,6 +241,7 @@ _settings.agent_limits.browser_transactions = 10
 _settings.agent_limits.xray_transactions = 10
 _settings.agent_limits.xray_profile_overhead = 0.05
 _settings.agent_limits.xray_profile_maximum = 500
+_settings.agent_limits.synthetics_analytic_events = 200
 
 _settings.console.listener_socket = None
 _settings.console.allow_interpreter_cmd = False

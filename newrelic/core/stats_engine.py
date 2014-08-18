@@ -277,6 +277,7 @@ class StatsEngine(object):
         self.__slow_transaction_dry_harvests = 0
         self.__transaction_errors = []
         self.__metric_ids = {}
+        self.__synthetics_analytic_events = []
         self.__browser_transactions = []
         self.__xray_transactions = []
         self.xray_sessions = {}
@@ -759,56 +760,88 @@ class StatsEngine(object):
                 self._update_slow_transaction(transaction)
                 self._update_browser_transaction(transaction)
 
+        # Create the analytic (transaction) event and add it to the
+        # appropriate "bucket." Synthetic requests are saved in one,
+        # while transactions from regular requests are saved in another.
+
+        if transaction.synthetics_resource_id:
+            if (len(self.__synthetics_analytic_events) <
+                    settings.agent_limits.synthetics_analytic_events):
+
+                event = self.create_analytic_event(transaction)
+                self.__synthetics_analytic_events.append(event)
+
+        elif (settings.collect_analytics_events and
+                settings.analytics_events.enabled):
+
+            if settings.analytics_events.transactions.enabled:
+
+                event = self.create_analytic_event(transaction)
+                self.__sampled_data_set.add(event)
+
+    def create_analytic_event(self, transaction):
         # Create the transaction record summarising key data for later
         # analytics. Only do this for web transaction at this point as
         # not sure if needs to be done for other transactions as field
         # names in record are based on web transaction metric names.
 
-        if (settings.collect_analytics_events and
-                settings.analytics_events.enabled):
-            
-            if settings.analytics_events.transactions.enabled:
-                record = {}
-                params = {}
+        if not self.__settings:
+            return
 
-                # First remember users custom parameters. We only
-                # retain any which have string type for key and
-                # string or numeric for value.
+        settings = self.__settings
 
-                if settings.analytics_events.capture_attributes:
-                    for key, value in transaction.custom_params.items():
-                        if not isinstance(key, six.string_types):
-                            continue
-                        if (not isinstance(value, six.string_types) and
-                                not isinstance(value, float) and
-                                not isinstance(value, six.integer_types)):
-                            continue
-                        params[key] = value
+        record = {}
+        params = {}
 
-                # Now we add the agents own values so they
-                # overwrite users values if same key name used.
+        # First remember users custom parameters. We only
+        # retain any which have string type for key and
+        # string or numeric for value.
 
-                name = self.__sampled_data_set.intern(transaction.path)
+        if settings.analytics_events.capture_attributes:
+            for key, value in transaction.custom_params.items():
+                if not isinstance(key, six.string_types):
+                    continue
+                if (not isinstance(value, six.string_types) and
+                        not isinstance(value, float) and
+                        not isinstance(value, six.integer_types)):
+                    continue
+                params[key] = value
 
-                record['type'] = 'Transaction'
-                record['name'] = name
-                record['timestamp'] = transaction.start_time
-                record['duration'] = transaction.duration
+        # Add Synthetics attributes as custom parameters
 
-                def _update_entry(source, target):
-                    try:
-                        record[target] = self.__stats_table[
-                                (source, '')].total_call_time
-                    except KeyError:
-                        pass
+        if transaction.synthetics_resource_id:
+            txn = transaction
+            params['nr.syntheticsResourceId'] = txn.synthetics_resource_id
+            params['nr.syntheticsJobId'] = txn.synthetics_job_id
+            params['nr.syntheticsMonitorId'] = txn.synthetics_monitor_id
 
-                _update_entry('WebFrontend/QueueTime', 'queueDuration')
+        # Now we add the agents own values so they
+        # overwrite users values if same key name used.
 
-                _update_entry('External/all', 'externalDuration')
-                _update_entry('Database/all', 'databaseDuration')
-                _update_entry('Memcache/all', 'memcacheDuration')
+        name = self.__sampled_data_set.intern(transaction.path)
 
-                self.__sampled_data_set.add([record, params])
+        record['type'] = 'Transaction'
+        record['name'] = name
+        record['timestamp'] = transaction.start_time
+        record['duration'] = transaction.duration
+        record['nr.guid'] = transaction.guid
+
+        def _update_entry(source, target):
+            try:
+                record[target] = self.__stats_table[
+                        (source, '')].total_call_time
+            except KeyError:
+                pass
+
+        _update_entry('WebFrontend/QueueTime', 'queueDuration')
+
+        _update_entry('External/all', 'externalDuration')
+        _update_entry('Database/all', 'databaseDuration')
+        _update_entry('Memcache/all', 'memcacheDuration')
+
+        analytic_event = [record, params]
+        return analytic_event
+
 
     @internal_trace('Supportability/StatsEngine/Calls/metric_data')
     def metric_data(self, normalizer=None):

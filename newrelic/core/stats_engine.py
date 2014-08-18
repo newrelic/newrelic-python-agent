@@ -306,6 +306,10 @@ class StatsEngine(object):
     def sampled_data_set(self):
         return self.__sampled_data_set
 
+    @property
+    def synthetics_events(self):
+        return self.__synthetics_events
+
     def update_metric_ids(self, metric_ids):
         """Updates the dictionary containing the mappings from metric
         (name, scope) to the integer identifier supplied back from the
@@ -1340,7 +1344,7 @@ class StatsEngine(object):
 
     def merge_other_stats(self, snapshot, merge_traces=True,
             merge_errors=True, merge_sql=True, merge_samples=True,
-            rollback=False):
+            merge_synthetics_events=True, rollback=False):
 
         """Merges non metric data from a snapshot. This would only be
         used when merging data from a single transaction into main
@@ -1381,6 +1385,20 @@ class StatsEngine(object):
                 if snapshot.__sampled_data_set.count == 1:
                     self.__sampled_data_set.add(
                             snapshot.__sampled_data_set.samples[0])
+
+        # Merge Synthetic analytic events, following same rules as for
+        # sampled data set described above.
+
+        if merge_synthetics_events:
+            if rollback:
+                self.__synthetics_events.extend(snapshot.__synthetics_events)
+            else:
+                if len(snapshot.__synthetics_events) == 1:
+                    self.__synthetics_events.append(
+                        snapshot.__synthetics_events[0])
+
+            maximum = settings.agent_limits.synthetics_events
+            self.__synthetics_events = self.__synthetics_events[:maximum]
 
         # Append snapshot error details at end to maintain time
         # based order and then trim at maximum to be kept.

@@ -1471,6 +1471,7 @@ class Application(object):
                             self._stats_engine.merge_other_stats(stats,
                                     merge_traces=False, merge_errors=False,
                                     merge_sql=False, merge_samples=True,
+                                    merge_synthetics_events = True,
                                     rollback=True)
 
                         else:

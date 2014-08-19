@@ -345,6 +345,47 @@ def validate_custom_parameters(required_params=[], forgone_params=[]):
 
     return _validate_custom_parameters
 
+def validate_synthetics_event(required_attrs=[], forgone_attrs=[],
+        should_exist=True):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_synthetics_event(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            if not should_exist:
+                assert instance.synthetics_events == []
+            else:
+                assert len(instance.synthetics_events) == 1
+                event = instance.synthetics_events[0]
+                assert event is not None
+                assert len(event) == 2
+
+                def _flatten(event):
+                    result = {}
+                    for elem in event:
+                        for k, v in elem.items():
+                            result[k] = v
+                    return result
+
+                flat_event = _flatten(event)
+
+                for name, value in required_attrs:
+                    assert name in flat_event, ('name=%r, event=%r' %
+                            (name, flat_event))
+                    assert flat_event[name] == value, ('name=%r, value=%r,'
+                            'event=%r' % (name, value, flat_event))
+
+                for name, value in forgone_attrs:
+                    assert name not in flat_event, ('name=%r, value=%r,'
+                        ' event=%r' % (name, value, flat_event))
+
+        return result
+
+    return _validate_synthetics_event
+
 def validate_database_trace_inputs(sql_parameters_type):
     @transient_function_wrapper('newrelic.api.database_trace',
             'DatabaseTrace.__init__')

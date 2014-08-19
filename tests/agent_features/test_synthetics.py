@@ -76,3 +76,30 @@ def test_no_synthetics_event_mismatched_encoding_key():
     headers = make_synthetics_header(encoding_key=encoding_key)
     response = target_application.get('/', headers=headers)
 
+@validate_synthetics_event(_test_valid_synthetics_event_required,
+        [], should_exist=True)
+@override_application_settings(_override_settings)
+def test_valid_synthetics_response_header():
+    headers = make_synthetics_header()
+    response = target_application.get('/', headers=headers)
+
+    assert 'X-NewRelic-App-Data' in response.headers
+    header = response.headers['X-NewRelic-App-Data']
+    header = deobfuscate(header, _override_settings['encoding_key'])
+    header = json_decode(header)
+
+    assert len(header) == 7
+
+    # Don't know how to check if the guid in the header is the same guid
+    # that was generated in the transaction, so I'll just make sure it
+    # looks like a guid.
+
+    assert len(header[5]) == 16     # 16 chars
+    assert int(header[5], 16)       # Hex chars
+
+@validate_synthetics_event([], [], should_exist=False)
+@override_application_settings(_override_settings)
+def test_no_synthetics_response_header():
+    headers = make_synthetics_header(account_id='999')
+    response = target_application.get('/', headers=headers)
+    assert 'X-NewRelic-App-Data' not in response.headers

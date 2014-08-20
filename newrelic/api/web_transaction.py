@@ -292,6 +292,11 @@ class WebTransaction(Transaction):
 
                 if synthetics['account_id'] in settings.trusted_account_ids:
 
+                    # Save obfuscated header, because we will pass it along
+                    # unchanged in all external requests.
+
+                    self.synthetics_header = environ_get(header_name)
+
                     if synthetics['version'] == 1:
                         self.synthetics_resource_id = synthetics['resource_id']
                         self.synthetics_job_id = synthetics['job_id']

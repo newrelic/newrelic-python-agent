@@ -145,6 +145,7 @@ class Transaction(object):
         self.synthetics_resource_id = None
         self.synthetics_job_id = None
         self.synthetics_monitor_id = None
+        self.synthetics_header = None
 
         self._custom_metrics = CustomMetrics()
 
@@ -461,7 +462,8 @@ class Transaction(object):
                 record_tt = self.record_tt,
                 synthetics_resource_id = self.synthetics_resource_id,
                 synthetics_job_id = self.synthetics_job_id,
-                synthetics_monitor_id = self.synthetics_monitor_id
+                synthetics_monitor_id = self.synthetics_monitor_id,
+                synthetics_header = self.synthetics_header,
                 )
 
         # Clear settings as we are all done and don't need it

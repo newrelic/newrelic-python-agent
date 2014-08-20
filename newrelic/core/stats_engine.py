@@ -278,6 +278,7 @@ class StatsEngine(object):
         self.__transaction_errors = []
         self.__metric_ids = {}
         self.__synthetics_events = []
+        self.__synthetics_transactions = []
         self.__browser_transactions = []
         self.__xray_transactions = []
         self.xray_sessions = {}
@@ -674,6 +675,20 @@ class StatsEngine(object):
         if len(self.__browser_transactions) < maximum:
             self.__browser_transactions.append(transaction)
 
+    def _update_synthetics_transaction(self, transaction):
+        """Check if transaction is a synthetics trace and save it to
+        __synthetics_transactions.
+        """
+
+        settings = self.__settings
+
+        if not transaction.synthetics_resource_id:
+            return
+
+        maximum = settings.agent_limits.synthetics_transactions
+        if len(self.__synthetics_transactions) < maximum:
+            self.__synthetics_transactions.append(transaction)
+
     @internal_trace('Supportability/StatsEngine/Calls/record_transaction')
     def record_transaction(self, transaction):
         """Record any apdex and time metrics for the transaction as
@@ -750,10 +765,11 @@ class StatsEngine(object):
         if (not transaction.suppress_transaction_trace and
                     transaction_tracer.enabled and settings.collect_traces):
 
-            # Transactions saved for xray session do not depend on the
-            # transaction threshold.
+            # Transactions saved for xray session and Synthetics transactions
+            # do not depend on the transaction threshold.
 
             self._update_xray_transaction(transaction)
+            self._update_synthetics_transaction(transaction)
 
             threshold = transaction_tracer.transaction_threshold
 

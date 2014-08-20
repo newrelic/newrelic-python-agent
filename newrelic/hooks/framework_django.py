@@ -1,5 +1,6 @@
 import sys
 import threading
+import logging
 
 from newrelic.packages import six
 
@@ -7,7 +8,30 @@ from newrelic.agent import (FunctionWrapper, callable_name,
     wrap_error_trace, FunctionTrace, wrap_function_trace, wrap_in_function,
     wrap_transaction_name, wrap_post_function, current_transaction,
     WSGIApplicationWrapper, ignore_status_code, insert_html_snippet,
-    verify_body_exists)
+    verify_body_exists, extra_settings)
+
+_logger = logging.getLogger(__name__)
+
+_boolean_states = {
+   '1': True, 'yes': True, 'true': True, 'on': True,
+   '0': False, 'no': False, 'false': False, 'off': False 
+}
+
+def _setting_boolean(value):
+    if value.lower() not in _boolean_states:
+        raise ValueError('Not a boolean: %s' % value)
+    return _boolean_states[value.lower()]
+
+_settings_types = {
+    'browser_monitoring.auto_instrument': _setting_boolean,
+}
+
+_settings_defaults = {
+    'browser_monitoring.auto_instrument': True,
+}
+
+django_settings = extra_settings('import-hook:django',
+        types=_settings_types, defaults=_settings_defaults)
 
 def should_ignore(exc, value, tb):
     from django.http import Http404
@@ -43,7 +67,7 @@ def browser_timing_middleware(request, response):
         return response
 
     # Only insert RUM JavaScript headers and footers if enabled
-    # in configuration.
+    # in configuration and not already likely inserted.
 
     if not transaction.settings.browser_monitoring.enabled:
         return response
@@ -51,11 +75,21 @@ def browser_timing_middleware(request, response):
     if transaction.autorum_disabled:
         return response
 
-    # Only possible if the content type is text/html.
+    if not django_settings.browser_monitoring.auto_instrument:
+        return response
 
-    ctype = response.get('Content-Type', '').lower()
+    if transaction.rum_header_generated:
+        return response
 
-    if ctype != 'text/html' and not ctype.startswith('text/html;'):
+    # Only possible if the content type is one of the allowed
+    # values. Normally this is just text/html, but optionally
+    # could be defined to be list of further types. For example
+    # a user may want to also perform insertion for
+    # 'application/xhtml+xml'.
+
+    ctype = response.get('Content-Type', '').lower().split(';')[0]
+
+    if ctype not in transaction.settings.browser_monitoring.content_type:
         return response
 
     # Don't risk it if content encoding already set.
@@ -63,11 +97,11 @@ def browser_timing_middleware(request, response):
     if response.has_header('Content-Encoding'):
         return response
 
-    # Don't instrument if it is an attachment content type
+    # Don't risk it if content is actually within an attachment.
 
     cdisposition = response.get('Content-Disposition', '').lower()
 
-    if cdisposition.startswith('attachment;'):
+    if cdisposition.split(';')[0].strip().lower() == 'attachment': 
         return response
 
     # No point continuing if header is empty. This can occur if
@@ -98,6 +132,11 @@ def browser_timing_middleware(request, response):
     result = insert_html_snippet(response.content, html_to_be_inserted)
 
     if result is not None:
+        if transaction.settings.debug.log_autorum_middleware:
+            _logger.debug('RUM insertion from Django middleware '
+                    'triggered. Bytes added was %r.',
+                    len(result) - len(response.content))
+
         response.content = result
         response['Content-Length'] = str(len(response.content))
 

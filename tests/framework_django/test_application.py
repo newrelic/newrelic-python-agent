@@ -148,16 +148,56 @@ def test_application_deferred_cbv():
     response = test_application.get('/deferred_cbv')
     response.mustcontain('CBV RESPONSE')
 
-_test_insert_html_snippet_settings = {
-    'js_agent_loader': '<!-- NREUM HEADER -->',
+_test_html_insertion_settings = {
+    'browser_monitoring.enabled': True,
+    'browser_monitoring.auto_instrument': True,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
 }
 
-@override_application_settings(_test_insert_html_snippet_settings)
-def test_insert_html_snippet():
-    response = test_application.get('/html_snippet', status=200)
+@override_application_settings(_test_html_insertion_settings)
+def test_html_insertion_django_middleware():
+    response = test_application.get('/html_insertion', status=200)
 
     # The 'NREUM HEADER' value comes from our override for the header.
     # The 'NREUM.info' value comes from the programmatically generated
     # footer added by the agent.
 
     response.mustcontain('NREUM HEADER', 'NREUM.info')
+
+_test_html_insertion_manual_settings = {
+    'browser_monitoring.enabled': True,
+    'browser_monitoring.auto_instrument': True,
+    'js_agent_loader': u'<!-- NREUM HEADER -->',
+}
+
+@override_application_settings(_test_html_insertion_manual_settings)
+def test_html_insertion_manual_django_middleware():
+    response = test_application.get('/html_insertion_manual', status=200)
+
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
+
+    response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])
+
+@override_application_settings(_test_html_insertion_settings)
+def test_html_insertion_unnamed_attachment_header_django_middleware():
+    response = test_application.get(
+            '/html_insertion_unnamed_attachment_header', status=200)
+
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
+
+    response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])
+
+@override_application_settings(_test_html_insertion_settings)
+def test_html_insertion_named_attachment_header_django_middleware():
+    response = test_application.get(
+            '/html_insertion_named_attachment_header', status=200)
+
+    # The 'NREUM HEADER' value comes from our override for the header.
+    # The 'NREUM.info' value comes from the programmatically generated
+    # footer added by the agent.
+
+    response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])

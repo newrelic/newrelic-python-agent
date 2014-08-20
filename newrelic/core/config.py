@@ -216,6 +216,7 @@ _settings.browser_monitoring.loader_version = None
 _settings.browser_monitoring.debug = False
 _settings.browser_monitoring.ssl_for_http = None
 _settings.browser_monitoring.capture_attributes = False
+_settings.browser_monitoring.content_type = ['text/html']
 
 _settings.transaction_name.limit = None
 _settings.transaction_name.naming_scheme = os.environ.get(
@@ -257,6 +258,7 @@ _settings.debug.log_normalization_rules = False
 _settings.debug.log_raw_metric_data = False
 _settings.debug.log_normalized_metric_data = False
 _settings.debug.log_explain_plan_queries = False
+_settings.debug.log_autorum_middleware = False
 _settings.debug.record_transaction_failure = False
 _settings.debug.enable_coroutine_profiling = False
 _settings.debug.explain_plan_obfuscation = 'simple'

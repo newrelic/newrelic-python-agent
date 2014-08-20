@@ -4,17 +4,20 @@ import time
 import string
 import re
 import logging
+import functools
 
 try:
     import urlparse
 except ImportError:
     import urllib.parse as urlparse
 
-import newrelic.api.application
-import newrelic.api.transaction
-import newrelic.api.object_wrapper
-import newrelic.api.function_trace
+from .application import application_instance
+from .transaction import Transaction, current_transaction
+from .function_trace import FunctionTrace
+from .html_insertion import insert_html_snippet, verify_body_exists
 
+from ..common.object_names import callable_name
+from ..common.object_wrapper import wrap_object, FunctionWrapper
 from ..common.encoding_utils import (obfuscate, deobfuscate, json_encode,
     json_decode)
 
@@ -52,7 +55,7 @@ def _extract_token(cookie):
     except Exception:
         pass
 
-class WebTransaction(newrelic.api.transaction.Transaction):
+class WebTransaction(Transaction):
 
     report_unicode_error = True
 
@@ -72,8 +75,7 @@ class WebTransaction(newrelic.api.transaction.Transaction):
 
         # Initialise the common transaction base class.
 
-        newrelic.api.transaction.Transaction.__init__(self,
-                application, enabled)
+        super(WebTransaction, self).__init__(application, enabled)
 
         # Bail out if the transaction is running in a
         # disabled state.
@@ -319,9 +321,11 @@ class WebTransaction(newrelic.api.transaction.Transaction):
                 if name in environ:
                     self._request_environment[name] = environ[name]
 
-        # Flags for tracking whether RUM header inserted.
+        # Flags for tracking whether RUM header and footer have been
+        # generated.
 
-        self._rum_header = False
+        self.rum_header_generated = False
+        self.rum_footer_generated = False
 
     def process_txn_header(self, environ):
         encoded_txn_header = environ.get('HTTP_X_NEWRELIC_TRANSACTION')
@@ -409,15 +413,18 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         return additional_headers
 
     def browser_timing_header(self):
-        """This function returns the header as a native python string.
-           In Python 2 native strings are stored as bytes.
-           In Python 3 native strings are stored as unicode.
+        """Returns the JavaScript header to be included in any HTML
+        response to perform real user monitoring. This function returns
+        the header as a native Python string. In Python 2 native strings
+        are stored as bytes. In Python 3 native strings are stored as
+        unicode.
 
-         """
+        """
+
         if not self.enabled:
             return ''
 
-        if self._state != newrelic.api.transaction.STATE_RUNNING:
+        if self._state != self.STATE_RUNNING:
             return ''
 
         if self.background_task:
@@ -435,6 +442,12 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         if not self._settings.license_key:
             return ''
 
+        # Don't return the header a second time if it has already
+        # been generated.
+
+        if self.rum_header_generated:
+            return ''
+
         # Requirement is that the first 13 characters of the account
         # license key is used as the key when obfuscating values for
         # the RUM footer. Will not be able to perform the obfuscation
@@ -443,53 +456,72 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         if len(self._settings.license_key) < 13:
             return ''
 
-        # Return header only if the agent received a valid js_agent_loader from
-        # collector. Collector won't send any js_agent_loader if
-        # browser_monitoring.loader is set to 'none'.
+        # Return the RUM header only if the agent received a valid value
+        # for js_agent_loader from the data collector. The data
+        # collector is not meant to send a non empty value for the
+        # js_agent_loader value if browser_monitoring.loader is set to
+        # 'none'.
         #
-        # JS Agent Loader is supposed to be ascii. Verify that by encoding it
-        # as ascii. If encoding fails return an empty string.
-        #
-        # Set self._rum_header to true only if a valid header was returned.
-        # This flag will be checked by the footer generation.
+        # The JavaScript agent loader is supposed to be ASCII. We verify
+        # that is the case by encoding it as ASCII to get a byte string.
+        # In the case of Python 2, we actually then use the encoded value
+        # as we need a native string, which for Python 2 is a byte string.
+        # If encoding as ASCII fails we will return an empty string.
 
         if self._settings.js_agent_loader:
             header = _js_agent_header_fragment % self._settings.js_agent_loader
             try:
-                header.encode('ascii')
+                if six.PY2:
+                    header = header.encode('ascii')
+                else:
+                    header.encode('ascii')
+
             except UnicodeError:
                 if not WebTransaction.unicode_error_reported:
                     _logger.error('ASCII encoding of js-agent-header failed.',
                             header)
                     WebTransaction.unicode_error_reported = True
+
                 header = ''
-            else:  # Successfully encoded.
-                self._rum_header = True
+
         else:
             header = ''
 
-        # Since encoding it as ascii was successful, return the string version
-        # of header.
+        # We remember if we have returned a non empty string value and
+        # if called a second time we will not return it again. The flag
+        # will also be used to check whether the footer should be
+        # generated.
 
-        return str(header)
+        if header:
+            self.rum_header_generated = True
+
+        return header
 
     def browser_timing_footer(self):
-        """This function returns the footer script as a native python string.
-           In Python 2 native strings are stored as bytes.
-           In Python 3 native strings are stored as unicode.
+        """Returns the JavaScript footer to be included in any HTML
+        response to perform real user monitoring. This function returns
+        the header as a native Python string. In Python 2 native strings
+        are stored as bytes. In Python 3 native strings are stored as
+        unicode.
 
-         """
+        """
 
         if not self.enabled:
             return ''
 
-        if self._state != newrelic.api.transaction.STATE_RUNNING:
+        if self._state != self.STATE_RUNNING:
             return ''
 
         if self.ignore_transaction:
             return ''
 
-        if not self._rum_header:
+        # Only generate a footer if the header had already been
+        # generated and we haven't already generated the footer.
+
+        if not self.rum_header_generated:
+            return ''
+
+        if self.rum_footer_generated:
             return ''
 
         # Make sure we freeze the path.
@@ -560,22 +592,33 @@ class WebTransaction(newrelic.api.transaction.Transaction):
         config_dict.update(additional_params)
         footer = _js_agent_footer_fragment % json_encode(config_dict)
 
-        # Footer dictionary is only supposed to have ascii chars. Verify that
-        # by encoding it as ascii. If encoding fails return an empty string.
+        # The JavaScript agent loader is supposed to be ASCII. We verify
+        # that is the case by encoding it as ASCII to get a byte string.
+        # In the case of Python 2, we actually then use the encoded value
+        # as we need a native string, which for Python 2 is a byte string.
+        # If encoding as ASCII fails we will return an empty string.
 
         try:
-            footer.encode('ascii')
+            if six.PY2:
+                footer = footer.encode('ascii')
+            else:
+                footer.encode('ascii')
+
         except UnicodeError:
             if not WebTransaction.unicode_error_reported:
                 _logger.error('ASCII encoding of js-agent-footer failed.',
                         footer)
                 WebTransaction.unicode_error_reported = True
-            return ''
 
-        # Since encoding it as ascii was successful, return the string version
-        # of footer.
+            footer = ''
 
-        return str(footer)
+        # We remember if we have returned a non empty string value and
+        # if called a second time we will not return it again.
+
+        if footer:
+            self.rum_footer_generated = True
+
+        return footer
 
 class _WSGIApplicationIterable(object):
 
@@ -587,8 +630,8 @@ class _WSGIApplicationIterable(object):
         if not self.transaction._sent_start:
             self.transaction._sent_start = time.time()
         try:
-            with newrelic.api.function_trace.FunctionTrace(
-                    self.transaction, name='Response', group='Python/WSGI'):
+            with FunctionTrace(self.transaction, name='Response',
+                    group='Python/WSGI'):
                 for item in self.generator:
                     yield item
                     try:
@@ -604,13 +647,11 @@ class _WSGIApplicationIterable(object):
 
     def close(self):
         try:
-            with newrelic.api.function_trace.FunctionTrace(
-                    self.transaction, name='Finalize', group='Python/WSGI'):
+            with FunctionTrace(self.transaction, name='Finalize',
+                    group='Python/WSGI'):
                 if hasattr(self.generator, 'close'):
-                    name = newrelic.api.object_wrapper.callable_name(
-                            self.generator.close)
-                    with newrelic.api.function_trace.FunctionTrace(
-                            self.transaction, name):
+                    name = callable_name(self.generator.close)
+                    with FunctionTrace(self.transaction, name):
                         self.generator.close()
 
         except:  # Catch all
@@ -620,7 +661,7 @@ class _WSGIApplicationIterable(object):
             self.transaction.__exit__(None, None, None)
             self.transaction._sent_end = time.time()
 
-class WSGIInputWrapper(object):
+class _WSGIInputWrapper(object):
 
     def __init__(self, transaction, input):
         self.__transaction = transaction
@@ -675,56 +716,386 @@ class WSGIInputWrapper(object):
             self.__transaction._read_end = time.time()
         return lines
 
-class WSGIApplicationWrapper(object):
+class _WSGIApplicationMiddleware(object):
 
-    def __init__(self, wrapped, application=None, name=None, group=None,
-               framework=None):
-        if isinstance(wrapped, tuple):
-            (instance, wrapped) = wrapped
-        else:
-            instance = None
+    # This is a WSGI middleware for automatically inserting RUM into
+    # HTML responses. It only works for where a WSGI application is
+    # returning response content via a iterable/generator. It does not
+    # work if the WSGI application write() callable is being used. It
+    # will buffer response content up to the start of <body>. This is
+    # technically in violation of the WSGI specification if one is
+    # strict, but will still work with all known WSGI servers. Because
+    # it does buffer, then technically it may cause a problem with
+    # streamed responses. For that to occur then it would have to be a
+    # HTML response that doesn't actually use <body> and so technically
+    # is not a valid HTML response. It is assumed though that in
+    # streaming a response, the <head> itself isn't streamed out only
+    # gradually.
 
-        newrelic.api.object_wrapper.update_wrapper(self, wrapped)
+    search_maximum = 64*1024
 
-        self._nr_instance = instance
-        self._nr_next_object = wrapped
+    def __init__(self, application, environ, start_response, transaction):
+        self.application = application
 
-        self._nr_name = name
-        self._nr_group = group
+        self.pass_through = True
 
-        if framework is None:
-            self._nr_framework = None
-        elif isinstance(framework, tuple):
-            self._nr_framework = framework
-        else:
-            self._nr_framework = (framework, None)
+        self.request_environ = environ
+        self.outer_start_response = start_response
+        self.outer_write = None
 
-        if not hasattr(self, '_nr_last_object'):
-            self._nr_last_object = wrapped
+        self.transaction = transaction
 
-        self._nr_application = application
+        self.response_status = None
+        self.response_headers = []
+        self.response_args = ()
 
-    def __get__(self, instance, klass):
-        if instance is None:
-            return self
-        descriptor = self._nr_next_object.__get__(instance, klass)
-        return self.__class__((instance, descriptor), self._nr_application,
-                self._nr_name, self._nr_group, self._nr_framework)
+        self.content_length = None
 
-    def __call__(self, environ, start_response):
-        transaction = newrelic.api.transaction.current_transaction()
+        self.response_length = 0
+        self.response_data = []
 
-        # Check to see if we are being called within the
-        # context of any sort of transaction. If we are,
-        # then we don't bother doing anything and just
-        # call the wrapped function.
+        settings = transaction.settings
+
+        self.debug = settings and settings.debug.log_autorum_middleware
+
+    def process_data(self, data):
+        # If this is the first data block, then immediately try
+        # for an insertion using full set of criteria. If this
+        # works then we are done, else we move to next phase of
+        # buffering up content until we find the body element.
+
+        def html_to_be_inserted():
+            header = self.transaction.browser_timing_header()
+
+            if not header:
+                return b''
+
+            footer = self.transaction.browser_timing_footer()
+
+            return six.b(header) + six.b(footer)
+
+        if not self.response_data:
+            modified = insert_html_snippet(data, html_to_be_inserted)
+
+            if modified is not None:
+                if self.debug:
+                    _logger.debug('RUM insertion from WSGI middleware '
+                            'triggered on first yielded string from '
+                            'response. Bytes added was %r.',
+                            len(modified) - len(data))
+
+                if self.content_length is not None:
+                    length = len(modified) - len(data)
+                    self.content_length += length
+
+                return [modified]
+
+        # Buffer up the data. If we haven't found the start of
+        # the body element, that is all we do. If we have reached
+        # the limit of buffering allowed, then give up and return
+        # the buffered data.
+
+        if not self.response_data or not verify_body_exists(data):
+            self.response_length += len(data)
+            self.response_data.append(data)
+
+            if self.response_length >= self.search_maximum:
+                buffered_data = self.response_data
+                self.response_data = []
+                return buffered_data
+
+            return
+
+        # Now join back together any buffered data into a single
+        # string. This makes it easier to process, but there is a
+        # risk that we could temporarily double memory use for
+        # the response content if had small data blocks followed
+        # by very large data block. Expect that the risk of this
+        # occuring is very small.
+
+        if self.response_data:
+            self.response_data.append(data)
+            data = b''.join(self.response_data)
+            self.response_data = []
+
+        # Perform the insertion of the HTML. This should always
+        # succeed as we would only have got here if we had found
+        # the body element, which is the fallback point for
+        # insertion.
+
+        modified = insert_html_snippet(data, html_to_be_inserted)
+
+        if modified is not None:
+            if self.debug:
+                _logger.debug('RUM insertion from WSGI middleware '
+                        'triggered on subsequent string yielded from '
+                        'response. Bytes added was %r.',
+                        len(modified) - len(data))
+
+            if self.content_length is not None:
+                length = len(modified) - len(data)
+                self.content_length += length
+
+            return [modified]
+
+        # Something went very wrong as we should never get here.
+
+        return [data]
+
+    def flush_headers(self):
+        # Add back in any response content length header. It will
+        # have been updated with the adjusted length by now if
+        # additional data was inserted into the response.
+
+        if self.content_length is not None:
+            header = (('Content-Length', str(self.content_length)))
+            self.response_headers.append(header)
+
+        self.outer_write = self.outer_start_response(self.response_status,
+                self.response_headers, *self.response_args)
+
+    def inner_write(self, data):
+        # If the write() callable is used, we do not attempt to
+        # do any insertion at all here after.
+
+        self.pass_through = True
+
+        # Flush the response headers if this hasn't yet been done.
+
+        if self.outer_write is None:
+            self.flush_headers()
+
+        # Now write out any buffered response data in case the
+        # WSGI application was doing something evil where it
+        # mixed use of yield and write. Technically if write()
+        # is used, it is supposed to be before any attempt to
+        # yield a string. When done switch to pass through mode.
+
+        if self.response_data:
+            for buffered_data in self.response_data:
+                self.outer_write(buffered_data)
+            self.response_data = []
+
+        return self.outer_write(data)
+
+    def start_response(self, status, response_headers, *args):
+        # The start_response() function can be called more than
+        # once. In that case, the values derived from the most
+        # recent call are used. We therefore need to reset any
+        # calculated values.
+
+        self.pass_through = True
+
+        self.response_status = status
+        self.response_headers = response_headers
+        self.response_args = args
+
+        self.content_length = None
+
+        # We need to check again if auto RUM has been disabled.
+        # This is because it can be disabled using an API call.
+        # Also check whether RUM insertion has already occurred.
+
+        if (self.transaction.autorum_disabled or
+                self.transaction.rum_header_generated):
+
+            self.flush_headers()
+            self.pass_through = True
+
+            return self.inner_write
+
+        # Extract values for response headers we need to work. Do
+        # not copy across the content length header at this time
+        # as we will need to adjust the length later if we are
+        # able to inject our Javascript.
+
+        pass_through = False
+
+        headers = []
+
+        content_type = None
+        content_length = None
+        content_encoding = None
+        content_disposition = None
+
+        for (name, value) in response_headers:
+            _name = name.lower()
+
+            if _name == 'content-length':
+                try:
+                    content_length = int(value)
+                    continue
+
+                except ValueError:
+                    pass_through = True
+
+            elif _name == 'content-type':
+                content_type = value
+
+            elif _name == 'content-encoding':
+                content_encoding = value
+
+            elif _name == 'content-disposition':
+                content_disposition = value
+
+            headers.append((name, value))
+
+        # We can only inject our Javascript if the content type
+        # is an allowed value, no content encoding has been set
+        # and an attachment isn't being used.
+
+        def should_insert_html():
+            if pass_through:
+                return False
+
+            if content_encoding is not None:
+                # This will match any encoding, including if the
+                # value 'identity' is used. Technically the value
+                # 'identity' should only be used in the header
+                # Accept-Encoding and not Content-Encoding. In
+                # other words, a WSGI application should not be
+                # returning identity. We could check and allow it
+                # anyway and still do RUM insertion, but don't.
+
+                return False
+
+            if (content_disposition is not None and
+                    content_disposition.split(';')[0].strip().lower() ==
+                    'attachment'):
+                return False
+
+            if content_type is None:
+                return False
+
+            settings = self.transaction.settings
+            allowed_content_type = settings.browser_monitoring.content_type
+
+            if content_type.split(';')[0] not in allowed_content_type:
+                return False
+
+            return True
+
+        if should_insert_html():
+            self.pass_through = False
+
+            self.content_length = content_length
+            self.response_headers = headers
+
+        # If in pass through mode at this point, we need to flush
+        # out the headers. We technically might do this again
+        # later if start_response() was called more than once.
+
+        if self.pass_through:
+            self.flush_headers()
+
+        return self.inner_write
+
+    def __call__(self):
+        iterable = None
+
+        try:
+            # Grab the iterable returned by the wrapped WSGI
+            # application.
+
+            iterable = self.application(self.request_environ,
+                    self.start_response)
+
+            # Process the response content from the iterable.
+
+            for data in iterable:
+                # If we are in pass through mode, simply pass it
+                # through. If we are in pass through mode then
+                # the headers should already have been flushed.
+
+                if self.pass_through:
+                    yield data
+
+                    continue
+
+                # If the headers haven't been flushed we need to
+                # check for the potential insertion point and
+                # buffer up data as necessary if we can't find it.
+
+                if self.outer_write is None:
+                    # Ignore any empty strings.
+
+                    if not data:
+                        continue
+
+                    # Check for the insertion point. Will return
+                    # None if data was buffered.
+
+                    buffered_data = self.process_data(data)
+
+                    if buffered_data is None:
+                        continue
+
+                    # The data was returned, with it being
+                    # potentially modified. It would not have
+                    # been modified if we had reached maximum to
+                    # be buffer. Flush out the headers, switch to
+                    # pass through mode and yield the data.
+
+                    self.flush_headers()
+                    self.pass_through = True
+
+                    for data in buffered_data:
+                        yield data
+
+                else:
+                    # Depending on how the WSGI specification is
+                    # interpreted, this shouldn't occur. That is,
+                    # nothing should be yielded prior to the
+                    # start_response() function being called. The
+                    # CGI/WSGI example in the WSGI specification
+                    # does allow that though as do various WSGI
+                    # servers that followed that example.
+
+                    yield data
+
+            # Ensure that headers have been written if the
+            # response was actually empty.
+
+            if self.outer_write is None:
+                self.flush_headers()
+                self.pass_through = True
+
+            # Ensure that any remaining buffered data is also
+            # written. Technically this should never be able
+            # to occur at this point, but do it just in case.
+
+            if self.response_data:
+                for data in self.response_data:
+                    yield data
+
+        finally:
+            # Call close() on the iterable as required by the
+            # WSGI specification.
+
+            if hasattr(iterable, 'close'):
+                name = callable_name(iterable.close)
+                with FunctionTrace(self.transaction, name):
+                    iterable.close()
+
+def WSGIApplicationWrapper(wrapped, application=None, name=None,
+        group=None, framework=None):
+
+    if framework is not None and not isinstance(framework, tuple):
+        framework = (framework, None)
+
+    def _nr_wsgi_application_wrapper_(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+
+        # Check to see if we are being called within the context of any
+        # sort of transaction. If we are, then we don't bother doing
+        # anything and just call the wrapped function.
 
         if transaction:
-            # Record details of framework against the transaction
-            # for later reporting as supportability metrics.
+            # Record details of framework against the transaction for
+            # later reporting as supportability metrics.
 
-            if self._nr_framework:
-                transaction._frameworks.add(self._nr_framework)
+            if framework:
+                transaction._frameworks.add(framework)
 
             # Override the web transaction name to be the name of the
             # wrapped callable if not explicitly named, and we want the
@@ -735,41 +1106,41 @@ class WSGIApplicationWrapper(object):
 
             settings = transaction._settings
 
-            if self._nr_name is None and settings:
-                if self._nr_framework is not None:
+            if name is None and settings:
+                if framework is not None:
                     naming_scheme = settings.transaction_name.naming_scheme
                     if naming_scheme in (None, 'framework'):
-                        name = newrelic.api.object_wrapper.callable_name(
-                                self._nr_next_object)
-                        transaction.set_transaction_name(name, priority=1)
+                        transaction.set_transaction_name(
+                                callable_name(wrapped), priority=1)
 
-            elif self._nr_name:
-                transaction.set_transaction_name(self._nr_name,
-                        self._nr_group, priority=1)
+            elif name:
+                transaction.set_transaction_name(name, group, priority=1)
 
-            return self._nr_next_object(environ, start_response)
+            return wrapped(*args, **kwargs)
 
-        # Otherwise treat it as top level transaction.
-        # We have to though look first to see whether the
-        # application name has been overridden through
-        # the WSGI environ dictionary.
+        # Otherwise treat it as top level transaction. We have to though
+        # look first to see whether the application name has been
+        # overridden through the WSGI environ dictionary.
+
+        def _args(environ, start_response, *args, **kwargs):
+            return environ, start_response
+
+        environ, start_response = _args(*args, **kwargs)
 
         app_name = environ.get('newrelic.app_name')
+
+        target_application = application
 
         if app_name:
             if app_name.find(';') != -1:
                 app_names = [string.strip(n) for n in app_name.split(';')]
                 app_name = app_names[0]
-                application = newrelic.api.application.application_instance(
-                        app_name)
+                target_application = application_instance(app_name)
                 for altname in app_names[1:]:
-                    application.link_to_application(altname)
+                    target_application.link_to_application(altname)
             else:
-                application = newrelic.api.application.application_instance(
-                        app_name)
+                target_application = application_instance(app_name)
         else:
-            application = self._nr_application
-
             # If application has an activate() method we assume it is an
             # actual application. Do this rather than check type so that
             # can easily mock it for testing.
@@ -777,19 +1148,18 @@ class WSGIApplicationWrapper(object):
             # FIXME Should this allow for multiple apps if a string.
 
             if not hasattr(application, 'activate'):
-                application = newrelic.api.application.application_instance(
-                        application)
+                target_application = application_instance(application)
 
         # Now start recording the actual web transaction.
 
-        transaction = WebTransaction(application, environ)
+        transaction = WebTransaction(target_application, environ)
         transaction.__enter__()
 
-        # Record details of framework against the transaction
-        # for later reporting as supportability metrics.
+        # Record details of framework against the transaction for later
+        # reporting as supportability metrics.
 
-        if self._nr_framework:
-            transaction._frameworks.add(self._nr_framework)
+        if framework:
+            transaction._frameworks.add(framework)
 
         # Override the initial web transaction name to be the supplied
         # name, or the name of the wrapped callable if wanting to use
@@ -805,23 +1175,20 @@ class WSGIApplicationWrapper(object):
 
         settings = transaction._settings
 
-        if self._nr_name is None and settings:
+        if name is None and settings:
             naming_scheme = settings.transaction_name.naming_scheme
 
-            if self._nr_framework is not None:
+            if framework is not None:
                 if naming_scheme in (None, 'framework'):
-                    name = newrelic.api.object_wrapper.callable_name(
-                            self._nr_next_object)
-                    transaction.set_transaction_name(name, priority=1)
+                    transaction.set_transaction_name(
+                            callable_name(wrapped), priority=1)
 
             elif naming_scheme in ('component', 'framework'):
-                name = newrelic.api.object_wrapper.callable_name(
-                        self._nr_next_object)
-                transaction.set_transaction_name(name, priority=1)
+                transaction.set_transaction_name(
+                        callable_name(wrapped), priority=1)
 
-        elif self._nr_name:
-            transaction.set_transaction_name(self._nr_name, self._nr_group,
-                  priority=1)
+        elif name:
+            transaction.set_transaction_name(name, group, priority=1)
 
         def _start_response(status, response_headers, *args):
 
@@ -850,28 +1217,33 @@ class WSGIApplicationWrapper(object):
             # have it.
 
             if 'wsgi.input' in environ:
-                environ['wsgi.input'] = WSGIInputWrapper(transaction,
+                environ['wsgi.input'] = _WSGIInputWrapper(transaction,
                         environ['wsgi.input'])
 
-            application = newrelic.api.function_trace.FunctionTraceWrapper(
-                    self._nr_next_object)
+            with FunctionTrace(transaction, name='Application',
+                    group='Python/WSGI'):
+                with FunctionTrace(transaction, name=callable_name(wrapped)):
+                    if (settings and settings.browser_monitoring.enabled and
+                            not transaction.autorum_disabled):
+                        middleware = _WSGIApplicationMiddleware(wrapped,
+                                environ, _start_response, transaction)
+                        result = middleware()
+                    else:
+                        result = wrapped(*args, **kwargs)
 
-            with newrelic.api.function_trace.FunctionTrace(
-                    transaction, name='Application', group='Python/WSGI'):
-                result = application(environ, _start_response)
         except:  # Catch all
             transaction.__exit__(*sys.exc_info())
             raise
 
         return _WSGIApplicationIterable(transaction, result)
 
+    return FunctionWrapper(wrapped, _nr_wsgi_application_wrapper_)
+
 def wsgi_application(application=None, name=None, group=None, framework=None):
-    def decorator(wrapped):
-        return WSGIApplicationWrapper(wrapped, application, name, group,
-            framework)
-    return decorator
+    return functools.partial(WSGIApplicationWrapper, application=application,
+            name=name, group=group, framework=framework)
 
 def wrap_wsgi_application(module, object_path, application=None,
             name=None, group=None, framework=None):
-    newrelic.api.object_wrapper.wrap_object(module, object_path,
-            WSGIApplicationWrapper, (application, name, group, framework))
+    wrap_object(module, object_path, WSGIApplicationWrapper,
+            (application, name, group, framework))

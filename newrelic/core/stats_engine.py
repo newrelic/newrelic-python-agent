@@ -1221,6 +1221,7 @@ class StatsEngine(object):
         self.__transaction_errors = []
         self.__metric_ids = {}
         self.__synthetics_events = []
+        self.__synthetics_transactions = []
         self.__browser_transactions = []
         self.__xray_transactions = []
         self.xray_sessions = {}
@@ -1319,6 +1320,7 @@ class StatsEngine(object):
         self.__browser_transactions = []
         self.__xray_transactions = []
         self.__synthetics_events = []
+        self.__synthetics_transactions = []
 
         if self.__settings is not None:
             self.__sampled_data_set = SampledDataSet(

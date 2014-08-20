@@ -1021,14 +1021,15 @@ class StatsEngine(object):
             return []
 
         # Create a set 'traces' that is a union of slow transaction,
-        # browser_transactions and xray_transactions. This ensures we don't
-        # send duplicates of a transaction.
+        # browser_transactions, xray_transactions, and Synthetics
+        # transactions. This ensures we don't send duplicates of a transaction.
 
         traces = set()
         if self.__slow_transaction:
             traces.add(self.__slow_transaction)
         traces.update(self.__browser_transactions)
         traces.update(self.__xray_transactions)
+        traces.update(self.__synthetics_transactions)
 
         # Return an empty list if no transactions were captured.
 
@@ -1476,6 +1477,14 @@ class StatsEngine(object):
             for txn in self.__xray_transactions[maximum:]:
                 txn.xray_id = None
             self.__xray_transactions = self.__xray_transactions[:maximum]
+
+            # Limit number of Synthetics transactions
+
+            maximum = settings.agent_limits.synthetics_transactions
+            self.__synthetics_transactions.extend(
+                    snapshot.__synthetics_transactions)
+            synthetics_slice = self.__synthetics_transactions[:maximum]
+            self.__synthetics_transactions = synthetics_slice
 
             transaction = snapshot.__slow_transaction
 

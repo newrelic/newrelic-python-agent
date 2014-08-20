@@ -289,6 +289,13 @@ class TransactionNode(_TransactionNode):
             custom_params['referring_transaction_guid'] = \
                     self.referring_transaction_guid
 
+        # By prepending 'nr.' to the Synthetics custom param name,
+        # it gets treated as an "Intrinsic" in the APM UI.
+
+        if self.synthetics_resource_id:
+            custom_params['nr.synthetics_resource_id'] = \
+                    self.synthetics_resource_id
+
         # There is an additional trace node labelled as 'ROOT'
         # that needs to be inserted below the root node object
         # which is returned. It inherits the start and end time

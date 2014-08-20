@@ -1132,7 +1132,8 @@ class StatsEngine(object):
                     trace.guid,
                     None,
                     force_persist,
-                    xray_id,])
+                    xray_id,
+                    trace.synthetics_resource_id,])
 
         return trace_data
 

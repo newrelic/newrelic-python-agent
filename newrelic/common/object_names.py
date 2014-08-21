@@ -5,6 +5,7 @@
 import sys
 import types
 import inspect
+import functools
 
 from ..packages import six
 
@@ -249,6 +250,12 @@ def object_context(target):
     the form (module, object_path).
 
     """
+
+    # Check whether the target is a functools.partial so we
+    # can actually extract the contained function and use it.
+
+    if isinstance(target, functools.partial):
+        target = target.func
 
     # Check whether we have previously calculated the name
     # details for the target object and cached it against the

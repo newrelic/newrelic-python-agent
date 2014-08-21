@@ -1103,6 +1103,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/component_djangorestframework.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/component_piston.py": {
         "hash": "n/a",
         "libraries": [

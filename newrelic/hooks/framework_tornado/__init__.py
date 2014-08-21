@@ -1,17 +1,21 @@
 import weakref
 import traceback
+import contextlib
 
 from newrelic.agent import (FunctionTrace, WebTransaction,
-    application as application_instance)
+    application as application_instance, ignore_status_code)
 
 def record_exception(transaction, exc_info):
+    # Record the details of any exception ignoring status codes which
+    # have been configured to be ignored.
+
     import tornado.web
 
     exc = exc_info[0]
     value = exc_info[1]
 
     if exc is tornado.web.HTTPError:
-        if value.status_code == 404:
+        if ignore_status_code(value.status_code):
             return
 
     transaction.record_exception(*exc_info)
@@ -77,7 +81,9 @@ def request_environment(application, request):
 def retrieve_transaction_request(transaction):
     # Retrieves any request already associated with the transaction.
 
-    return getattr(transaction, '_nr_current_request', None)
+    if hasattr(transaction, '_nr_current_request'):
+        if transaction._nr_current_request is not None:
+            return transaction._nr_current_request()
 
 def retrieve_request_transaction(request):
     # Retrieves any transaction already associated with the request.
@@ -85,9 +91,32 @@ def retrieve_request_transaction(request):
     return getattr(request, '_nr_transaction', None)
 
 def request_finished(request):
-    # Returns where the request is in the process of being finished.
+    # Returns whether the request is in the process of being finished.
+    # If we haven't started tracking of the request returns None.
 
-    return request._nr_request_finished
+    return getattr(request, '_nr_request_finished', None)
+
+def request_caller_context(request):
+    # Returns the most recently specified named caller context.
+
+    if not hasattr(request, '_nr_caller_context'):
+        return
+
+    if not request._nr_caller_context:
+        return
+
+    return request._nr_caller_context[-1]
+
+@contextlib.contextmanager
+def _nr_wrapper_named_caller_context_(request, name):
+    if not hasattr(request, '_nr_caller_context'):
+        request._nr_caller_context = []
+
+    request._nr_caller_context.append(name)
+
+    yield
+
+    request._nr_caller_context.pop(-1)
 
 def initiate_request_monitoring(request):
     # Creates a new transaction and associates it with the request.

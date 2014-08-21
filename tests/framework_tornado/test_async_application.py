@@ -62,6 +62,103 @@ def test_async_application_main_get():
     response = _test_application.get('/main')
     response.mustcontain('MAIN RESPONSE')
 
+_test_async_application_immediate_prepare_get_scoped_metrics = [
+    ('Python/Tornado/Request/Process', 1),
+    ('Function/_test_async_application:ImmediatePrepareHandler.prepare', 1),
+    ('Function/_test_async_application:ImmediatePrepareHandler.get', 1),
+]
+
+@setup_application_server
+@raise_background_exceptions()
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics('_test_async_application:ImmediatePrepareHandler.get',
+    scoped_metrics=_test_async_application_immediate_prepare_get_scoped_metrics)
+def test_async_application_immediate_prepare_get():
+    response = _test_application.get('/immediate_prepare')
+    response.mustcontain('PREPARE RESPONSE')
+
+_test_async_application_engine_immediate_prepare_get_scoped_metrics = [
+    ('Python/Tornado/Request/Process', 1),
+    ('Function/_test_async_application:EngineImmediatePrepareHandler.prepare', 1),
+    ('Function/_test_async_application:EngineImmediatePrepareHandler.get', 1),
+]
+
+@setup_application_server
+@raise_background_exceptions()
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics('_test_async_application:EngineImmediatePrepareHandler.get',
+    scoped_metrics=_test_async_application_engine_immediate_prepare_get_scoped_metrics)
+def test_async_application_engine_immediate_prepare_get():
+    response = _test_application.get('/engine_immediate_prepare')
+    response.mustcontain('PREPARE RESPONSE')
+
+_test_async_application_engine_multi_list_prepare_get_scoped_metrics = [
+    ('Python/Tornado/Request/Process', 1),
+    ('Function/_test_async_application:EngineMultiListPrepareHandler.prepare', 1),
+    ('Function/_test_async_application:EngineMultiListPrepareHandler.get', 1),
+]
+
+@setup_application_server
+@raise_background_exceptions()
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics('_test_async_application:EngineMultiListPrepareHandler.get',
+    scoped_metrics=_test_async_application_engine_multi_list_prepare_get_scoped_metrics)
+def test_async_application_engine_multi_list_prepare_get():
+    response = _test_application.get('/engine_multi_list_prepare')
+    response.mustcontain('PREPARE RESPONSE')
+
+_test_async_application_engine_multi_yield_prepare_get_scoped_metrics = [
+    ('Python/Tornado/Request/Process', 1),
+    ('Function/_test_async_application:EngineMultiYieldPrepareHandler.prepare', 1),
+    ('Function/_test_async_application:EngineMultiYieldPrepareHandler.get', 1),
+]
+
+@setup_application_server
+@raise_background_exceptions()
+@validate_transaction_errors(errors=[])
+#@validate_transaction_metrics('_test_async_application:EngineMultiYieldPrepareHandler.get',
+#    scoped_metrics=_test_async_application_engine_multi_yield_prepare_get_scoped_metrics)
+def test_async_application_engine_multi_yield_prepare_get():
+    response = _test_application.get('/engine_multi_yield_prepare')
+    response.mustcontain('PREPARE RESPONSE')
+
+_test_async_application_engine_cascade_prepare_get_scoped_metrics = [
+    ('Python/Tornado/Request/Process', 1),
+    ('Function/_test_async_application:EngineCascadePrepareHandler.prepare', 1),
+    ('Function/_test_async_application:EngineCascadePrepareHandler.get', 1),
+]
+
+@setup_application_server
+@raise_background_exceptions()
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics('_test_async_application:EngineCascadePrepareHandler.get',
+    scoped_metrics=_test_async_application_engine_cascade_prepare_get_scoped_metrics)
+def test_async_application_engine_cascade_prepare_get():
+    response = _test_application.get('/engine_cascade_prepare')
+    response.mustcontain('PREPARE RESPONSE')
+
+_test_async_application_engine_external_prepare_get_scoped_metrics = [
+    ('Python/Tornado/Request/Process', 1),
+    ('Function/_test_async_application:EngineExternalPrepareHandler.prepare', 1),
+    ('Function/_test_async_application:EngineExternalPrepareHandler.get', 1),
+]
+
+@setup_application_server
+@raise_background_exceptions()
+@validate_transaction_errors(errors=[])
+#@validate_transaction_metrics('_test_async_application:EngineExternalPrepareHandler.get',
+#    scoped_metrics=_test_async_application_engine_external_prepare_get_scoped_metrics)
+def test_async_application_engine_external_prepare_get():
+    response = _test_application.get('/engine_external_prepare')
+    response.mustcontain('PREPARE RESPONSE')
+
+_test_async_application_template_get_scoped_metrics = [
+    ('Python/Tornado/Request/Process', 1),
+    ('Template/Render/<string>', 1),
+    ('Template/Block/body', 1),
+    ('Function/_test_async_application:TemplateHandler.get', 1),
+]
+
 _test_async_application_template_get_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
     ('Template/Render/<string>', 1),
@@ -101,12 +198,8 @@ def test_async_application_delay_get():
 
 _test_async_application_engine_get_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
-    (select_python_version(
-        py2='Function/_test_async_application:get',
-        py3='Function/_test_async_application:EngineHandler.get'), 1),
-    (select_python_version(
-        py2='Function/_test_async_application:get (generator)',
-        py3='Function/_test_async_application:EngineHandler.get (generator)'), 2),
+    ('Function/_test_async_application:EngineHandler.get', 1),
+    ('Function/_test_async_application:EngineHandler.get (yield)', 2),
     (select_python_version(
         py2='Function/_test_async_application:EngineHandler.finish',
         py3='Function/tornado.web:RequestHandler.finish'), 1),
@@ -117,9 +210,7 @@ _test_async_application_engine_get_scoped_metrics = [
 @setup_application_server
 @raise_background_exceptions()
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics(select_python_version(
-    py2='_test_async_application:get',
-    py3='_test_async_application:EngineHandler.get'),
+@validate_transaction_metrics('_test_async_application:EngineHandler.get',
     scoped_metrics=_test_async_application_engine_get_scoped_metrics)
 def test_async_application_engine_get():
     response = _test_application.get('/engine')
@@ -127,12 +218,8 @@ def test_async_application_engine_get():
 
 _test_async_application_engine_return_get_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
-    (select_python_version(
-        py2='Function/_test_async_application:get',
-        py3='Function/_test_async_application:EngineReturnHandler.get'), 1),
-    (select_python_version(
-        py2='Function/_test_async_application:get (generator)',
-        py3='Function/_test_async_application:EngineReturnHandler.get (generator)'), 2),
+    ('Function/_test_async_application:EngineReturnHandler.get', 1),
+    ('Function/_test_async_application:EngineReturnHandler.get (yield)', 2),
     (select_python_version(
         py2='Function/_test_async_application:EngineReturnHandler.finish',
         py3='Function/tornado.web:RequestHandler.finish'), 1),
@@ -143,9 +230,7 @@ _test_async_application_engine_return_get_scoped_metrics = [
 @setup_application_server
 @raise_background_exceptions()
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics(select_python_version(
-    py2='_test_async_application:get',
-    py3='_test_async_application:EngineReturnHandler.get'),
+@validate_transaction_metrics('_test_async_application:EngineReturnHandler.get',
     scoped_metrics=_test_async_application_engine_return_get_scoped_metrics)
 def test_async_application_engine_return_get():
     response = _test_application.get('/engine_return')
@@ -153,12 +238,8 @@ def test_async_application_engine_return_get():
 
 _test_async_application_engine_error_get_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
-    (select_python_version(
-        py2='Function/_test_async_application:get',
-        py3='Function/_test_async_application:EngineErrorHandler.get'), 1),
-    (select_python_version(
-        py2='Function/_test_async_application:get (generator)',
-        py3='Function/_test_async_application:EngineErrorHandler.get (generator)'), 2),
+    ('Function/_test_async_application:EngineErrorHandler.get', 1),
+    ('Function/_test_async_application:EngineErrorHandler.get (yield)', 2),
     (select_python_version(
         py2='Function/_test_async_application:EngineErrorHandler.finish',
         py3='Function/tornado.web:RequestHandler.finish'), 1),
@@ -170,21 +251,15 @@ _test_async_application_engine_error_get_scoped_metrics = [
 @raise_background_exceptions()
 @validate_transaction_errors(errors=[select_python_version(
     py2='exceptions:RuntimeError', py3='builtins:RuntimeError')])
-@validate_transaction_metrics(select_python_version(
-    py2='_test_async_application:get',
-    py3='_test_async_application:EngineErrorHandler.get'),
+@validate_transaction_metrics('_test_async_application:EngineErrorHandler.get',
     scoped_metrics=_test_async_application_engine_error_get_scoped_metrics)
 def test_async_application_engine_error_get():
     response = _test_application.get('/engine_error', status=500)
 
 _test_async_application_coroutine_get_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
-    (select_python_version(
-        py2='Function/_test_async_application:get',
-        py3='Function/_test_async_application:CoroutineHandler.get'), 1),
-    (select_python_version(
-        py2='Function/_test_async_application:get (generator)',
-        py3='Function/_test_async_application:CoroutineHandler.get (generator)'), 2),
+    ('Function/_test_async_application:CoroutineHandler.get', 1),
+    ('Function/_test_async_application:CoroutineHandler.get (yield)', 2),
     (select_python_version(
         py2='Function/_test_async_application:CoroutineHandler.finish',
         py3='Function/tornado.web:RequestHandler.finish'), 1),
@@ -196,9 +271,7 @@ _test_async_application_coroutine_get_scoped_metrics = [
 @setup_application_server
 @raise_background_exceptions()
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics(select_python_version(
-    py2='_test_async_application:get',
-    py3='_test_async_application:CoroutineHandler.get'),
+@validate_transaction_metrics('_test_async_application:CoroutineHandler.get',
     scoped_metrics=_test_async_application_coroutine_get_scoped_metrics)
 def test_async_application_coroutine_get():
     response = _test_application.get('/coroutine')
@@ -206,12 +279,8 @@ def test_async_application_coroutine_get():
 
 _test_async_application_coroutine_return_get_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
-    (select_python_version(
-        py2='Function/_test_async_application:get',
-        py3='Function/_test_async_application:CoroutineReturnHandler.get'), 1),
-    (select_python_version(
-        py2='Function/_test_async_application:get (generator)',
-        py3='Function/_test_async_application:CoroutineReturnHandler.get (generator)'), 2),
+    ('Function/_test_async_application:CoroutineReturnHandler.get', 1),
+    ('Function/_test_async_application:CoroutineReturnHandler.get (yield)', 2),
     (select_python_version(
         py2='Function/_test_async_application:CoroutineReturnHandler.finish',
         py3='Function/tornado.web:RequestHandler.finish'), 1),
@@ -223,9 +292,7 @@ _test_async_application_coroutine_return_get_scoped_metrics = [
 @setup_application_server
 @raise_background_exceptions()
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics(select_python_version(
-    py2='_test_async_application:get',
-    py3='_test_async_application:CoroutineReturnHandler.get'),
+@validate_transaction_metrics('_test_async_application:CoroutineReturnHandler.get',
     scoped_metrics=_test_async_application_coroutine_return_get_scoped_metrics)
 def test_async_application_coroutine_return_get():
     response = _test_application.get('/coroutine_return')
@@ -233,12 +300,8 @@ def test_async_application_coroutine_return_get():
 
 _test_async_application_coroutine_error_get_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
-    (select_python_version(
-        py2='Function/_test_async_application:get',
-        py3='Function/_test_async_application:CoroutineErrorHandler.get'), 1),
-    (select_python_version(
-        py2='Function/_test_async_application:get (generator)',
-        py3='Function/_test_async_application:CoroutineErrorHandler.get (generator)'), 2),
+    ('Function/_test_async_application:CoroutineErrorHandler.get', 1),
+    ('Function/_test_async_application:CoroutineErrorHandler.get (yield)', 2),
     (select_python_version(
         py2='Function/_test_async_application:CoroutineErrorHandler.finish',
         py3='Function/tornado.web:RequestHandler.finish'), 1),
@@ -251,18 +314,14 @@ _test_async_application_coroutine_error_get_scoped_metrics = [
 @raise_background_exceptions()
 @validate_transaction_errors(errors=[select_python_version(
     py2='exceptions:RuntimeError', py3='builtins:RuntimeError')])
-@validate_transaction_metrics(select_python_version(
-    py2='_test_async_application:get',
-    py3='_test_async_application:CoroutineErrorHandler.get'),
+@validate_transaction_metrics('_test_async_application:CoroutineErrorHandler.get',
     scoped_metrics=_test_async_application_coroutine_error_get_scoped_metrics)
 def test_async_application_coroutine_error_get():
     response = _test_application.get('/coroutine_error', status=500)
 
 _test_async_application_404_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
-    (select_python_version(
-        py2='Function/tornado.web:ErrorHandler.get',
-        py3='Function/tornado.web:RequestHandler.get'), 1),
+    ('Function/tornado.web:ErrorHandler.prepare', 1),
     (select_python_version(
         py2='Function/tornado.web:ErrorHandler.finish',
         py3='Function/tornado.web:RequestHandler.finish'), 1),
@@ -337,7 +396,7 @@ def test_async_application_main_put():
     response.mustcontain(no=['XXX'])
 
 _test_async_application_wsgi_scoped_metrics = [
-    ('Python/Tornado/Request/Process', 1),
+    ('Python/Tornado/Request/Process', 2),
     (select_python_version(
         py2='Function/tornado.web:FallbackHandler.get',
         py3='Function/tornado.web:RequestHandler.get'), 1),

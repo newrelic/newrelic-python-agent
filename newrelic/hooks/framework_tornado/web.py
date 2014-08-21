@@ -1,62 +1,55 @@
 import sys
 import itertools
+import logging
 
 from newrelic.agent import (wrap_function_wrapper, current_transaction,
-    FunctionTrace, callable_name)
+    FunctionTrace, callable_name, wrap_function_trace)
 
 from . import (retrieve_request_transaction, initiate_request_monitoring,
     suspend_request_monitoring, resume_request_monitoring,
-    finalize_request_monitoring, record_exception)
+    finalize_request_monitoring, record_exception, request_finished)
 
-def call_wrapper(wrapped, instance, args, kwargs):
-    def _args(request, *args, **kwargs):
-        return request
+_logger = logging.getLogger(__name__)
 
-    request = _args(*args, **kwargs)
+def _nr_wrapper_Application___call__wsgi_(wrapped, instance, args, kwargs):
+    # This variant of the Application.__call__() wrapper is used when it
+    # is believed that we are being called via the WSGI application
+    # adapter. That is, someone is trying to use the blocking subset of
+    # the Tornado ASYNC APIs in a WSGI application. It is required that
+    # there is already a current active transaction at this point.
 
-    # If no transaction associated with request already, need to
-    # create a new one. The exception is when the the ASYNC API
-    # is being executed within a WSGI application, in which case
-    # a transaction will already be active. For that we execute
-    # straight away.
+    transaction = current_transaction()
 
-    transaction = retrieve_request_transaction(request)
-
-    if hasattr(instance, '_wsgi'):
-        # For Tornado prior to 4.0 the _wsgi attribute existed.
-        # If that attribute is True then it is a WSGI application.
-
-        if instance._wsgi:
-            transaction = current_transaction()
-
-            with FunctionTrace(transaction, name='Request/Process',
-                    group='Python/Tornado'):
-                return wrapped(*args, **kwargs)
-
-    else:
-        # For Tornado 4.0 and later, if there is no transaction
-        # associated with the current Tornado request object,
-        # then we assume that if there is still a current
-        # transaction that we are handling a WSGI application.
-
-        if transaction is None:
-            transaction = current_transaction()
-
-            if transaction is not None:
-                with FunctionTrace(transaction, name='Request/Process',
-                        group='Python/Tornado'):
-                    return wrapped(*args, **kwargs)
-
-    if transaction is None:
-        transaction = initiate_request_monitoring(request)
-
-    if not transaction:
+    with FunctionTrace(transaction, name='Request/Process',
+            group='Python/Tornado'):
         return wrapped(*args, **kwargs)
 
-    try:
-        # Call the original method in a trace object to give better
-        # context in transaction traces.
+def _nr_wrapper_Application___call__no_body_(wrapped, instance, args, kwargs):
+    # This variant of the Application.__call__() wrapper is used when it
+    # is believed that we are being called for a HTTP request where
+    # there is no request content. There should be no transaction
+    # associated with the Tornado request object and also no current
+    # active transaction. Create the transaction but if it is None then
+    # it means recording of transactions is not enabled then do not need
+    # to do anything.
 
+    def _params(request, *args, **kwargs):
+        return request
+
+    request = _params(*args, **kwargs)
+
+    transaction = initiate_request_monitoring(request)
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    # Call the original method in a trace object to give better context
+    # in transaction traces. It should return the RequestHandler instance
+    # which the request was passed off to. It should only every return
+    # an exception in situation where application was being shutdown so
+    # finalize the transaction on any error.
+
+    try:
         with FunctionTrace(transaction, name='Request/Process',
                 group='Python/Tornado'):
             handler = wrapped(*args, **kwargs)
@@ -66,55 +59,173 @@ def call_wrapper(wrapped, instance, args, kwargs):
         raise
 
     else:
-        # In the case of an immediate result or an exception
-        # occuring, then finish() will have been called on the
-        # request already. We can't just exit the transaction in the
-        # finish call however as need to still pop back up through
-        # the above function trace. So if it has been flagged that
-        # it is finished, which Tornado does by setting the request
-        # object in the connection to None, then we exit the
-        # transaction here. Otherwise we setup a function trace to
-        # track wait time for deferred and manually pop the
-        # transaction as being the current one for this thread.
+        # In the case of the response completing immediately or an
+        # exception occuring, then finish() should have been called on
+        # the request already. We can't just exit the transaction in the
+        # finish() call however as will need to still pop back up
+        # through the above function trace. So if it has been flagged
+        # that it is finished, which Tornado does by setting the request
+        # object in the connection to None, then we exit the transaction
+        # here. Otherwise we setup a function trace to track wait time
+        # for deferred and suspend monitoring.
 
-        if handler._finished:
-            if not request.connection.stream.writing():
-                finalize_request_monitoring(request)
+        if not request_finished(request):
+            suspend_request_monitoring(request, name='Callback/Wait')
 
-            else:
-                suspend_request_monitoring(request, name='Request/Output')
+        elif not request.connection.stream.writing():
+            finalize_request_monitoring(request)
 
         else:
-            suspend_request_monitoring(request, name='Callback/Wait')
+            suspend_request_monitoring(request, name='Request/Output')
 
         return handler
 
-def execute_wrapper(wrapped, instance, args, kwargs):
-    assert instance is not None
+def _nr_wrapper_Application___call__body_(wrapped, instance, args, kwargs):
+    # This variant of the Application.__call__() wrapper is used when it
+    # is believed that we are being called for a HTTP request where
+    # there is request content. There should already be a transaction
+    # associated with the Tornado request object and also a current
+    # active transaction.
+
+    transaction = current_transaction()
+
+    with FunctionTrace(transaction, name='Request/Process',
+            group='Python/Tornado'):
+        return wrapped(*args, **kwargs)
+
+def _nr_wrapper_Application___call___(wrapped, instance, args, kwargs):
+    # The Application.__call__() method can be called in a number of
+    # different circumstances.
+    #
+    # The first is that it is being called in the context of a WSGI
+    # application via the WSGI adapter. There should be no transaction
+    # associated with the Tornado request object, but there would be
+    # a current active transaction.
+    #
+    # The second is that it is called for a HTTP request by the Tornado
+    # HTTP server where there is no request content. This would occur
+    # from the HTTPConnection._on_headers() method. There should be no
+    # transaction associated with the Tornado request object and also
+    # no current active transaction.
+    #
+    # The third and final one is where it can be called for a HTTP
+    # request by the Tornado HTTP server where there is request content.
+    # This would occur from the HTTPConnection._on_request_body()
+    # method. There should be a transaction associated with the request
+    # object and also a current active transaction.
+    #
+    # The key method that __call__() in turn calls is the _execute()
+    # method of the target RequestHandler.
+
+    def _params(request, *args, **kwargs):
+        return request
+
+    request = _params(*args, **kwargs)
+
+    # Check first for the case where we are called via a WSGI adapter.
+    # The presumption here is that there can be no ASYNC callbacks.
+
+    transaction = retrieve_request_transaction(request)
+
+    if transaction is None and current_transaction():
+        return _nr_wrapper_Application___call__wsgi_(wrapped, instance,
+                args, kwargs)
+
+    # Now check for where we are being called on a HTTP request where
+    # there is no request content.
+
+    if transaction is None:
+        return _nr_wrapper_Application___call__no_body_(wrapped, instance,
+                args, kwargs)
+
+    # Finally have case where being called on a HTTP request where there
+    # is request content.
+
+    return _nr_wrapper_Application___call__body_(wrapped, instance,
+            args, kwargs)
+
+def _nr_wrapper_RequestHandler__execute_(wrapped, instance, args, kwargs):
+    # Prior to Tornado 3.1, the calling of the handler request method
+    # was performed from within RequestHandler._execute(). Any prepare()
+    # method was called immediately and could not be a coroutine. For
+    # later versions of Tornado, if the prepare() method is a coroutine
+    # and the future cannot be completed immediately, then the handler
+    # request method will be called from _execute_method() instead when
+    # prepare() completes.
 
     handler = instance
     request = handler.request
 
-    # Check to see if we are being called within the context of any
-    # sort of transaction. If we are, then we don't bother doing
-    # anything and just call the wrapped function. This should not
-    # really ever occur but check anyway.
+    # Check to see if we are being called within the context of any sort
+    # of transaction. If we aren't, then we don't bother doing anything and
+    # just call the wrapped function.
 
     transaction = current_transaction()
 
     if transaction is None:
         return wrapped(*args, **kwargs)
 
+    # If the method isn't one of the supported ones, then we expect the
+    # wrapped method to raise an exception for HTTPError(405). Name the
+    # transaction after the wrapped method first so it is used if that
+    # occurs.
+
+    name = callable_name(wrapped)
+    transaction.set_transaction_name(name)
+
     if request.method not in handler.SUPPORTED_METHODS:
         return wrapped(*args, **kwargs)
+
+    # Otherwise we name the transaction after the handler function that
+    # should end up being executed for the request. We don't create a
+    # function trace node at this point as that is handled by the fact
+    # that we wrapped the exposed methods from the wrapper for the
+    # constructor of the request handler.
 
     name = callable_name(getattr(handler, request.method.lower()))
     transaction.set_transaction_name(name)
 
+    # Call the original RequestHandler._execute(). So long as the
+    # prepare() method is not a coroutine which doesn't complete
+    # straight away, then the actual handler function handler should
+    # also be called at this point.
+
+    return wrapped(*args, **kwargs)
+
+def _nr_wrapper_RequestHandler__execute_method_(wrapped, instance,
+        args, kwargs):
+
+    # From Tornado 3.1, the calling of the handler request method is
+    # defered to RequestHandler._exeucte_method(). The wrapped method
+    # dynamically looks up the handler request method based on the
+    # method type of the HTTP request. We need to duplicate that lookup
+    # so we can determine the properly name of the handler request
+    # method. That name is then used in a function trace.
+
+    transaction = current_transaction()
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    handler = instance
+    request = handler.request
+
+    # XXX Is this now duplicating what is being done in the wrapper for
+    # RequestHandler.__init__().
+
+    name = callable_name(getattr(handler, request.method.lower()))
+
     with FunctionTrace(transaction, name=name):
         return wrapped(*args, **kwargs)
 
-def error_wrapper(wrapped, instance, args, kwargs):
+def _nr_wrapper_RequestHandler__handle_request_exception_(wrapped,
+        instance, args, kwargs):
+
+    # The RequestHandler._handle_request_exception() method is called
+    # with the details of any unhandled exception. It is believed to
+    # always be called in the context of an except block and so we can
+    # safely use sys.exc_info() to get the actual details.
+
     transaction = current_transaction()
 
     if transaction is not None:
@@ -122,52 +233,67 @@ def error_wrapper(wrapped, instance, args, kwargs):
 
     return wrapped(*args, **kwargs)
 
-def render_wrapper(wrapped, instance, args, kwargs):
+def _nr_wrapper_RequestHandler_render_(wrapped, instance, args, kwargs):
+    # Intended to track time spent rendering response content, but
+    # adding in the wrapper causes Tornado's calculation of where
+    # templates are stored to fail as it walks the stack and looks at
+    # where the calling code was stored and assumes templates exist in
+    # that directory if an absolute path is not provided. Thus not being
+    # used for now.
+
     transaction = current_transaction()
 
     if transaction is None:
         return wrapped(*args, **kwargs)
 
     name = callable_name(wrapped)
+
     with FunctionTrace(transaction, name=name):
         return wrapped(*args, **kwargs)
 
-def finish_wrapper(wrapped, instance, args, kwargs):
-    assert instance is not None
+def _nr_wrapper_RequestHandler_finish_(wrapped, instance, args, kwargs):
+    # The RequestHandler.finish() method will either be called explicitly
+    # by the user, but called also be called automatically by Tornado.
+    # It is possible that it can be called twice so it is necessary to
+    # protect against that.
 
     handler = instance
     request = handler.request
 
-    # Call wrapped method straight away if request object it is
-    # being called on is not even associated with a transaction.
-    # If we were in a running transaction we still want to record
-    # the call though. This will occur when calling finish on
-    # another request, but the target request wasn't monitored.
+    # Bail out out if we think the request as a whole has been completed.
+
+    if request_finished(request):
+        return wrapped(*args, **kwargs)
+
+    # Call wrapped method straight away if request object it is being
+    # called on is not even associated with a transaction. If we were in
+    # a running transaction we still want to record the call though.
+    # This will occur when calling finish on another request, but the
+    # target request wasn't monitored.
 
     transaction = retrieve_request_transaction(request)
 
-    running_transaction = current_transaction()
+    active_transaction = current_transaction()
 
-    if not transaction:
-        if running_transaction:
+    if transaction is None:
+        if active_transaction is not None:
             name = callable_name(wrapped)
 
-            with FunctionTrace(transaction, name):
+            with FunctionTrace(active_transaction, name):
                 return wrapped(*args, **kwargs)
 
         else:
             return wrapped(*args, **kwargs)
 
-    # Do we have a running transaction. When we do we need to
-    # consider two possiblities. The first is where the current
-    # running transaction doesn't match that bound to the request.
-    # For this case it would be where from within one transaction
-    # there is an attempt to call finish() on a distinct web request
-    # which was being monitored. The second is where finish() is
-    # being called for the current request.
+    # If we have an active transaction, we we need to consider two
+    # possiblities. The first is where the current running transaction
+    # doesn't match that bound to the request. For this case it would be
+    # where from within one transaction there is an attempt to call
+    # finish() on a distinct web request which was being monitored. The
+    # second is where finish() is being called for the current request.
 
-    if running_transaction:
-        if transaction != running_transaction:
+    if active_transaction is not None:
+        if transaction != active_transaction:
             # For this case we need to suspend the current running
             # transaction and call ourselves again. When it returns
             # we need to restore things back the way they were.
@@ -177,21 +303,22 @@ def finish_wrapper(wrapped, instance, args, kwargs):
 
             name = callable_name(wrapped)
 
-            with FunctionTrace(running_transaction, name):
+            with FunctionTrace(active_transaction, name):
                 try:
-                    running_transaction.drop_transaction()
+                    active_transaction.drop_transaction()
 
-                    return finish_wrapper(wrapped, instance, args, kwargs)
+                    return _nr_wrapper_RequestHandler_finish_(
+                            wrapped, instance, args, kwargs)
 
                 finally:
-                    running_transaction.save_transaction()
+                    active_transaction.save_transaction()
 
         else:
             # For this case we just trace the call.
 
             name = callable_name(wrapped)
 
-            with FunctionTrace(transaction, name):
+            with FunctionTrace(active_transaction, name):
                 return wrapped(*args, **kwargs)
 
     # Attempt to resume the transaction, calling the wrapped method
@@ -221,19 +348,30 @@ def finish_wrapper(wrapped, instance, args, kwargs):
 
         return result
 
-def generate_headers_wrapper(wrapped, instance, args, kwargs):
+def _nr_wrapper_RequestHandler__generate_headers_(wrapped, instance,
+        args, kwargs):
+
+    # The RequestHandler._generate_headers() method is where the
+    # response headers are injected into the response being written back
+    # to the client. We process the response headers before being sent
+    # to capture any details from them, but we also inject our own
+    # additional headers for support cross process transactions etc.
+
     transaction = current_transaction()
 
     if transaction is None:
         return wrapped(*args, **kwargs)
 
+    # Thread utilization doesn't make sense in the context of Tornado
+    # so we need to stop anything being generated for it.
+
     transaction._thread_utilization_start = None
 
-    status = '%d ???' % instance.get_status()
+    # The HTTPHeaders class with get_all() only started to be used in
+    # Tornado 3.0. For older versions have to fall back to combining the
+    # dictionary and list of headers.
 
-    # The HTTPHeaders class with get_all() only started to
-    # be used in Tornado 3.0. For older versions have to fall
-    # back to combining the dictionary and list of headers.
+    status = '%d ???' % instance.get_status()
 
     try:
         response_headers = instance._headers.get_all()
@@ -257,7 +395,16 @@ def generate_headers_wrapper(wrapped, instance, args, kwargs):
 
     return wrapped(*args, **kwargs)
 
-def on_connection_close_wrapper(wrapped, instance, args, kwargs):
+def _nr_wrapper_RequestHandler_on_connection_close(wrapped, instance,
+        args, kwargs):
+
+    # The RequestHandler.on_connection_close() method is called when the
+    # client closes the connection prematurely before the request had
+    # been completed. The callback itself wasn't registered at a point
+    # where there was any request tracking so there shouldn't be any
+    # active transaction when this is called. We track the call of the
+    # wrapped method and then finalize the whole transaction.
+
     transaction = current_transaction()
 
     if transaction:
@@ -286,38 +433,62 @@ def on_connection_close_wrapper(wrapped, instance, args, kwargs):
 
         return result
 
-def init_wrapper(wrapped, instance, args, kwargs):
+def _nr_wrapper_RequestHandler___init___(wrapped, instance, args, kwargs):
     # In this case we are actually wrapping the instance method on an
     # actual instance of a handler class rather than the class itself.
     # This is so we can wrap any derived version of this method when
     # it has been overridden in a handler class.
 
     wrap_function_wrapper(instance, 'on_connection_close',
-            on_connection_close_wrapper)
+            _nr_wrapper_RequestHandler_on_connection_close)
+
+    wrap_function_trace(instance, 'prepare')
+    wrap_function_trace(instance, 'on_finish')
+
+    handler = instance
+
+    for name in handler.SUPPORTED_METHODS:
+        if hasattr(handler, name):
+            wrap_function_trace(instance, name)
 
     return wrapped(*args, **kwargs)
 
 def instrument_tornado_web(module):
-    wrap_function_wrapper(module, 'Application.__call__', call_wrapper)
-    wrap_function_wrapper(module, 'RequestHandler._execute', execute_wrapper)
+    wrap_function_wrapper(module, 'Application.__call__',
+            _nr_wrapper_Application___call___)
+
     wrap_function_wrapper(module, 'RequestHandler._handle_request_exception',
-            error_wrapper)
+            _nr_wrapper_RequestHandler__handle_request_exception_)
 
-    # XXX This mucks up Tornado's calculation of where template file
-    # is as it does walking of the stack frames to work it out and the
-    # wrapper makes it stop before getting to the users code.
+    # Tornado 3.1 and later supports the prepare() method being a
+    # coroutine and so execution of the get handler is actually deferred
+    # to _execute_method().
 
-    #wrap_function_wrapper(module, 'RequestHandler.render', render_wrapper)
-    #wrap_function_wrapper(module, 'RequestHandler.render_string',
-    #        render_wrapper)
+    wrap_function_wrapper(module, 'RequestHandler._execute',
+             _nr_wrapper_RequestHandler__execute_)
 
-    wrap_function_wrapper(module, 'RequestHandler.finish', finish_wrapper)
+    if hasattr(module.RequestHandler, '_execute_method'):
+        wrap_function_wrapper(module, 'RequestHandler._execute_method',
+                _nr_wrapper_RequestHandler__execute_method_)
+
+    # This mucks up Tornado's calculation of where template files live
+    # as Tornado does walking of the stack frames to work it out and the
+    # wrapper makes it stop before getting to the users code. Thus is
+    # disabled for now.
+
+    # wrap_function_wrapper(module, 'RequestHandler.render',
+    #         _nr_wrapper_RequestHandler_render_)
+    # wrap_function_wrapper(module, 'RequestHandler.render_string',
+    #         _nr_wrapper_RequestHandler_render_)
+
+    wrap_function_wrapper(module, 'RequestHandler.finish',
+            _nr_wrapper_RequestHandler_finish_)
 
     if hasattr(module.RequestHandler, '_generate_headers'):
         # The _generate_headers() method only existed prior to Tornado 4.0.
 
         wrap_function_wrapper(module, 'RequestHandler._generate_headers',
-                generate_headers_wrapper)
+                _nr_wrapper_RequestHandler__generate_headers_)
 
-    wrap_function_wrapper(module, 'RequestHandler.__init__', init_wrapper)
-
+    wrap_function_wrapper(module, 'RequestHandler.__init__',
+            _nr_wrapper_RequestHandler___init___)

@@ -1,4 +1,5 @@
 import sys
+import logging
 
 from newrelic.agent import (wrap_function_wrapper, current_transaction,
     FunctionTrace, callable_name)
@@ -6,55 +7,126 @@ from newrelic.agent import (wrap_function_wrapper, current_transaction,
 from . import (retrieve_request_transaction, initiate_request_monitoring,
     suspend_request_monitoring, finalize_request_monitoring)
 
-def wsgi_container_call_wrapper(wrapped, instance, args, kwargs):
-    def _args(request, *args, **kwargs):
+_logger = logging.getLogger(__name__)
+
+def _nr_wrapper_WSGIContainer___call__no_body_(wrapped, instance,
+        args, kwargs):
+
+    # This variant of the WSGIContainer.__call__() wrapper is used when
+    # it is believed that we are being called for a HTTP request where
+    # there is no request content. There should be no transaction
+    # associated with the Tornado request object and also no current
+    # active transaction. Create the transaction but if it is None then
+    # it means recording of transactions is not enabled then do not need
+    # to do anything.
+
+    def _params(request, *args, **kwargs):
         return request
 
-    # We need to check to see if an existing transaction object has
-    # already been created for the request
+    request = _params(*args, **kwargs)
 
-    request = _args(*args, **kwargs)
+    transaction = initiate_request_monitoring(request)
 
-    transaction = retrieve_request_transaction(request)
+    if transaction is None:
+        return wrapped(*args, **kwargs)
 
-    # If there is no prior transaction we will need to create one.
+    # Call the original method in a trace object to give better context
+    # in transaction traces. It should only every return an exception is
+    # situation where application was being shutdown so finalize the
+    # transaction on any error.
 
-    if not transaction:
-        # Create the transaction but if it is None then it means
-        # recording of transactions is not enabled and so need to
-        # call the wrapped function immediately and return.
+    transaction.set_transaction_name(request.uri, 'Uri', priority=1)
 
-        transaction = initiate_request_monitoring(request)
-
-        if transaction is None:
-            return wrapped(*args, **kwargs)
-
-        try:
+    try:
+        with FunctionTrace(transaction, name='Request/Process',
+                group='Python/Tornado'):
             result = wrapped(*args, **kwargs)
 
-        except:  # Catch all
-            finalize_request_monitoring(request, *sys.exc_info())
-            raise
+    except:  # Catch all
+        finalize_request_monitoring(request, *sys.exc_info())
+        raise
 
-        if not request.connection.stream.writing():
+    else:
+        # In the case of the response completing immediately or an
+        # exception occuring, then finish() should have been called on
+        # the request already. We can't just exit the transaction in the
+        # finish() call however as will need to still pop back up
+        # through the above function trace. So if it has been flagged
+        # that it is finished, which Tornado does by setting the request
+        # object in the connection to None, then we exit the transaction
+        # here. Otherwise we setup a function trace to track wait time
+        # for deferred and suspend monitoring.
+
+        if not request_finished(request):
+            suspend_request_monitoring(request, name='Callback/Wait')
+
+        elif not request.connection.stream.writing():
             finalize_request_monitoring(request)
 
         else:
             suspend_request_monitoring(request, name='Request/Output')
 
-    else:
-        # XXX Name the transaction after the URI. This is a
-        # temporary fiddle to preserve old default URL naming
-        # convention for WSGI applications until we move away
-        # from that as a default.
+        return result
 
-        if transaction._request_uri is not None:
-             transaction.set_transaction_name(
-                     transaction._request_uri, 'Uri', priority=1)
+def _nr_wrapper_WSGIContainer___call__body_(wrapped, instance, args, kwargs):
+    # This variant of the WSGIContainer.__call__() wrapper is used when
+    # it is believed that we are being called for a HTTP request where
+    # there is request content. There should already be a transaction
+    # associated with the Tornado request object and also a current
+    # active transaction.
 
-        result = wrapped(*args, **kwargs)
+    def _params(request, *args, **kwargs):
+        return request
 
-    return result
+    request = _params(*args, **kwargs)
+
+    transaction = current_transaction()
+
+    transaction.set_transaction_name(request.uri, 'Uri', priority=1)
+
+    with FunctionTrace(transaction, name='Request/Process',
+            group='Python/Tornado'):
+        return wrapped(*args, **kwargs)
+
+def _nr_wrapper_WSGIContainer___call___(wrapped, instance, args, kwargs):
+    # This wrapper is used around the call which processes the complete
+    # WSGI application execution. We do not have to deal with WSGI
+    # itererable responses as that is all handled within the wrapped
+    # function.
+    #
+    # We have to deal with a couple of cases in this wrapper. If we are
+    # called when there is no request content, there will be no active
+    # transaction. If we are called when there is request content then
+    # there will be an active transaction. We can determine this from
+    # whether there is a request
+
+    def _params(request, *args, **kwargs):
+        return request
+
+    request = _params(*args, **kwargs)
+
+    # We need to check to see if an existing transaction object has
+    # already been created for the request. If there isn't one but there
+    # is an active transaction, something is not right and we don't do
+    # anything.
+
+    transaction = retrieve_request_transaction(request)
+
+    if transaction is None and current_transaction():
+        return wrapped(*args, **kwargs)
+
+    # Now check for where we are being called on a HTTP request where
+    # there is no request content.
+
+    if transaction is None:
+        return _nr_wrapper_WSGIContainer___call__no_body_(wrapped, instance,
+                args, kwargs)
+
+    # Finally have case where being called on a HTTP request where there
+    # is request content.
+
+    return _nr_wrapper_WSGIContainer___call__body_(wrapped, instance,
+            args, kwargs)
 
 class _WSGIApplicationIterable(object): 
 
@@ -108,16 +180,21 @@ class _WSGIApplication(object):
 
         return _WSGIApplicationIterable(transaction, result)
 
-def wsgi_container_init_wrapper(wrapped, instance, args, kwargs):
-    def _args(wsgi_application, *args, **kwargs):
+def _nr_wrapper_WSGIContainer___init___(wrapped, instance, args, kwargs):
+    # This wrapper is used on to inject a wrapper around the WSGI
+    # application object passed into the WSGI container. That wrapper is
+    # going to perform a subset of what we would normally do in the
+    # WSGIApplicationWrapper class for normal WSGI applications.
+
+    def _params(wsgi_application, *args, **kwargs):
         return wsgi_application
 
-    wsgi_application = _args(*args, **kwargs)
+    wsgi_application = _params(*args, **kwargs)
 
     return wrapped(_WSGIApplication(wsgi_application))
 
 def instrument_tornado_wsgi(module):
     wrap_function_wrapper(module, 'WSGIContainer.__init__',
-            wsgi_container_init_wrapper)
+            _nr_wrapper_WSGIContainer___init___)
     wrap_function_wrapper(module, 'WSGIContainer.__call__',
-            wsgi_container_call_wrapper)
+            _nr_wrapper_WSGIContainer___call___)

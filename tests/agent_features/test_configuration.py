@@ -114,7 +114,7 @@ _test_strip_proxy_details_local_configs = [
         'proxy_user': None,
         'proxy_pass': None,
 
-        'expected_proxy_host': 'http://hostname',
+        'expected_proxy_host': 'http://****@hostname',
     },
     {
         'license_key': 'LICENSE-KEY',
@@ -126,7 +126,7 @@ _test_strip_proxy_details_local_configs = [
         'proxy_user': None,
         'proxy_pass': None,
 
-        'expected_proxy_host': 'http://hostname:8888',
+        'expected_proxy_host': 'http://****@hostname:8888',
     },
     {
         'license_key': 'LICENSE-KEY',
@@ -138,7 +138,7 @@ _test_strip_proxy_details_local_configs = [
         'proxy_user': None,
         'proxy_pass': None,
 
-        'expected_proxy_host': 'http://hostname',
+        'expected_proxy_host': 'http://****:****@hostname',
     },
     {
         'license_key': 'LICENSE-KEY',
@@ -150,7 +150,7 @@ _test_strip_proxy_details_local_configs = [
         'proxy_user': None,
         'proxy_pass': None,
 
-        'expected_proxy_host': 'http://hostname:8888',
+        'expected_proxy_host': 'http://****:****@hostname:8888',
     },
     {
         'license_key': 'LICENSE-KEY',
@@ -162,7 +162,7 @@ _test_strip_proxy_details_local_configs = [
         'proxy_user': None,
         'proxy_pass': None,
 
-        'expected_proxy_host': 'https://hostname',
+        'expected_proxy_host': 'https://****:****@hostname',
     },
     {
         'license_key': 'LICENSE-KEY',
@@ -174,7 +174,7 @@ _test_strip_proxy_details_local_configs = [
         'proxy_user': None,
         'proxy_pass': None,
 
-        'expected_proxy_host': 'https://hostname:8888',
+        'expected_proxy_host': 'https://****:****@hostname:8888',
     },
 ]
 
@@ -196,8 +196,15 @@ def test_strip_proxy_details(settings):
     assert 'license_key' not in stripped
     assert 'api_key' not in stripped
 
-    assert 'proxy_user' not in stripped
-    assert 'proxy_pass' not in stripped
+    # These should be obfuscated.
+
+    obfuscated = '****'
+
+    if stripped['proxy_user'] is not None:
+        assert stripped['proxy_user'] == obfuscated
+
+    if stripped['proxy_pass'] is not None:
+        assert stripped['proxy_pass'] == obfuscated
 
     # The proxy_host and proxy_port will be preserved but proxy_host
     # needs to be checked to make sure it doesn't contain a username and
@@ -215,7 +222,9 @@ def test_strip_proxy_details(settings):
     if proxy_host is not None:
         components = urlparse.urlparse(proxy_host)
 
-        assert not components.username
-        assert not components.password
+        if components.username:
+            assert components.username == obfuscated
+        if components.password:
+            assert components.password == obfuscated
 
     assert proxy_host == expected_proxy_host

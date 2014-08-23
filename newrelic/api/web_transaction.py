@@ -295,7 +295,7 @@ class WebTransaction(Transaction):
                     # Save obfuscated header, because we will pass it along
                     # unchanged in all external requests.
 
-                    self.synthetics_header = environ_get(header_name)
+                    self.synthetics_header = environ.get(header_name)
 
                     if synthetics['version'] == 1:
                         self.synthetics_resource_id = synthetics['resource_id']

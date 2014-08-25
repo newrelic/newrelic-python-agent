@@ -287,7 +287,7 @@ class WebTransaction(Transaction):
 
             try:
                 header_name = 'HTTP_X_NEWRELIC_SYNTHETICS'
-                header = self.process_header(environ, header_name)
+                header = self.decode_newrelic_header(environ, header_name)
                 synthetics = _parse_synthetics_header(header)
 
                 if synthetics['account_id'] in settings.trusted_account_ids:
@@ -339,7 +339,9 @@ class WebTransaction(Transaction):
                         self.client_application_id = client_application_id
 
                         header_name = 'HTTP_X_NEWRELIC_TRANSACTION'
-                        txn_header = self.process_header(environ, header_name)
+                        txn_header = self.decode_newrelic_header(
+                                environ, header_name)
+
                         if txn_header:
                             self.referring_transaction_guid = txn_header[0]
 
@@ -371,7 +373,7 @@ class WebTransaction(Transaction):
         self.rum_header_generated = False
         self.rum_footer_generated = False
 
-    def process_header(self, environ, header_name):
+    def decode_newrelic_header(self, environ, header_name):
         encoded_header = environ.get(header_name)
         if encoded_header:
             try:

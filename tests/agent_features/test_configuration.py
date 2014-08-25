@@ -61,6 +61,30 @@ _test_strip_proxy_details_local_configs = [
         'api_key': 'API-KEY',
 
         'proxy_scheme': None,
+        'proxy_host': 'hostname',
+        'proxy_port': 8888,
+        'proxy_user': 'username',
+        'proxy_pass': None,
+
+        'expected_proxy_host': 'hostname',
+    },
+    {
+        'license_key': 'LICENSE-KEY',
+        'api_key': 'API-KEY',
+
+        'proxy_scheme': None,
+        'proxy_host': 'hostname',
+        'proxy_port': 8888,
+        'proxy_user': 'username',
+        'proxy_pass': '',
+
+        'expected_proxy_host': 'hostname',
+    },
+    {
+        'license_key': 'LICENSE-KEY',
+        'api_key': 'API-KEY',
+
+        'proxy_scheme': None,
         'proxy_host': 'http://hostname',
         'proxy_port': None,
         'proxy_user': None,
@@ -196,15 +220,12 @@ def test_strip_proxy_details(settings):
     assert 'license_key' not in stripped
     assert 'api_key' not in stripped
 
-    # These should be obfuscated.
+    # These should be obfuscated or None.
 
     obfuscated = '****'
 
-    if stripped['proxy_user'] is not None:
-        assert stripped['proxy_user'] == obfuscated
-
-    if stripped['proxy_pass'] is not None:
-        assert stripped['proxy_pass'] == obfuscated
+    assert stripped['proxy_user'] in (None, obfuscated)
+    assert stripped['proxy_pass'] in (None, obfuscated)
 
     # The proxy_host and proxy_port will be preserved but proxy_host
     # needs to be checked to make sure it doesn't contain a username and

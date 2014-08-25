@@ -346,7 +346,7 @@ class WebTransaction(Transaction):
                             self.referring_transaction_guid = txn_header[0]
 
                             # Incoming record_tt is OR'd with existing
-                            # record_tt. In the sceanrio where we make multiple
+                            # record_tt. In the scenario where we make multiple
                             # ext request, this will ensure we don't set the
                             # record_tt to False by a later request if it was
                             # set to True by an earlier request.

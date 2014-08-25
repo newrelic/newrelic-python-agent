@@ -312,6 +312,28 @@ def flatten_settings(settings):
 
     return _flatten({}, None, settings)
 
+def create_obfuscated_netloc(username, password, hostname, mask):
+    """Create a netloc string from hostname, username and password. If the
+    username and/or password is present, replace them with the obfuscation
+    mask. Otherwise, leave them out of netloc.
+
+    """
+
+    if username:
+        username = mask
+
+    if password:
+        password = mask
+
+    if username and password:
+        netloc = '%s:%s@%s' % (username, password, hostname)
+    elif username:
+        netloc = '%s@%s' % (username, hostname)
+    else:
+        netloc = hostname
+
+    return netloc
+
 def global_settings_dump(settings_object=None):
     """This returns dictionary of global settings flattened into a single
     key namespace rather than nested hierarchy. This is used to send the
@@ -331,13 +353,21 @@ def global_settings_dump(settings_object=None):
     del settings['license_key']
     del settings['api_key']
 
-    del settings['proxy_user']
-    del settings['proxy_pass']
+    # If proxy credentials are included in the settings, we obfuscate
+    # them before sending, rather than deleting.
+
+    obfuscated = '****'
+
+    if settings['proxy_user'] is not None:
+        settings['proxy_user'] = obfuscated
+
+    if settings['proxy_pass'] is not None:
+        settings['proxy_pass'] = obfuscated
 
     # For the case of proxy_host we have to do a bit more work as it
     # could be a URI which includes the username and password within
     # it. What we do here is parse the value and if identified as a
-    # URI we recompose it but drop the username and password.
+    # URI, we recompose it with the obfuscated username and password.
 
     proxy_host = settings['proxy_host']
 
@@ -345,16 +375,18 @@ def global_settings_dump(settings_object=None):
         components = urlparse.urlparse(proxy_host)
 
         if components.scheme:
-            if components.scheme:
-                if components.port:
-                    uri = '%s://%s:%s%s' % (components.scheme,
-                            components.hostname, components.port,
-                            components.path)
-                else:
-                    uri = '%s://%s%s' % (components.scheme,
-                            components.hostname, components.path)
 
-                settings['proxy_host'] = uri
+            netloc = create_obfuscated_netloc(components.username,
+                    components.password, components.hostname, obfuscated)
+
+            if components.port:
+                uri = '%s://%s:%s%s' % (components.scheme, netloc,
+                        components.port, components.path)
+            else:
+                uri = '%s://%s%s' % (components.scheme, netloc,
+                        components.path)
+
+            settings['proxy_host'] = uri
 
     return settings
 

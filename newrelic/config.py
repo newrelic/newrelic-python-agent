@@ -1551,6 +1551,12 @@ def _process_module_builtin_defaults():
     _process_module_definition('django.views.generic.base',
             'newrelic.hooks.framework_django',
             'instrument_django_views_generic_base')
+    _process_module_definition('django.core.management.base',
+            'newrelic.hooks.framework_django',
+            'instrument_django_core_management_base')
+    _process_module_definition('django.template.base',
+            'newrelic.hooks.framework_django',
+            'instrument_django_template_base')
 
     _process_module_definition('flask.app',
             'newrelic.hooks.framework_flask',
@@ -1820,6 +1826,10 @@ def _process_module_builtin_defaults():
     _process_module_definition('tastypie.api',
             'newrelic.hooks.component_tastypie',
             'instrument_tastypie_api')
+
+    _process_module_definition('rest_framework.views',
+            'newrelic.hooks.component_djangorestframework',
+            'instrument_rest_framework_views')
 
     _process_module_definition('celery.task.base',
             'newrelic.hooks.application_celery',

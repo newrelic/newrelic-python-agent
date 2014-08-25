@@ -8,7 +8,9 @@ from newrelic.agent import (FunctionWrapper, callable_name,
     wrap_error_trace, FunctionTrace, wrap_function_trace, wrap_in_function,
     wrap_transaction_name, wrap_post_function, current_transaction,
     WSGIApplicationWrapper, ignore_status_code, insert_html_snippet,
-    verify_body_exists, extra_settings)
+    verify_body_exists, BackgroundTask, register_application,
+    wrap_function_wrapper, FunctionTraceWrapper, function_wrapper,
+    extra_settings)
 
 _logger = logging.getLogger(__name__)
 
@@ -22,12 +24,21 @@ def _setting_boolean(value):
         raise ValueError('Not a boolean: %s' % value)
     return _boolean_states[value.lower()]
 
+def _setting_set(value):
+    return set(value.split())
+
 _settings_types = {
     'browser_monitoring.auto_instrument': _setting_boolean,
+    'instrumentation.templates.inclusion_tag' : _setting_set,
+    'instrumentation.background_task.startup_timeout': float,
+    'instrumentation.scripts.django_admin' : _setting_set,
 }
 
 _settings_defaults = {
     'browser_monitoring.auto_instrument': True,
+    'instrumentation.templates.inclusion_tag': set(),
+    'instrumentation.background_task.startup_timeout': 10.0,
+    'instrumentation.scripts.django_admin' : set(),
 }
 
 django_settings = extra_settings('import-hook:django',
@@ -836,3 +847,85 @@ def instrument_django_core_mail(module):
 
 def instrument_django_core_mail_message(module):
     wrap_function_trace(module, 'EmailMessage.send')
+
+def _nr_wrapper_BaseCommand___init___(wrapped, instance, args, kwargs):
+    instance.handle = FunctionTraceWrapper(instance.handle)
+    if hasattr(instance, 'handle_noargs'):
+        instance.handle_noargs = FunctionTraceWrapper(instance.handle_noargs)
+    return wrapped(*args, **kwargs)
+
+def _nr_wrapper_BaseCommand_run_from_argv_(wrapped, instance, args, kwargs):
+    def _args(argv, *args, **kwargs):
+        return argv
+
+    _argv = _args(*args, **kwargs)
+
+    subcommand = _argv[1]
+
+    commands = django_settings.instrumentation.scripts.django_admin
+    startup_timeout = \
+            django_settings.instrumentation.background_task.startup_timeout
+
+    if subcommand not in commands:
+        return wrapped(*args, **kwargs)
+
+    application = register_application(timeout=startup_timeout)
+
+    with BackgroundTask(application, subcommand, 'Django'):
+        return wrapped(*args, **kwargs)
+
+def instrument_django_core_management_base(module):
+    wrap_function_wrapper(module, 'BaseCommand.__init__',
+            _nr_wrapper_BaseCommand___init___)
+    wrap_function_wrapper(module, 'BaseCommand.run_from_argv',
+            _nr_wrapper_BaseCommand_run_from_argv_)
+
+@function_wrapper
+def _nr_wrapper_django_inclusion_tag_wrapper_(wrapped, instance,
+        args, kwargs):
+
+    transaction = current_transaction()
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    name = hasattr(wrapped, '__name__') and wrapped.__name__
+
+    if name is None:
+        return wrapped(*args, **kwargs)
+
+    qualname = callable_name(wrapped)
+
+    tags = django_settings.instrumentation.templates.inclusion_tag
+
+    if '*' not in tags and name not in tags and qualname not in tags:
+        return wrapped(*args, **kwargs)
+
+    with FunctionTrace(transaction, name, group='Template/Tag'):
+        return wrapped(*args, **kwargs)
+
+@function_wrapper
+def _nr_wrapper_django_inclusion_tag_decorator_(wrapped, instance,
+        args, kwargs):
+
+    def _bind_params(func, *args, **kwargs):
+        return func, args, kwargs
+
+    func, _args, _kwargs = _bind_params(*args, **kwargs)
+
+    func = _nr_wrapper_django_inclusion_tag_wrapper_(func)
+
+    return wrapped(func, *_args, **_kwargs)
+
+def _nr_wrapper_django_template_base_Library_inclusion_tag_(wrapped,
+        instance, args, kwargs):
+
+    return _nr_wrapper_django_inclusion_tag_decorator_(
+            wrapped(*args, **kwargs))
+
+def instrument_django_template_base(module):
+    global module_django_template_base
+    module_django_template_base = module
+
+    wrap_function_wrapper(module, 'Library.inclusion_tag',
+            _nr_wrapper_django_template_base_Library_inclusion_tag_)

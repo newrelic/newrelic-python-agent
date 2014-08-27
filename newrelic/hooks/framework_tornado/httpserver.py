@@ -10,7 +10,8 @@ from newrelic.agent import (wrap_function_wrapper, current_transaction,
 
 from . import (retrieve_request_transaction, initiate_request_monitoring,
     suspend_request_monitoring, resume_request_monitoring,
-    finish_request_monitoring, finalize_request_monitoring, request_finished)
+    finish_request_monitoring, finalize_request_monitoring, request_finished,
+    last_transaction_activation)
 
 _logger = logging.getLogger(__name__)
 
@@ -33,7 +34,18 @@ def _nr_wrapper_HTTPConnection__on_headers_(wrapped, instance, args, kwargs):
 
     transaction = current_transaction()
 
-    if transaction:
+    if transaction is not None:
+        _logger.error('Runtime instrumentation error. Starting a new '
+                'Tornado web request but there is a transaction active '
+                'already. Report this issue to New Relic support.\n%s',
+                ''.join(traceback.format_stack()[:-1]))
+
+        last = last_transaction_activation()
+
+        if last is not None:
+            _logger.info('The currently active transaction was possibly '
+                    'initiated or resumed from %r.', last)
+
         return wrapped(*args, **kwargs)
 
     # Execute the wrapped function as we are only going to do something

@@ -3,7 +3,33 @@ import traceback
 import contextlib
 
 from newrelic.agent import (FunctionTrace, WebTransaction,
-    application as application_instance, ignore_status_code)
+    application as application_instance, ignore_status_code, extra_settings)
+
+_boolean_states = {
+   '1': True, 'yes': True, 'true': True, 'on': True,
+   '0': False, 'no': False, 'false': False, 'off': False
+}
+
+def _setting_boolean(value):
+    if value.lower() not in _boolean_states:
+        raise ValueError('Not a boolean: %s' % value)
+    return _boolean_states[value.lower()]
+
+_settings_types = {
+    'debug.transaction_monitoring': _setting_boolean,
+}
+
+_settings_defaults = {
+    'debug.transaction_monitoring': True,
+}
+
+tornado_settings = extra_settings('import-hook:tornado',
+        types=_settings_types, defaults=_settings_defaults)
+
+_last_transaction_activation = None
+
+def last_transaction_activation():
+    return _last_transaction_activation
 
 def record_exception(transaction, exc_info):
     # Record the details of any exception ignoring status codes which
@@ -138,6 +164,10 @@ def initiate_request_monitoring(request):
     if not transaction.enabled:
         return
 
+    if tornado_settings.debug.transaction_monitoring:
+        global _last_transaction_activation
+        _last_transaction_activation = ''.join(traceback.format_stack()[:-1])
+
     transaction.__enter__()
 
     request._nr_transaction = transaction
@@ -206,6 +236,10 @@ def resume_request_monitoring(request, required=False):
 
     # Now make the transaction stored against the request the current
     # transaction.
+
+    if tornado_settings.debug.transaction_monitoring:
+        global _last_transaction_activation
+        _last_transaction_activation = ''.join(traceback.format_stack()[:-1])
 
     transaction.save_transaction()
 

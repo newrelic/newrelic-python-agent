@@ -289,12 +289,16 @@ class TransactionNode(_TransactionNode):
             custom_params['referring_transaction_guid'] = \
                     self.referring_transaction_guid
 
-        # By prepending 'nr.' to the Synthetics custom param name,
-        # it gets treated as an "Intrinsic" in the APM UI.
+        # By prepending 'nr.' to the Synthetics custom param names,
+        # they get treated as "Intrinsics" in the APM UI.
 
         if self.synthetics_resource_id:
             custom_params['nr.synthetics_resource_id'] = \
                     self.synthetics_resource_id
+            custom_params['nr.synthetics_job_id'] = \
+                    self.synthetics_job_id
+            custom_params['nr.synthetics_monitor_id'] = \
+                    self.synthetics_monitor_id
 
         # There is an additional trace node labelled as 'ROOT'
         # that needs to be inserted below the root node object

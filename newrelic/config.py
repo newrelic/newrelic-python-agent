@@ -1681,6 +1681,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('pyodbc',
             'newrelic.hooks.database_dbapi2')
 
+    _process_module_definition('pymssql',
+            'newrelic.hooks.database_pymssql')
+
     _process_module_definition('psycopg2',
             'newrelic.hooks.database_psycopg2',
             'instrument_psycopg2')

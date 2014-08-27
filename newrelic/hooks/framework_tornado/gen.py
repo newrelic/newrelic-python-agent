@@ -3,7 +3,7 @@ import types
 import logging
 
 from . import (retrieve_transaction_request, resume_request_monitoring,
-        record_exception)
+        suspend_request_monitoring, record_exception)
 
 from newrelic.agent import (wrap_function_wrapper, current_transaction,
     FunctionTrace, callable_name, FunctionWrapper, function_wrapper,
@@ -57,11 +57,17 @@ def _nr_wrapper_gen_coroutine_generator_(generator):
             # The first time in the loop we should already have
             # inherited an active transaction. On subsequent times
             # however there may not be, in which case we need to resume
-            # the transaction associated with the request.
+            # the transaction associated with the request. We need to
+            # remember if we resumed the transaction as we need to
+            # then make sure we suspend it again as the caller isn't
+            # going to do that for us.
+
+            suspend = None
 
             if name is not None:
                 if current_transaction() is None:
                     transaction = resume_request_monitoring(request)
+                    suspend = transaction
                 else:
                     transaction = active_transaction
 
@@ -71,35 +77,47 @@ def _nr_wrapper_gen_coroutine_generator_(generator):
             # value. Annotate the function trace with the location of
             # the code within the generator which will be executed.
 
-            params = {}
+            try:
+                params = {}
 
-            gi_frame = generator.gi_frame
+                gi_frame = generator.gi_frame
 
-            params['filename'] = gi_frame.f_code.co_filename
-            params['lineno'] = gi_frame.f_lineno
+                params['filename'] = gi_frame.f_code.co_filename
+                params['lineno'] = gi_frame.f_lineno
 
-            with FunctionTrace(transaction, name, params=params):
-                try:
-                    if exc is not None:
-                        yielded = generator.throw(*exc)
-                        exc = None
-                    else:
-                        yielded = generator.send(value)
+                with FunctionTrace(transaction, name, params=params):
+                    try:
+                        if exc is not None:
+                            yielded = generator.throw(*exc)
+                            exc = None
+                        else:
+                            yielded = generator.send(value)
 
-                except (GeneratorReturn, StopIteration):
-                    raise
+                    except (GeneratorReturn, StopIteration):
+                        raise
 
-                except Exception:
-                    # We need to record exceptions at this point
-                    # as the call back into the generator could
-                    # have been triggered by a future direct from
-                    # the main loop. There isn't therefore anywhere
-                    # else it can be captured.
+                    except Exception:
+                        # We need to record exceptions at this point
+                        # as the call back into the generator could
+                        # have been triggered by a future direct from
+                        # the main loop. There isn't therefore anywhere
+                        # else it can be captured.
 
-                    if transaction:
-                        record_exception(transaction, sys.exc_info())
+                        if transaction is not None:
+                            record_exception(transaction, sys.exc_info())
 
-                    raise
+                        raise
+
+            finally:
+                if suspend is not None:
+                    suspend_request_monitoring(request, name='Callback/Wait')
+
+            # XXX This could present a problem if we are yielding a
+            # future as the future will be scheduled outside of the
+            # context of the active transaction if we had to do a
+            # suspend of the transaction since we resumed it. We can't
+            # do the suspend after the yield as it is during the yield
+            # that control is returned back to the main loop.
 
             try:
                 value = yield yielded

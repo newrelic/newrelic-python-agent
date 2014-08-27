@@ -44,7 +44,7 @@ class ConnectionFactory(DBAPI2ConnectionFactory):
 
     __connection_wrapper__ = ConnectionWrapper
 
-def instrument_psycopg2(module):
+def instrument_pymssql(module):
     # XXX Don't believe MSSQL provides a simple means of doing an
     # explain plan using one SQL statement prefix, eg., 'EXPLAIN'.
 

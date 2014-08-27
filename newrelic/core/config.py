@@ -50,6 +50,7 @@ class XraySessionSettings(Settings): pass
 class AnalyticsEventsSettings(Settings): pass
 class AnalyticsEventsTransactionsSettings(Settings): pass
 class ProcessHostSettings(Settings): pass
+class SyntheticsSettings(Settings): pass
 
 _settings = Settings()
 _settings.thread_profiler = ThreadProfilerSettings()
@@ -68,6 +69,7 @@ _settings.cross_application_tracer = CrossApplicationTracerSettings()
 _settings.analytics_events = AnalyticsEventsSettings()
 _settings.analytics_events.transactions = AnalyticsEventsTransactionsSettings()
 _settings.process_host = ProcessHostSettings()
+_settings.synthetics = SyntheticsSettings()
 
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
 _settings.audit_log_file = os.environ.get('NEW_RELIC_AUDIT_LOG', None)
@@ -230,6 +232,8 @@ _settings.transaction_name.naming_scheme = os.environ.get(
         'NEW_RELIC_TRANSACTION_NAMING_SCHEME')
 
 _settings.slow_sql.enabled = True
+
+_settings.synthetics.enabled = True
 
 _settings.agent_limits.data_collector_timeout = 30.0
 _settings.agent_limits.transaction_traces_nodes = 2000

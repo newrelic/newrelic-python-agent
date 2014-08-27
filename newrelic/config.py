@@ -331,6 +331,8 @@ def _process_configuration(section):
                      'get', _map_browser_monitoring_content_type),
     _process_setting(section, 'slow_sql.enabled',
                      'getboolean', None)
+    _process_setting(section, 'synthetics.enabled',
+                     'getboolean', None)
     _process_setting(section, 'analytics_events.enabled',
                      'getboolean', None),
     _process_setting(section, 'analytics_events.capture_attributes',

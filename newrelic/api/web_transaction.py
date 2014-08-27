@@ -283,7 +283,8 @@ class WebTransaction(Transaction):
 
         # Check for Synthetics header
 
-        if settings.trusted_account_ids and settings.encoding_key:
+        if settings.synthetics.enabled and \
+                settings.trusted_account_ids and settings.encoding_key:
 
             try:
                 header_name = 'HTTP_X_NEWRELIC_SYNTHETICS'

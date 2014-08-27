@@ -827,14 +827,6 @@ class StatsEngine(object):
                     continue
                 params[key] = value
 
-        # Add Synthetics attributes as custom parameters
-
-        if transaction.synthetics_resource_id:
-            txn = transaction
-            params['nr.syntheticsResourceId'] = txn.synthetics_resource_id
-            params['nr.syntheticsJobId'] = txn.synthetics_job_id
-            params['nr.syntheticsMonitorId'] = txn.synthetics_monitor_id
-
         # Now we add the agents own values so they
         # overwrite users values if same key name used.
 
@@ -845,6 +837,14 @@ class StatsEngine(object):
         record['timestamp'] = transaction.start_time
         record['duration'] = transaction.duration
         record['nr.guid'] = transaction.guid
+
+        # Add the Synthetics attributes to the 'records' dict.
+
+        if transaction.synthetics_resource_id:
+            txn = transaction
+            record['nr.syntheticsResourceId'] = txn.synthetics_resource_id
+            record['nr.syntheticsJobId'] = txn.synthetics_job_id
+            record['nr.syntheticsMonitorId'] = txn.synthetics_monitor_id
 
         def _update_entry(source, target):
             try:

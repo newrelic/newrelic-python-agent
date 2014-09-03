@@ -96,9 +96,9 @@ def test_execute_via_cursor():
 @background_task()
 def test_execute_via_cursor_dict():
     with pymssql.connect(
-            database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
-            password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
-            port=DB_SETTINGS['port']) as connection:
+            server=DB_SETTINGS['server'], user=DB_SETTINGS['user'],
+            password=DB_SETTINGS['password'], DB_SETTINGS['name'])
+                as connection:
 
         cursor = connection.cursor(cursor_factory=pymssql.extras.RealDictCursor)
 
@@ -149,9 +149,9 @@ _test_rollback_on_exception_rollup_metrics = [
 def test_rollback_on_exception():
     try:
         with pymssql.connect(
-                database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
-                password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
-                port=DB_SETTINGS['port']) as connection:
+            server=DB_SETTINGS['server'], user=DB_SETTINGS['user'],
+            password=DB_SETTINGS['password'], DB_SETTINGS['name'])
+                as connection:
 
             raise RuntimeError('error')
     except RuntimeError:

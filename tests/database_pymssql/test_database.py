@@ -8,28 +8,21 @@ from newrelic.agent import (background_task, current_transaction,
 
 from newrelic.common.object_wrapper import resolve_path
 
-DB_SETTINGS =
-
 # Connection string from .NET agent
-    # <add name="MSSQLConnection" connectionString="Server=dotnetDB-SQL.pdx.vm. \
-    # datanerd.us\SQLEXPRESS;Database=NewRelic;User ID=sa;Password=!4maline!; \
-    # Trusted_Connection=False;Encrypt=False;Connection Timeout=30;" />
+# <add name="MSSQLConnection" connectionString="Server=dotnetDB-SQL.pdx.vm. \
+# datanerd.us\SQLEXPRESS;Database=NewRelic;User ID=sa;Password=!4maline!; \
+# Trusted_Connection=False;Encrypt=False;Connection Timeout=30;" />
 
-    server = "dotnetDB-SQL.pdx.vm.datanerd.us\SQLEXPRESS"
-    user = "sa"
-    password = "!4maline!"
+settings = {}
 
-    conn = pymssql.connect(server, user, password, "NewRelic")
+# Use local defaults, if TDDIUM vars aren't present.
 
-    settings = {}
+settings['name'] = "MSSQLConnection"
+settings['user'] = "sa"
+settings['password'] = "!4maline!"
+settings['server'] = "dotnetDB-SQL.pdx.vm.datanerd.us\SQLEXPRESS"
 
-    # Use local defaults, if TDDIUM vars aren't present.
-
-    settings['name'] = "MSSQLConnection"
-    settings['user'] = "sa"
-    settings['password'] = "!4maline!"
-    settings['server'] = "dotnetDB-SQL.pdx.vm.datanerd.us\SQLEXPRESS"
-
+DB_SETTINGS = settings
 
 _test_execute_via_cursor_scoped_metrics = [
         ('Function/pymssql:connect', 1),

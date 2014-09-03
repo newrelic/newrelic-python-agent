@@ -17,7 +17,7 @@ settings = {}
 
 # Use local defaults, if TDDIUM vars aren't present.
 
-settings['name'] = "MSSQLConnection"
+settings['name'] = "NewRelic"
 settings['user'] = "sa"
 settings['password'] = "!4maline!"
 settings['server'] = "dotnetDB-SQL.pdx.vm.datanerd.us\SQLEXPRESS"
@@ -57,8 +57,8 @@ _test_execute_via_cursor_rollup_metrics = [
 def test_execute_via_cursor():
     with pymssql.connect(
             server=DB_SETTINGS['server'], user=DB_SETTINGS['user'],
-            password=DB_SETTINGS['password'], DB_SETTINGS['name'])
-                as connection:
+            password=DB_SETTINGS['password'],
+            database=DB_SETTINGS['name']) as connection:
 
         cursor = connection.cursor()
 
@@ -97,8 +97,8 @@ def test_execute_via_cursor():
 def test_execute_via_cursor_dict():
     with pymssql.connect(
             server=DB_SETTINGS['server'], user=DB_SETTINGS['user'],
-            password=DB_SETTINGS['password'], DB_SETTINGS['name'])
-                as connection:
+            password=DB_SETTINGS['password'],
+            database=DB_SETTINGS['name']) as connection:
 
         cursor = connection.cursor(cursor_factory=pymssql.extras.RealDictCursor)
 
@@ -150,8 +150,8 @@ def test_rollback_on_exception():
     try:
         with pymssql.connect(
             server=DB_SETTINGS['server'], user=DB_SETTINGS['user'],
-            password=DB_SETTINGS['password'], DB_SETTINGS['name'])
-                as connection:
+            password=DB_SETTINGS['password'],
+            database=DB_SETTINGS['name']) as connection:
 
             raise RuntimeError('error')
     except RuntimeError:

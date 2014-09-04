@@ -13,16 +13,9 @@ from newrelic.common.object_wrapper import resolve_path
 # datanerd.us\SQLEXPRESS;Database=NewRelic;User ID=sa;Password=!4maline!; \
 # Trusted_Connection=False;Encrypt=False;Connection Timeout=30;" />
 
-settings = {}
-
-# Use local defaults, if TDDIUM vars aren't present.
-
-settings['name'] = "NewRelic"
-settings['user'] = "sa"
-settings['password'] = "!4maline!"
-settings['server'] = "dotnetDB-SQL.pdx.vm.datanerd.us\SQLEXPRESS"
-
-DB_SETTINGS = settings
+server = "dotnetDB-SQL.pdx.vm.datanerd.us\SQLEXPRESS"
+user = "sa"
+password = "!4maline!"
 
 _test_execute_via_cursor_scoped_metrics = [
         ('Function/pymssql:connect', 1),
@@ -55,10 +48,7 @@ _test_execute_via_cursor_rollup_metrics = [
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_execute_via_cursor():
-    with pymssql.connect(
-            DB_SETTINGS['server'], DB_SETTINGS['user'],
-            DB_SETTINGS['password'],
-            DB_SETTINGS['name']) as connection:
+    with pymssql.connect(server, user, password, "NewRelic") as connection:
 
         cursor = connection.cursor()
 
@@ -95,10 +85,7 @@ def test_execute_via_cursor():
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_execute_via_cursor_dict():
-    with pymssql.connect(
-            DB_SETTINGS['server'], DB_SETTINGS['user'],
-            DB_SETTINGS['password'],
-            DB_SETTINGS['name']) as connection:
+    with pymssql.connect(server, user, password, "NewRelic") as connection:
 
         cursor = connection.cursor(cursor_factory=pymssql.extras.RealDictCursor)
 
@@ -148,10 +135,7 @@ _test_rollback_on_exception_rollup_metrics = [
 @background_task()
 def test_rollback_on_exception():
     try:
-        with pymssql.connect(
-            DB_SETTINGS['server'], DB_SETTINGS['user'],
-            DB_SETTINGS['password'],
-            DB_SETTINGS['name']) as connection:
+        with pymssql.connect(server, user, password, "NewRelic") as connection:
 
             raise RuntimeError('error')
     except RuntimeError:

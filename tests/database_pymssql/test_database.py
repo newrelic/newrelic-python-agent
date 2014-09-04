@@ -56,9 +56,9 @@ _test_execute_via_cursor_rollup_metrics = [
 @background_task()
 def test_execute_via_cursor():
     with pymssql.connect(
-            server=DB_SETTINGS['server'], user=DB_SETTINGS['user'],
-            password=DB_SETTINGS['password'],
-            database=DB_SETTINGS['name']) as connection:
+            DB_SETTINGS['server'], DB_SETTINGS['user'],
+            DB_SETTINGS['password'],
+            DB_SETTINGS['name']) as connection:
 
         cursor = connection.cursor()
 
@@ -96,9 +96,9 @@ def test_execute_via_cursor():
 @background_task()
 def test_execute_via_cursor_dict():
     with pymssql.connect(
-            server=DB_SETTINGS['server'], user=DB_SETTINGS['user'],
-            password=DB_SETTINGS['password'],
-            database=DB_SETTINGS['name']) as connection:
+            DB_SETTINGS['server'], DB_SETTINGS['user'],
+            DB_SETTINGS['password'],
+            DB_SETTINGS['name']) as connection:
 
         cursor = connection.cursor(cursor_factory=pymssql.extras.RealDictCursor)
 
@@ -149,9 +149,9 @@ _test_rollback_on_exception_rollup_metrics = [
 def test_rollback_on_exception():
     try:
         with pymssql.connect(
-            server=DB_SETTINGS['server'], user=DB_SETTINGS['user'],
-            password=DB_SETTINGS['password'],
-            database=DB_SETTINGS['name']) as connection:
+            DB_SETTINGS['server'], DB_SETTINGS['user'],
+            DB_SETTINGS['password'],
+            DB_SETTINGS['name']) as connection:
 
             raise RuntimeError('error')
     except RuntimeError:

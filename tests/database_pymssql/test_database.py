@@ -116,19 +116,15 @@ def test_execute_via_cursor_dict():
 _test_rollback_on_exception_scoped_metrics = [
         ('Function/pymssql:connect', 1),
         ('Function/pymssql:Connection.__enter__', 1),
-        ('Function/pymssql:Connection.__exit__', 1)
-        # ('Database/other/sql', 1)
-        ]
+        ('Function/pymssql:Connection.__exit__', 1)]
 
-# _test_rollback_on_exception_rollup_metrics = [
-#         ('Database/all', 2),
-#         ('Database/allOther', 2),
-#         ('Database/other', 1),
-#         ('Database/other/sql', 1)]
+_test_rollback_on_exception_rollup_metrics = [
+        ('Database/all', 1),
+        ('Database/allOther', 1)]
 
 @validate_transaction_metrics('test_database:test_rollback_on_exception',
         scoped_metrics=_test_rollback_on_exception_scoped_metrics,
-        # rollup_metrics=_test_rollback_on_exception_rollup_metrics,
+        rollup_metrics=_test_rollback_on_exception_rollup_metrics,
         background_task=True)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()

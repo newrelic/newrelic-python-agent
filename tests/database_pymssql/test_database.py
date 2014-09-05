@@ -19,17 +19,17 @@ password = "!4maline!"
 
 _test_execute_via_cursor_scoped_metrics = [
         ('Function/pymssql:connect', 1),
-        ('Function/pymssql:connection.__enter__', 1),
-        ('Function/pymssql:connection.__exit__', 1),
+        ('Function/pymssql:Connection.__enter__', 1),
+        ('Function/pymssql:Connection.__exit__', 1),
         ('Database/database_pymssql/select', 1),
         ('Database/database_pymssql/insert', 1),
         ('Database/database_pymssql/update', 1),
-        ('Database/database_pymssql2/delete', 1),
-        ('Database/other/sql', 8)]
+        ('Database/database_pymssql/delete', 1),
+        ('Database/other/sql', 5)]
 
 _test_execute_via_cursor_rollup_metrics = [
-        ('Database/all', 13),
-        ('Database/allOther', 13),
+        ('Database/all', 10),
+        ('Database/allOther', 10),
         ('Database/select', 1),
         ('Database/database_pymssql/select', 1),
         ('Database/insert', 1),
@@ -38,13 +38,13 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Database/database_pymssql/update', 1),
         ('Database/delete', 1),
         ('Database/database_pymssql/delete', 1),
-        ('Database/other', 8),
-        ('Database/other/sql', 8)]
+        ('Database/other', 5),
+        ('Database/other/sql', 5)]
 
-# @validate_transaction_metrics('test_database:test_execute_via_cursor',
-#         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
-#         rollup_metrics=_test_execute_via_cursor_rollup_metrics,
-#         background_task=True)
+@validate_transaction_metrics('test_database:test_execute_via_cursor',
+        scoped_metrics=_test_execute_via_cursor_scoped_metrics,
+        rollup_metrics=_test_execute_via_cursor_rollup_metrics,
+        background_task=True)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_execute_via_cursor():
@@ -77,10 +77,10 @@ def test_execute_via_cursor():
         connection.rollback()
         connection.commit()
 
-# @validate_transaction_metrics('test_database:test_execute_via_cursor_dict',
-#         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
-#         rollup_metrics=_test_execute_via_cursor_rollup_metrics,
-#         background_task=True)
+@validate_transaction_metrics('test_database:test_execute_via_cursor_dict',
+        scoped_metrics=_test_execute_via_cursor_scoped_metrics,
+        rollup_metrics=_test_execute_via_cursor_rollup_metrics,
+        background_task=True)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_execute_via_cursor_dict():
@@ -113,11 +113,12 @@ def test_execute_via_cursor_dict():
         connection.rollback()
         connection.commit()
 
-# _test_rollback_on_exception_scoped_metrics = [
-#         ('Function/psycopg2:connect', 1),
-#         ('Function/pymssql:connection.__enter__', 1),
-#         ('Function/pymssql:connection.__exit__', 1),
-#         ('Database/other/sql', 1)]
+_test_rollback_on_exception_scoped_metrics = [
+        ('Function/pymssql:connect', 1),
+        ('Function/pymssql:Connection.__enter__', 1),
+        ('Function/pymssql:Connection.__exit__', 1)
+        # ('Database/other/sql', 1)
+        ]
 
 # _test_rollback_on_exception_rollup_metrics = [
 #         ('Database/all', 2),
@@ -125,10 +126,10 @@ def test_execute_via_cursor_dict():
 #         ('Database/other', 1),
 #         ('Database/other/sql', 1)]
 
-# @validate_transaction_metrics('test_database:test_rollback_on_exception',
-#         scoped_metrics=_test_rollback_on_exception_scoped_metrics,
-#         rollup_metrics=_test_rollback_on_exception_rollup_metrics,
-#         background_task=True)
+@validate_transaction_metrics('test_database:test_rollback_on_exception',
+        scoped_metrics=_test_rollback_on_exception_scoped_metrics,
+        # rollup_metrics=_test_rollback_on_exception_rollup_metrics,
+        background_task=True)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_rollback_on_exception():

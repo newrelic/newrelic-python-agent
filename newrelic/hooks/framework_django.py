@@ -16,7 +16,7 @@ _logger = logging.getLogger(__name__)
 
 _boolean_states = {
    '1': True, 'yes': True, 'true': True, 'on': True,
-   '0': False, 'no': False, 'false': False, 'off': False 
+   '0': False, 'no': False, 'false': False, 'off': False
 }
 
 def _setting_boolean(value):
@@ -112,7 +112,7 @@ def browser_timing_middleware(request, response):
 
     cdisposition = response.get('Content-Disposition', '').lower()
 
-    if cdisposition.split(';')[0].strip().lower() == 'attachment': 
+    if cdisposition.split(';')[0].strip().lower() == 'attachment':
         return response
 
     # No point continuing if header is empty. This can occur if

@@ -1,6 +1,7 @@
 import sys
 import threading
 import logging
+import functools
 
 from newrelic.packages import six
 
@@ -923,9 +924,87 @@ def _nr_wrapper_django_template_base_Library_inclusion_tag_(wrapped,
     return _nr_wrapper_django_inclusion_tag_decorator_(
             wrapped(*args, **kwargs))
 
+@function_wrapper
+def _nr_wrapper_django_template_base_InclusionNode_render_(wrapped,
+        instance, args, kwargs):
+
+    transaction = current_transaction()
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    if wrapped.__self__ is None:
+        return wrapped(*args, **kwargs)
+
+    file_name = getattr(wrapped.__self__, '_nr_file_name', None)
+
+    if file_name is None:
+        return wrapped(*args, **kwargs)
+
+    name = wrapped.__self__._nr_file_name
+
+    with FunctionTrace(transaction, name, 'Template/Include'):
+        return wrapped(*args, **kwargs)
+
+def _nr_wrapper_django_template_base_generic_tag_compiler_(wrapped, instance,
+        args, kwargs):
+
+    def _bind_params(parser, token, params, varargs, varkw, defaults,
+            name, takes_context, node_class, *args, **kwargs):
+        return node_class
+
+    node_class = _bind_params(*args, **kwargs)
+
+    if node_class.__name__ == 'InclusionNode':
+        result = wrapped(*args, **kwargs)
+
+        result.render = (
+                _nr_wrapper_django_template_base_InclusionNode_render_(
+                result.render))
+
+        return result
+
+    return wrapped(*args, **kwargs)
+
+def _nr_wrapper_django_template_base_Library_tag_(wrapped, instance,
+        args, kwargs):
+
+    def _bind_params(name=None, compile_function=None, *args, **kwargs):
+        return compile_function
+
+    compile_function = _bind_params(*args, **kwargs)
+
+    if not isinstance(compile_function, functools.partial):
+        return wrapped(*args, **kwargs)
+
+    node_class = compile_function.keywords.get('node_class')
+
+    if node_class is None or node_class.__name__ != 'InclusionNode':
+        return wrapped(*args, **kwargs)
+
+    frame = sys._getframe(1)
+
+    file_name = frame.f_locals.get('file_name')
+
+    if file_name is None:
+        return wrapped(*args, **kwargs)
+
+    if isinstance(file_name, module_django_template_base.Template):
+        file_name = file_name.name
+
+    node_class._nr_file_name = file_name
+
+    return wrapped(*args, **kwargs)
+
 def instrument_django_template_base(module):
     global module_django_template_base
     module_django_template_base = module
+
+    wrap_function_wrapper(module, 'generic_tag_compiler',
+            _nr_wrapper_django_template_base_generic_tag_compiler_)
+
+    wrap_function_wrapper(module, 'Library.tag',
+            _nr_wrapper_django_template_base_Library_tag_)
 
     wrap_function_wrapper(module, 'Library.inclusion_tag',
             _nr_wrapper_django_template_base_Library_inclusion_tag_)

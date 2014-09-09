@@ -25,7 +25,7 @@ _test_application_index_scoped_metrics = [
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_compress:index_page',
         scoped_metrics=_test_application_index_scoped_metrics)
-def test_application_index():
+def test_compress():
     application = target_application()
     response = application.get('/compress')
     response.mustcontain(500*'X')
@@ -40,7 +40,7 @@ _test_html_insertion_settings = {
 def test_html_insertion_flask_middleware():
     application = target_application()
     headers = { 'Accept-Encoding': 'gzip' }
-    response = application.get('/compress', headers=headers, status=200)
+    response = application.get('/html_insertion', headers=headers, status=200)
 
     # The 'NREUM HEADER' value comes from our override for the header.
     # The 'NREUM.info' value comes from the programmatically generated
@@ -48,7 +48,7 @@ def test_html_insertion_flask_middleware():
 
     response.mustcontain('NREUM HEADER', 'NREUM.info')
 
-"""
+
 _test_html_insertion_manual_settings = {
     'browser_monitoring.enabled': True,
     'browser_monitoring.auto_instrument': True,
@@ -89,4 +89,3 @@ def test_html_insertion_named_attachment_header_flask_middleware():
     # footer added by the agent.
 
     response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])
-"""

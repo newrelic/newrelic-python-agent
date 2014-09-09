@@ -1,7 +1,11 @@
+import logging
+
 from newrelic.agent import (current_transaction, extra_settings,
     insert_html_snippet, wrap_function_wrapper)
 
 from newrelic.packages import six
+
+_logger = logging.getLogger(__name__)
 
 _boolean_states = {
    '1': True, 'yes': True, 'true': True, 'on': True,

@@ -1,11 +1,13 @@
 import os
 import pytest
+import webtest
 
 from testing_support.fixtures import (override_application_settings,
-    validate_custom_parameters, validate_transaction_errors)
+    validate_custom_parameters, validate_transaction_errors,
+    validate_request_params)
 
 from newrelic.agent import (background_task, add_custom_parameter,
-    record_exception)
+    record_exception, wsgi_application)
 
 from newrelic.core.config import (global_settings, Settings,
     apply_config_setting)
@@ -267,3 +269,44 @@ def test_other_transaction_hsm_error_parameters_enabled():
         raise TestException()
     except Exception:
         record_exception(params={'key-2': 'value-2'})
+
+@wsgi_application()
+def target_wsgi_application_capture_params(environ, start_response):
+    status = '200 OK'
+    output = b'Hello World!'
+
+    response_headers = [('Content-Type', 'text/plain; charset=utf-8'),
+                        ('Content-Length', str(len(output)))]
+    start_response(status, response_headers)
+
+    return [output]
+
+_test_transaction_settings_hsm_enabled_capture_params = {
+    'high_security': True,
+    'capture_params': False }
+
+@override_application_settings(
+    _test_transaction_settings_hsm_enabled_capture_params)
+@validate_request_params(forgone_params=[('key-1', 'value-1')])
+def test_other_transaction_hsm_environ_capture_request_params_disabled():
+    target_application = webtest.TestApp(
+            target_wsgi_application_capture_params)
+
+    environ = {}
+    environ['newrelic.capture_request_params'] = False
+
+    response = target_application.get('/', params='key-1=value-1',
+            extra_environ=environ)
+
+@override_application_settings(
+    _test_transaction_settings_hsm_enabled_capture_params)
+@validate_request_params(forgone_params=[('key-1', 'value-1')])
+def test_other_transaction_hsm_environ_capture_request_params_enabled():
+    target_application = webtest.TestApp(
+            target_wsgi_application_capture_params)
+
+    environ = {}
+    environ['newrelic.capture_request_params'] = True
+
+    response = target_application.get('/', params='key-1=value-1',
+            extra_environ=environ)

@@ -9,6 +9,8 @@ CherryPy<3.3.0
 Django<1.4.0
 Django<1.5.0
 Django<1.6.0
+Django<1.7.0
+Django<1.8.0
 flask<0.7
 flask<0.8
 flask<0.9

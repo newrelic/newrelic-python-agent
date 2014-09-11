@@ -18,7 +18,9 @@ flask<0.10
 flask<0.11
 gearman<3.0.0
 PasteDeploy
+pymongo
 pytest-cov
+redis
 requests<0.8
 requests<0.9
 requests<0.10

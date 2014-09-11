@@ -288,6 +288,15 @@ _test_transaction_settings_hsm_enabled_capture_params = {
 @override_application_settings(
     _test_transaction_settings_hsm_enabled_capture_params)
 @validate_request_params(forgone_params=[('key-1', 'value-1')])
+def test_other_transaction_hsm_environ_capture_request_params():
+    target_application = webtest.TestApp(
+            target_wsgi_application_capture_params)
+
+    response = target_application.get('/', params='key-1=value-1')
+
+@override_application_settings(
+    _test_transaction_settings_hsm_enabled_capture_params)
+@validate_request_params(forgone_params=[('key-1', 'value-1')])
 def test_other_transaction_hsm_environ_capture_request_params_disabled():
     target_application = webtest.TestApp(
             target_wsgi_application_capture_params)

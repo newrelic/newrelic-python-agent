@@ -1560,6 +1560,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('flask.templating',
             'newrelic.hooks.framework_flask',
             'instrument_flask_templating')
+    _process_module_definition('flask.blueprints',
+            'newrelic.hooks.framework_flask',
+            'instrument_flask_blueprints')
 
     _process_module_definition('flask_compress',
             'newrelic.hooks.middleware_flask_compress',

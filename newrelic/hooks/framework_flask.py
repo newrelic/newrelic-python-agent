@@ -269,3 +269,119 @@ def instrument_flask_app(module):
 def instrument_flask_templating(module):
     wrap_function_trace(module, 'render_template')
     wrap_function_trace(module, 'render_template_string')
+
+def _nr_wrapper_Blueprint_endpoint_(wrapped, instance, args, kwargs):
+    return _nr_wrapper_endpoint_(wrapped(*args, **kwargs))
+
+@function_wrapper
+def _nr_wrapper_Blueprint_before_request_wrapped_(wrapped, instance,
+        args, kwargs):
+
+    transaction = current_transaction()
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    name = callable_name(wrapped)
+
+    transaction.set_transaction_name(name)
+
+    with FunctionTrace(transaction, name):
+        return wrapped(*args, **kwargs)
+
+def _nr_wrapper_Blueprint_before_request_(wrapped, instance, args, kwargs):
+    def _params(f, *args, **kwargs):
+        return f, args, kwargs
+
+    f, _args, _kwargs = _params(*args, **kwargs)
+    f = _nr_wrapper_Blueprint_before_request_wrapped_(f)
+
+    return wrapped(f, *_args, **_kwargs)
+
+def _nr_wrapper_Blueprint_before_app_request_(wrapped, instance,
+        args, kwargs):
+
+    def _params(f, *args, **kwargs):
+        return f, args, kwargs
+
+    f, _args, _kwargs = _params(*args, **kwargs)
+    f = _nr_wrapper_Blueprint_before_request_wrapped_(f)
+
+    return wrapped(f, *_args, **_kwargs)
+
+def _nr_wrapper_Blueprint_before_app_first_request_(wrapped, instance,
+        args, kwargs):
+
+    def _params(f, *args, **kwargs):
+        return f, args, kwargs
+
+    f, _args, _kwargs = _params(*args, **kwargs)
+    f = FunctionTraceWrapper(f)
+
+    return wrapped(f, *_args, **_kwargs)
+
+def _nr_wrapper_Blueprint_after_request_(wrapped, instance, args, kwargs):
+    def _params(f, *args, **kwargs):
+        return f, args, kwargs
+
+    f, _args, _kwargs = _params(*args, **kwargs)
+    f = FunctionTraceWrapper(f)
+
+    return wrapped(f, *_args, **_kwargs)
+
+def _nr_wrapper_Blueprint_after_app_request_(wrapped, instance, args, kwargs):
+    def _params(f, *args, **kwargs):
+        return f, args, kwargs
+
+    f, _args, _kwargs = _params(*args, **kwargs)
+    f = FunctionTraceWrapper(f)
+
+    return wrapped(f, *_args, **_kwargs)
+
+def _nr_wrapper_Blueprint_teardown_request_(wrapped, instance, args, kwargs):
+    def _params(f, *args, **kwargs):
+        return f, args, kwargs
+
+    f, _args, _kwargs = _params(*args, **kwargs)
+    f = FunctionTraceWrapper(f)
+
+    return wrapped(f, *_args, **_kwargs)
+
+def _nr_wrapper_Blueprint_teardown_app_request_(wrapped, instance,
+        args, kwargs):
+
+    def _params(f, *args, **kwargs):
+        return f, args, kwargs
+
+    f, _args, _kwargs = _params(*args, **kwargs)
+    f = FunctionTraceWrapper(f)
+
+    return wrapped(f, *_args, **_kwargs)
+
+def instrument_flask_blueprints(module):
+    wrap_function_wrapper(module, 'Blueprint.endpoint',
+            _nr_wrapper_Blueprint_endpoint_)
+
+    if hasattr(module.Blueprint, 'before_request'):
+        wrap_function_wrapper(module, 'Blueprint.before_request',
+                _nr_wrapper_Blueprint_before_request_)
+    if hasattr(module.Blueprint, 'before_app_request'):
+        wrap_function_wrapper(module, 'Blueprint.before_app_request',
+                _nr_wrapper_Blueprint_before_app_request_)
+    if hasattr(module.Blueprint, 'before_app_first_request'):
+        wrap_function_wrapper(module, 'Blueprint.before_app_first_request',
+                _nr_wrapper_Blueprint_before_app_first_request_)
+
+    if hasattr(module.Blueprint, 'after_request'):
+        wrap_function_wrapper(module, 'Blueprint.after_request',
+                _nr_wrapper_Blueprint_after_request_)
+    if hasattr(module.Blueprint, 'after_app_request'):
+        wrap_function_wrapper(module, 'Blueprint.after_app_request',
+                _nr_wrapper_Blueprint_after_app_request_)
+
+    if hasattr(module.Blueprint, 'teardown_request'):
+        wrap_function_wrapper(module, 'Blueprint.teardown_request',
+                _nr_wrapper_Blueprint_teardown_request_)
+    if hasattr(module.Blueprint, 'teardown_app_request'):
+        wrap_function_wrapper(module, 'Blueprint.teardown_app_request',
+                _nr_wrapper_Blueprint_teardown_app_request_)

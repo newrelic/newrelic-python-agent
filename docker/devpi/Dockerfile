@@ -1,6 +1,7 @@
 FROM python-base
 
-RUN pip install devpi eventlet
+RUN pip install eventlet
+RUN pip install devpi==2.0.1
 
 # Build a virtualenv for each python version
 

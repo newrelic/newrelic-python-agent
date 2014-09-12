@@ -8,6 +8,8 @@ cornice<0.17
 Django<1.4.0
 Django<1.5.0
 Django<1.6.0
+Django<1.7.0
+Django<1.8.0
 flask<0.7
 flask<0.11
 gevent
@@ -15,12 +17,14 @@ greenlet
 mysql-connector-python
 pg_proboscis
 psycopg2
+pymongo
 PyMySQL
 py-postgresql
 PasteDeploy
 Pyramid<1.4
 Pyramid<1.5
 pytest-cov
+redis
 requests<0.14
 requests<1.1
 requests<1.2

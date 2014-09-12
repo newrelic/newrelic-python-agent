@@ -25,7 +25,7 @@ _test_application_index_scoped_metrics = [
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_compress:index_page',
         scoped_metrics=_test_application_index_scoped_metrics)
-def test_compress():
+def test_compress_middleware():
     application = target_application()
     response = application.get('/compress')
     response.mustcontain(500*'X')

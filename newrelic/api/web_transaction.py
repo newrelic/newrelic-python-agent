@@ -105,6 +105,15 @@ class WebTransaction(Transaction):
                 'newrelic.disable_browser_autorum',
                 not settings.browser_monitoring.auto_instrument)
 
+        # Make sure that if high security mode is enabled that
+        # capture of request params is still being disabled.
+        # No warning is issued for this in the logs because it
+        # is a per request configuration and would create a lot
+        # of noise.
+
+        if settings.high_security:
+            self.capture_params = False
+
         # Extract from the WSGI environ dictionary
         # details of the URL path. This will be set as
         # default path for the web transaction. This can

@@ -1561,6 +1561,10 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.framework_flask',
             'instrument_flask_templating')
 
+    _process_module_definition('flask_compress',
+            'newrelic.hooks.middleware_flask_compress',
+            'instrument_flask_compress')
+
     #_process_module_definition('web.application',
     #        'newrelic.hooks.framework_webpy')
     #_process_module_definition('web.template',

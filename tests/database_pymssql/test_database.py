@@ -131,7 +131,7 @@ _test_rollback_on_exception_rollup_metrics = [
 def test_rollback_on_exception():
     try:
         with pymssql.connect(server, user, password, "NewRelic") as connection:
-
             raise RuntimeError('error')
+
     except RuntimeError:
         pass

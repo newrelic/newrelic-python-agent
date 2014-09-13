@@ -1,7 +1,7 @@
 import webtest
 
 from pyramid.response import Response
-from pyramid.view import view_config, view_defaults
+from pyramid.view import view_config
 from pyramid.config import Configurator
 import pyramid.httpexceptions as exc
 
@@ -35,16 +35,15 @@ def html_insertion(request):
             '<body><h1>My First Heading</h1><p>My first paragraph.</p>'
             '</body></html>')
 
-@view_defaults(route_name='rest')
 class RestView:
     def __init__(self, request):
         self.request = request
 
-    @view_config(request_method='GET')
+    @view_config(route_name='rest', request_method='GET')
     def get(self):
         return Response('Called GET')
 
-    @view_config(request_method='POST')
+    @view_config(route_name='rest', request_method='POST')
     def post(self):
         return Response('Called POST')
 

@@ -19,6 +19,9 @@ flask<0.11
 gearman<3.0.0
 PasteDeploy
 pymongo
+Pyramid<1.3
+Pyramid<1.4
+Pyramid<1.5
 pytest-cov
 redis
 requests<0.8

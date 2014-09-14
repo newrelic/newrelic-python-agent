@@ -6,6 +6,7 @@
   :tests:
     - tox -c tests/agent_features/tox.ini
     - tox -c tests/component_cornice/tox-0016.ini
+    - tox -c tests/component_djangorestframework/tox.ini
     - tox -c tests/database_mysql/tox.ini
     - tox -c tests/database_mysqldb/tox.ini
     - tox -c tests/database_oursql/tox.ini
@@ -55,7 +56,7 @@
   :mysql:
     :version: '5.1'
   :redis:
-    :version: '2.16.6' 
+    :version: '2.16.6'
   :mongodb:
     :version: '2.0'
     :append:

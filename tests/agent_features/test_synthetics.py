@@ -6,6 +6,8 @@ from newrelic.common.encoding_utils import (deobfuscate, obfuscate,
 
 from testing_support.fixtures import (validate_synthetics_event,
         validate_synthetics_transaction_trace, override_application_settings)
+from testing_support.external_fixtures import (
+        validate_synthetics_external_trace_header)
 
 ENCODING_KEY = '1234567890123456789012345678901234567890'
 ACCOUNT_ID = '444'
@@ -92,3 +94,23 @@ def test_valid_synthetics_in_transaction_trace():
 @override_application_settings(_override_settings)
 def test_no_synthetics_in_transaction_trace():
     response = target_application.get('/')
+
+_external_synthetics_header = ('X-NewRelic-Synthetics',
+        make_synthetics_header()['X-NewRelic-Synthetics'])
+
+@validate_synthetics_external_trace_header(
+        required_header=_external_synthetics_header, should_exist=True)
+@override_application_settings(_override_settings)
+def test_valid_synthetics_external_trace_header():
+    headers = make_synthetics_header()
+    response = target_application.get('/', headers=headers)
+
+@validate_synthetics_external_trace_header(should_exist=False)
+@override_application_settings(_override_settings)
+def test_no_synthetics_external_trace_header():
+    response = target_application.get('/')
+
+# Test synthetics.enabled
+
+# Test agent_limits.synthetics_events
+# Test agent_limits.synthetics_transactions

@@ -11,6 +11,7 @@ from newrelic.agent import (initialize, register_application,
 
 from newrelic.core.config import (apply_config_setting,
         create_settings_snapshot)
+from newrelic.core.database_utils import SQLConnections
 
 from newrelic.network.addresses import proxy_details
 from newrelic.packages import requests
@@ -388,6 +389,70 @@ def validate_synthetics_event(required_attrs=[], forgone_attrs=[],
         return result
 
     return _validate_synthetics_event
+
+def validate_synthetics_transaction_trace(required_params={},
+        forgone_params={}, should_exist=True):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_synthetics_transaction_trace(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+
+            # Now that transaction has been recorded, generate
+            # a transaction trace
+
+            connections = SQLConnections()
+            trace_data = instance.transaction_trace_data(connections)
+
+            # Check that synthetics resource id is in TT header
+
+            header = trace_data[0]
+            header_key = 'nr.synthetics_resource_id'
+
+            if should_exist:
+                assert header_key in required_params
+                assert header[9] == required_params[header_key], ('name=%r, '
+                            'header=%r' % (header_key, header))
+            else:
+                assert header[9] is None
+
+            def _decode_field(field):
+                import base64
+                import zlib
+
+                from newrelic.common.encoding_utils import json_decode
+
+                if not isinstance(field, bytes):
+                    field = field.encode('UTF-8')
+                data = base64.decodestring(field)
+                data = zlib.decompress(data)
+                if isinstance(data, bytes):
+                    data = data.decode('Latin-1')
+                data = json_decode(data)
+                return data
+
+            # Check that synthetics ids are in TT custom params
+
+            pack_data = _decode_field(trace_data[0][4])
+            tt_custom_params = pack_data[0][2]
+
+            for name in required_params:
+                assert name in tt_custom_params, ('name=%r, '
+                        'custom_params=%r' % (name, tt_custom_params))
+                assert tt_custom_params[name] == required_params[name], (
+                        'name=%r, value=%r, custom_params=%r' %
+                        (name, required_params[name], custom_params))
+
+            for name in forgone_params:
+                assert name not in tt_custom_params, ('name=%r, '
+                        'custom_params=%r' % (name, tt_custom_params))
+
+        return result
+
+    return _validate_synthetics_transaction_trace
 
 def validate_database_trace_inputs(sql_parameters_type):
     @transient_function_wrapper('newrelic.api.database_trace',

@@ -5,7 +5,7 @@ from newrelic.common.encoding_utils import (deobfuscate, obfuscate,
         json_decode, json_encode)
 
 from testing_support.fixtures import (validate_synthetics_event,
-        override_application_settings)
+        validate_synthetics_transaction_trace, override_application_settings)
 
 ENCODING_KEY = '1234567890123456789012345678901234567890'
 ACCOUNT_ID = '444'
@@ -75,3 +75,20 @@ def test_no_synthetics_event_mismatched_encoding_key():
     encoding_key = 'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz'
     headers = make_synthetics_header(encoding_key=encoding_key)
     response = target_application.get('/', headers=headers)
+
+_test_valid_synthetics_tt_required = {
+        'nr.synthetics_resource_id': SYNTHETICS_RESOURCE_ID,
+        'nr.synthetics_job_id': SYNTHETICS_JOB_ID,
+        'nr.synthetics_monitor_id': SYNTHETICS_MONITOR_ID}
+
+@validate_synthetics_transaction_trace(_test_valid_synthetics_tt_required)
+@override_application_settings(_override_settings)
+def test_valid_synthetics_in_transaction_trace():
+    headers = make_synthetics_header()
+    response = target_application.get('/', headers=headers)
+
+@validate_synthetics_transaction_trace([], _test_valid_synthetics_tt_required,
+        should_exist=False)
+@override_application_settings(_override_settings)
+def test_no_synthetics_in_transaction_trace():
+    response = target_application.get('/')

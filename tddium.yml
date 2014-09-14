@@ -1,7 +1,7 @@
 :tddium:
   :environment:
     'TDDIUM_SKIP_NONCE': ''
-    'PIP_INDEX_URL': 'http://localhost:3141/root/pypi/'
+    # 'PIP_INDEX_URL': 'http://localhost:3141/root/pypi/'
     'NEW_RELIC_FAKE_COLLECTOR': 'true'
   :tests:
     - tox -c tests/agent_features/tox.ini

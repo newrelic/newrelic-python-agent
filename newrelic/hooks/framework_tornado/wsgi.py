@@ -5,7 +5,7 @@ from newrelic.agent import (wrap_function_wrapper, current_transaction,
     FunctionTrace, callable_name, wrap_wsgi_application)
 
 from . import (retrieve_request_transaction, initiate_request_monitoring,
-    suspend_request_monitoring, finalize_request_monitoring)
+    suspend_request_monitoring, finalize_request_monitoring, request_finished)
 
 _logger = logging.getLogger(__name__)
 

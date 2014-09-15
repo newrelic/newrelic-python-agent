@@ -150,17 +150,17 @@ def _nr_wrapper_HTTPConnection__on_request_body_(wrapped, instance,
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    # Now call the orginal wrapped function. It will in turn call the
-    # application which will ensure any transaction which was resumed
-    # here is popped off. We cannot use a function trace at this point
-    # even if in a transaction as the called function can suspend
-    # the transaction or even finalize it.
+    # Now call the orginal wrapped function.
 
     try:
         result = wrapped(*args, **kwargs)
 
     except:  # Catch all
+        # There should never be an error from wrapped function but
+        # in case there is, try finalizing transaction.
+
         finalize_request_monitoring(request)
+        raise
 
     else:
         if not request_finished(request):
@@ -224,6 +224,9 @@ def _nr_wrapper_HTTPConnection__finish_request(wrapped, instance,
         result = wrapped(*args, **kwargs)
 
     except:  # Catch all
+        # There should never be an error from wrapped function but
+        # in case there is, try finalizing transaction.
+
         finalize_request_monitoring(request, *sys.exc_info())
         raise
 

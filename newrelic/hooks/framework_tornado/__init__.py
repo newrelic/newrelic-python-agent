@@ -210,6 +210,14 @@ def suspend_request_monitoring(request, name, group='Python/Tornado',
                 'Report this issue to New Relic support.\n%s',
                 ''.join(traceback.format_stack()[:-1]))
 
+        last = last_transaction_activation()
+
+        if last is not None:
+            _logger.info('The currently active transaction was possibly '
+                    'initiated or resumed from %r.', last)
+
+        return
+
     request._nr_wait_function_trace = FunctionTrace(transaction,
             name=name, group=group, terminal=terminal, rollup=rollup)
 

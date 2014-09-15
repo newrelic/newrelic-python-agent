@@ -281,6 +281,8 @@ def finalize_request_monitoring(request, exc=None, value=None, tb=None):
 
     transaction.__exit__(exc, value, tb)
 
+    transaction._nr_current_request = None
+
     request._nr_transaction = None
     request._nr_wait_function_trace = None
     request._nr_request_finished = True

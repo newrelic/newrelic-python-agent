@@ -185,18 +185,6 @@ class Raise404Handler(tornado.web.RequestHandler):
     def get(self):
         raise tornado.web.HTTPError(404)
 
-def wsgi_application(environ, start_response):
-    status = '200 OK'
-    output = b'WSGI RESPONSE'
-
-    response_headers = [('Content-type', 'text/plain'),
-                        ('Content-Length', str(len(output)))]
-    start_response(status, response_headers)
-
-    return [output]
-
-wsgi_application = tornado.wsgi.WSGIContainer(wsgi_application)
-
 application = tornado.web.Application([
     (r'/main', MainHandler),
     (r'/immediate_prepare', ImmediatePrepareHandler),
@@ -214,5 +202,4 @@ application = tornado.web.Application([
     (r'/coroutine_return', CoroutineReturnHandler),
     (r'/coroutine_error', CoroutineErrorHandler),
     (r'/raise404', Raise404Handler),
-    (r'/wsgi', tornado.web.FallbackHandler, dict(fallback=wsgi_application)),
 ])

@@ -394,23 +394,3 @@ _test_async_application_main_put_scoped_metrics = [
 def test_async_application_main_put():
     response = _test_application.put('/main', status=405)
     response.mustcontain(no=['XXX'])
-
-_test_async_application_wsgi_scoped_metrics = [
-    ('Python/Tornado/Request/Process', 2),
-    (select_python_version(
-        py2='Function/tornado.web:FallbackHandler.get',
-        py3='Function/tornado.web:RequestHandler.get'), 1),
-    ('Function/_test_async_application:wsgi_application', 1),
-    ('Python/WSGI/Application', 1),
-    ('Python/WSGI/Response', 1),
-    ('Python/WSGI/Finalize', 1)
-]
-
-@setup_application_server
-@raise_background_exceptions()
-@validate_transaction_errors(errors=[])
-@validate_transaction_metrics('wsgi', group='Uri',
-    scoped_metrics=_test_async_application_wsgi_scoped_metrics)
-def test_async_application_wsgi():
-    response = _test_application.get('/wsgi')
-    response.mustcontain('WSGI RESPONSE')

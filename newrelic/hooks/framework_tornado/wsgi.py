@@ -13,12 +13,12 @@ def _nr_wrapper_WSGIContainer___call__no_body_(wrapped, instance,
         args, kwargs):
 
     # This variant of the WSGIContainer.__call__() wrapper is used when
-    # it is believed that we are being called for a HTTP request where
-    # there is no request content. There should be no transaction
-    # associated with the Tornado request object and also no current
-    # active transaction. Create the transaction but if it is None then
-    # it means recording of transactions is not enabled then do not need
-    # to do anything.
+    # being used direct with HTTPServer and it is believed that we are
+    # being called for a HTTP request where there is no request content.
+    # There should be no transaction associated with the Tornado request
+    # object and also no current active transaction. Create the
+    # transaction but if it is None then it means recording of
+    # transactions is not enabled then do not need to do anything.
 
     def _params(request, *args, **kwargs):
         return request
@@ -70,10 +70,11 @@ def _nr_wrapper_WSGIContainer___call__no_body_(wrapped, instance,
 
 def _nr_wrapper_WSGIContainer___call__body_(wrapped, instance, args, kwargs):
     # This variant of the WSGIContainer.__call__() wrapper is used when
-    # it is believed that we are being called for a HTTP request where
-    # there is request content. There should already be a transaction
-    # associated with the Tornado request object and also a current
-    # active transaction.
+    # being used with HTTPServer directly and it is believed that we are
+    # being called for a HTTP request where there is request content.
+    # This would also be used where FallbackHandler was being used.
+    # There should already be a transaction associated with the Tornado
+    # request object and also a current active transaction.
 
     def _params(request, *args, **kwargs):
         return request
@@ -94,11 +95,20 @@ def _nr_wrapper_WSGIContainer___call___(wrapped, instance, args, kwargs):
     # itererable responses as that is all handled within the wrapped
     # function.
     #
-    # We have to deal with a couple of cases in this wrapper. If we are
-    # called when there is no request content, there will be no active
-    # transaction. If we are called when there is request content then
-    # there will be an active transaction. We can determine this from
-    # whether there is a request
+    # We have to deal with a few cases in this wrapper, made more
+    # complicated based on whether WSGIContainer is used in conjunction
+    # with a FallbackHandler or whether it is used directly with a
+    # HTTPServer instance.
+    #
+    # If WSGIContainer is used directly with a HTTPServer instance, if
+    # we are called when there is no request content, there will be no
+    # active transaction. If we are called when there is request content
+    # then there will be an active transaction.
+    #
+    # If WSGIContainer is used in conjunction with a FallbackHandler
+    # then there will always be an active transaction whether or not
+    # there is any request content. We treat this case the same is if
+    # there was request content even though there may not have been.
 
     def _params(request, *args, **kwargs):
         return request
@@ -116,14 +126,16 @@ def _nr_wrapper_WSGIContainer___call___(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     # Now check for where we are being called on a HTTP request where
-    # there is no request content.
+    # there is no request content. This will only be where used with
+    # HTTPServer directly.
 
     if transaction is None:
         return _nr_wrapper_WSGIContainer___call__no_body_(wrapped, instance,
                 args, kwargs)
 
     # Finally have case where being called on a HTTP request where there
-    # is request content.
+    # is request content and used directly with HTTPServer or where being
+    # used with FallbackHandler.
 
     return _nr_wrapper_WSGIContainer___call__body_(wrapped, instance,
             args, kwargs)

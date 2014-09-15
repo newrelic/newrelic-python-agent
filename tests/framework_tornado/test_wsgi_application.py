@@ -54,5 +54,5 @@ _test_wsgi_application_main_post_scoped_metrics = [
 @validate_transaction_metrics('test_wsgi_application:MainHandler.post',
         scoped_metrics=_test_wsgi_application_main_post_scoped_metrics)
 def test_wsgi_application_main_post():
-    response = test_application.post('/post')
+    response = test_application.post('/post', params={'a': 'b'})
     response.mustcontain('POST RESPONSE')

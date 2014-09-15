@@ -187,7 +187,12 @@ def _nr_wrapper_HTTPConnection__finish_request(wrapped, instance,
     transaction = retrieve_request_transaction(request)
 
     # The wrapped function could be called more than once. If it is then
-    # the transaction should already have been completed.
+    # the transaction should already have been completed. In this case
+    # the transaction should be None. To be safe also check whether the
+    # request itself was already flagged as finished. If transaction was
+    # the same as the current transaction the following check would have
+    # just marked it as finished again, but this first check will cover
+    # where the current transaction is for some reason different.
 
     if transaction is None:
         return wrapped(*args, **kwargs)

@@ -159,6 +159,7 @@ class _WSGIApplicationIterable(object):
 
         except: # Catch all 
             self.transaction.record_exception() 
+            raise
 
 class _WSGIApplication(object): 
 

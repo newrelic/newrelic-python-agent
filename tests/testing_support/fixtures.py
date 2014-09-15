@@ -9,6 +9,8 @@ from newrelic.agent import (initialize, register_application,
         transient_function_wrapper, function_wrapper, application_settings,
         wrap_function_wrapper)
 
+from newrelic.common.encoding_utils import unpack_field
+
 from newrelic.core.config import (apply_config_setting,
         create_settings_snapshot)
 from newrelic.core.database_utils import SQLConnections
@@ -419,24 +421,9 @@ def validate_synthetics_transaction_trace(required_params={},
             else:
                 assert header[9] is None
 
-            def _decode_field(field):
-                import base64
-                import zlib
-
-                from newrelic.common.encoding_utils import json_decode
-
-                if not isinstance(field, bytes):
-                    field = field.encode('UTF-8')
-                data = base64.decodestring(field)
-                data = zlib.decompress(data)
-                if isinstance(data, bytes):
-                    data = data.decode('Latin-1')
-                data = json_decode(data)
-                return data
-
             # Check that synthetics ids are in TT custom params
 
-            pack_data = _decode_field(trace_data[0][4])
+            pack_data = unpack_field(trace_data[0][4])
             tt_custom_params = pack_data[0][2]
 
             for name in required_params:

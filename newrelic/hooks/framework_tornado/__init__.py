@@ -286,11 +286,17 @@ def finalize_request_monitoring(request, exc=None, value=None, tb=None):
     # If all nodes hadn't been popped from the transaction stack then
     # error messages will be logged by the transaction. We therefore do
     # not need to check here.
+    #
+    # We must ensure we cleanup here even if __exit__() fails with an
+    # exception for some reason. This is especially the case for our own
+    # test harnesses.
 
-    transaction.__exit__(exc, value, tb)
+    try:
+        transaction.__exit__(exc, value, tb)
 
-    transaction._nr_current_request = None
+    finally:
+        transaction._nr_current_request = None
 
-    request._nr_transaction = None
-    request._nr_wait_function_trace = None
-    request._nr_request_finished = True
+        request._nr_transaction = None
+        request._nr_wait_function_trace = None
+        request._nr_request_finished = True

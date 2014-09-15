@@ -2,7 +2,7 @@ import sys
 import logging
 
 from newrelic.agent import (wrap_function_wrapper, current_transaction,
-    FunctionTrace, callable_name)
+    FunctionTrace, callable_name, wrap_wsgi_application)
 
 from . import (retrieve_request_transaction, initiate_request_monitoring,
     suspend_request_monitoring, finalize_request_monitoring)
@@ -199,3 +199,5 @@ def instrument_tornado_wsgi(module):
             _nr_wrapper_WSGIContainer___init___)
     wrap_function_wrapper(module, 'WSGIContainer.__call__',
             _nr_wrapper_WSGIContainer___call___)
+
+    wrap_wsgi_application(module, 'WSGIApplication.__call__')

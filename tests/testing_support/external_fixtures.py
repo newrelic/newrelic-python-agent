@@ -120,10 +120,12 @@ def validate_external_node_params(params=[]):
 
     return _validate_external_node_params
 
-def validate_synthetics_external_trace_header(required_header=(), should_exist=True):
+def validate_synthetics_external_trace_header(required_header=(),
+        should_exist=True):
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
-    def _validate_synthetics_external_trace_header(wrapped, instance, args, kwargs):
+    def _validate_synthetics_external_trace_header(wrapped, instance,
+            args, kwargs):
         def _bind_params(transaction, *args, **kwargs):
             return transaction
 
@@ -135,9 +137,11 @@ def validate_synthetics_external_trace_header(required_header=(), should_exist=T
             raise
         else:
             if should_exist:
-                external_headers = ExternalTrace.generate_request_headers(transaction)
-                assert required_header in external_headers, ('required_header=%r, '
-                        'external_headers=%r' % (header, external_headers))
+                external_headers = ExternalTrace.generate_request_headers(
+                        transaction)
+                assert required_header in external_headers, (
+                        'required_header=%r, ''external_headers=%r' % (
+                        header, external_headers))
 
         return result
 

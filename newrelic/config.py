@@ -1566,6 +1566,13 @@ def _process_module_builtin_defaults():
     _process_module_definition('flask.templating',
             'newrelic.hooks.framework_flask',
             'instrument_flask_templating')
+    _process_module_definition('flask.blueprints',
+            'newrelic.hooks.framework_flask',
+            'instrument_flask_blueprints')
+
+    _process_module_definition('flask_compress',
+            'newrelic.hooks.middleware_flask_compress',
+            'instrument_flask_compress')
 
     #_process_module_definition('web.application',
     #        'newrelic.hooks.framework_webpy')
@@ -1686,6 +1693,10 @@ def _process_module_builtin_defaults():
 
     _process_module_definition('pyodbc',
             'newrelic.hooks.database_dbapi2')
+
+    _process_module_definition('pymssql',
+            'newrelic.hooks.database_pymssql',
+            'instrument_pymssql')
 
     _process_module_definition('psycopg2',
             'newrelic.hooks.database_psycopg2',

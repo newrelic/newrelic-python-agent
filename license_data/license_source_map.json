@@ -1151,6 +1151,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/database_pymssql.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/database_sqlite.py": {
         "hash": "n/a",
         "libraries": [
@@ -1308,6 +1314,12 @@
         ]
     },
     "newrelic/hooks/memcache_umemcache.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/middleware_flask_compress.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

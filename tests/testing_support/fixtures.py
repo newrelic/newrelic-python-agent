@@ -441,6 +441,30 @@ def validate_synthetics_transaction_trace(required_params={},
 
     return _validate_synthetics_transaction_trace
 
+def validate_request_params(required_params=[], forgone_params=[]):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_request_params(wrapped, instance, args, kwargs):
+        def _bind_params(transaction, *args, **kwargs):
+            return transaction
+
+        transaction = _bind_params(*args, **kwargs)
+
+        for name, value in required_params:
+            assert name in transaction.request_params, ('name=%r, '
+                    'params=%r' % (name, transaction.request_params))
+            assert transaction.request_params[name] == value, (
+                    'name=%r, value=%r, params=%r' % (name, value,
+                    transaction.request_params))
+
+        for name, value in forgone_params:
+            assert name not in transaction.request_params, ('name=%r, '
+                    'params=%r' % (name, transaction.request_params))
+
+        return wrapped(*args, **kwargs)
+
+    return _validate_request_params
+
 def validate_database_trace_inputs(sql_parameters_type):
     @transient_function_wrapper('newrelic.api.database_trace',
             'DatabaseTrace.__init__')

@@ -95,6 +95,18 @@ def test_valid_synthetics_in_transaction_trace():
 def test_no_synthetics_in_transaction_trace():
     response = target_application.get('/')
 
+_disabled_settings = {
+    'encoding_key': ENCODING_KEY,
+    'trusted_account_ids': [int(ACCOUNT_ID)],
+    'synthetics.enabled': False,
+}
+
+@validate_synthetics_event([], [], should_exist=False)
+@override_application_settings(_disabled_settings)
+def test_synthetics_disabled():
+    headers = make_synthetics_header()
+    response = target_application.get('/', headers=headers)
+
 _external_synthetics_header = ('X-NewRelic-Synthetics',
         make_synthetics_header()['X-NewRelic-Synthetics'])
 

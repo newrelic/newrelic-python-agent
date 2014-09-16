@@ -311,6 +311,10 @@ class StatsEngine(object):
     def synthetics_events(self):
         return self.__synthetics_events
 
+    @property
+    def synthetics_transactions(self):
+        return self.__synthetics_transactions
+
     def update_metric_ids(self, metric_ids):
         """Updates the dictionary containing the mappings from metric
         (name, scope) to the integer identifier supplied back from the

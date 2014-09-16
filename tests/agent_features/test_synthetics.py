@@ -1,8 +1,10 @@
+import pytest
 import webtest
 
 from newrelic.agent import wsgi_application
 from newrelic.common.encoding_utils import (deobfuscate, obfuscate,
         json_decode, json_encode)
+from newrelic.core.agent import agent_instance
 
 from testing_support.fixtures import (validate_synthetics_event,
         validate_synthetics_transaction_trace, override_application_settings)
@@ -122,7 +124,66 @@ def test_valid_synthetics_external_trace_header():
 def test_no_synthetics_external_trace_header():
     response = target_application.get('/')
 
-# Test synthetics.enabled
+def _synthetics_limit_test(num_requests, num_events, num_transactions):
 
-# Test agent_limits.synthetics_events
-# Test agent_limits.synthetics_transactions
+    # Force harvest to clear stats
+
+    instance = agent_instance()
+    application = list(instance.applications.values())[0]
+    application.harvest()
+
+    # Send requests
+
+    headers = make_synthetics_header()
+    for i in range(num_requests):
+        response = target_application.get('/', headers=headers)
+
+    # Check that we've saved the right number events and traces
+
+    stats = application._stats_engine
+    assert len(stats.synthetics_events) == num_events
+    assert len(stats.synthetics_transactions) == num_transactions
+
+@pytest.mark.parametrize('num_requests,num_events,num_transactions', [
+    (0, 0, 0),
+    (20, 20, 20),
+    (21, 21, 20),
+    (200, 200, 20),
+    (201, 200, 20)])
+@override_application_settings(_override_settings)
+def test_synthetics_requests_default_limits(num_requests, num_events,
+        num_transactions):
+    _synthetics_limit_test(num_requests, num_events, num_transactions)
+
+_custom_settings = {
+    'encoding_key': ENCODING_KEY,
+    'trusted_account_ids': [int(ACCOUNT_ID)],
+    'agent_limits.synthetics_events': 5,
+    'agent_limits.synthetics_transactions': 3,
+}
+
+@pytest.mark.parametrize('num_requests,num_events,num_transactions', [
+    (0, 0, 0),
+    (3, 3, 3),
+    (4, 4, 3),
+    (5, 5, 3),
+    (6, 5, 3)])
+@override_application_settings(_custom_settings)
+def test_synthetics_requests_custom_limits(num_requests, num_events,
+        num_transactions):
+    _synthetics_limit_test(num_requests, num_events, num_transactions)
+
+_zero_settings = {
+    'encoding_key': ENCODING_KEY,
+    'trusted_account_ids': [int(ACCOUNT_ID)],
+    'agent_limits.synthetics_events': 0,
+    'agent_limits.synthetics_transactions': 0,
+}
+
+@pytest.mark.parametrize('num_requests,num_events,num_transactions', [
+    (0, 0, 0),
+    (1, 0, 0)])
+@override_application_settings(_zero_settings)
+def test_synthetics_requests_zero_limits(num_requests, num_events,
+        num_transactions):
+    _synthetics_limit_test(num_requests, num_events, num_transactions)

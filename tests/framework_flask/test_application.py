@@ -1,3 +1,5 @@
+import pytest
+
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, override_application_settings)
 
@@ -9,6 +11,9 @@ try:
     is_gt_flask060 = True
 except ImportError:
     is_gt_flask060 = False
+
+requires_endpoint_decorator = pytest.mark.skipif(not is_gt_flask060,
+        reason="The endpoint decorator is not supported.")
 
 def target_application():
     # We need to delay Flask application creation because of ordering
@@ -38,6 +43,23 @@ def test_application_index():
     application = target_application()
     response = application.get('/index')
     response.mustcontain('INDEX RESPONSE')
+
+_test_application_endpoint_scoped_metrics = [
+        ('Function/flask.app:Flask.wsgi_app', 1),
+        ('Python/WSGI/Application', 1),
+        ('Python/WSGI/Response', 1),
+        ('Python/WSGI/Finalize', 1),
+        ('Function/_test_application:endpoint_page', 1),
+        ('Function/werkzeug.wsgi:ClosingIterator.close', 1)]
+
+@requires_endpoint_decorator
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics('_test_application:endpoint_page',
+        scoped_metrics=_test_application_endpoint_scoped_metrics)
+def test_application_endpoint():
+    application = target_application()
+    response = application.get('/endpoint')
+    response.mustcontain('ENDPOINT RESPONSE')
 
 _test_application_error_scoped_metrics = [
         ('Function/flask.app:Flask.wsgi_app', 1),

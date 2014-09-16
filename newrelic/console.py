@@ -30,6 +30,9 @@ from newrelic.core.agent import agent_instance
 from newrelic.core.config import global_settings, flatten_settings
 from newrelic.api.transaction import Transaction
 from newrelic.api.object_wrapper import ObjectWrapper
+from newrelic.core.transaction_cache import transaction_cache
+
+_transaction_cache = transaction_cache()
 
 def shell_command(wrapped):
     args, varargs, keywords, defaults = inspect.getargspec(wrapped)
@@ -336,8 +339,11 @@ class ConsoleShell(cmd.Cmd):
         """
         """
 
-        for transaction in Transaction._transactions.values():
-            transaction.dump(self.stdout)
+        for item in _transaction_cache.active_threads():
+            transaction, thread_id, thread_type, frame = item
+            print('THREAD', item, file=self.stdout)
+            if transaction is not None:
+                transaction.dump(self.stdout)
             print(file=self.stdout)
 
     @shell_command
@@ -463,7 +469,7 @@ class ConnectionManager(object):
 
                 except Exception:
                     shell.stdout.flush()
-                    print('Unexpected exception.', file=self.stdout)
+                    print('Unexpected exception.', file=shell.stdout)
                     exc_info = sys.exc_info()
                     traceback.print_exception(exc_info[0], exc_info[1],
                             exc_info[2], file=shell.stdout)

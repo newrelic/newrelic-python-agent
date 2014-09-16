@@ -695,7 +695,7 @@ class SQLDatabase(object):
         name = getattr(self.dbapi2_module, '_nr_database_name', None)
 
         if name is None:
-            name = getattr(self.dbapi2_module, None)
+            name = getattr(self.dbapi2_module, '__name__', None)
 
             if name:
                 name = DATABASE_MODULES.get(name)

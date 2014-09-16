@@ -201,3 +201,28 @@ def test_html_insertion_named_attachment_header_django_middleware():
     # footer added by the agent.
 
     response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])
+
+_test_application_inclusion_tag_scoped_metrics = [
+        ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
+        ('Python/WSGI/Application', 1),
+        ('Python/WSGI/Response', 1),
+        ('Python/WSGI/Finalize', 1),
+        ('Function/views:inclusion_tag', 1),
+        ('Function/django.middleware.common:CommonMiddleware.process_request', 1),
+        ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_request', 1),
+        ('Function/django.contrib.auth.middleware:AuthenticationMiddleware.process_request', 1),
+        ('Function/django.contrib.messages.middleware:MessageMiddleware.process_request', 1),
+        ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 2),
+        ('Function/django.middleware.csrf:CsrfViewMiddleware.process_view', 1),
+        ('Function/django.contrib.messages.middleware:MessageMiddleware.process_response', 1),
+        ('Function/django.middleware.csrf:CsrfViewMiddleware.process_response', 1),
+        ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_response', 1),
+        ('Function/django.middleware.common:CommonMiddleware.process_response', 1),
+        ('Function/newrelic.hooks.framework_django:browser_timing_middleware', 1)]
+
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics('views:inclusion_tag',
+        scoped_metrics=_test_application_inclusion_tag_scoped_metrics)
+def test_application_inclusion_tag():
+    response = test_application.get('/inclusion_tag')
+    response.mustcontain('Inclusion tag')

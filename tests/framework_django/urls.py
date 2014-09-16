@@ -18,4 +18,5 @@ urlpatterns = patterns('',
     url(r'^html_insertion_named_attachment_header$',
         'views.html_insertion_named_attachment_header',
         name='html_insertion_named_attachment_header'),
+    url(r'^inclusion_tag$', 'views.inclusion_tag', name='inclusion_tag'),
 )

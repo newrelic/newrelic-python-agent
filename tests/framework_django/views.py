@@ -1,5 +1,7 @@
 from django.http import HttpResponse
 from django.views.generic.base import View
+from django.template import Context, Template
+from django.shortcuts import render
 
 from newrelic.agent import (get_browser_timing_header,
     get_browser_timing_footer)
@@ -46,3 +48,6 @@ def html_insertion_named_attachment_header(request):
             '</body></html>')
     response['Content-Disposition'] = 'Attachment; filename="X"'
     return response
+
+def inclusion_tag(request):
+    return render(request, 'main.html', {}, content_type="text/html")

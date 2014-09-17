@@ -18,9 +18,9 @@ class ExternalTrace(TimeTrace):
         self.params = {}
         self.settings = self.transaction.settings
 
-    def dump(self, file):
-        print >> file, self.__class__.__name__, dict(library=self.library,
-                url=self.url, method=self.method)
+    def __repr__(self):
+        return '<%s %s>' % (self.__class__.__name__, dict(
+                library=self.library, url=self.url, method=self.method))
 
     def create_node(self):
         return ExternalNode(library=self.library, url=self.url,

@@ -4,8 +4,18 @@ from newrelic.agent import (application as default_application,
 
 # Following wrappers are specifically for a gearman client.
 
-def wrapper_GearmanClient_poll_connections_until_stopped(wrapped, instance,
-        args, kwargs):
+def instrument_gearman_client(module):
+    wrap_function_trace(module, 'GearmanClient.submit_job')
+    wrap_function_trace(module, 'GearmanClient.submit_multiple_jobs')
+    wrap_function_trace(module, 'GearmanClient.submit_multiple_requests')
+    wrap_function_trace(module, 'GearmanClient.wait_until_jobs_accepted')
+    wrap_function_trace(module, 'GearmanClient.wait_until_jobs_completed')
+    wrap_function_trace(module, 'GearmanClient.get_job_status')
+    wrap_function_trace(module, 'GearmanClient.get_job_statuses')
+    wrap_function_trace(module, 'GearmanClient.wait_until_job_statuses_received')
+
+def wrapper_GearmanConnectionManager_poll_connections_until_stopped(
+        wrapped, instance, args, kwargs):
 
     def _bind_params(submitted_connections, *args, **kwargs):
         return submitted_connections
@@ -42,26 +52,13 @@ def wrapper_GearmanClient_poll_connections_until_stopped(wrapped, instance,
     if not submitted_connections:
         return wrapped(*args, **kwargs)
 
-    first_connection = submitted_connections[0]
+    first_connection = list(submitted_connections)[0]
 
     url = 'gearman://%s:%s' % (first_connection.gearman_host,
             first_connection.gearman_port)
 
     with ExternalTrace(transaction, 'gearman', url):
         return wrapped(*args, **kwargs)
-
-def instrument_gearman_client(module):
-    wrap_function_trace(module, 'GearmanClient.submit_job')
-    wrap_function_trace(module, 'GearmanClient.submit_multiple_jobs')
-    wrap_function_trace(module, 'GearmanClient.submit_multiple_requests')
-    wrap_function_trace(module, 'GearmanClient.wait_until_jobs_accepted')
-    wrap_function_trace(module, 'GearmanClient.wait_until_jobs_completed')
-    wrap_function_trace(module, 'GearmanClient.get_job_status')
-    wrap_function_trace(module, 'GearmanClient.get_job_statuses')
-    wrap_function_trace(module, 'GearmanClient.wait_until_job_statuses_received')
-
-    wrap_function_wrapper(module, 'GearmanClient.poll_connections_until_stopped',
-            wrapper_GearmanClient_poll_connections_until_stopped)
 
 def wrapper_GearmanConnectionManager_handle_function(wrapped, instance,
         args, kwargs):
@@ -105,6 +102,10 @@ def instrument_gearman_connection_manager(module):
             wrapper_GearmanConnectionManager_handle_function)
     wrap_function_wrapper(module, 'GearmanConnectionManager.handle_error',
             wrapper_GearmanConnectionManager_handle_function)
+
+    wrap_function_wrapper(module,
+            'GearmanConnectionManager.poll_connections_until_stopped',
+            wrapper_GearmanConnectionManager_poll_connections_until_stopped)
 
 # Following wrappers are specifically for a gearman worker.
 

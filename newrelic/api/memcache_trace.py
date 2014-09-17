@@ -12,8 +12,9 @@ class MemcacheTrace(TimeTrace):
 
         self.command = command
 
-    def dump(self, file):
-        print >> file, self.__class__.__name__, dict(command=self.command)
+    def __repr__(self):
+        return '<%s %s>' % (self.__class__.__name__, dict(
+                command=self.command))
 
     def create_node(self):
         return MemcacheNode(command=self.command, children=self.children,

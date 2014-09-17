@@ -23,9 +23,10 @@ class DatastoreTrace(newrelic.api.time_trace.TimeTrace):
             self.target = target
             self.operation = operation
 
-    def dump(self, file):
-        print >> file, self.__class__.__name__, dict(product=self.product,
-                target=self.target, operation=self.operation)
+    def __repr__(self):
+        return '<%s %s>' % (self.__class__.__name__, dict(
+                product=self.product, target=self.target,
+                operation=self.operation))
 
     def create_node(self):
         return self.node(product=self.product, target=self.target,

@@ -22,13 +22,17 @@ import newrelic.core.transaction_node
 import newrelic.core.database_node
 import newrelic.core.error_node
 
-import newrelic.api.time_trace
-
 from newrelic.core.stats_engine import CustomMetrics
 from newrelic.core.transaction_cache import transaction_cache
 from newrelic.core.thread_utilization import utilization_tracker
 
+from .time_trace import TimeTrace
+
 _logger = logging.getLogger(__name__)
+
+class Sentinel(TimeTrace):
+    def __init__(self):
+        super(Sentinel, self).__init__(None)
 
 class Transaction(object):
 
@@ -236,7 +240,7 @@ class Transaction(object):
         # dummy time trace object and when done we will
         # just grab what we need from that.
 
-        self._node_stack.append(newrelic.api.time_trace.TimeTrace(None))
+        self._node_stack.append(Sentinel())
 
         return self
 
@@ -245,6 +249,20 @@ class Transaction(object):
         # Bail out if the transaction is not enabled.
 
         if not self.enabled:
+            return
+
+        # Ensure that we are actually back at the top of
+        # transaction call stack. Assume that it is an
+        # instrumentation error and return with hope that
+        # will recover later.
+
+        if not len(self._node_stack) == 1:
+            _logger.error('Runtime instrumentation error. Exiting the '
+                    'transaction but the node stack is not empty. '
+                    'Node stack is %r. Report this issue to New Relic '
+                    'support.\n%s', self._node_stack, ''.join(
+                    traceback.format_stack()[:-1]))
+
             return
 
         # Mark as stopped and drop the transaction from
@@ -829,8 +847,21 @@ class Transaction(object):
 
     def _pop_current(self, node):
         last = self._node_stack.pop()
-        assert last == node
+
+        try:
+            assert last == node
+
+        except Exception:
+            _logger.error('Runtime instrumentation error. Object on '
+                    'transaction node stack when removing last value is '
+                    'not the expected one, found %r, expected %r. Report '
+                    'this issue to New Relic support.\n%s', last, node,
+                    ''.join(traceback.format_stack()[:-1]))
+
+            raise
+
         parent = self._node_stack[-1]
+
         return parent
 
     def _process_node(self, node):
@@ -932,8 +963,7 @@ class Transaction(object):
 
         print >> file, 'Node Stack:'
         for node in self._node_stack[1:]:
-            node.dump(file)
-
+            print >> file, node
 
 def current_transaction():
     current = transaction_cache().current_transaction()

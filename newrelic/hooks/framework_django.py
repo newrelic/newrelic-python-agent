@@ -735,7 +735,8 @@ def instrument_django_core_servers_basehttp(module):
     # not going to be changed, could just patch it to fix
     # problem and the instrumentation we need.
 
-    if hasattr(module.ServerHandler, 'run'):
+    if (not hasattr(module, 'simple_server') and
+            hasattr(module.ServerHandler, 'run')):
 
         # Patch the server to make it work properly.
 

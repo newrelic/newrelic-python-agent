@@ -70,7 +70,7 @@ _test_application_view_scoped_metrics = [
 if DJANGO_VERSION >= (1, 5):
     if six.PY3:
         _test_application_view_scoped_metrics.extend([
-                ('Function/rest_framework.response:HttpResponseBase.close', 1)])
+                ('Function/django.http.response:HttpResponseBase.close', 1)])
     else:
         _test_application_view_scoped_metrics.extend([
                 ('Function/rest_framework.response:Response.close', 1)])

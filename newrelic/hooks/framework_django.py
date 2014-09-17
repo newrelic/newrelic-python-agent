@@ -949,9 +949,18 @@ def _nr_wrapper_django_template_base_InclusionNode_render_(wrapped,
 def _nr_wrapper_django_template_base_generic_tag_compiler_(wrapped, instance,
         args, kwargs):
 
-    def _bind_params(parser, token, params, varargs, varkw, defaults,
-            name, takes_context, node_class, *args, **kwargs):
-        return node_class
+    if wrapped.__code__.co_argcount > 6:
+        # Django > 1.3.
+
+        def _bind_params(parser, token, params, varargs, varkw, defaults,
+                name, takes_context, node_class, *args, **kwargs):
+            return node_class
+    else:
+        # Django <= 1.3.
+
+        def _bind_params(params, defaults, name, node_class, parser, token,
+                *args, **kwargs):
+            return node_class
 
     node_class = _bind_params(*args, **kwargs)
 

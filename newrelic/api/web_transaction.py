@@ -634,28 +634,40 @@ class _WSGIApplicationIterable(object):
     def __init__(self, transaction, generator):
         self.transaction = transaction
         self.generator = generator
+        self.response_trace = None
 
     def __iter__(self):
         if not self.transaction._sent_start:
             self.transaction._sent_start = time.time()
         try:
-            with FunctionTrace(self.transaction, name='Response',
-                    group='Python/WSGI'):
-                for item in self.generator:
-                    yield item
-                    try:
-                        self.transaction._calls_yield += 1
-                        self.transaction._bytes_sent += len(item)
-                    except Exception:
-                        pass
+            self.response_trace = FunctionTrace(self.transaction,
+                    name='Response', group='Python/WSGI')
+            self.response_trace.__enter__()
+
+            for item in self.generator:
+                yield item
+                try:
+                    self.transaction._calls_yield += 1
+                    self.transaction._bytes_sent += len(item)
+                except Exception:
+                    pass
+
+            self.response_trace.__exit__(None, None, None)
+            self.response_trace = None
+
         except GeneratorExit:
             raise
+
         except:  # Catch all
             self.transaction.record_exception(*sys.exc_info())
             raise
 
     def close(self):
         try:
+            if self.response_trace:
+                self.response_trace.__exit__(None, None, None)
+                self.response_trace = None
+
             with FunctionTrace(self.transaction, name='Finalize',
                     group='Python/WSGI'):
                 if hasattr(self.generator, 'close'):
@@ -666,6 +678,7 @@ class _WSGIApplicationIterable(object):
         except:  # Catch all
             self.transaction.__exit__(*sys.exc_info())
             raise
+
         else:
             self.transaction.__exit__(None, None, None)
             self.transaction._sent_end = time.time()

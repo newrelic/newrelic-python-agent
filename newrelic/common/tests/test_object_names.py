@@ -199,16 +199,28 @@ class TestCallableName(unittest.TestCase):
                 _module_fqdn('_class3._asdict', '<namedtuple__class3>'))
 
     def test_generated_class_instance_instancemethod(self):
-        self.assertEqual(callable_name(_class3(1)._asdict),
-                _module_fqdn('_class3._asdict'))
+        if six.PY3:
+            self.assertEqual(callable_name(_class3(1)._asdict),
+                    _module_fqdn('_class3._asdict', '<namedtuple__class3>'))
+        else:
+            self.assertEqual(callable_name(_class3(1)._asdict),
+                    _module_fqdn('_class3._asdict'))
 
     def test_generated_class_type_staticmethod(self):
-        self.assertEqual(callable_name(_class3._make),
-                _module_fqdn('_class3._make'))
+        if six.PY3:
+            self.assertEqual(callable_name(_class3._make),
+                    _module_fqdn('_class3._make', '<namedtuple__class3>'))
+        else:
+            self.assertEqual(callable_name(_class3._make),
+                    _module_fqdn('_class3._make'))
 
     def test_generated_class_instance_staticmethod(self):
-        self.assertEqual(callable_name(_class3(1)._make),
-                _module_fqdn('_class3._make'))
+        if six.PY3:
+            self.assertEqual(callable_name(_class3(1)._make),
+                    _module_fqdn('_class3._make', '<namedtuple__class3>'))
+        else:
+            self.assertEqual(callable_name(_class3(1)._make),
+                    _module_fqdn('_class3._make'))
 
     def test_function_name_wraps_decorator(self):
         self.assertEqual(callable_name(_function2),

@@ -1973,14 +1973,8 @@
             "wrapt"
         ]
     },
-    "newrelic/packages/wrapt/six.py": {
-        "hash": "653f63e52e678a4f539906b2f2ee61bd",
-        "libraries": [
-            "wrapt"
-        ]
-    },
     "newrelic/packages/wrapt/wrappers.py": {
-        "hash": "71bf176fdb72b37d8dccafd8de81ad04",
+        "hash": "30e22f987724c3324a8fd244561c95fe",
         "libraries": [
             "wrapt"
         ]

@@ -22,7 +22,8 @@ from newrelic.packages.requests import certs
 
 from newrelic import version
 from newrelic.common.encoding_utils import unpack_field
-from newrelic.core.config import global_settings, create_settings_snapshot
+from newrelic.core.config import (global_settings, create_settings_snapshot,
+        global_settings_dump)
 from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
         internal_metric)
 
@@ -659,6 +660,19 @@ class ApplicationSession(object):
         return send_request(session, url, method, license_key,
             agent_run_id, payload)
 
+    @internal_trace('Supportability/Collector/Calls/agent_settings')
+    def agent_settings(self, settings):
+        """Called to report up agent settings after registration.
+
+        """
+
+        #payload = (self.agent_run_id, settings)
+        payload = (settings,)
+
+        return self.send_request(self.requests_session, self.collector_url,
+                'agent_settings', self.license_key, self.agent_run_id,
+                payload)
+
     @internal_trace('Supportability/Collector/Calls/shutdown')
     def shutdown_session(self):
         """Called to perform orderly deregistration of agent run against
@@ -874,7 +888,23 @@ class ApplicationSession(object):
             local_config['identifier'] = ','.join(app_names)
             local_config['agent_version'] = version
             local_config['environment'] = environment
-            local_config['settings'] = settings
+
+            connect_settings = {}
+            security_settings = {}
+
+            connect_settings['browser_monitoring.loader'] = (
+                    settings['browser_monitoring.loader'])
+            connect_settings['browser_monitoring.debug'] = (
+                    settings['browser_monitoring.debug'])
+
+            security_settings['capture_params'] = settings['capture_params']
+            security_settings['transaction_tracer'] = {}
+            security_settings['transaction_tracer']['record_sql'] = (
+                    settings['transaction_tracer.record_sql'])
+
+            local_config['settings'] = connect_settings
+            local_config['security_settings'] = security_settings
+
             local_config['high_security'] = settings['high_security']
             local_config['labels'] = settings['labels']
 
@@ -963,6 +993,8 @@ class ApplicationSession(object):
 
 _developer_mode_responses = {
     'get_redirect_host': u'fake-collector.newrelic.com',
+
+    'agent_settings': [],
 
     'connect': {
         u'js_agent_loader': u'<!-- NREUM -->',
@@ -1056,8 +1088,30 @@ def create_session(license_key, app_name, linked_applications,
     _global_settings = global_settings()
 
     if _global_settings.developer_mode:
-        return DeveloperModeSession.create_session(license_key, app_name,
+        session = DeveloperModeSession.create_session(license_key, app_name,
+                linked_applications, environment, settings)
+    else:
+        session = ApplicationSession.create_session(license_key, app_name,
                 linked_applications, environment, settings)
 
-    return ApplicationSession.create_session(license_key, app_name,
-            linked_applications, environment, settings)
+    # We now need to send up the final merged configuration using the
+    # agent_settings() method. We must make sure we pass the
+    # configuration through global_settings_dump() to strip/mask any
+    # sensitive settings. We also convert values which are strings or
+    # numerics to strings before sending to avoid problems with UI
+    # interpreting the values strangely if sent as native types.
+
+    application_settings = global_settings_dump(session.configuration)
+
+    for key, value in list(six.iteritems(application_settings)):
+        if not isinstance(key, six.string_types):
+            del application_settings[key]
+
+        if (not isinstance(value, six.string_types) and
+                not isinstance(value, float) and
+                not isinstance(value, six.integer_types)):
+            application_settings[key] = repr(value)
+
+    session.agent_settings(application_settings)
+
+    return session

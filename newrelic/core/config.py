@@ -86,6 +86,10 @@ def _environ_as_bool(name, default=False):
             pass
     return flag
 
+def _environ_as_set(name, default=''):
+    value = os.environ.get(name, default)
+    return set(value.split())
+
 def _parse_ignore_status_codes(value, target):
     items = value.split()
     for item in items:
@@ -119,6 +123,8 @@ _LOG_LEVEL = {
 }
 
 _settings.enabled = _environ_as_bool('NEW_RELIC_ENABLED', False)
+
+_settings.feature_flag = _environ_as_set('NEW_RELIC_FEATURE_FLAG', '')
 
 _settings.log_level = os.environ.get('NEW_RELIC_LOG_LEVEL', 'INFO').upper()
 

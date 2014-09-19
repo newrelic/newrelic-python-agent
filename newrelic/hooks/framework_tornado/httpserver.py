@@ -5,13 +5,13 @@ import types
 import itertools
 import traceback
 
-from newrelic.agent import (wrap_function_wrapper, current_transaction,
-        FunctionTrace, wrap_function_trace, callable_name)
+from newrelic.agent import (wrap_function_wrapper, FunctionTrace,
+    wrap_function_trace, callable_name)
 
 from . import (retrieve_request_transaction, initiate_request_monitoring,
     suspend_request_monitoring, resume_request_monitoring,
     finish_request_monitoring, finalize_request_monitoring, request_finished,
-    last_transaction_activation)
+    last_transaction_activation, retrieve_current_transaction)
 
 _logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ def _nr_wrapper_HTTPConnection__on_headers_(wrapped, instance, args, kwargs):
     # don't bother doing anything and just call the wrapped function
     # immediately as can't be sure what else to do.
 
-    transaction = current_transaction()
+    transaction = retrieve_current_transaction()
 
     if transaction is not None:
         _logger.error('Runtime instrumentation error. Starting a new '
@@ -203,7 +203,7 @@ def _nr_wrapper_HTTPConnection__finish_request(wrapped, instance,
     # Deal now with the possibility that the transaction is already the
     # current active transaction.
 
-    if transaction == current_transaction():
+    if transaction == retrieve_current_transaction():
         finish_request_monitoring(request)
 
         return wrapped(*args, **kwargs)
@@ -212,7 +212,7 @@ def _nr_wrapper_HTTPConnection__finish_request(wrapped, instance,
     # we expect, then not sure what we should be doing, so simply
     # return. This should hopefully never occur.
 
-    if current_transaction() is not None:
+    if retrieve_current_transaction() is not None:
         return wrapped(*args, **kwargs)
 
     # Not the current active transaction and so we need to try and

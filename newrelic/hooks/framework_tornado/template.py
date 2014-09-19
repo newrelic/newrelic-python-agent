@@ -1,8 +1,9 @@
-from newrelic.agent import (wrap_function_wrapper, current_transaction,
-    FunctionTrace)
+from newrelic.agent import wrap_function_wrapper, FunctionTrace
+
+from . import retrieve_current_transaction
 
 def template_generate_wrapper(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
+    transaction = retrieve_current_transaction()
 
     if transaction is None:
         return wrapped(*args, **kwargs)

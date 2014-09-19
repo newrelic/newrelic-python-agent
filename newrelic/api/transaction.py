@@ -965,10 +965,11 @@ class Transaction(object):
         for node in self._node_stack[1:]:
             print >> file, node
 
-def current_transaction():
+def current_transaction(active_only=True):
     current = transaction_cache().current_transaction()
-    if current and (current.ignore_transaction or current.stopped):
-        return None
+    if active_only:
+        if current and (current.ignore_transaction or current.stopped):
+            return None
     return current
 
 def transaction():

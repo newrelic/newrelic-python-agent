@@ -3,7 +3,8 @@ import traceback
 import contextlib
 
 from newrelic.agent import (FunctionTrace, WebTransaction,
-    application as application_instance, ignore_status_code, extra_settings)
+    application as application_instance, ignore_status_code, extra_settings,
+    current_transaction)
 
 _boolean_states = {
    '1': True, 'yes': True, 'true': True, 'on': True,
@@ -103,6 +104,16 @@ def request_environment(application, request):
                 result[key] = value
 
     return result
+
+def retrieve_current_transaction():
+    # Retrieves the current transaction regardless of whether it has
+    # been stopped or ignored. We can't just return the current
+    # transaction gated by whether the transaction has been stopped or
+    # is being ignored as that would screw things up because of all the
+    # funny checks we need to do against the transaction when resuming a
+    # transaction and so on.
+
+    return current_transaction(active_only=False)
 
 def retrieve_transaction_request(transaction):
     # Retrieves any request already associated with the transaction.

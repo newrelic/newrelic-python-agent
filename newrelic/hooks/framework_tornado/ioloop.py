@@ -1,8 +1,10 @@
 from newrelic.agent import (wrap_function_trace, wrap_function_wrapper,
-    FunctionTrace, callable_name, current_transaction)
+    FunctionTrace, callable_name)
+
+from . import retrieve_current_transaction
 
 def _nr_wrapper_IOLoop_add_callback_(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
+    transaction = retrieve_current_transaction()
 
     if transaction is None:
         return wrapped(*args, **kwargs)
@@ -20,7 +22,7 @@ def _nr_wrapper_IOLoop_add_callback_(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
 def _nr_wrapper_IOLoop_add_future_(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
+    transaction = retrieve_current_transaction()
 
     if transaction is None:
         return wrapped(*args, **kwargs)

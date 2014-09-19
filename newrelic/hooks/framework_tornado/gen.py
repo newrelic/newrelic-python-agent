@@ -3,11 +3,12 @@ import types
 import logging
 
 from . import (retrieve_transaction_request, resume_request_monitoring,
-        suspend_request_monitoring, record_exception)
+        suspend_request_monitoring, record_exception,
+        retrieve_current_transaction)
 
-from newrelic.agent import (wrap_function_wrapper, current_transaction,
-    FunctionTrace, callable_name, FunctionWrapper, function_wrapper,
-    wrap_object, FunctionTraceWrapper)
+from newrelic.agent import (wrap_function_wrapper, FunctionTrace,
+    callable_name, FunctionWrapper, function_wrapper, wrap_object,
+    FunctionTraceWrapper)
 
 _logger = logging.getLogger(__name__)
 
@@ -28,7 +29,7 @@ def _nr_wrapper_gen_coroutine_generator_(generator):
         value = None
         exc = None
 
-        active_transaction = current_transaction()
+        active_transaction = retrieve_current_transaction()
 
         transaction = None
         request = None
@@ -65,7 +66,7 @@ def _nr_wrapper_gen_coroutine_generator_(generator):
             suspend = None
 
             if name is not None:
-                if current_transaction() is None:
+                if retrieve_current_transaction() is None:
                     transaction = resume_request_monitoring(request)
                     suspend = transaction
                 else:
@@ -129,10 +130,10 @@ def _nr_wrapper_gen_coroutine_generator_(generator):
         generator.close()
 
 def _nr_wrapper_gen_Runner___init___(wrapped, instance, args, kwargs):
-    # This wrapper intercepts the initialisatiom function of the Runner
+    # This wrapper intercepts the initialisation function of the Runner
     # class and wraps the generator.
 
-    transaction = current_transaction()
+    transaction = retrieve_current_transaction()
 
     if transaction is None:
         return wrapped(*args, **kwargs)
@@ -161,7 +162,7 @@ def _nr_wrapper_gen_coroutine_function_(wrapped, instance, args, kwargs):
     # reference to it to allow the transaction to be reinstated across
     # calls of the generator to yield an item.
 
-    transaction = current_transaction()
+    transaction = retrieve_current_transaction()
 
     if transaction is None:
         return wrapped(*args, **kwargs)
@@ -190,7 +191,7 @@ def _nr_wrapper_Task_start_(wrapped, instance, args, kwargs):
     # The Task class executes a callback and we track that as a function
     # trace, naming it after the function the Task holds.
 
-    transaction = current_transaction()
+    transaction = retrieve_current_transaction()
 
     if transaction is None:
         return wrapped(*args, **kwargs)

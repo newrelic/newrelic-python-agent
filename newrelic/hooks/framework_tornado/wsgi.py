@@ -1,11 +1,12 @@
 import sys
 import logging
 
-from newrelic.agent import (wrap_function_wrapper, current_transaction,
-    FunctionTrace, callable_name, wrap_wsgi_application)
+from newrelic.agent import (wrap_function_wrapper, FunctionTrace,
+    callable_name, wrap_wsgi_application)
 
 from . import (retrieve_request_transaction, initiate_request_monitoring,
-    suspend_request_monitoring, finalize_request_monitoring, request_finished)
+    suspend_request_monitoring, finalize_request_monitoring,
+    request_finished, retrieve_current_transaction)
 
 _logger = logging.getLogger(__name__)
 
@@ -81,7 +82,7 @@ def _nr_wrapper_WSGIContainer___call__body_(wrapped, instance, args, kwargs):
 
     request = _params(*args, **kwargs)
 
-    transaction = current_transaction()
+    transaction = retrieve_current_transaction()
 
     transaction.set_transaction_name(request.uri, 'Uri', priority=1)
 
@@ -122,7 +123,7 @@ def _nr_wrapper_WSGIContainer___call___(wrapped, instance, args, kwargs):
 
     transaction = retrieve_request_transaction(request)
 
-    if transaction is None and current_transaction():
+    if transaction is None and retrieve_current_transaction():
         return wrapped(*args, **kwargs)
 
     # Now check for where we are being called on a HTTP request where
@@ -179,7 +180,7 @@ class _WSGIApplication(object):
         self.wsgi_application = wsgi_application 
 
     def __call__(self, environ, start_response): 
-        transaction = current_transaction() 
+        transaction = retrieve_current_transaction() 
 
         if transaction is None: 
             return self.wsgi_application(environ, start_response) 

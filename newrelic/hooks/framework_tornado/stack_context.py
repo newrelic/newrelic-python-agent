@@ -1,12 +1,13 @@
 import sys
 import logging
 
-from newrelic.agent import (wrap_function_wrapper, current_transaction,
-        FunctionTrace, callable_name, FunctionWrapper)
+from newrelic.agent import (wrap_function_wrapper, FunctionTrace,
+    callable_name, FunctionWrapper)
 
 from . import (retrieve_transaction_request, retrieve_request_transaction,
     request_finished, suspend_request_monitoring, resume_request_monitoring,
-    finalize_request_monitoring, record_exception)
+    finalize_request_monitoring, record_exception,
+    retrieve_current_transaction)
 
 _logger = logging.getLogger(__name__)
 
@@ -16,7 +17,7 @@ def callback_wrapper(request):
 
     def _callback_wrapper(wrapped, instance, args, kwargs):
 
-        if current_transaction():
+        if retrieve_current_transaction():
             return wrapped(*args, **kwargs)
 
         transaction = resume_request_monitoring(request)
@@ -50,7 +51,7 @@ def stack_context_wrap_wrapper(wrapped, instance, args, kwargs):
     def _args(fn, *args, **kwargs):
         return fn
 
-    transaction = current_transaction()
+    transaction = retrieve_current_transaction()
 
     if not transaction:
         return wrapped(*args, **kwargs)

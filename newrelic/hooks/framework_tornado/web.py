@@ -2,12 +2,13 @@ import sys
 import itertools
 import logging
 
-from newrelic.agent import (wrap_function_wrapper, current_transaction,
+from newrelic.agent import (wrap_function_wrapper,
     FunctionTrace, callable_name, wrap_function_trace)
 
 from . import (retrieve_request_transaction, initiate_request_monitoring,
     suspend_request_monitoring, resume_request_monitoring,
-    finalize_request_monitoring, record_exception, request_finished)
+    finalize_request_monitoring, record_exception, request_finished,
+    retrieve_current_transaction)
 
 _logger = logging.getLogger(__name__)
 
@@ -18,7 +19,7 @@ def _nr_wrapper_Application___call__wsgi_(wrapped, instance, args, kwargs):
     # the Tornado ASYNC APIs in a WSGI application. It is required that
     # there is already a current active transaction at this point.
 
-    transaction = current_transaction()
+    transaction = retrieve_current_transaction()
 
     with FunctionTrace(transaction, name='Request/Process',
             group='Python/Tornado'):
@@ -87,7 +88,7 @@ def _nr_wrapper_Application___call__body_(wrapped, instance, args, kwargs):
     # associated with the Tornado request object and also a current
     # active transaction.
 
-    transaction = current_transaction()
+    transaction = retrieve_current_transaction()
 
     with FunctionTrace(transaction, name='Request/Process',
             group='Python/Tornado'):
@@ -127,7 +128,7 @@ def _nr_wrapper_Application___call___(wrapped, instance, args, kwargs):
 
     transaction = retrieve_request_transaction(request)
 
-    if transaction is None and current_transaction():
+    if transaction is None and retrieve_current_transaction():
         return _nr_wrapper_Application___call__wsgi_(wrapped, instance,
                 args, kwargs)
 
@@ -160,7 +161,7 @@ def _nr_wrapper_RequestHandler__execute_(wrapped, instance, args, kwargs):
     # of transaction. If we aren't, then we don't bother doing anything and
     # just call the wrapped function.
 
-    transaction = current_transaction()
+    transaction = retrieve_current_transaction()
 
     if transaction is None:
         return wrapped(*args, **kwargs)
@@ -212,7 +213,7 @@ def _nr_wrapper_RequestHandler__handle_request_exception_(wrapped,
     # always be called in the context of an except block and so we can
     # safely use sys.exc_info() to get the actual details.
 
-    transaction = current_transaction()
+    transaction = retrieve_current_transaction()
 
     if transaction is not None:
         record_exception(transaction, sys.exc_info())
@@ -227,7 +228,7 @@ def _nr_wrapper_RequestHandler_render_(wrapped, instance, args, kwargs):
     # that directory if an absolute path is not provided. Thus not being
     # used for now.
 
-    transaction = current_transaction()
+    transaction = retrieve_current_transaction()
 
     if transaction is None:
         return wrapped(*args, **kwargs)
@@ -259,7 +260,7 @@ def _nr_wrapper_RequestHandler_finish_(wrapped, instance, args, kwargs):
 
     transaction = retrieve_request_transaction(request)
 
-    active_transaction = current_transaction()
+    active_transaction = retrieve_current_transaction()
 
     if transaction is None:
         if active_transaction is not None:
@@ -343,7 +344,7 @@ def _nr_wrapper_RequestHandler__generate_headers_(wrapped, instance,
     # to capture any details from them, but we also inject our own
     # additional headers for support cross process transactions etc.
 
-    transaction = current_transaction()
+    transaction = retrieve_current_transaction()
 
     if transaction is None:
         return wrapped(*args, **kwargs)
@@ -391,7 +392,7 @@ def _nr_wrapper_RequestHandler_on_connection_close(wrapped, instance,
     # active transaction when this is called. We track the call of the
     # wrapped method and then finalize the whole transaction.
 
-    transaction = current_transaction()
+    transaction = retrieve_current_transaction()
 
     if transaction:
         return wrapped(*args, **kwargs)

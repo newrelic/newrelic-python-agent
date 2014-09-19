@@ -143,6 +143,7 @@ _test_async_application_engine_external_prepare_get_scoped_metrics = [
     ('Function/_test_async_application:EngineExternalPrepareHandler.get', 1),
 ]
 
+@requires_coroutine
 @setup_application_server
 @raise_background_exceptions()
 @validate_transaction_errors(errors=[])
@@ -227,6 +228,7 @@ _test_async_application_engine_return_get_scoped_metrics = [
     #('Python/Tornado/Callback/Wait', 1),
 ]
 
+@requires_coroutine
 @setup_application_server
 @raise_background_exceptions()
 @validate_transaction_errors(errors=[])

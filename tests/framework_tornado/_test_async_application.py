@@ -86,16 +86,17 @@ class EngineCascadePrepareHandler(tornado.web.RequestHandler):
         add_custom_parameter('callback2', 'value')
         callback()
 
-class EngineExternalPrepareHandler(tornado.web.RequestHandler):
-    def get(self):
-        self.write('PREPARE RESPONSE')
-        add_custom_parameter('get', 'value')
-    @tornado.gen.coroutine
-    def prepare(self):
-        add_custom_parameter('prepare0', 'value')
-        http_client = tornado.httpclient.AsyncHTTPClient()
-        response = yield http_client.fetch("http://example.com")
-        add_custom_parameter('prepare1', 'value')
+if tornado.version_info[:2] >= (3, 0):
+    class EngineExternalPrepareHandler(tornado.web.RequestHandler):
+        def get(self):
+            self.write('PREPARE RESPONSE')
+            add_custom_parameter('get', 'value')
+        @tornado.gen.coroutine
+        def prepare(self):
+            add_custom_parameter('prepare0', 'value')
+            http_client = tornado.httpclient.AsyncHTTPClient()
+            response = yield http_client.fetch("http://example.com")
+            add_custom_parameter('prepare1', 'value')
 
 _TEMPLATE = """
 <html><body>{% block body %} 
@@ -128,16 +129,6 @@ class EngineHandler(tornado.web.RequestHandler):
         time.sleep(0.1)
         callback('DELAY RESPONSE')
 
-class EngineReturnHandler(tornado.web.RequestHandler):
-    @tornado.gen.engine
-    def get(self):
-        result = yield tornado.gen.Task(self.callback)
-        self.write(result)
-        raise tornado.gen.Return(None)
-    def callback(self, callback):
-        time.sleep(0.1)
-        callback('RETURN RESPONSE')
-
 class EngineErrorHandler(tornado.web.RequestHandler):
     @tornado.gen.engine
     def get(self):
@@ -148,6 +139,16 @@ class EngineErrorHandler(tornado.web.RequestHandler):
         callback('ERROR RESPONSE')
 
 if tornado.version_info[:2] >= (3, 0):
+    class EngineReturnHandler(tornado.web.RequestHandler):
+        @tornado.gen.engine
+        def get(self):
+            result = yield tornado.gen.Task(self.callback)
+            self.write(result)
+            raise tornado.gen.Return(None)
+        def callback(self, callback):
+            time.sleep(0.1)
+            callback('RETURN RESPONSE')
+
     class CoroutineHandler(tornado.web.RequestHandler):
         @tornado.gen.coroutine
         def get(self):
@@ -176,30 +177,31 @@ if tornado.version_info[:2] >= (3, 0):
             time.sleep(0.1)
             callback('ERROR RESPONSE')
 
-else:
-    CoroutineHandler = EngineHandler
-    CoroutineReturnHandler = EngineReturnHandler
-    CoroutineErrorHandler = EngineErrorHandler
-
 class Raise404Handler(tornado.web.RequestHandler):
     def get(self):
         raise tornado.web.HTTPError(404)
 
-application = tornado.web.Application([
+_url_mapping = [
     (r'/main', MainHandler),
     (r'/immediate_prepare', ImmediatePrepareHandler),
     (r'/engine_immediate_prepare', EngineImmediatePrepareHandler),
     (r'/engine_multi_list_prepare', EngineMultiListPrepareHandler),
     (r'/engine_multi_yield_prepare', EngineMultiYieldPrepareHandler),
     (r'/engine_cascade_prepare', EngineCascadePrepareHandler),
-    (r'/engine_external_prepare', EngineExternalPrepareHandler),
     (r'/template', TemplateHandler),
     (r'/delay', DelayHandler),
     (r'/engine', EngineHandler),
-    (r'/engine_return', EngineReturnHandler),
     (r'/engine_error', EngineErrorHandler),
-    (r'/coroutine', CoroutineHandler),
-    (r'/coroutine_return', CoroutineReturnHandler),
-    (r'/coroutine_error', CoroutineErrorHandler),
     (r'/raise404', Raise404Handler),
-])
+]
+
+if tornado.version_info[:2] >= (3, 0):
+    _url_mapping.extend([
+        (r'/engine_external_prepare', EngineExternalPrepareHandler),
+        (r'/engine_return', EngineReturnHandler),
+        (r'/coroutine', CoroutineHandler),
+        (r'/coroutine_return', CoroutineReturnHandler),
+        (r'/coroutine_error', CoroutineErrorHandler),
+    ])
+
+application = tornado.web.Application(_url_mapping)

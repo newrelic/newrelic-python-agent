@@ -196,27 +196,13 @@ def _nr_wrapper_RequestHandler__execute_method_(wrapped, instance,
         args, kwargs):
 
     # From Tornado 3.1, the calling of the handler request method is
-    # defered to RequestHandler._exeucte_method(). The wrapped method
-    # dynamically looks up the handler request method based on the
-    # method type of the HTTP request. We need to duplicate that lookup
-    # so we can determine the properly name of the handler request
-    # method. That name is then used in a function trace.
+    # defered to RequestHandler._exeucte_method(). As we wrap the
+    # handler method int RequestHandler.__init__() with a function trace
+    # we technically do not need to do anything here. Keep it as a place
+    # holder for now just in case we do need to do anything here.
 
-    transaction = current_transaction()
+    return wrapped(*args, **kwargs)
 
-    if transaction is None:
-        return wrapped(*args, **kwargs)
-
-    handler = instance
-    request = handler.request
-
-    # XXX Is this now duplicating what is being done in the wrapper for
-    # RequestHandler.__init__().
-
-    name = callable_name(getattr(handler, request.method.lower()))
-
-    with FunctionTrace(transaction, name=name):
-        return wrapped(*args, **kwargs)
 
 def _nr_wrapper_RequestHandler__handle_request_exception_(wrapped,
         instance, args, kwargs):
@@ -448,6 +434,7 @@ def _nr_wrapper_RequestHandler___init___(wrapped, instance, args, kwargs):
     handler = instance
 
     for name in handler.SUPPORTED_METHODS:
+        name = name.lower()
         if hasattr(handler, name):
             wrap_function_trace(instance, name)
 

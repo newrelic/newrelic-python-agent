@@ -885,6 +885,7 @@ class ApplicationSession(object):
             local_config['environment'] = environment
             local_config['settings'] = settings
             local_config['high_security'] = settings['high_security']
+            local_config['labels'] = settings['labels']
 
             display_name = settings['process_host.display_name']
 

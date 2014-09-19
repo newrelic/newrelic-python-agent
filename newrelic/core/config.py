@@ -90,6 +90,21 @@ def _environ_as_set(name, default=''):
     value = os.environ.get(name, default)
     return set(value.split())
 
+def _environ_as_mapping(name, default=''):
+    result = []
+    items = os.environ.get(name, default)
+    for item in items.split(';'):
+        item = item.strip()
+        if not item:
+            continue
+        key, value = item.split(':')
+        key = key.strip()
+        value = value.strip()
+        if not key:
+            continue
+        result.append((key, value))
+    return result
+
 def _parse_ignore_status_codes(value, target):
     items = value.split()
     for item in items:
@@ -150,6 +165,8 @@ _settings.proxy_pass = os.environ.get('NEW_RELIC_PROXY_PASS', None)
 _settings.app_name = os.environ.get('NEW_RELIC_APP_NAME', 'Python Application')
 
 _settings.process_host.display_name = None
+
+_settings.labels = _environ_as_mapping('NEW_RELIC_LABELS', '')
 
 _settings.monitor_mode = _environ_as_bool('NEW_RELIC_MONITOR_MODE', True)
 

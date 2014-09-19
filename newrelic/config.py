@@ -126,6 +126,9 @@ def _map_log_level(s):
 def _map_feature_flag(s):
     return set(s.split())
 
+def _map_labels(s):
+    return newrelic.core.config._environ_as_mapping(s)
+
 def _map_ignored_params(s):
     return s.split()
 
@@ -252,6 +255,8 @@ def _process_configuration(section):
                      'get', _map_feature_flag)
     _process_setting(section, 'app_name',
                      'get', None)
+    _process_setting(section, 'labels',
+                     'get', _map_labels)
     _process_setting(section, 'license_key',
                      'get', None)
     _process_setting(section, 'api_key',
@@ -462,6 +467,34 @@ def _process_app_name_setting():
 
     _settings.app_name = name
 
+def _process_labels_setting():
+    # Do special processing to handle labels. Initially the labels
+    # setting will be a list of key/value tuples. This needs to be
+    # converted into a list of dictionaries. It is also necessary
+    # to eliminate duplicates by taking the last value, plus apply
+    # length limits and limits on the number collected.
+
+    length_limit = 255
+    count_limit = 64
+
+    labels = {}
+
+    for key, value in _settings.labels:
+        key = key[:length_limit]
+        value = value[:length_limit]
+
+        labels[key] = value 
+
+        if len(labels) >= count_limit:
+            break
+
+    result = []
+
+    for key, value in labels.items():
+        result.append(dict(label_type=key, label_value=value))
+
+    _settings.labels = result
+
 def apply_local_high_security_mode_setting(settings):
     # When High Security Mode is activated, certain settings must be
     # set to be secure, even if that requires overriding a setting that
@@ -558,6 +591,11 @@ def _load_configuration(config_file=None, environment=None,
 
         _process_app_name_setting()
 
+        # Look for any labels and translate them into required form
+        # for sending up to data collector on registration.
+
+        _process_labels_setting()
+
         return
 
     _logger.debug("agent configuration file was %s" % config_file)
@@ -636,6 +674,11 @@ def _load_configuration(config_file=None, environment=None,
     # registered linked applications for later handling.
 
     _process_app_name_setting()
+
+    # Look for any labels and translate them into required form
+    # for sending up to data collector on registration.
+
+    _process_labels_setting()
 
     # Instrument with function trace any callables supplied by the
     # user in the configuration.

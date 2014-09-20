@@ -991,9 +991,16 @@ def _nr_wrapper_django_template_base_Library_tag_(wrapped, instance,
     if node_class is None or node_class.__name__ != 'InclusionNode':
         return wrapped(*args, **kwargs)
 
-    frame = sys._getframe(1)
+    # Climb stack to find the file_name of the include template.
+    # While you only have to go up 1 frame when using python with
+    # extensions, pure python requires going up 2 frames.
 
+    frame = sys._getframe(1)
     file_name = frame.f_locals.get('file_name')
+
+    if file_name is None:
+        frame = sys._getframe(2)
+        file_name = frame.f_locals.get('file_name')
 
     if file_name is None:
         return wrapped(*args, **kwargs)

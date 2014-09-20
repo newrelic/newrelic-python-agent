@@ -990,12 +990,12 @@ def _nr_wrapper_django_template_base_Library_tag_(wrapped, instance,
 
         node_class = None
 
-        # Django > 1.3 uses functools.partial
+        # Django >= 1.4 uses functools.partial
 
         if isinstance(compile_function, functools.partial):
             node_class = compile_function.keywords.get('node_class')
 
-        # Django <= 1.3 uses their home-grown "curry" function,
+        # Django < 1.4 uses their home-grown "curry" function,
         # not functools.partial.
 
         if (hasattr(compile_function, 'func_closure')

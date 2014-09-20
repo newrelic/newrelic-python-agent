@@ -1005,16 +1005,16 @@ def _nr_wrapper_django_template_base_Library_tag_(wrapped, instance,
             # compile_function here is generic_tag_compiler(), which has been
             # curried. To get node_class, we first get the function obj, args,
             # and kwargs of the curried function from the cells in
-            # compile_function.func_closure. But, the order of cell_contents
+            # compile_function.func_closure. But, the order of the cells
             # is not consistent from platform to platform, so we need to map
             # them to the variable names in func_code.co_freevars.
 
-            func_obj = dict(zip(compile_function.func_code.co_freevars,
+            cells = dict(zip(compile_function.func_code.co_freevars,
                     (c.cell_contents for c in compile_function.func_closure)))
 
             # node_class is the 4th arg passed to generic_tag_compiler()
 
-            node_class = func_obj['args'][3]
+            node_class = cells['args'][3]
 
         return node_class
 
@@ -1027,12 +1027,14 @@ def _nr_wrapper_django_template_base_Library_tag_(wrapped, instance,
     # While you only have to go up 1 frame when using python with
     # extensions, pure python requires going up 2 frames.
 
-    frame = sys._getframe(1)
-    file_name = frame.f_locals.get('file_name')
+    file_name = None
+    stack_levels = 2
 
-    if file_name is None:
-        frame = sys._getframe(2)
+    for i in range(1, stack_levels + 1):
+        frame = sys._getframe(i)
         file_name = frame.f_locals.get('file_name')
+        if file_name:
+            break
 
     if file_name is None:
         return wrapped(*args, **kwargs)

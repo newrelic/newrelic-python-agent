@@ -219,11 +219,8 @@ _test_application_inclusion_tag_scoped_metrics = [
         ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_response', 1),
         ('Function/django.middleware.common:CommonMiddleware.process_response', 1),
         ('Function/newrelic.hooks.framework_django:browser_timing_middleware', 1),
-        ('Template/Render/main.html', 1)]
-
-if DJANGO_VERSION >= (1, 4):
-    _test_application_inclusion_tag_scoped_metrics.extend([
-            ('Template/Include/results.html', 1)])
+        ('Template/Render/main.html', 1),
+        ('Template/Include/results.html', 1)]
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:inclusion_tag',

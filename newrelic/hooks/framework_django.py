@@ -983,10 +983,42 @@ def _nr_wrapper_django_template_base_Library_tag_(wrapped, instance,
 
     compile_function = _bind_params(*args, **kwargs)
 
-    if not isinstance(compile_function, functools.partial):
+    if not callable(compile_function):
         return wrapped(*args, **kwargs)
 
-    node_class = compile_function.keywords.get('node_class')
+    def _get_node_class(compile_function):
+
+        node_class = None
+
+        # Django > 1.3 uses functools.partial
+
+        if isinstance(compile_function, functools.partial):
+            node_class = compile_function.keywords.get('node_class')
+
+        # Django <= 1.3 uses their home-grown "curry" function,
+        # not functools.partial.
+
+        if (hasattr(compile_function, 'func_closure')
+                and hasattr(compile_function, 'func_name')
+                and compile_function.func_name == '_curried'):
+
+            # compile_function here is generic_tag_compiler(), which has been
+            # curried. To get node_class, we first get the function obj, args,
+            # and kwargs of the curried function from the cells in
+            # compile_function.func_closure. But, the order of cell_contents
+            # is not consistent from platform to platform, so we need to map
+            # them to the variable names in func_code.co_freevars.
+
+            func_obj = dict(zip(compile_function.func_code.co_freevars,
+                    (c.cell_contents for c in compile_function.func_closure)))
+
+            # node_class is the 4th arg passed to generic_tag_compiler()
+
+            node_class = func_obj['args'][3]
+
+        return node_class
+
+    node_class = _get_node_class(compile_function)
 
     if node_class is None or node_class.__name__ != 'InclusionNode':
         return wrapped(*args, **kwargs)

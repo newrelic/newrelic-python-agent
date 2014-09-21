@@ -1,13 +1,14 @@
 import webtest
 
 from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors, override_application_settings)
+    validate_transaction_errors, override_application_settings,
+    override_settings)
 
 from wsgi import application
 
 from newrelic.packages import six
-
 from newrelic.agent import application_settings
+from newrelic.hooks.framework_django import django_settings
 
 import json
 
@@ -226,5 +227,38 @@ _test_application_inclusion_tag_scoped_metrics = [
 @validate_transaction_metrics('views:inclusion_tag',
         scoped_metrics=_test_application_inclusion_tag_scoped_metrics)
 def test_application_inclusion_tag():
+    response = test_application.get('/inclusion_tag')
+    response.mustcontain('Inclusion tag')
+
+_test_inclusion_tag_template_tags_scoped_metrics = [
+        ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
+        ('Python/WSGI/Application', 1),
+        ('Python/WSGI/Response', 1),
+        ('Python/WSGI/Finalize', 1),
+        ('Function/views:inclusion_tag', 1),
+        ('Function/django.middleware.common:CommonMiddleware.process_request', 1),
+        ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_request', 1),
+        ('Function/django.contrib.auth.middleware:AuthenticationMiddleware.process_request', 1),
+        ('Function/django.contrib.messages.middleware:MessageMiddleware.process_request', 1),
+        ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 2),
+        ('Function/django.middleware.csrf:CsrfViewMiddleware.process_view', 1),
+        ('Function/django.contrib.messages.middleware:MessageMiddleware.process_response', 1),
+        ('Function/django.middleware.csrf:CsrfViewMiddleware.process_response', 1),
+        ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_response', 1),
+        ('Function/django.middleware.common:CommonMiddleware.process_response', 1),
+        ('Function/newrelic.hooks.framework_django:browser_timing_middleware', 1),
+        ('Template/Render/main.html', 1),
+        ('Template/Include/results.html', 1),
+        ('Template/Tag/show_results', 1)]
+
+_test_inclusion_tag_settings = {
+    'instrumentation.templates.inclusion_tag': '*'
+}
+
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics('views:inclusion_tag',
+        scoped_metrics=_test_inclusion_tag_template_tags_scoped_metrics)
+@override_settings(_test_inclusion_tag_settings, django_settings)
+def test_inclusion_tag_template_tag_metric():
     response = test_application.get('/inclusion_tag')
     response.mustcontain('Inclusion tag')

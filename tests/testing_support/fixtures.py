@@ -410,9 +410,9 @@ def validate_database_trace_inputs(sql_parameters_type):
 
     return _validate_database_trace_inputs
 
-def override_application_settings(settings):
+def override_settings(settings, settings_object=None):
     @function_wrapper
-    def _override_application_settings(wrapped, instance, args, kwargs):
+    def _override_settings(wrapped, instance, args, kwargs):
         try:
             # This is a bit horrible as the one settings object, has
             # references from a number of different places. We have to
@@ -420,7 +420,11 @@ def override_application_settings(settings):
             # when done clear the top level settings object and rebuild
             # it when done.
 
-            original = application_settings()
+            if settings_object is None:
+                original = application_settings()
+            else:
+                original = settings_object
+
             backup = dict(original)
             for name, value in settings.items():
                 apply_config_setting(original, name, value)
@@ -430,7 +434,12 @@ def override_application_settings(settings):
             for name, value in backup.items():
                 apply_config_setting(original, name, value)
 
-    return _override_application_settings
+    return _override_settings
+
+# Keep old function name around for now, before replacing it with
+# override_settings in all tests.
+
+override_application_settings = override_settings
 
 def override_ignore_status_codes(status_codes):
     @function_wrapper

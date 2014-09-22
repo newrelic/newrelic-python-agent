@@ -2,7 +2,7 @@ import webtest
 
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, override_application_settings,
-    override_settings)
+    override_generic_settings)
 
 from wsgi import application
 
@@ -258,7 +258,7 @@ _test_inclusion_tag_settings = {
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:inclusion_tag',
         scoped_metrics=_test_inclusion_tag_template_tags_scoped_metrics)
-@override_settings(_test_inclusion_tag_settings, django_settings)
+@override_generic_settings(django_settings, _test_inclusion_tag_settings)
 def test_inclusion_tag_template_tag_metric():
     response = test_application.get('/inclusion_tag')
     response.mustcontain('Inclusion tag')

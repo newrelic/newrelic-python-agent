@@ -410,9 +410,9 @@ def validate_database_trace_inputs(sql_parameters_type):
 
     return _validate_database_trace_inputs
 
-def override_settings(settings, settings_object=None):
+def override_application_settings(overrides):
     @function_wrapper
-    def _override_settings(wrapped, instance, args, kwargs):
+    def _override_application_settings(wrapped, instance, args, kwargs):
         try:
             # This is a bit horrible as the one settings object, has
             # references from a number of different places. We have to
@@ -420,13 +420,9 @@ def override_settings(settings, settings_object=None):
             # when done clear the top level settings object and rebuild
             # it when done.
 
-            if settings_object is None:
-                original = application_settings()
-            else:
-                original = settings_object
-
+            original = application_settings()
             backup = dict(original)
-            for name, value in settings.items():
+            for name, value in overrides.items():
                 apply_config_setting(original, name, value)
             return wrapped(*args, **kwargs)
         finally:
@@ -434,12 +430,30 @@ def override_settings(settings, settings_object=None):
             for name, value in backup.items():
                 apply_config_setting(original, name, value)
 
-    return _override_settings
+    return _override_application_settings
 
-# Keep old function name around for now, before replacing it with
-# override_settings in all tests.
+def override_generic_settings(settings_object, overrides):
+    @function_wrapper
+    def _override_generic_settings(wrapped, instance, args, kwargs):
+        try:
+            # This is a bit horrible as in some cases a settings object may
+            # have references from a number of different places. We have
+            # to create a copy, overlay the temporary settings and then
+            # when done clear the top level settings object and rebuild
+            # it when done.
 
-override_application_settings = override_settings
+            original = settings_object
+
+            backup = dict(original)
+            for name, value in overrides.items():
+                apply_config_setting(original, name, value)
+            return wrapped(*args, **kwargs)
+        finally:
+            original.__dict__.clear()
+            for name, value in backup.items():
+                apply_config_setting(original, name, value)
+
+    return _override_generic_settings
 
 def override_ignore_status_codes(status_codes):
     @function_wrapper

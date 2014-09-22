@@ -66,12 +66,12 @@ _test_application = webtest.TestApp('http://localhost:8889')
 
 test_wsgi_fallback_handler_get_scoped_metrics = [
     ('Python/Tornado/Request/Process', 2),
-    (select_python_version(
-        py2='Function/tornado.web:FallbackHandler.prepare',
-        py3='Function/tornado.web:RequestHandler.prepare'), 1),
-    (select_python_version(
-        py2='Function/tornado.web:FallbackHandler.get',
-        py3='Function/tornado.web:RequestHandler.get'), 1),
+    #(select_python_version(
+    #    py2='Function/tornado.web:FallbackHandler.prepare',
+    #    py3='Function/tornado.web:RequestHandler.prepare'), 1),
+    #(select_python_version(
+    #    py2='Function/tornado.web:FallbackHandler.get',
+    #    py3='Function/tornado.web:RequestHandler.get'), 1),
     ('Function/test_wsgi_fallback_handler:wsgi_application', 1),
     ('Python/WSGI/Application', 1),
     ('Python/WSGI/Response', 1),
@@ -89,12 +89,12 @@ def test_wsgi_fallback_handler_get():
 
 test_wsgi_fallback_handler_post_scoped_metrics = [
     ('Python/Tornado/Request/Process', 2),
-    (select_python_version(
-        py2='Function/tornado.web:FallbackHandler.prepare',
-        py3='Function/tornado.web:RequestHandler.prepare'), 1),
-    (select_python_version(
-        py2='Function/tornado.web:FallbackHandler.post',
-        py3='Function/tornado.web:RequestHandler.post'), 1),
+    #(select_python_version(
+    #    py2='Function/tornado.web:FallbackHandler.prepare',
+    #    py3='Function/tornado.web:RequestHandler.prepare'), 1),
+    #(select_python_version(
+    #    py2='Function/tornado.web:FallbackHandler.post',
+    #    py3='Function/tornado.web:RequestHandler.post'), 1),
     ('Function/test_wsgi_fallback_handler:wsgi_application', 1),
     ('Python/WSGI/Application', 1),
     ('Python/WSGI/Response', 1),

@@ -344,6 +344,8 @@ def _process_configuration(section):
                      'get', _map_browser_monitoring_content_type),
     _process_setting(section, 'slow_sql.enabled',
                      'getboolean', None)
+    _process_setting(section, 'synthetics.enabled',
+                     'getboolean', None)
     _process_setting(section, 'analytics_events.enabled',
                      'getboolean', None),
     _process_setting(section, 'analytics_events.capture_attributes',
@@ -387,6 +389,10 @@ def _process_configuration(section):
     _process_setting(section, 'agent_limits.xray_profile_overhead',
                      'getfloat', None)
     _process_setting(section, 'agent_limits.xray_profile_maximum',
+                     'getint', None)
+    _process_setting(section, 'agent_limits.synthetics_events',
+                     'getint', None)
+    _process_setting(section, 'agent_limits.synthetics_transactions',
                      'getint', None)
     _process_setting(section, 'console.listener_socket',
                      'get', _map_console_listener_socket)

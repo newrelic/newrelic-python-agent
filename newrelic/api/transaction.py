@@ -146,6 +146,11 @@ class Transaction(object):
         self.referring_transaction_guid = None
         self.record_tt = False
 
+        self.synthetics_resource_id = None
+        self.synthetics_job_id = None
+        self.synthetics_monitor_id = None
+        self.synthetics_header = None
+
         self._custom_metrics = CustomMetrics()
 
         self._profile_samples = deque()
@@ -473,6 +478,10 @@ class Transaction(object):
                 client_cross_process_id=self.client_cross_process_id,
                 referring_transaction_guid=self.referring_transaction_guid,
                 record_tt = self.record_tt,
+                synthetics_resource_id = self.synthetics_resource_id,
+                synthetics_job_id = self.synthetics_job_id,
+                synthetics_monitor_id = self.synthetics_monitor_id,
+                synthetics_header = self.synthetics_header,
                 )
 
         # Clear settings as we are all done and don't need it
@@ -903,8 +912,8 @@ class Transaction(object):
         self._cpu_user_time_end = os.times()[0]
 
     def add_custom_parameter(self, name, value):
-        if not self._settings: 
-            return 
+        if not self._settings:
+            return
 
         if not self._settings.high_security:
             self._custom_params[name] = value

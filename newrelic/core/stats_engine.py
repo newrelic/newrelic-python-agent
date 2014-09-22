@@ -277,6 +277,8 @@ class StatsEngine(object):
         self.__slow_transaction_dry_harvests = 0
         self.__transaction_errors = []
         self.__metric_ids = {}
+        self.__synthetics_events = []
+        self.__synthetics_transactions = []
         self.__browser_transactions = []
         self.__xray_transactions = []
         self.xray_sessions = {}
@@ -304,6 +306,14 @@ class StatsEngine(object):
     @property
     def sampled_data_set(self):
         return self.__sampled_data_set
+
+    @property
+    def synthetics_events(self):
+        return self.__synthetics_events
+
+    @property
+    def synthetics_transactions(self):
+        return self.__synthetics_transactions
 
     def update_metric_ids(self, metric_ids):
         """Updates the dictionary containing the mappings from metric
@@ -669,6 +679,20 @@ class StatsEngine(object):
         if len(self.__browser_transactions) < maximum:
             self.__browser_transactions.append(transaction)
 
+    def _update_synthetics_transaction(self, transaction):
+        """Check if transaction is a synthetics trace and save it to
+        __synthetics_transactions.
+        """
+
+        settings = self.__settings
+
+        if not transaction.synthetics_resource_id:
+            return
+
+        maximum = settings.agent_limits.synthetics_transactions
+        if len(self.__synthetics_transactions) < maximum:
+            self.__synthetics_transactions.append(transaction)
+
     @internal_trace('Supportability/StatsEngine/Calls/record_transaction')
     def record_transaction(self, transaction):
         """Record any apdex and time metrics for the transaction as
@@ -745,10 +769,11 @@ class StatsEngine(object):
         if (not transaction.suppress_transaction_trace and
                     transaction_tracer.enabled and settings.collect_traces):
 
-            # Transactions saved for xray session do not depend on the
-            # transaction threshold.
+            # Transactions saved for xray session and Synthetics transactions
+            # do not depend on the transaction threshold.
 
             self._update_xray_transaction(transaction)
+            self._update_synthetics_transaction(transaction)
 
             threshold = transaction_tracer.transaction_threshold
 
@@ -759,56 +784,88 @@ class StatsEngine(object):
                 self._update_slow_transaction(transaction)
                 self._update_browser_transaction(transaction)
 
+        # Create the analytic (transaction) event and add it to the
+        # appropriate "bucket." Synthetic requests are saved in one,
+        # while transactions from regular requests are saved in another.
+
+        if transaction.synthetics_resource_id:
+            if (len(self.__synthetics_events) <
+                    settings.agent_limits.synthetics_events):
+
+                event = self.create_analytic_event(transaction)
+                self.__synthetics_events.append(event)
+
+        elif (settings.collect_analytics_events and
+                settings.analytics_events.enabled):
+
+            if settings.analytics_events.transactions.enabled:
+
+                event = self.create_analytic_event(transaction)
+                self.__sampled_data_set.add(event)
+
+    def create_analytic_event(self, transaction):
         # Create the transaction record summarising key data for later
         # analytics. Only do this for web transaction at this point as
         # not sure if needs to be done for other transactions as field
         # names in record are based on web transaction metric names.
 
-        if (settings.collect_analytics_events and
-                settings.analytics_events.enabled):
-            
-            if settings.analytics_events.transactions.enabled:
-                record = {}
-                params = {}
+        if not self.__settings:
+            return
 
-                # First remember users custom parameters. We only
-                # retain any which have string type for key and
-                # string or numeric for value.
+        settings = self.__settings
 
-                if settings.analytics_events.capture_attributes:
-                    for key, value in transaction.custom_params.items():
-                        if not isinstance(key, six.string_types):
-                            continue
-                        if (not isinstance(value, six.string_types) and
-                                not isinstance(value, float) and
-                                not isinstance(value, six.integer_types)):
-                            continue
-                        params[key] = value
+        record = {}
+        params = {}
 
-                # Now we add the agents own values so they
-                # overwrite users values if same key name used.
+        # First remember users custom parameters. We only
+        # retain any which have string type for key and
+        # string or numeric for value.
 
-                name = self.__sampled_data_set.intern(transaction.path)
+        if settings.analytics_events.capture_attributes:
+            for key, value in transaction.custom_params.items():
+                if not isinstance(key, six.string_types):
+                    continue
+                if (not isinstance(value, six.string_types) and
+                        not isinstance(value, float) and
+                        not isinstance(value, six.integer_types)):
+                    continue
+                params[key] = value
 
-                record['type'] = 'Transaction'
-                record['name'] = name
-                record['timestamp'] = transaction.start_time
-                record['duration'] = transaction.duration
+        # Now we add the agents own values so they
+        # overwrite users values if same key name used.
 
-                def _update_entry(source, target):
-                    try:
-                        record[target] = self.__stats_table[
-                                (source, '')].total_call_time
-                    except KeyError:
-                        pass
+        name = self.__sampled_data_set.intern(transaction.path)
 
-                _update_entry('WebFrontend/QueueTime', 'queueDuration')
+        record['type'] = 'Transaction'
+        record['name'] = name
+        record['timestamp'] = transaction.start_time
+        record['duration'] = transaction.duration
+        record['nr.guid'] = transaction.guid
 
-                _update_entry('External/all', 'externalDuration')
-                _update_entry('Database/all', 'databaseDuration')
-                _update_entry('Memcache/all', 'memcacheDuration')
+        # Add the Synthetics attributes to the 'records' dict.
 
-                self.__sampled_data_set.add([record, params])
+        if transaction.synthetics_resource_id:
+            txn = transaction
+            record['nr.syntheticsResourceId'] = txn.synthetics_resource_id
+            record['nr.syntheticsJobId'] = txn.synthetics_job_id
+            record['nr.syntheticsMonitorId'] = txn.synthetics_monitor_id
+
+        def _update_entry(source, target):
+            try:
+                record[target] = self.__stats_table[
+                        (source, '')].total_call_time
+            except KeyError:
+                pass
+
+        _update_entry('WebFrontend/QueueTime', 'queueDuration')
+
+        _update_entry('External/all', 'externalDuration')
+        _update_entry('Database/all', 'databaseDuration')
+        _update_entry('Memcache/all', 'memcacheDuration')
+
+        analytic_event = [record, params]
+        return analytic_event
+
 
     @internal_trace('Supportability/StatsEngine/Calls/metric_data')
     def metric_data(self, normalizer=None):
@@ -968,14 +1025,15 @@ class StatsEngine(object):
             return []
 
         # Create a set 'traces' that is a union of slow transaction,
-        # browser_transactions and xray_transactions. This ensures we don't
-        # send duplicates of a transaction.
+        # browser_transactions, xray_transactions, and Synthetics
+        # transactions. This ensures we don't send duplicates of a transaction.
 
         traces = set()
         if self.__slow_transaction:
             traces.add(self.__slow_transaction)
         traces.update(self.__browser_transactions)
         traces.update(self.__xray_transactions)
+        traces.update(self.__synthetics_transactions)
 
         # Return an empty list if no transactions were captured.
 
@@ -1079,7 +1137,8 @@ class StatsEngine(object):
                     trace.guid,
                     None,
                     force_persist,
-                    xray_id,])
+                    xray_id,
+                    trace.synthetics_resource_id,])
 
         return trace_data
 
@@ -1165,6 +1224,8 @@ class StatsEngine(object):
         self.__slow_transaction_old_duration = None
         self.__transaction_errors = []
         self.__metric_ids = {}
+        self.__synthetics_events = []
+        self.__synthetics_transactions = []
         self.__browser_transactions = []
         self.__xray_transactions = []
         self.xray_sessions = {}
@@ -1194,6 +1255,13 @@ class StatsEngine(object):
                     self.__settings.analytics_events.max_samples_stored)
         else:
             self.__sampled_data_set = SampledDataSet()
+
+    def reset_synthetics_events(self):
+        """Resets the accumulated statistics back to initial state for
+        Synthetics events data.
+
+        """
+        self.__synthetics_events = []
 
     def harvest_snapshot(self):
         """Creates a snapshot of the accumulated statistics, error
@@ -1255,6 +1323,8 @@ class StatsEngine(object):
         self.__transaction_errors = []
         self.__browser_transactions = []
         self.__xray_transactions = []
+        self.__synthetics_events = []
+        self.__synthetics_transactions = []
 
         if self.__settings is not None:
             self.__sampled_data_set = SampledDataSet(
@@ -1307,7 +1377,7 @@ class StatsEngine(object):
 
     def merge_other_stats(self, snapshot, merge_traces=True,
             merge_errors=True, merge_sql=True, merge_samples=True,
-            rollback=False):
+            merge_synthetics_events=True, rollback=False):
 
         """Merges non metric data from a snapshot. This would only be
         used when merging data from a single transaction into main
@@ -1348,6 +1418,20 @@ class StatsEngine(object):
                 if snapshot.__sampled_data_set.count == 1:
                     self.__sampled_data_set.add(
                             snapshot.__sampled_data_set.samples[0])
+
+        # Merge Synthetic analytic events, following same rules as for
+        # sampled data set described above.
+
+        if merge_synthetics_events:
+            if rollback:
+                self.__synthetics_events.extend(snapshot.__synthetics_events)
+            else:
+                if len(snapshot.__synthetics_events) == 1:
+                    self.__synthetics_events.append(
+                        snapshot.__synthetics_events[0])
+
+            maximum = settings.agent_limits.synthetics_events
+            self.__synthetics_events = self.__synthetics_events[:maximum]
 
         # Append snapshot error details at end to maintain time
         # based order and then trim at maximum to be kept.
@@ -1399,6 +1483,14 @@ class StatsEngine(object):
             for txn in self.__xray_transactions[maximum:]:
                 txn.xray_id = None
             self.__xray_transactions = self.__xray_transactions[:maximum]
+
+            # Limit number of Synthetics transactions
+
+            maximum = settings.agent_limits.synthetics_transactions
+            self.__synthetics_transactions.extend(
+                    snapshot.__synthetics_transactions)
+            synthetics_slice = self.__synthetics_transactions[:maximum]
+            self.__synthetics_transactions = synthetics_slice
 
             transaction = snapshot.__slow_transaction
 

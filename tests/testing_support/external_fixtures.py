@@ -4,7 +4,7 @@ except ImportError:
     import httplib
 
 from newrelic.agent import (transient_function_wrapper, current_transaction,
-    function_wrapper)
+    function_wrapper, ExternalTrace)
 
 from newrelic.common.encoding_utils import (json_encode, json_decode,
     obfuscate, deobfuscate)
@@ -119,3 +119,30 @@ def validate_external_node_params(params=[]):
         return result
 
     return _validate_external_node_params
+
+def validate_synthetics_external_trace_header(required_header=(),
+        should_exist=True):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_synthetics_external_trace_header(wrapped, instance,
+            args, kwargs):
+        def _bind_params(transaction, *args, **kwargs):
+            return transaction
+
+        transaction = _bind_params(*args, **kwargs)
+
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            if should_exist:
+                external_headers = ExternalTrace.generate_request_headers(
+                        transaction)
+                assert required_header in external_headers, (
+                        'required_header=%r, ''external_headers=%r' % (
+                        header, external_headers))
+
+        return result
+
+    return _validate_synthetics_external_trace_header

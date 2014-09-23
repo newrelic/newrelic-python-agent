@@ -12,6 +12,10 @@ from newrelic.common.object_names import callable_name
 
 def _function1(self): pass
 
+def _function_a(a): pass
+
+_partial_function1 = functools.partial(_function_a, a=1)
+
 class _class1():
 
     def _function1(self): pass
@@ -99,6 +103,10 @@ class TestCallableName(unittest.TestCase):
     def test_function_name(self):
         self.assertEqual(callable_name(_function1),
                 _module_fqdn('_function1'))
+
+    def test_function_partial(self):
+        self.assertEqual(callable_name(_partial_function1),
+                _module_fqdn('_function_a'))
 
     def test_old_class_type(self):
         self.assertEqual(callable_name(_class1),

@@ -12,7 +12,7 @@ from newrelic.packages import six
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, raise_background_exceptions)
 
-from newrelic.agent import function_wrapper
+from newrelic.agent import function_wrapper, callable_name
 
 requires_coroutine = pytest.mark.skipif(tornado.version_info[:2] < (3, 0),
     reason="Tornado only added gen.coroutine in 3.0.")
@@ -22,21 +22,19 @@ def select_python_version(py2, py3):
 
 def py2_ioloop_metric_name(method_name=None):
 
-    # IOLoop class name can vary in Python 2:
+    # IOLoop class name can vary in Python 2, depending
+    # on Tornado version and how IO is done:
+    #
     #   kqueue (BSD and Mac OS X)
     #   epoll (Linux)
     #   select (default fallback)
 
-    metric_format = 'Function/tornado.platform.%s:%sIOLoop'
-
-    if hasattr(select, 'epoll'):
-        values = ('epoll', 'EPoll')
-    elif hasattr(select, 'kqueue'):
-        values = ('kqueue', 'KQueue')
+    if tornado.version_info[:2] >= (3, 0):
+        ioloop_cls = tornado.ioloop.IOLoop.configured_class()
     else:
-        values = ('select', 'Select')
+        ioloop_cls = tornado.ioloop.IOLoop
 
-    metric_name = metric_format % values
+    metric_name = 'Function/%s' % callable_name(ioloop_cls)
 
     if method_name:
         metric_name = '%s.%s' % (metric_name, method_name)
@@ -202,6 +200,11 @@ def test_async_application_template_get():
 
 _py2_ioloop_add_timeout_metric_name = py2_ioloop_metric_name('add_timeout')
 
+if tornado.version_info[:2] >= (3, 0):
+    _py3_ioloop_add_timeout_metric_name = 'Function/tornado.ioloop:PollIOLoop.add_timeout'
+else:
+    _py3_ioloop_add_timeout_metric_name = 'Function/tornado.ioloop:IOLoop.add_timeout'
+
 _test_async_application_delay_get_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
     ('Function/_test_async_application:DelayHandler.get', 1),
@@ -210,7 +213,7 @@ _test_async_application_delay_get_scoped_metrics = [
         py3='Function/tornado.web:RequestHandler.finish'), 1),
     (select_python_version(
         py2=_py2_ioloop_add_timeout_metric_name,
-        py3='Function/tornado.ioloop:PollIOLoop.add_timeout'), 1),
+        py3=_py3_ioloop_add_timeout_metric_name), 1),
     ('Python/Tornado/Callback/Wait', 1),
 ]
 

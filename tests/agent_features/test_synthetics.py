@@ -19,7 +19,8 @@ SYNTHETICS_MONITOR_ID = 'dc452ae9-1a93-4ab5-8a33-600521e9cd00'
 
 _override_settings = {
     'encoding_key': ENCODING_KEY,
-    'trusted_account_ids': [int(ACCOUNT_ID)]
+    'trusted_account_ids': [int(ACCOUNT_ID)],
+    'synthetics.enabled': True,
 }
 
 def make_synthetics_header(version='1', account_id=ACCOUNT_ID,
@@ -160,6 +161,7 @@ _custom_settings = {
     'trusted_account_ids': [int(ACCOUNT_ID)],
     'agent_limits.synthetics_events': 5,
     'agent_limits.synthetics_transactions': 3,
+    'synthetics.enabled': True,
 }
 
 @pytest.mark.parametrize('num_requests,num_events,num_transactions', [
@@ -178,6 +180,7 @@ _zero_settings = {
     'trusted_account_ids': [int(ACCOUNT_ID)],
     'agent_limits.synthetics_events': 0,
     'agent_limits.synthetics_transactions': 0,
+    'synthetics.enabled': True,
 }
 
 @pytest.mark.parametrize('num_requests,num_events,num_transactions', [

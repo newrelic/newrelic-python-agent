@@ -12,6 +12,10 @@ from newrelic.common.object_names import callable_name
 
 def _function1(self): pass
 
+def _function_a(a): pass
+
+_partial_function1 = functools.partial(_function_a, a=1)
+
 class _class1():
 
     def _function1(self): pass
@@ -99,6 +103,10 @@ class TestCallableName(unittest.TestCase):
     def test_function_name(self):
         self.assertEqual(callable_name(_function1),
                 _module_fqdn('_function1'))
+
+    def test_function_partial(self):
+        self.assertEqual(callable_name(_partial_function1),
+                _module_fqdn('_function_a'))
 
     def test_old_class_type(self):
         self.assertEqual(callable_name(_class1),
@@ -199,16 +207,28 @@ class TestCallableName(unittest.TestCase):
                 _module_fqdn('_class3._asdict', '<namedtuple__class3>'))
 
     def test_generated_class_instance_instancemethod(self):
-        self.assertEqual(callable_name(_class3(1)._asdict),
-                _module_fqdn('_class3._asdict'))
+        if six.PY3:
+            self.assertEqual(callable_name(_class3(1)._asdict),
+                    _module_fqdn('_class3._asdict', '<namedtuple__class3>'))
+        else:
+            self.assertEqual(callable_name(_class3(1)._asdict),
+                    _module_fqdn('_class3._asdict'))
 
     def test_generated_class_type_staticmethod(self):
-        self.assertEqual(callable_name(_class3._make),
-                _module_fqdn('_class3._make'))
+        if six.PY3:
+            self.assertEqual(callable_name(_class3._make),
+                    _module_fqdn('_class3._make', '<namedtuple__class3>'))
+        else:
+            self.assertEqual(callable_name(_class3._make),
+                    _module_fqdn('_class3._make'))
 
     def test_generated_class_instance_staticmethod(self):
-        self.assertEqual(callable_name(_class3(1)._make),
-                _module_fqdn('_class3._make'))
+        if six.PY3:
+            self.assertEqual(callable_name(_class3(1)._make),
+                    _module_fqdn('_class3._make', '<namedtuple__class3>'))
+        else:
+            self.assertEqual(callable_name(_class3(1)._make),
+                    _module_fqdn('_class3._make'))
 
     def test_function_name_wraps_decorator(self):
         self.assertEqual(callable_name(_function2),

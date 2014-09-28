@@ -99,7 +99,7 @@ def GeneratorTraceWrapper(wrapped, name=None, group=None, label=None,
             try:
                 result = wrapped(*args, **kwargs)
 
-            except Exception:
+            except:  # Catch all
                 raise
 
             else:

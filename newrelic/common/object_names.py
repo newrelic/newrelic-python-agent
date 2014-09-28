@@ -5,6 +5,7 @@
 import sys
 import types
 import inspect
+import functools
 
 from ..packages import six
 
@@ -225,20 +226,7 @@ def _object_context_py3(object):
 
     # Now calculate the name of the module object is defined in.
 
-    owner = None
-
-    if inspect.ismethod(object):
-        if object.__self__ is not None:
-            cname = getattr(object.__self__, '__name__', None)
-            if cname is None:
-                owner = object.__self__.__class__
-            else:
-                owner = object.__self__
-
-        else:
-            owner = object.__self__
-
-    mname = _module_name(owner or object)
+    mname = _module_name(object)
 
     return (mname, path)
 
@@ -247,6 +235,12 @@ def object_context(target):
     the form (module, object_path).
 
     """
+
+    # Check whether the target is a functools.partial so we
+    # can actually extract the contained function and use it.
+
+    if isinstance(target, functools.partial):
+        target = target.func
 
     # Check whether we have previously calculated the name
     # details for the target object and cached it against the

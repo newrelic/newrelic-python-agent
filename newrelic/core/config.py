@@ -50,6 +50,7 @@ class XraySessionSettings(Settings): pass
 class AnalyticsEventsSettings(Settings): pass
 class AnalyticsEventsTransactionsSettings(Settings): pass
 class ProcessHostSettings(Settings): pass
+class SyntheticsSettings(Settings): pass
 
 _settings = Settings()
 _settings.thread_profiler = ThreadProfilerSettings()
@@ -68,6 +69,7 @@ _settings.cross_application_tracer = CrossApplicationTracerSettings()
 _settings.analytics_events = AnalyticsEventsSettings()
 _settings.analytics_events.transactions = AnalyticsEventsTransactionsSettings()
 _settings.process_host = ProcessHostSettings()
+_settings.synthetics = SyntheticsSettings()
 
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
 _settings.audit_log_file = os.environ.get('NEW_RELIC_AUDIT_LOG', None)
@@ -85,6 +87,10 @@ def _environ_as_bool(name, default=False):
         except AttributeError:
             pass
     return flag
+
+def _environ_as_set(name, default=''):
+    value = os.environ.get(name, default)
+    return set(value.split())
 
 def _parse_ignore_status_codes(value, target):
     items = value.split()
@@ -119,6 +125,8 @@ _LOG_LEVEL = {
 }
 
 _settings.enabled = _environ_as_bool('NEW_RELIC_ENABLED', False)
+
+_settings.feature_flag = _environ_as_set('NEW_RELIC_FEATURE_FLAG', '')
 
 _settings.log_level = os.environ.get('NEW_RELIC_LOG_LEVEL', 'INFO').upper()
 
@@ -231,6 +239,8 @@ _settings.transaction_name.naming_scheme = os.environ.get(
 
 _settings.slow_sql.enabled = True
 
+_settings.synthetics.enabled = False
+
 _settings.agent_limits.data_collector_timeout = 30.0
 _settings.agent_limits.transaction_traces_nodes = 2000
 _settings.agent_limits.sql_query_length_maximum = 16384
@@ -248,6 +258,8 @@ _settings.agent_limits.browser_transactions = 10
 _settings.agent_limits.xray_transactions = 10
 _settings.agent_limits.xray_profile_overhead = 0.05
 _settings.agent_limits.xray_profile_maximum = 500
+_settings.agent_limits.synthetics_events = 200
+_settings.agent_limits.synthetics_transactions = 20
 
 _settings.console.listener_socket = None
 _settings.console.allow_interpreter_cmd = False

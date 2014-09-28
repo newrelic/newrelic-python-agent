@@ -43,6 +43,14 @@ _logger = logging.getLogger(__name__)
 
 sys.meta_path.insert(0, newrelic.api.import_hook.ImportHookFinder())
 
+# The set of valid feature flags that the agent currently uses.
+# This will be used to validate what is provided and issue warnings
+# if feature flags not in set are provided.
+
+_FEATURE_FLAGS = set([
+    'tornado.instrumentation.r2'
+])
+
 # Names of configuration file and deployment environment. This
 # will be overridden by the load_configuration() function when
 # configuration is loaded.
@@ -114,6 +122,9 @@ _RECORD_SQL = {
 
 def _map_log_level(s):
     return _LOG_LEVEL[s.upper()]
+
+def _map_feature_flag(s):
+    return set(s.split())
 
 def _map_ignored_params(s):
     return s.split()
@@ -237,6 +248,8 @@ def _process_setting(section, option, getter, mapper):
 # ensure they are set as soon as possible.
 
 def _process_configuration(section):
+    _process_setting(section, 'feature_flag',
+                     'get', _map_feature_flag)
     _process_setting(section, 'app_name',
                      'get', None)
     _process_setting(section, 'license_key',
@@ -331,6 +344,8 @@ def _process_configuration(section):
                      'get', _map_browser_monitoring_content_type),
     _process_setting(section, 'slow_sql.enabled',
                      'getboolean', None)
+    _process_setting(section, 'synthetics.enabled',
+                     'getboolean', None)
     _process_setting(section, 'analytics_events.enabled',
                      'getboolean', None),
     _process_setting(section, 'analytics_events.capture_attributes',
@@ -374,6 +389,10 @@ def _process_configuration(section):
     _process_setting(section, 'agent_limits.xray_profile_overhead',
                      'getfloat', None)
     _process_setting(section, 'agent_limits.xray_profile_maximum',
+                     'getint', None)
+    _process_setting(section, 'agent_limits.synthetics_events',
+                     'getint', None)
+    _process_setting(section, 'agent_limits.synthetics_transactions',
                      'getint', None)
     _process_setting(section, 'console.listener_socket',
                      'get', _map_console_listener_socket)
@@ -529,6 +548,16 @@ def _load_configuration(config_file=None, environment=None,
 
         initialize_logging(log_file, log_level)
 
+        # Validate provided feature flags and log a warning if get one
+        # which isn't valid.
+
+        for flag in _settings.feature_flag:
+            if flag not in _FEATURE_FLAGS:
+                _logger.warning('Unknown agent feature flag %r provided. '
+                        'Check agent documentation or release notes, or '
+                        'contact New Relic support for clarification of '
+                        'validity of the specific feature flag.', flag)
+
         # Look for an app_name setting which is actually a semi colon
         # list of application names and adjust app_name setting and
         # registered linked applications for later handling.
@@ -592,6 +621,16 @@ def _load_configuration(config_file=None, environment=None,
 
     for option, value in _cache_object:
         _logger.debug("agent config %s = %s" % (option, repr(value)))
+
+    # Validate provided feature flags and log a warning if get one
+    # which isn't valid.
+
+    for flag in _settings.feature_flag:
+        if flag not in _FEATURE_FLAGS:
+            _logger.warning('Unknown agent feature flag %r provided. '
+                    'Check agent documentation or release notes, or '
+                    'contact New Relic support for clarification of '
+                    'validity of the specific feature flag.', flag)
 
     # Apply High Security Mode policy if enabled in local agent
     # configuration file.
@@ -1624,40 +1663,77 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.framework_cherrypy',
             'instrument_cherrypy__cptree')
 
-    _process_module_definition('tornado.wsgi',
-            'newrelic.hooks.framework_tornado',
-            'instrument_tornado_wsgi')
+    if 'tornado.instrumentation.r2' in _settings.feature_flag:
+        _process_module_definition('tornado.wsgi',
+                'newrelic.hooks.framework_tornado.wsgi',
+                'instrument_tornado_wsgi')
 
-    _process_module_definition('tornado.httpserver',
-            'newrelic.hooks.framework_tornado',
-            'instrument_tornado_httpserver')
-    _process_module_definition('tornado.httputil',
-            'newrelic.hooks.framework_tornado',
-            'instrument_tornado_httputil')
-    _process_module_definition('tornado.web',
-            'newrelic.hooks.framework_tornado',
-            'instrument_tornado_web')
-    _process_module_definition('tornado.template',
-            'newrelic.hooks.framework_tornado',
-            'instrument_tornado_template')
-    _process_module_definition('tornado.stack_context',
-            'newrelic.hooks.framework_tornado',
-            'instrument_tornado_stack_context')
-    _process_module_definition('tornado.ioloop',
-            'newrelic.hooks.framework_tornado',
-            'instrument_tornado_ioloop')
-    _process_module_definition('tornado.iostream',
-            'newrelic.hooks.framework_tornado',
-            'instrument_tornado_iostream')
-    _process_module_definition('tornado.curl_httpclient',
-            'newrelic.hooks.framework_tornado',
-            'instrument_tornado_curl_httpclient')
-    _process_module_definition('tornado.simple_httpclient',
-            'newrelic.hooks.framework_tornado',
-            'instrument_tornado_simple_httpclient')
-    _process_module_definition('tornado.gen',
-            'newrelic.hooks.framework_tornado',
-            'instrument_tornado_gen')
+        _process_module_definition('tornado.httpserver',
+                'newrelic.hooks.framework_tornado.httpserver',
+                'instrument_tornado_httpserver')
+        _process_module_definition('tornado.iostream',
+                'newrelic.hooks.framework_tornado.iostream',
+                'instrument_tornado_iostream')
+        _process_module_definition('tornado.ioloop',
+                'newrelic.hooks.framework_tornado.ioloop',
+                'instrument_tornado_ioloop')
+        _process_module_definition('tornado.httputil',
+                'newrelic.hooks.framework_tornado.httputil',
+                'instrument_tornado_httputil')
+        _process_module_definition('tornado.curl_httpclient',
+                'newrelic.hooks.framework_tornado.curl_httpclient',
+                'instrument_tornado_curl_httpclient')
+        _process_module_definition('tornado.simple_httpclient',
+                'newrelic.hooks.framework_tornado.simple_httpclient',
+                'instrument_tornado_simple_httpclient')
+        _process_module_definition('tornado.web',
+                'newrelic.hooks.framework_tornado.web',
+                'instrument_tornado_web')
+        _process_module_definition('tornado.stack_context',
+                'newrelic.hooks.framework_tornado.stack_context',
+                'instrument_tornado_stack_context')
+        _process_module_definition('tornado.template',
+                'newrelic.hooks.framework_tornado.template',
+                'instrument_tornado_template')
+        _process_module_definition('tornado.gen',
+                'newrelic.hooks.framework_tornado.gen',
+                'instrument_tornado_gen')
+
+    else:
+        _process_module_definition('tornado.wsgi',
+                'newrelic.hooks.framework_tornado_r1',
+                'instrument_tornado_wsgi')
+
+        _process_module_definition('tornado.httpserver',
+                'newrelic.hooks.framework_tornado_r1',
+                'instrument_tornado_httpserver')
+        _process_module_definition('tornado.httputil',
+                'newrelic.hooks.framework_tornado_r1',
+                'instrument_tornado_httputil')
+        _process_module_definition('tornado.web',
+                'newrelic.hooks.framework_tornado_r1',
+                'instrument_tornado_web')
+        _process_module_definition('tornado.template',
+                'newrelic.hooks.framework_tornado_r1',
+                'instrument_tornado_template')
+        _process_module_definition('tornado.stack_context',
+                'newrelic.hooks.framework_tornado_r1',
+                'instrument_tornado_stack_context')
+        _process_module_definition('tornado.ioloop',
+                'newrelic.hooks.framework_tornado_r1',
+                'instrument_tornado_ioloop')
+        _process_module_definition('tornado.iostream',
+                'newrelic.hooks.framework_tornado_r1',
+                'instrument_tornado_iostream')
+        _process_module_definition('tornado.curl_httpclient',
+                'newrelic.hooks.framework_tornado_r1',
+                'instrument_tornado_curl_httpclient')
+        _process_module_definition('tornado.simple_httpclient',
+                'newrelic.hooks.framework_tornado_r1',
+                'instrument_tornado_simple_httpclient')
+        _process_module_definition('tornado.gen',
+                'newrelic.hooks.framework_tornado_r1',
+                'instrument_tornado_gen')
 
     _process_module_definition('paste.httpserver',
             'newrelic.hooks.adapter_paste',

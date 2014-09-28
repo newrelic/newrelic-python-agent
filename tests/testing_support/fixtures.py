@@ -3,14 +3,21 @@ import logging
 import os
 import sys
 import pwd
+import threading
+import time
+
+from newrelic.packages import six
 
 from newrelic.agent import (initialize, register_application,
         global_settings, shutdown_agent, application as application_instance,
         transient_function_wrapper, function_wrapper, application_settings,
         wrap_function_wrapper)
 
+from newrelic.common.encoding_utils import unpack_field
+
 from newrelic.core.config import (apply_config_setting,
         create_settings_snapshot)
+from newrelic.core.database_utils import SQLConnections
 
 from newrelic.network.addresses import proxy_details
 from newrelic.packages import requests
@@ -235,17 +242,73 @@ def collector_available_fixture(request):
     application = application_instance()
     assert application.active
 
+def raise_background_exceptions(timeout=5.0):
+    @function_wrapper
+    def _raise_background_exceptions(wrapped, instance, args, kwargs):
+        time.sleep(0.1)
+
+        if getattr(raise_background_exceptions, 'enabled', None) is None:
+            raise_background_exceptions.event = threading.Event()
+        else:
+            assert raise_background_exceptions.count == 0
+
+        raise_background_exceptions.enabled = True
+        raise_background_exceptions.count = 0
+        raise_background_exceptions.exception = None
+        raise_background_exceptions.event.clear()
+
+        try:
+            return wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            if raise_background_exceptions.exception is not None:
+                tp, value, tb = raise_background_exceptions.exception
+                raise_background_exceptions.exception = None
+                six.reraise(tp, value, tb)
+        finally:
+            time.sleep(0.1)
+
+            raise_background_exceptions.enabled = False
+            result = raise_background_exceptions.event.wait(timeout)
+            done = raise_background_exceptions.event.is_set()
+            raise_background_exceptions.event.clear()
+
+            assert done, 'Timeout waiting for background task to finish.'
+
+    return _raise_background_exceptions
+
+@function_wrapper
+def catch_background_exceptions(wrapped, instance, args, kwargs):
+    if not getattr(raise_background_exceptions, 'enabled', False):
+        return wrapped(*args, **kwargs)
+
+    raise_background_exceptions.count += 1
+
+    try:
+        return wrapped(*args, **kwargs)
+    except:
+        raise_background_exceptions.exception = sys.exc_info()
+        raise
+    finally:
+        raise_background_exceptions.count -= 1
+        if raise_background_exceptions.count == 0:
+            raise_background_exceptions.event.set()
+
 def validate_transaction_metrics(name, group='Function',
         background_task=False, scoped_metrics=[], rollup_metrics=[],
         custom_metrics=[]):
 
     if background_task:
+        rollup_metric = 'OtherTransaction/all'
         transaction_metric = 'OtherTransaction/%s/%s' % (group, name)
     else:
+        rollup_metric = 'WebTransaction'
         transaction_metric = 'WebTransaction/%s/%s' % (group, name)
 
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
+    @catch_background_exceptions
     def _validate_transaction_metrics(wrapped, instance, args, kwargs):
         try:
             result = wrapped(*args, **kwargs)
@@ -270,6 +333,7 @@ def validate_transaction_metrics(name, group='Function',
                 else:
                     assert metric is None, _metrics_table()
 
+            _validate(rollup_metric, '', 1)
             _validate(transaction_metric, '', 1)
 
             for scoped_name, scoped_count in scoped_metrics:
@@ -287,8 +351,10 @@ def validate_transaction_metrics(name, group='Function',
 
 def validate_transaction_errors(errors=[], required_params=[],
         forgone_params=[]):
+
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
+    @catch_background_exceptions
     def _validate_transaction_errors(wrapped, instance, args, kwargs):
         def _bind_params(transaction, *args, **kwargs):
             return transaction
@@ -322,8 +388,10 @@ def validate_transaction_errors(errors=[], required_params=[],
     return _validate_transaction_errors
 
 def validate_custom_parameters(required_params=[], forgone_params=[]):
+
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
+    @catch_background_exceptions
     def _validate_custom_parameters(wrapped, instance, args, kwargs):
         def _bind_params(transaction, *args, **kwargs):
             return transaction
@@ -344,6 +412,99 @@ def validate_custom_parameters(required_params=[], forgone_params=[]):
         return wrapped(*args, **kwargs)
 
     return _validate_custom_parameters
+
+def validate_synthetics_event(required_attrs=[], forgone_attrs=[],
+        should_exist=True):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_synthetics_event(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            if not should_exist:
+                assert instance.synthetics_events == []
+            else:
+                assert len(instance.synthetics_events) == 1
+                event = instance.synthetics_events[0]
+                assert event is not None
+                assert len(event) == 2
+
+                def _flatten(event):
+                    result = {}
+                    for elem in event:
+                        for k, v in elem.items():
+                            result[k] = v
+                    return result
+
+                flat_event = _flatten(event)
+
+                assert 'nr.guid' in flat_event, ('name=%r, event=%r' %
+                            (name, flat_event))
+
+                for name, value in required_attrs:
+                    assert name in flat_event, ('name=%r, event=%r' %
+                            (name, flat_event))
+                    assert flat_event[name] == value, ('name=%r, value=%r,'
+                            'event=%r' % (name, value, flat_event))
+
+                for name, value in forgone_attrs:
+                    assert name not in flat_event, ('name=%r, value=%r,'
+                        ' event=%r' % (name, value, flat_event))
+
+        return result
+
+    return _validate_synthetics_event
+
+def validate_synthetics_transaction_trace(required_params={},
+        forgone_params={}, should_exist=True):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_synthetics_transaction_trace(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+
+            # Now that transaction has been recorded, generate
+            # a transaction trace
+
+            connections = SQLConnections()
+            trace_data = instance.transaction_trace_data(connections)
+
+            # Check that synthetics resource id is in TT header
+
+            header = trace_data[0]
+            header_key = 'nr.synthetics_resource_id'
+
+            if should_exist:
+                assert header_key in required_params
+                assert header[9] == required_params[header_key], ('name=%r, '
+                            'header=%r' % (header_key, header))
+            else:
+                assert header[9] is None
+
+            # Check that synthetics ids are in TT custom params
+
+            pack_data = unpack_field(trace_data[0][4])
+            tt_custom_params = pack_data[0][2]
+
+            for name in required_params:
+                assert name in tt_custom_params, ('name=%r, '
+                        'custom_params=%r' % (name, tt_custom_params))
+                assert tt_custom_params[name] == required_params[name], (
+                        'name=%r, value=%r, custom_params=%r' %
+                        (name, required_params[name], custom_params))
+
+            for name in forgone_params:
+                assert name not in tt_custom_params, ('name=%r, '
+                        'custom_params=%r' % (name, tt_custom_params))
+
+        return result
+
+    return _validate_synthetics_transaction_trace
 
 def validate_request_params(required_params=[], forgone_params=[]):
     @transient_function_wrapper('newrelic.core.stats_engine',
@@ -370,8 +531,10 @@ def validate_request_params(required_params=[], forgone_params=[]):
     return _validate_request_params
 
 def validate_database_trace_inputs(sql_parameters_type):
+
     @transient_function_wrapper('newrelic.api.database_trace',
             'DatabaseTrace.__init__')
+    @catch_background_exceptions
     def _validate_database_trace_inputs(wrapped, instance, args, kwargs):
         def _bind_params(transaction, sql, dbapi2_module=None,
                 connect_params=None, cursor_params=None, sql_parameters=None,
@@ -410,7 +573,7 @@ def validate_database_trace_inputs(sql_parameters_type):
 
     return _validate_database_trace_inputs
 
-def override_application_settings(settings):
+def override_application_settings(overrides):
     @function_wrapper
     def _override_application_settings(wrapped, instance, args, kwargs):
         try:
@@ -422,7 +585,7 @@ def override_application_settings(settings):
 
             original = application_settings()
             backup = dict(original)
-            for name, value in settings.items():
+            for name, value in overrides.items():
                 apply_config_setting(original, name, value)
             return wrapped(*args, **kwargs)
         finally:
@@ -431,6 +594,29 @@ def override_application_settings(settings):
                 apply_config_setting(original, name, value)
 
     return _override_application_settings
+
+def override_generic_settings(settings_object, overrides):
+    @function_wrapper
+    def _override_generic_settings(wrapped, instance, args, kwargs):
+        try:
+            # This is a bit horrible as in some cases a settings object may
+            # have references from a number of different places. We have
+            # to create a copy, overlay the temporary settings and then
+            # when done clear the top level settings object and rebuild
+            # it when done.
+
+            original = settings_object
+
+            backup = dict(original)
+            for name, value in overrides.items():
+                apply_config_setting(original, name, value)
+            return wrapped(*args, **kwargs)
+        finally:
+            original.__dict__.clear()
+            for name, value in backup.items():
+                apply_config_setting(original, name, value)
+
+    return _override_generic_settings
 
 def override_ignore_status_codes(status_codes):
     @function_wrapper

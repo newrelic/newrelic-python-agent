@@ -18,9 +18,9 @@ class SolrTrace(newrelic.api.time_trace.TimeTrace):
         self.library = library
         self.command = command
 
-    def dump(self, file):
-        print >> file, self.__class__.__name__, dict(library=self.library,
-                command=self.command)
+    def __repr__(self):
+        return '<%s %s>' % (self.__class__.__name__, dict(
+                library=self.library, command=self.command))
 
     def create_node(self):
         return self.node(library=self.library, command=self.command,

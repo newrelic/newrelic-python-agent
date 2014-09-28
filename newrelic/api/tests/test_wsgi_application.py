@@ -239,11 +239,11 @@ class TestCase(newrelic.tests.test_cases.TestCase):
                     "wsgi.input": Input() }
         _wsgiapp_function(environ, None).close()
 
-    def test_wsgiapp_function_realines_exception(self):
+    def test_wsgiapp_function_readlines_exception(self):
         class Input(object):
             def readlines(self):
                 raise RuntimeError('fail')
-        environ = { "REQUEST_URI": "/wsgiapp_function_realines_exception",
+        environ = { "REQUEST_URI": "/wsgiapp_function_readlines_exception",
                     "wsgi.input": Input() }
         _wsgiapp_function(environ, None).close()
 

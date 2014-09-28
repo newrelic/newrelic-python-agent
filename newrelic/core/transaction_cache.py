@@ -5,6 +5,8 @@
 import sys
 import threading
 import weakref
+import traceback
+import logging
 
 try:
     import thread
@@ -12,6 +14,8 @@ except ImportError:
     import _thread as thread
 
 from newrelic.core.config import global_settings
+
+_logger = logging.getLogger(__name__)
 
 class TransactionCache(object):
 
@@ -119,6 +123,11 @@ class TransactionCache(object):
         thread_id = transaction.thread_id
 
         if thread_id in self._cache:
+            _logger.error('Runtime instrumentation error. Attempt to '
+                    'to save the transaction when one is already saved. '
+                    'Report this issue to New Relic support.\n%s',
+                    ''.join(traceback.format_stack()[:-1]))
+
             raise RuntimeError('transaction already active')
 
         self._cache[thread_id] = transaction
@@ -149,11 +158,21 @@ class TransactionCache(object):
         thread_id = transaction.thread_id
 
         if not thread_id in self._cache:
+            _logger.error('Runtime instrumentation error. Attempt to '
+                    'to drop the transaction but where none is active. '
+                    'Report this issue to New Relic support.\n%s',
+                    ''.join(traceback.format_stack()[:-1]))
+
             raise RuntimeError('no active transaction')
 
         current = self._cache.get(thread_id)
 
         if transaction != current:
+            _logger.error('Runtime instrumentation error. Attempt to '
+                    'to drop the transaction but where is not the '
+                    'current transaction. Report this issue to New Relic '
+                    'support.\n%s', ''.join(traceback.format_stack()[:-1]))
+
             raise RuntimeError('not the current transaction')
 
         transaction._greenlet = None

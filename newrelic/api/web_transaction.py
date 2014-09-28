@@ -55,6 +55,25 @@ def _extract_token(cookie):
     except Exception:
         pass
 
+def _parse_synthetics_header(header):
+    # Return a dictionary of values from Synthetics header
+    # Returns empty dict, if version is not supported.
+
+    synthetics = {}
+    version = None
+
+    if len(header) > 0:
+        version = int(header[0])
+
+    if version == 1:
+        synthetics['version'] = version
+        synthetics['account_id'] = int(header[1])
+        synthetics['resource_id'] = header[2]
+        synthetics['job_id'] = header[3]
+        synthetics['monitor_id'] = header[4]
+
+    return synthetics
+
 class WebTransaction(Transaction):
 
     report_unicode_error = True
@@ -271,6 +290,31 @@ class WebTransaction(Transaction):
 
             self._request_params.update(params)
 
+        # Check for Synthetics header
+
+        if settings.synthetics.enabled and \
+                settings.trusted_account_ids and settings.encoding_key:
+
+            try:
+                header_name = 'HTTP_X_NEWRELIC_SYNTHETICS'
+                header = self.decode_newrelic_header(environ, header_name)
+                synthetics = _parse_synthetics_header(header)
+
+                if synthetics['account_id'] in settings.trusted_account_ids:
+
+                    # Save obfuscated header, because we will pass it along
+                    # unchanged in all external requests.
+
+                    self.synthetics_header = environ.get(header_name)
+
+                    if synthetics['version'] == 1:
+                        self.synthetics_resource_id = synthetics['resource_id']
+                        self.synthetics_job_id = synthetics['job_id']
+                        self.synthetics_monitor_id = synthetics['monitor_id']
+
+            except Exception:
+                pass
+
         # Check for the New Relic cross process ID header and extract
         # the relevant details.
 
@@ -304,12 +348,15 @@ class WebTransaction(Transaction):
                         self.client_account_id = client_account_id
                         self.client_application_id = client_application_id
 
-                        txn_header = self.process_txn_header(environ)
+                        header_name = 'HTTP_X_NEWRELIC_TRANSACTION'
+                        txn_header = self.decode_newrelic_header(
+                                environ, header_name)
+
                         if txn_header:
                             self.referring_transaction_guid = txn_header[0]
 
                             # Incoming record_tt is OR'd with existing
-                            # record_tt. In the sceanrio where we make multiple
+                            # record_tt. In the scenario where we make multiple
                             # ext request, this will ensure we don't set the
                             # record_tt to False by a later request if it was
                             # set to True by an earlier request.
@@ -336,17 +383,16 @@ class WebTransaction(Transaction):
         self.rum_header_generated = False
         self.rum_footer_generated = False
 
-    def process_txn_header(self, environ):
-        encoded_txn_header = environ.get('HTTP_X_NEWRELIC_TRANSACTION')
-
-        if encoded_txn_header:
+    def decode_newrelic_header(self, environ, header_name):
+        encoded_header = environ.get(header_name)
+        if encoded_header:
             try:
-                decoded_txn_header = json_decode(deobfuscate(
-                        encoded_txn_header, self._settings.encoding_key))
+                decoded_header = json_decode(deobfuscate(
+                        encoded_header, self._settings.encoding_key))
             except Exception:
-                decoded_txn_header = None
+                decoded_header = None
 
-        return decoded_txn_header
+        return decoded_header
 
     def process_response(self, status, response_headers, *args):
         """Processes response status and headers, extracting any
@@ -380,6 +426,7 @@ class WebTransaction(Transaction):
         # process web external calls.
 
         if self.client_cross_process_id is not None:
+
             # Need to work out queueing time and duration up to this
             # point for inclusion in metrics and response header. If the
             # recording of the transaction had been prematurely stopped
@@ -634,28 +681,40 @@ class _WSGIApplicationIterable(object):
     def __init__(self, transaction, generator):
         self.transaction = transaction
         self.generator = generator
+        self.response_trace = None
 
     def __iter__(self):
         if not self.transaction._sent_start:
             self.transaction._sent_start = time.time()
         try:
-            with FunctionTrace(self.transaction, name='Response',
-                    group='Python/WSGI'):
-                for item in self.generator:
-                    yield item
-                    try:
-                        self.transaction._calls_yield += 1
-                        self.transaction._bytes_sent += len(item)
-                    except Exception:
-                        pass
+            self.response_trace = FunctionTrace(self.transaction,
+                    name='Response', group='Python/WSGI')
+            self.response_trace.__enter__()
+
+            for item in self.generator:
+                yield item
+                try:
+                    self.transaction._calls_yield += 1
+                    self.transaction._bytes_sent += len(item)
+                except Exception:
+                    pass
+
+            self.response_trace.__exit__(None, None, None)
+            self.response_trace = None
+
         except GeneratorExit:
             raise
+
         except:  # Catch all
             self.transaction.record_exception(*sys.exc_info())
             raise
 
     def close(self):
         try:
+            if self.response_trace:
+                self.response_trace.__exit__(None, None, None)
+                self.response_trace = None
+
             with FunctionTrace(self.transaction, name='Finalize',
                     group='Python/WSGI'):
                 if hasattr(self.generator, 'close'):
@@ -666,6 +725,7 @@ class _WSGIApplicationIterable(object):
         except:  # Catch all
             self.transaction.__exit__(*sys.exc_info())
             raise
+
         else:
             self.transaction.__exit__(None, None, None)
             self.transaction._sent_end = time.time()

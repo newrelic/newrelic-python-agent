@@ -29,9 +29,11 @@ class FunctionTrace(TimeTrace):
         self.terminal = terminal
         self.rollup = terminal and rollup or None
 
-    def dump(self, file):
-        print >> file, self.__class__.__name__, dict(name=self.name,
-                group=self.group)
+    def __repr__(self):
+        return '<%s %s>' % (self.__class__.__name__, dict(
+                name=self.name, group=self.group, label=self.label,
+                params=self.params, terminal=self.terminal,
+                rollup=self.rollup))
 
     def create_node(self):
         return FunctionNode(group=self.group, name=self.name,

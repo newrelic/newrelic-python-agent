@@ -18,9 +18,9 @@ class ExternalTrace(TimeTrace):
         self.params = {}
         self.settings = self.transaction.settings
 
-    def dump(self, file):
-        print >> file, self.__class__.__name__, dict(library=self.library,
-                url=self.url, method=self.method)
+    def __repr__(self):
+        return '<%s %s>' % (self.__class__.__name__, dict(
+                library=self.library, url=self.url, method=self.method))
 
     def create_node(self):
         return ExternalNode(library=self.library, url=self.url,
@@ -73,18 +73,22 @@ class ExternalTrace(TimeTrace):
 
         settings = transaction.settings
 
-        if not settings.cross_application_tracer.enabled:
-            return []
+        nr_headers = []
 
-        encoded_cross_process_id = obfuscate(settings.cross_process_id,
-                settings.encoding_key)
+        if settings.cross_application_tracer.enabled:
 
-        transaction_data = [transaction.guid, transaction.record_tt]
-        encoded_transaction = obfuscate(json_encode(transaction_data),
-                settings.encoding_key)
+            encoded_cross_process_id = obfuscate(settings.cross_process_id,
+                    settings.encoding_key)
+            nr_headers.append(('X-NewRelic-ID', encoded_cross_process_id))
 
-        nr_headers = [('X-NewRelic-ID', encoded_cross_process_id),
-                      ('X-NewRelic-Transaction', encoded_transaction)]
+            transaction_data = [transaction.guid, transaction.record_tt]
+            encoded_transaction = obfuscate(json_encode(transaction_data),
+                    settings.encoding_key)
+            nr_headers.append(('X-NewRelic-Transaction', encoded_transaction))
+
+        if transaction.synthetics_header:
+            nr_headers.append(
+                    ('X-NewRelic-Synthetics', transaction.synthetics_header))
 
         return nr_headers
 

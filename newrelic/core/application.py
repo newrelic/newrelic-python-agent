@@ -1266,7 +1266,7 @@ class Application(object):
 
                     if (configuration.collect_analytics_events and
                             configuration.analytics_events.enabled):
-                            
+
                         if configuration.analytics_events.transactions.enabled:
                             sampled_data_set = stats.sampled_data_set
 
@@ -1305,20 +1305,31 @@ class Application(object):
 
                     stats.reset_metric_stats()
 
-                    # Send sample data set for analytics.
+                    # Send data set for analytics, which is a combination
+                    # of Synthetic analytic events, and the sampled data
+                    # set of regular requests.
+
+                    all_analytic_events = []
+
+                    if len(stats.synthetics_events):
+                        all_analytic_events.extend(stats.synthetics_events)
 
                     if (configuration.collect_analytics_events and
                             configuration.analytics_events.enabled):
 
                         if configuration.analytics_events.transactions.enabled:
-                            if len(sampled_data_set.samples):
-                                _logger.debug('Sending analytics event data '
-                                        'for harvest of %r.', self._app_name)
+                            samples = stats.sampled_data_set.samples
+                            all_analytic_events.extend(samples)
 
-                                self._active_session.analytic_event_data(
-                                        sampled_data_set.samples)
+                    if len(all_analytic_events):
+                        _logger.debug('Sending analytics event data '
+                                'for harvest of %r.', self._app_name)
+
+                        self._active_session.analytic_event_data(
+                                all_analytic_events)
 
                     stats.reset_sampled_data()
+                    stats.reset_synthetics_events()
 
                     # Successful, so we update the stats engine with the
                     # new metric IDs and reset the reporting period
@@ -1471,6 +1482,7 @@ class Application(object):
                             self._stats_engine.merge_other_stats(stats,
                                     merge_traces=False, merge_errors=False,
                                     merge_sql=False, merge_samples=True,
+                                    merge_synthetics_events = True,
                                     rollback=True)
 
                         else:

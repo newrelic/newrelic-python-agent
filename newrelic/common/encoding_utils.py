@@ -6,6 +6,7 @@ of data.
 import types
 import base64
 import json
+import zlib
 
 from ..packages import six
 
@@ -157,7 +158,7 @@ def xor_cipher_encrypt_base64(text, key):
     text = text.encode('utf-8').decode('latin-1')
 
     result = base64.b64encode(bytes(xor_cipher_encrypt(text, key)))
- 
+
     # The result from base64 encoding will be a byte string but since
     # dealing with byte strings in Python 2 and Python 3 is quite
     # different, it is safer to return a Unicode string for both. We can
@@ -189,3 +190,22 @@ def xor_cipher_decrypt_base64(text, key):
 
 obfuscate = xor_cipher_encrypt_base64
 deobfuscate = xor_cipher_decrypt_base64
+
+# Functions to unpack fields in data sent to the collector.
+
+def unpack_field(field):
+    """Decodes data that was compressed before being sent to the collector.
+    For example, 'pack_data' in a transaction trace, or 'params_data' in a
+    slow sql trace is run through zlib.compress, base64.standard_b64encode
+    and json_encode before being sent. This function reverses the compression
+    and encoding, and returns a Python object.
+
+    """
+    if not isinstance(field, bytes):
+        field = field.encode('UTF-8')
+    data = base64.decodestring(field)
+    data = zlib.decompress(data)
+    if isinstance(data, bytes):
+        data = data.decode('Latin-1')
+    data = json_decode(data)
+    return data

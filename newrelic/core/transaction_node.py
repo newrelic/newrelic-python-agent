@@ -22,7 +22,8 @@ _TransactionNode = namedtuple('_TransactionNode',
         'errors', 'slow_sql', 'apdex_t', 'suppress_apdex', 'custom_metrics',
         'parameter_groups', 'guid', 'rum_trace', 'cpu_time',
         'suppress_transaction_trace', 'client_cross_process_id',
-        'referring_transaction_guid', 'record_tt'])
+        'referring_transaction_guid', 'record_tt', 'synthetics_resource_id',
+        'synthetics_job_id', 'synthetics_monitor_id', 'synthetics_header'])
 
 class TransactionNode(_TransactionNode):
 
@@ -287,6 +288,17 @@ class TransactionNode(_TransactionNode):
         if self.referring_transaction_guid:
             custom_params['referring_transaction_guid'] = \
                     self.referring_transaction_guid
+
+        # By prepending 'nr.' to the Synthetics custom param names,
+        # they get treated as "Intrinsics" in the APM UI.
+
+        if self.synthetics_resource_id:
+            custom_params['nr.synthetics_resource_id'] = \
+                    self.synthetics_resource_id
+            custom_params['nr.synthetics_job_id'] = \
+                    self.synthetics_job_id
+            custom_params['nr.synthetics_monitor_id'] = \
+                    self.synthetics_monitor_id
 
         # There is an additional trace node labelled as 'ROOT'
         # that needs to be inserted below the root node object

@@ -489,8 +489,18 @@ def _process_labels_setting(labels=None):
     deduped = {}
 
     for key, value in labels:
-        key = key[:length_limit]
-        value = value[:length_limit]
+
+        if len(key) > length_limit:
+            _logger.warning('Improper configuration. Label key %s is too '
+                    'long. Truncating key to: %s' % (key, key[:length_limit]))
+
+        if len(value) > length_limit:
+            _logger.warning('Improper configuration. Label value %s is too '
+                    'long. Truncating value to: %s' %
+                    (value, value[:length_limit]))
+
+            key = key[:length_limit]
+            value = value[:length_limit]
 
         deduped[key] = value
 

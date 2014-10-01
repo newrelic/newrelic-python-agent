@@ -473,30 +473,33 @@ def _process_app_name_setting():
 
     _settings.app_name = name
 
-def _process_labels_setting():
+def _process_labels_setting(labels=None):
     # Do special processing to handle labels. Initially the labels
     # setting will be a list of key/value tuples. This needs to be
     # converted into a list of dictionaries. It is also necessary
     # to eliminate duplicates by taking the last value, plus apply
     # length limits and limits on the number collected.
 
+    if labels is None:
+        labels = _settings.labels
+
     length_limit = 255
     count_limit = 64
 
-    labels = {}
+    deduped = {}
 
-    for key, value in _settings.labels:
+    for key, value in labels:
         key = key[:length_limit]
         value = value[:length_limit]
 
-        labels[key] = value 
+        deduped[key] = value
 
-        if len(labels) >= count_limit:
+        if len(deduped) >= count_limit:
             break
 
     result = []
 
-    for key, value in labels.items():
+    for key, value in deduped.items():
         result.append(dict(label_type=key, label_value=value))
 
     _settings.labels = result

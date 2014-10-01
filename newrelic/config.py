@@ -127,7 +127,7 @@ def _map_feature_flag(s):
     return set(s.split())
 
 def _map_labels(s):
-    return newrelic.core.config._environ_as_mapping(s)
+    return newrelic.core.config._environ_as_mapping(name='', default=s)
 
 def _map_ignored_params(s):
     return s.split()

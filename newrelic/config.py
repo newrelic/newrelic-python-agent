@@ -499,13 +499,15 @@ def _process_labels_setting(labels=None):
                     'long. Truncating value to: %s' %
                     (value, value[:length_limit]))
 
-            key = key[:length_limit]
-            value = value[:length_limit]
+        if len(deduped) >= count_limit:
+            _logger.warning('Improper configuration. Maximum number of labels '
+                    'reached. Using first %d labels.' % length_limit)
+            break
+
+        key = key[:length_limit]
+        value = value[:length_limit]
 
         deduped[key] = value
-
-        if len(deduped) >= count_limit:
-            break
 
     result = []
 

@@ -19,6 +19,8 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
+_logger = logging.getLogger(__name__)
+
 # The Settings objects and the global default settings. We create a
 # distinct type for each sub category of settings that the agent knows
 # about so that an error when accessing a non existant setting is more
@@ -95,16 +97,31 @@ def _environ_as_set(name, default=''):
 def _environ_as_mapping(name, default=''):
     result = []
     items = os.environ.get(name, default)
+
     for item in items.split(';'):
         item = item.strip()
         if not item:
             continue
-        key, value = item.split(':')
+
+        try:
+            key, value = item.split(':')
+        except ValueError:
+            _logger.warning('Invalid configuration. Cannot parse: '
+                    '%s.' % (items,))
+            result = []
+            break
+
         key = key.strip()
         value = value.strip()
-        if not key:
-            continue
-        result.append((key, value))
+
+        if key and value:
+            result.append((key, value))
+        else:
+            _logger.warning('Invalid configuration. Cannot parse: '
+                    '%s.' % (items,))
+            result = []
+            break
+
     return result
 
 def _parse_ignore_status_codes(value, target):

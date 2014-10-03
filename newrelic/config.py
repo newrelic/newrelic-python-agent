@@ -501,7 +501,7 @@ def _process_labels_setting(labels=None):
 
         if len(deduped) >= count_limit:
             _logger.warning('Improper configuration. Maximum number of labels '
-                    'reached. Using first %d labels.' % length_limit)
+                    'reached. Using first %d labels.' % count_limit)
             break
 
         key = key[:length_limit]

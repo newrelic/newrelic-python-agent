@@ -111,8 +111,9 @@ def _environ_as_mapping(name, default=''):
         try:
             key, value = item.split(':')
         except ValueError:
-            _logger.warning('Invalid configuration. Cannot parse: '
-                    '%s.' % (items,))
+            _logger.warning('Invalid configuration. Cannot parse: %s.'
+                    'Expected format \'key1:value1;key2:value2 ... \'.' %
+                     (items,))
             result = []
             break
 
@@ -122,8 +123,9 @@ def _environ_as_mapping(name, default=''):
         if key and value:
             result.append((key, value))
         else:
-            _logger.warning('Invalid configuration. Cannot parse: '
-                    '%s.' % (items,))
+            _logger.warning('Invalid configuration. Cannot parse: %s.'
+                    'Expected format \'key1:value1;key2:value2 ... \'.' %
+                     (items,))
             result = []
             break
 

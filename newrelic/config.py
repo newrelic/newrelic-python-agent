@@ -512,7 +512,7 @@ def _process_labels_setting(labels=None):
     result = []
 
     for key, value in deduped.items():
-        result.append(dict(label_type=key, label_value=value))
+        result.append({'label_type': key, 'label_value': value})
 
     _settings.labels = result
 

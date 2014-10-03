@@ -98,10 +98,15 @@ def _environ_as_mapping(name, default=''):
     result = []
     items = os.environ.get(name, default)
 
+    # Strip all whitespace and semicolons from the end of the string.
+    # That way, when we split a valid labels string by ';', the resulting
+    # list will contain no empty elements. When we loop through the
+    # elements, if we see one that is empty, or can't be split by ':',
+    # then we know the string has an invalid format.
+
+    items = items.strip('; \t\n\r\f\v')
+
     for item in items.split(';'):
-        item = item.strip()
-        if not item:
-            continue
 
         try:
             key, value = item.split(':')

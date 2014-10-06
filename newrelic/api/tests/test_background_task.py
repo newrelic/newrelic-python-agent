@@ -31,6 +31,34 @@ def _test_function_da_1():
 def _test_function_nl_1(arg):
     time.sleep(0.1)
 
+@newrelic.api.background_task.background_task()
+def _test_function_inner_nested_ignore():
+    pass
+
+@newrelic.api.background_task.background_task()
+def _test_function_outer_nested_ignore():
+    transaction = newrelic.api.transaction.current_transaction()
+    assert transaction is not None
+    transaction.ignore_transaction = True
+    try:
+        _test_function_inner_nested_ignore()
+    finally:
+        assert transaction.ignore_transaction
+
+@newrelic.api.background_task.background_task()
+def _test_function_inner_nested_stopped():
+    pass
+
+@newrelic.api.background_task.background_task()
+def _test_function_outer_nested_stopped():
+    transaction = newrelic.api.transaction.current_transaction()
+    assert transaction is not None
+    transaction.stopped = True
+    try:
+        _test_function_inner_nested_stopped()
+    finally:
+        assert transaction.stopped
+
 class TestCase(newrelic.tests.test_cases.TestCase):
 
     requires_collector = True
@@ -149,6 +177,12 @@ class TestCase(newrelic.tests.test_cases.TestCase):
 
     def test_background_task_name_lambda(self):
         _test_function_nl_1('name_lambda')
+
+    def test_background_task_nested_ignore(self):
+        _test_function_outer_nested_ignore()
+
+    def test_background_task_nested_stopped(self):
+        _test_function_outer_nested_stopped()
 
 if __name__ == '__main__':
     unittest.main()

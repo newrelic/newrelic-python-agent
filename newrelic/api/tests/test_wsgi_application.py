@@ -9,9 +9,17 @@ import newrelic.api.settings
 import newrelic.api.application
 import newrelic.api.transaction
 import newrelic.api.web_transaction
+import newrelic.api.background_task
 
 settings = newrelic.api.settings.settings()
 _application = newrelic.api.application.application_instance()
+
+def _dummy_start_response(status, headers, *args):
+    pass
+
+def _consume_wsgi_application(iterable):
+    list(iterable)
+    iterable.close()
 
 def _wsgiapp_function(environ, start_response):
     transaction = newrelic.api.transaction.current_transaction()
@@ -70,6 +78,92 @@ def _wsgiapp_named_wsgi_application_inner(environ, start_response):
 def _wsgiapp_named_wsgi_application_outer(environ, start_response):
     return _wsgiapp_named_wsgi_application_inner(
             environ, start_response)
+
+@newrelic.api.web_transaction.wsgi_application(
+        name='wsgiapp_named_wsgi_application_inner_ignore', group='Group')
+def _wsgiapp_named_wsgi_application_inner_ignore(environ, start_response):
+    transaction = newrelic.api.transaction.current_transaction()
+    assert transaction is None
+    return []
+
+@newrelic.api.web_transaction.wsgi_application(
+        name='wsgiapp_named_wsgi_application_outer_ignore', group='Group')
+def _wsgiapp_named_wsgi_application_outer_ignore(environ, start_response):
+    transaction = newrelic.api.transaction.current_transaction()
+    assert transaction is not None
+    assert transaction.enabled
+    assert not transaction.ignore_transaction
+
+    transaction.ignore_transaction = True
+
+    try:
+        return _wsgiapp_named_wsgi_application_inner_ignore(
+                environ, start_response)
+    finally:
+        assert transaction.ignore_transaction
+
+@newrelic.api.web_transaction.wsgi_application(
+        name='wsgiapp_named_wsgi_application_inner_stopped', group='Group')
+def _wsgiapp_named_wsgi_application_inner_stopped(environ, start_response):
+    transaction = newrelic.api.transaction.current_transaction()
+    assert transaction is None
+    return []
+
+@newrelic.api.web_transaction.wsgi_application(
+        name='wsgiapp_named_wsgi_application_outer_stopped', group='Group')
+def _wsgiapp_named_wsgi_application_outer_stopped(environ, start_response):
+    transaction = newrelic.api.transaction.current_transaction()
+    assert transaction is not None
+    assert transaction.enabled
+    assert not transaction.stopped
+
+    transaction.stopped = True
+
+    try:
+        return _wsgiapp_named_wsgi_application_inner_stopped(
+                environ, start_response)
+    finally:
+        assert transaction.stopped
+
+@newrelic.api.background_task.background_task()
+def _wsgiapp_named_wsgi_application_inner_bg_ignore():
+    transaction = newrelic.api.transaction.current_transaction()
+    assert transaction is None
+
+@newrelic.api.web_transaction.wsgi_application(
+        name='wsgiapp_named_wsgi_application_outer_bg_ignore', group='Group')
+def _wsgiapp_named_wsgi_application_outer_bg_ignore(environ, start_response):
+    transaction = newrelic.api.transaction.current_transaction()
+    assert transaction is not None
+    assert transaction.enabled
+    assert not transaction.ignore_transaction
+
+    transaction.ignore_transaction = True
+
+    try:
+        return []
+    finally:
+        assert transaction.ignore_transaction
+
+@newrelic.api.background_task.background_task()
+def _wsgiapp_named_wsgi_application_inner_bg_stopped():
+    transaction = newrelic.api.transaction.current_transaction()
+    assert transaction is None
+
+@newrelic.api.web_transaction.wsgi_application(
+        name='wsgiapp_named_wsgi_application_outer_bg_stopped', group='Group')
+def _wsgiapp_named_wsgi_application_outer_bg_stopped(environ, start_response):
+    transaction = newrelic.api.transaction.current_transaction()
+    assert transaction is not None
+    assert transaction.enabled
+    assert not transaction.stopped
+
+    transaction.stopped = True
+
+    try:
+        return []
+    finally:
+        assert transaction.stopped
 
 @newrelic.api.web_transaction.wsgi_application(framework='Framework')
 def _wsgiapp_named_framework_wsgi_application(environ, start_response):
@@ -189,6 +283,30 @@ class TestCase(newrelic.tests.test_cases.TestCase):
     def test_wsgiapp_named_wsgi_application_nested(self):
         environ = { "REQUEST_URI": "/wsgiapp_named_wsgi_application_nested" }
         _wsgiapp_named_wsgi_application_outer(environ, None).close()
+
+    def test_wsgiapp_named_wsgi_application_nested_ignore(self):
+        environ = { "REQUEST_URI": "/wsgiapp_named_wsgi_application_nested_ignore" }
+        _consume_wsgi_application(
+                _wsgiapp_named_wsgi_application_outer_ignore(environ,
+                _dummy_start_response))
+
+    def test_wsgiapp_named_wsgi_application_nested_stopped(self):
+        environ = { "REQUEST_URI": "/wsgiapp_named_wsgi_application_nested_stopped" }
+        _consume_wsgi_application(
+                _wsgiapp_named_wsgi_application_outer_stopped(environ,
+                _dummy_start_response))
+
+    def test_wsgiapp_named_wsgi_application_nested_bg_ignore(self):
+        environ = { "REQUEST_URI": "/wsgiapp_named_wsgi_application_nested_bg_ignore" }
+        _consume_wsgi_application(
+                _wsgiapp_named_wsgi_application_outer_bg_ignore(environ,
+                _dummy_start_response))
+
+    def test_wsgiapp_named_wsgi_application_nested_bg_stopped(self):
+        environ = { "REQUEST_URI": "/wsgiapp_named_wsgi_application_nested_bg_stopped" }
+        _consume_wsgi_application(
+                _wsgiapp_named_wsgi_application_outer_bg_stopped(environ,
+                _dummy_start_response))
 
     def test_wsgiapp_named_framework_wsgi_application(self):
         environ = { "REQUEST_URI":

@@ -1153,22 +1153,31 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None,
         framework = (framework, None)
 
     def _nr_wsgi_application_wrapper_(wrapped, instance, args, kwargs):
-        transaction = current_transaction()
+        # Check to see if any transaction is present, even an inactive
+        # one which has been marked to be ignored or which has been
+        # stopped already.
 
-        # Check to see if we are being called within the context of any
-        # sort of transaction. If we are, then we don't bother doing
-        # anything and just call the wrapped function.
+        transaction = current_transaction(active_only=False)
 
         if transaction:
-            # Record details of framework against the transaction for
-            # later reporting as supportability metrics.
+            # If there is any active transaction we will return without
+            # applying a new WSGI application wrapper context. In the
+            # case of a transaction which is being ignored or which has
+            # been stopped, we do that without doing anything further.
+
+            if transaction.ignore_transaction or transaction.stopped:
+                return wrapped(*args, **kwargs)
+
+            # For any other transaction, we record the details of any
+            # framework against the transaction for later reporting as
+            # supportability metrics.
 
             if framework:
                 transaction._frameworks.add(framework)
 
-            # Override the web transaction name to be the name of the
-            # wrapped callable if not explicitly named, and we want the
-            # default name to be that of the WSGI component for the
+            # Also override the web transaction name to be the name of
+            # the wrapped callable if not explicitly named, and we want
+            # the default name to be that of the WSGI component for the
             # framework. This will override the use of a raw URL which
             # can result in metric grouping issues where a framework is
             # not instrumented or is leaking URLs.

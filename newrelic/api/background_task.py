@@ -32,8 +32,6 @@ class BackgroundTask(Transaction):
 def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
 
     def wrapper(wrapped, instance, args, kwargs):
-        transaction = current_transaction()
-
         if callable(name):
             if instance is not None:
                 _name = name(instance, *args, **kwargs)
@@ -55,16 +53,27 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
         else:
             _group = group
 
-        # Check to see if we are being called within the context
-        # of a web transaction. If we are, then we will just
-        # flag the current web transaction as a background task
-        # if not already marked as such and name the web
-        # transaction as well. In any case, if nested in another
-        # transaction be it a web transaction or background
-        # task, then we don't do anything else and just called
-        # the wrapped function.
+        # Check to see if any transaction is present, even an inactive
+        # one which has been marked to be ignored or which has been
+        # stopped already.
+
+        transaction = current_transaction(active_only=False)
 
         if transaction:
+            # If there is any active transaction we will return without
+            # applying a new WSGI application wrapper context. In the
+            # case of a transaction which is being ignored or which has
+            # been stopped, we do that without doing anything further.
+
+            if transaction.ignore_transaction or transaction.stopped:
+                return wrapped(*args, **kwargs)
+
+            # Check to see if we are being called within the context of
+            # a web transaction. If we are, then we will just flag the
+            # current web transaction as a background task if not
+            # already marked as such and name the web transaction as
+            # well.
+
             if type(transaction) == WebTransaction:
                 if not transaction.background_task:
                     transaction.background_task = True

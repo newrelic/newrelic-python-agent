@@ -74,6 +74,11 @@ def _parse_synthetics_header(header):
 
     return synthetics
 
+
+def _remove_query_string(url):
+    out = urlparse.urlsplit(url)
+    return urlparse.urlunsplit((out.scheme, out.netloc, out.path, '', ''))
+
 class WebTransaction(Transaction):
 
     report_unicode_error = True
@@ -376,6 +381,13 @@ class WebTransaction(Transaction):
             for name in settings.include_environ:
                 if name in environ:
                     self._request_environment[name] = environ[name]
+
+        # Strip out the query params from the HTTP_REFERER if capture_params
+        # is disabled in the settings.
+        if (self._request_environment.get('HTTP_REFERER') and
+                not self.capture_params):
+            self._request_environment['HTTP_REFERER'] = \
+                _remove_query_string(self._request_environment['HTTP_REFERER'])
 
         # Flags for tracking whether RUM header and footer have been
         # generated.

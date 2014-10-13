@@ -647,84 +647,6 @@
             "New Relic"
         ]
     },
-    "newrelic/common/tests/system_info/1proc1coreNoHt.txt": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/tests/system_info/1proc1coreNoHtARMv6.txt": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/tests/system_info/1proc1coreNoHtAws.txt": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/tests/system_info/1proc1coreNoHtCentos.txt": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/tests/system_info/1proc1coreWithHt.txt": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/tests/system_info/1proc2coreNoHt.txt": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/tests/system_info/1proc4coreNoHt.txt": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/tests/system_info/2proc1coreWithHt.txt": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/tests/system_info/2proc2coreNoHt.txt": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/tests/system_info/2proc4coreNoHt.txt": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/tests/system_info/UnknownProc4coreUnknownHtVmwareCentOS.txt": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/tests/system_info/malformed-file.txt": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/tests/system_info/meminfo.txt": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
     "newrelic/common/tests/test_in_function.py": {
         "hash": "n/a",
         "libraries": [
@@ -768,12 +690,6 @@
         ]
     },
     "newrelic/common/tests/test_stopwatch.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/common/tests/test_system_info.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

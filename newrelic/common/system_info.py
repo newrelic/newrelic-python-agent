@@ -178,8 +178,9 @@ def _darwin_physical_processor_count():
     return (num_physical_processors, num_physical_cores)
 
 def physical_processor_count():
-    """Returns the number of physical processors in the system. If the
-    value cannot be determined, then None is returned.
+    """Returns the number of physical processors and the number of physical
+    cores in the system as a tuple. One or both values may be None, if a value
+    cannot be determined.
 
     """
 

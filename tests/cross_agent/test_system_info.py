@@ -5,27 +5,22 @@ from newrelic.common.system_info import (logical_processor_count,
         physical_processor_count, total_physical_memory, physical_memory_used,
         _linux_physical_processor_count, _linux_total_physical_memory)
 
-
 def test_logical_processor_count():
     assert logical_processor_count() >= 1
-
 
 def test_physical_processor_count():
     processors_count, cores_count = physical_processor_count()
     assert processors_count is None or processors_count >= 0
     assert cores_count is None or cores_count >= 0
 
-
 def test_total_physical_memory():
     assert total_physical_memory() >= 0
-
 
 def test_physical_memory_used():
     assert physical_memory_used() >= 0
 
     if total_physical_memory() > 0:
         assert physical_memory_used() <= total_physical_memory()
-
 
 @pytest.mark.parametrize('filename,expected', [
     ('1pack_1core_1logical.txt', (1, 1)),
@@ -48,7 +43,6 @@ def test_linux_physical_processor_count(filename, expected):
 
     result = _linux_physical_processor_count(path)
     assert result == expected
-
 
 @pytest.mark.parametrize('filename,expected', [
     ('meminfo_4096MB.txt', 4194304/1024.0),

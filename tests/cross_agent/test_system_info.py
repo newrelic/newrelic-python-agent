@@ -11,8 +11,9 @@ def test_logical_processor_count():
 
 
 def test_physical_processor_count():
-    count = physical_processor_count()
-    assert count is None or count >= 0
+    processors_count, cores_count = physical_processor_count()
+    assert processors_count is None or processors_count >= 0
+    assert cores_count is None or cores_count >= 0
 
 
 def test_total_physical_memory():

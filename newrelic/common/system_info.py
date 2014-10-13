@@ -9,8 +9,6 @@ import re
 import multiprocessing
 import subprocess
 
-from ..packages import requests
-
 try:
     from subprocess import check_output as _execute_program
 except ImportError:

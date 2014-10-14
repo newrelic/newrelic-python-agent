@@ -19,7 +19,12 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
+class _NullHandler(logging.Handler):
+    def emit(self, record):
+        pass
+
 _logger = logging.getLogger(__name__)
+_logger.addHandler(_NullHandler())
 
 # The Settings objects and the global default settings. We create a
 # distinct type for each sub category of settings that the agent knows

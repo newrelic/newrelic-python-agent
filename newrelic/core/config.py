@@ -19,6 +19,13 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
+class _NullHandler(logging.Handler):
+    def emit(self, record):
+        pass
+
+_logger = logging.getLogger(__name__)
+_logger.addHandler(_NullHandler())
+
 # The Settings objects and the global default settings. We create a
 # distinct type for each sub category of settings that the agent knows
 # about so that an error when accessing a non existant setting is more
@@ -92,6 +99,46 @@ def _environ_as_set(name, default=''):
     value = os.environ.get(name, default)
     return set(value.split())
 
+def _environ_as_mapping(name, default=''):
+    result = []
+    items = os.environ.get(name, default)
+
+    # Strip all whitespace and semicolons from the end of the string.
+    # That way, when we split a valid labels string by ';', the resulting
+    # list will contain no empty elements. When we loop through the
+    # elements, if we see one that is empty, or can't be split by ':',
+    # then we know the string has an invalid format.
+
+    items = items.strip('; \t\n\r\f\v')
+
+    if not items:
+        return result
+
+    for item in items.split(';'):
+
+        try:
+            key, value = item.split(':')
+        except ValueError:
+            _logger.warning('Invalid configuration. Cannot parse: %s.'
+                    'Expected format \'key1:value1;key2:value2 ... \'.' %
+                     (items,))
+            result = []
+            break
+
+        key = key.strip()
+        value = value.strip()
+
+        if key and value:
+            result.append((key, value))
+        else:
+            _logger.warning('Invalid configuration. Cannot parse: %s.'
+                    'Expected format \'key1:value1;key2:value2 ... \'.' %
+                     (items,))
+            result = []
+            break
+
+    return result
+
 def _parse_ignore_status_codes(value, target):
     items = value.split()
     for item in items:
@@ -152,6 +199,8 @@ _settings.proxy_pass = os.environ.get('NEW_RELIC_PROXY_PASS', None)
 _settings.app_name = os.environ.get('NEW_RELIC_APP_NAME', 'Python Application')
 
 _settings.process_host.display_name = None
+
+_settings.labels = _environ_as_mapping('NEW_RELIC_LABELS', '')
 
 _settings.monitor_mode = _environ_as_bool('NEW_RELIC_MONITOR_MODE', True)
 

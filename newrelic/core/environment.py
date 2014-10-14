@@ -45,7 +45,19 @@ def environment_settings():
 
     env.append(('Total Physical Memory (MB)', total_physical_memory()))
     env.append(('Logical Processors', logical_processor_count()))
-    env.append(('Physical Processors', physical_processor_count()))
+
+    physical_processor_packages, physical_cores = physical_processor_count()
+
+    # Report this attribute only if it has a valid value.
+
+    if physical_processor_packages:
+        env.append(('Physical Processor Packages',
+            physical_processor_packages))
+
+    # Report this attribute only if it has a valid value.
+
+    if physical_cores:
+        env.append(('Physical Cores', physical_cores))
 
     # Python information.
 

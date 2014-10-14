@@ -99,11 +99,11 @@ def _linux_physical_processor_count(filename=None):
     filename = filename or '/proc/cpuinfo'
 
     processors = 0
-    physical_cores = {}
+    physical_processors = {}
 
     try:
         with open(filename, 'r') as fp:
-            physical_id = None
+            processor_id = None
             cores = None
 
             for line in fp:
@@ -127,14 +127,14 @@ def _linux_physical_processor_count(filename=None):
                     # thus we only end up remember the number of
                     # cores from the last one we see.
 
-                    if cores and physical_id:
-                        physical_cores[physical_id] = cores
+                    if cores and processor_id:
+                        physical_processors[processor_id] = cores
 
-                        physical_id = None
+                        processor_id = None
                         cores = None
 
                 elif key == 'physical id':
-                    physical_id = value
+                    processor_id = value
 
                 elif key == 'cpu cores':
                     cores = int(value)
@@ -143,29 +143,44 @@ def _linux_physical_processor_count(filename=None):
         # away the number of cores for the physical ID we saw in the
         # last processor section.
 
-        if cores and physical_id:
-            physical_cores[physical_id] = cores
+        if cores and processor_id:
+            physical_processors[processor_id] = cores
 
     except Exception:
         pass
 
-    return sum(physical_cores.values()) or processors or None
+    num_physical_processors = len(physical_processors) or (processors
+                                        if processors == 1 else None)
+    num_physical_cores = sum(physical_processors.values()) or (processors
+                                        if processors == 1 else None)
+
+    return (num_physical_processors, num_physical_cores)
 
 def _darwin_physical_processor_count():
     # For MacOS X we can use sysctl.
 
-    command = ['/usr/sbin/sysctl', '-n', 'hw.physicalcpu']
+    physical_processor_cmd = ['/usr/sbin/sysctl', '-n', 'hw.packages']
 
     try:
-        return int(_execute_program(command, stderr=subprocess.PIPE))
-    except subprocess.CalledProcessError:
-        pass
-    except ValueError:
-        pass
+        num_physical_processors = int(_execute_program(physical_processor_cmd,
+            stderr=subprocess.PIPE))
+    except (subprocess.CalledProcessError, ValueError):
+        num_physical_processors = None
+
+    physical_core_cmd = ['/usr/sbin/sysctl', '-n', 'hw.physicalcpu']
+
+    try:
+        num_physical_cores = int(_execute_program(physical_core_cmd,
+            stderr=subprocess.PIPE))
+    except (subprocess.CalledProcessError, ValueError):
+        num_physical_cores = None
+
+    return (num_physical_processors, num_physical_cores)
 
 def physical_processor_count():
-    """Returns the number of physical processors in the system. If the
-    value cannot be determined, then None is returned.
+    """Returns the number of physical processors and the number of physical
+    cores in the system as a tuple. One or both values may be None, if a value
+    cannot be determined.
 
     """
 

@@ -4,7 +4,7 @@ import webtest
 
 from testing_support.fixtures import (override_application_settings,
     validate_custom_parameters, validate_transaction_errors,
-    validate_request_params)
+    validate_request_params, validate_parameter_groups)
 
 from newrelic.agent import (background_task, add_custom_parameter,
     record_exception, wsgi_application)
@@ -319,3 +319,16 @@ def test_other_transaction_hsm_environ_capture_request_params_enabled():
 
     response = target_application.get('/', params='key-1=value-1',
             extra_environ=environ)
+
+@override_application_settings(
+    _test_transaction_settings_hsm_enabled_capture_params)
+@validate_parameter_groups('Request environment',
+        required_params=[('HTTP_REFERER', 'http://example.com/blah')])
+def test_http_referrer_url_is_sanitized_in_hsm():
+    target_application = webtest.TestApp(
+            target_wsgi_application_capture_params)
+
+    environ = {}
+    environ['HTTP_REFERER'] = 'http://example.com/blah?query=value'
+
+    response = target_application.get('/', extra_environ=environ)

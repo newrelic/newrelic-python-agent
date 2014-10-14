@@ -19,7 +19,12 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
+class _NullHandler(logging.Handler):
+    def emit(self, record):
+        pass
+
 _logger = logging.getLogger(__name__)
+_logger.addHandler(_NullHandler())
 
 # The Settings objects and the global default settings. We create a
 # distinct type for each sub category of settings that the agent knows
@@ -105,6 +110,9 @@ def _environ_as_mapping(name, default=''):
     # then we know the string has an invalid format.
 
     items = items.strip('; \t\n\r\f\v')
+
+    if not items:
+        return result
 
     for item in items.split(';'):
 

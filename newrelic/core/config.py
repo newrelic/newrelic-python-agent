@@ -106,6 +106,9 @@ def _environ_as_mapping(name, default=''):
 
     items = items.strip('; \t\n\r\f\v')
 
+    if not items:
+        return result
+
     for item in items.split(';'):
 
         try:

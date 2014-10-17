@@ -850,18 +850,28 @@ class StatsEngine(object):
             record['nr.syntheticsJobId'] = txn.synthetics_job_id
             record['nr.syntheticsMonitorId'] = txn.synthetics_monitor_id
 
-        def _update_entry(source, target):
+        def _add_call_time(source, target):
             try:
                 record[target] = self.__stats_table[
                         (source, '')].total_call_time
             except KeyError:
                 pass
 
-        _update_entry('WebFrontend/QueueTime', 'queueDuration')
+        def _add_call_count(source, target):
+            try:
+                record[target] = self.__stats_table[
+                        (source, '')].call_count
+            except KeyError:
+                pass
 
-        _update_entry('External/all', 'externalDuration')
-        _update_entry('Database/all', 'databaseDuration')
-        _update_entry('Memcache/all', 'memcacheDuration')
+        _add_call_time('WebFrontend/QueueTime', 'queueDuration')
+
+        _add_call_time('External/all', 'externalDuration')
+        _add_call_time('Database/all', 'databaseDuration')
+        _add_call_time('Memcache/all', 'memcacheDuration')
+
+        _add_call_count('External/all', 'externalCallCount')
+        _add_call_count('Database/all', 'databaseCallCount')
 
         analytic_event = [record, params]
         return analytic_event

@@ -315,3 +315,21 @@ class TransactionNode(_TransactionNode):
     def slow_sql_nodes(self, stats):
         for item in self.slow_sql:
             yield item.slow_sql_node(stats, self)
+
+    def apdex_perf_zone(self):
+        """Return the single letter representation of an apdex perf zone."""
+
+        # Apdex is only valid for WebTransactions.
+
+        if self.type != 'WebTransaction':
+            return None
+
+        if self.errors:
+            return 'F'
+        else:
+            if self.duration <= self.apdex_t:
+                return 'S'
+            elif self.duration <= 4 * self.apdex_t:
+                return 'T'
+            else:
+                return 'F'

@@ -48,7 +48,8 @@ sys.meta_path.insert(0, newrelic.api.import_hook.ImportHookFinder())
 # if feature flags not in set are provided.
 
 _FEATURE_FLAGS = set([
-    'tornado.instrumentation.r2'
+    'tornado.instrumentation.r2',
+    'pymongo.instrumentation.r2',
 ])
 
 # Names of configuration file and deployment environment. This
@@ -1940,12 +1941,21 @@ def _process_module_builtin_defaults():
     _process_module_definition('solr',
             'newrelic.hooks.solr_solrpy')
 
-    _process_module_definition('pymongo.connection',
-            'newrelic.hooks.nosql_pymongo',
-            'instrument_pymongo_connection')
-    _process_module_definition('pymongo.collection',
-            'newrelic.hooks.nosql_pymongo',
-            'instrument_pymongo_collection')
+    if 'pymongo.instrumentation.r2' in _settings.feature_flag:
+        _process_module_definition('pymongo.connection',
+                'newrelic.hooks.datastore_pymongo',
+                'instrument_pymongo_connection')
+        _process_module_definition('pymongo.collection',
+                'newrelic.hooks.datastore_pymongo',
+                'instrument_pymongo_collection')
+
+    else:
+        _process_module_definition('pymongo.connection',
+                'newrelic.hooks.nosql_pymongo',
+                'instrument_pymongo_connection')
+        _process_module_definition('pymongo.collection',
+                'newrelic.hooks.nosql_pymongo',
+                'instrument_pymongo_collection')
 
     _process_module_definition('redis.connection',
             'newrelic.hooks.nosql_redis',

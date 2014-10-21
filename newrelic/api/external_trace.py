@@ -77,11 +77,13 @@ class ExternalTrace(TimeTrace):
 
         if settings.cross_application_tracer.enabled:
 
+            transaction.is_part_of_cat = True
             encoded_cross_process_id = obfuscate(settings.cross_process_id,
                     settings.encoding_key)
             nr_headers.append(('X-NewRelic-ID', encoded_cross_process_id))
 
-            transaction_data = [transaction.guid, transaction.record_tt]
+            transaction_data = [transaction.guid, transaction.record_tt,
+                    transaction.trip_id, transaction.path_hash]
             encoded_transaction = obfuscate(json_encode(transaction_data),
                     settings.encoding_key)
             nr_headers.append(('X-NewRelic-Transaction', encoded_transaction))

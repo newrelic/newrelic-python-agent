@@ -8,7 +8,7 @@ import logging
 import warnings
 import itertools
 import random
-from hash_digest import md5
+from hashlib import md5
 
 try:
     import thread

@@ -1094,6 +1094,14 @@ def create_session(license_key, app_name, linked_applications,
         session = ApplicationSession.create_session(license_key, app_name,
                 linked_applications, environment, settings)
 
+    # When session creation is unsucessful None is returned. We need to catch
+    # that and return None. Session creation can faile ifdata-collector is down
+    # or if the configuration is wrong, such as having the capture_params true
+    # in high security mode.
+
+    if session is None:
+        return None
+
     # We now need to send up the final merged configuration using the
     # agent_settings() method. We must make sure we pass the
     # configuration through global_settings_dump() to strip/mask any

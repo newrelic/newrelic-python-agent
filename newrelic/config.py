@@ -730,7 +730,7 @@ def _load_configuration(config_file=None, environment=None,
 
     for function in _settings.transaction_tracer.generator_trace:
         try:
-            (module, object_path) = string.splitfields(function, ':', 1)
+            (module, object_path) = function.split(':', 1)
 
             name = None
             group = 'Function'
@@ -1168,7 +1168,7 @@ def _process_generator_trace_configuration():
 
         try:
             function = _config_object.get(section, 'function')
-            (module, object_path) = string.splitfields(function, ':', 1)
+            (module, object_path) = function.split(':', 1)
 
             name = None
             group = 'Function'
@@ -1225,7 +1225,7 @@ def _process_profile_trace_configuration():
 
         try:
             function = _config_object.get(section, 'function')
-            (module, object_path) = string.splitfields(function, ':', 1)
+            (module, object_path) = function.split(':', 1)
 
             name = None
             group = 'Function'

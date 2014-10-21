@@ -1095,7 +1095,7 @@ def create_session(license_key, app_name, linked_applications,
                 linked_applications, environment, settings)
 
     # When session creation is unsucessful None is returned. We need to catch
-    # that and return None. Session creation can faile ifdata-collector is down
+    # that and return None. Session creation can fail if data-collector is down
     # or if the configuration is wrong, such as having the capture_params true
     # in high security mode.
 

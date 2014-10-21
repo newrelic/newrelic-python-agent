@@ -351,6 +351,7 @@ class WebTransaction(Transaction):
                         self.client_cross_process_id = client_cross_process_id
                         self.client_account_id = client_account_id
                         self.client_application_id = client_application_id
+                        self.is_part_of_cat = True
 
                         header_name = 'HTTP_X_NEWRELIC_TRANSACTION'
                         txn_header = self.decode_newrelic_header(
@@ -366,6 +367,9 @@ class WebTransaction(Transaction):
                             # set to True by an earlier request.
 
                             self.record_tt = self.record_tt or txn_header[1]
+
+                            self._trip_id = txn_header[2]
+                            self._referring_path_hash = txn_header[3]
 
                 except Exception:
                     pass
@@ -383,7 +387,7 @@ class WebTransaction(Transaction):
 
         # Strip out the query params from the HTTP_REFERER if capture_params
         # is disabled in the settings.
-        
+
         if (self._request_environment.get('HTTP_REFERER') and
                 not self.capture_params):
             self._request_environment['HTTP_REFERER'] = \

@@ -842,21 +842,21 @@ class StatsEngine(object):
         record['duration'] = transaction.duration
         record['nr.guid'] = transaction.guid
 
-        def _add_if_not_none(key, value):
-            if value is not None:
+        def _add_if_not_empty(key, value):
+            if value:
                 record[key] = value
 
         if transaction.path_hash:
             record['nr.tripId'] = transaction.trip_id
             record['nr.pathHash'] = transaction.path_hash
 
-            _add_if_not_none('nr.referringPathHash',
-                    transaction._referring_path_hash)
-            _add_if_not_none('nr.alternatePathHashes',
-                    ';'.join(transaction.alternate_path_hash))
-            _add_if_not_none('nr.referringTransactionGuid',
+            _add_if_not_empty('nr.referringPathHash',
+                    transaction.referring_path_hash)
+            _add_if_not_empty('nr.alternatePathHashes',
+                    ';'.join(transaction.alternate_path_hashes))
+            _add_if_not_empty('nr.referringTransactionGuid',
                     transaction.referring_transaction_guid)
-            _add_if_not_none('nr.apdexPerfZone',
+            _add_if_not_empty('nr.apdexPerfZone',
                     transaction.apdex_perf_zone())
 
         # Add the Synthetics attributes to the 'records' dict.

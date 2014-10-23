@@ -9,7 +9,8 @@ import tornado.ioloop
 from newrelic.packages import six
 
 from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors, raise_background_exceptions)
+    validate_transaction_errors, raise_background_exceptions,
+    wait_for_background_threads)
 
 from newrelic.agent import function_wrapper
 
@@ -71,6 +72,7 @@ _test_wsgi_http_server_get_scoped_metrics = [
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('get', group='Uri',
     scoped_metrics=_test_wsgi_http_server_get_scoped_metrics)
+@wait_for_background_threads()
 def test_wsgi_http_server_get():
     response = _test_application.get('/get')
     response.mustcontain('WSGI RESPONSE')
@@ -88,6 +90,7 @@ _test_wsgi_http_server_post_scoped_metrics = [
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('post', group='Uri',
     scoped_metrics=_test_wsgi_http_server_post_scoped_metrics)
+@wait_for_background_threads()
 def test_wsgi_http_server_post():
     response = _test_application.post('/post', params={'a': 'b'})
     response.mustcontain('WSGI RESPONSE')

@@ -240,13 +240,12 @@ def collector_agent_registration_fixture(app_name=None, default_settings={}):
 @pytest.fixture(scope='function')
 def collector_available_fixture(request):
     application = application_instance()
-    assert application.active
+    active = application.active
+    assert active
 
 def raise_background_exceptions(timeout=5.0):
     @function_wrapper
     def _raise_background_exceptions(wrapped, instance, args, kwargs):
-        time.sleep(0.1)
-
         if getattr(raise_background_exceptions, 'enabled', None) is None:
             raise_background_exceptions.event = threading.Event()
         else:
@@ -258,25 +257,48 @@ def raise_background_exceptions(timeout=5.0):
         raise_background_exceptions.event.clear()
 
         try:
-            return wrapped(*args, **kwargs)
+            result = wrapped(*args, **kwargs)
+
         except:
+            # There was an exception in the immediate decorators.
+            # Raise it rather than those from background threads.
+
+            raise_background_exceptions.event.clear()
+            raise_background_exceptions.exception = None
             raise
+
         else:
-            if raise_background_exceptions.exception is not None:
-                tp, value, tb = raise_background_exceptions.exception
-                raise_background_exceptions.exception = None
-                six.reraise(tp, value, tb)
-        finally:
-            time.sleep(0.1)
+            # Immediate decorators completed normally. We need
+            # though to make sure that background threads
+            # completed within the timeout period and that no
+            # exception occurred in the background threads.
 
             raise_background_exceptions.enabled = False
-            result = raise_background_exceptions.event.wait(timeout)
+
             done = raise_background_exceptions.event.is_set()
             raise_background_exceptions.event.clear()
 
+            exc_info = raise_background_exceptions.exception
+            raise_background_exceptions.exception = None
+
             assert done, 'Timeout waiting for background task to finish.'
 
+            if exc_info is not None:
+                six.reraise(*exc_info)
+
+        return result
+
     return _raise_background_exceptions
+
+def wait_for_background_threads(timeout=5.0):
+    @function_wrapper
+    def _wait_for_background_threads(wrapped, instance, args, kwargs):
+        try:
+            return wrapped(*args, **kwargs)
+        finally:
+            raise_background_exceptions.event.wait(timeout)
+
+    return _wait_for_background_threads
 
 @function_wrapper
 def catch_background_exceptions(wrapped, instance, args, kwargs):

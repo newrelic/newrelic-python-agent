@@ -10,7 +10,8 @@ import tornado.ioloop
 from newrelic.packages import six
 
 from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors, raise_background_exceptions)
+    validate_transaction_errors, raise_background_exceptions,
+    wait_for_background_threads)
 
 from newrelic.agent import function_wrapper, callable_name
 
@@ -80,6 +81,7 @@ _test_async_application_main_get_scoped_metrics = [
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_async_application:MainHandler.get',
     scoped_metrics=_test_async_application_main_get_scoped_metrics)
+@wait_for_background_threads()
 def test_async_application_main_get():
     response = _test_application.get('/main')
     response.mustcontain('MAIN RESPONSE')
@@ -95,6 +97,7 @@ _test_async_application_immediate_prepare_get_scoped_metrics = [
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_async_application:ImmediatePrepareHandler.get',
     scoped_metrics=_test_async_application_immediate_prepare_get_scoped_metrics)
+@wait_for_background_threads()
 def test_async_application_immediate_prepare_get():
     response = _test_application.get('/immediate_prepare')
     response.mustcontain('PREPARE RESPONSE')
@@ -110,6 +113,7 @@ _test_async_application_engine_immediate_prepare_get_scoped_metrics = [
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_async_application:EngineImmediatePrepareHandler.get',
     scoped_metrics=_test_async_application_engine_immediate_prepare_get_scoped_metrics)
+@wait_for_background_threads()
 def test_async_application_engine_immediate_prepare_get():
     response = _test_application.get('/engine_immediate_prepare')
     response.mustcontain('PREPARE RESPONSE')
@@ -125,6 +129,7 @@ _test_async_application_engine_multi_list_prepare_get_scoped_metrics = [
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_async_application:EngineMultiListPrepareHandler.get',
     scoped_metrics=_test_async_application_engine_multi_list_prepare_get_scoped_metrics)
+@wait_for_background_threads()
 def test_async_application_engine_multi_list_prepare_get():
     response = _test_application.get('/engine_multi_list_prepare')
     response.mustcontain('PREPARE RESPONSE')
@@ -138,8 +143,9 @@ _test_async_application_engine_multi_yield_prepare_get_scoped_metrics = [
 @setup_application_server
 @raise_background_exceptions()
 @validate_transaction_errors(errors=[])
-#@validate_transaction_metrics('_test_async_application:EngineMultiYieldPrepareHandler.get',
-#    scoped_metrics=_test_async_application_engine_multi_yield_prepare_get_scoped_metrics)
+@validate_transaction_metrics('_test_async_application:EngineMultiYieldPrepareHandler.get',
+    scoped_metrics=_test_async_application_engine_multi_yield_prepare_get_scoped_metrics)
+@wait_for_background_threads()
 def test_async_application_engine_multi_yield_prepare_get():
     response = _test_application.get('/engine_multi_yield_prepare')
     response.mustcontain('PREPARE RESPONSE')
@@ -155,6 +161,7 @@ _test_async_application_engine_cascade_prepare_get_scoped_metrics = [
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_async_application:EngineCascadePrepareHandler.get',
     scoped_metrics=_test_async_application_engine_cascade_prepare_get_scoped_metrics)
+@wait_for_background_threads()
 def test_async_application_engine_cascade_prepare_get():
     response = _test_application.get('/engine_cascade_prepare')
     response.mustcontain('PREPARE RESPONSE')
@@ -169,8 +176,9 @@ _test_async_application_engine_external_prepare_get_scoped_metrics = [
 @setup_application_server
 @raise_background_exceptions()
 @validate_transaction_errors(errors=[])
-#@validate_transaction_metrics('_test_async_application:EngineExternalPrepareHandler.get',
-#    scoped_metrics=_test_async_application_engine_external_prepare_get_scoped_metrics)
+@validate_transaction_metrics('_test_async_application:EngineExternalPrepareHandler.get',
+    scoped_metrics=_test_async_application_engine_external_prepare_get_scoped_metrics)
+@wait_for_background_threads()
 def test_async_application_engine_external_prepare_get():
     response = _test_application.get('/engine_external_prepare')
     response.mustcontain('PREPARE RESPONSE')
@@ -194,6 +202,7 @@ _test_async_application_template_get_scoped_metrics = [
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_async_application:TemplateHandler.get',
     scoped_metrics=_test_async_application_template_get_scoped_metrics)
+@wait_for_background_threads()
 def test_async_application_template_get():
     response = _test_application.get('/template')
     response.mustcontain('TEMPLATE RESPONSE')
@@ -222,6 +231,7 @@ _test_async_application_delay_get_scoped_metrics = [
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_async_application:DelayHandler.get',
     scoped_metrics=_test_async_application_delay_get_scoped_metrics)
+@wait_for_background_threads()
 def test_async_application_delay_get():
     response = _test_application.get('/delay')
     response.mustcontain('DELAY RESPONSE')
@@ -242,6 +252,7 @@ _test_async_application_engine_get_scoped_metrics = [
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_async_application:EngineHandler.get',
     scoped_metrics=_test_async_application_engine_get_scoped_metrics)
+@wait_for_background_threads()
 def test_async_application_engine_get():
     response = _test_application.get('/engine')
     response.mustcontain('DELAY RESPONSE')
@@ -263,6 +274,7 @@ _test_async_application_engine_return_get_scoped_metrics = [
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_async_application:EngineReturnHandler.get',
     scoped_metrics=_test_async_application_engine_return_get_scoped_metrics)
+@wait_for_background_threads()
 def test_async_application_engine_return_get():
     response = _test_application.get('/engine_return')
     response.mustcontain('RETURN RESPONSE')
@@ -284,6 +296,7 @@ _test_async_application_engine_error_get_scoped_metrics = [
     py2='exceptions:RuntimeError', py3='builtins:RuntimeError')])
 @validate_transaction_metrics('_test_async_application:EngineErrorHandler.get',
     scoped_metrics=_test_async_application_engine_error_get_scoped_metrics)
+@wait_for_background_threads()
 def test_async_application_engine_error_get():
     response = _test_application.get('/engine_error', status=500)
 
@@ -304,6 +317,7 @@ _test_async_application_coroutine_get_scoped_metrics = [
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_async_application:CoroutineHandler.get',
     scoped_metrics=_test_async_application_coroutine_get_scoped_metrics)
+@wait_for_background_threads()
 def test_async_application_coroutine_get():
     response = _test_application.get('/coroutine')
     response.mustcontain('DELAY RESPONSE')
@@ -325,6 +339,7 @@ _test_async_application_coroutine_return_get_scoped_metrics = [
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_async_application:CoroutineReturnHandler.get',
     scoped_metrics=_test_async_application_coroutine_return_get_scoped_metrics)
+@wait_for_background_threads()
 def test_async_application_coroutine_return_get():
     response = _test_application.get('/coroutine_return')
     response.mustcontain('RETURN RESPONSE')
@@ -347,6 +362,7 @@ _test_async_application_coroutine_error_get_scoped_metrics = [
     py2='exceptions:RuntimeError', py3='builtins:RuntimeError')])
 @validate_transaction_metrics('_test_async_application:CoroutineErrorHandler.get',
     scoped_metrics=_test_async_application_coroutine_error_get_scoped_metrics)
+@wait_for_background_threads()
 def test_async_application_coroutine_error_get():
     response = _test_application.get('/coroutine_error', status=500)
 
@@ -365,6 +381,7 @@ _test_async_application_404_scoped_metrics = [
     py2='tornado.web:ErrorHandler.get',
     py3='tornado.web:RequestHandler.get'),
     scoped_metrics=_test_async_application_404_scoped_metrics)
+@wait_for_background_threads()
 def test_async_application_404():
     response = _test_application.get('/missing', status=404)
     response.mustcontain(no=['XXX'])
@@ -382,6 +399,7 @@ _test_async_application_raise_404_scoped_metrics = [
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_async_application:Raise404Handler.get',
     scoped_metrics=_test_async_application_raise_404_scoped_metrics)
+@wait_for_background_threads()
 def test_async_application_raise_404():
     response = _test_application.get('/raise404', status=404)
     response.mustcontain(no=['XXX'])
@@ -400,6 +418,7 @@ _test_async_application_main_post_scoped_metrics = [
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_async_application:MainHandler.post',
     scoped_metrics=_test_async_application_main_post_scoped_metrics)
+@wait_for_background_threads()
 def test_async_application_main_post():
     response = _test_application.post('/main', params={'a': 'b'})
     response.mustcontain('MAIN RESPONSE')
@@ -422,6 +441,7 @@ _test_async_application_main_put_scoped_metrics = [
     py2='_test_async_application:MainHandler.put',
     py3='tornado.web:RequestHandler.put'),
     scoped_metrics=_test_async_application_main_put_scoped_metrics)
+@wait_for_background_threads()
 def test_async_application_main_put():
     response = _test_application.put('/main', status=405)
     response.mustcontain(no=['XXX'])

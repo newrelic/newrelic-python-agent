@@ -1,5 +1,4 @@
 import webtest
-import json
 
 try:
     from urllib2 import urlopen  # Py2.X
@@ -10,13 +9,9 @@ import sqlite3 as db
 
 from newrelic.packages import six
 
-from testing_support.fixtures import override_application_settings
-
 from newrelic.agent import (add_user_attribute, add_custom_parameter,
     get_browser_timing_header, get_browser_timing_footer,
     application_settings, wsgi_application, transient_function_wrapper)
-
-from newrelic.common.encoding_utils import deobfuscate
 
 DATABASE_NAME = ':memory:'
 
@@ -52,11 +47,8 @@ def target_wsgi_application(environ, start_response):
         add_custom_parameter('dict', {})
 
     if path == '/db' or path == '/dbext':
-        #with db.connect(DATABASE_NAME) as connection:
         connection = db.connect(DATABASE_NAME)
         connection.execute("""create table test_db (a, b, c)""")
-            #connection.execute("""insert into test_db values (?, ?, ?)""",
-                    #(1, 1.0, 'a'))
 
     if path == '/ext' or path == '/dbext':
         r = urlopen('http://www.google.com')

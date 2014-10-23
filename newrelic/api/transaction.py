@@ -611,7 +611,7 @@ class Transaction(object):
         # If the referring_path_hash is unavailable then we use '0' as the
         # seed.
 
-        seed = self._referring_path_hash or '0'
+        seed = int((self._referring_path_hash or '0'), base=16)
 
         path_hash = self._generate_path_hash(identifier, seed)
 
@@ -631,7 +631,7 @@ class Transaction(object):
 
         """
         rotated = ((seed << 1) | (seed >> 31)) & 0xffffffff
-        return '%08x', rotated ^ int(md5(name).hexdigest()[:8], base=16)
+        return '%08x' % (rotated ^ int(md5(name).hexdigest()[:8], base=16))
 
     def add_profile_sample(self, stack_trace):
         if self._state != self.STATE_RUNNING:

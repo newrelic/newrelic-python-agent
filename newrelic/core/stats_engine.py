@@ -853,7 +853,7 @@ class StatsEngine(object):
             _add_if_not_empty('nr.referringPathHash',
                     transaction.referring_path_hash)
             _add_if_not_empty('nr.alternatePathHashes',
-                    ';'.join(transaction.alternate_path_hashes))
+                    ','.join(transaction.alternate_path_hashes))
             _add_if_not_empty('nr.referringTransactionGuid',
                     transaction.referring_transaction_guid)
             _add_if_not_empty('nr.apdexPerfZone',

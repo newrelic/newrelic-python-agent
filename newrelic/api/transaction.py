@@ -584,7 +584,12 @@ class Transaction(object):
 
     @property
     def alternate_path_hashes(self):
-        return set(self._alternate_path_hashes.values())
+        """Return the alternate path hashes but not including the current path
+        hash.
+
+        """
+        return (set(self._alternate_path_hashes.values()) -
+                set([self.path_hash]))
 
     @property
     def path_hash(self):

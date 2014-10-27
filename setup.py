@@ -121,7 +121,7 @@ def run_setup(with_extensions):
 
         if with_extensions:
             monotonic_libraries = []
-            if sys.platform == 'linux2':
+            if sys.platform in ('linux2', 'linux3'):
                 monotonic_libraries = ['rt']
 
             kwargs_tmp['ext_modules'] = [

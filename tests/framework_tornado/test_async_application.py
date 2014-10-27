@@ -17,6 +17,8 @@ from newrelic.agent import function_wrapper, callable_name
 
 requires_coroutine = pytest.mark.skipif(tornado.version_info[:2] < (3, 0),
     reason="Tornado only added gen.coroutine in 3.0.")
+requires_coroutine_error = pytest.mark.skipif(tornado.version_info[:2] < (3, 1),
+    reason="Tornado only exceptions in gen.coroutine in 3.1.")
 
 def select_python_version(py2, py3):
     return six.PY3 and py3 or py2
@@ -85,6 +87,33 @@ _test_async_application_main_get_scoped_metrics = [
 def test_async_application_main_get():
     response = _test_application.get('/main')
     response.mustcontain('MAIN RESPONSE')
+
+_test_async_application_asynchronous_get_scoped_metrics = [
+    ('Python/Tornado/Request/Process', 1),
+    ('Function/_test_async_application:AsynchronousHandler.get', 1),
+    ('Function/_test_async_application:AsynchronousHandler._on_download', 1)
+]
+
+if tornado.version_info[:2] < (3, 0):
+    _test_async_application_asynchronous_get_scoped_metrics.extend([
+        ('Function/tornado.simple_httpclient:SimpleAsyncHTTPClient.fetch', 1),
+    ])
+else:
+    _test_async_application_asynchronous_get_scoped_metrics.extend([
+        (select_python_version(
+            py2='Function/tornado.simple_httpclient:SimpleAsyncHTTPClient.fetch',
+            py3='Function/tornado.httpclient:AsyncHTTPClient.fetch'), 1),
+    ])
+
+@setup_application_server
+@raise_background_exceptions()
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics('_test_async_application:AsynchronousHandler.get',
+    scoped_metrics=_test_async_application_asynchronous_get_scoped_metrics)
+@wait_for_background_threads()
+def test_async_application_asynchronous_get():
+    response = _test_application.get('/asynchronous')
+    response.mustcontain('ASYNCHRONOUS RESPONSE')
 
 _test_async_application_immediate_prepare_get_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),
@@ -355,7 +384,7 @@ _test_async_application_coroutine_error_get_scoped_metrics = [
     #('Python/Tornado/Callback/Wait', 1),
 ]
 
-@requires_coroutine
+@requires_coroutine_error
 @setup_application_server
 @raise_background_exceptions()
 @validate_transaction_errors(errors=[select_python_version(

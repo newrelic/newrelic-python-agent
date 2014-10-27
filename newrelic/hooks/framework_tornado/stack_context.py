@@ -13,12 +13,27 @@ _logger = logging.getLogger(__name__)
 
 module_stack_context = None
 
-def callback_wrapper(request):
+def _nr_stack_context_wrap_wrapped_(request):
 
-    def _callback_wrapper(wrapped, instance, args, kwargs):
+    def _nr_stack_context_function_wrapper_(wrapped, instance, args, kwargs):
 
-        if retrieve_current_transaction():
-            return wrapped(*args, **kwargs)
+        # We can come in here with either an active transaction
+        # or a request with a transaction bound to it. If there
+        # is an active transaction then call the wrapped function
+        # within function trace and return immediately.
+
+        transaction = retrieve_current_transaction()
+
+        if transaction is not None:
+            name = callable_name(wrapped)
+
+            with FunctionTrace(transaction, name=name):
+                return wrapped(*args, **kwargs)
+
+        # For the case of a request with a transaction bound to
+        # it, we need to resume the transaction and then call it.
+        # As we resumed the transaction, need to handle
+        # suspending or finalizing it.
 
         transaction = resume_request_monitoring(request)
 
@@ -45,9 +60,9 @@ def callback_wrapper(request):
             else:
                 suspend_request_monitoring(request, name='Request/Output')
 
-    return _callback_wrapper
+    return _nr_stack_context_function_wrapper_
 
-def stack_context_wrap_wrapper(wrapped, instance, args, kwargs):
+def _nr_stack_context_wrap_wrapper_(wrapped, instance, args, kwargs):
     def _args(fn, *args, **kwargs):
         return fn
 
@@ -63,18 +78,19 @@ def stack_context_wrap_wrapper(wrapped, instance, args, kwargs):
 
     fn = _args(*args, **kwargs)
 
-    # Tornado 3.1 doesn't use _StackContextWrapper and checks
-    # for a '_wrapped' attribute instead which makes this a
-    # bit more fragile.
+    # We need to filter out certain out types of wrapped functions.
+    # Tornado 3.1 doesn't use _StackContextWrapper and checks for a
+    # '_wrapped' attribute instead which makes this a bit more fragile.
 
     if hasattr(module_stack_context, '_StackContextWrapper'):
-        if fn is None or fn.__class__ is module_stack_context._StackContextWrapper:
+        if (fn is None or
+                fn.__class__ is module_stack_context._StackContextWrapper):
             return fn
     else:
         if fn is None or hasattr(fn, '_wrapped'):
             return fn
 
-    fn = FunctionWrapper(fn, callback_wrapper(request))
+    fn = FunctionWrapper(fn, _nr_stack_context_wrap_wrapped_(request))
 
     return wrapped(fn)
 
@@ -82,4 +98,4 @@ def instrument_tornado_stack_context(module):
     global module_stack_context
     module_stack_context = module
 
-    wrap_function_wrapper(module, 'wrap', stack_context_wrap_wrapper)
+    wrap_function_wrapper(module, 'wrap', _nr_stack_context_wrap_wrapper_)

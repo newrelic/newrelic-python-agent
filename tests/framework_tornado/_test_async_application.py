@@ -20,9 +20,7 @@ class AsynchronousHandler(tornado.web.RequestHandler):
     @tornado.web.asynchronous
     def get(self):
         http = tornado.httpclient.AsyncHTTPClient()
-        print('AsynchronousHandler:get #1')
         http.fetch('http://example.com', self._on_download)
-        print('AsynchronousHandler:get #2')
     def _on_download(self, response):
         self.write('ASYNCHRONOUS RESPONSE')
         self.finish()

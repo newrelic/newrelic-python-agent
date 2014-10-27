@@ -334,7 +334,6 @@ class WebTransaction(Transaction):
                     client_cross_process_id = deobfuscate(
                             client_cross_process_id, settings.encoding_key)
 
-
                     # The cross process ID consists of the client
                     # account ID and the ID of the specific application
                     # the client is recording requests against. We need
@@ -351,13 +350,13 @@ class WebTransaction(Transaction):
                         self.client_cross_process_id = client_cross_process_id
                         self.client_account_id = client_account_id
                         self.client_application_id = client_application_id
-                        self.is_part_of_cat = True
 
                         header_name = 'HTTP_X_NEWRELIC_TRANSACTION'
                         txn_header = self.decode_newrelic_header(
                                 environ, header_name)
 
                         if txn_header:
+                            self.is_part_of_cat = True
                             self.referring_transaction_guid = txn_header[0]
 
                             # Incoming record_tt is OR'd with existing
@@ -368,8 +367,10 @@ class WebTransaction(Transaction):
 
                             self.record_tt = self.record_tt or txn_header[1]
 
-                            self._trip_id = txn_header[2]
-                            self._referring_path_hash = txn_header[3]
+                            if isinstance(txn_header[2], six.string_types):
+                                self._trip_id = txn_header[2]
+                            if isinstance(txn_header[3], six.string_types):
+                                self._referring_path_hash = txn_header[3]
 
                 except Exception:
                     pass

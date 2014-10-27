@@ -115,13 +115,21 @@ if with_setuptools:
             'console_scripts': ['newrelic-admin = newrelic.admin:main'],
             }
 
+def with_librt():
+    try:
+        if sys.platform.startswith('linux'):
+            import ctypes.util
+            return ctypes.util.find_library('rt')
+    except Exception:
+        pass
+
 def run_setup(with_extensions):
     def _run_setup():
         kwargs_tmp = dict(kwargs)
 
         if with_extensions:
             monotonic_libraries = []
-            if sys.platform in ('linux2', 'linux3'):
+            if with_librt():
                 monotonic_libraries = ['rt']
 
             kwargs_tmp['ext_modules'] = [

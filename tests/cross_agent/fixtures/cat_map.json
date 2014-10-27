@@ -13,29 +13,7 @@
     "expectedIntrinsicFields": {
       "nr.guid": "9323dc260548ed0e",
       "nr.tripId": "7e249074f277923d",
-      "nr.pathHash": "169d655a",
-      "nr.referringTransactionGuid": "b854df4feb2b1f06",
-      "nr.referringPathHash": "5d2957be"
-    },
-    "nonExpectedIntrinsicFields": [
-      "nr.alternatePathHashes"
-    ]
-  },
-  {
-    "name": "new_cat_path_hash_with_leading_zero",
-    "appName": "testAppName",
-    "transactionName": "WebTransaction/txn7",
-    "transactionGuid": "9323dc260548ed0e",
-    "inboundPayload": [
-      "b854df4feb2b1f06",
-      false,
-      "7e249074f277923d",
-      "5d2957be"
-    ],
-    "expectedIntrinsicFields": {
-      "nr.guid": "9323dc260548ed0e",
-      "nr.tripId": "7e249074f277923d",
-      "nr.pathHash": "04429689",
+      "nr.pathHash": "fd4c564e",
       "nr.referringTransactionGuid": "b854df4feb2b1f06",
       "nr.referringPathHash": "5d2957be"
     },
@@ -72,14 +50,14 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "accfca26"
+          "471ef932"
         ]
       }
     ],
     "expectedIntrinsicFields": {
       "nr.guid": "9323dc260548ed0e",
       "nr.tripId": "9323dc260548ed0e",
-      "nr.pathHash": "accfca26"
+      "nr.pathHash": "471ef932"
     },
     "nonExpectedIntrinsicFields": [
       "nr.referringTransactionGuid",
@@ -100,7 +78,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "df3fb1b5"
+          "223204e1"
         ]
       },
       {
@@ -109,7 +87,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "df3fb1b5"
+          "223204e1"
         ]
       },
       {
@@ -118,7 +96,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "cf3bc3a8"
+          "ba009ec7"
         ]
       },
       {
@@ -127,15 +105,15 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "2ab5328c"
+          "72305b71"
         ]
       }
     ],
     "expectedIntrinsicFields": {
       "nr.guid": "9323dc260548ed0e",
       "nr.tripId": "9323dc260548ed0e",
-      "nr.pathHash": "accfca26",
-      "nr.alternatePathHashes": "2ab5328c,cf3bc3a8,df3fb1b5"
+      "nr.pathHash": "471ef932",
+      "nr.alternatePathHashes": "223204e1,72305b71,ba009ec7"
     },
     "nonExpectedIntrinsicFields": [
       "nr.referringTransactionGuid",
@@ -155,7 +133,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "a7d2798f"
+          "79ccac01"
         ]
       },
       {
@@ -164,7 +142,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "55f97a7f"
+          "a6bec526"
         ]
       },
       {
@@ -173,7 +151,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "72827114"
+          "106dd09f"
         ]
       },
       {
@@ -182,7 +160,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "9a3ed934"
+          "77301c6e"
         ]
       },
       {
@@ -191,7 +169,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "a1744603"
+          "caebd894"
         ]
       },
       {
@@ -200,7 +178,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "ccadfd2c"
+          "5e3c1839"
         ]
       },
       {
@@ -209,7 +187,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "be1039f5"
+          "3ca1692c"
         ]
       },
       {
@@ -218,7 +196,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "da7edf2e"
+          "2d016cd2"
         ]
       },
       {
@@ -227,7 +205,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "eaca716b"
+          "1b111373"
         ]
       },
       {
@@ -236,7 +214,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "6fc8d18f"
+          "32f8bdc2"
         ]
       },
       {
@@ -245,15 +223,15 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "dbe37177"
+          "ad0f6816"
         ]
       }
     ],
     "expectedIntrinsicFields": {
       "nr.guid": "9323dc260548ed0e",
       "nr.tripId": "9323dc260548ed0e",
-      "nr.pathHash": "accfca26",
-      "nr.alternatePathHashes": "55f97a7f,6fc8d18f,72827114,9a3ed934,a1744603,a7d2798f,be1039f5,ccadfd2c,da7edf2e,eaca716b"
+      "nr.pathHash": "471ef932",
+      "nr.alternatePathHashes": "106dd09f,1b111373,2d016cd2,32f8bdc2,3ca1692c,5e3c1839,77301c6e,79ccac01,a6bec526,caebd894"
     },
     "nonExpectedIntrinsicFields": [
       "nr.referringTransactionGuid",
@@ -273,7 +251,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "a7d2798f"
+          "79ccac01"
         ]
       },
       {
@@ -282,7 +260,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "a7d2798f"
+          "79ccac01"
         ]
       },
       {
@@ -291,7 +269,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "a7d2798f"
+          "79ccac01"
         ]
       },
       {
@@ -300,7 +278,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "a7d2798f"
+          "79ccac01"
         ]
       },
       {
@@ -309,7 +287,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "a7d2798f"
+          "79ccac01"
         ]
       },
       {
@@ -318,7 +296,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "a7d2798f"
+          "79ccac01"
         ]
       },
       {
@@ -327,7 +305,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "a7d2798f"
+          "79ccac01"
         ]
       },
       {
@@ -336,7 +314,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "a7d2798f"
+          "79ccac01"
         ]
       },
       {
@@ -345,7 +323,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "a7d2798f"
+          "79ccac01"
         ]
       },
       {
@@ -354,7 +332,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "a7d2798f"
+          "79ccac01"
         ]
       },
       {
@@ -363,7 +341,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "a7d2798f"
+          "79ccac01"
         ]
       },
       {
@@ -372,15 +350,15 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "55f97a7f"
+          "a6bec526"
         ]
       }
     ],
     "expectedIntrinsicFields": {
       "nr.guid": "9323dc260548ed0e",
       "nr.tripId": "9323dc260548ed0e",
-      "nr.pathHash": "accfca26",
-      "nr.alternatePathHashes": "55f97a7f,a7d2798f"
+      "nr.pathHash": "471ef932",
+      "nr.alternatePathHashes": "79ccac01,a6bec526"
     },
     "nonExpectedIntrinsicFields": [
       "nr.referringTransactionGuid",
@@ -405,15 +383,15 @@
           "9323dc260548ed0e",
           false,
           "7e249074f277923d",
-          "656d1ec9"
+          "9860ab9d"
         ]
       }
     ],
     "expectedIntrinsicFields": {
       "nr.guid": "9323dc260548ed0e",
       "nr.tripId": "7e249074f277923d",
-      "nr.pathHash": "169d655a",
-      "nr.alternatePathHashes": "656d1ec9",
+      "nr.pathHash": "fd4c564e",
+      "nr.alternatePathHashes": "9860ab9d",
       "nr.referringTransactionGuid": "b854df4feb2b1f06",
       "nr.referringPathHash": "5d2957be"
     },
@@ -432,7 +410,7 @@
     "expectedIntrinsicFields": {
       "nr.guid": "9323dc260548ed0e",
       "nr.tripId": "7e249074f277923d",
-      "nr.pathHash": "accfca26",
+      "nr.pathHash": "471ef932",
       "nr.referringTransactionGuid": "b854df4feb2b1f06"
     },
     "nonExpectedIntrinsicFields": [
@@ -454,7 +432,7 @@
     "expectedIntrinsicFields": {
       "nr.guid": "9323dc260548ed0e",
       "nr.tripId": "7e249074f277923d",
-      "nr.pathHash": "accfca26",
+      "nr.pathHash": "471ef932",
       "nr.referringTransactionGuid": "b854df4feb2b1f06"
     },
     "nonExpectedIntrinsicFields": [
@@ -479,12 +457,56 @@
     "expectedIntrinsicFields": {
       "nr.guid": "9323dc260548ed0e",
       "nr.tripId": "7e249074f277923d",
-      "nr.pathHash": "accfca26",
+      "nr.pathHash": "471ef932",
       "nr.referringTransactionGuid": "b854df4feb2b1f06"
     },
     "nonExpectedIntrinsicFields": [
       "nr.alternatePathHashes",
       "nr.referringPathHash"
+    ]
+  },
+  {
+    "name": "new_cat_corrupt_path_hash",
+    "appName": "testAppName",
+    "transactionName": "WebTransaction/testTxnName",
+    "transactionGuid": "9323dc260548ed0e",
+    "inboundPayload": [
+      "b854df4feb2b1f06",
+      false,
+      "7e249074f277923d",
+	  "ZXYQEDABC"
+    ],
+    "expectedIntrinsicFields": {
+      "nr.guid": "9323dc260548ed0e",
+      "nr.tripId": "7e249074f277923d",
+      "nr.pathHash": "471ef932",
+      "nr.referringTransactionGuid": "b854df4feb2b1f06",
+      "nr.referringPathHash": "ZXYQEDABC"
+    },
+    "nonExpectedIntrinsicFields": [
+      "nr.alternatePathHashes"
+    ]
+  },
+  {
+    "name": "new_cat_malformed_trip_id",
+    "appName": "testAppName",
+    "transactionName": "WebTransaction/testTxnName",
+    "transactionGuid": "9323dc260548ed0e",
+    "inboundPayload": [
+      "b854df4feb2b1f06",
+      false,
+	  ["scrambled"],
+      "b854df4feb2b1f06"
+    ],
+    "expectedIntrinsicFields": {
+      "nr.guid": "9323dc260548ed0e",
+      "nr.tripId": "9323dc260548ed0e",
+      "nr.pathHash": "b1e147ad",
+      "nr.referringTransactionGuid": "b854df4feb2b1f06",
+      "nr.referringPathHash": "b854df4feb2b1f06"
+    },
+    "nonExpectedIntrinsicFields": [
+      "nr.alternatePathHashes"
     ]
   },
   {
@@ -499,7 +521,7 @@
     "expectedIntrinsicFields": {
       "nr.guid": "9323dc260548ed0e",
       "nr.tripId": "9323dc260548ed0e",
-      "nr.pathHash": "accfca26",
+      "nr.pathHash": "471ef932",
       "nr.referringTransactionGuid": "b854df4feb2b1f06"
     },
     "nonExpectedIntrinsicFields": [
@@ -520,7 +542,7 @@
     "expectedIntrinsicFields": {
       "nr.guid": "9323dc260548ed0e",
       "nr.tripId": "9323dc260548ed0e",
-      "nr.pathHash": "accfca26",
+      "nr.pathHash": "471ef932",
       "nr.referringTransactionGuid": "b854df4feb2b1f06"
     },
     "nonExpectedIntrinsicFields": [

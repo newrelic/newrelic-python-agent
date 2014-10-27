@@ -488,7 +488,7 @@ class Transaction(object):
                 synthetics_monitor_id = self.synthetics_monitor_id,
                 synthetics_header = self.synthetics_header,
                 is_part_of_cat=self.is_part_of_cat,
-                trip_id=self._trip_id,
+                trip_id=self.trip_id,
                 path_hash=self.path_hash,
                 referring_path_hash=self._referring_path_hash,
                 alternate_path_hashes=self.alternate_path_hashes,
@@ -588,7 +588,7 @@ class Transaction(object):
         hash.
 
         """
-        return (set(self._alternate_path_hashes.values()) -
+        return sorted(set(self._alternate_path_hashes.values()) -
                 set([self.path_hash]))
 
     @property
@@ -616,7 +616,10 @@ class Transaction(object):
         # If the referring_path_hash is unavailable then we use '0' as the
         # seed.
 
-        seed = int((self._referring_path_hash or '0'), base=16)
+        try:
+            seed = int((self._referring_path_hash or '0'), base=16)
+        except Exception:
+            seed = 0
 
         path_hash = self._generate_path_hash(identifier, seed)
 
@@ -631,12 +634,13 @@ class Transaction(object):
     def _generate_path_hash(name, seed):
         """Algorithm for generating the path hash:
         * Rotate Left the seed value and truncate to 32-bits.
-        * Compute the md5 digest of the name truncate to 32-bits.
-        * XOR with the seed and return the result.
+        * Compute the md5 digest of the name, take the last 4 bytes (32-bits).
+        * XOR the 4 bytes of digest with the seed and return the result.
 
         """
         rotated = ((seed << 1) | (seed >> 31)) & 0xffffffff
-        return '%08x' % (rotated ^ int(md5(name).hexdigest()[:8], base=16))
+        path_hash = (rotated ^ int(md5(six.b(name)).hexdigest()[-8:], base=16))
+        return '%08x' % path_hash
 
     def add_profile_sample(self, stack_trace):
         if self._state != self.STATE_RUNNING:

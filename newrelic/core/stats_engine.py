@@ -840,13 +840,13 @@ class StatsEngine(object):
         record['name'] = name
         record['timestamp'] = transaction.start_time
         record['duration'] = transaction.duration
-        record['nr.guid'] = transaction.guid
 
         def _add_if_not_empty(key, value):
             if value:
                 record[key] = value
 
         if transaction.path_hash:
+            record['nr.guid'] = transaction.guid
             record['nr.tripId'] = transaction.trip_id
             record['nr.pathHash'] = transaction.path_hash
 

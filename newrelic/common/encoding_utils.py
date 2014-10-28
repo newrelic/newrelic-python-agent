@@ -7,6 +7,7 @@ import types
 import base64
 import json
 import zlib
+from hashlib import md5
 
 from ..packages import six
 
@@ -209,3 +210,14 @@ def unpack_field(field):
         data = data.decode('Latin-1')
     data = json_decode(data)
     return data
+
+def generate_path_hash(name, seed):
+    """Algorithm for generating the path hash:
+    * Rotate Left the seed value and truncate to 32-bits.
+    * Compute the md5 digest of the name, take the last 4 bytes (32-bits).
+    * XOR the 4 bytes of digest with the seed and return the result.
+
+    """
+    rotated = ((seed << 1) | (seed >> 31)) & 0xffffffff
+    path_hash = (rotated ^ int(md5(six.b(name)).hexdigest()[-8:], base=16))
+    return '%08x' % path_hash

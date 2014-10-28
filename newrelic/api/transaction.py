@@ -8,7 +8,6 @@ import logging
 import warnings
 import itertools
 import random
-from hashlib import md5
 
 try:
     import thread
@@ -26,6 +25,7 @@ import newrelic.core.error_node
 from newrelic.core.stats_engine import CustomMetrics
 from newrelic.core.transaction_cache import transaction_cache
 from newrelic.core.thread_utilization import utilization_tracker
+from ..common.encoding_utils import generate_path_hash
 
 from .time_trace import TimeTrace
 
@@ -621,7 +621,7 @@ class Transaction(object):
         except Exception:
             seed = 0
 
-        path_hash = self._generate_path_hash(identifier, seed)
+        path_hash = generate_path_hash(identifier, seed)
 
         # Only store upto 10 alternate path hashes.
 
@@ -629,18 +629,6 @@ class Transaction(object):
             self._alternate_path_hashes[identifier] = path_hash
 
         return path_hash
-
-    @staticmethod
-    def _generate_path_hash(name, seed):
-        """Algorithm for generating the path hash:
-        * Rotate Left the seed value and truncate to 32-bits.
-        * Compute the md5 digest of the name, take the last 4 bytes (32-bits).
-        * XOR the 4 bytes of digest with the seed and return the result.
-
-        """
-        rotated = ((seed << 1) | (seed >> 31)) & 0xffffffff
-        path_hash = (rotated ^ int(md5(six.b(name)).hexdigest()[-8:], base=16))
-        return '%08x' % path_hash
 
     def add_profile_sample(self, stack_trace):
         if self._state != self.STATE_RUNNING:

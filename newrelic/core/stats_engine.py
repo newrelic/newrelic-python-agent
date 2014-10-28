@@ -862,6 +862,7 @@ class StatsEngine(object):
         # Add the Synthetics attributes to the 'records' dict.
 
         if transaction.synthetics_resource_id:
+            record['nr.guid'] = transaction.guid
             txn = transaction
             record['nr.syntheticsResourceId'] = txn.synthetics_resource_id
             record['nr.syntheticsJobId'] = txn.synthetics_job_id

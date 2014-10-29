@@ -197,6 +197,7 @@ _settings.proxy_user = os.environ.get('NEW_RELIC_PROXY_USER', None)
 _settings.proxy_pass = os.environ.get('NEW_RELIC_PROXY_PASS', None)
 
 _settings.app_name = os.environ.get('NEW_RELIC_APP_NAME', 'Python Application')
+_settings.linked_applications = []
 
 _settings.process_host.display_name = None
 

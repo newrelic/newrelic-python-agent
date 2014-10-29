@@ -48,7 +48,8 @@ sys.meta_path.insert(0, newrelic.api.import_hook.ImportHookFinder())
 # if feature flags not in set are provided.
 
 _FEATURE_FLAGS = set([
-    'tornado.instrumentation.r2'
+    'tornado.instrumentation.r2',
+    'pymongo.instrumentation.r2',
 ])
 
 # Names of configuration file and deployment environment. This
@@ -730,7 +731,7 @@ def _load_configuration(config_file=None, environment=None,
 
     for function in _settings.transaction_tracer.generator_trace:
         try:
-            (module, object_path) = string.splitfields(function, ':', 1)
+            (module, object_path) = function.split(':', 1)
 
             name = None
             group = 'Function'
@@ -1168,7 +1169,7 @@ def _process_generator_trace_configuration():
 
         try:
             function = _config_object.get(section, 'function')
-            (module, object_path) = string.splitfields(function, ':', 1)
+            (module, object_path) = function.split(':', 1)
 
             name = None
             group = 'Function'
@@ -1225,7 +1226,7 @@ def _process_profile_trace_configuration():
 
         try:
             function = _config_object.get(section, 'function')
-            (module, object_path) = string.splitfields(function, ':', 1)
+            (module, object_path) = function.split(':', 1)
 
             name = None
             group = 'Function'
@@ -1940,12 +1941,21 @@ def _process_module_builtin_defaults():
     _process_module_definition('solr',
             'newrelic.hooks.solr_solrpy')
 
-    _process_module_definition('pymongo.connection',
-            'newrelic.hooks.nosql_pymongo',
-            'instrument_pymongo_connection')
-    _process_module_definition('pymongo.collection',
-            'newrelic.hooks.nosql_pymongo',
-            'instrument_pymongo_collection')
+    if 'pymongo.instrumentation.r2' in _settings.feature_flag:
+        _process_module_definition('pymongo.connection',
+                'newrelic.hooks.datastore_pymongo',
+                'instrument_pymongo_connection')
+        _process_module_definition('pymongo.collection',
+                'newrelic.hooks.datastore_pymongo',
+                'instrument_pymongo_collection')
+
+    else:
+        _process_module_definition('pymongo.connection',
+                'newrelic.hooks.nosql_pymongo',
+                'instrument_pymongo_connection')
+        _process_module_definition('pymongo.collection',
+                'newrelic.hooks.nosql_pymongo',
+                'instrument_pymongo_collection')
 
     _process_module_definition('redis.connection',
             'newrelic.hooks.nosql_redis',

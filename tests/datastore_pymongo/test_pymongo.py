@@ -16,17 +16,23 @@ MONGODB_PORT = int(os.environ.get('MONGODB_PORT_27017_TCP_PORT', MONGODB_PORT))
 
 _test_httplib_http_request_scoped_metrics = [
         ('Function/pymongo.connection:Connection.__init__', 1),
-        ('Datastore/MongoDB/my_collection/save', 3),
-        ('Datastore/MongoDB/my_collection/create_index', 1),
-        ('Datastore/MongoDB/my_collection/find', 3),
-        ('Datastore/MongoDB/my_collection/findOne', 1)]
+        ('Datastore/statement/MongoDB/my_collection/save', 3),
+        ('Datastore/statement/MongoDB/my_collection/create_index', 1),
+        ('Datastore/statement/MongoDB/my_collection/find', 3),
+        ('Datastore/statement/MongoDB/my_collection/find_one', 1)]
 
 _test_httplib_http_request_rollup_metrics = [
         ('Function/pymongo.connection:Connection.__init__', 1),
-        ('Datastore/MongoDB/save', 3),
-        ('Datastore/MongoDB/create_index', 1),
-        ('Datastore/MongoDB/find', 3),
-        ('Datastore/MongoDB/findOne', 1)]
+        ('Datastore/MongoDB/all', 8),
+        ('Datastore/MongoDB/allOther', 8),
+        ('Datastore/operation/MongoDB/save', 3),
+        ('Datastore/operation/MongoDB/create_index', 1),
+        ('Datastore/operation/MongoDB/find', 3),
+        ('Datastore/operation/MongoDB/find_one', 1),
+        ('Datastore/statement/MongoDB/my_collection/save', 3),
+        ('Datastore/statement/MongoDB/my_collection/create_index', 1),
+        ('Datastore/statement/MongoDB/my_collection/find', 3),
+        ('Datastore/statement/MongoDB/my_collection/find_one', 1)]
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(

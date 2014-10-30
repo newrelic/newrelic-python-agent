@@ -10,34 +10,43 @@ _DatastoreNode = namedtuple('_DatastoreNode',
 
 class DatastoreNode(_DatastoreNode):
 
+    # TODO: Get final placeholder for target, when spec is final.
+    target_default = '*'
+    operation_default = 'other'
+
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
         database node as well as all the child nodes.
 
         """
 
-        yield TimeMetric(name='Datastore/all', scope='',
+        product = self.product
+        target = self.target or self.target_default
+        operation = self.operation or self.operation_default
+
+        # Rollup metrics
+
+        name = 'Datastore/%s/all' % product
+
+        yield TimeMetric(name=name, scope='',
                 duration=self.duration, exclusive=self.exclusive)
 
         if root.type == 'WebTransaction':
-            yield TimeMetric(name='Datastore/allWeb', scope='',
+
+            name = 'Datastore/%s/allWeb' % product
+
+            yield TimeMetric(name=name, scope='',
                     duration=self.duration, exclusive=self.exclusive)
         else:
-            yield TimeMetric(name='Datastore/allOther', scope='',
+
+            name = 'Datastore/%s/allOther' % product
+
+            yield TimeMetric(name=name, scope='',
                     duration=self.duration, exclusive=self.exclusive)
 
-        # FIXME The follow is what PHP agent was doing, but it may
-        # not sync up with what is now actually required. As example,
-        # the 'show' operation in PHP agent doesn't generate a full
-        # path with a table name, yet get_table() in SQL parser
-        # does appear to generate one. Also, the SQL parser has
-        # special cases for 'set', 'create' and 'call' as well.
+        # Statement metrics
 
-        product = self.product
-        target = self.target or '*'
-        operation = self.operation
-
-        name = 'Datastore/%s/%s/%s' % (product, target, operation)
+        name = 'Datastore/statement/%s/%s/%s' % (product, target, operation)
 
         yield TimeMetric(name=name, scope='', duration=self.duration,
                 exclusive=self.exclusive)
@@ -45,12 +54,9 @@ class DatastoreNode(_DatastoreNode):
         yield TimeMetric(name=name, scope=root.path,
             duration=self.duration, exclusive=self.exclusive)
 
-        name = 'Datastore/%s/%s' % (product, operation)
+        # Operation metrics
 
-        yield TimeMetric(name=name, scope='', duration=self.duration,
-                exclusive=self.exclusive)
-
-        name = 'Datastore/%s/all' % product
+        name = 'Datastore/operation/%s/%s' % (product, operation)
 
         yield TimeMetric(name=name, scope='', duration=self.duration,
                 exclusive=self.exclusive)
@@ -58,8 +64,8 @@ class DatastoreNode(_DatastoreNode):
     def trace_node(self, stats, root, connections):
 
         product = self.product
-        target = self.target or '*'
-        operation = self.operation
+        target = self.target or self.target_default
+        operation = self.operation or self.operation_default
 
         name = 'Datastore/%s/%s/%s' % (product, target, operation)
 

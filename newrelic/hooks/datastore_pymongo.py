@@ -6,8 +6,6 @@ _methods = ['save', 'insert', 'update', 'drop', 'remove', 'find_one',
             'group', 'rename', 'distinct', 'map_reduce', 'inline_map_reduce',
             'find_and_modify']
 
-_mapping = {'find_one': 'findOne'}
-
 def instrument_pymongo_connection(module):
 
     # Must name function explicitly as pymongo overrides the
@@ -30,4 +28,4 @@ def instrument_pymongo_collection(module):
             newrelic.api.datastore_trace.wrap_datastore_trace(
                     module, 'Collection.%s' % method,
                     product='MongoDB', target=_collection_name,
-                    operation=_mapping.get(method, method))
+                    operation=method)

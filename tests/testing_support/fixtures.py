@@ -75,6 +75,8 @@ _fake_collector_responses = {
 
     'analytic_event_data': None,
 
+    'agent_settings': None,
+
     'shutdown': None,
 }
 

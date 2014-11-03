@@ -165,8 +165,10 @@ not be compiled. This can occur where a compiler is not present on the
 target system or the Python installation does not have the corresponding
 developer package installed. The Python agent will instead be installed
 without the extensions. The consequence of this is that although the
-Python agent will still run, JSON encoding/decoding speedups will not be
-available, nor will some of the non core features of the Python agent.
+Python agent will still run, some non core features of the Python agent,
+such as capacity analysis instance busy metrics, will not be available.
+Pure Python versions of code supporting some features, rather than the
+optimised C versions, will also be used resulting in additional overheads.
 """
 
 with_extensions = os.environ.get('NEW_RELIC_EXTENSIONS', None)

@@ -11,7 +11,7 @@ from newrelic.packages import six
 from newrelic.agent import (initialize, register_application,
         global_settings, shutdown_agent, application as application_instance,
         transient_function_wrapper, function_wrapper, application_settings,
-        wrap_function_wrapper)
+        wrap_function_wrapper, ObjectProxy)
 
 from newrelic.common.encoding_utils import unpack_field
 
@@ -620,6 +620,26 @@ def validate_database_trace_inputs(sql_parameters_type):
         return wrapped(*args, **kwargs)
 
     return _validate_database_trace_inputs
+
+def override_application_name(name):
+    class Application(ObjectProxy):
+        @property
+        def name(self):
+            return name
+
+    @transient_function_wrapper('newrelic.api.transaction',
+            'Transaction.__init__')
+    def _override_application_name(wrapped, instance, args, kwargs):
+        def _bind_params(application, *args, **kwargs):
+            return application, args, kwargs
+
+        application, _args, _kwargs = _bind_params(*args, **kwargs)
+
+        application = Application(application)
+
+        return wrapped(application, *_args, **_kwargs)
+
+    return _override_application_name
 
 def override_application_settings(overrides):
     @function_wrapper

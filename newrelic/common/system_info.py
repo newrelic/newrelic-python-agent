@@ -184,10 +184,12 @@ def physical_processor_count():
 
     """
 
-    if sys.platform in ('linux', 'linux2'):
+    if sys.platform.startswith('linux'):
         return _linux_physical_processor_count()
     elif sys.platform == 'darwin':
         return _darwin_physical_processor_count()
+
+    return (None, None)
 
 def _linux_total_physical_memory(filename=None):
     # For Linux we can use information from /proc/meminfo. Although the
@@ -232,7 +234,7 @@ def total_physical_memory():
 
     """
 
-    if sys.platform in ('linux', 'linux2'):
+    if sys.platform.startswith('linux'):
         return _linux_total_physical_memory()
     elif sys.platform == 'darwin':
         return _darwin_total_physical_memory()
@@ -277,7 +279,7 @@ def physical_memory_used():
     # can be used in metrics. As such has traditionally always been
     # returned as an integer to avoid checks at the point is used.
 
-    if sys.platform in ('linux', 'linux2'):
+    if sys.platform.startswith('linux'):
         return _linux_physical_memory_used()
 
     # For all other platforms try using getrusage() if we have the

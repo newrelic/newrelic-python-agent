@@ -18,7 +18,8 @@
     - tox -c tests/database_pymysql/tox.ini
     - tox -c tests/database_sqlite/tox.ini
     - tox -c tests/datastore_redis/tox.ini
-    - tox -c tests/datastore_mongodb/tox.ini
+    - tox -c tests/datastore_pymongo/tox.ini
+    - tox -c tests/nosql_pymongo/tox.ini
     - tox -c tests/external_httplib/tox.ini
     - tox -c tests/external_requests/tox-0014.ini
     - tox -c tests/external_requests/tox-0102.ini

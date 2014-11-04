@@ -13,7 +13,29 @@
     "expectedIntrinsicFields": {
       "nr.guid": "9323dc260548ed0e",
       "nr.tripId": "7e249074f277923d",
-      "nr.pathHash": "fd4c564e",
+      "nr.pathHash": "815b96d3",
+      "nr.referringTransactionGuid": "b854df4feb2b1f06",
+      "nr.referringPathHash": "5d2957be"
+    },
+    "nonExpectedIntrinsicFields": [
+      "nr.alternatePathHashes"
+    ]
+  },
+  {
+    "name": "new_cat_path_hash_with_leading_zero",
+    "appName": "testAppName",
+    "transactionName": "WebTransaction/Custom/txn4",
+    "transactionGuid": "9323dc260548ed0e",
+    "inboundPayload": [
+      "b854df4feb2b1f06",
+      false,
+      "7e249074f277923d",
+      "5d2957be"
+    ],
+    "expectedIntrinsicFields": {
+      "nr.guid": "9323dc260548ed0e",
+      "nr.tripId": "7e249074f277923d",
+      "nr.pathHash": "0e258e4e",
       "nr.referringTransactionGuid": "b854df4feb2b1f06",
       "nr.referringPathHash": "5d2957be"
     },
@@ -50,14 +72,14 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "471ef932"
+          "3b0939af"
         ]
       }
     ],
     "expectedIntrinsicFields": {
       "nr.guid": "9323dc260548ed0e",
       "nr.tripId": "9323dc260548ed0e",
-      "nr.pathHash": "471ef932"
+      "nr.pathHash": "3b0939af"
     },
     "nonExpectedIntrinsicFields": [
       "nr.referringTransactionGuid",
@@ -78,7 +100,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "223204e1"
+          "f1c8adf5"
         ]
       },
       {
@@ -87,7 +109,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "223204e1"
+          "f1c8adf5"
         ]
       },
       {
@@ -96,7 +118,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "ba009ec7"
+          "ea19b61c"
         ]
       },
       {
@@ -105,15 +127,15 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "72305b71"
+          "e00736cc"
         ]
       }
     ],
     "expectedIntrinsicFields": {
       "nr.guid": "9323dc260548ed0e",
       "nr.tripId": "9323dc260548ed0e",
-      "nr.pathHash": "471ef932",
-      "nr.alternatePathHashes": "223204e1,72305b71,ba009ec7"
+      "nr.pathHash": "3b0939af",
+      "nr.alternatePathHashes": "e00736cc,ea19b61c,f1c8adf5"
     },
     "nonExpectedIntrinsicFields": [
       "nr.referringTransactionGuid",
@@ -133,7 +155,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "79ccac01"
+          "93fb4310"
         ]
       },
       {
@@ -142,7 +164,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "a6bec526"
+          "a67c2da4"
         ]
       },
       {
@@ -151,7 +173,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "106dd09f"
+          "0d932b2b"
         ]
       },
       {
@@ -160,7 +182,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "77301c6e"
+          "b4772132"
         ]
       },
       {
@@ -169,7 +191,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "caebd894"
+          "51a1a337"
         ]
       },
       {
@@ -178,7 +200,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "5e3c1839"
+          "77b5cb70"
         ]
       },
       {
@@ -187,7 +209,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "3ca1692c"
+          "8a842c7f"
         ]
       },
       {
@@ -196,7 +218,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "2d016cd2"
+          "b968edb8"
         ]
       },
       {
@@ -205,7 +227,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "1b111373"
+          "2691f90e"
         ]
       },
       {
@@ -214,7 +236,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "32f8bdc2"
+          "b46aec87"
         ]
       },
       {
@@ -223,15 +245,15 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "ad0f6816"
+          "10bb3bf3"
         ]
       }
     ],
     "expectedIntrinsicFields": {
       "nr.guid": "9323dc260548ed0e",
       "nr.tripId": "9323dc260548ed0e",
-      "nr.pathHash": "471ef932",
-      "nr.alternatePathHashes": "106dd09f,1b111373,2d016cd2,32f8bdc2,3ca1692c,5e3c1839,77301c6e,79ccac01,a6bec526,caebd894"
+      "nr.pathHash": "3b0939af",
+      "nr.alternatePathHashes": "0d932b2b,2691f90e,51a1a337,77b5cb70,8a842c7f,93fb4310,a67c2da4,b46aec87,b4772132,b968edb8"
     },
     "nonExpectedIntrinsicFields": [
       "nr.referringTransactionGuid",
@@ -251,7 +273,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "79ccac01"
+          "93fb4310"
         ]
       },
       {
@@ -260,7 +282,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "79ccac01"
+          "93fb4310"
         ]
       },
       {
@@ -269,7 +291,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "79ccac01"
+          "93fb4310"
         ]
       },
       {
@@ -278,7 +300,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "79ccac01"
+          "93fb4310"
         ]
       },
       {
@@ -287,7 +309,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "79ccac01"
+          "93fb4310"
         ]
       },
       {
@@ -296,7 +318,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "79ccac01"
+          "93fb4310"
         ]
       },
       {
@@ -305,7 +327,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "79ccac01"
+          "93fb4310"
         ]
       },
       {
@@ -314,7 +336,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "79ccac01"
+          "93fb4310"
         ]
       },
       {
@@ -323,7 +345,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "79ccac01"
+          "93fb4310"
         ]
       },
       {
@@ -332,7 +354,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "79ccac01"
+          "93fb4310"
         ]
       },
       {
@@ -341,7 +363,7 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "79ccac01"
+          "93fb4310"
         ]
       },
       {
@@ -350,15 +372,15 @@
           "9323dc260548ed0e",
           false,
           "9323dc260548ed0e",
-          "a6bec526"
+          "a67c2da4"
         ]
       }
     ],
     "expectedIntrinsicFields": {
       "nr.guid": "9323dc260548ed0e",
       "nr.tripId": "9323dc260548ed0e",
-      "nr.pathHash": "471ef932",
-      "nr.alternatePathHashes": "79ccac01,a6bec526"
+      "nr.pathHash": "3b0939af",
+      "nr.alternatePathHashes": "93fb4310,a67c2da4"
     },
     "nonExpectedIntrinsicFields": [
       "nr.referringTransactionGuid",
@@ -383,15 +405,15 @@
           "9323dc260548ed0e",
           false,
           "7e249074f277923d",
-          "9860ab9d"
+          "4b9a0289"
         ]
       }
     ],
     "expectedIntrinsicFields": {
       "nr.guid": "9323dc260548ed0e",
       "nr.tripId": "7e249074f277923d",
-      "nr.pathHash": "fd4c564e",
-      "nr.alternatePathHashes": "9860ab9d",
+      "nr.pathHash": "815b96d3",
+      "nr.alternatePathHashes": "4b9a0289",
       "nr.referringTransactionGuid": "b854df4feb2b1f06",
       "nr.referringPathHash": "5d2957be"
     },
@@ -410,7 +432,7 @@
     "expectedIntrinsicFields": {
       "nr.guid": "9323dc260548ed0e",
       "nr.tripId": "7e249074f277923d",
-      "nr.pathHash": "471ef932",
+      "nr.pathHash": "3b0939af",
       "nr.referringTransactionGuid": "b854df4feb2b1f06"
     },
     "nonExpectedIntrinsicFields": [
@@ -432,7 +454,7 @@
     "expectedIntrinsicFields": {
       "nr.guid": "9323dc260548ed0e",
       "nr.tripId": "7e249074f277923d",
-      "nr.pathHash": "471ef932",
+      "nr.pathHash": "3b0939af",
       "nr.referringTransactionGuid": "b854df4feb2b1f06"
     },
     "nonExpectedIntrinsicFields": [
@@ -457,7 +479,7 @@
     "expectedIntrinsicFields": {
       "nr.guid": "9323dc260548ed0e",
       "nr.tripId": "7e249074f277923d",
-      "nr.pathHash": "471ef932",
+      "nr.pathHash": "3b0939af",
       "nr.referringTransactionGuid": "b854df4feb2b1f06"
     },
     "nonExpectedIntrinsicFields": [
@@ -479,7 +501,7 @@
     "expectedIntrinsicFields": {
       "nr.guid": "9323dc260548ed0e",
       "nr.tripId": "7e249074f277923d",
-      "nr.pathHash": "471ef932",
+      "nr.pathHash": "3b0939af",
       "nr.referringTransactionGuid": "b854df4feb2b1f06",
       "nr.referringPathHash": "ZXYQEDABC"
     },
@@ -496,14 +518,14 @@
       "b854df4feb2b1f06",
       false,
 	  ["scrambled"],
-      "b854df4feb2b1f06"
+      "5d2957be"
     ],
     "expectedIntrinsicFields": {
       "nr.guid": "9323dc260548ed0e",
       "nr.tripId": "9323dc260548ed0e",
-      "nr.pathHash": "b1e147ad",
+      "nr.pathHash": "815b96d3",
       "nr.referringTransactionGuid": "b854df4feb2b1f06",
-      "nr.referringPathHash": "b854df4feb2b1f06"
+      "nr.referringPathHash": "5d2957be"
     },
     "nonExpectedIntrinsicFields": [
       "nr.alternatePathHashes"
@@ -521,7 +543,7 @@
     "expectedIntrinsicFields": {
       "nr.guid": "9323dc260548ed0e",
       "nr.tripId": "9323dc260548ed0e",
-      "nr.pathHash": "471ef932",
+      "nr.pathHash": "3b0939af",
       "nr.referringTransactionGuid": "b854df4feb2b1f06"
     },
     "nonExpectedIntrinsicFields": [
@@ -542,7 +564,7 @@
     "expectedIntrinsicFields": {
       "nr.guid": "9323dc260548ed0e",
       "nr.tripId": "9323dc260548ed0e",
-      "nr.pathHash": "471ef932",
+      "nr.pathHash": "3b0939af",
       "nr.referringTransactionGuid": "b854df4feb2b1f06"
     },
     "nonExpectedIntrinsicFields": [

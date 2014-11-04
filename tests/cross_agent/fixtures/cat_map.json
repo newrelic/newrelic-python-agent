@@ -2,7 +2,7 @@
   {
     "name": "new_cat",
     "appName": "testAppName",
-    "transactionName": "WebTransaction/testTxnName",
+    "transactionName": "WebTransaction/Custom/testTxnName",
     "transactionGuid": "9323dc260548ed0e",
     "inboundPayload": [
       "b854df4feb2b1f06",
@@ -24,7 +24,7 @@
   {
     "name": "new_cat_no_referring_payload",
     "appName": "testAppName",
-    "transactionName": "WebTransaction/testTxnName",
+    "transactionName": "WebTransaction/Custom/testTxnName",
     "transactionGuid": "9323dc260548ed0e",
     "inboundPayload": null,
     "expectedIntrinsicFields": {},
@@ -40,12 +40,12 @@
   {
     "name": "new_cat_with_call_out",
     "appName": "testAppName",
-    "transactionName": "WebTransaction/testTxnName",
+    "transactionName": "WebTransaction/Custom/testTxnName",
     "transactionGuid": "9323dc260548ed0e",
     "inboundPayload": null,
     "outboundRequests": [
       {
-        "outboundTxnName": "WebTransaction/testTxnName",
+        "outboundTxnName": "WebTransaction/Custom/testTxnName",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -68,12 +68,12 @@
   {
     "name": "new_cat_with_multiple_calls_out",
     "appName": "testAppName",
-    "transactionName": "WebTransaction/testTxnName",
+    "transactionName": "WebTransaction/Custom/testTxnName",
     "transactionGuid": "9323dc260548ed0e",
     "inboundPayload": null,
     "outboundRequests": [
       {
-        "outboundTxnName": "WebTransaction/otherTxnName",
+        "outboundTxnName": "WebTransaction/Custom/otherTxnName",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -82,7 +82,7 @@
         ]
       },
       {
-        "outboundTxnName": "WebTransaction/otherTxnName",
+        "outboundTxnName": "WebTransaction/Custom/otherTxnName",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -91,7 +91,7 @@
         ]
       },
       {
-        "outboundTxnName": "WebTransaction/moreOtherTxnName",
+        "outboundTxnName": "WebTransaction/Custom/moreOtherTxnName",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -100,7 +100,7 @@
         ]
       },
       {
-        "outboundTxnName": "WebTransaction/moreDifferentTxnName",
+        "outboundTxnName": "WebTransaction/Custom/moreDifferentTxnName",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -123,12 +123,12 @@
   {
     "name": "new_cat_with_many_unique_calls_out",
     "appName": "testAppName",
-    "transactionName": "WebTransaction/testTxnName",
+    "transactionName": "WebTransaction/Custom/testTxnName",
     "transactionGuid": "9323dc260548ed0e",
     "inboundPayload": null,
     "outboundRequests": [
       {
-        "outboundTxnName": "WebTransaction/txn1",
+        "outboundTxnName": "WebTransaction/Custom/txn1",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -137,7 +137,7 @@
         ]
       },
       {
-        "outboundTxnName": "WebTransaction/txn2",
+        "outboundTxnName": "WebTransaction/Custom/txn2",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -146,7 +146,7 @@
         ]
       },
       {
-        "outboundTxnName": "WebTransaction/txn3",
+        "outboundTxnName": "WebTransaction/Custom/txn3",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -155,7 +155,7 @@
         ]
       },
       {
-        "outboundTxnName": "WebTransaction/txn4",
+        "outboundTxnName": "WebTransaction/Custom/txn4",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -164,7 +164,7 @@
         ]
       },
       {
-        "outboundTxnName": "WebTransaction/txn5",
+        "outboundTxnName": "WebTransaction/Custom/txn5",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -173,7 +173,7 @@
         ]
       },
       {
-        "outboundTxnName": "WebTransaction/txn6",
+        "outboundTxnName": "WebTransaction/Custom/txn6",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -182,7 +182,7 @@
         ]
       },
       {
-        "outboundTxnName": "WebTransaction/txn7",
+        "outboundTxnName": "WebTransaction/Custom/txn7",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -191,7 +191,7 @@
         ]
       },
       {
-        "outboundTxnName": "WebTransaction/txn8",
+        "outboundTxnName": "WebTransaction/Custom/txn8",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -200,7 +200,7 @@
         ]
       },
       {
-        "outboundTxnName": "WebTransaction/txn9",
+        "outboundTxnName": "WebTransaction/Custom/txn9",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -209,7 +209,7 @@
         ]
       },
       {
-        "outboundTxnName": "WebTransaction/txn10",
+        "outboundTxnName": "WebTransaction/Custom/txn10",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -218,7 +218,7 @@
         ]
       },
       {
-        "outboundTxnName": "WebTransaction/txn11",
+        "outboundTxnName": "WebTransaction/Custom/txn11",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -241,12 +241,12 @@
   {
     "name": "new_cat_with_many_calls_out",
     "appName": "testAppName",
-    "transactionName": "WebTransaction/testTxnName",
+    "transactionName": "WebTransaction/Custom/testTxnName",
     "transactionGuid": "9323dc260548ed0e",
     "inboundPayload": null,
     "outboundRequests": [
       {
-        "outboundTxnName": "WebTransaction/txn1",
+        "outboundTxnName": "WebTransaction/Custom/txn1",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -255,7 +255,7 @@
         ]
       },
       {
-        "outboundTxnName": "WebTransaction/txn1",
+        "outboundTxnName": "WebTransaction/Custom/txn1",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -264,7 +264,7 @@
         ]
       },
       {
-        "outboundTxnName": "WebTransaction/txn1",
+        "outboundTxnName": "WebTransaction/Custom/txn1",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -273,7 +273,7 @@
         ]
       },
       {
-        "outboundTxnName": "WebTransaction/txn1",
+        "outboundTxnName": "WebTransaction/Custom/txn1",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -282,7 +282,7 @@
         ]
       },
       {
-        "outboundTxnName": "WebTransaction/txn1",
+        "outboundTxnName": "WebTransaction/Custom/txn1",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -291,7 +291,7 @@
         ]
       },
       {
-        "outboundTxnName": "WebTransaction/txn1",
+        "outboundTxnName": "WebTransaction/Custom/txn1",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -300,7 +300,7 @@
         ]
       },
       {
-        "outboundTxnName": "WebTransaction/txn1",
+        "outboundTxnName": "WebTransaction/Custom/txn1",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -309,7 +309,7 @@
         ]
       },
       {
-        "outboundTxnName": "WebTransaction/txn1",
+        "outboundTxnName": "WebTransaction/Custom/txn1",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -318,7 +318,7 @@
         ]
       },
       {
-        "outboundTxnName": "WebTransaction/txn1",
+        "outboundTxnName": "WebTransaction/Custom/txn1",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -327,7 +327,7 @@
         ]
       },
       {
-        "outboundTxnName": "WebTransaction/txn1",
+        "outboundTxnName": "WebTransaction/Custom/txn1",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -336,7 +336,7 @@
         ]
       },
       {
-        "outboundTxnName": "WebTransaction/txn1",
+        "outboundTxnName": "WebTransaction/Custom/txn1",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -345,7 +345,7 @@
         ]
       },
       {
-        "outboundTxnName": "WebTransaction/txn2",
+        "outboundTxnName": "WebTransaction/Custom/txn2",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -368,7 +368,7 @@
   {
     "name": "new_cat_with_referring_info_and_call_out",
     "appName": "testAppName",
-    "transactionName": "WebTransaction/testTxnName",
+    "transactionName": "WebTransaction/Custom/testTxnName",
     "transactionGuid": "9323dc260548ed0e",
     "inboundPayload": [
       "b854df4feb2b1f06",
@@ -378,7 +378,7 @@
     ],
     "outboundRequests": [
       {
-        "outboundTxnName": "WebTransaction/otherTxnName",
+        "outboundTxnName": "WebTransaction/Custom/otherTxnName",
         "expectedOutboundPayload": [
           "9323dc260548ed0e",
           false,
@@ -400,7 +400,7 @@
   {
     "name": "new_cat_missing_path_hash",
     "appName": "testAppName",
-    "transactionName": "WebTransaction/testTxnName",
+    "transactionName": "WebTransaction/Custom/testTxnName",
     "transactionGuid": "9323dc260548ed0e",
     "inboundPayload": [
       "b854df4feb2b1f06",
@@ -421,7 +421,7 @@
   {
     "name": "new_cat_null_path_hash",
     "appName": "testAppName",
-    "transactionName": "WebTransaction/testTxnName",
+    "transactionName": "WebTransaction/Custom/testTxnName",
     "transactionGuid": "9323dc260548ed0e",
     "inboundPayload": [
       "b854df4feb2b1f06",
@@ -443,7 +443,7 @@
   {
     "name": "new_cat_malformed_path_hash",
     "appName": "testAppName",
-    "transactionName": "WebTransaction/testTxnName",
+    "transactionName": "WebTransaction/Custom/testTxnName",
     "transactionGuid": "9323dc260548ed0e",
     "inboundPayload": [
       "b854df4feb2b1f06",
@@ -468,7 +468,7 @@
   {
     "name": "new_cat_corrupt_path_hash",
     "appName": "testAppName",
-    "transactionName": "WebTransaction/testTxnName",
+    "transactionName": "WebTransaction/Custom/testTxnName",
     "transactionGuid": "9323dc260548ed0e",
     "inboundPayload": [
       "b854df4feb2b1f06",
@@ -490,7 +490,7 @@
   {
     "name": "new_cat_malformed_trip_id",
     "appName": "testAppName",
-    "transactionName": "WebTransaction/testTxnName",
+    "transactionName": "WebTransaction/Custom/testTxnName",
     "transactionGuid": "9323dc260548ed0e",
     "inboundPayload": [
       "b854df4feb2b1f06",
@@ -512,7 +512,7 @@
   {
     "name": "new_cat_missing_trip_id",
     "appName": "testAppName",
-    "transactionName": "WebTransaction/testTxnName",
+    "transactionName": "WebTransaction/Custom/testTxnName",
     "transactionGuid": "9323dc260548ed0e",
     "inboundPayload": [
       "b854df4feb2b1f06",
@@ -532,7 +532,7 @@
   {
     "name": "new_cat_null_trip_id",
     "appName": "testAppName",
-    "transactionName": "WebTransaction/testTxnName",
+    "transactionName": "WebTransaction/Custom/testTxnName",
     "transactionGuid": "9323dc260548ed0e",
     "inboundPayload": [
       "b854df4feb2b1f06",

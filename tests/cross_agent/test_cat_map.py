@@ -9,11 +9,12 @@ except ImportError:
 
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.packages import six
-from newrelic.agent import (get_browser_timing_header,
-        get_browser_timing_footer, wsgi_application,
+from newrelic.agent import (get_browser_timing_header, set_transaction_name,
+        get_browser_timing_footer, wsgi_application, set_background_task,
         transient_function_wrapper, current_transaction)
 from newrelic.common.encoding_utils import (obfuscate, json_encode)
-from testing_support.fixtures import override_application_settings
+from testing_support.fixtures import (override_application_settings,
+        override_application_name)
 
 ENCODING_KEY = '1234567890123456789012345678901234567890'
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -42,23 +43,40 @@ _parameters = ",".join(_parameters_list)
 def target_wsgi_application(environ, start_response):
     status = '200 OK'
 
-    txn_name = environ.get('txn')
+
+    txn_name = environ.get('txn').split('/', 3)
     guid = environ.get('guid')
     txn = current_transaction()
+
     txn.guid = guid
     for req in OUTBOUD_REQUESTS:
-        txn._frozen_path = req['outboundTxnName']
+        # Change the transaction name before making an outbound call.
+        outgoing_name = req['outboundTxnName'].split('/', 3)
+        if outgoing_name[0] != 'WebTransaction':
+            set_background_task(True)
+
+        set_transaction_name(outgoing_name[2], group=outgoing_name[1])
+
         expected_outbound_header = obfuscate(
                 json_encode(req['expectedOutboundPayload']), ENCODING_KEY)
         generated_outbound_header = dict(
                 ExternalTrace.generate_request_headers(txn))
+
+        # A 500 error is returned because 'assert' statements in the wsgi app
+        # are ignored.
+
         if (expected_outbound_header !=
                 generated_outbound_header['X-NewRelic-Transaction']):
             status = '500 Outbound Headers Check Failed.'
         r = urlopen('http://www.example.com')
         r.read(10)
 
-    txn._frozen_path = txn_name
+    # Set the final transaction name.
+
+    if txn_name[0] != 'WebTransaction':
+        set_background_task(True)
+    set_transaction_name(txn_name[2], group=txn_name[1])
+
     text = '<html><head>%s</head><body><p>RESPONSE</p>%s</body></html>'
 
     output = (text % (get_browser_timing_header(),
@@ -102,9 +120,9 @@ def validate_analytics_catmap_data(name, expected_attributes=(),
 
     return _validate_analytics_sample_data
 
-def make_headers(payload):
+def _make_headers(payload):
     value = obfuscate(json_encode(payload), ENCODING_KEY)
-    id_value = obfuscate('1#23', ENCODING_KEY)
+    id_value = obfuscate('1#1', ENCODING_KEY)
     return {'X-NewRelic-Transaction': value, 'X-NewRelic-ID': id_value}
 
 @pytest.mark.parametrize(_parameters, load_tests())
@@ -125,8 +143,8 @@ def test_cat_map(name, appName, transactionName, transactionGuid,
             expected_attributes=expectedIntrinsicFields,
             non_expected_attributes=nonExpectedIntrinsicFields)
     @override_application_settings(_custom_settings)
+    @override_application_name(appName)
     def run_cat_test():
-        # Extract the last portion of the transaction name.
 
         if six.PY2:
             txn_name = transactionName.encode('UTF-8')
@@ -136,7 +154,7 @@ def test_cat_map(name, appName, transactionName, transactionGuid,
             guid = transactionGuid
 
         response = target_application.get('/',
-                headers=make_headers(inboundPayload),
+                headers=_make_headers(inboundPayload),
                 extra_environ={'txn': txn_name,
                     'guid': guid})
 

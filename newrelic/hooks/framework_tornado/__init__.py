@@ -21,7 +21,7 @@ _settings_types = {
 }
 
 _settings_defaults = {
-    'debug.transaction_monitoring': True,
+    'debug.transaction_monitoring': False,
 }
 
 tornado_settings = extra_settings('import-hook:tornado',

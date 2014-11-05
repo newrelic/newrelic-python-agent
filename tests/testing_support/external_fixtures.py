@@ -60,7 +60,7 @@ def validate_cross_process_headers(wrapped, instance, args, kwargs):
 
     assert type(values[0]) == type('')
 
-    guid, record_tt = json_decode(deobfuscate(values[0], encoding_key))
+    guid, record_tt = json_decode(deobfuscate(values[0], encoding_key))[:2]
 
     assert guid == transaction.guid
     assert record_tt == transaction.record_tt

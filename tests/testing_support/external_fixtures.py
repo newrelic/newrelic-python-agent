@@ -60,10 +60,13 @@ def validate_cross_process_headers(wrapped, instance, args, kwargs):
 
     assert type(values[0]) == type('')
 
-    guid, record_tt = json_decode(deobfuscate(values[0], encoding_key))[:2]
+    (guid, record_tt, trip_id, path_hash) = \
+            json_decode(deobfuscate(values[0], encoding_key))
 
     assert guid == transaction.guid
     assert record_tt == transaction.record_tt
+    assert trip_id == transaction.trip_id
+    assert path_hash == transaction.path_hash
 
     return result
 

@@ -66,7 +66,27 @@ class ThreadUtilizationDataSource(object):
         self._last_timestamp = now
         self._utilization = new_utilization
 
-        total_threads = self._utilization_tracker.total_threads()
+        total_threads = None
+
+        try:
+            # Recent mod_wsgi versions publish the number of actual
+            # threads so we can use this real value instead of the
+            # calculated value. This is important in order to get the
+            # correct utilization value for mod_wsgi daemon mode as the
+            # way it manages the thread pool it may not actually
+            # activate all available threads if the requirement isn't
+            # there for them. Thus the utilization figure will be too
+            # high as would only be calculated relative to the activated
+            # threads and not the total of what is actually available.
+
+            import mod_wsgi
+            total_threads = mod_wsgi.threads_per_process
+
+        except Exception:
+            pass
+
+        if total_threads is None:
+            total_threads = self._utilization_tracker.total_threads()
 
         if total_threads:
             # Don't report any metrics if don't detect any threads

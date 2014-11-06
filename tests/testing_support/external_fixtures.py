@@ -60,10 +60,13 @@ def validate_cross_process_headers(wrapped, instance, args, kwargs):
 
     assert type(values[0]) == type('')
 
-    guid, record_tt = json_decode(deobfuscate(values[0], encoding_key))
+    (guid, record_tt, trip_id, path_hash) = \
+            json_decode(deobfuscate(values[0], encoding_key))
 
     assert guid == transaction.guid
     assert record_tt == transaction.record_tt
+    assert trip_id == transaction.trip_id
+    assert path_hash == transaction.path_hash
 
     return result
 
@@ -137,8 +140,29 @@ def validate_synthetics_external_trace_header(required_header=(),
             raise
         else:
             if should_exist:
+                # XXX This validation routine is technically
+                # broken as the argument to record_transaction()
+                # is not actually an instance of the Transaction
+                # object. Instead it is a TransactionNode object.
+                # The static method generate_request_headers() is
+                # expecting a Transaction object and not
+                # TransactionNode. The latter provides attributes
+                # which are not updatable by the static method
+                # generate_request_headers(), which it wants to
+                # update, so would fail. For now what we do is use
+                # a little proxy wrapper so that updates do not
+                # fail. The use of this wrapper needs to be
+                # reviewed and a better way of achieveing what is
+                # required found.
+
+                class _Transaction(object):
+                    def __init__(self, wrapped):
+                        self.__wrapped__ = wrapped
+                    def __getattr__(self, name):
+                        return getattr(self.__wrapped__, name)
+
                 external_headers = ExternalTrace.generate_request_headers(
-                        transaction)
+                        _Transaction(transaction))
                 assert required_header in external_headers, (
                         'required_header=%r, ''external_headers=%r' % (
                         header, external_headers))

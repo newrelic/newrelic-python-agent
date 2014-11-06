@@ -5,6 +5,7 @@
     'NEW_RELIC_FAKE_COLLECTOR': 'true'
   :tests:
     - tox -c tests/agent_features/tox.ini
+    - tox -c tests/cross_agent/tox.ini
     - tox -c tests/component_cornice/tox-0016.ini
     - tox -c tests/component_djangorestframework/tox.ini
     - tox -c tests/database_mysql/tox.ini

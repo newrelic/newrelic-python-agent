@@ -25,6 +25,7 @@ import newrelic.core.error_node
 from newrelic.core.stats_engine import CustomMetrics
 from newrelic.core.transaction_cache import transaction_cache
 from newrelic.core.thread_utilization import utilization_tracker
+from ..common.encoding_utils import generate_path_hash
 
 from .time_trace import TimeTrace
 
@@ -145,6 +146,10 @@ class Transaction(object):
         self.client_application_id = None
         self.referring_transaction_guid = None
         self.record_tt = False
+        self._trip_id = None
+        self._referring_path_hash = None
+        self._alternate_path_hashes = {}
+        self.is_part_of_cat = False
 
         self.synthetics_resource_id = None
         self.synthetics_job_id = None
@@ -482,6 +487,11 @@ class Transaction(object):
                 synthetics_job_id = self.synthetics_job_id,
                 synthetics_monitor_id = self.synthetics_monitor_id,
                 synthetics_header = self.synthetics_header,
+                is_part_of_cat=self.is_part_of_cat,
+                trip_id=self.trip_id,
+                path_hash=self.path_hash,
+                referring_path_hash=self._referring_path_hash,
+                alternate_path_hashes=self.alternate_path_hashes,
                 )
 
         # Clear settings as we are all done and don't need it
@@ -567,6 +577,58 @@ class Transaction(object):
     @property
     def profile_sample(self):
         return self._profile_samples
+
+    @property
+    def trip_id(self):
+        return self._trip_id or self.guid
+
+    @property
+    def alternate_path_hashes(self):
+        """Return the alternate path hashes but not including the current path
+        hash.
+
+        """
+        return sorted(set(self._alternate_path_hashes.values()) -
+                set([self.path_hash]))
+
+    @property
+    def path_hash(self):
+        """Path hash is a 32-bit digest of the string "appname;txn_name"
+        XORed with the referring_path_hash. Since the txn_name can change
+        during the course of a transaction, up to 10 path_hashes are stored
+        in _alternate_path_hashes. Before generating the path hash, check the
+        _alternate_path_hashes to determine if we've seen this identifier and
+        return the value.
+
+        """
+
+        if not self.is_part_of_cat:
+            return None
+
+        identifier = '%s;%s' % (self.application.name, self.path)
+
+        # Check if identifier is already part of the _alternate_path_hashes and
+        # return the value if available.
+
+        if self._alternate_path_hashes.get(identifier):
+            return self._alternate_path_hashes[identifier]
+
+        # If the referring_path_hash is unavailable then we use '0' as the
+        # seed.
+
+        try:
+            seed = int((self._referring_path_hash or '0'), base=16)
+        except Exception:
+            seed = 0
+
+        path_hash = generate_path_hash(identifier, seed)
+
+        # Only store upto 10 alternate path hashes.
+
+        if len(self._alternate_path_hashes) < 10:
+            self._alternate_path_hashes[identifier] = path_hash
+
+        return path_hash
 
     def add_profile_sample(self, stack_trace):
         if self._state != self.STATE_RUNNING:

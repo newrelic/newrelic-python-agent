@@ -334,7 +334,6 @@ class WebTransaction(Transaction):
                     client_cross_process_id = deobfuscate(
                             client_cross_process_id, settings.encoding_key)
 
-
                     # The cross process ID consists of the client
                     # account ID and the ID of the specific application
                     # the client is recording requests against. We need
@@ -357,6 +356,7 @@ class WebTransaction(Transaction):
                                 environ, header_name)
 
                         if txn_header:
+                            self.is_part_of_cat = True
                             self.referring_transaction_guid = txn_header[0]
 
                             # Incoming record_tt is OR'd with existing
@@ -366,6 +366,11 @@ class WebTransaction(Transaction):
                             # set to True by an earlier request.
 
                             self.record_tt = self.record_tt or txn_header[1]
+
+                            if isinstance(txn_header[2], six.string_types):
+                                self._trip_id = txn_header[2]
+                            if isinstance(txn_header[3], six.string_types):
+                                self._referring_path_hash = txn_header[3]
 
                 except Exception:
                     pass
@@ -383,7 +388,7 @@ class WebTransaction(Transaction):
 
         # Strip out the query params from the HTTP_REFERER if capture_params
         # is disabled in the settings.
-        
+
         if (self._request_environment.get('HTTP_REFERER') and
                 not self.capture_params):
             self._request_environment['HTTP_REFERER'] = \

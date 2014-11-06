@@ -16,6 +16,15 @@ class MainHandler(tornado.web.RequestHandler):
     def post(self):
         self.write('MAIN RESPONSE')
 
+class AsynchronousHandler(tornado.web.RequestHandler):
+    @tornado.web.asynchronous
+    def get(self):
+        http = tornado.httpclient.AsyncHTTPClient()
+        http.fetch('http://example.com', self._on_download)
+    def _on_download(self, response):
+        self.write('ASYNCHRONOUS RESPONSE')
+        self.finish()
+
 class ImmediatePrepareHandler(tornado.web.RequestHandler):
     def get(self):
         self.write('PREPARE RESPONSE')
@@ -183,6 +192,7 @@ class Raise404Handler(tornado.web.RequestHandler):
 
 _url_mapping = [
     (r'/main', MainHandler),
+    (r'/asynchronous', AsynchronousHandler),
     (r'/immediate_prepare', ImmediatePrepareHandler),
     (r'/engine_immediate_prepare', EngineImmediatePrepareHandler),
     (r'/engine_multi_list_prepare', EngineMultiListPrepareHandler),
@@ -201,6 +211,10 @@ if tornado.version_info[:2] >= (3, 0):
         (r'/engine_return', EngineReturnHandler),
         (r'/coroutine', CoroutineHandler),
         (r'/coroutine_return', CoroutineReturnHandler),
+    ])
+
+if tornado.version_info[:2] >= (3, 1):
+    _url_mapping.extend([
         (r'/coroutine_error', CoroutineErrorHandler),
     ])
 

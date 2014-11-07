@@ -23,7 +23,7 @@ _settings_types = {
 
 _settings_defaults = {
     'debug.transaction_monitoring': False,
-    'instrumentation.metrics.async_wait_rollup': False,
+    'instrumentation.metrics.async_wait_rollup': True,
 }
 
 tornado_settings = extra_settings('import-hook:tornado',

@@ -27,6 +27,10 @@ def wsgi_application(environ, start_response):
 server_thread = None
 server_ready = threading.Event()
 
+# HTTP listener port will be of form 3mmnn.
+
+http_port = int('3%02d%02d' % tornado.version_info[:2])
+
 @function_wrapper
 def setup_application_server(wrapped, instance, args, kwargs):
     global server_thread
@@ -39,7 +43,7 @@ def setup_application_server(wrapped, instance, args, kwargs):
         wsgi_container = tornado.wsgi.WSGIContainer(wsgi_application)
 
         http_server = tornado.httpserver.HTTPServer(wsgi_container)
-        http_server.listen(8890)
+        http_server.listen(http_port)
         server_ready.set()
         tornado.ioloop.IOLoop.instance().start()
 
@@ -57,7 +61,7 @@ def teardown_module(module):
     if server_thread is not None:
         server_thread.join()
 
-_test_application = webtest.TestApp('http://localhost:8890')
+_test_application = webtest.TestApp('http://localhost:%d' % http_port)
 
 _test_wsgi_http_server_get_scoped_metrics = [
     ('Python/Tornado/Request/Process', 1),

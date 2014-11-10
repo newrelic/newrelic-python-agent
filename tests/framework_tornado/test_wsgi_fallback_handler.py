@@ -30,7 +30,7 @@ def wsgi_application(environ, start_response):
 server_thread = None
 server_ready = threading.Event()
 
-# HTTP listener port will be of form 1mmnn.
+# HTTP listener port will be of form 2mmnn.
 
 http_port = int('2%02d%02d' % tornado.version_info[:2])
 

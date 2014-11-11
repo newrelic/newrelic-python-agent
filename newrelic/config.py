@@ -51,6 +51,7 @@ _FEATURE_FLAGS = set([
     'tornado.instrumentation.r1',
     'tornado.instrumentation.r2',
     'pymongo.instrumentation.r2',
+    'django.instrumentation.inclusion-tags.r1',
 ])
 
 # Names of configuration file and deployment environment. This

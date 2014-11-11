@@ -11,7 +11,7 @@ from newrelic.agent import (FunctionWrapper, callable_name,
     WSGIApplicationWrapper, ignore_status_code, insert_html_snippet,
     verify_body_exists, BackgroundTask, register_application,
     wrap_function_wrapper, FunctionTraceWrapper, function_wrapper,
-    extra_settings)
+    extra_settings, global_settings)
 
 _logger = logging.getLogger(__name__)
 
@@ -1053,11 +1053,14 @@ def instrument_django_template_base(module):
     global module_django_template_base
     module_django_template_base = module
 
-    wrap_function_wrapper(module, 'generic_tag_compiler',
-            _nr_wrapper_django_template_base_generic_tag_compiler_)
+    settings = global_settings()
 
-    wrap_function_wrapper(module, 'Library.tag',
-            _nr_wrapper_django_template_base_Library_tag_)
+    if 'django.instrumentation.inclusion-tags.r1' in settings.feature_flag:
+        wrap_function_wrapper(module, 'generic_tag_compiler',
+                _nr_wrapper_django_template_base_generic_tag_compiler_)
 
-    wrap_function_wrapper(module, 'Library.inclusion_tag',
-            _nr_wrapper_django_template_base_Library_inclusion_tag_)
+        wrap_function_wrapper(module, 'Library.tag',
+                _nr_wrapper_django_template_base_Library_tag_)
+
+        wrap_function_wrapper(module, 'Library.inclusion_tag',
+                _nr_wrapper_django_template_base_Library_inclusion_tag_)

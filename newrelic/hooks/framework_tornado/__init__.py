@@ -18,10 +18,12 @@ def _setting_boolean(value):
 
 _settings_types = {
     'debug.transaction_monitoring': _setting_boolean,
+    'instrumentation.metrics.async_wait_rollup': _setting_boolean,
 }
 
 _settings_defaults = {
     'debug.transaction_monitoring': False,
+    'instrumentation.metrics.async_wait_rollup': True,
 }
 
 tornado_settings = extra_settings('import-hook:tornado',
@@ -196,7 +198,7 @@ def initiate_request_monitoring(request):
     return transaction
 
 def suspend_request_monitoring(request, name, group='Python/Tornado',
-        terminal=True, rollup='Async Wait'):
+        terminal=True, rollup=None):
 
     # Suspend the monitoring of the transaction. We do this because
     # we can't rely on thread local data to separate transactions for
@@ -228,6 +230,10 @@ def suspend_request_monitoring(request, name, group='Python/Tornado',
                     'initiated or resumed from %r.', last)
 
         return
+
+    if rollup is None:
+        if tornado_settings.instrumentation.metrics.async_wait_rollup:
+            rollup = 'Async Wait'
 
     request._nr_wait_function_trace = FunctionTrace(transaction,
             name=name, group=group, terminal=terminal, rollup=rollup)

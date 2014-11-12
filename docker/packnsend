@@ -147,6 +147,7 @@ set_docker_env_vars()
     #       NEW_RELIC_PROXY_PORT
     #       NEW_RELIC_PROXY_USER
     #       NEW_RELIC_PROXY_PASS
+    #       NEW_RELIC_DEVELOPER_MODE
 
     DOCKER_ENV_VARS=""
 

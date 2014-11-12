@@ -168,6 +168,12 @@ set_docker_env_vars()
         DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
     fi
 
+    if test -n "$NEW_RELIC_DEVELOPER_MODE"
+    then
+        KEY_VAL="NEW_RELIC_DEVELOPER_MODE=$NEW_RELIC_DEVELOPER_MODE"
+        DOCKER_ENV_VARS="$DOCKER_ENV_VARS -e $KEY_VAL"
+    fi
+
     if test -n "$NEW_RELIC_PROXY_SCHEME"
     then
         KEY_VAL="NEW_RELIC_PROXY_SCHEME=$NEW_RELIC_PROXY_SCHEME"

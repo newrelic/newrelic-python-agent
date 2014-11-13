@@ -79,6 +79,11 @@ def add_user_attribute(key, value):
     #        'add_user_attribute().', DeprecationWarning, stacklevel=2)
     return add_custom_parameter(key, value)
 
+def add_framework_info(name, version=None):
+    transaction = current_transaction()
+    if transaction:
+        transaction.add_framework_info(name, version)
+
 def record_exception(exc=None, value=None, tb=None, params={},
         ignore_errors=[], application=None):
     if application is None:

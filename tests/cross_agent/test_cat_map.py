@@ -14,7 +14,7 @@ from newrelic.agent import (get_browser_timing_header, set_transaction_name,
         transient_function_wrapper, current_transaction)
 from newrelic.common.encoding_utils import (obfuscate, json_encode)
 from testing_support.fixtures import (override_application_settings,
-        override_application_name)
+        override_application_name, validate_tt_parameters)
 
 ENCODING_KEY = '1234567890123456789012345678901234567890'
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -137,8 +137,18 @@ def test_cat_map(name, appName, transactionName, transactionGuid,
             'encoding_key': ENCODING_KEY,
             'trusted_account_ids': [1],
             'cross_application_tracer.enabled': True,
+            'transaction_tracer.transaction_threshold': 0.0,
             }
 
+    if expectedIntrinsicFields:
+        _external_node_params = {
+                'nr.path_hash': expectedIntrinsicFields['nr.pathHash'],
+                'nr.trip_id': expectedIntrinsicFields['nr.tripId'],
+                }
+    else:
+        _external_node_params = []
+
+    @validate_tt_parameters(required_params=_external_node_params)
     @validate_analytics_catmap_data(transactionName,
             expected_attributes=expectedIntrinsicFields,
             non_expected_attributes=nonExpectedIntrinsicFields)

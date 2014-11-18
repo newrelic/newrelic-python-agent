@@ -171,6 +171,8 @@ def collector_agent_registration_fixture(app_name=None, default_settings={}):
 
         use_fake_collector = _environ_as_bool(
                 'NEW_RELIC_FAKE_COLLECTOR', False)
+        use_developer_mode = _environ_as_bool(
+                'NEW_RELIC_DEVELOPER_MODE', False)
 
         if use_fake_collector:
             wrap_function_wrapper('newrelic.core.data_collector',
@@ -217,7 +219,7 @@ def collector_agent_registration_fixture(app_name=None, default_settings={}):
 
         headers['X-API-Key'] = settings.api_key
 
-        if not use_fake_collector:
+        if not use_fake_collector and not use_developer_mode:
             try:
                 _logger.debug("Record deployment marker at %s" % url)
                 r = requests.post(url, proxies=proxies, headers=headers,

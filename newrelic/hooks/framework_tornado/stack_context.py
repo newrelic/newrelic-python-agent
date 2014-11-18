@@ -46,7 +46,7 @@ def _nr_stack_context_wrap_wrapped_(request):
             with FunctionTrace(transaction, name=name):
                 return wrapped(*args, **kwargs)
 
-        except Exception:
+        except:  # Catch all.
             record_exception(transaction, sys.exc_info())
             raise
 

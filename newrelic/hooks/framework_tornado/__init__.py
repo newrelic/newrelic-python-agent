@@ -195,6 +195,17 @@ def initiate_request_monitoring(request):
 
     transaction._nr_current_request = weakref.ref(request)
 
+    # Record framework information for generation of framework metrics.
+
+    import tornado
+
+    if hasattr(tornado, 'version_info'):
+        version = '.'.join(map(str, tornado.version_info))
+    else:
+        version = None
+
+    transaction.add_framework_info('Tornado/ASYNC', version)
+
     return transaction
 
 def suspend_request_monitoring(request, name, group='Python/Tornado',

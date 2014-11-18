@@ -1190,7 +1190,8 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None,
             # supportability metrics.
 
             if framework:
-                transaction._frameworks.add(framework)
+                transaction.add_framework_info(
+                        name=framework[0], version=framework[1])
 
             # Also override the web transaction name to be the name of
             # the wrapped callable if not explicitly named, and we want
@@ -1254,7 +1255,8 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None,
         # reporting as supportability metrics.
 
         if framework:
-            transaction._frameworks.add(framework)
+            transaction.add_framework_info(
+                    name=framework[0], version=framework[1])
 
         # Override the initial web transaction name to be the supplied
         # name, or the name of the wrapped callable if wanting to use

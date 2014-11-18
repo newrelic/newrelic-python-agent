@@ -356,9 +356,13 @@ def _nr_wrapper_RequestHandler__generate_headers_(wrapped, instance,
 
     # The HTTPHeaders class with get_all() only started to be used in
     # Tornado 3.0. For older versions have to fall back to combining the
-    # dictionary and list of headers.
+    # dictionary and list of headers. The get_status() method only got
+    # added in Tornado 1.2.
 
-    status = '%d ???' % instance.get_status()
+    if hasattr(instance, 'get_status'):
+        status = '%d ???' % instance.get_status()
+    else:
+        status = '%d ???' % instance._status_code
 
     try:
         response_headers = instance._headers.get_all()
@@ -430,7 +434,9 @@ def _nr_wrapper_RequestHandler___init___(wrapped, instance, args, kwargs):
             _nr_wrapper_RequestHandler_on_connection_close)
 
     wrap_function_trace(instance, 'prepare')
-    wrap_function_trace(instance, 'on_finish')
+
+    if hasattr(instance, 'on_finish'):
+        wrap_function_trace(instance, 'on_finish')
 
     handler = instance
 

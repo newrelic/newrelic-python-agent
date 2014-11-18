@@ -207,14 +207,19 @@ def _uncomment_sql(sql):
 # instead is try and match based on whatever occurs between the
 # different delimiters we expect. That way we do not have to worry about
 # locale.
+#
+# In the case of a schema and table reference, when quoting is used,
+# the same type of quoting must be used on each in the one statement.
+# You cannot mix different quoting schemes as then the regex gets
+# even more messy.
 
 def _parse_default(sql, regex):
     match = regex.search(sql)
     return match and _extract_identifier(match.group(1)) or ''
 
-_parse_identifier_1_p = r'"((?:[^"]|"")+)"'
-_parse_identifier_2_p = r"'((?:[^']|'')+)'"
-_parse_identifier_3_p = r'`((?:[^`]|``)+)`'
+_parse_identifier_1_p = r'"((?:[^"]|"")+)"(?:\."((?:[^"]|"")+)")?'
+_parse_identifier_2_p = r"'((?:[^']|'')+)'(?:\.'((?:[^']|'')+)')?"
+_parse_identifier_3_p = r'`((?:[^`]|``)+)`(?:\.`((?:[^`]|``)+)`)?'
 _parse_identifier_4_p = r'\[\s*(\S+)\s*\]'
 _parse_identifier_5_p = r'\(\s*(\S+)\s*\)'
 _parse_identifier_6_p = r'([^\s\(\)\[\],]+)'
@@ -227,44 +232,41 @@ _parse_identifier_p = ''.join(('(', _parse_identifier_1_p, '|',
 _parse_from_p = '\s+FROM\s+' + _parse_identifier_p
 _parse_from_re = re.compile(_parse_from_p, re.IGNORECASE)
 
+def _join_identifier(m):
+    return m and '.'.join([s for s in m.groups()[1:] if s]).lower() or ''
+
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_target_select')
 def _parse_select(sql):
-    m = _parse_from_re.search(sql)
-    return m and next(s for s in m.groups()[1:] if s).lower() or ''
+    return _join_identifier(_parse_from_re.search(sql))
 
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_target_delete')
 def _parse_delete(sql):
-    m = _parse_from_re.search(sql)
-    return m and next(s for s in m.groups()[1:] if s).lower() or ''
+    return _join_identifier(_parse_from_re.search(sql))
 
 _parse_into_p = '\s+INTO\s+' + _parse_identifier_p
 _parse_into_re = re.compile(_parse_into_p, re.IGNORECASE)
 
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_target_insert')
 def _parse_insert(sql):
-    m = _parse_into_re.search(sql)
-    return m and next(s for s in m.groups()[1:] if s).lower() or ''
+    return _join_identifier(_parse_into_re.search(sql))
 
 _parse_update_p = '\s*UPDATE\s+' + _parse_identifier_p
 _parse_update_re = re.compile(_parse_update_p, re.IGNORECASE)
 
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_target_update')
 def _parse_update(sql):
-    m = _parse_update_re.search(sql)
-    return m and next(s for s in m.groups()[1:] if s).lower() or ''
+    return _join_identifier(_parse_update_re.search(sql))
 
 _parse_table_p = '\s+TABLE\s+' + _parse_identifier_p
 _parse_table_re = re.compile(_parse_table_p, re.IGNORECASE)
 
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_target_create')
 def _parse_create(sql):
-    m = _parse_table_re.search(sql)
-    return m and next(s for s in m.groups()[1:] if s).lower() or ''
+    return _join_identifier(_parse_table_re.search(sql))
 
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_target_drop')
 def _parse_drop(sql):
-    m = _parse_table_re.search(sql)
-    return m and next(s for s in m.groups()[1:] if s).lower() or ''
+    return _join_identifier(_parse_table_re.search(sql))
 
 # TODO Following need to be reviewed again. They aren't currently used
 # in actual use as only parse out target for select/insert/update/delete.

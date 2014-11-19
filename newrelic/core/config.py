@@ -289,7 +289,7 @@ _settings.transaction_name.naming_scheme = os.environ.get(
 
 _settings.slow_sql.enabled = True
 
-_settings.synthetics.enabled = False
+_settings.synthetics.enabled = True
 
 _settings.agent_limits.data_collector_timeout = 30.0
 _settings.agent_limits.transaction_traces_nodes = 2000

@@ -996,6 +996,10 @@ class Transaction(object):
         #        stacklevel=2)
         self.add_custom_parameters(items)
 
+    def add_framework_info(self, name, version=None):
+        if name:
+            self._frameworks.add((name, version))
+
     def dump(self, file):
         """Dumps details about the transaction to the file object."""
 
@@ -1095,6 +1099,11 @@ def add_user_attribute(key, value):
     #warnings.warn('API change. Use add_custom_parameter() instead of '
     #        'add_user_attribute().', DeprecationWarning, stacklevel=2)
     return add_custom_parameter(key, value)
+
+def add_framework_info(name, version=None):
+    transaction = current_transaction()
+    if transaction:
+        transaction.add_framework_info(name, version)
 
 def record_exception(exc=None, value=None, tb=None, params={},
         ignore_errors=[], application=None):

@@ -11,7 +11,7 @@ from .api.application import (application_instance as application,
 from .api.transaction import (current_transaction, set_transaction_name,
         end_of_transaction, set_background_task, ignore_transaction,
         suppress_apdex_metric, capture_request_params, add_custom_parameter,
-        record_exception, get_browser_timing_header,
+        add_framework_info, record_exception, get_browser_timing_header,
         get_browser_timing_footer, disable_browser_autorum,
         suppress_transaction_trace, record_custom_metric,
         record_custom_metrics)

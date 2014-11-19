@@ -487,6 +487,26 @@ SELECT_PARSE_TESTS = [
     ('', 'select'),
     """select now() as time"""
   ),
+  (
+    # Select with schema.
+    ('schema.table', 'select'),
+    '''SELECT * from schema.table'''
+  ),
+  (
+    # Select with quoted schema.
+    ('schema.table', 'select'),
+    '''SELECT * from "schema"."table"'''
+  ),
+  (
+    # Select with quoted schema.
+    ('schema.table', 'select'),
+    """SELECT * from 'schema'.'table'"""
+  ),
+  (
+    # Select with quoted schema.
+    ('schema.table', 'select'),
+    '''SELECT * from `schema`.`table`'''
+  ),
 ]
 
 DELETE_PARSE_TESTS = [

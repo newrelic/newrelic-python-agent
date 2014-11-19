@@ -35,10 +35,15 @@
     - tox -c tests/framework_bottle/tox-0011.ini
     - tox -c tests/framework_cherrypy/tox-0301.ini
     - tox -c tests/framework_cherrypy/tox-0302.ini
+    - tox -c tests/framework_cherrypy/tox-0303.ini
+    - tox -c tests/framework_cherrypy/tox-0304.ini
+    - tox -c tests/framework_cherrypy/tox-0305.ini
+    - tox -c tests/framework_cherrypy/tox-0306.ini
     - tox -c tests/framework_django/tox-0103.ini
     - tox -c tests/framework_django/tox-0104.ini
     - tox -c tests/framework_django/tox-0105.ini
     - tox -c tests/framework_django/tox-0106.ini
+    - tox -c tests/framework_django/tox-0107.ini
     - tox -c tests/framework_flask/tox-0006.ini
     - tox -c tests/framework_flask/tox-0007.ini
     - tox -c tests/framework_flask/tox-0008.ini
@@ -61,7 +66,7 @@
   :mysql:
     :version: '5.1'
   :redis:
-    :version: '2.16.6'
+    :version: '2.6.16'
   :mongodb:
     :version: '2.0'
     :append:

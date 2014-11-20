@@ -658,11 +658,14 @@ def validate_database_trace_inputs(sql_parameters_type):
 
     return _validate_database_trace_inputs
 
-def override_application_name(name):
+def override_application_name(app_name):
+    # The argument here cannot be named 'name', or else it triggers
+    # a PyPy bug. Hence, we use 'app_name' instead.
+
     class Application(ObjectProxy):
         @property
         def name(self):
-            return name
+            return app_name
 
     @transient_function_wrapper('newrelic.api.transaction',
             'Transaction.__init__')

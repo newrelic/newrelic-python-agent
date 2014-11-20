@@ -211,6 +211,8 @@ def unpack_field(field):
     data = json_decode(data)
     return data
 
+
+
 def generate_path_hash(name, seed):
     """Algorithm for generating the path hash:
     * Rotate Left the seed value and truncate to 32-bits.
@@ -219,5 +221,8 @@ def generate_path_hash(name, seed):
 
     """
     rotated = ((seed << 1) | (seed >> 31)) & 0xffffffff
-    path_hash = (rotated ^ int(md5(six.b(name)).hexdigest()[-8:], base=16))
+
+    if not isinstance(name, bytes):
+        name = name.encode('UTF-8')
+    path_hash = (rotated ^ int(md5(name).hexdigest()[-8:], base=16))
     return '%08x' % path_hash

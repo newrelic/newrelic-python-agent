@@ -532,6 +532,41 @@ def validate_synthetics_transaction_trace(required_params={},
 
     return _validate_synthetics_transaction_trace
 
+def validate_tt_parameters(required_params={},
+        forgone_params={}):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_tt_parameters(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+
+            # Now that transaction has been recorded, generate
+            # a transaction trace
+
+            connections = SQLConnections()
+            trace_data = instance.transaction_trace_data(connections)
+
+            pack_data = unpack_field(trace_data[0][4])
+            tt_custom_params = pack_data[0][2]
+
+            for name in required_params:
+                assert name in tt_custom_params, ('name=%r, '
+                        'custom_params=%r' % (name, tt_custom_params))
+                assert tt_custom_params[name] == required_params[name], (
+                        'name=%r, value=%r, custom_params=%r' %
+                        (name, required_params[name], tt_custom_params))
+
+            for name in forgone_params:
+                assert name not in tt_custom_params, ('name=%r, '
+                        'custom_params=%r' % (name, tt_custom_params))
+
+        return result
+
+    return _validate_tt_parameters
+
 def validate_request_params(required_params=[], forgone_params=[]):
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
@@ -623,11 +658,14 @@ def validate_database_trace_inputs(sql_parameters_type):
 
     return _validate_database_trace_inputs
 
-def override_application_name(name):
+def override_application_name(app_name):
+    # The argument here cannot be named 'name', or else it triggers
+    # a PyPy bug. Hence, we use 'app_name' instead.
+
     class Application(ObjectProxy):
         @property
         def name(self):
-            return name
+            return app_name
 
     @transient_function_wrapper('newrelic.api.transaction',
             'Transaction.__init__')

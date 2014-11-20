@@ -547,8 +547,6 @@ def validate_tt_parameters(required_params={},
             connections = SQLConnections()
             trace_data = instance.transaction_trace_data(connections)
 
-            # Check that synthetics ids are in TT custom params
-
             pack_data = unpack_field(trace_data[0][4])
             tt_custom_params = pack_data[0][2]
 

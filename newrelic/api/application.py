@@ -143,3 +143,12 @@ def application():
            'instead of application().', DeprecationWarning, stacklevel=2)
 
    return application_instance()
+
+def register_application(name=None, timeout=None):
+    instance = application_instance(name)
+    instance.activate(timeout)
+    return instance
+
+def application_settings(name=None):
+    instance = application_instance(name)
+    return instance.settings

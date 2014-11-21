@@ -5,14 +5,11 @@ import pymongo
 
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors)
+from testing_support.settings import mongodb_settings
 
 from newrelic.agent import background_task
 
-MONGODB_HOST = os.environ.get('TDIUM_MONGOID_HOST', 'localhost')
-MONGODB_PORT = int(os.environ.get('TDIUM_MONGOID_PORT', '27017'))
-
-MONGODB_HOST = os.environ.get('MONGODB_PORT_27017_TCP_ADDR', MONGODB_HOST)
-MONGODB_PORT = int(os.environ.get('MONGODB_PORT_27017_TCP_PORT', MONGODB_PORT))
+MONGODB_HOST, MONGODB_PORT = mongodb_settings()
 
 def _exercise_mongo(db):
     db.my_collection.save({"x": 10})

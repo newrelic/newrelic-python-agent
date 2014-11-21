@@ -192,8 +192,6 @@ def xor_cipher_decrypt_base64(text, key):
 obfuscate = xor_cipher_encrypt_base64
 deobfuscate = xor_cipher_decrypt_base64
 
-# Functions to unpack fields in data sent to the collector.
-
 def unpack_field(field):
     """Decodes data that was compressed before being sent to the collector.
     For example, 'pack_data' in a transaction trace, or 'params_data' in a
@@ -202,12 +200,16 @@ def unpack_field(field):
     and encoding, and returns a Python object.
 
     """
+
     if not isinstance(field, bytes):
         field = field.encode('UTF-8')
+
     data = base64.decodestring(field)
     data = zlib.decompress(data)
+
     if isinstance(data, bytes):
         data = data.decode('Latin-1')
+
     data = json_decode(data)
     return data
 
@@ -218,6 +220,11 @@ def generate_path_hash(name, seed):
     * XOR the 4 bytes of digest with the seed and return the result.
 
     """
+
     rotated = ((seed << 1) | (seed >> 31)) & 0xffffffff
-    path_hash = (rotated ^ int(md5(six.b(name)).hexdigest()[-8:], base=16))
+
+    if not isinstance(name, bytes):
+        name = name.encode('UTF-8')
+
+    path_hash = (rotated ^ int(md5(name).hexdigest()[-8:], base=16))
     return '%08x' % path_hash

@@ -43,8 +43,11 @@ _parameters = ",".join(_parameters_list)
 def target_wsgi_application(environ, start_response):
     status = '200 OK'
 
+    txn_name = environ.get('txn')
+    if six.PY2:
+        txn_name = txn_name.decode('UTF-8')
+    txn_name = txn_name.split('/', 3)
 
-    txn_name = environ.get('txn').split('/', 3)
     guid = environ.get('guid')
     txn = current_transaction()
 

@@ -46,7 +46,7 @@
   {
     "name": "new_cat_path_hash_with_unicode_name",
     "appName": "testAppName",
-    "transactionName": "WebTransaction/Custom/txn√√√",
+    "transactionName": "WebTransaction/Custom/txn\u221a\u221a\u221a",
     "transactionGuid": "9323dc260548ed0e",
     "inboundPayload": [
       "b854df4feb2b1f06",

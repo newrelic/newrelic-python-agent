@@ -870,17 +870,27 @@ class StatsEngine(object):
 
         def _add_call_time(source, target):
             try:
-                record[target] = self.__stats_table[
+                call_time = self.__stats_table[
                         (source, '')].total_call_time
             except KeyError:
                 pass
+            else:
+                if target in record:
+                    record[target] += call_time
+                else:
+                    record[target] = call_time
 
         def _add_call_count(source, target):
             try:
-                record[target] = self.__stats_table[
+                call_count = self.__stats_table[
                         (source, '')].call_count
             except KeyError:
                 pass
+            else:
+                if target in record:
+                    record[target] += call_count
+                else:
+                    record[target] = call_count
 
         _add_call_time('WebFrontend/QueueTime', 'queueDuration')
 
@@ -890,6 +900,12 @@ class StatsEngine(object):
 
         _add_call_count('External/all', 'externalCallCount')
         _add_call_count('Database/all', 'databaseCallCount')
+
+        # As we transition to using Datastore metrics, we now include
+        # 'Datastore/all' totals in databaseDuration and databaseCallCount.
+
+        _add_call_time('Datastore/all', 'databaseDuration')
+        _add_call_count('Datastore/all', 'databaseCallCount')
 
         analytic_event = [record, params]
         return analytic_event

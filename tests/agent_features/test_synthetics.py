@@ -145,6 +145,8 @@ def _synthetics_limit_test(num_requests, num_events, num_transactions):
     assert len(stats.synthetics_events) == num_events
     assert len(stats.synthetics_transactions) == num_transactions
 
+@pytest.mark.skipif(True, reason='Test is too flaky. '
+                'Need to find a way to make harvests more predictable.')
 @pytest.mark.parametrize('num_requests,num_events,num_transactions', [
     (0, 0, 0),
     (20, 20, 20),
@@ -164,6 +166,8 @@ _custom_settings = {
     'synthetics.enabled': True,
 }
 
+@pytest.mark.skipif(True, reason='Test is too flaky. '
+                'Need to find a way to make harvests more predictable.')
 @pytest.mark.parametrize('num_requests,num_events,num_transactions', [
     (0, 0, 0),
     (3, 3, 3),
@@ -183,6 +187,8 @@ _zero_settings = {
     'synthetics.enabled': True,
 }
 
+@pytest.mark.skipif(True, reason='Test is too flaky. '
+                'Need to find a way to make harvests more predictable.')
 @pytest.mark.parametrize('num_requests,num_events,num_transactions', [
     (0, 0, 0),
     (1, 0, 0)])

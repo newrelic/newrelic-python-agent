@@ -195,7 +195,7 @@ class _WSGIApplication(object):
         return _WSGIApplicationIterable(transaction, result)
 
 def _nr_wrapper_WSGIContainer___init___(wrapped, instance, args, kwargs):
-    # This wrapper is used on to inject a wrapper around the WSGI
+    # This wrapper is used to inject a wrapper around the WSGI
     # application object passed into the WSGI container. That wrapper is
     # going to perform a subset of what we would normally do in the
     # WSGIApplicationWrapper class for normal WSGI applications.
@@ -213,4 +213,12 @@ def instrument_tornado_wsgi(module):
     wrap_function_wrapper(module, 'WSGIContainer.__call__',
             _nr_wrapper_WSGIContainer___call___)
 
-    wrap_wsgi_application(module, 'WSGIApplication.__call__')
+    import tornado
+
+    if hasattr(tornado, 'version_info'):
+        version = '.'.join(map(str, tornado.version_info))
+    else:
+        version = None
+
+    wrap_wsgi_application(module, 'WSGIApplication.__call__',
+            framework=('Tornado/WSGI', version))

@@ -226,6 +226,10 @@ class TransactionNode(_TransactionNode):
             if self.referring_transaction_guid:
                 custom_params['referring_transaction_guid'] = \
                         self.referring_transaction_guid
+            if self.trip_id:
+                custom_params['nr.trip_id'] = self.trip_id
+            if self.path_hash:
+                custom_params['nr.path_hash'] = self.path_hash
 
             if custom_params:
                 params["custom_params"] = custom_params
@@ -291,8 +295,13 @@ class TransactionNode(_TransactionNode):
             custom_params['referring_transaction_guid'] = \
                     self.referring_transaction_guid
 
-        # By prepending 'nr.' to the Synthetics custom param names,
-        # they get treated as "Intrinsics" in the APM UI.
+        # By prepending 'nr.' to the custom param names, they get treated as
+        # "Intrinsics" in the APM UI.
+
+        if self.trip_id:
+            custom_params['nr.trip_id'] = self.trip_id
+        if self.path_hash:
+            custom_params['nr.path_hash'] = self.path_hash
 
         if self.synthetics_resource_id:
             custom_params['nr.synthetics_resource_id'] = \

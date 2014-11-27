@@ -119,9 +119,9 @@ def _environ_as_mapping(name, default=''):
         try:
             key, value = item.split(':')
         except ValueError:
-            _logger.warning('Invalid configuration. Cannot parse: %s.'
-                    'Expected format \'key1:value1;key2:value2 ... \'.' %
-                     (items,))
+            _logger.warning('Invalid configuration. Cannot parse: %r.'
+                    'Expected format \'key1:value1;key2:value2 ... \'.',
+                     items)
             result = []
             break
 
@@ -131,9 +131,9 @@ def _environ_as_mapping(name, default=''):
         if key and value:
             result.append((key, value))
         else:
-            _logger.warning('Invalid configuration. Cannot parse: %s.'
-                    'Expected format \'key1:value1;key2:value2 ... \'.' %
-                     (items,))
+            _logger.warning('Invalid configuration. Cannot parse: %r.'
+                    'Expected format \'key1:value1;key2:value2 ... \'.',
+                     items)
             result = []
             break
 
@@ -289,7 +289,7 @@ _settings.transaction_name.naming_scheme = os.environ.get(
 
 _settings.slow_sql.enabled = True
 
-_settings.synthetics.enabled = False
+_settings.synthetics.enabled = True
 
 _settings.agent_limits.data_collector_timeout = 30.0
 _settings.agent_limits.transaction_traces_nodes = 2000

@@ -658,3 +658,14 @@ def agent():
            'instead of agent().', DeprecationWarning, stacklevel=2)
 
    return agent_instance()
+
+def shutdown_agent(timeout=None):
+    agent = agent_instance()
+    agent.shutdown_agent(timeout)
+
+def register_data_source(source, application=None, name=None,
+        settings=None, **properties):
+    agent = agent_instance()
+    agent.register_data_source(source,
+            application and application.name or None, name, settings,
+            **properties)

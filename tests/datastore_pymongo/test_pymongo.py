@@ -4,7 +4,7 @@ import random
 import pymongo
 
 from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors)
+    validate_transaction_errors, validate_database_duration)
 from testing_support.settings import mongodb_settings
 
 from newrelic.agent import background_task
@@ -83,6 +83,13 @@ _test_pymongo_mongo_client_rollup_metrics = (_test_pymongo_rollup_metrics +
         background_task=True)
 @background_task()
 def test_mongodb_mongo_client_operation():
+    client = pymongo.MongoClient(MONGODB_HOST, MONGODB_PORT)
+    db = client.test
+    _exercise_mongo(db)
+
+@validate_database_duration()
+@background_task()
+def test_mongodb_database_duration():
     client = pymongo.MongoClient(MONGODB_HOST, MONGODB_PORT)
     db = client.test
     _exercise_mongo(db)

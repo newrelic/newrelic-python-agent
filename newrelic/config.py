@@ -1977,6 +1977,10 @@ def _process_module_builtin_defaults():
     _process_module_definition('solr',
             'newrelic.hooks.solr_solrpy')
 
+    _process_module_definition('pyelasticsearch.client',
+            'newrelic.hooks.datastore_pyelasticsearch',
+            'instrument_pyelasticsearch_client')
+
     if 'database.instrumentation.r1' in _settings.feature_flag:
         _process_module_definition('pymongo.connection',
                 'newrelic.hooks.nosql_pymongo',

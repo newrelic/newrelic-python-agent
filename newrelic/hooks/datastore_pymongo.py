@@ -1,5 +1,5 @@
+from newrelic.agent import wrap_function_trace
 from newrelic.api.datastore_trace import wrap_datastore_trace
-from newrelic.api.function_trace import wrap_function_trace
 
 _methods = ['save', 'insert', 'update', 'drop', 'remove', 'find_one',
             'find', 'count', 'create_index', 'ensure_index', 'drop_indexes',

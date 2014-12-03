@@ -1,8 +1,5 @@
-import os
-import random
-import sqlite3
-
 import pymongo
+import sqlite3
 
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_errors, validate_database_duration)

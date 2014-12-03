@@ -77,3 +77,18 @@ def mysql_settings():
             settings['port']))
 
     return settings
+
+def mongodb_settings():
+    """Return (host, port) tuple to connect to mongodb."""
+
+    # Use local defaults, if TDDIUM vars aren't present.
+
+    host = 'localhost' # TDDIUM sets up mongodb on each test worker.
+    port = int(os.environ.get('TDDIUM_MONGOID_PORT', '27017'))
+
+    # Look for env vars in test docker container.
+
+    host = os.environ.get('MONGODB_PORT_27017_TCP_ADDR', host)
+    port = int(os.environ.get('MONGODB_PORT_27017_TCP_PORT', port))
+
+    return (host, port)

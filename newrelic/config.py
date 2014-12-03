@@ -1947,6 +1947,9 @@ def _process_module_builtin_defaults():
         _process_module_definition('pymongo.connection',
                 'newrelic.hooks.datastore_pymongo',
                 'instrument_pymongo_connection')
+        _process_module_definition('pymongo.mongo_client',
+                'newrelic.hooks.datastore_pymongo',
+                'instrument_pymongo_mongo_client')
         _process_module_definition('pymongo.collection',
                 'newrelic.hooks.datastore_pymongo',
                 'instrument_pymongo_collection')

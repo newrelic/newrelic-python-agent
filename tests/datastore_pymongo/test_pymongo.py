@@ -1,5 +1,6 @@
 import os
 import random
+import sqlite3
 
 import pymongo
 
@@ -93,3 +94,24 @@ def test_mongodb_database_duration():
     client = pymongo.MongoClient(MONGODB_HOST, MONGODB_PORT)
     db = client.test
     _exercise_mongo(db)
+
+@validate_database_duration()
+@background_task()
+def test_mongodb_and_sqlite_database_duration():
+
+    # Make mongodb queries
+
+    client = pymongo.MongoClient(MONGODB_HOST, MONGODB_PORT)
+    db = client.test
+    _exercise_mongo(db)
+
+    # Make sqlite queries
+
+    conn = sqlite3.connect(":memory:")
+    cur = conn.cursor()
+
+    cur.execute("CREATE TABLE blah (name text, quantity int)")
+    cur.execute("INSERT INTO blah VALUES ('Bob', 22)")
+
+    conn.commit()
+    conn.close()

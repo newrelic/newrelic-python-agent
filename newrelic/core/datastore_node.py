@@ -24,10 +24,11 @@ class DatastoreNode(_DatastoreNode):
         target = self.target or self.target_default
         operation = self.operation or self.operation_default
 
-        # Top-level rollup metric. Not used by APM, but needed to
-        # calculate databaseDuration for the Transaction Event.
+        # Private rollup metric. Not used by APM, but it's helpful for
+        # us to calculate databaseDuration and databaseCallCount for the
+        # Transaction Event.
 
-        yield TimeMetric(name='Datastore/all', scope='',
+        yield TimeMetric(name='Supportability/Datastore/all', scope='',
                 duration=self.duration, exclusive=self.exclusive)
 
         # Product level rollup metrics

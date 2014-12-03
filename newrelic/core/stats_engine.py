@@ -902,10 +902,11 @@ class StatsEngine(object):
         _add_call_count('Database/all', 'databaseCallCount')
 
         # As we transition to using Datastore metrics, we now include
-        # 'Datastore/all' totals in databaseDuration and databaseCallCount.
+        # 'Supportability/Datastore/all' totals in databaseDuration and
+        # databaseCallCount.
 
-        _add_call_time('Datastore/all', 'databaseDuration')
-        _add_call_count('Datastore/all', 'databaseCallCount')
+        _add_call_time('Supportability/Datastore/all', 'databaseDuration')
+        _add_call_count('Supportability/Datastore/all', 'databaseCallCount')
 
         analytic_event = [record, params]
         return analytic_event

@@ -675,13 +675,18 @@ class Transaction(object):
                 self.ignore_transaction = self.ignore_transaction or ignore
 
             # Apply transaction rules on the full transaction name.
-            # The path is frozen at this point and cannot be further
-            # changed.
 
             self._frozen_path, ignore = self._application.normalize_name(
                     self.path, 'transaction')
 
             self.ignore_transaction = self.ignore_transaction or ignore
+
+            # Apply segement whitelist rule to the segments on the full
+            # transaction name. The path is frozen at this point and cannot be
+            # further changed.
+
+            self._frozen_path = self._application.normalize_name(
+                    self.path, 'segment')
 
             # Look up the apdex from the table of key transactions. If
             # current transaction is not a key transaction then use the

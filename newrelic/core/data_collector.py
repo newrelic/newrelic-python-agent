@@ -238,11 +238,11 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         license_key = 'NO LICENSE KEY WAS SET IN AGENT CONFIGURATION'
 
     # The agent formats requests and is able to handle responses for
-    # protocol version 12.
+    # protocol version 14.
 
     params['method'] = method
     params['license_key'] = license_key
-    params['protocol_version'] = '12'
+    params['protocol_version'] = '14'
     params['marshal_format'] = 'json'
 
     if agent_run_id:
@@ -1052,7 +1052,7 @@ class DeveloperModeSession(ApplicationSession):
 
         params['method'] = method
         params['license_key'] = license_key
-        params['protocol_version'] = '12'
+        params['protocol_version'] = '14'
         params['marshal_format'] = 'json'
 
         if agent_run_id:

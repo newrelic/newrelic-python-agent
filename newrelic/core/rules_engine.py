@@ -89,3 +89,67 @@ class RulesEngine(object):
                 break
 
         return (final_string, ignore)
+
+class SegmentCollapseEngine(object):
+    """Segment names in transaction name are collapsed using the rules from the
+    collector. The collector sends a prefix and list of whitelist terms
+    associated with that prefix. If a transaction name matches the prefix then
+    we replace all segments of the name with a '*' except for the segments in
+    the whitelist terms.
+
+    """
+
+    COLLAPSE_STAR_RE = re.compile('((?:^|/)\*)(?:/\*)*')
+
+    def __init__(self, rules):
+        self.rules = {}
+        for rule in rules:
+            # Prefix must have exactly 2 valid segments. We remove any empty
+            # strings that may result from splitting a prefix that might have a
+            # trailing slash. eg: 'WebTransaction/Foo/' will result in
+            # ['WebTransaction', 'Foo', ''].
+
+            prefix_segments = [x for x in rule['prefix'].split('/') if x]
+            if len(prefix_segments) == 2:
+                prefix = '/'.join(prefix_segments)
+                self.rules[prefix] = rule['terms']
+
+    def normalize(self, txn_name):
+        """Takes a transaction name and collapses the segments into a '*'
+        except for the segments in the whitelist_terms.
+
+        """
+
+        # Only the first two segments of the transaction name can be a prefix.
+        prefix = '/'.join(txn_name.split('/')[:2])
+        whitelist_terms = self.rules.get(prefix)
+        if whitelist_terms is None:
+            return txn_name
+
+        # Remove the prefix. and split by '/' to extract the segments.
+
+        txn_name_no_prefix = txn_name[len(prefix):]
+
+        # If the remaining portion has a preceding '/' we strip it out and
+        # add them back when joining the segments after the collapsing.
+
+        add_slash = txn_name_no_prefix.startswith('/')
+        segments = txn_name_no_prefix.lstrip('/').split('/')
+
+        # Replace non-whitelist terms with '*'.
+
+        result = [x if x in whitelist_terms else '*' for x in segments]
+
+        # Collapse adjacent '*' segments to a single '*'.
+        result_string = '/'.join(result)
+
+        collapsed_result = self.COLLAPSE_STAR_RE.sub('\\1', result_string)
+
+        # Set the txn_name to the new value after applying the rule.
+
+        if add_slash:
+            txn_name = prefix + '/' + collapsed_result
+        else:
+            txn_name = prefix + collapsed_result
+
+        return txn_name

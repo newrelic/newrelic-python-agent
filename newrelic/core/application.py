@@ -21,7 +21,7 @@ from newrelic.core.data_collector import create_session
 from newrelic.network.exceptions import (ForceAgentRestart,
         ForceAgentDisconnect, DiscardDataForRequest, RetryDataForRequest)
 from newrelic.core.environment import environment_settings
-from newrelic.core.rules_engine import RulesEngine
+from newrelic.core.rules_engine import RulesEngine, SegmentCollapseEngine
 from newrelic.core.stats_engine import StatsEngine, CustomMetrics
 from newrelic.core.internal_metrics import (InternalTrace,
         InternalTraceContext, internal_metric)
@@ -88,7 +88,9 @@ class Application(object):
         # to use unnecessary locking to protect access.
 
         self._rules_engine = { 'url': RulesEngine([]),
-                'transaction': RulesEngine([]), 'metric': RulesEngine([]) }
+                'transaction': RulesEngine([]),
+                'metric': RulesEngine([]),
+                'segment': SegmentCollapseEngine([])}
 
         self._data_samplers = []
 
@@ -154,6 +156,8 @@ class Application(object):
                     self._rules_engine['metric'].rules)
             print >> file, 'Transaction Normalization Rules: %r' % (
                     self._rules_engine['transaction'].rules)
+            print >> file, 'Transaction Segment Whitelist Rules: %r' % (
+                    self._rules_engine['segment'].rules)
             print >> file, 'Harvest Period Start: %s' % (
                     time.asctime(time.localtime(self._period_start)))
             print >> file, 'Transaction Count: %d' % (
@@ -342,6 +346,8 @@ class Application(object):
                                 configuration.metric_name_rules)
                         self._rules_engine['transaction'] = RulesEngine(
                                 configuration.transaction_name_rules)
+                        self._rules_engine['segment'] = SegmentCollapseEngine(
+                                configuration.transaction_segment_terms)
 
                     except Exception:
                         _logger.exception('The agent normalization rules '

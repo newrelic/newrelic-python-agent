@@ -1866,7 +1866,7 @@
         ]
     },
     "newrelic/packages/wrapt/__init__.py": {
-        "hash": "122766fd1d018b3f59d18d725d4d610b",
+        "hash": "4bcec6b3b1df3d31eced25461e11f423",
         "libraries": [
             "wrapt"
         ]
@@ -1884,7 +1884,7 @@
         ]
     },
     "newrelic/packages/wrapt/decorators.py": {
-        "hash": "2fed0cdfc7f992d35dbb513ee458c18c",
+        "hash": "875e7d69fcaa5fb346bf3be2ac5f8373",
         "libraries": [
             "wrapt"
         ]

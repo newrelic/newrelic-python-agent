@@ -39,7 +39,7 @@ class ConnectionFactory(DBAPI2ConnectionFactory):
     __connection_wrapper__ = ConnectionWrapper
 
 def instrument_psycopg2(module):
-    register_database_client(module, 'PostgreSQL', 'single',
+    register_database_client(module, 'Postgres', 'single',
             'explain', ('select', 'insert', 'update', 'delete'))
 
     wrap_object(module, 'connect', ConnectionFactory, (module,))

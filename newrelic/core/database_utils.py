@@ -428,7 +428,7 @@ def _obfuscate_explain_plan_postgresql(columns, rows, mask=None):
     return columns, rows
 
 _obfuscate_explain_plan_table = {
-    'PostgreSQL': _obfuscate_explain_plan_postgresql
+    'Postgres': _obfuscate_explain_plan_postgresql
 }
 
 def _obfuscate_explain_plan(database, columns, rows):

@@ -1,10 +1,8 @@
-import os
-import random
-
 import pymongo
+import sqlite3
 
 from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_errors)
+    validate_transaction_errors, validate_database_duration)
 from testing_support.settings import mongodb_settings
 
 from newrelic.agent import background_task
@@ -86,3 +84,31 @@ def test_mongodb_mongo_client_operation():
     client = pymongo.MongoClient(MONGODB_HOST, MONGODB_PORT)
     db = client.test
     _exercise_mongo(db)
+
+@validate_database_duration()
+@background_task()
+def test_mongodb_database_duration():
+    client = pymongo.MongoClient(MONGODB_HOST, MONGODB_PORT)
+    db = client.test
+    _exercise_mongo(db)
+
+@validate_database_duration()
+@background_task()
+def test_mongodb_and_sqlite_database_duration():
+
+    # Make mongodb queries
+
+    client = pymongo.MongoClient(MONGODB_HOST, MONGODB_PORT)
+    db = client.test
+    _exercise_mongo(db)
+
+    # Make sqlite queries
+
+    conn = sqlite3.connect(":memory:")
+    cur = conn.cursor()
+
+    cur.execute("CREATE TABLE blah (name text, quantity int)")
+    cur.execute("INSERT INTO blah VALUES ('Bob', 22)")
+
+    conn.commit()
+    conn.close()

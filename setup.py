@@ -86,10 +86,11 @@ packages = [
   "newrelic/packages",
   "newrelic/packages/requests",
   "newrelic/packages/requests/packages",
-  "newrelic/packages/requests/packages/charade",
+  "newrelic/packages/requests/packages/chardet",
   "newrelic/packages/requests/packages/urllib3",
   "newrelic/packages/requests/packages/urllib3/packages",
   "newrelic/packages/requests/packages/urllib3/packages/ssl_match_hostname",
+  "newrelic/packages/requests/packages/urllib3/util",
   "newrelic/packages/wrapt",
   "newrelic.samplers",
 ]

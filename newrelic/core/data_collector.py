@@ -11,6 +11,7 @@ import sys
 import time
 import zlib
 import base64
+import warnings
 
 from pprint import pprint
 
@@ -355,9 +356,12 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         cert_loc = certs.where()
         timeout = settings.agent_limits.data_collector_timeout
 
-        r = session.post(url, params=params, headers=headers,
-                proxies=proxies, timeout=timeout, data=data,
-                verify=cert_loc)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+
+            r = session.post(url, params=params, headers=headers,
+                    proxies=proxies, timeout=timeout, data=data,
+                    verify=cert_loc)
 
         # Read the content now so we can force close the socket
         # connection if this is a transient session as quickly

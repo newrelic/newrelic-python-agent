@@ -121,6 +121,32 @@ def _requests_proxy_scheme_workaround(wrapped, instance, args, kwargs):
 
     return wrapped(*args, **kwargs)
 
+# This is a monkey patch for requests contained within our bundled requests.
+# Have no idea why they made the change, but the change they made in the
+# commit:
+#
+#   https://github.com/kennethreitz/requests/commit/8b7fcfb49a38cd6ee1cbb4a52e0a4af57969abb3
+#
+# breaks proxying a HTTPS requests over a HTTPS proxy. The original seems to
+# be more correct than the changed version and works in testing. Return the
+# functionality back to how it worked previously.
+
+@patch_function_wrapper(
+        'newrelic.packages.requests.adapters',
+        'HTTPAdapter.request_url')
+def _requests_request_url_workaround(wrapped, instance, args, kwargs):
+    from newrelic.packages.requests.adapters import urldefragauth
+
+    def _bind_params(request, proxies):
+        return request, proxies
+
+    request, proxies = _bind_params(*args, **kwargs)
+
+    if not proxies:
+        return wrapped(*args, **kwargs)
+
+    return urldefragauth(request.url)
+
 # Low level network functions and session management. When connecting to
 # the data collector it is initially done through the main data collector.
 # It is though then necessary to ask the data collector for the per

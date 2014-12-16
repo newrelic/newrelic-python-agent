@@ -224,7 +224,7 @@ class WebTransaction(Transaction):
         # added header in case that header was added in front
         # end server to Apache instead.
         #
-        # Which ever header is used, we accomodate the value
+        # Which ever header is used, we accommodate the value
         # being in seconds, milliseconds or microseconds. Also
         # handle it being prefixed with 't='.
 
@@ -897,7 +897,7 @@ class _WSGIApplicationMiddleware(object):
         # risk that we could temporarily double memory use for
         # the response content if had small data blocks followed
         # by very large data block. Expect that the risk of this
-        # occuring is very small.
+        # occurring is very small.
 
         if self.response_data:
             self.response_data.append(data)

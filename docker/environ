@@ -54,9 +54,7 @@ fi
 
 # If NEW_RELIC_PROXY_HOST is in URL format, then the NEW_RELIC_PROXY_HOST
 # URL will be split, and the split values will be assigned to individual
-# NEW_RELIC_PROXY_* vars that do not already have values. If the individual
-# NEW_RELIC_PROXY_* vars already have values, then those values will not be
-# overwritten.
+# NEW_RELIC_PROXY_* vars overwriting any previous values.
 
 # In addition, the dummy values of 'proxy_host' and 'proxy_port' will be
 # replaced with the actual host and port of the squid docker container.
@@ -81,14 +79,11 @@ then
         # It does not handle user or password.
 
         SPLIT_URL=`echo $NEW_RELIC_PROXY_HOST | \
-            sed -e 's@\([a-z]*\)://\(.*\):\(proxy_port\|[0-9]*\).*@\1 \2 \3@'`
+            sed -e 's@\([a-z]*\)://\([^:]*\):\(.*\).*@\1 \2 \3@'`
 
-        SCHEME=`echo $SPLIT_URL | awk '{print $1}'`
-        PORT=`echo $SPLIT_URL | awk '{print $3}'`
-
-        NEW_RELIC_PROXY_SCHEME=${NEW_RELIC_PROXY_SCHEME:-$SCHEME}
-        NEW_RELIC_PROXY_PORT=${NEW_RELIC_PROXY_PORT:-$PORT}
-
+        NEW_RELIC_PROXY_SCHEME=`echo $SPLIT_URL | awk '{print $1}'`
+        NEW_RELIC_PROXY_HOST=`echo $SPLIT_URL | awk '{print $2}'`
+        NEW_RELIC_PROXY_PORT=`echo $SPLIT_URL | awk '{print $3}'`
     fi
 fi
 
@@ -109,16 +104,12 @@ NEW_RELIC_PROXY_HOST=`echo $NEW_RELIC_PROXY_HOST | \
 
 if test "$NEW_RELIC_PROXY_SCHEME" = "http"
 then
-    NEW_RELIC_PROXY_HOST=`echo $NEW_RELIC_PROXY_HOST | \
-        sed -e "s/proxy_port/3128/"`
     NEW_RELIC_PROXY_PORT=`echo $NEW_RELIC_PROXY_PORT | \
         sed -e "s/proxy_port/3128/"`
 fi
 
 if test "$NEW_RELIC_PROXY_SCHEME" = "https"
 then
-    NEW_RELIC_PROXY_HOST=`echo $NEW_RELIC_PROXY_HOST | \
-        sed -e "s/proxy_port/3129/"`
     NEW_RELIC_PROXY_PORT=`echo $NEW_RELIC_PROXY_PORT | \
         sed -e "s/proxy_port/3129/"`
 fi

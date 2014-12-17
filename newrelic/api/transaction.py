@@ -676,7 +676,7 @@ class Transaction(object):
 
             # Apply transaction rules on the full transaction name.
 
-            self._frozen_path, ignore = self._application.normalize_name(
+            path, ignore = self._application.normalize_name(
                     self.path, 'transaction')
 
             self.ignore_transaction = self.ignore_transaction or ignore
@@ -686,7 +686,7 @@ class Transaction(object):
             # further changed.
 
             self._frozen_path = self._application.normalize_name(
-                    self.path, 'segment')
+                    path, 'segment')
 
             # Look up the apdex from the table of key transactions. If
             # current transaction is not a key transaction then use the

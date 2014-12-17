@@ -99,7 +99,7 @@ class SegmentCollapseEngine(object):
 
     """
 
-    COLLAPSE_STAR_RE = re.compile('((?:^|/)\*)(?:/\*)*')
+    COLLAPSE_STAR_RE = re.compile(r'((?:^|/)\*)(?:/\*)*')
 
     def __init__(self, rules):
         self.rules = {}
@@ -119,37 +119,36 @@ class SegmentCollapseEngine(object):
         except for the segments in the whitelist_terms.
 
         """
+        segments = txn_name.split('/')
 
-        # Only the first two segments of the transaction name can be a prefix.
-        prefix = '/'.join(txn_name.split('/')[:2])
+        # First two segments are prefix. So if there are only two segments,
+        # then nothing to do.
+
+        if len(segments) <= 2:
+            return txn_name, False
+
+        # Third segment must be valid. Otherwise nothing to do.
+
+        if len(segments) == 3 and segments[3] == '':
+            return txn_name, False
+
+        # First two segments of the transaction name make up the prefix.
+
+        prefix = '/'.join(segments[:2])
         whitelist_terms = self.rules.get(prefix)
+
+        # No whitelist terms, meaning no rule associated with the prefix.
+
         if whitelist_terms is None:
-            return txn_name
-
-        # Remove the prefix. and split by '/' to extract the segments.
-
-        txn_name_no_prefix = txn_name[len(prefix):]
-
-        # If the remaining portion has a preceding '/' we strip it out and
-        # add them back when joining the segments after the collapsing.
-
-        add_slash = txn_name_no_prefix.startswith('/')
-        segments = txn_name_no_prefix.lstrip('/').split('/')
+            return txn_name, False
 
         # Replace non-whitelist terms with '*'.
 
-        result = [x if x in whitelist_terms else '*' for x in segments]
+        result = [x if x in whitelist_terms else '*' for x in segments[2:]]
 
         # Collapse adjacent '*' segments to a single '*'.
-        result_string = '/'.join(result)
 
+        result_string = '/'.join(result)
         collapsed_result = self.COLLAPSE_STAR_RE.sub('\\1', result_string)
 
-        # Set the txn_name to the new value after applying the rule.
-
-        if add_slash:
-            txn_name = prefix + '/' + collapsed_result
-        else:
-            txn_name = prefix + collapsed_result
-
-        return txn_name
+        return '/'.join((prefix, collapsed_result)), False

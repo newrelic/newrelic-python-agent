@@ -31,4 +31,4 @@ def test_transaction_segments(testname, transaction_segment_terms, tests):
     print tests
     engine = SegmentCollapseEngine(transaction_segment_terms)
     for test in tests:
-        assert engine.normalize(test['input']) == test['expected']
+        assert engine.normalize(test['input'])[0] == test['expected']

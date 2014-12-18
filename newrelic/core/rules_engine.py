@@ -118,19 +118,25 @@ class SegmentCollapseEngine(object):
         """Takes a transaction name and collapses the segments into a '*'
         except for the segments in the whitelist_terms.
 
+        Returns a modified copy of the transaction name and a flag indicating
+        whether the transaction should be ignored. For segment rules there is
+        currently no functionality to ignore the transaction based on a match,
+        so we will always return False.
         """
+
+        ignore = False
         segments = txn_name.split('/')
 
         # First two segments are prefix. So if there are only two segments,
         # then nothing to do.
 
         if len(segments) <= 2:
-            return txn_name, False
+            return txn_name, ignore
 
         # Third segment must be valid. Otherwise nothing to do.
 
         if len(segments) == 3 and not segments[-1]:
-            return txn_name, False
+            return txn_name, ignore
 
         # First two segments of the transaction name make up the prefix.
 
@@ -140,7 +146,7 @@ class SegmentCollapseEngine(object):
         # No whitelist terms, meaning no rule associated with the prefix.
 
         if whitelist_terms is None:
-            return txn_name, False
+            return txn_name, ignore
 
         # Replace non-whitelist terms with '*'.
 
@@ -151,4 +157,4 @@ class SegmentCollapseEngine(object):
         result_string = '/'.join(result)
         collapsed_result = self.COLLAPSE_STAR_RE.sub('\\1', result_string)
 
-        return '/'.join((prefix, collapsed_result)), False
+        return '/'.join((prefix, collapsed_result)), ignore

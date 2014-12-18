@@ -129,7 +129,7 @@ class SegmentCollapseEngine(object):
 
         # Third segment must be valid. Otherwise nothing to do.
 
-        if len(segments) == 3 and segments[3] == '':
+        if len(segments) == 3 and not segments[-1]:
             return txn_name, False
 
         # First two segments of the transaction name make up the prefix.

@@ -685,7 +685,7 @@ class Transaction(object):
             # transaction name. The path is frozen at this point and cannot be
             # further changed.
 
-            self._frozen_path = self._application.normalize_name(
+            self._frozen_path, ignore = self._application.normalize_name(
                     path, 'segment')
 
             # Look up the apdex from the table of key transactions. If

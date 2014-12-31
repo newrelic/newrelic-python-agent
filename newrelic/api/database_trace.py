@@ -53,7 +53,7 @@ class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
         return '<%s %s>' % (self.__class__.__name__, dict(
                 sql=self.sql, dbapi2_module=self.dbapi2_module))
 
-    def finalize_data(self, exc=None, value=None, tb=None):
+    def finalize_data(self, transaction, exc=None, value=None, tb=None):
         self.stack_trace = None
 
         connect_params = None
@@ -61,18 +61,18 @@ class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
         sql_parameters = None
         execute_params = None
 
-        settings = self.transaction.settings
+        settings = transaction.settings
         transaction_tracer = settings.transaction_tracer
         agent_limits = settings.agent_limits
 
         if (transaction_tracer.enabled and settings.collect_traces and
                 transaction_tracer.record_sql != 'off'):
             if self.duration >= transaction_tracer.stack_trace_threshold:
-                if (self.transaction._stack_trace_count <
+                if (transaction._stack_trace_count <
                         agent_limits.slow_sql_stack_trace):
-                    self.stack_trace = [self.transaction._intern_string(x) for
+                    self.stack_trace = [transaction._intern_string(x) for
                                         x in traceback.format_stack()]
-                    self.transaction._stack_trace_count += 1
+                    transaction._stack_trace_count += 1
 
 
             # Only remember all the params for the calls if know
@@ -85,13 +85,13 @@ class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
             if (exc is None and transaction_tracer.explain_enabled and
                     self.duration >= transaction_tracer.explain_threshold and
                     self.connect_params is not None):
-                if (self.transaction._explain_plan_count <
+                if (transaction._explain_plan_count <
                        agent_limits.sql_explain_plans):
                     connect_params = self.connect_params
                     cursor_params = self.cursor_params
                     sql_parameters = self.sql_parameters
                     execute_params = self.execute_params
-                    self.transaction._explain_plan_count += 1
+                    transaction._explain_plan_count += 1
 
         self.sql_format = transaction_tracer.record_sql
 

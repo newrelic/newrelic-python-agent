@@ -242,6 +242,7 @@ _settings.js_agent_file = None
 _settings.url_rules = []
 _settings.metric_name_rules = []
 _settings.transaction_name_rules = []
+_settings.transaction_segment_terms = []
 
 _settings.cross_process_id = None
 _settings.trusted_account_ids = []

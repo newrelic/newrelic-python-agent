@@ -1,0 +1,207 @@
+[
+  {
+    "testname": "basic",
+    "transaction_segment_terms": [
+      {
+        "prefix": "WebTransaction/Custom",
+        "terms":  ["one", "two", "three"]
+      },
+      {
+        "prefix": "WebTransaction/Uri",
+        "terms": ["seven", "eight", "nine"]
+      }
+    ],
+    "tests": [
+      {
+        "input": "WebTransaction/Uri/one/two/seven/user/nine/account",
+        "expected": "WebTransaction/Uri/*/seven/*/nine/*"
+      },
+      {
+        "input": "WebTransaction/Custom/one/two/seven/user/nine/account",
+        "expected": "WebTransaction/Custom/one/two/*"
+      },
+      {
+        "input": "WebTransaction/Other/one/two/foo/bar",
+        "expected": "WebTransaction/Other/one/two/foo/bar"
+      }
+    ]
+  },
+  {
+    "testname": "prefix_with_trailing_slash",
+    "transaction_segment_terms": [
+      {
+        "prefix": "WebTransaction/Custom/",
+        "terms": ["a", "b"]
+      }
+    ],
+    "tests": [
+      {
+        "input": "WebTransaction/Custom/a/b/c",
+        "expected": "WebTransaction/Custom/a/b/*"
+      },
+      {
+        "input": "WebTransaction/Customer/a/b/c",
+        "expected": "WebTransaction/Customer/a/b/c"
+      }
+    ]
+  },
+  {
+    "testname": "rule_chaining",
+    "transaction_segment_terms": [
+      {
+        "prefix": "WebTransaction/Foo",
+        "terms": ["one", "two", "three"]
+      },
+      {
+        "prefix": "WebTransaction/Foo",
+        "terms": ["one", "two"]
+      }
+    ],
+    "tests": [
+      {
+        "input": "WebTransaction/Foo/one/two/three/four",
+        "expected": "WebTransaction/Foo/one/two/*"
+      }
+    ]
+  },
+  {
+    "testname": "terms_are_order_independent",
+    "transaction_segment_terms": [
+      {
+        "prefix": "WebTransaction/Foo",
+        "terms": ["one", "two", "three"]
+      }
+    ],
+    "tests": [
+      {
+        "input": "WebTransaction/Foo/bar/one/three/two",
+        "expected": "WebTransaction/Foo/*/one/three/two"
+      },
+      {
+        "input": "WebTransaction/Foo/three/one/one/two/three",
+        "expected": "WebTransaction/Foo/three/one/one/two/three"
+      }
+    ]
+  },
+  {
+    "testname": "invalid_rule_not_enough_prefix_segments",
+    "transaction_segment_terms": [
+      {
+        "prefix": "WebTransaction",
+        "terms": ["one", "two"]
+      }
+    ],
+    "tests": [
+      {
+        "input": "WebTransaction/Foo/bar/one/three/two",
+        "expected": "WebTransaction/Foo/bar/one/three/two"
+      },
+      {
+        "input": "WebTransaction/Foo/three/one/one/two/three",
+        "expected": "WebTransaction/Foo/three/one/one/two/three"
+      }
+    ]
+  },
+  {
+    "testname": "invalid_rule_not_enough_prefix_segments_ending_in_slash",
+    "transaction_segment_terms": [
+      {
+        "prefix": "WebTransaction/",
+        "terms": ["one", "two"]
+      }
+    ],
+    "tests": [
+      {
+        "input": "WebTransaction/Foo/bar/one/three/two",
+        "expected": "WebTransaction/Foo/bar/one/three/two"
+      },
+      {
+        "input": "WebTransaction/Foo/three/one/one/two/three",
+        "expected": "WebTransaction/Foo/three/one/one/two/three"
+      }
+    ]
+  },
+  {
+    "testname": "invalid_rule_too_many_prefix_segments",
+    "transaction_segment_terms": [
+      {
+        "prefix": "WebTransaction/Foo/bar",
+        "terms": ["one", "two"]
+      }
+    ],
+    "tests": [
+      {
+        "input": "WebTransaction/Foo/bar/one/three/two",
+        "expected": "WebTransaction/Foo/bar/one/three/two"
+      },
+      {
+        "input": "WebTransaction/Foo/three/one/one/two/three",
+        "expected": "WebTransaction/Foo/three/one/one/two/three"
+      }
+    ]
+  },
+  {
+    "testname": "two_segment_transaction_name",
+    "transaction_segment_terms": [
+      {
+        "prefix": "WebTransaction/Foo",
+        "terms": ["a", "b", "c"]
+      }
+    ],
+    "tests": [
+      {
+        "input": "WebTransaction/Foo",
+        "expected": "WebTransaction/Foo"
+      }
+    ]
+  },
+  {
+    "testname": "two_segment_transaction_name_with_trailing_slash",
+    "transaction_segment_terms": [
+      {
+        "prefix": "WebTransaction/Foo",
+        "terms": ["a", "b", "c"]
+      }
+    ],
+    "tests": [
+      {
+        "input": "WebTransaction/Foo/",
+        "expected": "WebTransaction/Foo/"
+      }
+    ]
+  },
+  {
+    "testname": "transaction_segment_with_adjacent_slashes",
+    "transaction_segment_terms": [
+      {
+        "prefix": "WebTransaction/Foo",
+        "terms": ["a", "b", "c"]
+      }
+    ],
+    "tests": [
+      {
+        "input": "WebTransaction/Foo///a/b///c/d/",
+        "expected": "WebTransaction/Foo/*/a/b/*/c/*"
+      },
+      {
+        "input": "WebTransaction/Foo///a/b///c///",
+        "expected": "WebTransaction/Foo/*/a/b/*/c/*"
+      }
+    ]
+  },
+  {
+    "testname": "transaction_name_with_single_segment",
+    "transaction_segment_terms": [
+      {
+        "prefix": "WebTransaction/Foo",
+        "terms": ["a", "b", "c"]
+      }
+    ],
+    "tests": [
+      {
+        "input": "WebTransaction",
+        "expected": "WebTransaction"
+      }
+    ]
+  }
+]

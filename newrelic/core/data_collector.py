@@ -1150,6 +1150,34 @@ def create_session(license_key, app_name, linked_applications,
                 not isinstance(value, six.integer_types)):
             application_settings[key] = repr(value)
 
-    session.agent_settings(application_settings)
+    try:
+        session.agent_settings(application_settings)
 
-    return session
+    except NetworkInterfaceException:
+        # The reason for errors of this type have already been logged.
+        # No matter what the error we just pass back None. The upper
+        # layer will deal with not being successful.
+
+        _logger.warning('Agent registration failed due to error in '
+                'uploading agent settings. Registration should retry '
+                'automatically.')
+
+        pass
+
+    except Exception:
+        # Any other errors are going to be unexpected and likely will
+        # indicate an issue with the implementation of the agent.
+
+        _logger.exception('Unexpected exception when attempting to '
+                'update agent settings with the data collector. Please '
+                'report this problem to New Relic support for further '
+                'investigation.')
+
+        _logger.warning('Agent registration failed due to error in '
+                'uploading agent settings. Registration should retry '
+                'automatically.')
+
+        pass
+
+    else:
+        return session

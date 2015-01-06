@@ -483,6 +483,68 @@ def validate_synthetics_event(required_attrs=[], forgone_attrs=[],
 
     return _validate_synthetics_event
 
+def validate_database_duration():
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_database_duration(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+
+            metrics = instance.stats_table
+            sampled_data_set = instance.sampled_data_set
+
+            assert sampled_data_set.count == 1
+
+            event = sampled_data_set.samples[0]
+            intrinsics = event[0]
+
+            # As long as we are sending 'Database' metrics, then
+            # 'databaseDuration' and 'databaseCallCount' will be
+            # the sum both 'Database' and 'Datastore' values.
+
+            try:
+                database_all = metrics[('Database/all', '')]
+            except KeyError:
+                database_all_duration = 0.0
+                database_all_call_count = 0
+            else:
+                database_all_duration = database_all.total_call_time
+                database_all_call_count = database_all.call_count
+
+            # Sum the individual 'Datastore/<product>/all' metrics to make
+            # sure they are all included in 'databaseDuration' and
+            # 'databaseCallCount'.
+
+            datastore_products = ['MongoDB']
+
+            product_duration = 0.0
+            product_call_count = 0
+
+            for product in datastore_products:
+                try:
+                    metric_name = 'Datastore/%s/all' % product
+                    product_metric = metrics[(metric_name, '')]
+                except KeyError:
+                    pass
+                else:
+                    product_duration += product_metric.total_call_time
+                    product_call_count += product_metric.call_count
+
+            assert 'databaseDuration' in intrinsics
+            assert 'databaseCallCount' in intrinsics
+
+            assert intrinsics['databaseDuration'] == (database_all_duration +
+                    product_duration)
+            assert intrinsics['databaseCallCount'] == (database_all_call_count +
+                    product_call_count)
+
+        return result
+
+    return _validate_database_duration
+
 def validate_synthetics_transaction_trace(required_params={},
         forgone_params={}, should_exist=True):
     @transient_function_wrapper('newrelic.core.stats_engine',

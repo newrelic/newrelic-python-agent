@@ -1416,67 +1416,67 @@
         ]
     },
     "newrelic/packages/requests/LICENSE": {
-        "hash": "c858703330162aa799141655a10fe120",
+        "hash": "c7869e52c8275537186de35e3cd5f9ec",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/NOTICE": {
-        "hash": "78f5bacf7f1c81c3c798887c9e94d745",
+        "hash": "0e347b1a70df2b1c2ee9f02724853021",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/__init__.py": {
-        "hash": "642350eb5461cbbb11b598f34c6cd440",
+        "hash": "00f648a94622ed4e3d244d515f267149",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/adapters.py": {
-        "hash": "4f130441bd23fca931667a68a95ebfc4",
+        "hash": "4ee65ea5624cdea208bf86d70a373d87",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/api.py": {
-        "hash": "3e627cfaefaffc664679910e23b21f9d",
+        "hash": "b5da3020451c7ace8e7fbd2ce551b0f3",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/auth.py": {
-        "hash": "cec722af07b9f90785fe3ea605d9c609",
+        "hash": "20be0aebd4e306d1f20c4a3d790a3666",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/cacert.pem": {
-        "hash": "f106f71cc71b873f81ea58f2fd2b2ff6",
+        "hash": "cc3d2cd6b035dc31b2614c1df204848e",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/certs.py": {
-        "hash": "c73165057ef7f22c8fa5cd82d51a3b95",
+        "hash": "f74172285ed79fe8a660624f78b20427",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/compat.py": {
-        "hash": "571d79b4db2cb411d5421bde9e9605c0",
+        "hash": "e7d0280ba156287e35e44ac3c2bde9a9",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/cookies.py": {
-        "hash": "4e3979411371cbee740f9546c6c414c9",
+        "hash": "84a84a3ab1325dc85715f20c063f1e1a",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/exceptions.py": {
-        "hash": "7ade8f8ea4e5c1666fa660c2e501c354",
+        "hash": "294db834487a43667e8206c4eb25c187",
         "libraries": [
             "requests"
         ]
@@ -1488,7 +1488,7 @@
         ]
     },
     "newrelic/packages/requests/models.py": {
-        "hash": "519cbda99e716c3e4470279169e0d8cb",
+        "hash": "9640110fa187278eb97440e1217b72c9",
         "libraries": [
             "requests"
         ]
@@ -1499,242 +1499,254 @@
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/__init__.py": {
-        "hash": "cba2953ecda64ec9d56293443cfa8fb8",
+    "newrelic/packages/requests/packages/chardet/__init__.py": {
+        "hash": "d91ddc14e31824faacd96fa88e42a6b8",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/big5freq.py": {
+    "newrelic/packages/requests/packages/chardet/big5freq.py": {
         "hash": "b20f539dc45fa9e514c1eb4f5aa8b5c6",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/big5prober.py": {
-        "hash": "d500a4d8921a6cab7e69478b5d601f0e",
+    "newrelic/packages/requests/packages/chardet/big5prober.py": {
+        "hash": "44159687c2bae35f165b44f07f5f167a",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/chardistribution.py": {
-        "hash": "210c3fb4c18ecc1a772078d6b6e1aae8",
+    "newrelic/packages/requests/packages/chardet/chardetect.py": {
+        "hash": "c80b09e2a63b375c02c8c1e825a953c5",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/charsetgroupprober.py": {
-        "hash": "c3a51153318b7563134c3730325b926b",
+    "newrelic/packages/requests/packages/chardet/chardistribution.py": {
+        "hash": "d2c4ad8cc905d95f148ead169d249eb8",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/charsetprober.py": {
+    "newrelic/packages/requests/packages/chardet/charsetgroupprober.py": {
+        "hash": "24c57085435b8ad1a7bf9ff4ffe6cce0",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/chardet/charsetprober.py": {
         "hash": "0cb6549c5cf979c8023f8aaf3392a117",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/codingstatemachine.py": {
-        "hash": "a7c13da016cd4ea46effaef65743e833",
+    "newrelic/packages/requests/packages/chardet/codingstatemachine.py": {
+        "hash": "241dd3b7d3eb97ae384320fc8346c6ff",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/compat.py": {
+    "newrelic/packages/requests/packages/chardet/compat.py": {
         "hash": "73f2b9ae331ab011571a3b3a2c62acc1",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/constants.py": {
-        "hash": "986aa78eafc448b3d5fc05ea72f0fc51",
+    "newrelic/packages/requests/packages/chardet/constants.py": {
+        "hash": "6cccf2eada7dfa841a5c39aaecb037e7",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/cp949prober.py": {
-        "hash": "77a6bc41bdf459477a6ae1944ee391c4",
+    "newrelic/packages/requests/packages/chardet/cp949prober.py": {
+        "hash": "dd0087e46f835b791a5c9904fcda2de3",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/escprober.py": {
-        "hash": "7e5331c1c467906df057eb152be138f2",
+    "newrelic/packages/requests/packages/chardet/escprober.py": {
+        "hash": "ecf56c6473c5a9bc0540a1ca11ec998a",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/escsm.py": {
-        "hash": "6619228cbe1d71f5604ce370b7ac5616",
+    "newrelic/packages/requests/packages/chardet/escsm.py": {
+        "hash": "00590b3c94c4db8f25639ab261e4c725",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/eucjpprober.py": {
-        "hash": "0ecc239ea431c1da34b97864ddb7cfc7",
+    "newrelic/packages/requests/packages/chardet/eucjpprober.py": {
+        "hash": "ec46274be67af664e800a0a61d49184f",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/euckrfreq.py": {
+    "newrelic/packages/requests/packages/chardet/euckrfreq.py": {
         "hash": "65b6b3e75845e033ce34c11ccdd85450",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/euckrprober.py": {
-        "hash": "b0185251b7da8df7c334e5dbb2c9b030",
+    "newrelic/packages/requests/packages/chardet/euckrprober.py": {
+        "hash": "cc2282aef66a161b3451f9cf455fdd7d",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/euctwfreq.py": {
+    "newrelic/packages/requests/packages/chardet/euctwfreq.py": {
         "hash": "f13fee8c7bd6db0e8c40030ccacdfbde",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/euctwprober.py": {
-        "hash": "46b200a57059410d7cdee611bf63b032",
+    "newrelic/packages/requests/packages/chardet/euctwprober.py": {
+        "hash": "ca66f5277872165faa5140068794604a",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/gb2312freq.py": {
+    "newrelic/packages/requests/packages/chardet/gb2312freq.py": {
         "hash": "0fb5414fcc0bdb8b04af324015505c06",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/gb2312prober.py": {
-        "hash": "e4f3a1d5cf5bd7fb11cfda4111f16133",
+    "newrelic/packages/requests/packages/chardet/gb2312prober.py": {
+        "hash": "84284584b8e29f50f40781205a9d4e76",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/hebrewprober.py": {
-        "hash": "928074b0e74c726502bf106a522a9917",
+    "newrelic/packages/requests/packages/chardet/hebrewprober.py": {
+        "hash": "354a83d1bb3c20b4626b6c4ad54d163a",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/jisfreq.py": {
+    "newrelic/packages/requests/packages/chardet/jisfreq.py": {
         "hash": "03be91b7ead4725af61234d4852bb7ab",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/jpcntx.py": {
-        "hash": "a770c6f871b4d544cf5d342f97aa61cf",
+    "newrelic/packages/requests/packages/chardet/jpcntx.py": {
+        "hash": "b59a7b8b0debe197444bf831ba42bbe9",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/langbulgarianmodel.py": {
-        "hash": "af97b3a787cbbd9c5394f2ef3a2892b9",
+    "newrelic/packages/requests/packages/chardet/langbulgarianmodel.py": {
+        "hash": "e4e05437410aa80cf9a13afac19997fe",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/langcyrillicmodel.py": {
-        "hash": "5ce800a9e39483de540546383e0aecc1",
+    "newrelic/packages/requests/packages/chardet/langcyrillicmodel.py": {
+        "hash": "74ce958cbef2eee08a7a04fb4db41260",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/langgreekmodel.py": {
-        "hash": "367b117e7637cf593d1418a9eee46acd",
+    "newrelic/packages/requests/packages/chardet/langgreekmodel.py": {
+        "hash": "7090da7635347b767b4eb194f697207d",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/langhebrewmodel.py": {
-        "hash": "801ea55b50b84baae5ae485eaa120bc5",
+    "newrelic/packages/requests/packages/chardet/langhebrewmodel.py": {
+        "hash": "22df1e2996355e4c082cc0b2f8dbe261",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/langhungarianmodel.py": {
-        "hash": "cbdce2285ed20552a9ca625851602bbd",
+    "newrelic/packages/requests/packages/chardet/langhungarianmodel.py": {
+        "hash": "3b86d62fe73022a609b2e8095edecf87",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/langthaimodel.py": {
-        "hash": "48a9b9c8cd9faccbef7c7fb04c59ac50",
+    "newrelic/packages/requests/packages/chardet/langthaimodel.py": {
+        "hash": "4f941425be84ee4e1b7ccb7c4b31e8d8",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/latin1prober.py": {
-        "hash": "d75a9a3468804648693ad8dfb5953fe1",
+    "newrelic/packages/requests/packages/chardet/latin1prober.py": {
+        "hash": "9e7400a368b70c1acccab78d2cc489cd",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/mbcharsetprober.py": {
-        "hash": "d3d71d3c4b39e06833bc673deca83b23",
+    "newrelic/packages/requests/packages/chardet/mbcharsetprober.py": {
+        "hash": "729460c9c60436fc763d1069c9c0ec34",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/mbcsgroupprober.py": {
-        "hash": "a2bbedbdfc05751b14728ecd7a7cd196",
+    "newrelic/packages/requests/packages/chardet/mbcsgroupprober.py": {
+        "hash": "719ecf479d507a3e6450aefbaa42fcc8",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/mbcssm.py": {
-        "hash": "42623a1e08b9fc25ef2468c422a68311",
+    "newrelic/packages/requests/packages/chardet/mbcssm.py": {
+        "hash": "2fd9f3c93568c552779bd46990027c36",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/sbcharsetprober.py": {
-        "hash": "01a19ac0ce5587c9325353b86c0f82fe",
+    "newrelic/packages/requests/packages/chardet/sbcharsetprober.py": {
+        "hash": "93349a5fa5cb824d1485cd5f3a53928a",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/sbcsgroupprober.py": {
-        "hash": "7d5e06b60f4e993fc4054542710c1216",
+    "newrelic/packages/requests/packages/chardet/sbcsgroupprober.py": {
+        "hash": "ee25f2a03587e2c283eab0b36c9e5783",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/sjisprober.py": {
-        "hash": "05a78e210131213b9f3a00cbb11e6f65",
+    "newrelic/packages/requests/packages/chardet/sjisprober.py": {
+        "hash": "cc3a79aa0c3a332183eeb165e0e84c81",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/universaldetector.py": {
-        "hash": "8ed8cc93176d4534aa07c540987c97f3",
+    "newrelic/packages/requests/packages/chardet/universaldetector.py": {
+        "hash": "bcae4c645a737d3f0e7c96a66528ca4a",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/charade/utf8prober.py": {
-        "hash": "fe113f4e09f172895469c9a2da5ed7ad",
+    "newrelic/packages/requests/packages/chardet/utf8prober.py": {
+        "hash": "887fc2198b0ce72cea28d667c5c80291",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/packages/urllib3/__init__.py": {
-        "hash": "1204a73ff4a258fbc2bc78155fd3cf7d",
+        "hash": "346815eecb6a8e506502211edab86599",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/packages/urllib3/_collections.py": {
-        "hash": "a1161b052569ab60f321a993591992af",
+        "hash": "03311fba1528c4bef9b3c5b29827da8d",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/urllib3/connection.py": {
+        "hash": "7c9479b6560900d23baa0a6d196cc85a",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/packages/urllib3/connectionpool.py": {
-        "hash": "acba7f44d64bbd5821f6b1da93f84938",
+        "hash": "29e8480d2a0ddb8e3bb5d93c69b3d590",
         "libraries": [
             "requests"
         ]
@@ -1746,31 +1758,31 @@
         ]
     },
     "newrelic/packages/requests/packages/urllib3/contrib/ntlmpool.py": {
-        "hash": "5d9af521c38324069bc0ecf6f3ea093f",
+        "hash": "28326aa5efc624868639878c255bac2f",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/packages/urllib3/contrib/pyopenssl.py": {
-        "hash": "d21af46ecb51753ba02ca0c47aa011e0",
+        "hash": "715dbfef0d5d2bfd23269c9c8f43cb64",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/packages/urllib3/exceptions.py": {
-        "hash": "657240754c55afa6fd48b3e96049bce5",
+        "hash": "ab3b42e0e842fe992bf0679ac4d57f54",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/packages/urllib3/fields.py": {
-        "hash": "bda16c5526525b140f31d886559781b9",
+        "hash": "904017dea9985e85ea615c3f6d64c2b4",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/packages/urllib3/filepost.py": {
-        "hash": "2192b3f42c5806461be54a32720746e9",
+        "hash": "0f0fb249291122a03cbbe82f250a0161",
         "libraries": [
             "requests"
         ]
@@ -1782,7 +1794,7 @@
         ]
     },
     "newrelic/packages/requests/packages/urllib3/packages/ordered_dict.py": {
-        "hash": "77b68f9ab1b803b612b88b0b0b3e72f8",
+        "hash": "63fd069f8f081f5b0a78c900cae1a4f8",
         "libraries": [
             "requests"
         ]
@@ -1794,55 +1806,103 @@
         ]
     },
     "newrelic/packages/requests/packages/urllib3/packages/ssl_match_hostname/__init__.py": {
-        "hash": "b20d19da11dd6afe8a8c03b7551bb04d",
+        "hash": "988c7ab2c2c2e271115fc194b4fedc21",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/urllib3/packages/ssl_match_hostname/_implementation.py": {
+        "hash": "85ff999bea926a9ad308e2eb100177da",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/packages/urllib3/poolmanager.py": {
-        "hash": "e1420c1f0925780b05cae7df1c0a73a3",
+        "hash": "9c06ef63b9b8de175a256a1e01d66bf2",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/packages/urllib3/request.py": {
-        "hash": "4a5995f77ffa042f434fe9c34f5c1882",
+        "hash": "f8cb31ebe2e837ab20459b881a4c8261",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/packages/urllib3/response.py": {
-        "hash": "56a2074bcac0709015d5ee2cbcaf0880",
+        "hash": "49eff66b047437dd7816210a4ef06c05",
         "libraries": [
             "requests"
         ]
     },
-    "newrelic/packages/requests/packages/urllib3/util.py": {
-        "hash": "c61c3c72708b7147b56406f3dea5e4e3",
+    "newrelic/packages/requests/packages/urllib3/util/__init__.py": {
+        "hash": "6d2024f583b121e112d81f2adee01e39",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/urllib3/util/connection.py": {
+        "hash": "0212794a9f4e4aacb451cdf921035d7f",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/urllib3/util/request.py": {
+        "hash": "d88a08f0e4c39b92293376a7c83c89bf",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/urllib3/util/response.py": {
+        "hash": "87e0ba4a7953843f35bfd6763a50af3b",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/urllib3/util/retry.py": {
+        "hash": "caba9e0565bb1f25cd67b62f633a75e5",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/urllib3/util/ssl_.py": {
+        "hash": "adcd775983503eb74cc3650033f52ec9",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/urllib3/util/timeout.py": {
+        "hash": "e39050ef98f6d90721dabd2ccab472b9",
+        "libraries": [
+            "requests"
+        ]
+    },
+    "newrelic/packages/requests/packages/urllib3/util/url.py": {
+        "hash": "be63feaaf6fb96e6021ca8ff171cfb63",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/sessions.py": {
-        "hash": "9e02abae9060e6c4bf25af7c8ec6d90a",
+        "hash": "5a7a5d75aa17d8f0f2d20473da1bbc8e",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/status_codes.py": {
-        "hash": "132b741de0ae791e04c11063f592f2e8",
+        "hash": "e85940ec11bff44eee58a3255f9baaf0",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/structures.py": {
-        "hash": "5f089d56ce9911ba6b57df8722d3ac5c",
+        "hash": "c2b3b113de153dd915fd4b812185e1b2",
         "libraries": [
             "requests"
         ]
     },
     "newrelic/packages/requests/utils.py": {
-        "hash": "9881d4aae91a1a9492bcac390b287313",
+        "hash": "07ba10ccce38b550b23c72fc0702f3be",
         "libraries": [
             "requests"
         ]
@@ -1866,7 +1926,7 @@
         ]
     },
     "newrelic/packages/wrapt/__init__.py": {
-        "hash": "122766fd1d018b3f59d18d725d4d610b",
+        "hash": "4bcec6b3b1df3d31eced25461e11f423",
         "libraries": [
             "wrapt"
         ]
@@ -1884,7 +1944,7 @@
         ]
     },
     "newrelic/packages/wrapt/decorators.py": {
-        "hash": "2fed0cdfc7f992d35dbb513ee458c18c",
+        "hash": "875e7d69fcaa5fb346bf3be2ac5f8373",
         "libraries": [
             "wrapt"
         ]

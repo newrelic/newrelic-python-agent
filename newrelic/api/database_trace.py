@@ -1,15 +1,11 @@
-import sys
-import types
-import time
 import traceback
-
+import functools
 import logging
 
-import newrelic.core.database_node
-
-import newrelic.api.transaction
-import newrelic.api.time_trace
-import newrelic.api.object_wrapper
+from .time_trace import TimeTrace
+from .transaction import current_transaction
+from ..core.database_node import DatabaseNode
+from ..common.object_wrapper import FunctionWrapper, wrap_object
 
 _logger = logging.getLogger(__name__)
 
@@ -29,9 +25,7 @@ def register_database_client(dbapi2_module, database_name,
     dbapi2_module._nr_explain_stmts = explain_stmts
     dbapi2_module._nr_instance_name = instance_name
 
-class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
-
-    node = newrelic.core.database_node.DatabaseNode
+class DatabaseTrace(TimeTrace):
 
     def __init__(self, transaction, sql, dbapi2_module=None,
                  connect_params=None, cursor_params=None,
@@ -103,7 +97,7 @@ class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
         self.execute_params = execute_params
 
     def create_node(self):
-        return self.node(dbapi2_module=self.dbapi2_module, sql=self.sql,
+        return DatabaseNode(dbapi2_module=self.dbapi2_module, sql=self.sql,
                 children=self.children, start_time=self.start_time,
                 end_time=self.end_time, duration=self.duration,
                 exclusive=self.exclusive, stack_trace=self.stack_trace,
@@ -115,53 +109,31 @@ class DatabaseTrace(newrelic.api.time_trace.TimeTrace):
     def terminal_node(self):
         return True
 
-class DatabaseTraceWrapper(object):
+def DatabaseTraceWrapper(wrapped, sql, dbapi2_module=None):
 
-    def __init__(self, wrapped, sql, dbapi2_module=None):
-        if isinstance(wrapped, tuple):
-            (instance, wrapped) = wrapped
-        else:
-            instance = None
+    def _nr_database_trace_wrapper_(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
 
-        newrelic.api.object_wrapper.update_wrapper(self, wrapped)
+        if transaction is None:
+            return wrapped(*args, **kwargs)
 
-        self._nr_instance = instance
-        self._nr_next_object = wrapped
-
-        if not hasattr(self, '_nr_last_object'):
-            self._nr_last_object = wrapped
-
-        self._nr_sql = sql
-        self._nr_dbapi2_module = dbapi2_module
-
-    def __get__(self, instance, klass):
-        if instance is None:
-            return self
-        descriptor = self._nr_next_object.__get__(instance, klass)
-        return self.__class__((instance, descriptor), self._nr_sql,
-                              self._nr_dbapi2_module)
-
-    def __call__(self, *args, **kwargs):
-        transaction = newrelic.api.transaction.current_transaction()
-        if not transaction:
-            return self._nr_next_object(*args, **kwargs)
-
-        if callable(self._nr_sql):
-            if self._nr_instance is not None:
-                sql = self._nr_sql(self._nr_instance, *args, **kwargs)
+        if callable(sql):
+            if instance is not None:
+                _sql = sql(instance, *args, **kwargs)
             else:
-                sql = self._nr_sql(*args, **kwargs)
+                _sql = sql(*args, **kwargs)
         else:
-            sql = self._nr_sql
+            _sql = sql
 
-        with DatabaseTrace(transaction, sql, self._nr_dbapi2_module):
-            return self._nr_next_object(*args, **kwargs)
+        with DatabaseTrace(transaction, _sql, dbapi2_module):
+            return wrapped(*args, **kwargs)
+
+    return FunctionWrapper(wrapped, _nr_database_trace_wrapper_)
 
 def database_trace(sql, dbapi2_module=None):
-    def decorator(wrapped):
-        return DatabaseTraceWrapper(wrapped, sql, dbapi2_module=None)
-    return decorator
+    return functools.partial(DatabaseTraceWrapper, sql=sql,
+            dbapi2_module=dbapi2_module)
 
 def wrap_database_trace(module, object_path, sql, dbapi2_module=None):
-    newrelic.api.object_wrapper.wrap_object(module, object_path,
-            DatabaseTraceWrapper, (sql, dbapi2_module))
+    wrap_object(module, object_path, DatabaseTraceWrapper,
+            (sql, dbapi2_module))

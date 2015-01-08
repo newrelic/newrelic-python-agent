@@ -129,14 +129,23 @@ class DatabaseNode(_DatabaseNode):
 
         """
 
+        yield TimeMetric(name='Datastore/all', scope='',
+                duration=self.duration, exclusive=self.exclusive)
+
         yield TimeMetric(name='Datastore/%s/all' % self.product, scope='',
                 duration=self.duration, exclusive=self.exclusive)
 
         if root.type == 'WebTransaction':
+            yield TimeMetric(name='Datastore/allWeb', scope='',
+                    duration=self.duration, exclusive=self.exclusive)
+
             yield TimeMetric(name='Datastore/%s/allWeb' % self.product,
                     scope='', duration=self.duration,
                     exclusive=self.exclusive)
         else:
+            yield TimeMetric(name='Datastore/allOther', scope='',
+                    duration=self.duration, exclusive=self.exclusive)
+
             yield TimeMetric(name='Datastore/%s/allOther' % self.product,
                     scope='', duration=self.duration,
                     exclusive=self.exclusive)

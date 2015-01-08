@@ -25,6 +25,8 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Datastore/statement/Postgres/other/other', 8)]
 
 _test_execute_via_cursor_rollup_metrics = [
+        ('Datastore/all', 13),
+        ('Datastore/allOther', 13),
         ('Datastore/Postgres/all', 13),
         ('Datastore/Postgres/allOther', 13),
         ('Datastore/operation/Postgres/select', 1),
@@ -136,6 +138,8 @@ _test_rollback_on_exception_scoped_metrics = [
         ('Datastore/statement/Postgres/other/other', 1)]
 
 _test_rollback_on_exception_rollup_metrics = [
+        ('Datastore/all', 2),
+        ('Datastore/allOther', 2),
         ('Datastore/Postgres/all', 2),
         ('Datastore/Postgres/allOther', 2),
         ('Datastore/operation/Postgres/other', 1),

@@ -25,6 +25,8 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Datastore/statement/SQLite/other/other', 6)]
 
 _test_execute_via_cursor_rollup_metrics = [
+        ('Datastore/all', 11),
+        ('Datastore/allOther', 11),
         ('Datastore/SQLite/all', 11),
         ('Datastore/SQLite/allOther', 11),
         ('Datastore/operation/SQLite/select', 1),
@@ -90,6 +92,8 @@ _test_execute_via_connection_scoped_metrics = [
         ('Datastore/statement/SQLite/other/other', 6)]
 
 _test_execute_via_connection_rollup_metrics = [
+        ('Datastore/all', 11),
+        ('Datastore/allOther', 11),
         ('Datastore/SQLite/all', 11),
         ('Datastore/SQLite/allOther', 11),
         ('Datastore/operation/SQLite/select', 1),
@@ -152,6 +156,8 @@ _test_rollback_on_exception_scoped_metrics = [
         ('Datastore/statement/SQLite/other/other', 1)]
 
 _test_rollback_on_exception_rollup_metrics = [
+        ('Datastore/all', 2),
+        ('Datastore/allOther', 2),
         ('Datastore/SQLite/all', 2),
         ('Datastore/SQLite/allOther', 2),
         ('Datastore/operation/SQLite/other', 1),

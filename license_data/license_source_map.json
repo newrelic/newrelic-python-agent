@@ -1067,6 +1067,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/database_psycopg2ct.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/database_pymssql.py": {
         "hash": "n/a",
         "libraries": [

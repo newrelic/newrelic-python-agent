@@ -1838,10 +1838,11 @@ def _process_module_builtin_defaults():
             'instrument_psycopg2_extensions')
 
     _process_module_definition('psycopg2ct',
-            'newrelic.hooks.database_dbapi2')
+            'newrelic.hooks.database_psycopg2ct',
+            'instrument_psycopg2ct')
     _process_module_definition('psycopg2ct.extensions',
-            'newrelic.hooks.database_psycopg2',
-            'instrument_psycopg2_extensions')
+            'newrelic.hooks.database_psycopg2ct',
+            'instrument_psycopg2ct_extensions')
 
     _process_module_definition('psycopg2cffi',
             'newrelic.hooks.database_psycopg2',

@@ -1061,6 +1061,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/database_oursql.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/database_postgresql.py": {
         "hash": "n/a",
         "libraries": [

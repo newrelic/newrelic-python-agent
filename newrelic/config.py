@@ -1817,8 +1817,8 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.database_mysqldb',
             'instrument_mysqldb')
     _process_module_definition('oursql',
-            'newrelic.hooks.database_mysqldb',
-            'instrument_mysqldb')
+            'newrelic.hooks.database_oursql',
+            'instrument_oursql')
     _process_module_definition('pymysql',
             'newrelic.hooks.database_pymysql',
             'instrument_pymysql')

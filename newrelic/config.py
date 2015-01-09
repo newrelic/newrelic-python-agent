@@ -1852,11 +1852,12 @@ def _process_module_builtin_defaults():
             'instrument_psycopg2cffi_extensions')
 
     _process_module_definition('postgresql.driver.dbapi20',
-            'newrelic.hooks.database_psycopg2',
-            'instrument_psycopg2')
+            'newrelic.hooks.database_postgresql',
+            'instrument_postgresql_driver_dbapi20')
 
     _process_module_definition('postgresql.interface.proboscis.dbapi2',
-            'newrelic.hooks.database_dbapi2')
+            'newrelic.hooks.database_postgresql',
+            'instrument_postgresql_interface_proboscis_dbapi2')
 
     _process_module_definition('sqlite3',
             'newrelic.hooks.database_sqlite',

@@ -1845,11 +1845,11 @@ def _process_module_builtin_defaults():
             'instrument_psycopg2ct_extensions')
 
     _process_module_definition('psycopg2cffi',
-            'newrelic.hooks.database_psycopg2',
-            'instrument_psycopg2')
+            'newrelic.hooks.database_psycopg2cffi',
+            'instrument_psycopg2cffi')
     _process_module_definition('psycopg2cffi.extensions',
-            'newrelic.hooks.database_psycopg2',
-            'instrument_psycopg2_extensions')
+            'newrelic.hooks.database_psycopg2cffi',
+            'instrument_psycopg2cffi_extensions')
 
     _process_module_definition('postgresql.driver.dbapi20',
             'newrelic.hooks.database_psycopg2',

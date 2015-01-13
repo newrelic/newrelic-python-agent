@@ -62,7 +62,7 @@ def collector_url(server=None):
 
     scheme = settings.ssl and 'https' or 'http'
 
-    if not server:
+    if not server or settings.port:
         # When pulling port from agent configuration it should only be
         # set when testing against a local data collector. For staging
         # and production should not be set and would default to port 80

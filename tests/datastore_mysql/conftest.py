@@ -21,7 +21,7 @@ _default_settings = {
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
-        app_name='Python Agent Test (database_mysql)',
+        app_name='Python Agent Test (datastore_mysql)',
         default_settings=_default_settings)
 
 @pytest.fixture(scope='session')

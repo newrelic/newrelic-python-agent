@@ -8,11 +8,6 @@ from newrelic.agent import (background_task, current_transaction,
 
 from newrelic.common.object_wrapper import resolve_path
 
-# Connection string from .NET agent
-# <add name="MSSQLConnection" connectionString="Server=dotnetDB-SQL.pdx.vm. \
-# datanerd.us\SQLEXPRESS;Database=NewRelic;User ID=sa;Password=!4maline!; \
-# Trusted_Connection=False;Encrypt=False;Connection Timeout=30;" />
-
 server = "win-database.pdx.vm.datanerd.us\SQLEXPRESS"
 user = "sa"
 password = "!4maline!"

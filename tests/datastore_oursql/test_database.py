@@ -19,10 +19,10 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Function/oursql:Connection', 1),
         ('Function/oursql:Connection.__enter__', 1),
         ('Function/oursql:Connection.__exit__', 1),
-        ('Datastore/statement/MySQL/database_oursql/select', 2),
-        ('Datastore/statement/MySQL/database_oursql/insert', 1),
-        ('Datastore/statement/MySQL/database_oursql/update', 1),
-        ('Datastore/statement/MySQL/database_oursql/delete', 1),
+        ('Datastore/statement/MySQL/datastore_oursql/select', 2),
+        ('Datastore/statement/MySQL/datastore_oursql/insert', 1),
+        ('Datastore/statement/MySQL/datastore_oursql/update', 1),
+        ('Datastore/statement/MySQL/datastore_oursql/delete', 1),
         ('Datastore/statement/MySQL/other/other', 6)]
 
 _test_execute_via_cursor_rollup_metrics = [
@@ -31,14 +31,14 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/MySQL/all', 12),
         ('Datastore/MySQL/allOther', 12),
         ('Datastore/operation/MySQL/select', 2),
-        ('Datastore/statement/MySQL/database_oursql/select', 2),
+        ('Datastore/statement/MySQL/datastore_oursql/select', 2),
         ('Datastore/operation/MySQL/insert', 1),
-        ('Datastore/statement/MySQL/database_oursql/insert', 1),
+        ('Datastore/statement/MySQL/datastore_oursql/insert', 1),
         ('Datastore/operation/MySQL/update', 1),
-        ('Datastore/statement/MySQL/database_oursql/update', 1),
+        ('Datastore/statement/MySQL/datastore_oursql/update', 1),
         ('Datastore/operation/MySQL/delete', 1),
-        ('Datastore/statement/MySQL/database_oursql/delete', 1),
-        ('Datastore/instance/MySQL/localhost/database_oursql', 5),
+        ('Datastore/statement/MySQL/datastore_oursql/delete', 1),
+        ('Datastore/instance/MySQL/localhost/datastore_oursql', 5),
         ('Datastore/operation/MySQL/other', 6),
         ('Datastore/statement/MySQL/other/other', 6)]
 
@@ -54,15 +54,15 @@ def test_execute_via_cursor():
             host=DB_SETTINGS['host'], port=DB_SETTINGS['port'])
 
     with connection as cursor:
-        cursor.execute("""drop table if exists database_oursql""")
+        cursor.execute("""drop table if exists datastore_oursql""")
 
-        cursor.execute("""create table database_oursql """
+        cursor.execute("""create table datastore_oursql """
                 """(a integer, b real, c text)""")
 
-        cursor.executemany("""insert into database_oursql values (?, ?, ?)""",
+        cursor.executemany("""insert into datastore_oursql values (?, ?, ?)""",
                 [(1, 1.0, '1.0'), (2, 2.2, '2.2'), (3, 3.3, '3.3')])
 
-        cursor.execute("""select * from database_oursql""")
+        cursor.execute("""select * from datastore_oursql""")
 
         # The oursql cursor execute() method takes a non DBAPI2
         # argument to disable parameter interpolation. Also
@@ -70,14 +70,14 @@ def test_execute_via_cursor():
         # speedup in execution because the default way creates a
         # prepared statement every time and then throws it away.
 
-        cursor.execute("""select * from database_oursql""", plain_query=True)
+        cursor.execute("""select * from datastore_oursql""", plain_query=True)
 
         for row in cursor: pass
 
-        cursor.execute("""update database_oursql set a=?, b=?, c=? """
+        cursor.execute("""update datastore_oursql set a=?, b=?, c=? """
                 """where a=?""", (4, 4.0, '4.0', 1))
 
-        cursor.execute("""delete from database_oursql where a=2""")
+        cursor.execute("""delete from datastore_oursql where a=2""")
 
     connection.commit()
     connection.rollback()

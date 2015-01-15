@@ -18,10 +18,10 @@ DATABASE_NAME = ':memory:'
 
 _test_execute_via_cursor_scoped_metrics = [
         ('Function/_sqlite3:connect', 1),
-        ('Datastore/statement/SQLite/database_sqlite/select', 1),
-        ('Datastore/statement/SQLite/database_sqlite/insert', 1),
-        ('Datastore/statement/SQLite/database_sqlite/update', 1),
-        ('Datastore/statement/SQLite/database_sqlite/delete', 1),
+        ('Datastore/statement/SQLite/datastore_sqlite/select', 1),
+        ('Datastore/statement/SQLite/datastore_sqlite/insert', 1),
+        ('Datastore/statement/SQLite/datastore_sqlite/update', 1),
+        ('Datastore/statement/SQLite/datastore_sqlite/delete', 1),
         ('Datastore/statement/SQLite/other/other', 6)]
 
 _test_execute_via_cursor_rollup_metrics = [
@@ -30,14 +30,14 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/SQLite/all', 11),
         ('Datastore/SQLite/allOther', 11),
         ('Datastore/operation/SQLite/select', 1),
-        ('Datastore/statement/SQLite/database_sqlite/select', 1),
+        ('Datastore/statement/SQLite/datastore_sqlite/select', 1),
         ('Datastore/operation/SQLite/insert', 1),
-        ('Datastore/statement/SQLite/database_sqlite/insert', 1),
+        ('Datastore/statement/SQLite/datastore_sqlite/insert', 1),
         ('Datastore/operation/SQLite/update', 1),
-        ('Datastore/statement/SQLite/database_sqlite/update', 1),
+        ('Datastore/statement/SQLite/datastore_sqlite/update', 1),
         ('Datastore/operation/SQLite/delete', 1),
-        ('Datastore/statement/SQLite/database_sqlite/delete', 1),
-        ('Datastore/instance/SQLite/localhost:{:memory:}/database_sqlite', 4),
+        ('Datastore/statement/SQLite/datastore_sqlite/delete', 1),
+        ('Datastore/instance/SQLite/localhost:{:memory:}/datastore_sqlite', 4),
         ('Datastore/operation/SQLite/other', 6),
         ('Datastore/statement/SQLite/other/other', 6)]
 
@@ -62,21 +62,21 @@ def test_execute_via_cursor():
     with database.connect(DATABASE_NAME) as connection:
         cursor = connection.cursor()
 
-        cursor.execute("""drop table if exists database_sqlite""")
+        cursor.execute("""drop table if exists datastore_sqlite""")
 
-        cursor.execute("""create table database_sqlite (a, b, c)""")
+        cursor.execute("""create table datastore_sqlite (a, b, c)""")
 
-        cursor.executemany("""insert into database_sqlite values (?, ?, ?)""",
+        cursor.executemany("""insert into datastore_sqlite values (?, ?, ?)""",
                 [(1, 1.0, '1.0'), (2, 2.2, '2.2'), (3, 3.3, '3.3')])
 
-        cursor.execute("""select * from database_sqlite""")
+        cursor.execute("""select * from datastore_sqlite""")
 
         for row in cursor: pass
 
-        cursor.execute("""update database_sqlite set a=?, b=?, """
+        cursor.execute("""update datastore_sqlite set a=?, b=?, """
                 """c=? where a=?""", (4, 4.0, '4.0', 1))
 
-        script = """delete from database_sqlite where a = 2;"""
+        script = """delete from datastore_sqlite where a = 2;"""
         cursor.executescript(script)
 
         connection.commit()
@@ -85,10 +85,10 @@ def test_execute_via_cursor():
 
 _test_execute_via_connection_scoped_metrics = [
         ('Function/_sqlite3:connect', 1),
-        ('Datastore/statement/SQLite/database_sqlite/select', 1),
-        ('Datastore/statement/SQLite/database_sqlite/insert', 1),
-        ('Datastore/statement/SQLite/database_sqlite/update', 1),
-        ('Datastore/statement/SQLite/database_sqlite/delete', 1),
+        ('Datastore/statement/SQLite/datastore_sqlite/select', 1),
+        ('Datastore/statement/SQLite/datastore_sqlite/insert', 1),
+        ('Datastore/statement/SQLite/datastore_sqlite/update', 1),
+        ('Datastore/statement/SQLite/datastore_sqlite/delete', 1),
         ('Datastore/statement/SQLite/other/other', 6)]
 
 _test_execute_via_connection_rollup_metrics = [
@@ -97,14 +97,14 @@ _test_execute_via_connection_rollup_metrics = [
         ('Datastore/SQLite/all', 11),
         ('Datastore/SQLite/allOther', 11),
         ('Datastore/operation/SQLite/select', 1),
-        ('Datastore/statement/SQLite/database_sqlite/select', 1),
+        ('Datastore/statement/SQLite/datastore_sqlite/select', 1),
         ('Datastore/operation/SQLite/insert', 1),
-        ('Datastore/statement/SQLite/database_sqlite/insert', 1),
+        ('Datastore/statement/SQLite/datastore_sqlite/insert', 1),
         ('Datastore/operation/SQLite/update', 1),
-        ('Datastore/statement/SQLite/database_sqlite/update', 1),
+        ('Datastore/statement/SQLite/datastore_sqlite/update', 1),
         ('Datastore/operation/SQLite/delete', 1),
-        ('Datastore/statement/SQLite/database_sqlite/delete', 1),
-        ('Datastore/instance/SQLite/localhost:{:memory:}/database_sqlite', 4),
+        ('Datastore/statement/SQLite/datastore_sqlite/delete', 1),
+        ('Datastore/instance/SQLite/localhost:{:memory:}/datastore_sqlite', 4),
         ('Datastore/operation/SQLite/other', 6),
         ('Datastore/statement/SQLite/other/other', 6)]
 
@@ -131,20 +131,20 @@ else:
 @background_task()
 def test_execute_via_connection():
     with database.connect(DATABASE_NAME) as connection:
-        connection.execute("""drop table if exists database_sqlite""")
+        connection.execute("""drop table if exists datastore_sqlite""")
 
-        connection.execute("""create table database_sqlite (a, b, c)""")
+        connection.execute("""create table datastore_sqlite (a, b, c)""")
 
-        connection.executemany("""insert into database_sqlite values """
+        connection.executemany("""insert into datastore_sqlite values """
                 """(?, ?, ?)""", [(1, 1.0, '1.0'), (2, 2.2, '2.2'),
                 (3, 3.3, '3.3')])
 
-        connection.execute("""select * from database_sqlite""")
+        connection.execute("""select * from datastore_sqlite""")
 
-        connection.execute("""update database_sqlite set a=?, b=?, """
+        connection.execute("""update datastore_sqlite set a=?, b=?, """
                 """c=? where a=?""", (4, 4.0, '4.0', 1))
 
-        script = """delete from database_sqlite where a = 2;"""
+        script = """delete from datastore_sqlite where a = 2;"""
         connection.executescript(script)
 
         connection.commit()

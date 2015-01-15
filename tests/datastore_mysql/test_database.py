@@ -17,10 +17,10 @@ DB_SETTINGS = mysql_settings()
 
 _test_execute_via_cursor_scoped_metrics = [
         ('Function/mysql.connector:connect', 1),
-        ('Datastore/statement/MySQL/database_mysql/select', 1),
-        ('Datastore/statement/MySQL/database_mysql/insert', 1),
-        ('Datastore/statement/MySQL/database_mysql/update', 1),
-        ('Datastore/statement/MySQL/database_mysql/delete', 1),
+        ('Datastore/statement/MySQL/datastore_mysql/select', 1),
+        ('Datastore/statement/MySQL/datastore_mysql/insert', 1),
+        ('Datastore/statement/MySQL/datastore_mysql/update', 1),
+        ('Datastore/statement/MySQL/datastore_mysql/delete', 1),
         ('Datastore/statement/MySQL/other/other', 5)]
 
 _test_execute_via_cursor_rollup_metrics = [
@@ -29,14 +29,14 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/MySQL/all', 10),
         ('Datastore/MySQL/allOther', 10),
         ('Datastore/operation/MySQL/select', 1),
-        ('Datastore/statement/MySQL/database_mysql/select', 1),
+        ('Datastore/statement/MySQL/datastore_mysql/select', 1),
         ('Datastore/operation/MySQL/insert', 1),
-        ('Datastore/statement/MySQL/database_mysql/insert', 1),
+        ('Datastore/statement/MySQL/datastore_mysql/insert', 1),
         ('Datastore/operation/MySQL/update', 1),
-        ('Datastore/statement/MySQL/database_mysql/update', 1),
+        ('Datastore/statement/MySQL/datastore_mysql/update', 1),
         ('Datastore/operation/MySQL/delete', 1),
-        ('Datastore/statement/MySQL/database_mysql/delete', 1),
-        ('Datastore/instance/MySQL/localhost/database_mysql', 4),
+        ('Datastore/statement/MySQL/datastore_mysql/delete', 1),
+        ('Datastore/instance/MySQL/localhost/datastore_mysql', 4),
         ('Datastore/operation/MySQL/other', 5),
         ('Datastore/statement/MySQL/other/other', 5)]
 
@@ -53,24 +53,24 @@ def test_execute_via_cursor():
 
     cursor = connection.cursor()
 
-    cursor.execute("""drop table if exists database_mysql""")
+    cursor.execute("""drop table if exists datastore_mysql""")
 
-    cursor.execute("""create table database_mysql """
+    cursor.execute("""create table datastore_mysql """
             """(a integer, b real, c text)""")
 
-    cursor.executemany("""insert into database_mysql """
+    cursor.executemany("""insert into datastore_mysql """
             """values (%(a)s, %(b)s, %(c)s)""", [dict(a=1, b=1.0, c='1.0'),
             dict(a=2, b=2.2, c='2.2'), dict(a=3, b=3.3, c='3.3')])
 
-    cursor.execute("""select * from database_mysql""")
+    cursor.execute("""select * from datastore_mysql""")
 
     for row in cursor: pass
 
-    cursor.execute("""update database_mysql set a=%(a)s, b=%(b)s, """
+    cursor.execute("""update datastore_mysql set a=%(a)s, b=%(b)s, """
             """c=%(c)s where a=%(old_a)s""", dict(a=4, b=4.0,
             c='4.0', old_a=1))
 
-    cursor.execute("""delete from database_mysql where a=2""")
+    cursor.execute("""delete from datastore_mysql where a=2""")
 
     connection.commit()
     connection.rollback()
@@ -78,10 +78,10 @@ def test_execute_via_cursor():
 
 _test_connect_using_alias_scoped_metrics = [
         ('Function/mysql.connector:connect', 1),
-        ('Datastore/statement/MySQL/database_mysql/select', 1),
-        ('Datastore/statement/MySQL/database_mysql/insert', 1),
-        ('Datastore/statement/MySQL/database_mysql/update', 1),
-        ('Datastore/statement/MySQL/database_mysql/delete', 1),
+        ('Datastore/statement/MySQL/datastore_mysql/select', 1),
+        ('Datastore/statement/MySQL/datastore_mysql/insert', 1),
+        ('Datastore/statement/MySQL/datastore_mysql/update', 1),
+        ('Datastore/statement/MySQL/datastore_mysql/delete', 1),
         ('Datastore/statement/MySQL/other/other', 5)]
 
 _test_connect_using_alias_rollup_metrics = [
@@ -90,14 +90,14 @@ _test_connect_using_alias_rollup_metrics = [
         ('Datastore/MySQL/all', 10),
         ('Datastore/MySQL/allOther', 10),
         ('Datastore/operation/MySQL/select', 1),
-        ('Datastore/statement/MySQL/database_mysql/select', 1),
+        ('Datastore/statement/MySQL/datastore_mysql/select', 1),
         ('Datastore/operation/MySQL/insert', 1),
-        ('Datastore/statement/MySQL/database_mysql/insert', 1),
+        ('Datastore/statement/MySQL/datastore_mysql/insert', 1),
         ('Datastore/operation/MySQL/update', 1),
-        ('Datastore/statement/MySQL/database_mysql/update', 1),
+        ('Datastore/statement/MySQL/datastore_mysql/update', 1),
         ('Datastore/operation/MySQL/delete', 1),
-        ('Datastore/statement/MySQL/database_mysql/delete', 1),
-        ('Datastore/instance/MySQL/localhost/database_mysql', 4),
+        ('Datastore/statement/MySQL/datastore_mysql/delete', 1),
+        ('Datastore/instance/MySQL/localhost/datastore_mysql', 4),
         ('Datastore/operation/MySQL/other', 5),
         ('Datastore/statement/MySQL/other/other', 5)]
 
@@ -114,24 +114,24 @@ def test_connect_using_alias():
 
     cursor = connection.cursor()
 
-    cursor.execute("""drop table if exists database_mysql""")
+    cursor.execute("""drop table if exists datastore_mysql""")
 
-    cursor.execute("""create table database_mysql """
+    cursor.execute("""create table datastore_mysql """
             """(a integer, b real, c text)""")
 
-    cursor.executemany("""insert into database_mysql """
+    cursor.executemany("""insert into datastore_mysql """
             """values (%(a)s, %(b)s, %(c)s)""", [dict(a=1, b=1.0, c='1.0'),
             dict(a=2, b=2.2, c='2.2'), dict(a=3, b=3.3, c='3.3')])
 
-    cursor.execute("""select * from database_mysql""")
+    cursor.execute("""select * from datastore_mysql""")
 
     for row in cursor: pass
 
-    cursor.execute("""update database_mysql set a=%(a)s, b=%(b)s, """
+    cursor.execute("""update datastore_mysql set a=%(a)s, b=%(b)s, """
             """c=%(c)s where a=%(old_a)s""", dict(a=4, b=4.0,
             c='4.0', old_a=1))
 
-    cursor.execute("""delete from database_mysql where a=2""")
+    cursor.execute("""delete from datastore_mysql where a=2""")
 
     connection.commit()
     connection.rollback()

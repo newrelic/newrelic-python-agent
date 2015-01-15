@@ -15,10 +15,10 @@ DB_SETTINGS = postgresql_settings()
 
 _test_execute_via_cursor_scoped_metrics = [
         ('Function/psycopg2ct:connect', 1),
-        ('Datastore/statement/Postgres/database_psycopg2ct/select', 1),
-        ('Datastore/statement/Postgres/database_psycopg2ct/insert', 1),
-        ('Datastore/statement/Postgres/database_psycopg2ct/update', 1),
-        ('Datastore/statement/Postgres/database_psycopg2ct/delete', 1),
+        ('Datastore/statement/Postgres/datastore_psycopg2ct/select', 1),
+        ('Datastore/statement/Postgres/datastore_psycopg2ct/insert', 1),
+        ('Datastore/statement/Postgres/datastore_psycopg2ct/update', 1),
+        ('Datastore/statement/Postgres/datastore_psycopg2ct/delete', 1),
         ('Datastore/statement/Postgres/other/other', 7)]
 
 _test_execute_via_cursor_rollup_metrics = [
@@ -27,14 +27,14 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/Postgres/all', 12),
         ('Datastore/Postgres/allOther', 12),
         ('Datastore/operation/Postgres/select', 1),
-        ('Datastore/statement/Postgres/database_psycopg2ct/select', 1),
+        ('Datastore/statement/Postgres/datastore_psycopg2ct/select', 1),
         ('Datastore/operation/Postgres/insert', 1),
-        ('Datastore/statement/Postgres/database_psycopg2ct/insert', 1),
+        ('Datastore/statement/Postgres/datastore_psycopg2ct/insert', 1),
         ('Datastore/operation/Postgres/update', 1),
-        ('Datastore/statement/Postgres/database_psycopg2ct/update', 1),
+        ('Datastore/statement/Postgres/datastore_psycopg2ct/update', 1),
         ('Datastore/operation/Postgres/delete', 1),
-        ('Datastore/statement/Postgres/database_psycopg2ct/delete', 1),
-        ('Datastore/instance/Postgres/localhost/database_psycopg2ct', 4),
+        ('Datastore/statement/Postgres/datastore_psycopg2ct/delete', 1),
+        ('Datastore/instance/Postgres/localhost/datastore_psycopg2ct', 4),
         ('Datastore/operation/Postgres/other', 7),
         ('Datastore/statement/Postgres/other/other', 7)]
 
@@ -55,23 +55,23 @@ def test_execute_via_cursor():
     psycopg2ct.extensions.register_type(psycopg2ct.extensions.UNICODE, connection)
     psycopg2ct.extensions.register_type(psycopg2ct.extensions.UNICODE, cursor)
 
-    cursor.execute("""drop table if exists database_psycopg2ct""")
+    cursor.execute("""drop table if exists datastore_psycopg2ct""")
 
-    cursor.execute("""create table database_psycopg2ct """
+    cursor.execute("""create table datastore_psycopg2ct """
             """(a integer, b real, c text)""")
 
-    cursor.executemany("""insert into database_psycopg2ct """
+    cursor.executemany("""insert into datastore_psycopg2ct """
             """values (%s, %s, %s)""", [(1, 1.0, '1.0'), (2, 2.2, '2.2'),
             (3, 3.3, '3.3')])
 
-    cursor.execute("""select * from database_psycopg2ct""")
+    cursor.execute("""select * from datastore_psycopg2ct""")
 
     for row in cursor: pass
 
-    cursor.execute("""update database_psycopg2ct set a=%s, b=%s, c=%s """
+    cursor.execute("""update datastore_psycopg2ct set a=%s, b=%s, c=%s """
             """where a=%s""", (4, 4.0, '4.0', 1))
 
-    cursor.execute("""delete from database_psycopg2ct where a=2""")
+    cursor.execute("""delete from datastore_psycopg2ct where a=2""")
 
     connection.commit()
 

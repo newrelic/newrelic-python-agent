@@ -13,7 +13,7 @@ from newrelic.common.object_wrapper import resolve_path
 # datanerd.us\SQLEXPRESS;Database=NewRelic;User ID=sa;Password=!4maline!; \
 # Trusted_Connection=False;Encrypt=False;Connection Timeout=30;" />
 
-server = "dotnetDB-SQL.pdx.vm.datanerd.us\SQLEXPRESS"
+server = "win-database.pdx.vm.datanerd.us\SQLEXPRESS"
 user = "sa"
 password = "!4maline!"
 

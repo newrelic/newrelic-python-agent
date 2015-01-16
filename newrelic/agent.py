@@ -53,6 +53,9 @@ from .api.profile_trace import (profile_trace, ProfileTraceWrapper,
 from .api.database_trace import (database_trace, DatabaseTrace,
         DatabaseTraceWrapper, wrap_database_trace, register_database_client)
 
+from .api.datastore_trace import (datastore_trace, DatastoreTrace,
+        DatastoreTraceWrapper, wrap_datastore_trace)
+
 from .api.external_trace import (external_trace, ExternalTrace,
         ExternalTraceWrapper, wrap_external_trace)
 

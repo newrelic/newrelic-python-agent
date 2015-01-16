@@ -37,7 +37,7 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/statement/SQLite/datastore_sqlite/update', 1),
         ('Datastore/operation/SQLite/delete', 1),
         ('Datastore/statement/SQLite/datastore_sqlite/delete', 1),
-        ('Datastore/instance/SQLite/localhost:{:memory:}/datastore_sqlite', 4),
+        #('Datastore/instance/SQLite/localhost:{:memory:}/datastore_sqlite', 4),
         ('Datastore/operation/SQLite/other', 6),
         ('Datastore/statement/SQLite/other/other', 6)]
 
@@ -104,7 +104,7 @@ _test_execute_via_connection_rollup_metrics = [
         ('Datastore/statement/SQLite/datastore_sqlite/update', 1),
         ('Datastore/operation/SQLite/delete', 1),
         ('Datastore/statement/SQLite/datastore_sqlite/delete', 1),
-        ('Datastore/instance/SQLite/localhost:{:memory:}/datastore_sqlite', 4),
+        #('Datastore/instance/SQLite/localhost:{:memory:}/datastore_sqlite', 4),
         ('Datastore/operation/SQLite/other', 6),
         ('Datastore/statement/SQLite/other/other', 6)]
 

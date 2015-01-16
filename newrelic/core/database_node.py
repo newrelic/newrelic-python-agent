@@ -177,14 +177,16 @@ class DatabaseNode(_DatabaseNode):
             yield TimeMetric(name=name, scope='', duration=self.duration,
                     exclusive=self.exclusive)
 
-            instance = self.instance
+            # We are not generating instance metrics at this time.
 
-            if instance is not None:
-                name = 'Datastore/instance/%s/%s/%s' % (self.product,
-                        instance, target or 'other')
+            #instance = self.instance
 
-                yield TimeMetric(name=name, scope='', duration=self.duration,
-                        exclusive=self.exclusive)
+            #if instance is not None:
+            #    name = 'Datastore/instance/%s/%s/%s' % (self.product,
+            #            instance, target or 'other')
+
+            #    yield TimeMetric(name=name, scope='', duration=self.duration,
+            #            exclusive=self.exclusive)
 
         elif operation in ('show',):
             name = 'Datastore/operation/%s/%s' % (self.product, operation)

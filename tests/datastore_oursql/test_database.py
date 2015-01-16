@@ -38,7 +38,7 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/statement/MySQL/datastore_oursql/update', 1),
         ('Datastore/operation/MySQL/delete', 1),
         ('Datastore/statement/MySQL/datastore_oursql/delete', 1),
-        ('Datastore/instance/MySQL/localhost/datastore_oursql', 5),
+        #('Datastore/instance/MySQL/localhost/datastore_oursql', 5),
         ('Datastore/operation/MySQL/other', 6),
         ('Datastore/statement/MySQL/other/other', 6)]
 

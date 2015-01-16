@@ -34,7 +34,7 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/statement/Postgres/datastore_postgresql/update', 1),
         ('Datastore/operation/Postgres/delete', 1),
         ('Datastore/statement/Postgres/datastore_postgresql/delete', 1),
-        ('Datastore/instance/Postgres/localhost/datastore_postgresql', 4),
+        #('Datastore/instance/Postgres/localhost/datastore_postgresql', 4),
         ('Datastore/operation/Postgres/other', 8),
         ('Datastore/statement/Postgres/other/other', 8)]
 

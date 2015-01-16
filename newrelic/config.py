@@ -1806,7 +1806,9 @@ def _process_module_builtin_defaults():
             'instrument_gunicorn_app_base')
 
     _process_module_definition('cx_Oracle',
-            'newrelic.hooks.database_dbapi2')
+            'newrelic.hooks.database_cx_oracle',
+            'instrument_cx_oracle')
+
     _process_module_definition('ibm_db_dbi',
             'newrelic.hooks.database_dbapi2')
 

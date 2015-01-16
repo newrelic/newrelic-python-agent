@@ -1824,7 +1824,8 @@ def _process_module_builtin_defaults():
             'instrument_pymysql')
 
     _process_module_definition('pyodbc',
-            'newrelic.hooks.database_dbapi2')
+            'newrelic.hooks.database_pyodbc',
+            'instrument_pyodbc')
 
     _process_module_definition('pymssql',
             'newrelic.hooks.database_pymssql',

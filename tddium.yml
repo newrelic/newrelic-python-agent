@@ -7,7 +7,8 @@
     - tox -c tests/agent_features/tox.ini
     - tox -c tests/cross_agent/tox.ini
     - tox -c tests/component_cornice/tox-0016.ini
-    - tox -c tests/component_djangorestframework/tox.ini
+    - tox -c tests/component_djangorestframework/tox-0203.ini
+    - tox -c tests/component_djangorestframework/tox-0300.ini
     - tox -c tests/database_mysql/tox.ini
     - tox -c tests/database_mysqldb/tox.ini
     - tox -c tests/database_oursql/tox.ini

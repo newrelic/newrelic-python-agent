@@ -18,6 +18,16 @@
     - tox -c tests/database_psycopg2ct/tox.ini
     - tox -c tests/database_pymysql/tox.ini
     - tox -c tests/database_sqlite/tox.ini
+    - tox -c tests/datastore_mysql/tox.ini
+    - tox -c tests/datastore_mysqldb/tox.ini
+    - tox -c tests/datastore_oursql/tox.ini
+    - tox -c tests/datastore_proboscis/tox.ini
+    - tox -c tests/datastore_postgresql/tox.ini
+    - tox -c tests/datastore_psycopg2/tox.ini
+    - tox -c tests/datastore_psycopg2cffi/tox.ini
+    - tox -c tests/datastore_psycopg2ct/tox.ini
+    - tox -c tests/datastore_pymysql/tox.ini
+    - tox -c tests/datastore_sqlite/tox.ini
     - tox -c tests/datastore_redis/tox.ini
     - tox -c tests/datastore_pymongo/tox.ini
     - tox -c tests/nosql_pymongo/tox.ini

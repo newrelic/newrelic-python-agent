@@ -667,22 +667,7 @@ def explain_plan(connections, sql_statement, connect_params, cursor_params,
 
     return details
 
-# Wrapper for information about a specific database. We haven't yet
-# added high level instrumentation modules for all databases we know
-# of and so we still maintain a table here indexed by Python module
-# name for some.
-
-DATABASE_MODULES = {
-    'ibm_db_dbi': 'DB2'
-}
-
-DATABASE_DEFINTIONS = {
-    'DB2': {
-        'quoting_style': 'single',
-        'explain_query': 'EXPLAIN',
-        'explain_stmts': ('select', 'insert', 'update', 'delete')
-    }
-}
+# Wrapper for information about a specific database.
 
 class SQLDatabase(object):
 
@@ -694,15 +679,7 @@ class SQLDatabase(object):
 
     @property
     def name(self):
-        name = getattr(self.dbapi2_module, '_nr_database_name', None)
-
-        if name is None:
-            name = getattr(self.dbapi2_module, '__name__', None)
-
-            if name:
-                name = DATABASE_MODULES.get(name)
-
-        return name
+        return getattr(self.dbapi2_module, '_nr_database_name', None)
 
     @property
     def client(self):
@@ -718,35 +695,20 @@ class SQLDatabase(object):
         result = getattr(self.dbapi2_module, '_nr_quoting_style', None)
 
         if result is None:
-            details = DATABASE_DEFINTIONS.get(self.name)
-            if details:
-                result = details['quoting_style']
-            else:
-                result = 'single'
+            result = 'single'
 
         return result
 
     @property
     def explain_query(self):
-        result = getattr(self.dbapi2_module, '_nr_explain_query', None)
-
-        if result is None:
-            details = DATABASE_DEFINTIONS.get(self.name)
-            if details:
-                result = details['explain_query']
-
-        return result
+        return getattr(self.dbapi2_module, '_nr_explain_query', None)
 
     @property
     def explain_stmts(self):
         result = getattr(self.dbapi2_module, '_nr_explain_stmts', None)
 
         if result is None:
-            details = DATABASE_DEFINTIONS.get(self.name)
-            if details:
-                result = details['explain_stmts']
-            else:
-                result = ()
+            result = ()
 
         return result
 

@@ -1055,6 +1055,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/database_ibm_db_dbi.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/database_mysql.py": {
         "hash": "n/a",
         "libraries": [

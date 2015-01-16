@@ -1,0 +1,10 @@
+from newrelic.agent import wrap_object, register_database_client
+
+from .database_dbapi2 import ConnectionFactory
+
+def instrument_ibm_db_dbi(module):
+    register_database_client(module, database_name='IBMDB2',
+            quoting_style='single', explain_query='EXPLAIN',
+            explain_stmts=('select', 'insert', 'update', 'delete'))
+
+    wrap_object(module, 'connect', ConnectionFactory, (module,))

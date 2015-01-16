@@ -1810,7 +1810,8 @@ def _process_module_builtin_defaults():
             'instrument_cx_oracle')
 
     _process_module_definition('ibm_db_dbi',
-            'newrelic.hooks.database_dbapi2')
+            'newrelic.hooks.database_ibm_db_dbi',
+            'instrument_ibm_db_dbi')
 
     _process_module_definition('mysql.connector',
             'newrelic.hooks.database_mysql',

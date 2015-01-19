@@ -14,16 +14,14 @@ REDIS_HOST = os.environ.get('REDIS_PORT_6379_TCP_ADDR', REDIS_HOST)
 REDIS_PORT = int(os.environ.get('REDIS_PORT_6379_TCP_PORT', REDIS_PORT))
 
 _test_httplib_http_request_scoped_metrics = [
-        ('Datastore/operation/Redis/get', 1),
-        ('Datastore/operation/Redis/set', 1)]
+        ('Function/redis.connection:Connection.connect', 1),
+        ('Function/redis.client:StrictRedis.get', 1),
+        ('Function/redis.client:StrictRedis.set', 1)]
 
 _test_httplib_http_request_rollup_metrics = [
-        ('Datastore/all', 2),
-        ('Datastore/allOther', 2),
-        ('Datastore/Redis/all', 2),
-        ('Datastore/Redis/allOther', 2),
-        ('Datastore/operation/Redis/get', 1),
-        ('Datastore/operation/Redis/set', 1)]
+        ('Function/redis.connection:Connection.connect', 1),
+        ('Function/redis.client:StrictRedis.get', 1),
+        ('Function/redis.client:StrictRedis.set', 1)]
 
 @validate_transaction_metrics(
         'test_redis:test_redis_operation',

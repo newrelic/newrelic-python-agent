@@ -50,9 +50,10 @@ sys.meta_path.insert(0, newrelic.api.import_hook.ImportHookFinder())
 _FEATURE_FLAGS = set([
     'tornado.instrumentation.r1',
     'tornado.instrumentation.r2',
-    'pymongo.instrumentation.r2',
     'django.instrumentation.inclusion-tags.r1',
     'database.instrumentation.r2',
+    'pymongo.instrumentation.r2',
+    'redis.instrumentation.r2',
 ])
 
 # Names of configuration file and deployment environment. This
@@ -1969,12 +1970,18 @@ def _process_module_builtin_defaults():
                 'newrelic.hooks.nosql_pymongo',
                 'instrument_pymongo_collection')
 
-    _process_module_definition('redis.connection',
-            'newrelic.hooks.nosql_redis',
-            'instrument_redis_connection')
-    _process_module_definition('redis.client',
-            'newrelic.hooks.nosql_redis',
-            'instrument_redis_client')
+    if 'redis.instrumentation.r2' in _settings.feature_flag:
+        _process_module_definition('redis.client',
+                'newrelic.hooks.datastore_redis',
+                'instrument_redis_client')
+
+    else:
+        _process_module_definition('redis.connection',
+                'newrelic.hooks.nosql_redis',
+                'instrument_redis_connection')
+        _process_module_definition('redis.client',
+                'newrelic.hooks.nosql_redis',
+                'instrument_redis_client')
 
     _process_module_definition('piston.resource',
             'newrelic.hooks.component_piston',

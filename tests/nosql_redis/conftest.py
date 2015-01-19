@@ -4,7 +4,7 @@ from testing_support.fixtures import (code_coverage_fixture,
         collector_agent_registration_fixture, collector_available_fixture)
 
 _coverage_source = [
-    'newrelic.hooks.datastore_redis',
+    'newrelic.hooks.nosql_redis',
 ]
 
 code_coverage = code_coverage_fixture(source=_coverage_source)
@@ -15,11 +15,10 @@ _default_settings = {
     'transaction_tracer.stack_trace_threshold': 0.0,
     'debug.log_data_collector_payloads': True,
     'debug.record_transaction_failure': True,
-    'feature_flag': set(['redis.instrumentation.r2'])
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
-        app_name='Python Agent Test (datastore_redis)',
+        app_name='Python Agent Test (nosql_redis)',
         default_settings=_default_settings)
 
 @pytest.fixture(scope='session')

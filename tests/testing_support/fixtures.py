@@ -96,7 +96,8 @@ def fake_collector_wrapper(wrapped, instance, args, kwargs):
 
     return wrapped(*args, **kwargs)
 
-def collector_agent_registration_fixture(app_name=None, default_settings={}):
+def collector_agent_registration_fixture(app_name=None, default_settings={},
+        linked_applications=[]):
     @pytest.fixture(scope='session')
     def _collector_agent_registration_fixture(request):
         settings = global_settings()
@@ -227,6 +228,13 @@ def collector_agent_registration_fixture(app_name=None, default_settings={}):
             except Exception:
                 _logger.exception("Unable to record deployment marker.")
                 pass
+
+        # Associate linked applications.
+
+        application = application_instance()
+
+        for name in linked_applications:
+            application.link_to_application(name)
 
         # Force registration of the application.
 

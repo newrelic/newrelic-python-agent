@@ -22,7 +22,8 @@ _default_settings = {
 
 collector_agent_registration = collector_agent_registration_fixture(
         app_name='Python Agent Test (datastore_psycopg2)',
-        default_settings=_default_settings)
+        default_settings=_default_settings,
+        linked_applications=['Python Agent Test (datastore)'])
 
 @pytest.fixture(scope='session')
 def session_initialization(code_coverage, collector_agent_registration):

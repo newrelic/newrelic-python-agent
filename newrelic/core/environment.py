@@ -137,13 +137,6 @@ def environment_settings():
     if not dispatcher and 'flup.server.cgi' in sys.modules:
         dispatcher.append(('Dispatcher', 'flup/cgi'))
 
-    if not dispatcher and 'tornado' in sys.modules:
-        dispatcher.append(('Dispatcher', 'tornado'))
-        tornado = sys.modules['tornado']
-        if hasattr(tornado, 'version_info'):
-            dispatcher.append(('Dispatcher Version',
-                               str(tornado.version_info)))
-
     if not dispatcher and 'gunicorn' in sys.modules:
         if 'gunicorn.workers.ggevent' in sys.modules:
             dispatcher.append(('Dispatcher', 'gunicorn (gevent)'))
@@ -154,6 +147,13 @@ def environment_settings():
         gunicorn = sys.modules['gunicorn']
         if hasattr(gunicorn, '__version__'):
             dispatcher.append(('Dispatcher Version', gunicorn.__version__))
+
+    if not dispatcher and 'tornado' in sys.modules:
+        dispatcher.append(('Dispatcher', 'tornado'))
+        tornado = sys.modules['tornado']
+        if hasattr(tornado, 'version_info'):
+            dispatcher.append(('Dispatcher Version',
+                               str(tornado.version_info)))
 
     env.extend(dispatcher)
 

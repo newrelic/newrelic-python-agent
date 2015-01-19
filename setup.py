@@ -21,7 +21,7 @@ from distutils.command.build_ext import build_ext
 from distutils.errors import (CCompilerError, DistutilsExecError,
         DistutilsPlatformError)
 
-copyright = '(C) Copyright 2010-2014 New Relic Inc. All rights reserved.'
+copyright = '(C) Copyright 2010-2015 New Relic Inc. All rights reserved.'
 
 script_directory = os.path.dirname(__file__)
 if not script_directory:
@@ -86,10 +86,11 @@ packages = [
   "newrelic/packages",
   "newrelic/packages/requests",
   "newrelic/packages/requests/packages",
-  "newrelic/packages/requests/packages/charade",
+  "newrelic/packages/requests/packages/chardet",
   "newrelic/packages/requests/packages/urllib3",
   "newrelic/packages/requests/packages/urllib3/packages",
   "newrelic/packages/requests/packages/urllib3/packages/ssl_match_hostname",
+  "newrelic/packages/requests/packages/urllib3/util",
   "newrelic/packages/wrapt",
   "newrelic.samplers",
 ]

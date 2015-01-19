@@ -89,3 +89,107 @@ class RulesEngine(object):
                 break
 
         return (final_string, ignore)
+
+class SegmentCollapseEngine(object):
+    """Segment names in transaction name are collapsed using the rules
+    from the data collector. The collector sends a prefix and list of
+    whitelist terms associated with that prefix. If a transaction name
+    matches the prefix then we replace all segments of the name with a
+    '*' except for the segments in the whitelist terms.
+
+    """
+
+    COLLAPSE_STAR_RE = re.compile(r'((?:^|/)\*)(?:/\*)*')
+
+    def __init__(self, rules):
+        self.rules = {}
+
+        prefixes = []
+
+        for rule in rules:
+            # Prefix should only have two segments, but believe there
+            # may be a possibility of getting an extraneous trailing
+            # slash. Therefore remove any trailing slashes. Technically
+            # we can do away with the check for two segments, or at
+            # least allow minimumum of two and the algorithm will still
+            # work as the regex for pre match and how remainder is
+            # collected from pattern, will deal with prefixes of
+            # different length and will choose the longest match.
+
+            prefix_segments = rule['prefix'].rstrip('/').split('/')
+
+            if len(prefix_segments) == 2:
+                prefix = '/'.join(prefix_segments)
+                self.rules[prefix] = rule['terms']
+                prefixes.append(prefix)
+
+        # Construct a regular expression which can efficiently pre match
+        # any transaction name so we can avoid needing to split the
+        # transaction name into segments.
+        #
+        # The pattern requires there to be at least one character in the
+        # third segment. So three segments with the third being empty is
+        # a special case that will always be passed through as is, even
+        # if the prefix matched. We add a group around the remainder after
+        # the prefix and immediately following slash so we only split on
+        # that later if necessary.
+        #
+        # Use Unicode here when constructing pattern as the data collector
+        # should always return prefixes and term strings as Unicode.
+
+        choices = u'|'.join([re.escape(x) for x in prefixes])
+        pattern = u'^(%s)/(.+)$' % choices
+
+        self.prefixes = re.compile(pattern)
+
+    def normalize(self, txn_name):
+        """Takes a transaction name and collapses the segments into a
+        '*' except for the segments in the whitelist_terms.
+
+        Returns a modified copy of the transaction name and a flag
+        indicating whether the transaction should be ignored. For
+        segment rules there is currently no functionality to ignore the
+        transaction based on a match, so we will always return False.
+
+        """
+
+        # If we have no rules then nothing to do.
+
+        if not self.rules:
+            return txn_name, False
+
+        # Use our regular expression to perform a pre match so can avoid
+        # needing to split the name into segments. This also gives us the
+        # prefix which matched so we can check if we did in fact have
+        # any terms for it.
+
+        match = self.prefixes.match(txn_name)
+
+        if not match:
+            return txn_name, False
+
+        prefix = match.group(1)
+
+        whitelist_terms = self.rules.get(prefix)
+
+        if whitelist_terms is None:
+            return txn_name, False
+ 
+        # Now split the name into segments. The name could be either a
+        # byte string or a Unicode string. The separator will be coerced
+        # to the correct type as necessary and the segments will always
+        # be of the same type as the original name was. We shouldn't
+        # therefore need to have to worry about Unicode issues and
+        # whether a byte string contains anything which can't be changed
+        # to a Unicode string as no coercion will occur.
+
+        remainder = match.group(2)
+        segments = remainder.split('/')
+
+        # Replace non-whitelist terms with '*' and then collapse any
+        # adjacent '*' segments to a single '*'.
+
+        result = [x if x in whitelist_terms else '*' for x in segments]
+        result = self.COLLAPSE_STAR_RE.sub('\\1', '/'.join(result))
+
+        return '/'.join((prefix, result)), False

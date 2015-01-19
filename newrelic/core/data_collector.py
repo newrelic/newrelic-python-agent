@@ -11,6 +11,7 @@ import sys
 import time
 import zlib
 import base64
+import warnings
 
 from pprint import pprint
 
@@ -119,6 +120,32 @@ def _requests_proxy_scheme_workaround(wrapped, instance, args, kwargs):
             return connection
 
     return wrapped(*args, **kwargs)
+
+# This is a monkey patch for requests contained within our bundled requests.
+# Have no idea why they made the change, but the change they made in the
+# commit:
+#
+#   https://github.com/kennethreitz/requests/commit/8b7fcfb49a38cd6ee1cbb4a52e0a4af57969abb3
+#
+# breaks proxying a HTTPS requests over a HTTPS proxy. The original seems to
+# be more correct than the changed version and works in testing. Return the
+# functionality back to how it worked previously.
+
+@patch_function_wrapper(
+        'newrelic.packages.requests.adapters',
+        'HTTPAdapter.request_url')
+def _requests_request_url_workaround(wrapped, instance, args, kwargs):
+    from newrelic.packages.requests.adapters import urldefragauth
+
+    def _bind_params(request, proxies):
+        return request, proxies
+
+    request, proxies = _bind_params(*args, **kwargs)
+
+    if not proxies:
+        return wrapped(*args, **kwargs)
+
+    return urldefragauth(request.url)
 
 # Low level network functions and session management. When connecting to
 # the data collector it is initially done through the main data collector.
@@ -238,11 +265,11 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         license_key = 'NO LICENSE KEY WAS SET IN AGENT CONFIGURATION'
 
     # The agent formats requests and is able to handle responses for
-    # protocol version 12.
+    # protocol version 14.
 
     params['method'] = method
     params['license_key'] = license_key
-    params['protocol_version'] = '12'
+    params['protocol_version'] = '14'
     params['marshal_format'] = 'json'
 
     if agent_run_id:
@@ -355,9 +382,12 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         cert_loc = certs.where()
         timeout = settings.agent_limits.data_collector_timeout
 
-        r = session.post(url, params=params, headers=headers,
-                proxies=proxies, timeout=timeout, data=data,
-                verify=cert_loc)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+
+            r = session.post(url, params=params, headers=headers,
+                    proxies=proxies, timeout=timeout, data=data,
+                    verify=cert_loc)
 
         # Read the content now so we can force close the socket
         # connection if this is a transient session as quickly
@@ -1052,7 +1082,7 @@ class DeveloperModeSession(ApplicationSession):
 
         params['method'] = method
         params['license_key'] = license_key
-        params['protocol_version'] = '12'
+        params['protocol_version'] = '14'
         params['marshal_format'] = 'json'
 
         if agent_run_id:
@@ -1120,6 +1150,34 @@ def create_session(license_key, app_name, linked_applications,
                 not isinstance(value, six.integer_types)):
             application_settings[key] = repr(value)
 
-    session.agent_settings(application_settings)
+    try:
+        session.agent_settings(application_settings)
 
-    return session
+    except NetworkInterfaceException:
+        # The reason for errors of this type have already been logged.
+        # No matter what the error we just pass back None. The upper
+        # layer will deal with not being successful.
+
+        _logger.warning('Agent registration failed due to error in '
+                'uploading agent settings. Registration should retry '
+                'automatically.')
+
+        pass
+
+    except Exception:
+        # Any other errors are going to be unexpected and likely will
+        # indicate an issue with the implementation of the agent.
+
+        _logger.exception('Unexpected exception when attempting to '
+                'update agent settings with the data collector. Please '
+                'report this problem to New Relic support for further '
+                'investigation.')
+
+        _logger.warning('Agent registration failed due to error in '
+                'uploading agent settings. Registration should retry '
+                'automatically.')
+
+        pass
+
+    else:
+        return session

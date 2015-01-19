@@ -1,4 +1,8 @@
 import time
+import traceback
+import logging
+
+_logger = logging.getLogger(__name__)
 
 class TimeTrace(object):
 
@@ -11,6 +15,7 @@ class TimeTrace(object):
         self.end_time = 0.0
         self.duration = 0.0
         self.exclusive = 0.0
+        self.activated = False
 
         # Don't do further tracing of transaction if
         # it has been explicitly stopped.
@@ -39,17 +44,38 @@ class TimeTrace(object):
 
         self.transaction._push_current(self)
 
+        self.activated = True
+
         return self
 
     def __exit__(self, exc, value, tb):
         if not self.transaction:
             return
 
+        # Check for violation of context manager protocol where
+        # __exit__() is called before __enter__().
+
+        if not self.activated:
+            _logger.error('Runtime instrumentation error. The __exit__() '
+                    'method of %r was called prior to __enter__() being '
+                    'called. Report this issue to New Relic support.\n%s',
+                    self, ''.join(traceback.format_stack()[:-1]))
+
+            return
+
+        # Wipe out transaction reference so can't use object
+        # again. Retain reference as local variable for use in
+        # this call though.
+
+        transaction = self.transaction
+
+        self.transaction = None
+
         # If recording of time for transaction has already been
         # stopped, then that time has to be used.
 
-        if self.transaction.stopped:
-            self.end_time = self.transaction.end_time
+        if transaction.stopped:
+            self.end_time = transaction.end_time
         else:
             self.end_time = time.time()
 
@@ -74,12 +100,14 @@ class TimeTrace(object):
         # Pop ourselves as current node. The return value is our
         # parent.
 
-        parent = self.transaction._pop_current(self)
+        parent = transaction._pop_current(self)
 
         # Give chance for derived class to finalize any data in
-        # this object instance.
+        # this object instance. The transaction is passed as a
+        # parameter since the transaction object on this instance
+        # will have been cleared above.
 
-        self.finalize_data(exc, value, tb)
+        self.finalize_data(transaction, exc, value, tb)
 
         # Give chance for derived class to create a standin node
         # object to be used in the transaction trace. If we get
@@ -89,14 +117,10 @@ class TimeTrace(object):
         node = self.create_node()
 
         if node:
-            self.transaction._process_node(node)
+            transaction._process_node(node)
             parent.process_child(node)
 
-        # Wipe out transaction reference so can't use object again.
-
-        self.transaction = None
-
-    def finalize_data(self, exc=None, value=None, tb=None):
+    def finalize_data(self, transaction, exc=None, value=None, tb=None):
         pass
 
     def create_node(self):

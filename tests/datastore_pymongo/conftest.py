@@ -10,12 +10,13 @@ _coverage_source = [
 code_coverage = code_coverage_fixture(source=_coverage_source)
 
 _default_settings = {
-    'feature_flag': set(['pymongo.instrumentation.r2']),
     'transaction_tracer.explain_threshold': 0.0,
     'transaction_tracer.transaction_threshold': 0.0,
     'transaction_tracer.stack_trace_threshold': 0.0,
     'debug.log_data_collector_payloads': True,
     'debug.record_transaction_failure': True,
+    'feature_flag': set(['database.instrumentation.r2',
+        'pymongo.instrumentation.r2'])
 }
 
 collector_agent_registration = collector_agent_registration_fixture(

@@ -34,6 +34,8 @@ _test_pymongo_scoped_metrics = [
         ('Datastore/statement/MongoDB/my_collection/find_one', 1)]
 
 _test_pymongo_rollup_metrics = [
+        ('Datastore/all', 8),
+        ('Datastore/allOther', 8),
         ('Datastore/MongoDB/all', 8),
         ('Datastore/MongoDB/allOther', 8),
         ('Datastore/operation/MongoDB/save', 3),

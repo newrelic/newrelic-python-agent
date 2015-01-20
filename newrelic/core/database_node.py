@@ -182,19 +182,29 @@ class DatabaseNode(_DatabaseNode):
         return self.time_metrics_r1(stats, root, parent)
 
     def slow_sql_node(self, stats, root):
+        settings = global_settings()
 
-        operation = self.operation
+        product = self.product
+        operation = self.operation or 'other'
+        target = self.target
 
-        if operation in ('select', 'update', 'insert', 'delete'):
-            target = self.target
+        if 'database.instrumentation.r2' in settings.feature_flag:
             if target:
-                name = 'Database/%s/%s' % (target, operation)
+                name = 'Datastore/statement/%s/%s/%s' % (product, target,
+                        operation)
             else:
-                name = 'Database/%s' % operation
-        elif operation in ('show',):
-            name = 'Database/%s' % operation
+                name = 'Datastore/operation/%s/%s' % (product, operation)
+
         else:
-            name = 'Database/other/sql'
+            if operation in ('select', 'update', 'insert', 'delete'):
+                if target:
+                    name = 'Database/%s/%s' % (target, operation)
+                else:
+                    name = 'Database/%s' % operation
+            elif operation in ('show',):
+                name = 'Database/%s' % operation
+            else:
+                name = 'Database/other/sql'
 
         request_uri = ''
         if root.type == 'WebTransaction':

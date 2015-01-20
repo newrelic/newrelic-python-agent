@@ -22,7 +22,7 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Datastore/statement/SQLite/datastore_sqlite/insert', 1),
         ('Datastore/statement/SQLite/datastore_sqlite/update', 1),
         ('Datastore/statement/SQLite/datastore_sqlite/delete', 1),
-        ('Datastore/statement/SQLite/other/other', 6)]
+        ('Datastore/operation/SQLite/other', 6)]
 
 _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/all', 11),
@@ -37,9 +37,7 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/statement/SQLite/datastore_sqlite/update', 1),
         ('Datastore/operation/SQLite/delete', 1),
         ('Datastore/statement/SQLite/datastore_sqlite/delete', 1),
-        #('Datastore/instance/SQLite/localhost:{:memory:}/datastore_sqlite', 4),
-        ('Datastore/operation/SQLite/other', 6),
-        ('Datastore/statement/SQLite/other/other', 6)]
+        ('Datastore/operation/SQLite/other', 6)]
 
 if is_pypy:
     _test_execute_via_cursor_scoped_metrics.extend([
@@ -89,7 +87,7 @@ _test_execute_via_connection_scoped_metrics = [
         ('Datastore/statement/SQLite/datastore_sqlite/insert', 1),
         ('Datastore/statement/SQLite/datastore_sqlite/update', 1),
         ('Datastore/statement/SQLite/datastore_sqlite/delete', 1),
-        ('Datastore/statement/SQLite/other/other', 6)]
+        ('Datastore/operation/SQLite/other', 6)]
 
 _test_execute_via_connection_rollup_metrics = [
         ('Datastore/all', 11),
@@ -104,9 +102,7 @@ _test_execute_via_connection_rollup_metrics = [
         ('Datastore/statement/SQLite/datastore_sqlite/update', 1),
         ('Datastore/operation/SQLite/delete', 1),
         ('Datastore/statement/SQLite/datastore_sqlite/delete', 1),
-        #('Datastore/instance/SQLite/localhost:{:memory:}/datastore_sqlite', 4),
-        ('Datastore/operation/SQLite/other', 6),
-        ('Datastore/statement/SQLite/other/other', 6)]
+        ('Datastore/operation/SQLite/other', 6)]
 
 if is_pypy:
     _test_execute_via_connection_scoped_metrics.extend([
@@ -153,15 +149,14 @@ def test_execute_via_connection():
 
 _test_rollback_on_exception_scoped_metrics = [
         ('Function/_sqlite3:connect', 1),
-        ('Datastore/statement/SQLite/other/other', 1)]
+        ('Datastore/operation/SQLite/other', 1)]
 
 _test_rollback_on_exception_rollup_metrics = [
         ('Datastore/all', 2),
         ('Datastore/allOther', 2),
         ('Datastore/SQLite/all', 2),
         ('Datastore/SQLite/allOther', 2),
-        ('Datastore/operation/SQLite/other', 1),
-        ('Datastore/statement/SQLite/other/other', 1)]
+        ('Datastore/operation/SQLite/other', 1)]
 
 if is_pypy:
     _test_rollback_on_exception_scoped_metrics.extend([

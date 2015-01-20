@@ -19,7 +19,7 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Datastore/statement/Postgres/datastore_psycopg2ct/insert', 1),
         ('Datastore/statement/Postgres/datastore_psycopg2ct/update', 1),
         ('Datastore/statement/Postgres/datastore_psycopg2ct/delete', 1),
-        ('Datastore/statement/Postgres/other/other', 7)]
+        ('Datastore/operation/Postgres/other', 7)]
 
 _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/all', 12),
@@ -34,9 +34,7 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/statement/Postgres/datastore_psycopg2ct/update', 1),
         ('Datastore/operation/Postgres/delete', 1),
         ('Datastore/statement/Postgres/datastore_psycopg2ct/delete', 1),
-        #('Datastore/instance/Postgres/localhost/datastore_psycopg2ct', 4),
-        ('Datastore/operation/Postgres/other', 7),
-        ('Datastore/statement/Postgres/other/other', 7)]
+        ('Datastore/operation/Postgres/other', 7)]
 
 @validate_transaction_metrics('test_database:test_execute_via_cursor',
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,

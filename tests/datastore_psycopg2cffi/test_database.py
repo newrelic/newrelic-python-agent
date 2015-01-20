@@ -21,7 +21,7 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Datastore/statement/Postgres/datastore_psycopg2cffi/insert', 1),
         ('Datastore/statement/Postgres/datastore_psycopg2cffi/update', 1),
         ('Datastore/statement/Postgres/datastore_psycopg2cffi/delete', 1),
-        ('Datastore/statement/Postgres/other/other', 8)]
+        ('Datastore/operation/Postgres/other', 8)]
 
 _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/all', 13),
@@ -36,9 +36,7 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/statement/Postgres/datastore_psycopg2cffi/update', 1),
         ('Datastore/operation/Postgres/delete', 1),
         ('Datastore/statement/Postgres/datastore_psycopg2cffi/delete', 1),
-        #('Datastore/instance/Postgres/localhost/datastore_psycopg2cffi', 4),
-        ('Datastore/operation/Postgres/other', 8),
-        ('Datastore/statement/Postgres/other/other', 8)]
+        ('Datastore/operation/Postgres/other', 8)]
 
 @validate_transaction_metrics('test_database:test_execute_via_cursor',
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
@@ -88,7 +86,7 @@ _test_rollback_on_exception_scoped_metrics = [
         ('Function/psycopg2cffi:connect', 1),
         ('Function/psycopg2cffi._impl.connection:Connection.__enter__', 1),
         ('Function/psycopg2cffi._impl.connection:Connection.__exit__', 1),
-        ('Datastore/statement/Postgres/other/other', 1)]
+        ('Datastore/operation/Postgres/other', 1)]
 
 _test_rollback_on_exception_rollup_metrics = [
         ('Datastore/all', 2),

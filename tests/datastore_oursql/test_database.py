@@ -23,7 +23,7 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Datastore/statement/MySQL/datastore_oursql/insert', 1),
         ('Datastore/statement/MySQL/datastore_oursql/update', 1),
         ('Datastore/statement/MySQL/datastore_oursql/delete', 1),
-        ('Datastore/statement/MySQL/other/other', 6)]
+        ('Datastore/operation/MySQL/other', 6)]
 
 _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/all', 12),
@@ -38,9 +38,7 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/statement/MySQL/datastore_oursql/update', 1),
         ('Datastore/operation/MySQL/delete', 1),
         ('Datastore/statement/MySQL/datastore_oursql/delete', 1),
-        #('Datastore/instance/MySQL/localhost/datastore_oursql', 5),
-        ('Datastore/operation/MySQL/other', 6),
-        ('Datastore/statement/MySQL/other/other', 6)]
+        ('Datastore/operation/MySQL/other', 6)]
 
 @validate_transaction_metrics('test_database:test_execute_via_cursor',
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
@@ -89,15 +87,14 @@ _test_rollback_on_exception_scoped_metrics = [
         ('Function/oursql:Connection', 1),
         ('Function/oursql:Connection.__enter__', 1),
         ('Function/oursql:Connection.__exit__', 1),
-        ('Datastore/statement/MySQL/other/other', 1)]
+        ('Datastore/operation/MySQL/other', 1)]
 
 _test_rollback_on_exception_rollup_metrics = [
         ('Datastore/all', 2),
         ('Datastore/allWeb', 2),
         ('Datastore/MySQL/all', 2),
         ('Datastore/MySQL/allWeb', 2),
-        ('Datastore/operation/MySQL/other', 1),
-        ('Datastore/statement/MySQL/other/other', 1)]
+        ('Datastore/operation/MySQL/other', 1)]
 
 @validate_transaction_metrics('test_database:test_rollback_on_exception',
         scoped_metrics=_test_rollback_on_exception_scoped_metrics,

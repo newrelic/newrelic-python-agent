@@ -21,7 +21,7 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Datastore/statement/MySQL/datastore_mysql/insert', 1),
         ('Datastore/statement/MySQL/datastore_mysql/update', 1),
         ('Datastore/statement/MySQL/datastore_mysql/delete', 1),
-        ('Datastore/statement/MySQL/other/other', 5)]
+        ('Datastore/operation/MySQL/other', 5)]
 
 _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/all', 10),
@@ -36,9 +36,7 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/statement/MySQL/datastore_mysql/update', 1),
         ('Datastore/operation/MySQL/delete', 1),
         ('Datastore/statement/MySQL/datastore_mysql/delete', 1),
-        #('Datastore/instance/MySQL/localhost/datastore_mysql', 4),
-        ('Datastore/operation/MySQL/other', 5),
-        ('Datastore/statement/MySQL/other/other', 5)]
+        ('Datastore/operation/MySQL/other', 5)]
 
 @validate_transaction_metrics('test_database:test_execute_via_cursor',
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
@@ -84,7 +82,7 @@ _test_connect_using_alias_scoped_metrics = [
         ('Datastore/statement/MySQL/datastore_mysql/insert', 1),
         ('Datastore/statement/MySQL/datastore_mysql/update', 1),
         ('Datastore/statement/MySQL/datastore_mysql/delete', 1),
-        ('Datastore/statement/MySQL/other/other', 5)]
+        ('Datastore/operation/MySQL/other', 5)]
 
 _test_connect_using_alias_rollup_metrics = [
         ('Datastore/all', 10),
@@ -99,9 +97,7 @@ _test_connect_using_alias_rollup_metrics = [
         ('Datastore/statement/MySQL/datastore_mysql/update', 1),
         ('Datastore/operation/MySQL/delete', 1),
         ('Datastore/statement/MySQL/datastore_mysql/delete', 1),
-        #('Datastore/instance/MySQL/localhost/datastore_mysql', 4),
-        ('Datastore/operation/MySQL/other', 5),
-        ('Datastore/statement/MySQL/other/other', 5)]
+        ('Datastore/operation/MySQL/other', 5)]
 
 @validate_transaction_metrics('test_database:test_connect_using_alias',
         scoped_metrics=_test_connect_using_alias_scoped_metrics,

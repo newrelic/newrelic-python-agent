@@ -9,7 +9,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
 from testing_support.settings import mysql_settings
 
 from newrelic.agent import (background_task, current_transaction,
-    transient_function_wrapper)
+    transient_function_wrapper, set_background_task)
 
 from newrelic.common.object_wrapper import resolve_path
 
@@ -27,9 +27,9 @@ _test_execute_via_cursor_scoped_metrics = [
 
 _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/all', 12),
-        ('Datastore/allOther', 12),
+        ('Datastore/allWeb', 12),
         ('Datastore/MySQL/all', 12),
-        ('Datastore/MySQL/allOther', 12),
+        ('Datastore/MySQL/allWeb', 12),
         ('Datastore/operation/MySQL/select', 2),
         ('Datastore/statement/MySQL/datastore_oursql/select', 2),
         ('Datastore/operation/MySQL/insert', 1),
@@ -45,10 +45,12 @@ _test_execute_via_cursor_rollup_metrics = [
 @validate_transaction_metrics('test_database:test_execute_via_cursor',
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
         rollup_metrics=_test_execute_via_cursor_rollup_metrics,
-        background_task=True)
+        background_task=False)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_execute_via_cursor():
+    set_background_task(False)
+
     connection = oursql.connect(db=DB_SETTINGS['name'],
             user=DB_SETTINGS['user'], passwd=DB_SETTINGS['password'],
             host=DB_SETTINGS['host'], port=DB_SETTINGS['port'])
@@ -91,19 +93,21 @@ _test_rollback_on_exception_scoped_metrics = [
 
 _test_rollback_on_exception_rollup_metrics = [
         ('Datastore/all', 2),
-        ('Datastore/allOther', 2),
+        ('Datastore/allWeb', 2),
         ('Datastore/MySQL/all', 2),
-        ('Datastore/MySQL/allOther', 2),
+        ('Datastore/MySQL/allWeb', 2),
         ('Datastore/operation/MySQL/other', 1),
         ('Datastore/statement/MySQL/other/other', 1)]
 
 @validate_transaction_metrics('test_database:test_rollback_on_exception',
         scoped_metrics=_test_rollback_on_exception_scoped_metrics,
         rollup_metrics=_test_rollback_on_exception_rollup_metrics,
-        background_task=True)
+        background_task=False)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_rollback_on_exception():
+    set_background_task(False)
+
     try:
         connection = oursql.connect(db=DB_SETTINGS['name'],
                 user=DB_SETTINGS['user'], passwd=DB_SETTINGS['password'],

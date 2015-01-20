@@ -216,22 +216,29 @@ class DatabaseNode(_DatabaseNode):
                 execute_params=self.execute_params)
 
     def trace_node(self, stats, root, connections):
+        settings = global_settings()
 
-        operation = self.operation
+        product = self.product
+        operation = self.operation or 'other'
+        target = self.target
 
-        # TODO Verify that these are the correct names to use.
-        # Could possibly cache this if necessary.
-
-        if operation in ('select', 'update', 'insert', 'delete'):
-            target = self.target
+        if 'database.instrumentation.r2' in settings.feature_flag:
             if target:
-                name = 'Database/%s/%s' % (target, operation)
+                name = 'Datastore/statement/%s/%s/%s' % (product, target,
+                        operation)
             else:
-                name = 'Database/%s' % operation
-        elif operation in ('show',):
-            name = 'Database/%s' % operation
+                name = 'Datastore/operation/%s/%s' % (product, operation)
+
         else:
-            name = 'Database/other/sql'
+            if operation in ('select', 'update', 'insert', 'delete'):
+                if target:
+                    name = 'Database/%s/%s' % (target, operation)
+                else:
+                    name = 'Database/%s' % operation
+            elif operation in ('show',):
+                name = 'Database/%s' % operation
+            else:
+                name = 'Database/other/sql'
 
         name = root.string_table.cache(name)
 

@@ -129,85 +129,48 @@ class DatabaseNode(_DatabaseNode):
 
         """
 
+        product = self.product
+        operation = self.operation or 'other'
+        target = self.target
+
         yield TimeMetric(name='Datastore/all', scope='',
                 duration=self.duration, exclusive=self.exclusive)
 
-        yield TimeMetric(name='Datastore/%s/all' % self.product, scope='',
+        yield TimeMetric(name='Datastore/%s/all' % product, scope='',
                 duration=self.duration, exclusive=self.exclusive)
 
         if root.type == 'WebTransaction':
             yield TimeMetric(name='Datastore/allWeb', scope='',
                     duration=self.duration, exclusive=self.exclusive)
 
-            yield TimeMetric(name='Datastore/%s/allWeb' % self.product,
+            yield TimeMetric(name='Datastore/%s/allWeb' % product,
                     scope='', duration=self.duration,
                     exclusive=self.exclusive)
         else:
             yield TimeMetric(name='Datastore/allOther', scope='',
                     duration=self.duration, exclusive=self.exclusive)
 
-            yield TimeMetric(name='Datastore/%s/allOther' % self.product,
+            yield TimeMetric(name='Datastore/%s/allOther' % product,
                     scope='', duration=self.duration,
                     exclusive=self.exclusive)
 
-        # FIXME The follow is what PHP agent was doing, but it may
-        # not sync up with what is now actually required. As example,
-        # the 'show' operation in PHP agent doesn't generate a full
-        # path with a table name, yet get_table() in SQL parser
-        # does appear to generate one. Also, the SQL parser has
-        # special cases for 'set', 'create' and 'call' as well.
-
-        operation = self.operation
-
-        if operation in ('select', 'update', 'insert', 'delete'):
-            target = self.target
-
-            if target:
-                name = 'Datastore/statement/%s/%s/%s' % (self.product,
-                        self.target, operation)
-
-                yield TimeMetric(name=name, scope='', duration=self.duration,
-                        exclusive=self.exclusive)
-
-                yield TimeMetric(name=name, scope=root.path,
-                    duration=self.duration, exclusive=self.exclusive)
-
-            name = 'Datastore/operation/%s/%s' % (self.product, operation)
-
-            yield TimeMetric(name=name, scope='', duration=self.duration,
-                    exclusive=self.exclusive)
-
-            # We are not generating instance metrics at this time.
-
-            #instance = self.instance
-
-            #if instance is not None:
-            #    name = 'Datastore/instance/%s/%s/%s' % (self.product,
-            #            instance, target or 'other')
-
-            #    yield TimeMetric(name=name, scope='', duration=self.duration,
-            #            exclusive=self.exclusive)
-
-        elif operation in ('show',):
-            name = 'Datastore/operation/%s/%s' % (self.product, operation)
+        if target:
+            name = 'Datastore/statement/%s/%s/%s' % (product,
+                    self.target, operation)
 
             yield TimeMetric(name=name, scope='', duration=self.duration,
                     exclusive=self.exclusive)
 
             yield TimeMetric(name=name, scope=root.path,
-                    duration=self.duration, exclusive=self.exclusive)
+                duration=self.duration, exclusive=self.exclusive)
 
-        else:
-            yield TimeMetric(name='Datastore/operation/%s/other' % (
-                    self.product), scope='', duration=self.duration,
-                    exclusive=self.exclusive)
+        name = 'Datastore/operation/%s/%s' % (product, operation)
 
-            yield TimeMetric(name='Datastore/statement/%s/other/other' % (
-                    self.product), scope='', duration=self.duration,
-                    exclusive=self.exclusive)
+        yield TimeMetric(name=name, scope='', duration=self.duration,
+                exclusive=self.exclusive)
 
-            yield TimeMetric(name='Datastore/statement/%s/other/other' % (
-                    self.product), scope=root.path,
+        if not target:
+            yield TimeMetric(name=name, scope=root.path,
                     duration=self.duration, exclusive=self.exclusive)
 
     def time_metrics(self, stats, root, parent):

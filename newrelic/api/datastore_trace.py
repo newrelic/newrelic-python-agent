@@ -72,7 +72,7 @@ def DatastoreTraceWrapper(wrapped, product, target, operation):
     return FunctionWrapper(wrapped, _nr_datastore_trace_wrapper_)
 
 def datastore_trace(product, target, operation):
-    return functools.partial(DatabaseTraceWrapper, product=product,
+    return functools.partial(DatastoreTraceWrapper, product=product,
             target=target, operation=operation)
 
 def wrap_datastore_trace(module, object_path, product, target, operation):

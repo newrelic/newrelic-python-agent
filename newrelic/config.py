@@ -1974,6 +1974,9 @@ def _process_module_builtin_defaults():
         _process_module_definition('redis.connection',
                 'newrelic.hooks.datastore_redis',
                 'instrument_redis_connection')
+        _process_module_definition('redis.client',
+                'newrelic.hooks.datastore_redis',
+                'instrument_redis_client')
 
     else:
         _process_module_definition('redis.connection',

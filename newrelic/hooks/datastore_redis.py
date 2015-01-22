@@ -1,4 +1,5 @@
-from newrelic.agent import wrap_datastore_trace
+from newrelic.agent import (wrap_datastore_trace, wrap_function_wrapper,
+        current_transaction, DatastoreTrace)
 
 _methods_1 = ['bgrewriteaof', 'bgsave', 'client_kill', 'client_list',
     'client_getname', 'client_setname', 'config_get', 'config_set',
@@ -32,6 +33,9 @@ _methods_1 = ['bgrewriteaof', 'bgsave', 'client_kill', 'client_list',
 _methods_2 = ['setex', 'lrem', 'zadd']
 
 def instrument_redis_client(module):
+    # This way of instrumenting Redis is not being used. See the lower
+    # level wrapping of Connection class in instrument_redis_connection().
+
     if hasattr(module, 'StrictRedis'):
         for method in _methods_1:
             if hasattr(module.StrictRedis, method):
@@ -47,3 +51,29 @@ def instrument_redis_client(module):
         if hasattr(module.Redis, method):
             wrap_datastore_trace(module, 'Redis.%s' % method,
                     product='Redis', target=None, operation=method)
+
+_multi_part_commands = set(['CLIENT', 'CLUSTER', 'COMMAND', 'CONFIG',
+    'DEBUG', 'SENTINEL', 'SLOWLOG', 'SCRIPT'])
+
+def _nr_Connection_send_command_wrapper_(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+
+    if transaction is None or not args:
+        return wrapped(*args, **kwargs)
+
+    operation = args[0].strip().upper()
+
+    # Older Redis clients would when sending multi part commands pass
+    # them in as separate arguments to send_command(). Need to therefore
+    # detect those and grab the next argument from the set of arguments.
+
+    if operation in _multi_part_commands and len(args) > 1:
+        operation = '%s %s' % (operation, args[1].strip().upper())
+
+    with DatastoreTrace(transaction, product='Redis', target=None,
+            operation=operation):
+        return wrapped(*args, **kwargs)
+
+def instrument_redis_connection(module):
+    wrap_function_wrapper(module, 'Connection.send_command',
+            _nr_Connection_send_command_wrapper_)

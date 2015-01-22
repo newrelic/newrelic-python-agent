@@ -1971,9 +1971,9 @@ def _process_module_builtin_defaults():
                 'instrument_pymongo_collection')
 
     if 'redis.instrumentation.r2' in _settings.feature_flag:
-        _process_module_definition('redis.client',
+        _process_module_definition('redis.connection',
                 'newrelic.hooks.datastore_redis',
-                'instrument_redis_client')
+                'instrument_redis_connection')
 
     else:
         _process_module_definition('redis.connection',

@@ -54,6 +54,7 @@ _FEATURE_FLAGS = set([
     'database.instrumentation.r2',
     'pymongo.instrumentation.r2',
     'redis.instrumentation.r2',
+    'memcache.instrumentation.r2',
 ])
 
 # Names of configuration file and deployment environment. This
@@ -1878,14 +1879,32 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.database_sqlite',
             'instrument_sqlite3_dbapi2')
 
-    _process_module_definition('memcache',
-            'newrelic.hooks.memcache_memcache')
-    _process_module_definition('pylibmc',
-            'newrelic.hooks.memcache_pylibmc')
-    _process_module_definition('umemcache',
-            'newrelic.hooks.memcache_umemcache')
-    _process_module_definition('bmemcached',
-            'newrelic.hooks.memcache_memcache')
+
+    if 'memcache.instrumentation.r2' in _settings.feature_flag:
+        _process_module_definition('memcache',
+                'newrelic.hooks.datastore_memcache',
+                'instrument_memcache')
+        _process_module_definition('umemcache',
+                'newrelic.hooks.datastore_umemcache',
+                'instrument_umemcache')
+        _process_module_definition('pylibmc.client',
+                'newrelic.hooks.datastore_pylibmc',
+                'instrument_pylibmc_client')
+        _process_module_definition('bmemcached.client',
+                'newrelic.hooks.datastore_bmemcached',
+                'instrument_bmemcached_client')
+        _process_module_definition('pymemcache.client',
+                'newrelic.hooks.datastore_pymemcache',
+                'instrument_pymemcache_client')
+    else:
+        _process_module_definition('memcache',
+                'newrelic.hooks.memcache_memcache')
+        _process_module_definition('umemcache',
+                'newrelic.hooks.memcache_umemcache')
+        _process_module_definition('pylibmc',
+                'newrelic.hooks.memcache_pylibmc')
+        _process_module_definition('bmemcached',
+                'newrelic.hooks.memcache_memcache')
 
     _process_module_definition('jinja2.environment',
             'newrelic.hooks.template_jinja2')

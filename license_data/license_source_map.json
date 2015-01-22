@@ -1127,6 +1127,30 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/datastore_bmemcached.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/datastore_memcache.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/datastore_pylibmc.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/datastore_pymemcache.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/datastore_pymongo.py": {
         "hash": "n/a",
         "libraries": [
@@ -1134,6 +1158,12 @@
         ]
     },
     "newrelic/hooks/datastore_redis.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/datastore_umemcache.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

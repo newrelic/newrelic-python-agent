@@ -102,13 +102,16 @@ class TestCase(unittest.TestCase):
         key = xor_cipher_genkey('0123456789')
 
         result = xor_cipher_decrypt_base64(b'', key)
-        self.assertTrue(result is u'')
+        self.assertEqual(result, u'')
+        self.assertEqual(type(result), type(u''))
 
         result = xor_cipher_decrypt_base64('', key)
-        self.assertTrue(result is u'')
+        self.assertEqual(result, u'')
+        self.assertEqual(type(result), type(u''))
 
         result = xor_cipher_decrypt_base64(u'', key)
-        self.assertTrue(result is u'')
+        self.assertEqual(result, u'')
+        self.assertEqual(type(result), type(u''))
 
     def test_xor_cipher_encrypt_base64_same_length_as_key(self):
         key = xor_cipher_genkey('0123456789')

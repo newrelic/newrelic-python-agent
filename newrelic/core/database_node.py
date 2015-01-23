@@ -176,10 +176,10 @@ class DatabaseNode(_DatabaseNode):
     def time_metrics(self, stats, root, parent):
         settings = global_settings()
 
-        if 'database.instrumentation.r2' in settings.feature_flag:
-            return self.time_metrics_r2(stats, root, parent)
-        
-        return self.time_metrics_r1(stats, root, parent)
+        if 'database.instrumentation.r1' in settings.feature_flag:
+            return self.time_metrics_r1(stats, root, parent)
+
+        return self.time_metrics_r2(stats, root, parent)
 
     def slow_sql_node(self, stats, root):
         settings = global_settings()
@@ -188,14 +188,7 @@ class DatabaseNode(_DatabaseNode):
         operation = self.operation or 'other'
         target = self.target
 
-        if 'database.instrumentation.r2' in settings.feature_flag:
-            if target:
-                name = 'Datastore/statement/%s/%s/%s' % (product, target,
-                        operation)
-            else:
-                name = 'Datastore/operation/%s/%s' % (product, operation)
-
-        else:
+        if 'database.instrumentation.r1' in settings.feature_flag:
             if operation in ('select', 'update', 'insert', 'delete'):
                 if target:
                     name = 'Database/%s/%s' % (target, operation)
@@ -205,6 +198,12 @@ class DatabaseNode(_DatabaseNode):
                 name = 'Database/%s' % operation
             else:
                 name = 'Database/other/sql'
+        else:
+            if target:
+                name = 'Datastore/statement/%s/%s/%s' % (product, target,
+                        operation)
+            else:
+                name = 'Datastore/operation/%s/%s' % (product, operation)
 
         request_uri = ''
         if root.type == 'WebTransaction':
@@ -232,14 +231,7 @@ class DatabaseNode(_DatabaseNode):
         operation = self.operation or 'other'
         target = self.target
 
-        if 'database.instrumentation.r2' in settings.feature_flag:
-            if target:
-                name = 'Datastore/statement/%s/%s/%s' % (product, target,
-                        operation)
-            else:
-                name = 'Datastore/operation/%s/%s' % (product, operation)
-
-        else:
+        if 'database.instrumentation.r1' in settings.feature_flag:
             if operation in ('select', 'update', 'insert', 'delete'):
                 if target:
                     name = 'Database/%s/%s' % (target, operation)
@@ -249,6 +241,12 @@ class DatabaseNode(_DatabaseNode):
                 name = 'Database/%s' % operation
             else:
                 name = 'Database/other/sql'
+        else:
+            if target:
+                name = 'Datastore/statement/%s/%s/%s' % (product, target,
+                        operation)
+            else:
+                name = 'Datastore/operation/%s/%s' % (product, operation)
 
         name = root.string_table.cache(name)
 

@@ -51,10 +51,8 @@ _FEATURE_FLAGS = set([
     'tornado.instrumentation.r1',
     'tornado.instrumentation.r2',
     'django.instrumentation.inclusion-tags.r1',
+    'database.instrumentation.r1',
     'database.instrumentation.r2',
-    'pymongo.instrumentation.r2',
-    'redis.instrumentation.r2',
-    'memcache.instrumentation.r2',
 ])
 
 # Names of configuration file and deployment environment. This
@@ -1880,7 +1878,16 @@ def _process_module_builtin_defaults():
             'instrument_sqlite3_dbapi2')
 
 
-    if 'memcache.instrumentation.r2' in _settings.feature_flag:
+    if 'database.instrumentation.r1' in _settings.feature_flag:
+        _process_module_definition('memcache',
+                'newrelic.hooks.memcache_memcache')
+        _process_module_definition('umemcache',
+                'newrelic.hooks.memcache_umemcache')
+        _process_module_definition('pylibmc',
+                'newrelic.hooks.memcache_pylibmc')
+        _process_module_definition('bmemcached',
+                'newrelic.hooks.memcache_memcache')
+    else:
         _process_module_definition('memcache',
                 'newrelic.hooks.datastore_memcache',
                 'instrument_memcache')
@@ -1896,15 +1903,6 @@ def _process_module_builtin_defaults():
         _process_module_definition('pymemcache.client',
                 'newrelic.hooks.datastore_pymemcache',
                 'instrument_pymemcache_client')
-    else:
-        _process_module_definition('memcache',
-                'newrelic.hooks.memcache_memcache')
-        _process_module_definition('umemcache',
-                'newrelic.hooks.memcache_umemcache')
-        _process_module_definition('pylibmc',
-                'newrelic.hooks.memcache_pylibmc')
-        _process_module_definition('bmemcached',
-                'newrelic.hooks.memcache_memcache')
 
     _process_module_definition('jinja2.environment',
             'newrelic.hooks.template_jinja2')
@@ -1970,7 +1968,14 @@ def _process_module_builtin_defaults():
     _process_module_definition('solr',
             'newrelic.hooks.solr_solrpy')
 
-    if 'pymongo.instrumentation.r2' in _settings.feature_flag:
+    if 'database.instrumentation.r1' in _settings.feature_flag:
+        _process_module_definition('pymongo.connection',
+                'newrelic.hooks.nosql_pymongo',
+                'instrument_pymongo_connection')
+        _process_module_definition('pymongo.collection',
+                'newrelic.hooks.nosql_pymongo',
+                'instrument_pymongo_collection')
+    else:
         _process_module_definition('pymongo.connection',
                 'newrelic.hooks.datastore_pymongo',
                 'instrument_pymongo_connection')
@@ -1981,28 +1986,19 @@ def _process_module_builtin_defaults():
                 'newrelic.hooks.datastore_pymongo',
                 'instrument_pymongo_collection')
 
-    else:
-        _process_module_definition('pymongo.connection',
-                'newrelic.hooks.nosql_pymongo',
-                'instrument_pymongo_connection')
-        _process_module_definition('pymongo.collection',
-                'newrelic.hooks.nosql_pymongo',
-                'instrument_pymongo_collection')
-
-    if 'redis.instrumentation.r2' in _settings.feature_flag:
+    if 'database.instrumentation.r1' in _settings.feature_flag:
         _process_module_definition('redis.connection',
-                'newrelic.hooks.datastore_redis',
+                'newrelic.hooks.nosql_redis',
                 'instrument_redis_connection')
         _process_module_definition('redis.client',
-                'newrelic.hooks.datastore_redis',
+                'newrelic.hooks.nosql_redis',
                 'instrument_redis_client')
-
     else:
         _process_module_definition('redis.connection',
-                'newrelic.hooks.nosql_redis',
+                'newrelic.hooks.datastore_redis',
                 'instrument_redis_connection')
         _process_module_definition('redis.client',
-                'newrelic.hooks.nosql_redis',
+                'newrelic.hooks.datastore_redis',
                 'instrument_redis_client')
 
     _process_module_definition('piston.resource',

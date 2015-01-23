@@ -88,13 +88,13 @@ class ConnectionFactory(ObjectProxy):
 
         settings = global_settings()
 
-        if 'database.instrumentation.r2' in settings.feature_flag:
+        if 'database.instrumentation.r1' in settings.feature_flag:
+            rollup = 'Database/all'
+        else:
             rollup = []
             rollup.append('Datastore/all')
             rollup.append('Datastore/%s/all' %
                     self._nr_dbapi2_module._nr_database_name)
-        else:
-            rollup = 'Database/all'
 
         with FunctionTrace(transaction, callable_name(self.__wrapped__),
                 terminal=True, rollup=rollup):

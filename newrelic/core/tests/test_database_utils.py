@@ -871,11 +871,11 @@ class TestDatabase(unittest.TestCase):
     #        actual_result = statement.target, statement.operation
     #        self.assertEqual(expected_result, actual_result)
 
-    def test_parse_show_tests(self):
-        for expected_result, sql in SHOW_PARSE_TESTS:
-            statement = SQLStatement(sql, DUMMY_DATABASE)
-            actual_result = statement.target, statement.operation
-            self.assertEqual(expected_result, actual_result)
+    #def test_parse_show_tests(self):
+    #    for expected_result, sql in SHOW_PARSE_TESTS:
+    #        statement = SQLStatement(sql, DUMMY_DATABASE)
+    #        actual_result = statement.target, statement.operation
+    #        self.assertEqual(expected_result, actual_result)
 
     #def test_parse_set_tests(self):
     #    for expected_result, sql in SET_PARSE_TESTS:

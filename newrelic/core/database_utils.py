@@ -313,6 +313,13 @@ _parse_alter_re = re.compile(_parse_alter_p, re.IGNORECASE)
 def _parse_alter(sql):
     return _parse_default(sql, _parse_alter_re)
 
+# For SQL queries, if a target of some sort, such as a table can be
+# meaningfully extracted, then this table should map to the function
+# which extracts it. If no target can be extracted, but it is still
+# desired that the operation be broken out separately with new Datastore
+# metrics, then the operation should still be added, but with the value
+# being set to None.
+
 _operation_table = {
     'select': _parse_select,
     'delete': _parse_delete,
@@ -321,7 +328,8 @@ _operation_table = {
     #'create': _parse_create,
     #'drop': _parse_drop,
     #'call': _parse_call,
-    'show': _parse_show,
+    #'show': _parse_show,
+    'show': None,
     #'set': _parse_set,
     #'exec': _parse_exec,
     #'execute': _parse_execute,

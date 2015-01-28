@@ -23,13 +23,14 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Datastore/statement/MySQL/datastore_mysqldb/insert', 1),
         ('Datastore/statement/MySQL/datastore_mysqldb/update', 1),
         ('Datastore/statement/MySQL/datastore_mysqldb/delete', 1),
+        ('Datastore/operation/MySQL/show', 1),
         ('Datastore/operation/MySQL/other', 6)]
 
 _test_execute_via_cursor_rollup_metrics = [
-        ('Datastore/all', 11),
-        ('Datastore/allOther', 11),
-        ('Datastore/MySQL/all', 11),
-        ('Datastore/MySQL/allOther', 11),
+        ('Datastore/all', 12),
+        ('Datastore/allOther', 12),
+        ('Datastore/MySQL/all', 12),
+        ('Datastore/MySQL/allOther', 12),
         ('Datastore/operation/MySQL/select', 1),
         ('Datastore/statement/MySQL/datastore_mysqldb/select', 1),
         ('Datastore/operation/MySQL/insert', 1),
@@ -38,6 +39,7 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/statement/MySQL/datastore_mysqldb/update', 1),
         ('Datastore/operation/MySQL/delete', 1),
         ('Datastore/statement/MySQL/datastore_mysqldb/delete', 1),
+        ('Datastore/operation/MySQL/show', 1),
         ('Datastore/operation/MySQL/other', 6)]
 
 @validate_transaction_metrics('test_database:test_execute_via_cursor',
@@ -70,6 +72,8 @@ def test_execute_via_cursor():
 
         cursor.execute("""delete from datastore_mysqldb where a=2""")
 
+        cursor.execute("""show authors""")
+
     connection.commit()
     connection.rollback()
     connection.commit()
@@ -80,13 +84,14 @@ _test_connect_using_alias_scoped_metrics = [
         ('Datastore/statement/MySQL/datastore_mysqldb/insert', 1),
         ('Datastore/statement/MySQL/datastore_mysqldb/update', 1),
         ('Datastore/statement/MySQL/datastore_mysqldb/delete', 1),
+        ('Datastore/operation/MySQL/show', 1),
         ('Datastore/operation/MySQL/other', 6)]
 
 _test_connect_using_alias_rollup_metrics = [
-        ('Datastore/all', 11),
-        ('Datastore/allOther', 11),
-        ('Datastore/MySQL/all', 11),
-        ('Datastore/MySQL/allOther', 11),
+        ('Datastore/all', 12),
+        ('Datastore/allOther', 12),
+        ('Datastore/MySQL/all', 12),
+        ('Datastore/MySQL/allOther', 12),
         ('Datastore/operation/MySQL/select', 1),
         ('Datastore/statement/MySQL/datastore_mysqldb/select', 1),
         ('Datastore/operation/MySQL/insert', 1),
@@ -95,6 +100,7 @@ _test_connect_using_alias_rollup_metrics = [
         ('Datastore/statement/MySQL/datastore_mysqldb/update', 1),
         ('Datastore/operation/MySQL/delete', 1),
         ('Datastore/statement/MySQL/datastore_mysqldb/delete', 1),
+        ('Datastore/operation/MySQL/show', 1),
         ('Datastore/operation/MySQL/other', 6)]
 
 @validate_transaction_metrics('test_database:test_connect_using_alias',
@@ -126,6 +132,8 @@ def test_connect_using_alias():
                 """c=%s where a=%s""", (4, 4.0, '4.0', 1))
 
         cursor.execute("""delete from datastore_mysqldb where a=2""")
+
+        cursor.execute("""show authors""")
 
     connection.commit()
     connection.rollback()

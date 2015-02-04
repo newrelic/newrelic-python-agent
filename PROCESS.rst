@@ -12,7 +12,8 @@ The agent version is keyed off the version attribute in the file::
 
     newrelic/__init__.py
 
-The agent uses a version number consisting of 4 digits. These represent:
+The agent uses a version number consisting of 4 digits in the form
+``A.B.C.D``. These represent:
 
 * Major version number.
 * Minor version number.
@@ -20,8 +21,8 @@ The agent uses a version number consisting of 4 digits. These represent:
 * Build number.
 
 When setting the version attribute in the ``newrelic/__init__.py`` file
-the string should only list the first three number components. The build
-number will be automatically substituted.
+the string should only list the first three number components. That is,
+``A.B.C``. The build number will be automatically substituted.
 
 In the case of working on a local development box the build number will
 always be ``0``. For a build performed from Jenkins it will be set to the
@@ -54,12 +55,12 @@ when providing versions to customers.
 Building a Release Package
 --------------------------
 
-To build the Python agent for release it is necessary to use script::
+To build the Python agent for release it is necessary to use the script::
 
     build.sh
 
 The script expects to be able to find the ``python`` executable in your
-PATH or that of the Jenkins user when this script is executed on the
+``PATH`` or that of the Jenkins user when this script is executed on the
 Jenkins build slaves.
 
 The result of running this script will be a tar ball placed in the ``dist``
@@ -67,7 +68,7 @@ sub directory. It will be named with the form::
 
     newrelic-A.B.C.D.tar.gz
 
-The ``A.B.C`` component of version will come from the version number
+The ``A.B.C`` component of the version will come from the version string
 defined in the ``newrelic/__init__.py`` file. These correspond to the
 major, minor and patch level revision numbers as explained above.
 
@@ -95,22 +96,22 @@ Although the ``build.sh`` script can be run on a local development system,
 only tar balls produced by the Jenkins build jobs should ever be handed
 out to customers. The two relevant Jenkins build jobs are:
 
-* https://pdx-hudson.datanerd.us/view/Python/job/Python_Agent-MASTER/label=build-ubuntu1004-32/
+* https://pdx-hudson.datanerd.us/view/Python/job/Python_Agent-MASTER
 
     This is used to produce the tar ball for an official release.
 
-* https://pdx-hudson.datanerd.us/view/Python/job/Python_Agent-DEVELOP/label=build-ubuntu1004-32/
+* https://pdx-hudson.datanerd.us/view/Python/job/Python_Agent-DEVELOP
 
     This is used to produce the tar balls for development versions. These
     are internal versions and would not normally be handed out to customers
-    except in approved circumstance where need a customer to test a change
-    before an official release is made.
+    except in approved circumstance where a customer is needed to test a
+    change before an official release can be made.
 
 Downloadable Releases
 ---------------------
 
 Official releases are made available via the Python Package Index (PyPi).
-the page for the New Relic Python agent is:
+The page for the New Relic Python agent is:
 
 * https://pypi.python.org/pypi/newrelic
 
@@ -123,7 +124,7 @@ Details for obtaining access to our account on PyPi can be found at:
 
 * https://newrelic.atlassian.net/wiki/display/eng/Python+Agent+Managing+The+Package+Index
 
-In cases where is is necessary to provide a test version to a customer prior
+In cases where it is necessary to provide a test version to a customer prior
 to an official release, these would generally be made available via:
 
 * http://download.newrelic.com/python_agent/testing/
@@ -142,7 +143,7 @@ With our odd/even numbering scheme, this means you should be incrementing
 the ``B`` component of the ``A.B.C`` version number from the odd number
 used during development to the even number used for the release.
 
-2. Run locally ``./build.sh`` to force licence validation script to be
+2. Run locally ``./build.sh`` to force the licence validation script to be
 run and ensure package builds.
 
 3. Run locally ``./tests.sh`` to ensure that all base level unit tests pass.
@@ -156,18 +157,20 @@ branch.
 ``vA.B.C``.
 
 With our odd/even numbering scheme, ``B`` should always be even. This string
-will become the final tag git-flow will add when finishing the release.
+will become the final tag ``git-flow`` will add when finishing the release.
 
 7. If necessary, push release branch back to github for further testing by
-the rest of the Python agent team.
+the rest of the Python agent team. Wait for confirmation before proceeding
+if such testing is required.
 
 8. Follow ``git-glow`` procedure to finish the release branch.
 
-9. Switch back to the ``develop`` branch and perform a merged from
-``master`` into the ``develop`` branch.
+9. Switch back to the ``develop`` branch and perform a merge from
+``master`` back into the ``develop`` branch.
 
 This is to synchronize the two branches so git doesn't keep tracking them
-as completely parallel paths of development.
+as completely parallel paths of development with consequent strange results
+when trying to compare branches.
 
 10. In the ``develop`` branch, increment the version number in
 ``newrelic/__init__.py`` to be that of next development release number.
@@ -200,8 +203,8 @@ hosts used by ``download.newrelic.com``. Generate a file in the same
 directory for the download with an ``.md5`` extension which contains the MD5
 hash of the package.
 
-For more details on working the the New Relic download site and transferring
-files across see:
+For more details on working with the New Relic download site and
+transferring files across see:
 
 * https://newrelic.atlassian.net/wiki/display/eng/Python+Agent+Managing+The+Download+Site 
 
@@ -216,19 +219,19 @@ are also at least three places where the version number must be updated in
 the page.
 
 If preparing in advance and don't know the full version number, use ``X``
-for the last number. When you go to release you should change as instances
-of ``X`` and *ALSO* reset the date/time for the release else it will show
+for the last number. When you go to release you should change all instances
+of ``X`` and **ALSO** reset the date/time for the release else it will show
 the date/time for the old page.
 
 When renaming ``X`` and saving page, in a separate window check that you
 can get to the page in question. If it goes into a redirect loop then you
 need to go into the page and find 'Url Redirects' down the bottom of page
-and delete and bogus URL redirects. This may only be an issue if you
+and delete any bogus URL redirects. This may only be an issue if you
 accidentally publish the page with ``X`` and rename afterwards, so make sure
 the ``X`` is changed before publishing. Either way, perhaps check there are
-no redirects as they shouldn't been needed on new page.
+no redirects as they shouldn't be needed on new page.
 
-Note that in publishing page and saying that it is ready for publication
+Note that publishing the page by saying that it is ready for publication
 will make it public straight away, there is no review process.
 
 18. Update the ``python_agent_version`` configuration to ``A.B.C.D`` in APM

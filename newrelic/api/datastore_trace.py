@@ -1,14 +1,11 @@
-import types
+import functools
 
-import newrelic.core.datastore_node
+from .time_trace import TimeTrace
+from .transaction import current_transaction
+from ..core.datastore_node import DatastoreNode
+from ..common.object_wrapper import FunctionWrapper, wrap_object
 
-import newrelic.api.transaction
-import newrelic.api.time_trace
-import newrelic.api.object_wrapper
-
-class DatastoreTrace(newrelic.api.time_trace.TimeTrace):
-
-    node = newrelic.core.datastore_node.DatastoreNode
+class DatastoreTrace(TimeTrace):
 
     def __init__(self, transaction, product, target, operation):
 
@@ -29,7 +26,7 @@ class DatastoreTrace(newrelic.api.time_trace.TimeTrace):
                 operation=self.operation))
 
     def create_node(self):
-        return self.node(product=self.product, target=self.target,
+        return DatastoreNode(product=self.product, target=self.target,
                 operation=self.operation, children=self.children,
                 start_time=self.start_time, end_time=self.end_time,
                 duration=self.duration, exclusive=self.exclusive)
@@ -37,53 +34,47 @@ class DatastoreTrace(newrelic.api.time_trace.TimeTrace):
     def terminal_node(self):
         return True
 
-class DatastoreTraceWrapper(object):
+def DatastoreTraceWrapper(wrapped, product, target, operation):
 
-    def __init__(self, wrapped, product, target, operation):
-        if isinstance(wrapped, tuple):
-            (instance, wrapped) = wrapped
-        else:
-            instance = None
+    def _nr_datastore_trace_wrapper_(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
 
-        newrelic.api.object_wrapper.update_wrapper(self, wrapped)
+        if transaction is None:
+            return wrapped(*args, **kwargs)
 
-        self._nr_instance = instance
-        self._nr_next_object = wrapped
-
-        if not hasattr(self, '_nr_last_object'):
-            self._nr_last_object = wrapped
-
-        self._nr_product = product
-        self._nr_target = target
-        self._nr_operation = operation
-
-    def __get__(self, instance, klass):
-        if instance is None:
-            return self
-        descriptor = self._nr_next_object.__get__(instance, klass)
-        return self.__class__((instance, descriptor), self._nr_product,
-                              self._nr_target, self._nr_operation)
-
-    def __call__(self, *args, **kwargs):
-        transaction = newrelic.api.transaction.current_transaction()
-        if not transaction:
-            return self._nr_next_object(*args, **kwargs)
-
-        if callable(self._nr_target):
-            if self._nr_instance is not None:
-                _target = self._nr_target(self._nr_instance, *args, **kwargs)
+        if callable(product):
+            if instance is not None:
+                _product = product(instance, *args, **kwargs)
             else:
-                _target = self._nr_target(*args, **kwargs)
+                _product = product(*args, **kwargs)
+        else:
+            _product = product
 
-        with DatastoreTrace(transaction, self._nr_product, _target,
-                self._nr_operation):
-            return self._nr_next_object(*args, **kwargs)
+        if callable(target):
+            if instance is not None:
+                _target = target(instance, *args, **kwargs)
+            else:
+                _target = target(*args, **kwargs)
+        else:
+            _target = target
+
+        if callable(operation):
+            if instance is not None:
+                _operation = operation(instance, *args, **kwargs)
+            else:
+                _operation = operation(*args, **kwargs)
+        else:
+            _operation = operation
+
+        with DatastoreTrace(transaction, _product, _target, _operation):
+            return wrapped(*args, **kwargs)
+
+    return FunctionWrapper(wrapped, _nr_datastore_trace_wrapper_)
 
 def datastore_trace(product, target, operation):
-    def decorator(wrapped):
-        return DatastoreTraceWrapper(wrapped, product, target, operation)
-    return decorator
+    return functools.partial(DatastoreTraceWrapper, product=product,
+            target=target, operation=operation)
 
 def wrap_datastore_trace(module, object_path, product, target, operation):
-    newrelic.api.object_wrapper.wrap_object(module, object_path,
-            DatastoreTraceWrapper, (product, target, operation))
+    wrap_object(module, object_path, DatastoreTraceWrapper,
+            (product, target, operation))

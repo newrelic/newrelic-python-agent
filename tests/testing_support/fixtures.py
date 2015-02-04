@@ -96,7 +96,8 @@ def fake_collector_wrapper(wrapped, instance, args, kwargs):
 
     return wrapped(*args, **kwargs)
 
-def collector_agent_registration_fixture(app_name=None, default_settings={}):
+def collector_agent_registration_fixture(app_name=None, default_settings={},
+        linked_applications=[]):
     @pytest.fixture(scope='session')
     def _collector_agent_registration_fixture(request):
         settings = global_settings()
@@ -227,6 +228,13 @@ def collector_agent_registration_fixture(app_name=None, default_settings={}):
             except Exception:
                 _logger.exception("Unable to record deployment marker.")
                 pass
+
+        # Associate linked applications.
+
+        application = application_instance()
+
+        for name in linked_applications:
+            application.link_to_application(name)
 
         # Force registration of the application.
 
@@ -514,32 +522,22 @@ def validate_database_duration():
                 database_all_duration = database_all.total_call_time
                 database_all_call_count = database_all.call_count
 
-            # Sum the individual 'Datastore/<product>/all' metrics to make
-            # sure they are all included in 'databaseDuration' and
-            # 'databaseCallCount'.
-
-            datastore_products = ['MongoDB']
-
-            product_duration = 0.0
-            product_call_count = 0
-
-            for product in datastore_products:
-                try:
-                    metric_name = 'Datastore/%s/all' % product
-                    product_metric = metrics[(metric_name, '')]
-                except KeyError:
-                    pass
-                else:
-                    product_duration += product_metric.total_call_time
-                    product_call_count += product_metric.call_count
+            try:
+                datastore_all = metrics[('Datastore/all', '')]
+            except KeyError:
+                datastore_all_duration = 0.0
+                datastore_all_call_count = 0
+            else:
+                datastore_all_duration = datastore_all.total_call_time
+                datastore_all_call_count = datastore_all.call_count
 
             assert 'databaseDuration' in intrinsics
             assert 'databaseCallCount' in intrinsics
 
             assert intrinsics['databaseDuration'] == (database_all_duration +
-                    product_duration)
+                    datastore_all_duration)
             assert intrinsics['databaseCallCount'] == (database_all_call_count +
-                    product_call_count)
+                    datastore_all_call_count)
 
         return result
 

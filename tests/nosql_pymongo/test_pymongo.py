@@ -16,7 +16,6 @@ MONGODB_PORT = int(os.environ.get('MONGODB_PORT_27017_TCP_PORT', MONGODB_PORT))
 
 _test_httplib_http_request_scoped_metrics = [
         ('Function/pymongo.connection:Connection.__init__', 1),
-        ('Function/pymongo.collection:Collection.insert', 4),
         ('Function/pymongo.collection:Collection.save', 3),
         ('Function/pymongo.collection:Collection.create_index', 1),
         ('Function/pymongo.collection:Collection.find', 5),
@@ -24,7 +23,6 @@ _test_httplib_http_request_scoped_metrics = [
 
 _test_httplib_http_request_rollup_metrics = [
         ('Function/pymongo.connection:Connection.__init__', 1),
-        ('Function/pymongo.collection:Collection.insert', 4),
         ('Function/pymongo.collection:Collection.save', 3),
         ('Function/pymongo.collection:Collection.create_index', 1),
         ('Function/pymongo.collection:Collection.find', 5),

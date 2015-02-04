@@ -23,11 +23,12 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Database/database_mysqldb/insert', 1),
         ('Database/database_mysqldb/update', 1),
         ('Database/database_mysqldb/delete', 1),
+        ('Database/show', 1),
         ('Database/other/sql', 6)]
 
 _test_execute_via_cursor_rollup_metrics = [
-        ('Database/all', 11),
-        ('Database/allOther', 11),
+        ('Database/all', 12),
+        ('Database/allOther', 12),
         ('Database/select', 1),
         ('Database/database_mysqldb/select', 1),
         ('Database/insert', 1),
@@ -36,6 +37,7 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Database/database_mysqldb/update', 1),
         ('Database/delete', 1),
         ('Database/database_mysqldb/delete', 1),
+        ('Database/show', 1),
         ('Database/other', 6),
         ('Database/other/sql', 6)]
 
@@ -69,6 +71,8 @@ def test_execute_via_cursor():
 
         cursor.execute("""delete from database_mysqldb where a=2""")
 
+        cursor.execute("""show authors""")
+
     connection.commit()
     connection.rollback()
     connection.commit()
@@ -79,11 +83,12 @@ _test_connect_using_alias_scoped_metrics = [
         ('Database/database_mysqldb/insert', 1),
         ('Database/database_mysqldb/update', 1),
         ('Database/database_mysqldb/delete', 1),
+        ('Database/show', 1),
         ('Database/other/sql', 6)]
 
 _test_connect_using_alias_rollup_metrics = [
-        ('Database/all', 11),
-        ('Database/allOther', 11),
+        ('Database/all', 12),
+        ('Database/allOther', 12),
         ('Database/select', 1),
         ('Database/database_mysqldb/select', 1),
         ('Database/insert', 1),
@@ -92,6 +97,7 @@ _test_connect_using_alias_rollup_metrics = [
         ('Database/database_mysqldb/update', 1),
         ('Database/delete', 1),
         ('Database/database_mysqldb/delete', 1),
+        ('Database/show', 1),
         ('Database/other', 6),
         ('Database/other/sql', 6)]
 
@@ -124,6 +130,8 @@ def test_connect_using_alias():
                 """c=%s where a=%s""", (4, 4.0, '4.0', 1))
 
         cursor.execute("""delete from database_mysqldb where a=2""")
+
+        cursor.execute("""show authors""")
 
     connection.commit()
     connection.rollback()

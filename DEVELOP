@@ -78,18 +78,6 @@ the configure script will automatically look in the same 'bin' directory
 first so '--with-virtualenv' shouldn't usually be needed.
 
 
-Setting The Agent Version
-=========================
-
-The agent version is keyed off the version attribute in the file:
-
-    newrelic/__init__.py
-
-The final release package built as explained below will also incorporate
-the Hudson build number. If built on a local system, the build number of
-'0' will be used.
-
-
 Running The Unit Tests
 ======================
 
@@ -123,34 +111,3 @@ package.
 
 The 'tests.sh' script will be automatically run by Jenkins whenever changes
 are pushed to the GIT repository.
-
-Building A Release Package
-==========================
-
-To build the Python agent for release use the script:
-
-    build.sh
-
-The script expects to be able to find the 'python' executable in your PATH
-or that of the Hudson user when this script is executed on the Hudson build
-boxes.
-
-The result of running this script will be a tar ball placed in the 'dist'
-sub directory. It will be named with the form:
-
-    newrelic-A.B.C.D.tar.gz
-
-The 'A.B.C' component of version will come from the version number defined
-in the 'newrelic/__init__.py' file. The 'D' component of the version is the
-build number and will be '0' for local development or the Hudson build
-number when the script is run under Hudson.
-
-After creating the release package, you should verify that it can be installed
-into a Python virtual environment by running:
-
-    pip install dist/newrelic-A.B.C.D.tar.gz
-
-This is necessary as the creation of the tar ball only collects the files
-into a Python source package and doesn't actually compile any of the Python
-code files into byte code. The latter is needed as a final check to ensure
-that syntax of code it correct.

@@ -11,7 +11,8 @@ class CursorWrapper(DBAPI2CursorWrapper):
 
     def executescript(self, sql_script):
         transaction = current_transaction()
-        with DatabaseTrace(transaction, sql_script, self._nr_dbapi2_module):
+        with DatabaseTrace(transaction, sql_script, self._nr_dbapi2_module,
+                self._nr_connect_params):
             return self.__wrapped__.executescript(sql_script)
 
 class ConnectionWrapper(DBAPI2ConnectionWrapper):
@@ -38,11 +39,11 @@ class ConnectionWrapper(DBAPI2ConnectionWrapper):
         with FunctionTrace(transaction, name):
             if exc is None and value is None and tb is None:
                 with DatabaseTrace(transaction, 'COMMIT',
-                        self._nr_dbapi2_module):
+                        self._nr_dbapi2_module, self._nr_connect_params):
                     return self.__wrapped__.__exit__(exc, value, tb)
             else:
                 with DatabaseTrace(transaction, 'ROLLBACK',
-                        self._nr_dbapi2_module):
+                        self._nr_dbapi2_module, self._nr_connect_params):
                     return self.__wrapped__.__exit__(exc, value, tb)
 
     def execute(self, sql, parameters=DEFAULT):
@@ -64,15 +65,25 @@ class ConnectionWrapper(DBAPI2ConnectionWrapper):
 
     def executescript(self, sql_script):
         transaction = current_transaction()
-        with DatabaseTrace(transaction, sql_script, self._nr_dbapi2_module):
+        with DatabaseTrace(transaction, sql_script, self._nr_dbapi2_module,
+                self._nr_connect_params):
             return self.__wrapped__.executescript(sql_script)
 
 class ConnectionFactory(DBAPI2ConnectionFactory):
 
     __connection_wrapper__ = ConnectionWrapper
 
+def instance_name(args, kwargs):
+    def _bind_params(database, *args, **kwargs):
+        return database
+
+    database = _bind_params(*args, **kwargs)
+
+    return 'localhost:{%s}' % database
+
 def instrument_sqlite3_dbapi2(module):
-    register_database_client(module, 'SQLite', 'single')
+    register_database_client(module, 'SQLite', 'single',
+            instance_name=instance_name)
 
     wrap_object(module, 'connect', ConnectionFactory, (module,))
 
@@ -85,6 +96,7 @@ def instrument_sqlite3(module):
     # be applied.
 
     if not isinstance(module.connect, ConnectionFactory):
-        register_database_client(module, 'SQLite')
+        register_database_client(module, 'SQLite',
+                instance_name=instance_name)
 
         wrap_object(module, 'connect', ConnectionFactory, (module,))

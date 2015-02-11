@@ -1043,7 +1043,19 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/database_cx_oracle.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/database_dbapi2.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/database_ibm_db_dbi.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -1061,7 +1073,31 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/database_oursql.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/database_postgresql.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/database_psycopg2.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/database_psycopg2cffi.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/database_psycopg2ct.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -1073,13 +1109,61 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/database_pymysql.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/database_pyodbc.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/database_sqlite.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
         ]
     },
+    "newrelic/hooks/datastore_bmemcached.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/datastore_memcache.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/datastore_pylibmc.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/datastore_pymemcache.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/datastore_pymongo.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/datastore_redis.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/datastore_umemcache.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

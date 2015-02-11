@@ -19,9 +19,23 @@
     - tox -c tests/database_psycopg2ct/tox.ini
     - tox -c tests/database_pymysql/tox.ini
     - tox -c tests/database_sqlite/tox.ini
+    - tox -c tests/datastore_mysql/tox.ini
+    - tox -c tests/datastore_mysqldb/tox.ini
+    - tox -c tests/datastore_oursql/tox.ini
+    - tox -c tests/datastore_proboscis/tox.ini
+    - tox -c tests/datastore_postgresql/tox.ini
+    - tox -c tests/datastore_psycopg2/tox.ini
+    - tox -c tests/datastore_psycopg2cffi/tox.ini
+    - tox -c tests/datastore_psycopg2ct/tox.ini
+    - tox -c tests/datastore_pymysql/tox.ini
+    - tox -c tests/datastore_sqlite/tox.ini
     - tox -c tests/datastore_redis/tox.ini
     - tox -c tests/datastore_pymongo/tox.ini
-    - tox -c tests/nosql_pymongo/tox.ini
+    - tox -c tests/datastore_memcache/tox.ini
+    - tox -c tests/datastore_umemcache/tox.ini
+    - tox -c tests/datastore_pylibmc/tox.ini
+    - tox -c tests/datastore_bmemcached/tox.ini
+    - tox -c tests/datastore_pymemcache/tox.ini
     - tox -c tests/external_httplib/tox.ini
     - tox -c tests/external_requests/tox-0014.ini
     - tox -c tests/external_requests/tox-0102.ini
@@ -59,6 +73,8 @@
     - tox -c tests/framework_tornado/tox-0302.ini
     - tox -c tests/framework_web2py/tox-01098.ini
     - tox -c tests/memcache_memcache/tox.ini
+    - tox -c tests/nosql_redis/tox.ini
+    - tox -c tests/nosql_pymongo/tox.ini
   :python:
     :python_version: 2.7
     :pip_requirements_file: requirements.txt

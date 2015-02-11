@@ -10,10 +10,6 @@ _DatastoreNode = namedtuple('_DatastoreNode',
 
 class DatastoreNode(_DatastoreNode):
 
-    # TODO: Get final placeholder for target, when spec is final.
-    target_default = '*'
-    operation_default = 'other'
-
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
         database node as well as all the child nodes.
@@ -21,60 +17,64 @@ class DatastoreNode(_DatastoreNode):
         """
 
         product = self.product
-        target = self.target or self.target_default
-        operation = self.operation or self.operation_default
+        target = self.target
+        operation = self.operation or 'other'
 
-        # Private rollup metric. Not used by APM, but it's helpful for
-        # us to calculate databaseDuration and databaseCallCount for the
-        # Transaction Event.
+        # Rollup metrics
 
-        yield TimeMetric(name='Supportability/Datastore/all', scope='',
+        yield TimeMetric(name='Datastore/all', scope='',
                 duration=self.duration, exclusive=self.exclusive)
 
-        # Product level rollup metrics
-
-        name = 'Datastore/%s/all' % product
-
-        yield TimeMetric(name=name, scope='',
+        yield TimeMetric(name='Datastore/%s/all' % product, scope='',
                 duration=self.duration, exclusive=self.exclusive)
 
         if root.type == 'WebTransaction':
-
-            name = 'Datastore/%s/allWeb' % product
-
-            yield TimeMetric(name=name, scope='',
+            yield TimeMetric(name='Datastore/allWeb', scope='',
                     duration=self.duration, exclusive=self.exclusive)
+
+            yield TimeMetric(name='Datastore/%s/allWeb' % product, scope='',
+                    duration=self.duration, exclusive=self.exclusive)
+
         else:
-
-            name = 'Datastore/%s/allOther' % product
-
-            yield TimeMetric(name=name, scope='',
+            yield TimeMetric(name='Datastore/allOther', scope='',
                     duration=self.duration, exclusive=self.exclusive)
 
-        # Statement metrics
+            yield TimeMetric(name='Datastore/%s/allOther' % product, scope='',
+                    duration=self.duration, exclusive=self.exclusive)
 
-        name = 'Datastore/statement/%s/%s/%s' % (product, target, operation)
+        # Statement metrics.
 
-        yield TimeMetric(name=name, scope='', duration=self.duration,
-                exclusive=self.exclusive)
+        if target:
+            name = 'Datastore/statement/%s/%s/%s' % (product, target,
+                    operation)
 
-        yield TimeMetric(name=name, scope=root.path,
-            duration=self.duration, exclusive=self.exclusive)
+            yield TimeMetric(name=name, scope='', duration=self.duration,
+                    exclusive=self.exclusive)
 
-        # Operation metrics
+            yield TimeMetric(name=name, scope=root.path,
+                duration=self.duration, exclusive=self.exclusive)
+
+        # Operation metrics.
 
         name = 'Datastore/operation/%s/%s' % (product, operation)
 
         yield TimeMetric(name=name, scope='', duration=self.duration,
                 exclusive=self.exclusive)
 
+        if not target:
+            yield TimeMetric(name=name, scope=root.path,
+                    duration=self.duration, exclusive=self.exclusive)
+
     def trace_node(self, stats, root, connections):
-
         product = self.product
-        target = self.target or self.target_default
-        operation = self.operation or self.operation_default
+        target = self.target
+        operation = self.operation or 'other'
 
-        name = 'Datastore/%s/%s/%s' % (product, target, operation)
+        if target:
+            name = 'Datastore/statement/%s/%s/%s' % (product, target,
+                    operation)
+        else:
+            name = 'Datastore/operation/%s/%s' % (product, operation)
 
         name = root.string_table.cache(name)
 

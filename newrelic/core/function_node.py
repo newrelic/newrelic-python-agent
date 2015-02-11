@@ -4,6 +4,8 @@ import newrelic.core.trace_node
 
 from newrelic.core.metric import TimeMetric
 
+from ..packages import six
+
 _FunctionNode = namedtuple('_FunctionNode',
         ['group', 'name', 'children', 'start_time', 'end_time',
         'duration', 'exclusive', 'label', 'params', 'rollup'])
@@ -24,7 +26,9 @@ class FunctionNode(_FunctionNode):
         yield TimeMetric(name=name, scope=root.path,
                 duration=self.duration, exclusive=self.exclusive)
 
-        # Generate a rollup metric if one has been specified.
+        # Generate one or more rollup metric if any have been specified.
+        # We can actually get a single string value or a list of strings
+        # if more than one.
         #
         # We actually implement two cases here. If the rollup name ends
         # with /all, then we implement the old style, which is to
@@ -39,20 +43,26 @@ class FunctionNode(_FunctionNode):
         # own rollup categories.
 
         if self.rollup:
-            if self.rollup.endswith('/all'):
-                yield TimeMetric(name=self.rollup, scope='',
-                        duration=self.duration, exclusive=None)
-
-                if root.type == 'WebTransaction':
-                    yield TimeMetric(name=self.rollup+'Web', scope='',
-                            duration=self.duration, exclusive=None)
-                else:
-                    yield TimeMetric(name=self.rollup+'Other', scope='',
-                            duration=self.duration, exclusive=None)
-
+            if isinstance(self.rollup, six.string_types):
+                rollups = [self.rollup]
             else:
-                yield TimeMetric(name=self.rollup, scope=root.type,
-                        duration=self.duration, exclusive=None)
+                rollups = self.rollup
+
+            for rollup in rollups:
+                if rollup.endswith('/all'):
+                    yield TimeMetric(name=rollup, scope='',
+                            duration=self.duration, exclusive=None)
+
+                    if root.type == 'WebTransaction':
+                        yield TimeMetric(name=rollup+'Web', scope='',
+                                duration=self.duration, exclusive=None)
+                    else:
+                        yield TimeMetric(name=rollup+'Other', scope='',
+                                duration=self.duration, exclusive=None)
+
+                else:
+                    yield TimeMetric(name=rollup, scope=root.type,
+                            duration=self.duration, exclusive=None)
 
         # Now for the children.
 

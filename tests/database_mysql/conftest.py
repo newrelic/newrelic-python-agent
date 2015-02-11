@@ -16,7 +16,8 @@ _default_settings = {
     'transaction_tracer.stack_trace_threshold': 0.0,
     'debug.log_data_collector_payloads': True,
     'debug.record_transaction_failure': True,
-    'debug.log_explain_plan_queries': True
+    'debug.log_explain_plan_queries': True,
+    'feature_flag': set(['database.instrumentation.r1'])
 }
 
 collector_agent_registration = collector_agent_registration_fixture(

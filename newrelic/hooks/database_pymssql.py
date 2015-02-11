@@ -24,7 +24,7 @@ class ConnectionWrapper(DBAPI2ConnectionWrapper):
         transaction = current_transaction()
         name = callable_name(self.__wrapped__.__exit__)
         with FunctionTrace(transaction, name):
-            # XXX The pymsql client doesn't appear to to force a
+            # XXX The pymssql client doesn't appear to to force a
             # commit or rollback from __exit__() explicitly. Need
             # to work out what its behaviour is around auto commit
             # and rollback.
@@ -48,6 +48,7 @@ def instrument_pymssql(module):
     # XXX Don't believe MSSQL provides a simple means of doing an
     # explain plan using one SQL statement prefix, eg., 'EXPLAIN'.
 
-    register_database_client(module, 'MSSQL', 'single')
+    register_database_client(module, database_name='MSSQL',
+            quoting_style='single')
 
     wrap_object(module, 'connect', ConnectionFactory, (module,))

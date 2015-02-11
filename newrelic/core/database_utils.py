@@ -313,19 +313,27 @@ _parse_alter_re = re.compile(_parse_alter_p, re.IGNORECASE)
 def _parse_alter(sql):
     return _parse_default(sql, _parse_alter_re)
 
+# For SQL queries, if a target of some sort, such as a table can be
+# meaningfully extracted, then this table should map to the function
+# which extracts it. If no target can be extracted, but it is still
+# desired that the operation be broken out separately with new Datastore
+# metrics, then the operation should still be added, but with the value
+# being set to None.
+
 _operation_table = {
     'select': _parse_select,
     'delete': _parse_delete,
     'insert': _parse_insert,
     'update': _parse_update,
-    'create': _parse_create,
-    'drop': _parse_drop,
-    'call': _parse_call,
-    'show': _parse_show,
-    'set': _parse_set,
-    'exec': _parse_exec,
-    'execute': _parse_execute,
-    'alter': _parse_alter,
+    #'create': _parse_create,
+    #'drop': _parse_drop,
+    #'call': _parse_call,
+    #'show': _parse_show,
+    'show': None,
+    #'set': _parse_set,
+    #'exec': _parse_exec,
+    #'execute': _parse_execute,
+    #'alter': _parse_alter,
 }
 
 _parse_operation_p = r'(\w+)'
@@ -428,7 +436,7 @@ def _obfuscate_explain_plan_postgresql(columns, rows, mask=None):
     return columns, rows
 
 _obfuscate_explain_plan_table = {
-    'PostgreSQL': _obfuscate_explain_plan_postgresql
+    'Postgres': _obfuscate_explain_plan_postgresql
 }
 
 def _obfuscate_explain_plan(database, columns, rows):
@@ -667,22 +675,7 @@ def explain_plan(connections, sql_statement, connect_params, cursor_params,
 
     return details
 
-# Wrapper for information about a specific database. We haven't yet
-# added high level instrumentation modules for all databases we know
-# of and so we still maintain a table here indexed by Python module
-# name for some.
-
-DATABASE_MODULES = {
-    'ibm_db_dbi': 'DB2'
-}
-
-DATABASE_DEFINTIONS = {
-    'DB2': {
-        'quoting_style': 'single',
-        'explain_query': 'EXPLAIN',
-        'explain_stmts': ('select', 'insert', 'update', 'delete')
-    }
-}
+# Wrapper for information about a specific database.
 
 class SQLDatabase(object):
 
@@ -694,15 +687,7 @@ class SQLDatabase(object):
 
     @property
     def name(self):
-        name = getattr(self.dbapi2_module, '_nr_database_name', None)
-
-        if name is None:
-            name = getattr(self.dbapi2_module, '__name__', None)
-
-            if name:
-                name = DATABASE_MODULES.get(name)
-
-        return name
+        return getattr(self.dbapi2_module, '_nr_database_name', None)
 
     @property
     def client(self):
@@ -718,35 +703,20 @@ class SQLDatabase(object):
         result = getattr(self.dbapi2_module, '_nr_quoting_style', None)
 
         if result is None:
-            details = DATABASE_DEFINTIONS.get(self.name)
-            if details:
-                result = details['quoting_style']
-            else:
-                result = 'single'
+            result = 'single'
 
         return result
 
     @property
     def explain_query(self):
-        result = getattr(self.dbapi2_module, '_nr_explain_query', None)
-
-        if result is None:
-            details = DATABASE_DEFINTIONS.get(self.name)
-            if details:
-                result = details['explain_query']
-
-        return result
+        return getattr(self.dbapi2_module, '_nr_explain_query', None)
 
     @property
     def explain_stmts(self):
         result = getattr(self.dbapi2_module, '_nr_explain_stmts', None)
 
         if result is None:
-            details = DATABASE_DEFINTIONS.get(self.name)
-            if details:
-                result = details['explain_stmts']
-            else:
-                result = ()
+            result = ()
 
         return result
 

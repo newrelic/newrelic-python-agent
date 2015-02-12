@@ -39,5 +39,6 @@ tox-admin.ini
 tox.ini
 license_data
 license_reviewer.py
+PROCESS.rst
 
 .tox

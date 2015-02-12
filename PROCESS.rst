@@ -52,8 +52,8 @@ In either case, only tarballs created from the Jenkins jobs for ``develop``
 and ``master`` branches of the Python agent repository should ever be used
 when providing versions to customers.
 
-Building a Release Package
---------------------------
+Verifying Package Builds
+------------------------
 
 To build the Python agent for release it is necessary to use the script::
 

@@ -20,7 +20,7 @@ class ExternalNode(_ExternalNode):
         if hasattr(self, '_details'):
             return self._details
 
-        self._details = urlparse.urlparse(self.url)
+        self._details = urlparse.urlparse(self.url or '')
 
         return self._details
 

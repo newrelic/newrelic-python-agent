@@ -8,6 +8,8 @@ try:
 except ImportError:
     import configparser as ConfigParser
 
+from .packages import six
+
 from .common.log_file import initialize_logging
 from .core.config import Settings, apply_config_setting
 
@@ -1917,21 +1919,26 @@ def _process_module_builtin_defaults():
     _process_module_definition('genshi.template.base',
             'newrelic.hooks.template_genshi')
 
-    _process_module_definition('httplib',
-            'newrelic.hooks.external_httplib') # Python 2
-    _process_module_definition('http.client',
-            'newrelic.hooks.external_httplib') # Python 3
+    if six.PY2:
+        _process_module_definition('httplib',
+                'newrelic.hooks.external_httplib')
+    else:
+        _process_module_definition('http.client',
+                'newrelic.hooks.external_httplib')
 
     _process_module_definition('httplib2',
             'newrelic.hooks.external_httplib2')
 
-    _process_module_definition('urllib',
-            'newrelic.hooks.external_urllib') # Python 2
-    _process_module_definition('urllib.request',
-            'newrelic.hooks.external_urllib') # Python 3
+    if six.PY2:
+        _process_module_definition('urllib',
+                'newrelic.hooks.external_urllib')
+    else:
+        _process_module_definition('urllib.request',
+                'newrelic.hooks.external_urllib')
 
-    _process_module_definition('urllib2',
-            'newrelic.hooks.external_urllib2') # Python 2
+    if six.PY2:
+        _process_module_definition('urllib2',
+                'newrelic.hooks.external_urllib2')
 
     _process_module_definition('urllib3.connectionpool',
             'newrelic.hooks.external_urllib3',

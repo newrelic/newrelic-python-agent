@@ -380,6 +380,10 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         # it takes to get back a response.
 
         cert_loc = certs.where()
+
+        if settings.debug.disable_certificate_validation:
+            cert_loc = False
+
         timeout = settings.agent_limits.data_collector_timeout
 
         with warnings.catch_warnings():

@@ -332,6 +332,7 @@ _settings.debug.log_autorum_middleware = False
 _settings.debug.record_transaction_failure = False
 _settings.debug.enable_coroutine_profiling = False
 _settings.debug.explain_plan_obfuscation = 'simple'
+_settings.debug.disable_certificate_validation = False
 
 
 def global_settings():

@@ -1599,6 +1599,8 @@ class Application(object):
         except Exception:
             pass
 
+        self._active_session.close_connection()
+
         self._active_session = None
         self._harvest_enabled = False
 

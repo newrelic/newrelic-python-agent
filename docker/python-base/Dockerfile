@@ -42,3 +42,6 @@ RUN wget https://raw.github.com/pypa/pip/master/contrib/get-pip.py
 RUN python get-pip.py
 
 RUN pip install 'pip<1.5' 'virtualenv<1.11' 'tox<1.7.0'
+
+# Needed for pymssql tests.
+RUN apt-get install -y freetds-dev

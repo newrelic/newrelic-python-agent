@@ -16,8 +16,8 @@ DB_SETTINGS = postgresql_settings()
 
 _test_execute_via_cursor_scoped_metrics = [
         ('Function/psycopg2:connect', 1),
-        ('Function/psycopg2._psycopg:connection.__enter__', 1),
-        ('Function/psycopg2._psycopg:connection.__exit__', 1),
+        ('Function/psycopg2.extensions:connection.__enter__', 1),
+        ('Function/psycopg2.extensions:connection.__exit__', 1),
         ('Database/database_psycopg2/select', 1),
         ('Database/database_psycopg2/insert', 1),
         ('Database/database_psycopg2/update', 1),
@@ -130,8 +130,8 @@ def test_execute_via_cursor_dict():
 
 _test_rollback_on_exception_scoped_metrics = [
         ('Function/psycopg2:connect', 1),
-        ('Function/psycopg2._psycopg:connection.__enter__', 1),
-        ('Function/psycopg2._psycopg:connection.__exit__', 1),
+        ('Function/psycopg2.extensions:connection.__enter__', 1),
+        ('Function/psycopg2.extensions:connection.__exit__', 1),
         ('Database/other/sql', 1)]
 
 _test_rollback_on_exception_rollup_metrics = [

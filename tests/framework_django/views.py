@@ -21,6 +21,14 @@ def html_insertion(request):
             '<body><h1>My First Heading</h1><p>My first paragraph.</p>'
             '</body></html>')
 
+def html_insertion_content_length(request):
+    content = ('<!DOCTYPE html><html><head>Some header</head>'
+            '<body><h1>My First Heading</h1><p>My first paragraph.</p>'
+            '</body></html>')
+    response = HttpResponse(content)
+    response['Content-Length'] = len(content)
+    return response
+
 def html_insertion_manual(request):
     header = get_browser_timing_header()
     footer = get_browser_timing_footer()

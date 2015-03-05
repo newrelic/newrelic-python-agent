@@ -20,7 +20,10 @@ import newrelic.packages.six as six
 from .error_collector import TracedError
 from .internal_metrics import (internal_trace, InternalTrace, internal_metric)
 from .database_utils import explain_plan
+from .stack_trace import stack_trace
+
 from ..common.encoding_utils import json_encode
+
 _logger = logging.getLogger(__name__)
 
 class ApdexStats(list):
@@ -510,13 +513,11 @@ class StatsEngine(object):
             except Exception:
                 message = '<unprintable %s object>' % type(value).__name__
 
-        stack_trace = traceback.format_exception(exc, value, tb)
-
         # Record the exception details.
 
         params = {}
 
-        params["stack_trace"] = stack_trace
+        params["stack_trace"] = stack_trace(tb)
 
         if settings.error_collector.capture_attributes:
             params["custom_params"] = custom_params

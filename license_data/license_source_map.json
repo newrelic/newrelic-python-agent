@@ -833,6 +833,12 @@
             "New Relic"
         ]
     },
+    "newrelic/core/stack_trace.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/core/stats_engine.py": {
         "hash": "n/a",
         "libraries": [

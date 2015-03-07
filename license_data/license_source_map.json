@@ -1169,6 +1169,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/datastore_pyelasticsearch.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/external_dropbox.py": {
         "hash": "n/a",
         "libraries": [

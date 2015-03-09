@@ -20,7 +20,7 @@ import newrelic.packages.six as six
 from .error_collector import TracedError
 from .internal_metrics import (internal_trace, InternalTrace, internal_metric)
 from .database_utils import explain_plan
-from .stack_trace import stack_trace
+from .stack_trace import exception_stack
 
 from ..common.encoding_utils import json_encode
 
@@ -517,7 +517,7 @@ class StatsEngine(object):
 
         params = {}
 
-        params["stack_trace"] = stack_trace(tb)
+        params["stack_trace"] = exception_stack(tb)
 
         if settings.error_collector.capture_attributes:
             params["custom_params"] = custom_params

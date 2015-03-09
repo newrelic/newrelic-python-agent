@@ -26,7 +26,7 @@ from newrelic.core.stats_engine import CustomMetrics
 from newrelic.core.transaction_cache import transaction_cache
 from newrelic.core.thread_utilization import utilization_tracker
 
-from ..core.stack_trace import stack_trace
+from ..core.stack_trace import exception_stack
 from ..common.encoding_utils import generate_path_hash
 
 from .time_trace import TimeTrace
@@ -876,7 +876,7 @@ class Transaction(object):
                 timestamp=time.time(),
                 type=fullname,
                 message=message,
-                stack_trace=stack_trace(tb),
+                stack_trace=exception_stack(tb),
                 custom_params=custom_params,
                 file_name=None,
                 line_number=None,

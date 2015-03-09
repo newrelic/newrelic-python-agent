@@ -98,7 +98,7 @@ def elasticsearch_settings():
 
     # Use local defaults, if TDDIUM vars aren't present.
 
-    host = os.environ.get('TDDIUM_ES_HOST')
+    host = os.environ.get('TDDIUM_ES_HOST', 'localhost')
     port = int(os.environ.get('TDDIUM_ES_HTTP_PORT', '9200'))
 
     # Look for env vars in test docker container.

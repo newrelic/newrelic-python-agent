@@ -5,14 +5,23 @@ etc.
 """
 
 import sys
+import itertools
 
 from .config import global_settings
 
 _global_settings = global_settings()
 
 def _extract_stack(f, skip=0, limit=None):
+    if f is None:
+        return []
+
     if limit is None:
         limit = _global_settings.max_stack_trace_lines
+
+    # For calculating the stack trace we have the bottom most frame we
+    # are interested in. We need to work upwards to get the full stack.
+    # We append to a list and reverse at the end to get things in the
+    # order we want as it is more effecient.
 
     n = 0
     l = []
@@ -93,10 +102,23 @@ def exception_stack(tb, limit=None):
     if limit is None:
         limit = _global_settings.max_stack_trace_lines
 
+    # The traceback objects provide a chain for stack frames from the
+    # top point of where the exception was caught, down to where the
+    # exception was raised. This is not the complete stack, so we need
+    # to prefix that with the stack trace for the point of the
+    # try/except, which is derived from the frame associated with the
+    # top most traceback object.
+
     _tb_stack = _extract_tb(tb, limit)
+
+    if len(_tb_stack) < limit:
+        _current_stack = _extract_stack(tb.tb_frame, skip=1,
+                limit=limit-len(_tb_stack))
+    else:
+        _current_stack = []
 
     result = ['Traceback (most recent call last):']
     result.extend(['File "{source}", line {line}, in {name}'.format(**d)
-            for d in _tb_stack])
+            for d in itertools.chain(_current_stack, _tb_stack)])
 
     return result

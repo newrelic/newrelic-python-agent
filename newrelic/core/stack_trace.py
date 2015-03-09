@@ -45,11 +45,36 @@ def current_stack(skip=0, limit=None):
     return result
 
 def _extract_tb(tb, limit=None):
+    if tb is None:
+        return []
+
     if limit is None:
         limit = _global_settings.max_stack_trace_lines
 
+    # The first traceback object is actually connected to the top most
+    # frame where the exception was caught. As the limit needs to apply
+    # to the bottom most, we need to traverse the complete list of
+    # traceback objects and calculate as we go what would be the top
+    # traceback object. Only once we have done that can we then work
+    # out what frames to return.
+
+    n = 0
+    top = tb
+
+    while tb is not None:
+        if n >= limit:
+            top = top.tb_next
+
+        tb = tb.tb_next
+        n += 1
+
     n = 0
     l = []
+
+    # We have now the top traceback object for the limit of what we are
+    # to return. The bottom most will be that where the error occurred.
+
+    tb = top
 
     while tb is not None and n < limit:
         f = tb.tb_frame

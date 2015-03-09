@@ -246,6 +246,9 @@ def _log_response(log_id, result):
 
     _audit_log_fp.flush()
 
+_deflate_exclude_list = set(['transaction_sample_data', 'sql_trace_data',
+    'profile_data'])
+
 def send_request(session, url, method, license_key, agent_run_id=None,
             payload=()):
     """Constructs and sends a request to the data collector."""
@@ -312,20 +315,18 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 url, method)
 
     # Compress the serialized JSON being sent as content if over 64KiB
-    # in size. If less than 2MB in size compress for speed. If over
-    # 2MB then compress for smallest size. This parallels what the Ruby
-    # agent does.
+    # in size and not in message types that further compression is
+    # excluded.
 
-    if len(data) > 64*1024:
+    if method not in _deflate_exclude_list and len(data) > 64*1024:
         headers['Content-Encoding'] = 'deflate'
-        level = (len(data) < 2000000) and 1 or 9
 
         internal_metric('Supportability/Collector/ZLIB/Bytes/%s' % method,
                 len(data))
 
         with InternalTrace('Supportability/Collector/ZLIB/Compress/'
                 '%s' % method):
-            data = zlib.compress(six.b(data), level)
+            data = zlib.compress(six.b(data))
 
     # If there is no requests session object provided for making
     # requests create one now. We want to close this as soon as we

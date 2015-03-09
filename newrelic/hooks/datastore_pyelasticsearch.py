@@ -3,6 +3,8 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
+from ..packages import six
+
 from newrelic.agent import (ObjectProxy, ExternalTrace, wrap_function_wrapper,
         current_transaction, DatastoreTrace)
 
@@ -113,11 +115,28 @@ def _nr_wrapper_ElasticSearch___init___(wrapped, instance, args, kwargs):
     instance.session = RequestsSessionObjectProxy(instance.session)
     return result
 
-def _extract_index_from_pos1(index, *args, **kwargs):
-    return index or 'other'
+def _extract_index_from_pos1(index_name, *args, **kwargs):
+    """Extract the index name which will be the first argument. Returns 'other'
+    if the index name is not a string.
+    """
+
+    # An index name can sometimes be None or an iterable. In that case we
+    # return 'other' because we don't want to consume the iterator just in case
+    # it's a generator.
+
+    return index_name if isinstance(index_name, six.string_types) else 'other'
 
 def _extract_index_from_kwarg(*args, **kwargs):
-    return kwargs.get('index') or 'other'
+    """Extract the index name from a keyword argument. Return 'other' if the
+    index name is not a string.
+    """
+
+    # An index name can sometimes be None or an iterable. In that case we
+    # return 'other' because we don't want to consume the iterator just in case
+    # it's a generator.
+
+    index_name = kwargs.get('index')
+    return index_name if isinstance(index_name, six.string_types) else 'other'
 
 _elasticsearch_client_methods = (
     ('bulk_index', _extract_index_from_pos1),

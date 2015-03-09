@@ -18,9 +18,14 @@ def _exercise_es(es):
     es.index("contacts", "person",
             {"name": "Freddy Tester", "age": 29, "title": "Assistant"}, id=3)
     es.refresh('contacts')
+    es.index("address", "employee", {"name": "Sherlock",
+        "address": "221B Baker Street, London"}, id=1)
+    es.index("address", "employee", {"name": "Bilbo",
+        "address": "Bag End, Bagshot row, Hobbiton, Shire"}, id=2)
     es.search('name:Joe', index='contacts')
     es.search('name:jessica', index='contacts')
     es.search('name:freddy', index='contacts')
+    es.search('name:Bilbo', index=['contacts', 'address'])
 
 # Common Metrics for tests that use _exercise_es().
 
@@ -29,14 +34,17 @@ _test_pyelasticsearch_scoped_metrics = [
         ('Datastore/statement/Elasticsearch/contacts/search', 3)]
 
 _test_pyelasticsearch_rollup_metrics = [
-        ('Datastore/all', 6),
-        ('Datastore/allOther', 6),
-        ('Datastore/Elasticsearch/all', 6),
-        ('Datastore/Elasticsearch/allOther', 6),
-        ('Datastore/operation/Elasticsearch/index', 3),
-        ('Datastore/operation/Elasticsearch/search', 3),
+        ('Datastore/all', 9),
+        ('Datastore/allOther', 9),
+        ('Datastore/Elasticsearch/all', 9),
+        ('Datastore/Elasticsearch/allOther', 9),
+        ('Datastore/operation/Elasticsearch/index', 5),
+        ('Datastore/operation/Elasticsearch/search', 4),
         ('Datastore/statement/Elasticsearch/contacts/index', 3),
-        ('Datastore/statement/Elasticsearch/contacts/search', 3)]
+        ('Datastore/statement/Elasticsearch/contacts/search', 3),
+        ('Datastore/statement/Elasticsearch/address/index', 2),
+        ('Datastore/statement/Elasticsearch/other/search', 1),
+        ]
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(

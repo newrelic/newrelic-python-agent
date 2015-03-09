@@ -10,8 +10,11 @@ Django<1.5.0
 Django<1.6.0
 Django<1.7.0
 Django<1.8.0
+djangorestframework<2.4.0
+djangorestframework<3.1.0
 flask<0.7
 flask<0.11
+flask-compress
 gevent
 greenlet
 mysql-connector-python
@@ -21,6 +24,8 @@ pymongo
 PyMySQL
 py-postgresql
 PasteDeploy
+pylibmc
+pymemcache
 Pyramid<1.4
 Pyramid<1.5
 pytest-cov
@@ -34,7 +39,11 @@ requests<2.2
 requests<2.3
 requests<2.4
 routes
+tornado<2.5.0
+tornado<3.1.0
 tornado<3.2.0
+tornado<3.3.0
+tornado<4.1.0
 urllib3<1.3
 urllib3<1.4
 urllib3<1.5

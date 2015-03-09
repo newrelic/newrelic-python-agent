@@ -4,19 +4,7 @@ except ImportError:
     import urllib.parse as urlparse
 
 from newrelic.agent import (ObjectProxy, ExternalTrace, wrap_function_wrapper,
-        current_transaction)
-
-from newrelic.api.datastore_trace import DatastoreTrace
-
-# List of methods in the pyelasticsearch module that has 'index' as a kwarg.
-kw_index_methods = ['search', 'multi_get', 'count']
-
-# List of methods in the pyelasticsearch module that has 'index' as a
-# positional arg.
-pos_index_methods = ['get', 'delete', 'delete_all', 'delete_by_query',
-'delete_index', 'create_index', 'bulk_index', 'more_like_this', 'percolate',
-'update', 'index']
-
+        current_transaction, DatastoreTrace)
 
 def extract_netloc(url):
     details = urlparse.urlparse(url)
@@ -78,7 +66,8 @@ class RequestsSessionObjectProxy(ObjectProxy):
         if isinstance(node, DatastoreTrace):
             node.instance = extract_netloc(url)
 
-        return self.__wrapped__.get(*args, **kwargs)
+        with ExternalTrace(transaction, 'pyelasticsearch', url, method='GET'):
+            return self.__wrapped__.get(*args, **kwargs)
 
     def put(self, *args, **kwargs):
         def _bind_params(url, *args, **kwargs):
@@ -124,52 +113,52 @@ def _nr_wrapper_ElasticSearch___init___(wrapped, instance, args, kwargs):
     instance.session = RequestsSessionObjectProxy(instance.session)
     return result
 
-def _nr_wrapper_ElasticSearch_kw_index_(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
+def _extract_index_from_pos1(index, *args, **kwargs):
+    return index or 'other'
 
-    if transaction is None:
-        return wrapped(*args, **kwargs)
+def _extract_index_from_kwarg(*args, **kwargs):
+    return kwargs.get('index') or 'other'
 
-    def _bind_params(*args, **kwargs):
-        return kwargs.get('index', 'other')
+_elasticsearch_client_methods = (
+    ('bulk_index', _extract_index_from_pos1),
+    ('count', _extract_index_from_kwarg),
+    ('create_index', _extract_index_from_pos1),
+    ('delete', _extract_index_from_pos1),
+    ('delete_all', _extract_index_from_pos1),
+    ('delete_by_query', _extract_index_from_pos1),
+    ('delete_index', _extract_index_from_pos1),
+    ('get', _extract_index_from_pos1),
+    ('index', _extract_index_from_pos1),
+    ('more_like_this', _extract_index_from_pos1),
+    ('multi_get', _extract_index_from_kwarg),
+    ('percolate', _extract_index_from_pos1),
+    ('search', _extract_index_from_kwarg),
+    ('update', _extract_index_from_pos1),
+)
 
-    index = _bind_params(*args, **kwargs)
+def wrap_elasticsearch_client_method(module, name, arg_extractor):
+    def _nr_wrapper_ElasticSearch_method_(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
 
-    # with DatastoreTrace(transaction, 'ElasticSearch', index,
-    # wrapped.__name__, 'unknown') as tracer:
-    with DatastoreTrace(transaction, 'Elasticsearch', index, wrapped.__name__):
-        return wrapped(*args, **kwargs)
+        if transaction is None:
+            return wrapped(*args, **kwargs)
 
-def _nr_wrapper_ElasticSearch_pos_index_(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
+        index = arg_extractor(*args, **kwargs)
 
-    if transaction is None:
-        return wrapped(*args, **kwargs)
+        with DatastoreTrace(transaction, product='Elasticsearch',
+                target=index, operation=name):
+            return wrapped(*args, **kwargs)
 
-    def _bind_params(index, *args, **kwargs):
-        return index
-
-    index = _bind_params(*args, **kwargs)
-
-    # with DatastoreTrace(transaction, 'Elasticsearch', index,
-    # wrapped.__name__, 'unknown') as tracer:
-    with DatastoreTrace(transaction, 'Elasticsearch', index, wrapped.__name__):
-        return wrapped(*args, **kwargs)
+    if hasattr(module.ElasticSearch, name):
+        wrap_function_wrapper(module.ElasticSearch, name,
+                _nr_wrapper_ElasticSearch_method_)
 
 def instrument_pyelasticsearch_client(module):
-
     # The datastore feature does not need the Instance Names anymore, hence
     # there is no need to patch the ElasticSearch.__init__() method
 
     # wrap_function_wrapper(module, 'ElasticSearch.__init__',
     # _nr_wrapper_ElasticSearch___init___)
 
-    for method in kw_index_methods:
-        if hasattr(module.ElasticSearch, method):
-            wrap_function_wrapper(module, 'ElasticSearch.%s' % method,
-                    _nr_wrapper_ElasticSearch_kw_index_)
-
-    for method in pos_index_methods:
-        if hasattr(module.ElasticSearch, method):
-            wrap_function_wrapper(module, 'ElasticSearch.%s' % method,
-                    _nr_wrapper_ElasticSearch_pos_index_)
+    for name, arg_extractor in _elasticsearch_client_methods:
+        wrap_elasticsearch_client_method(module, name, arg_extractor)

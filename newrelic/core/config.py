@@ -224,7 +224,7 @@ _settings.include_environ = ['REQUEST_METHOD', 'HTTP_USER_AGENT',
                               'HTTP_REFERER', 'CONTENT_TYPE',
                               'CONTENT_LENGTH']
 
-_settings.max_stack_trace_lines = 100
+_settings.max_stack_trace_lines = 50
 
 _settings.sampling_rate = 0
 

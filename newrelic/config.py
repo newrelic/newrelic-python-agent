@@ -299,6 +299,8 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'include_environ',
                      'get', _map_include_environ)
+    _process_setting(section, 'max_stack_trace_lines',
+                     'getint', None)
     _process_setting(section, 'startup_timeout',
                      'getfloat', None)
     _process_setting(section, 'shutdown_timeout',

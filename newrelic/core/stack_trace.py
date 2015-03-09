@@ -6,16 +6,13 @@ etc.
 
 import sys
 
-# No global configuration setting for number of stack frames to retain
-# at this point. Python itself generally imposes a 1000 stack frame
-# limit but this can be overridden if sys.tracebacklimit has been set.
+from .config import global_settings
 
-_traceback_limit = (hasattr(sys, 'tracebacklimit') and
-        sys.tracebacklimit or 1000)
+_global_settings = global_settings()
 
 def _extract_stack(f, skip=0, limit=None):
     if limit is None:
-        limit = _traceback_limit
+        limit = _global_settings.max_stack_trace_lines
 
     n = 0
     l = []
@@ -49,7 +46,7 @@ def current_stack(skip=0, limit=None):
 
 def _extract_tb(tb, limit=None):
     if limit is None:
-        limit = _traceback_limit
+        limit = _global_settings.max_stack_trace_lines
 
     n = 0
     l = []
@@ -69,7 +66,7 @@ def exception_stack(tb, limit=None):
         return []
 
     if limit is None:
-        limit = _traceback_limit
+        limit = _global_settings.max_stack_trace_lines
 
     _tb_stack = _extract_tb(tb, limit)
 

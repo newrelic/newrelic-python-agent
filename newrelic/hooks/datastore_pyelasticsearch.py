@@ -1,119 +1,7 @@
-try:
-    import urlparse
-except ImportError:
-    import urllib.parse as urlparse
-
 from ..packages import six
 
-from newrelic.agent import (ObjectProxy, ExternalTrace, wrap_function_wrapper,
-        current_transaction, DatastoreTrace)
-
-def extract_netloc(url):
-    details = urlparse.urlparse(url)
-
-    hostname = details.hostname or 'unknown'
-
-    try:
-        scheme = details.scheme.lower()
-        port = details.port
-    except Exception:
-        scheme = None
-        port = None
-
-    if (scheme, port) in (('http', 80), ('https', 443)):
-        port = None
-
-    netloc = port and ('%s:%s' % (hostname, port)) or hostname
-
-    return netloc
-
-class RequestsSessionObjectProxy(ObjectProxy):
-    """A class that proxies all attribute access to the underlying class. But
-    overrides the http methods get, post, delete and put to grab the url to
-    extract the hostname.
-
-    """
-    def post(self, *args, **kwargs):
-        def _bind_params(url, *args, **kwargs):
-            return url
-
-        transaction = current_transaction()
-
-        if transaction is None:
-            return self.__wrapped__.post(*args, **kwargs)
-
-        url = _bind_params(*args, **kwargs)
-
-        node = transaction.active_node()
-
-        if isinstance(node, DatastoreTrace):
-            node.instance = extract_netloc(url)
-
-        with ExternalTrace(transaction, 'pyelasticsearch', url, method='POST'):
-            return self.__wrapped__.post(*args, **kwargs)
-
-    def get(self, *args, **kwargs):
-        def _bind_params(url, *args, **kwargs):
-            return url
-
-        transaction = current_transaction()
-
-        if transaction is None:
-            return self.__wrapped__.get(*args, **kwargs)
-
-        url = _bind_params(*args, **kwargs)
-
-        node = transaction.active_node()
-
-        if isinstance(node, DatastoreTrace):
-            node.instance = extract_netloc(url)
-
-        with ExternalTrace(transaction, 'pyelasticsearch', url, method='GET'):
-            return self.__wrapped__.get(*args, **kwargs)
-
-    def put(self, *args, **kwargs):
-        def _bind_params(url, *args, **kwargs):
-            return url
-
-        transaction = current_transaction()
-
-        if transaction is None:
-            return self.__wrapped__.put(*args, **kwargs)
-
-        url = _bind_params(*args, **kwargs)
-
-        node = transaction.active_node()
-
-        if isinstance(node, DatastoreTrace):
-            node.instance = extract_netloc(url)
-
-        with ExternalTrace(transaction, 'pyelasticsearch', url, method='PUT'):
-            return self.__wrapped__.put(*args, **kwargs)
-
-    def delete(self, *args, **kwargs):
-        def _bind_params(url, *args, **kwargs):
-            return url
-
-        transaction = current_transaction()
-
-        if transaction is None:
-            return self.__wrapped__.delete(*args, **kwargs)
-
-        url = _bind_params(*args, **kwargs)
-
-        node = transaction.active_node()
-
-        if isinstance(node, DatastoreTrace):
-            node.instance = extract_netloc(url)
-
-        with ExternalTrace(transaction, 'pyelasticsearch', url,
-                method='DELETE'):
-            return self.__wrapped__.delete(*args, **kwargs)
-
-def _nr_wrapper_ElasticSearch___init___(wrapped, instance, args, kwargs):
-    result = wrapped(*args, **kwargs)
-    instance.session = RequestsSessionObjectProxy(instance.session)
-    return result
+from newrelic.agent import (wrap_function_wrapper, current_transaction,
+        DatastoreTrace)
 
 def _extract_index_from_pos1(index, *args, **kwargs):
     """Extract the index name which will be the first argument. Returns 'other'
@@ -153,6 +41,7 @@ _elasticsearch_client_methods = (
     ('percolate', _extract_index_from_pos1),
     ('search', _extract_index_from_kwarg),
     ('update', _extract_index_from_pos1),
+    ('send_request', None),  # No target.
 )
 
 def wrap_elasticsearch_client_method(module, name, arg_extractor):
@@ -162,7 +51,15 @@ def wrap_elasticsearch_client_method(module, name, arg_extractor):
         if transaction is None:
             return wrapped(*args, **kwargs)
 
-        index = arg_extractor(*args, **kwargs)
+        # When arg_extractor is None, it means there is no target field
+        # associated with this method. Hence this method will only create an
+        # operation metric and no statement metric. This is handled by setting
+        # the target to None when calling the DatastoreTrace.
+
+        if arg_extractor is None:
+            index = None
+        else:
+            index = arg_extractor(*args, **kwargs)
 
         with DatastoreTrace(transaction, product='Elasticsearch',
                 target=index, operation=name):
@@ -173,11 +70,5 @@ def wrap_elasticsearch_client_method(module, name, arg_extractor):
                 _nr_wrapper_ElasticSearch_method_)
 
 def instrument_pyelasticsearch_client(module):
-    # The datastore feature does not need the Instance Names anymore, hence
-    # there is no need to patch the ElasticSearch.__init__() method
-
-    # wrap_function_wrapper(module, 'ElasticSearch.__init__',
-    # _nr_wrapper_ElasticSearch___init___)
-
     for name, arg_extractor in _elasticsearch_client_methods:
         wrap_elasticsearch_client_method(module, name, arg_extractor)

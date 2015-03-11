@@ -10,8 +10,6 @@ RUN apt-get install -y language-pack-en-base
 ENV LANG en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
 
-RUN apt-get update
-
 RUN apt-get install -y bzip2
 RUN apt-get install -y vim
 RUN apt-get install -y wget
@@ -45,3 +43,9 @@ RUN pip install 'pip<1.5' 'virtualenv<1.11' 'tox<1.7.0'
 
 # Needed for pymssql tests.
 RUN apt-get install -y freetds-dev
+
+# Needed for pylibmc tests.
+RUN apt-get install -y libmemcached-dev
+
+# Needed for umemcache tests.
+RUN apt-get install -y build-essential

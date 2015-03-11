@@ -10,8 +10,6 @@ RUN apt-get install -y language-pack-en-base
 ENV LANG en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
 
-RUN apt-get update
-
 RUN apt-get install -y bzip2
 RUN apt-get install -y vim
 RUN apt-get install -y wget

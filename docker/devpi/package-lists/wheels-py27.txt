@@ -23,7 +23,7 @@ flask<0.8
 flask<0.9
 flask<0.10
 flask<0.11
-flask-compress
+Flask-Compress
 future
 gearman<3.0.0
 gevent

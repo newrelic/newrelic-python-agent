@@ -45,3 +45,9 @@ RUN pip install 'pip<1.5' 'virtualenv<1.11' 'tox<1.7.0'
 
 # Needed for pymssql tests.
 RUN apt-get install -y freetds-dev
+
+# Needed for pylibmc tests.
+RUN apt-get install -y libmemcached-dev
+
+# Needed for umemcache tests.
+RUN apt-get install -y build-essential

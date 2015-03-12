@@ -9,7 +9,7 @@ Django<1.4.0
 Django<1.5.0
 Django<1.6.0
 Django<1.7.0
-Django<1.8.0
+Django<1.7.999
 djangorestframework<2.4.0
 djangorestframework<3.1.0
 flask<0.7

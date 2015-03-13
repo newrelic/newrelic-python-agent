@@ -1492,6 +1492,9 @@ class Application(object):
                                     merge_sql=False, merge_samples=True,
                                     merge_synthetics_events = True,
                                     rollback=True)
+                            internal_metric(
+                                    'Supportability/Python/Fail/Harvest/Retry/MergeCount',
+                                    self._merge_count)
 
                         else:
                             _logger.error('Unable to report main transaction '
@@ -1517,6 +1520,9 @@ class Application(object):
                     # but if we retry with same data the same error is
                     # likely to occur again so we just throw any data
                     # not sent away for this reporting period.
+
+                    internal_metric(
+                            'Supportability/Python/Fail/Harvest/DiscardDataForRequest', 1)
 
                     self._discard_count += 1
 

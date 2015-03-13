@@ -400,14 +400,18 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         content = r.content
 
     except requests.RequestException:
+        exc_type, message = sys.exc_info()[:2]
+        name = exc_type.__name__
         if not settings.proxy_host or not settings.proxy_port:
             _logger.warning('Data collector is not contactable. This can be '
                     'because of a network issue or because of the data '
                     'collector being restarted. In the event that contact '
                     'cannot be made after a period of time then please '
                     'report this problem to New Relic support for further '
-                    'investigation. The error raised was %r.',
-                    sys.exc_info()[1])
+                    'investigation. The error raised was %r.', message)
+            internal_metric(
+                    'Supportability/Python/Fail/Collector/NoProxy/RequestException/%s'
+                    % name, 1)
         else:
             _logger.warning('Data collector is not contactable via the proxy '
                     'host %r on port %r with proxy user of %r. This can be '
@@ -417,9 +421,12 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                     'report this problem to New Relic support for further '
                     'investigation. The error raised was %r.',
                     settings.proxy_host, settings.proxy_port,
-                    settings.proxy_user, sys.exc_info()[1])
+                    settings.proxy_user, message)
 
-        raise RetryDataForRequest(str(sys.exc_info()[1]))
+            internal_metric(
+                    'Supportability/Python/Fail/Collector/WithProxy/RequestException/%s'
+                    % name, 1)
+        raise RetryDataForRequest(str(message))
 
     finally:
         if auto_close_session:
@@ -439,7 +446,9 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 'params of %r and payload of %r. Please report this '
                 'problem to New Relic support.', url, headers, params,
                 payload)
-
+        internal_metric(
+                'Supportability/Python/Fail/Collector/Response/%d'
+                % r.status_code, 1)
         raise DiscardDataForRequest()
 
     elif r.status_code == 413:
@@ -449,6 +458,9 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 'the request content was %d. If this keeps occurring on a '
                 'regular basis, please report this problem to New Relic '
                 'support for further investigation.', method, len(data))
+        internal_metric(
+                'Supportability/Python/Fail/Collector/Response/%d'
+                % r.status_code, 1)
 
         raise DiscardDataForRequest()
 
@@ -457,6 +469,9 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 'malformed JSON data for method %r. If this keeps occurring '
                 'on a regular basis, please report this problem to New '
                 'Relic support for further investigation.', method)
+        internal_metric(
+                'Supportability/Python/Fail/Collector/Response/%d'
+                % r.status_code, 1)
 
         if settings.debug.log_malformed_json_data:
             if headers['Content-Encoding'] == 'deflate':
@@ -475,6 +490,9 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 'In the event that availability of our servers is not '
                 'restored after a period of time then please report this '
                 'problem to New Relic support for further investigation.')
+        internal_metric(
+                'Supportability/Python/Fail/Collector/Response/%d'
+                % r.status_code, 1)
 
         raise ServerIsUnavailable()
 
@@ -485,6 +503,9 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                     'the request was %r. If this issue persists then please '
                     'report this problem to New Relic support for further '
                     'investigation.', r.status_code, method, payload)
+            internal_metric(
+                    'Supportability/Python/Fail/Collector/Response/NoProxy/%d'
+                    % r.status_code, 1)
         else:
             _logger.warning('An unexpected HTTP response was received from '
                     'the data collector of %r for method %r while connecting '
@@ -494,6 +515,9 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                     'support for further investigation.', r.status_code,
                     method, settings.proxy_host, settings.proxy_port,
                     settings.proxy_user, payload)
+            internal_metric(
+                    'Supportability/Python/Fail/Collector/Response/WithProxy/%d'
+                    % r.status_code, 1)
 
         raise DiscardDataForRequest()
 
@@ -561,6 +585,8 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 'which was used by the agent is %r. Please correct any '
                 'problem with the license key or report this problem to '
                 'New Relic support.', license_key)
+        internal_metric(
+                'Supportability/Python/Fail/Collector/LicenseException', 1)
 
         raise DiscardDataForRequest(message)
 
@@ -571,7 +597,8 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 'the request content was %d. If this keeps occurring on a '
                 'regular basis, please report this problem to New Relic '
                 'support for further investigation.', method, len(data))
-
+        internal_metric(
+                'Supportability/Python/Fail/Collector/PostTooBigException', 1)
         raise DiscardDataForRequest(message)
 
     # Server side exceptions are also used to inform the agent to
@@ -584,7 +611,9 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 'requested by the data collector for the application '
                 'where the agent run was %r. The reason given for the '
                 'forced restart is %r.', agent_run_id, message)
-
+        internal_metric(
+                'Supportability/Python/Fail/Collector/ForceRestartException',
+                1)
         raise ForceAgentRestart(message)
 
     elif error_type == 'NewRelic::Agent::ForceDisconnectException':
@@ -593,7 +622,9 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 'agent run was %r. The reason given for the forced '
                 'disconnection is %r. Please contact New Relic support '
                 'for further information.', agent_run_id, message)
-
+        internal_metric(
+                'Supportability/Python/Fail/Collector/ForceDisconnectException',
+                1)
         raise ForceAgentDisconnect(message)
 
     # We received an unexpected server side error we don't know what
@@ -604,7 +635,8 @@ def send_request(session, url, method, license_key, agent_run_id=None,
             'was of type %r with message %r. If this issue persists '
             'then please report this problem to New Relic support for '
             'further investigation.', method, payload, error_type, message)
-
+    internal_metric(
+            'Supportability/Python/Fail/Collector/UnexpectedException', 1)
     raise DiscardDataForRequest(message)
 
 def apply_high_security_mode_fixups(local_settings, server_settings):

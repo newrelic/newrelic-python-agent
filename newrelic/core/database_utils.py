@@ -325,15 +325,14 @@ _operation_table = {
     'delete': _parse_delete,
     'insert': _parse_insert,
     'update': _parse_update,
-    #'create': _parse_create,
-    #'drop': _parse_drop,
-    #'call': _parse_call,
-    #'show': _parse_show,
+    'create': None,
+    'drop': None,
+    'call': _parse_call,
     'show': None,
-    #'set': _parse_set,
-    #'exec': _parse_exec,
-    #'execute': _parse_execute,
-    #'alter': _parse_alter,
+    'set': None,
+    'exec': None,
+    'execute': None,
+    'alter': None,
 }
 
 _parse_operation_p = r'(\w+)'

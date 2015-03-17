@@ -5,10 +5,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
 
 from testing_support.settings import postgresql_settings
 
-from newrelic.agent import (background_task, current_transaction,
-    transient_function_wrapper, set_background_task)
-
-from newrelic.common.object_wrapper import resolve_path
+from newrelic.agent import background_task, set_background_task
 
 DB_SETTINGS = postgresql_settings()
 
@@ -19,13 +16,17 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Datastore/statement/Postgres/datastore_postgresql/insert', 1),
         ('Datastore/statement/Postgres/datastore_postgresql/update', 1),
         ('Datastore/statement/Postgres/datastore_postgresql/delete', 1),
-        ('Datastore/operation/Postgres/other', 8)]
+        ('Datastore/statement/Postgres/now/call', 1),
+        ('Datastore/statement/Postgres/pg_sleep/call', 1),
+        ('Datastore/operation/Postgres/drop', 1),
+        ('Datastore/operation/Postgres/create', 1),
+        ('Datastore/operation/Postgres/other', 4)]
 
 _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/all', 13),
-        ('Datastore/allWeb', 13),
+        ('Datastore/allOther', 13),
         ('Datastore/Postgres/all', 13),
-        ('Datastore/Postgres/allWeb', 13),
+        ('Datastore/Postgres/allOther', 13),
         ('Datastore/operation/Postgres/select', 1),
         ('Datastore/statement/Postgres/datastore_postgresql/select', 1),
         ('Datastore/operation/Postgres/insert', 1),
@@ -34,17 +35,20 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/statement/Postgres/datastore_postgresql/update', 1),
         ('Datastore/operation/Postgres/delete', 1),
         ('Datastore/statement/Postgres/datastore_postgresql/delete', 1),
-        ('Datastore/operation/Postgres/other', 8)]
+        ('Datastore/operation/Postgres/drop', 1),
+        ('Datastore/operation/Postgres/create', 1),
+        ('Datastore/statement/Postgres/now/call', 1),
+        ('Datastore/statement/Postgres/pg_sleep/call', 1),
+        ('Datastore/operation/Postgres/call', 2),
+        ('Datastore/operation/Postgres/other', 4)]
 
 @validate_transaction_metrics('test_database:test_execute_via_cursor',
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
         rollup_metrics=_test_execute_via_cursor_rollup_metrics,
-        background_task=False)
+        background_task=True)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_execute_via_cursor():
-    set_background_task(False)
-
     with postgresql.driver.dbapi20.connect(database=DB_SETTINGS['name'],
             user=DB_SETTINGS['user'], password=DB_SETTINGS['password'],
             host=DB_SETTINGS['host'], port=DB_SETTINGS['port']) as connection:
@@ -84,19 +88,17 @@ _test_rollback_on_exception_scoped_metrics = [
 
 _test_rollback_on_exception_rollup_metrics = [
         ('Datastore/all', 2),
-        ('Datastore/allWeb', 2),
+        ('Datastore/allOther', 2),
         ('Datastore/Postgres/all', 2),
-        ('Datastore/Postgres/allWeb', 2)]
+        ('Datastore/Postgres/allOther', 2)]
 
 @validate_transaction_metrics('test_database:test_rollback_on_exception',
         scoped_metrics=_test_rollback_on_exception_scoped_metrics,
         rollup_metrics=_test_rollback_on_exception_rollup_metrics,
-        background_task=False)
+        background_task=True)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_rollback_on_exception():
-    set_background_task(False)
-
     try:
         with postgresql.driver.dbapi20.connect(database=DB_SETTINGS['name'],
                 user=DB_SETTINGS['user'], password=DB_SETTINGS['password'],

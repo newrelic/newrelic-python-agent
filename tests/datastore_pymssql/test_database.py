@@ -3,15 +3,14 @@ import pymssql
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_database_trace_inputs)
 
-from newrelic.agent import (background_task, current_transaction,
-    transient_function_wrapper)
-
-from newrelic.common.object_wrapper import resolve_path
+from newrelic.agent import background_task
 
 server = "win-database.pdx.vm.datanerd.us\SQLEXPRESS"
 user = "sa"
 password = "!4maline!"
 
+# 'DROP' statement is not recognized since our parser isn't designed to handle
+# the IF condition which is used by the test. So it is categorized as 'other'.
 _test_execute_via_cursor_scoped_metrics = [
         ('Function/pymssql:connect', 1),
         ('Function/pymssql:Connection.__enter__', 1),
@@ -20,7 +19,8 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Datastore/statement/MSSQL/datastore_pymssql/insert', 1),
         ('Datastore/statement/MSSQL/datastore_pymssql/update', 1),
         ('Datastore/statement/MSSQL/datastore_pymssql/delete', 1),
-        ('Datastore/operation/MSSQL/other', 5)]
+        ('Datastore/operation/MSSQL/create', 1),
+        ('Datastore/operation/MSSQL/other', 4)]
 
 _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/all', 10),
@@ -35,7 +35,8 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/statement/MSSQL/datastore_pymssql/update', 1),
         ('Datastore/operation/MSSQL/delete', 1),
         ('Datastore/statement/MSSQL/datastore_pymssql/delete', 1),
-        ('Datastore/operation/MSSQL/other', 5)]
+        ('Datastore/operation/MSSQL/create', 1),
+        ('Datastore/operation/MSSQL/other', 4)]
 
 @validate_transaction_metrics('test_database:test_execute_via_cursor',
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,

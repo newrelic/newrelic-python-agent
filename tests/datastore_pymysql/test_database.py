@@ -1,17 +1,11 @@
 import pymysql
 
-import pwd
-import os
-
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_database_trace_inputs)
 
 from testing_support.settings import mysql_settings
 
-from newrelic.agent import (background_task, current_transaction,
-    transient_function_wrapper)
-
-from newrelic.common.object_wrapper import resolve_path
+from newrelic.agent import background_task
 
 DB_SETTINGS = mysql_settings()
 
@@ -23,13 +17,16 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Datastore/statement/MySQL/datastore_pymysql/insert', 1),
         ('Datastore/statement/MySQL/datastore_pymysql/update', 1),
         ('Datastore/statement/MySQL/datastore_pymysql/delete', 1),
-        ('Datastore/operation/MySQL/other', 6)]
+        ('Datastore/operation/MySQL/drop', 2),
+        ('Datastore/operation/MySQL/create', 2),
+        ('Datastore/statement/MySQL/hello/call', 1),
+        ('Datastore/operation/MySQL/other', 4)]
 
 _test_execute_via_cursor_rollup_metrics = [
-        ('Datastore/all', 11),
-        ('Datastore/allOther', 11),
-        ('Datastore/MySQL/all', 11),
-        ('Datastore/MySQL/allOther', 11),
+        ('Datastore/all', 14),
+        ('Datastore/allOther', 14),
+        ('Datastore/MySQL/all', 14),
+        ('Datastore/MySQL/allOther', 14),
         ('Datastore/operation/MySQL/select', 1),
         ('Datastore/statement/MySQL/datastore_pymysql/select', 1),
         ('Datastore/operation/MySQL/insert', 1),
@@ -38,7 +35,11 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/statement/MySQL/datastore_pymysql/update', 1),
         ('Datastore/operation/MySQL/delete', 1),
         ('Datastore/statement/MySQL/datastore_pymysql/delete', 1),
-        ('Datastore/operation/MySQL/other', 6)]
+        ('Datastore/statement/MySQL/hello/call', 1),
+        ('Datastore/operation/MySQL/call', 1),
+        ('Datastore/operation/MySQL/drop', 2),
+        ('Datastore/operation/MySQL/create', 2),
+        ('Datastore/operation/MySQL/other', 4)]
 
 @validate_transaction_metrics('test_database:test_execute_via_cursor',
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
@@ -69,6 +70,13 @@ def test_execute_via_cursor():
                 """c=%s where a=%s""", (4, 4.0, '4.0', 1))
 
         cursor.execute("""delete from datastore_pymysql where a=2""")
+        cursor.execute("""drop procedure if exists hello""")
+        cursor.execute("""CREATE PROCEDURE hello()
+                          BEGIN
+                            SELECT 'Hello World!';
+                          END""")
+
+        cursor.callproc("hello")
 
     connection.commit()
     connection.rollback()

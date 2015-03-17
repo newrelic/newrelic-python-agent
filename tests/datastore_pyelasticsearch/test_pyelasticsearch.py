@@ -47,7 +47,7 @@ _test_pyelasticsearch_rollup_metrics = [
         ('Datastore/statement/Elasticsearch/address/index', 2),
         ('Datastore/statement/Elasticsearch/address/search', 1),
         ('Datastore/statement/Elasticsearch/other/search', 1),
-        ('Datastore/operation/Elasticsearch/send_request', 1),  # refresh()
+        ('Datastore/statement/Elasticsearch/contacts/refresh', 1),
         ]
 
 @validate_transaction_errors(errors=[])

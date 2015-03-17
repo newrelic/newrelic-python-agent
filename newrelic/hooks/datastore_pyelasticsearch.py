@@ -27,21 +27,39 @@ def _extract_index_from_kwarg(*args, **kwargs):
     return index_name if isinstance(index_name, six.string_types) else 'other'
 
 _elasticsearch_client_methods = (
+    ('bulk', None),  # No target.
     ('bulk_index', _extract_index_from_pos1),
+    ('close_index', None),  # No target.
+    ('cluster_state', None),  # No target.
     ('count', _extract_index_from_kwarg),
     ('create_index', _extract_index_from_pos1),
     ('delete', _extract_index_from_pos1),
     ('delete_all', _extract_index_from_pos1),
+    ('delete_all_indexes', None),  # No target.
     ('delete_by_query', _extract_index_from_pos1),
     ('delete_index', _extract_index_from_pos1),
+    ('flush', _extract_index_from_pos1),
+    ('gateway_snapshot', _extract_index_from_pos1),
     ('get', _extract_index_from_pos1),
+    ('get_aliases', _extract_index_from_pos1),
+    ('get_mapping', _extract_index_from_pos1),
+    ('get_settings', _extract_index_from_pos1),
+    ('health', _extract_index_from_pos1),
     ('index', _extract_index_from_pos1),
     ('more_like_this', _extract_index_from_pos1),
-    ('multi_get', _extract_index_from_kwarg),
+    ('multi_get', None),  # No target.
+    ('open_index', _extract_index_from_pos1),
+    ('optimize', _extract_index_from_pos1),
     ('percolate', _extract_index_from_pos1),
+    ('put_mapping', _extract_index_from_pos1),
+    ('refresh', _extract_index_from_pos1),
     ('search', _extract_index_from_kwarg),
-    ('update', _extract_index_from_pos1),
     ('send_request', None),  # No target.
+    ('status', _extract_index_from_pos1),
+    ('update', _extract_index_from_pos1),
+    ('update_aliases', None),  # No target.
+    ('update_all_settings', None),  # No target.
+    ('update_settings', _extract_index_from_pos1),
 )
 
 def wrap_elasticsearch_client_method(module, name, arg_extractor):

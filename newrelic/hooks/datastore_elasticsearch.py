@@ -126,7 +126,7 @@ _elasticsearch_client_indices_methods = (
     ('delete', _extract_args_index),
     ('delete_alias', _extract_args_index),
     ('delete_mapping', _extract_args_index),
-    ('delete_template', _extract_args_index),
+    ('delete_template', None),
     ('delete_warmer', _extract_args_index),
     ('exists', _extract_args_index),
     ('exists_alias', _extract_args_name_index),

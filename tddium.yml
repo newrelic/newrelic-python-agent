@@ -95,6 +95,8 @@
     :config:
       raise_not_found_error: false
       allow_dynamic_fields: false
+  :elasticsearch:
+    :version: '0.19'
   :custom_service:
     :command: 'services.sh'
     :ping: true

@@ -1133,7 +1133,19 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/datastore_elasticsearch.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/datastore_memcache.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/datastore_pyelasticsearch.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -1164,12 +1176,6 @@
         ]
     },
     "newrelic/hooks/datastore_umemcache.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/datastore_pyelasticsearch.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

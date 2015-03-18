@@ -87,6 +87,28 @@ def test_none_url_get():
         # Python 3.
         pass
 
+_test_requests_wrong_datatype_url_scoped_metrics = [
+        ('External/unknown.url/requests/', 1)]
+
+_test_requests_wrong_datatype_url_rollup_metrics = [
+        ('External/all', 1),
+        ('External/allOther', 1),
+        ('External/unknown.url/all', 1),
+        ('External/unknown.url/requests/', 1)]
+
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics(
+        'test_requests:test_wrong_datatype_url_get',
+        scoped_metrics=_test_requests_wrong_datatype_url_scoped_metrics,
+        rollup_metrics=_test_requests_wrong_datatype_url_rollup_metrics,
+        background_task=True)
+@background_task()
+def test_wrong_datatype_url_get():
+    try:
+        requests.get({'a': 1})
+    except Exception:
+        pass
+
 @validate_transaction_errors(errors=[])
 @background_task()
 @cache_outgoing_headers

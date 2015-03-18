@@ -26,29 +26,41 @@ def _exercise_es(es):
     es.search('name:jessica', index='contacts')
     es.search('name:Sherlock', index='address')
     es.search('name:Bilbo', index=['contacts', 'address'])
+    es.search('name:Bilbo', index='contacts,address')
+    es.search('name:Bilbo')
+    es.status()
 
 # Common Metrics for tests that use _exercise_es().
 
 _test_pyelasticsearch_scoped_metrics = [
-        ('Datastore/statement/Elasticsearch/contacts/index', 3),
-        ('Datastore/statement/Elasticsearch/contacts/search', 2),
-        ('Datastore/statement/Elasticsearch/address/search', 1),
-        ]
+    ('Datastore/statement/Elasticsearch/contacts/index', 3),
+    ('Datastore/statement/Elasticsearch/contacts/search', 2),
+    ('Datastore/statement/Elasticsearch/address/index', 2),
+    ('Datastore/statement/Elasticsearch/address/search', 1),
+    ('Datastore/statement/Elasticsearch/_all/search', 1),
+    ('Datastore/statement/Elasticsearch/other/search', 2),
+    ('Datastore/statement/Elasticsearch/contacts/refresh', 1),
+    ('Datastore/statement/Elasticsearch/_all/status', 1),
+]
 
 _test_pyelasticsearch_rollup_metrics = [
-        ('Datastore/all', 10),
-        ('Datastore/allOther', 10),
-        ('Datastore/Elasticsearch/all', 10),
-        ('Datastore/Elasticsearch/allOther', 10),
-        ('Datastore/operation/Elasticsearch/index', 5),
-        ('Datastore/operation/Elasticsearch/search', 4),
-        ('Datastore/statement/Elasticsearch/contacts/index', 3),
-        ('Datastore/statement/Elasticsearch/contacts/search', 2),
-        ('Datastore/statement/Elasticsearch/address/index', 2),
-        ('Datastore/statement/Elasticsearch/address/search', 1),
-        ('Datastore/statement/Elasticsearch/other/search', 1),
-        ('Datastore/statement/Elasticsearch/contacts/refresh', 1),
-        ]
+    ('Datastore/all', 13),
+    ('Datastore/allOther', 13),
+    ('Datastore/Elasticsearch/all', 13),
+    ('Datastore/Elasticsearch/allOther', 13),
+    ('Datastore/operation/Elasticsearch/index', 5),
+    ('Datastore/operation/Elasticsearch/search', 6),
+    ('Datastore/operation/Elasticsearch/refresh', 1),
+    ('Datastore/operation/Elasticsearch/status', 1),
+    ('Datastore/statement/Elasticsearch/contacts/index', 3),
+    ('Datastore/statement/Elasticsearch/contacts/search', 2),
+    ('Datastore/statement/Elasticsearch/address/index', 2),
+    ('Datastore/statement/Elasticsearch/address/search', 1),
+    ('Datastore/statement/Elasticsearch/_all/search', 1),
+    ('Datastore/statement/Elasticsearch/other/search', 2),
+    ('Datastore/statement/Elasticsearch/contacts/refresh', 1),
+    ('Datastore/statement/Elasticsearch/_all/status', 1),
+]
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(

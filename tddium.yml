@@ -36,6 +36,7 @@
     - tox -c tests/datastore_pylibmc/tox.ini
     - tox -c tests/datastore_bmemcached/tox.ini
     - tox -c tests/datastore_pymemcache/tox.ini
+    - tox -c tests/datastore_pyelasticsearch/tox.ini
     - tox -c tests/external_httplib/tox.ini
     - tox -c tests/external_requests/tox-0014.ini
     - tox -c tests/external_requests/tox-0102.ini

@@ -48,7 +48,6 @@
     - tox -c tests/framework_bottle/tox-0009.ini
     - tox -c tests/framework_bottle/tox-0010.ini
     - tox -c tests/framework_bottle/tox-0011.ini
-    - tox -c tests/framework_cherrypy/tox-0301.ini
     - tox -c tests/framework_cherrypy/tox-0302.ini
     - tox -c tests/framework_cherrypy/tox-0303.ini
     - tox -c tests/framework_cherrypy/tox-0304.ini

@@ -2010,6 +2010,9 @@ def _process_module_builtin_defaults():
                 'newrelic.hooks.datastore_redis',
                 'instrument_redis_client')
 
+    _process_module_definition('motor',
+            'newrelic.hooks.datastore_motor', 'patch_motor')
+
     _process_module_definition('piston.resource',
             'newrelic.hooks.component_piston',
             'instrument_piston_resource')

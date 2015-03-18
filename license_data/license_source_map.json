@@ -1445,6 +1445,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/datastore_motor.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/network/__init__.py": {
         "hash": "n/a",
         "libraries": [

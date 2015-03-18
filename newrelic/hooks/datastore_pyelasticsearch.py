@@ -4,13 +4,13 @@ from newrelic.agent import (wrap_function_wrapper, current_transaction,
         DatastoreTrace)
 
 # An index name can be a string, None or a sequence. In the case of None
-# or an empty string it is the same as using '_all'. When a string it
-# can also be a comma separated list of index names. A sequence
+# an empty string or '*', it is the same as using '_all'. When a string
+# it can also be a comma separated list of index names. A sequence
 # obviously can also be more than one index name. Where we are certain
 # there is only a single index name we use it, otherwise we use 'other'.
 
 def _index_name(index):
-    if not index:
+    if not index or index == '*':
         return '_all'
     if not isinstance(index, six.string_types) or ',' in index:
         return 'other'

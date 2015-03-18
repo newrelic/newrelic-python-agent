@@ -27,6 +27,7 @@ def _exercise_es(es):
     es.search(index='address', q='name:Sherlock')
     es.search(index=['contacts', 'address'], q='name:Bilbo')
     es.search(index='contacts,address', q='name:Bilbo')
+    es.search(index='*', q='name:Bilbo')
     es.search(q='name:Bilbo')
     es.indices.status()
     es.cat.health()
@@ -41,7 +42,7 @@ _test_elasticsearch_scoped_metrics = [
     ('Datastore/statement/Elasticsearch/contacts/search', 2),
     ('Datastore/statement/Elasticsearch/address/index', 2),
     ('Datastore/statement/Elasticsearch/address/search', 1),
-    ('Datastore/statement/Elasticsearch/_all/search', 1),
+    ('Datastore/statement/Elasticsearch/_all/search', 2),
     ('Datastore/statement/Elasticsearch/other/search', 2),
     ('Datastore/statement/Elasticsearch/contacts/indices.refresh', 1),
     ('Datastore/statement/Elasticsearch/_all/indices.status', 1),
@@ -52,19 +53,19 @@ _test_elasticsearch_scoped_metrics = [
 ]
 
 _test_elasticsearch_rollup_metrics = [
-    ('Datastore/all', 17),
-    ('Datastore/allOther', 17),
-    ('Datastore/Elasticsearch/all', 17),
-    ('Datastore/Elasticsearch/allOther', 17),
+    ('Datastore/all', 18),
+    ('Datastore/allOther', 18),
+    ('Datastore/Elasticsearch/all', 18),
+    ('Datastore/Elasticsearch/allOther', 18),
     ('Datastore/operation/Elasticsearch/index', 5),
-    ('Datastore/operation/Elasticsearch/search', 6),
+    ('Datastore/operation/Elasticsearch/search', 7),
     ('Datastore/operation/Elasticsearch/indices.refresh', 1),
     ('Datastore/operation/Elasticsearch/indices.status', 1),
     ('Datastore/statement/Elasticsearch/contacts/index', 3),
     ('Datastore/statement/Elasticsearch/contacts/search', 2),
     ('Datastore/statement/Elasticsearch/address/index', 2),
     ('Datastore/statement/Elasticsearch/address/search', 1),
-    ('Datastore/statement/Elasticsearch/_all/search', 1),
+    ('Datastore/statement/Elasticsearch/_all/search', 2),
     ('Datastore/statement/Elasticsearch/other/search', 2),
     ('Datastore/statement/Elasticsearch/contacts/indices.refresh', 1),
     ('Datastore/statement/Elasticsearch/_all/indices.status', 1),

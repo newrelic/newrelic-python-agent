@@ -194,6 +194,9 @@ def _log_request(url, params, headers, data):
     if headers.get('Content-Encoding') == 'deflate':
         data = zlib.decompress(data)
 
+        if isinstance(data, bytes):
+            data = data.decode('Latin-1')
+
     object_from_json = json_decode(data)
 
     pprint(object_from_json, stream=_audit_log_fp)

@@ -405,6 +405,10 @@ def _process_configuration(section):
                      'getint', None)
     _process_setting(section, 'agent_limits.synthetics_transactions',
                      'getint', None)
+    _process_setting(section, 'agent_limits.data_compression_threshold',
+                     'getint', None)
+    _process_setting(section, 'agent_limits.data_compression_level',
+                     'getint', None)
     _process_setting(section, 'console.listener_socket',
                      'get', _map_console_listener_socket)
     _process_setting(section, 'console.allow_interpreter_cmd',

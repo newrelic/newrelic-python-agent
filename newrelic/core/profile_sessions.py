@@ -604,8 +604,12 @@ class ProfileSession(object):
                     'payload=%r.', flat_tree)
 
         json_call_tree = json_encode(flat_tree)
+
+        level = settings.agent_limits.data_compression_level
+        level = level or zlib.Z_DEFAULT_COMPRESSION
+
         encoded_tree = base64.standard_b64encode(
-                zlib.compress(six.b(json_call_tree)))
+                zlib.compress(six.b(json_call_tree), level))
 
         if six.PY3:
             encoded_tree = encoded_tree.decode('Latin-1')

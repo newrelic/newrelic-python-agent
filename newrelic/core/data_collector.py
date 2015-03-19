@@ -321,7 +321,9 @@ def send_request(session, url, method, license_key, agent_run_id=None,
     # in size and not in message types that further compression is
     # excluded.
 
-    if method not in _deflate_exclude_list and len(data) > 64*1024:
+    threshold = settings.agent_limits.data_compression_threshold
+
+    if method not in _deflate_exclude_list and len(data) > threshold:
         headers['Content-Encoding'] = 'deflate'
 
         internal_metric('Supportability/Collector/ZLIB/Bytes/%s' % method,
@@ -329,7 +331,9 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
         with InternalTrace('Supportability/Collector/ZLIB/Compress/'
                 '%s' % method):
-            data = zlib.compress(six.b(data))
+            level = settings.agent_limits.data_compression_level
+            level = level or zlib.Z_DEFAULT_COMPRESSION
+            data = zlib.compress(six.b(data), level)
 
     # If there is no requests session object provided for making
     # requests create one now. We want to close this as soon as we

@@ -29,10 +29,10 @@ def test_getattr_dunder_name():
     with pytest.raises(AttributeError):
         name = client.__name__
 
-def test_underscore_attribute_error():
+def test_underscore_attribute_does_not_raise_error():
     client = motor.MotorClient()
-    with pytest.raises(AttributeError):
-        db = client._db_with_leading_underscore
+    db = client._db_with_leading_underscore
+    assert isinstance(db, motor.MotorDatabase)
 
 def test_underscore_attibute_access():
     client = motor.MotorClient()

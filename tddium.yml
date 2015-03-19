@@ -36,6 +36,8 @@
     - tox -c tests/datastore_pylibmc/tox.ini
     - tox -c tests/datastore_bmemcached/tox.ini
     - tox -c tests/datastore_pymemcache/tox.ini
+    - tox -c tests/datastore_elasticsearch/tox.ini
+    - tox -c tests/datastore_pyelasticsearch/tox.ini
     - tox -c tests/external_httplib/tox.ini
     - tox -c tests/external_requests/tox-0014.ini
     - tox -c tests/external_requests/tox-0102.ini
@@ -92,6 +94,8 @@
     :config:
       raise_not_found_error: false
       allow_dynamic_fields: false
+  :elasticsearch:
+    :version: '1.4'
   :custom_service:
     :command: 'services.sh'
     :ping: true

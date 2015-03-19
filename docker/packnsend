@@ -18,7 +18,8 @@ APP_SERVICE_IMAGES="
     devpi \
     squid \
     mongodb \
-    redis
+    redis \
+    elasticsearch
     "
 
 ALL_IMAGES="python-base $APP_SERVICE_IMAGES"
@@ -260,6 +261,7 @@ launch_remote_command()
         --link packnsend-squid:squid \
         --link packnsend-mongodb:mongodb \
         --link packnsend-redis:redis \
+        --link packnsend-elasticsearch:elasticsearch \
         $DATA_IMAGE_NAME /data/packnsend-remote "$@")
 
     STATUS=$(time docker wait $CONTAINER_ID)
@@ -292,6 +294,7 @@ launch_remote_command()
             --link packnsend-squid:squid \
             --link packnsend-mongodb:mongodb \
             --link packnsend-redis:redis \
+            --link packnsend-elasticsearch:elasticsearch \
             $TEST_IMAGE_NAME /data/packnsend-bash
     fi
 }
@@ -321,6 +324,7 @@ launch_remote_shell()
         --link packnsend-squid:squid \
         --link packnsend-mongodb:mongodb \
         --link packnsend-redis:redis \
+        --link packnsend-elasticsearch:elasticsearch \
         $DATA_IMAGE_NAME /data/packnsend-bash
 }
 

@@ -1977,6 +1977,29 @@ def _process_module_builtin_defaults():
     _process_module_definition('solr',
             'newrelic.hooks.solr_solrpy')
 
+    _process_module_definition('elasticsearch.client',
+            'newrelic.hooks.datastore_elasticsearch',
+            'instrument_elasticsearch_client')
+    _process_module_definition('elasticsearch.client.cat',
+            'newrelic.hooks.datastore_elasticsearch',
+            'instrument_elasticsearch_client_cat')
+    _process_module_definition('elasticsearch.client.cluster',
+            'newrelic.hooks.datastore_elasticsearch',
+            'instrument_elasticsearch_client_cluster')
+    _process_module_definition('elasticsearch.client.indices',
+            'newrelic.hooks.datastore_elasticsearch',
+            'instrument_elasticsearch_client_indices')
+    _process_module_definition('elasticsearch.client.nodes',
+            'newrelic.hooks.datastore_elasticsearch',
+            'instrument_elasticsearch_client_nodes')
+    _process_module_definition('elasticsearch.client.snapshot',
+            'newrelic.hooks.datastore_elasticsearch',
+            'instrument_elasticsearch_client_snapshot')
+
+    _process_module_definition('pyelasticsearch.client',
+            'newrelic.hooks.datastore_pyelasticsearch',
+            'instrument_pyelasticsearch_client')
+
     if 'database.instrumentation.r1' in _settings.feature_flag:
         _process_module_definition('pymongo.connection',
                 'newrelic.hooks.nosql_pymongo',

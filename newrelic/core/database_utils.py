@@ -268,15 +268,15 @@ def _parse_create(sql):
 def _parse_drop(sql):
     return _join_identifier(_parse_table_re.search(sql))
 
-# TODO Following need to be reviewed again. They aren't currently used
-# in actual use as only parse out target for select/insert/update/delete.
-
 _parse_call_p = r'\s*CALL\s+(?!\()(\w+)'
 _parse_call_re = re.compile(_parse_call_p, re.IGNORECASE)
 
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_target_call')
 def _parse_call(sql):
     return _parse_default(sql, _parse_call_re)
+
+# TODO Following need to be reviewed again. They aren't currently used
+# in actual use as only parse out target for select/insert/update/delete.
 
 _parse_show_p = r'\s*SHOW\s+(.*)'
 _parse_show_re = re.compile(_parse_show_p, re.IGNORECASE | re.DOTALL)

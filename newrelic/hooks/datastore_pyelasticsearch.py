@@ -22,11 +22,14 @@ def _extract_kwargs_index(*args, **kwargs):
 def _extract_args_index(index=None, *args, **kwargs):
     return _index_name(index)
 
+def _extract_args_metric_index(metric=None, index=None, *args, **kwargs):
+    return _index_name(index)
+
 _elasticsearch_client_methods = (
     ('bulk', None),
     ('bulk_index', _extract_args_index),
     ('close_index', None),
-    ('cluster_state', None),
+    ('cluster_state', _extract_args_metric_index),
     ('count', _extract_kwargs_index),
     ('create_index', _extract_args_index),
     ('delete', _extract_args_index),

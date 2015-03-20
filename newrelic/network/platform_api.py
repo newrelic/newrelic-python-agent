@@ -96,14 +96,11 @@ class PlatformInterface(object):
                 'with payload=%r.', data)
 
         # Compress the serialized JSON being sent as content if over 64KiB
-        # in size. If less than 2MB in size compress for speed. If over
-        # 2MB then compress for smallest size. This parallels what the Ruby
-        # agent does.
+        # in size.
 
         if len(data) > 64*1024:
             headers['Content-Encoding'] = 'deflate'
-            level = (len(data) < 2000000) and 1 or 9
-            data = zlib.compress(six.b(data), level)
+            data = zlib.compress(six.b(data))
 
         # If there is no requests session object provided for making
         # requests create one now. We want to close this as soon as we

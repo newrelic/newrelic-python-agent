@@ -1031,8 +1031,11 @@ class StatsEngine(object):
 
             json_data = json_encode(params)
 
+            level = self.__settings.agent_limits.data_compression_level
+            level = level or zlib.Z_DEFAULT_COMPRESSION
+
             params_data = base64.standard_b64encode(
-                    zlib.compress(six.b(json_data)))
+                    zlib.compress(six.b(json_data), level))
 
             if six.PY3:
                 params_data = params_data.decode('Latin-1')
@@ -1156,9 +1159,12 @@ class StatsEngine(object):
             internal_metric('Supportability/StatsEngine/ZLIB/Bytes/'
                             'transaction_sample_data', len(json_data))
 
+            level = self.__settings.agent_limits.data_compression_level
+            level = level or zlib.Z_DEFAULT_COMPRESSION
+
             with InternalTrace('Supportability/StatsEngine/ZLIB/Compress/'
                                'transaction_sample_data'):
-                zlib_data = zlib.compress(six.b(json_data))
+                zlib_data = zlib.compress(six.b(json_data), level)
 
             with InternalTrace('Supportability/StatsEngine/BASE64/Encode/'
                                'transaction_sample_data'):
@@ -1231,9 +1237,12 @@ class StatsEngine(object):
         internal_metric('Supportability/StatsEngine/ZLIB/Bytes/'
                 'transaction_sample_data', len(json_data))
 
+        level = self.__settings.agent_limits.data_compression_level
+        level = level or zlib.Z_DEFAULT_COMPRESSION
+
         with InternalTrace('Supportability/StatsEngine/ZLIB/Compress/'
                 'transaction_sample_data'):
-            zlib_data = zlib.compress(six.b(json_data))
+            zlib_data = zlib.compress(six.b(json_data), level)
 
         with InternalTrace('Supportability/StatsEngine/BASE64/Encode/'
                 'transaction_sample_data'):

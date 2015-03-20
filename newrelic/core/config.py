@@ -311,6 +311,8 @@ _settings.agent_limits.xray_profile_overhead = 0.05
 _settings.agent_limits.xray_profile_maximum = 500
 _settings.agent_limits.synthetics_events = 200
 _settings.agent_limits.synthetics_transactions = 20
+_settings.agent_limits.data_compression_threshold = 64*1024
+_settings.agent_limits.data_compression_level = None
 
 _settings.console.listener_socket = None
 _settings.console.allow_interpreter_cmd = False

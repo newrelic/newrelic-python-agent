@@ -194,6 +194,9 @@ def _log_request(url, params, headers, data):
     if headers.get('Content-Encoding') == 'deflate':
         data = zlib.decompress(data)
 
+        if isinstance(data, bytes):
+            data = data.decode('Latin-1')
+
     object_from_json = json_decode(data)
 
     pprint(object_from_json, stream=_audit_log_fp)
@@ -245,6 +248,9 @@ def _log_response(log_id, result):
     print(file=_audit_log_fp)
 
     _audit_log_fp.flush()
+
+_deflate_exclude_list = set(['transaction_sample_data', 'sql_trace_data',
+    'profile_data'])
 
 def send_request(session, url, method, license_key, agent_run_id=None,
             payload=()):
@@ -312,19 +318,21 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 url, method)
 
     # Compress the serialized JSON being sent as content if over 64KiB
-    # in size. If less than 2MB in size compress for speed. If over
-    # 2MB then compress for smallest size. This parallels what the Ruby
-    # agent does.
+    # in size and not in message types that further compression is
+    # excluded.
 
-    if len(data) > 64*1024:
+    threshold = settings.agent_limits.data_compression_threshold
+
+    if method not in _deflate_exclude_list and len(data) > threshold:
         headers['Content-Encoding'] = 'deflate'
-        level = (len(data) < 2000000) and 1 or 9
 
         internal_metric('Supportability/Collector/ZLIB/Bytes/%s' % method,
                 len(data))
 
         with InternalTrace('Supportability/Collector/ZLIB/Compress/'
                 '%s' % method):
+            level = settings.agent_limits.data_compression_level
+            level = level or zlib.Z_DEFAULT_COMPRESSION
             data = zlib.compress(six.b(data), level)
 
     # If there is no requests session object provided for making

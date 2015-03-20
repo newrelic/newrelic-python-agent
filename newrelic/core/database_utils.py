@@ -268,15 +268,15 @@ def _parse_create(sql):
 def _parse_drop(sql):
     return _join_identifier(_parse_table_re.search(sql))
 
-# TODO Following need to be reviewed again. They aren't currently used
-# in actual use as only parse out target for select/insert/update/delete.
-
 _parse_call_p = r'\s*CALL\s+(?!\()(\w+)'
 _parse_call_re = re.compile(_parse_call_p, re.IGNORECASE)
 
 @internal_trace('Supportability/DatabaseUtils/Calls/parse_target_call')
 def _parse_call(sql):
     return _parse_default(sql, _parse_call_re)
+
+# TODO Following need to be reviewed again. They aren't currently used
+# in actual use as only parse out target for select/insert/update/delete.
 
 _parse_show_p = r'\s*SHOW\s+(.*)'
 _parse_show_re = re.compile(_parse_show_p, re.IGNORECASE | re.DOTALL)
@@ -325,15 +325,16 @@ _operation_table = {
     'delete': _parse_delete,
     'insert': _parse_insert,
     'update': _parse_update,
-    #'create': _parse_create,
-    #'drop': _parse_drop,
-    #'call': _parse_call,
-    #'show': _parse_show,
+    'create': None,
+    'drop': None,
+    'call': _parse_call,
     'show': None,
-    #'set': _parse_set,
-    #'exec': _parse_exec,
-    #'execute': _parse_execute,
-    #'alter': _parse_alter,
+    'set': None,
+    'exec': None,
+    'execute': None,
+    'alter': None,
+    'commit': None,
+    'rollback': None,
 }
 
 _parse_operation_p = r'(\w+)'

@@ -1,17 +1,11 @@
 import MySQLdb
 
-import pwd
-import os
-
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_database_trace_inputs)
 
 from testing_support.settings import mysql_settings
 
-from newrelic.agent import (background_task, current_transaction,
-    transient_function_wrapper)
-
-from newrelic.common.object_wrapper import resolve_path
+from newrelic.agent import background_task
 
 DB_SETTINGS = mysql_settings()
 
@@ -23,8 +17,11 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Datastore/statement/MySQL/datastore_mysqldb/insert', 1),
         ('Datastore/statement/MySQL/datastore_mysqldb/update', 1),
         ('Datastore/statement/MySQL/datastore_mysqldb/delete', 1),
+        ('Datastore/operation/MySQL/drop', 1),
+        ('Datastore/operation/MySQL/create', 1),
         ('Datastore/operation/MySQL/show', 1),
-        ('Datastore/operation/MySQL/other', 6)]
+        ('Datastore/operation/MySQL/commit', 3),
+        ('Datastore/operation/MySQL/rollback', 1)]
 
 _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/all', 12),
@@ -40,7 +37,10 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/operation/MySQL/delete', 1),
         ('Datastore/statement/MySQL/datastore_mysqldb/delete', 1),
         ('Datastore/operation/MySQL/show', 1),
-        ('Datastore/operation/MySQL/other', 6)]
+        ('Datastore/operation/MySQL/drop', 1),
+        ('Datastore/operation/MySQL/create', 1),
+        ('Datastore/operation/MySQL/commit', 3),
+        ('Datastore/operation/MySQL/rollback', 1)]
 
 @validate_transaction_metrics('test_database:test_execute_via_cursor',
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
@@ -85,7 +85,10 @@ _test_connect_using_alias_scoped_metrics = [
         ('Datastore/statement/MySQL/datastore_mysqldb/update', 1),
         ('Datastore/statement/MySQL/datastore_mysqldb/delete', 1),
         ('Datastore/operation/MySQL/show', 1),
-        ('Datastore/operation/MySQL/other', 6)]
+        ('Datastore/operation/MySQL/drop', 1),
+        ('Datastore/operation/MySQL/create', 1),
+        ('Datastore/operation/MySQL/commit', 3),
+        ('Datastore/operation/MySQL/rollback', 1)]
 
 _test_connect_using_alias_rollup_metrics = [
         ('Datastore/all', 12),
@@ -101,7 +104,10 @@ _test_connect_using_alias_rollup_metrics = [
         ('Datastore/operation/MySQL/delete', 1),
         ('Datastore/statement/MySQL/datastore_mysqldb/delete', 1),
         ('Datastore/operation/MySQL/show', 1),
-        ('Datastore/operation/MySQL/other', 6)]
+        ('Datastore/operation/MySQL/drop', 1),
+        ('Datastore/operation/MySQL/create', 1),
+        ('Datastore/operation/MySQL/commit', 3),
+        ('Datastore/operation/MySQL/rollback', 1)]
 
 @validate_transaction_metrics('test_database:test_connect_using_alias',
         scoped_metrics=_test_connect_using_alias_scoped_metrics,
@@ -143,14 +149,14 @@ _test_rollback_on_exception_scoped_metrics = [
         ('Function/MySQLdb:Connect', 1),
         ('Function/MySQLdb.connections:Connection.__enter__', 1),
         ('Function/MySQLdb.connections:Connection.__exit__', 1),
-        ('Datastore/operation/MySQL/other', 1)]
+        ('Datastore/operation/MySQL/rollback', 1)]
 
 _test_rollback_on_exception_rollup_metrics = [
         ('Datastore/all', 2),
         ('Datastore/allOther', 2),
         ('Datastore/MySQL/all', 2),
         ('Datastore/MySQL/allOther', 2),
-        ('Datastore/operation/MySQL/other', 1)]
+        ('Datastore/operation/MySQL/rollback', 1)]
 
 @validate_transaction_metrics('test_database:test_rollback_on_exception',
         scoped_metrics=_test_rollback_on_exception_scoped_metrics,

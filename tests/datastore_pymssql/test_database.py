@@ -3,15 +3,14 @@ import pymssql
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_database_trace_inputs)
 
-from newrelic.agent import (background_task, current_transaction,
-    transient_function_wrapper)
-
-from newrelic.common.object_wrapper import resolve_path
+from newrelic.agent import background_task
 
 server = "win-database.pdx.vm.datanerd.us\SQLEXPRESS"
 user = "sa"
 password = "!4maline!"
 
+# 'DROP' statement is not recognized since our parser isn't designed to handle
+# the IF condition which is used by the test. So it is categorized as 'other'.
 _test_execute_via_cursor_scoped_metrics = [
         ('Function/pymssql:connect', 1),
         ('Function/pymssql:Connection.__enter__', 1),
@@ -20,13 +19,17 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Datastore/statement/MSSQL/datastore_pymssql/insert', 1),
         ('Datastore/statement/MSSQL/datastore_pymssql/update', 1),
         ('Datastore/statement/MSSQL/datastore_pymssql/delete', 1),
-        ('Datastore/operation/MSSQL/other', 5)]
+        ('Datastore/statement/MSSQL/sp_help/call', 1),
+        ('Datastore/operation/MSSQL/create', 1),
+        ('Datastore/operation/MSSQL/commit', 2),
+        ('Datastore/operation/MSSQL/rollback', 1),
+        ('Datastore/operation/MSSQL/other', 1)]
 
 _test_execute_via_cursor_rollup_metrics = [
-        ('Datastore/all', 10),
-        ('Datastore/allOther', 10),
-        ('Datastore/MSSQL/all', 10),
-        ('Datastore/MSSQL/allOther', 10),
+        ('Datastore/all', 11),
+        ('Datastore/allOther', 11),
+        ('Datastore/MSSQL/all', 11),
+        ('Datastore/MSSQL/allOther', 11),
         ('Datastore/operation/MSSQL/select', 1),
         ('Datastore/statement/MSSQL/datastore_pymssql/select', 1),
         ('Datastore/operation/MSSQL/insert', 1),
@@ -35,7 +38,12 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/statement/MSSQL/datastore_pymssql/update', 1),
         ('Datastore/operation/MSSQL/delete', 1),
         ('Datastore/statement/MSSQL/datastore_pymssql/delete', 1),
-        ('Datastore/operation/MSSQL/other', 5)]
+        ('Datastore/operation/MSSQL/call', 1),
+        ('Datastore/statement/MSSQL/sp_help/call', 1),
+        ('Datastore/operation/MSSQL/create', 1),
+        ('Datastore/operation/MSSQL/commit', 2),
+        ('Datastore/operation/MSSQL/rollback', 1),
+        ('Datastore/operation/MSSQL/other', 1)]
 
 @validate_transaction_metrics('test_database:test_execute_via_cursor',
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
@@ -67,6 +75,8 @@ def test_execute_via_cursor():
                 """c=%s where a=%s""", (4, 4.0, '4.0', 1))
 
         cursor.execute("""delete from datastore_pymssql where a=2""")
+
+        cursor.callproc('sp_help', ('datastore_pymssql',))
 
         connection.commit()
 
@@ -103,6 +113,8 @@ def test_execute_via_cursor_dict():
                 """c=%s where a=%s""", (4, 4.0, '4.0', 1))
 
         cursor.execute("""delete from datastore_pymssql where a=2""")
+
+        cursor.callproc('sp_help', ('datastore_pymssql',))
 
         connection.commit()
 

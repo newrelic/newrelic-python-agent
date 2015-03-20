@@ -1,17 +1,11 @@
 import oursql
 
-import pwd
-import os
-
 from testing_support.fixtures import (validate_transaction_metrics,
             validate_database_trace_inputs)
 
 from testing_support.settings import mysql_settings
 
-from newrelic.agent import (background_task, current_transaction,
-    transient_function_wrapper, set_background_task)
-
-from newrelic.common.object_wrapper import resolve_path
+from newrelic.agent import background_task
 
 DB_SETTINGS = mysql_settings()
 
@@ -23,13 +17,16 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Datastore/statement/MySQL/datastore_oursql/insert', 1),
         ('Datastore/statement/MySQL/datastore_oursql/update', 1),
         ('Datastore/statement/MySQL/datastore_oursql/delete', 1),
-        ('Datastore/operation/MySQL/other', 6)]
+        ('Datastore/operation/MySQL/create', 1),
+        ('Datastore/operation/MySQL/drop', 1),
+        ('Datastore/operation/MySQL/commit', 3),
+        ('Datastore/operation/MySQL/rollback', 1)]
 
 _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/all', 12),
-        ('Datastore/allWeb', 12),
+        ('Datastore/allOther', 12),
         ('Datastore/MySQL/all', 12),
-        ('Datastore/MySQL/allWeb', 12),
+        ('Datastore/MySQL/allOther', 12),
         ('Datastore/operation/MySQL/select', 2),
         ('Datastore/statement/MySQL/datastore_oursql/select', 2),
         ('Datastore/operation/MySQL/insert', 1),
@@ -38,16 +35,18 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/statement/MySQL/datastore_oursql/update', 1),
         ('Datastore/operation/MySQL/delete', 1),
         ('Datastore/statement/MySQL/datastore_oursql/delete', 1),
-        ('Datastore/operation/MySQL/other', 6)]
+        ('Datastore/operation/MySQL/create', 1),
+        ('Datastore/operation/MySQL/drop', 1),
+        ('Datastore/operation/MySQL/commit', 3),
+        ('Datastore/operation/MySQL/rollback', 1)]
 
 @validate_transaction_metrics('test_database:test_execute_via_cursor',
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
         rollup_metrics=_test_execute_via_cursor_rollup_metrics,
-        background_task=False)
+        background_task=True)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_execute_via_cursor():
-    set_background_task(False)
 
     connection = oursql.connect(db=DB_SETTINGS['name'],
             user=DB_SETTINGS['user'], passwd=DB_SETTINGS['password'],
@@ -87,23 +86,22 @@ _test_rollback_on_exception_scoped_metrics = [
         ('Function/oursql:Connection', 1),
         ('Function/oursql:Connection.__enter__', 1),
         ('Function/oursql:Connection.__exit__', 1),
-        ('Datastore/operation/MySQL/other', 1)]
+        ('Datastore/operation/MySQL/rollback', 1)]
 
 _test_rollback_on_exception_rollup_metrics = [
         ('Datastore/all', 2),
-        ('Datastore/allWeb', 2),
+        ('Datastore/allOther', 2),
         ('Datastore/MySQL/all', 2),
-        ('Datastore/MySQL/allWeb', 2),
-        ('Datastore/operation/MySQL/other', 1)]
+        ('Datastore/MySQL/allOther', 2),
+        ('Datastore/operation/MySQL/rollback', 1)]
 
 @validate_transaction_metrics('test_database:test_rollback_on_exception',
         scoped_metrics=_test_rollback_on_exception_scoped_metrics,
         rollup_metrics=_test_rollback_on_exception_rollup_metrics,
-        background_task=False)
+        background_task=True)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_rollback_on_exception():
-    set_background_task(False)
 
     try:
         connection = oursql.connect(db=DB_SETTINGS['name'],

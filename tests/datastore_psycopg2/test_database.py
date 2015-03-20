@@ -7,10 +7,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
 
 from testing_support.settings import postgresql_settings
 
-from newrelic.agent import (background_task, current_transaction,
-    transient_function_wrapper)
-
-from newrelic.common.object_wrapper import resolve_path
+from newrelic.agent import background_task
 
 DB_SETTINGS = postgresql_settings()
 
@@ -22,7 +19,12 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Datastore/statement/Postgres/datastore_psycopg2/insert', 1),
         ('Datastore/statement/Postgres/datastore_psycopg2/update', 1),
         ('Datastore/statement/Postgres/datastore_psycopg2/delete', 1),
-        ('Datastore/operation/Postgres/other', 8)]
+        ('Datastore/statement/Postgres/now/call', 1),
+        ('Datastore/statement/Postgres/pg_sleep/call', 1),
+        ('Datastore/operation/Postgres/drop', 1),
+        ('Datastore/operation/Postgres/create', 1),
+        ('Datastore/operation/Postgres/commit', 3),
+        ('Datastore/operation/Postgres/rollback', 1)]
 
 _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/all', 13),
@@ -37,7 +39,13 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/statement/Postgres/datastore_psycopg2/update', 1),
         ('Datastore/operation/Postgres/delete', 1),
         ('Datastore/statement/Postgres/datastore_psycopg2/delete', 1),
-        ('Datastore/operation/Postgres/other', 8)]
+        ('Datastore/operation/Postgres/drop', 1),
+        ('Datastore/operation/Postgres/create', 1),
+        ('Datastore/statement/Postgres/now/call', 1),
+        ('Datastore/statement/Postgres/pg_sleep/call', 1),
+        ('Datastore/operation/Postgres/call', 2),
+        ('Datastore/operation/Postgres/commit', 3),
+        ('Datastore/operation/Postgres/rollback', 1)]
 
 @validate_transaction_metrics('test_database:test_execute_via_cursor',
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
@@ -133,14 +141,14 @@ _test_rollback_on_exception_scoped_metrics = [
         ('Function/psycopg2:connect', 1),
         ('Function/psycopg2.extensions:connection.__enter__', 1),
         ('Function/psycopg2.extensions:connection.__exit__', 1),
-        ('Datastore/operation/Postgres/other', 1)]
+        ('Datastore/operation/Postgres/rollback', 1)]
 
 _test_rollback_on_exception_rollup_metrics = [
         ('Datastore/all', 2),
         ('Datastore/allOther', 2),
         ('Datastore/Postgres/all', 2),
         ('Datastore/Postgres/allOther', 2),
-        ('Datastore/operation/Postgres/other', 1)]
+        ('Datastore/operation/Postgres/rollback', 1)]
 
 @validate_transaction_metrics('test_database:test_rollback_on_exception',
         scoped_metrics=_test_rollback_on_exception_scoped_metrics,

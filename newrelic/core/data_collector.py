@@ -570,15 +570,24 @@ def send_request(session, url, method, license_key, agent_run_id=None,
             license_key, agent_run_id, params, headers, error_type,
             message)
 
+    # Technically most server side errors will result in the active
+    # agent run being abandoned and so there is no point trying to
+    # create a metric for when they occur. Leave this here though to at
+    # least log a metric for the case where a completely unexpected
+    # server error response is received and the agent run does manage to
+    # continue and further requests don't just keep failing. Since do
+    # not even expect the metric to be retained, use the original error
+    # type as sent.
+
+    internal_metric('Supportability/Python/Collector/ServerError/'
+            '%s' % error_type, 1)
+
     if error_type == 'NewRelic::Agent::LicenseException':
         _logger.error('Data collector is indicating that an incorrect '
                 'license key has been supplied by the agent. The value '
                 'which was used by the agent is %r. Please correct any '
                 'problem with the license key or report this problem to '
                 'New Relic support.', license_key)
-
-        internal_metric('Supportability/Python/Fail/Collector/'
-                'LicenseException', 1)
 
         raise DiscardDataForRequest(message)
 
@@ -589,9 +598,6 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 'the request content was %d. If this keeps occurring on a '
                 'regular basis, please report this problem to New Relic '
                 'support for further investigation.', method, len(data))
-
-        internal_metric('Supportability/Python/Fail/Collector/'
-                'PostTooBigException', 1)
 
         raise DiscardDataForRequest(message)
 
@@ -606,9 +612,6 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 'where the agent run was %r. The reason given for the '
                 'forced restart is %r.', agent_run_id, message)
 
-        internal_metric('Supportability/Python/Fail/Collector/'
-                'ForceRestartException', 1)
-
         raise ForceAgentRestart(message)
 
     elif error_type == 'NewRelic::Agent::ForceDisconnectException':
@@ -617,9 +620,6 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 'agent run was %r. The reason given for the forced '
                 'disconnection is %r. Please contact New Relic support '
                 'for further information.', agent_run_id, message)
-
-        internal_metric('Supportability/Python/Fail/Collector/'
-                'ForceDisconnectException', 1)
 
         raise ForceAgentDisconnect(message)
 
@@ -631,9 +631,6 @@ def send_request(session, url, method, license_key, agent_run_id=None,
             'was of type %r with message %r. If this issue persists '
             'then please report this problem to New Relic support for '
             'further investigation.', method, payload, error_type, message)
-
-    internal_metric('Supportability/Python/Fail/Collector/'
-            'UnexpectedException', 1)
 
     raise DiscardDataForRequest(message)
 

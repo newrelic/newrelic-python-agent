@@ -19,16 +19,17 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Datastore/statement/MSSQL/datastore_pymssql/insert', 1),
         ('Datastore/statement/MSSQL/datastore_pymssql/update', 1),
         ('Datastore/statement/MSSQL/datastore_pymssql/delete', 1),
+        ('Datastore/statement/MSSQL/sp_help/call', 1),
         ('Datastore/operation/MSSQL/create', 1),
         ('Datastore/operation/MSSQL/commit', 2),
         ('Datastore/operation/MSSQL/rollback', 1),
         ('Datastore/operation/MSSQL/other', 1)]
 
 _test_execute_via_cursor_rollup_metrics = [
-        ('Datastore/all', 10),
-        ('Datastore/allOther', 10),
-        ('Datastore/MSSQL/all', 10),
-        ('Datastore/MSSQL/allOther', 10),
+        ('Datastore/all', 11),
+        ('Datastore/allOther', 11),
+        ('Datastore/MSSQL/all', 11),
+        ('Datastore/MSSQL/allOther', 11),
         ('Datastore/operation/MSSQL/select', 1),
         ('Datastore/statement/MSSQL/datastore_pymssql/select', 1),
         ('Datastore/operation/MSSQL/insert', 1),
@@ -37,6 +38,8 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/statement/MSSQL/datastore_pymssql/update', 1),
         ('Datastore/operation/MSSQL/delete', 1),
         ('Datastore/statement/MSSQL/datastore_pymssql/delete', 1),
+        ('Datastore/operation/MSSQL/call', 1),
+        ('Datastore/statement/MSSQL/sp_help/call', 1),
         ('Datastore/operation/MSSQL/create', 1),
         ('Datastore/operation/MSSQL/commit', 2),
         ('Datastore/operation/MSSQL/rollback', 1),
@@ -73,6 +76,8 @@ def test_execute_via_cursor():
 
         cursor.execute("""delete from datastore_pymssql where a=2""")
 
+        cursor.callproc('sp_help', ('datastore_pymssql',))
+
         connection.commit()
 
         connection.rollback()
@@ -108,6 +113,8 @@ def test_execute_via_cursor_dict():
                 """c=%s where a=%s""", (4, 4.0, '4.0', 1))
 
         cursor.execute("""delete from datastore_pymssql where a=2""")
+
+        cursor.callproc('sp_help', ('datastore_pymssql',))
 
         connection.commit()
 

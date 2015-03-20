@@ -29,6 +29,7 @@ from newrelic.core.xray_session import XraySession
 from newrelic.core.profile_sessions import profile_session_manager
 
 from .database_utils import SQLConnections
+from ..common.object_names import callable_name
 
 _logger = logging.getLogger(__name__)
 
@@ -1476,6 +1477,11 @@ class Application(object):
                     # SQL and transaction traces from older harvest
                     # period.
 
+                    exc_type = sys.exc_info()[0]
+
+                    internal_metric('Supportability/Python/Harvest/'
+                            'Exception/%s' % callable_name(exc_type), 1)
+
                     if self._period_start != period_end:
 
                         self._merge_count += 1
@@ -1494,9 +1500,6 @@ class Application(object):
                                     merge_sql=False, merge_samples=True,
                                     merge_synthetics_events = True,
                                     rollback=True)
-                            internal_metric('Supportability/Python/Fail/'
-                                    'Harvest/Retry/MergeCount',
-                                    self._merge_count)
 
                         else:
                             _logger.error('Unable to report main transaction '
@@ -1523,14 +1526,21 @@ class Application(object):
                     # likely to occur again so we just throw any data
                     # not sent away for this reporting period.
 
-                    internal_metric('Supportability/Python/Fail/Harvest/'
-                            'DiscardDataForRequest', 1)
+                    exc_type = sys.exc_info()[0]
+
+                    internal_metric('Supportability/Python/Harvest/'
+                            'Exception/%s' % callable_name(exc_type), 1)
 
                     self._discard_count += 1
 
                 except Exception:
                     # An unexpected error, likely some sort of internal
                     # agent implementation issue.
+
+                    exc_type = sys.exc_info()[0]
+
+                    internal_metric('Supportability/Python/Harvest/'
+                            'Exception/%s' % callable_name(exc_type), 1)
 
                     _logger.exception('Unexpected exception when attempting '
                             'to harvest the metric data and send it to the '

@@ -758,8 +758,8 @@ class Application(object):
                 try:
                     background_task, samples = profile_samples
 
-                    internal_metric('Supportability/Profiling/Counts/'
-                            'stack_traces', len(samples))
+                    internal_metric('Supportability/Python/Profiling/'
+                            'Counts/stack_traces', len(samples))
 
                     tr_type = 'BACKGROUND' if background_task else 'REQUEST'
 
@@ -788,8 +788,8 @@ class Application(object):
                     self._transaction_count += 1
                     self._last_transaction = data.end_time
 
-                    internal_metric('Supportability/Transaction/Counts/'
-                            'metric_data', stats.metric_data_count())
+                    internal_metric('Supportability/Python/Transaction/'
+                            'Counts/metric_data', stats.metric_data_count())
 
                     self._stats_engine.merge_metric_stats(stats)
                     self._stats_engine.merge_other_stats(stats)
@@ -1160,7 +1160,7 @@ class Application(object):
         internal_metrics = CustomMetrics()
 
         with InternalTraceContext(internal_metrics):
-            with InternalTrace('Supportability/Harvest/Calls/harvest'):
+            with InternalTrace('Supportability/Python/Harvest/Calls/harvest'):
 
                 self._harvest_count += 1
 
@@ -1278,10 +1278,12 @@ class Application(object):
                         if configuration.analytics_events.transactions.enabled:
                             sampled_data_set = stats.sampled_data_set
 
-                            internal_metric('Supportability/RequestSampler/'
-                                    'requests', sampled_data_set.count)
-                            internal_metric('Supportability/RequestSampler/'
-                                    'samples', len(sampled_data_set.samples))
+                            internal_metric('Supportability/Python/'
+                                    'RequestSampler/requests',
+                                    sampled_data_set.count)
+                            internal_metric('Supportability/Python/'
+                                    'RequestSampler/samples',
+                                    len(sampled_data_set.samples))
 
                     # Create a metric_normalizer based on normalize_name
                     # If metric rename rules are empty, set normalizer
@@ -1302,7 +1304,7 @@ class Application(object):
 
                     metric_data = stats.metric_data(metric_normalizer)
 
-                    internal_metric('Supportability/Harvest/Counts/'
+                    internal_metric('Supportability/Python/Harvest/Counts/'
                             'metric_data', len(metric_data))
 
                     _logger.debug('Sending metric data for harvest of %r.',
@@ -1357,8 +1359,8 @@ class Application(object):
                     if configuration.collect_errors:
                         error_data = stats.error_data()
 
-                        internal_metric('Supportability/Harvest/Counts/'
-                                'error_data', len(error_data))
+                        internal_metric('Supportability/Python/Harvest/'
+                                'Counts/error_data', len(error_data))
 
                         if error_data:
                             _logger.debug('Sending error data for harvest '
@@ -1378,8 +1380,8 @@ class Application(object):
                                 slow_sql_data = stats.slow_sql_data(
                                         connections)
 
-                                internal_metric('Supportability/Harvest/'
-                                        'Counts/sql_trace_data',
+                                internal_metric('Supportability/Python/'
+                                        'Harvest/Counts/sql_trace_data',
                                         len(slow_sql_data))
 
                                 if slow_sql_data:
@@ -1393,8 +1395,8 @@ class Application(object):
                                     stats.transaction_trace_data(
                                     connections))
 
-                            internal_metric('Supportability/Harvest/Counts/'
-                                    'transaction_sample_data',
+                            internal_metric('Supportability/Python/Harvest/'
+                                    'Counts/transaction_sample_data',
                                     len(slow_transaction_data))
 
                             if slow_transaction_data:
@@ -1492,8 +1494,8 @@ class Application(object):
                                     merge_sql=False, merge_samples=True,
                                     merge_synthetics_events = True,
                                     rollback=True)
-                            internal_metric(
-                                    'Supportability/Python/Fail/Harvest/Retry/MergeCount',
+                            internal_metric('Supportability/Python/Fail/'
+                                    'Harvest/Retry/MergeCount',
                                     self._merge_count)
 
                         else:
@@ -1521,8 +1523,8 @@ class Application(object):
                     # likely to occur again so we just throw any data
                     # not sent away for this reporting period.
 
-                    internal_metric(
-                            'Supportability/Python/Fail/Harvest/DiscardDataForRequest', 1)
+                    internal_metric('Supportability/Python/Fail/Harvest/'
+                            'DiscardDataForRequest', 1)
 
                     self._discard_count += 1
 

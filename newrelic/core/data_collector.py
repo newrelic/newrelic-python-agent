@@ -291,7 +291,8 @@ def send_request(session, url, method, license_key, agent_run_id=None,
     # a problem with the implementation of the agent.
 
     try:
-        with InternalTrace('Supportability/Collector/JSON/Encode/%s' % method):
+        with InternalTrace('Supportability/Python/'
+                'Collector/JSON/Encode/%s' % method):
             data = json_encode(payload)
 
     except Exception:
@@ -320,10 +321,10 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         headers['Content-Encoding'] = 'deflate'
         level = (len(data) < 2000000) and 1 or 9
 
-        internal_metric('Supportability/Collector/ZLIB/Bytes/%s' % method,
-                len(data))
+        internal_metric('Supportability/Python/Collector/ZLIB/Bytes/'
+                '%s' % method, len(data))
 
-        with InternalTrace('Supportability/Collector/ZLIB/Compress/'
+        with InternalTrace('Supportability/Python/Collector/ZLIB/Compress/'
                 '%s' % method):
             data = zlib.compress(six.b(data), level)
 
@@ -367,8 +368,8 @@ def send_request(session, url, method, license_key, agent_run_id=None,
     # accept requests. It should be a transient issue so should be able
     # to retain data and try again.
 
-    internal_metric('Supportability/Collector/Output/Bytes/%s' % method,
-            len(data))
+    internal_metric('Supportability/Python/Collector/Output/Bytes/'
+            '%s' % method, len(data))
 
     # If audit logging is enabled, log the requests details.
 
@@ -402,6 +403,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
     except requests.RequestException:
         exc_type, message = sys.exc_info()[:2]
         name = exc_type.__name__
+
         if not settings.proxy_host or not settings.proxy_port:
             _logger.warning('Data collector is not contactable. This can be '
                     'because of a network issue or because of the data '
@@ -409,9 +411,10 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                     'cannot be made after a period of time then please '
                     'report this problem to New Relic support for further '
                     'investigation. The error raised was %r.', message)
-            internal_metric(
-                    'Supportability/Python/Fail/Collector/NoProxy/RequestException/%s'
-                    % name, 1)
+
+            internal_metric('Supportability/Python/Fail/Collector/'
+                    'NoProxy/RequestException/%s' % name, 1)
+
         else:
             _logger.warning('Data collector is not contactable via the proxy '
                     'host %r on port %r with proxy user of %r. This can be '
@@ -423,9 +426,9 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                     settings.proxy_host, settings.proxy_port,
                     settings.proxy_user, message)
 
-            internal_metric(
-                    'Supportability/Python/Fail/Collector/WithProxy/RequestException/%s'
-                    % name, 1)
+            internal_metric('Supportability/Python/Fail/Collector/'
+                    'WithProxy/RequestException/%s' % name, 1)
+
         raise RetryDataForRequest(str(message))
 
     finally:
@@ -446,9 +449,10 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 'params of %r and payload of %r. Please report this '
                 'problem to New Relic support.', url, headers, params,
                 payload)
-        internal_metric(
-                'Supportability/Python/Fail/Collector/Response/%d'
+
+        internal_metric('Supportability/Python/Fail/Collector/Response/%d'
                 % r.status_code, 1)
+
         raise DiscardDataForRequest()
 
     elif r.status_code == 413:
@@ -458,8 +462,8 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 'the request content was %d. If this keeps occurring on a '
                 'regular basis, please report this problem to New Relic '
                 'support for further investigation.', method, len(data))
-        internal_metric(
-                'Supportability/Python/Fail/Collector/Response/%d'
+
+        internal_metric('Supportability/Python/Fail/Collector/Response/%d'
                 % r.status_code, 1)
 
         raise DiscardDataForRequest()
@@ -469,8 +473,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 'malformed JSON data for method %r. If this keeps occurring '
                 'on a regular basis, please report this problem to New '
                 'Relic support for further investigation.', method)
-        internal_metric(
-                'Supportability/Python/Fail/Collector/Response/%d'
+        internal_metric('Supportability/Python/Fail/Collector/Response/%d'
                 % r.status_code, 1)
 
         if settings.debug.log_malformed_json_data:
@@ -490,8 +493,8 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 'In the event that availability of our servers is not '
                 'restored after a period of time then please report this '
                 'problem to New Relic support for further investigation.')
-        internal_metric(
-                'Supportability/Python/Fail/Collector/Response/%d'
+
+        internal_metric('Supportability/Python/Fail/Collector/Response/%d'
                 % r.status_code, 1)
 
         raise ServerIsUnavailable()
@@ -503,9 +506,10 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                     'the request was %r. If this issue persists then please '
                     'report this problem to New Relic support for further '
                     'investigation.', r.status_code, method, payload)
-            internal_metric(
-                    'Supportability/Python/Fail/Collector/Response/NoProxy/%d'
-                    % r.status_code, 1)
+
+            internal_metric('Supportability/Python/Fail/Collector/Response/'
+                    'NoProxy/%d' % r.status_code, 1)
+
         else:
             _logger.warning('An unexpected HTTP response was received from '
                     'the data collector of %r for method %r while connecting '
@@ -515,9 +519,9 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                     'support for further investigation.', r.status_code,
                     method, settings.proxy_host, settings.proxy_port,
                     settings.proxy_user, payload)
-            internal_metric(
-                    'Supportability/Python/Fail/Collector/Response/WithProxy/%d'
-                    % r.status_code, 1)
+
+            internal_metric('Supportability/Python/Fail/Collector/Response/'
+                    'WithProxy/%d' % r.status_code, 1)
 
         raise DiscardDataForRequest()
 
@@ -536,11 +540,12 @@ def send_request(session, url, method, license_key, agent_run_id=None,
     # If we got this far we should have a legitimate response from the
     # data collector. The response is JSON so need to decode it.
 
-    internal_metric('Supportability/Collector/Input/Bytes/%s' % method,
+    internal_metric('Supportability/Python/Collector/Input/Bytes/%s' % method,
             len(content))
 
     try:
-        with InternalTrace('Supportability/Collector/JSON/Decode/%s' % method):
+        with InternalTrace('Supportability/Python/Collector/JSON/Decode/'
+                '%s' % method):
             if six.PY3:
                 content = content.decode('UTF-8')
 
@@ -585,8 +590,9 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 'which was used by the agent is %r. Please correct any '
                 'problem with the license key or report this problem to '
                 'New Relic support.', license_key)
-        internal_metric(
-                'Supportability/Python/Fail/Collector/LicenseException', 1)
+
+        internal_metric('Supportability/Python/Fail/Collector/'
+                'LicenseException', 1)
 
         raise DiscardDataForRequest(message)
 
@@ -597,8 +603,10 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 'the request content was %d. If this keeps occurring on a '
                 'regular basis, please report this problem to New Relic '
                 'support for further investigation.', method, len(data))
-        internal_metric(
-                'Supportability/Python/Fail/Collector/PostTooBigException', 1)
+
+        internal_metric('Supportability/Python/Fail/Collector/'
+                'PostTooBigException', 1)
+
         raise DiscardDataForRequest(message)
 
     # Server side exceptions are also used to inform the agent to
@@ -611,9 +619,10 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 'requested by the data collector for the application '
                 'where the agent run was %r. The reason given for the '
                 'forced restart is %r.', agent_run_id, message)
-        internal_metric(
-                'Supportability/Python/Fail/Collector/ForceRestartException',
-                1)
+
+        internal_metric('Supportability/Python/Fail/Collector/'
+                'ForceRestartException', 1)
+
         raise ForceAgentRestart(message)
 
     elif error_type == 'NewRelic::Agent::ForceDisconnectException':
@@ -622,9 +631,10 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 'agent run was %r. The reason given for the forced '
                 'disconnection is %r. Please contact New Relic support '
                 'for further information.', agent_run_id, message)
-        internal_metric(
-                'Supportability/Python/Fail/Collector/ForceDisconnectException',
-                1)
+
+        internal_metric('Supportability/Python/Fail/Collector/'
+                'ForceDisconnectException', 1)
+
         raise ForceAgentDisconnect(message)
 
     # We received an unexpected server side error we don't know what
@@ -635,8 +645,10 @@ def send_request(session, url, method, license_key, agent_run_id=None,
             'was of type %r with message %r. If this issue persists '
             'then please report this problem to New Relic support for '
             'further investigation.', method, payload, error_type, message)
-    internal_metric(
-            'Supportability/Python/Fail/Collector/UnexpectedException', 1)
+
+    internal_metric('Supportability/Python/Fail/Collector/'
+            'UnexpectedException', 1)
+
     raise DiscardDataForRequest(message)
 
 def apply_high_security_mode_fixups(local_settings, server_settings):
@@ -726,7 +738,7 @@ class ApplicationSession(object):
         return send_request(session, url, method, license_key,
             agent_run_id, payload)
 
-    @internal_trace('Supportability/Collector/Calls/agent_settings')
+    @internal_trace('Supportability/Python/Collector/Calls/agent_settings')
     def agent_settings(self, settings):
         """Called to report up agent settings after registration.
 
@@ -739,7 +751,7 @@ class ApplicationSession(object):
                 'agent_settings', self.license_key, self.agent_run_id,
                 payload)
 
-    @internal_trace('Supportability/Collector/Calls/shutdown')
+    @internal_trace('Supportability/Python/Collector/Calls/shutdown')
     def shutdown_session(self):
         """Called to perform orderly deregistration of agent run against
         data collector, rather than simply dropping the connection and
@@ -761,7 +773,7 @@ class ApplicationSession(object):
 
         return result
 
-    @internal_trace('Supportability/Collector/Calls/metric_data')
+    @internal_trace('Supportability/Python/Collector/Calls/metric_data')
     def send_metric_data(self, start_time, end_time, metric_data):
         """Called to submit metric data for specified period of time.
         Time values are seconds since UNIX epoch as returned by the
@@ -775,7 +787,7 @@ class ApplicationSession(object):
         return self.send_request(self.requests_session, self.collector_url,
                 'metric_data', self.license_key, self.agent_run_id, payload)
 
-    @internal_trace('Supportability/Collector/Calls/error_data')
+    @internal_trace('Supportability/Python/Collector/Calls/error_data')
     def send_errors(self, errors):
         """Called to submit errors. The errors should be an iterable
         of individual errors details.
@@ -794,7 +806,8 @@ class ApplicationSession(object):
         return self.send_request(self.requests_session, self.collector_url,
                 'error_data', self.license_key, self.agent_run_id, payload)
 
-    @internal_trace('Supportability/Collector/Calls/transaction_sample_data')
+    @internal_trace('Supportability/Python/Collector/Calls/'
+            'transaction_sample_data')
     def send_transaction_traces(self, transaction_traces):
         """Called to submit transaction traces. The transaction traces
         should be an iterable of individual traces.
@@ -814,7 +827,7 @@ class ApplicationSession(object):
                 'transaction_sample_data', self.license_key,
                 self.agent_run_id, payload)
 
-    @internal_trace('Supportability/Collector/Calls/send_profile_data')
+    @internal_trace('Supportability/Python/Collector/Calls/send_profile_data')
     def send_profile_data(self, profile_data):
         """Called to submit Profile Data.
         """
@@ -828,7 +841,7 @@ class ApplicationSession(object):
                 'profile_data', self.license_key,
                 self.agent_run_id, payload)
 
-    @internal_trace('Supportability/Collector/Calls/sql_trace_data')
+    @internal_trace('Supportability/Python/Collector/Calls/sql_trace_data')
     def send_sql_traces(self, sql_traces):
         """Called to sub SQL traces. The SQL traces should be an
         iterable of individual SQL details.
@@ -847,7 +860,8 @@ class ApplicationSession(object):
                 'sql_trace_data', self.license_key, self.agent_run_id,
                 payload)
 
-    @internal_trace('Supportability/Collector/Calls/get_agent_commands')
+    @internal_trace('Supportability/Python/Collector/Calls/'
+            'get_agent_commands')
     def get_agent_commands(self):
         """Receive agent commands from the data collector.
 
@@ -859,7 +873,8 @@ class ApplicationSession(object):
                 'get_agent_commands', self.license_key, self.agent_run_id,
                 payload)
 
-    @internal_trace('Supportability/Collector/Calls/send_agent_command_results')
+    @internal_trace('Supportability/Python/Collector/Calls/'
+            'send_agent_command_results')
     def send_agent_command_results(self, cmd_results):
         """Acknowledge the receipt of an agent command.
 
@@ -871,7 +886,7 @@ class ApplicationSession(object):
                 'agent_command_results', self.license_key, self.agent_run_id,
                 payload)
 
-    @internal_trace('Supportability/Collector/Calls/get_xray_metadata')
+    @internal_trace('Supportability/Python/Collector/Calls/get_xray_metadata')
     def get_xray_metadata(self, xray_id):
         """Receive xray metadata from the data collector.
 

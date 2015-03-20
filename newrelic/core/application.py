@@ -759,7 +759,7 @@ class Application(object):
                     background_task, samples = profile_samples
 
                     internal_metric('Supportability/Profiling/Counts/'
-                            'stack_traces[sample]', len(samples))
+                            'stack_traces', len(samples))
 
                     tr_type = 'BACKGROUND' if background_task else 'REQUEST'
 

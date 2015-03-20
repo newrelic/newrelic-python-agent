@@ -443,15 +443,15 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 'and content=%r.', url, method, license_key, agent_run_id,
                 params, headers, r.status_code, content)
 
+        internal_metric('Supportability/Python/Collector/HTTPError/%d'
+                % r.status_code, 1)
+
     if r.status_code == 400:
         _logger.error('Data collector is indicating that a bad '
                 'request has been submitted for url %r, headers of %r, '
                 'params of %r and payload of %r. Please report this '
                 'problem to New Relic support.', url, headers, params,
                 payload)
-
-        internal_metric('Supportability/Python/Fail/Collector/Response/%d'
-                % r.status_code, 1)
 
         raise DiscardDataForRequest()
 
@@ -463,9 +463,6 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 'regular basis, please report this problem to New Relic '
                 'support for further investigation.', method, len(data))
 
-        internal_metric('Supportability/Python/Fail/Collector/Response/%d'
-                % r.status_code, 1)
-
         raise DiscardDataForRequest()
 
     elif r.status_code == 415:
@@ -473,8 +470,6 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 'malformed JSON data for method %r. If this keeps occurring '
                 'on a regular basis, please report this problem to New '
                 'Relic support for further investigation.', method)
-        internal_metric('Supportability/Python/Fail/Collector/Response/%d'
-                % r.status_code, 1)
 
         if settings.debug.log_malformed_json_data:
             if headers['Content-Encoding'] == 'deflate':
@@ -494,9 +489,6 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 'restored after a period of time then please report this '
                 'problem to New Relic support for further investigation.')
 
-        internal_metric('Supportability/Python/Fail/Collector/Response/%d'
-                % r.status_code, 1)
-
         raise ServerIsUnavailable()
 
     elif r.status_code != 200:
@@ -507,9 +499,6 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                     'report this problem to New Relic support for further '
                     'investigation.', r.status_code, method, payload)
 
-            internal_metric('Supportability/Python/Fail/Collector/Response/'
-                    'NoProxy/%d' % r.status_code, 1)
-
         else:
             _logger.warning('An unexpected HTTP response was received from '
                     'the data collector of %r for method %r while connecting '
@@ -519,9 +508,6 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                     'support for further investigation.', r.status_code,
                     method, settings.proxy_host, settings.proxy_port,
                     settings.proxy_user, payload)
-
-            internal_metric('Supportability/Python/Fail/Collector/Response/'
-                    'WithProxy/%d' % r.status_code, 1)
 
         raise DiscardDataForRequest()
 

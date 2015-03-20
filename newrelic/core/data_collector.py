@@ -34,6 +34,7 @@ from newrelic.network.exceptions import (NetworkInterfaceException,
 
 from ..network.addresses import proxy_details
 from ..common.object_wrapper import patch_function_wrapper
+from ..common.object_names import callable_name
 from ..common.encoding_utils import json_encode, json_decode
 
 _logger = logging.getLogger(__name__)
@@ -402,7 +403,9 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
     except requests.RequestException:
         exc_type, message = sys.exc_info()[:2]
-        name = exc_type.__name__
+
+        internal_metric('Supportability/Python/Collector/Exception/'
+                '%s' % callable_name(exc_type), 1)
 
         if not settings.proxy_host or not settings.proxy_port:
             _logger.warning('Data collector is not contactable. This can be '
@@ -411,9 +414,6 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                     'cannot be made after a period of time then please '
                     'report this problem to New Relic support for further '
                     'investigation. The error raised was %r.', message)
-
-            internal_metric('Supportability/Python/Fail/Collector/'
-                    'NoProxy/RequestException/%s' % name, 1)
 
         else:
             _logger.warning('Data collector is not contactable via the proxy '
@@ -426,10 +426,19 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                     settings.proxy_host, settings.proxy_port,
                     settings.proxy_user, message)
 
-            internal_metric('Supportability/Python/Fail/Collector/'
-                    'WithProxy/RequestException/%s' % name, 1)
-
         raise RetryDataForRequest(str(message))
+
+    except Exception:
+        # Any unexpected exception will be caught by higher layer, but
+        # still attempt to log a metric here just in case agent run
+        # doesn't get shutdown as a result of the exception.
+
+        exc_type = sys.exc_info()[0]
+
+        internal_metric('Supportability/Python/Collector/Exception/'
+                '%s' % callable_name(exc_type), 1)
+
+        raise
 
     finally:
         if auto_close_session:

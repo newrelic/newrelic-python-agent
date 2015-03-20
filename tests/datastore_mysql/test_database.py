@@ -17,7 +17,7 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Datastore/operation/MySQL/drop', 2),
         ('Datastore/operation/MySQL/create', 2),
         ('Datastore/statement/MySQL/hello/call', 1),
-        ('Datastore/operation/MySQL/commit', 2)]
+        ('Datastore/operation/MySQL/commit', 2),
         ('Datastore/operation/MySQL/rollback', 1)]
 
 _test_execute_via_cursor_rollup_metrics = [

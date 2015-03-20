@@ -42,7 +42,7 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/statement/Postgres/pg_sleep/call', 1),
         ('Datastore/operation/Postgres/call', 2),
         ('Datastore/operation/Postgres/commit', 3),
-        ('Datastore/operation/Postgres/rollback', 4)]
+        ('Datastore/operation/Postgres/rollback', 1)]
 
 @validate_transaction_metrics('test_database:test_execute_via_cursor',
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,

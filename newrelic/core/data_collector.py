@@ -937,8 +937,11 @@ class ApplicationSession(object):
                     settings)
 
             url = collector_url()
-            redirect_host = cls.send_request(None, url, 'get_redirect_host',
-                    license_key)
+
+            with InternalTrace('Supportability/Python/Collector/Calls/'
+                    'get_redirect_host'):
+                redirect_host = cls.send_request(None, url,
+                        'get_redirect_host', license_key)
 
             # Then we perform a connect to the actual data collector host
             # we need to use. All communications after this point should go
@@ -991,8 +994,11 @@ class ApplicationSession(object):
             payload = (local_config,)
 
             url = collector_url(redirect_host)
-            server_config = cls.send_request(None, url, 'connect',
-                    license_key, None, payload)
+
+            with InternalTrace('Supportability/Python/Collector/Calls/'
+                    'connect'):
+                server_config = cls.send_request(None, url, 'connect',
+                        license_key, None, payload)
 
             # Apply High Security Mode to server_config, so the local
             # security settings won't get overwritten when we overlay

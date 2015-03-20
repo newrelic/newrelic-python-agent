@@ -263,6 +263,11 @@ class Application(object):
         if self._active_session:
             return
 
+        # Remember when we started attempt to connect so can record a
+        # metric of how long it actually took.
+
+        connect_start = time.time()
+
         # We perform a short sleep here to ensure that this thread is
         # suspended and the main thread gets to run. This is necessary
         # for greenlet based systems else this thread would run until
@@ -304,6 +309,8 @@ class Application(object):
                    (30, False, False), (60, True, False),
                    (120, False, False), (300, False, True),]
 
+        connect_attempts = 0
+
         try:
             while not active_session:
 
@@ -313,9 +320,14 @@ class Application(object):
                 if self._pending_shutdown:
                     return
 
-                active_session = create_session(None, self._app_name,
-                        self.linked_applications, environment_settings(),
-                        global_settings_dump())
+                connect_attempts += 1
+
+                internal_metrics = CustomMetrics()
+
+                with InternalTraceContext(internal_metrics):
+                    active_session = create_session(None, self._app_name,
+                            self.linked_applications, environment_settings(),
+                            global_settings_dump())
 
                 # We were successful, but first need to make sure we do
                 # not have any problems with the agent normalization
@@ -431,6 +443,28 @@ class Application(object):
             # Clear any prior count of harvest merges due to failures.
 
             self._merge_count = 0
+
+            # Record metrics for how long it took us to connect and how
+            # many attempts we made. Also record metrics for the final
+            # successful attempt. If we went through multiple attempts,
+            # individual details of errors before the final one that
+            # worked are not recorded as recording them all in the
+            # initial harvest would possibly skew first harvest metrics
+            # and cause confusion as we cannot properly mark the time over
+            # which they were recorded. Make sure we do this before we
+            # mark the session active so we don't have to grab a lock on
+            # merging the internal metrics.
+
+            with InternalTraceContext(internal_metrics):
+                internal_metric('Supportability/Python/Application/'
+                        'Registration/Duration',
+                        self._period_start-connect_start)
+                internal_metric('Supportability/Python/Application/'
+                        'Registration/Attempts',
+                        connect_attempts)
+
+            self._stats_engine.merge_custom_metrics(
+                    internal_metrics.metrics())
 
             # Update the active session in this object. This will the
             # recording of transactions to start.

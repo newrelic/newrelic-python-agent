@@ -55,7 +55,7 @@ class _nr_umemcache_Client_proxy_(ObjectProxy):
         return self.__wrapped__.decr(*args, **kwargs)
 
     @datastore_trace('Memcached', None, 'stats')
-    def decr(self, *args, **kwargs):
+    def stats(self, *args, **kwargs):
         return self.__wrapped__.stats(*args, **kwargs)
 
 def _nr_umemcache_Client_wrapper_(wrapped, instance, args, kwargs):

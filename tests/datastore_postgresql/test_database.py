@@ -20,7 +20,8 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Datastore/statement/Postgres/pg_sleep/call', 1),
         ('Datastore/operation/Postgres/drop', 1),
         ('Datastore/operation/Postgres/create', 1),
-        ('Datastore/operation/Postgres/other', 4)]
+        ('Datastore/operation/Postgres/commit', 3),
+        ('Datastore/operation/Postgres/rollback', 1)]
 
 _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/all', 13),
@@ -40,7 +41,8 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/statement/Postgres/now/call', 1),
         ('Datastore/statement/Postgres/pg_sleep/call', 1),
         ('Datastore/operation/Postgres/call', 2),
-        ('Datastore/operation/Postgres/other', 4)]
+        ('Datastore/operation/Postgres/commit', 3),
+        ('Datastore/operation/Postgres/rollback', 4)]
 
 @validate_transaction_metrics('test_database:test_execute_via_cursor',
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
@@ -84,7 +86,7 @@ def test_execute_via_cursor():
 _test_rollback_on_exception_scoped_metrics = [
         ('Function/postgresql.driver.pq3:Connection.__enter__', 1),
         ('Function/postgresql.driver.pq3:Connection.__exit__', 1),
-        ('Datastore/operation/Postgres/other', 1)]
+        ('Datastore/operation/Postgres/rollback', 1)]
 
 _test_rollback_on_exception_rollup_metrics = [
         ('Datastore/all', 2),

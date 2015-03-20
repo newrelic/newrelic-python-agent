@@ -20,7 +20,9 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Datastore/statement/MSSQL/datastore_pymssql/update', 1),
         ('Datastore/statement/MSSQL/datastore_pymssql/delete', 1),
         ('Datastore/operation/MSSQL/create', 1),
-        ('Datastore/operation/MSSQL/other', 4)]
+        ('Datastore/operation/MSSQL/commit', 2),
+        ('Datastore/operation/MSSQL/rollback', 1),
+        ('Datastore/operation/MSSQL/other', 1)]
 
 _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/all', 10),
@@ -36,7 +38,9 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/operation/MSSQL/delete', 1),
         ('Datastore/statement/MSSQL/datastore_pymssql/delete', 1),
         ('Datastore/operation/MSSQL/create', 1),
-        ('Datastore/operation/MSSQL/other', 4)]
+        ('Datastore/operation/MSSQL/commit', 2),
+        ('Datastore/operation/MSSQL/rollback', 1),
+        ('Datastore/operation/MSSQL/other', 1)]
 
 @validate_transaction_metrics('test_database:test_execute_via_cursor',
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,

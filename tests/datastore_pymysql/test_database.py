@@ -20,7 +20,8 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Datastore/operation/MySQL/drop', 2),
         ('Datastore/operation/MySQL/create', 2),
         ('Datastore/statement/MySQL/hello/call', 1),
-        ('Datastore/operation/MySQL/other', 4)]
+        ('Datastore/operation/MySQL/commit', 3),
+        ('Datastore/operation/MySQL/rollback', 1)]
 
 _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/all', 14),
@@ -39,7 +40,8 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/operation/MySQL/call', 1),
         ('Datastore/operation/MySQL/drop', 2),
         ('Datastore/operation/MySQL/create', 2),
-        ('Datastore/operation/MySQL/other', 4)]
+        ('Datastore/operation/MySQL/commit', 3),
+        ('Datastore/operation/MySQL/rollback', 1)]
 
 @validate_transaction_metrics('test_database:test_execute_via_cursor',
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
@@ -86,14 +88,14 @@ _test_rollback_on_exception_scoped_metrics = [
         ('Function/pymysql:Connect', 1),
         ('Function/pymysql.connections:Connection.__enter__', 1),
         ('Function/pymysql.connections:Connection.__exit__', 1),
-        ('Datastore/operation/MySQL/other', 1)]
+        ('Datastore/operation/MySQL/rollback', 1)]
 
 _test_rollback_on_exception_rollup_metrics = [
         ('Datastore/all', 2),
         ('Datastore/allOther', 2),
         ('Datastore/MySQL/all', 2),
         ('Datastore/MySQL/allOther', 2),
-        ('Datastore/operation/MySQL/other', 1)]
+        ('Datastore/operation/MySQL/rollback', 1)]
 
 @validate_transaction_metrics('test_database:test_rollback_on_exception',
         scoped_metrics=_test_rollback_on_exception_scoped_metrics,

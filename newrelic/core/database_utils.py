@@ -333,6 +333,8 @@ _operation_table = {
     'exec': None,
     'execute': None,
     'alter': None,
+    'commit': None,
+    'rollback': None,
 }
 
 _parse_operation_p = r'(\w+)'

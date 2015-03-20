@@ -17,7 +17,8 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Datastore/operation/MySQL/drop', 2),
         ('Datastore/operation/MySQL/create', 2),
         ('Datastore/statement/MySQL/hello/call', 1),
-        ('Datastore/operation/MySQL/other', 3)]
+        ('Datastore/operation/MySQL/commit', 2)]
+        ('Datastore/operation/MySQL/rollback', 1)]
 
 _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/all', 13),
@@ -36,7 +37,8 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/operation/MySQL/call', 1),
         ('Datastore/operation/MySQL/drop', 2),
         ('Datastore/operation/MySQL/create', 2),
-        ('Datastore/operation/MySQL/other', 3)]
+        ('Datastore/operation/MySQL/commit', 2),
+        ('Datastore/operation/MySQL/rollback', 1)]
 
 @validate_transaction_metrics('test_database:test_execute_via_cursor',
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
@@ -92,7 +94,8 @@ _test_connect_using_alias_scoped_metrics = [
         ('Datastore/operation/MySQL/drop', 2),
         ('Datastore/operation/MySQL/create', 2),
         ('Datastore/statement/MySQL/hello/call', 1),
-        ('Datastore/operation/MySQL/other', 3)]
+        ('Datastore/operation/MySQL/commit', 2),
+        ('Datastore/operation/MySQL/rollback', 1)]
 
 _test_connect_using_alias_rollup_metrics = [
         ('Datastore/all', 13),
@@ -111,7 +114,8 @@ _test_connect_using_alias_rollup_metrics = [
         ('Datastore/operation/MySQL/call', 1),
         ('Datastore/operation/MySQL/drop', 2),
         ('Datastore/operation/MySQL/create', 2),
-        ('Datastore/operation/MySQL/other', 3)]
+        ('Datastore/operation/MySQL/commit', 2),
+        ('Datastore/operation/MySQL/rollback', 1)]
 
 @validate_transaction_metrics('test_database:test_connect_using_alias',
         scoped_metrics=_test_connect_using_alias_scoped_metrics,

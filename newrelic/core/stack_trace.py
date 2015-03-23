@@ -11,12 +11,9 @@ from .config import global_settings
 
 _global_settings = global_settings()
 
-def _extract_stack(f, skip=0, limit=None):
+def _extract_stack(f, skip, limit):
     if f is None:
         return []
-
-    if limit is None:
-        limit = _global_settings.max_stack_trace_lines
 
     # For calculating the stack trace we have the bottom most frame we
     # are interested in. We need to work upwards to get the full stack.
@@ -42,6 +39,9 @@ def _extract_stack(f, skip=0, limit=None):
     return l
 
 def current_stack(skip=0, limit=None):
+    if limit is None:
+        limit = _global_settings.max_stack_trace_lines
+
     try:
         raise ZeroDivisionError
     except ZeroDivisionError:
@@ -53,7 +53,7 @@ def current_stack(skip=0, limit=None):
 
     return result
 
-def _extract_tb(tb, limit=None):
+def _extract_tb(tb, limit):
     if tb is None:
         return []
 

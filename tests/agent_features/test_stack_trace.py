@@ -1,6 +1,8 @@
 import sys
 
-from newrelic.core.stack_trace import exception_stack, current_stack
+from newrelic.core.stack_trace import (exception_stack, current_stack,
+    _format_stack_trace as _format_stack_trace_from_dicts, _extract_stack,
+    _extract_tb)
 
 def _format_stack_trace_from_tuples(frames):
     result = ['Traceback (most recent call last):']
@@ -251,3 +253,27 @@ _stack_trace_current_skip = _format_stack_trace_from_tuples([
 
 def test_trace_current_full():
     actual = skip5(skip=0, limit=1000)
+
+# This example shows the relationship between functions _extract_stack()
+# and _extract_tb(). _extract_stack() collects the outer frames starting
+# from the frame above where the exception occurred. _extract_tb()
+# collects the inner frames from the try/except block down to the
+# exception. Call them explicitly and the result of adding the two
+# should be the same as having used the exception_stack() function. This
+# test just takes the limit calculations done inside of the function
+# exception_stack() out of play.
+
+def test_trace_current_plus_traceback():
+    try:
+        raise ZeroDivisionError
+    except ZeroDivisionError:
+        tb = sys.exc_info()[2]
+        frame = tb.tb_frame.f_back
+
+    limit = 10000
+
+    actual = exception_stack(tb)
+    require = _format_stack_trace_from_dicts(
+            _extract_stack(frame, 0, limit)+_extract_tb(tb, limit))
+
+    assert actual == require, (actual, require)

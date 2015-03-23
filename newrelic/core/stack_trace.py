@@ -11,6 +11,12 @@ from .config import global_settings
 
 _global_settings = global_settings()
 
+def _format_stack_trace(frames):
+    result = ['Traceback (most recent call last):']
+    result.extend(['File "{source}", line {line}, in {name}'.format(**d)
+            for d in frames])
+    return result
+
 def _extract_stack(f, skip, limit):
     if f is None:
         return []
@@ -47,11 +53,7 @@ def current_stack(skip=0, limit=None):
     except ZeroDivisionError:
         f = sys.exc_info()[2].tb_frame.f_back
 
-    result = ['Traceback (most recent call last):']
-    result.extend(['File "{source}", line {line}, in {name}'.format(**d)
-            for d in _extract_stack(f, skip, limit)])
-
-    return result
+    return _format_stack_trace(_extract_stack(f, skip, limit))
 
 def _extract_tb(tb, limit):
     if tb is None:
@@ -114,8 +116,4 @@ def exception_stack(tb, limit=None):
     else:
         _current_stack = []
 
-    result = ['Traceback (most recent call last):']
-    result.extend(['File "{source}", line {line}, in {name}'.format(**d)
-            for d in itertools.chain(_current_stack, _tb_stack)])
-
-    return result
+    return _format_stack_trace(itertools.chain(_current_stack, _tb_stack))

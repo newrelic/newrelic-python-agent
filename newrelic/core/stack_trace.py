@@ -105,13 +105,13 @@ def exception_stack(tb, limit=None):
     # top point of where the exception was caught, down to where the
     # exception was raised. This is not the complete stack, so we need
     # to prefix that with the stack trace for the point of the
-    # try/except, which is derived from the frame associated with the
-    # top most traceback object.
+    # try/except, which is derived from the frame one above that
+    # associated with the top most traceback object.
 
     _tb_stack = _extract_tb(tb, limit)
 
     if len(_tb_stack) < limit:
-        _current_stack = _extract_stack(tb.tb_frame, skip=1,
+        _current_stack = _extract_stack(tb.tb_frame.f_back, skip=0,
                 limit=limit-len(_tb_stack))
     else:
         _current_stack = []

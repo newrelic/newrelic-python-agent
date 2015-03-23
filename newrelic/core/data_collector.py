@@ -111,14 +111,14 @@ def connection_type():
     request_scheme = ssl and 'https' or 'http'
 
     if settings.proxy_host is None:
-        return 'direct-%s' % request_scheme
+        return 'direct/%s' % request_scheme
 
     proxy_scheme = settings.proxy_scheme
 
     if proxy_scheme is None:
         proxy_scheme = ssl and 'https' or 'http'
 
-    return 'proxy-%s-%s' % (proxy_scheme, request_scheme)
+    return '%s-proxy/%s' % (proxy_scheme, request_scheme)
 
 # This is a monkey patch for urllib3 contained within our bundled requests
 # library. This is to override the urllib3 behaviour for how the proxy

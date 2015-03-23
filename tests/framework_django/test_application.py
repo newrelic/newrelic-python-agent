@@ -53,6 +53,10 @@ def test_application_index():
 
     assert 'Content-Length' not in response.headers
 
+@validate_transaction_metrics('views:exception')
+def test_application_exception():
+    response = test_application.get('/exception', status=500)
+
 _test_application_not_found_scoped_metrics = [
         ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
         ('Python/WSGI/Application', 1),

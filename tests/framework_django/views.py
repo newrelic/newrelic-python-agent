@@ -9,6 +9,9 @@ from newrelic.agent import (get_browser_timing_header,
 def index(request):
     return HttpResponse('INDEX RESPONSE')
 
+def exception(request):
+    raise RuntimeError('exception')
+
 class MyView(View):
     def get(self, request):
         return HttpResponse('CBV RESPONSE')

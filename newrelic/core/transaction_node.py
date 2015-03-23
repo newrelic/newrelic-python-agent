@@ -261,7 +261,8 @@ class TransactionNode(_TransactionNode):
                 end_time=end_time, name=name, params=params, children=children,
                 label=None)
 
-    @internal_trace('Supportability/TransactionNode/Calls/transaction_trace')
+    @internal_trace('Supportability/Python/TransactionNode/Calls/'
+            'transaction_trace')
     def transaction_trace(self, stats, limit, connections):
 
         self.trace_node_count = 0

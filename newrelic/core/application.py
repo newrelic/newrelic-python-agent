@@ -29,6 +29,7 @@ from newrelic.core.xray_session import XraySession
 from newrelic.core.profile_sessions import profile_session_manager
 
 from .database_utils import SQLConnections
+from ..common.object_names import callable_name
 
 _logger = logging.getLogger(__name__)
 
@@ -262,6 +263,11 @@ class Application(object):
         if self._active_session:
             return
 
+        # Remember when we started attempt to connect so can record a
+        # metric of how long it actually took.
+
+        connect_start = time.time()
+
         # We perform a short sleep here to ensure that this thread is
         # suspended and the main thread gets to run. This is necessary
         # for greenlet based systems else this thread would run until
@@ -303,6 +309,8 @@ class Application(object):
                    (30, False, False), (60, True, False),
                    (120, False, False), (300, False, True),]
 
+        connect_attempts = 0
+
         try:
             while not active_session:
 
@@ -312,9 +320,14 @@ class Application(object):
                 if self._pending_shutdown:
                     return
 
-                active_session = create_session(None, self._app_name,
-                        self.linked_applications, environment_settings(),
-                        global_settings_dump())
+                connect_attempts += 1
+
+                internal_metrics = CustomMetrics()
+
+                with InternalTraceContext(internal_metrics):
+                    active_session = create_session(None, self._app_name,
+                            self.linked_applications, environment_settings(),
+                            global_settings_dump())
 
                 # We were successful, but first need to make sure we do
                 # not have any problems with the agent normalization
@@ -430,6 +443,28 @@ class Application(object):
             # Clear any prior count of harvest merges due to failures.
 
             self._merge_count = 0
+
+            # Record metrics for how long it took us to connect and how
+            # many attempts we made. Also record metrics for the final
+            # successful attempt. If we went through multiple attempts,
+            # individual details of errors before the final one that
+            # worked are not recorded as recording them all in the
+            # initial harvest would possibly skew first harvest metrics
+            # and cause confusion as we cannot properly mark the time over
+            # which they were recorded. Make sure we do this before we
+            # mark the session active so we don't have to grab a lock on
+            # merging the internal metrics.
+
+            with InternalTraceContext(internal_metrics):
+                internal_metric('Supportability/Python/Application/'
+                        'Registration/Duration',
+                        self._period_start-connect_start)
+                internal_metric('Supportability/Python/Application/'
+                        'Registration/Attempts',
+                        connect_attempts)
+
+            self._stats_engine.merge_custom_metrics(
+                    internal_metrics.metrics())
 
             # Update the active session in this object. This will the
             # recording of transactions to start.
@@ -758,8 +793,8 @@ class Application(object):
                 try:
                     background_task, samples = profile_samples
 
-                    internal_metric('Supportability/Profiling/Counts/'
-                            'stack_traces[sample]', len(samples))
+                    internal_metric('Supportability/Python/Profiling/'
+                            'Counts/stack_traces', len(samples))
 
                     tr_type = 'BACKGROUND' if background_task else 'REQUEST'
 
@@ -788,8 +823,8 @@ class Application(object):
                     self._transaction_count += 1
                     self._last_transaction = data.end_time
 
-                    internal_metric('Supportability/Transaction/Counts/'
-                            'metric_data', stats.metric_data_count())
+                    internal_metric('Supportability/Python/Transaction/'
+                            'Counts/metric_data', stats.metric_data_count())
 
                     self._stats_engine.merge_metric_stats(stats)
                     self._stats_engine.merge_other_stats(stats)
@@ -1160,7 +1195,7 @@ class Application(object):
         internal_metrics = CustomMetrics()
 
         with InternalTraceContext(internal_metrics):
-            with InternalTrace('Supportability/Harvest/Calls/harvest'):
+            with InternalTrace('Supportability/Python/Harvest/Calls/harvest'):
 
                 self._harvest_count += 1
 
@@ -1278,10 +1313,12 @@ class Application(object):
                         if configuration.analytics_events.transactions.enabled:
                             sampled_data_set = stats.sampled_data_set
 
-                            internal_metric('Supportability/RequestSampler/'
-                                    'requests', sampled_data_set.count)
-                            internal_metric('Supportability/RequestSampler/'
-                                    'samples', len(sampled_data_set.samples))
+                            internal_metric('Supportability/Python/'
+                                    'RequestSampler/requests',
+                                    sampled_data_set.count)
+                            internal_metric('Supportability/Python/'
+                                    'RequestSampler/samples',
+                                    len(sampled_data_set.samples))
 
                     # Create a metric_normalizer based on normalize_name
                     # If metric rename rules are empty, set normalizer
@@ -1302,7 +1339,7 @@ class Application(object):
 
                     metric_data = stats.metric_data(metric_normalizer)
 
-                    internal_metric('Supportability/Harvest/Counts/'
+                    internal_metric('Supportability/Python/Harvest/Counts/'
                             'metric_data', len(metric_data))
 
                     _logger.debug('Sending metric data for harvest of %r.',
@@ -1357,8 +1394,8 @@ class Application(object):
                     if configuration.collect_errors:
                         error_data = stats.error_data()
 
-                        internal_metric('Supportability/Harvest/Counts/'
-                                'error_data', len(error_data))
+                        internal_metric('Supportability/Python/Harvest/'
+                                'Counts/error_data', len(error_data))
 
                         if error_data:
                             _logger.debug('Sending error data for harvest '
@@ -1378,8 +1415,8 @@ class Application(object):
                                 slow_sql_data = stats.slow_sql_data(
                                         connections)
 
-                                internal_metric('Supportability/Harvest/'
-                                        'Counts/sql_trace_data',
+                                internal_metric('Supportability/Python/'
+                                        'Harvest/Counts/sql_trace_data',
                                         len(slow_sql_data))
 
                                 if slow_sql_data:
@@ -1393,8 +1430,8 @@ class Application(object):
                                     stats.transaction_trace_data(
                                     connections))
 
-                            internal_metric('Supportability/Harvest/Counts/'
-                                    'transaction_sample_data',
+                            internal_metric('Supportability/Python/Harvest/'
+                                    'Counts/transaction_sample_data',
                                     len(slow_transaction_data))
 
                             if slow_transaction_data:
@@ -1474,6 +1511,11 @@ class Application(object):
                     # SQL and transaction traces from older harvest
                     # period.
 
+                    exc_type = sys.exc_info()[0]
+
+                    internal_metric('Supportability/Python/Harvest/'
+                            'Exception/%s' % callable_name(exc_type), 1)
+
                     if self._period_start != period_end:
 
                         self._merge_count += 1
@@ -1518,11 +1560,21 @@ class Application(object):
                     # likely to occur again so we just throw any data
                     # not sent away for this reporting period.
 
+                    exc_type = sys.exc_info()[0]
+
+                    internal_metric('Supportability/Python/Harvest/'
+                            'Exception/%s' % callable_name(exc_type), 1)
+
                     self._discard_count += 1
 
                 except Exception:
                     # An unexpected error, likely some sort of internal
                     # agent implementation issue.
+
+                    exc_type = sys.exc_info()[0]
+
+                    internal_metric('Supportability/Python/Harvest/'
+                            'Exception/%s' % callable_name(exc_type), 1)
 
                     _logger.exception('Unexpected exception when attempting '
                             'to harvest the metric data and send it to the '

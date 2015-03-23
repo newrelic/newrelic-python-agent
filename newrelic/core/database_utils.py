@@ -55,7 +55,7 @@ _quotes_table = {
 
 _quotes_default = _single_quotes_re
 
-@internal_trace('Supportability/DatabaseUtils/Calls/obfuscate_sql')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/obfuscate_sql')
 def _obfuscate_sql(sql, database):
     quotes_re = _quotes_table.get(database.quoting_style, _single_quotes_re)
 
@@ -107,7 +107,7 @@ _normalize_whitespace_2_re = re.compile(_normalize_whitespace_2_p)
 _normalize_whitespace_3_p = r'(?<!\w)\s+'
 _normalize_whitespace_3_re = re.compile(_normalize_whitespace_3_p)
 
-@internal_trace('Supportability/DatabaseUtils/Calls/normalize_sql')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/normalize_sql')
 def _normalize_sql(sql):
     # Note we that do this as a series of regular expressions as
     # using '|' in regular expressions is more expensive.
@@ -235,43 +235,50 @@ _parse_from_re = re.compile(_parse_from_p, re.IGNORECASE)
 def _join_identifier(m):
     return m and '.'.join([s for s in m.groups()[1:] if s]).lower() or ''
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_target_select')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/'
+        'parse_target_select')
 def _parse_select(sql):
     return _join_identifier(_parse_from_re.search(sql))
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_target_delete')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/'
+        'parse_target_delete')
 def _parse_delete(sql):
     return _join_identifier(_parse_from_re.search(sql))
 
 _parse_into_p = '\s+INTO\s+' + _parse_identifier_p
 _parse_into_re = re.compile(_parse_into_p, re.IGNORECASE)
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_target_insert')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/'
+        'parse_target_insert')
 def _parse_insert(sql):
     return _join_identifier(_parse_into_re.search(sql))
 
 _parse_update_p = '\s*UPDATE\s+' + _parse_identifier_p
 _parse_update_re = re.compile(_parse_update_p, re.IGNORECASE)
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_target_update')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/'
+        'parse_target_update')
 def _parse_update(sql):
     return _join_identifier(_parse_update_re.search(sql))
 
 _parse_table_p = '\s+TABLE\s+' + _parse_identifier_p
 _parse_table_re = re.compile(_parse_table_p, re.IGNORECASE)
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_target_create')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/'
+        'parse_target_create')
 def _parse_create(sql):
     return _join_identifier(_parse_table_re.search(sql))
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_target_drop')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/'
+        'parse_target_drop')
 def _parse_drop(sql):
     return _join_identifier(_parse_table_re.search(sql))
 
 _parse_call_p = r'\s*CALL\s+(?!\()(\w+)'
 _parse_call_re = re.compile(_parse_call_p, re.IGNORECASE)
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_target_call')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/'
+        'parse_target_call')
 def _parse_call(sql):
     return _parse_default(sql, _parse_call_re)
 
@@ -281,35 +288,40 @@ def _parse_call(sql):
 _parse_show_p = r'\s*SHOW\s+(.*)'
 _parse_show_re = re.compile(_parse_show_p, re.IGNORECASE | re.DOTALL)
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_target_show')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/'
+        'parse_target_show')
 def _parse_show(sql):
     return _parse_default(sql, _parse_show_re)
 
 _parse_set_p = r'\s*SET\s+(.*?)\W+.*'
 _parse_set_re = re.compile(_parse_set_p, re.IGNORECASE | re.DOTALL)
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_target_set')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/'
+        'parse_target_set')
 def _parse_set(sql):
     return _parse_default(sql, _parse_set_re)
 
 _parse_exec_p = r'\s*EXEC\s+(?!\()(\w+)'
 _parse_exec_re = re.compile(_parse_exec_p, re.IGNORECASE)
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_target_exec')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/'
+        'parse_target_exec')
 def _parse_exec(sql):
     return _parse_default(sql, _parse_exec_re)
 
 _parse_execute_p = r'\s*EXECUTE\s+(?!\()(\w+)'
 _parse_execute_re = re.compile(_parse_execute_p, re.IGNORECASE)
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_target_execute')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/'
+        'parse_target_execute')
 def _parse_execute(sql):
     return _parse_default(sql, _parse_execute_re)
 
 _parse_alter_p = r'\s*ALTER\s+(?!\()(\w+)'
 _parse_alter_re = re.compile(_parse_alter_p, re.IGNORECASE)
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_target_alter')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/'
+        'parse_target_alter')
 def _parse_alter(sql):
     return _parse_default(sql, _parse_alter_re)
 
@@ -340,13 +352,13 @@ _operation_table = {
 _parse_operation_p = r'(\w+)'
 _parse_operation_re = re.compile(_parse_operation_p)
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_operation')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/parse_operation')
 def _parse_operation(sql):
     match = _parse_operation_re.search(sql)
     operation = match and match.group(1).lower() or ''
     return operation if operation in _operation_table else ''
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_target')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/parse_target')
 def _parse_target(sql, operation):
     parse = _operation_table.get(operation, None)
     return parse and parse(sql) or ''
@@ -523,7 +535,7 @@ class SQLConnections(object):
             if len(self.connections) == self.maximum:
                 connection = self.connections.pop(0)[1]
 
-                internal_metric('Supportability/DatabaseUtils/Counts/'
+                internal_metric('Supportability/Python/DatabaseUtils/Counts/'
                                 'drop_database_connection', 1)
 
                 if settings.debug.log_explain_plan_queries:
@@ -538,7 +550,7 @@ class SQLConnections(object):
 
             self.connections.append((key, connection))
 
-            internal_metric('Supportability/DatabaseUtils/Counts/'
+            internal_metric('Supportability/Python/DatabaseUtils/Counts/'
                             'create_database_connection', 1)
 
             if settings.debug.log_explain_plan_queries:
@@ -577,7 +589,7 @@ def _query_result_dicts_to_tuples(columns, rows):
 
     return [tuple([row[col] for col in columns]) for row in rows]
 
-@internal_trace('Supportability/DatabaseUtils/Calls/explain_plan')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/explain_plan')
 def _explain_plan(connections, sql, database, connect_params, cursor_params,
         sql_parameters, execute_params):
 

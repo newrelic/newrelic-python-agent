@@ -154,7 +154,7 @@ class ProfileSessionManager(object):
         self.sample_period_s = 0.1
         self._aggregation_time = 0.0
 
-    @internal_trace('Supportability/Profiling/Calls/add_stack_traces[sec|call]')
+    @internal_trace('Supportability/Python/Profiling/Calls/add_stack_traces')
     def add_stack_traces(self, app_name, key_txn, txn_type, stack_traces):
         """Adds a list of stack_traces to a praticular xray profile session's
         call tree. This is called at the end of a transaction when it's name is
@@ -182,7 +182,7 @@ class ProfileSessionManager(object):
             end = time.time() - start
             self._aggregation_time += end
 
-        internal_metric('Supportability/Profiling/Counts/stack_frames[frame]',
+        internal_metric('Supportability/Python/Profiling/Counts/stack_frames',
                 count)
 
         return True

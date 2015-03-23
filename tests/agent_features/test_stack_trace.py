@@ -3,6 +3,7 @@ import sys
 from newrelic.core.stack_trace import (exception_stack, current_stack,
     _format_stack_trace as _format_stack_trace_from_dicts, _extract_stack,
     _extract_tb)
+from newrelic.agent import global_settings
 
 def _format_stack_trace_from_tuples(frames):
     result = ['Traceback (most recent call last):']
@@ -197,6 +198,24 @@ def test_trace_exception_full():
     except Exception:
         tb = sys.exc_info()[2]
         actual = exception_stack(tb)
+
+
+def test_trace_line_limit():
+    settings = global_settings()
+    original = settings.max_stack_trace_lines
+    settings.max_stack_trace_lines = 40
+    try:
+        function12()
+    except Exception:
+        tb = sys.exc_info()[2]
+        actual = exception_stack(tb)
+    finally:
+        settings.max_stack_trace_lines = original
+
+    # 40 lines of stack trace and one line that says
+    # 'Traceback (most recent call last):'
+
+    assert len(actual) == 41
 
 # Test just the ability to get the current stack frame. Limited so we
 # can compare to what we expect.

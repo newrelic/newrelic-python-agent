@@ -57,3 +57,7 @@ def html_insertion_named_attachment_header():
     return response
 
 _test_application = webtest.TestApp(application)
+
+@application.route('/empty_content_type')
+def empty_content_type():
+    return Response('Empty Content Type Header', mimetype='')

@@ -70,7 +70,7 @@ def _nr_wrapper_Compress_after_request(wrapped, instance, args, kwargs):
     # a user may want to also perform insertion for
     # 'application/xhtml+xml'.
 
-    ctype = response.mimetype.lower()
+    ctype = (response.mimetype or '').lower()
 
     if ctype not in transaction.settings.browser_monitoring.content_type:
         return wrapped(*args, **kwargs)

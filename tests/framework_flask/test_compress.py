@@ -89,3 +89,12 @@ def test_html_insertion_named_attachment_header_flask_middleware():
     # footer added by the agent.
 
     response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])
+
+def test_empty_content_type():
+    application = target_application()
+    response = application.get('/empty_content_type')
+
+    # Make sure agent doesn't blow up, if content type is ''
+
+    assert response.headers['Content-Type'] == ''
+    response.mustcontain('Empty Content Type Header')

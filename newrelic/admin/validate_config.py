@@ -29,13 +29,23 @@ def _run_validation_test():
     def _function3():
         add_custom_parameter('txn-key-1', 1)
 
-        try:
-            raise NotImplementedError(
-                    'This is a test error and can be ignored.')
-        except:
-            record_exception(params={'err-key-2': 2, 'err-key-3': 3.0})
+        _function4()
 
         raise RuntimeError('This is a test error and can be ignored.')
+
+    @function_trace()
+    def _function4(params=None, application=None):
+        try:
+            _function5()
+        except:
+            record_exception(params=(params or {
+                    'err-key-2': 2, 'err-key-3': 3.0}),
+                    application=application)
+
+    @function_trace()
+    def _function5():
+        raise NotImplementedError(
+                'This is a test error and can be ignored.')
 
     @wsgi_application()
     def _wsgi_application(environ, start_response):
@@ -85,10 +95,8 @@ def _run_validation_test():
 
     _background_task()
 
-    try:
-        raise NotImplementedError('This is a test error and can be ignored.')
-    except Exception:
-        record_exception(params={'err-key-4': 4}, application=application())
+    _function4(params={'err-key-4': 4, 'err-key-5': 5.0},
+            application=application())
 
 _user_message = """
 Running Python agent test.

@@ -1,10 +1,10 @@
-import traceback
 import functools
 import logging
 
 from .time_trace import TimeTrace
 from .transaction import current_transaction
 from ..core.database_node import DatabaseNode
+from ..core.stack_trace import current_stack
 from ..common.object_wrapper import FunctionWrapper, wrap_object
 
 _logger = logging.getLogger(__name__)
@@ -67,7 +67,7 @@ class DatabaseTrace(TimeTrace):
                 if (transaction._stack_trace_count <
                         agent_limits.slow_sql_stack_trace):
                     self.stack_trace = [transaction._intern_string(x) for
-                                        x in traceback.format_stack()]
+                                        x in current_stack(skip=2)]
                     transaction._stack_trace_count += 1
 
 

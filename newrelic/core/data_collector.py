@@ -99,7 +99,7 @@ def proxy_server():
     return proxy_details(proxy_scheme, settings.proxy_host,
             settings.proxy_port, settings.proxy_user, settings.proxy_pass)
 
-def connection_type():
+def connection_type(proxies):
     """Returns a string describing the connection type for use in metrics.
 
     """
@@ -110,13 +110,10 @@ def connection_type():
 
     request_scheme = ssl and 'https' or 'http'
 
-    if settings.proxy_host is None:
+    if proxies is None:
         return 'direct/%s' % request_scheme
 
-    proxy_scheme = settings.proxy_scheme
-
-    if proxy_scheme is None:
-        proxy_scheme = ssl and 'https' or 'http'
+    proxy_scheme = proxies['http'].split('://')[0]
 
     return '%s-proxy/%s' % (proxy_scheme, request_scheme)
 
@@ -405,7 +402,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
     log_id = _log_request(url, params, headers, data)
 
-    connection = connection_type()
+    connection = connection_type(proxies)
 
     try:
         # The timeout value in the requests module is only on

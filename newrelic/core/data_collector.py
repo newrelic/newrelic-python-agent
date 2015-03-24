@@ -99,6 +99,24 @@ def proxy_server():
     return proxy_details(proxy_scheme, settings.proxy_host,
             settings.proxy_port, settings.proxy_user, settings.proxy_pass)
 
+def connection_type(proxies):
+    """Returns a string describing the connection type for use in metrics.
+
+    """
+
+    settings = global_settings()
+
+    ssl = settings.ssl
+
+    request_scheme = ssl and 'https' or 'http'
+
+    if proxies is None:
+        return 'direct/%s' % request_scheme
+
+    proxy_scheme = proxies['http'].split('://')[0]
+
+    return '%s-proxy/%s' % (proxy_scheme, request_scheme)
+
 # This is a monkey patch for urllib3 contained within our bundled requests
 # library. This is to override the urllib3 behaviour for how the proxy
 # is communicated with so as to allow us to restore the old broken
@@ -384,6 +402,8 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
     log_id = _log_request(url, params, headers, data)
 
+    connection = connection_type(proxies)
+
     try:
         # The timeout value in the requests module is only on
         # the initial connection and doesn't apply to how long
@@ -399,6 +419,10 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
 
+            internal_metric('Supportability/Python/Collector/Requests', 1)
+            internal_metric('Supportability/Python/Collector/Requests/'
+                    '%s' % connection, 1)
+
             r = session.post(url, params=params, headers=headers,
                     proxies=proxies, timeout=timeout, data=data,
                     verify=cert_loc)
@@ -411,6 +435,10 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
     except requests.RequestException:
         exc_type, message = sys.exc_info()[:2]
+
+        internal_metric('Supportability/Python/Collector/Failures', 1)
+        internal_metric('Supportability/Python/Collector/Failures/'
+                '%s' % connection, 1)
 
         internal_metric('Supportability/Python/Collector/Exception/'
                 '%s' % callable_name(exc_type), 1)
@@ -443,6 +471,10 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
         exc_type = sys.exc_info()[0]
 
+        internal_metric('Supportability/Python/Collector/Failures', 1)
+        internal_metric('Supportability/Python/Collector/Failures/'
+                '%s' % connection, 1)
+
         internal_metric('Supportability/Python/Collector/Exception/'
                 '%s' % callable_name(exc_type), 1)
 
@@ -459,6 +491,10 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 'agent_run_id=%r, params=%r, headers=%r, status_code=%r '
                 'and content=%r.', url, method, license_key, agent_run_id,
                 params, headers, r.status_code, content)
+
+        internal_metric('Supportability/Python/Collector/Failures', 1)
+        internal_metric('Supportability/Python/Collector/Failures/'
+                '%s' % connection, 1)
 
         internal_metric('Supportability/Python/Collector/HTTPError/%d'
                 % r.status_code, 1)
@@ -609,6 +645,14 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         raise DiscardDataForRequest(message)
 
     elif error_type == 'NewRelic::Agent::PostTooBigException':
+        # As far as we know we should never see this type of server side
+        # error as for JSON API we should always get back a HTTP 413
+        # error response instead.
+
+        internal_metric('Supportability/Python/Collector/Failures', 1)
+        internal_metric('Supportability/Python/Collector/Failures/'
+                '%s' % connection, 1)
+
         _logger.warning('Core application is indicating that a request for '
                 'method %r was received where the request content size '
                 'was over the maximum allowed size limit. The length of '
@@ -640,8 +684,15 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
         raise ForceAgentDisconnect(message)
 
-    # We received an unexpected server side error we don't know what
-    # to do with.
+    # We received an unexpected server side error we don't know what to
+    # do with. Ignoring PostTooBigException which we expect that we
+    # should never receive, unexpected server side errors are the only
+    # ones we record a failure metric for as other server side errors
+    # are really commands to have the agent do something.
+
+    internal_metric('Supportability/Python/Collector/Failures', 1)
+    internal_metric('Supportability/Python/Collector/Failures/'
+            '%s' % connection, 1)
 
     _logger.warning('An unexpected server error was received from the '
             'data collector for method %r with payload of %r. The error '

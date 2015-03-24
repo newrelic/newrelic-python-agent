@@ -20,7 +20,10 @@ class ExternalNode(_ExternalNode):
         if hasattr(self, '_details'):
             return self._details
 
-        self._details = urlparse.urlparse(self.url)
+        try:
+            self._details = urlparse.urlparse(self.url or '')
+        except Exception:
+            self._details = urlparse.urlparse('http://unknown.url')
 
         return self._details
 

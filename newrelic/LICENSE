@@ -6,9 +6,6 @@ This product includes:
 
 which contains components released under the following license(s):
 
-  The BSD 3-Clause License <http://opensource.org/licenses/BSD-3-Clause>
-  GNU LESSER GENERAL PUBLIC LICENSE <http://www.gnu.org/licenses/lgpl.html>
-  The MIT License <http://opensource.org/licenses/MIT>
   Apache License, Version 2.0 <http://www.apache.org/licenses/LICENSE-2.0>
 
 ---------------------------------------------------------------------------
@@ -45,7 +42,7 @@ which contains components released under the following license(s):
 
 All other components of this product are:
 
-  Copyright (c) 2010-2014 New Relic, Inc. All rights reserved.
+  Copyright (c) 2010-2015 New Relic, Inc. All rights reserved.
 
 Certain inventions disclosed in this file may be claimed within patents
 owned or patent applications filed by New Relic, Inc. or third parties.

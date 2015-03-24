@@ -55,7 +55,7 @@ _quotes_table = {
 
 _quotes_default = _single_quotes_re
 
-@internal_trace('Supportability/DatabaseUtils/Calls/obfuscate_sql')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/obfuscate_sql')
 def _obfuscate_sql(sql, database):
     quotes_re = _quotes_table.get(database.quoting_style, _single_quotes_re)
 
@@ -107,7 +107,7 @@ _normalize_whitespace_2_re = re.compile(_normalize_whitespace_2_p)
 _normalize_whitespace_3_p = r'(?<!\w)\s+'
 _normalize_whitespace_3_re = re.compile(_normalize_whitespace_3_p)
 
-@internal_trace('Supportability/DatabaseUtils/Calls/normalize_sql')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/normalize_sql')
 def _normalize_sql(sql):
     # Note we that do this as a series of regular expressions as
     # using '|' in regular expressions is more expensive.
@@ -207,14 +207,19 @@ def _uncomment_sql(sql):
 # instead is try and match based on whatever occurs between the
 # different delimiters we expect. That way we do not have to worry about
 # locale.
+#
+# In the case of a schema and table reference, when quoting is used,
+# the same type of quoting must be used on each in the one statement.
+# You cannot mix different quoting schemes as then the regex gets
+# even more messy.
 
 def _parse_default(sql, regex):
     match = regex.search(sql)
     return match and _extract_identifier(match.group(1)) or ''
 
-_parse_identifier_1_p = r'"((?:[^"]|"")+)"'
-_parse_identifier_2_p = r"'((?:[^']|'')+)'"
-_parse_identifier_3_p = r'`((?:[^`]|``)+)`'
+_parse_identifier_1_p = r'"((?:[^"]|"")+)"(?:\."((?:[^"]|"")+)")?'
+_parse_identifier_2_p = r"'((?:[^']|'')+)'(?:\.'((?:[^']|'')+)')?"
+_parse_identifier_3_p = r'`((?:[^`]|``)+)`(?:\.`((?:[^`]|``)+)`)?'
 _parse_identifier_4_p = r'\[\s*(\S+)\s*\]'
 _parse_identifier_5_p = r'\(\s*(\S+)\s*\)'
 _parse_identifier_6_p = r'([^\s\(\)\[\],]+)'
@@ -227,115 +232,133 @@ _parse_identifier_p = ''.join(('(', _parse_identifier_1_p, '|',
 _parse_from_p = '\s+FROM\s+' + _parse_identifier_p
 _parse_from_re = re.compile(_parse_from_p, re.IGNORECASE)
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_target_select')
-def _parse_select(sql):
-    m = _parse_from_re.search(sql)
-    return m and next(s for s in m.groups()[1:] if s).lower() or ''
+def _join_identifier(m):
+    return m and '.'.join([s for s in m.groups()[1:] if s]).lower() or ''
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_target_delete')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/'
+        'parse_target_select')
+def _parse_select(sql):
+    return _join_identifier(_parse_from_re.search(sql))
+
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/'
+        'parse_target_delete')
 def _parse_delete(sql):
-    m = _parse_from_re.search(sql)
-    return m and next(s for s in m.groups()[1:] if s).lower() or ''
+    return _join_identifier(_parse_from_re.search(sql))
 
 _parse_into_p = '\s+INTO\s+' + _parse_identifier_p
 _parse_into_re = re.compile(_parse_into_p, re.IGNORECASE)
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_target_insert')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/'
+        'parse_target_insert')
 def _parse_insert(sql):
-    m = _parse_into_re.search(sql)
-    return m and next(s for s in m.groups()[1:] if s).lower() or ''
+    return _join_identifier(_parse_into_re.search(sql))
 
 _parse_update_p = '\s*UPDATE\s+' + _parse_identifier_p
 _parse_update_re = re.compile(_parse_update_p, re.IGNORECASE)
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_target_update')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/'
+        'parse_target_update')
 def _parse_update(sql):
-    m = _parse_update_re.search(sql)
-    return m and next(s for s in m.groups()[1:] if s).lower() or ''
+    return _join_identifier(_parse_update_re.search(sql))
 
 _parse_table_p = '\s+TABLE\s+' + _parse_identifier_p
 _parse_table_re = re.compile(_parse_table_p, re.IGNORECASE)
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_target_create')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/'
+        'parse_target_create')
 def _parse_create(sql):
-    m = _parse_table_re.search(sql)
-    return m and next(s for s in m.groups()[1:] if s).lower() or ''
+    return _join_identifier(_parse_table_re.search(sql))
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_target_drop')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/'
+        'parse_target_drop')
 def _parse_drop(sql):
-    m = _parse_table_re.search(sql)
-    return m and next(s for s in m.groups()[1:] if s).lower() or ''
-
-# TODO Following need to be reviewed again. They aren't currently used
-# in actual use as only parse out target for select/insert/update/delete.
+    return _join_identifier(_parse_table_re.search(sql))
 
 _parse_call_p = r'\s*CALL\s+(?!\()(\w+)'
 _parse_call_re = re.compile(_parse_call_p, re.IGNORECASE)
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_target_call')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/'
+        'parse_target_call')
 def _parse_call(sql):
     return _parse_default(sql, _parse_call_re)
+
+# TODO Following need to be reviewed again. They aren't currently used
+# in actual use as only parse out target for select/insert/update/delete.
 
 _parse_show_p = r'\s*SHOW\s+(.*)'
 _parse_show_re = re.compile(_parse_show_p, re.IGNORECASE | re.DOTALL)
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_target_show')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/'
+        'parse_target_show')
 def _parse_show(sql):
     return _parse_default(sql, _parse_show_re)
 
 _parse_set_p = r'\s*SET\s+(.*?)\W+.*'
 _parse_set_re = re.compile(_parse_set_p, re.IGNORECASE | re.DOTALL)
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_target_set')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/'
+        'parse_target_set')
 def _parse_set(sql):
     return _parse_default(sql, _parse_set_re)
 
 _parse_exec_p = r'\s*EXEC\s+(?!\()(\w+)'
 _parse_exec_re = re.compile(_parse_exec_p, re.IGNORECASE)
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_target_exec')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/'
+        'parse_target_exec')
 def _parse_exec(sql):
     return _parse_default(sql, _parse_exec_re)
 
 _parse_execute_p = r'\s*EXECUTE\s+(?!\()(\w+)'
 _parse_execute_re = re.compile(_parse_execute_p, re.IGNORECASE)
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_target_execute')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/'
+        'parse_target_execute')
 def _parse_execute(sql):
     return _parse_default(sql, _parse_execute_re)
 
 _parse_alter_p = r'\s*ALTER\s+(?!\()(\w+)'
 _parse_alter_re = re.compile(_parse_alter_p, re.IGNORECASE)
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_target_alter')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/'
+        'parse_target_alter')
 def _parse_alter(sql):
     return _parse_default(sql, _parse_alter_re)
+
+# For SQL queries, if a target of some sort, such as a table can be
+# meaningfully extracted, then this table should map to the function
+# which extracts it. If no target can be extracted, but it is still
+# desired that the operation be broken out separately with new Datastore
+# metrics, then the operation should still be added, but with the value
+# being set to None.
 
 _operation_table = {
     'select': _parse_select,
     'delete': _parse_delete,
     'insert': _parse_insert,
     'update': _parse_update,
-    'create': _parse_create,
-    'drop': _parse_drop,
+    'create': None,
+    'drop': None,
     'call': _parse_call,
-    'show': _parse_show,
-    'set': _parse_set,
-    'exec': _parse_exec,
-    'execute': _parse_execute,
-    'alter': _parse_alter,
+    'show': None,
+    'set': None,
+    'exec': None,
+    'execute': None,
+    'alter': None,
+    'commit': None,
+    'rollback': None,
 }
 
 _parse_operation_p = r'(\w+)'
 _parse_operation_re = re.compile(_parse_operation_p)
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_operation')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/parse_operation')
 def _parse_operation(sql):
     match = _parse_operation_re.search(sql)
     operation = match and match.group(1).lower() or ''
     return operation if operation in _operation_table else ''
 
-@internal_trace('Supportability/DatabaseUtils/Calls/parse_target')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/parse_target')
 def _parse_target(sql, operation):
     parse = _operation_table.get(operation, None)
     return parse and parse(sql) or ''
@@ -426,7 +449,7 @@ def _obfuscate_explain_plan_postgresql(columns, rows, mask=None):
     return columns, rows
 
 _obfuscate_explain_plan_table = {
-    'PostgreSQL': _obfuscate_explain_plan_postgresql
+    'Postgres': _obfuscate_explain_plan_postgresql
 }
 
 def _obfuscate_explain_plan(database, columns, rows):
@@ -512,7 +535,7 @@ class SQLConnections(object):
             if len(self.connections) == self.maximum:
                 connection = self.connections.pop(0)[1]
 
-                internal_metric('Supportability/DatabaseUtils/Counts/'
+                internal_metric('Supportability/Python/DatabaseUtils/Counts/'
                                 'drop_database_connection', 1)
 
                 if settings.debug.log_explain_plan_queries:
@@ -527,7 +550,7 @@ class SQLConnections(object):
 
             self.connections.append((key, connection))
 
-            internal_metric('Supportability/DatabaseUtils/Counts/'
+            internal_metric('Supportability/Python/DatabaseUtils/Counts/'
                             'create_database_connection', 1)
 
             if settings.debug.log_explain_plan_queries:
@@ -566,7 +589,7 @@ def _query_result_dicts_to_tuples(columns, rows):
 
     return [tuple([row[col] for col in columns]) for row in rows]
 
-@internal_trace('Supportability/DatabaseUtils/Calls/explain_plan')
+@internal_trace('Supportability/Python/DatabaseUtils/Calls/explain_plan')
 def _explain_plan(connections, sql, database, connect_params, cursor_params,
         sql_parameters, execute_params):
 
@@ -665,22 +688,7 @@ def explain_plan(connections, sql_statement, connect_params, cursor_params,
 
     return details
 
-# Wrapper for information about a specific database. We haven't yet
-# added high level instrumentation modules for all databases we know
-# of and so we still maintain a table here indexed by Python module
-# name for some.
-
-DATABASE_MODULES = {
-    'ibm_db_dbi': 'DB2'
-}
-
-DATABASE_DEFINTIONS = {
-    'DB2': {
-        'quoting_style': 'single',
-        'explain_query': 'EXPLAIN',
-        'explain_stmts': ('select', 'insert', 'update', 'delete')
-    }
-}
+# Wrapper for information about a specific database.
 
 class SQLDatabase(object):
 
@@ -692,15 +700,7 @@ class SQLDatabase(object):
 
     @property
     def name(self):
-        name = getattr(self.dbapi2_module, '_nr_database_name', None)
-
-        if name is None:
-            name = getattr(self.dbapi2_module, '__name__', None)
-
-            if name:
-                name = DATABASE_MODULES.get(name)
-
-        return name
+        return getattr(self.dbapi2_module, '_nr_database_name', None)
 
     @property
     def client(self):
@@ -716,35 +716,20 @@ class SQLDatabase(object):
         result = getattr(self.dbapi2_module, '_nr_quoting_style', None)
 
         if result is None:
-            details = DATABASE_DEFINTIONS.get(self.name)
-            if details:
-                result = details['quoting_style']
-            else:
-                result = 'single'
+            result = 'single'
 
         return result
 
     @property
     def explain_query(self):
-        result = getattr(self.dbapi2_module, '_nr_explain_query', None)
-
-        if result is None:
-            details = DATABASE_DEFINTIONS.get(self.name)
-            if details:
-                result = details['explain_query']
-
-        return result
+        return getattr(self.dbapi2_module, '_nr_explain_query', None)
 
     @property
     def explain_stmts(self):
         result = getattr(self.dbapi2_module, '_nr_explain_stmts', None)
 
         if result is None:
-            details = DATABASE_DEFINTIONS.get(self.name)
-            if details:
-                result = details['explain_stmts']
-            else:
-                result = ()
+            result = ()
 
         return result
 

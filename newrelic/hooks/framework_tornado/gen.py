@@ -97,7 +97,7 @@ def _nr_wrapper_gen_coroutine_generator_(generator):
                     except (GeneratorReturn, StopIteration):
                         raise
 
-                    except Exception:
+                    except:  # Catch all.
                         # We need to record exceptions at this point
                         # as the call back into the generator could
                         # have been triggered by a future direct from

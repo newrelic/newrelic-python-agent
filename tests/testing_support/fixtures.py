@@ -96,7 +96,8 @@ def fake_collector_wrapper(wrapped, instance, args, kwargs):
 
     return wrapped(*args, **kwargs)
 
-def collector_agent_registration_fixture(app_name=None, default_settings={}):
+def collector_agent_registration_fixture(app_name=None, default_settings={},
+        linked_applications=[]):
     @pytest.fixture(scope='session')
     def _collector_agent_registration_fixture(request):
         settings = global_settings()
@@ -171,6 +172,8 @@ def collector_agent_registration_fixture(app_name=None, default_settings={}):
 
         use_fake_collector = _environ_as_bool(
                 'NEW_RELIC_FAKE_COLLECTOR', False)
+        use_developer_mode = _environ_as_bool(
+                'NEW_RELIC_DEVELOPER_MODE', False)
 
         if use_fake_collector:
             wrap_function_wrapper('newrelic.core.data_collector',
@@ -217,7 +220,7 @@ def collector_agent_registration_fixture(app_name=None, default_settings={}):
 
         headers['X-API-Key'] = settings.api_key
 
-        if not use_fake_collector:
+        if not use_fake_collector and not use_developer_mode:
             try:
                 _logger.debug("Record deployment marker at %s" % url)
                 r = requests.post(url, proxies=proxies, headers=headers,
@@ -225,6 +228,13 @@ def collector_agent_registration_fixture(app_name=None, default_settings={}):
             except Exception:
                 _logger.exception("Unable to record deployment marker.")
                 pass
+
+        # Associate linked applications.
+
+        application = application_instance()
+
+        for name in linked_applications:
+            application.link_to_application(name)
 
         # Force registration of the application.
 
@@ -481,6 +491,58 @@ def validate_synthetics_event(required_attrs=[], forgone_attrs=[],
 
     return _validate_synthetics_event
 
+def validate_database_duration():
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_database_duration(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+
+            metrics = instance.stats_table
+            sampled_data_set = instance.sampled_data_set
+
+            assert sampled_data_set.count == 1
+
+            event = sampled_data_set.samples[0]
+            intrinsics = event[0]
+
+            # As long as we are sending 'Database' metrics, then
+            # 'databaseDuration' and 'databaseCallCount' will be
+            # the sum both 'Database' and 'Datastore' values.
+
+            try:
+                database_all = metrics[('Database/all', '')]
+            except KeyError:
+                database_all_duration = 0.0
+                database_all_call_count = 0
+            else:
+                database_all_duration = database_all.total_call_time
+                database_all_call_count = database_all.call_count
+
+            try:
+                datastore_all = metrics[('Datastore/all', '')]
+            except KeyError:
+                datastore_all_duration = 0.0
+                datastore_all_call_count = 0
+            else:
+                datastore_all_duration = datastore_all.total_call_time
+                datastore_all_call_count = datastore_all.call_count
+
+            assert 'databaseDuration' in intrinsics
+            assert 'databaseCallCount' in intrinsics
+
+            assert intrinsics['databaseDuration'] == (database_all_duration +
+                    datastore_all_duration)
+            assert intrinsics['databaseCallCount'] == (database_all_call_count +
+                    datastore_all_call_count)
+
+        return result
+
+    return _validate_database_duration
+
 def validate_synthetics_transaction_trace(required_params={},
         forgone_params={}, should_exist=True):
     @transient_function_wrapper('newrelic.core.stats_engine',
@@ -529,6 +591,41 @@ def validate_synthetics_transaction_trace(required_params={},
         return result
 
     return _validate_synthetics_transaction_trace
+
+def validate_tt_parameters(required_params={},
+        forgone_params={}):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_tt_parameters(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+
+            # Now that transaction has been recorded, generate
+            # a transaction trace
+
+            connections = SQLConnections()
+            trace_data = instance.transaction_trace_data(connections)
+
+            pack_data = unpack_field(trace_data[0][4])
+            tt_custom_params = pack_data[0][2]
+
+            for name in required_params:
+                assert name in tt_custom_params, ('name=%r, '
+                        'custom_params=%r' % (name, tt_custom_params))
+                assert tt_custom_params[name] == required_params[name], (
+                        'name=%r, value=%r, custom_params=%r' %
+                        (name, required_params[name], tt_custom_params))
+
+            for name in forgone_params:
+                assert name not in tt_custom_params, ('name=%r, '
+                        'custom_params=%r' % (name, tt_custom_params))
+
+        return result
+
+    return _validate_tt_parameters
 
 def validate_request_params(required_params=[], forgone_params=[]):
     @transient_function_wrapper('newrelic.core.stats_engine',
@@ -621,11 +718,14 @@ def validate_database_trace_inputs(sql_parameters_type):
 
     return _validate_database_trace_inputs
 
-def override_application_name(name):
+def override_application_name(app_name):
+    # The argument here cannot be named 'name', or else it triggers
+    # a PyPy bug. Hence, we use 'app_name' instead.
+
     class Application(ObjectProxy):
         @property
         def name(self):
-            return name
+            return app_name
 
     @transient_function_wrapper('newrelic.api.transaction',
             'Transaction.__init__')

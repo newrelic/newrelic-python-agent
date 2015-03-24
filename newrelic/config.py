@@ -8,6 +8,8 @@ try:
 except ImportError:
     import configparser as ConfigParser
 
+from .packages import six
+
 from .common.log_file import initialize_logging
 from .core.config import Settings, apply_config_setting
 
@@ -50,8 +52,9 @@ sys.meta_path.insert(0, newrelic.api.import_hook.ImportHookFinder())
 _FEATURE_FLAGS = set([
     'tornado.instrumentation.r1',
     'tornado.instrumentation.r2',
-    'pymongo.instrumentation.r2',
     'django.instrumentation.inclusion-tags.r1',
+    'database.instrumentation.r1',
+    'database.instrumentation.r2',
 ])
 
 # Names of configuration file and deployment environment. This
@@ -296,6 +299,8 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'include_environ',
                      'get', _map_include_environ)
+    _process_setting(section, 'max_stack_trace_lines',
+                     'getint', None)
     _process_setting(section, 'startup_timeout',
                      'getfloat', None)
     _process_setting(section, 'shutdown_timeout',
@@ -402,6 +407,10 @@ def _process_configuration(section):
                      'getint', None)
     _process_setting(section, 'agent_limits.synthetics_transactions',
                      'getint', None)
+    _process_setting(section, 'agent_limits.data_compression_threshold',
+                     'getint', None)
+    _process_setting(section, 'agent_limits.data_compression_level',
+                     'getint', None)
     _process_setting(section, 'console.listener_socket',
                      'get', _map_console_listener_socket)
     _process_setting(section, 'console.allow_interpreter_cmd',
@@ -434,6 +443,8 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'debug.explain_plan_obfuscation',
                      'get', None)
+    _process_setting(section, 'debug.disable_certificate_validation',
+                     'getboolean', None)
     _process_setting(section, 'cross_application_tracer.enabled',
                      'getboolean', None)
     _process_setting(section, 'process_host.display_name',
@@ -1805,9 +1816,12 @@ def _process_module_builtin_defaults():
             'instrument_gunicorn_app_base')
 
     _process_module_definition('cx_Oracle',
-            'newrelic.hooks.database_dbapi2')
+            'newrelic.hooks.database_cx_oracle',
+            'instrument_cx_oracle')
+
     _process_module_definition('ibm_db_dbi',
-            'newrelic.hooks.database_dbapi2')
+            'newrelic.hooks.database_ibm_db_dbi',
+            'instrument_ibm_db_dbi')
 
     _process_module_definition('mysql.connector',
             'newrelic.hooks.database_mysql',
@@ -1816,14 +1830,15 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.database_mysqldb',
             'instrument_mysqldb')
     _process_module_definition('oursql',
-            'newrelic.hooks.database_mysqldb',
-            'instrument_mysqldb')
+            'newrelic.hooks.database_oursql',
+            'instrument_oursql')
     _process_module_definition('pymysql',
-            'newrelic.hooks.database_mysqldb',
-            'instrument_mysqldb')
+            'newrelic.hooks.database_pymysql',
+            'instrument_pymysql')
 
     _process_module_definition('pyodbc',
-            'newrelic.hooks.database_dbapi2')
+            'newrelic.hooks.database_pyodbc',
+            'instrument_pyodbc')
 
     _process_module_definition('pymssql',
             'newrelic.hooks.database_pymssql',
@@ -1837,24 +1852,26 @@ def _process_module_builtin_defaults():
             'instrument_psycopg2_extensions')
 
     _process_module_definition('psycopg2ct',
-            'newrelic.hooks.database_dbapi2')
+            'newrelic.hooks.database_psycopg2ct',
+            'instrument_psycopg2ct')
     _process_module_definition('psycopg2ct.extensions',
-            'newrelic.hooks.database_psycopg2',
-            'instrument_psycopg2_extensions')
+            'newrelic.hooks.database_psycopg2ct',
+            'instrument_psycopg2ct_extensions')
 
     _process_module_definition('psycopg2cffi',
-            'newrelic.hooks.database_psycopg2',
-            'instrument_psycopg2')
+            'newrelic.hooks.database_psycopg2cffi',
+            'instrument_psycopg2cffi')
     _process_module_definition('psycopg2cffi.extensions',
-            'newrelic.hooks.database_psycopg2',
-            'instrument_psycopg2_extensions')
+            'newrelic.hooks.database_psycopg2cffi',
+            'instrument_psycopg2cffi_extensions')
 
     _process_module_definition('postgresql.driver.dbapi20',
-            'newrelic.hooks.database_psycopg2',
-            'instrument_psycopg2')
+            'newrelic.hooks.database_postgresql',
+            'instrument_postgresql_driver_dbapi20')
 
     _process_module_definition('postgresql.interface.proboscis.dbapi2',
-            'newrelic.hooks.database_dbapi2')
+            'newrelic.hooks.database_postgresql',
+            'instrument_postgresql_interface_proboscis_dbapi2')
 
     _process_module_definition('sqlite3',
             'newrelic.hooks.database_sqlite',
@@ -1870,14 +1887,32 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.database_sqlite',
             'instrument_sqlite3_dbapi2')
 
-    _process_module_definition('memcache',
-            'newrelic.hooks.memcache_memcache')
-    _process_module_definition('pylibmc',
-            'newrelic.hooks.memcache_pylibmc')
-    _process_module_definition('umemcache',
-            'newrelic.hooks.memcache_umemcache')
-    _process_module_definition('bmemcached',
-            'newrelic.hooks.memcache_memcache')
+
+    if 'database.instrumentation.r1' in _settings.feature_flag:
+        _process_module_definition('memcache',
+                'newrelic.hooks.memcache_memcache')
+        _process_module_definition('umemcache',
+                'newrelic.hooks.memcache_umemcache')
+        _process_module_definition('pylibmc',
+                'newrelic.hooks.memcache_pylibmc')
+        _process_module_definition('bmemcached',
+                'newrelic.hooks.memcache_memcache')
+    else:
+        _process_module_definition('memcache',
+                'newrelic.hooks.datastore_memcache',
+                'instrument_memcache')
+        _process_module_definition('umemcache',
+                'newrelic.hooks.datastore_umemcache',
+                'instrument_umemcache')
+        _process_module_definition('pylibmc.client',
+                'newrelic.hooks.datastore_pylibmc',
+                'instrument_pylibmc_client')
+        _process_module_definition('bmemcached.client',
+                'newrelic.hooks.datastore_bmemcached',
+                'instrument_bmemcached_client')
+        _process_module_definition('pymemcache.client',
+                'newrelic.hooks.datastore_pymemcache',
+                'instrument_pymemcache_client')
 
     _process_module_definition('jinja2.environment',
             'newrelic.hooks.template_jinja2')
@@ -1892,21 +1927,26 @@ def _process_module_builtin_defaults():
     _process_module_definition('genshi.template.base',
             'newrelic.hooks.template_genshi')
 
-    _process_module_definition('httplib',
-            'newrelic.hooks.external_httplib') # Python 2
-    _process_module_definition('http.client',
-            'newrelic.hooks.external_httplib') # Python 3
+    if six.PY2:
+        _process_module_definition('httplib',
+                'newrelic.hooks.external_httplib')
+    else:
+        _process_module_definition('http.client',
+                'newrelic.hooks.external_httplib')
 
     _process_module_definition('httplib2',
             'newrelic.hooks.external_httplib2')
 
-    _process_module_definition('urllib',
-            'newrelic.hooks.external_urllib') # Python 2
-    _process_module_definition('urllib.request',
-            'newrelic.hooks.external_urllib') # Python 3
+    if six.PY2:
+        _process_module_definition('urllib',
+                'newrelic.hooks.external_urllib')
+    else:
+        _process_module_definition('urllib.request',
+                'newrelic.hooks.external_urllib')
 
-    _process_module_definition('urllib2',
-            'newrelic.hooks.external_urllib2') # Python 2
+    if six.PY2:
+        _process_module_definition('urllib2',
+                'newrelic.hooks.external_urllib2')
 
     _process_module_definition('urllib3.connectionpool',
             'newrelic.hooks.external_urllib3',
@@ -1943,28 +1983,64 @@ def _process_module_builtin_defaults():
     _process_module_definition('solr',
             'newrelic.hooks.solr_solrpy')
 
-    if 'pymongo.instrumentation.r2' in _settings.feature_flag:
+    _process_module_definition('elasticsearch.client',
+            'newrelic.hooks.datastore_elasticsearch',
+            'instrument_elasticsearch_client')
+    _process_module_definition('elasticsearch.client.cat',
+            'newrelic.hooks.datastore_elasticsearch',
+            'instrument_elasticsearch_client_cat')
+    _process_module_definition('elasticsearch.client.cluster',
+            'newrelic.hooks.datastore_elasticsearch',
+            'instrument_elasticsearch_client_cluster')
+    _process_module_definition('elasticsearch.client.indices',
+            'newrelic.hooks.datastore_elasticsearch',
+            'instrument_elasticsearch_client_indices')
+    _process_module_definition('elasticsearch.client.nodes',
+            'newrelic.hooks.datastore_elasticsearch',
+            'instrument_elasticsearch_client_nodes')
+    _process_module_definition('elasticsearch.client.snapshot',
+            'newrelic.hooks.datastore_elasticsearch',
+            'instrument_elasticsearch_client_snapshot')
+
+    _process_module_definition('pyelasticsearch.client',
+            'newrelic.hooks.datastore_pyelasticsearch',
+            'instrument_pyelasticsearch_client')
+
+    if 'database.instrumentation.r1' in _settings.feature_flag:
         _process_module_definition('pymongo.connection',
-                'newrelic.hooks.datastore_pymongo',
+                'newrelic.hooks.nosql_pymongo',
                 'instrument_pymongo_connection')
         _process_module_definition('pymongo.collection',
-                'newrelic.hooks.datastore_pymongo',
+                'newrelic.hooks.nosql_pymongo',
                 'instrument_pymongo_collection')
-
     else:
         _process_module_definition('pymongo.connection',
-                'newrelic.hooks.nosql_pymongo',
+                'newrelic.hooks.datastore_pymongo',
                 'instrument_pymongo_connection')
+        _process_module_definition('pymongo.mongo_client',
+                'newrelic.hooks.datastore_pymongo',
+                'instrument_pymongo_mongo_client')
         _process_module_definition('pymongo.collection',
-                'newrelic.hooks.nosql_pymongo',
+                'newrelic.hooks.datastore_pymongo',
                 'instrument_pymongo_collection')
 
-    _process_module_definition('redis.connection',
-            'newrelic.hooks.nosql_redis',
-            'instrument_redis_connection')
-    _process_module_definition('redis.client',
-            'newrelic.hooks.nosql_redis',
-            'instrument_redis_client')
+    if 'database.instrumentation.r1' in _settings.feature_flag:
+        _process_module_definition('redis.connection',
+                'newrelic.hooks.nosql_redis',
+                'instrument_redis_connection')
+        _process_module_definition('redis.client',
+                'newrelic.hooks.nosql_redis',
+                'instrument_redis_client')
+    else:
+        _process_module_definition('redis.connection',
+                'newrelic.hooks.datastore_redis',
+                'instrument_redis_connection')
+        _process_module_definition('redis.client',
+                'newrelic.hooks.datastore_redis',
+                'instrument_redis_client')
+
+    _process_module_definition('motor',
+            'newrelic.hooks.datastore_motor', 'patch_motor')
 
     _process_module_definition('piston.resource',
             'newrelic.hooks.component_piston',

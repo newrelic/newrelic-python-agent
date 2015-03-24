@@ -95,11 +95,6 @@ def collect_stack_traces(include_nr_threads=False, include_xrays=False):
     for (txn, thread_id, thread_category, frame) in \
             transaction_cache().active_threads():
 
-        # Skip background threads for X-rays.
-
-        if (include_xrays) and (txn and txn.background_task):
-            continue
-
         # Skip NR Threads unless explicitly requested.
 
         if (thread_category == 'AGENT') and (not include_nr_threads):
@@ -159,7 +154,7 @@ class ProfileSessionManager(object):
         self.sample_period_s = 0.1
         self._aggregation_time = 0.0
 
-    @internal_trace('Supportability/Profiling/Calls/add_stack_traces[sec|call]')
+    @internal_trace('Supportability/Python/Profiling/Calls/add_stack_traces')
     def add_stack_traces(self, app_name, key_txn, txn_type, stack_traces):
         """Adds a list of stack_traces to a praticular xray profile session's
         call tree. This is called at the end of a transaction when it's name is
@@ -187,7 +182,7 @@ class ProfileSessionManager(object):
             end = time.time() - start
             self._aggregation_time += end
 
-        internal_metric('Supportability/Profiling/Counts/stack_frames[frame]',
+        internal_metric('Supportability/Python/Profiling/Counts/stack_frames',
                 count)
 
         return True
@@ -609,8 +604,12 @@ class ProfileSession(object):
                     'payload=%r.', flat_tree)
 
         json_call_tree = json_encode(flat_tree)
+
+        level = settings.agent_limits.data_compression_level
+        level = level or zlib.Z_DEFAULT_COMPRESSION
+
         encoded_tree = base64.standard_b64encode(
-                zlib.compress(six.b(json_call_tree)))
+                zlib.compress(six.b(json_call_tree), level))
 
         if six.PY3:
             encoded_tree = encoded_tree.decode('Latin-1')

@@ -1,6 +1,6 @@
 from newrelic.agent import (current_transaction, wrap_object,
         callable_name, FunctionTrace, ObjectProxy, DatabaseTrace,
-        register_database_client)
+        register_database_client, global_settings)
 
 DEFAULT = object()
 
@@ -85,8 +85,19 @@ class ConnectionFactory(ObjectProxy):
 
     def __call__(self, *args, **kwargs):
         transaction = current_transaction()
+
+        settings = global_settings()
+
+        if 'database.instrumentation.r1' in settings.feature_flag:
+            rollup = 'Database/all'
+        else:
+            rollup = []
+            rollup.append('Datastore/all')
+            rollup.append('Datastore/%s/all' %
+                    self._nr_dbapi2_module._nr_database_name)
+
         with FunctionTrace(transaction, callable_name(self.__wrapped__),
-                terminal=True, rollup='Database/all'):
+                terminal=True, rollup=rollup):
             return self.__connection_wrapper__(self.__wrapped__(
                     *args, **kwargs), self._nr_dbapi2_module, (args, kwargs))
 

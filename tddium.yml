@@ -4,10 +4,12 @@
     # 'PIP_INDEX_URL': 'http://localhost:3141/root/pypi/'
     'NEW_RELIC_FAKE_COLLECTOR': 'true'
   :tests:
+    - tox -c tests/agent_unittests/tox.ini
     - tox -c tests/agent_features/tox.ini
     - tox -c tests/cross_agent/tox.ini
     - tox -c tests/component_cornice/tox-0016.ini
-    - tox -c tests/component_djangorestframework/tox.ini
+    - tox -c tests/component_djangorestframework/tox-0203.ini
+    - tox -c tests/component_djangorestframework/tox-0300.ini
     - tox -c tests/database_mysql/tox.ini
     - tox -c tests/database_mysqldb/tox.ini
     - tox -c tests/database_oursql/tox.ini
@@ -18,9 +20,25 @@
     - tox -c tests/database_psycopg2ct/tox.ini
     - tox -c tests/database_pymysql/tox.ini
     - tox -c tests/database_sqlite/tox.ini
+    - tox -c tests/datastore_mysql/tox.ini
+    - tox -c tests/datastore_mysqldb/tox.ini
+    - tox -c tests/datastore_oursql/tox.ini
+    - tox -c tests/datastore_proboscis/tox.ini
+    - tox -c tests/datastore_postgresql/tox.ini
+    - tox -c tests/datastore_psycopg2/tox.ini
+    - tox -c tests/datastore_psycopg2cffi/tox.ini
+    - tox -c tests/datastore_psycopg2ct/tox.ini
+    - tox -c tests/datastore_pymysql/tox.ini
+    - tox -c tests/datastore_sqlite/tox.ini
     - tox -c tests/datastore_redis/tox.ini
     - tox -c tests/datastore_pymongo/tox.ini
-    - tox -c tests/nosql_pymongo/tox.ini
+    - tox -c tests/datastore_memcache/tox.ini
+    - tox -c tests/datastore_umemcache/tox.ini
+    - tox -c tests/datastore_pylibmc/tox.ini
+    - tox -c tests/datastore_bmemcached/tox.ini
+    - tox -c tests/datastore_pymemcache/tox.ini
+    - tox -c tests/datastore_elasticsearch/tox.ini
+    - tox -c tests/datastore_pyelasticsearch/tox.ini
     - tox -c tests/external_httplib/tox.ini
     - tox -c tests/external_requests/tox-0014.ini
     - tox -c tests/external_requests/tox-0102.ini
@@ -33,12 +51,16 @@
     - tox -c tests/framework_bottle/tox-0009.ini
     - tox -c tests/framework_bottle/tox-0010.ini
     - tox -c tests/framework_bottle/tox-0011.ini
-    - tox -c tests/framework_cherrypy/tox-0301.ini
     - tox -c tests/framework_cherrypy/tox-0302.ini
+    - tox -c tests/framework_cherrypy/tox-0303.ini
+    - tox -c tests/framework_cherrypy/tox-0304.ini
+    - tox -c tests/framework_cherrypy/tox-0305.ini
+    - tox -c tests/framework_cherrypy/tox-0306.ini
     - tox -c tests/framework_django/tox-0103.ini
     - tox -c tests/framework_django/tox-0104.ini
     - tox -c tests/framework_django/tox-0105.ini
     - tox -c tests/framework_django/tox-0106.ini
+    - tox -c tests/framework_django/tox-0107.ini
     - tox -c tests/framework_flask/tox-0006.ini
     - tox -c tests/framework_flask/tox-0007.ini
     - tox -c tests/framework_flask/tox-0008.ini
@@ -53,6 +75,8 @@
     - tox -c tests/framework_tornado/tox-0302.ini
     - tox -c tests/framework_web2py/tox-01098.ini
     - tox -c tests/memcache_memcache/tox.ini
+    - tox -c tests/nosql_redis/tox.ini
+    - tox -c tests/nosql_pymongo/tox.ini
   :python:
     :python_version: 2.7
     :pip_requirements_file: requirements.txt
@@ -61,7 +85,7 @@
   :mysql:
     :version: '5.1'
   :redis:
-    :version: '2.16.6'
+    :version: '2.6.16'
   :mongodb:
     :version: '2.0'
     :append:
@@ -71,6 +95,8 @@
     :config:
       raise_not_found_error: false
       allow_dynamic_fields: false
+  :elasticsearch:
+    :version: '1.4'
   :custom_service:
     :command: 'services.sh'
     :ping: true

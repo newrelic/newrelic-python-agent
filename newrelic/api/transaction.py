@@ -25,6 +25,8 @@ import newrelic.core.error_node
 from newrelic.core.stats_engine import CustomMetrics
 from newrelic.core.transaction_cache import transaction_cache
 from newrelic.core.thread_utilization import utilization_tracker
+
+from ..core.stack_trace import exception_stack
 from ..common.encoding_utils import generate_path_hash
 
 from .time_trace import TimeTrace
@@ -675,11 +677,18 @@ class Transaction(object):
                 self.ignore_transaction = self.ignore_transaction or ignore
 
             # Apply transaction rules on the full transaction name.
-            # The path is frozen at this point and cannot be further
-            # changed.
+
+            path, ignore = self._application.normalize_name(
+                    self.path, 'transaction')
+
+            self.ignore_transaction = self.ignore_transaction or ignore
+
+            # Apply segment whitelist rule to the segments on the full
+            # transaction name. The path is frozen at this point and cannot be
+            # further changed.
 
             self._frozen_path, ignore = self._application.normalize_name(
-                    self.path, 'transaction')
+                    path, 'segment')
 
             self.ignore_transaction = self.ignore_transaction or ignore
 
@@ -863,13 +872,11 @@ class Transaction(object):
             if error.type == fullname and error.message == message:
                 return
 
-        stack_trace = traceback.format_exception(exc, value, tb)
-
         node = newrelic.core.error_node.ErrorNode(
                 timestamp=time.time(),
                 type=fullname,
                 message=message,
-                stack_trace=stack_trace,
+                stack_trace=exception_stack(tb),
                 custom_params=custom_params,
                 file_name=None,
                 line_number=None,
@@ -996,6 +1003,10 @@ class Transaction(object):
         #        stacklevel=2)
         self.add_custom_parameters(items)
 
+    def add_framework_info(self, name, version=None):
+        if name:
+            self._frameworks.add((name, version))
+
     def dump(self, file):
         """Dumps details about the transaction to the file object."""
 
@@ -1048,3 +1059,107 @@ def transaction():
             'instead of transaction().', DeprecationWarning, stacklevel=2)
 
     return current_transaction()
+
+def set_transaction_name(name, group=None, priority=None):
+    transaction = current_transaction()
+    if transaction:
+        transaction.set_transaction_name(name, group, priority)
+
+def name_transaction(name, group=None, priority=None):
+    warnings.warn('API change. Use set_transaction_name() instead of '
+            'name_transaction().', DeprecationWarning, stacklevel=2)
+    transaction = current_transaction()
+    if transaction:
+        transaction.set_transaction_name(name, group, priority)
+
+def end_of_transaction():
+    transaction = current_transaction()
+    if transaction:
+        transaction.stop_recording()
+
+def set_background_task(flag=True):
+    transaction = current_transaction()
+    if transaction:
+        transaction.background_task = flag
+
+def ignore_transaction(flag=True):
+    transaction = current_transaction()
+    if transaction:
+        transaction.ignore_transaction = flag
+
+def suppress_apdex_metric(flag=True):
+    transaction = current_transaction()
+    if transaction:
+        transaction.suppress_apdex = flag
+
+def capture_request_params(flag=True):
+    transaction = current_transaction()
+    if transaction:
+        transaction.capture_params = flag
+
+def add_custom_parameter(key, value):
+    transaction = current_transaction()
+    if transaction:
+        transaction.add_custom_parameter(key, value)
+
+def add_user_attribute(key, value):
+    #warnings.warn('API change. Use add_custom_parameter() instead of '
+    #        'add_user_attribute().', DeprecationWarning, stacklevel=2)
+    return add_custom_parameter(key, value)
+
+def add_framework_info(name, version=None):
+    transaction = current_transaction()
+    if transaction:
+        transaction.add_framework_info(name, version)
+
+def record_exception(exc=None, value=None, tb=None, params={},
+        ignore_errors=[], application=None):
+    if application is None:
+        transaction = current_transaction()
+        if transaction:
+            transaction.record_exception(exc, value, tb, params,
+                    ignore_errors)
+    else:
+        if application.enabled:
+            application.record_exception(exc, value, tb, params,
+                    ignore_errors)
+
+def get_browser_timing_header():
+    transaction = current_transaction()
+    if transaction and hasattr(transaction, 'browser_timing_header'):
+        return transaction.browser_timing_header()
+    return ''
+
+def get_browser_timing_footer():
+    transaction = current_transaction()
+    if transaction and hasattr(transaction, 'browser_timing_footer'):
+        return transaction.browser_timing_footer()
+    return ''
+
+def disable_browser_autorum(flag=True):
+    transaction = current_transaction()
+    if transaction:
+        transaction.autorum_disabled = flag
+
+def suppress_transaction_trace(flag=True):
+    transaction = current_transaction()
+    if transaction:
+        transaction.suppress_transaction_trace = flag
+
+def record_custom_metric(name, value, application=None):
+    if application is None:
+        transaction = current_transaction()
+        if transaction:
+            transaction.record_custom_metric(name, value)
+    else:
+        if application.enabled:
+            application.record_custom_metric(name, value)
+
+def record_custom_metrics(metrics, application=None):
+    if application is None:
+        transaction = current_transaction()
+        if transaction:
+            transaction.record_custom_metrics(metrics)
+    else:
+        if application.enabled:
+            application.record_custom_metrics(metrics)

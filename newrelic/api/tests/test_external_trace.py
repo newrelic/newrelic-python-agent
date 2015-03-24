@@ -109,5 +109,10 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         with transaction:
             _test_function_1a("http://invalid_url:xxx")
 
+    def test_external_trace_none_for_transaction(self):
+        with newrelic.api.external_trace.ExternalTrace(
+                None, 'library', 'url'):
+            pass
+
 if __name__ == '__main__':
     unittest.main()

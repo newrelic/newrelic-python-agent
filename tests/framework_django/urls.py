@@ -7,9 +7,13 @@ from views import MyView
 
 urlpatterns = patterns('',
     url(r'^$', 'views.index', name='index'),
+    url(r'^exception$', 'views.exception', name='exception'),
     url(r'^cbv$', MyView.as_view()),
     url(r'^deferred_cbv$', 'views.deferred_cbv'),
     url(r'^html_insertion$', 'views.html_insertion', name='html_insertion'),
+    url(r'^html_insertion_content_length$',
+        'views.html_insertion_content_length',
+        name='html_insertion_content_length'),
     url(r'^html_insertion_manual$', 'views.html_insertion_manual',
         name='html_insertion_manual'),
     url(r'^html_insertion_unnamed_attachment_header$',

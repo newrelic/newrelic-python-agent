@@ -150,7 +150,9 @@ def browser_timing_middleware(request, response):
                     len(result) - len(response.content))
 
         response.content = result
-        response['Content-Length'] = str(len(response.content))
+
+        if response.get('Content-Length', None):
+            response['Content-Length'] = str(len(response.content))
 
     return response
 

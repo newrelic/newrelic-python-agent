@@ -119,9 +119,9 @@ def _environ_as_mapping(name, default=''):
         try:
             key, value = item.split(':')
         except ValueError:
-            _logger.warning('Invalid configuration. Cannot parse: %s.'
-                    'Expected format \'key1:value1;key2:value2 ... \'.' %
-                     (items,))
+            _logger.warning('Invalid configuration. Cannot parse: %r.'
+                    'Expected format \'key1:value1;key2:value2 ... \'.',
+                     items)
             result = []
             break
 
@@ -131,9 +131,9 @@ def _environ_as_mapping(name, default=''):
         if key and value:
             result.append((key, value))
         else:
-            _logger.warning('Invalid configuration. Cannot parse: %s.'
-                    'Expected format \'key1:value1;key2:value2 ... \'.' %
-                     (items,))
+            _logger.warning('Invalid configuration. Cannot parse: %r.'
+                    'Expected format \'key1:value1;key2:value2 ... \'.',
+                     items)
             result = []
             break
 
@@ -224,6 +224,8 @@ _settings.include_environ = ['REQUEST_METHOD', 'HTTP_USER_AGENT',
                               'HTTP_REFERER', 'CONTENT_TYPE',
                               'CONTENT_LENGTH']
 
+_settings.max_stack_trace_lines = 50
+
 _settings.sampling_rate = 0
 
 _settings.startup_timeout = float(
@@ -242,6 +244,7 @@ _settings.js_agent_file = None
 _settings.url_rules = []
 _settings.metric_name_rules = []
 _settings.transaction_name_rules = []
+_settings.transaction_segment_terms = []
 
 _settings.cross_process_id = None
 _settings.trusted_account_ids = []
@@ -289,7 +292,7 @@ _settings.transaction_name.naming_scheme = os.environ.get(
 
 _settings.slow_sql.enabled = True
 
-_settings.synthetics.enabled = False
+_settings.synthetics.enabled = True
 
 _settings.agent_limits.data_collector_timeout = 30.0
 _settings.agent_limits.transaction_traces_nodes = 2000
@@ -310,6 +313,8 @@ _settings.agent_limits.xray_profile_overhead = 0.05
 _settings.agent_limits.xray_profile_maximum = 500
 _settings.agent_limits.synthetics_events = 200
 _settings.agent_limits.synthetics_transactions = 20
+_settings.agent_limits.data_compression_threshold = 64*1024
+_settings.agent_limits.data_compression_level = None
 
 _settings.console.listener_socket = None
 _settings.console.allow_interpreter_cmd = False
@@ -331,6 +336,7 @@ _settings.debug.log_autorum_middleware = False
 _settings.debug.record_transaction_failure = False
 _settings.debug.enable_coroutine_profiling = False
 _settings.debug.explain_plan_obfuscation = 'simple'
+_settings.debug.disable_certificate_validation = False
 
 
 def global_settings():

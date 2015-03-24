@@ -51,6 +51,12 @@ def test_application_index():
     response = test_application.get('')
     response.mustcontain('INDEX RESPONSE')
 
+    assert 'Content-Length' not in response.headers
+
+@validate_transaction_metrics('views:exception')
+def test_application_exception():
+    response = test_application.get('/exception', status=500)
+
 _test_application_not_found_scoped_metrics = [
         ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
         ('Python/WSGI/Application', 1),
@@ -202,6 +208,18 @@ def test_html_insertion_named_attachment_header_django_middleware():
     # footer added by the agent.
 
     response.mustcontain(no=['NREUM HEADER', 'NREUM.info'])
+
+@override_application_settings(_test_html_insertion_settings)
+def test_html_insertion_no_content_length_header():
+    response = test_application.get('/html_insertion')
+
+    assert 'Content-Length' not in response.headers
+
+@override_application_settings(_test_html_insertion_settings)
+def test_html_insertion_content_length_header():
+    response = test_application.get('/html_insertion_content_length')
+
+    assert 'Content-Length' in response.headers
 
 _test_application_inclusion_tag_scoped_metrics = [
         ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),

@@ -11,6 +11,7 @@ import sys
 import time
 import zlib
 import base64
+import warnings
 
 from pprint import pprint
 
@@ -33,6 +34,7 @@ from newrelic.network.exceptions import (NetworkInterfaceException,
 
 from ..network.addresses import proxy_details
 from ..common.object_wrapper import patch_function_wrapper
+from ..common.object_names import callable_name
 from ..common.encoding_utils import json_encode, json_decode
 
 _logger = logging.getLogger(__name__)
@@ -61,7 +63,7 @@ def collector_url(server=None):
 
     scheme = settings.ssl and 'https' or 'http'
 
-    if not server:
+    if not server or settings.port:
         # When pulling port from agent configuration it should only be
         # set when testing against a local data collector. For staging
         # and production should not be set and would default to port 80
@@ -97,6 +99,24 @@ def proxy_server():
     return proxy_details(proxy_scheme, settings.proxy_host,
             settings.proxy_port, settings.proxy_user, settings.proxy_pass)
 
+def connection_type(proxies):
+    """Returns a string describing the connection type for use in metrics.
+
+    """
+
+    settings = global_settings()
+
+    ssl = settings.ssl
+
+    request_scheme = ssl and 'https' or 'http'
+
+    if proxies is None:
+        return 'direct/%s' % request_scheme
+
+    proxy_scheme = proxies['http'].split('://')[0]
+
+    return '%s-proxy/%s' % (proxy_scheme, request_scheme)
+
 # This is a monkey patch for urllib3 contained within our bundled requests
 # library. This is to override the urllib3 behaviour for how the proxy
 # is communicated with so as to allow us to restore the old broken
@@ -119,6 +139,32 @@ def _requests_proxy_scheme_workaround(wrapped, instance, args, kwargs):
             return connection
 
     return wrapped(*args, **kwargs)
+
+# This is a monkey patch for requests contained within our bundled requests.
+# Have no idea why they made the change, but the change they made in the
+# commit:
+#
+#   https://github.com/kennethreitz/requests/commit/8b7fcfb49a38cd6ee1cbb4a52e0a4af57969abb3
+#
+# breaks proxying a HTTPS requests over a HTTPS proxy. The original seems to
+# be more correct than the changed version and works in testing. Return the
+# functionality back to how it worked previously.
+
+@patch_function_wrapper(
+        'newrelic.packages.requests.adapters',
+        'HTTPAdapter.request_url')
+def _requests_request_url_workaround(wrapped, instance, args, kwargs):
+    from newrelic.packages.requests.adapters import urldefragauth
+
+    def _bind_params(request, proxies):
+        return request, proxies
+
+    request, proxies = _bind_params(*args, **kwargs)
+
+    if not proxies:
+        return wrapped(*args, **kwargs)
+
+    return urldefragauth(request.url)
 
 # Low level network functions and session management. When connecting to
 # the data collector it is initially done through the main data collector.
@@ -166,6 +212,9 @@ def _log_request(url, params, headers, data):
 
     if headers.get('Content-Encoding') == 'deflate':
         data = zlib.decompress(data)
+
+        if isinstance(data, bytes):
+            data = data.decode('Latin-1')
 
     object_from_json = json_decode(data)
 
@@ -219,6 +268,9 @@ def _log_response(log_id, result):
 
     _audit_log_fp.flush()
 
+_deflate_exclude_list = set(['transaction_sample_data', 'sql_trace_data',
+    'profile_data'])
+
 def send_request(session, url, method, license_key, agent_run_id=None,
             payload=()):
     """Constructs and sends a request to the data collector."""
@@ -238,11 +290,11 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         license_key = 'NO LICENSE KEY WAS SET IN AGENT CONFIGURATION'
 
     # The agent formats requests and is able to handle responses for
-    # protocol version 12.
+    # protocol version 14.
 
     params['method'] = method
     params['license_key'] = license_key
-    params['protocol_version'] = '12'
+    params['protocol_version'] = '14'
     params['marshal_format'] = 'json'
 
     if agent_run_id:
@@ -264,7 +316,8 @@ def send_request(session, url, method, license_key, agent_run_id=None,
     # a problem with the implementation of the agent.
 
     try:
-        with InternalTrace('Supportability/Collector/JSON/Encode/%s' % method):
+        with InternalTrace('Supportability/Python/'
+                'Collector/JSON/Encode/%s' % method):
             data = json_encode(payload)
 
     except Exception:
@@ -285,19 +338,21 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 url, method)
 
     # Compress the serialized JSON being sent as content if over 64KiB
-    # in size. If less than 2MB in size compress for speed. If over
-    # 2MB then compress for smallest size. This parallels what the Ruby
-    # agent does.
+    # in size and not in message types that further compression is
+    # excluded.
 
-    if len(data) > 64*1024:
+    threshold = settings.agent_limits.data_compression_threshold
+
+    if method not in _deflate_exclude_list and len(data) > threshold:
         headers['Content-Encoding'] = 'deflate'
-        level = (len(data) < 2000000) and 1 or 9
 
-        internal_metric('Supportability/Collector/ZLIB/Bytes/%s' % method,
-                len(data))
+        internal_metric('Supportability/Python/Collector/ZLIB/Bytes/'
+                '%s' % method, len(data))
 
-        with InternalTrace('Supportability/Collector/ZLIB/Compress/'
+        with InternalTrace('Supportability/Python/Collector/ZLIB/Compress/'
                 '%s' % method):
+            level = settings.agent_limits.data_compression_level
+            level = level or zlib.Z_DEFAULT_COMPRESSION
             data = zlib.compress(six.b(data), level)
 
     # If there is no requests session object provided for making
@@ -340,12 +395,14 @@ def send_request(session, url, method, license_key, agent_run_id=None,
     # accept requests. It should be a transient issue so should be able
     # to retain data and try again.
 
-    internal_metric('Supportability/Collector/Output/Bytes/%s' % method,
-            len(data))
+    internal_metric('Supportability/Python/Collector/Output/Bytes/'
+            '%s' % method, len(data))
 
     # If audit logging is enabled, log the requests details.
 
     log_id = _log_request(url, params, headers, data)
+
+    connection = connection_type(proxies)
 
     try:
         # The timeout value in the requests module is only on
@@ -353,11 +410,22 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         # it takes to get back a response.
 
         cert_loc = certs.where()
+
+        if settings.debug.disable_certificate_validation:
+            cert_loc = False
+
         timeout = settings.agent_limits.data_collector_timeout
 
-        r = session.post(url, params=params, headers=headers,
-                proxies=proxies, timeout=timeout, data=data,
-                verify=cert_loc)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+
+            internal_metric('Supportability/Python/Collector/Requests', 1)
+            internal_metric('Supportability/Python/Collector/Requests/'
+                    '%s' % connection, 1)
+
+            r = session.post(url, params=params, headers=headers,
+                    proxies=proxies, timeout=timeout, data=data,
+                    verify=cert_loc)
 
         # Read the content now so we can force close the socket
         # connection if this is a transient session as quickly
@@ -366,14 +434,23 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         content = r.content
 
     except requests.RequestException:
+        exc_type, message = sys.exc_info()[:2]
+
+        internal_metric('Supportability/Python/Collector/Failures', 1)
+        internal_metric('Supportability/Python/Collector/Failures/'
+                '%s' % connection, 1)
+
+        internal_metric('Supportability/Python/Collector/Exception/'
+                '%s' % callable_name(exc_type), 1)
+
         if not settings.proxy_host or not settings.proxy_port:
             _logger.warning('Data collector is not contactable. This can be '
                     'because of a network issue or because of the data '
                     'collector being restarted. In the event that contact '
                     'cannot be made after a period of time then please '
                     'report this problem to New Relic support for further '
-                    'investigation. The error raised was %r.',
-                    sys.exc_info()[1])
+                    'investigation. The error raised was %r.', message)
+
         else:
             _logger.warning('Data collector is not contactable via the proxy '
                     'host %r on port %r with proxy user of %r. This can be '
@@ -383,9 +460,25 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                     'report this problem to New Relic support for further '
                     'investigation. The error raised was %r.',
                     settings.proxy_host, settings.proxy_port,
-                    settings.proxy_user, sys.exc_info()[1])
+                    settings.proxy_user, message)
 
-        raise RetryDataForRequest(str(sys.exc_info()[1]))
+        raise RetryDataForRequest(str(message))
+
+    except Exception:
+        # Any unexpected exception will be caught by higher layer, but
+        # still attempt to log a metric here just in case agent run
+        # doesn't get shutdown as a result of the exception.
+
+        exc_type = sys.exc_info()[0]
+
+        internal_metric('Supportability/Python/Collector/Failures', 1)
+        internal_metric('Supportability/Python/Collector/Failures/'
+                '%s' % connection, 1)
+
+        internal_metric('Supportability/Python/Collector/Exception/'
+                '%s' % callable_name(exc_type), 1)
+
+        raise
 
     finally:
         if auto_close_session:
@@ -398,6 +491,13 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                 'agent_run_id=%r, params=%r, headers=%r, status_code=%r '
                 'and content=%r.', url, method, license_key, agent_run_id,
                 params, headers, r.status_code, content)
+
+        internal_metric('Supportability/Python/Collector/Failures', 1)
+        internal_metric('Supportability/Python/Collector/Failures/'
+                '%s' % connection, 1)
+
+        internal_metric('Supportability/Python/Collector/HTTPError/%d'
+                % r.status_code, 1)
 
     if r.status_code == 400:
         _logger.error('Data collector is indicating that a bad '
@@ -451,6 +551,7 @@ def send_request(session, url, method, license_key, agent_run_id=None,
                     'the request was %r. If this issue persists then please '
                     'report this problem to New Relic support for further '
                     'investigation.', r.status_code, method, payload)
+
         else:
             _logger.warning('An unexpected HTTP response was received from '
                     'the data collector of %r for method %r while connecting '
@@ -478,11 +579,12 @@ def send_request(session, url, method, license_key, agent_run_id=None,
     # If we got this far we should have a legitimate response from the
     # data collector. The response is JSON so need to decode it.
 
-    internal_metric('Supportability/Collector/Input/Bytes/%s' % method,
+    internal_metric('Supportability/Python/Collector/Input/Bytes/%s' % method,
             len(content))
 
     try:
-        with InternalTrace('Supportability/Collector/JSON/Decode/%s' % method):
+        with InternalTrace('Supportability/Python/Collector/JSON/Decode/'
+                '%s' % method):
             if six.PY3:
                 content = content.decode('UTF-8')
 
@@ -521,6 +623,18 @@ def send_request(session, url, method, license_key, agent_run_id=None,
             license_key, agent_run_id, params, headers, error_type,
             message)
 
+    # Technically most server side errors will result in the active
+    # agent run being abandoned and so there is no point trying to
+    # create a metric for when they occur. Leave this here though to at
+    # least log a metric for the case where a completely unexpected
+    # server error response is received and the agent run does manage to
+    # continue and further requests don't just keep failing. Since do
+    # not even expect the metric to be retained, use the original error
+    # type as sent.
+
+    internal_metric('Supportability/Python/Collector/ServerError/'
+            '%s' % error_type, 1)
+
     if error_type == 'NewRelic::Agent::LicenseException':
         _logger.error('Data collector is indicating that an incorrect '
                 'license key has been supplied by the agent. The value '
@@ -531,6 +645,14 @@ def send_request(session, url, method, license_key, agent_run_id=None,
         raise DiscardDataForRequest(message)
 
     elif error_type == 'NewRelic::Agent::PostTooBigException':
+        # As far as we know we should never see this type of server side
+        # error as for JSON API we should always get back a HTTP 413
+        # error response instead.
+
+        internal_metric('Supportability/Python/Collector/Failures', 1)
+        internal_metric('Supportability/Python/Collector/Failures/'
+                '%s' % connection, 1)
+
         _logger.warning('Core application is indicating that a request for '
                 'method %r was received where the request content size '
                 'was over the maximum allowed size limit. The length of '
@@ -562,8 +684,15 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
         raise ForceAgentDisconnect(message)
 
-    # We received an unexpected server side error we don't know what
-    # to do with.
+    # We received an unexpected server side error we don't know what to
+    # do with. Ignoring PostTooBigException which we expect that we
+    # should never receive, unexpected server side errors are the only
+    # ones we record a failure metric for as other server side errors
+    # are really commands to have the agent do something.
+
+    internal_metric('Supportability/Python/Collector/Failures', 1)
+    internal_metric('Supportability/Python/Collector/Failures/'
+            '%s' % connection, 1)
 
     _logger.warning('An unexpected server error was received from the '
             'data collector for method %r with payload of %r. The error '
@@ -660,7 +789,7 @@ class ApplicationSession(object):
         return send_request(session, url, method, license_key,
             agent_run_id, payload)
 
-    @internal_trace('Supportability/Collector/Calls/agent_settings')
+    @internal_trace('Supportability/Python/Collector/Calls/agent_settings')
     def agent_settings(self, settings):
         """Called to report up agent settings after registration.
 
@@ -673,7 +802,7 @@ class ApplicationSession(object):
                 'agent_settings', self.license_key, self.agent_run_id,
                 payload)
 
-    @internal_trace('Supportability/Collector/Calls/shutdown')
+    @internal_trace('Supportability/Python/Collector/Calls/shutdown')
     def shutdown_session(self):
         """Called to perform orderly deregistration of agent run against
         data collector, rather than simply dropping the connection and
@@ -695,7 +824,7 @@ class ApplicationSession(object):
 
         return result
 
-    @internal_trace('Supportability/Collector/Calls/metric_data')
+    @internal_trace('Supportability/Python/Collector/Calls/metric_data')
     def send_metric_data(self, start_time, end_time, metric_data):
         """Called to submit metric data for specified period of time.
         Time values are seconds since UNIX epoch as returned by the
@@ -709,7 +838,7 @@ class ApplicationSession(object):
         return self.send_request(self.requests_session, self.collector_url,
                 'metric_data', self.license_key, self.agent_run_id, payload)
 
-    @internal_trace('Supportability/Collector/Calls/error_data')
+    @internal_trace('Supportability/Python/Collector/Calls/error_data')
     def send_errors(self, errors):
         """Called to submit errors. The errors should be an iterable
         of individual errors details.
@@ -728,7 +857,8 @@ class ApplicationSession(object):
         return self.send_request(self.requests_session, self.collector_url,
                 'error_data', self.license_key, self.agent_run_id, payload)
 
-    @internal_trace('Supportability/Collector/Calls/transaction_sample_data')
+    @internal_trace('Supportability/Python/Collector/Calls/'
+            'transaction_sample_data')
     def send_transaction_traces(self, transaction_traces):
         """Called to submit transaction traces. The transaction traces
         should be an iterable of individual traces.
@@ -748,7 +878,7 @@ class ApplicationSession(object):
                 'transaction_sample_data', self.license_key,
                 self.agent_run_id, payload)
 
-    @internal_trace('Supportability/Collector/Calls/send_profile_data')
+    @internal_trace('Supportability/Python/Collector/Calls/send_profile_data')
     def send_profile_data(self, profile_data):
         """Called to submit Profile Data.
         """
@@ -762,7 +892,7 @@ class ApplicationSession(object):
                 'profile_data', self.license_key,
                 self.agent_run_id, payload)
 
-    @internal_trace('Supportability/Collector/Calls/sql_trace_data')
+    @internal_trace('Supportability/Python/Collector/Calls/sql_trace_data')
     def send_sql_traces(self, sql_traces):
         """Called to sub SQL traces. The SQL traces should be an
         iterable of individual SQL details.
@@ -781,7 +911,8 @@ class ApplicationSession(object):
                 'sql_trace_data', self.license_key, self.agent_run_id,
                 payload)
 
-    @internal_trace('Supportability/Collector/Calls/get_agent_commands')
+    @internal_trace('Supportability/Python/Collector/Calls/'
+            'get_agent_commands')
     def get_agent_commands(self):
         """Receive agent commands from the data collector.
 
@@ -793,7 +924,8 @@ class ApplicationSession(object):
                 'get_agent_commands', self.license_key, self.agent_run_id,
                 payload)
 
-    @internal_trace('Supportability/Collector/Calls/send_agent_command_results')
+    @internal_trace('Supportability/Python/Collector/Calls/'
+            'send_agent_command_results')
     def send_agent_command_results(self, cmd_results):
         """Acknowledge the receipt of an agent command.
 
@@ -805,7 +937,7 @@ class ApplicationSession(object):
                 'agent_command_results', self.license_key, self.agent_run_id,
                 payload)
 
-    @internal_trace('Supportability/Collector/Calls/get_xray_metadata')
+    @internal_trace('Supportability/Python/Collector/Calls/get_xray_metadata')
     def get_xray_metadata(self, xray_id):
         """Receive xray metadata from the data collector.
 
@@ -864,8 +996,11 @@ class ApplicationSession(object):
                     settings)
 
             url = collector_url()
-            redirect_host = cls.send_request(None, url, 'get_redirect_host',
-                    license_key)
+
+            with InternalTrace('Supportability/Python/Collector/Calls/'
+                    'get_redirect_host'):
+                redirect_host = cls.send_request(None, url,
+                        'get_redirect_host', license_key)
 
             # Then we perform a connect to the actual data collector host
             # we need to use. All communications after this point should go
@@ -918,8 +1053,11 @@ class ApplicationSession(object):
             payload = (local_config,)
 
             url = collector_url(redirect_host)
-            server_config = cls.send_request(None, url, 'connect',
-                    license_key, None, payload)
+
+            with InternalTrace('Supportability/Python/Collector/Calls/'
+                    'connect'):
+                server_config = cls.send_request(None, url, 'connect',
+                        license_key, None, payload)
 
             # Apply High Security Mode to server_config, so the local
             # security settings won't get overwritten when we overlay
@@ -1052,7 +1190,7 @@ class DeveloperModeSession(ApplicationSession):
 
         params['method'] = method
         params['license_key'] = license_key
-        params['protocol_version'] = '12'
+        params['protocol_version'] = '14'
         params['marshal_format'] = 'json'
 
         if agent_run_id:
@@ -1120,6 +1258,34 @@ def create_session(license_key, app_name, linked_applications,
                 not isinstance(value, six.integer_types)):
             application_settings[key] = repr(value)
 
-    session.agent_settings(application_settings)
+    try:
+        session.agent_settings(application_settings)
 
-    return session
+    except NetworkInterfaceException:
+        # The reason for errors of this type have already been logged.
+        # No matter what the error we just pass back None. The upper
+        # layer will deal with not being successful.
+
+        _logger.warning('Agent registration failed due to error in '
+                'uploading agent settings. Registration should retry '
+                'automatically.')
+
+        pass
+
+    except Exception:
+        # Any other errors are going to be unexpected and likely will
+        # indicate an issue with the implementation of the agent.
+
+        _logger.exception('Unexpected exception when attempting to '
+                'update agent settings with the data collector. Please '
+                'report this problem to New Relic support for further '
+                'investigation.')
+
+        _logger.warning('Agent registration failed due to error in '
+                'uploading agent settings. Registration should retry '
+                'automatically.')
+
+        pass
+
+    else:
+        return session

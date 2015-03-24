@@ -9,9 +9,6 @@
         },
         "requests": {
             "licenses": [
-                "MIT",
-                "LGPL",
-                "BSD (3-Clause)",
                 "apache2"
             ],
             "name": "requests",
@@ -43,14 +40,6 @@
         "BSD (2-Clause)": {
             "name": "The BSD 2-Clause License",
             "url": "http://opensource.org/licenses/BSD-2-Clause"
-        },
-        "BSD (3-Clause)": {
-            "name": "The BSD 3-Clause License",
-            "url": "http://opensource.org/licenses/BSD-3-Clause"
-        },
-        "LGPL": {
-            "name": "GNU LESSER GENERAL PUBLIC LICENSE",
-            "url": "http://www.gnu.org/licenses/lgpl.html"
         },
         "MIT": {
             "name": "The MIT License",

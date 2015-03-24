@@ -20,7 +20,10 @@ import newrelic.packages.six as six
 from .error_collector import TracedError
 from .internal_metrics import (internal_trace, InternalTrace, internal_metric)
 from .database_utils import explain_plan
+from .stack_trace import exception_stack
+
 from ..common.encoding_utils import json_encode
+
 _logger = logging.getLogger(__name__)
 
 class ApdexStats(list):
@@ -510,13 +513,11 @@ class StatsEngine(object):
             except Exception:
                 message = '<unprintable %s object>' % type(value).__name__
 
-        stack_trace = traceback.format_exception(exc, value, tb)
-
         # Record the exception details.
 
         params = {}
 
-        params["stack_trace"] = stack_trace
+        params["stack_trace"] = exception_stack(tb)
 
         if settings.error_collector.capture_attributes:
             params["custom_params"] = custom_params
@@ -693,7 +694,8 @@ class StatsEngine(object):
         if len(self.__synthetics_transactions) < maximum:
             self.__synthetics_transactions.append(transaction)
 
-    @internal_trace('Supportability/StatsEngine/Calls/record_transaction')
+    @internal_trace('Supportability/Python/StatsEngine/Calls/'
+            'record_transaction')
     def record_transaction(self, transaction):
         """Record any apdex and time metrics for the transaction as
         well as any errors which occurred for the transaction. If the
@@ -726,16 +728,16 @@ class StatsEngine(object):
         # lesser time. Such metrics get reported into the performance
         # breakdown tab for specific web transactions.
 
-        with InternalTrace(
-                'Supportability/TransactionNode/Calls/apdex_metrics'):
+        with InternalTrace('Supportability/Python/TransactionNode/Calls/'
+                'apdex_metrics'):
             self.record_apdex_metrics(transaction.apdex_metrics(self))
 
-        with InternalTrace(
-                'Supportability/TransactionNode/Calls/value_metrics'):
+        with InternalTrace('Supportability/Python/TransactionNode/Calls/'
+                'value_metrics'):
             self.merge_custom_metrics(transaction.custom_metrics.metrics())
 
-        with InternalTrace(
-                'Supportability/TransactionNode/Calls/time_metrics'):
+        with InternalTrace('Supportability/Python/TransactionNode/Calls/'
+                'time_metrics'):
             self.record_time_metrics(transaction.time_metrics(self))
 
         # Capture any errors if error collection is enabled.
@@ -744,8 +746,8 @@ class StatsEngine(object):
         if (error_collector.enabled and settings.collect_errors and
                 len(self.__transaction_errors) <
                 settings.agent_limits.errors_per_harvest):
-            with InternalTrace(
-                    'Supportability/TransactionNode/Calls/error_details'):
+            with InternalTrace('Supportability/Python/TransactionNode/Calls/'
+                    'error_details'):
                 self.__transaction_errors.extend(transaction.error_details())
 
                 self.__transaction_errors = self.__transaction_errors[:
@@ -754,8 +756,8 @@ class StatsEngine(object):
         # Capture any sql traces if transaction tracer enabled.
 
         if slow_sql.enabled and settings.collect_traces:
-            with InternalTrace(
-                    'Supportability/TransactionNode/Calls/slow_sql_nodes'):
+            with InternalTrace('Supportability/Python/TransactionNode/Calls/'
+                    'slow_sql_nodes'):
                 for node in transaction.slow_sql_nodes(self):
                     self.record_slow_sql_node(node)
 
@@ -870,17 +872,27 @@ class StatsEngine(object):
 
         def _add_call_time(source, target):
             try:
-                record[target] = self.__stats_table[
+                call_time = self.__stats_table[
                         (source, '')].total_call_time
             except KeyError:
                 pass
+            else:
+                if target in record:
+                    record[target] += call_time
+                else:
+                    record[target] = call_time
 
         def _add_call_count(source, target):
             try:
-                record[target] = self.__stats_table[
+                call_count = self.__stats_table[
                         (source, '')].call_count
             except KeyError:
                 pass
+            else:
+                if target in record:
+                    record[target] += call_count
+                else:
+                    record[target] = call_count
 
         _add_call_time('WebFrontend/QueueTime', 'queueDuration')
 
@@ -891,11 +903,19 @@ class StatsEngine(object):
         _add_call_count('External/all', 'externalCallCount')
         _add_call_count('Database/all', 'databaseCallCount')
 
+        # As we transition to using Datastore metrics, we now
+        # include 'Datastore/all' totals in databaseDuration and
+        # databaseCallCount. After transition we can remove the
+        # 'Database/all' checks above.
+
+        _add_call_time('Datastore/all', 'databaseDuration')
+        _add_call_count('Datastore/all', 'databaseCallCount')
+
         analytic_event = [record, params]
         return analytic_event
 
 
-    @internal_trace('Supportability/StatsEngine/Calls/metric_data')
+    @internal_trace('Supportability/Python/StatsEngine/Calls/metric_data')
     def metric_data(self, normalizer=None):
         """Returns a list containing the low level metric data for
         sending to the core application pertaining to the reporting
@@ -958,7 +978,7 @@ class StatsEngine(object):
 
         return len(self.__stats_table)
 
-    @internal_trace('Supportability/StatsEngine/Calls/error_data')
+    @internal_trace('Supportability/Python/StatsEngine/Calls/error_data')
     def error_data(self):
         """Returns a to a list containing any errors collected during
         the reporting period.
@@ -970,7 +990,7 @@ class StatsEngine(object):
 
         return self.__transaction_errors
 
-    @internal_trace('Supportability/StatsEngine/Calls/slow_sql_data')
+    @internal_trace('Supportability/Python/StatsEngine/Calls/slow_sql_data')
     def slow_sql_data(self, connections):
 
         _logger.debug('Generating slow SQL data.')
@@ -1013,8 +1033,11 @@ class StatsEngine(object):
 
             json_data = json_encode(params)
 
+            level = self.__settings.agent_limits.data_compression_level
+            level = level or zlib.Z_DEFAULT_COMPRESSION
+
             params_data = base64.standard_b64encode(
-                    zlib.compress(six.b(json_data)))
+                    zlib.compress(six.b(json_data), level))
 
             if six.PY3:
                 params_data = params_data.decode('Latin-1')
@@ -1040,7 +1063,8 @@ class StatsEngine(object):
 
         return result
 
-    @internal_trace('Supportability/StatsEngine/Calls/transaction_trace_data')
+    @internal_trace('Supportability/Python/StatsEngine/Calls/'
+            'transaction_trace_data')
     def transaction_trace_data(self, connections):
         """Returns a list of slow transaction data collected
         during the reporting period.
@@ -1119,9 +1143,8 @@ class StatsEngine(object):
             transaction_trace = trace.transaction_trace(
                     self, maximum_nodes, connections)
 
-            internal_metric('Supportability/StatsEngine/Counts/'
-                            'transaction_sample_data',
-                            trace.trace_node_count)
+            internal_metric('Supportability/Python/StatsEngine/Counts/'
+                    'transaction_sample_data', trace.trace_node_count)
 
             data = [transaction_trace,
                     list(trace.string_table.values())]
@@ -1130,20 +1153,23 @@ class StatsEngine(object):
                 _logger.debug('Encoding slow transaction data where '
                               'payload=%r.', data)
 
-            with InternalTrace('Supportability/StatsEngine/JSON/Encode/'
-                               'transaction_sample_data'):
+            with InternalTrace('Supportability/Python/StatsEngine/JSON/'
+                    'Encode/transaction_sample_data'):
 
                 json_data = json_encode(data)
 
-            internal_metric('Supportability/StatsEngine/ZLIB/Bytes/'
-                            'transaction_sample_data', len(json_data))
+            internal_metric('Supportability/Python/StatsEngine/ZLIB/Bytes/'
+                    'transaction_sample_data', len(json_data))
 
-            with InternalTrace('Supportability/StatsEngine/ZLIB/Compress/'
-                               'transaction_sample_data'):
-                zlib_data = zlib.compress(six.b(json_data))
+            level = self.__settings.agent_limits.data_compression_level
+            level = level or zlib.Z_DEFAULT_COMPRESSION
 
-            with InternalTrace('Supportability/StatsEngine/BASE64/Encode/'
-                               'transaction_sample_data'):
+            with InternalTrace('Supportability/Python/StatsEngine/ZLIB/'
+                    'Compress/transaction_sample_data'):
+                zlib_data = zlib.compress(six.b(json_data), level)
+
+            with InternalTrace('Supportability/Python/StatsEngine/BASE64/'
+                    'Encode/transaction_sample_data'):
                 pack_data = base64.standard_b64encode(zlib_data)
 
                 if six.PY3:
@@ -1170,7 +1196,8 @@ class StatsEngine(object):
 
         return trace_data
 
-    @internal_trace('Supportability/StatsEngine/Calls/slow_transaction_data')
+    @internal_trace('Supportability/Python/StatsEngine/Calls/'
+            'slow_transaction_data')
     def slow_transaction_data(self):
         """Returns a list containing any slow transaction data collected
         during the reporting period.
@@ -1194,7 +1221,7 @@ class StatsEngine(object):
         transaction_trace = self.__slow_transaction.transaction_trace(
                 self, maximum)
 
-        internal_metric('Supportability/StatsEngine/Counts/'
+        internal_metric('Supportability/Python/StatsEngine/Counts/'
                 'transaction_sample_data',
                 self.__slow_transaction.trace_node_count)
 
@@ -1205,19 +1232,22 @@ class StatsEngine(object):
             _logger.debug('Encoding slow transaction data where '
                     'payload=%r.', data)
 
-        with InternalTrace('Supportability/StatsEngine/JSON/Encode/'
+        with InternalTrace('Supportability/Python/StatsEngine/JSON/Encode/'
                 'transaction_sample_data'):
 
             json_data = json_encode(data)
 
-        internal_metric('Supportability/StatsEngine/ZLIB/Bytes/'
+        internal_metric('Supportability/Python/StatsEngine/ZLIB/Bytes/'
                 'transaction_sample_data', len(json_data))
 
-        with InternalTrace('Supportability/StatsEngine/ZLIB/Compress/'
-                'transaction_sample_data'):
-            zlib_data = zlib.compress(six.b(json_data))
+        level = self.__settings.agent_limits.data_compression_level
+        level = level or zlib.Z_DEFAULT_COMPRESSION
 
-        with InternalTrace('Supportability/StatsEngine/BASE64/Encode/'
+        with InternalTrace('Supportability/Python/StatsEngine/ZLIB/Compress/'
+                'transaction_sample_data'):
+            zlib_data = zlib.compress(six.b(json_data), level)
+
+        with InternalTrace('Supportability/Python/StatsEngine/BASE64/Encode/'
                 'transaction_sample_data'):
             pack_data = base64.standard_b64encode(zlib_data)
 

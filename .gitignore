@@ -1,6 +1,7 @@
 *.swp
 *.pyc
 *.pyo
+*.so
 
 __pycache__
 
@@ -45,7 +46,9 @@ htmlcov
 
 .tox*
 
+audit.log
 testing.log
 .tddium*
 
 .tags
+.solano*

@@ -8,8 +8,6 @@ from newrelic.agent import get_browser_timing_header, get_browser_timing_footer
 
 application = Flask(__name__)
 
-application.debug = True
-
 compress = Compress()
 compress.init_app(application)
 
@@ -57,3 +55,9 @@ def html_insertion_named_attachment_header():
     return response
 
 _test_application = webtest.TestApp(application)
+
+@application.route('/empty_content_type')
+def empty_content_type():
+    response = Response('Empty Content Type Header', mimetype='')
+    assert response.mimetype is None
+    return response

@@ -60,4 +60,6 @@ _test_application = webtest.TestApp(application)
 
 @application.route('/empty_content_type')
 def empty_content_type():
-    return Response('Empty Content Type Header', mimetype='')
+    response = Response('Empty Content Type Header', mimetype='')
+    assert response.mimetype is None
+    return response

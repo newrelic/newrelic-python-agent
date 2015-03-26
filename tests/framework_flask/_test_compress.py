@@ -8,8 +8,6 @@ from newrelic.agent import get_browser_timing_header, get_browser_timing_footer
 
 application = Flask(__name__)
 
-application.debug = True
-
 compress = Compress()
 compress.init_app(application)
 

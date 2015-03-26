@@ -175,13 +175,20 @@ def environment_settings():
             plugins.append(name)
 
         elif name.find('.') == -1 and hasattr(module, '__file__'):
-            try:
-                if 'pkg_resources' in sys.modules:
-                    version = pkg_resources.get_distribution(name).version
-                    if version:
-                        name = '%s (%s)' % (name, version)
-            except Exception:
-                pass
+            # XXX This is disabled as it can cause notable overhead in
+            # pathalogical cases. Will be replaced with a new system
+            # where have a whitelist of packages we really want version
+            # information for and will work out on case by case basis
+            # how to extract that from the modules themselves.
+
+            #try:
+            #    if 'pkg_resources' in sys.modules:
+            #        version = pkg_resources.get_distribution(name).version
+            #        if version:
+            #            name = '%s (%s)' % (name, version)
+            #except Exception:
+            #    pass
+
             plugins.append(name)
 
     env.append(('Plugin List', plugins))

@@ -1,9 +1,11 @@
+import json
+
 import psycopg2
 import psycopg2.extensions
 import psycopg2.extras
 
 from testing_support.fixtures import (validate_transaction_metrics,
-    validate_database_trace_inputs)
+    validate_database_trace_inputs, validate_transaction_errors)
 
 from testing_support.settings import postgresql_settings
 
@@ -166,3 +168,19 @@ def test_rollback_on_exception():
             raise RuntimeError('error')
     except RuntimeError:
         pass
+
+@validate_transaction_metrics('test_database:test_register_json',
+        background_task=True)
+@validate_transaction_errors(errors=[])
+@background_task()
+def test_register_json():
+    with psycopg2.connect(
+            database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
+            password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
+            port=DB_SETTINGS['port']) as connection:
+
+        cursor = connection.cursor()
+
+        loads = lambda x: json.loads(x, parse_float=Decimal)
+        psycopg2.extras.register_json(connection, loads=loads)
+        psycopg2.extras.register_json(cursor, loads=loads)

@@ -1847,9 +1847,18 @@ def _process_module_builtin_defaults():
     _process_module_definition('psycopg2',
             'newrelic.hooks.database_psycopg2',
             'instrument_psycopg2')
+    _process_module_definition('psycopg2._psycopg2',
+            'newrelic.hooks.database_psycopg2',
+            'instrument_psycopg2__psycopg2')
     _process_module_definition('psycopg2.extensions',
             'newrelic.hooks.database_psycopg2',
             'instrument_psycopg2_extensions')
+    _process_module_definition('psycopg2._json',
+            'newrelic.hooks.database_psycopg2',
+            'instrument_psycopg2__json')
+    _process_module_definition('psycopg2._range',
+            'newrelic.hooks.database_psycopg2',
+            'instrument_psycopg2__range')
 
     _process_module_definition('psycopg2ct',
             'newrelic.hooks.database_psycopg2ct',

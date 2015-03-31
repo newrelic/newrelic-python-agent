@@ -115,7 +115,7 @@ if DJANGO_VERSION >= (1, 5):
                 ('Function/django.http.response:HttpResponse.close', 1)])
 
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics('views:MyView',
+@validate_transaction_metrics('views:MyView.get',
         scoped_metrics=_test_application_cbv_scoped_metrics)
 def test_application_cbv():
     response = test_application.get('/cbv')

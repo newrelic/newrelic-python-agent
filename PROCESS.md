@@ -1,4 +1,3 @@
-=====================
 Development Processes
 =====================
 
@@ -122,7 +121,7 @@ download site at:
 
 Details for obtaining access to our account on PyPi can be found at:
 
-* https://newrelic.atlassian.net/wiki/display/eng/Python+Agent+Managing+The+Package+Index
+* [Python Agent Managing the Package Index](https://newrelic.atlassian.net/wiki/display/eng/Python+Agent+Managing+The+Package+Index)
 
 In cases where it is necessary to provide a test version to a customer prior
 to an official release, these would generally be made available via:
@@ -136,12 +135,15 @@ Once work has finished on a development version and all testing has been
 performed and the code approved for release, the following steps should be
 carried out to do the actual release.
 
+0. Talk to CAB (a hipchat room) and give them the links to the CAB approval
+   document. Get their approval before proceeding.
+
 1. Check out the ``develop`` branch of the Python agent repository and
 update the version number in ``newrelic/__init__.py`` for the release.
 
-With our odd/even numbering scheme, this means you should be incrementing
-the ``B`` component of the ``A.B.C`` version number from the odd number
-used during development to the even number used for the release.
+    With our odd/even numbering scheme, this means you should be incrementing
+the ``B`` component of the ``A.B.C`` version number from the odd number used
+during development to the even number used for the release.
 
 2. Run locally ``./build.sh`` to force the licence validation script to be
 run and ensure package builds.
@@ -156,8 +158,9 @@ branch.
 6. Follow ``git-flow`` procedure to create a release branch with name
 ``vA.B.C``.
 
-With our odd/even numbering scheme, ``B`` should always be even. This string
-will become the final tag ``git-flow`` will add when finishing the release.
+    With our odd/even numbering scheme, ``B`` should always be even. This
+string will become the final tag ``git-flow`` will add when finishing the
+release.
 
 7. If necessary, push release branch back to github for further testing by
 the rest of the Python agent team. Wait for confirmation before proceeding
@@ -168,14 +171,14 @@ if such testing is required.
 9. Switch back to the ``develop`` branch and perform a merge from
 ``master`` back into the ``develop`` branch.
 
-This is to synchronize the two branches so git doesn't keep tracking them
+    This is to synchronize the two branches so git doesn't keep tracking them
 as completely parallel paths of development with consequent strange results
 when trying to compare branches.
 
 10. In the ``develop`` branch, increment the version number in
 ``newrelic/__init__.py`` to be that of next development release number.
 
-That is, increment ``B`` if next version is minor version. With our
+    That is, increment ``B`` if next version is minor version. With our
 odd/even numbering scheme, ``B`` should always be odd after this change.
 
 11. Commit change made to ``newrelic/__init__.py`` into the ``develop``
@@ -183,7 +186,7 @@ branch.
 
 12. Push both the ``develop`` and ``master`` branches back to the GIT repo.
 
-This action will also trigger the Jenkins ``Python_Agent-MASTER`` and
+    This action will also trigger the Jenkins ``Python_Agent-MASTER`` and
 ``Python_Agent-DEVELOP`` jobs.
 
 13. Check that ``Python_Agent-MASTER-TESTS`` in Jenkins runs and all tests
@@ -203,49 +206,45 @@ hosts used by ``download.newrelic.com``. Generate a file in the same
 directory for the download with an ``.md5`` extension which contains the MD5
 hash of the package.
 
-For more details on working with the New Relic download site and
-transferring files across see:
+    For more details on working with the New Relic download site and
+transferring files across see: [Managing the Package Index][pkg_index].
 
-* https://newrelic.atlassian.net/wiki/display/eng/Python+Agent+Managing+The+Download+Site 
+[pkg_index]: https://newrelic.atlassian.net/wiki/display/eng/Python+Agent+Managing+The+Package+Index
 
 17. Ensure that release notes are updated for the new version. These are
-hosted at:
+hosted at: https://docs.newrelic.com/docs/release-notes/agent-release-notes/python-release-notes
 
-* https://docs.newrelic.com/docs/release-notes/agent-release-notes/python-release-notes
+    It is easiest to clone an existing set of release notes and change the
+content, just make sure you take 'Clone of' out of the page title. There are
+also at least three places where the version number must be updated in the
+page.
 
-It is easiest to clone an existing set of release notes and change the
-content, just make sure you take 'Clone of' out of the page title. There
-are also at least three places where the version number must be updated in
-the page.
+    If preparing in advance and don't know the full version number, use ``X``
+for the last number. When you go to release you should change all instances of
+``X`` and **ALSO** reset the date/time for the release else it will show the
+date/time for the old page.
 
-If preparing in advance and don't know the full version number, use ``X``
-for the last number. When you go to release you should change all instances
-of ``X`` and **ALSO** reset the date/time for the release else it will show
-the date/time for the old page.
+    When renaming ``X`` and saving page, in a separate window check that you
+can get to the page in question. If it goes into a redirect loop then you need
+to go into the page and find 'Url Redirects' down the bottom of page and
+delete any bogus URL redirects. This may only be an issue if you accidentally
+publish the page with ``X`` and rename afterwards, so make sure the ``X`` is
+changed before publishing. Either way, perhaps check there are no redirects as
+they shouldn't be needed on new page.
 
-When renaming ``X`` and saving page, in a separate window check that you
-can get to the page in question. If it goes into a redirect loop then you
-need to go into the page and find 'Url Redirects' down the bottom of page
-and delete any bogus URL redirects. This may only be an issue if you
-accidentally publish the page with ``X`` and rename afterwards, so make sure
-the ``X`` is changed before publishing. Either way, perhaps check there are
-no redirects as they shouldn't be needed on new page.
-
-Note that publishing the page by saying that it is ready for publication
+    Note that publishing the page by saying that it is ready for publication
 will make it public straight away, there is no review process.
 
 18. Update the ``python_agent_version`` configuration to ``A.B.C.D`` in APM
-systems configuration page at:
+systems configuration page at: https://rpm.newrelic.com/admin/system_configurations.
 
-* https://rpm.newrelic.com/admin/system_configurations.
-
-If we need to notify existing users to update their older agents, also
+    If we need to notify existing users to update their older agents, also
 update the ``min_python_agent_version`` to ``A.B.C.D``.
 
 19. Create a new Python package index (PyPi) entry for the new release and
 attach the tar ball.
 
-Validate that ``pip install`` of package into a virtual environment works
+    Validate that ``pip install`` of package into a virtual environment works
 and that a ``newrelic-admin validate-config`` test runs okay.
 
 20. Make sure any documentation specific to the release is marked as ready
@@ -267,9 +266,7 @@ feature(s) or improvement(s) in the release.
 
 24. Make sure that all JIRA stories associated with the release version have
 been updated as having been released. The current agent dashboard can be
-found at:
-
-* https://newrelic.atlassian.net/secure/Dashboard.jspa?selectPageId=11912
+found at: https://newrelic.atlassian.net/secure/Dashboard.jspa?selectPageId=11912
 
 25. Switch over JIRA Python agent filters for current/next/next+1 releases
 so current dashboard now shows issues for next release.

@@ -66,7 +66,8 @@ _test_application_not_found_scoped_metrics = [
         ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_request', 1),
         ('Function/django.contrib.auth.middleware:AuthenticationMiddleware.process_request', 1),
         ('Function/django.contrib.messages.middleware:MessageMiddleware.process_request', 1),
-        ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 3),
+        #('Function/django.core.urlresolvers:RegexURLResolver.resolve', 3),
+        #('Function/django.core.urlresolvers:RegexURLResolver.resolve_error_handler', 1),
         ('Function/django.contrib.messages.middleware:MessageMiddleware.process_response', 1),
         ('Function/django.middleware.csrf:CsrfViewMiddleware.process_response', 1),
         ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_response', 1),
@@ -75,11 +76,18 @@ _test_application_not_found_scoped_metrics = [
 
 if DJANGO_VERSION >= (1, 5):
     if six.PY3:
-        _test_application_index_scoped_metrics.extend([
+        _test_application_not_found_scoped_metrics.extend([
                 ('Function/django.http.response:HttpResponseBase.close', 1)])
     else:
-        _test_application_index_scoped_metrics.extend([
-                ('Function/django.http.response:HttpResponse.close', 1)])
+        _test_application_not_found_scoped_metrics.extend([
+                ('Function/django.http.response:HttpResponseNotFound.close', 1)])
+
+if DJANGO_VERSION >= (1, 8):
+    _test_application_not_found_scoped_metrics.extend([
+            ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 4)])
+else:
+    _test_application_not_found_scoped_metrics.extend([
+            ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 3)])
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('django.views.debug:technical_404_response',

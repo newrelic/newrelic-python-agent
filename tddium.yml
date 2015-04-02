@@ -61,6 +61,7 @@
     - tox -c tests/framework_django/tox-0105.ini
     - tox -c tests/framework_django/tox-0106.ini
     - tox -c tests/framework_django/tox-0107.ini
+    - tox -c tests/framework_django/tox-0108.ini
     - tox -c tests/framework_flask/tox-0006.ini
     - tox -c tests/framework_flask/tox-0007.ini
     - tox -c tests/framework_flask/tox-0008.ini

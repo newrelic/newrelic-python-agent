@@ -1986,8 +1986,12 @@ def _process_module_builtin_defaults():
     _process_module_definition('facepy.graph_api',
             'newrelic.hooks.external_facepy')
 
+    #_process_module_definition('pysolr',
+    #        'newrelic.hooks.solr_pysolr')
+
     _process_module_definition('pysolr',
-            'newrelic.hooks.solr_pysolr')
+            'newrelic.hooks.datastore_pysolr',
+            'instrument_pysolr')
 
     _process_module_definition('solr',
             'newrelic.hooks.solr_solrpy')

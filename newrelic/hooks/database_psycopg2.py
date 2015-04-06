@@ -71,6 +71,32 @@ def wrapper_psycopg2_register_type(wrapped, instance, args, kwargs):
     else:
         return wrapped(obj)
 
+# As we can't get in reliably and monkey patch the register_type()
+# function in psycopg2._psycopg2 before it is imported, we also need to
+# monkey patch the other references to it in other psycopg2 sub modules.
+# In doing that we need to make sure it has not already been monkey
+# patched by checking to see if it is already an ObjectProxy.
+
+def instrument_psycopg2__psycopg2(module):
+    if hasattr(module, 'register_type'):
+        if not isinstance(module.register_type, ObjectProxy):
+            wrap_function_wrapper(module, 'register_type',
+                    wrapper_psycopg2_register_type)
+
 def instrument_psycopg2_extensions(module):
-    wrap_function_wrapper(module, 'register_type',
-            wrapper_psycopg2_register_type)
+    if hasattr(module, 'register_type'):
+        if not isinstance(module.register_type, ObjectProxy):
+            wrap_function_wrapper(module, 'register_type',
+                    wrapper_psycopg2_register_type)
+
+def instrument_psycopg2__json(module):
+    if hasattr(module, 'register_type'):
+        if not isinstance(module.register_type, ObjectProxy):
+            wrap_function_wrapper(module, 'register_type',
+                    wrapper_psycopg2_register_type)
+
+def instrument_psycopg2__range(module):
+    if hasattr(module, 'register_type'):
+        if not isinstance(module.register_type, ObjectProxy):
+            wrap_function_wrapper(module, 'register_type',
+                    wrapper_psycopg2_register_type)

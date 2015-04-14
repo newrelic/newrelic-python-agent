@@ -83,7 +83,7 @@ def mongodb_settings():
 
     # Use local defaults, if TDDIUM vars aren't present.
 
-    host = 'localhost' # TDDIUM sets up mongodb on each test worker.
+    host = 'localhost'  # TDDIUM sets up mongodb on each test worker.
     port = int(os.environ.get('TDDIUM_MONGOID_PORT', '27017'))
 
     # Look for env vars in test docker container.
@@ -105,5 +105,20 @@ def elasticsearch_settings():
 
     host = os.environ.get('ELASTICSEARCH_PORT_9200_TCP_ADDR', host)
     port = int(os.environ.get('ELASTICSEARCH_PORT_9200_TCP_PORT', port))
+
+    return (host, port)
+
+def solr_settings():
+    """Return (host, port) tuple to connect to solr."""
+
+    # Use local defaults, if TDDIUM vars aren't present.
+
+    host = os.environ.get('TDDIUM_SOLR_HOST', 'localhost')
+    port = int(os.environ.get('TDDIUM_SOLR_PORT', '8983'))
+
+    # Look for env vars in test docker container.
+
+    host = os.environ.get('SOLR_PORT_8983_TCP_ADDR', host)
+    port = int(os.environ.get('SOLR_PORT_8983_TCP_PORT', port))
 
     return (host, port)

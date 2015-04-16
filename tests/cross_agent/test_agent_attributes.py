@@ -67,4 +67,4 @@ def test_attributes(testname, config, input_key, input_default_destinations,
 
     result = attribute_filter.apply(input_key, input_destinations)
     expected = destinations_as_int(expected_destinations)
-    assert result == expected, "af(%s), %s" % (attribute_filter, expected)
+    assert result == expected, attribute_filter

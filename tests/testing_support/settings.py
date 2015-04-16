@@ -118,7 +118,7 @@ def solr_settings():
 
     # Look for env vars in test docker container.
 
-    host = os.environ.get('SOLR_PORT_8983_TCP_ADDR', host)
-    port = int(os.environ.get('SOLR_PORT_8983_TCP_PORT', port))
+    host = os.environ.get('SOLR4_PORT_8983_TCP_ADDR', host)
+    port = int(os.environ.get('SOLR4_PORT_8983_TCP_PORT', port))
 
     return (host, port)

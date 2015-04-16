@@ -6,7 +6,7 @@ from testing_support.settings import solr_settings
 from newrelic.agent import background_task
 
 SOLR_HOST, SOLR_PORT = solr_settings()
-SOLR_URL = 'http://%s:%s' % (SOLR_HOST, SOLR_PORT)
+SOLR_URL = 'http://%s:%s/solr' % (SOLR_HOST, SOLR_PORT)
 
 def _exercise_solr(solr):
     solr.add([
@@ -40,5 +40,5 @@ _test_solr_search_rollup_metrics = [
     background_task=True)
 @background_task()
 def test_solr_search():
-    s = Solr('http://localhost:8983/solr/')
+    s = Solr(SOLR_URL)
     _exercise_solr(s)

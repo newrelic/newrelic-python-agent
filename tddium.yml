@@ -39,6 +39,7 @@
     - tox -c tests/datastore_pymemcache/tox.ini
     - tox -c tests/datastore_elasticsearch/tox.ini
     - tox -c tests/datastore_pyelasticsearch/tox.ini
+    - tox -c tests/datastore_pysolr/tox.ini
     - tox -c tests/external_httplib/tox.ini
     - tox -c tests/external_requests/tox-0014.ini
     - tox -c tests/external_requests/tox-0102.ini
@@ -97,6 +98,8 @@
       allow_dynamic_fields: false
   :elasticsearch:
     :version: '1.4'
+  :solr:
+    :version: '4.2.0'
   :custom_service:
     :command: 'services.sh'
     :ping: true

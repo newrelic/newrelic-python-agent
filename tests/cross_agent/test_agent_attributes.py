@@ -68,3 +68,33 @@ def test_attributes(testname, config, input_key, input_default_destinations,
     result = attribute_filter.apply(input_key, input_destinations)
     expected = destinations_as_int(expected_destinations)
     assert result == expected, attribute_filter
+
+_sorting_tests = [
+    ('lexicographic', ('a', 1, True), ('ab', 1, True)),
+    ('is_include', ('a', 1, True), ('a', 1, False)),
+    ('wildcard', ('a*', 1, True), ('a', 1, False)),
+    ('wildcard same length', ('a*', 1, True), ('ab', 1, False)),
+]
+
+@pytest.mark.parametrize('testname, rule1, rule2', _sorting_tests)
+def test_attribute_filter_rule_sort(testname, rule1, rule2):
+    first = af.AttributeFilterRule(*rule1)
+    second = af.AttributeFilterRule(*rule2)
+
+    assert first < second
+    assert first <= second
+    assert second > first
+    assert second >= first
+    assert first != second
+
+_equality_tests = [
+    ('is_include', ('a', 1, True), ('a', 1, True)),
+    ('not is_include', ('a', 1, False), ('a', 1, False)),
+    ('is_wildcard', ('a*', 1, True), ('a*', 1, True)),
+]
+@pytest.mark.parametrize('testname, rule1, rule2', _equality_tests)
+def test_attribute_filter_rule_equality(testname, rule1, rule2):
+    first = af.AttributeFilterRule(*rule1)
+    second = af.AttributeFilterRule(*rule2)
+
+    assert first == second

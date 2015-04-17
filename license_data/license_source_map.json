@@ -1445,6 +1445,18 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/datastore_solrpy.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/datastore_pysolr.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/template_genshi.py": {
         "hash": "n/a",
         "libraries": [

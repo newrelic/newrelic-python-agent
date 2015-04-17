@@ -21,9 +21,29 @@ class AttributeFilterRule(object):
         self.is_include = is_include
         self.is_wildcard = name.endswith('*')
 
-    def __repr__(self):
-        return '(%s, %s, %s, %s)' % (self.name, int2binary(self.destinations),
-                self.is_wildcard, self.is_include)
+    def _as_sortable(self):
+
+        # Represent AttributeFilterRule as a tuple that will sort properly.
+        #
+        # Sorting rules:
+        #
+        #     1. Rules are sorted lexicographically by name, so that shorter,
+        #        less specific names come before longer, more specific ones.
+        #
+        #     2. If names are the same, then rules with wildcards come before
+        #        non-wildcards. Since False < True, we need to invert
+        #        is_wildcard in the tuple, so that rules with wildcards have
+        #        precedence.
+        #
+        #     3. If names and wildcards are the same, then include rules come
+        #        before exclude rules. Similar to rule above, we must invert
+        #        is_include for correct sorting results.
+        #
+        # By taking the sorted rules and applying them in order against an
+        # attribute, we will guarantee that the most specific rule is applied
+        # last, in accordance with the Agent Attributes spec.
+
+        return (self.name, not self.is_wildcard, not self.is_include)
 
     def __eq__(self, other):
         return self._as_sortable() == other._as_sortable()
@@ -43,10 +63,9 @@ class AttributeFilterRule(object):
     def __ge__(self, other):
         return self._as_sortable() >= other._as_sortable()
 
-    def _as_sortable(self):
-        # Non-wildcards sort after wildcards
-        # Excludes sort after includes
-        return tuple([self.name, not self.is_wildcard, not self.is_include])
+    def __repr__(self):
+        return '(%s, %s, %s, %s)' % (self.name, int2binary(self.destinations),
+                self.is_wildcard, self.is_include)
 
     def name_match(self, name):
         if self.is_wildcard:

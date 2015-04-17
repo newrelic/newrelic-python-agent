@@ -6,7 +6,6 @@ from testing_support.fixtures import (code_coverage_fixture,
 _coverage_source = [
     'newrelic.api.transaction',
     'newrelic.api.web_transaction',
-    'newrelic.core.attribute_filter',
 ]
 
 code_coverage = code_coverage_fixture(source=_coverage_source)

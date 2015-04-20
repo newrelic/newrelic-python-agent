@@ -1151,6 +1151,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/datastore_motor.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/datastore_pyelasticsearch.py": {
         "hash": "n/a",
         "libraries": [
@@ -1458,12 +1464,6 @@
         ]
     },
     "newrelic/hooks/template_mako.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/datastore_motor.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

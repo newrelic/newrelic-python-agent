@@ -141,7 +141,7 @@ class AttributeFilter(object):
 
         rules.sort()
 
-        return rules
+        return tuple(rules)
 
     def apply(self, name, default_destinations):
         if self.enabled_destinations == DST_NONE:

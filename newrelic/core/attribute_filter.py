@@ -75,19 +75,6 @@ class AttributeFilterRule(object):
 
 class AttributeFilter(object):
 
-    INCLUDE_EXCLUDE_SETTINGS = (
-        ('attributes.include', DST_ALL, True),
-        ('attributes.exclude', DST_ALL, False),
-        ('transaction_events.attributes.include', DST_TRANSACTION_EVENTS, True),
-        ('transaction_events.attributes.exclude', DST_TRANSACTION_EVENTS, False),
-        ('transaction_tracer.attributes.include', DST_TRANSACTION_TRACER, True),
-        ('transaction_tracer.attributes.exclude', DST_TRANSACTION_TRACER, False),
-        ('error_collector.attributes.include', DST_ERROR_COLLECTOR, True),
-        ('error_collector.attributes.exclude', DST_ERROR_COLLECTOR, False),
-        ('browser_monitoring.attributes.include', DST_BROWSER_MONITORING, True),
-        ('browser_monitoring.attributes.exclude', DST_BROWSER_MONITORING, False),
-    )
-
     def __init__(self, settings=None):
 
         if settings is None:
@@ -96,9 +83,7 @@ class AttributeFilter(object):
             self.settings = settings
 
         self.enabled_destinations = self._set_enabled_destinations()
-        self.rules = self._build_rules(self.INCLUDE_EXCLUDE_SETTINGS)
-
-        self.rules.sort()
+        self.rules = self._build_rules()
 
     def __repr__(self):
         return "<AttributeFilter: destinations: %s, rules: %s>" % (
@@ -124,7 +109,28 @@ class AttributeFilter(object):
 
         return enabled_destinations
 
-    def _build_rules(self, rule_templates):
+    def _build_rules(self):
+
+        # "Rule Templates" below are used for building AttributeFilterRules.
+        #
+        # Each tuple includes:
+        #   1. Setting name
+        #   2. Bitfield value for destination for that setting.
+        #   3. Boolean that represents whether the setting is an "include" or not.
+
+        rule_templates = (
+            ('attributes.include', DST_ALL, True),
+            ('attributes.exclude', DST_ALL, False),
+            ('transaction_events.attributes.include', DST_TRANSACTION_EVENTS, True),
+            ('transaction_events.attributes.exclude', DST_TRANSACTION_EVENTS, False),
+            ('transaction_tracer.attributes.include', DST_TRANSACTION_TRACER, True),
+            ('transaction_tracer.attributes.exclude', DST_TRANSACTION_TRACER, False),
+            ('error_collector.attributes.include', DST_ERROR_COLLECTOR, True),
+            ('error_collector.attributes.exclude', DST_ERROR_COLLECTOR, False),
+            ('browser_monitoring.attributes.include', DST_BROWSER_MONITORING, True),
+            ('browser_monitoring.attributes.exclude', DST_BROWSER_MONITORING, False),
+        )
+
         rules = []
 
         for (setting_name, destination, is_include) in rule_templates:
@@ -132,6 +138,8 @@ class AttributeFilter(object):
             for setting in self.settings.get(setting_name) or ():
                 rule = AttributeFilterRule(setting, destination, is_include)
                 rules.append(rule)
+
+        rules.sort()
 
         return rules
 

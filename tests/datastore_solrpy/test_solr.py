@@ -10,11 +10,11 @@ SOLR_URL = 'http://%s:%s/solr' % (SOLR_HOST, SOLR_PORT)
 
 def _exercise_solr(solr):
     solr.add_many([
-        {"id": "doc_1", "title": "A test document"},
-        {"id": "doc_2", "title": "The Banana: Tasty or Dangerous?"},
+        {"id": "doc_1"},
+        {"id": "doc_2"},
         ])
     solr.commit()
-    solr.query('title:banana').results
+    solr.query('id:doc_1').results
     solr.delete('id:doc_1')
     solr.commit()
 

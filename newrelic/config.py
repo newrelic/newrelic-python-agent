@@ -1987,10 +1987,12 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.external_facepy')
 
     _process_module_definition('pysolr',
-            'newrelic.hooks.solr_pysolr')
+            'newrelic.hooks.datastore_pysolr',
+            'instrument_pysolr')
 
     _process_module_definition('solr',
-            'newrelic.hooks.solr_solrpy')
+            'newrelic.hooks.datastore_solrpy',
+            'instrument_solrpy')
 
     _process_module_definition('elasticsearch.client',
             'newrelic.hooks.datastore_elasticsearch',

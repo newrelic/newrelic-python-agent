@@ -1,15 +1,49 @@
 from .config import fetch_config_setting, flatten_settings, global_settings
 
 
+# Attribute "destinations" represented as bitfields.
+
 DST_NONE = 0x0
 DST_ALL  = 0xF
-
 DST_TRANSACTION_EVENTS = 1 << 0
 DST_TRANSACTION_TRACER = 1 << 1
 DST_ERROR_COLLECTOR    = 1 << 2
 DST_BROWSER_MONITORING = 1 << 3
 
 class AttributeFilter(object):
+
+    # Apply filtering rules to attributes.
+    #
+    # Upon initialization, an AttributeFilter object will take all attribute
+    # related settings and turn them into an ordered tuple of
+    # AttributeFilterRules. During registration of the agent, a single
+    # AttributeFilter object will be created, and will remain unchanged for
+    # the life of the agent run. Changing attribute related settings/rules
+    # requires restarting the agent.
+    #
+    # Each attribute can belong to one or more destinations. To determine
+    # which destination an attribute belongs to, call the apply() method,
+    # which will apply all of the rules to the attribute and return a set of
+    # destinations.
+    #
+    # Destinations are represented as bitfields, where the bit positions
+    # specified in the DST_* constants are used to indicate which
+    # destination an attribute belongs to.
+    #
+    # The algorithm for applying filtering rules is as follows:
+    #
+    #   1. Start with a bitfield representing the set of default destinations
+    #      passed in to apply().
+    #
+    #   2. Mask this bitfield against the set of destinations that have
+    #      attribute enabled at all.
+    #
+    #   3. Traverse the list of AttributeFilterRules in order, applying
+    #      each matching rule, but taking care to not let rules override the
+    #      enabled status of each destination. Each matching rule may mutate
+    #      the bitfield.
+    #
+    #   4. Return the resulting bitfield after all rules have been applied.
 
     def __init__(self, settings=None):
 
@@ -109,17 +143,16 @@ class AttributeFilterRule(object):
         #
         # Sorting rules:
         #
-        #     1. Rules are sorted lexicographically by name, so that shorter,
-        #        less specific names come before longer, more specific ones.
+        #   1. Rules are sorted lexicographically by name, so that shorter,
+        #      less specific names come before longer, more specific ones.
         #
-        #     2. If names are the same, then rules with wildcards come before
-        #        non-wildcards. Since False < True, we need to invert
-        #        is_wildcard in the tuple, so that rules with wildcards have
-        #        precedence.
+        #   2. If names are the same, then rules with wildcards come before
+        #      non-wildcards. Since False < True, we need to invert is_wildcard
+        #      in the tuple, so that rules with wildcards have precedence.
         #
-        #     3. If names and wildcards are the same, then include rules come
-        #        before exclude rules. Similar to rule above, we must invert
-        #        is_include for correct sorting results.
+        #   3. If names and wildcards are the same, then include rules come
+        #      before exclude rules. Similar to rule above, we must invert
+        #      is_include for correct sorting results.
         #
         # By taking the sorted rules and applying them in order against an
         # attribute, we will guarantee that the most specific rule is applied

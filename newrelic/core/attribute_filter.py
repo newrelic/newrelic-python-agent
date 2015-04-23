@@ -9,10 +9,6 @@ DST_TRANSACTION_TRACER = 1 << 1
 DST_ERROR_COLLECTOR    = 1 << 2
 DST_BROWSER_MONITORING = 1 << 3
 
-def int2binary(i):
-    """Represent int as binary string."""
-    return str(i) if i<=1 else int2binary(i>>1) + str(i&1)
-
 class AttributeFilterRule(object):
 
     def __init__(self, name, destinations, is_include):
@@ -64,7 +60,7 @@ class AttributeFilterRule(object):
         return self._as_sortable() >= other._as_sortable()
 
     def __repr__(self):
-        return '(%s, %s, %s, %s)' % (self.name, int2binary(self.destinations),
+        return '(%s, %s, %s, %s)' % (self.name, bin(self.destinations),
                 self.is_wildcard, self.is_include)
 
     def name_match(self, name):
@@ -87,7 +83,7 @@ class AttributeFilter(object):
 
     def __repr__(self):
         return "<AttributeFilter: destinations: %s, rules: %s>" % (
-                int2binary(self.enabled_destinations), self.rules)
+                bin(self.enabled_destinations), self.rules)
 
     def _set_enabled_destinations(self):
         enabled_destinations = DST_NONE

@@ -9,66 +9,6 @@ DST_TRANSACTION_TRACER = 1 << 1
 DST_ERROR_COLLECTOR    = 1 << 2
 DST_BROWSER_MONITORING = 1 << 3
 
-class AttributeFilterRule(object):
-
-    def __init__(self, name, destinations, is_include):
-        self.name = name.rstrip('*')
-        self.destinations = destinations
-        self.is_include = is_include
-        self.is_wildcard = name.endswith('*')
-
-    def _as_sortable(self):
-
-        # Represent AttributeFilterRule as a tuple that will sort properly.
-        #
-        # Sorting rules:
-        #
-        #     1. Rules are sorted lexicographically by name, so that shorter,
-        #        less specific names come before longer, more specific ones.
-        #
-        #     2. If names are the same, then rules with wildcards come before
-        #        non-wildcards. Since False < True, we need to invert
-        #        is_wildcard in the tuple, so that rules with wildcards have
-        #        precedence.
-        #
-        #     3. If names and wildcards are the same, then include rules come
-        #        before exclude rules. Similar to rule above, we must invert
-        #        is_include for correct sorting results.
-        #
-        # By taking the sorted rules and applying them in order against an
-        # attribute, we will guarantee that the most specific rule is applied
-        # last, in accordance with the Agent Attributes spec.
-
-        return (self.name, not self.is_wildcard, not self.is_include)
-
-    def __eq__(self, other):
-        return self._as_sortable() == other._as_sortable()
-
-    def __ne__(self, other):
-        return self._as_sortable() != other._as_sortable()
-
-    def __lt__(self, other):
-        return self._as_sortable() < other._as_sortable()
-
-    def __le__(self, other):
-        return self._as_sortable() <= other._as_sortable()
-
-    def __gt__(self, other):
-        return self._as_sortable() > other._as_sortable()
-
-    def __ge__(self, other):
-        return self._as_sortable() >= other._as_sortable()
-
-    def __repr__(self):
-        return '(%s, %s, %s, %s)' % (self.name, bin(self.destinations),
-                self.is_wildcard, self.is_include)
-
-    def name_match(self, name):
-        if self.is_wildcard:
-            return name.startswith(self.name)
-        else:
-            return self.name == name
-
 class AttributeFilter(object):
 
     def __init__(self, settings=None):
@@ -154,3 +94,63 @@ class AttributeFilter(object):
                     destinations &= ~rule.destinations
 
         return destinations
+
+class AttributeFilterRule(object):
+
+    def __init__(self, name, destinations, is_include):
+        self.name = name.rstrip('*')
+        self.destinations = destinations
+        self.is_include = is_include
+        self.is_wildcard = name.endswith('*')
+
+    def _as_sortable(self):
+
+        # Represent AttributeFilterRule as a tuple that will sort properly.
+        #
+        # Sorting rules:
+        #
+        #     1. Rules are sorted lexicographically by name, so that shorter,
+        #        less specific names come before longer, more specific ones.
+        #
+        #     2. If names are the same, then rules with wildcards come before
+        #        non-wildcards. Since False < True, we need to invert
+        #        is_wildcard in the tuple, so that rules with wildcards have
+        #        precedence.
+        #
+        #     3. If names and wildcards are the same, then include rules come
+        #        before exclude rules. Similar to rule above, we must invert
+        #        is_include for correct sorting results.
+        #
+        # By taking the sorted rules and applying them in order against an
+        # attribute, we will guarantee that the most specific rule is applied
+        # last, in accordance with the Agent Attributes spec.
+
+        return (self.name, not self.is_wildcard, not self.is_include)
+
+    def __eq__(self, other):
+        return self._as_sortable() == other._as_sortable()
+
+    def __ne__(self, other):
+        return self._as_sortable() != other._as_sortable()
+
+    def __lt__(self, other):
+        return self._as_sortable() < other._as_sortable()
+
+    def __le__(self, other):
+        return self._as_sortable() <= other._as_sortable()
+
+    def __gt__(self, other):
+        return self._as_sortable() > other._as_sortable()
+
+    def __ge__(self, other):
+        return self._as_sortable() >= other._as_sortable()
+
+    def __repr__(self):
+        return '(%s, %s, %s, %s)' % (self.name, bin(self.destinations),
+                self.is_wildcard, self.is_include)
+
+    def name_match(self, name):
+        if self.is_wildcard:
+            return name.startswith(self.name)
+        else:
+            return self.name == name

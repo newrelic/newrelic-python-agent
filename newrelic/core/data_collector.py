@@ -1043,12 +1043,12 @@ class ApplicationSession(object):
             local_config['high_security'] = settings['high_security']
             local_config['labels'] = settings['labels']
 
-            display_name = settings['process_host.display_name']
+            display_host = settings['process_host.display_name']
 
-            if display_name is None:
-                local_config['display_name'] = local_config['host']
+            if display_host is None:
+                local_config['display_host'] = local_config['host']
             else:
-                local_config['display_name'] = display_name
+                local_config['display_host'] = display_host
 
             payload = (local_config,)
 

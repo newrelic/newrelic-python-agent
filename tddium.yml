@@ -83,6 +83,8 @@
   :python:
     :python_version: 2.7
     :pip_requirements_file: requirements.txt
+  :java:
+    :java_version: java-7-openjdk
   :postgresql:
     :version: '9.4'
   :mysql:

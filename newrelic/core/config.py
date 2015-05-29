@@ -199,7 +199,8 @@ _settings.proxy_pass = os.environ.get('NEW_RELIC_PROXY_PASS', None)
 _settings.app_name = os.environ.get('NEW_RELIC_APP_NAME', 'Python Application')
 _settings.linked_applications = []
 
-_settings.process_host.display_name = None
+_settings.process_host.display_name = os.environ.get(
+        'NEW_RELIC_PROCESS_HOST_DISPLAY_NAME', None)
 
 _settings.labels = _environ_as_mapping('NEW_RELIC_LABELS', '')
 

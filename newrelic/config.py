@@ -237,7 +237,7 @@ def _process_setting(section, option, getter, mapper):
                 fields = fields[1].split('.', 1)
 
         # Cache the configuration so can be dumped out to
-        # log file when whole main configuraiton has been
+        # log file when whole main configuration has been
         # processed. This ensures that the log file and log
         # level entries have been set.
 

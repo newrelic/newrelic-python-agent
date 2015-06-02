@@ -1,18 +1,26 @@
 import mock
-import socket
-import urllib2
 
 from newrelic.common.utilization import AWSVendorInfo
+from newrelic.packages import requests
 
 
 class MockResponse(object):
 
-    def __init__(self, code, body):
+    def __init__(self, code, body, charset=None):
         self.code = code
         self.body = body
+        self.charset = charset or 'iso-8859-1'
+        self.headers = self._headers(self.charset)
+
+    def _headers(self, charset):
+        if self.charset.lower() == 'iso-8859-1':
+            headers = {'content-type': 'text/plain'}
+        else:
+            headers = {'content-type': 'text/plain; charset=%s' % charset}
+        return headers
 
     def read(self):
-        return self.body
+        return self.body.encode(self.charset)
 
 def test_aws_vendor_info():
     aws = AWSVendorInfo()
@@ -23,70 +31,68 @@ def test_metadata_url():
     url = aws.metadata_url('instance-id')
     assert url == 'http://169.254.169.254/2008-02-01/meta-data/instance-id'
 
-@mock.patch.object(urllib2.OpenerDirector, 'open')
-def test_fetch(mock_open):
-    mock_response = MockResponse('200', 'blah')
-    mock_open.return_value = mock_response
+@mock.patch.object(requests.Session, 'get')
+def test_fetch(mock_get):
+    mock_response = MockResponse('200', 'blah', 'utf-8')
+    mock_get.return_value = mock_response
 
     aws = AWSVendorInfo()
     resp = aws.fetch('foo')
-    assert resp == 'blah'
+    assert resp == b'blah'
 
-@mock.patch.object(urllib2.OpenerDirector, 'open')
-def test_instance_id(mock_open):
-    mock_response = MockResponse('200', 'i-e7e85ce1')
-    mock_open.return_value = mock_response
+@mock.patch.object(requests.Session, 'get')
+def test_instance_id(mock_get):
+    mock_response = MockResponse('200', 'i-e7e85ce1', 'utf-8')
+    mock_get.return_value = mock_response
 
     aws = AWSVendorInfo()
-    assert aws.instance_id == 'i-e7e85ce1'
-    mock_open.assert_called_with(
+    assert aws.instance_id == b'i-e7e85ce1'
+    mock_get.assert_called_with(
             'http://169.254.169.254/2008-02-01/meta-data/instance-id',
-            timeout=0.5)
+            timeout=aws.timeout)
 
-@mock.patch.object(urllib2.OpenerDirector, 'open')
-def test_instance_type(mock_open):
-    mock_response = MockResponse('200', 'm3.medium')
-    mock_open.return_value = mock_response
+@mock.patch.object(requests.Session, 'get')
+def test_instance_type(mock_get):
+    mock_response = MockResponse('200', 'm3.medium', 'iso-8859-1')
+    mock_get.return_value = mock_response
 
     aws = AWSVendorInfo()
-    assert aws.instance_type == 'm3.medium'
-    mock_open.assert_called_with(
+    assert aws.instance_type == b'm3.medium'
+    mock_get.assert_called_with(
             'http://169.254.169.254/2008-02-01/meta-data/instance-type',
-            timeout=0.5)
+            timeout=aws.timeout)
 
-@mock.patch.object(urllib2.OpenerDirector, 'open')
-def test_availability_zone(mock_open):
+@mock.patch.object(requests.Session, 'get')
+def test_availability_zone(mock_get):
     mock_response = MockResponse('200', 'us-west-2b')
-    mock_open.return_value = mock_response
+    mock_get.return_value = mock_response
 
     aws = AWSVendorInfo()
-    assert aws.availability_zone == 'us-west-2b'
-    mock_open.assert_called_with(
+    assert aws.availability_zone == b'us-west-2b'
+    mock_get.assert_called_with(
             'http://169.254.169.254/2008-02-01/meta-data/placement/availability-zone',
-            timeout=0.5)
+            timeout=aws.timeout)
 
-@mock.patch.object(urllib2.OpenerDirector, 'open')
-def test_fetch_timeout_socket_error(mock_open):
-    mock_open.side_effect = socket.error
-
-    aws = AWSVendorInfo()
-    resp = aws.fetch('instance-id')
-    assert resp == None
-
-@mock.patch.object(urllib2.OpenerDirector, 'open')
-def test_fetch_timeout_urllib2_urlerror(mock_open):
-    mock_open.side_effect = urllib2.URLError('error msg')
+@mock.patch.object(requests.Session, 'get')
+def test_fetch_connect_timeout(mock_get):
+    mock_get.side_effect = requests.exceptions.ConnectTimeout
 
     aws = AWSVendorInfo()
     resp = aws.fetch('instance-id')
     assert resp == None
 
-@mock.patch.object(urllib2.OpenerDirector, 'open')
-def test_fetch_timeout_ioerror(mock_open):
-    mock_open.side_effect = IOError
+@mock.patch.object(requests.Session, 'get')
+def test_fetch_read_timeout(mock_get):
+    mock_get.side_effect = requests.exceptions.ReadTimeout
 
     aws = AWSVendorInfo()
     resp = aws.fetch('instance-id')
     assert resp == None
 
+@mock.patch.object(requests.Session, 'get')
+def test_fetch_exception(mock_get):
+    mock_get.side_effect = Exception
 
+    aws = AWSVendorInfo()
+    resp = aws.fetch('instance-id')
+    assert resp == None

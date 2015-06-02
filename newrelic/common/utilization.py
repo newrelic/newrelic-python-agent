@@ -1,4 +1,4 @@
-import urllib2
+from newrelic.packages import requests
 
 
 class AWSVendorInfo(object):
@@ -7,7 +7,7 @@ class AWSVendorInfo(object):
 
     METADATA_HOST = '169.254.169.254'
     API_VERSION = '2008-02-01'
-    TIMEOUT = 0.5
+    TIMEOUT = 0.25
 
     def __init__(self, timeout=None):
         self.timeout = timeout or self.TIMEOUT
@@ -33,15 +33,19 @@ class AWSVendorInfo(object):
         if not self.check_metadata:
             return None
 
+        # Use own requests session to disable all environment variables. This
+        # allows us to bypass any proxy set via env var for this request.
+
+        session = requests.Session()
+        session.trust_env = False
+
         url = self.metadata_url(path)
-        proxy_handler = urllib2.ProxyHandler({})
-        opener = urllib2.build_opener(proxy_handler)
 
         try:
-            resp = opener.open(url, timeout=self.timeout)
+            resp = session.get(url, timeout=self.timeout)
         except Exception:
             self.check_metadata = False
             return None
 
         content = resp.read()
-        return content.encode('utf-8')
+        return content

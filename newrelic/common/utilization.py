@@ -47,5 +47,4 @@ class AWSVendorInfo(object):
             self.check_metadata = False
             return None
 
-        content = resp.read()
-        return content
+        return resp.text

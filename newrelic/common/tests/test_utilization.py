@@ -106,3 +106,12 @@ def test_normalize_bad_regex():
 def test_normalize_ok_unicode_range():
     data = u'\u2603'
     assert AWSVendorInfo().normalize('instance_key', data) == data
+
+@mock.patch.object(requests.Session, 'get')
+def test_to_dict(mock_get):
+    mock_get.side_effect = [MockResponse('200', 'foo'),
+            MockResponse('200', 'bar'),
+            MockResponse('200', 'baz')]
+
+    aws = AWSVendorInfo()
+    assert aws.to_dict() == {'aws': {'id': 'foo', 'type': 'bar', 'zone': 'baz'}}

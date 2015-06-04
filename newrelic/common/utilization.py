@@ -82,6 +82,13 @@ class AWSVendorInfo(object):
 
         return result
 
+    def to_dict(self):
+        return {'aws': {'id': self.instance_id,
+                        'type': self.instance_type,
+                        'zone': self.availability_zone
+                       }
+                }
+
     def valid_length(self, data):
         return len(data) <= 255
 

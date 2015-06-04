@@ -84,3 +84,25 @@ def test_fetch_exception(mock_get):
     aws = AWSVendorInfo()
     resp = aws.fetch('instance-id')
     assert resp == None
+
+def test_normalize_strip_whitespace():
+    assert AWSVendorInfo().normalize('instance_key', ' blah ') == 'blah'
+
+def test_normalize_correct_length():
+    assert AWSVendorInfo().normalize('instance_key', 'blah') == 'blah'
+
+def test_normalize_too_long():
+    data = 'x' * 256
+    assert AWSVendorInfo().normalize('instance_key', data) == None
+
+def test_normalize_ok_regex():
+    data = '12345'
+    assert AWSVendorInfo().normalize('instance_key', data) == data
+
+def test_normalize_bad_regex():
+    data = '!#$'
+    assert AWSVendorInfo().normalize('instance_key', data) == None
+
+def test_normalize_ok_unicode_range():
+    data = u'\u2603'
+    assert AWSVendorInfo().normalize('instance_key', data) == data

@@ -92,13 +92,6 @@ class AWSVendorInfo(object):
 
         return result
 
-    def to_dict(self):
-        return {'aws': {'id': self.instance_id,
-                        'type': self.instance_type,
-                        'zone': self.availability_zone
-                       }
-                }
-
     def valid_length(self, data):
         return len(data) <= 255
 
@@ -107,3 +100,10 @@ class AWSVendorInfo(object):
             if not re.match(r'[0-9a-zA-Z_ ./-]', data) and ord(c) < 0x80:
                 return False
         return True
+
+    def to_dict(self):
+        return {'aws': {'id': self.instance_id,
+                        'type': self.instance_type,
+                        'zone': self.availability_zone
+                       }
+                }

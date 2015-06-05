@@ -103,13 +103,7 @@ class AWSVendorInfo(object):
         return len(data) <= 255
 
     def valid_chars(self, data):
-        return any([self.valid_regex(data), self.valid_unicode_chars(data)])
-
-    def valid_regex(self, data):
-        return re.match(r'^[0-9a-zA-Z_ ./-]+$', data)
-
-    def valid_unicode_chars(self, data):
         for c in data:
-            if ord(c) < 0x80:
+            if not re.match(r'[0-9a-zA-Z_ ./-]', data) and ord(c) < 0x80:
                 return False
         return True

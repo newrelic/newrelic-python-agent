@@ -19,17 +19,27 @@ class AWSVendorInfo(object):
         self.timeout = timeout or self.TIMEOUT
         self.skip_metadata_check = False
 
+        self._instance_id = None
+        self._instance_type = None
+        self._availability_zone = None
+
     @property
     def instance_id(self):
-        return self.get('instance-id')
+        if not self._instance_id:
+            self._instance_id = self.get('instance-id')
+        return self._instance_id
 
     @property
     def instance_type(self):
-        return self.get('instance-type')
+        if not self._instance_type:
+            self._instance_type = self.get('instance-type')
+        return self._instance_type
 
     @property
     def availability_zone(self):
-        return self.get('placement/availability-zone')
+        if not self._availability_zone:
+            self._availability_zone = self.get('placement/availability-zone')
+        return self._availability_zone
 
     @property
     def has_data(self):

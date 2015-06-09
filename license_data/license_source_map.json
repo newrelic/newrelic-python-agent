@@ -737,6 +737,12 @@
             "New Relic"
         ]
     },
+    "newrelic/core/attribute_filter.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/core/config.py": {
         "hash": "n/a",
         "libraries": [
@@ -1151,6 +1157,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/datastore_motor.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/datastore_pyelasticsearch.py": {
         "hash": "n/a",
         "libraries": [
@@ -1445,6 +1457,18 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/datastore_solrpy.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/datastore_pysolr.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/template_genshi.py": {
         "hash": "n/a",
         "libraries": [
@@ -1458,12 +1482,6 @@
         ]
     },
     "newrelic/hooks/template_mako.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/datastore_motor.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

@@ -107,3 +107,10 @@ class AWSVendorInfo(object):
                         'zone': self.availability_zone
                        }
                 }
+
+def aws_data():
+    aws = AWSVendorInfo()
+    if aws.has_data:
+        return aws.to_dict()
+    else:
+        return None

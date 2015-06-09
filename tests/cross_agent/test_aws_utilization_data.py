@@ -3,7 +3,7 @@ import mock
 import os
 import pytest
 
-from newrelic.common.utilization import AWSVendorInfo, requests
+from newrelic.common.utilization import aws_data, requests
 
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -63,11 +63,7 @@ def test_aws(testname, uris, expected_vendors_hash, expected_metrics):
     def _test_aws_data(mock_get, mock_internal_metric):
         mock_get.side_effect = mock_return_values
 
-        aws = AWSVendorInfo()
-        if aws.has_data:
-            assert aws.to_dict() == expected_vendors_hash
-        else:
-            assert None == expected_vendors_hash
+        assert aws_data() == expected_vendors_hash
 
         if expected_metrics:
             item = list(expected_metrics.items())[0]

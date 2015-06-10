@@ -1,9 +1,11 @@
+import json
 import os
 import pytest
 
 from newrelic.common.system_info import (logical_processor_count,
         physical_processor_count, total_physical_memory, physical_memory_used,
-        _linux_physical_processor_count, _linux_total_physical_memory)
+        _linux_physical_processor_count, _linux_total_physical_memory,
+        docker_container_id)
 
 def test_logical_processor_count():
     assert logical_processor_count() >= 1
@@ -54,3 +56,26 @@ def test_linux_total_physical_memory(filename, expected):
 
     value = _linux_total_physical_memory(path)
     assert value == expected
+
+DOCKER_FIXTURE = os.path.join(os.curdir, 'fixtures', 'docker_container_id')
+def _load_docker_test_attributes():
+    """Returns a list of docker test attributes in the form:
+       [(<filename>, <containerId>), ...]
+
+    """
+    docker_test_attributes = []
+    test_cases = os.path.join(DOCKER_FIXTURE, 'cases.json')
+    with open(test_cases, 'r') as fh:
+        js = fh.read()
+    json_list = json.loads(js)
+    for json_record in json_list:
+        docker_test_attributes.append(
+            (json_record['filename'], json_record['containerId']))
+    return docker_test_attributes
+
+import newrelic.common.system_info
+@pytest.mark.parametrize('filename, containerId',
+                          _load_docker_test_attributes())
+def test_docker_container_id(filename, containerId):
+    path = os.path.join(DOCKER_FIXTURE, filename)
+    assert docker_container_id(path) == containerId

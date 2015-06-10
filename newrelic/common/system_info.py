@@ -3,6 +3,7 @@ system or for the specific process the code is running in.
 
 """
 
+import logging
 import os
 import sys
 import re
@@ -34,6 +35,8 @@ try:
     import resource
 except ImportError:
     pass
+
+_logger = logging.getLogger(__name__)
 
 def logical_processor_count():
     """Returns the number of logical processors in the system.
@@ -304,3 +307,72 @@ def physical_memory_used():
             return memory_kbytes / 1024
 
     return 0
+
+def docker_container_id(cgroup_path='/proc/self/cgroup'):
+    """Returns the docker container id or None if it can't be determined.
+
+    """
+    if not sys.platform.startswith('linux'):
+        return None
+
+    container_id = None
+    try:
+        with open(cgroup_path, 'r') as cgroup_info:
+            container_id = _process_cgroup_info(cgroup_info)
+    except Exception:
+        pass
+    return container_id
+
+def _process_cgroup_info(cgroup_info):
+    """Parses the Docker container id from cgroup info.
+
+    Arguments:
+      cgroup_info: An iterable where each item is a line of a cgroup file.
+
+    Returns:
+      Dock container id or None if it can't be determined.
+
+    Exceptions:
+      KeyError: There is 'cpu' field in the the cgroup info.
+
+    """
+    cgroup_ids = _parse_cgroup_ids(cgroup_info)
+    # This will throw a KeyError exception if cpu is not present.
+    cpu_cgroup = cgroup_ids['cpu']
+    re_docker_id = (
+        # docker native driver w/out systemd (fs)
+        '(^/docker/(?P<native_no_sysd>[0-9a-f]+)$)|'
+        # docker native driver with systemd
+        '(^/system.slice/docker-(?P<native_sysd>[0-9a-f]+).scope$)|'
+        # docker lxc driver
+        '(^/lxc/(?P<lxc>[0-9a-f]+)$)')
+    match = re.match(re_docker_id, cpu_cgroup)
+    if match and match.group('native_no_sysd'):
+        container_id = match.group('native_no_sysd')
+    elif match and match.group('native_sysd'):
+        container_id = match.group('native_sysd')
+    elif match and match.group('lxc'):
+        container_id = match.group('lxc')
+    elif not match and cpu_cgroup == '/':
+        container_id = None
+    else:
+        # Should I increment Supportability/utilization/docker/error
+        # Should also check length and log if error
+        # *** Should do this above
+        # here and how do I do this?
+        _logger.debug("Ignoring unrecognized cgroup ID format: '%s'"
+                      % (cpu_cgroup))
+        container_id = None
+    return container_id
+
+def _parse_cgroup_ids(cgroup_info):
+    cgroup_ids = {}
+    for line in cgroup_info:
+        parts = line.split(':')
+        if len(parts) != 3:
+            continue
+        _, subsystems, cgroup_id = parts
+        subsystems = subsystems.split(',')
+        for subsystem in subsystems:
+            cgroup_ids[subsystem] = cgroup_id
+    return cgroup_ids

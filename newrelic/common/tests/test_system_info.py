@@ -86,9 +86,13 @@ class TestsDockerContainerId(unittest.TestCase):
     self.assertRaises(
       Exception, newrelic.common.system_info._process_cgroup_info, cgroup_info)
 
-  def test_long_docker_id(self):
-    # I'm not sure if I should drop long ids or truncate them.
-    pass
+  def test_validate_docker_container_id_length(self):
+    container_id = 'a' * 64
+    self.assertTrue(
+      newrelic.common.system_info._validate_docker_container_id(container_id))
+    container_id = 'a' * 65
+    self.assertFalse(
+      newrelic.common.system_info._validate_docker_container_id(container_id))
 
 if __name__ == '__main__':
     unittest.main()

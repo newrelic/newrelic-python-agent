@@ -10,6 +10,8 @@ import re
 import multiprocessing
 import subprocess
 
+from newrelic.core.internal_metrics import (internal_metric)
+
 try:
     from subprocess import check_output as _execute_program
 except ImportError:
@@ -356,16 +358,23 @@ def _process_cgroup_info(cgroup_info):
     elif not match and cpu_cgroup == '/':
         container_id = None
     else:
-        # Should I increment Supportability/utilization/docker/error
-        # Should also check length and log if error
-        # *** Should do this above
-        # here and how do I do this?
         _logger.debug("Ignoring unrecognized cgroup ID format: '%s'"
                       % (cpu_cgroup))
         container_id = None
+    if (container_id is not None and
+        not _validate_docker_container_id(container_id)):
+        container_id = None
+        _logger.warning("Docker cgroup ID does not validate: '%s'" % container_id)
+        internal_metric('Supportability/utilization/docker/error', 1)
     return container_id
 
 def _parse_cgroup_ids(cgroup_info):
+    """Returns a dictionary of subsystems to their cgroup.
+
+    Arguments:
+      cgroup_info: An iterable where each item is a line of a cgroup file.
+
+    """
     cgroup_ids = {}
     for line in cgroup_info:
         parts = line.split(':')
@@ -376,3 +385,22 @@ def _parse_cgroup_ids(cgroup_info):
         for subsystem in subsystems:
             cgroup_ids[subsystem] = cgroup_id
     return cgroup_ids
+
+def _validate_docker_container_id(container_id):
+    """Validates a docker container id.
+
+    Arguments:
+      container_id: A string or buffer with the container id.
+
+    Returns:
+      True if the container id is valid, False otherwise.
+
+    """
+    # Check if container id is valid
+    re_valid_id = '^[0-9a-f]+$'
+    match = re.match(re_valid_id, container_id)
+    if len(container_id) == 64 and match is not None:
+        return True
+
+    # Container id is not valid
+    return False

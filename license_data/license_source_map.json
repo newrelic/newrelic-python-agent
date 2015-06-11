@@ -695,6 +695,12 @@
             "New Relic"
         ]
     },
+    "newrelic/common/tests/test_system_info.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/common/tests/test_utilization.py": {
         "hash": "n/a",
         "libraries": [

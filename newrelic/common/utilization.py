@@ -93,7 +93,8 @@ class AWSVendorInfo(object):
         return result
 
     def valid_length(self, data):
-        return len(data) <= 255
+        bytes = data.encode('utf-8')
+        return len(bytes) <= 255
 
     def valid_chars(self, data):
         regex = re.compile(r'[0-9a-zA-Z_ ./-]')

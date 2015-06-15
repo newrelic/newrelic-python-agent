@@ -109,6 +109,13 @@ def test_normalize_too_long():
     data = 'x' * 256
     assert AWSVendorInfo().normalize('instance_key', data) == None
 
+def test_normalize_too_long_unicode():
+    data = u'x' * 254
+    data = data + u'\u2603'
+    assert len(data) == 255
+    assert len(data.encode('utf-8')) == 257
+    assert AWSVendorInfo().normalize('instance_key', data) == None
+
 def test_normalize_ok_regex():
     data = '12345'
     assert AWSVendorInfo().normalize('instance_key', data) == data

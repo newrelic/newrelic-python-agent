@@ -96,8 +96,9 @@ class AWSVendorInfo(object):
         return len(data) <= 255
 
     def valid_chars(self, data):
+        regex = re.compile(r'[0-9a-zA-Z_ ./-]')
         for c in data:
-            if not re.match(r'[0-9a-zA-Z_ ./-]', data) and ord(c) < 0x80:
+            if not regex.match(c) and ord(c) < 0x80:
                 return False
         return True
 

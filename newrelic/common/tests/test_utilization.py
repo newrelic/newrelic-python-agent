@@ -125,6 +125,10 @@ def test_normalize_ok_regex_plus_unicode():
     data = u'09\u2603az'
     assert AWSVendorInfo().normalize('instance_key', data) == data
 
+def test_normalize_bad_regex_plus_unicode():
+    data = u'a\u0021'
+    assert AWSVendorInfo().normalize('instance_key', data) == None
+
 @mock.patch.object(requests.Session, 'get')
 def test_to_dict(mock_get):
     mock_get.side_effect = [MockResponse('200', 'foo'),

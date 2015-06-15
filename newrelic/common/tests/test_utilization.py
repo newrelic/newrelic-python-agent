@@ -27,6 +27,9 @@ def test_fetch(mock_get):
     aws = AWSVendorInfo()
     resp = aws.fetch('foo')
     assert resp == 'blah'
+    mock_get.assert_called_with(
+            'http://169.254.169.254/2008-02-01/meta-data/foo',
+            timeout=aws.timeout)
 
 @mock.patch.object(requests.Session, 'get')
 def test_skip_fetch(mock_get):

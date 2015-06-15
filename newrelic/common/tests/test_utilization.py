@@ -1,6 +1,6 @@
 import mock
 
-from newrelic.common.utilization import AWSVendorInfo
+from newrelic.common.utilization import AWSVendorInfo, aws_data
 from newrelic.packages import requests
 
 
@@ -133,3 +133,16 @@ def test_to_dict(mock_get):
 
     aws = AWSVendorInfo()
     assert aws.to_dict() == {'aws': {'id': 'foo', 'type': 'bar', 'zone': 'baz'}}
+
+@mock.patch.object(requests.Session, 'get')
+def test_aws_data_ok(mock_get):
+    mock_get.side_effect = [MockResponse('200', 'foo'),
+            MockResponse('200', 'bar'),
+            MockResponse('200', 'baz')]
+
+    assert aws_data() == {'aws': {'id': 'foo', 'type': 'bar', 'zone': 'baz'}}
+
+@mock.patch.object(requests.Session, 'get')
+def test_aws_data_timeout(mock_get):
+    mock_get.side_effect = requests.exceptions.ReadTimeout
+    assert aws_data() is None

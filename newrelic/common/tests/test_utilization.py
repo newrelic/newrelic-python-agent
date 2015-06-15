@@ -29,6 +29,17 @@ def test_fetch(mock_get):
     assert resp == 'blah'
 
 @mock.patch.object(requests.Session, 'get')
+def test_skip_fetch(mock_get):
+    mock_response = MockResponse('200', 'blah')
+    mock_get.return_value = mock_response
+
+    aws = AWSVendorInfo()
+    aws.skip_metadata_check = True
+    resp = aws.fetch('foo')
+    assert resp is None
+    assert mock_get.called is False
+
+@mock.patch.object(requests.Session, 'get')
 def test_instance_id(mock_get):
     mock_response = MockResponse('200', 'i-e7e85ce1')
     mock_get.return_value = mock_response

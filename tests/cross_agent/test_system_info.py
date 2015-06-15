@@ -73,7 +73,6 @@ def _load_docker_test_attributes():
             (json_record['filename'], json_record['containerId']))
     return docker_test_attributes
 
-import newrelic.common.system_info
 @pytest.mark.parametrize('filename, containerId',
                           _load_docker_test_attributes())
 def test_docker_container_id(filename, containerId):

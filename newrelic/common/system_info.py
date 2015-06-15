@@ -10,7 +10,7 @@ import re
 import multiprocessing
 import subprocess
 
-from newrelic.core.internal_metrics import (internal_metric)
+from newrelic.core.internal_metrics import internal_metric
 
 try:
     from subprocess import check_output as _execute_program
@@ -314,6 +314,7 @@ def docker_container_id(cgroup_path='/proc/self/cgroup'):
     """Returns the docker container id or None if it can't be determined.
 
     """
+
     if not sys.platform.startswith('linux'):
         return None
 
@@ -321,9 +322,10 @@ def docker_container_id(cgroup_path='/proc/self/cgroup'):
     try:
         with open(cgroup_path, 'r') as cgroup_info:
             container_id = _process_cgroup_info(cgroup_info)
+        return container_id
+
     except Exception:
-        pass
-    return container_id
+        return None
 
 def _process_cgroup_info(cgroup_info):
     """Parses the Docker container id from cgroup info.
@@ -334,38 +336,32 @@ def _process_cgroup_info(cgroup_info):
     Returns:
       Dock container id or None if it can't be determined.
 
-    Exceptions:
-      KeyError: There is 'cpu' field in the the cgroup info.
-
     """
+
     cgroup_ids = _parse_cgroup_ids(cgroup_info)
-    # This will throw a KeyError exception if cpu is not present.
-    cpu_cgroup = cgroup_ids['cpu']
-    re_docker_id = (
-        # docker native driver w/out systemd (fs)
-        '(^/docker/(?P<native_no_sysd>[0-9a-f]+)$)|'
-        # docker native driver with systemd
-        '(^/system.slice/docker-(?P<native_sysd>[0-9a-f]+).scope$)|'
-        # docker lxc driver
-        '(^/lxc/(?P<lxc>[0-9a-f]+)$)')
-    match = re.match(re_docker_id, cpu_cgroup)
-    if match and match.group('native_no_sysd'):
-        container_id = match.group('native_no_sysd')
-    elif match and match.group('native_sysd'):
-        container_id = match.group('native_sysd')
-    elif match and match.group('lxc'):
-        container_id = match.group('lxc')
-    elif not match and cpu_cgroup == '/':
+    cpu_cgroup = cgroup_ids.get('cpu', '')
+
+    native_no_sysd_p = '^/docker/(?P<native_no_sysd>[0-9a-f]+)$'
+    native_sysd_p = '^/system.slice/docker-(?P<native_sysd>[0-9a-f]+).scope$'
+    lxc_p = '^/lxc/(?P<lxc>[0-9a-f]+)$'
+    docker_id_p = '|'.join([native_no_sysd_p, native_sysd_p, lxc_p])
+
+    match = re.match(docker_id_p, cpu_cgroup)
+    if match:
+        container_id = next((m for m in match.groups() if m is not None))
+    elif cpu_cgroup == '/':
         container_id = None
     else:
-        _logger.debug("Ignoring unrecognized cgroup ID format: '%s'"
-                      % (cpu_cgroup))
+        _logger.debug("Ignoring unrecognized cgroup ID format: '%s'" %
+                (cpu_cgroup))
         container_id = None
-    if (container_id is not None and
-        not _validate_docker_container_id(container_id)):
+
+    if (container_id and not _validate_docker_container_id(container_id)):
         container_id = None
-        _logger.warning("Docker cgroup ID does not validate: '%s'" % container_id)
+        _logger.warning("Docker cgroup ID does not validate: '%s'" %
+                container_id)
         internal_metric('Supportability/utilization/docker/error', 1)
+
     return container_id
 
 def _parse_cgroup_ids(cgroup_info):
@@ -375,15 +371,20 @@ def _parse_cgroup_ids(cgroup_info):
       cgroup_info: An iterable where each item is a line of a cgroup file.
 
     """
+
     cgroup_ids = {}
+
     for line in cgroup_info:
         parts = line.split(':')
         if len(parts) != 3:
             continue
+
         _, subsystems, cgroup_id = parts
         subsystems = subsystems.split(',')
+
         for subsystem in subsystems:
             cgroup_ids[subsystem] = cgroup_id
+
     return cgroup_ids
 
 def _validate_docker_container_id(container_id):
@@ -396,10 +397,12 @@ def _validate_docker_container_id(container_id):
       True if the container id is valid, False otherwise.
 
     """
+
     # Check if container id is valid
-    re_valid_id = '^[0-9a-f]+$'
-    match = re.match(re_valid_id, container_id)
-    if len(container_id) == 64 and match is not None:
+    valid_id_p = '^[0-9a-f]+$'
+
+    match = re.match(valid_id_p, container_id)
+    if match and len(container_id) == 64:
         return True
 
     # Container id is not valid

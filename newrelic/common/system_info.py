@@ -311,9 +311,7 @@ def physical_memory_used():
     return 0
 
 def docker_container_id(cgroup_path='/proc/self/cgroup'):
-    """Returns the docker container id or None if it can't be determined.
-
-    """
+    """Returns the docker container id, or None if it can't be determined."""
 
     if not sys.platform.startswith('linux'):
         return None

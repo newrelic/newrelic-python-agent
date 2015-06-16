@@ -32,6 +32,33 @@ class TestTransactionTracerConfig(unittest.TestCase):
         tt = c.transaction_tracer
         self.assertEqual(0.666, tt.transaction_threshold)
 
+class TestUtilizationConfig(unittest.TestCase):
+
+    def test_defaults(self):
+        c = newrelic.core.config.create_settings_snapshot()
+        self.assertTrue(c.utilization.detect_aws)
+        self.assertTrue(c.utilization.detect_docker)
+
+    def test_detect_aws_false(self):
+        d = { "utilization.detect_aws": False }
+        c = newrelic.core.config.create_settings_snapshot(d)
+        self.assertFalse(c.utilization.detect_aws)
+        self.assertTrue(c.utilization.detect_docker)
+
+    def test_docker_false(self):
+        d = { "utilization.detect_docker": False }
+        c = newrelic.core.config.create_settings_snapshot(d)
+        self.assertTrue(c.utilization.detect_aws)
+        self.assertFalse(c.utilization.detect_docker)
+
+    def test_detect_utilization_false(self):
+        d = { "utilization.detect_aws": False,
+                "utilization.detect_docker": False }
+        c = newrelic.core.config.create_settings_snapshot(d)
+        self.assertFalse(c.utilization.detect_aws)
+        self.assertFalse(c.utilization.detect_docker)
+
+
 class TestIgnoreStatusCodes(unittest.TestCase):
 
     def test_add_single(self):

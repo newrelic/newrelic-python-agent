@@ -695,7 +695,19 @@
             "New Relic"
         ]
     },
+    "newrelic/common/tests/test_utilization.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/common/tests/test_xor_cipher.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/utilization.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -1187,7 +1199,19 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/datastore_pysolr.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/datastore_redis.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/datastore_solrpy.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"
@@ -1452,18 +1476,6 @@
         ]
     },
     "newrelic/hooks/solr_solrpy.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/datastore_solrpy.py": {
-        "hash": "n/a",
-        "libraries": [
-            "New Relic"
-        ]
-    },
-    "newrelic/hooks/datastore_pysolr.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

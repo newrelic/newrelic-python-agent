@@ -449,6 +449,10 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'process_host.display_name',
                      'get', None)
+    _process_setting(section, 'utilization.detect_aws',
+                     'getboolean', None)
+    _process_setting(section, 'utilization.detect_docker',
+                     'getboolean', None)
 
 # Loading of configuration from specified file and for specified
 # deployment environment. Can also indicate whether configuration

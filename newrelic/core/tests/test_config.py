@@ -6,7 +6,7 @@ import newrelic.core.config
 class TestSettings(unittest.TestCase):
 
     def test_category_creation(self):
-        d = { "a1": 1, "a2.b2": 2, "a3.b3.c3": 3 }
+        d = {'a1': 1, 'a2.b2': 2, 'a3.b3.c3': 3 }
         c = newrelic.core.config.create_settings_snapshot(d)
         self.assertEqual(1, c.a1)
         self.assertEqual(2, c.a2.b2)
@@ -21,13 +21,13 @@ class TestTransactionTracerConfig(unittest.TestCase):
         self.assertEqual(None, tt.transaction_threshold)
 
     def test_enabled(self):
-        d = { "transaction_tracer.enabled": False }
+        d = {'transaction_tracer.enabled': False }
         c = newrelic.core.config.create_settings_snapshot(d)
         tt = c.transaction_tracer
         self.assertFalse(tt.enabled)
 
     def test_transaction_threshold(self):
-        d = { "transaction_tracer.transaction_threshold": 0.666 }
+        d = {'transaction_tracer.transaction_threshold': 0.666 }
         c = newrelic.core.config.create_settings_snapshot(d)
         tt = c.transaction_tracer
         self.assertEqual(0.666, tt.transaction_threshold)
@@ -40,20 +40,20 @@ class TestUtilizationConfig(unittest.TestCase):
         self.assertTrue(c.utilization.detect_docker)
 
     def test_detect_aws_false(self):
-        d = { "utilization.detect_aws": False }
+        d = {'utilization.detect_aws': False }
         c = newrelic.core.config.create_settings_snapshot(d)
         self.assertFalse(c.utilization.detect_aws)
         self.assertTrue(c.utilization.detect_docker)
 
     def test_docker_false(self):
-        d = { "utilization.detect_docker": False }
+        d = {'utilization.detect_docker': False }
         c = newrelic.core.config.create_settings_snapshot(d)
         self.assertTrue(c.utilization.detect_aws)
         self.assertFalse(c.utilization.detect_docker)
 
     def test_detect_utilization_false(self):
-        d = { "utilization.detect_aws": False,
-                "utilization.detect_docker": False }
+        d = {'utilization.detect_aws': False,
+             'utilization.detect_docker': False }
         c = newrelic.core.config.create_settings_snapshot(d)
         self.assertFalse(c.utilization.detect_aws)
         self.assertFalse(c.utilization.detect_docker)
@@ -166,5 +166,5 @@ class TestCreateSettingsSnapshot(unittest.TestCase):
         c = newrelic.core.config.create_settings_snapshot(server, self.local)
         self.assertEqual(c.transaction_tracer.record_sql, 'obfuscated')
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

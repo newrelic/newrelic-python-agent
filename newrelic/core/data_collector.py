@@ -1014,7 +1014,9 @@ class ApplicationSession(object):
             # session object to maintain only single connection to ensure
             # that keep alive is effective.
 
-            payload = (cls._create_connect_local_config(),)
+            local_config = cls._create_connect_local_config(app_name,
+                    linked_applications, environment, settings)
+            payload = (local_config,)
 
             url = collector_url(redirect_host)
 

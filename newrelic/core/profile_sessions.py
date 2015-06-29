@@ -156,9 +156,9 @@ class ProfileSessionManager(object):
 
     @internal_trace('Supportability/Python/Profiling/Calls/add_stack_traces')
     def add_stack_traces(self, app_name, key_txn, txn_type, stack_traces):
-        """Adds a list of stack_traces to a praticular xray profile session's
+        """Adds a list of stack_traces to a particular x-ray profile session's
         call tree. This is called at the end of a transaction when it's name is
-        frozen and it is identified as an xray transaction.
+        frozen and it is identified as an x-ray transaction.
 
         """
 

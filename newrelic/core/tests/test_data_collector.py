@@ -7,7 +7,7 @@ from newrelic.core.data_collector import ApplicationSession
 # Global constants used in tests
 AGENT_VERSION = '2.0.0.0'
 APP_NAME = 'test_app'
-AWS = {'aws': {'id': 'foo', 'type': 'bar', 'zone': 'baz'}}
+AWS = {'id': 'foo', 'type': 'bar', 'zone': 'baz'}
 BROWSER_MONITORING_DEBUG = 'debug'
 BROWSER_MONITORING_LOADER = 'loader'
 CAPTURE_PARAMS = 'capture_params'
@@ -95,10 +95,16 @@ def payload_asserts(payload, with_aws=True, with_docker=True):
     if vendors_len:
         assert len(payload_data['utilization']['vendors']) == vendors_len
         if with_aws:
-            assert payload_data['utilization']['vendors']['aws'] == AWS['aws']
+            assert payload_data['utilization']['vendors']['aws'] == AWS
+        else:
+            assert 'aws' not in payload_data['utilization']['vendors']
         if with_docker:
             assert payload_data['utilization']['vendors']['docker'] == {
                 'id': DOCKER_ID}
+        else:
+            assert 'docker' not in payload_data['utilization']['vendors']
+    else:
+        assert 'vendors' not in payload_data['utilization']
 
 def test_create_connect_payload():
     payload = ApplicationSession._create_connect_payload(

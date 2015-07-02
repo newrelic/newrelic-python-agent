@@ -1127,7 +1127,7 @@ class ApplicationSession(object):
         if settings['utilization.detect_aws']:
             aws = aws_data()
             if aws:
-                utilization_vendor_settings['aws'] = aws['aws']
+                utilization_vendor_settings['aws'] = aws
         if settings['utilization.detect_docker']:
             docker_id = docker_container_id()
             if docker_id:

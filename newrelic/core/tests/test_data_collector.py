@@ -19,13 +19,13 @@ HOST = "test_host"
 LABELS = 'labels'
 LINKED_APPS = ['linked_app_1', 'linked_app_2']
 MEMORY = 12000.0
-LOCAL_CONFIG_APP_NAME = [APP_NAME] + LINKED_APPS
-LOCAL_CONFIG_ID = ','.join(LOCAL_CONFIG_APP_NAME)
+PAYLOAD_APP_NAME = [APP_NAME] + LINKED_APPS
+PAYLOAD_ID = ','.join(PAYLOAD_APP_NAME)
 PID = 123
 PROCESSOR_COUNT = 4
 RECORD_SQL = 'record_sql'
 
-# Mock out the calls used to create the connect local_config.
+# Mock out the calls used to create the connect payload.
 def setup_module(module):
     def gethostname():
         return HOST
@@ -64,64 +64,65 @@ def default_settings():
             'utilization.detect_aws': True,
             'utilization.detect_docker': True }
 
-def local_config_asserts(local_config, with_aws=True, with_docker=True):
-    assert local_config['agent_version'] == AGENT_VERSION
-    assert local_config['app_name'] == LOCAL_CONFIG_APP_NAME
-    assert local_config['display_host'] == DISPLAY_NAME
-    assert local_config['environment'] == ENVIRONMENT
-    assert local_config['high_security'] == HIGH_SECURITY
-    assert local_config['host'] == HOST
-    assert local_config['identifier'] == LOCAL_CONFIG_ID
-    assert local_config['labels'] == LABELS
-    assert local_config['language'] == 'python'
-    assert local_config['pid'] == PID
-    assert len(local_config['security_settings']) == 2
-    assert local_config['security_settings']['capture_params'] == CAPTURE_PARAMS
-    assert local_config['security_settings']['transaction_tracer'] == {
+def payload_asserts(payload, with_aws=True, with_docker=True):
+    payload_data = payload[0]
+    assert payload_data['agent_version'] == AGENT_VERSION
+    assert payload_data['app_name'] == PAYLOAD_APP_NAME
+    assert payload_data['display_host'] == DISPLAY_NAME
+    assert payload_data['environment'] == ENVIRONMENT
+    assert payload_data['high_security'] == HIGH_SECURITY
+    assert payload_data['host'] == HOST
+    assert payload_data['identifier'] == PAYLOAD_ID
+    assert payload_data['labels'] == LABELS
+    assert payload_data['language'] == 'python'
+    assert payload_data['pid'] == PID
+    assert len(payload_data['security_settings']) == 2
+    assert payload_data['security_settings']['capture_params'] == CAPTURE_PARAMS
+    assert payload_data['security_settings']['transaction_tracer'] == {
             'record_sql': RECORD_SQL}
-    assert len(local_config['settings']) == 2
-    assert local_config['settings']['browser_monitoring.loader'] == (
+    assert len(payload_data['settings']) == 2
+    assert payload_data['settings']['browser_monitoring.loader'] == (
             BROWSER_MONITORING_LOADER)
-    assert local_config['settings']['browser_monitoring.debug'] == (
+    assert payload_data['settings']['browser_monitoring.debug'] == (
             BROWSER_MONITORING_DEBUG)
     utilization_len = 4 + (with_aws or with_docker)
-    assert len(local_config['utilization']) == utilization_len
-    assert local_config['utilization']['hostname'] == HOST
-    assert local_config['utilization']['logical_processors'] == PROCESSOR_COUNT
-    assert local_config['utilization']['metadata_version'] == 1
-    assert local_config['utilization']['total_ram_mib'] == MEMORY
+    assert len(payload_data['utilization']) == utilization_len
+    assert payload_data['utilization']['hostname'] == HOST
+    assert payload_data['utilization']['logical_processors'] == PROCESSOR_COUNT
+    assert payload_data['utilization']['metadata_version'] == 1
+    assert payload_data['utilization']['total_ram_mib'] == MEMORY
     vendors_len = with_aws + with_docker
     if vendors_len:
-        assert len(local_config['utilization']['vendors']) == vendors_len
+        assert len(payload_data['utilization']['vendors']) == vendors_len
         if with_aws:
-            assert local_config['utilization']['vendors']['aws'] == AWS['aws']
+            assert payload_data['utilization']['vendors']['aws'] == AWS['aws']
         if with_docker:
-            assert local_config['utilization']['vendors']['docker'] == {
+            assert payload_data['utilization']['vendors']['docker'] == {
                 'id': DOCKER_ID}
 
-def test_create_connect_local_config():
-    local_config = ApplicationSession._create_connect_local_config(
+def test_create_connect_payload():
+    payload = ApplicationSession._create_connect_payload(
             APP_NAME, LINKED_APPS, ENVIRONMENT, default_settings())
-    local_config_asserts(local_config)
+    payload_asserts(payload)
 
-def test_create_connect_local_config_no_aws():
+def test_create_connect_payload_no_aws():
     settings = default_settings()
     settings['utilization.detect_aws'] = False
-    local_config = ApplicationSession._create_connect_local_config(
+    payload = ApplicationSession._create_connect_payload(
             APP_NAME, LINKED_APPS, ENVIRONMENT, settings)
-    local_config_asserts(local_config, with_aws=False)
+    payload_asserts(payload, with_aws=False)
 
-def test_create_connect_local_config_no_docker():
+def test_create_connect_payload_no_docker():
     settings = default_settings()
     settings['utilization.detect_docker'] = False
-    local_config = ApplicationSession._create_connect_local_config(
+    payload = ApplicationSession._create_connect_payload(
             APP_NAME, LINKED_APPS, ENVIRONMENT, settings)
-    local_config_asserts(local_config, with_docker=False)
+    payload_asserts(payload, with_docker=False)
 
-def test_create_connect_local_config_no_vendors():
+def test_create_connect_payload_no_vendors():
     settings = default_settings()
     settings['utilization.detect_aws'] = False
     settings['utilization.detect_docker'] = False
-    local_config = ApplicationSession._create_connect_local_config(
+    payload = ApplicationSession._create_connect_payload(
             APP_NAME, LINKED_APPS, ENVIRONMENT, settings)
-    local_config_asserts(local_config, with_aws=False, with_docker=False)
+    payload_asserts(payload, with_aws=False, with_docker=False)

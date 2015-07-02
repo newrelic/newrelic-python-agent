@@ -1014,9 +1014,8 @@ class ApplicationSession(object):
             # session object to maintain only single connection to ensure
             # that keep alive is effective.
 
-            local_config = cls._create_connect_local_config(app_name,
+            payload = cls._create_connect_payload(app_name,
                     linked_applications, environment, settings)
-            payload = (local_config,)
 
             url = collector_url(redirect_host)
 
@@ -1095,38 +1094,27 @@ class ApplicationSession(object):
 
             return session
 
-    @classmethod
-    def _create_connect_local_config(cls, app_name, linked_applications,
-            environment, settings):
+    @staticmethod
+    def _create_connect_payload(app_name, linked_applications, environment,
+            settings):
         # Creates the payload to send on the initial connection to the
         # data collector.
 
         app_names = [app_name] + linked_applications
+
         hostname = socket.gethostname()
-
-        local_config = {}
-
-        local_config['host'] = hostname
-        local_config['pid'] = os.getpid()
-        local_config['language'] = 'python'
-        local_config['app_name'] = app_names
-        local_config['identifier'] = ','.join(app_names)
-        local_config['agent_version'] = version
-        local_config['environment'] = environment
 
         connect_settings = {}
         connect_settings['browser_monitoring.loader'] = (
             settings['browser_monitoring.loader'])
         connect_settings['browser_monitoring.debug'] = (
             settings['browser_monitoring.debug'])
-        local_config['settings'] = connect_settings
 
         security_settings = {}
         security_settings['capture_params'] = settings['capture_params']
         security_settings['transaction_tracer'] = {}
         security_settings['transaction_tracer']['record_sql'] = (
             settings['transaction_tracer.record_sql'])
-        local_config['security_settings'] = security_settings
 
         utilization_settings = {}
         # metadata_version corresponds to the utilization spec being used.
@@ -1136,33 +1124,38 @@ class ApplicationSession(object):
         utilization_settings['hostname'] = hostname
 
         utilization_vendor_settings = {}
-
         if settings['utilization.detect_aws']:
             aws = aws_data()
             if aws:
                 utilization_vendor_settings['aws'] = aws['aws']
-
         if settings['utilization.detect_docker']:
             docker_id = docker_container_id()
             if docker_id:
                 utilization_vendor_settings['docker'] = { 'id': docker_id }
-
         if utilization_vendor_settings:
-          utilization_settings['vendors'] = utilization_vendor_settings
-
-        local_config['utilization'] = utilization_settings
-
-        local_config['high_security'] = settings['high_security']
-        local_config['labels'] = settings['labels']
+            utilization_settings['vendors'] = utilization_vendor_settings
 
         display_host = settings['process_host.display_name']
 
+        local_config = {}
+        local_config['host'] = hostname
+        local_config['pid'] = os.getpid()
+        local_config['language'] = 'python'
+        local_config['app_name'] = app_names
+        local_config['identifier'] = ','.join(app_names)
+        local_config['agent_version'] = version
+        local_config['environment'] = environment
+        local_config['settings'] = connect_settings
+        local_config['security_settings'] = security_settings
+        local_config['utilization'] = utilization_settings
+        local_config['high_security'] = settings['high_security']
+        local_config['labels'] = settings['labels']
         if display_host is None:
             local_config['display_host'] = local_config['host']
         else:
             local_config['display_host'] = display_host
 
-        return local_config
+        return (local_config,)
 
 _developer_mode_responses = {
     'get_redirect_host': u'fake-collector.newrelic.com',

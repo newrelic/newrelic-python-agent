@@ -887,7 +887,7 @@
             "New Relic"
         ]
     },
-    "newrelic/core/tests/test_database_collector.py": {
+    "newrelic/core/tests/test_data_collector.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

@@ -104,11 +104,11 @@ class AWSVendorInfo(object):
         return True
 
     def to_dict(self):
-        return {'aws': {'id': self.instance_id,
-                        'type': self.instance_type,
-                        'zone': self.availability_zone
-                       }
-                }
+        return {
+            'id': self.instance_id,
+            'type': self.instance_type,
+            'zone': self.availability_zone
+        }
 
 def aws_data():
     aws = AWSVendorInfo()

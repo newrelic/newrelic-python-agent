@@ -81,12 +81,14 @@ first so '--with-virtualenv' shouldn't usually be needed.
 Running The Unit Tests
 ======================
 
+First, install tox via pip.
+
 To run the unit tests use the script:
 
     tests.sh
 
-This uses 'tox' to coordinate testing. For each Python version available
-this will construct a Python virtual environment the Python agent package
+This uses 'tox' to coordinate testing. For each Python version available,
+this will construct a Python virtual environment. The Python agent package
 will be installed into that rather than into the Python install found by
 the 'configure' script. This avoids polluting your main Python installation
 with your development version of the Python agent just to be able to run

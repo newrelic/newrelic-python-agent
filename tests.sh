@@ -131,12 +131,6 @@ else
     TOX=tox
 fi
 
-$TOX --help > /dev/null 2>&1
-
-if test "$?" != "0"
-then
-    TOX="python runtox.py"
-fi
 
 if test x"$*" = x""
 then

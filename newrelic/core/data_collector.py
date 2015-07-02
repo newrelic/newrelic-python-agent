@@ -1136,25 +1136,24 @@ class ApplicationSession(object):
             utilization_settings['vendors'] = utilization_vendor_settings
 
         display_host = settings['process_host.display_name']
-
-        local_config = {}
-        local_config['host'] = hostname
-        local_config['pid'] = os.getpid()
-        local_config['language'] = 'python'
-        local_config['app_name'] = app_names
-        local_config['identifier'] = ','.join(app_names)
-        local_config['agent_version'] = version
-        local_config['environment'] = environment
-        local_config['settings'] = connect_settings
-        local_config['security_settings'] = security_settings
-        local_config['utilization'] = utilization_settings
-        local_config['high_security'] = settings['high_security']
-        local_config['labels'] = settings['labels']
         if display_host is None:
-            local_config['display_host'] = local_config['host']
-        else:
-            local_config['display_host'] = display_host
+            display_host = hostname
 
+        local_config = {
+                'host': hostname,
+                'pid': os.getpid(),
+                'language': 'python',
+                'app_name': app_names,
+                'identifier': ','.join(app_names),
+                'agent_version': version,
+                'environment': environment,
+                'settings': connect_settings,
+                'security_settings': security_settings,
+                'utilization': utilization_settings,
+                'high_security': settings['high_security'],
+                'labels': settings['labels'],
+                'display_host': display_host,
+        }
         return (local_config,)
 
 _developer_mode_responses = {

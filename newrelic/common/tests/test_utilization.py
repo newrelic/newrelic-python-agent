@@ -143,7 +143,7 @@ def test_to_dict(mock_get):
             MockResponse('200', 'baz')]
 
     aws = AWSVendorInfo()
-    assert aws.to_dict() == {'aws': {'id': 'foo', 'type': 'bar', 'zone': 'baz'}}
+    assert aws.to_dict() == {'id': 'foo', 'type': 'bar', 'zone': 'baz'}
 
 @mock.patch.object(requests.Session, 'get')
 def test_aws_data_ok(mock_get):
@@ -151,7 +151,7 @@ def test_aws_data_ok(mock_get):
             MockResponse('200', 'bar'),
             MockResponse('200', 'baz')]
 
-    assert aws_data() == {'aws': {'id': 'foo', 'type': 'bar', 'zone': 'baz'}}
+    assert aws_data() == {'id': 'foo', 'type': 'bar', 'zone': 'baz'}
 
 @mock.patch.object(requests.Session, 'get')
 def test_aws_data_timeout(mock_get):

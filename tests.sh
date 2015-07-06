@@ -132,10 +132,10 @@ else
 fi
 
 $TOX --help > /dev/null 2>&1
-
 if test "$?" != "0"
 then
-    TOX="python runtox.py"
+    echo "Please install tox using 'pip install tox'"
+    exit 1
 fi
 
 if test x"$*" = x""

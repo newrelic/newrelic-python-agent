@@ -63,7 +63,14 @@ def test_aws(testname, uris, expected_vendors_hash, expected_metrics):
     def _test_aws_data(mock_get, mock_internal_metric):
         mock_get.side_effect = mock_return_values
 
-        assert aws_data() == expected_vendors_hash
+        data = aws_data()
+
+        if data:
+            aws_vendor_hash = {'aws': data}
+        else:
+            aws_vendor_hash = None
+
+        assert aws_vendor_hash == expected_vendors_hash
 
         if expected_metrics:
             item = list(expected_metrics.items())[0]

@@ -566,6 +566,11 @@ def apply_local_high_security_mode_setting(settings):
         _logger.info(log_template, 'transaction_tracer.record_sql',
             'raw', 'obfuscated')
 
+    if not settings.strip_exception_messages.enabled:
+        settings.strip_exception_messages.enabled = True
+        _logger.info(log_template, 'strip_exception_messages.enabled',
+                False, True)
+
     return settings
 
 def _load_configuration(config_file=None, environment=None,

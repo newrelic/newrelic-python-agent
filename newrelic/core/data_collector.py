@@ -730,7 +730,8 @@ def apply_high_security_mode_fixups(local_settings, server_settings):
     # Remove individual security settings from top level of configuration
     # settings returned.
 
-    security_settings = ('capture_params', 'transaction_tracer.record_sql')
+    security_settings = ('capture_params', 'transaction_tracer.record_sql',
+            'strip_exception_messages.enabled')
 
     for setting in security_settings:
         if setting in server_settings:

@@ -192,7 +192,7 @@ def test_remote_config_hsm_fixups_disabled(local_settings, server_settings):
 
     settings = apply_high_security_mode_fixups(local_settings, server_settings)
 
-    agent_config = server_settings['agent_config']
+    agent_config = settings['agent_config']
 
     assert u'high_security' not in settings
 
@@ -209,7 +209,7 @@ def test_remote_config_hsm_fixups_enabled(local_settings, server_settings):
 
     settings = apply_high_security_mode_fixups(local_settings, server_settings)
 
-    agent_config = server_settings['agent_config']
+    agent_config = settings['agent_config']
 
     assert u'high_security' not in settings
     assert u'capture_params' not in settings

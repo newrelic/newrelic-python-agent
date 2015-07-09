@@ -165,6 +165,9 @@ def _merge_ignore_status_codes(s):
 def _map_browser_monitoring_content_type(s):
     return s.split()
 
+def _map_strip_exception_messages_whitelist(s):
+    return s.split()
+
 # Processing of a single setting from configuration file.
 
 def _raise_configuration_error(section, option=None):
@@ -453,6 +456,10 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'utilization.detect_docker',
                      'getboolean', None)
+    _process_setting(section, 'strip_exception_messages.enabled',
+                     'getboolean', None)
+    _process_setting(section, 'strip_exception_messages.whitelist',
+                     'get', _map_strip_exception_messages_whitelist)
 
 # Loading of configuration from specified file and for specified
 # deployment environment. Can also indicate whether configuration

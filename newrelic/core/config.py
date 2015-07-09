@@ -59,6 +59,7 @@ class AnalyticsEventsTransactionsSettings(Settings): pass
 class ProcessHostSettings(Settings): pass
 class SyntheticsSettings(Settings): pass
 class UtilizationSettings(Settings): pass
+class StripExceptionMessageSettings(Settings): pass
 
 _settings = Settings()
 _settings.thread_profiler = ThreadProfilerSettings()
@@ -79,6 +80,7 @@ _settings.analytics_events.transactions = AnalyticsEventsTransactionsSettings()
 _settings.process_host = ProcessHostSettings()
 _settings.synthetics = SyntheticsSettings()
 _settings.utilization = UtilizationSettings()
+_settings.strip_exception_messages = StripExceptionMessageSettings()
 
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
 _settings.audit_log_file = os.environ.get('NEW_RELIC_AUDIT_LOG', None)
@@ -343,6 +345,9 @@ _settings.debug.disable_certificate_validation = False
 
 _settings.utilization.detect_aws = True
 _settings.utilization.detect_docker = True
+
+_settings.strip_exception_messages.enabled = False
+_settings.strip_exception_messages.whitelist = []
 
 def global_settings():
     """This returns the default global settings. Generally only used

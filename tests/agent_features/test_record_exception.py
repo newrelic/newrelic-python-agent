@@ -103,3 +103,45 @@ def test_record_exception_strip_message_enabled():
         raise RuntimeError('message not displayed')
     except RuntimeError:
         record_exception()
+
+_test_record_exception_strip_message_in_whitelist = [
+        (_runtime_error_name, 'original error message')]
+
+_strip_message_in_whitelist_settings = {
+        'strip_exception_messages.enabled': True,
+        'strip_exception_messages.whitelist': [_runtime_error_name],
+}
+
+@validate_transaction_errors(errors=_test_record_exception_strip_message_in_whitelist)
+@override_application_settings(_strip_message_in_whitelist_settings)
+@background_task()
+def test_record_exception_strip_message_in_whitelist():
+    settings = application_settings()
+    assert settings.strip_exception_messages.enabled
+    assert _runtime_error_name in settings.strip_exception_messages.whitelist
+
+    try:
+        raise RuntimeError('original error message')
+    except RuntimeError:
+        record_exception()
+
+_test_record_exception_strip_message_not_in_whitelist = [
+        (_runtime_error_name, STRIP_EXCEPTION_MESSAGE)]
+
+_strip_message_not_in_whitelist_settings = {
+        'strip_exception_messages.enabled': True,
+        'strip_exception_messages.whitelist': ['FooError', 'BarError'],
+}
+
+@validate_transaction_errors(errors=_test_record_exception_strip_message_not_in_whitelist)
+@override_application_settings(_strip_message_not_in_whitelist_settings)
+@background_task()
+def test_record_exception_strip_message_not_in_whitelist():
+    settings = application_settings()
+    assert settings.strip_exception_messages.enabled
+    assert _runtime_error_name not in settings.strip_exception_messages.whitelist
+
+    try:
+        raise RuntimeError('message not displayed')
+    except RuntimeError:
+        record_exception()

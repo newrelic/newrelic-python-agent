@@ -13,10 +13,10 @@ _test_record_exception_sys_exc_info = [
 @validate_transaction_errors(errors=_test_record_exception_sys_exc_info)
 @background_task()
 def test_record_exception_sys_exc_info():
-    try: 
-      raise RuntimeError('one') 
-    except RuntimeError: 
-      record_exception(*sys.exc_info())
+    try:
+        raise RuntimeError('one')
+    except RuntimeError:
+        record_exception(*sys.exc_info())
 
 _test_record_exception_no_exc_info = [
         (_runtime_error_name, 'one')]
@@ -24,10 +24,10 @@ _test_record_exception_no_exc_info = [
 @validate_transaction_errors(errors=_test_record_exception_no_exc_info)
 @background_task()
 def test_record_exception_no_exc_info():
-    try: 
-      raise RuntimeError('one') 
-    except RuntimeError: 
-      record_exception()
+    try:
+        raise RuntimeError('one')
+    except RuntimeError:
+        record_exception()
 
 _test_record_exception_multiple_different_type = [
         (_runtime_error_name, 'one'),
@@ -36,15 +36,15 @@ _test_record_exception_multiple_different_type = [
 @validate_transaction_errors(errors=_test_record_exception_multiple_different_type)
 @background_task()
 def test_record_exception_multiple_different_type():
-    try: 
-      raise RuntimeError('one') 
-    except RuntimeError: 
-      record_exception()
+    try:
+        raise RuntimeError('one')
+    except RuntimeError:
+        record_exception()
 
-    try: 
-      raise TypeError('two') 
-    except TypeError: 
-      record_exception()
+    try:
+        raise TypeError('two')
+    except TypeError:
+        record_exception()
 
 _test_record_exception_multiple_same_type = [
         (_runtime_error_name, 'one'),
@@ -53,12 +53,13 @@ _test_record_exception_multiple_same_type = [
 @validate_transaction_errors(errors=_test_record_exception_multiple_same_type)
 @background_task()
 def test_record_exception_multiple_same_type():
-    try: 
-      raise RuntimeError('one') 
-    except RuntimeError: 
-      record_exception()
+    try:
+        raise RuntimeError('one')
+    except RuntimeError:
+        record_exception()
 
-    try: 
-      raise RuntimeError('two') 
-    except RuntimeError: 
-      record_exception()
+    try:
+        raise RuntimeError('two')
+    except RuntimeError:
+        record_exception()
+

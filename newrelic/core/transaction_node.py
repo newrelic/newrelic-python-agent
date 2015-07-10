@@ -214,7 +214,7 @@ class TransactionNode(_TransactionNode):
             if self.parameter_groups:
                 params["parameter_groups"] = self.parameter_groups
 
-            if self.settings.error_collector.capture_attributes:
+            if self.settings.error_collector.attributes.enabled:
                 custom_params = (error.custom_params and dict(
                     error.custom_params) or {})
             else:
@@ -277,7 +277,7 @@ class TransactionNode(_TransactionNode):
 
         # Add in special CPU time value for UI to display CPU burn.
 
-        if self.settings.transaction_tracer.capture_attributes:
+        if self.settings.transaction_tracer.attributes.enabled:
             custom_params = custom_params and dict(custom_params) or {}
         else:
             custom_params = {}

@@ -526,7 +526,7 @@ class StatsEngine(object):
 
         params["stack_trace"] = exception_stack(tb)
 
-        if settings.error_collector.capture_attributes:
+        if settings.error_collector.attributes.enabled:
             params["custom_params"] = custom_params
 
         error_details = TracedError(
@@ -807,10 +807,10 @@ class StatsEngine(object):
                 event = self.create_analytic_event(transaction)
                 self.__synthetics_events.append(event)
 
-        elif (settings.collect_analytics_events and
-                settings.analytics_events.enabled):
+        elif (settings.collect_transaction_events and
+                settings.transaction_events.enabled):
 
-            if settings.analytics_events.transactions.enabled:
+            if settings.transaction_events.transactions.enabled:
 
                 event = self.create_analytic_event(transaction)
                 self.__sampled_data_set.add(event)
@@ -833,7 +833,7 @@ class StatsEngine(object):
         # retain any which have string type for key and
         # string or numeric for value.
 
-        if settings.analytics_events.capture_attributes:
+        if settings.transaction_events.attributes.enabled:
             for key, value in transaction.custom_params.items():
                 if not isinstance(key, six.string_types):
                     continue
@@ -1300,7 +1300,7 @@ class StatsEngine(object):
 
         if settings is not None:
             self.__sampled_data_set = SampledDataSet(
-                    settings.analytics_events.max_samples_stored)
+                    settings.transaction_events.max_samples_stored)
         else:
             self.__sampled_data_set = SampledDataSet()
 
@@ -1320,7 +1320,7 @@ class StatsEngine(object):
 
         if self.__settings is not None:
             self.__sampled_data_set = SampledDataSet(
-                    self.__settings.analytics_events.max_samples_stored)
+                    self.__settings.transaction_events.max_samples_stored)
         else:
             self.__sampled_data_set = SampledDataSet()
 
@@ -1396,7 +1396,7 @@ class StatsEngine(object):
 
         if self.__settings is not None:
             self.__sampled_data_set = SampledDataSet(
-                    self.__settings.analytics_events.max_samples_stored)
+                    self.__settings.transaction_events.max_samples_stored)
         else:
             self.__sampled_data_set = SampledDataSet()
 

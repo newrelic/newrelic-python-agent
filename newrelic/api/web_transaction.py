@@ -637,7 +637,7 @@ class WebTransaction(Transaction):
                 additional_params.append(('agentToken', self.rum_token))
                 additional_params.append(('ttGuid', self.guid))
 
-        if self._settings.browser_monitoring.capture_attributes:
+        if self._settings.browser_monitoring.attributes.enabled:
             def _filter(params):
                 for key, value in params.items():
                     if not isinstance(key, six.string_types):

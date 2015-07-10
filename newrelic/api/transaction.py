@@ -33,6 +33,10 @@ from .time_trace import TimeTrace
 
 _logger = logging.getLogger(__name__)
 
+
+STRIP_EXCEPTION_MESSAGE = ('<Message removed due to configuration setting: '
+        'strip_exception_messages.enabled = True>')
+
 class Sentinel(TimeTrace):
     def __init__(self):
         super(Sentinel, self).__init__(None)
@@ -871,6 +875,14 @@ class Transaction(object):
         for error in self._errors:
             if error.type == fullname and error.message == message:
                 return
+
+        # Now that we've done comparison above with the real exception
+        # message, check to see if we need to strip the message before
+        # recording it.
+
+        if (settings.strip_exception_messages.enabled and
+                fullname not in settings.strip_exception_messages.whitelist):
+            message = STRIP_EXCEPTION_MESSAGE
 
         node = newrelic.core.error_node.ErrorNode(
                 timestamp=time.time(),

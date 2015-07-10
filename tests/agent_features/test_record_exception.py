@@ -1,8 +1,11 @@
 import sys
 
-from testing_support.fixtures import validate_transaction_errors
+from testing_support.fixtures import (validate_transaction_errors,
+        override_application_settings)
 
-from newrelic.agent import background_task, record_exception
+from newrelic.agent import (background_task, record_exception,
+        application_settings)
+from newrelic.api.transaction import STRIP_EXCEPTION_MESSAGE
 
 _runtime_error_name = (RuntimeError.__module__ + ':' + RuntimeError.__name__)
 _type_error_name = (TypeError.__module__ + ':' + TypeError.__name__)
@@ -63,3 +66,40 @@ def test_record_exception_multiple_same_type():
     except RuntimeError:
         record_exception()
 
+_test_record_exception_strip_message_disabled = [
+        (_runtime_error_name, 'one')]
+
+_strip_message_disabled_settings = {
+        'strip_exception_messages.enabled': False,
+}
+
+@validate_transaction_errors(errors=_test_record_exception_strip_message_disabled)
+@override_application_settings(_strip_message_disabled_settings)
+@background_task()
+def test_record_exception_strip_message_disabled():
+    settings = application_settings()
+    assert not settings.strip_exception_messages.enabled
+
+    try:
+        raise RuntimeError('one')
+    except RuntimeError:
+        record_exception()
+
+_test_record_exception_strip_message_enabled = [
+        (_runtime_error_name, STRIP_EXCEPTION_MESSAGE)]
+
+_strip_message_enabled_settings = {
+        'strip_exception_messages.enabled': True,
+}
+
+@validate_transaction_errors(errors=_test_record_exception_strip_message_enabled)
+@override_application_settings(_strip_message_enabled_settings)
+@background_task()
+def test_record_exception_strip_message_enabled():
+    settings = application_settings()
+    assert settings.strip_exception_messages.enabled
+
+    try:
+        raise RuntimeError('message not displayed')
+    except RuntimeError:
+        record_exception()

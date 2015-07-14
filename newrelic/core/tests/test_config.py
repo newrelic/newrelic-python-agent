@@ -166,5 +166,24 @@ class TestCreateSettingsSnapshot(unittest.TestCase):
         c = newrelic.core.config.create_settings_snapshot(server, self.local)
         self.assertEqual(c.transaction_tracer.record_sql, 'obfuscated')
 
+class TestAgentAttributesValid(unittest.TestCase):
+    def test_valid_wildcards(self):
+        result = newrelic.core.config._parse_attributes('a.b* b* c.* AB*')
+        self.assertEqual(result, ['a.b*', 'b*', 'c.*', 'AB*'])
+
+    def test_invalid_wildcards(self):
+        result = newrelic.core.config._parse_attributes('a b.*.c d *e')
+        self.assertEqual(result, ['a', 'd'])
+        result = newrelic.core.config._parse_attributes('*')
+        self.assertEqual(result, [])
+
+    def test_empty_list(self):
+        result = newrelic.core.config._parse_attributes('')
+        self.assertEqual(result, [])
+
+    def test_valid_no_wildcard(self):
+        result = newrelic.core.config._parse_attributes('aa Ab c a_b')
+        self.assertEqual(result, ['aa', 'Ab', 'c', 'a_b'])
+
 if __name__ == '__main__':
     unittest.main()

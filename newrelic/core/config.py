@@ -181,7 +181,7 @@ def _parse_ignore_status_codes(value, target):
 def _parse_attributes(s):
     r = re.compile('[\w.]+\*?$')
     items = s.split()
-    matches = map(r.match, items)
+    matches = list(map(r.match, items))
     while None in matches:
         invalid_idx = matches.index(None)
         invalid_attr = items.pop(invalid_idx)

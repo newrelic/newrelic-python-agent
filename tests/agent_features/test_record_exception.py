@@ -4,11 +4,11 @@ from testing_support.fixtures import (validate_transaction_errors,
         override_application_settings)
 
 from newrelic.agent import (background_task, record_exception,
-        application_settings)
+        application_settings, application, callable_name)
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 
-_runtime_error_name = (RuntimeError.__module__ + ':' + RuntimeError.__name__)
-_type_error_name = (TypeError.__module__ + ':' + TypeError.__name__)
+_runtime_error_name = callable_name(RuntimeError)
+_type_error_name = callable_name(TypeError)
 
 _test_record_exception_sys_exc_info = [
         (_runtime_error_name, 'one')]

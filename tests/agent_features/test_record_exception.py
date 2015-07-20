@@ -5,7 +5,7 @@ from testing_support.fixtures import (validate_transaction_errors,
 
 from newrelic.agent import (background_task, record_exception,
         application_settings)
-from newrelic.api.transaction import STRIP_EXCEPTION_MESSAGE
+from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 
 _runtime_error_name = (RuntimeError.__module__ + ':' + RuntimeError.__name__)
 _type_error_name = (TypeError.__module__ + ':' + TypeError.__name__)

@@ -29,13 +29,11 @@ from newrelic.core.thread_utilization import utilization_tracker
 from ..core.stack_trace import exception_stack
 from ..common.encoding_utils import generate_path_hash
 
+from .settings import STRIP_EXCEPTION_MESSAGE
 from .time_trace import TimeTrace
 
 _logger = logging.getLogger(__name__)
 
-
-STRIP_EXCEPTION_MESSAGE = ('<Message removed due to configuration setting: '
-        'strip_exception_messages.enabled = True>')
 
 class Sentinel(TimeTrace):
     def __init__(self):

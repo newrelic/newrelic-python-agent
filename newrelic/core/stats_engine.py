@@ -22,6 +22,7 @@ from .internal_metrics import (internal_trace, InternalTrace, internal_metric)
 from .database_utils import explain_plan
 from .stack_trace import exception_stack
 
+from ..api.settings import STRIP_EXCEPTION_MESSAGE
 from ..common.encoding_utils import json_encode
 
 _logger = logging.getLogger(__name__)
@@ -513,6 +514,12 @@ class StatsEngine(object):
             except Exception:
                 message = '<unprintable %s object>' % type(value).__name__
 
+        # Check to see if we need to strip the message before recording it.
+
+        if (settings.strip_exception_messages.enabled and
+                fullname not in settings.strip_exception_messages.whitelist):
+            message = STRIP_EXCEPTION_MESSAGE
+
         # Record the exception details.
 
         params = {}
@@ -522,9 +529,12 @@ class StatsEngine(object):
         if settings.error_collector.capture_attributes:
             params["custom_params"] = custom_params
 
-        error_details =TracedError(start_time=time.time(),
-                path='Exception', message=message,
-                type=fullname, parameters=params)
+        error_details = TracedError(
+                start_time=time.time(),
+                path='Exception',
+                message=message,
+                type=fullname,
+                parameters=params)
 
         self.__transaction_errors.append(error_details)
 

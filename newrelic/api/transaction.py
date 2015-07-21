@@ -862,6 +862,12 @@ class Transaction(object):
             except Exception:
                 message = '<unprintable %s object>' % type(value).__name__
 
+        # Check to see if we need to strip the message before recording it.
+
+        if (settings.strip_exception_messages.enabled and
+                fullname not in settings.strip_exception_messages.whitelist):
+            message = STRIP_EXCEPTION_MESSAGE
+
         # Check that we have not recorded this exception
         # previously for this transaction due to multiple
         # error traces triggering. This is not going to be
@@ -873,14 +879,6 @@ class Transaction(object):
         for error in self._errors:
             if error.type == fullname and error.message == message:
                 return
-
-        # Now that we've done comparison above with the real exception
-        # message, check to see if we need to strip the message before
-        # recording it.
-
-        if (settings.strip_exception_messages.enabled and
-                fullname not in settings.strip_exception_messages.whitelist):
-            message = STRIP_EXCEPTION_MESSAGE
 
         node = newrelic.core.error_node.ErrorNode(
                 timestamp=time.time(),

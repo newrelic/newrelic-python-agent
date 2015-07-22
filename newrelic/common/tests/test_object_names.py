@@ -8,7 +8,8 @@ from collections import namedtuple
 import newrelic.packages.six as six
 from newrelic.packages.six.moves import builtins
 
-from newrelic.common.object_names import callable_name
+from newrelic.common.object_names import (callable_name,
+        expand_builtin_exception_name)
 
 def _function1(self): pass
 
@@ -339,6 +340,54 @@ class TestCallableName(unittest.TestCase):
     def test_extension_method_via_instance(self):
         self.assertEqual(callable_name(datetime.date(200, 1, 1).strftime),
                 _module_fqdn('date.strftime', 'datetime'))
+
+class TestExpandBuiltinExceptionName(unittest.TestCase):
+
+    def test_builtin_exception(self):
+        result = expand_builtin_exception_name('KeyError')
+        if six.PY3:
+            self.assertEqual(result, 'builtins:KeyError')
+        elif six.PY2:
+            self.assertEqual(result, 'exceptions:KeyError')
+        else:
+            self.assertEqual(result, 'KeyError')
+
+    def test_base_exception(self):
+        result = expand_builtin_exception_name('BaseException')
+        if six.PY3:
+            self.assertEqual(result, 'builtins:BaseException')
+        elif six.PY2:
+            self.assertEqual(result, 'exceptions:BaseException')
+        else:
+            self.assertEqual(result, 'BaseException')
+
+    def test_warning(self):
+        result = expand_builtin_exception_name('UnicodeWarning')
+        if six.PY3:
+            self.assertEqual(result, 'builtins:UnicodeWarning')
+        elif six.PY2:
+            self.assertEqual(result, 'exceptions:UnicodeWarning')
+        else:
+            self.assertEqual(result, 'UnicodeWarning')
+
+    def test_py3_exception_only(self):
+        result = expand_builtin_exception_name('BrokenPipeError')
+        if six.PY3:
+            self.assertEqual(result, 'builtins:BrokenPipeError')
+        else:
+            self.assertEqual(result, 'BrokenPipeError')
+
+    def test_not_builtin(self):
+        result = expand_builtin_exception_name('Foo')
+        self.assertEqual(result, 'Foo')
+
+    def test_builtin_not_exception(self):
+        result = expand_builtin_exception_name('sum')
+        self.assertEqual(result, 'sum')
+
+    def test_not_builtin_with_colon(self):
+        result = expand_builtin_exception_name('MyModule:KeyError')
+        self.assertEqual(result, 'MyModule:KeyError')
 
 if __name__ == '__main__':
     unittest.main()

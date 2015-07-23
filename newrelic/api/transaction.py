@@ -34,7 +34,6 @@ from .time_trace import TimeTrace
 
 _logger = logging.getLogger(__name__)
 
-
 class Sentinel(TimeTrace):
     def __init__(self):
         super(Sentinel, self).__init__(None)

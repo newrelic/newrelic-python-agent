@@ -852,20 +852,20 @@ class Transaction(object):
 
         exc_type = exc.__name__
 
-        try:
-            message = str(value)
-        except Exception:
-            try:
-                # Assume JSON encoding can handle unicode.
-                message = six.text_type(value)
-            except Exception:
-                message = '<unprintable %s object>' % type(value).__name__
-
         # Check to see if we need to strip the message before recording it.
 
         if (settings.strip_exception_messages.enabled and
                 fullname not in settings.strip_exception_messages.whitelist):
             message = STRIP_EXCEPTION_MESSAGE
+        else:
+            try:
+                message = str(value)
+            except Exception:
+                try:
+                    # Assume JSON encoding can handle unicode.
+                    message = six.text_type(value)
+                except Exception:
+                    message = '<unprintable %s object>' % type(value).__name__
 
         # Check that we have not recorded this exception
         # previously for this transaction due to multiple

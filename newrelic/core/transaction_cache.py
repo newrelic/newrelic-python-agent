@@ -169,9 +169,9 @@ class TransactionCache(object):
 
         if transaction != current:
             _logger.error('Runtime instrumentation error. Attempt to '
-                    'to drop the transaction but where is not the '
-                    'current transaction. Report this issue to New Relic '
-                    'support.\n%s', ''.join(traceback.format_stack()[:-1]))
+                    'to drop the transaction when it is not the current '
+                    'transaction. Report this issue to New Relic support.\n%s',
+                    ''.join(traceback.format_stack()[:-1]))
 
             raise RuntimeError('not the current transaction')
 

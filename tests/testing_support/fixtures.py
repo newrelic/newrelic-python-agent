@@ -227,11 +227,11 @@ def collector_agent_registration_fixture(app_name=None, default_settings={},
 
         if not use_fake_collector and not use_developer_mode:
             try:
-                _logger.debug("Record deployment marker at %s" % url)
+                _logger.debug('Record deployment marker at %s', url)
                 r = requests.post(url, proxies=proxies, headers=headers,
                         timeout=timeout, data=data)
             except Exception:
-                _logger.exception("Unable to record deployment marker.")
+                _logger.exception('Unable to record deployment marker.')
                 pass
 
         # Associate linked applications.
@@ -334,9 +334,15 @@ def catch_background_exceptions(wrapped, instance, args, kwargs):
         if raise_background_exceptions.count == 0:
             raise_background_exceptions.event.set()
 
-def validate_transaction_metrics(name, group='Function',
+def _validate_transaction_metrics_helper(name, group='Function',
         background_task=False, scoped_metrics=[], rollup_metrics=[],
-        custom_metrics=[]):
+        custom_metrics=[], validate=None,
+        should_validate_top_level_metrics=True):
+    # Helper function to create decorator to validate transaction metrics.
+    # To create a decorator that validates some part of the transaction metrics,
+    # one defines a validate function then calls this method with the validate
+    # method. See validate_transaction_metrics below for an example of
+    # validating call counts.
 
     if background_task:
         rollup_metric = 'OtherTransaction/all'
@@ -356,37 +362,75 @@ def validate_transaction_metrics(name, group='Function',
         else:
             metrics = instance.stats_table
 
-            def _validate(name, scope, count):
-                key = (name, scope)
-                metric = metrics.get(key)
-
-                def _metrics_table():
-                    return 'metric=%r, metrics=%r' % (key, metrics)
-
-                def _metric_details():
-                    return 'metric=%r, count=%r' % (key, metric.call_count)
-
-                if count is not None:
-                    assert metric is not None, _metrics_table()
-                    assert metric.call_count == count, _metric_details()
-                else:
-                    assert metric is None, _metrics_table()
-
-            _validate(rollup_metric, '', 1)
-            _validate(transaction_metric, '', 1)
+            if should_validate_top_level_metrics:
+                validate(metrics, rollup_metric, '', 1)
+                validate(metrics, transaction_metric, '', 1)
 
             for scoped_name, scoped_count in scoped_metrics:
-                _validate(scoped_name, transaction_metric, scoped_count)
+                validate(metrics, scoped_name, transaction_metric, scoped_count)
 
             for rollup_name, rollup_count in rollup_metrics:
-                _validate(rollup_name, '', rollup_count)
+                validate(metrics, rollup_name, '', rollup_count)
 
             for custom_name, custom_count in custom_metrics:
-                _validate(custom_name, '', custom_count)
+                validate(metrics, custom_name, '', custom_count)
 
         return result
 
     return _validate_transaction_metrics
+
+def validate_transaction_metrics(name, group='Function',
+        background_task=False, scoped_metrics=[], rollup_metrics=[],
+        custom_metrics=[]):
+
+    def _validate(metrics, name, scope, count):
+        key = (name, scope)
+        metric = metrics.get(key)
+
+        def _metrics_table():
+            return 'metric=%r, metrics=%r' % (key, metrics)
+
+        def _metric_details():
+            return 'metric=%r, count=%r' % (key, metric.call_count)
+
+        if count is not None:
+            assert metric is not None, _metrics_table()
+            assert metric.call_count == count, _metric_details()
+        else:
+            assert metric is None, _metrics_table()
+
+    return _validate_transaction_metrics_helper(name, group,
+            background_task, scoped_metrics, rollup_metrics, custom_metrics,
+            _validate)
+
+def validate_transaction_metric_times(name, group='Function',
+        background_task=False, scoped_metrics=[], rollup_metrics=[],
+        custom_metrics=[]):
+
+    def _validate(metrics, name, scope, call_time_range):
+        key = (name, scope)
+        metric = metrics.get(key)
+
+        min_call_time, max_call_time = call_time_range
+        def _metrics_table():
+            return 'metric=%r, metrics=%r' % (key, metrics)
+
+        def _metric_details():
+            return 'metric=%r, total_call_time=%r' % (
+                key, metric.total_call_time)
+
+        if min_call_time is not None:
+            assert metric is not None, _metrics_table()
+            assert metric.total_call_time >= min_call_time, (
+                    _metric_details())
+            assert metric.total_call_time <= max_call_time, (
+                    _metric_details())
+        else:
+            assert metric is None, _metrics_table()
+
+    return _validate_transaction_metrics_helper(name, group,
+            background_task, scoped_metrics, rollup_metrics, custom_metrics,
+            _validate, should_validate_top_level_metrics=False)
 
 def validate_transaction_errors(errors=[], required_params=[],
         forgone_params=[]):

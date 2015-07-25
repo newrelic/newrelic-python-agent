@@ -167,14 +167,7 @@ def _map_browser_monitoring_content_type(s):
     return s.split()
 
 def _map_strip_exception_messages_whitelist(s):
-    whitelist = []
-    items = s.split()
-
-    for item in items:
-        exception_name = expand_builtin_exception_name(item)
-        whitelist.append(exception_name)
-
-    return whitelist
+    return [expand_builtin_exception_name(item) for item in s.split()]
 
 # Processing of a single setting from configuration file.
 

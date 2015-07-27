@@ -13,7 +13,6 @@ import os
 import logging
 import copy
 import socket
-import re
 
 try:
     import urlparse
@@ -179,15 +178,14 @@ def _parse_ignore_status_codes(value, target):
     return target
 
 def _parse_attributes(s):
-    r = re.compile('[\w.]+\*?$')
-    items = s.split()
-    matches = list(map(r.match, items))
-    while None in matches:
-        invalid_idx = matches.index(None)
-        invalid_attr = items.pop(invalid_idx)
-        matches.pop(invalid_idx)
-        _logger.warning('Improperly formatted attribute: %s' % invalid_attr)
-    return items
+    valid = []
+    for item in s.split():
+        if len(item) == 1 or ('*' not in item[:-1] and len(item.encode('utf-8')) < 256):
+            valid.append(item)
+        else:
+            _logger.warning('Improperly formatted attribute: %r', item)
+    return valid
+
 
 _LOG_LEVEL = {
     'CRITICAL': logging.CRITICAL,

@@ -94,13 +94,6 @@ _hsm_local_config_file_settings_enabled = [
         'ssl': True,
         'capture_params': True,
         'transaction_tracer.record_sql': 'raw',
-        'strip_exception_messages.enabled': True,
-    },
-    {
-        'high_security': True,
-        'ssl': True,
-        'capture_params': True,
-        'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': False,
     },
 ]

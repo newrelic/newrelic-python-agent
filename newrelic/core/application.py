@@ -1310,15 +1310,14 @@ class Application(object):
                     if (configuration.collect_analytics_events and
                             configuration.transaction_events.enabled):
 
-                        if configuration.transaction_events.transactions.enabled:
-                            sampled_data_set = stats.sampled_data_set
+                        sampled_data_set = stats.sampled_data_set
 
-                            internal_metric('Supportability/Python/'
-                                    'RequestSampler/requests',
-                                    sampled_data_set.count)
-                            internal_metric('Supportability/Python/'
-                                    'RequestSampler/samples',
-                                    len(sampled_data_set.samples))
+                        internal_metric('Supportability/Python/'
+                                'RequestSampler/requests',
+                                sampled_data_set.count)
+                        internal_metric('Supportability/Python/'
+                                'RequestSampler/samples',
+                                len(sampled_data_set.samples))
 
                     # Create a metric_normalizer based on normalize_name
                     # If metric rename rules are empty, set normalizer
@@ -1362,9 +1361,8 @@ class Application(object):
                     if (configuration.collect_analytics_events and
                             configuration.transaction_events.enabled):
 
-                        if configuration.transaction_events.transactions.enabled:
-                            samples = stats.sampled_data_set.samples
-                            all_analytic_events.extend(samples)
+                        samples = stats.sampled_data_set.samples
+                        all_analytic_events.extend(samples)
 
                     if len(all_analytic_events):
                         _logger.debug('Sending analytics event data '

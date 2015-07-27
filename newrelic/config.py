@@ -379,8 +379,6 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'transaction_events.max_samples_stored',
                      'getint', None)
-    _process_setting(section, 'transaction_events.transactions.enabled',
-                     'getboolean', None)
     _process_setting(section, 'transaction_events.attributes.enabled',
                      'getboolean', None)
     _process_setting(section, 'transaction_events.attributes.exclude',

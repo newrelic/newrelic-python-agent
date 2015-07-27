@@ -814,8 +814,6 @@ class StatsEngine(object):
         elif (settings.collect_analytics_events and
                 settings.transaction_events.enabled):
 
-            if settings.transaction_events.transactions.enabled:
-
                 event = self.create_analytic_event(transaction)
                 self.__sampled_data_set.add(event)
 

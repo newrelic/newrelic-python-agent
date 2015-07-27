@@ -230,7 +230,6 @@ def test_analytic_events_capture_attributes_disabled():
 
     assert settings.collect_analytics_events
     assert settings.transaction_events.enabled
-    assert settings.transaction_events.transactions.enabled
     assert not settings.transaction_events.attributes.enabled
 
     assert settings.browser_monitoring.enabled
@@ -304,7 +303,6 @@ def test_analytic_events_background_task():
 
     assert settings.collect_analytics_events
     assert settings.transaction_events.enabled
-    assert settings.transaction_events.transactions.enabled
 
     assert settings.browser_monitoring.enabled
     assert settings.browser_monitoring.attributes.enabled
@@ -408,48 +406,6 @@ def test_analytic_events_disabled():
 
     assert settings.collect_analytics_events
     assert not settings.transaction_events.enabled
-
-    assert settings.browser_monitoring.enabled
-    assert settings.browser_monitoring.attributes.enabled
-
-    assert settings.js_agent_loader
-
-    response = target_application.get('/')
-
-    header = response.html.html.head.script.text
-    content = response.html.html.body.p.text
-    footer = response.html.html.body.script.text
-
-    # Validate actual body content as sansity check.
-
-    assert content == 'RESPONSE'
-
-    # We no longer are in control of the JS contents of the header so
-    # just check to make sure it contains at least the magic string
-    # 'NREUM'.
-
-    assert header.find('NREUM') != -1
-
-    # Now validate that userAttributes is not present, since should
-    # be disabled.
-
-    data = json.loads(footer.split('NREUM.info=')[1])
-
-    assert 'userAttributes' in data
-
-_test_analytic_events_transactions_disabled_settings = {
-    'transaction_events.transactions.enabled': False,
-    'browser_monitoring.attributes.enabled': True }
-
-@validate_no_analytics_sample_data
-@override_application_settings(
-        _test_analytic_events_transactions_disabled_settings)
-def test_analytic_events_transactions_disabled():
-    settings = application_settings()
-
-    assert settings.collect_analytics_events
-    assert settings.transaction_events.enabled
-    assert not settings.transaction_events.transactions.enabled
 
     assert settings.browser_monitoring.enabled
     assert settings.browser_monitoring.attributes.enabled

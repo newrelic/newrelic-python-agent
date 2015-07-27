@@ -361,7 +361,7 @@ def _process_configuration(section):
     _process_setting(section, 'browser_monitoring.ssl_for_http',
                      'getboolean', None)
     _process_setting(section, 'browser_monitoring.content_type',
-                     'get', _map_split_strings),
+                     'get', _map_split_strings)
     _process_setting(section, 'browser_monitoring.attributes.enable',
                      'getboolean', None)
     _process_setting(section, 'browser_monitoring.attributes.exclude',
@@ -373,13 +373,13 @@ def _process_configuration(section):
     _process_setting(section, 'synthetics.enabled',
                      'getboolean', None)
     _process_setting(section, 'transaction_events.enabled',
-                     'getboolean', None),
+                     'getboolean', None)
     _process_setting(section, 'transaction_events.max_samples_stored',
-                     'getint', None),
+                     'getint', None)
     _process_setting(section, 'transaction_events.transactions.enabled',
-                     'getboolean', None),
+                     'getboolean', None)
     _process_setting(section, 'transaction_events.attributes.enabled',
-                     'getboolean', None),
+                     'getboolean', None)
     _process_setting(section, 'transaction_events.attributes.exclude',
                      'get', _map_split_strings)
     _process_setting(section, 'transaction_events.attributes.include',

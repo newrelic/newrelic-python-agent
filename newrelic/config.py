@@ -344,7 +344,7 @@ def _process_configuration(section):
                      'get', _map_split_strings)
     _process_setting(section, 'error_collector.ignore_status_codes',
                      'get', _merge_ignore_status_codes)
-    _process_setting(section, 'error_collector.attributes.enable',
+    _process_setting(section, 'error_collector.attributes.enabled',
                      'getboolean', None)
     _process_setting(section, 'error_collector.attributes.exclude',
                      'get', _map_split_strings)
@@ -362,7 +362,7 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'browser_monitoring.content_type',
                      'get', _map_split_strings)
-    _process_setting(section, 'browser_monitoring.attributes.enable',
+    _process_setting(section, 'browser_monitoring.attributes.enabled',
                      'getboolean', None)
     _process_setting(section, 'browser_monitoring.attributes.exclude',
                      'get', _map_split_strings)

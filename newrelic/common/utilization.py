@@ -13,7 +13,7 @@ class AWSVendorInfo(object):
 
     METADATA_HOST = '169.254.169.254'
     API_VERSION = '2008-02-01'
-    TIMEOUT = 0.25
+    TIMEOUT = 0.5
 
     def __init__(self, timeout=None):
         self.timeout = timeout or self.TIMEOUT

@@ -15,6 +15,8 @@ from newrelic.core.config import (global_settings, Settings,
 from newrelic.config import apply_local_high_security_mode_setting
 from newrelic.core.data_collector import apply_high_security_mode_fixups
 
+from newrelic.agent import capture_request_params
+
 def test_hsm_configuration_default():
     # Global default should always be off.
 
@@ -314,6 +316,18 @@ def target_wsgi_application_capture_params(environ, start_response):
 
     return [output]
 
+@wsgi_application()
+def target_wsgi_application_capture_params_api_called(environ, start_response):
+    status = '200 OK'
+    output = b'Hello World!'
+
+    capture_request_params(True)
+    response_headers = [('Content-Type', 'text/plain; charset=utf-8'),
+                        ('Content-Length', str(len(output)))]
+    start_response(status, response_headers)
+
+    return [output]
+
 _test_transaction_settings_hsm_enabled_capture_params = {
     'high_security': True,
     'capture_params': False }
@@ -352,6 +366,15 @@ def test_other_transaction_hsm_environ_capture_request_params_enabled():
 
     response = target_application.get('/', params='key-1=value-1',
             extra_environ=environ)
+
+@override_application_settings(
+    _test_transaction_settings_hsm_enabled_capture_params)
+@validate_request_params(forgone_params=[('key-1', 'value-1')])
+def test_other_transaction_hsm_environ_capture_request_params_api_called():
+    target_application = webtest.TestApp(
+            target_wsgi_application_capture_params_api_called)
+
+    response = target_application.get('/', params='key-1=value-1')
 
 @override_application_settings(
     _test_transaction_settings_hsm_enabled_capture_params)

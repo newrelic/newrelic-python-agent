@@ -1094,8 +1094,10 @@ def suppress_apdex_metric(flag=True):
 
 def capture_request_params(flag=True):
     transaction = current_transaction()
-    if transaction:
-        if not transaction.settings.high_security:
+    if transaction and transaction.settings:
+        if transaction.settings.high_security:
+            _logger.warn("Cannot modify capture_params in High Security Mode.")
+        else:
             transaction.capture_params = flag
 
 def add_custom_parameter(key, value):

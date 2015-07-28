@@ -284,7 +284,7 @@ def target_wsgi_application_capture_params(environ, start_response):
     return [output]
 
 @wsgi_application()
-def target_wsgi_application_capture_params_api_enabled(environ, start_response):
+def target_wsgi_application_capture_params_api_called(environ, start_response):
     status = '200 OK'
     output = b'Hello World!'
 
@@ -337,9 +337,9 @@ def test_other_transaction_hsm_environ_capture_request_params_enabled():
 @override_application_settings(
     _test_transaction_settings_hsm_enabled_capture_params)
 @validate_request_params(forgone_params=[('key-1', 'value-1')])
-def test_other_transaction_hsm_environ_capture_request_params_api_enabled():
+def test_other_transaction_hsm_environ_capture_request_params_api_called():
     target_application = webtest.TestApp(
-            target_wsgi_application_capture_params_api_enabled)
+            target_wsgi_application_capture_params_api_called)
 
     response = target_application.get('/', params='key-1=value-1')
 

@@ -11,7 +11,7 @@ from newrelic.packages import six
 from newrelic.agent import (initialize, register_application,
         global_settings, shutdown_agent, application as application_instance,
         transient_function_wrapper, function_wrapper, application_settings,
-        wrap_function_wrapper, ObjectProxy)
+        wrap_function_wrapper, ObjectProxy, application, callable_name)
 
 from newrelic.common.encoding_utils import unpack_field
 
@@ -832,3 +832,64 @@ def code_coverage_fixture(source=['newrelic']):
         cov.start()
 
     return _code_coverage_fixture
+
+def core_application_stats_engine(app_name=None):
+    """Return the StatsEngine object from the core application object.
+
+    Useful when validating items added outside of a transaction, since
+    monkey-patching StatsEngine.record_transaction() doesn't work in
+    those situations.
+
+    """
+
+    api_application = application(app_name)
+    api_name = api_application.name
+    core_application = api_application._agent.application(api_name)
+    return core_application._stats_engine
+
+def core_application_stats_engine_error(error_type, app_name=None):
+    """Return a single error with the type of error_type, or None.
+
+    In the core application StatsEngine, look in StatsEngine.error_data()
+    and return the first error with the type of error_type. If none found,
+    return None.
+
+    Useful for verifying that application.record_exception() works, since
+    the error is saved outside of a transaction. Must use a unique error
+    type per test in a single test file, so that it returns the error you
+    expect. (If you have 2 tests that record the same type of exception, then
+    StatsEngine.error_data() will contain 2 errors with the same type, but
+    this function will always return the first one it finds.)
+
+    """
+
+    stats = core_application_stats_engine(app_name)
+    errors = stats.error_data()
+    return next((e for e in errors if e.type == error_type), None)
+
+def error_is_saved(error, app_name=None):
+    """Return True, if an error of a particular type has already been saved.
+
+    Before calling application.record_exception() in a test, it's good to
+    check if that type of error has already been saved, so you know that
+    there will only be a single example of a type of Error in error_data()
+    when you verify that the exception was recorded correctly.
+
+    Example usage:
+
+        try:
+            assert not error_is_saved(ErrorOne)
+            raise ErrorOne('error one message')
+        except ErrorOne:
+            application_instance = application()
+            application_instance.record_exception()
+
+        my_error = core_application_stats_engine_error(_error_one_name)
+        assert my_error.message == 'error one message'
+
+    """
+
+    error_name = callable_name(error)
+    stats = core_application_stats_engine(app_name)
+    errors = stats.error_data()
+    return error_name in [e.type for e in errors if e.type == error_name]

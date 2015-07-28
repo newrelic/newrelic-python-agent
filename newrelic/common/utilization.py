@@ -13,10 +13,9 @@ class AWSVendorInfo(object):
 
     METADATA_HOST = '169.254.169.254'
     API_VERSION = '2008-02-01'
-    TIMEOUT = 0.5
 
-    def __init__(self, timeout=None):
-        self.timeout = timeout or self.TIMEOUT
+    def __init__(self, timeout=0.5):
+        self.timeout = timeout
         self.skip_metadata_check = False
 
         self._instance_id = None

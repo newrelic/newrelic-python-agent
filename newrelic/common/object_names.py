@@ -9,6 +9,15 @@ import functools
 
 from ..packages import six
 
+if six.PY2:
+    import exceptions
+    _exceptions_module = exceptions
+elif six.PY3:
+    import builtins
+    _exceptions_module = builtins
+else:
+    _exceptions_module = None
+
 # Object model terminology for quick reference.
 #
 # class:
@@ -46,7 +55,7 @@ from ..packages import six
 # builtin:
 #
 #   __name__:
-#     original name of this function or method         
+#     original name of this function or method
 #   __self__:
 #     instance to which a method is bound, or None
 
@@ -167,7 +176,7 @@ def _object_context_py2(object):
         fname = getattr(object, '__name__', None)
 
         if fname is not None:
-            if hasattr(object, '__objclass__'):                                 
+            if hasattr(object, '__objclass__'):
                 cname = object.__objclass__.__name__
             elif not hasattr(object, '__get__'):
                 cname = object.__class__.__name__
@@ -354,3 +363,18 @@ def callable_name(object, separator=':'):
     # the specified separator.
 
     return separator.join(object_context(object))
+
+def expand_builtin_exception_name(name):
+
+    # Convert name to module:name format, if it's a builtin Exception.
+    # Otherwise, return it unchanged.
+
+    try:
+        exception = getattr(_exceptions_module, name)
+    except AttributeError:
+        pass
+    else:
+        if type(exception) is type and issubclass(exception, BaseException):
+            return callable_name(exception)
+
+    return name

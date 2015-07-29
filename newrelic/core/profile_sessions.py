@@ -140,7 +140,7 @@ class ProfileSessionManager(object):
 
         # Dict with app_name as key and another dictionary (let's call it child
         # dictionary) as value. The child dictionary has key_txn name as key
-        # and xray profile session as value.
+        # and x-ray profile session as value.
 
         self.application_xrays = {}
         self.finished_sessions = defaultdict(list)
@@ -156,9 +156,9 @@ class ProfileSessionManager(object):
 
     @internal_trace('Supportability/Python/Profiling/Calls/add_stack_traces')
     def add_stack_traces(self, app_name, key_txn, txn_type, stack_traces):
-        """Adds a list of stack_traces to a praticular xray profile session's
+        """Adds a list of stack_traces to a particular x-ray profile session's
         call tree. This is called at the end of a transaction when it's name is
-        frozen and it is identified as an xray transaction.
+        frozen and it is identified as an x-ray transaction.
 
         """
 
@@ -208,8 +208,8 @@ class ProfileSessionManager(object):
             # log an error message
             return False
 
-        # Acquire thread lock before updating the datastructures. This method
-        # is invoked from the harvest thread and this ensures the varaibles are
+        # Acquire thread lock before updating the data structures. This method
+        # is invoked from the harvest thread and this ensures the variables are
         # not being updated concurrently by the profiler thread.
 
         with self._lock:
@@ -217,7 +217,7 @@ class ProfileSessionManager(object):
             xray_profile_sessions = self.application_xrays.setdefault(app_name,
                     {})
 
-            # Xray profiler session is already running for the key txn
+            # X-ray profiler session is already running for the key txn
 
             if xray_profile_sessions.get(key_txn):
                 # XXX Maybe we should return True here since we are running
@@ -263,7 +263,7 @@ class ProfileSessionManager(object):
         """
 
         # Grab the lock before updating the profile sessions. This is to
-        # make sure that we're not updating the datastructures while the
+        # make sure that we're not updating the data structures while the
         # harvest thread is starting/stopping new sessions.
 
         with self._lock:
@@ -278,7 +278,7 @@ class ProfileSessionManager(object):
                     self.full_profile_app = None
                     self._xray_suspended = False
 
-                    # If X-ray sessions are pending then log the reenabling of
+                    # If X-ray sessions are pending then log the re-enabling of
                     # x-ray profiler
 
                     if self.application_xrays[app_name]:
@@ -353,7 +353,7 @@ class ProfileSessionManager(object):
 
         while True:
 
-            # If xray profilers are not suspended and at least one x-ray
+            # If x-ray profilers are not suspended and at least one x-ray
             # session is active it'll cause collect_stack_traces() to add
             # the stack_traces to the txn obj.
 
@@ -383,7 +383,7 @@ class ProfileSessionManager(object):
                 return
 
             # Adjust sample period dynamically base on overheads of doing
-            # thread profiling if is an X Ray session.
+            # thread profiling if is an X-Ray session.
 
             if not self._xray_suspended:
                 overhead = time.time() - start
@@ -444,7 +444,7 @@ class ProfileSessionManager(object):
         if app_name == self.full_profile_app:
             self.stop_profile_session(app_name)
 
-        # Stop all xray profiler sessions.
+        # Stop all x-ray profiler sessions.
 
         try:
             xray_profile_sessions = self.application_xrays[app_name]
@@ -559,7 +559,7 @@ class ProfileSession(object):
         # Generic profiling sessions have to wait for completion before
         # reporting data.
         #
-        # Xray profile session can send partial profile data on every harvest.
+        # X-ray profile session can send partial profile data on every harvest.
 
         if ((self.profiler_type == SessionType.GENERIC) and
                 (self.state == SessionState.RUNNING)):
@@ -589,14 +589,14 @@ class ProfileSession(object):
         # profiler continue to send an empty tree. This can happen on a system
         # that uses green threads (coroutines), so sending an empty tree marks
         # the end of a profile session. If we don't send anything then the UI
-        # timesout after a very long time (~15mins) which is frustrating for
+        # times out after a very long time (~15mins) which is frustrating for
         # the customer.
 
         if (thread_count == 0) and (self.profiler_type == SessionType.XRAY):
             return None
 
         # Construct the actual final data for sending. The actual call
-        # data is turned into JSON, compessed and then base64 encoded at
+        # data is turned into JSON, compressed and then base64 encoded at
         # this point to cut its size.
 
         if settings.debug.log_thread_profile_payload:
@@ -618,9 +618,9 @@ class ProfileSession(object):
             (self.actual_stop_time_s or time.time()) * 1000, self.sample_count,
             encoded_tree, thread_count, 0, self.xray_id]]
 
-        # Reset the datastructures to default. For xray profile sessions we
+        # Reset the data structures to default. For x-ray profile sessions we
         # report the partial call tree at every harvest cycle. It is required
-        # to reset the datastructures to avoid aggregating the call trees
+        # to reset the data structures to avoid aggregating the call trees
         # across harvest cycles.
 
         self.reset_profile_data()
@@ -639,7 +639,7 @@ class CallTree(object):
         filename, func_name, func_line, exec_line = self.method_data
 
         # func_line is the first line of a function and exec_line is the line
-        # inside that fucntion that is currently being executed.  On the leaf
+        # inside that function that is currently being executed.  On the leaf
         # nodes the exec_line will be different from the func_line. Such nodes
         # are labeled with an @ sign in the second element of the tuple.
 

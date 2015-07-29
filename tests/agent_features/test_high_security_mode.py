@@ -15,6 +15,8 @@ from newrelic.core.config import (global_settings, Settings,
 from newrelic.config import apply_local_high_security_mode_setting
 from newrelic.core.data_collector import apply_high_security_mode_fixups
 
+from newrelic.agent import capture_request_params
+
 def test_hsm_configuration_default():
     # Global default should always be off.
 
@@ -28,24 +30,28 @@ _hsm_local_config_file_settings_disabled = [
         'ssl': True,
         'capture_params': True,
         'transaction_tracer.record_sql': 'raw',
+        'strip_exception_messages.enabled': False,
     },
     {
         'high_security': False,
         'ssl': False,
         'capture_params': False,
         'transaction_tracer.record_sql': 'raw',
+        'strip_exception_messages.enabled': False,
     },
     {
         'high_security': False,
         'ssl': False,
         'capture_params': False,
         'transaction_tracer.record_sql': 'obfuscated',
+        'strip_exception_messages.enabled': True,
     },
     {
         'high_security': False,
         'ssl': False,
         'capture_params': False,
         'transaction_tracer.record_sql': 'off',
+        'strip_exception_messages.enabled': True,
     },
 ]
 
@@ -55,30 +61,42 @@ _hsm_local_config_file_settings_enabled = [
         'ssl': True,
         'capture_params': True,
         'transaction_tracer.record_sql': 'raw',
+        'strip_exception_messages.enabled': True,
     },
     {
         'high_security': True,
         'ssl': False,
         'capture_params': True,
         'transaction_tracer.record_sql': 'raw',
+        'strip_exception_messages.enabled': True,
     },
     {
         'high_security': True,
         'ssl': True,
         'capture_params': False,
         'transaction_tracer.record_sql': 'raw',
+        'strip_exception_messages.enabled': True,
     },
     {
         'high_security': True,
         'ssl': True,
         'capture_params': True,
         'transaction_tracer.record_sql': 'obfuscated',
+        'strip_exception_messages.enabled': True,
     },
     {
         'high_security': True,
         'ssl': True,
         'capture_params': True,
         'transaction_tracer.record_sql': 'off',
+        'strip_exception_messages.enabled': True,
+    },
+    {
+        'high_security': True,
+        'ssl': True,
+        'capture_params': True,
+        'transaction_tracer.record_sql': 'raw',
+        'strip_exception_messages.enabled': False,
     },
 ]
 
@@ -98,12 +116,14 @@ def test_local_config_file_hsm_override_disabled(settings):
     original_ssl = settings.ssl
     original_capture_params = settings.capture_params
     original_record_sql = settings.transaction_tracer.record_sql
+    original_strip_messages = settings.strip_exception_messages.enabled
 
     apply_local_high_security_mode_setting(settings)
 
     assert settings.ssl == original_ssl
     assert settings.capture_params == original_capture_params
     assert settings.transaction_tracer.record_sql == original_record_sql
+    assert settings.strip_exception_messages.enabled == original_strip_messages
 
 @parameterize_hsm_local_config(_hsm_local_config_file_settings_enabled)
 def test_local_config_file_hsm_override_enabled(settings):
@@ -112,6 +132,7 @@ def test_local_config_file_hsm_override_enabled(settings):
     assert settings.ssl
     assert not settings.capture_params
     assert settings.transaction_tracer.record_sql in ('off', 'obfuscated')
+    assert settings.strip_exception_messages.enabled
 
 _hsm_server_side_config_settings_disabled = [
     (
@@ -119,11 +140,13 @@ _hsm_server_side_config_settings_disabled = [
             'high_security': False,
             'capture_params': False,
             'transaction_tracer.record_sql': 'obfuscated',
+            'strip_exception_messages.enabled': True,
         },
         {
             u'agent_config': {
                 u'capture_params': True,
                 u'transaction_tracer.record_sql': u'raw',
+                u'strip_exception_messages.enabled': False,
             },
         },
     ),
@@ -132,11 +155,13 @@ _hsm_server_side_config_settings_disabled = [
             'high_security': False,
             'capture_params': True,
             'transaction_tracer.record_sql': 'raw',
+            'strip_exception_messages.enabled': False,
         },
         {
             u'agent_config': {
                 u'capture_params': False,
-                'transaction_tracer.record_sql': u'off',
+                u'transaction_tracer.record_sql': u'off',
+                u'strip_exception_messages.enabled': True,
             },
         },
     ),
@@ -148,14 +173,17 @@ _hsm_server_side_config_settings_enabled = [
             'high_security': True,
             'capture_params': False,
             'transaction_tracer.record_sql': 'obfuscated',
+            'strip_exception_messages.enabled': True,
         },
         {
             u'high_security': True,
             u'capture_params': False,
             u'transaction_tracer.record_sql': u'obfuscated',
+            u'strip_exception_messages.enabled': True,
             u'agent_config': {
                 u'capture_params': False,
                 u'transaction_tracer.record_sql': u'obfuscated',
+                u'strip_exception_messages.enabled': True,
             },
         },
     ),
@@ -164,14 +192,17 @@ _hsm_server_side_config_settings_enabled = [
             'high_security': True,
             'capture_params': False,
             'transaction_tracer.record_sql': 'obfuscated',
+            'strip_exception_messages.enabled': True,
         },
         {
             u'high_security': True,
             u'capture_params': False,
             u'transaction_tracer.record_sql': u'obfuscated',
+            u'strip_exception_messages.enabled': True,
             u'agent_config': {
                 u'capture_params': True,
                 u'transaction_tracer.record_sql': u'raw',
+                u'strip_exception_messages.enabled': False,
             },
         },
     ),
@@ -189,15 +220,17 @@ def test_remote_config_hsm_fixups_disabled(local_settings, server_settings):
 
     original_capture_params = agent_config['capture_params']
     original_record_sql = agent_config['transaction_tracer.record_sql']
+    original_strip_messages = agent_config['strip_exception_messages.enabled']
 
     settings = apply_high_security_mode_fixups(local_settings, server_settings)
 
-    agent_config = server_settings['agent_config']
+    agent_config = settings['agent_config']
 
     assert u'high_security' not in settings
 
     assert agent_config['capture_params'] == original_capture_params
     assert agent_config['transaction_tracer.record_sql'] == original_record_sql
+    assert agent_config['strip_exception_messages.enabled'] == original_strip_messages
 
 @pytest.mark.parametrize('local_settings,server_settings',
         _hsm_server_side_config_settings_enabled)
@@ -209,14 +242,16 @@ def test_remote_config_hsm_fixups_enabled(local_settings, server_settings):
 
     settings = apply_high_security_mode_fixups(local_settings, server_settings)
 
-    agent_config = server_settings['agent_config']
+    agent_config = settings['agent_config']
 
     assert u'high_security' not in settings
     assert u'capture_params' not in settings
     assert u'transaction_tracer.record_sql' not in settings
+    assert u'strip_exception_messages.enabled' not in settings
 
     assert u'capture_params' not in agent_config
     assert u'transaction_tracer.record_sql' not in agent_config
+    assert u'strip_exception_messages.enabled' not in agent_config
 
 def test_remote_config_hsm_fixups_server_side_disabled():
     local_settings = {'high_security': True}
@@ -281,6 +316,18 @@ def target_wsgi_application_capture_params(environ, start_response):
 
     return [output]
 
+@wsgi_application()
+def target_wsgi_application_capture_params_api_called(environ, start_response):
+    status = '200 OK'
+    output = b'Hello World!'
+
+    capture_request_params(True)
+    response_headers = [('Content-Type', 'text/plain; charset=utf-8'),
+                        ('Content-Length', str(len(output)))]
+    start_response(status, response_headers)
+
+    return [output]
+
 _test_transaction_settings_hsm_enabled_capture_params = {
     'high_security': True,
     'capture_params': False }
@@ -319,6 +366,15 @@ def test_other_transaction_hsm_environ_capture_request_params_enabled():
 
     response = target_application.get('/', params='key-1=value-1',
             extra_environ=environ)
+
+@override_application_settings(
+    _test_transaction_settings_hsm_enabled_capture_params)
+@validate_request_params(forgone_params=[('key-1', 'value-1')])
+def test_other_transaction_hsm_environ_capture_request_params_api_called():
+    target_application = webtest.TestApp(
+            target_wsgi_application_capture_params_api_called)
+
+    response = target_application.get('/', params='key-1=value-1')
 
 @override_application_settings(
     _test_transaction_settings_hsm_enabled_capture_params)

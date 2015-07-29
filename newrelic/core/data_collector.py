@@ -22,7 +22,6 @@ import newrelic.packages.requests as requests
 from newrelic.packages.requests import certs
 
 from newrelic import version
-from newrelic.common.encoding_utils import unpack_field
 from newrelic.core.config import (global_settings, create_settings_snapshot,
         global_settings_dump)
 from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
@@ -35,7 +34,10 @@ from newrelic.network.exceptions import (NetworkInterfaceException,
 from ..network.addresses import proxy_details
 from ..common.object_wrapper import patch_function_wrapper
 from ..common.object_names import callable_name
-from ..common.encoding_utils import json_encode, json_decode
+from ..common.encoding_utils import json_encode, json_decode, unpack_field
+from ..common.system_info import (docker_container_id,
+        logical_processor_count, total_physical_memory)
+from ..common.utilization import aws_data
 
 _logger = logging.getLogger(__name__)
 
@@ -728,7 +730,8 @@ def apply_high_security_mode_fixups(local_settings, server_settings):
     # Remove individual security settings from top level of configuration
     # settings returned.
 
-    security_settings = ('capture_params', 'transaction_tracer.record_sql')
+    security_settings = ('capture_params', 'transaction_tracer.record_sql',
+            'strip_exception_messages.enabled')
 
     for setting in security_settings:
         if setting in server_settings:
@@ -1012,45 +1015,8 @@ class ApplicationSession(object):
             # session object to maintain only single connection to ensure
             # that keep alive is effective.
 
-            app_names = [app_name] + linked_applications
-
-            local_config = {}
-
-            local_config['host'] = socket.gethostname()
-            local_config['pid'] = os.getpid()
-            local_config['language'] = 'python'
-            local_config['app_name'] = app_names
-            local_config['identifier'] = ','.join(app_names)
-            local_config['agent_version'] = version
-            local_config['environment'] = environment
-
-            connect_settings = {}
-            security_settings = {}
-
-            connect_settings['browser_monitoring.loader'] = (
-                    settings['browser_monitoring.loader'])
-            connect_settings['browser_monitoring.debug'] = (
-                    settings['browser_monitoring.debug'])
-
-            security_settings['capture_params'] = settings['capture_params']
-            security_settings['transaction_tracer'] = {}
-            security_settings['transaction_tracer']['record_sql'] = (
-                    settings['transaction_tracer.record_sql'])
-
-            local_config['settings'] = connect_settings
-            local_config['security_settings'] = security_settings
-
-            local_config['high_security'] = settings['high_security']
-            local_config['labels'] = settings['labels']
-
-            display_host = settings['process_host.display_name']
-
-            if display_host is None:
-                local_config['display_host'] = local_config['host']
-            else:
-                local_config['display_host'] = display_host
-
-            payload = (local_config,)
+            payload = cls._create_connect_payload(app_name,
+                    linked_applications, environment, settings)
 
             url = collector_url(redirect_host)
 
@@ -1128,6 +1094,68 @@ class ApplicationSession(object):
                         logger_func('%s', message)
 
             return session
+
+    @staticmethod
+    def _create_connect_payload(app_name, linked_applications, environment,
+            settings):
+        # Creates the payload to send on the initial connection to the
+        # data collector.
+
+        app_names = [app_name] + linked_applications
+
+        hostname = socket.gethostname()
+
+        connect_settings = {}
+        connect_settings['browser_monitoring.loader'] = (
+            settings['browser_monitoring.loader'])
+        connect_settings['browser_monitoring.debug'] = (
+            settings['browser_monitoring.debug'])
+
+        security_settings = {}
+        security_settings['capture_params'] = settings['capture_params']
+        security_settings['transaction_tracer'] = {}
+        security_settings['transaction_tracer']['record_sql'] = (
+            settings['transaction_tracer.record_sql'])
+
+        utilization_settings = {}
+        # metadata_version corresponds to the utilization spec being used.
+        utilization_settings['metadata_version'] = 1
+        utilization_settings['logical_processors'] = logical_processor_count()
+        utilization_settings['total_ram_mib'] = total_physical_memory()
+        utilization_settings['hostname'] = hostname
+
+        utilization_vendor_settings = {}
+        if settings['utilization.detect_aws']:
+            aws = aws_data()
+            if aws:
+                utilization_vendor_settings['aws'] = aws
+        if settings['utilization.detect_docker']:
+            docker_id = docker_container_id()
+            if docker_id:
+                utilization_vendor_settings['docker'] = { 'id': docker_id }
+        if utilization_vendor_settings:
+            utilization_settings['vendors'] = utilization_vendor_settings
+
+        display_host = settings['process_host.display_name']
+        if display_host is None:
+            display_host = hostname
+
+        local_config = {
+                'host': hostname,
+                'pid': os.getpid(),
+                'language': 'python',
+                'app_name': app_names,
+                'identifier': ','.join(app_names),
+                'agent_version': version,
+                'environment': environment,
+                'settings': connect_settings,
+                'security_settings': security_settings,
+                'utilization': utilization_settings,
+                'high_security': settings['high_security'],
+                'labels': settings['labels'],
+                'display_host': display_host,
+        }
+        return (local_config,)
 
 _developer_mode_responses = {
     'get_redirect_host': u'fake-collector.newrelic.com',

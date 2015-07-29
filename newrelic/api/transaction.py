@@ -29,6 +29,7 @@ from newrelic.core.thread_utilization import utilization_tracker
 from ..core.stack_trace import exception_stack
 from ..common.encoding_utils import generate_path_hash
 
+from .settings import STRIP_EXCEPTION_MESSAGE
 from .time_trace import TimeTrace
 
 _logger = logging.getLogger(__name__)
@@ -851,14 +852,20 @@ class Transaction(object):
 
         exc_type = exc.__name__
 
-        try:
-            message = str(value)
-        except Exception:
+        # Check to see if we need to strip the message before recording it.
+
+        if (settings.strip_exception_messages.enabled and
+                fullname not in settings.strip_exception_messages.whitelist):
+            message = STRIP_EXCEPTION_MESSAGE
+        else:
             try:
-                # Assume JSON encoding can handle unicode.
-                message = six.text_type(value)
+                message = str(value)
             except Exception:
-                message = '<unprintable %s object>' % type(value).__name__
+                try:
+                    # Assume JSON encoding can handle unicode.
+                    message = six.text_type(value)
+                except Exception:
+                    message = '<unprintable %s object>' % type(value).__name__
 
         # Check that we have not recorded this exception
         # previously for this transaction due to multiple
@@ -1094,8 +1101,11 @@ def suppress_apdex_metric(flag=True):
 
 def capture_request_params(flag=True):
     transaction = current_transaction()
-    if transaction:
-        transaction.capture_params = flag
+    if transaction and transaction.settings:
+        if transaction.settings.high_security:
+            _logger.warn("Cannot modify capture_params in High Security Mode.")
+        else:
+            transaction.capture_params = flag
 
 def add_custom_parameter(key, value):
     transaction = current_transaction()

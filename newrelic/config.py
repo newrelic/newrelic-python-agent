@@ -11,6 +11,7 @@ except ImportError:
 from .packages import six
 
 from .common.log_file import initialize_logging
+from .common.object_names import expand_builtin_exception_name
 from .core.config import Settings, apply_config_setting
 
 import newrelic.core.agent
@@ -164,6 +165,9 @@ def _merge_ignore_status_codes(s):
 
 def _map_browser_monitoring_content_type(s):
     return s.split()
+
+def _map_strip_exception_messages_whitelist(s):
+    return [expand_builtin_exception_name(item) for item in s.split()]
 
 # Processing of a single setting from configuration file.
 
@@ -449,6 +453,14 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'process_host.display_name',
                      'get', None)
+    _process_setting(section, 'utilization.detect_aws',
+                     'getboolean', None)
+    _process_setting(section, 'utilization.detect_docker',
+                     'getboolean', None)
+    _process_setting(section, 'strip_exception_messages.enabled',
+                     'getboolean', None)
+    _process_setting(section, 'strip_exception_messages.whitelist',
+                     'get', _map_strip_exception_messages_whitelist)
 
 # Loading of configuration from specified file and for specified
 # deployment environment. Can also indicate whether configuration
@@ -554,6 +566,11 @@ def apply_local_high_security_mode_setting(settings):
         settings.transaction_tracer.record_sql = 'obfuscated'
         _logger.info(log_template, 'transaction_tracer.record_sql',
             'raw', 'obfuscated')
+
+    if not settings.strip_exception_messages.enabled:
+        settings.strip_exception_messages.enabled = True
+        _logger.info(log_template, 'strip_exception_messages.enabled',
+                False, True)
 
     return settings
 

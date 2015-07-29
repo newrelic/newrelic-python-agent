@@ -289,7 +289,7 @@ class Application(object):
         # the timeout so the caller isn't blocked for the full wait time
         # if this thread was in a deadlock state that prevented it from
         # running. Such a deadlock state could occur where subsequent
-        # code run form this thread performs a deferred module import.
+        # code run from this thread performs a deferred module import.
 
         if self._detect_deadlock:
             imp.acquire_lock()

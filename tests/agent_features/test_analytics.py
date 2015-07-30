@@ -228,7 +228,7 @@ _test_analytic_events_capture_attributes_disabled_settings = {
 def test_analytic_events_capture_attributes_disabled():
     settings = application_settings()
 
-    assert settings.collect_transaction_events
+    assert settings.collect_analytics_events
     assert settings.transaction_events.enabled
     assert settings.transaction_events.transactions.enabled
     assert not settings.transaction_events.attributes.enabled
@@ -302,7 +302,7 @@ _test_analytic_events_background_task_settings = {
 def test_analytic_events_background_task():
     settings = application_settings()
 
-    assert settings.collect_transaction_events
+    assert settings.collect_analytics_events
     assert settings.transaction_events.enabled
     assert settings.transaction_events.transactions.enabled
 
@@ -359,7 +359,7 @@ def validate_no_analytics_sample_data(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 _test_collect_analytic_events_disabled_settings = {
-    'collect_transaction_events': False,
+    'collect_analytics_events': False,
     'browser_monitoring.attributes.enabled': True }
 
 @validate_no_analytics_sample_data
@@ -367,7 +367,7 @@ _test_collect_analytic_events_disabled_settings = {
 def test_collect_analytic_events_disabled():
     settings = application_settings()
 
-    assert not settings.collect_transaction_events
+    assert not settings.collect_analytics_events
 
     assert settings.browser_monitoring.enabled
     assert settings.browser_monitoring.attributes.enabled
@@ -406,7 +406,7 @@ _test_analytic_events_disabled_settings = {
 def test_analytic_events_disabled():
     settings = application_settings()
 
-    assert settings.collect_transaction_events
+    assert settings.collect_analytics_events
     assert not settings.transaction_events.enabled
 
     assert settings.browser_monitoring.enabled
@@ -447,7 +447,7 @@ _test_analytic_events_transactions_disabled_settings = {
 def test_analytic_events_transactions_disabled():
     settings = application_settings()
 
-    assert settings.collect_transaction_events
+    assert settings.collect_analytics_events
     assert settings.transaction_events.enabled
     assert not settings.transaction_events.transactions.enabled
 

@@ -1307,7 +1307,7 @@ class Application(object):
                     # Report internal metrics about sample data set
                     # for analytics.
 
-                    if (configuration.collect_transaction_events and
+                    if (configuration.collect_analytics_events and
                             configuration.transaction_events.enabled):
 
                         if configuration.transaction_events.transactions.enabled:
@@ -1359,7 +1359,7 @@ class Application(object):
                     if len(stats.synthetics_events):
                         all_analytic_events.extend(stats.synthetics_events)
 
-                    if (configuration.collect_transaction_events and
+                    if (configuration.collect_analytics_events and
                             configuration.transaction_events.enabled):
 
                         if configuration.transaction_events.transactions.enabled:

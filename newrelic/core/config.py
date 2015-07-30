@@ -226,7 +226,7 @@ _settings.high_security = _environ_as_bool('NEW_RELIC_HIGH_SECURITY', False)
 
 _settings.collect_errors = True
 _settings.collect_traces = True
-_settings.collect_transaction_events = True
+_settings.collect_analytics_events = True
 
 _settings.apdex_t = 0.5
 _settings.web_transactions_apdex = {}

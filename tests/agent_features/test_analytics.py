@@ -114,7 +114,7 @@ def validate_analytics_sample_data(name, capture_attributes=True):
     return _validate_analytics_sample_data
 
 _test_capture_attributes_enabled_settings = {
-    'browser_monitoring.capture_attributes': True }
+    'browser_monitoring.attributes.enabled': True }
 
 @validate_analytics_sample_data(name='WebTransaction/Uri/')
 @override_application_settings(_test_capture_attributes_enabled_settings)
@@ -122,7 +122,7 @@ def test_capture_attributes_enabled():
     settings = application_settings()
 
     assert settings.browser_monitoring.enabled
-    assert settings.browser_monitoring.capture_attributes
+    assert settings.browser_monitoring.attributes.enabled
 
     assert settings.js_agent_loader
 
@@ -177,7 +177,7 @@ def test_capture_attributes_enabled():
     assert attributes['multibyte-unicode'] == b'\xe2\x88\x9a'.decode('utf-8')
 
 _test_no_attributes_recorded_settings = {
-    'browser_monitoring.capture_attributes': True }
+    'browser_monitoring.attributes.enabled': True }
 
 @validate_analytics_sample_data(name='WebTransaction/Uri/',
         capture_attributes=False)
@@ -186,7 +186,7 @@ def test_no_attributes_recorded():
     settings = application_settings()
 
     assert settings.browser_monitoring.enabled
-    assert settings.browser_monitoring.capture_attributes
+    assert settings.browser_monitoring.attributes.enabled
 
     assert settings.js_agent_loader
 
@@ -218,8 +218,8 @@ def test_no_attributes_recorded():
     assert 'userAttributes' not in data 
 
 _test_analytic_events_capture_attributes_disabled_settings = {
-    'analytics_events.capture_attributes': False,
-    'browser_monitoring.capture_attributes': True }
+    'transaction_events.attributes.enabled': False,
+    'browser_monitoring.attributes.enabled': True }
 
 @validate_analytics_sample_data(name='WebTransaction/Uri/',
         capture_attributes=False)
@@ -229,12 +229,12 @@ def test_analytic_events_capture_attributes_disabled():
     settings = application_settings()
 
     assert settings.collect_analytics_events
-    assert settings.analytics_events.enabled
-    assert settings.analytics_events.transactions.enabled
-    assert not settings.analytics_events.capture_attributes
+    assert settings.transaction_events.enabled
+    assert settings.transaction_events.transactions.enabled
+    assert not settings.transaction_events.attributes.enabled
 
     assert settings.browser_monitoring.enabled
-    assert settings.browser_monitoring.capture_attributes
+    assert settings.browser_monitoring.attributes.enabled
 
     assert settings.js_agent_loader
 
@@ -266,7 +266,7 @@ def test_capture_attributes_default():
     settings = application_settings()
 
     assert settings.browser_monitoring.enabled
-    assert not settings.browser_monitoring.capture_attributes
+    assert not settings.browser_monitoring.attributes.enabled
 
     assert settings.js_agent_loader
 
@@ -294,7 +294,7 @@ def test_capture_attributes_default():
     assert 'userAttributes' not in data
 
 _test_analytic_events_background_task_settings = {
-    'browser_monitoring.capture_attributes': True }
+    'browser_monitoring.attributes.enabled': True }
 
 @validate_analytics_sample_data(name='OtherTransaction/Uri/')
 @override_application_settings(
@@ -303,11 +303,11 @@ def test_analytic_events_background_task():
     settings = application_settings()
 
     assert settings.collect_analytics_events
-    assert settings.analytics_events.enabled
-    assert settings.analytics_events.transactions.enabled
+    assert settings.transaction_events.enabled
+    assert settings.transaction_events.transactions.enabled
 
     assert settings.browser_monitoring.enabled
-    assert settings.browser_monitoring.capture_attributes
+    assert settings.browser_monitoring.attributes.enabled
 
     assert settings.js_agent_loader
 
@@ -317,7 +317,7 @@ def test_analytic_events_background_task():
     assert response.html.html.head.script is None
 
 _test_capture_attributes_disabled_settings = {
-    'browser_monitoring.capture_attributes': False }
+    'browser_monitoring.attributes.enabled': False }
 
 @validate_analytics_sample_data(name='WebTransaction/Uri/')
 @override_application_settings(_test_capture_attributes_disabled_settings)
@@ -325,7 +325,7 @@ def test_capture_attributes_disabled():
     settings = application_settings()
 
     assert settings.browser_monitoring.enabled
-    assert not settings.browser_monitoring.capture_attributes
+    assert not settings.browser_monitoring.attributes.enabled
 
     assert settings.js_agent_loader
 
@@ -360,7 +360,7 @@ def validate_no_analytics_sample_data(wrapped, instance, args, kwargs):
 
 _test_collect_analytic_events_disabled_settings = {
     'collect_analytics_events': False,
-    'browser_monitoring.capture_attributes': True }
+    'browser_monitoring.attributes.enabled': True }
 
 @validate_no_analytics_sample_data
 @override_application_settings(_test_collect_analytic_events_disabled_settings)
@@ -370,7 +370,7 @@ def test_collect_analytic_events_disabled():
     assert not settings.collect_analytics_events
 
     assert settings.browser_monitoring.enabled
-    assert settings.browser_monitoring.capture_attributes
+    assert settings.browser_monitoring.attributes.enabled
 
     assert settings.js_agent_loader
 
@@ -398,8 +398,8 @@ def test_collect_analytic_events_disabled():
     assert 'userAttributes' in data
 
 _test_analytic_events_disabled_settings = {
-    'analytics_events.enabled': False,
-    'browser_monitoring.capture_attributes': True }
+    'transaction_events.enabled': False,
+    'browser_monitoring.attributes.enabled': True }
 
 @validate_no_analytics_sample_data
 @override_application_settings(_test_analytic_events_disabled_settings)
@@ -407,10 +407,10 @@ def test_analytic_events_disabled():
     settings = application_settings()
 
     assert settings.collect_analytics_events
-    assert not settings.analytics_events.enabled
+    assert not settings.transaction_events.enabled
 
     assert settings.browser_monitoring.enabled
-    assert settings.browser_monitoring.capture_attributes
+    assert settings.browser_monitoring.attributes.enabled
 
     assert settings.js_agent_loader
 
@@ -438,8 +438,8 @@ def test_analytic_events_disabled():
     assert 'userAttributes' in data
 
 _test_analytic_events_transactions_disabled_settings = {
-    'analytics_events.transactions.enabled': False,
-    'browser_monitoring.capture_attributes': True }
+    'transaction_events.transactions.enabled': False,
+    'browser_monitoring.attributes.enabled': True }
 
 @validate_no_analytics_sample_data
 @override_application_settings(
@@ -448,11 +448,11 @@ def test_analytic_events_transactions_disabled():
     settings = application_settings()
 
     assert settings.collect_analytics_events
-    assert settings.analytics_events.enabled
-    assert not settings.analytics_events.transactions.enabled
+    assert settings.transaction_events.enabled
+    assert not settings.transaction_events.transactions.enabled
 
     assert settings.browser_monitoring.enabled
-    assert settings.browser_monitoring.capture_attributes
+    assert settings.browser_monitoring.attributes.enabled
 
     assert settings.js_agent_loader
 

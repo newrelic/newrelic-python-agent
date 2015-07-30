@@ -1308,9 +1308,9 @@ class Application(object):
                     # for analytics.
 
                     if (configuration.collect_analytics_events and
-                            configuration.analytics_events.enabled):
+                            configuration.transaction_events.enabled):
 
-                        if configuration.analytics_events.transactions.enabled:
+                        if configuration.transaction_events.transactions.enabled:
                             sampled_data_set = stats.sampled_data_set
 
                             internal_metric('Supportability/Python/'
@@ -1360,9 +1360,9 @@ class Application(object):
                         all_analytic_events.extend(stats.synthetics_events)
 
                     if (configuration.collect_analytics_events and
-                            configuration.analytics_events.enabled):
+                            configuration.transaction_events.enabled):
 
-                        if configuration.analytics_events.transactions.enabled:
+                        if configuration.transaction_events.transactions.enabled:
                             samples = stats.sampled_data_set.samples
                             all_analytic_events.extend(samples)
 

@@ -136,12 +136,6 @@ def _map_feature_flag(s):
 def _map_labels(s):
     return newrelic.core.config._environ_as_mapping(name='', default=s)
 
-def _map_ignored_params(s):
-    return s.split()
-
-def _map_include_environ(s):
-    return s.split()
-
 def _map_transaction_threshold(s):
     if s == 'apdex_f':
         return None
@@ -150,10 +144,7 @@ def _map_transaction_threshold(s):
 def _map_record_sql(s):
     return _RECORD_SQL[s]
 
-def _map_ignore_errors(s):
-    return s.split()
-
-def _map_function_trace(s):
+def _map_split_strings(s):
     return s.split()
 
 def _map_console_listener_socket(s):
@@ -298,17 +289,23 @@ def _process_configuration(section):
     _process_setting(section, 'capture_params',
                      'getboolean', None)
     _process_setting(section, 'ignored_params',
-                     'get', _map_ignored_params)
+                     'get', _map_split_strings)
     _process_setting(section, 'capture_environ',
                      'getboolean', None)
     _process_setting(section, 'include_environ',
-                     'get', _map_include_environ)
+                     'get', _map_split_strings)
     _process_setting(section, 'max_stack_trace_lines',
                      'getint', None)
     _process_setting(section, 'startup_timeout',
                      'getfloat', None)
     _process_setting(section, 'shutdown_timeout',
                      'getfloat', None)
+    _process_setting(section, 'attributes.enabled',
+                     'getboolean', None)
+    _process_setting(section, 'attributes.exclude',
+                     'get', _map_split_strings)
+    _process_setting(section, 'attributes.include',
+                     'get', _map_split_strings)
     _process_setting(section, 'transaction_name.naming_scheme',
                      'get', None)
     _process_setting(section, 'thread_profiler.enabled',
@@ -328,23 +325,31 @@ def _process_configuration(section):
     _process_setting(section, 'transaction_tracer.explain_threshold',
                      'getfloat', None)
     _process_setting(section, 'transaction_tracer.function_trace',
-                     'get', _map_function_trace)
+                     'get', _map_split_strings)
     _process_setting(section, 'transaction_tracer.generator_trace',
-                     'get', _map_function_trace)
+                     'get', _map_split_strings)
     _process_setting(section, 'transaction_tracer.top_n',
                      'getint', None)
-    _process_setting(section, 'transaction_tracer.capture_attributes',
-                     'getboolean', None),
+    _process_setting(section, 'transaction_tracer.attributes.enabled',
+                     'getboolean', None)
+    _process_setting(section, 'transaction_tracer.attributes.exclude',
+                     'get', _map_split_strings)
+    _process_setting(section, 'transaction_tracer.attributes.include',
+                     'get', _map_split_strings)
     _process_setting(section, 'error_collector.enabled',
-                     'getboolean', None),
+                     'getboolean', None)
     _process_setting(section, 'error_collector.capture_source',
-                     'getboolean', None),
+                     'getboolean', None)
     _process_setting(section, 'error_collector.ignore_errors',
-                     'get', _map_ignore_errors)
+                     'get', _map_split_strings)
     _process_setting(section, 'error_collector.ignore_status_codes',
                      'get', _merge_ignore_status_codes)
-    _process_setting(section, 'error_collector.capture_attributes',
-                     'getboolean', None),
+    _process_setting(section, 'error_collector.attributes.enabled',
+                     'getboolean', None)
+    _process_setting(section, 'error_collector.attributes.exclude',
+                     'get', _map_split_strings)
+    _process_setting(section, 'error_collector.attributes.include',
+                     'get', _map_split_strings)
     _process_setting(section, 'browser_monitoring.enabled',
                      'getboolean', None)
     _process_setting(section, 'browser_monitoring.auto_instrument',
@@ -355,22 +360,30 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'browser_monitoring.ssl_for_http',
                      'getboolean', None)
-    _process_setting(section, 'browser_monitoring.capture_attributes',
-                     'getboolean', None),
     _process_setting(section, 'browser_monitoring.content_type',
-                     'get', _map_browser_monitoring_content_type),
+                     'get', _map_split_strings)
+    _process_setting(section, 'browser_monitoring.attributes.enabled',
+                     'getboolean', None)
+    _process_setting(section, 'browser_monitoring.attributes.exclude',
+                     'get', _map_split_strings)
+    _process_setting(section, 'browser_monitoring.attributes.include',
+                     'get', _map_split_strings)
     _process_setting(section, 'slow_sql.enabled',
                      'getboolean', None)
     _process_setting(section, 'synthetics.enabled',
                      'getboolean', None)
-    _process_setting(section, 'analytics_events.enabled',
-                     'getboolean', None),
-    _process_setting(section, 'analytics_events.capture_attributes',
-                     'getboolean', None),
-    _process_setting(section, 'analytics_events.max_samples_stored',
-                     'getint', None),
-    _process_setting(section, 'analytics_events.transactions.enabled',
-                     'getboolean', None),
+    _process_setting(section, 'transaction_events.enabled',
+                     'getboolean', None)
+    _process_setting(section, 'transaction_events.max_samples_stored',
+                     'getint', None)
+    _process_setting(section, 'transaction_events.transactions.enabled',
+                     'getboolean', None)
+    _process_setting(section, 'transaction_events.attributes.enabled',
+                     'getboolean', None)
+    _process_setting(section, 'transaction_events.attributes.exclude',
+                     'get', _map_split_strings)
+    _process_setting(section, 'transaction_events.attributes.include',
+                     'get', _map_split_strings)
     _process_setting(section, 'local_daemon.socket_path',
                      'get', None)
     _process_setting(section, 'local_daemon.synchronous_startup',

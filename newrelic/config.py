@@ -1939,6 +1939,10 @@ def _process_module_builtin_defaults():
         _process_module_definition('tornado.web',
                 'newrelic.hooks.framework_tornado_r3.web',
                 'instrument_tornado_web')
+        _process_module_definition('tornado.stack_context',
+                'newrelic.hooks.framework_tornado_r3.stack_context',
+                'instrument_tornado_stack_context')
+
 
     elif 'tornado.instrumentation.r1' in _settings.feature_flag:
         _process_module_definition('tornado.wsgi',

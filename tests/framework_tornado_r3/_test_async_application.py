@@ -24,8 +24,45 @@ class SleepRequestHandler(RequestHandler):
         yield tornado.gen.sleep(2)
         self.finish(self.RESPONSE)
 
+class OneCallbackRequestHandler(RequestHandler):
+    RESPONSE = b'one callback'
+
+    @tornado.web.asynchronous
+    def get(self):
+        tornado.ioloop.IOLoop.current().add_callback(self.finish_callback)
+
+    def finish_callback(self):
+        self.finish(self.RESPONSE)
+
+class MultipleCallbacksRequestHandler(RequestHandler):
+    RESPONSE = b'multiple callbacks'
+    _MAX_COUNTER = 2
+
+    #def __init__(self):
+    #    super(MultipleCallbacksRequestHandler, self).__init__()
+    #    self._max_counter = 3
+
+    @tornado.web.asynchronous
+    def get(self):
+        print("\n***\nBDIRKS in GET\n****")
+        tornado.ioloop.IOLoop.current().add_callback(self.counter_callback, 1)
+
+    def counter_callback(self, counter):
+        print("\n***\nBDIRKS in COUNTER %s\n****" % counter)
+        if counter < self._MAX_COUNTER:
+            tornado.ioloop.IOLoop.current().add_callback(
+                    self.counter_callback, counter+1)
+        else:
+            tornado.ioloop.IOLoop.current().add_callback(self.finish_callback)
+
+    def finish_callback(self):
+        print("\n***\nBDIRKS in FINISH\n****")
+        self.finish(self.RESPONSE)
+
+DEFAULT_HTTP_PORT = 2456
+
 class TestServer(threading.Thread):
-    def __init__(self, http_port=8000):
+    def __init__(self, http_port=DEFAULT_HTTP_PORT):
         super(TestServer, self).__init__()
         self.http_server = None
         self.application = None
@@ -36,6 +73,8 @@ class TestServer(threading.Thread):
         self.application = Application([
             ('/', HelloRequestHandler),
             ('/sleep', SleepRequestHandler),
+            ('/one-callback', OneCallbackRequestHandler),
+            ('/multiple-callbacks', MultipleCallbacksRequestHandler),
             ])
         self.http_server = HTTPServer(self.application)
         self.http_server.listen(self.http_port, '')
@@ -54,27 +93,33 @@ class TestServer(threading.Thread):
         ioloop.add_callback(ioloop.stop)
         self.join()
 
-test_server = None
-def get_url(path=''):
-    return test_server.get_url(path)
+def get_url(path='', http_port=DEFAULT_HTTP_PORT):
+    return 'http://localhost:%s/%s' % (http_port, path)
 
-def setup_application_server():
-    @function_wrapper
-    def _setup_application_server(wrapped, instance, args, kwargs):
-        global test_server
-        test_server = TestServer()
-        test_server.start()
-        try:
-            # threading.Event.wait() always returns None in py2.6 instead of a
-            # boolean as in >= py2.7. So we don't check the return value and
-            # check threading.Event.is_set() instead.
-            test_server.server_ready.wait(10.0)
-            if not test_server.server_ready.is_set():
-                raise Tornado4TestException('Application test server could not start.')
-            wrapped(*args, **kwargs)
-        finally:
-            test_server.stop_server()
-    return _setup_application_server
+#_test_server = None
+#def get_url(path=''):
+#    return _test_server.get_url(path)
+#
+#_HTTP_PORT = 2300
+#def setup_application_server():
+#    @function_wrapper
+#    def _setup_application_server(wrapped, instance, args, kwargs):
+#        global _test_server
+#        global _HTTP_PORT
+#        _HTTP_PORT += 1
+#        _test_server = TestServer(http_port=_HTTP_PORT)
+#        _test_server.start()
+#        try:
+#            # threading.Event.wait() always returns None in py2.6 instead of a
+#            # boolean as in >= py2.7. So we don't check the return value and
+#            # check threading.Event.is_set() instead.
+#            _test_server.server_ready.wait(10.0)
+#            if not _test_server.server_ready.is_set():
+#                raise Tornado4TestException('Application test server could not start.')
+#            wrapped(*args, **kwargs)
+#        finally:
+#            _test_server.stop_server()
+#    return _setup_application_server
 
 class TestClient(threading.Thread):
     def __init__(self, url):

@@ -18,6 +18,7 @@ class MockApplication(object):
         self.active = True
         self.enabled = True
         self.thread_utilization = None
+        self.attribute_filter = None
     def activate(self):
         pass
     def normalize_name(self, name, rule_type):

@@ -497,6 +497,9 @@ class Transaction(object):
                 path_hash=self.path_hash,
                 referring_path_hash=self._referring_path_hash,
                 alternate_path_hashes=self.alternate_path_hashes,
+                attributes_intrinsic=[],
+                attributes_agent=[],
+                attributes_user=[],
                 )
 
         # Clear settings as we are all done and don't need it

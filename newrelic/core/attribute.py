@@ -1,6 +1,7 @@
 from collections import namedtuple
 
-from .attribute_filter import DST_ERROR_COLLECTOR, DST_TRANSACTION_TRACER
+from .attribute_filter import (DST_ALL, DST_ERROR_COLLECTOR,
+        DST_TRANSACTION_TRACER)
 
 
 INTRINSIC_DEFAULT_DST = DST_ERROR_COLLECTOR | DST_TRANSACTION_TRACER
@@ -33,4 +34,8 @@ def create_attributes(attr_dict, destinations, attribute_filter):
 
 def create_agent_attributes(attr_dict, attribute_filter):
     destinations = AGENT_DEFAULT_DST
+    return create_attributes(attr_dict, destinations, attribute_filter)
+
+def create_user_attributes(attr_dict, attribute_filter):
+    destinations = DST_ALL
     return create_attributes(attr_dict, destinations, attribute_filter)

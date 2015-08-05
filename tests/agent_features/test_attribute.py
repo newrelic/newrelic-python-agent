@@ -1,6 +1,6 @@
 import webtest
 
-from newrelic.agent import wsgi_application
+from newrelic.agent import wsgi_application, add_custom_parameter
 from newrelic.core.attribute import create_intrinsic_attributes
 
 from testing_support.fixtures import (override_application_settings,
@@ -11,6 +11,10 @@ from testing_support.fixtures import (override_application_settings,
 def target_wsgi_application(environ, start_response):
     status = '200 OK'
     output = b'Hello World!'
+
+    path = environ.get('PATH_INFO')
+    if path == '/user_attribute':
+        add_custom_parameter('test_key', 'test_value')
 
     response_headers = [('Content-Type', 'text/plain; charset=utf-8'),
                         ('Content-Length', str(len(output)))]
@@ -34,4 +38,13 @@ _forgone_agent = ()
 def test_agent():
     target_application = webtest.TestApp(target_wsgi_application)
     response = target_application.get('/')
+    assert response.body == b'Hello World!'
+
+_required_user = ['test_key']
+_forgone_user = []
+
+@validate_attributes('user', _required_user, _forgone_user)
+def test_user():
+    target_application = webtest.TestApp(target_wsgi_application)
+    response = target_application.get('/user_attribute')
     assert response.body == b'Hello World!'

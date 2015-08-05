@@ -27,7 +27,7 @@ from newrelic.core.transaction_cache import transaction_cache
 from newrelic.core.thread_utilization import utilization_tracker
 
 from ..core.attribute import (create_intrinsic_attributes,
-        create_agent_attributes)
+        create_agent_attributes, create_user_attributes)
 from ..core.stack_trace import exception_stack
 from ..common.encoding_utils import generate_path_hash
 
@@ -542,6 +542,10 @@ class Transaction(object):
 
         attributes_agent = create_agent_attributes(a_attrs, attribute_filter)
 
+        # Create user attributes
+
+        attributes_user = create_user_attributes(self._custom_params,
+                attribute_filter)
 
         node = newrelic.core.transaction_node.TransactionNode(
                 settings=self._settings,
@@ -583,7 +587,7 @@ class Transaction(object):
                 alternate_path_hashes=self.alternate_path_hashes,
                 attributes_intrinsic=attributes_intrinsic,
                 attributes_agent=attributes_agent,
-                attributes_user=[],
+                attributes_user=attributes_user,
                 )
 
         # Clear settings as we are all done and don't need it

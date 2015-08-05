@@ -27,3 +27,11 @@ def test_intrinsics():
     response = target_application.get('/')
     assert response.body == b'Hello World!'
 
+_required_agent = ('request.method', 'wsgi.output.time')
+_forgone_agent = ()
+
+@validate_attributes('agent', _required_agent, _forgone_agent)
+def test_agent():
+    target_application = webtest.TestApp(target_wsgi_application)
+    response = target_application.get('/')
+    assert response.body == b'Hello World!'

@@ -26,6 +26,7 @@ from newrelic.core.stats_engine import CustomMetrics
 from newrelic.core.transaction_cache import transaction_cache
 from newrelic.core.thread_utilization import utilization_tracker
 
+from ..core.attribute import create_intrinsic_attributes
 from ..core.stack_trace import exception_stack
 from ..common.encoding_utils import generate_path_hash
 
@@ -379,6 +380,9 @@ class Transaction(object):
         if self.response_code != 0:
             self._response_properties['STATUS'] = str(self.response_code)
 
+        ## START of Parameter Groups
+        ## TODO: Remove this once attributes is working
+
         metrics = self._transaction_metrics
 
         if self._bytes_read != 0:
@@ -421,6 +425,8 @@ class Transaction(object):
                 queue_wait = 0
             metrics['WebFrontend/QueueTime'] = '%.4f' % queue_wait
 
+        ## END of Parameter Groups
+
         self.record_custom_metric('Python/WSGI/Input/Bytes',
                            self._bytes_read)
 
@@ -458,6 +464,26 @@ class Transaction(object):
             parameter_groups['Transaction metrics'] = self._transaction_metrics
 
         attribute_filter = self.application.attribute_filter
+
+        # Create intrinsic attributes
+
+        i_attrs = {}
+        if self.referring_transaction_guid:
+            i_attrs['referring_transaction_guid'] = self.referring_transaction_guid
+        if self.client_cross_process_id:
+            i_attrs['client_cross_process_id'] = self.client_cross_process_id
+        if self.trip_id:
+            i_attrs['trip_id'] = self.trip_id
+        if self.path_hash:
+            i_attrs['path_hash'] = self.path_hash
+        if self.synthetics_resource_id:
+            i_attrs['synthetics_resource_id'] = self.synthetics_resource_id
+        if self.synthetics_job_id:
+            i_attrs['synthetics_job_id'] = self.synthetics_job_id
+        if self.synthetics_monitor_id:
+            i_attrs['synthetics_monitor_id'] = self.synthetics_monitor_id
+
+        attributes_intrinsic = create_intrinsic_attributes(i_attrs)
 
         node = newrelic.core.transaction_node.TransactionNode(
                 settings=self._settings,
@@ -497,7 +523,7 @@ class Transaction(object):
                 path_hash=self.path_hash,
                 referring_path_hash=self._referring_path_hash,
                 alternate_path_hashes=self.alternate_path_hashes,
-                attributes_intrinsic=[],
+                attributes_intrinsic=attributes_intrinsic,
                 attributes_agent=[],
                 attributes_user=[],
                 )

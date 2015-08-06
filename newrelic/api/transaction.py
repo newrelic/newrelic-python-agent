@@ -463,14 +463,8 @@ class Transaction(object):
             parameter_groups['Request environment'] = self._request_environment
         if self._response_properties:
             parameter_groups['Response properties'] = self._response_properties
-
         if self._transaction_metrics:
             parameter_groups['Transaction metrics'] = self._transaction_metrics
-
-        # Create user attributes
-
-        attributes_user = create_user_attributes(self._custom_params,
-                self.attribute_filter)
 
         node = newrelic.core.transaction_node.TransactionNode(
                 settings=self._settings,
@@ -512,7 +506,7 @@ class Transaction(object):
                 alternate_path_hashes=self.alternate_path_hashes,
                 attributes_intrinsic=self.attributes_intrinsic,
                 attributes_agent=self.attributes_agent,
-                attributes_user=attributes_user,
+                attributes_user=self.attributes_user,
                 )
 
         # Clear settings as we are all done and don't need it
@@ -741,6 +735,11 @@ class Transaction(object):
             a_attrs['webfrontend.queuetime'] = '%.4f' % self.queue_wait
 
         return create_agent_attributes(a_attrs, self.attribute_filter)
+
+    @property
+    def attributes_user(self):
+        return create_user_attributes(self._custom_params,
+                self.attribute_filter)
 
     def add_profile_sample(self, stack_trace):
         if self._state != self.STATE_RUNNING:

@@ -428,6 +428,13 @@ class Transaction(object):
 
         ## END of Parameter Groups
 
+        # _sent_end should already be set by this point, but in case it
+        # isn't, set it now before we record the custom metrics.
+
+        if self._sent_start:
+            if not self._sent_end:
+                self._sent_end = time.time()
+
         self.record_custom_metric('Python/WSGI/Input/Bytes',
                            self._bytes_read)
         self.record_custom_metric('Python/WSGI/Input/Time',

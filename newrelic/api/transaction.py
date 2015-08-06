@@ -466,26 +466,6 @@ class Transaction(object):
 
         attribute_filter = self.application.attribute_filter
 
-        # Create intrinsic attributes
-
-        i_attrs = {}
-        if self.referring_transaction_guid:
-            i_attrs['referring_transaction_guid'] = self.referring_transaction_guid
-        if self.client_cross_process_id:
-            i_attrs['client_cross_process_id'] = self.client_cross_process_id
-        if self.trip_id:
-            i_attrs['trip_id'] = self.trip_id
-        if self.path_hash:
-            i_attrs['path_hash'] = self.path_hash
-        if self.synthetics_resource_id:
-            i_attrs['synthetics_resource_id'] = self.synthetics_resource_id
-        if self.synthetics_job_id:
-            i_attrs['synthetics_job_id'] = self.synthetics_job_id
-        if self.synthetics_monitor_id:
-            i_attrs['synthetics_monitor_id'] = self.synthetics_monitor_id
-
-        attributes_intrinsic = create_intrinsic_attributes(i_attrs)
-
         # Create agent attributes
 
         a_attrs = {}
@@ -585,7 +565,7 @@ class Transaction(object):
                 path_hash=self.path_hash,
                 referring_path_hash=self._referring_path_hash,
                 alternate_path_hashes=self.alternate_path_hashes,
-                attributes_intrinsic=attributes_intrinsic,
+                attributes_intrinsic=self.attributes_intrinsic,
                 attributes_agent=attributes_agent,
                 attributes_user=attributes_user,
                 )
@@ -725,6 +705,27 @@ class Transaction(object):
             self._alternate_path_hashes[identifier] = path_hash
 
         return path_hash
+
+    @property
+    def attributes_intrinsic(self):
+        i_attrs = {}
+
+        if self.referring_transaction_guid:
+            i_attrs['referring_transaction_guid'] = self.referring_transaction_guid
+        if self.client_cross_process_id:
+            i_attrs['client_cross_process_id'] = self.client_cross_process_id
+        if self.trip_id:
+            i_attrs['trip_id'] = self.trip_id
+        if self.path_hash:
+            i_attrs['path_hash'] = self.path_hash
+        if self.synthetics_resource_id:
+            i_attrs['synthetics_resource_id'] = self.synthetics_resource_id
+        if self.synthetics_job_id:
+            i_attrs['synthetics_job_id'] = self.synthetics_job_id
+        if self.synthetics_monitor_id:
+            i_attrs['synthetics_monitor_id'] = self.synthetics_monitor_id
+
+        return create_intrinsic_attributes(i_attrs)
 
     def add_profile_sample(self, stack_trace):
         if self._state != self.STATE_RUNNING:

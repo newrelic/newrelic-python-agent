@@ -48,3 +48,37 @@ def test_user():
     target_application = webtest.TestApp(target_wsgi_application)
     response = target_application.get('/user_attribute')
     assert response.body == b'Hello World!'
+
+_settings_legacy_false = {'capture_params': False}
+_required_request_legacy_false = []
+_forgone_request_legacy_false = ['request.parameters.foo']
+
+@override_application_settings(_settings_legacy_false)
+@validate_attributes('agent', _required_request_legacy_false,
+        _forgone_request_legacy_false)
+def test_capture_request_params_legacy_false():
+    target_application = webtest.TestApp(target_wsgi_application)
+    response = target_application.get('/?foo=bar')
+    assert response.body == b'Hello World!'
+
+_settings_legacy_true = {'capture_params': True}
+_required_request_legacy_true = ['request.parameters.foo']
+_forgone_request_legacy_true = []
+
+@override_application_settings(_settings_legacy_true)
+@validate_attributes('agent', _required_request_legacy_true,
+        _forgone_request_legacy_true)
+def test_capture_request_params_legacy_true():
+    target_application = webtest.TestApp(target_wsgi_application)
+    response = target_application.get('/?foo=bar')
+    assert response.body == b'Hello World!'
+
+_required_request_default = ['request.parameters.foo']
+_forgone_request_default = []
+
+@validate_attributes('agent', _required_request_default,
+        _forgone_request_default)
+def test_capture_request_params_default():
+    target_application = webtest.TestApp(target_wsgi_application)
+    response = target_application.get('/?foo=bar')
+    assert response.body == b'Hello World!'

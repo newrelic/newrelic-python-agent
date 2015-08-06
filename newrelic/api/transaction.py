@@ -430,7 +430,8 @@ class Transaction(object):
 
         self.record_custom_metric('Python/WSGI/Input/Bytes',
                            self._bytes_read)
-
+        self.record_custom_metric('Python/WSGI/Input/Time',
+                           self.read_duration)
         self.record_custom_metric('Python/WSGI/Input/Calls/read',
                            self._calls_read)
         self.record_custom_metric('Python/WSGI/Input/Calls/readline',
@@ -440,6 +441,8 @@ class Transaction(object):
 
         self.record_custom_metric('Python/WSGI/Output/Bytes',
                            self._bytes_sent)
+        self.record_custom_metric('Python/WSGI/Output/Time',
+                           self.sent_duration)
         self.record_custom_metric('Python/WSGI/Output/Calls/yield',
                            self._calls_yield)
         self.record_custom_metric('Python/WSGI/Output/Calls/write',
@@ -731,12 +734,9 @@ class Transaction(object):
 
         if self.read_duration != 0:
             a_attrs['wsgi.input.time'] = '%.4f' % self.read_duration
-        self.record_custom_metric('Python/WSGI/Input/Time', self.read_duration)
 
         if self.sent_duration != 0:
             a_attrs['wsgi.output.time'] = '%.4f' % self.sent_duration
-        self.record_custom_metric('Python/WSGI/Output/Time',
-                           self.sent_duration)
 
         if self.queue_wait != 0 :
             a_attrs['webfrontend.queuetime'] = '%.4f' % self.queue_wait

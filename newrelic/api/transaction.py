@@ -653,6 +653,29 @@ class Transaction(object):
         return self.application.attribute_filter
 
     @property
+    def read_duration(self):
+        read_duration = 0
+        if self._read_start and self._read_end:
+            read_duration = self._read_end - self._read_start
+        return read_duration
+
+    @property
+    def sent_duration(self):
+        sent_duration = 0
+        if self._sent_start and self._sent_end:
+            sent_duration = self._sent_end - self._sent_start
+        return sent_duration
+
+    @property
+    def queue_wait(self):
+        queue_wait = 0
+        if self.queue_start:
+            queue_wait = self.start_time - self.queue_start
+            if queue_wait < 0:
+                queue_wait = 0
+        return queue_wait
+
+    @property
     def attributes_intrinsic(self):
         i_attrs = {}
 
@@ -706,26 +729,17 @@ class Transaction(object):
         if self._calls_yield != 0:
             a_attrs['wsgi.output.calls.yield'] = self._calls_yield
 
-        read_duration = 0
-        if self._read_start:
-            read_duration = self._read_end - self._read_start
-            a_attrs['wsgi.input.time'] = '%.4f' % read_duration
-        self.record_custom_metric('Python/WSGI/Input/Time', read_duration)
+        if self.read_duration != 0:
+            a_attrs['wsgi.input.time'] = '%.4f' % self.read_duration
+        self.record_custom_metric('Python/WSGI/Input/Time', self.read_duration)
 
-        sent_duration = 0
-        if self._sent_start:
-            if not self._sent_end:
-                self._sent_end = time.time()
-            sent_duration = self._sent_end - self._sent_start
-            a_attrs['wsgi.output.time'] = '%.4f' % sent_duration
+        if self.sent_duration != 0:
+            a_attrs['wsgi.output.time'] = '%.4f' % self.sent_duration
         self.record_custom_metric('Python/WSGI/Output/Time',
-                           sent_duration)
+                           self.sent_duration)
 
-        if self.queue_start:
-            queue_wait = self.start_time - self.queue_start
-            if queue_wait < 0:
-                queue_wait = 0
-            a_attrs['webfrontend.queuetime'] = '%.4f' % queue_wait
+        if self.queue_wait != 0 :
+            a_attrs['webfrontend.queuetime'] = '%.4f' % self.queue_wait
 
         return create_agent_attributes(a_attrs, self.attribute_filter)
 

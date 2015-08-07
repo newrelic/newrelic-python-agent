@@ -716,6 +716,13 @@ class Transaction(object):
         if req_env.get('CONTENT_LENGTH', None):
             a_attrs['request.headers.content-length'] = req_env['CONTENT_LENGTH']
 
+        resp_props = self._response_properties
+
+        if resp_props.get('STATUS', None):
+            a_attrs['response.status'] = resp_props['STATUS']
+        if resp_props.get('CONTENT_LENGTH', None):
+            a_attrs['response.content-length'] = resp_props['CONTENT_LENGTH']
+
         if self.read_duration != 0:
             a_attrs['wsgi.input.time'] = '%.4f' % self.read_duration
         if self._bytes_read != 0:

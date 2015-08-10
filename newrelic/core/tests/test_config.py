@@ -189,6 +189,14 @@ class TestAgentAttributesValid(unittest.TestCase):
         result = newrelic.core.config._parse_attributes('a'*256 + ' abc')
         self.assertEqual(result, ['abc'])
 
+    def test_unicode_strings_length(self):
+        result = newrelic.core.config._parse_attributes(u'\u00F6'*127 +
+                u' \U0001F6B2')
+        self.assertEqual(result, [u'\u00F6'*127, u'\U0001F6B2'])
+        result = newrelic.core.config._parse_attributes(u"\u00F6"*128 +
+                u' \U0001F6B2')
+        self.assertEqual(result, [u'\U0001F6B2'])
+
 
 if __name__ == '__main__':
     unittest.main()

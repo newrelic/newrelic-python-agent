@@ -180,7 +180,7 @@ def _parse_ignore_status_codes(value, target):
 def _parse_attributes(s):
     valid = []
     for item in s.split():
-        if len(item) == 1 or ('*' not in item[:-1] and len(item.encode('utf-8')) < 256):
+        if '*' not in item[:-1] and len(item.encode('utf-8')) < 256:
             valid.append(item)
         else:
             _logger.warning('Improperly formatted attribute: %r', item)

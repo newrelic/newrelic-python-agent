@@ -166,5 +166,37 @@ class TestCreateSettingsSnapshot(unittest.TestCase):
         c = newrelic.core.config.create_settings_snapshot(server, self.local)
         self.assertEqual(c.transaction_tracer.record_sql, 'obfuscated')
 
+class TestAgentAttributesValid(unittest.TestCase):
+    def test_valid_wildcards(self):
+        result = newrelic.core.config._parse_attributes('a.b* b* c.* AB* *')
+        self.assertEqual(result, ['a.b*', 'b*', 'c.*', 'AB*', '*'])
+
+    def test_invalid_wildcards(self):
+        result = newrelic.core.config._parse_attributes('a b.*.c d *e')
+        self.assertEqual(result, ['a', 'd'])
+
+    def test_empty_list(self):
+        result = newrelic.core.config._parse_attributes('')
+        self.assertEqual(result, [])
+
+    def test_valid_no_wildcard(self):
+        result = newrelic.core.config._parse_attributes('aa Ab c a_b')
+        self.assertEqual(result, ['aa', 'Ab', 'c', 'a_b'])
+
+    def test_validate_attribute_size(self):
+        result = newrelic.core.config._parse_attributes('a'*255 + ' abc')
+        self.assertEqual(result, ['a'*255, 'abc'])
+        result = newrelic.core.config._parse_attributes('a'*256 + ' abc')
+        self.assertEqual(result, ['abc'])
+
+    def test_unicode_strings_length(self):
+        result = newrelic.core.config._parse_attributes(u'\u00F6'*127 +
+                u' \U0001F6B2')
+        self.assertEqual(result, [u'\u00F6'*127, u'\U0001F6B2'])
+        result = newrelic.core.config._parse_attributes(u"\u00F6"*128 +
+                u' \U0001F6B2')
+        self.assertEqual(result, [u'\U0001F6B2'])
+
+
 if __name__ == '__main__':
     unittest.main()

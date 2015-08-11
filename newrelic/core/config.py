@@ -177,6 +177,16 @@ def _parse_ignore_status_codes(value, target):
                 target.add(int(item))
     return target
 
+def _parse_attributes(s):
+    valid = []
+    for item in s.split():
+        if '*' not in item[:-1] and len(item.encode('utf-8')) < 256:
+            valid.append(item)
+        else:
+            _logger.warning('Improperly formatted attribute: %r', item)
+    return valid
+
+
 _LOG_LEVEL = {
     'CRITICAL': logging.CRITICAL,
     'ERROR': logging.ERROR,

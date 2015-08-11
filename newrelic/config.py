@@ -160,6 +160,9 @@ def _map_browser_monitoring_content_type(s):
 def _map_strip_exception_messages_whitelist(s):
     return [expand_builtin_exception_name(item) for item in s.split()]
 
+def _map_inc_excl_attributes(s):
+    return newrelic.core.config._parse_attributes(s)
+
 # Processing of a single setting from configuration file.
 
 def _raise_configuration_error(section, option=None):
@@ -303,9 +306,9 @@ def _process_configuration(section):
     _process_setting(section, 'attributes.enabled',
                      'getboolean', None)
     _process_setting(section, 'attributes.exclude',
-                     'get', _map_split_strings)
+                     'get', _map_inc_excl_attributes)
     _process_setting(section, 'attributes.include',
-                     'get', _map_split_strings)
+                     'get', _map_inc_excl_attributes)
     _process_setting(section, 'transaction_name.naming_scheme',
                      'get', None)
     _process_setting(section, 'thread_profiler.enabled',
@@ -333,9 +336,9 @@ def _process_configuration(section):
     _process_setting(section, 'transaction_tracer.attributes.enabled',
                      'getboolean', None)
     _process_setting(section, 'transaction_tracer.attributes.exclude',
-                     'get', _map_split_strings)
+                     'get', _map_inc_excl_attributes)
     _process_setting(section, 'transaction_tracer.attributes.include',
-                     'get', _map_split_strings)
+                     'get', _map_inc_excl_attributes)
     _process_setting(section, 'error_collector.enabled',
                      'getboolean', None)
     _process_setting(section, 'error_collector.capture_source',
@@ -347,9 +350,9 @@ def _process_configuration(section):
     _process_setting(section, 'error_collector.attributes.enabled',
                      'getboolean', None)
     _process_setting(section, 'error_collector.attributes.exclude',
-                     'get', _map_split_strings)
+                     'get', _map_inc_excl_attributes)
     _process_setting(section, 'error_collector.attributes.include',
-                     'get', _map_split_strings)
+                     'get', _map_inc_excl_attributes)
     _process_setting(section, 'browser_monitoring.enabled',
                      'getboolean', None)
     _process_setting(section, 'browser_monitoring.auto_instrument',
@@ -365,9 +368,9 @@ def _process_configuration(section):
     _process_setting(section, 'browser_monitoring.attributes.enabled',
                      'getboolean', None)
     _process_setting(section, 'browser_monitoring.attributes.exclude',
-                     'get', _map_split_strings)
+                     'get', _map_inc_excl_attributes)
     _process_setting(section, 'browser_monitoring.attributes.include',
-                     'get', _map_split_strings)
+                     'get', _map_inc_excl_attributes)
     _process_setting(section, 'slow_sql.enabled',
                      'getboolean', None)
     _process_setting(section, 'synthetics.enabled',
@@ -381,9 +384,9 @@ def _process_configuration(section):
     _process_setting(section, 'transaction_events.attributes.enabled',
                      'getboolean', None)
     _process_setting(section, 'transaction_events.attributes.exclude',
-                     'get', _map_split_strings)
+                     'get', _map_inc_excl_attributes)
     _process_setting(section, 'transaction_events.attributes.include',
-                     'get', _map_split_strings)
+                     'get', _map_inc_excl_attributes)
     _process_setting(section, 'local_daemon.socket_path',
                      'get', None)
     _process_setting(section, 'local_daemon.synchronous_startup',

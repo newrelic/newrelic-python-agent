@@ -457,6 +457,8 @@ class Transaction(object):
         if self._transaction_metrics:
             parameter_groups['Transaction metrics'] = self._transaction_metrics
 
+        attribute_filter = self.application.attribute_filter
+
         node = newrelic.core.transaction_node.TransactionNode(
                 settings=self._settings,
                 path=self.path,

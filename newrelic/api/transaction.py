@@ -26,6 +26,8 @@ from newrelic.core.stats_engine import CustomMetrics
 from newrelic.core.transaction_cache import transaction_cache
 from newrelic.core.thread_utilization import utilization_tracker
 
+from ..core.attribute import (create_intrinsic_attributes,
+        create_agent_attributes, create_user_attributes)
 from ..core.stack_trace import exception_stack
 from ..common.encoding_utils import generate_path_hash
 
@@ -379,6 +381,9 @@ class Transaction(object):
         if self.response_code != 0:
             self._response_properties['STATUS'] = str(self.response_code)
 
+        ## START of Parameter Groups
+        ## TODO: Remove this once attributes is working
+
         metrics = self._transaction_metrics
 
         if self._bytes_read != 0:
@@ -421,9 +426,19 @@ class Transaction(object):
                 queue_wait = 0
             metrics['WebFrontend/QueueTime'] = '%.4f' % queue_wait
 
+        ## END of Parameter Groups
+
+        # _sent_end should already be set by this point, but in case it
+        # isn't, set it now before we record the custom metrics.
+
+        if self._sent_start:
+            if not self._sent_end:
+                self._sent_end = time.time()
+
         self.record_custom_metric('Python/WSGI/Input/Bytes',
                            self._bytes_read)
-
+        self.record_custom_metric('Python/WSGI/Input/Time',
+                           self.read_duration)
         self.record_custom_metric('Python/WSGI/Input/Calls/read',
                            self._calls_read)
         self.record_custom_metric('Python/WSGI/Input/Calls/readline',
@@ -433,6 +448,8 @@ class Transaction(object):
 
         self.record_custom_metric('Python/WSGI/Output/Bytes',
                            self._bytes_sent)
+        self.record_custom_metric('Python/WSGI/Output/Time',
+                           self.sent_duration)
         self.record_custom_metric('Python/WSGI/Output/Calls/yield',
                            self._calls_yield)
         self.record_custom_metric('Python/WSGI/Output/Calls/write',
@@ -453,11 +470,8 @@ class Transaction(object):
             parameter_groups['Request environment'] = self._request_environment
         if self._response_properties:
             parameter_groups['Response properties'] = self._response_properties
-
         if self._transaction_metrics:
             parameter_groups['Transaction metrics'] = self._transaction_metrics
-
-        attribute_filter = self.application.attribute_filter
 
         node = newrelic.core.transaction_node.TransactionNode(
                 settings=self._settings,
@@ -497,6 +511,9 @@ class Transaction(object):
                 path_hash=self.path_hash,
                 referring_path_hash=self._referring_path_hash,
                 alternate_path_hashes=self.alternate_path_hashes,
+                attributes_intrinsic=self.attributes_intrinsic,
+                attributes_agent=self.attributes_agent,
+                attributes_user=self.attributes_user,
                 )
 
         # Clear settings as we are all done and don't need it
@@ -634,6 +651,109 @@ class Transaction(object):
             self._alternate_path_hashes[identifier] = path_hash
 
         return path_hash
+
+    @property
+    def attribute_filter(self):
+        return self.application.attribute_filter
+
+    @property
+    def read_duration(self):
+        read_duration = 0
+        if self._read_start and self._read_end:
+            read_duration = self._read_end - self._read_start
+        return read_duration
+
+    @property
+    def sent_duration(self):
+        sent_duration = 0
+        if self._sent_start and self._sent_end:
+            sent_duration = self._sent_end - self._sent_start
+        return sent_duration
+
+    @property
+    def queue_wait(self):
+        queue_wait = 0
+        if self.queue_start:
+            queue_wait = self.start_time - self.queue_start
+            if queue_wait < 0:
+                queue_wait = 0
+        return queue_wait
+
+    @property
+    def attributes_intrinsic(self):
+        i_attrs = {}
+
+        if self.referring_transaction_guid:
+            i_attrs['referring_transaction_guid'] = self.referring_transaction_guid
+        if self.client_cross_process_id:
+            i_attrs['client_cross_process_id'] = self.client_cross_process_id
+        if self.trip_id:
+            i_attrs['trip_id'] = self.trip_id
+        if self.path_hash:
+            i_attrs['path_hash'] = self.path_hash
+        if self.synthetics_resource_id:
+            i_attrs['synthetics_resource_id'] = self.synthetics_resource_id
+        if self.synthetics_job_id:
+            i_attrs['synthetics_job_id'] = self.synthetics_job_id
+        if self.synthetics_monitor_id:
+            i_attrs['synthetics_monitor_id'] = self.synthetics_monitor_id
+
+        return create_intrinsic_attributes(i_attrs)
+
+    @property
+    def attributes_agent(self):
+        a_attrs = {}
+        req_env = self._request_environment
+
+        if req_env.get('REQUEST_METHOD', None):
+            a_attrs['request.method'] = req_env['REQUEST_METHOD']
+        if req_env.get('HTTP_USER_AGENT', None):
+            a_attrs['request.headers.user-agent'] = req_env['HTTP_USER_AGENT']
+        if req_env.get('HTTP_REFERER', None):
+            a_attrs['request.headers.referer'] = req_env['HTTP_REFERER']
+        if req_env.get('CONTENT_TYPE', None):
+            a_attrs['request.headers.content-type'] = req_env['CONTENT_TYPE']
+        if req_env.get('CONTENT_LENGTH', None):
+            a_attrs['request.headers.content-length'] = req_env['CONTENT_LENGTH']
+
+        resp_props = self._response_properties
+
+        if resp_props.get('STATUS', None):
+            a_attrs['response.status'] = resp_props['STATUS']
+        if resp_props.get('CONTENT_LENGTH', None):
+            a_attrs['response.content-length'] = resp_props['CONTENT_LENGTH']
+
+        if self.read_duration != 0:
+            a_attrs['wsgi.input.time'] = '%.4f' % self.read_duration
+        if self._bytes_read != 0:
+            a_attrs['wsgi.input.bytes'] = self._bytes_read
+        if self._calls_read != 0:
+            a_attrs['wsgi.input.calls.read'] = self._calls_read
+        if self._calls_readline != 0:
+            a_attrs['wsgi.input.calls.readline'] = self._calls_readline
+        if self._calls_readlines != 0:
+            a_attrs['wsgi.input.calls.readlines'] = self._calls_readlines
+
+        if self.sent_duration != 0:
+            a_attrs['wsgi.output.time'] = '%.4f' % self.sent_duration
+        if self._bytes_sent != 0:
+            a_attrs['wsgi.output.bytes'] = self._bytes_sent
+        if self._calls_write != 0:
+            a_attrs['wsgi.output.calls.write'] = self._calls_write
+        if self._calls_yield != 0:
+            a_attrs['wsgi.output.calls.yield'] = self._calls_yield
+
+        if self._thread_utilization_value:
+            a_attrs['thread.concurrency'] = self._thread_utilization_value
+        if self.queue_wait != 0 :
+            a_attrs['webfrontend.queuetime'] = '%.4f' % self.queue_wait
+
+        return create_agent_attributes(a_attrs, self.attribute_filter)
+
+    @property
+    def attributes_user(self):
+        return create_user_attributes(self._custom_params,
+                self.attribute_filter)
 
     def add_profile_sample(self, stack_trace):
         if self._state != self.STATE_RUNNING:

@@ -675,6 +675,36 @@ def validate_parameter_groups(group, required_params=[], forgone_params=[]):
 
     return _validate_parameter_groups
 
+def validate_attributes(type, required_attr_names=[], forgone_attr_names=[]):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_attributes(wrapped, instance, args, kwargs):
+        def _bind_params(transaction, *args, **kwargs):
+            return transaction
+
+        transaction = _bind_params(*args, **kwargs)
+
+        if type == 'intrinsic':
+            attributes = transaction.attributes_intrinsic
+        elif type == 'agent':
+            attributes = transaction.attributes_agent
+        elif type == 'user':
+            attributes = transaction.attributes_user
+
+        attribute_names = [a.name for a in attributes]
+
+        for name in required_attr_names:
+            assert name in attribute_names, ('name=%r,'
+                    'attributes=%r' % (name, attributes))
+
+        for name in forgone_attr_names:
+            assert name not in attribute_names, ('name=%r,'
+                    ' attributes=%r' % (name, attributes))
+
+        return wrapped(*args, **kwargs)
+
+    return _validate_attributes
+
 def validate_database_trace_inputs(sql_parameters_type):
 
     @transient_function_wrapper('newrelic.api.database_trace',

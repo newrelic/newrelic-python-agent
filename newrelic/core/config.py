@@ -241,7 +241,7 @@ _settings.collect_analytics_events = True
 _settings.apdex_t = 0.5
 _settings.web_transactions_apdex = {}
 
-_settings.capture_params = False
+_settings.capture_params = None
 _settings.ignored_params = []
 
 _settings.capture_environ = True

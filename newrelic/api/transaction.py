@@ -26,8 +26,9 @@ from newrelic.core.stats_engine import CustomMetrics
 from newrelic.core.transaction_cache import transaction_cache
 from newrelic.core.thread_utilization import utilization_tracker
 
-from ..core.attribute import (create_intrinsic_attributes,
-        create_agent_attributes, create_user_attributes)
+from ..core.attribute import (create_attributes, create_intrinsic_attributes,
+        create_agent_attributes, create_user_attributes, AGENT_DEFAULT_DST)
+from ..core.attribute_filter import DST_NONE
 from ..core.stack_trace import exception_stack
 from ..common.encoding_utils import generate_path_hash
 
@@ -748,7 +749,63 @@ class Transaction(object):
         if self.queue_wait != 0 :
             a_attrs['webfrontend.queuetime'] = '%.4f' % self.queue_wait
 
-        return create_agent_attributes(a_attrs, self.attribute_filter)
+        attributes_agent = create_agent_attributes(a_attrs,
+                self.attribute_filter)
+
+        # Request parameters are a special case of agent attributes, so
+        # they must be added on to attributes_agent separately
+
+        # There are 3 cases we need to handle:
+        #
+        # 1. LEGACY: capture_params = False
+        #
+        #    Don't add request parameters at all, which means they will not
+        #    go through the AttributeFilter.
+        #
+        # 2. LEGACY: capture_params = True
+        #
+        #    Filter request parameters through the AttributeFilter, but
+        #    set the destinations to `TRANSACTION_TRACER | ERROR_COLLECTOR`.
+        #
+        #    If the user does not add any additional attribute filtering
+        #    rules, this will result in the same outcome as the old
+        #    capture_params = True behavior. They will be added to transaction
+        #    traces and error traces.
+        #
+        # 3. CURRENT: capture_params is None
+        #
+        #    Filter request parameters through the AttributeFilter, but set
+        #    the destinations to NONE.
+        #
+        #    That means by default, request parameters won't get included in
+        #    any destination. But, it will allow user added include/exclude
+        #    attribute filtering rules to be applied to the request parameters.
+
+        if (self.capture_params is None) or self.capture_params:
+
+            if self._request_params:
+
+                r_attrs = {}
+                attributes_request = {}
+
+                for k, v in self._request_params.items():
+                    new_key = 'request.parameters.%s' % k
+                    if len(v) == 1:
+                        new_val = v[0]
+                    else:
+                        new_val = ",".join(v)
+                    r_attrs[new_key] = new_val
+
+                if self.capture_params is None:
+                    attributes_request = create_attributes(r_attrs,
+                            DST_NONE, self.attribute_filter)
+                elif self.capture_params:
+                    attributes_request = create_attributes(r_attrs,
+                            AGENT_DEFAULT_DST, self.attribute_filter)
+
+                attributes_agent.extend(attributes_request)
+
+        return attributes_agent
 
     @property
     def attributes_user(self):

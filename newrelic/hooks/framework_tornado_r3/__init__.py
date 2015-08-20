@@ -31,6 +31,13 @@ def retrieve_request_transaction(request):
     # Retrieves any transaction already associated with the request.
     return getattr(request, '_nr_transaction', None)
 
+def retrieve_transaction_request(transaction):
+    # Retrieves any request already associated with the transaction.
+    request_weakref = getattr(transaction, '_nr_current_request', None)
+    if request_weakref is not None:
+        return request_weakref()
+    return None
+
 # We sometimes want to purge the current transaction out of the queue and
 # replace it with the known current transaction which has been called into
 # asynchronously.
@@ -38,6 +45,7 @@ def purge_current_transaction():
     old_transaction = retrieve_current_transaction()
     if old_transaction is not None:
         old_transaction.drop_transaction()
+    return old_transaction
 
 # TODO(bdirks): I feel like there may be a problem with a threadid pointing to
 # None. We should never store None in the transaction cache. I need to
@@ -47,29 +55,34 @@ def replace_current_transaction(new_transaction):
     new_transaction.save_transaction()
 
 def finalize_request_monitoring(request, exc=None, value=None, tb=None):
-    purge_current_transaction()
-
     # Finalize monitoring of the transaction.
     transaction = retrieve_request_transaction(request)
-    transaction.save_transaction()
+    try:
+        finalize_transaction(transaction, exc, value, tb)
+    finally:
+        # This should be set to None in finalize transaction but in case it
+        # isn't we set it to None here.
+        request._nr_transaction = None
 
+def finalize_transaction(transaction, exc=None, value=None, tb=None):
     if transaction is None:
-        _logger.error('Runtime instrumentation error. Finalizing the '
-                'Tornado transaction but there was no transaction cached '
-                'against the request object. Report this issue to New Relic '
+        _logger.error('Runtime instrumentation error. Attempting to finalize an '
+                'empty transaction. Please report this issue to New Relic '
                 'support.\n%s', ''.join(traceback.format_stack()[:-1]))
         return
 
-    # If all nodes haven't been popped from the transaction stack then
-    # error messages will be logged by the transaction. We therefore do
-    # not need to check here.
-    #
-    # We must ensure we cleanup here even if __exit__() fails with an
-    # exception for some reason.
+    old_transaction = purge_current_transaction()
+    transaction.save_transaction()
 
     try:
         transaction.__exit__(exc, value, tb)
 
     finally:
+        transaction._is_finalized = True
+        request = retrieve_transaction_request(transaction)
+        if request is not None:
+            request._nr_transaction = None
         transaction._nr_current_request = None
-        request._nr_transaction = None
+
+        if old_transaction is not None:
+            replace_current_transaction(old_transaction)

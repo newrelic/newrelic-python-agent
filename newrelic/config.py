@@ -1942,6 +1942,9 @@ def _process_module_builtin_defaults():
         _process_module_definition('tornado.stack_context',
                 'newrelic.hooks.framework_tornado_r3.stack_context',
                 'instrument_tornado_stack_context')
+        _process_module_definition('tornado.ioloop',
+                'newrelic.hooks.framework_tornado_r3.ioloop',
+                'instrument_tornado_ioloop')
 
 
     elif 'tornado.instrumentation.r1' in _settings.feature_flag:

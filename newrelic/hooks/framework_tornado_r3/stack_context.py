@@ -36,6 +36,7 @@ def _stack_context_wrapper_helper(fxn_arg_extractor, fxn_arg_index,
     if fxn is None:
         return wrapped(*args, **kwargs)
 
+    # BDIRKS getting transaction should be near this or this fxn name is misleading
     transaction_aware_fxn = _create_transaction_aware_fxn(fxn, wrapped,
         instance, args, kwargs)
 
@@ -46,6 +47,8 @@ def _stack_context_wrapper_helper(fxn_arg_extractor, fxn_arg_index,
 
     transaction = retrieve_current_transaction()
 
+    # We replace the function we call in the callback with the transaction aware
+    # version of the function.
     if len(args) > fxn_arg_index:
         # args is a tuple so must make a copy instead of overwriting the
         # function at fxn_arg_index
@@ -55,15 +58,11 @@ def _stack_context_wrapper_helper(fxn_arg_extractor, fxn_arg_index,
         kwargs[fxn_arg_name] = transaction_aware_fxn
 
     try:
-        # TODO(bdirks): We should be calling callable_name on wrapped and
-        # not on fxn here. Leaving it temporarily since I want to push to
-        # server to have others look at this PR in progress.
-        # See note above FunctionTrace in _transaction_aware_fxn.
-        #name = callable_name(wrapped)
-        name = callable_name(fxn)
+        # BDIRKS Do we care about timing this?
+        name = callable_name(wrapped)
         with FunctionTrace(transaction, name=name):
             stack_context_wrapped_fxn = wrapped(*args, **kwargs)
-            stack_context_wrapped_fxn._nr_is_transaction_aware = True
+            stack_context_wrapped_fxn._nr_transaction = transaction
             return stack_context_wrapped_fxn
     except:  # Catch all.
         record_exception(transaction, sys.exc_info())
@@ -79,7 +78,8 @@ def _create_transaction_aware_fxn(fxn, wrapped, instance, args, kwargs):
     # since this is also cause Tornado's stack_context.wrap to rewrap it.
     # That Tornado method will also return the input fxn immediately if
     # previously wrapped.
-    if hasattr(fxn, '_nr_is_transaction_aware'):
+
+    if hasattr(fxn, '_nr_transaction'):
         return None
 
     # We want to get the transaction associated with this path of execution
@@ -96,16 +96,10 @@ def _create_transaction_aware_fxn(fxn, wrapped, instance, args, kwargs):
         # or will be the last transaction starting to be handled.
         old_transaction = retrieve_current_transaction()
         replace_current_transaction(transaction)
-        # TODO(bdirks): We should call callable_name on fxn here.
-        # Currently there is a problem since we end the transaction on
-        # the RequestHandlers on_finish method. Since on_finish will we
-        # wrapped in _transaction_aware_fxn, it will cause the transaction to
-        # end before this context handler exits, causing the transaction node
-        # stack to be nonempty (it has the final callback still in it).
-        #name = callable_name(fxn)
+        name = callable_name(fxn)
         # TODO(bdirks): should we wrap this in a try/except block?
-        #with FunctionTrace(transaction, name=name):
-        ret = fxn(*fxn_args, **fxn_kwargs)
+        with FunctionTrace(transaction, name=name):
+            ret = fxn(*fxn_args, **fxn_kwargs)
         replace_current_transaction(old_transaction)
         return ret
 

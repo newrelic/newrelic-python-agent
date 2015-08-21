@@ -1,4 +1,5 @@
 import logging
+import traceback
 
 from newrelic.agent import wrap_function_wrapper
 from . import retrieve_request_transaction

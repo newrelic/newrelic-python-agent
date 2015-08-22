@@ -8,9 +8,9 @@ _logger = logging.getLogger(__name__)
 def _nr_wrapper_IOLoop__run_callback_(wrapped, instance, args, kwargs):
     # callback in wrapped in functools.partial so to get the actual callback
     # we need to grab the func attribute.
-    #### asyncio and twisted override add_callback but should still work.
-    #### see tornado-4.2/tornado/platform/(asyncio|twisted).py
-    #### We should test.
+    # TODO(bdirks): asyncio and twisted override add_callback but should still
+    # work. See tornado-4.2/tornado/platform/(asyncio|twisted).py. We should
+    # explicitly test this.
     def _callback_extractor(callback, *args, **kwargs):
         try:
             return callback.func

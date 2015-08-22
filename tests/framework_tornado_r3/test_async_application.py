@@ -1,7 +1,8 @@
 import time
 
 from testing_support.fixtures import (validate_transaction_metrics,
-    validate_transaction_metric_times, validate_transaction_errors)
+    validate_transaction_metric_times, validate_transaction_errors,
+    raise_background_exceptions)
 
 from _test_async_application import (get_url,
         TestClient, HelloRequestHandler, SleepRequestHandler,
@@ -24,30 +25,28 @@ def teardown_module(module):
     _server_thread.stop_server()
 
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics('tornado.httputil:HTTPServerRequest.__init__')
+@validate_transaction_metrics('_test_async_application:HelloRequestHandler.get')
 def test_simple_response():
-    print("\n**************\nBDIRKS TEST simple response")
     client = TestClient(get_url())
     client.start()
     client.join()
     assert HelloRequestHandler.RESPONSE == client.response.body
 
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics('tornado.httputil:HTTPServerRequest.__init__')
+@validate_transaction_metrics('_test_async_application:SleepRequestHandler.get')
 @validate_transaction_metric_times(
-        'tornado.httputil:HTTPServerRequest.__init__',
-        custom_metrics = [('WebTransaction/Function/tornado.httputil:HTTPServerRequest.__init__', (2.0, 2.3))])
+        '_test_async_application:SleepRequestHandler.get',
+        custom_metrics = [
+                ('WebTransaction/Function/_test_async_application:SleepRequestHandler.get', (2.0, 2.3))])
 def test_sleep_response():
-    print("\n**************\nBDIRKS TEST sleep")
     client = TestClient(get_url('sleep'))
     client.start()
     client.join()
     assert SleepRequestHandler.RESPONSE == client.response.body
 
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics('tornado.httputil:HTTPServerRequest.__init__')
+@validate_transaction_metrics('_test_async_application:SleepRequestHandler.get')
 def test_sleep_two_clients():
-    print("\n**************\nBDIRKS TEST sleep 2 clients")
     client1 = TestClient(get_url('sleep'))
     client2 = TestClient(get_url('sleep'))
     start_time = time.time()
@@ -66,10 +65,9 @@ _test_application_scoped_metrics = [
         ('Function/_test_async_application:OneCallbackRequestHandler.finish_callback', 1)]
 
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics('tornado.httputil:HTTPServerRequest.__init__',
+@validate_transaction_metrics('_test_async_application:OneCallbackRequestHandler.get',
         scoped_metrics=_test_application_scoped_metrics)
 def test_one_callback():
-    print("\n**************\nBDIRKS TEST one callback")
     client = TestClient(get_url('one-callback'))
     client.start()
     client.join()
@@ -80,10 +78,9 @@ _test_application_scoped_metrics = [
         ('Function/_test_async_application:MultipleCallbacksRequestHandler.counter_callback', 2)]
 
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics('tornado.httputil:HTTPServerRequest.__init__',
+@validate_transaction_metrics('_test_async_application:MultipleCallbacksRequestHandler.get',
         scoped_metrics=_test_application_scoped_metrics)
 def test_multiple_callbacks():
-    print("\n**************\nBDIRKS TEST multiple callbacks")
     client = TestClient(get_url('multiple-callbacks'))
     client.start()
     client.join()

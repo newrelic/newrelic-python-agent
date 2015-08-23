@@ -7,7 +7,7 @@ class TestSettings(unittest.TestCase):
 
     def test_category_creation(self):
         d = {'a1': 1, 'a2.b2': 2, 'a3.b3.c3': 3 }
-        c = newrelic.core.config.create_settings_snapshot(d)
+        c = newrelic.core.config.apply_server_side_settings(d)
         self.assertEqual(1, c.a1)
         self.assertEqual(2, c.a2.b2)
         self.assertEqual(3, c.a3.b3.c3)
@@ -15,46 +15,46 @@ class TestSettings(unittest.TestCase):
 class TestTransactionTracerConfig(unittest.TestCase):
 
     def test_defaults(self):
-        c = newrelic.core.config.create_settings_snapshot()
+        c = newrelic.core.config.apply_server_side_settings()
         tt = c.transaction_tracer
         self.assertTrue(tt.enabled)
         self.assertEqual(None, tt.transaction_threshold)
 
     def test_enabled(self):
         d = {'transaction_tracer.enabled': False }
-        c = newrelic.core.config.create_settings_snapshot(d)
+        c = newrelic.core.config.apply_server_side_settings(d)
         tt = c.transaction_tracer
         self.assertFalse(tt.enabled)
 
     def test_transaction_threshold(self):
         d = {'transaction_tracer.transaction_threshold': 0.666 }
-        c = newrelic.core.config.create_settings_snapshot(d)
+        c = newrelic.core.config.apply_server_side_settings(d)
         tt = c.transaction_tracer
         self.assertEqual(0.666, tt.transaction_threshold)
 
 class TestUtilizationConfig(unittest.TestCase):
 
     def test_defaults(self):
-        c = newrelic.core.config.create_settings_snapshot()
+        c = newrelic.core.config.apply_server_side_settings()
         self.assertTrue(c.utilization.detect_aws)
         self.assertTrue(c.utilization.detect_docker)
 
     def test_detect_aws_false(self):
         d = {'utilization.detect_aws': False }
-        c = newrelic.core.config.create_settings_snapshot(d)
+        c = newrelic.core.config.apply_server_side_settings(d)
         self.assertFalse(c.utilization.detect_aws)
         self.assertTrue(c.utilization.detect_docker)
 
     def test_docker_false(self):
         d = {'utilization.detect_docker': False }
-        c = newrelic.core.config.create_settings_snapshot(d)
+        c = newrelic.core.config.apply_server_side_settings(d)
         self.assertTrue(c.utilization.detect_aws)
         self.assertFalse(c.utilization.detect_docker)
 
     def test_detect_utilization_false(self):
         d = {'utilization.detect_aws': False,
              'utilization.detect_docker': False }
-        c = newrelic.core.config.create_settings_snapshot(d)
+        c = newrelic.core.config.apply_server_side_settings(d)
         self.assertFalse(c.utilization.detect_aws)
         self.assertFalse(c.utilization.detect_docker)
 
@@ -128,42 +128,42 @@ class TestCreateSettingsSnapshot(unittest.TestCase):
         server = {'ssl': False}
         self.local.high_security = False
         self.local.ssl = True
-        c = newrelic.core.config.create_settings_snapshot(server, self.local)
+        c = newrelic.core.config.apply_server_side_settings(server, self.local)
         self.assertFalse(c.ssl)
 
     def test_high_security_off_override_capture_params(self):
         server = {'capture_params': False}
         self.local.high_security = False
         self.local.capture_params = True
-        c = newrelic.core.config.create_settings_snapshot(server, self.local)
+        c = newrelic.core.config.apply_server_side_settings(server, self.local)
         self.assertFalse(c.capture_params)
 
     def test_high_security_off_override_record_sql(self):
         server = {'transaction_tracer.record_sql': 'off'}
         self.local.high_security = False
         self.local.transaction_tracer.record_sql = 'raw'
-        c = newrelic.core.config.create_settings_snapshot(server, self.local)
+        c = newrelic.core.config.apply_server_side_settings(server, self.local)
         self.assertEqual(c.transaction_tracer.record_sql, 'off')
 
     def test_high_security_on_keep_local_ssl(self):
         server = {}
         self.local.high_security = True
         self.local.ssl = True
-        c = newrelic.core.config.create_settings_snapshot(server, self.local)
+        c = newrelic.core.config.apply_server_side_settings(server, self.local)
         self.assertTrue(c.ssl)
 
     def test_high_security_on_keep_local_capture_params(self):
         server = {}
         self.local.high_security = True
         self.local.capture_params = False
-        c = newrelic.core.config.create_settings_snapshot(server, self.local)
+        c = newrelic.core.config.apply_server_side_settings(server, self.local)
         self.assertFalse(c.capture_params)
 
     def test_high_security_on_keep_local_record_sql(self):
         server = {}
         self.local.high_security = True
         self.local.transaction_tracer.record_sql = 'obfuscated'
-        c = newrelic.core.config.create_settings_snapshot(server, self.local)
+        c = newrelic.core.config.apply_server_side_settings(server, self.local)
         self.assertEqual(c.transaction_tracer.record_sql, 'obfuscated')
 
 class TestAgentAttributesValid(unittest.TestCase):

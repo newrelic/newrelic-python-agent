@@ -549,7 +549,7 @@ def fetch_config_setting(settings_object, name):
 
     return target
 
-def create_settings_snapshot(server_side_config={}, settings=_settings):
+def apply_server_side_settings(server_side_config={}, settings=_settings):
     """Create a snapshot of the global default settings and overlay it
     with any server side configuration settings. Any local settings
     overrides to take precedence over server side configuration settings
@@ -559,7 +559,7 @@ def create_settings_snapshot(server_side_config={}, settings=_settings):
 
     >>> server_config = { 'browser_monitoring.auto_instrument': False }
     >>>
-    >>> settings_snapshot = create_settings_snapshot(server_config)
+    >>> settings_snapshot = apply_server_side_settings(server_config)
 
     """
 

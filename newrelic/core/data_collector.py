@@ -22,7 +22,7 @@ import newrelic.packages.requests as requests
 from newrelic.packages.requests import certs
 
 from newrelic import version
-from newrelic.core.config import (global_settings, create_settings_snapshot,
+from newrelic.core.config import (global_settings, apply_server_side_settings,
         global_settings_dump)
 from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
         internal_metric)
@@ -1036,7 +1036,7 @@ class ApplicationSession(object):
             # by taking a snapshot of the locally constructed
             # configuration and overlaying it with that from the server.
 
-            application_config = create_settings_snapshot(server_config)
+            application_config = apply_server_side_settings(server_config)
 
         except NetworkInterfaceException:
             # The reason for errors of this type have already been logged.

@@ -47,12 +47,10 @@ def purge_current_transaction():
         old_transaction.drop_transaction()
     return old_transaction
 
-# TODO(bdirks): I feel like there may be a problem with a threadid pointing to
-# None. We should never store None in the transaction cache. I need to
-# investigate whether this will happen now.
 def replace_current_transaction(new_transaction):
-    purge_current_transaction()
+    old_transaction = purge_current_transaction()
     new_transaction.save_transaction()
+    return old_transaction
 
 def finalize_request_monitoring(request, exc=None, value=None, tb=None):
     # Finalize monitoring of the transaction.
@@ -71,8 +69,7 @@ def finalize_transaction(transaction, exc=None, value=None, tb=None):
                 'support.\n%s', ''.join(traceback.format_stack()[:-1]))
         return
 
-    old_transaction = purge_current_transaction()
-    transaction.save_transaction()
+    old_transaction = replace_current_transaction(transaction)
 
     try:
         transaction.__exit__(exc, value, tb)

@@ -6,26 +6,12 @@ from six.moves import range
 from . import (record_exception, retrieve_current_transaction,
                replace_current_transaction)
 
-### TODO(bdirks): Add exception handling
 def _nr_wrapper_stack_context_wrap_(wrapped, instance, args, kwargs):
 
     def _fxn_arg_extractor(fn, *args, **kwargs):
         return fn
 
     return _stack_context_wrapper_helper(_fxn_arg_extractor, 0, 'fn', wrapped,
-            instance, args, kwargs)
-
-# TODO(bdirks): Remove this instrumentation.
-# I know do not think we need to wrap this method. Tornado
-# doesn't use it and it's used by clients to pass in a custom context. It seems
-# like in that case we then don't want to associate the current transaction with
-# the function call.
-def _nr_wrapper_run_with_stack_context_(wrapped, instance, args, kwargs):
-
-    def _fxn_arg_extractor(context, func, *args, **kwargs):
-        return func
-
-    return _stack_context_wrapper_helper(_fxn_arg_extractor, 1, 'func', wrapped,
             instance, args, kwargs)
 
 def _stack_context_wrapper_helper(fxn_arg_extractor, fxn_arg_index,
@@ -36,12 +22,12 @@ def _stack_context_wrapper_helper(fxn_arg_extractor, fxn_arg_index,
     if fxn is None:
         return wrapped(*args, **kwargs)
 
-    # BDIRKS getting transaction should be near this or this fxn name is misleading
     transaction_aware_fxn = _create_transaction_aware_fxn(fxn, wrapped,
         instance, args, kwargs)
 
-    # If we are already have a transaction aware function or we are not run
-    # in the context of a transaction we return.
+    # If transaction_aware_fxn is None then it is either not being called in
+    # the context of a transaction or it is already wrapped.
+    # Either way we do not need to wrap this function.
     if not transaction_aware_fxn:
         return wrapped(*args, **kwargs)
 
@@ -58,10 +44,13 @@ def _stack_context_wrapper_helper(fxn_arg_extractor, fxn_arg_index,
         kwargs[fxn_arg_name] = transaction_aware_fxn
 
     try:
-        # BDIRKS Do we care about timing this?
+        # TODO: investigate whether we care about instrumenting the wrapping.
         name = callable_name(wrapped)
         with FunctionTrace(transaction, name=name):
             stack_context_wrapped_fxn = wrapped(*args, **kwargs)
+            # Since our context aware function is wrapped by the stack context
+            # wrapper function we label the newly wrapped function with our
+            # transaction to keep track of it.
             stack_context_wrapped_fxn._nr_transaction = transaction
             return stack_context_wrapped_fxn
     except:  # Catch all.
@@ -92,12 +81,9 @@ def _create_transaction_aware_fxn(fxn, wrapped, instance, args, kwargs):
         return None
 
     def _transaction_aware_fxn(*fxn_args, **fxn_kwargs):
-        # TODO(bdirks): Investigate whether old_transaction will be None
-        # or will be the last transaction starting to be handled.
         old_transaction = retrieve_current_transaction()
         replace_current_transaction(transaction)
         name = callable_name(fxn)
-        # TODO(bdirks): should we wrap this in a try/except block?
         with FunctionTrace(transaction, name=name):
             ret = fxn(*fxn_args, **fxn_kwargs)
         replace_current_transaction(old_transaction)

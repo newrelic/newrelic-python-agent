@@ -1445,6 +1445,18 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/framework_tornado_r3/ioloop.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/hooks/framework_tornado_r3/stack_context.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/framework_tornado_r3/web.py": {
         "hash": "n/a",
         "libraries": [

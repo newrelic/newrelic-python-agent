@@ -75,10 +75,6 @@ class Application(object):
         return self._agent.application_settings(self._name)
 
     @property
-    def attribute_filter(self):
-        return self._agent.application_attribute_filter(self._name)
-
-    @property
     def active(self):
         return self.settings is not None
 

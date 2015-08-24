@@ -16,7 +16,6 @@ import newrelic.packages.six as six
 
 from newrelic.samplers.data_sampler import DataSampler
 
-from newrelic.core.attribute_filter import AttributeFilter
 from newrelic.core.config import global_settings_dump, global_settings
 from newrelic.core.data_collector import create_session
 from newrelic.network.exceptions import (ForceAgentRestart,
@@ -112,8 +111,6 @@ class Application(object):
         # value = XraySession object
 
         self._active_xrays = {}
-
-        self.attribute_filter = None
 
     @property
     def name(self):
@@ -432,11 +429,6 @@ class Application(object):
 
             with self._stats_custom_lock:
                 self._stats_custom_engine.reset_stats(configuration)
-
-            # Now that configuration has been finalized, we can create the
-            # AttributeFilter.
-
-            self.attribute_filter = AttributeFilter()
 
             # Record an initial start time for the reporting period and
             # clear record of last transaction processed.

@@ -14,6 +14,8 @@ import logging
 import copy
 import socket
 
+from .attribute_filter import AttributeFilter
+
 try:
     import urlparse
 except ImportError:
@@ -233,6 +235,8 @@ _settings.monitor_mode = _environ_as_bool('NEW_RELIC_MONITOR_MODE', True)
 _settings.developer_mode = _environ_as_bool('NEW_RELIC_DEVELOPER_MODE', False)
 
 _settings.high_security = _environ_as_bool('NEW_RELIC_HIGH_SECURITY', False)
+
+_settings.attribute_filter = None
 
 _settings.collect_errors = True
 _settings.collect_traces = True
@@ -549,7 +553,7 @@ def fetch_config_setting(settings_object, name):
 
     return target
 
-def create_settings_snapshot(server_side_config={}, settings=_settings):
+def apply_server_side_settings(server_side_config={}, settings=_settings):
     """Create a snapshot of the global default settings and overlay it
     with any server side configuration settings. Any local settings
     overrides to take precedence over server side configuration settings
@@ -559,7 +563,7 @@ def create_settings_snapshot(server_side_config={}, settings=_settings):
 
     >>> server_config = { 'browser_monitoring.auto_instrument': False }
     >>>
-    >>> settings_snapshot = create_settings_snapshot(server_config)
+    >>> settings_snapshot = apply_server_side_settings(server_config)
 
     """
 
@@ -597,6 +601,17 @@ def create_settings_snapshot(server_side_config={}, settings=_settings):
         apply_config_setting(settings_snapshot, name, value)
 
     return settings_snapshot
+
+def finalize_application_settings(server_side_config={}, settings=_settings):
+    """Overlay server-side settings and add attribute filter."""
+
+    application_settings = apply_server_side_settings(
+            server_side_config, settings)
+
+    application_settings.attribute_filter = AttributeFilter(
+            flatten_settings(application_settings))
+
+    return application_settings
 
 def ignore_status_code(status):
     return status in _settings.error_collector.ignore_status_codes

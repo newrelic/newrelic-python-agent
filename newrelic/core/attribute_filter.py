@@ -1,6 +1,3 @@
-from .config import fetch_config_setting, flatten_settings, global_settings
-
-
 # Attribute "destinations" represented as bitfields.
 
 DST_NONE = 0x0
@@ -45,13 +42,9 @@ class AttributeFilter(object):
     #
     #   4. Return the resulting bitfield after all rules have been applied.
 
-    def __init__(self, settings=None):
+    def __init__(self, flattened_settings):
 
-        if settings is None:
-            self.settings = flatten_settings(global_settings())
-        else:
-            self.settings = settings
-
+        self.settings = flattened_settings
         self.enabled_destinations = self._set_enabled_destinations()
         self.rules = self._build_rules()
 

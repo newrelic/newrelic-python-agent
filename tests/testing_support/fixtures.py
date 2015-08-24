@@ -15,8 +15,7 @@ from newrelic.agent import (initialize, register_application,
 
 from newrelic.common.encoding_utils import unpack_field
 
-from newrelic.core.config import (apply_config_setting,
-        create_settings_snapshot)
+from newrelic.core.config import apply_config_setting
 from newrelic.core.database_utils import SQLConnections
 
 from newrelic.network.addresses import proxy_details

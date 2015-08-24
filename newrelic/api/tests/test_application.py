@@ -30,12 +30,11 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         self.assertEqual(id(application1), id(application2))
 
     def test_attribute_filter_before_registration(self):
-        application = newrelic.api.application.Application(name='foo')
-        self.assertEqual(application.attribute_filter, None)
+        self.assertEqual(settings.attribute_filter, None)
 
     def test_attribute_filter_after_registration(self):
         application = newrelic.api.application.application_instance()
-        attribute_filter = application.attribute_filter
+        attribute_filter = application.settings.attribute_filter
 
         # Performing an 'isinstance' test would require importing
         # newrelic.core.attribute_filter. Instead, let's just test

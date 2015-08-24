@@ -655,7 +655,7 @@ class Transaction(object):
 
     @property
     def attribute_filter(self):
-        return self.application.attribute_filter
+        return self._settings.attribute_filter
 
     @property
     def read_duration(self):

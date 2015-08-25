@@ -474,7 +474,7 @@ def validate_synthetics_event(required_attrs=[], forgone_attrs=[],
                 assert len(instance.synthetics_events) == 1
                 event = instance.synthetics_events[0]
                 assert event is not None
-                assert len(event) == 2
+                assert len(event) == 3
 
                 def _flatten(event):
                     result = {}

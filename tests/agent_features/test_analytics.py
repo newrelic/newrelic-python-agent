@@ -63,51 +63,51 @@ def validate_analytics_sample_data(name, capture_attributes=True):
         sample = _bind_params(*args, **kwargs)
 
         assert isinstance(sample, list)
-        assert len(sample) == 2
+        assert len(sample) == 3
 
-        record, params = sample
+        intrinsics, user_attributes, agent_attributes = sample
 
-        assert record['type'] == 'Transaction'
-        assert record['name'] == name
-        assert record['timestamp'] >= 0.0
-        assert record['duration'] >= 0.0
+        assert intrinsics['type'] == 'Transaction'
+        assert intrinsics['name'] == name
+        assert intrinsics['timestamp'] >= 0.0
+        assert intrinsics['duration'] >= 0.0
 
-        assert 'queueDuration' not in record
-        assert 'externalDuration' not in record
-        assert 'databaseDuration' not in record
-        assert 'memcacheDuration' not in record
+        assert 'queueDuration' not in intrinsics
+        assert 'externalDuration' not in intrinsics
+        assert 'databaseDuration' not in intrinsics
+        assert 'memcacheDuration' not in intrinsics
 
         if capture_attributes:
-            assert params['user'] == u'user-name'
-            assert params['account'] == u'account-name'
-            assert params['product'] == u'product-name'
+            assert user_attributes['user'] == u'user-name'
+            assert user_attributes['account'] == u'account-name'
+            assert user_attributes['product'] == u'product-name'
 
             if six.PY2:
-                assert params['bytes'] == u'bytes-value'
+                assert user_attributes['bytes'] == u'bytes-value'
             else:
-                assert 'bytes' not in params
+                assert 'bytes' not in user_attributes
 
-            assert params['string'] == u'string-value'
-            assert params['unicode'] == u'unicode-value'
+            assert user_attributes['string'] == u'string-value'
+            assert user_attributes['unicode'] == u'unicode-value'
 
-            assert params['integer'] == 1
-            assert params['float'] == 1.0
+            assert user_attributes['integer'] == 1
+            assert user_attributes['float'] == 1.0
 
             if six.PY2:
-                assert params['invalid-utf8'] == b'\xe2'
-                assert params['multibyte-utf8'] == b'\xe2\x88\x9a'
+                assert user_attributes['invalid-utf8'] == b'\xe2'
+                assert user_attributes['multibyte-utf8'] == b'\xe2\x88\x9a'
             else:
-                assert 'invalid-utf8' not in params
-                assert 'multibyte-utf8' not in params
+                assert 'invalid-utf8' not in user_attributes
+                assert 'multibyte-utf8' not in user_attributes
 
-            assert params['multibyte-unicode'] == b'\xe2\x88\x9a'.decode('utf-8')
+            assert user_attributes['multibyte-unicode'] == b'\xe2\x88\x9a'.decode('utf-8')
 
-            assert 'list' not in params
-            assert 'tuple' not in params
-            assert 'dict' not in params
+            assert 'list' not in user_attributes
+            assert 'tuple' not in user_attributes
+            assert 'dict' not in user_attributes
 
         else:
-            assert params == {}
+            assert user_attributes == {}
 
         return wrapped(*args, **kwargs)
 

@@ -17,7 +17,7 @@ from newrelic.core.internal_metrics import internal_trace
 from newrelic.core.string_table import StringTable
 from newrelic.core.attribute import create_user_attributes
 from newrelic.core.attribute_filter import (DST_ERROR_COLLECTOR,
-        DST_TRANSACTION_TRACER)
+        DST_TRANSACTION_TRACER, DST_TRANSACTION_EVENTS)
 
 _TransactionNode = namedtuple('_TransactionNode',
         ['settings', 'path', 'type', 'group', 'name', 'request_uri',
@@ -378,42 +378,38 @@ class TransactionNode(_TransactionNode):
         # names in record are based on web transaction metric names.
         settings = self.settings
 
-        record = {}
-        params = {}
+        intrinsics = {}
+        attributes_user = {}
+        attributes_agent = {}
 
-        # First remember users custom parameters. We only
-        # retain any which have string type for key and
-        # string or numeric for value.
-
-        if settings.transaction_events.attributes.enabled:
-            for key, value in self.custom_params.items():
-                if not isinstance(key, six.string_types):
+        for attr in self.attributes_user:
+            if attr.destinations & DST_TRANSACTION_EVENTS:
+                # We only retain any attributes which have string type for key and
+                # string or numeric for value.
+                if not isinstance(attr.name, six.string_types):
                     continue
-                if (not isinstance(value, six.string_types) and
-                        not isinstance(value, float) and
-                        not isinstance(value, six.integer_types)):
+                if (not isinstance(attr.value, six.string_types) and
+                        not isinstance(attr.value, float) and
+                        not isinstance(attr.value, six.integer_types)):
                     continue
-                params[key] = value
 
-        # Now we add the agents own values so they
-        # overwrite users values if same key name used.
+                attributes_user[attr.name] = attr.value
 
-        # name = self.__sampled_data_set.intern(self.path)
-        name = self.path
+        i_attrs = {}
 
-        record['type'] = 'Transaction'
-        record['name'] = name
-        record['timestamp'] = self.start_time
-        record['duration'] = self.duration
+        i_attrs['type'] = 'Transaction'
+        i_attrs['name'] = self.path
+        i_attrs['timestamp'] = self.start_time
+        i_attrs['duration'] = self.duration
 
         def _add_if_not_empty(key, value):
             if value:
-                record[key] = value
+                i_attrs[key] = value
 
         if self.path_hash:
-            record['nr.guid'] = self.guid
-            record['nr.tripId'] = self.trip_id
-            record['nr.pathHash'] = self.path_hash
+            i_attrs['nr.guid'] = self.guid
+            i_attrs['nr.tripId'] = self.trip_id
+            i_attrs['nr.pathHash'] = self.path_hash
 
             _add_if_not_empty('nr.referringPathHash',
                     self.referring_path_hash)
@@ -427,11 +423,10 @@ class TransactionNode(_TransactionNode):
         # Add the Synthetics attributes to the 'records' dict.
 
         if self.synthetics_resource_id:
-            record['nr.guid'] = self.guid
-            txn = self
-            record['nr.syntheticsResourceId'] = txn.synthetics_resource_id
-            record['nr.syntheticsJobId'] = txn.synthetics_job_id
-            record['nr.syntheticsMonitorId'] = txn.synthetics_monitor_id
+            i_attrs['nr.guid'] = self.guid
+            i_attrs['nr.syntheticsResourceId'] = self.synthetics_resource_id
+            i_attrs['nr.syntheticsJobId'] = self.synthetics_job_id
+            i_attrs['nr.syntheticsMonitorId'] = self.synthetics_monitor_id
 
         def _add_call_time(source, target):
             try:
@@ -440,10 +435,10 @@ class TransactionNode(_TransactionNode):
             except KeyError:
                 pass
             else:
-                if target in record:
-                    record[target] += call_time
+                if target in i_attrs:
+                    i_attrs[target] += call_time
                 else:
-                    record[target] = call_time
+                    i_attrs[target] = call_time
 
         def _add_call_count(source, target):
             try:
@@ -452,10 +447,10 @@ class TransactionNode(_TransactionNode):
             except KeyError:
                 pass
             else:
-                if target in record:
-                    record[target] += call_count
+                if target in i_attrs:
+                    i_attrs[target] += call_count
                 else:
-                    record[target] = call_count
+                    i_attrs[target] = call_count
 
         _add_call_time('WebFrontend/QueueTime', 'queueDuration')
 
@@ -474,5 +469,14 @@ class TransactionNode(_TransactionNode):
         _add_call_time('Datastore/all', 'databaseDuration')
         _add_call_count('Datastore/all', 'databaseCallCount')
 
-        analytic_event = [record, params]
+        # not the same as agent attributes intrinsics, so don't use filter?
+        intrinsics = i_attrs
+
+        # agent attributes
+        for attr in self.attributes_agent:
+            if attr.destinations & DST_TRANSACTION_EVENTS:
+                attributes_agent[attr.name] = attr.value
+
+
+        analytic_event = [intrinsics, attributes_user, attributes_agent]
         return analytic_event

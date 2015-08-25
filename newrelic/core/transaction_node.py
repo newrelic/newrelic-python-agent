@@ -10,6 +10,7 @@ from collections import namedtuple
 
 import newrelic.core.error_collector
 import newrelic.core.trace_node
+import newrelic.packages.six as six
 
 from newrelic.core.metric import ApdexMetric, TimeMetric
 from newrelic.core.internal_metrics import internal_trace
@@ -369,3 +370,109 @@ class TransactionNode(_TransactionNode):
                 return 'T'
             else:
                 return 'F'
+
+    def create_analytic_event(self, stats_table):
+        # Create the transaction record summarising key data for later
+        # analytics. Only do this for web transaction at this point as
+        # not sure if needs to be done for other transactions as field
+        # names in record are based on web transaction metric names.
+        settings = self.settings
+
+        record = {}
+        params = {}
+
+        # First remember users custom parameters. We only
+        # retain any which have string type for key and
+        # string or numeric for value.
+
+        if settings.transaction_events.attributes.enabled:
+            for key, value in self.custom_params.items():
+                if not isinstance(key, six.string_types):
+                    continue
+                if (not isinstance(value, six.string_types) and
+                        not isinstance(value, float) and
+                        not isinstance(value, six.integer_types)):
+                    continue
+                params[key] = value
+
+        # Now we add the agents own values so they
+        # overwrite users values if same key name used.
+
+        # name = self.__sampled_data_set.intern(self.path)
+        name = self.path
+
+        record['type'] = 'Transaction'
+        record['name'] = name
+        record['timestamp'] = self.start_time
+        record['duration'] = self.duration
+
+        def _add_if_not_empty(key, value):
+            if value:
+                record[key] = value
+
+        if self.path_hash:
+            record['nr.guid'] = self.guid
+            record['nr.tripId'] = self.trip_id
+            record['nr.pathHash'] = self.path_hash
+
+            _add_if_not_empty('nr.referringPathHash',
+                    self.referring_path_hash)
+            _add_if_not_empty('nr.alternatePathHashes',
+                    ','.join(self.alternate_path_hashes))
+            _add_if_not_empty('nr.referringTransactionGuid',
+                    self.referring_transaction_guid)
+            _add_if_not_empty('nr.apdexPerfZone',
+                    self.apdex_perf_zone())
+
+        # Add the Synthetics attributes to the 'records' dict.
+
+        if self.synthetics_resource_id:
+            record['nr.guid'] = self.guid
+            txn = self
+            record['nr.syntheticsResourceId'] = txn.synthetics_resource_id
+            record['nr.syntheticsJobId'] = txn.synthetics_job_id
+            record['nr.syntheticsMonitorId'] = txn.synthetics_monitor_id
+
+        def _add_call_time(source, target):
+            try:
+                call_time = stats_table[
+                        (source, '')].total_call_time
+            except KeyError:
+                pass
+            else:
+                if target in record:
+                    record[target] += call_time
+                else:
+                    record[target] = call_time
+
+        def _add_call_count(source, target):
+            try:
+                call_count = stats_table[
+                        (source, '')].call_count
+            except KeyError:
+                pass
+            else:
+                if target in record:
+                    record[target] += call_count
+                else:
+                    record[target] = call_count
+
+        _add_call_time('WebFrontend/QueueTime', 'queueDuration')
+
+        _add_call_time('External/all', 'externalDuration')
+        _add_call_time('Database/all', 'databaseDuration')
+        _add_call_time('Memcache/all', 'memcacheDuration')
+
+        _add_call_count('External/all', 'externalCallCount')
+        _add_call_count('Database/all', 'databaseCallCount')
+
+        # As we transition to using Datastore metrics, we now
+        # include 'Datastore/all' totals in databaseDuration and
+        # databaseCallCount. After transition we can remove the
+        # 'Database/all' checks above.
+
+        _add_call_time('Datastore/all', 'databaseDuration')
+        _add_call_count('Datastore/all', 'databaseCallCount')
+
+        analytic_event = [record, params]
+        return analytic_event

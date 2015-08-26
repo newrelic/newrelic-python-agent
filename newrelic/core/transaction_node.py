@@ -14,6 +14,8 @@ import newrelic.core.trace_node
 from newrelic.core.metric import ApdexMetric, TimeMetric
 from newrelic.core.internal_metrics import internal_trace
 from newrelic.core.string_table import StringTable
+from newrelic.core.attribute_filter import DST_ERROR_COLLECTOR
+from newrelic.core.attribute import create_user_attributes
 
 _TransactionNode = namedtuple('_TransactionNode',
         ['settings', 'path', 'type', 'group', 'name', 'request_uri',
@@ -210,30 +212,29 @@ class TransactionNode(_TransactionNode):
             params = {}
             params["request_uri"] = self.request_uri
             params["stack_trace"] = error.stack_trace
-            if self.request_params:
-                params["request_params"] = self.request_params
-            if self.parameter_groups:
-                params["parameter_groups"] = self.parameter_groups
 
-            if self.settings.error_collector.attributes.enabled:
-                custom_params = (error.custom_params and dict(
-                    error.custom_params) or {})
-            else:
-                custom_params = {}
+            params['intrinsics'] = {}
+            for attr in self.attributes_intrinsic:
+                if attr.destinations & DST_ERROR_COLLECTOR:
+                    params['intrinsics'][attr.name] = attr.value
 
-            if self.client_cross_process_id:
-                custom_params['client_cross_process_id'] = \
-                        self.client_cross_process_id
-            if self.referring_transaction_guid:
-                custom_params['referring_transaction_guid'] = \
-                        self.referring_transaction_guid
-            if self.trip_id:
-                custom_params['nr.trip_id'] = self.trip_id
-            if self.path_hash:
-                custom_params['nr.path_hash'] = self.path_hash
+            params['agentAttributes'] = {}
+            for attr in self.attributes_agent:
+                if attr.destinations & DST_ERROR_COLLECTOR:
+                    params['agentAttributes'][attr.name] = attr.value
 
-            if custom_params:
-                params["custom_params"] = custom_params
+            params['userAttributes'] = {}
+            for attr in self.attributes_user:
+                if attr.destinations & DST_ERROR_COLLECTOR:
+                    params['userAttributes'][attr.name] = attr.value
+
+            # add error specific custom params to this error's userAttributes
+
+            err_attrs = create_user_attributes(error.custom_params,
+                    self.settings.attribute_filter)
+            for attr in err_attrs:
+                if attr.destinations & DST_ERROR_COLLECTOR:
+                    params['userAttributes'][attr.name] = attr.value
 
             yield newrelic.core.error_collector.TracedError(
                     start_time=error.timestamp, path=self.path,

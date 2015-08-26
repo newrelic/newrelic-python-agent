@@ -15,11 +15,14 @@ from newrelic.agent import (initialize, register_application,
 
 from newrelic.common.encoding_utils import unpack_field
 
-from newrelic.core.config import apply_config_setting
+from newrelic.core.config import (apply_config_setting, flatten_settings)
 from newrelic.core.database_utils import SQLConnections
 
 from newrelic.network.addresses import proxy_details
 from newrelic.packages import requests
+
+from newrelic.core.agent import agent_instance
+from newrelic.core.attribute_filter import AttributeFilter
 
 _logger = logging.getLogger('newrelic.tests')
 
@@ -591,6 +594,64 @@ def validate_synthetics_transaction_trace(required_params={},
 
     return _validate_synthetics_transaction_trace
 
+def validate_transaction_error_trace_attributes(required_params={},
+        forgone_params={}):
+    """Check the error trace for attributes, expect only one error to be
+    present in the transaction.
+    """
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_transaction_error_trace(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+
+        error_data = instance.error_data()
+
+        # there should be only one error
+        assert len(error_data) == 1
+        traced_error = error_data[0]
+
+        check_error_attributes(traced_error.parameters, required_params,
+                forgone_params, is_transaction=True)
+
+        return result
+
+    return _validate_transaction_error_trace
+
+def check_error_attributes(parameters, required_params={}, forgone_params={},
+        is_transaction=True):
+    parameter_fields = ['userAttributes']
+    if is_transaction:
+        parameter_fields.extend(['stack_trace', 'agentAttributes',
+                'intrinsics', 'request_uri'])
+
+    for field in parameter_fields:
+        assert field in parameters
+
+    # we can remove this after agent attributes transition is all over
+    assert 'parameter_groups' not in parameters
+    assert 'custom_params' not in parameters
+    assert 'request_params' not in parameters
+
+    if required_params:
+        for param in required_params['agent']:
+            assert param in parameters['agentAttributes']
+
+        for param in required_params['user']:
+            assert param in parameters['userAttributes']
+
+        for param in required_params['intrinsic']:
+            assert param in parameters['intrinsics']
+
+    if forgone_params:
+        for param in forgone_params['agent']:
+            assert param not in parameters['agentAttributes']
+
+        for param in forgone_params['user']:
+            assert param not in parameters['userAttributes']
+
 def validate_tt_parameters(required_params={},
         forgone_params={}):
     @transient_function_wrapper('newrelic.core.stats_engine',
@@ -780,15 +841,24 @@ def override_application_settings(overrides):
             # when done clear the top level settings object and rebuild
             # it when done.
 
-            original = application_settings()
-            backup = dict(original)
+            original_settings = application_settings()
+            backup = dict(original_settings)
             for name, value in overrides.items():
-                apply_config_setting(original, name, value)
+                apply_config_setting(original_settings, name, value)
+
+            # should also update the attribute filter since it is affected
+            # by application settings
+
+            original_filter = original_settings.attribute_filter
+            flat_settings = flatten_settings(original_settings)
+            original_settings.attribute_filter = AttributeFilter(flat_settings)
+
             return wrapped(*args, **kwargs)
         finally:
-            original.__dict__.clear()
+            original_settings.__dict__.clear()
             for name, value in backup.items():
-                apply_config_setting(original, name, value)
+                apply_config_setting(original_settings, name, value)
+            original_settings.attribute_filter = original_filter
 
     return _override_application_settings
 

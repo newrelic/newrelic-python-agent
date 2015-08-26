@@ -1021,15 +1021,8 @@ class Transaction(object):
 
         if settings.high_security:
             custom_params = {}
-
         else:
-            if params:
-                custom_params = dict(self._custom_params)
-                custom_params.update(params)
-            else:
-                custom_params = self._custom_params
-
-        exc_type = exc.__name__
+            custom_params = params
 
         # Check to see if we need to strip the message before recording it.
 

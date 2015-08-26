@@ -16,8 +16,7 @@ def _nr_wrapper_stack_context_wrap_(wrapped, instance, args, kwargs):
     if fxn is None:
         return wrapped(*args, **kwargs)
 
-    transaction_aware_fxn = _create_transaction_aware_fxn(fxn, wrapped,
-        instance, args, kwargs)
+    transaction_aware_fxn = _create_transaction_aware_fxn(fxn, args, kwargs)
 
     # If transaction_aware_fxn is None then it is either not being called in
     # the context of a transaction or it is already wrapped.
@@ -46,7 +45,7 @@ def _nr_wrapper_stack_context_wrap_(wrapped, instance, args, kwargs):
         record_exception(transaction, sys.exc_info())
         raise
 
-def _create_transaction_aware_fxn(fxn, wrapped, instance, args, kwargs):
+def _create_transaction_aware_fxn(fxn, args, kwargs):
     # Returns a version of fxn that will switch context to the appropriate
     # transaction and then restore the previous transaction on exit.
     # If fxn is already transaction aware or if there is no transaction

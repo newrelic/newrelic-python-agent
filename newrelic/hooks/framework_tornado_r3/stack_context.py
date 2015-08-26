@@ -8,16 +8,10 @@ from . import (record_exception, retrieve_current_transaction,
 
 def _nr_wrapper_stack_context_wrap_(wrapped, instance, args, kwargs):
 
-    def _fxn_arg_extractor(fn, *args, **kwargs):
-        return fn
+    def _fxn_arg_extractor(fxn, *args, **kwargs):
+        return fxn
 
-    return _stack_context_wrapper_helper(_fxn_arg_extractor, 0, 'fn', wrapped,
-            instance, args, kwargs)
-
-def _stack_context_wrapper_helper(fxn_arg_extractor, fxn_arg_index,
-        fxn_arg_name, wrapped, instance, args, kwargs):
-
-    fxn = fxn_arg_extractor(*args, **kwargs)
+    fxn = _fxn_arg_extractor(*args, **kwargs)
 
     if fxn is None:
         return wrapped(*args, **kwargs)
@@ -35,24 +29,19 @@ def _stack_context_wrapper_helper(fxn_arg_extractor, fxn_arg_index,
 
     # We replace the function we call in the callback with the transaction aware
     # version of the function.
-    if len(args) > fxn_arg_index:
-        # args is a tuple so must make a copy instead of overwriting the
-        # function at fxn_arg_index
-        args = map(lambda i: args[i] if i != fxn_arg_index else
-                transaction_aware_fxn, range(0, len(args)))
+    if len(args) > 0:
+        args = list(args)
+        args[0] = transaction_aware_fxn
     else:
         kwargs[fxn_arg_name] = transaction_aware_fxn
 
     try:
-        # TODO: investigate whether we care about instrumenting the wrapping.
-        name = callable_name(wrapped)
-        with FunctionTrace(transaction, name=name):
-            stack_context_wrapped_fxn = wrapped(*args, **kwargs)
-            # Since our context aware function is wrapped by the stack context
-            # wrapper function we label the newly wrapped function with our
-            # transaction to keep track of it.
-            stack_context_wrapped_fxn._nr_transaction = transaction
-            return stack_context_wrapped_fxn
+        stack_context_wrapped_fxn = wrapped(*args, **kwargs)
+        # Since our context aware function is wrapped by the stack context
+        # wrapper function we label the newly wrapped function with our
+        # transaction to keep track of it.
+        stack_context_wrapped_fxn._nr_transaction = transaction
+        return stack_context_wrapped_fxn
     except:  # Catch all.
         record_exception(transaction, sys.exc_info())
         raise
@@ -93,5 +82,3 @@ def _create_transaction_aware_fxn(fxn, wrapped, instance, args, kwargs):
 
 def instrument_tornado_stack_context(module):
     wrap_function_wrapper(module, 'wrap', _nr_wrapper_stack_context_wrap_)
-    wrap_function_wrapper(module, 'run_with_stack_context',
-            _nr_wrapper_run_with_stack_context_)

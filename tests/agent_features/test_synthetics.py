@@ -82,9 +82,9 @@ def test_no_synthetics_event_mismatched_encoding_key():
     response = target_application.get('/', headers=headers)
 
 _test_valid_synthetics_tt_required = {
-        'nr.synthetics_resource_id': SYNTHETICS_RESOURCE_ID,
-        'nr.synthetics_job_id': SYNTHETICS_JOB_ID,
-        'nr.synthetics_monitor_id': SYNTHETICS_MONITOR_ID}
+        'synthetics_resource_id': SYNTHETICS_RESOURCE_ID,
+        'synthetics_job_id': SYNTHETICS_JOB_ID,
+        'synthetics_monitor_id': SYNTHETICS_MONITOR_ID}
 
 @validate_synthetics_transaction_trace(_test_valid_synthetics_tt_required)
 @override_application_settings(_override_settings)

@@ -17,6 +17,9 @@ import sys
 
 import newrelic.packages.six as six
 
+from newrelic.core.attribute_filter import DST_ERROR_COLLECTOR
+from newrelic.core.attribute import create_user_attributes
+
 from .error_collector import TracedError
 from .internal_metrics import (internal_trace, InternalTrace, internal_metric)
 from .database_utils import explain_plan
@@ -498,12 +501,10 @@ class StatsEngine(object):
         # Only add params if High Security Mode is off.
 
         if settings.high_security:
-            custom_params = {}
-
+            attributes = []
         else:
-            custom_params = params
-
-        exc_type = exc.__name__
+            attributes = create_user_attributes(params,
+                    settings.attribute_filter)
 
         # Check to see if we need to strip the message before recording it.
 
@@ -526,8 +527,11 @@ class StatsEngine(object):
 
         params["stack_trace"] = exception_stack(tb)
 
-        if settings.error_collector.attributes.enabled:
-            params["custom_params"] = custom_params
+        # filter custom error specific params using attribute filter (user)
+        params['userAttributes'] = {}
+        for attr in attributes:
+            if attr.destinations & DST_ERROR_COLLECTOR:
+                params['userAttributes'][attr.name] = attr.value
 
         error_details = TracedError(
                 start_time=time.time(),

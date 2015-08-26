@@ -173,3 +173,59 @@ _expected_absent_attributes = {
 @override_application_settings(_override_settings)
 def test_error_in_transaction_trace_attributes_disabled():
     run_failing_request()
+
+# =========================  outside transaction
+
+class OutsideWithParamsError(Exception):
+    pass
+OutsideWithParamsError.name = callable_name(OutsideWithParamsError)
+
+def test_error_trace_outside_transaction():
+
+    _expected_attributes = {
+            'user' : ['test_key'],
+            'agent' : [],
+            'intrinsic' : []
+            }
+
+    try:
+        raise OutsideWithParamsError("Error outside transaction")
+    except OutsideWithParamsError:
+        application_instance = application()
+        application_instance.record_exception(params={'test_key': 'test_value'})
+
+    my_error = core_application_stats_engine_error(OutsideWithParamsError.name)
+
+    check_error_attributes(my_error.parameters, _expected_attributes,
+            is_transaction=False)
+
+
+class OutsideNoParamsError(Exception):
+    pass
+OutsideNoParamsError.name = callable_name(OutsideNoParamsError)
+
+_override_settings = {
+        'error_collector.attributes.exclude' : ['test_key']
+}
+
+@override_application_settings(_override_settings)
+def test_error_trace_outside_transaction_excluded_user_param():
+
+    _expected_attributes = {}
+
+    _expected_absent_attributes = {
+            'user' : ['test_key'],
+            'agent' : [],
+            'intrinsic' : []
+            }
+
+    try:
+        raise OutsideNoParamsError("Error outside transaction")
+    except OutsideNoParamsError:
+        application_instance = application()
+        application_instance.record_exception(params={'test_key': 'test_value'})
+
+    my_error = core_application_stats_engine_error(OutsideNoParamsError.name)
+
+    check_error_attributes(my_error.parameters, _expected_attributes,
+            _expected_absent_attributes, is_transaction=False)

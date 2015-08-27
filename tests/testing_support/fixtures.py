@@ -595,6 +595,50 @@ def validate_synthetics_transaction_trace(required_params={},
 
     return _validate_synthetics_transaction_trace
 
+def validate_tt_collector_json(required_params={},
+        forgone_params={}, should_exist=True):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_tt_collector_json(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+
+            # Now that transaction has been recorded, generate
+            # a transaction trace
+
+            connections = SQLConnections()
+            trace_data = instance.transaction_trace_data(connections)
+
+            trace0 = trace_data[0] #1st trace
+            assert isinstance(trace0[0], (int, float)) # start time (ms)
+            assert isinstance(trace0[1], (int, float)) # duration (ms)
+            assert isinstance(trace0[2], six.string_types) # scope
+            assert isinstance(trace0[3], six.string_types) # request url
+            # array of trace segments
+            trace_segments = unpack_field(trace0[4])
+            assert isinstance(trace_segments[0][0], (int,float)) # start time (s)
+            # the next two items should be empty dicts, old parameters stuff
+            # placeholders for now
+            assert isinstance(trace_segments[0][1], dict)
+            assert len(trace_segments[0][1]) == 0
+            assert isinstance(trace_segments[0][2], dict)
+            assert len(trace_segments[0][2]) == 0
+            # root node in slot 3
+            root_node = trace_segments[0][3]
+            assert root_node[2] == 'ROOT'
+            attributes = trace_segments[0][4]
+
+            assert 'intrinsics' in attributes
+            assert 'userAttributes' in attributes
+            assert 'agentAttributes' in attributes
+
+        return result
+
+    return _validate_tt_collector_json
+
 def validate_transaction_trace_attributes(required_params={},
         forgone_params={}, should_exist=True):
     @transient_function_wrapper('newrelic.core.stats_engine',

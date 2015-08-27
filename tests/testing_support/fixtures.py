@@ -435,16 +435,24 @@ def validate_custom_parameters(required_params=[], forgone_params=[]):
 
         transaction = _bind_params(*args, **kwargs)
 
+        # these are pre-destination applied attributes, so they may not
+        # actually end up in a transaction/error trace, we are merely testing
+        # for presence on the TransactionNode
+
+        attrs = {}
+        for attr in transaction.attributes_user:
+            attrs[attr.name] = attr.value
+
         for name, value in required_params:
-            assert name in transaction.custom_params, ('name=%r, '
-                    'params=%r' % (name, transaction.custom_params))
-            assert transaction.custom_params[name] == value, (
+            assert name in attrs, ('name=%r, '
+                    'params=%r' % (name, attrs))
+            assert attrs[name] == value, (
                     'name=%r, value=%r, params=%r' % (name, value,
-                    transaction.custom_params))
+                    attrs))
 
         for name, value in forgone_params:
-            assert name not in transaction.custom_params, ('name=%r, '
-                    'params=%r' % (name, transaction.custom_params))
+            assert name not in attrs, ('name=%r, '
+                    'params=%r' % (name, attrs))
 
         return wrapped(*args, **kwargs)
 

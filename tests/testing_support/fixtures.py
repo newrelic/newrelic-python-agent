@@ -723,7 +723,6 @@ def check_error_attributes(parameters, required_params={}, forgone_params={},
 
     check_attributes(parameters, required_params, forgone_params)
 
-
 def check_attributes(parameters, required_params={}, forgone_params={}):
     if required_params:
         for param in required_params['agent']:

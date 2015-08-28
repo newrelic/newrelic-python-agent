@@ -78,8 +78,11 @@ class TransactionNode(_TransactionNode):
             # and how the exclusive component would appear in
             # the overview graphs.
 
-            yield TimeMetric(name='HttpDispatcher', scope='',
-                    duration=self.duration, exclusive=None)
+            yield TimeMetric(
+                    name='HttpDispatcher',
+                    scope='',
+                    duration=self.duration,
+                    exclusive=None)
 
             # Upstream queue time within any web server front end.
 
@@ -94,12 +97,18 @@ class TransactionNode(_TransactionNode):
                 if queue_wait < 0:
                     queue_wait = 0
 
-                yield TimeMetric(name='WebFrontend/QueueTime', scope='',
-                        duration=queue_wait, exclusive=None)
+                yield TimeMetric(
+                        name='WebFrontend/QueueTime',
+                        scope='',
+                        duration=queue_wait,
+                        exclusive=None)
 
         # Generate the full transaction metric.
 
-        yield TimeMetric(name=self.path, scope='', duration=self.duration,
+        yield TimeMetric(
+                name=self.path,
+                scope='',
+                duration=self.duration,
                 exclusive=self.exclusive)
 
         # Generate the rollup metric.
@@ -109,27 +118,42 @@ class TransactionNode(_TransactionNode):
         else:
             rollup = self.type
 
-        yield TimeMetric(name=rollup, scope='', duration=self.duration,
+        yield TimeMetric(
+                name=rollup,
+                scope='',
+                duration=self.duration,
                 exclusive=self.exclusive)
 
         if self.errors:
             # Generate overall rollup metric indicating if errors present.
-            yield TimeMetric(name='Errors/all', scope='', duration=0.0,
-                      exclusive=None)
+            yield TimeMetric(
+                    name='Errors/all',
+                    scope='',
+                    duration=0.0,
+                    exclusive=None)
 
             # Generate individual error metric for transaction.
-            yield TimeMetric(name='Errors/%s' % self.path, scope='',
-                    duration=0.0, exclusive=None)
+            yield TimeMetric(
+                    name='Errors/%s' % self.path,
+                    scope='',
+                    duration=0.0,
+                    exclusive=None)
 
             # Generate rollup metric for WebTransaction errors.
             if self.type == 'WebTransaction':
-                yield TimeMetric(name='Errors/allWeb', scope='', duration=0.0,
+                yield TimeMetric(
+                        name='Errors/allWeb',
+                        scope='',
+                        duration=0.0,
                         exclusive=None)
 
             # Generate rollup metric for OtherTransaction errors.
             if self.type != 'WebTransaction':
-                yield TimeMetric(name='Errors/allOther', scope='',
-                        duration=0.0, exclusive=None)
+                yield TimeMetric(
+                        name='Errors/allOther',
+                        scope='',
+                        duration=0.0,
+                        exclusive=None)
 
         # Now for the children.
 
@@ -180,14 +204,20 @@ class TransactionNode(_TransactionNode):
         else:
             name = 'Apdex/%s/%s' % (self.group, self.name)
 
-        yield ApdexMetric(name=name, satisfying=satisfying,
-                tolerating=tolerating, frustrating=frustrating,
+        yield ApdexMetric(
+                name=name,
+                satisfying=satisfying,
+                tolerating=tolerating,
+                frustrating=frustrating,
                 apdex_t=self.apdex_t)
 
         # Generate the rollup metric.
 
-        yield ApdexMetric(name='Apdex', satisfying=satisfying,
-                tolerating=tolerating, frustrating=frustrating,
+        yield ApdexMetric(
+                name='Apdex',
+                satisfying=satisfying,
+                tolerating=tolerating,
+                frustrating=frustrating,
                 apdex_t=self.apdex_t)
 
     def error_details(self):
@@ -238,8 +268,10 @@ class TransactionNode(_TransactionNode):
                     params['userAttributes'][attr.name] = attr.value
 
             yield newrelic.core.error_collector.TracedError(
-                    start_time=error.timestamp, path=self.path,
-                    message=error.message, type=error.type,
+                    start_time=error.timestamp,
+                    path=self.path,
+                    message=error.message,
+                    type=error.type,
                     parameters=params)
 
     def trace_node(self, stats, root, connections):
@@ -260,8 +292,12 @@ class TransactionNode(_TransactionNode):
 
         params = {}
 
-        return newrelic.core.trace_node.TraceNode(start_time=start_time,
-                end_time=end_time, name=name, params=params, children=children,
+        return newrelic.core.trace_node.TraceNode(
+                start_time=start_time,
+                end_time=end_time,
+                name=name,
+                params=params,
+                children=children,
                 label=None)
 
     @internal_trace('Supportability/Python/TransactionNode/Calls/'
@@ -297,11 +333,20 @@ class TransactionNode(_TransactionNode):
         # which is returned. It inherits the start and end time
         # from the actual top node for the transaction.
 
-        root = newrelic.core.trace_node.TraceNode(trace_node[0],
-                trace_node[1], 'ROOT', {}, [trace_node], label=None)
+        root = newrelic.core.trace_node.TraceNode(
+                start_time=trace_node.start_time,
+                end_time=trace_node.end_time,
+                name='ROOT',
+                params={},
+                children=[trace_node],
+                label=None)
 
-        return newrelic.core.trace_node.RootNode(start_time=start_time,
-                empty0={}, empty1={}, root=root, attributes=attributes)
+        return newrelic.core.trace_node.RootNode(
+                start_time=start_time,
+                empty0={},
+                empty1={},
+                root=root,
+                attributes=attributes)
 
     def slow_sql_nodes(self, stats):
         for item in self.slow_sql:

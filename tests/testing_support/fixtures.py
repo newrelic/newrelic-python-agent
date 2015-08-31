@@ -605,6 +605,8 @@ def validate_synthetics_transaction_trace(required_params={},
 
 def validate_tt_collector_json(required_params={},
         forgone_params={}, should_exist=True):
+    '''make assertions based off the cross-agent spec on transaction traces'''
+
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
     def _validate_tt_collector_json(wrapped, instance, args, kwargs):
@@ -620,28 +622,70 @@ def validate_tt_collector_json(required_params={},
             connections = SQLConnections()
             trace_data = instance.transaction_trace_data(connections)
 
-            trace0 = trace_data[0] #1st trace
-            assert isinstance(trace0[0], (int, float)) # start time (ms)
-            assert isinstance(trace0[1], (int, float)) # duration (ms)
-            assert isinstance(trace0[2], six.string_types) # scope
-            assert isinstance(trace0[3], six.string_types) # request url
-            # array of trace segments
-            trace_segments = unpack_field(trace0[4])
-            assert isinstance(trace_segments[0][0], (int,float)) # start time (s)
-            # the next two items should be empty dicts, old parameters stuff
+            trace = trace_data[0] #1st trace
+            assert isinstance(trace[0], (int, float)) # start time (ms)
+            assert isinstance(trace[1], (int, float)) # duration (ms)
+            assert isinstance(trace[2], six.string_types) # transaction name
+            assert isinstance(trace[3], six.string_types) # request url
+
+            # trace details -- python agent always uses condensed trace array
+
+            trace_details, string_table = unpack_field(trace[4])
+            assert len(trace_details) == 5
+            assert isinstance(trace_details[0], (int,float)) # start time (s)
+
+            # the next two items should be empty dicts, old parameters stuff,
             # placeholders for now
-            assert isinstance(trace_segments[0][1], dict)
-            assert len(trace_segments[0][1]) == 0
-            assert isinstance(trace_segments[0][2], dict)
-            assert len(trace_segments[0][2]) == 0
+
+            assert isinstance(trace_details[1], dict)
+            assert len(trace_details[1]) == 0
+            assert isinstance(trace_details[2], dict)
+            assert len(trace_details[2]) == 0
+
             # root node in slot 3
-            root_node = trace_segments[0][3]
+
+            root_node = trace_details[3]
+            assert isinstance(root_node[0], (int, float)) # entry timestamp
+            assert isinstance(root_node[1], (int, float)) # exit timestamp
             assert root_node[2] == 'ROOT'
-            attributes = trace_segments[0][4]
+            assert isinstance(root_node[3], dict)
+            assert len(root_node[3]) == 0 # spec shows empty (for root)
+            children = root_node[4]
+            assert isinstance(children, list)
+
+            # there are two optional items at the end of trace segments,
+            # class name that segment is in, and method name function is in;
+            # Python agent does not use these (only Java does)
+
+            # let's just test the first child
+            trace_segment = children[0]
+            assert isinstance(trace_segment[0], (int, float)) # entry timestamp
+            assert isinstance(trace_segment[1], (int, float)) # exit timestamp
+            assert isinstance(trace_segment[2], six.string_types) # scope
+            assert isinstance(trace_segment[3], dict) # request params
+            assert isinstance(trace_segment[4], list) # children
+
+            attributes = trace_details[4]
 
             assert 'intrinsics' in attributes
             assert 'userAttributes' in attributes
             assert 'agentAttributes' in attributes
+
+            assert isinstance(trace[5], six.string_types) #GUID
+            assert trace[6] is None # reserved for future use
+            assert trace[7] is False # deprecated force persist flag
+
+             # x-ray session ID
+
+            assert trace[8] is None or isinstance(trace[8], six.string_types)
+
+            # Synthetics ID
+
+            assert trace[9] is None or isinstance(trace[9], six.string_types)
+
+            assert isinstance(string_table, list)
+            for name in string_table:
+                assert isinstance(name, six.string_types) # metric name
 
         return result
 

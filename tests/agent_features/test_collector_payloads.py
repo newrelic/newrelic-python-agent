@@ -23,6 +23,7 @@ def normal_wsgi_application(environ, start_response):
 exceptional_application = webtest.TestApp(exceptional_wsgi_application)
 normal_application = webtest.TestApp(normal_wsgi_application)
 
+
 @validate_error_trace_collector_json()
 def test_error_trace_json():
     try:

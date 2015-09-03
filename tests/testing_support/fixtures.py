@@ -227,7 +227,7 @@ def collector_agent_registration_fixture(app_name=None, default_settings={},
 
         if not use_fake_collector and not use_developer_mode:
             try:
-                _logger.debug('Record deployment marker at %s', url)
+                _logger.debug('Record deployment marker at %s' % url)
                 r = requests.post(url, proxies=proxies, headers=headers,
                         timeout=timeout, data=data)
             except Exception:
@@ -260,18 +260,16 @@ def collector_available_fixture(request):
     active = application.active
     assert active
 
-def raise_background_exceptions(timeout=5.0):
+def raise_background_exceptions(timeout=5.0, request_count=1):
     @function_wrapper
     def _raise_background_exceptions(wrapped, instance, args, kwargs):
-        if getattr(raise_background_exceptions, 'enabled', None) is None:
-            raise_background_exceptions.event = threading.Event()
-        else:
-            assert raise_background_exceptions.count == 0
 
         raise_background_exceptions.enabled = True
         raise_background_exceptions.count = 0
         raise_background_exceptions.exception = None
-        raise_background_exceptions.event.clear()
+        raise_background_exceptions.events = [threading.Event()
+                for i in range(0, request_count)]
+        raise_background_exceptions.event_index = 0
 
         try:
             result = wrapped(*args, **kwargs)
@@ -280,7 +278,7 @@ def raise_background_exceptions(timeout=5.0):
             # There was an exception in the immediate decorators.
             # Raise it rather than those from background threads.
 
-            raise_background_exceptions.event.clear()
+            raise_background_exceptions.events = []
             raise_background_exceptions.exception = None
             raise
 
@@ -292,8 +290,15 @@ def raise_background_exceptions(timeout=5.0):
 
             raise_background_exceptions.enabled = False
 
-            done = raise_background_exceptions.event.is_set()
-            raise_background_exceptions.event.clear()
+            assert raise_background_exceptions.event_index == request_count, (
+                    'Not all expected requests were set as completed, %s != %s'
+                    % (raise_background_exceptions.event_index, request_count,))
+
+            done = all(event.is_set() for event in
+                    raise_background_exceptions.events)
+            assert done, "Not all requests were successfully handled."
+
+            raise_background_exceptions.events = []
 
             exc_info = raise_background_exceptions.exception
             raise_background_exceptions.exception = None
@@ -313,12 +318,23 @@ def wait_for_background_threads(timeout=5.0):
         try:
             return wrapped(*args, **kwargs)
         finally:
-            raise_background_exceptions.event.wait(timeout)
+            # Wait until all the events have finished.
+            for i in range(0, len(raise_background_exceptions.events)):
+                raise_background_exceptions.events[i].wait(timeout)
 
     return _wait_for_background_threads
 
 @function_wrapper
 def catch_background_exceptions(wrapped, instance, args, kwargs):
+    # This decorator is used in the validate_transaction_* decorators found
+    # in this file. The validate decorators are ultimately used to decorate
+    # record_transaction though can wrap each other if we are validating
+    # more than 1 type of metric. Since we want to know when the collection
+    # of validate decorators finally exit we keep track of the nesting via
+    # raise_background_exceptions.count. This is ok, even in the asynchronous
+    # case because record_transaction does not yield and will run to completion
+    # before another call into it is made.
+
     if not getattr(raise_background_exceptions, 'enabled', False):
         return wrapped(*args, **kwargs)
 
@@ -331,8 +347,14 @@ def catch_background_exceptions(wrapped, instance, args, kwargs):
         raise
     finally:
         raise_background_exceptions.count -= 1
+        # Increment event_index so a different event is used for each request
+        # serviced (ie call to recored_transaction). We don't have to worry
+        # about locking before we increment the index because only one call to
+        # record transaction can happen at a time.
         if raise_background_exceptions.count == 0:
-            raise_background_exceptions.event.set()
+            event_index = raise_background_exceptions.event_index
+            raise_background_exceptions.events[event_index].set()
+            raise_background_exceptions.event_index += 1
 
 def _validate_transaction_metrics_helper(name, group='Function',
         background_task=False, scoped_metrics=[], rollup_metrics=[],

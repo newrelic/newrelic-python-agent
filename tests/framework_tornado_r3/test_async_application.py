@@ -2,7 +2,7 @@ import time
 
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_transaction_metric_times, validate_transaction_errors,
-    raise_background_exceptions)
+    raise_background_exceptions, wait_for_background_threads)
 
 from _test_async_application import (TestClient, TestServer,
         HelloRequestHandler, SleepRequestHandler, OneCallbackRequestHandler,
@@ -23,28 +23,34 @@ def setup_module(module):
 def teardown_module(module):
     _test_server.stop_server()
 
+@raise_background_exceptions()
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_async_application:HelloRequestHandler.get')
+@wait_for_background_threads()
 def test_simple_response():
     client = TestClient(_test_server.get_url())
     client.start()
     client.join()
     assert HelloRequestHandler.RESPONSE == client.response.body
 
+@raise_background_exceptions()
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_async_application:SleepRequestHandler.get')
 @validate_transaction_metric_times(
         '_test_async_application:SleepRequestHandler.get',
         custom_metrics = [
                 ('WebTransaction/Function/_test_async_application:SleepRequestHandler.get', (2.0, 2.3))])
+@wait_for_background_threads()
 def test_sleep_response():
     client = TestClient(_test_server.get_url('sleep'))
     client.start()
     client.join()
     assert SleepRequestHandler.RESPONSE == client.response.body
 
+@raise_background_exceptions(request_count=2)
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_async_application:SleepRequestHandler.get')
+@wait_for_background_threads()
 def test_sleep_two_clients():
     client1 = TestClient(_test_server.get_url('sleep'))
     client2 = TestClient(_test_server.get_url('sleep'))
@@ -63,9 +69,11 @@ def test_sleep_two_clients():
 _test_application_scoped_metrics = [
         ('Function/_test_async_application:OneCallbackRequestHandler.finish_callback', 1)]
 
+@raise_background_exceptions()
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_async_application:OneCallbackRequestHandler.get',
         scoped_metrics=_test_application_scoped_metrics)
+@wait_for_background_threads()
 def test_one_callback():
     client = TestClient(_test_server.get_url('one-callback'))
     client.start()
@@ -76,9 +84,11 @@ _test_application_scoped_metrics = [
         ('Function/_test_async_application:MultipleCallbacksRequestHandler.finish_callback', 1),
         ('Function/_test_async_application:MultipleCallbacksRequestHandler.counter_callback', 2)]
 
+@raise_background_exceptions()
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('_test_async_application:MultipleCallbacksRequestHandler.get',
         scoped_metrics=_test_application_scoped_metrics)
+@wait_for_background_threads()
 def test_multiple_callbacks():
     client = TestClient(_test_server.get_url('multiple-callbacks'))
     client.start()

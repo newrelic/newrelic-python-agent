@@ -554,6 +554,38 @@ def validate_database_duration():
 
     return _validate_database_duration
 
+def validate_transaction_event_attributes(required_params={},
+        forgone_params={}):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_transaction_event_attributes(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+
+        event_data = instance.sampled_data_set
+        # grab first transaction event in data set
+        intrinsics, attributes_user, attributes_agent = event_data.samples[0]
+
+        if required_params:
+            for param in required_params['agent']:
+                assert param in attributes_agent
+            for param in required_params['user']:
+                assert param in attributes_user
+            for param in required_params['intrinsic']:
+                assert param in intrinsics
+
+        if forgone_params:
+            for param in forgone_params['agent']:
+                assert param not in attributes_agent
+            for param in forgone_params['user']:
+                assert param not in attributes_user
+
+
+        return result
+    return _validate_transaction_event_attributes
+
 def validate_synthetics_transaction_trace(required_params={},
         forgone_params={}, should_exist=True):
     @transient_function_wrapper('newrelic.core.stats_engine',

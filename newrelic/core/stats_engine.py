@@ -814,10 +814,8 @@ class StatsEngine(object):
         elif (settings.collect_analytics_events and
                 settings.transaction_events.enabled):
 
-            if settings.transaction_events.transactions.enabled:
-
-                event = self.create_analytic_event(transaction)
-                self.__sampled_data_set.add(event)
+            event = self.create_analytic_event(transaction)
+            self.__sampled_data_set.add(event)
 
     def create_analytic_event(self, transaction):
         # Create the transaction record summarising key data for later

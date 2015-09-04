@@ -62,7 +62,6 @@ class CrossApplicationTracerSettings(Settings): pass
 class XraySessionSettings(Settings): pass
 class TransactionEventsSettings(Settings): pass
 class TransactionEventsAttributesSettings(Settings): pass
-class TransactionEventsTransactionsSettings(Settings): pass
 class ProcessHostSettings(Settings): pass
 class SyntheticsSettings(Settings): pass
 class UtilizationSettings(Settings): pass
@@ -87,7 +86,6 @@ _settings.debug = DebugSettings()
 _settings.cross_application_tracer = CrossApplicationTracerSettings()
 _settings.xray_session = XraySessionSettings()
 _settings.transaction_events = TransactionEventsSettings()
-_settings.transaction_events.transactions = TransactionEventsTransactionsSettings()
 _settings.transaction_events.attributes = TransactionEventsAttributesSettings()
 _settings.process_host = ProcessHostSettings()
 _settings.synthetics = SyntheticsSettings()
@@ -289,7 +287,6 @@ _settings.xray_session.enabled = True
 
 _settings.transaction_events.enabled = True
 _settings.transaction_events.max_samples_stored = 1200
-_settings.transaction_events.transactions.enabled = True
 _settings.transaction_events.attributes.enabled = True
 _settings.transaction_events.attributes.exclude = []
 _settings.transaction_events.attributes.include = []

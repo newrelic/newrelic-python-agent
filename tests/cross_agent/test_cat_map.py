@@ -145,8 +145,8 @@ def test_cat_map(name, appName, transactionName, transactionGuid,
 
     if expectedIntrinsicFields:
         _external_node_params = {
-                'nr.path_hash': expectedIntrinsicFields['nr.pathHash'],
-                'nr.trip_id': expectedIntrinsicFields['nr.tripId'],
+                'path_hash': expectedIntrinsicFields['nr.pathHash'],
+                'trip_id': expectedIntrinsicFields['nr.tripId'],
                 }
     else:
         _external_node_params = []

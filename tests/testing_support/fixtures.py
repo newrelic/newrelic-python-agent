@@ -435,16 +435,24 @@ def validate_custom_parameters(required_params=[], forgone_params=[]):
 
         transaction = _bind_params(*args, **kwargs)
 
+        # these are pre-destination applied attributes, so they may not
+        # actually end up in a transaction/error trace, we are merely testing
+        # for presence on the TransactionNode
+
+        attrs = {}
+        for attr in transaction.attributes_user:
+            attrs[attr.name] = attr.value
+
         for name, value in required_params:
-            assert name in transaction.custom_params, ('name=%r, '
-                    'params=%r' % (name, transaction.custom_params))
-            assert transaction.custom_params[name] == value, (
+            assert name in attrs, ('name=%r, '
+                    'params=%r' % (name, attrs))
+            assert attrs[name] == value, (
                     'name=%r, value=%r, params=%r' % (name, value,
-                    transaction.custom_params))
+                    attrs))
 
         for name, value in forgone_params:
-            assert name not in transaction.custom_params, ('name=%r, '
-                    'params=%r' % (name, transaction.custom_params))
+            assert name not in attrs, ('name=%r, '
+                    'params=%r' % (name, attrs))
 
         return wrapped(*args, **kwargs)
 
@@ -566,7 +574,7 @@ def validate_synthetics_transaction_trace(required_params={},
             # Check that synthetics resource id is in TT header
 
             header = trace_data[0]
-            header_key = 'nr.synthetics_resource_id'
+            header_key = 'synthetics_resource_id'
 
             if should_exist:
                 assert header_key in required_params
@@ -578,22 +586,142 @@ def validate_synthetics_transaction_trace(required_params={},
             # Check that synthetics ids are in TT custom params
 
             pack_data = unpack_field(trace_data[0][4])
-            tt_custom_params = pack_data[0][2]
+            tt_intrinsics = pack_data[0][4]['intrinsics']
 
             for name in required_params:
-                assert name in tt_custom_params, ('name=%r, '
-                        'custom_params=%r' % (name, tt_custom_params))
-                assert tt_custom_params[name] == required_params[name], (
-                        'name=%r, value=%r, custom_params=%r' %
-                        (name, required_params[name], custom_params))
+                assert name in tt_intrinsics, ('name=%r, '
+                        'intrinsics=%r' % (name, tt_intrinsics))
+                assert tt_intrinsics[name] == required_params[name], (
+                        'name=%r, value=%r, intrinsics=%r' %
+                        (name, required_params[name], intrinsics))
 
             for name in forgone_params:
-                assert name not in tt_custom_params, ('name=%r, '
-                        'custom_params=%r' % (name, tt_custom_params))
+                assert name not in tt_intrinsics, ('name=%r, '
+                        'intrinsics=%r' % (name, tt_intrinsics))
 
         return result
 
     return _validate_synthetics_transaction_trace
+
+def validate_tt_collector_json(required_params={},
+        forgone_params={}, should_exist=True):
+    '''make assertions based off the cross-agent spec on transaction traces'''
+
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_tt_collector_json(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+
+            # Now that transaction has been recorded, generate
+            # a transaction trace
+
+            connections = SQLConnections()
+            trace_data = instance.transaction_trace_data(connections)
+
+            trace = trace_data[0] #1st trace
+            assert isinstance(trace[0], (int, float)) # start time (ms)
+            assert isinstance(trace[1], (int, float)) # duration (ms)
+            assert isinstance(trace[2], six.string_types) # transaction name
+            assert isinstance(trace[3], six.string_types) # request url
+
+            # trace details -- python agent always uses condensed trace array
+
+            trace_details, string_table = unpack_field(trace[4])
+            assert len(trace_details) == 5
+            assert isinstance(trace_details[0], (int,float)) # start time (s)
+
+            # the next two items should be empty dicts, old parameters stuff,
+            # placeholders for now
+
+            assert isinstance(trace_details[1], dict)
+            assert len(trace_details[1]) == 0
+            assert isinstance(trace_details[2], dict)
+            assert len(trace_details[2]) == 0
+
+            # root node in slot 3
+
+            root_node = trace_details[3]
+            assert isinstance(root_node[0], (int, float)) # entry timestamp
+            assert isinstance(root_node[1], (int, float)) # exit timestamp
+            assert root_node[2] == 'ROOT'
+            assert isinstance(root_node[3], dict)
+            assert len(root_node[3]) == 0 # spec shows empty (for root)
+            children = root_node[4]
+            assert isinstance(children, list)
+
+            # there are two optional items at the end of trace segments,
+            # class name that segment is in, and method name function is in;
+            # Python agent does not use these (only Java does)
+
+            # let's just test the first child
+            trace_segment = children[0]
+            assert isinstance(trace_segment[0], (int, float)) # entry timestamp
+            assert isinstance(trace_segment[1], (int, float)) # exit timestamp
+            assert isinstance(trace_segment[2], six.string_types) # scope
+            assert isinstance(trace_segment[3], dict) # request params
+            assert isinstance(trace_segment[4], list) # children
+
+            attributes = trace_details[4]
+
+            assert 'intrinsics' in attributes
+            assert 'userAttributes' in attributes
+            assert 'agentAttributes' in attributes
+
+            assert isinstance(trace[5], six.string_types) #GUID
+            assert trace[6] is None # reserved for future use
+            assert trace[7] is False # deprecated force persist flag
+
+             # x-ray session ID
+
+            assert trace[8] is None or isinstance(trace[8], six.string_types)
+
+            # Synthetics ID
+
+            assert trace[9] is None or isinstance(trace[9], six.string_types)
+
+            assert isinstance(string_table, list)
+            for name in string_table:
+                assert isinstance(name, six.string_types) # metric name
+
+        return result
+
+    return _validate_tt_collector_json
+
+def validate_transaction_trace_attributes(required_params={},
+        forgone_params={}, should_exist=True):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_transaction_trace_attributes(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+
+            # Now that transaction has been recorded, generate
+            # a transaction trace
+
+            connections = SQLConnections()
+            trace_data = instance.transaction_trace_data(connections)
+
+            pack_data = unpack_field(trace_data[0][4])
+            assert len(pack_data) == 2
+            assert len(pack_data[0]) == 5
+            parameters = pack_data[0][4]
+
+            assert 'intrinsics' in parameters
+            assert 'userAttributes' in parameters
+            assert 'agentAttributes' in parameters
+
+            check_attributes(parameters, required_params, forgone_params)
+
+        return result
+
+    return _validate_transaction_trace_attributes
 
 def validate_transaction_error_trace_attributes(required_params={},
         forgone_params={}):
@@ -623,6 +751,7 @@ def validate_transaction_error_trace_attributes(required_params={},
 
 def check_error_attributes(parameters, required_params={}, forgone_params={},
         is_transaction=True):
+
     parameter_fields = ['userAttributes']
     if is_transaction:
         parameter_fields.extend(['stack_trace', 'agentAttributes',
@@ -636,6 +765,9 @@ def check_error_attributes(parameters, required_params={}, forgone_params={},
     assert 'custom_params' not in parameters
     assert 'request_params' not in parameters
 
+    check_attributes(parameters, required_params, forgone_params)
+
+def check_attributes(parameters, required_params={}, forgone_params={}):
     if required_params:
         for param in required_params['agent']:
             assert param in parameters['agentAttributes']
@@ -704,20 +836,19 @@ def validate_tt_parameters(required_params={},
 
             connections = SQLConnections()
             trace_data = instance.transaction_trace_data(connections)
-
             pack_data = unpack_field(trace_data[0][4])
-            tt_custom_params = pack_data[0][2]
+            tt_intrinsics = pack_data[0][4]['intrinsics']
 
             for name in required_params:
-                assert name in tt_custom_params, ('name=%r, '
-                        'custom_params=%r' % (name, tt_custom_params))
-                assert tt_custom_params[name] == required_params[name], (
-                        'name=%r, value=%r, custom_params=%r' %
-                        (name, required_params[name], tt_custom_params))
+                assert name in tt_intrinsics, ('name=%r, '
+                        'intrinsics=%r' % (name, tt_intrinsics))
+                assert tt_intrinsics[name] == required_params[name], (
+                        'name=%r, value=%r, intrinsics=%r' %
+                        (name, required_params[name], tt_intrinsics))
 
             for name in forgone_params:
-                assert name not in tt_custom_params, ('name=%r, '
-                        'custom_params=%r' % (name, tt_custom_params))
+                assert name not in tt_intrinsics, ('name=%r, '
+                        'intrinsics=%r' % (name, tt_intrinsics))
 
         return result
 

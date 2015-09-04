@@ -699,6 +699,16 @@ class Transaction(object):
         if self.synthetics_monitor_id:
             i_attrs['synthetics_monitor_id'] = self.synthetics_monitor_id
 
+        # Add in special CPU time value for UI to display CPU burn.
+
+        # XXX Disable cpu time value for CPU burn as was
+        # previously reporting incorrect value and we need to
+        # fix it, at least on Linux to report just the CPU time
+        # for the executing thread.
+
+        # if self._cpu_user_time_value:
+        #     i_attrs['cpu_time'] = self._cpu_user_time_value
+
         return create_intrinsic_attributes(i_attrs)
 
     @property

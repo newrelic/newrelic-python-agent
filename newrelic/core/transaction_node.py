@@ -14,8 +14,9 @@ import newrelic.core.trace_node
 from newrelic.core.metric import ApdexMetric, TimeMetric
 from newrelic.core.internal_metrics import internal_trace
 from newrelic.core.string_table import StringTable
-from newrelic.core.attribute_filter import DST_ERROR_COLLECTOR
 from newrelic.core.attribute import create_user_attributes
+from newrelic.core.attribute_filter import (DST_ERROR_COLLECTOR,
+        DST_TRANSACTION_TRACER)
 
 _TransactionNode = namedtuple('_TransactionNode',
         ['settings', 'path', 'type', 'group', 'name', 'request_uri',
@@ -77,8 +78,11 @@ class TransactionNode(_TransactionNode):
             # and how the exclusive component would appear in
             # the overview graphs.
 
-            yield TimeMetric(name='HttpDispatcher', scope='',
-                    duration=self.duration, exclusive=None)
+            yield TimeMetric(
+                    name='HttpDispatcher',
+                    scope='',
+                    duration=self.duration,
+                    exclusive=None)
 
             # Upstream queue time within any web server front end.
 
@@ -93,12 +97,18 @@ class TransactionNode(_TransactionNode):
                 if queue_wait < 0:
                     queue_wait = 0
 
-                yield TimeMetric(name='WebFrontend/QueueTime', scope='',
-                        duration=queue_wait, exclusive=None)
+                yield TimeMetric(
+                        name='WebFrontend/QueueTime',
+                        scope='',
+                        duration=queue_wait,
+                        exclusive=None)
 
         # Generate the full transaction metric.
 
-        yield TimeMetric(name=self.path, scope='', duration=self.duration,
+        yield TimeMetric(
+                name=self.path,
+                scope='',
+                duration=self.duration,
                 exclusive=self.exclusive)
 
         # Generate the rollup metric.
@@ -108,27 +118,42 @@ class TransactionNode(_TransactionNode):
         else:
             rollup = self.type
 
-        yield TimeMetric(name=rollup, scope='', duration=self.duration,
+        yield TimeMetric(
+                name=rollup,
+                scope='',
+                duration=self.duration,
                 exclusive=self.exclusive)
 
         if self.errors:
             # Generate overall rollup metric indicating if errors present.
-            yield TimeMetric(name='Errors/all', scope='', duration=0.0,
-                      exclusive=None)
+            yield TimeMetric(
+                    name='Errors/all',
+                    scope='',
+                    duration=0.0,
+                    exclusive=None)
 
             # Generate individual error metric for transaction.
-            yield TimeMetric(name='Errors/%s' % self.path, scope='',
-                    duration=0.0, exclusive=None)
+            yield TimeMetric(
+                    name='Errors/%s' % self.path,
+                    scope='',
+                    duration=0.0,
+                    exclusive=None)
 
             # Generate rollup metric for WebTransaction errors.
             if self.type == 'WebTransaction':
-                yield TimeMetric(name='Errors/allWeb', scope='', duration=0.0,
+                yield TimeMetric(
+                        name='Errors/allWeb',
+                        scope='',
+                        duration=0.0,
                         exclusive=None)
 
             # Generate rollup metric for OtherTransaction errors.
             if self.type != 'WebTransaction':
-                yield TimeMetric(name='Errors/allOther', scope='',
-                        duration=0.0, exclusive=None)
+                yield TimeMetric(
+                        name='Errors/allOther',
+                        scope='',
+                        duration=0.0,
+                        exclusive=None)
 
         # Now for the children.
 
@@ -179,14 +204,20 @@ class TransactionNode(_TransactionNode):
         else:
             name = 'Apdex/%s/%s' % (self.group, self.name)
 
-        yield ApdexMetric(name=name, satisfying=satisfying,
-                tolerating=tolerating, frustrating=frustrating,
+        yield ApdexMetric(
+                name=name,
+                satisfying=satisfying,
+                tolerating=tolerating,
+                frustrating=frustrating,
                 apdex_t=self.apdex_t)
 
         # Generate the rollup metric.
 
-        yield ApdexMetric(name='Apdex', satisfying=satisfying,
-                tolerating=tolerating, frustrating=frustrating,
+        yield ApdexMetric(
+                name='Apdex',
+                satisfying=satisfying,
+                tolerating=tolerating,
+                frustrating=frustrating,
                 apdex_t=self.apdex_t)
 
     def error_details(self):
@@ -237,8 +268,10 @@ class TransactionNode(_TransactionNode):
                     params['userAttributes'][attr.name] = attr.value
 
             yield newrelic.core.error_collector.TracedError(
-                    start_time=error.timestamp, path=self.path,
-                    message=error.message, type=error.type,
+                    start_time=error.timestamp,
+                    path=self.path,
+                    message=error.message,
+                    type=error.type,
                     parameters=params)
 
     def trace_node(self, stats, root, connections):
@@ -259,8 +292,12 @@ class TransactionNode(_TransactionNode):
 
         params = {}
 
-        return newrelic.core.trace_node.TraceNode(start_time=start_time,
-                end_time=end_time, name=name, params=params, children=children,
+        return newrelic.core.trace_node.TraceNode(
+                start_time=start_time,
+                end_time=end_time,
+                name=name,
+                params=params,
+                children=children,
                 label=None)
 
     @internal_trace('Supportability/Python/TransactionNode/Calls/'
@@ -271,60 +308,45 @@ class TransactionNode(_TransactionNode):
         self.trace_node_limit = limit
 
         start_time = newrelic.core.trace_node.root_start_time(self)
-        request_params = self.request_params or None
-        custom_params = self.custom_params or None
-        parameter_groups = self.parameter_groups or None
 
         trace_node = self.trace_node(stats, self, connections)
 
-        # Add in special CPU time value for UI to display CPU burn.
+        attributes = {}
 
-        if self.settings.transaction_tracer.attributes.enabled:
-            custom_params = custom_params and dict(custom_params) or {}
-        else:
-            custom_params = {}
+        attributes['intrinsics'] = {}
+        for attr in self.attributes_intrinsic:
+            if attr.destinations & DST_TRANSACTION_TRACER:
+                attributes['intrinsics'][attr.name] = attr.value
 
-        # XXX Disable cpu time value for CPU burn as was
-        # previously reporting incorrect value and we need to
-        # fix it, at least on Linux to report just the CPU time
-        # for the executing thread.
+        attributes['agentAttributes'] = {}
+        for attr in self.attributes_agent:
+            if attr.destinations & DST_TRANSACTION_TRACER:
+                attributes['agentAttributes'][attr.name] = attr.value
 
-        # custom_params['cpu_time'] = self.cpu_time
-
-        if self.client_cross_process_id:
-            custom_params['client_cross_process_id'] = \
-                    self.client_cross_process_id
-        if self.referring_transaction_guid:
-            custom_params['referring_transaction_guid'] = \
-                    self.referring_transaction_guid
-
-        # By prepending 'nr.' to the custom param names, they get treated as
-        # "Intrinsics" in the APM UI.
-
-        if self.trip_id:
-            custom_params['nr.trip_id'] = self.trip_id
-        if self.path_hash:
-            custom_params['nr.path_hash'] = self.path_hash
-
-        if self.synthetics_resource_id:
-            custom_params['nr.synthetics_resource_id'] = \
-                    self.synthetics_resource_id
-            custom_params['nr.synthetics_job_id'] = \
-                    self.synthetics_job_id
-            custom_params['nr.synthetics_monitor_id'] = \
-                    self.synthetics_monitor_id
+        attributes['userAttributes'] = {}
+        for attr in self.attributes_user:
+            if attr.destinations & DST_TRANSACTION_TRACER:
+                attributes['userAttributes'][attr.name] = attr.value
 
         # There is an additional trace node labelled as 'ROOT'
         # that needs to be inserted below the root node object
         # which is returned. It inherits the start and end time
         # from the actual top node for the transaction.
 
-        root = newrelic.core.trace_node.TraceNode(trace_node[0],
-                trace_node[1], 'ROOT', {}, [trace_node], label=None)
+        root = newrelic.core.trace_node.TraceNode(
+                start_time=trace_node.start_time,
+                end_time=trace_node.end_time,
+                name='ROOT',
+                params={},
+                children=[trace_node],
+                label=None)
 
-        return newrelic.core.trace_node.RootNode(start_time=start_time,
-                request_params=request_params, custom_params=custom_params,
-                root=root, parameter_groups=parameter_groups)
+        return newrelic.core.trace_node.RootNode(
+                start_time=start_time,
+                empty0={},
+                empty1={},
+                root=root,
+                attributes=attributes)
 
     def slow_sql_nodes(self, stats):
         for item in self.slow_sql:

@@ -149,7 +149,7 @@ def test_capture_attributes_enabled():
 
     obfuscation_key = settings.license_key[:13]
 
-    attributes = json.loads(deobfuscate(data['userAttributes'], 
+    attributes = json.loads(deobfuscate(data['userAttributes'],
             obfuscation_key))
 
     assert attributes['user'] == u'user-name'
@@ -215,7 +215,7 @@ def test_no_attributes_recorded():
     # As we are not recording any user attributes, we should not
     # actually have an entry at all in the footer.
 
-    assert 'userAttributes' not in data 
+    assert 'userAttributes' not in data
 
 _test_analytic_events_capture_attributes_disabled_settings = {
     'transaction_events.attributes.enabled': False,

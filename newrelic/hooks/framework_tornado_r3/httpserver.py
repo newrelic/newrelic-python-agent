@@ -12,10 +12,6 @@ _logger = logging.getLogger(__name__)
 
 def _nr_wrapper__ServerRequestAdapter_on_connection_close_(wrapped, instance,
         args, kwargs):
-    result = _end_request_monitoring(wrapped, instance, args, kwargs)
-    return result
-
-def _end_request_monitoring(wrapped, instance, args, kwargs):
 
     assert instance is not None
 

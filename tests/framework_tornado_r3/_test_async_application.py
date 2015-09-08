@@ -1,3 +1,4 @@
+import functools
 import threading
 import tornado
 
@@ -30,6 +31,21 @@ class OneCallbackRequestHandler(RequestHandler):
     @tornado.web.asynchronous
     def get(self):
         tornado.ioloop.IOLoop.current().add_callback(self.finish_callback)
+
+    def finish_callback(self):
+        self.finish(self.RESPONSE)
+
+class NamedStackContextWrapRequestHandler(RequestHandler):
+    RESPONSE = b'another callback'
+
+    @tornado.web.asynchronous
+    def get(self):
+        # This may be a little frail since we add the callback directly to
+        # ioloop's callback list. We do this since we want to test that using a
+        # named argument to parsed out correctly and the tornado internals don't
+        # use the named argument.
+        tornado.ioloop.IOLoop.current()._callbacks.append(functools.partial(
+                tornado.stack_context.wrap(fn=self.finish_callback)))
 
     def finish_callback(self):
         self.finish(self.RESPONSE)
@@ -67,6 +83,7 @@ class TestServer(threading.Thread):
             ('/', HelloRequestHandler),
             ('/sleep', SleepRequestHandler),
             ('/one-callback', OneCallbackRequestHandler),
+            ('/named-wrap-callback', NamedStackContextWrapRequestHandler),
             ('/multiple-callbacks', MultipleCallbacksRequestHandler),
             ])
         self.http_server = HTTPServer(self.application)

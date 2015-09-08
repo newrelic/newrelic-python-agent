@@ -6,7 +6,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
 
 from _test_async_application import (TestClient, TestServer,
         HelloRequestHandler, SleepRequestHandler, OneCallbackRequestHandler,
-        MultipleCallbacksRequestHandler)
+        NamedStackContextWrapRequestHandler, MultipleCallbacksRequestHandler)
 
 # We have 1 instance of the server that runs for every test. If we start and
 # stop the server between tests we observe sporadic failures including one,
@@ -79,6 +79,21 @@ def test_one_callback():
     client.start()
     client.join()
     assert OneCallbackRequestHandler.RESPONSE == client.response.body
+
+_test_application_scoped_metrics = [
+        ('Function/_test_async_application:NamedStackContextWrapRequestHandler.finish_callback', 1)]
+
+@raise_background_exceptions()
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics(
+        '_test_async_application:NamedStackContextWrapRequestHandler.get',
+        scoped_metrics=_test_application_scoped_metrics)
+@wait_for_background_threads()
+def test_named_wrapped_callback():
+    client = TestClient(_test_server.get_url('named-wrap-callback'))
+    client.start()
+    client.join()
+    assert NamedStackContextWrapRequestHandler.RESPONSE == client.response.body
 
 _test_application_scoped_metrics = [
         ('Function/_test_async_application:MultipleCallbacksRequestHandler.finish_callback', 1),

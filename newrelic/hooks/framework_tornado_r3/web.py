@@ -52,22 +52,17 @@ def _nr_wrapper_RequestHandler__execute_(wrapped, instance, args, kwargs):
                 ''.join(traceback.format_stack()[:-1]))
         return wrapped(*args, **kwargs)
 
-    # If the method isn't one of the supported ones, then we expect the
-    # wrapped method to raise an exception for HTTPError(405). Name the
-    # transaction after the wrapped method first so it is used if that
-    # occurs.
-
-    name = callable_name(wrapped)
-    transaction.set_transaction_name(name)
-
     if request.method not in handler.SUPPORTED_METHODS:
-        return wrapped(*args, **kwargs)
-
-    # Otherwise we name the transaction after the handler function that
-    # should end up being executed for the request.
-
-    name = callable_name(getattr(handler, request.method.lower()))
-    transaction.set_transaction_name(name)
+        # If the method isn't one of the supported ones, then we expect the
+        # wrapped method to raise an exception for HTTPError(405). In this case
+        # we name the transaction after the wrapped method.
+        name = callable_name(wrapped)
+        transaction.set_transaction_name(name)
+    else:
+        # Otherwise we name the transaction after the handler function that
+        # should end up being executed for the request.
+        name = callable_name(getattr(handler, request.method.lower()))
+        transaction.set_transaction_name(name)
 
     return wrapped(*args, **kwargs)
 

@@ -8,8 +8,9 @@ from . import (record_exception, retrieve_current_transaction,
 
 def _nr_wrapper_stack_context_wrap_(wrapped, instance, args, kwargs):
 
-    def _fxn_arg_extractor(fxn, *args, **kwargs):
-        return fxn
+    def _fxn_arg_extractor(fn, *args, **kwargs):
+        # fn is the name of the callable argument in stack_context.wrap
+        return fn
 
     fxn = _fxn_arg_extractor(*args, **kwargs)
 
@@ -32,7 +33,8 @@ def _nr_wrapper_stack_context_wrap_(wrapped, instance, args, kwargs):
         args = list(args)
         args[0] = transaction_aware_fxn
     else:
-        kwargs[fxn_arg_name] = transaction_aware_fxn
+        # Keyword argument name for the callable function is 'fn'.
+        kwargs['fn'] = transaction_aware_fxn
 
     try:
         stack_context_wrapped_fxn = wrapped(*args, **kwargs)

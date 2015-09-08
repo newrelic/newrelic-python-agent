@@ -2,7 +2,7 @@ import logging
 import traceback
 
 from newrelic.agent import wrap_function_wrapper
-from . import finalize_request_monitoring
+from .util import finalize_request_monitoring
 
 _logger = logging.getLogger(__name__)
 

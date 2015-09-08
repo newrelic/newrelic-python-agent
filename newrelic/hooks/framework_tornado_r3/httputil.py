@@ -4,7 +4,7 @@ import weakref
 
 from newrelic.agent import (application as application_instance, callable_name,
         WebTransaction, wrap_function_wrapper)
-from . import purge_current_transaction
+from .util import purge_current_transaction
 
 _logger = logging.getLogger(__name__)
 

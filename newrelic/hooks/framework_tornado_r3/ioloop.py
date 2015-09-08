@@ -1,7 +1,7 @@
 import logging
 
 from newrelic.agent import wrap_function_wrapper
-from . import finalize_transaction
+from .util import finalize_transaction
 
 _logger = logging.getLogger(__name__)
 
@@ -33,4 +33,5 @@ def _nr_wrapper_IOLoop__run_callback_(wrapped, instance, args, kwargs):
     return ret
 
 def instrument_tornado_ioloop(module):
-    wrap_function_wrapper(module, 'IOLoop._run_callback', _nr_wrapper_IOLoop__run_callback_)
+    wrap_function_wrapper(module, 'IOLoop._run_callback',
+            _nr_wrapper_IOLoop__run_callback_)

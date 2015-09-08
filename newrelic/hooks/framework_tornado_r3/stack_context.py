@@ -3,8 +3,8 @@ import sys
 from newrelic.agent import (wrap_function_wrapper, FunctionTrace,
     callable_name)
 from six.moves import range
-from . import (record_exception, retrieve_current_transaction,
-               replace_current_transaction)
+from .util import (record_exception, retrieve_current_transaction,
+                   replace_current_transaction)
 
 def _nr_wrapper_stack_context_wrap_(wrapped, instance, args, kwargs):
 

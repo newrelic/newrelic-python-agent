@@ -260,7 +260,35 @@ def collector_available_fixture(request):
     active = application.active
     assert active
 
-def raise_background_exceptions(timeout=5.0, request_count=1):
+def raise_background_exceptions(request_count=1):
+    # This decorator is used in conjuction with wait_for_background_threads
+    # and the validate_* decorators defined in this file. To use it, the
+    # validate_* decorators must be sandwiched between a calls to
+    # raise_background_exceptions and wait_for_background_threads.
+    # See and example below.
+    #
+    # This decorator is used to decorate a test when the test makes a request
+    # to a test server running on a different thread than the testing thread.
+    # This decorator does the following:
+    # 1) Ensures request_counts requests are serviced before the test exits or
+    #    timeout (defined in wait_for_background_threads) is reached.
+    # 2) Ensures the test fails if there is an uncaught exception occurs in
+    #    the background server.
+    #
+    # Here is an example of using this decorator with validate_* decorators and
+    # the required wait_for_background_threads decorator:
+    #
+    # @raise_background_exceptions()
+    # @validate_transaction_errors(errors=[])
+    # @validate_transaction_metrics('_test_async_application:OneCallbackRequestHandler.get',
+    #     scoped_metrics=_test_application_scoped_metrics)
+    # @wait_for_background_threads()
+    # def test_one_callback():
+    #  client = TestClient(_test_server.get_url('one-callback'))
+    #  client.start()
+    #  client.join()
+    #  assert OneCallbackRequestHandler.RESPONSE == client.response.body
+
     @function_wrapper
     def _raise_background_exceptions(wrapped, instance, args, kwargs):
 
@@ -313,6 +341,8 @@ def raise_background_exceptions(timeout=5.0, request_count=1):
     return _raise_background_exceptions
 
 def wait_for_background_threads(timeout=5.0):
+    # This decorator is used in conjuction with the decorator,
+    # raise_background_exceptions. Please see that method for documenation.
     @function_wrapper
     def _wait_for_background_threads(wrapped, instance, args, kwargs):
         try:
@@ -326,14 +356,14 @@ def wait_for_background_threads(timeout=5.0):
 
 @function_wrapper
 def catch_background_exceptions(wrapped, instance, args, kwargs):
-    # This decorator is used in the validate_transaction_* decorators found
-    # in this file. The validate decorators are ultimately used to decorate
-    # record_transaction though can wrap each other if we are validating
-    # more than 1 type of metric. Since we want to know when the collection
-    # of validate decorators finally exit we keep track of the nesting via
-    # raise_background_exceptions.count. This is ok, even in the asynchronous
-    # case because record_transaction does not yield and will run to completion
-    # before another call into it is made.
+    # This decorator is used in the validate_* decorators found
+    # in this file. The 'validate' decorators are ultimately used to decorate
+    # record_transaction though they can also wrap each other if we are
+    # validating more than 1 type of metric. Since we want to know when the
+    # collection of validate decorators finally exit we keep track of the
+    # nesting via raise_background_exceptions.count. This is ok, even in the
+    # asynchronous case, because record_transaction does not yield and will run
+    # to completion before another call into it is made.
 
     if not getattr(raise_background_exceptions, 'enabled', False):
         return wrapped(*args, **kwargs)

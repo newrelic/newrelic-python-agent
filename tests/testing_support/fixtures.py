@@ -1045,6 +1045,79 @@ def validate_database_trace_inputs(sql_parameters_type):
 
     return _validate_database_trace_inputs
 
+def validate_analytics_sample_data(name, capture_attributes=True,
+        database_call_count=0, external_call_count=0):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'SampledDataSet.add')
+    def _validate_analytics_sample_data(wrapped, instance, args, kwargs):
+        def _bind_params(sample, *args, **kwargs):
+            return sample
+
+        sample = _bind_params(*args, **kwargs)
+
+        assert isinstance(sample, list)
+        assert len(sample) == 3
+
+        intrinsics, user_attributes, agent_attributes = sample
+
+        assert intrinsics['type'] == 'Transaction'
+        assert intrinsics['name'] == name
+        assert intrinsics['timestamp'] >= 0.0
+        assert intrinsics['duration'] >= 0.0
+
+        assert 'queueDuration' not in intrinsics
+        assert 'memcacheDuration' not in intrinsics
+
+        if capture_attributes:
+            assert user_attributes['user'] == u'user-name'
+            assert user_attributes['account'] == u'account-name'
+            assert user_attributes['product'] == u'product-name'
+
+            if six.PY2:
+                assert user_attributes['bytes'] == u'bytes-value'
+            else:
+                assert 'bytes' not in user_attributes
+
+            assert user_attributes['string'] == u'string-value'
+            assert user_attributes['unicode'] == u'unicode-value'
+
+            assert user_attributes['integer'] == 1
+            assert user_attributes['float'] == 1.0
+
+            if six.PY2:
+                assert user_attributes['invalid-utf8'] == b'\xe2'
+                assert user_attributes['multibyte-utf8'] == b'\xe2\x88\x9a'
+            else:
+                assert 'invalid-utf8' not in user_attributes
+                assert 'multibyte-utf8' not in user_attributes
+
+            assert user_attributes['multibyte-unicode'] == b'\xe2\x88\x9a'.decode('utf-8')
+
+            assert 'list' not in user_attributes
+            assert 'tuple' not in user_attributes
+            assert 'dict' not in user_attributes
+
+        else:
+            assert user_attributes == {}
+
+        if database_call_count:
+            assert intrinsics['databaseDuration'] > 0
+            assert intrinsics['databaseCallCount'] == database_call_count
+        else:
+            assert 'databaseDuration' not in intrinsics
+            assert 'databaseCallCount' not in intrinsics
+
+        if external_call_count:
+            assert intrinsics['externalDuration'] > 0
+            assert intrinsics['externalCallCount'] == external_call_count
+        else:
+            assert 'externalDuration' not in intrinsics
+            assert 'externalCallCount' not in intrinsics
+
+        return wrapped(*args, **kwargs)
+
+    return _validate_analytics_sample_data
+
 def override_application_name(app_name):
     # The argument here cannot be named 'name', or else it triggers
     # a PyPy bug. Hence, we use 'app_name' instead.

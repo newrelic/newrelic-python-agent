@@ -808,16 +808,16 @@ class StatsEngine(object):
             if (len(self.__synthetics_events) <
                     settings.agent_limits.synthetics_events):
 
-                event = self.create_analytic_event(transaction)
+                event = self.create_transaction_event(transaction)
                 self.__synthetics_events.append(event)
 
         elif (settings.collect_analytics_events and
                 settings.transaction_events.enabled):
 
-            event = self.create_analytic_event(transaction)
+            event = self.create_transaction_event(transaction)
             self.__sampled_data_set.add(event)
 
-    def create_analytic_event(self, transaction):
+    def create_transaction_event(self, transaction):
         # Create the transaction record summarising key data for later
         # analytics. Only do this for web transaction at this point as
         # not sure if needs to be done for other transactions as field
@@ -827,7 +827,7 @@ class StatsEngine(object):
         settings = self.__settings
 
         name = self.__sampled_data_set.intern(transaction.path)
-        return transaction.create_analytic_event(self.__stats_table)
+        return transaction.transaction_event(self.__stats_table)
 
 
     @internal_trace('Supportability/Python/StatsEngine/Calls/metric_data')

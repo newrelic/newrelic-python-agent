@@ -371,7 +371,7 @@ class TransactionNode(_TransactionNode):
             else:
                 return 'F'
 
-    def create_analytic_event(self, stats_table):
+    def transaction_event(self, stats_table):
         # Create the transaction record summarising key data for later
         # analytics. Only do this for web transaction at this point as
         # not sure if needs to be done for other transactions as field

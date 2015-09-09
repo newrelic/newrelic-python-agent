@@ -27,8 +27,9 @@ from newrelic.core.transaction_cache import transaction_cache
 from newrelic.core.thread_utilization import utilization_tracker
 
 from ..core.attribute import (create_attributes, create_intrinsic_attributes,
-        create_agent_attributes, create_user_attributes, AGENT_DEFAULT_DST)
-from ..core.attribute_filter import DST_NONE
+        create_agent_attributes, create_user_attributes)
+from ..core.attribute_filter import (DST_NONE, DST_ERROR_COLLECTOR,
+        DST_TRANSACTION_TRACER)
 from ..core.stack_trace import exception_stack
 from ..common.encoding_utils import generate_path_hash
 
@@ -811,7 +812,8 @@ class Transaction(object):
                             DST_NONE, self.attribute_filter)
                 elif self.capture_params:
                     attributes_request = create_attributes(r_attrs,
-                            AGENT_DEFAULT_DST, self.attribute_filter)
+                            DST_ERROR_COLLECTOR | DST_TRANSACTION_TRACER,
+                            self.attribute_filter)
 
                 attributes_agent.extend(attributes_request)
 

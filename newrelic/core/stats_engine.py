@@ -1,6 +1,6 @@
 """The stats engine is what collects the accumulated transactions metrics,
 details of errors and slow transactions. There is one instance of the stats
-engine per application. This will be cleared upon each succesful harvest of
+engine per application. This will be cleared upon each successful harvest of
 data whereby it is sent to the core application.
 
 """
@@ -250,12 +250,12 @@ class StatsEngine(object):
     """The stats engine object holds the accumulated transactions metrics,
     details of errors and slow transactions. There should be one instance
     of the stats engine per application. This will be cleared upon each
-    succesful harvest of data whereby it is sent to the core application.
+    successful harvest of data whereby it is sent to the core application.
     No data will however be accumulated while there is no associated
     settings object indicating that application has been successfully
     activated and server side settings received.
 
-    All of the accumlated apdex, time and value metrics are mapped to from
+    All of the accumulated apdex, time and value metrics are mapped to from
     the same stats table. The key is comprised of a tuple (name, scope).
     For an apdex metric the scope is None. Time metrics should always have
     a string as the scope and it can be either empty or not. Value metrics
@@ -466,7 +466,7 @@ class StatsEngine(object):
             # Originally we used module.class but that was
             # inconsistent with everything else which used
             # module:name. So changed to use ':' as separator, but
-            # for backward compatability need to support '.' as
+            # for backward compatibility need to support '.' as
             # separator for time being. Check that with the ':'
             # last as we will use that name as the exception type.
 
@@ -613,13 +613,13 @@ class StatsEngine(object):
         return key
 
     def _update_xray_transaction(self, transaction):
-        """Check if transaction is an xray transaction and save it to the
+        """Check if transaction is an x-ray transaction and save it to the
         __xray_transactions
         """
 
         settings = self.__settings
 
-        # Nothing to do if we have reached the max limit of xray transactions
+        # Nothing to do if we have reached the max limit of x-ray transactions
         # to send per harvest.
 
         maximum = settings.agent_limits.xray_transactions
@@ -734,7 +734,7 @@ class StatsEngine(object):
         # whether over a time threshold calculated as percentage of
         # overall request time, up to a maximum number of unique
         # metrics. This is intended to limit how many metrics are
-        # reported for each transaction and try and cutdown on an
+        # reported for each transaction and try and cut down on an
         # explosion of unique metric names. The limits and thresholds
         # are applied after the metrics are reverse sorted based on
         # exclusive times for each metric. This ensures that the metrics
@@ -785,7 +785,7 @@ class StatsEngine(object):
         if (not transaction.suppress_transaction_trace and
                     transaction_tracer.enabled and settings.collect_traces):
 
-            # Transactions saved for xray session and Synthetics transactions
+            # Transactions saved for x-ray session and Synthetics transactions
             # do not depend on the transaction threshold.
 
             self._update_xray_transaction(transaction)
@@ -1430,7 +1430,7 @@ class StatsEngine(object):
 
         # Restore original slow transaction if slower than any newer slow
         # transaction. Also append any saved transactions corresponding to
-        # browser and xray traces, trimming them at the maximum to be kept.
+        # browser and x-ray traces, trimming them at the maximum to be kept.
 
         if merge_traces:
 
@@ -1469,9 +1469,9 @@ class StatsEngine(object):
 
             # If the transaction has an xray_id then it does not qualify to
             # be considered for slow transaction.  This is because in the Core
-            # app, there is logic to NOT show TTs with xray ids in the
+            # app, there is logic to NOT show TTs with x-ray ids in the
             # WebTransactions tab. If a TT has xray_id it is only shown under
-            # the xray page.
+            # the x-ray page.
 
             xray_id = getattr(transaction, 'xray_id', None)
             if transaction and xray_id is None:

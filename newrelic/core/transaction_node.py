@@ -36,7 +36,7 @@ class TransactionNode(_TransactionNode):
 
     """Class holding data corresponding to the root of the transaction. All
     the nodes of interest recorded for the transaction are held as a tree
-    structure within the 'childen' attribute.
+    structure within the 'children' attribute.
 
     """
 
@@ -420,7 +420,7 @@ class TransactionNode(_TransactionNode):
             _add_if_not_empty('nr.apdexPerfZone',
                     self.apdex_perf_zone())
 
-        # Add the Synthetics attributes to the 'records' dict.
+        # Add the Synthetics attributes to the intrinsics dict.
 
         if self.synthetics_resource_id:
             i_attrs['nr.guid'] = self.guid
@@ -429,24 +429,20 @@ class TransactionNode(_TransactionNode):
             i_attrs['nr.syntheticsMonitorId'] = self.synthetics_monitor_id
 
         def _add_call_time(source, target):
-            try:
-                call_time = stats_table[
-                        (source, '')].total_call_time
-            except KeyError:
-                pass
-            else:
+            # include time for keys previously added to stats table via
+            # stats_engine.record_transaction
+            if (source, '') in stats_table:
+                call_time = stats_table[(source, '')].total_call_time
                 if target in i_attrs:
                     i_attrs[target] += call_time
                 else:
                     i_attrs[target] = call_time
 
         def _add_call_count(source, target):
-            try:
-                call_count = stats_table[
-                        (source, '')].call_count
-            except KeyError:
-                pass
-            else:
+            # include counts for keys previously added to stats table via
+            # stats_engine.record_transaction
+            if (source, '') in stats_table:
+                call_count = stats_table[(source, '')].call_count
                 if target in i_attrs:
                     i_attrs[target] += call_count
                 else:
@@ -469,10 +465,12 @@ class TransactionNode(_TransactionNode):
         _add_call_time('Datastore/all', 'databaseDuration')
         _add_call_count('Datastore/all', 'databaseCallCount')
 
-        # not the same as agent attributes intrinsics, so don't use filter?
+        # Intrinsic attributes don't get filtered
+
         intrinsics = i_attrs
 
-        # agent attributes
+        # Add agent attributes to event
+
         for attr in self.attributes_agent:
             if attr.destinations & DST_TRANSACTION_EVENTS:
                 attributes_agent[attr.name] = attr.value

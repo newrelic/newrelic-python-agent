@@ -513,7 +513,7 @@ class Transaction(object):
                 path_hash=self.path_hash,
                 referring_path_hash=self._referring_path_hash,
                 alternate_path_hashes=self.alternate_path_hashes,
-                attributes_intrinsic=self.attributes_intrinsic,
+                attributes_intrinsic=self.attributes_intrinsic_trace,
                 attributes_agent=self.attributes_agent,
                 attributes_user=self.attributes_user,
                 )
@@ -682,7 +682,8 @@ class Transaction(object):
         return queue_wait
 
     @property
-    def attributes_intrinsic(self):
+    def attributes_intrinsic_trace(self):
+        """Intrinsic attributes for transaction traces and error traces"""
         i_attrs = {}
 
         if self.referring_transaction_guid:

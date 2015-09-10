@@ -28,6 +28,7 @@ class Attribute(_Attribute):
                 self.name, self.value, bin(self.destinations))
 
 def create_intrinsic_attributes(attr_dict):
+    """Intrinsic attributes for Transaction Trace and Error trace only"""
 
     # Intrinsic attributes don't go through the Attribute Filter
 

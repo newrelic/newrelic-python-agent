@@ -57,12 +57,12 @@ def _nr_wrapper_RequestHandler__execute_(wrapped, instance, args, kwargs):
         # wrapped method to raise an exception for HTTPError(405). In this case
         # we name the transaction after the wrapped method.
         name = callable_name(wrapped)
-        transaction.set_transaction_name(name)
     else:
         # Otherwise we name the transaction after the handler function that
         # should end up being executed for the request.
         name = callable_name(getattr(handler, request.method.lower()))
-        transaction.set_transaction_name(name)
+
+    transaction.set_transaction_name(name)
 
     return wrapped(*args, **kwargs)
 

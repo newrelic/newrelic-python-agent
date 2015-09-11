@@ -226,12 +226,10 @@ class SampledDataSet(object):
         self.samples = []
         self.capacity = capacity
         self.count = 0
-        self.strings = {}
 
     def reset(self):
         self.samples = []
         self.count = 0
-        self.strings = {}
 
     def add(self, sample):
         if len(self.samples) < self.capacity:
@@ -241,9 +239,6 @@ class SampledDataSet(object):
             if index < self.capacity:
                 self.samples[index] = sample
         self.count += 1
-
-    def intern(self, string):
-        return self.strings.setdefault(string, string)
 
 class StatsEngine(object):
 
@@ -808,27 +803,14 @@ class StatsEngine(object):
             if (len(self.__synthetics_events) <
                     settings.agent_limits.synthetics_events):
 
-                event = self.create_transaction_event(transaction)
+                event = transaction.transaction_event(self.__stats_table)
                 self.__synthetics_events.append(event)
 
         elif (settings.collect_analytics_events and
                 settings.transaction_events.enabled):
 
-            event = self.create_transaction_event(transaction)
+            event = transaction.transaction_event(self.__stats_table)
             self.__sampled_data_set.add(event)
-
-    def create_transaction_event(self, transaction):
-        # Create the transaction record summarising key data for later
-        # analytics. Only do this for web transaction at this point as
-        # not sure if needs to be done for other transactions as field
-        # names in record are based on web transaction metric names.
-        if not self.__settings:
-            return
-        settings = self.__settings
-
-        name = self.__sampled_data_set.intern(transaction.path)
-        return transaction.transaction_event(self.__stats_table)
-
 
     @internal_trace('Supportability/Python/StatsEngine/Calls/metric_data')
     def metric_data(self, normalizer=None):

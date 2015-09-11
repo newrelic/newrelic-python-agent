@@ -227,11 +227,11 @@ def collector_agent_registration_fixture(app_name=None, default_settings={},
 
         if not use_fake_collector and not use_developer_mode:
             try:
-                _logger.debug("Record deployment marker at %s" % url)
+                _logger.debug('Record deployment marker at %s' % url)
                 r = requests.post(url, proxies=proxies, headers=headers,
                         timeout=timeout, data=data)
             except Exception:
-                _logger.exception("Unable to record deployment marker.")
+                _logger.exception('Unable to record deployment marker.')
                 pass
 
         # Associate linked applications.
@@ -260,18 +260,44 @@ def collector_available_fixture(request):
     active = application.active
     assert active
 
-def raise_background_exceptions(timeout=5.0):
+def raise_background_exceptions(request_count=1):
+    # This decorator is used in conjuction with wait_for_background_threads
+    # and the validate_* decorators defined in this file. To use it, the
+    # validate_* decorators must be sandwiched between a calls to
+    # raise_background_exceptions and wait_for_background_threads.
+    # See and example below.
+    #
+    # This decorator is used to decorate a test when the test makes a request
+    # to a test server running on a different thread than the testing thread.
+    # This decorator does the following:
+    # 1) Ensures request_counts requests are serviced before the test exits or
+    #    timeout (defined in wait_for_background_threads) is reached.
+    # 2) Ensures the test fails if there is an uncaught exception occurs in
+    #    the background server.
+    #
+    # Here is an example of using this decorator with validate_* decorators and
+    # the required wait_for_background_threads decorator:
+    #
+    # @raise_background_exceptions()
+    # @validate_transaction_errors(errors=[])
+    # @validate_transaction_metrics('_test_async_application:OneCallbackRequestHandler.get',
+    #     scoped_metrics=_test_application_scoped_metrics)
+    # @wait_for_background_threads()
+    # def test_one_callback():
+    #  client = TestClient(_test_server.get_url('one-callback'))
+    #  client.start()
+    #  client.join()
+    #  assert OneCallbackRequestHandler.RESPONSE == client.response.body
+
     @function_wrapper
     def _raise_background_exceptions(wrapped, instance, args, kwargs):
-        if getattr(raise_background_exceptions, 'enabled', None) is None:
-            raise_background_exceptions.event = threading.Event()
-        else:
-            assert raise_background_exceptions.count == 0
 
         raise_background_exceptions.enabled = True
         raise_background_exceptions.count = 0
         raise_background_exceptions.exception = None
-        raise_background_exceptions.event.clear()
+        raise_background_exceptions.events = [threading.Event()
+                for i in range(0, request_count)]
+        raise_background_exceptions.event_index = 0
 
         try:
             result = wrapped(*args, **kwargs)
@@ -280,7 +306,7 @@ def raise_background_exceptions(timeout=5.0):
             # There was an exception in the immediate decorators.
             # Raise it rather than those from background threads.
 
-            raise_background_exceptions.event.clear()
+            raise_background_exceptions.events = []
             raise_background_exceptions.exception = None
             raise
 
@@ -292,8 +318,15 @@ def raise_background_exceptions(timeout=5.0):
 
             raise_background_exceptions.enabled = False
 
-            done = raise_background_exceptions.event.is_set()
-            raise_background_exceptions.event.clear()
+            assert raise_background_exceptions.event_index == request_count, (
+                    'Not all expected requests were set as completed, %s != %s'
+                    % (raise_background_exceptions.event_index, request_count,))
+
+            done = all(event.is_set() for event in
+                    raise_background_exceptions.events)
+            assert done, "Not all requests were successfully handled."
+
+            raise_background_exceptions.events = []
 
             exc_info = raise_background_exceptions.exception
             raise_background_exceptions.exception = None
@@ -308,17 +341,30 @@ def raise_background_exceptions(timeout=5.0):
     return _raise_background_exceptions
 
 def wait_for_background_threads(timeout=5.0):
+    # This decorator is used in conjuction with the decorator,
+    # raise_background_exceptions. Please see that method for documenation.
     @function_wrapper
     def _wait_for_background_threads(wrapped, instance, args, kwargs):
         try:
             return wrapped(*args, **kwargs)
         finally:
-            raise_background_exceptions.event.wait(timeout)
+            # Wait until all the events have finished.
+            for i in range(0, len(raise_background_exceptions.events)):
+                raise_background_exceptions.events[i].wait(timeout)
 
     return _wait_for_background_threads
 
 @function_wrapper
 def catch_background_exceptions(wrapped, instance, args, kwargs):
+    # This decorator is used in the validate_* decorators found
+    # in this file. The 'validate' decorators are ultimately used to decorate
+    # record_transaction though they can also wrap each other if we are
+    # validating more than 1 type of metric. Since we want to know when the
+    # collection of validate decorators finally exit we keep track of the
+    # nesting via raise_background_exceptions.count. This is ok, even in the
+    # asynchronous case, because record_transaction does not yield and will run
+    # to completion before another call into it is made.
+
     if not getattr(raise_background_exceptions, 'enabled', False):
         return wrapped(*args, **kwargs)
 
@@ -331,12 +377,24 @@ def catch_background_exceptions(wrapped, instance, args, kwargs):
         raise
     finally:
         raise_background_exceptions.count -= 1
+        # Increment event_index so a different event is used for each request
+        # serviced (ie call to recored_transaction). We don't have to worry
+        # about locking before we increment the index because only one call to
+        # record transaction can happen at a time.
         if raise_background_exceptions.count == 0:
-            raise_background_exceptions.event.set()
+            event_index = raise_background_exceptions.event_index
+            raise_background_exceptions.events[event_index].set()
+            raise_background_exceptions.event_index += 1
 
-def validate_transaction_metrics(name, group='Function',
+def _validate_transaction_metrics_helper(name, group='Function',
         background_task=False, scoped_metrics=[], rollup_metrics=[],
-        custom_metrics=[]):
+        custom_metrics=[], validate=None,
+        should_validate_top_level_metrics=True):
+    # Helper function to create decorator to validate transaction metrics.
+    # To create a decorator that validates some part of the transaction metrics,
+    # one defines a validate function then calls this method with the validate
+    # method. See validate_transaction_metrics below for an example of
+    # validating call counts.
 
     if background_task:
         rollup_metric = 'OtherTransaction/all'
@@ -356,37 +414,75 @@ def validate_transaction_metrics(name, group='Function',
         else:
             metrics = instance.stats_table
 
-            def _validate(name, scope, count):
-                key = (name, scope)
-                metric = metrics.get(key)
-
-                def _metrics_table():
-                    return 'metric=%r, metrics=%r' % (key, metrics)
-
-                def _metric_details():
-                    return 'metric=%r, count=%r' % (key, metric.call_count)
-
-                if count is not None:
-                    assert metric is not None, _metrics_table()
-                    assert metric.call_count == count, _metric_details()
-                else:
-                    assert metric is None, _metrics_table()
-
-            _validate(rollup_metric, '', 1)
-            _validate(transaction_metric, '', 1)
+            if should_validate_top_level_metrics:
+                validate(metrics, rollup_metric, '', 1)
+                validate(metrics, transaction_metric, '', 1)
 
             for scoped_name, scoped_count in scoped_metrics:
-                _validate(scoped_name, transaction_metric, scoped_count)
+                validate(metrics, scoped_name, transaction_metric, scoped_count)
 
             for rollup_name, rollup_count in rollup_metrics:
-                _validate(rollup_name, '', rollup_count)
+                validate(metrics, rollup_name, '', rollup_count)
 
             for custom_name, custom_count in custom_metrics:
-                _validate(custom_name, '', custom_count)
+                validate(metrics, custom_name, '', custom_count)
 
         return result
 
     return _validate_transaction_metrics
+
+def validate_transaction_metrics(name, group='Function',
+        background_task=False, scoped_metrics=[], rollup_metrics=[],
+        custom_metrics=[]):
+
+    def _validate(metrics, name, scope, count):
+        key = (name, scope)
+        metric = metrics.get(key)
+
+        def _metrics_table():
+            return 'metric=%r, metrics=%r' % (key, metrics)
+
+        def _metric_details():
+            return 'metric=%r, count=%r' % (key, metric.call_count)
+
+        if count is not None:
+            assert metric is not None, _metrics_table()
+            assert metric.call_count == count, _metric_details()
+        else:
+            assert metric is None, _metrics_table()
+
+    return _validate_transaction_metrics_helper(name, group,
+            background_task, scoped_metrics, rollup_metrics, custom_metrics,
+            _validate)
+
+def validate_transaction_metric_times(name, group='Function',
+        background_task=False, scoped_metrics=[], rollup_metrics=[],
+        custom_metrics=[]):
+
+    def _validate(metrics, name, scope, call_time_range):
+        key = (name, scope)
+        metric = metrics.get(key)
+
+        min_call_time, max_call_time = call_time_range
+        def _metrics_table():
+            return 'metric=%r, metrics=%r' % (key, metrics)
+
+        def _metric_details():
+            return 'metric=%r, total_call_time=%r' % (
+                key, metric.total_call_time)
+
+        if min_call_time is not None:
+            assert metric is not None, _metrics_table()
+            assert metric.total_call_time >= min_call_time, (
+                    _metric_details())
+            assert metric.total_call_time <= max_call_time, (
+                    _metric_details())
+        else:
+            assert metric is None, _metrics_table()
+
+    return _validate_transaction_metrics_helper(name, group,
+            background_task, scoped_metrics, rollup_metrics, custom_metrics,
+            _validate, should_validate_top_level_metrics=False)
 
 def validate_transaction_errors(errors=[], required_params=[],
         forgone_params=[]):

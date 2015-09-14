@@ -6,11 +6,17 @@ from .attribute_filter import (DST_ALL, DST_ERROR_COLLECTOR,
 _Attribute = namedtuple('_Attribute',
         ['name', 'value', 'destinations'])
 
+# The following defaults map, _DEFAULT_DESTINATIONS is created here, never
+# changed, and only used in create_agent_attributes. It is placed at the module
+# level here as an optimization
+
 # All agent attributes go to transaction traces and error traces by default
-_default_destinations = defaultdict(lambda:
+
+_DEFAULT_DESTINATIONS = defaultdict(lambda:
         DST_ERROR_COLLECTOR | DST_TRANSACTION_TRACER)
 
 # The following subset goes to transaction events by default
+
 trans_event_default = [
         'request.method',
         'request.headers.content-type',
@@ -19,7 +25,7 @@ trans_event_default = [
         'response.content-length'
 ]
 for attr in trans_event_default:
-    _default_destinations[attr] |= DST_TRANSACTION_EVENTS
+    _DEFAULT_DESTINATIONS[attr] |= DST_TRANSACTION_EVENTS
 
 class Attribute(_Attribute):
 
@@ -48,7 +54,7 @@ def create_agent_attributes(attr_dict, attribute_filter):
     attributes = []
 
     for k, v in attr_dict.items():
-        dest = attribute_filter.apply(k, _default_destinations[k])
+        dest = attribute_filter.apply(k, _DEFAULT_DESTINATIONS[k])
         attributes.append(Attribute(k, v, dest))
 
     return attributes

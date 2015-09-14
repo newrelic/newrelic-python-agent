@@ -314,6 +314,22 @@ translate_settings_tests = [
         TSetting('analytics_events.capture_attributes', False, True),
         TSetting('transaction_events.attributes.enabled', True, True)
     ),
+    (
+        TSetting('analytics_events.enabled', True, True),
+        TSetting('transaction_events.enabled', False, True)
+    ),
+    (
+        TSetting('analytics_events.enabled', False, True),
+        TSetting('transaction_events.enabled', True, True)
+    ),
+    (
+        TSetting('analytics_events.max_samples_stored', 1200, 1200),
+        TSetting('transaction_events.max_samples_stored', 9999, 1200)
+    ),
+    (
+        TSetting('analytics_events.max_samples_stored', 9999, 1200),
+        TSetting('transaction_events.max_samples_stored', 1200, 1200)
+    ),
 ]
 
 @pytest.mark.parametrize('old,new', translate_settings_tests)

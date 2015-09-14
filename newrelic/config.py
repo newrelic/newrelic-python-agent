@@ -598,6 +598,14 @@ deprecated_settings_map = [
         'analytics_events.capture_attributes',
         'transaction_events.attributes.enabled'
     ),
+    (
+        'analytics_events.enabled',
+        'transaction_events.enabled'
+    ),
+    (
+        'analytics_events.max_samples_stored',
+        'transaction_events.max_samples_stored'
+    ),
 ]
 
 def translate_deprecated_settings(settings, cached_settings):

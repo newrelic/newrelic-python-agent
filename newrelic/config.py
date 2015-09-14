@@ -1,3 +1,4 @@
+import copy
 import os
 import sys
 import logging
@@ -12,7 +13,7 @@ from .packages import six
 
 from .common.log_file import initialize_logging
 from .common.object_names import expand_builtin_exception_name
-from .core.config import Settings, apply_config_setting
+from .core.config import Settings, apply_config_setting, fetch_config_setting
 
 import newrelic.core.agent
 import newrelic.core.config
@@ -556,6 +557,91 @@ def _process_labels_setting(labels=None):
 
     _settings.labels = result
 
+def delete_setting(settings_object, name):
+    """Delete setting from settings_object.
+
+    If passed a 'root' setting, like 'error_collector', it will
+    delete 'error_collector' and all settings underneath it, such
+    as 'error_collector.attributes.enabled'
+
+    """
+
+    target = settings_object
+    fields = name.split('.', 1)
+
+    while len(fields) > 1:
+        if not hasattr(target, fields[0]):
+            break
+        target = getattr(target, fields[0])
+        fields = fields[1].split('.', 1)
+
+    try:
+        delattr(target, fields[0])
+    except AttributeError:
+        _logger.debug('Failed to delete setting: %r', name)
+        pass
+
+deprecated_settings_map = [
+    (
+        'transaction_tracer.capture_attributes',
+        'transaction_tracer.attributes.enabled'
+    ),
+    (
+        'error_collector.capture_attributes',
+        'error_collector.attributes.enabled'
+    ),
+    (
+        'browser_monitoring.capture_attributes',
+        'browser_monitoring.attributes.enabled'
+    ),
+    (
+        'analytics_events.capture_attributes',
+        'transaction_events.attributes.enabled'
+    ),
+]
+
+def translate_deprecated_settings(settings, cached_settings):
+    """If deprecated setting has been set by user, but the new
+    setting has not, then translate the deprecated setting to the
+    new one and delete the deprecated one from the settings object.
+
+    If both deprecated and new setting have been applied, ignore
+    deprecated setting.
+
+    settings:
+        Settings object
+
+    cached_settings:
+        A list of (key, value) pairs of the parsed global settings found
+        in the config file.
+
+    """
+
+    new_settings = copy.deepcopy(settings)
+
+    # cached_settings is a list of option key/values and can have duplicate
+    # keys, if the customer used environment sections in the config file.
+    # Since options are applied to the settings object in order, so that the
+    # options at the end of the list will override earlier options with the
+    # same key, then converting to a dict will result in each option having
+    # the most recently applied value.
+
+    cached = dict(cached_settings)
+
+    for (old_key, new_key) in deprecated_settings_map:
+
+        if old_key in cached:
+            if new_key in cached:
+                _logger.debug('Ignoring deprecated setting: %r', old_key)
+            else:
+                apply_config_setting(new_settings, new_key, cached[old_key])
+                _logger.debug('Applying value of deprecated setting %r to %r',
+                        old_key, new_key)
+
+            delete_setting(new_settings, old_key)
+
+    return new_settings
+
 def apply_local_high_security_mode_setting(settings):
     # When High Security Mode is activated, certain settings must be
     # set to be secure, even if that requires overriding a setting that
@@ -729,6 +815,9 @@ def _load_configuration(config_file=None, environment=None,
                     'Check agent documentation or release notes, or '
                     'contact New Relic support for clarification of '
                     'validity of the specific feature flag.', flag)
+
+    # Translate old settings
+    # translate_deprecated_settings(_settings)
 
     # Apply High Security Mode policy if enabled in local agent
     # configuration file.

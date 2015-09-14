@@ -1,3 +1,4 @@
+import collections
 import pytest
 
 try:
@@ -5,8 +6,10 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
-from newrelic.core.config import (global_settings_dump,
-    apply_config_setting, Settings)
+from newrelic.config import delete_setting, translate_deprecated_settings
+from newrelic.core.config import (global_settings_dump, flatten_settings,
+    apply_config_setting, apply_server_side_settings, Settings,
+    fetch_config_setting)
 
 def parameterize_local_config(settings_list):
     settings_object_list = []
@@ -249,3 +252,124 @@ def test_strip_proxy_details(settings):
             assert components.password == obfuscated
 
     assert proxy_host == expected_proxy_host
+
+def test_delete_setting():
+    d = {'transaction_tracer.capture_attributes': True}
+    settings = apply_server_side_settings(d)
+    delete_setting(settings, 'transaction_tracer.capture_attributes')
+    assert 'capture_attributes' not in settings.transaction_tracer
+
+def test_delete_setting_absent():
+    settings = apply_server_side_settings()
+    delete_setting(settings, 'transaction_tracer.capture_attributes')
+    assert 'capture_attributes' not in settings.transaction_tracer
+
+def test_delete_setting_parent():
+    settings = apply_server_side_settings()
+    assert 'transaction_tracer' in settings
+    assert 'attributes' in settings.transaction_tracer
+
+    delete_setting(settings, 'transaction_tracer')
+    assert 'transaction_tracer' not in settings
+
+# Create a set of tests for `translate_deprecated_setting`
+#
+# For each setting, there are 2 variations:
+#
+#       'value' == 'default'
+#       'value' != 'default'
+
+TSetting = collections.namedtuple('TSetting', ['name', 'value', 'default'])
+
+translate_settings_tests = [
+    (
+        TSetting('transaction_tracer.capture_attributes', True, True),
+        TSetting('transaction_tracer.attributes.enabled', False, True)
+    ),
+    (
+        TSetting('transaction_tracer.capture_attributes', False, True),
+        TSetting('transaction_tracer.attributes.enabled', True, True)
+    ),
+    (
+        TSetting('error_collector.capture_attributes', True, True),
+        TSetting('error_collector.attributes.enabled', False, True)
+    ),
+    (
+        TSetting('error_collector.capture_attributes', False, True),
+        TSetting('error_collector.attributes.enabled', True, True)
+    ),
+    (
+        TSetting('browser_monitoring.capture_attributes', False, False),
+        TSetting('browser_monitoring.attributes.enabled', True, False)
+    ),
+    (
+        TSetting('browser_monitoring.capture_attributes', True, False),
+        TSetting('browser_monitoring.attributes.enabled', False, False)
+    ),
+    (
+        TSetting('analytics_events.capture_attributes', True, True),
+        TSetting('transaction_events.attributes.enabled', False, True)
+    ),
+    (
+        TSetting('analytics_events.capture_attributes', False, True),
+        TSetting('transaction_events.attributes.enabled', True, True)
+    ),
+]
+
+@pytest.mark.parametrize('old,new', translate_settings_tests)
+def test_translate_deprecated_setting_without_new_setting(old, new):
+    # Before: deprecated setting will be in settings object.
+    #         new setting will be in settings object and have default value
+    #
+    # After:  deprecated setting will *NOT* be in settings object
+    #         new setting will have value of deprecated setting
+
+    settings = apply_server_side_settings()
+    apply_config_setting(settings, old.name, old.value)
+
+    assert fetch_config_setting(settings, old.name) == old.value
+    assert fetch_config_setting(settings, new.name) == new.default
+
+    cached = [(old.name, old.value)]
+    result = translate_deprecated_settings(settings, cached)
+    assert old.name not in flatten_settings(result)
+    assert fetch_config_setting(result, new.name) == old.value
+
+@pytest.mark.parametrize('old,new', translate_settings_tests)
+def test_translate_deprecated_setting_with_new_setting(old, new):
+    # Before: deprecated setting will be in settings object.
+    #         new setting will be in settings object and have its value
+    #
+    # After:  deprecated setting will *NOT* be in settings object
+    #         new setting will still have its value (remain unchanged)
+
+    settings = apply_server_side_settings()
+    apply_config_setting(settings, old.name, old.value)
+    apply_config_setting(settings, new.name, new.value)
+
+    assert fetch_config_setting(settings, old.name) == old.value
+    assert fetch_config_setting(settings, new.name) == new.value
+
+    cached = [(old.name, old.value), (new.name, new.value)]
+    result = translate_deprecated_settings(settings, cached)
+    assert old.name not in flatten_settings(result)
+    assert fetch_config_setting(result, new.name) == new.value
+
+@pytest.mark.parametrize('old,new', translate_settings_tests)
+def test_translate_deprecated_setting_without_old_setting(old, new):
+    # Before: deprecated setting will *NOT* be in settings object.
+    #         new setting will be in settings object and have its value
+    #
+    # After:  deprecated setting will still *NOT* be in settings object
+    #         new setting will still have its value (remain unchanged)
+
+    settings = apply_server_side_settings()
+    apply_config_setting(settings, new.name, new.value)
+
+    assert old.name not in flatten_settings(settings)
+    assert fetch_config_setting(settings, new.name) == new.value
+
+    cached = [(new.name, new.value)]
+    result = translate_deprecated_settings(settings, cached)
+    assert old.name not in flatten_settings(result)
+    assert fetch_config_setting(result, new.name) == new.value

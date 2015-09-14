@@ -329,7 +329,7 @@ class TransactionNode(_TransactionNode):
             if attr.destinations & DST_TRANSACTION_TRACER:
                 attributes['userAttributes'][attr.name] = attr.value
 
-        # There is an additional trace node labelled as 'ROOT'
+        # There is an additional trace node labeled as 'ROOT'
         # that needs to be inserted below the root node object
         # which is returned. It inherits the start and end time
         # from the actual top node for the transaction.
@@ -372,20 +372,20 @@ class TransactionNode(_TransactionNode):
                 return 'F'
 
     def transaction_event(self, stats_table):
-        # Create the transaction record summarising key data for later
-        # analytics. Only do this for web transaction at this point as
-        # not sure if needs to be done for other transactions as field
-        # names in record are based on web transaction metric names.
-        settings = self.settings
+        # Create the transaction event, which is a list of attributes.
 
-        intrinsics = {}
+        # Intrinsic attributes don't get filtered
+
+        intrinsics = self._event_instrinsic_attributes(stats_table)
+
+        # Add user and agent attributes to event
+
         attributes_user = {}
-        attributes_agent = {}
 
         for attr in self.attributes_user:
             if attr.destinations & DST_TRANSACTION_EVENTS:
-                # We only retain any attributes which have string type for key and
-                # string or numeric for value.
+                # We only retain any attributes which have string type for key
+                # and string or numeric for value.
                 if not isinstance(attr.name, six.string_types):
                     continue
                 if (not isinstance(attr.value, six.string_types) and
@@ -395,21 +395,35 @@ class TransactionNode(_TransactionNode):
 
                 attributes_user[attr.name] = attr.value
 
-        i_attrs = {}
+        attributes_agent = {}
 
-        i_attrs['type'] = 'Transaction'
-        i_attrs['name'] = self.path
-        i_attrs['timestamp'] = self.start_time
-        i_attrs['duration'] = self.duration
+        for attr in self.attributes_agent:
+            if attr.destinations & DST_TRANSACTION_EVENTS:
+                attributes_agent[attr.name] = attr.value
+
+        transaction_event = [intrinsics, attributes_user, attributes_agent]
+        return transaction_event
+
+    def _event_instrinsic_attributes(self, stats_table):
+        """Put together the intrinsic attributes for a transaction event"""
+
+        settings = self.settings
+
+        intrinsics = {}
+
+        intrinsics['type'] = 'Transaction'
+        intrinsics['name'] = self.path
+        intrinsics['timestamp'] = self.start_time
+        intrinsics['duration'] = self.duration
 
         def _add_if_not_empty(key, value):
             if value:
-                i_attrs[key] = value
+                intrinsics[key] = value
 
         if self.path_hash:
-            i_attrs['nr.guid'] = self.guid
-            i_attrs['nr.tripId'] = self.trip_id
-            i_attrs['nr.pathHash'] = self.path_hash
+            intrinsics['nr.guid'] = self.guid
+            intrinsics['nr.tripId'] = self.trip_id
+            intrinsics['nr.pathHash'] = self.path_hash
 
             _add_if_not_empty('nr.referringPathHash',
                     self.referring_path_hash)
@@ -423,30 +437,30 @@ class TransactionNode(_TransactionNode):
         # Add the Synthetics attributes to the intrinsics dict.
 
         if self.synthetics_resource_id:
-            i_attrs['nr.guid'] = self.guid
-            i_attrs['nr.syntheticsResourceId'] = self.synthetics_resource_id
-            i_attrs['nr.syntheticsJobId'] = self.synthetics_job_id
-            i_attrs['nr.syntheticsMonitorId'] = self.synthetics_monitor_id
+            intrinsics['nr.guid'] = self.guid
+            intrinsics['nr.syntheticsResourceId'] = self.synthetics_resource_id
+            intrinsics['nr.syntheticsJobId'] = self.synthetics_job_id
+            intrinsics['nr.syntheticsMonitorId'] = self.synthetics_monitor_id
 
         def _add_call_time(source, target):
             # include time for keys previously added to stats table via
             # stats_engine.record_transaction
             if (source, '') in stats_table:
                 call_time = stats_table[(source, '')].total_call_time
-                if target in i_attrs:
-                    i_attrs[target] += call_time
+                if target in intrinsics:
+                    intrinsics[target] += call_time
                 else:
-                    i_attrs[target] = call_time
+                    intrinsics[target] = call_time
 
         def _add_call_count(source, target):
             # include counts for keys previously added to stats table via
             # stats_engine.record_transaction
             if (source, '') in stats_table:
                 call_count = stats_table[(source, '')].call_count
-                if target in i_attrs:
-                    i_attrs[target] += call_count
+                if target in intrinsics:
+                    intrinsics[target] += call_count
                 else:
-                    i_attrs[target] = call_count
+                    intrinsics[target] = call_count
 
         _add_call_time('WebFrontend/QueueTime', 'queueDuration')
 
@@ -465,16 +479,5 @@ class TransactionNode(_TransactionNode):
         _add_call_time('Datastore/all', 'databaseDuration')
         _add_call_count('Datastore/all', 'databaseCallCount')
 
-        # Intrinsic attributes don't get filtered
+        return intrinsics
 
-        intrinsics = i_attrs
-
-        # Add agent attributes to event
-
-        for attr in self.attributes_agent:
-            if attr.destinations & DST_TRANSACTION_EVENTS:
-                attributes_agent[attr.name] = attr.value
-
-
-        analytic_event = [intrinsics, attributes_user, attributes_agent]
-        return analytic_event

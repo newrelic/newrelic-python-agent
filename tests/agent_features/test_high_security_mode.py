@@ -65,6 +65,13 @@ _hsm_local_config_file_settings_enabled = [
     },
     {
         'high_security': True,
+        'ssl': True,
+        'capture_params': None,
+        'transaction_tracer.record_sql': 'raw',
+        'strip_exception_messages.enabled': True,
+    },
+    {
+        'high_security': True,
         'ssl': False,
         'capture_params': True,
         'transaction_tracer.record_sql': 'raw',
@@ -130,7 +137,7 @@ def test_local_config_file_hsm_override_enabled(settings):
     apply_local_high_security_mode_setting(settings)
 
     assert settings.ssl
-    assert not settings.capture_params
+    assert settings.capture_params not in (True, None)
     assert settings.transaction_tracer.record_sql in ('off', 'obfuscated')
     assert settings.strip_exception_messages.enabled
 

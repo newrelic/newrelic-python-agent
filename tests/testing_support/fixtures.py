@@ -1091,7 +1091,8 @@ def validate_analytics_sample_data(name, capture_attributes=True,
                 assert 'invalid-utf8' not in user_attributes
                 assert 'multibyte-utf8' not in user_attributes
 
-            assert user_attributes['multibyte-unicode'] == b'\xe2\x88\x9a'.decode('utf-8')
+            assert user_attributes['multibyte-unicode'] == \
+                    b'\xe2\x88\x9a'.decode('utf-8')
 
             assert 'list' not in user_attributes
             assert 'tuple' not in user_attributes

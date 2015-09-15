@@ -161,7 +161,7 @@ def test_no_attributes_recorded():
     content = response.html.html.body.p.text
     footer = response.html.html.body.script.text
 
-    # Validate actual body content as sansity check.
+    # Validate actual body content as sanity check.
 
     assert content == 'RESPONSE'
 
@@ -207,7 +207,7 @@ def test_analytic_events_capture_attributes_disabled():
     content = response.html.html.body.p.text
     footer = response.html.html.body.script.text
 
-    # Validate actual body content as sansity check.
+    # Validate actual body content as sanity check.
 
     assert content == 'RESPONSE'
 
@@ -239,7 +239,7 @@ def test_capture_attributes_default():
     content = response.html.html.body.p.text
     footer = response.html.html.body.script.text
 
-    # Validate actual body content as sansity check.
+    # Validate actual body content as sanity check.
 
     assert content == 'RESPONSE'
 
@@ -297,7 +297,7 @@ def test_capture_attributes_disabled():
     content = response.html.html.body.p.text
     footer = response.html.html.body.script.text
 
-    # Validate actual body content as sansity check.
+    # Validate actual body content as sanity check.
 
     assert content == 'RESPONSE'
 
@@ -342,7 +342,7 @@ def test_collect_analytic_events_disabled():
     content = response.html.html.body.p.text
     footer = response.html.html.body.script.text
 
-    # Validate actual body content as sansity check.
+    # Validate actual body content as sanity check.
 
     assert content == 'RESPONSE'
 
@@ -382,7 +382,7 @@ def test_analytic_events_disabled():
     content = response.html.html.body.p.text
     footer = response.html.html.body.script.text
 
-    # Validate actual body content as sansity check.
+    # Validate actual body content as sanity check.
 
     assert content == 'RESPONSE'
 
@@ -418,7 +418,7 @@ def test_no_database_or_external_attributes_in_analytics():
 
     content = response.html.html.body.p.text
 
-    # Validate actual body content as sansity check.
+    # Validate actual body content as sanity check.
 
     assert content == 'RESPONSE'
 
@@ -439,7 +439,7 @@ def test_database_attributes_in_analytics():
 
     content = response.html.html.body.p.text
 
-    # Validate actual body content as sansity check.
+    # Validate actual body content as sanity check.
 
     assert content == 'RESPONSE'
 
@@ -460,7 +460,7 @@ def test_external_attributes_in_analytics():
 
     content = response.html.html.body.p.text
 
-    # Validate actual body content as sansity check.
+    # Validate actual body content as sanity check.
 
     assert content == 'RESPONSE'
 
@@ -482,6 +482,6 @@ def test_database_and_external_attributes_in_analytics():
 
     content = response.html.html.body.p.text
 
-    # Validate actual body content as sansity check.
+    # Validate actual body content as sanity check.
 
     assert content == 'RESPONSE'

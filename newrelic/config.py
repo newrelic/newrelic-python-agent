@@ -625,6 +625,13 @@ def translate_deprecated_settings(settings, cached_settings):
 
     """
 
+    # NOTE: The 'capture_params' setting is deprecated, but since it affects
+    # attribute filter default destinations, it is not translated here. We
+    # keep the capture_params setting.
+    #
+    # See newrelic.core.transaction:Transaction.attribute_agent to see how
+    # it is used.
+
     new_settings = copy.deepcopy(settings)
 
     # cached_settings is a list of option key/values and can have duplicate
@@ -647,6 +654,34 @@ def translate_deprecated_settings(settings, cached_settings):
                         old_key, new_key)
 
             delete_setting(new_settings, old_key)
+
+    # The 'ignored_params' setting is more complicated than the above
+    # deprecated settings, so it gets handled separately.
+
+    if 'ignored_params' in cached:
+
+        # Don't merge 'ignored_params' settings. If user set
+        # 'attributes.exclude' setting, only use those values,
+        # and ignore 'ignored_params' settings.
+
+        if 'attributes.exclude' not in cached:
+
+            ignored_params = fetch_config_setting(settings, 'ignored_params')
+            for p in ignored_params:
+
+                attr_value = 'request.parameters.' + p
+                excluded_attrs = fetch_config_setting(
+                        settings, 'attributes.exclude')
+
+                if attr_value not in excluded_attrs:
+                    new_settings.attributes.exclude.append(attr_value)
+                    _logger.debug('Applying value of deprecated setting '
+                            'ignored_params to attributes.exclude: %r',
+                            attr_value)
+        else:
+            _logger.debug('Ignoring deprecated setting: ignored_params')
+
+        delete_setting(new_settings, 'ignored_params')
 
     return new_settings
 

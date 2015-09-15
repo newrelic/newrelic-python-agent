@@ -288,7 +288,7 @@ def test_transaction_event_deprecated_capture_params_true():
 # ========================= attempt to override intrinsic
 
 _override_settings = {
-        'attributes.error_collector.exclude': ['trip_id'],
+        'error_collector.attributes.exclude': ['trip_id'],
 }
 
 _expected_attributes = {
@@ -303,7 +303,7 @@ def test_error_trace_in_transaction_exclude_intrinsic():
     run_failing_request()
 
 _override_settings = {
-        'attributes.transaction_tracer.exclude': ['trip_id'],
+        'transaction_tracer.attributes.exclude': ['trip_id'],
 }
 
 @validate_transaction_trace_attributes(_expected_attributes)
@@ -313,7 +313,7 @@ def test_transaction_trace_exclude_intrinsic():
 
 
 _override_settings = {
-        'attributes.transaction_events.exclude': ['name', 'duration',
+        'transaction_events.attributes.exclude': ['name', 'duration',
             'timestamp', 'type'],
 }
 

@@ -29,8 +29,8 @@ _TransactionNode = namedtuple('_TransactionNode',
         'referring_transaction_guid', 'record_tt', 'synthetics_resource_id',
         'synthetics_job_id', 'synthetics_monitor_id', 'synthetics_header',
         'is_part_of_cat', 'trip_id', 'path_hash', 'referring_path_hash',
-        'alternate_path_hashes', 'attributes_intrinsic', 'attributes_agent',
-        'attributes_user'])
+        'alternate_path_hashes', 'trace_intrinsics', 'agent_attributes',
+        'user_attributes'])
 
 class TransactionNode(_TransactionNode):
 
@@ -245,18 +245,15 @@ class TransactionNode(_TransactionNode):
             params["request_uri"] = self.request_uri
             params["stack_trace"] = error.stack_trace
 
-            params['intrinsics'] = {}
-            for attr in self.attributes_intrinsic:
-                if attr.destinations & DST_ERROR_COLLECTOR:
-                    params['intrinsics'][attr.name] = attr.value
+            params['intrinsics'] = self.trace_intrinsics
 
             params['agentAttributes'] = {}
-            for attr in self.attributes_agent:
+            for attr in self.agent_attributes:
                 if attr.destinations & DST_ERROR_COLLECTOR:
                     params['agentAttributes'][attr.name] = attr.value
 
             params['userAttributes'] = {}
-            for attr in self.attributes_user:
+            for attr in self.user_attributes:
                 if attr.destinations & DST_ERROR_COLLECTOR:
                     params['userAttributes'][attr.name] = attr.value
 
@@ -314,18 +311,15 @@ class TransactionNode(_TransactionNode):
 
         attributes = {}
 
-        attributes['intrinsics'] = {}
-        for attr in self.attributes_intrinsic:
-            if attr.destinations & DST_TRANSACTION_TRACER:
-                attributes['intrinsics'][attr.name] = attr.value
+        attributes['intrinsics'] = self.trace_intrinsics
 
         attributes['agentAttributes'] = {}
-        for attr in self.attributes_agent:
+        for attr in self.agent_attributes:
             if attr.destinations & DST_TRANSACTION_TRACER:
                 attributes['agentAttributes'][attr.name] = attr.value
 
         attributes['userAttributes'] = {}
-        for attr in self.attributes_user:
+        for attr in self.user_attributes:
             if attr.destinations & DST_TRANSACTION_TRACER:
                 attributes['userAttributes'][attr.name] = attr.value
 
@@ -376,13 +370,13 @@ class TransactionNode(_TransactionNode):
 
         # Intrinsic attributes don't get filtered
 
-        intrinsics = self._event_instrinsic_attributes(stats_table)
+        intrinsics = self.transaction_event_intrinsics(stats_table)
 
         # Add user and agent attributes to event
 
-        attributes_user = {}
+        user_attributes = {}
 
-        for attr in self.attributes_user:
+        for attr in self.user_attributes:
             if attr.destinations & DST_TRANSACTION_EVENTS:
                 # We only retain any attributes which have string type for key
                 # and string or numeric for value.
@@ -393,18 +387,18 @@ class TransactionNode(_TransactionNode):
                         not isinstance(attr.value, six.integer_types)):
                     continue
 
-                attributes_user[attr.name] = attr.value
+                user_attributes[attr.name] = attr.value
 
-        attributes_agent = {}
+        agent_attributes = {}
 
-        for attr in self.attributes_agent:
+        for attr in self.agent_attributes:
             if attr.destinations & DST_TRANSACTION_EVENTS:
-                attributes_agent[attr.name] = attr.value
+                agent_attributes[attr.name] = attr.value
 
-        transaction_event = [intrinsics, attributes_user, attributes_agent]
+        transaction_event = [intrinsics, user_attributes, agent_attributes]
         return transaction_event
 
-    def _event_instrinsic_attributes(self, stats_table):
+    def transaction_event_intrinsics(self, stats_table):
         """Put together the intrinsic attributes for a transaction event"""
 
         settings = self.settings

@@ -1,7 +1,6 @@
 import webtest
 
 from newrelic.agent import wsgi_application, add_custom_parameter
-from newrelic.core.attribute import create_intrinsic_attributes
 
 from testing_support.fixtures import (override_application_settings,
     validate_attributes)

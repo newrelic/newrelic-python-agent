@@ -440,7 +440,7 @@ def validate_custom_parameters(required_params=[], forgone_params=[]):
         # for presence on the TransactionNode
 
         attrs = {}
-        for attr in transaction.attributes_user:
+        for attr in transaction.user_attributes:
             attrs[attr.name] = attr.value
 
         for name, value in required_params:
@@ -566,21 +566,21 @@ def validate_transaction_event_attributes(required_params={},
 
         event_data = instance.sampled_data_set
         # grab first transaction event in data set
-        intrinsics, attributes_user, attributes_agent = event_data.samples[0]
+        intrinsics, user_attributes, agent_attributes = event_data.samples[0]
 
         if required_params:
             for param in required_params['agent']:
-                assert param in attributes_agent
+                assert param in agent_attributes
             for param in required_params['user']:
-                assert param in attributes_user
+                assert param in user_attributes
             for param in required_params['intrinsic']:
                 assert param in intrinsics
 
         if forgone_params:
             for param in forgone_params['agent']:
-                assert param not in attributes_agent
+                assert param not in agent_attributes
             for param in forgone_params['user']:
-                assert param not in attributes_user
+                assert param not in user_attributes
 
 
         return result
@@ -982,13 +982,14 @@ def validate_attributes(type, required_attr_names=[], forgone_attr_names=[]):
         transaction = _bind_params(*args, **kwargs)
 
         if type == 'intrinsic':
-            attributes = transaction.attributes_intrinsic
+            attributes = transaction.trace_intrinsics
+            attribute_names = attributes.keys()
         elif type == 'agent':
-            attributes = transaction.attributes_agent
+            attributes = transaction.agent_attributes
+            attribute_names = [a.name for a in attributes]
         elif type == 'user':
-            attributes = transaction.attributes_user
-
-        attribute_names = [a.name for a in attributes]
+            attributes = transaction.user_attributes
+            attribute_names = [a.name for a in attributes]
 
         for name in required_attr_names:
             assert name in attribute_names, ('name=%r,'

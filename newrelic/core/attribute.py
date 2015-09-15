@@ -33,14 +33,6 @@ class Attribute(_Attribute):
         return "Attribute(name=%r, value=%r, destinations=%r)" % (
                 self.name, self.value, bin(self.destinations))
 
-def create_intrinsic_attributes(attr_dict):
-    """Intrinsic attributes for Transaction Trace and Error trace only"""
-
-    # Intrinsic attributes don't go through the Attribute Filter
-
-    destinations = DST_ERROR_COLLECTOR | DST_TRANSACTION_TRACER
-    return [Attribute(k, v, destinations) for k, v in attr_dict.items()]
-
 def create_attributes(attr_dict, destinations, attribute_filter):
     attributes = []
 

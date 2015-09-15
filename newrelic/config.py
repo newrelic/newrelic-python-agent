@@ -608,29 +608,35 @@ deprecated_settings_map = [
 ]
 
 def translate_deprecated_settings(settings, cached_settings):
-    """If deprecated setting has been set by user, but the new
-    setting has not, then translate the deprecated setting to the
-    new one and delete the deprecated one from the settings object.
+    # If deprecated setting has been set by user, but the new
+    # setting has not, then translate the deprecated setting to the
+    # new one.
+    #
+    # If both deprecated and new setting have been applied, ignore
+    # deprecated setting.
+    #
+    # In either case, delete the deprecated one from the settings object.
 
-    If both deprecated and new setting have been applied, ignore
-    deprecated setting.
+    # Parameters:
+    #
+    #    settings:
+    #         Settings object
+    #
+    #   cached_settings:
+    #         A list of (key, value) pairs of the parsed global settings
+    #         found in the config file.
 
-    settings:
-        Settings object
-
-    cached_settings:
-        A list of (key, value) pairs of the parsed global settings found
-        in the config file.
-
-    """
-
-    # NOTE: The 'capture_params' setting is deprecated, but since it affects
+    # NOTE:
+    #
+    # The 'capture_params' setting is deprecated, but since it affects
     # attribute filter default destinations, it is not translated here. We
     # keep the capture_params setting.
     #
     # See newrelic.core.transaction:Transaction.attribute_agent to see how
     # it is used.
 
+    # NOTE:
+    #
     # cached_settings is a list of option key/values and can have duplicate
     # keys, if the customer used environment sections in the config file.
     # Since options are applied to the settings object in order, so that the

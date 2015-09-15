@@ -580,33 +580,6 @@ def delete_setting(settings_object, name):
         _logger.debug('Failed to delete setting: %r', name)
         pass
 
-deprecated_settings_map = [
-    (
-        'transaction_tracer.capture_attributes',
-        'transaction_tracer.attributes.enabled'
-    ),
-    (
-        'error_collector.capture_attributes',
-        'error_collector.attributes.enabled'
-    ),
-    (
-        'browser_monitoring.capture_attributes',
-        'browser_monitoring.attributes.enabled'
-    ),
-    (
-        'analytics_events.capture_attributes',
-        'transaction_events.attributes.enabled'
-    ),
-    (
-        'analytics_events.enabled',
-        'transaction_events.enabled'
-    ),
-    (
-        'analytics_events.max_samples_stored',
-        'transaction_events.max_samples_stored'
-    ),
-]
-
 def translate_deprecated_settings(settings, cached_settings):
     # If deprecated setting has been set by user, but the new
     # setting has not, then translate the deprecated setting to the
@@ -645,6 +618,33 @@ def translate_deprecated_settings(settings, cached_settings):
     # the most recently applied value.
 
     cached = dict(cached_settings)
+
+    deprecated_settings_map = [
+        (
+            'transaction_tracer.capture_attributes',
+            'transaction_tracer.attributes.enabled'
+        ),
+        (
+            'error_collector.capture_attributes',
+            'error_collector.attributes.enabled'
+        ),
+        (
+            'browser_monitoring.capture_attributes',
+            'browser_monitoring.attributes.enabled'
+        ),
+        (
+            'analytics_events.capture_attributes',
+            'transaction_events.attributes.enabled'
+        ),
+        (
+            'analytics_events.enabled',
+            'transaction_events.enabled'
+        ),
+        (
+            'analytics_events.max_samples_stored',
+            'transaction_events.max_samples_stored'
+        ),
+    ]
 
     for (old_key, new_key) in deprecated_settings_map:
 

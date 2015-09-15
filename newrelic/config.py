@@ -857,7 +857,8 @@ def _load_configuration(config_file=None, environment=None,
                     'validity of the specific feature flag.', flag)
 
     # Translate old settings
-    # translate_deprecated_settings(_settings)
+
+    translate_deprecated_settings(_settings)
 
     # Apply High Security Mode policy if enabled in local agent
     # configuration file.

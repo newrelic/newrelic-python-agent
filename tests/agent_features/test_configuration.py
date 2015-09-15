@@ -348,6 +348,8 @@ def test_translate_deprecated_setting_without_new_setting(old, new):
 
     cached = [(old.name, old.value)]
     result = translate_deprecated_settings(settings, cached)
+
+    assert result is settings
     assert old.name not in flatten_settings(result)
     assert fetch_config_setting(result, new.name) == old.value
 
@@ -368,6 +370,8 @@ def test_translate_deprecated_setting_with_new_setting(old, new):
 
     cached = [(old.name, old.value), (new.name, new.value)]
     result = translate_deprecated_settings(settings, cached)
+
+    assert result is settings
     assert old.name not in flatten_settings(result)
     assert fetch_config_setting(result, new.name) == new.value
 
@@ -387,6 +391,8 @@ def test_translate_deprecated_setting_without_old_setting(old, new):
 
     cached = [(new.name, new.value)]
     result = translate_deprecated_settings(settings, cached)
+
+    assert result is settings
     assert old.name not in flatten_settings(result)
     assert fetch_config_setting(result, new.name) == new.value
 
@@ -402,6 +408,7 @@ def test_translate_deprecated_ignored_params_without_new_setting():
     cached = [('ignored_params', ignored_params)]
     result = translate_deprecated_settings(settings, cached)
 
+    assert result is settings
     assert 'request.parameters.foo' in result.attributes.exclude
     assert 'request.parameters.bar' in result.attributes.exclude
     assert 'ignored_params' not in result
@@ -425,6 +432,7 @@ def test_translate_deprecated_ignored_params_with_new_setting():
 
     # ignored_params are not merged!
 
+    assert result is settings
     assert 'request.parameters.foo' in result.attributes.exclude
     assert 'request.parameters.bar' not in result.attributes.exclude
     assert 'ignored_params' not in result

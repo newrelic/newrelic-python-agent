@@ -1,4 +1,3 @@
-import copy
 import os
 import sys
 import logging
@@ -632,8 +631,6 @@ def translate_deprecated_settings(settings, cached_settings):
     # See newrelic.core.transaction:Transaction.attribute_agent to see how
     # it is used.
 
-    new_settings = copy.deepcopy(settings)
-
     # cached_settings is a list of option key/values and can have duplicate
     # keys, if the customer used environment sections in the config file.
     # Since options are applied to the settings object in order, so that the
@@ -649,11 +646,11 @@ def translate_deprecated_settings(settings, cached_settings):
             if new_key in cached:
                 _logger.debug('Ignoring deprecated setting: %r', old_key)
             else:
-                apply_config_setting(new_settings, new_key, cached[old_key])
+                apply_config_setting(settings, new_key, cached[old_key])
                 _logger.debug('Applying value of deprecated setting %r to %r',
                         old_key, new_key)
 
-            delete_setting(new_settings, old_key)
+            delete_setting(settings, old_key)
 
     # The 'ignored_params' setting is more complicated than the above
     # deprecated settings, so it gets handled separately.
@@ -674,16 +671,16 @@ def translate_deprecated_settings(settings, cached_settings):
                         settings, 'attributes.exclude')
 
                 if attr_value not in excluded_attrs:
-                    new_settings.attributes.exclude.append(attr_value)
+                    settings.attributes.exclude.append(attr_value)
                     _logger.debug('Applying value of deprecated setting '
                             'ignored_params to attributes.exclude: %r',
                             attr_value)
         else:
             _logger.debug('Ignoring deprecated setting: ignored_params')
 
-        delete_setting(new_settings, 'ignored_params')
+        delete_setting(settings, 'ignored_params')
 
-    return new_settings
+    return settings
 
 def apply_local_high_security_mode_setting(settings):
     # When High Security Mode is activated, certain settings must be

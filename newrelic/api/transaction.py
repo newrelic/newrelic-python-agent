@@ -1176,7 +1176,9 @@ class Transaction(object):
         if not self._settings:
             return
 
-        if not self._settings.high_security:
+        if self._settings.high_security:
+            _logger.debug('Cannot add custom parameter in High Security Mode.')
+        else:
             self._custom_params[name] = value
 
     def add_custom_parameters(self, items):

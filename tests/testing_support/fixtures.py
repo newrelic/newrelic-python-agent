@@ -563,27 +563,27 @@ def validate_transaction_event_attributes(required_params={},
             result = wrapped(*args, **kwargs)
         except:
             raise
+        else:
+            event_data = instance.sampled_data_set
+            # grab first transaction event in data set
+            intrinsics, user_attributes, agent_attributes = event_data.samples[0]
 
-        event_data = instance.sampled_data_set
-        # grab first transaction event in data set
-        intrinsics, user_attributes, agent_attributes = event_data.samples[0]
+            if required_params:
+                for param in required_params['agent']:
+                    assert param in agent_attributes
+                for param in required_params['user']:
+                    assert param in user_attributes
+                for param in required_params['intrinsic']:
+                    assert param in intrinsics
 
-        if required_params:
-            for param in required_params['agent']:
-                assert param in agent_attributes
-            for param in required_params['user']:
-                assert param in user_attributes
-            for param in required_params['intrinsic']:
-                assert param in intrinsics
-
-        if forgone_params:
-            for param in forgone_params['agent']:
-                assert param not in agent_attributes
-            for param in forgone_params['user']:
-                assert param not in user_attributes
-
+            if forgone_params:
+                for param in forgone_params['agent']:
+                    assert param not in agent_attributes
+                for param in forgone_params['user']:
+                    assert param not in user_attributes
 
         return result
+
     return _validate_transaction_event_attributes
 
 def validate_synthetics_transaction_trace(required_params={},
@@ -767,15 +767,16 @@ def validate_transaction_error_trace_attributes(required_params={},
             result = wrapped(*args, **kwargs)
         except:
             raise
+        else:
 
-        error_data = instance.error_data()
+            error_data = instance.error_data()
 
-        # there should be only one error
-        assert len(error_data) == 1
-        traced_error = error_data[0]
+            # there should be only one error
+            assert len(error_data) == 1
+            traced_error = error_data[0]
 
-        check_error_attributes(traced_error.parameters, required_params,
-                forgone_params, is_transaction=True)
+            check_error_attributes(traced_error.parameters, required_params,
+                    forgone_params, is_transaction=True)
 
         return result
 
@@ -825,65 +826,68 @@ def validate_error_trace_collector_json():
             result = wrapped(*args, **kwargs)
         except:
             raise
-        errors = instance.error_data()
+        else:
+            errors = instance.error_data()
 
-        # recreate what happens right before data is sent to the collector in
-        # data_collector.py via ApplicationSession.send_errors
-        agent_run_id = 666
-        payload = (agent_run_id, errors)
-        collector_json = json_encode(payload)
+            # recreate what happens right before data is sent to the collector
+            # in data_collector.py via ApplicationSession.send_errors
+            agent_run_id = 666
+            payload = (agent_run_id, errors)
+            collector_json = json_encode(payload)
 
-        decoded_json = json.loads(collector_json)
+            decoded_json = json.loads(collector_json)
 
-        assert decoded_json[0] == agent_run_id
-        err = decoded_json[1][0]
-        assert len(err) == 5
-        assert isinstance(err[0], (int, float))
-        assert isinstance(err[1], six.string_types) # path
-        assert isinstance(err[2], six.string_types) # error message
-        assert isinstance(err[3], six.string_types) # exception name
-        parameters = err[4]
+            assert decoded_json[0] == agent_run_id
+            err = decoded_json[1][0]
+            assert len(err) == 5
+            assert isinstance(err[0], (int, float))
+            assert isinstance(err[1], six.string_types) # path
+            assert isinstance(err[2], six.string_types) # error message
+            assert isinstance(err[3], six.string_types) # exception name
+            parameters = err[4]
 
-        parameter_fields = ['userAttributes', 'stack_trace', 'agentAttributes',
-                'intrinsics', 'request_uri']
+            parameter_fields = ['userAttributes', 'stack_trace',
+                    'agentAttributes', 'intrinsics', 'request_uri']
 
-        for field in parameter_fields:
-            assert field in parameters
+            for field in parameter_fields:
+                assert field in parameters
 
     return _validate_error_trace_collector_json
 
 def validate_transaction_event_collector_json():
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
-    def _validate_transaction_event_collector_json(wrapped, instance, args, kwargs):
+    def _validate_transaction_event_collector_json(wrapped, instance, args,
+            kwargs):
         try:
             result = wrapped(*args, **kwargs)
         except:
             raise
-        samples = instance.sampled_data_set.samples
+        else:
+            samples = instance.sampled_data_set.samples
 
-        # recreate what happens right before data is sent to the collector in
-        # data_collector.py during the harvest via analytic_event_data
-        agent_run_id = 666
-        payload = (agent_run_id, samples)
-        collector_json = json_encode(payload)
+            # recreate what happens right before data is sent to the collector
+            # in data_collector.py during the harvest via analytic_event_data
+            agent_run_id = 666
+            payload = (agent_run_id, samples)
+            collector_json = json_encode(payload)
 
-        decoded_json = json.loads(collector_json)
+            decoded_json = json.loads(collector_json)
 
-        assert decoded_json[0] == agent_run_id
+            assert decoded_json[0] == agent_run_id
 
-        # list of events
+            # list of events
 
-        events = decoded_json[1]
+            events = decoded_json[1]
 
-        for event in events:
+            for event in events:
 
-            # event is an array containing intrinsics, user-attributes,
-            # and agent-attributes
+                # event is an array containing intrinsics, user-attributes,
+                # and agent-attributes
 
-            assert len(event) == 3
-            for d in event:
-                assert isinstance(d, dict)
+                assert len(event) == 3
+                for d in event:
+                    assert isinstance(d, dict)
 
         return result
 
@@ -1048,6 +1052,10 @@ def validate_database_trace_inputs(sql_parameters_type):
 
 def validate_analytics_sample_data(name, capture_attributes=True,
         database_call_count=0, external_call_count=0):
+    """This test depends on values in the test application from
+    agent_features/test_analytics.py, and is only meant to be run as a
+    validation with those tests.
+    """
     @transient_function_wrapper('newrelic.core.stats_engine',
             'SampledDataSet.add')
     def _validate_analytics_sample_data(wrapped, instance, args, kwargs):
@@ -1092,8 +1100,8 @@ def validate_analytics_sample_data(name, capture_attributes=True,
                 assert 'invalid-utf8' not in user_attributes
                 assert 'multibyte-utf8' not in user_attributes
 
-            assert user_attributes['multibyte-unicode'] == \
-                    b'\xe2\x88\x9a'.decode('utf-8')
+            multibyte_value = b'\xe2\x88\x9a'.decode('utf-8')
+            assert user_attributes['multibyte-unicode'] == multibyte_value
 
             assert 'list' not in user_attributes
             assert 'tuple' not in user_attributes

@@ -864,7 +864,7 @@ def _load_configuration(config_file=None, environment=None,
 
     # Translate old settings
 
-    translate_deprecated_settings(_settings)
+    translate_deprecated_settings(_settings, _cache_object)
 
     # Apply High Security Mode policy if enabled in local agent
     # configuration file.

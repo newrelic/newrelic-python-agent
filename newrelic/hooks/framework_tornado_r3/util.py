@@ -1,6 +1,6 @@
 import logging
 
-from newrelic.agent import current_transaction
+from newrelic.agent import current_transaction, ignore_status_code
 
 _logger = logging.getLogger(__name__)
 
@@ -12,6 +12,10 @@ def record_exception(transaction, exc_info):
 
     exc = exc_info[0]
     value = exc_info[1]
+
+    # Not an error so we just return.
+    if exc is tornado.web.Finish:
+        return
 
     if exc is tornado.web.HTTPError:
         if ignore_status_code(value.status_code):

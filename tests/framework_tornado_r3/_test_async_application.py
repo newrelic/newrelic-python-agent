@@ -68,48 +68,11 @@ class MultipleCallbacksRequestHandler(RequestHandler):
     def finish_callback(self):
         self.finish(self.RESPONSE)
 
-DEFAULT_HTTP_PORT = 2456
-
-class TestServer(threading.Thread):
-    def __init__(self, http_port=DEFAULT_HTTP_PORT):
-        super(TestServer, self).__init__()
-        self.http_server = None
-        self.application = None
-        self.http_port = http_port
-        self.server_ready = threading.Event()
-
-    def run(self):
-        self.application = Application([
-            ('/', HelloRequestHandler),
-            ('/sleep', SleepRequestHandler),
-            ('/one-callback', OneCallbackRequestHandler),
-            ('/named-wrap-callback', NamedStackContextWrapRequestHandler),
-            ('/multiple-callbacks', MultipleCallbacksRequestHandler),
-            ])
-        self.http_server = HTTPServer(self.application)
-        self.http_server.listen(self.http_port, '')
-        ioloop = tornado.ioloop.IOLoop.current()
-        ioloop.add_callback(self.server_ready.set)
-        ioloop.start()
-
-    # The following methods are intended to be called from different thread than
-    # the running TestServer thread.
-    def get_url(self, path=''):
-        return 'http://localhost:%s/%s' % (self.http_port, path)
-
-    def stop_server(self):
-        self.http_server.stop()
-        ioloop = tornado.ioloop.IOLoop.instance()
-        ioloop.add_callback(ioloop.stop)
-        self.join()
-
-class TestClient(threading.Thread):
-    def __init__(self, url):
-        super(TestClient, self).__init__()
-        self.url = url
-        self.response = None
-
-    def run(self):
-        client = HTTPClient()
-        self.response = client.fetch(self.url)
-        client.close()
+def get_tornado_app():
+    return Application([
+        ('/', HelloRequestHandler),
+        ('/sleep', SleepRequestHandler),
+        ('/one-callback', OneCallbackRequestHandler),
+        ('/named-wrap-callback', NamedStackContextWrapRequestHandler),
+        ('/multiple-callbacks', MultipleCallbacksRequestHandler),
+    ])

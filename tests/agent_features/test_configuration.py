@@ -256,11 +256,15 @@ def test_strip_proxy_details(settings):
 def test_delete_setting():
     d = {'transaction_tracer.capture_attributes': True}
     settings = apply_server_side_settings(d)
+    assert 'capture_attributes' in settings.transaction_tracer
+
     delete_setting(settings, 'transaction_tracer.capture_attributes')
     assert 'capture_attributes' not in settings.transaction_tracer
 
 def test_delete_setting_absent():
     settings = apply_server_side_settings()
+    assert 'capture_attributes' not in settings.transaction_tracer
+
     delete_setting(settings, 'transaction_tracer.capture_attributes')
     assert 'capture_attributes' not in settings.transaction_tracer
 
@@ -272,8 +276,9 @@ def test_delete_setting_parent():
     delete_setting(settings, 'transaction_tracer')
     assert 'transaction_tracer' not in settings
 
-# Create a set of tests for `translate_deprecated_setting`
+# Build a series of tests for `translate_deprecated_setting`.
 #
+# Each test will consist of an old setting and new setting.
 # For each setting, there are 2 variations:
 #
 #       'value' == 'default'

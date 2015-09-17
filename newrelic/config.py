@@ -578,7 +578,6 @@ def delete_setting(settings_object, name):
         delattr(target, fields[0])
     except AttributeError:
         _logger.debug('Failed to delete setting: %r', name)
-        pass
 
 def translate_deprecated_settings(settings, cached_settings):
     # If deprecated setting has been set by user, but the new

@@ -92,7 +92,7 @@ def test_footer_attributes():
     assert data['agentToken'] == token
     assert len(data['ttGuid']) == 16
 
-    assert 'userAttributes' not in data
+    assert 'atts' not in data
 
 _test_rum_ssl_for_http_is_none = {
     'browser_monitoring.enabled': True,

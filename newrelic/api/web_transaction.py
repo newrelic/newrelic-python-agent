@@ -21,6 +21,8 @@ from ..common.object_wrapper import wrap_object, FunctionWrapper
 from ..common.encoding_utils import (obfuscate, deobfuscate, json_encode,
     json_decode)
 
+from ..core.attribute_filter import DST_BROWSER_MONITORING
+
 from ..packages import six
 
 _logger = logging.getLogger(__name__)
@@ -569,7 +571,7 @@ class WebTransaction(Transaction):
     def browser_timing_footer(self):
         """Returns the JavaScript footer to be included in any HTML
         response to perform real user monitoring. This function returns
-        the header as a native Python string. In Python 2 native strings
+        the footer as a native Python string. In Python 2 native strings
         are stored as bytes. In Python 3 native strings are stored as
         unicode.
 
@@ -633,24 +635,41 @@ class WebTransaction(Transaction):
                 additional_params.append(('agentToken', self.rum_token))
                 additional_params.append(('ttGuid', self.guid))
 
-        if self._settings.browser_monitoring.attributes.enabled:
-            def _filter(params):
-                for key, value in params.items():
-                    if not isinstance(key, six.string_types):
-                        continue
-                    if (not isinstance(value, six.string_types) and
-                            not isinstance(value, float) and
-                            not isinstance(value, six.integer_types)):
-                        continue
-                    yield key, value
+        def _filter(params):
+            for key, value in params.items():
+                if not isinstance(key, six.string_types):
+                    continue
+                if (not isinstance(value, six.string_types) and
+                        not isinstance(value, float) and
+                        not isinstance(value, six.integer_types)):
+                    continue
+                yield key, value
 
-            user_attributes = dict(_filter(self._custom_params))
+        attributes = {}
 
-            if user_attributes:
-                user_attributes = obfuscate(json_encode(user_attributes),
-                        obfuscation_key)
+        user_attributes = {}
+        for attr in self.user_attributes:
+            if attr.destinations & DST_BROWSER_MONITORING:
+                user_attributes[attr.name] = attr.value
 
-                additional_params.append(('userAttributes', user_attributes))
+        user_attributes = dict(_filter(user_attributes))
+
+        if user_attributes:
+            attributes['u'] = user_attributes
+
+        agent_attributes = {}
+        for attr in self.agent_attributes:
+            if attr.destinations & DST_BROWSER_MONITORING:
+                agent_attributes[attr.name] = attr.value
+
+        if agent_attributes:
+            attributes['a'] = agent_attributes
+
+        if attributes:
+            attributes = obfuscate(json_encode(attributes),
+                    obfuscation_key)
+            additional_params.append(('atts', attributes))
+
 
         if self._settings.browser_monitoring.ssl_for_http is not None:
             additional_params.append(('sslForHttp',

@@ -2,9 +2,11 @@ import unittest
 import pytest
 import tornado.testing
 
+import select
 import time
 
 from newrelic.agent import wrap_function_wrapper
+from newrelic.packages import six
 
 from _test_async_application import (get_tornado_app, HelloRequestHandler,
         SleepRequestHandler, OneCallbackRequestHandler,
@@ -14,6 +16,9 @@ from testing_support.fixtures import (
     tornado_validate_count_transaction_metrics,
     tornado_validate_time_transaction_metrics,
     tornado_validate_errors)
+
+def select_python_version(py2, py3):
+    return six.PY3 and py3 or py2
 
 class TornadoTest(tornado.testing.AsyncHTTPTestCase):
 
@@ -53,18 +58,30 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         if self.waits_counter == self.waits_expected:
             self.stop()
 
-    def fetch_response(self, path):
+    def fetch_response(self, path, is_http_error=False):
         # For each request we need to wait for 2 events: the response and a call
         # to record transaction.
         self.waits_expected += 2
+
+        # Make a request to the server.
         future = self.http_client.fetch(self.get_url(path), self.fetch_finished)
         try:
             self.wait(timeout=5.0)
         except:
             # TODO(bdirks): Verify this fails.
             self.assertTrue(False, "Timeout occured waiting for response")
-        response = future.result()
-        return response
+
+        # Retrieve the server response. An exception will be raised
+        # if the server did not respond successfully.
+        try:
+            response = future.result()
+        except tornado.httpclient.HTTPError:
+            if not is_http_error:
+                raise
+        else:
+            self.assertFalse(is_http_error, "Client did not receive an error "
+                    "though one was expected.")
+            return response
 
     def fetch_responses(self, paths):
         # For each request we need to wait for 2 events: the response and a call
@@ -79,6 +96,13 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         for future in futures:
             responses.append(future.result())
         return responses
+
+    def fetch_exception(self, path):
+        # ExpectLog ensures that the expected server side exception occurs and
+        # makes the logging to stdout less noisy.
+        with tornado.testing.ExpectLog('tornado.application',
+                "Uncaught exception GET %s" % path):
+            self.fetch_response(path, is_http_error=True)
 
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
@@ -155,3 +179,26 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body,
                 MultipleCallbacksRequestHandler.RESPONSE)
+
+    @tornado_validate_errors(errors=[select_python_version(
+            py2='exceptions:ZeroDivisionError',
+            py3='builtins:ZeroDivisionError')])
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:SyncExceptionRequestHandler.get')
+    def test_sync_exception(self):
+        self.fetch_exception('/sync-exception')
+
+    @tornado_validate_errors(errors=[select_python_version(
+            py2='exceptions:NameError', py3='builtins:NameError')])
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:CallbackExceptionRequestHandler.get',
+            scoped_metrics=[
+                ('Function/_test_async_application:CallbackExceptionRequestHandler.counter_callback',
+                 5)])
+    def test_callback_exception(self):
+        self.fetch_exception('/callback-exception')
+
+    @tornado_validate_errors(errors=['tornado.gen:BadYieldError'])
+    @tornado_validate_count_transaction_metrics('_test_async_application:CoroutineExceptionRequestHandler.get')
+    def test_coroutine_exception(self):
+        self.fetch_exception('/coroutine-exception')

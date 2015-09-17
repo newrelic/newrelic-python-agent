@@ -1,6 +1,6 @@
 """The stats engine is what collects the accumulated transactions metrics,
 details of errors and slow transactions. There is one instance of the stats
-engine per application. This will be cleared upon each succesful harvest of
+engine per application. This will be cleared upon each successful harvest of
 data whereby it is sent to the core application.
 
 """
@@ -226,12 +226,10 @@ class SampledDataSet(object):
         self.samples = []
         self.capacity = capacity
         self.count = 0
-        self.strings = {}
 
     def reset(self):
         self.samples = []
         self.count = 0
-        self.strings = {}
 
     def add(self, sample):
         if len(self.samples) < self.capacity:
@@ -242,20 +240,17 @@ class SampledDataSet(object):
                 self.samples[index] = sample
         self.count += 1
 
-    def intern(self, string):
-        return self.strings.setdefault(string, string)
-
 class StatsEngine(object):
 
     """The stats engine object holds the accumulated transactions metrics,
     details of errors and slow transactions. There should be one instance
     of the stats engine per application. This will be cleared upon each
-    succesful harvest of data whereby it is sent to the core application.
+    successful harvest of data whereby it is sent to the core application.
     No data will however be accumulated while there is no associated
     settings object indicating that application has been successfully
     activated and server side settings received.
 
-    All of the accumlated apdex, time and value metrics are mapped to from
+    All of the accumulated apdex, time and value metrics are mapped to from
     the same stats table. The key is comprised of a tuple (name, scope).
     For an apdex metric the scope is None. Time metrics should always have
     a string as the scope and it can be either empty or not. Value metrics
@@ -466,7 +461,7 @@ class StatsEngine(object):
             # Originally we used module.class but that was
             # inconsistent with everything else which used
             # module:name. So changed to use ':' as separator, but
-            # for backward compatability need to support '.' as
+            # for backward compatibility need to support '.' as
             # separator for time being. Check that with the ':'
             # last as we will use that name as the exception type.
 
@@ -613,13 +608,13 @@ class StatsEngine(object):
         return key
 
     def _update_xray_transaction(self, transaction):
-        """Check if transaction is an xray transaction and save it to the
+        """Check if transaction is an x-ray transaction and save it to the
         __xray_transactions
         """
 
         settings = self.__settings
 
-        # Nothing to do if we have reached the max limit of xray transactions
+        # Nothing to do if we have reached the max limit of x-ray transactions
         # to send per harvest.
 
         maximum = settings.agent_limits.xray_transactions
@@ -734,7 +729,7 @@ class StatsEngine(object):
         # whether over a time threshold calculated as percentage of
         # overall request time, up to a maximum number of unique
         # metrics. This is intended to limit how many metrics are
-        # reported for each transaction and try and cutdown on an
+        # reported for each transaction and try and cut down on an
         # explosion of unique metric names. The limits and thresholds
         # are applied after the metrics are reverse sorted based on
         # exclusive times for each metric. This ensures that the metrics
@@ -785,7 +780,7 @@ class StatsEngine(object):
         if (not transaction.suppress_transaction_trace and
                     transaction_tracer.enabled and settings.collect_traces):
 
-            # Transactions saved for xray session and Synthetics transactions
+            # Transactions saved for x-ray session and Synthetics transactions
             # do not depend on the transaction threshold.
 
             self._update_xray_transaction(transaction)
@@ -808,124 +803,14 @@ class StatsEngine(object):
             if (len(self.__synthetics_events) <
                     settings.agent_limits.synthetics_events):
 
-                event = self.create_analytic_event(transaction)
+                event = transaction.transaction_event(self.__stats_table)
                 self.__synthetics_events.append(event)
 
         elif (settings.collect_analytics_events and
                 settings.transaction_events.enabled):
 
-            event = self.create_analytic_event(transaction)
+            event = transaction.transaction_event(self.__stats_table)
             self.__sampled_data_set.add(event)
-
-    def create_analytic_event(self, transaction):
-        # Create the transaction record summarising key data for later
-        # analytics. Only do this for web transaction at this point as
-        # not sure if needs to be done for other transactions as field
-        # names in record are based on web transaction metric names.
-
-        if not self.__settings:
-            return
-
-        settings = self.__settings
-
-        record = {}
-        params = {}
-
-        # First remember users custom parameters. We only
-        # retain any which have string type for key and
-        # string or numeric for value.
-
-        if settings.transaction_events.attributes.enabled:
-            for key, value in transaction.custom_params.items():
-                if not isinstance(key, six.string_types):
-                    continue
-                if (not isinstance(value, six.string_types) and
-                        not isinstance(value, float) and
-                        not isinstance(value, six.integer_types)):
-                    continue
-                params[key] = value
-
-        # Now we add the agents own values so they
-        # overwrite users values if same key name used.
-
-        name = self.__sampled_data_set.intern(transaction.path)
-
-        record['type'] = 'Transaction'
-        record['name'] = name
-        record['timestamp'] = transaction.start_time
-        record['duration'] = transaction.duration
-
-        def _add_if_not_empty(key, value):
-            if value:
-                record[key] = value
-
-        if transaction.path_hash:
-            record['nr.guid'] = transaction.guid
-            record['nr.tripId'] = transaction.trip_id
-            record['nr.pathHash'] = transaction.path_hash
-
-            _add_if_not_empty('nr.referringPathHash',
-                    transaction.referring_path_hash)
-            _add_if_not_empty('nr.alternatePathHashes',
-                    ','.join(transaction.alternate_path_hashes))
-            _add_if_not_empty('nr.referringTransactionGuid',
-                    transaction.referring_transaction_guid)
-            _add_if_not_empty('nr.apdexPerfZone',
-                    transaction.apdex_perf_zone())
-
-        # Add the Synthetics attributes to the 'records' dict.
-
-        if transaction.synthetics_resource_id:
-            record['nr.guid'] = transaction.guid
-            txn = transaction
-            record['nr.syntheticsResourceId'] = txn.synthetics_resource_id
-            record['nr.syntheticsJobId'] = txn.synthetics_job_id
-            record['nr.syntheticsMonitorId'] = txn.synthetics_monitor_id
-
-        def _add_call_time(source, target):
-            try:
-                call_time = self.__stats_table[
-                        (source, '')].total_call_time
-            except KeyError:
-                pass
-            else:
-                if target in record:
-                    record[target] += call_time
-                else:
-                    record[target] = call_time
-
-        def _add_call_count(source, target):
-            try:
-                call_count = self.__stats_table[
-                        (source, '')].call_count
-            except KeyError:
-                pass
-            else:
-                if target in record:
-                    record[target] += call_count
-                else:
-                    record[target] = call_count
-
-        _add_call_time('WebFrontend/QueueTime', 'queueDuration')
-
-        _add_call_time('External/all', 'externalDuration')
-        _add_call_time('Database/all', 'databaseDuration')
-        _add_call_time('Memcache/all', 'memcacheDuration')
-
-        _add_call_count('External/all', 'externalCallCount')
-        _add_call_count('Database/all', 'databaseCallCount')
-
-        # As we transition to using Datastore metrics, we now
-        # include 'Datastore/all' totals in databaseDuration and
-        # databaseCallCount. After transition we can remove the
-        # 'Database/all' checks above.
-
-        _add_call_time('Datastore/all', 'databaseDuration')
-        _add_call_count('Datastore/all', 'databaseCallCount')
-
-        analytic_event = [record, params]
-        return analytic_event
-
 
     @internal_trace('Supportability/Python/StatsEngine/Calls/metric_data')
     def metric_data(self, normalizer=None):
@@ -1527,7 +1412,7 @@ class StatsEngine(object):
 
         # Restore original slow transaction if slower than any newer slow
         # transaction. Also append any saved transactions corresponding to
-        # browser and xray traces, trimming them at the maximum to be kept.
+        # browser and x-ray traces, trimming them at the maximum to be kept.
 
         if merge_traces:
 
@@ -1566,9 +1451,9 @@ class StatsEngine(object):
 
             # If the transaction has an xray_id then it does not qualify to
             # be considered for slow transaction.  This is because in the Core
-            # app, there is logic to NOT show TTs with xray ids in the
+            # app, there is logic to NOT show TTs with x-ray ids in the
             # WebTransactions tab. If a TT has xray_id it is only shown under
-            # the xray page.
+            # the x-ray page.
 
             xray_id = getattr(transaction, 'xray_id', None)
             if transaction and xray_id is None:

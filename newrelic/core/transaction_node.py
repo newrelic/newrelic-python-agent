@@ -10,13 +10,14 @@ from collections import namedtuple
 
 import newrelic.core.error_collector
 import newrelic.core.trace_node
+import newrelic.packages.six as six
 
 from newrelic.core.metric import ApdexMetric, TimeMetric
 from newrelic.core.internal_metrics import internal_trace
 from newrelic.core.string_table import StringTable
 from newrelic.core.attribute import create_user_attributes
 from newrelic.core.attribute_filter import (DST_ERROR_COLLECTOR,
-        DST_TRANSACTION_TRACER)
+        DST_TRANSACTION_TRACER, DST_TRANSACTION_EVENTS)
 
 _TransactionNode = namedtuple('_TransactionNode',
         ['settings', 'path', 'type', 'group', 'name', 'request_uri',
@@ -28,14 +29,14 @@ _TransactionNode = namedtuple('_TransactionNode',
         'referring_transaction_guid', 'record_tt', 'synthetics_resource_id',
         'synthetics_job_id', 'synthetics_monitor_id', 'synthetics_header',
         'is_part_of_cat', 'trip_id', 'path_hash', 'referring_path_hash',
-        'alternate_path_hashes', 'attributes_intrinsic', 'attributes_agent',
-        'attributes_user'])
+        'alternate_path_hashes', 'trace_intrinsics', 'agent_attributes',
+        'user_attributes'])
 
 class TransactionNode(_TransactionNode):
 
     """Class holding data corresponding to the root of the transaction. All
     the nodes of interest recorded for the transaction are held as a tree
-    structure within the 'childen' attribute.
+    structure within the 'children' attribute.
 
     """
 
@@ -244,18 +245,15 @@ class TransactionNode(_TransactionNode):
             params["request_uri"] = self.request_uri
             params["stack_trace"] = error.stack_trace
 
-            params['intrinsics'] = {}
-            for attr in self.attributes_intrinsic:
-                if attr.destinations & DST_ERROR_COLLECTOR:
-                    params['intrinsics'][attr.name] = attr.value
+            params['intrinsics'] = self.trace_intrinsics
 
             params['agentAttributes'] = {}
-            for attr in self.attributes_agent:
+            for attr in self.agent_attributes:
                 if attr.destinations & DST_ERROR_COLLECTOR:
                     params['agentAttributes'][attr.name] = attr.value
 
             params['userAttributes'] = {}
-            for attr in self.attributes_user:
+            for attr in self.user_attributes:
                 if attr.destinations & DST_ERROR_COLLECTOR:
                     params['userAttributes'][attr.name] = attr.value
 
@@ -313,22 +311,19 @@ class TransactionNode(_TransactionNode):
 
         attributes = {}
 
-        attributes['intrinsics'] = {}
-        for attr in self.attributes_intrinsic:
-            if attr.destinations & DST_TRANSACTION_TRACER:
-                attributes['intrinsics'][attr.name] = attr.value
+        attributes['intrinsics'] = self.trace_intrinsics
 
         attributes['agentAttributes'] = {}
-        for attr in self.attributes_agent:
+        for attr in self.agent_attributes:
             if attr.destinations & DST_TRANSACTION_TRACER:
                 attributes['agentAttributes'][attr.name] = attr.value
 
         attributes['userAttributes'] = {}
-        for attr in self.attributes_user:
+        for attr in self.user_attributes:
             if attr.destinations & DST_TRANSACTION_TRACER:
                 attributes['userAttributes'][attr.name] = attr.value
 
-        # There is an additional trace node labelled as 'ROOT'
+        # There is an additional trace node labeled as 'ROOT'
         # that needs to be inserted below the root node object
         # which is returned. It inherits the start and end time
         # from the actual top node for the transaction.
@@ -369,3 +364,114 @@ class TransactionNode(_TransactionNode):
                 return 'T'
             else:
                 return 'F'
+
+    def transaction_event(self, stats_table):
+        # Create the transaction event, which is a list of attributes.
+
+        # Intrinsic attributes don't get filtered
+
+        intrinsics = self.transaction_event_intrinsics(stats_table)
+
+        # Add user and agent attributes to event
+
+        user_attributes = {}
+
+        for attr in self.user_attributes:
+            if attr.destinations & DST_TRANSACTION_EVENTS:
+                # We only retain any attributes which have string type for key
+                # and string or numeric for value.
+                if not isinstance(attr.name, six.string_types):
+                    continue
+                if (not isinstance(attr.value, six.string_types) and
+                        not isinstance(attr.value, float) and
+                        not isinstance(attr.value, six.integer_types)):
+                    continue
+
+                user_attributes[attr.name] = attr.value
+
+        agent_attributes = {}
+
+        for attr in self.agent_attributes:
+            if attr.destinations & DST_TRANSACTION_EVENTS:
+                agent_attributes[attr.name] = attr.value
+
+        transaction_event = [intrinsics, user_attributes, agent_attributes]
+        return transaction_event
+
+    def transaction_event_intrinsics(self, stats_table):
+        """Put together the intrinsic attributes for a transaction event"""
+
+        settings = self.settings
+
+        intrinsics = {}
+
+        intrinsics['type'] = 'Transaction'
+        intrinsics['name'] = self.path
+        intrinsics['timestamp'] = self.start_time
+        intrinsics['duration'] = self.duration
+
+        def _add_if_not_empty(key, value):
+            if value:
+                intrinsics[key] = value
+
+        if self.path_hash:
+            intrinsics['nr.guid'] = self.guid
+            intrinsics['nr.tripId'] = self.trip_id
+            intrinsics['nr.pathHash'] = self.path_hash
+
+            _add_if_not_empty('nr.referringPathHash',
+                    self.referring_path_hash)
+            _add_if_not_empty('nr.alternatePathHashes',
+                    ','.join(self.alternate_path_hashes))
+            _add_if_not_empty('nr.referringTransactionGuid',
+                    self.referring_transaction_guid)
+            _add_if_not_empty('nr.apdexPerfZone',
+                    self.apdex_perf_zone())
+
+        # Add the Synthetics attributes to the intrinsics dict.
+
+        if self.synthetics_resource_id:
+            intrinsics['nr.guid'] = self.guid
+            intrinsics['nr.syntheticsResourceId'] = self.synthetics_resource_id
+            intrinsics['nr.syntheticsJobId'] = self.synthetics_job_id
+            intrinsics['nr.syntheticsMonitorId'] = self.synthetics_monitor_id
+
+        def _add_call_time(source, target):
+            # include time for keys previously added to stats table via
+            # stats_engine.record_transaction
+            if (source, '') in stats_table:
+                call_time = stats_table[(source, '')].total_call_time
+                if target in intrinsics:
+                    intrinsics[target] += call_time
+                else:
+                    intrinsics[target] = call_time
+
+        def _add_call_count(source, target):
+            # include counts for keys previously added to stats table via
+            # stats_engine.record_transaction
+            if (source, '') in stats_table:
+                call_count = stats_table[(source, '')].call_count
+                if target in intrinsics:
+                    intrinsics[target] += call_count
+                else:
+                    intrinsics[target] = call_count
+
+        _add_call_time('WebFrontend/QueueTime', 'queueDuration')
+
+        _add_call_time('External/all', 'externalDuration')
+        _add_call_time('Database/all', 'databaseDuration')
+        _add_call_time('Memcache/all', 'memcacheDuration')
+
+        _add_call_count('External/all', 'externalCallCount')
+        _add_call_count('Database/all', 'databaseCallCount')
+
+        # As we transition to using Datastore metrics, we now
+        # include 'Datastore/all' totals in databaseDuration and
+        # databaseCallCount. After transition we can remove the
+        # 'Database/all' checks above.
+
+        _add_call_time('Datastore/all', 'databaseDuration')
+        _add_call_count('Datastore/all', 'databaseCallCount')
+
+        return intrinsics
+

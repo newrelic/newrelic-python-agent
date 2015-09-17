@@ -440,7 +440,7 @@ def validate_custom_parameters(required_params=[], forgone_params=[]):
         # for presence on the TransactionNode
 
         attrs = {}
-        for attr in transaction.attributes_user:
+        for attr in transaction.user_attributes:
             attrs[attr.name] = attr.value
 
         for name, value in required_params:
@@ -474,7 +474,7 @@ def validate_synthetics_event(required_attrs=[], forgone_attrs=[],
                 assert len(instance.synthetics_events) == 1
                 event = instance.synthetics_events[0]
                 assert event is not None
-                assert len(event) == 2
+                assert len(event) == 3
 
                 def _flatten(event):
                     result = {}
@@ -553,6 +553,38 @@ def validate_database_duration():
         return result
 
     return _validate_database_duration
+
+def validate_transaction_event_attributes(required_params={},
+        forgone_params={}):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_transaction_event_attributes(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            event_data = instance.sampled_data_set
+            # grab first transaction event in data set
+            intrinsics, user_attributes, agent_attributes = event_data.samples[0]
+
+            if required_params:
+                for param in required_params['agent']:
+                    assert param in agent_attributes
+                for param in required_params['user']:
+                    assert param in user_attributes
+                for param in required_params['intrinsic']:
+                    assert param in intrinsics
+
+            if forgone_params:
+                for param in forgone_params['agent']:
+                    assert param not in agent_attributes
+                for param in forgone_params['user']:
+                    assert param not in user_attributes
+
+        return result
+
+    return _validate_transaction_event_attributes
 
 def validate_synthetics_transaction_trace(required_params={},
         forgone_params={}, should_exist=True):
@@ -735,15 +767,16 @@ def validate_transaction_error_trace_attributes(required_params={},
             result = wrapped(*args, **kwargs)
         except:
             raise
+        else:
 
-        error_data = instance.error_data()
+            error_data = instance.error_data()
 
-        # there should be only one error
-        assert len(error_data) == 1
-        traced_error = error_data[0]
+            # there should be only one error
+            assert len(error_data) == 1
+            traced_error = error_data[0]
 
-        check_error_attributes(traced_error.parameters, required_params,
-                forgone_params, is_transaction=True)
+            check_error_attributes(traced_error.parameters, required_params,
+                    forgone_params, is_transaction=True)
 
         return result
 
@@ -793,32 +826,73 @@ def validate_error_trace_collector_json():
             result = wrapped(*args, **kwargs)
         except:
             raise
-        errors = instance.error_data()
+        else:
+            errors = instance.error_data()
 
-        # recreate what happens right before data is sent to the collector in
-        # data_collector.py via ApplicationSession.send_errors
-        agent_run_id = 666
-        payload = (agent_run_id, errors)
-        collector_json = json_encode(payload)
+            # recreate what happens right before data is sent to the collector
+            # in data_collector.py via ApplicationSession.send_errors
+            agent_run_id = 666
+            payload = (agent_run_id, errors)
+            collector_json = json_encode(payload)
 
-        decoded_json = json.loads(collector_json)
+            decoded_json = json.loads(collector_json)
 
-        assert decoded_json[0] == agent_run_id
-        err = decoded_json[1][0]
-        assert len(err) == 5
-        assert isinstance(err[0], (int, float))
-        assert isinstance(err[1], six.string_types) # path
-        assert isinstance(err[2], six.string_types) # error message
-        assert isinstance(err[3], six.string_types) # exception name
-        parameters = err[4]
+            assert decoded_json[0] == agent_run_id
+            err = decoded_json[1][0]
+            assert len(err) == 5
+            assert isinstance(err[0], (int, float))
+            assert isinstance(err[1], six.string_types) # path
+            assert isinstance(err[2], six.string_types) # error message
+            assert isinstance(err[3], six.string_types) # exception name
+            parameters = err[4]
 
-        parameter_fields = ['userAttributes', 'stack_trace', 'agentAttributes',
-                'intrinsics', 'request_uri']
+            parameter_fields = ['userAttributes', 'stack_trace',
+                    'agentAttributes', 'intrinsics', 'request_uri']
 
-        for field in parameter_fields:
-            assert field in parameters
+            for field in parameter_fields:
+                assert field in parameters
 
     return _validate_error_trace_collector_json
+
+def validate_transaction_event_collector_json():
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_transaction_event_collector_json(wrapped, instance, args,
+            kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            samples = instance.sampled_data_set.samples
+
+            # recreate what happens right before data is sent to the collector
+            # in data_collector.py during the harvest via analytic_event_data
+            agent_run_id = 666
+            payload = (agent_run_id, samples)
+            collector_json = json_encode(payload)
+
+            decoded_json = json.loads(collector_json)
+
+            assert decoded_json[0] == agent_run_id
+
+            # list of events
+
+            events = decoded_json[1]
+
+            for event in events:
+
+                # event is an array containing intrinsics, user-attributes,
+                # and agent-attributes
+
+                assert len(event) == 3
+                for d in event:
+                    assert isinstance(d, dict)
+
+        return result
+
+    return _validate_transaction_event_collector_json
+
 
 def validate_tt_parameters(required_params={},
         forgone_params={}):
@@ -912,13 +986,14 @@ def validate_attributes(type, required_attr_names=[], forgone_attr_names=[]):
         transaction = _bind_params(*args, **kwargs)
 
         if type == 'intrinsic':
-            attributes = transaction.attributes_intrinsic
+            attributes = transaction.trace_intrinsics
+            attribute_names = attributes.keys()
         elif type == 'agent':
-            attributes = transaction.attributes_agent
+            attributes = transaction.agent_attributes
+            attribute_names = [a.name for a in attributes]
         elif type == 'user':
-            attributes = transaction.attributes_user
-
-        attribute_names = [a.name for a in attributes]
+            attributes = transaction.user_attributes
+            attribute_names = [a.name for a in attributes]
 
         for name in required_attr_names:
             assert name in attribute_names, ('name=%r,'
@@ -974,6 +1049,84 @@ def validate_database_trace_inputs(sql_parameters_type):
         return wrapped(*args, **kwargs)
 
     return _validate_database_trace_inputs
+
+def validate_analytics_sample_data(name, capture_attributes=True,
+        database_call_count=0, external_call_count=0):
+    """This test depends on values in the test application from
+    agent_features/test_analytics.py, and is only meant to be run as a
+    validation with those tests.
+    """
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'SampledDataSet.add')
+    def _validate_analytics_sample_data(wrapped, instance, args, kwargs):
+        def _bind_params(sample, *args, **kwargs):
+            return sample
+
+        sample = _bind_params(*args, **kwargs)
+
+        assert isinstance(sample, list)
+        assert len(sample) == 3
+
+        intrinsics, user_attributes, agent_attributes = sample
+
+        assert intrinsics['type'] == 'Transaction'
+        assert intrinsics['name'] == name
+        assert intrinsics['timestamp'] >= 0.0
+        assert intrinsics['duration'] >= 0.0
+
+        assert 'queueDuration' not in intrinsics
+        assert 'memcacheDuration' not in intrinsics
+
+        if capture_attributes:
+            assert user_attributes['user'] == u'user-name'
+            assert user_attributes['account'] == u'account-name'
+            assert user_attributes['product'] == u'product-name'
+
+            if six.PY2:
+                assert user_attributes['bytes'] == u'bytes-value'
+            else:
+                assert 'bytes' not in user_attributes
+
+            assert user_attributes['string'] == u'string-value'
+            assert user_attributes['unicode'] == u'unicode-value'
+
+            assert user_attributes['integer'] == 1
+            assert user_attributes['float'] == 1.0
+
+            if six.PY2:
+                assert user_attributes['invalid-utf8'] == b'\xe2'
+                assert user_attributes['multibyte-utf8'] == b'\xe2\x88\x9a'
+            else:
+                assert 'invalid-utf8' not in user_attributes
+                assert 'multibyte-utf8' not in user_attributes
+
+            multibyte_value = b'\xe2\x88\x9a'.decode('utf-8')
+            assert user_attributes['multibyte-unicode'] == multibyte_value
+
+            assert 'list' not in user_attributes
+            assert 'tuple' not in user_attributes
+            assert 'dict' not in user_attributes
+
+        else:
+            assert user_attributes == {}
+
+        if database_call_count:
+            assert intrinsics['databaseDuration'] > 0
+            assert intrinsics['databaseCallCount'] == database_call_count
+        else:
+            assert 'databaseDuration' not in intrinsics
+            assert 'databaseCallCount' not in intrinsics
+
+        if external_call_count:
+            assert intrinsics['externalDuration'] > 0
+            assert intrinsics['externalCallCount'] == external_call_count
+        else:
+            assert 'externalDuration' not in intrinsics
+            assert 'externalCallCount' not in intrinsics
+
+        return wrapped(*args, **kwargs)
+
+    return _validate_analytics_sample_data
 
 def override_application_name(app_name):
     # The argument here cannot be named 'name', or else it triggers

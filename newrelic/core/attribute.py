@@ -1,27 +1,34 @@
 from collections import namedtuple
 
 from .attribute_filter import (DST_ALL, DST_ERROR_COLLECTOR,
-        DST_TRANSACTION_TRACER)
-
-
-INTRINSIC_DEFAULT_DST = DST_ERROR_COLLECTOR | DST_TRANSACTION_TRACER
-AGENT_DEFAULT_DST = DST_ERROR_COLLECTOR | DST_TRANSACTION_TRACER
+        DST_TRANSACTION_TRACER, DST_NONE, DST_TRANSACTION_EVENTS)
 
 _Attribute = namedtuple('_Attribute',
         ['name', 'value', 'destinations'])
+
+# The following destinations are created here, never changed, and only used in
+# create_agent_attributes. It is placed at the module level here as an optimization
+
+# All agent attributes go to transaction traces and error traces by default
+
+_DESTINATIONS = DST_ERROR_COLLECTOR | DST_TRANSACTION_TRACER
+_DESTINATIONS_WITH_EVENTS = _DESTINATIONS | DST_TRANSACTION_EVENTS
+
+# The following subset goes to transaction events by default
+
+_TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = [
+        'request.method',
+        'request.headers.content-type',
+        'request.headers.content-length',
+        'response.status',
+        'response.content-length'
+]
 
 class Attribute(_Attribute):
 
     def __repr__(self):
         return "Attribute(name=%r, value=%r, destinations=%r)" % (
                 self.name, self.value, bin(self.destinations))
-
-def create_intrinsic_attributes(attr_dict):
-
-    # Intrinsic attributes don't go through the Attribute Filter
-
-    destinations = INTRINSIC_DEFAULT_DST
-    return [Attribute(k, v, destinations) for k, v in attr_dict.items()]
 
 def create_attributes(attr_dict, destinations, attribute_filter):
     attributes = []
@@ -33,8 +40,17 @@ def create_attributes(attr_dict, destinations, attribute_filter):
     return attributes
 
 def create_agent_attributes(attr_dict, attribute_filter):
-    destinations = AGENT_DEFAULT_DST
-    return create_attributes(attr_dict, destinations, attribute_filter)
+    attributes = []
+
+    for k, v in attr_dict.items():
+        if k in _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES:
+            dest = attribute_filter.apply(k, _DESTINATIONS_WITH_EVENTS)
+        else:
+            dest = attribute_filter.apply(k, _DESTINATIONS)
+
+        attributes.append(Attribute(k, v, dest))
+
+    return attributes
 
 def create_user_attributes(attr_dict, attribute_filter):
     destinations = DST_ALL

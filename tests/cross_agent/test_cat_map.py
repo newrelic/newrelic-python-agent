@@ -104,20 +104,20 @@ def validate_analytics_catmap_data(name, expected_attributes=(),
         sample = _bind_params(*args, **kwargs)
 
         assert isinstance(sample, list)
-        assert len(sample) == 2
+        assert len(sample) == 3
 
-        record, params = sample
+        intrinsics, user_attributes, agent_attributes = sample
 
-        assert record['type'] == 'Transaction'
-        assert record['name'] == name
-        assert record['timestamp'] >= 0.0
-        assert record['duration'] >= 0.0
+        assert intrinsics['type'] == 'Transaction'
+        assert intrinsics['name'] == name
+        assert intrinsics['timestamp'] >= 0.0
+        assert intrinsics['duration'] >= 0.0
 
         for key, value in expected_attributes.items():
-            assert record[key] == value
+            assert intrinsics[key] == value
 
         for key in non_expected_attributes:
-            assert record.get(key) is None
+            assert intrinsics.get(key) is None
 
         return wrapped(*args, **kwargs)
 

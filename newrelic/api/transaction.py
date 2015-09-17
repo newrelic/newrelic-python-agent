@@ -26,9 +26,10 @@ from newrelic.core.stats_engine import CustomMetrics
 from newrelic.core.transaction_cache import transaction_cache
 from newrelic.core.thread_utilization import utilization_tracker
 
-from ..core.attribute import (create_attributes, create_intrinsic_attributes,
-        create_agent_attributes, create_user_attributes, AGENT_DEFAULT_DST)
-from ..core.attribute_filter import DST_NONE
+from ..core.attribute import (create_attributes, create_agent_attributes,
+        create_user_attributes)
+from ..core.attribute_filter import (DST_NONE, DST_ERROR_COLLECTOR,
+        DST_TRANSACTION_TRACER)
 from ..core.stack_trace import exception_stack
 from ..common.encoding_utils import generate_path_hash
 
@@ -512,9 +513,9 @@ class Transaction(object):
                 path_hash=self.path_hash,
                 referring_path_hash=self._referring_path_hash,
                 alternate_path_hashes=self.alternate_path_hashes,
-                attributes_intrinsic=self.attributes_intrinsic,
-                attributes_agent=self.attributes_agent,
-                attributes_user=self.attributes_user,
+                trace_intrinsics=self.trace_intrinsics,
+                agent_attributes=self.agent_attributes,
+                user_attributes=self.user_attributes,
                 )
 
         # Clear settings as we are all done and don't need it
@@ -681,7 +682,8 @@ class Transaction(object):
         return queue_wait
 
     @property
-    def attributes_intrinsic(self):
+    def trace_intrinsics(self):
+        """Intrinsic attributes for transaction traces and error traces"""
         i_attrs = {}
 
         if self.referring_transaction_guid:
@@ -709,10 +711,10 @@ class Transaction(object):
         # if self._cpu_user_time_value:
         #     i_attrs['cpu_time'] = self._cpu_user_time_value
 
-        return create_intrinsic_attributes(i_attrs)
+        return i_attrs
 
     @property
-    def attributes_agent(self):
+    def agent_attributes(self):
         a_attrs = {}
         req_env = self._request_environment
 
@@ -759,11 +761,11 @@ class Transaction(object):
         if self.queue_wait != 0 :
             a_attrs['webfrontend.queuetime'] = '%.4f' % self.queue_wait
 
-        attributes_agent = create_agent_attributes(a_attrs,
+        agent_attributes = create_agent_attributes(a_attrs,
                 self.attribute_filter)
 
         # Request parameters are a special case of agent attributes, so
-        # they must be added on to attributes_agent separately
+        # they must be added on to agent_attributes separately
 
         # There are 3 cases we need to handle:
         #
@@ -811,14 +813,15 @@ class Transaction(object):
                             DST_NONE, self.attribute_filter)
                 elif self.capture_params:
                     attributes_request = create_attributes(r_attrs,
-                            AGENT_DEFAULT_DST, self.attribute_filter)
+                            DST_ERROR_COLLECTOR | DST_TRANSACTION_TRACER,
+                            self.attribute_filter)
 
-                attributes_agent.extend(attributes_request)
+                agent_attributes.extend(attributes_request)
 
-        return attributes_agent
+        return agent_attributes
 
     @property
-    def attributes_user(self):
+    def user_attributes(self):
         return create_user_attributes(self._custom_params,
                 self.attribute_filter)
 

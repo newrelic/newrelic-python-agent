@@ -7,7 +7,7 @@ from testing_support.fixtures import (override_application_settings,
     validate_request_params, validate_parameter_groups)
 
 from newrelic.agent import (background_task, add_custom_parameter,
-    record_exception, wsgi_application)
+    record_exception, wsgi_application, current_transaction)
 
 from newrelic.core.config import (global_settings, Settings,
     apply_config_setting)
@@ -280,12 +280,29 @@ _test_transaction_settings_hsm_enabled = {
 def test_other_transaction_hsm_custom_parameters_disabled():
     add_custom_parameter('key', 'value')
 
+@override_application_settings(_test_transaction_settings_hsm_disabled)
+@validate_custom_parameters(required_params=[('key-1', 'value-1'),
+        ('key-2', 'value-2')])
+@background_task()
+def test_other_transaction_hsm_multiple_custom_parameters_disabled():
+    transaction = current_transaction()
+    transaction.add_custom_parameters([('key-1', 'value-1'),
+            ('key-2', 'value-2')])
+
 @override_application_settings(_test_transaction_settings_hsm_enabled)
 @validate_custom_parameters(forgone_params=[('key', 'value')])
 @background_task()
 def test_other_transaction_hsm_custom_parameters_enabled():
     add_custom_parameter('key', 'value')
 
+@override_application_settings(_test_transaction_settings_hsm_enabled)
+@validate_custom_parameters(forgone_params=[('key-1', 'value-1'),
+        ('key-2', 'value-2')])
+@background_task()
+def test_other_transaction_hsm_multiple_custom_parameters_enabled():
+    transaction = current_transaction()
+    transaction.add_custom_parameters([('key-1', 'value-1'),
+            ('key-2', 'value-2')])
 class TestException(Exception): pass
 
 _test_exception_name = '%s:%s' % (__name__, TestException.__name__)

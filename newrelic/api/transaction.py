@@ -1183,7 +1183,7 @@ class Transaction(object):
 
     def add_custom_parameters(self, items):
         for name, value in items:
-            self._custom_params[name] = value
+            self.add_custom_parameter(name, value)
 
     def add_user_attribute(self, name, value):
         #warnings.warn('Internal API change. Use add_custom_parameter() '

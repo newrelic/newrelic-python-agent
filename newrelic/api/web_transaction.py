@@ -288,10 +288,6 @@ class WebTransaction(Transaction):
             except Exception:
                 params = cgi.parse_qs(value, keep_blank_values=True)
 
-            for name in settings.ignored_params:
-                if name in params:
-                    del params[name]
-
             self._request_params.update(params)
 
         # Check for Synthetics header

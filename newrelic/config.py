@@ -12,7 +12,7 @@ from .packages import six
 
 from .common.log_file import initialize_logging
 from .common.object_names import expand_builtin_exception_name
-from .core.config import Settings, apply_config_setting
+from .core.config import Settings, apply_config_setting, fetch_config_setting
 
 import newrelic.core.agent
 import newrelic.core.config
@@ -556,6 +556,153 @@ def _process_labels_setting(labels=None):
 
     _settings.labels = result
 
+def delete_setting(settings_object, name):
+    """Delete setting from settings_object.
+
+    If passed a 'root' setting, like 'error_collector', it will
+    delete 'error_collector' and all settings underneath it, such
+    as 'error_collector.attributes.enabled'
+
+    """
+
+    target = settings_object
+    fields = name.split('.', 1)
+
+    while len(fields) > 1:
+        if not hasattr(target, fields[0]):
+            break
+        target = getattr(target, fields[0])
+        fields = fields[1].split('.', 1)
+
+    try:
+        delattr(target, fields[0])
+    except AttributeError:
+        _logger.debug('Failed to delete setting: %r', name)
+
+def translate_deprecated_settings(settings, cached_settings):
+    # If deprecated setting has been set by user, but the new
+    # setting has not, then translate the deprecated setting to the
+    # new one.
+    #
+    # If both deprecated and new setting have been applied, ignore
+    # deprecated setting.
+    #
+    # In either case, delete the deprecated one from the settings object.
+
+    # Parameters:
+    #
+    #    settings:
+    #         Settings object
+    #
+    #   cached_settings:
+    #         A list of (key, value) pairs of the parsed global settings
+    #         found in the config file.
+
+    # NOTE:
+    #
+    # cached_settings is a list of option key/values and can have duplicate
+    # keys, if the customer used environment sections in the config file.
+    # Since options are applied to the settings object in order, so that the
+    # options at the end of the list will override earlier options with the
+    # same key, then converting to a dict will result in each option having
+    # the most recently applied value.
+
+    cached = dict(cached_settings)
+
+    deprecated_settings_map = [
+        (
+            'transaction_tracer.capture_attributes',
+            'transaction_tracer.attributes.enabled'
+        ),
+        (
+            'error_collector.capture_attributes',
+            'error_collector.attributes.enabled'
+        ),
+        (
+            'browser_monitoring.capture_attributes',
+            'browser_monitoring.attributes.enabled'
+        ),
+        (
+            'analytics_events.capture_attributes',
+            'transaction_events.attributes.enabled'
+        ),
+        (
+            'analytics_events.enabled',
+            'transaction_events.enabled'
+        ),
+        (
+            'analytics_events.max_samples_stored',
+            'transaction_events.max_samples_stored'
+        ),
+    ]
+
+    for (old_key, new_key) in deprecated_settings_map:
+
+        if old_key in cached:
+            _logger.info('Deprecated setting found: %r. Please use new '
+                    'setting: %r.', old_key, new_key)
+
+            if new_key in cached:
+                _logger.info('Ignoring deprecated setting: %r. Using new '
+                        'setting: %r.', old_key, new_key)
+            else:
+                apply_config_setting(settings, new_key, cached[old_key])
+                _logger.info('Applying value of deprecated setting %r to %r.',
+                        old_key, new_key)
+
+            delete_setting(settings, old_key)
+
+    # The 'ignored_params' setting is more complicated than the above
+    # deprecated settings, so it gets handled separately.
+
+    if 'ignored_params' in cached:
+
+        _logger.info('Deprecated setting found: ignored_params. Please use '
+                'new setting: attributes.exclude. For the new setting, an '
+                'ignored parameter should be prefaced with '
+                '"request.parameters.". For example, ignoring a parameter '
+                'named "foo" should be added added to attributes.exclude as '
+                '"request.parameters.foo."')
+
+        # Don't merge 'ignored_params' settings. If user set
+        # 'attributes.exclude' setting, only use those values,
+        # and ignore 'ignored_params' settings.
+
+        if 'attributes.exclude' in cached:
+            _logger.info('Ignoring deprecated setting: ignored_params. Using '
+                    'new setting: attributes.exclude.')
+
+        else:
+            ignored_params = fetch_config_setting(settings, 'ignored_params')
+
+            for p in ignored_params:
+                attr_value = 'request.parameters.' + p
+                excluded_attrs = fetch_config_setting(
+                        settings, 'attributes.exclude')
+
+                if attr_value not in excluded_attrs:
+                    settings.attributes.exclude.append(attr_value)
+                    _logger.info('Applying value of deprecated setting '
+                            'ignored_params to attributes.exclude: %r.',
+                            attr_value)
+
+        delete_setting(settings, 'ignored_params')
+
+    # The 'capture_params' setting is deprecated, but since it affects
+    # attribute filter default destinations, it is not translated here. We
+    # log a message, but keep the capture_params setting.
+    #
+    # See newrelic.core.transaction:Transaction.agent_attributes to see how
+    # it is used.
+
+    if 'capture_params' in cached:
+        _logger.info('Deprecated setting found: capture_params. Please use '
+                'new setting: attributes.exclude. To disable capturing all '
+                'request parameters, add "request.parameters.*" to '
+                'attributes.exclude.')
+
+    return settings
+
 def apply_local_high_security_mode_setting(settings):
     # When High Security Mode is activated, certain settings must be
     # set to be secure, even if that requires overriding a setting that
@@ -729,6 +876,10 @@ def _load_configuration(config_file=None, environment=None,
                     'Check agent documentation or release notes, or '
                     'contact New Relic support for clarification of '
                     'validity of the specific feature flag.', flag)
+
+    # Translate old settings
+
+    translate_deprecated_settings(_settings, _cache_object)
 
     # Apply High Security Mode policy if enabled in local agent
     # configuration file.

@@ -600,15 +600,6 @@ def translate_deprecated_settings(settings, cached_settings):
 
     # NOTE:
     #
-    # The 'capture_params' setting is deprecated, but since it affects
-    # attribute filter default destinations, it is not translated here. We
-    # keep the capture_params setting.
-    #
-    # See newrelic.core.transaction:Transaction.attribute_agent to see how
-    # it is used.
-
-    # NOTE:
-    #
     # cached_settings is a list of option key/values and can have duplicate
     # keys, if the customer used environment sections in the config file.
     # Since options are applied to the settings object in order, so that the
@@ -696,6 +687,19 @@ def translate_deprecated_settings(settings, cached_settings):
                             attr_value)
 
         delete_setting(settings, 'ignored_params')
+
+    # The 'capture_params' setting is deprecated, but since it affects
+    # attribute filter default destinations, it is not translated here. We
+    # log a message, but keep the capture_params setting.
+    #
+    # See newrelic.core.transaction:Transaction.agent_attributes to see how
+    # it is used.
+
+    if 'capture_params' in cached:
+        _logger.info('Deprecated setting found: capture_params. Please use '
+                'new setting: attributes.exclude. To disable capturing all '
+                'request parameters, add "request.parameters.*" to '
+                'attributes.exclude.')
 
     return settings
 

@@ -648,15 +648,15 @@ def translate_deprecated_settings(settings, cached_settings):
     for (old_key, new_key) in deprecated_settings_map:
 
         if old_key in cached:
-            _logger.debug('Deprecated setting found: %r. Please use new '
+            _logger.info('Deprecated setting found: %r. Please use new '
                     'setting: %r.', old_key, new_key)
 
             if new_key in cached:
-                _logger.debug('Ignoring deprecated setting: %r. Using new '
+                _logger.info('Ignoring deprecated setting: %r. Using new '
                         'setting: %r.', old_key, new_key)
             else:
                 apply_config_setting(settings, new_key, cached[old_key])
-                _logger.debug('Applying value of deprecated setting %r to %r.',
+                _logger.info('Applying value of deprecated setting %r to %r.',
                         old_key, new_key)
 
             delete_setting(settings, old_key)
@@ -666,7 +666,7 @@ def translate_deprecated_settings(settings, cached_settings):
 
     if 'ignored_params' in cached:
 
-        _logger.debug('Deprecated setting found: ignored_params. Please use '
+        _logger.info('Deprecated setting found: ignored_params. Please use '
                 'new setting: attributes.exclude. For the new setting, an '
                 'ignored parameter should be prefaced with '
                 '"request.parameters.". For example, ignoring a parameter '
@@ -678,7 +678,7 @@ def translate_deprecated_settings(settings, cached_settings):
         # and ignore 'ignored_params' settings.
 
         if 'attributes.exclude' in cached:
-            _logger.debug('Ignoring deprecated setting: ignored_params. Using '
+            _logger.info('Ignoring deprecated setting: ignored_params. Using '
                     'new setting: attributes.exclude.')
 
         else:
@@ -691,7 +691,7 @@ def translate_deprecated_settings(settings, cached_settings):
 
                 if attr_value not in excluded_attrs:
                     settings.attributes.exclude.append(attr_value)
-                    _logger.debug('Applying value of deprecated setting '
+                    _logger.info('Applying value of deprecated setting '
                             'ignored_params to attributes.exclude: %r.',
                             attr_value)
 

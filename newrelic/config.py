@@ -649,14 +649,14 @@ def translate_deprecated_settings(settings, cached_settings):
 
         if old_key in cached:
             _logger.debug('Deprecated setting found: %r. Please use new '
-                    'setting: %r', old_key, new_key)
+                    'setting: %r.', old_key, new_key)
 
             if new_key in cached:
                 _logger.debug('Ignoring deprecated setting: %r. Using new '
-                        'setting: %r', old_key, new_key)
+                        'setting: %r.', old_key, new_key)
             else:
                 apply_config_setting(settings, new_key, cached[old_key])
-                _logger.debug('Applying value of deprecated setting %r to %r',
+                _logger.debug('Applying value of deprecated setting %r to %r.',
                         old_key, new_key)
 
             delete_setting(settings, old_key)
@@ -683,8 +683,8 @@ def translate_deprecated_settings(settings, cached_settings):
 
         else:
             ignored_params = fetch_config_setting(settings, 'ignored_params')
-            for p in ignored_params:
 
+            for p in ignored_params:
                 attr_value = 'request.parameters.' + p
                 excluded_attrs = fetch_config_setting(
                         settings, 'attributes.exclude')
@@ -692,7 +692,7 @@ def translate_deprecated_settings(settings, cached_settings):
                 if attr_value not in excluded_attrs:
                     settings.attributes.exclude.append(attr_value)
                     _logger.debug('Applying value of deprecated setting '
-                            'ignored_params to attributes.exclude: %r',
+                            'ignored_params to attributes.exclude: %r.',
                             attr_value)
 
         delete_setting(settings, 'ignored_params')

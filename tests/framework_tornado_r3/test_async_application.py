@@ -68,7 +68,6 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         try:
             self.wait(timeout=5.0)
         except:
-            # TODO(bdirks): Verify this fails.
             self.assertTrue(False, "Timeout occured waiting for response")
 
         # Retrieve the server response. An exception will be raised
@@ -137,7 +136,10 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         start_time = time.time()
         responses = self.fetch_responses(['/sleep', '/sleep'])
         duration = time.time() - start_time
-        self.assertAlmostEqual(duration, 2.1, delta=0.2)
+        # We don't use assertAlmostEqual since delta isn't supported in 2.6.
+        # Also assert(Greater|Less)Than is only in > 2.6.
+        self.assertTrue(duration >= 2.0)
+        self.assertTrue(duration <= 2.3)
         self.assertEqual(responses[0].code, 200)
         self.assertEqual(responses[0].body, SleepRequestHandler.RESPONSE)
         self.assertEqual(responses[1].code, 200)

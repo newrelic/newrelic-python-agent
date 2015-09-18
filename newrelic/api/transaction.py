@@ -1033,6 +1033,9 @@ class Transaction(object):
         # Only add params if High Security Mode is off.
 
         if settings.high_security:
+            if params:
+                _logger.debug('Cannot add custom parameters in '
+                        'High Security Mode.')
             custom_params = {}
         else:
             custom_params = params

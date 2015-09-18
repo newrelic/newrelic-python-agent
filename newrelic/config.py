@@ -677,8 +677,11 @@ def translate_deprecated_settings(settings, cached_settings):
         # 'attributes.exclude' setting, only use those values,
         # and ignore 'ignored_params' settings.
 
-        if 'attributes.exclude' not in cached:
+        if 'attributes.exclude' in cached:
+            _logger.debug('Ignoring deprecated setting: ignored_params. Using '
+                    'new setting: attributes.exclude.')
 
+        else:
             ignored_params = fetch_config_setting(settings, 'ignored_params')
             for p in ignored_params:
 
@@ -691,9 +694,6 @@ def translate_deprecated_settings(settings, cached_settings):
                     _logger.debug('Applying value of deprecated setting '
                             'ignored_params to attributes.exclude: %r',
                             attr_value)
-        else:
-            _logger.debug('Ignoring deprecated setting: ignored_params. Using '
-                    'new setting: attributes.exclude.')
 
         delete_setting(settings, 'ignored_params')
 

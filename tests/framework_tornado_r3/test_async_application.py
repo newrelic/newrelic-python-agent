@@ -120,7 +120,7 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
                     'WebTransaction/Function/_test_async_application:SleepRequestHandler.get',
                     (2.0, 2.3))])
     def test_sleep_response(self):
-        response = self.fetch('/sleep')
+        response = self.fetch_response('/sleep')
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, SleepRequestHandler.RESPONSE)
 

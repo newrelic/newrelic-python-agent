@@ -604,36 +604,9 @@ class WebTransaction(Transaction):
 
         obfuscation_key = self._settings.license_key[:13]
 
-        txn_name = obfuscate(self.path, obfuscation_key)
+        intrinsics = self.browser_monitoring_intrinsics(obfuscation_key)
 
-        queue_start = self.queue_start or self.start_time
-        start_time = self.start_time
-        end_time = time.time()
-
-        queue_duration = int((start_time - queue_start) * 1000)
-        request_duration = int((end_time - start_time) * 1000)
-
-        config_dict = {
-            "beacon": self._settings.beacon,
-            "errorBeacon": self._settings.error_beacon,
-            "licenseKey": self._settings.browser_key,
-            "applicationID": self._settings.application_id,
-            "transactionName": txn_name,
-            "queueTime": queue_duration,
-            "applicationTime": request_duration,
-            "agent": self._settings.js_agent_file,
-        }
-
-        additional_params = []
-
-        threshold = self._settings.transaction_tracer.transaction_threshold
-        if threshold is None:
-            threshold = self.apdex * 4
-
-        if request_duration >= threshold:
-            if self.rum_token:
-                additional_params.append(('agentToken', self.rum_token))
-                additional_params.append(('ttGuid', self.guid))
+        # filter user and agent attributes
 
         def _filter(params):
             for key, value in params.items():
@@ -665,20 +638,15 @@ class WebTransaction(Transaction):
         if agent_attributes:
             attributes['a'] = agent_attributes
 
+        # create the data structure that pull all our data in
+
+        footer_data = intrinsics
+
         if attributes:
-            attributes = obfuscate(json_encode(attributes),
-                    obfuscation_key)
-            additional_params.append(('atts', attributes))
+            attributes = obfuscate(json_encode(attributes), obfuscation_key)
+            footer_data['atts'] = attributes
 
-
-        if self._settings.browser_monitoring.ssl_for_http is not None:
-            additional_params.append(('sslForHttp',
-                self._settings.browser_monitoring.ssl_for_http))
-
-        # Add in the additional params to the footer config dictionary.
-
-        config_dict.update(additional_params)
-        footer = _js_agent_footer_fragment % json_encode(config_dict)
+        footer = _js_agent_footer_fragment % json_encode(footer_data)
 
         # The JavaScript agent loader is supposed to be ASCII. We verify
         # that is the case by encoding it as ASCII to get a byte string.
@@ -707,6 +675,42 @@ class WebTransaction(Transaction):
             self.rum_footer_generated = True
 
         return footer
+
+    def browser_monitoring_intrinsics(self, obfuscation_key):
+        txn_name = obfuscate(self.path, obfuscation_key)
+
+        queue_start = self.queue_start or self.start_time
+        start_time = self.start_time
+        end_time = time.time()
+
+        queue_duration = int((start_time - queue_start) * 1000)
+        request_duration = int((end_time - start_time) * 1000)
+
+        intrinsics = {
+            "beacon": self._settings.beacon,
+            "errorBeacon": self._settings.error_beacon,
+            "licenseKey": self._settings.browser_key,
+            "applicationID": self._settings.application_id,
+            "transactionName": txn_name,
+            "queueTime": queue_duration,
+            "applicationTime": request_duration,
+            "agent": self._settings.js_agent_file,
+        }
+
+        threshold = self._settings.transaction_tracer.transaction_threshold
+        if threshold is None:
+            threshold = self.apdex * 4
+
+        if request_duration >= threshold:
+            if self.rum_token:
+                intrinsics['agentToken'] = self.rum_token
+                intrinsics['ttGuid'] = self.guid
+
+        if self._settings.browser_monitoring.ssl_for_http is not None:
+            ssl_for_http = self._settings.browser_monitoring.ssl_for_http
+            intrinsics['sslForHttp'] = ssl_for_http
+
+        return intrinsics
 
 class _WSGIApplicationIterable(object):
 

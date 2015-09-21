@@ -143,7 +143,6 @@ class Transaction(object):
         self.apdex = 0
 
         self.rum_token = None
-        self.rum_trace = False
 
         # 16-digit random hex. Padded with zeros in the front.
         self.guid = '%016x' % random.getrandbits(64)
@@ -498,7 +497,6 @@ class Transaction(object):
                 custom_metrics=self._custom_metrics,
                 parameter_groups=parameter_groups,
                 guid=self.guid,
-                rum_trace = self.rum_trace,
                 cpu_time=self._cpu_user_time_value,
                 suppress_transaction_trace=self.suppress_transaction_trace,
                 client_cross_process_id=self.client_cross_process_id,

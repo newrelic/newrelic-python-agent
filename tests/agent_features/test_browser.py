@@ -89,9 +89,6 @@ def test_footer_attributes():
 
     assert txn_name == u'WebTransaction/Uri/'
 
-    assert data['agentToken'] == token
-    assert len(data['ttGuid']) == 16
-
     assert 'atts' not in data
 
 _test_rum_ssl_for_http_is_none = {

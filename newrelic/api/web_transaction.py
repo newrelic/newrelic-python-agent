@@ -49,14 +49,6 @@ def _lookup_environ_setting(environ, name, default=False):
             pass
     return flag
 
-def _extract_token(cookie):
-    try:
-        t = re.search(r"\bNRAGENT=(tk=.{16})", cookie)
-        token = re.search(r"^tk=([^\"<'>]+)$", t.group(1)) if t else None
-        return token and token.group(1)
-    except Exception:
-        pass
-
 def _parse_synthetics_header(header):
     # Return a dictionary of values from Synthetics header
     # Returns empty dict, if version is not supported.
@@ -160,10 +152,6 @@ class WebTransaction(Transaction):
         script_name = environ.get('SCRIPT_NAME', None)
         path_info = environ.get('PATH_INFO', None)
         http_cookie = environ.get('HTTP_COOKIE', None)
-
-        if http_cookie and ("NRAGENT" in http_cookie):
-            self.rum_token = _extract_token(http_cookie)
-            self.rum_trace = True if self.rum_token else False
 
         self._request_uri = request_uri
 
@@ -696,15 +684,6 @@ class WebTransaction(Transaction):
             "applicationTime": request_duration,
             "agent": self._settings.js_agent_file,
         }
-
-        threshold = self._settings.transaction_tracer.transaction_threshold
-        if threshold is None:
-            threshold = self.apdex * 4
-
-        if request_duration >= threshold:
-            if self.rum_token:
-                intrinsics['agentToken'] = self.rum_token
-                intrinsics['ttGuid'] = self.guid
 
         if self._settings.browser_monitoring.ssl_for_http is not None:
             ssl_for_http = self._settings.browser_monitoring.ssl_for_http

@@ -15,7 +15,7 @@ from _test_async_application import (get_tornado_app, HelloRequestHandler,
 from testing_support.fixtures import (
     tornado_validate_count_transaction_metrics,
     tornado_validate_time_transaction_metrics,
-    tornado_validate_errors)
+    tornado_validate_errors, tornado_validate_transaction_cache_empty)
 
 def select_python_version(py2, py3):
     return six.PY3 and py3 or py2
@@ -103,6 +103,7 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
                 "Uncaught exception GET %s" % path):
             self.fetch_response(path, is_http_error=True)
 
+    @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:HelloRequestHandler.get')
@@ -111,6 +112,7 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, HelloRequestHandler.RESPONSE)
 
+    @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:SleepRequestHandler.get')
@@ -124,6 +126,7 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, SleepRequestHandler.RESPONSE)
 
+    @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:SleepRequestHandler.get')
@@ -145,6 +148,7 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         self.assertEqual(responses[1].code, 200)
         self.assertEqual(responses[1].body, SleepRequestHandler.RESPONSE)
 
+    @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[])
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:OneCallbackRequestHandler.get',
@@ -156,6 +160,7 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, OneCallbackRequestHandler.RESPONSE)
 
+    @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[])
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:NamedStackContextWrapRequestHandler.get',
@@ -168,6 +173,7 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         self.assertEqual(response.body,
                 NamedStackContextWrapRequestHandler.RESPONSE)
 
+    @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[])
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:MultipleCallbacksRequestHandler.get',
@@ -182,6 +188,7 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         self.assertEqual(response.body,
                 MultipleCallbacksRequestHandler.RESPONSE)
 
+    @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[select_python_version(
             py2='exceptions:ZeroDivisionError',
             py3='builtins:ZeroDivisionError')])
@@ -200,6 +207,7 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
     def test_callback_exception(self):
         self.fetch_exception('/callback-exception')
 
+    @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=['tornado.gen:BadYieldError'])
     @tornado_validate_count_transaction_metrics('_test_async_application:CoroutineExceptionRequestHandler.get')
     def test_coroutine_exception(self):

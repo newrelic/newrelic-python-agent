@@ -1576,6 +1576,7 @@ def tornado_validate_count_transaction_metrics(name, group='Function',
         (custom_metric_name, expected_count)
 
     Note, this only validates the first transaction in the test.
+
     """
 
     def _validate_metric_count(metrics, name, scope, count):
@@ -1640,6 +1641,7 @@ def tornado_validate_time_transaction_metrics(name, group='Function',
         (custom_metric_name, (min_time, max_time))
 
     Note, this only validates the first transaction in the test.
+
     """
 
     def _validate_metric_times(metrics, name, scope, call_time_range):
@@ -1688,6 +1690,7 @@ def tornado_validate_errors(errors=[]):
          that no errors have occurred.
 
     Note, this only validates the first transaction in the test.
+
     """
 
     @function_wrapper
@@ -1713,3 +1716,19 @@ def tornado_validate_errors(errors=[]):
                 expected, captured, errors)
 
     return _validate_transaction_errors
+
+def tornado_validate_transaction_cache_empty():
+    """Validates the transaction cache is empty after all requests are serviced.
+
+    """
+
+    @function_wrapper
+    def validate_cache_empty(wrapped, instance, args, kwargs):
+        from newrelic.core.transaction_cache import transaction_cache
+        transaction = transaction_cache().current_transaction()
+        assert None == transaction
+        wrapped(*args, **kwargs)
+        transaction = transaction_cache().current_transaction()
+        assert None == transaction
+
+    return validate_cache_empty

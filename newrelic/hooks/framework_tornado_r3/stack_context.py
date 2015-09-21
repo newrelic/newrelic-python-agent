@@ -4,7 +4,7 @@ from newrelic.agent import (wrap_function_wrapper, FunctionTrace,
     callable_name)
 from six.moves import range
 from .util import (record_exception, retrieve_current_transaction,
-                   replace_current_transaction)
+        replace_current_transaction)
 
 def _nr_wrapper_stack_context_wrap_(wrapped, instance, args, kwargs):
 
@@ -71,8 +71,7 @@ def _create_transaction_aware_fxn(fxn, args, kwargs):
         return None
 
     def _transaction_aware_fxn(*fxn_args, **fxn_kwargs):
-        old_transaction = retrieve_current_transaction()
-        replace_current_transaction(transaction)
+        old_transaction = replace_current_transaction(transaction)
         name = callable_name(fxn)
         with FunctionTrace(transaction, name=name):
             ret = fxn(*fxn_args, **fxn_kwargs)

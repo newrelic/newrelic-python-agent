@@ -1185,6 +1185,7 @@ class Transaction(object):
             self._custom_params[name] = value
 
     def add_custom_parameters(self, items):
+        # items is a list of (name, value) tuples.
         for name, value in items:
             self.add_custom_parameter(name, value)
 

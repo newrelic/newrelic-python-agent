@@ -303,6 +303,7 @@ def test_other_transaction_hsm_multiple_custom_parameters_enabled():
     transaction = current_transaction()
     transaction.add_custom_parameters([('key-1', 'value-1'),
             ('key-2', 'value-2')])
+
 class TestException(Exception): pass
 
 _test_exception_name = '%s:%s' % (__name__, TestException.__name__)

@@ -321,7 +321,6 @@ class WebTransaction(Transaction):
         # Check for the New Relic cross process ID header and extract
         # the relevant details.
 
-
         if settings.cross_application_tracer.enabled and \
                 settings.cross_process_id and settings.trusted_account_ids and \
                 settings.encoding_key:

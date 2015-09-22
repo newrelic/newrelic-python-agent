@@ -27,7 +27,8 @@ from newrelic.core.transaction_cache import transaction_cache
 from newrelic.core.thread_utilization import utilization_tracker
 
 from ..core.attribute import (create_attributes, create_agent_attributes,
-        create_user_attributes, truncate)
+        create_user_attributes, truncate, user_attr_name_length_ok,
+        truncate_attribute_value)
 from ..core.attribute_filter import (DST_NONE, DST_ERROR_COLLECTOR,
         DST_TRANSACTION_TRACER)
 from ..core.stack_trace import exception_stack
@@ -1176,13 +1177,46 @@ class Transaction(object):
         self._cpu_user_time_end = os.times()[0]
 
     def add_custom_parameter(self, name, value):
+        maxnum_user_attributes = 64
+
         if not self._settings:
-            return
+            return False
 
         if self._settings.high_security:
             _logger.debug('Cannot add custom parameter in High Security Mode.')
+            return False
+
+        # Currently, we accept a lot of types for values...
+        # Will be fixed in subsequent PR.
+
+        valid_types_text = (six.text_type, six.binary_type)
+        valid_types_not_text = (bool, float, six.integer_types,
+                list, dict, tuple)
+
+        if not isinstance(name, valid_types_text):
+            name = str(name)
+
+        if len(self._custom_params) >= maxnum_user_attributes:
+            _logger.debug('Maximum number of custom attributes already added: '
+                    '%r. Dropping attribute: %r=%r', maxnum_user_attributes,
+                    name, value)
+            return False
+
+        if not user_attr_name_length_ok(name, value):
+            return False
+
+        if isinstance(value, valid_types_text):
+            key, val = truncate_attribute_value(name, value)
+        elif isinstance(value, valid_types_not_text):
+            key, val = name, value
         else:
-            self._custom_params[name] = value
+            key = None
+
+        if key is None:
+            return False
+        else:
+            self._custom_params[key] = val
+            return True
 
     def add_custom_parameters(self, items):
         # items is a list of (name, value) tuples.
@@ -1301,7 +1335,9 @@ def capture_request_params(flag=True):
 def add_custom_parameter(key, value):
     transaction = current_transaction()
     if transaction:
-        transaction.add_custom_parameter(key, value)
+        return transaction.add_custom_parameter(key, value)
+    else:
+        return False
 
 def add_user_attribute(key, value):
     #warnings.warn('API change. Use add_custom_parameter() instead of '

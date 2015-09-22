@@ -1,11 +1,12 @@
 import webtest
 
-from newrelic.agent import wsgi_application, add_custom_parameter
+from newrelic.agent import (wsgi_application, add_custom_parameter,
+    background_task)
 from newrelic.packages import six
 from newrelic.core.attribute import truncate
 
 from testing_support.fixtures import (override_application_settings,
-    validate_attributes)
+    validate_attributes, validate_custom_parameters)
 
 
 @wsgi_application()
@@ -135,3 +136,48 @@ def test_truncate_empty_unicode():
     result = truncate(u, maxsize=5)
     assert isinstance(result, six.text_type)
     assert result == u''
+
+# Tests for limits on user attributes
+
+TOO_LONG = '*' * 256
+TRUNCATED = '*' * 255
+
+_required_custom_params = [('key', 'value')]
+_forgone_custom_params = []
+
+@validate_custom_parameters(_required_custom_params, _forgone_custom_params)
+@background_task()
+def test_custom_params_ok():
+    result = add_custom_parameter('key', 'value')
+    assert result
+
+_required_custom_params_long_key = []
+_forgone_custom_params_long_key = [(TOO_LONG, 'value')]
+
+@validate_custom_parameters(_required_custom_params_long_key,
+        _forgone_custom_params_long_key)
+@background_task()
+def test_custom_params_key_too_long():
+    result = add_custom_parameter(TOO_LONG, 'value')
+    assert not result
+
+_required_custom_params_long_value = [('key', TRUNCATED)]
+_forgone_custom_params_long_value = []
+
+@validate_custom_parameters(_required_custom_params_long_value,
+        _forgone_custom_params_long_value)
+@background_task()
+def test_custom_params_value_too_long():
+    result = add_custom_parameter('key', TOO_LONG)
+    assert result
+
+_required_custom_params_too_many = [('key-63', 'value')]
+_forgone_custom_params_too_many = [('key-64', 'value')]
+
+@validate_custom_parameters(_required_custom_params_too_many,
+        _forgone_custom_params_too_many)
+@background_task()
+def test_custom_params_too_many():
+    for i in range(65):
+        result = add_custom_parameter('key-%02d' % i, 'value')
+    assert not result   # Last one fails

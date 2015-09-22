@@ -1,9 +1,14 @@
+import logging
+
 from collections import namedtuple
 
 from ..packages import six
 
 from .attribute_filter import (DST_ALL, DST_ERROR_COLLECTOR,
         DST_TRANSACTION_TRACER, DST_NONE, DST_TRANSACTION_EVENTS)
+
+
+_logger = logging.getLogger(__name__)
 
 _Attribute = namedtuple('_Attribute',
         ['name', 'value', 'destinations'])
@@ -77,3 +82,20 @@ def _truncate_unicode(u, maxsize, encoding='utf-8'):
 
 def _truncate_bytes(s, maxsize):
     return s[:maxsize]
+
+def user_attr_name_length_ok(name, value, maxsize=255):
+    trunc_name = truncate(name, maxsize)
+    if name != trunc_name:
+        _logger.debug('Attribute name exceeds maximum length (%r bytes). '
+                'Dropping attribute: %r=%r', maxsize, name, value)
+        return False
+    else:
+        return True
+
+def truncate_attribute_value(name, value, maxsize=255):
+    trunc_value = truncate(value, maxsize)
+    if value != trunc_value:
+        _logger.debug('Attribute value exceeds maximum length '
+                '(%r bytes). Truncating value: %r=%r.',
+                maxsize, name, trunc_value)
+    return (name, trunc_value)

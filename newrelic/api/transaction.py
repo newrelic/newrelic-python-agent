@@ -807,7 +807,12 @@ class Transaction(object):
                         new_val = v[0]
                     else:
                         new_val = ",".join(v)
-                    r_attrs[new_key] = new_val
+
+                    if user_attr_name_length_ok(new_key, new_val):
+                        final_key, final_val = truncate_attribute_value(
+                                new_key, new_val)
+
+                        r_attrs[final_key] = final_val
 
                 if self.capture_params is None:
                     attributes_request = create_attributes(r_attrs,

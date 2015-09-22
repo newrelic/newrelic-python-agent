@@ -181,3 +181,40 @@ def test_custom_params_too_many():
     for i in range(65):
         result = add_custom_parameter('key-%02d' % i, 'value')
     assert not result   # Last one fails
+OK_KEY = '*' * (255 - len('request.parameters.'))
+OK_REQUEST_PARAM = 'request.parameters.' + OK_KEY
+TOO_LONG_KEY = '*' * (256 - len('request.parameters.'))
+TOO_LONG_REQUEST_PARAM = 'request.parameters.' + TOO_LONG_KEY
+
+assert len(OK_REQUEST_PARAM) == 255
+assert len(TOO_LONG_REQUEST_PARAM) == 256
+
+_required_request_key_ok = [OK_REQUEST_PARAM]
+_forgone_request_key_ok = []
+
+@validate_attributes('agent', _required_request_key_ok,
+        _forgone_request_key_ok)
+def test_capture_request_params_key_ok():
+    target_application = webtest.TestApp(target_wsgi_application)
+    response = target_application.get('/?%s=bar' % OK_KEY)
+    assert response.body == b'Hello World!'
+
+_required_request_key_too_long = []
+_forgone_request_key_too_long = [TOO_LONG_REQUEST_PARAM]
+
+@validate_attributes('agent', _required_request_key_too_long,
+        _forgone_request_key_too_long)
+def test_capture_request_params_key_too_long():
+    target_application = webtest.TestApp(target_wsgi_application)
+    response = target_application.get('/?%s=bar' % TOO_LONG_KEY)
+    assert response.body == b'Hello World!'
+
+_required_request_value_too_long = ['request.parameters.foo']
+_forgone_request_value_too_long = []
+
+@validate_attributes('agent', _required_request_value_too_long,
+        _forgone_request_value_too_long)
+def test_capture_request_params_value_too_long():
+    target_application = webtest.TestApp(target_wsgi_application)
+    response = target_application.get('/?foo=%s' % TOO_LONG)
+    assert response.body == b'Hello World!'

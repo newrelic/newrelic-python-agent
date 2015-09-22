@@ -1,5 +1,7 @@
 from collections import namedtuple
 
+from ..packages import six
+
 from .attribute_filter import (DST_ALL, DST_ERROR_COLLECTOR,
         DST_TRANSACTION_TRACER, DST_NONE, DST_TRANSACTION_EVENTS)
 
@@ -55,3 +57,23 @@ def create_agent_attributes(attr_dict, attribute_filter):
 def create_user_attributes(attr_dict, attribute_filter):
     destinations = DST_ALL
     return create_attributes(attr_dict, destinations, attribute_filter)
+
+def truncate(text, maxsize, encoding='utf-8'):
+
+    # Truncate text so that it's byte representation
+    # is no longer than maxsize bytes.
+
+    # If text is unicode (Python 2 or 3), return unicode.
+    # If text is a Python 2 string, return str.
+
+    if isinstance(text, six.text_type):
+        return _truncate_unicode(text, maxsize, encoding)
+    else:
+        return _truncate_bytes(text, maxsize)
+
+def _truncate_unicode(u, maxsize, encoding='utf-8'):
+    encoded = u.encode(encoding)[:maxsize]
+    return encoded.decode(encoding, 'ignore')
+
+def _truncate_bytes(s, maxsize):
+    return s[:maxsize]

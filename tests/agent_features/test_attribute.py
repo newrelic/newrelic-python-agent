@@ -1,6 +1,8 @@
 import webtest
 
 from newrelic.agent import wsgi_application, add_custom_parameter
+from newrelic.packages import six
+from newrelic.core.attribute import truncate
 
 from testing_support.fixtures import (override_application_settings,
     validate_attributes)
@@ -81,3 +83,55 @@ def test_capture_request_params_default():
     target_application = webtest.TestApp(target_wsgi_application)
     response = target_application.get('/?foo=bar')
     assert response.body == b'Hello World!'
+
+# Tests for truncate()
+
+def test_truncate_string():
+    s = 'blahblah'
+    result = truncate(s, maxsize=4)
+    assert isinstance(result, six.string_types)
+    assert result == 'blah'
+
+def test_truncate_bytes():
+    b = b'foobar'
+    result = truncate(b, maxsize=3)
+    assert isinstance(result, six.binary_type)
+    assert result == b'foo'
+
+def test_truncate_unicode_snowman():
+    # '\u2603' is 'SNOWMAN'
+    u = u'snow\u2603'
+    assert u.encode('utf-8') == b'snow\xe2\x98\x83'
+    result = truncate(u, maxsize=5)
+    assert isinstance(result, six.text_type)
+    assert result == u'snow'
+
+def test_truncate_combining_characters():
+    # '\u0308' is 'COMBINING DIAERESIS' (AKA 'umlaut')
+    u = u'Zoe\u0308'
+    assert u.encode('utf-8') == b'Zoe\xcc\x88'
+
+    # truncate will chop off 'COMBINING DIAERESIS', which leaves
+    # 'LATIN SMALL LETTER E' by itself.
+
+    result = truncate(u, maxsize=3)
+    assert isinstance(result, six.text_type)
+    assert result == u'Zoe'
+
+def test_truncate_empty_string():
+    s = ''
+    result = truncate(s, maxsize=4)
+    assert isinstance(result, six.string_types)
+    assert result == ''
+
+def test_truncate_empty_bytes():
+    b = b''
+    result = truncate(b, maxsize=3)
+    assert isinstance(result, six.binary_type)
+    assert result == b''
+
+def test_truncate_empty_unicode():
+    u = u''
+    result = truncate(u, maxsize=5)
+    assert isinstance(result, six.text_type)
+    assert result == u''

@@ -719,12 +719,22 @@ def apply_local_high_security_mode_setting(settings):
         settings.ssl = True
         _logger.info(log_template, 'ssl', False, True)
 
-    # capture_params is a tri-state variable: True, or False, or None.
+    # capture_params is a deprecated setting for users, and has three
+    # possible values:
+    #
+    #   True:  For backward compatibility.
+    #   False: For backward compatibility.
+    #   None:  The current default setting.
+    #
+    # In High Security, capture_params must be False, but we only need
+    # to log if the customer has actually used the deprecated setting
+    # and set it to True.
 
-    if (settings.capture_params is None) or settings.capture_params:
-        original = settings.capture_params
+    if settings.capture_params:
         settings.capture_params = False
-        _logger.info(log_template, 'capture_params', original, False)
+        _logger.info(log_template, 'capture_params', True, False)
+    elif settings.capture_params is None:
+        settings.capture_params = False
 
     if settings.transaction_tracer.record_sql == 'raw':
         settings.transaction_tracer.record_sql = 'obfuscated'

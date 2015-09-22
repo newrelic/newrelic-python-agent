@@ -1033,6 +1033,9 @@ class Transaction(object):
         # Only add params if High Security Mode is off.
 
         if settings.high_security:
+            if params:
+                _logger.debug('Cannot add custom parameters in '
+                        'High Security Mode.')
             custom_params = {}
         else:
             custom_params = params
@@ -1176,12 +1179,15 @@ class Transaction(object):
         if not self._settings:
             return
 
-        if not self._settings.high_security:
+        if self._settings.high_security:
+            _logger.debug('Cannot add custom parameter in High Security Mode.')
+        else:
             self._custom_params[name] = value
 
     def add_custom_parameters(self, items):
+        # items is a list of (name, value) tuples.
         for name, value in items:
-            self._custom_params[name] = value
+            self.add_custom_parameter(name, value)
 
     def add_user_attribute(self, name, value):
         #warnings.warn('Internal API change. Use add_custom_parameter() '

@@ -278,17 +278,20 @@ class WebTransaction(Transaction):
             if self.queue_start > 0.0:
                 break
 
-        # Capture query request string parameters.
+        # Capture query request string parameters, unless we're in
+        # High Security Mode.
 
-        value = environ.get('QUERY_STRING', None)
+        if not settings.high_security:
 
-        if value:
-            try:
-                params = urlparse.parse_qs(value, keep_blank_values=True)
-            except Exception:
-                params = cgi.parse_qs(value, keep_blank_values=True)
+            value = environ.get('QUERY_STRING', None)
 
-            self._request_params.update(params)
+            if value:
+                try:
+                    params = urlparse.parse_qs(value, keep_blank_values=True)
+                except Exception:
+                    params = cgi.parse_qs(value, keep_blank_values=True)
+
+                self._request_params.update(params)
 
         # Check for Synthetics header
 
@@ -317,7 +320,6 @@ class WebTransaction(Transaction):
 
         # Check for the New Relic cross process ID header and extract
         # the relevant details.
-
 
         if settings.cross_application_tracer.enabled and \
                 settings.cross_process_id and settings.trusted_account_ids and \

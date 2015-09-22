@@ -7,7 +7,7 @@ from testing_support.fixtures import (override_application_settings,
     validate_request_params, validate_parameter_groups)
 
 from newrelic.agent import (background_task, add_custom_parameter,
-    record_exception, wsgi_application)
+    record_exception, wsgi_application, current_transaction)
 
 from newrelic.core.config import (global_settings, Settings,
     apply_config_setting)
@@ -60,6 +60,13 @@ _hsm_local_config_file_settings_enabled = [
         'high_security': True,
         'ssl': True,
         'capture_params': True,
+        'transaction_tracer.record_sql': 'raw',
+        'strip_exception_messages.enabled': True,
+    },
+    {
+        'high_security': True,
+        'ssl': True,
+        'capture_params': None,
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': True,
     },
@@ -130,7 +137,7 @@ def test_local_config_file_hsm_override_enabled(settings):
     apply_local_high_security_mode_setting(settings)
 
     assert settings.ssl
-    assert not settings.capture_params
+    assert settings.capture_params not in (True, None)
     assert settings.transaction_tracer.record_sql in ('off', 'obfuscated')
     assert settings.strip_exception_messages.enabled
 
@@ -273,11 +280,29 @@ _test_transaction_settings_hsm_enabled = {
 def test_other_transaction_hsm_custom_parameters_disabled():
     add_custom_parameter('key', 'value')
 
+@override_application_settings(_test_transaction_settings_hsm_disabled)
+@validate_custom_parameters(required_params=[('key-1', 'value-1'),
+        ('key-2', 'value-2')])
+@background_task()
+def test_other_transaction_hsm_multiple_custom_parameters_disabled():
+    transaction = current_transaction()
+    transaction.add_custom_parameters([('key-1', 'value-1'),
+            ('key-2', 'value-2')])
+
 @override_application_settings(_test_transaction_settings_hsm_enabled)
 @validate_custom_parameters(forgone_params=[('key', 'value')])
 @background_task()
 def test_other_transaction_hsm_custom_parameters_enabled():
     add_custom_parameter('key', 'value')
+
+@override_application_settings(_test_transaction_settings_hsm_enabled)
+@validate_custom_parameters(forgone_params=[('key-1', 'value-1'),
+        ('key-2', 'value-2')])
+@background_task()
+def test_other_transaction_hsm_multiple_custom_parameters_enabled():
+    transaction = current_transaction()
+    transaction.add_custom_parameters([('key-1', 'value-1'),
+            ('key-2', 'value-2')])
 
 class TestException(Exception): pass
 

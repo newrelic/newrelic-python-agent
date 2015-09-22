@@ -520,15 +520,19 @@ class WebTransaction(Transaction):
         # collector is not meant to send a non empty value for the
         # js_agent_loader value if browser_monitoring.loader is set to
         # 'none'.
-        #
-        # The JavaScript agent loader is supposed to be ASCII. We verify
-        # that is the case by encoding it as ASCII to get a byte string.
-        # In the case of Python 2, we actually then use the encoded value
-        # as we need a native string, which for Python 2 is a byte string.
-        # If encoding as ASCII fails we will return an empty string.
 
         if self._settings.js_agent_loader:
             header = _js_agent_header_fragment % self._settings.js_agent_loader
+
+            # To avoid any issues with browser encodings, we will make sure that
+            # the javascript we inject for the browser agent is ASCII encodable.
+            # Since we obfuscate all agent and user attributes, and the transaction
+            # name with base 64 encoding, this will preserve those strings, if
+            # they have values outside of the ASCII character set.
+            # In the case of Python 2, we actually then use the encoded value
+            # as we need a native string, which for Python 2 is a byte string.
+            # If encoding as ASCII fails we will return an empty string.
+
             try:
                 if six.PY2:
                     header = header.encode('ascii')
@@ -636,8 +640,11 @@ class WebTransaction(Transaction):
 
         footer = _js_agent_footer_fragment % json_encode(footer_data)
 
-        # The JavaScript agent loader is supposed to be ASCII. We verify
-        # that is the case by encoding it as ASCII to get a byte string.
+        # To avoid any issues with browser encodings, we will make sure that
+        # the javascript we inject for the browser agent is ASCII encodable.
+        # Since we obfuscate all agent and user attributes, and the transaction
+        # name with base 64 encoding, this will preserve those strings, if
+        # they have values outside of the ASCII character set.
         # In the case of Python 2, we actually then use the encoded value
         # as we need a native string, which for Python 2 is a byte string.
         # If encoding as ASCII fails we will return an empty string.

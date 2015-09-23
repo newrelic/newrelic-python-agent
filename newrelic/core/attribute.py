@@ -32,6 +32,7 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = [
 ]
 
 MAX_NUM_USER_ATTRIBUTES = 64
+MAX_ATTRIBUTE_LENGTH = 255
 MAX_64_BIT_INT = 2 ** 63 -1
 
 class TooManyAttributesException(Exception): pass
@@ -71,7 +72,7 @@ def create_user_attributes(attr_dict, attribute_filter):
     destinations = DST_ALL
     return create_attributes(attr_dict, destinations, attribute_filter)
 
-def truncate(text, maxsize, encoding='utf-8'):
+def truncate(text, maxsize=MAX_ATTRIBUTE_LENGTH, encoding='utf-8'):
 
     # Truncate text so that it's byte representation
     # is no longer than maxsize bytes.
@@ -91,19 +92,19 @@ def _truncate_unicode(u, maxsize, encoding='utf-8'):
 def _truncate_bytes(s, maxsize):
     return s[:maxsize]
 
-def truncate_attribute_value(name, value, maxsize=255):
-    trunc_value = truncate(value, maxsize)
+def truncate_attribute_value(name, value, max_length=MAX_ATTRIBUTE_LENGTH):
+    trunc_value = truncate(value, max_length)
     if value != trunc_value:
         _logger.debug('Attribute value exceeds maximum length '
                 '(%r bytes). Truncating value: %r=%r.',
-                maxsize, name, trunc_value)
+                max_length, name, trunc_value)
     return (name, trunc_value)
 
-def check_max_user_attributes(num_stored, max_count=64):
+def check_max_user_attributes(num_stored, max_count=MAX_NUM_USER_ATTRIBUTES):
     if num_stored >= max_count:
         raise TooManyAttributesException()
 
-def check_name_length(name, max_length=255, encoding='utf-8'):
+def check_name_length(name, max_length=MAX_ATTRIBUTE_LENGTH, encoding='utf-8'):
     trunc_name = truncate(name, max_length, encoding)
     if name != trunc_name:
         raise NameTooLongException()

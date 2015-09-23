@@ -1205,8 +1205,8 @@ class Transaction(object):
             check_max_int(value)
 
         except TooManyAttributesException:
-            _logger.warning('Maximum number of custom attributes already added: '
-                    'Dropping attribute: %r=%r', name, value)
+            _logger.warning('Maximum number of custom attributes already '
+                    'added. Dropping attribute: %r=%r', name, value)
             return False
 
         except NameIsNotStringException:
@@ -1226,7 +1226,8 @@ class Transaction(object):
 
         else:
             valid_types_text = (six.text_type, six.binary_type)
-            valid_types_not_text = (bool, float, six.integer_types, list, dict, tuple)
+            valid_types_not_text = (bool, float, six.integer_types,
+                    list, dict, tuple)
 
             if isinstance(value, valid_types_text):
                 key, val = truncate_attribute_value(name, value)

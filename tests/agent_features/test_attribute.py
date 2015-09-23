@@ -180,7 +180,10 @@ _forgone_custom_params_too_many = [('key-64', 'value')]
 def test_custom_params_too_many():
     for i in range(65):
         result = add_custom_parameter('key-%02d' % i, 'value')
-    assert not result   # Last one fails
+        if i < 64:
+            assert result
+        else:
+            assert not result   # Last one fails
 
 _required_custom_params_name_not_string = []
 _forgone_custom_params_name_not_string = [(1, 'value')]

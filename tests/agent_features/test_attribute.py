@@ -1,13 +1,19 @@
+import sys
 import webtest
 
 from newrelic.agent import (wsgi_application, add_custom_parameter,
     background_task)
 from newrelic.packages import six
-from newrelic.core.attribute import truncate, MAX_64_BIT_INT
+from newrelic.core.attribute import truncate, sanitize, MAX_64_BIT_INT
 
 from testing_support.fixtures import (override_application_settings,
     validate_attributes, validate_custom_parameters)
 
+
+# Python 3 lacks longs
+
+if sys.version_info >= (3,0):
+    long = int
 
 @wsgi_application()
 def target_wsgi_application(environ, start_response):
@@ -253,3 +259,48 @@ def test_capture_request_params_value_too_long():
     target_application = webtest.TestApp(target_wsgi_application)
     response = target_application.get('/?foo=%s' % TOO_LONG)
     assert response.body == b'Hello World!'
+
+# Test sanitize()
+
+def test_sanitize_string():
+    s = 'foo'
+    assert sanitize(s) == s
+
+def test_sanitize_bytes():
+    b = b'bytes'
+    assert sanitize(b) == b
+
+def test_sanitize_unicode():
+    u = u'SMILING FACE: \u263a'
+    assert sanitize(u) == u
+
+def test_sanitize_bool():
+    assert sanitize(True) == True
+
+def test_sanitize_float():
+    assert sanitize(1.11) == 1.11
+
+def test_sanitize_int():
+    assert sanitize(9876) == 9876
+
+def test_sanitize_long():
+    l = long(123456)
+    assert sanitize(l) == l
+
+def test_sanitize_dict():
+    d = {1: 'foo'}
+    assert sanitize(d) == "{1: 'foo'}"
+
+def test_sanitize_list():
+    l = [1,2,3,4]
+    assert sanitize(l) == '[1, 2, 3, 4]'
+
+def test_sanitize_tuple():
+    t = ('one', 'two', 'three')
+    assert sanitize(t) == "('one', 'two', 'three')"
+
+class Foo(object): pass
+
+def test_sanitize_object():
+    f = Foo()
+    assert sanitize(f) == str(f)

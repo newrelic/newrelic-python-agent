@@ -157,3 +157,19 @@ def process_user_attribute(name, value):
             return FAILED_RESULT
 
         return (key, val)
+
+def sanitize(value):
+
+    # Return value unchanged, if it's a valid type that is supported by
+    # Insights. Otherwise, convert value to a string.
+
+    valid_value_types = (six.text_type, six.binary_type, bool, float,
+            six.integer_types)
+
+    if not isinstance(value, valid_value_types):
+        original = value
+        value = str(value)
+        _logger.debug('Attribute value is of type: %r. Casting %r to '
+                'string: %s', type(value), original, value)
+
+    return value

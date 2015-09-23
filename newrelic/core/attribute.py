@@ -31,6 +31,7 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = [
         'response.content-length'
 ]
 
+MAX_NUM_USER_ATTRIBUTES = 64
 MAX_64_BIT_INT = 2 ** 63 -1
 
 class TooManyAttributesException(Exception): pass

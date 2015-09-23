@@ -28,7 +28,7 @@ from newrelic.core.thread_utilization import utilization_tracker
 
 from ..core.attribute import (create_attributes, create_agent_attributes,
         create_user_attributes, truncate, truncate_attribute_value,
-        process_user_attribute)
+        process_user_attribute, MAX_NUM_USER_ATTRIBUTES)
 from ..core.attribute_filter import (DST_NONE, DST_ERROR_COLLECTOR,
         DST_TRANSACTION_TRACER)
 from ..core.stack_trace import exception_stack
@@ -1188,8 +1188,6 @@ class Transaction(object):
         if self._settings.high_security:
             _logger.debug('Cannot add custom parameter in High Security Mode.')
             return False
-
-        MAX_NUM_USER_ATTRIBUTES = 64
 
         if len(self._custom_params) >= MAX_NUM_USER_ATTRIBUTES:
             _logger.warning('Maximum number of custom attributes already '

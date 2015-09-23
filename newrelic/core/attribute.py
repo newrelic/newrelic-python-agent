@@ -31,10 +31,12 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = [
         'response.content-length'
 ]
 
+MAX_64_BIT_INT = 2 ** 63 -1
+
 class TooManyAttributesException(Exception): pass
-class IntTooLargeException(Exception): pass
 class NameTooLongException(Exception): pass
 class NameIsNotStringException(Exception): pass
+class IntTooLargeException(Exception): pass
 
 class Attribute(_Attribute):
 
@@ -117,3 +119,7 @@ def check_name_length(name, max_length=255, encoding='utf-8'):
 def check_name_is_string(name):
     if not isinstance(name, (six.text_type, six.binary_type)):
         raise NameIsNotStringException()
+
+def check_max_int(value, max_int=MAX_64_BIT_INT):
+    if isinstance(value, six.integer_types) and value > max_int:
+        raise IntTooLargeException

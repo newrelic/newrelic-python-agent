@@ -29,8 +29,8 @@ from newrelic.core.thread_utilization import utilization_tracker
 from ..core.attribute import (create_attributes, create_agent_attributes,
         create_user_attributes, truncate, user_attr_name_length_ok,
         truncate_attribute_value, check_max_user_attributes, check_name_length,
-        check_name_is_string, TooManyAttributesException, NameTooLongException,
-        NameIsNotStringException)
+        check_name_is_string, check_max_int, TooManyAttributesException,
+        NameTooLongException, NameIsNotStringException, IntTooLargeException)
 from ..core.attribute_filter import (DST_NONE, DST_ERROR_COLLECTOR,
         DST_TRANSACTION_TRACER)
 from ..core.stack_trace import exception_stack
@@ -1202,6 +1202,7 @@ class Transaction(object):
             check_max_user_attributes(len(self._custom_params))
             check_name_is_string(name)
             check_name_length(name)
+            check_max_int(value)
 
         except TooManyAttributesException:
             _logger.warning('Maximum number of custom attributes already added: '
@@ -1216,6 +1217,11 @@ class Transaction(object):
         except NameTooLongException:
             _logger.warning('Attribute name exceeds maximum length. Dropping '
                     'attribute: %r=%r', name, value)
+            return False
+
+        except IntTooLargeException:
+            _logger.warning('Attribute value exceeds maximum integer value. '
+                    'Dropping attribute: %r=%r', name, value)
             return False
 
         else:

@@ -3,7 +3,7 @@ import webtest
 from newrelic.agent import (wsgi_application, add_custom_parameter,
     background_task)
 from newrelic.packages import six
-from newrelic.core.attribute import truncate
+from newrelic.core.attribute import truncate, MAX_64_BIT_INT
 
 from testing_support.fixtures import (override_application_settings,
     validate_attributes, validate_custom_parameters)
@@ -190,6 +190,18 @@ _forgone_custom_params_name_not_string = [(1, 'value')]
 @background_task()
 def test_custom_params_name_not_string():
     result = add_custom_parameter(1, 'value')
+    assert not result
+
+TOO_BIG = MAX_64_BIT_INT + 1
+
+_required_custom_params_int_too_big = []
+_forgone_custom_params_int_too_big = [('key', TOO_BIG)]
+
+@validate_custom_parameters(_required_custom_params_int_too_big,
+        _forgone_custom_params_int_too_big)
+@background_task()
+def test_custom_params_int_too_big():
+    result = add_custom_parameter('key', TOO_BIG)
     assert not result
 
 OK_KEY = '*' * (255 - len('request.parameters.'))

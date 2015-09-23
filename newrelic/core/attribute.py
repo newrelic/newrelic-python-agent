@@ -114,3 +114,50 @@ def check_name_is_string(name):
 def check_max_int(value, max_int=MAX_64_BIT_INT):
     if isinstance(value, six.integer_types) and value > max_int:
         raise IntTooLargeException
+
+def process_user_attribute(name, value):
+
+    # Perform all necessary checks on a potential attribute.
+    #
+    # Returns:
+    #       (name, value) if attribute is OK.
+    #       (NONE, NONE) if attribute isn't.
+    #
+    # If any of these checks fail, they will raise an exception, so we
+    # log a message, and return (None, None).
+
+    FAILED_RESULT = (None, None)
+
+    try:
+        check_name_is_string(name)
+        check_name_length(name)
+        check_max_int(value)
+
+    except NameIsNotStringException:
+        _logger.warning('Attribute name must be a string. Dropping '
+                'attribute: %r=%r', name, value)
+        return FAILED_RESULT
+
+    except NameTooLongException:
+        _logger.warning('Attribute name exceeds maximum length. Dropping '
+                'attribute: %r=%r', name, value)
+        return FAILED_RESULT
+
+    except IntTooLargeException:
+        _logger.warning('Attribute value exceeds maximum integer value. '
+                'Dropping attribute: %r=%r', name, value)
+        return FAILED_RESULT
+
+    else:
+        valid_types_text = (six.text_type, six.binary_type)
+        valid_types_not_text = (bool, float, six.integer_types,
+                list, dict, tuple)
+
+        if isinstance(value, valid_types_text):
+            key, val = truncate_attribute_value(name, value)
+        elif isinstance(value, valid_types_not_text):
+            key, val = name, value
+        else:
+            return FAILED_RESULT
+
+        return (key, val)

@@ -28,9 +28,7 @@ from newrelic.core.thread_utilization import utilization_tracker
 
 from ..core.attribute import (create_attributes, create_agent_attributes,
         create_user_attributes, truncate, truncate_attribute_value,
-        check_max_user_attributes, check_name_length, check_name_is_string,
-        check_max_int, TooManyAttributesException, NameTooLongException,
-        NameIsNotStringException, IntTooLargeException)
+        process_user_attribute)
 from ..core.attribute_filter import (DST_NONE, DST_ERROR_COLLECTOR,
         DST_TRANSACTION_TRACER)
 from ..core.stack_trace import exception_stack
@@ -810,14 +808,10 @@ class Transaction(object):
                     else:
                         new_val = ",".join(v)
 
-                    try:
-                        check_name_length(new_key)
-                    except NameTooLongException:
-                        _logger.debug('Attribute name exceeds maximum length. '
-                                'Dropping attribute: %r=%r', new_key, new_val)
-                    else:
-                        final_key, final_val = truncate_attribute_value(
-                                new_key, new_val)
+                    final_key, final_val = process_user_attribute(new_key,
+                            new_val)
+
+                    if final_key:
                         r_attrs[final_key] = final_val
 
                 if self.capture_params is None:
@@ -1195,47 +1189,18 @@ class Transaction(object):
             _logger.debug('Cannot add custom parameter in High Security Mode.')
             return False
 
-        # If any of these checks fail, they will raise an exception, so we can
-        # drop the attribute, log a message, and return False.
+        MAX_NUM_USER_ATTRIBUTES = 64
 
-        try:
-            check_max_user_attributes(len(self._custom_params))
-            check_name_is_string(name)
-            check_name_length(name)
-            check_max_int(value)
-
-        except TooManyAttributesException:
+        if len(self._custom_params) >= MAX_NUM_USER_ATTRIBUTES:
             _logger.warning('Maximum number of custom attributes already '
                     'added. Dropping attribute: %r=%r', name, value)
             return False
 
-        except NameIsNotStringException:
-            _logger.warning('Attribute name must be a string. Dropping '
-                    'attribute: %r=%r', name, value)
-            return False
+        key, val = process_user_attribute(name, value)
 
-        except NameTooLongException:
-            _logger.warning('Attribute name exceeds maximum length. Dropping '
-                    'attribute: %r=%r', name, value)
+        if key is None:
             return False
-
-        except IntTooLargeException:
-            _logger.warning('Attribute value exceeds maximum integer value. '
-                    'Dropping attribute: %r=%r', name, value)
-            return False
-
         else:
-            valid_types_text = (six.text_type, six.binary_type)
-            valid_types_not_text = (bool, float, six.integer_types,
-                    list, dict, tuple)
-
-            if isinstance(value, valid_types_text):
-                key, val = truncate_attribute_value(name, value)
-            elif isinstance(value, valid_types_not_text):
-                key, val = name, value
-            else:
-                return False
-
             self._custom_params[key] = val
             return True
 

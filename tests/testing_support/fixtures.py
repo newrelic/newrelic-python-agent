@@ -13,7 +13,7 @@ from newrelic.agent import (initialize, register_application,
         global_settings, shutdown_agent, application as application_instance,
         transient_function_wrapper, function_wrapper, application_settings,
         wrap_function_wrapper, ObjectProxy, application, callable_name,
-        get_browser_timing_footer, current_transaction)
+        get_browser_timing_footer)
 
 from newrelic.common.encoding_utils import (unpack_field, json_encode,
         deobfuscate, json_decode)
@@ -896,8 +896,7 @@ def validate_transaction_event_collector_json():
     return _validate_transaction_event_collector_json
 
 
-def validate_tt_parameters(required_params={},
-        forgone_params={}):
+def validate_tt_parameters(required_params={}, forgone_params={}):
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
     def _validate_tt_parameters(wrapped, instance, args, kwargs):
@@ -930,8 +929,7 @@ def validate_tt_parameters(required_params={},
 
     return _validate_tt_parameters
 
-def validate_browser_attributes(required_params={},
-        forgone_params={}):
+def validate_browser_attributes(required_params={}, forgone_params={}):
     @transient_function_wrapper('newrelic.api.web_transaction',
             'WebTransaction.browser_timing_footer')
     def _validate_browser_attributes(wrapped, instance, args, kwargs):
@@ -950,19 +948,36 @@ def validate_browser_attributes(required_params={},
             for attr in required_params['intrinsic']:
                 assert attr in footer_data
 
-        if 'user' in required_params or 'agent' in required_params:
-
+        if 'atts' in footer_data:
             obfuscation_key = instance._settings.license_key[:13]
             attributes = json_decode(deobfuscate(footer_data['atts'],
                     obfuscation_key))
+        else:
 
-            if 'user' in required_params:
-                for attr in required_params['user']:
-                    assert attr in attributes['u']
+            # if there are no user or agent attributes, there will be no dict
+            # for them in the browser data
 
-            if 'agent' in required_params:
-                for attr in required_params['agent']:
-                    assert attr in attributes['a']
+            attributes = None
+
+        if 'user' in required_params:
+            for attr in required_params['user']:
+                assert attr in attributes['u']
+
+        if 'agent' in required_params:
+            for attr in required_params['agent']:
+                assert attr in attributes['a']
+
+        if 'user' in forgone_params:
+            if attributes:
+                if 'u' in attributes:
+                    for attr in forgone_params['user']:
+                        assert attr not in attributes['u']
+
+        if 'agent' in forgone_params:
+            if attributes:
+                if 'a' in attributes:
+                    for attr in forgone_params['agent']:
+                        assert attr not in attributes['a']
 
         return result
 

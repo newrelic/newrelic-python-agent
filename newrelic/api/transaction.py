@@ -27,8 +27,8 @@ from newrelic.core.transaction_cache import transaction_cache
 from newrelic.core.thread_utilization import utilization_tracker
 
 from ..core.attribute import (create_attributes, create_agent_attributes,
-        create_user_attributes, truncate, truncate_attribute_value,
-        process_user_attribute, MAX_NUM_USER_ATTRIBUTES)
+        create_user_attributes, truncate, process_user_attribute,
+        MAX_NUM_USER_ATTRIBUTES)
 from ..core.attribute_filter import (DST_NONE, DST_ERROR_COLLECTOR,
         DST_TRANSACTION_TRACER)
 from ..core.stack_trace import exception_stack

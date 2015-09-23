@@ -35,7 +35,6 @@ MAX_NUM_USER_ATTRIBUTES = 64
 MAX_ATTRIBUTE_LENGTH = 255
 MAX_64_BIT_INT = 2 ** 63 -1
 
-class TooManyAttributesException(Exception): pass
 class NameTooLongException(Exception): pass
 class NameIsNotStringException(Exception): pass
 class IntTooLargeException(Exception): pass
@@ -99,10 +98,6 @@ def truncate_attribute_value(name, value, max_length=MAX_ATTRIBUTE_LENGTH):
                 '(%r bytes). Truncating value: %r=%r.',
                 max_length, name, trunc_value)
     return (name, trunc_value)
-
-def check_max_user_attributes(num_stored, max_count=MAX_NUM_USER_ATTRIBUTES):
-    if num_stored >= max_count:
-        raise TooManyAttributesException()
 
 def check_name_length(name, max_length=MAX_ATTRIBUTE_LENGTH, encoding='utf-8'):
     trunc_name = truncate(name, max_length, encoding)

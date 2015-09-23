@@ -181,6 +181,17 @@ def test_custom_params_too_many():
     for i in range(65):
         result = add_custom_parameter('key-%02d' % i, 'value')
     assert not result   # Last one fails
+
+_required_custom_params_name_not_string = []
+_forgone_custom_params_name_not_string = [(1, 'value')]
+
+@validate_custom_parameters(_required_custom_params_name_not_string,
+        _forgone_custom_params_name_not_string)
+@background_task()
+def test_custom_params_name_not_string():
+    result = add_custom_parameter(1, 'value')
+    assert not result
+
 OK_KEY = '*' * (255 - len('request.parameters.'))
 OK_REQUEST_PARAM = 'request.parameters.' + OK_KEY
 TOO_LONG_KEY = '*' * (256 - len('request.parameters.'))

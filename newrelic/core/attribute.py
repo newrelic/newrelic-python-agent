@@ -34,6 +34,7 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = [
 class TooManyAttributesException(Exception): pass
 class IntTooLargeException(Exception): pass
 class NameTooLongException(Exception): pass
+class NameIsNotStringException(Exception): pass
 
 class Attribute(_Attribute):
 
@@ -112,3 +113,7 @@ def check_name_length(name, max_length=255, encoding='utf-8'):
     trunc_name = truncate(name, max_length, encoding)
     if name != trunc_name:
         raise NameTooLongException()
+
+def check_name_is_string(name):
+    if not isinstance(name, (six.text_type, six.binary_type)):
+        raise NameIsNotStringException()

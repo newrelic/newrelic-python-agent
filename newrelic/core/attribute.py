@@ -31,6 +31,10 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = [
         'response.content-length'
 ]
 
+class TooManyAttributesException(Exception): pass
+class IntTooLargeException(Exception): pass
+class NameTooLongException(Exception): pass
+
 class Attribute(_Attribute):
 
     def __repr__(self):
@@ -99,3 +103,12 @@ def truncate_attribute_value(name, value, maxsize=255):
                 '(%r bytes). Truncating value: %r=%r.',
                 maxsize, name, trunc_value)
     return (name, trunc_value)
+
+def check_max_user_attributes(num_stored, max_count=64):
+    if num_stored >= max_count:
+        raise TooManyAttributesException()
+
+def check_name_length(name, max_length=255, encoding='utf-8'):
+    trunc_name = truncate(name, max_length, encoding)
+    if name != trunc_name:
+        raise NameTooLongException()

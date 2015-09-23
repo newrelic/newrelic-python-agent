@@ -27,10 +27,10 @@ from newrelic.core.transaction_cache import transaction_cache
 from newrelic.core.thread_utilization import utilization_tracker
 
 from ..core.attribute import (create_attributes, create_agent_attributes,
-        create_user_attributes, truncate, user_attr_name_length_ok,
-        truncate_attribute_value, check_max_user_attributes, check_name_length,
-        check_name_is_string, check_max_int, TooManyAttributesException,
-        NameTooLongException, NameIsNotStringException, IntTooLargeException)
+        create_user_attributes, truncate, truncate_attribute_value,
+        check_max_user_attributes, check_name_length, check_name_is_string,
+        check_max_int, TooManyAttributesException, NameTooLongException,
+        NameIsNotStringException, IntTooLargeException)
 from ..core.attribute_filter import (DST_NONE, DST_ERROR_COLLECTOR,
         DST_TRANSACTION_TRACER)
 from ..core.stack_trace import exception_stack

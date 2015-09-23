@@ -90,15 +90,6 @@ def _truncate_unicode(u, maxsize, encoding='utf-8'):
 def _truncate_bytes(s, maxsize):
     return s[:maxsize]
 
-def user_attr_name_length_ok(name, value, maxsize=255):
-    trunc_name = truncate(name, maxsize)
-    if name != trunc_name:
-        _logger.debug('Attribute name exceeds maximum length (%r bytes). '
-                'Dropping attribute: %r=%r', maxsize, name, value)
-        return False
-    else:
-        return True
-
 def truncate_attribute_value(name, value, maxsize=255):
     trunc_value = truncate(value, maxsize)
     if value != trunc_value:

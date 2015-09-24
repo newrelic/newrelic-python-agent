@@ -42,11 +42,20 @@ def test_agent():
     response = target_application.get('/')
     assert response.body == b'Hello World!'
 
+_required_user = []
+_forgone_user = ['test_key']
+
+@validate_attributes('user', _required_user, _forgone_user)
+def test_user_default():
+    target_application = webtest.TestApp(target_wsgi_application)
+    response = target_application.get('/')
+    assert response.body == b'Hello World!'
+
 _required_user = ['test_key']
 _forgone_user = []
 
 @validate_attributes('user', _required_user, _forgone_user)
-def test_user():
+def test_user_add_attribute():
     target_application = webtest.TestApp(target_wsgi_application)
     response = target_application.get('/user_attribute')
     assert response.body == b'Hello World!'

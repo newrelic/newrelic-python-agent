@@ -1190,7 +1190,7 @@ class Transaction(object):
             return False
 
         if len(self._custom_params) >= MAX_NUM_USER_ATTRIBUTES:
-            _logger.warning('Maximum number of custom attributes already '
+            _logger.debug('Maximum number of custom attributes already '
                     'added. Dropping attribute: %r=%r', name, value)
             return False
 

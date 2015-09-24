@@ -124,17 +124,17 @@ def process_user_attribute(name, value):
         check_max_int(value)
 
     except NameIsNotStringException:
-        _logger.warning('Attribute name must be a string. Dropping '
+        _logger.debug('Attribute name must be a string. Dropping '
                 'attribute: %r=%r', name, value)
         return FAILED_RESULT
 
     except NameTooLongException:
-        _logger.warning('Attribute name exceeds maximum length. Dropping '
+        _logger.debug('Attribute name exceeds maximum length. Dropping '
                 'attribute: %r=%r', name, value)
         return FAILED_RESULT
 
     except IntTooLargeException:
-        _logger.warning('Attribute value exceeds maximum integer value. '
+        _logger.debug('Attribute value exceeds maximum integer value. '
                 'Dropping attribute: %r=%r', name, value)
         return FAILED_RESULT
 

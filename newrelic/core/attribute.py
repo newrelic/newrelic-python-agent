@@ -92,14 +92,6 @@ def _truncate_unicode(u, maxsize, encoding='utf-8'):
 def _truncate_bytes(s, maxsize):
     return s[:maxsize]
 
-def truncate_attribute_value(name, value, max_length=MAX_ATTRIBUTE_LENGTH):
-    trunc_value = truncate(value, max_length)
-    if value != trunc_value:
-        _logger.debug('Attribute value exceeds maximum length '
-                '(%r bytes). Truncating value: %r=%r.',
-                max_length, name, trunc_value)
-    return (name, trunc_value)
-
 def check_name_length(name, max_length=MAX_ATTRIBUTE_LENGTH, encoding='utf-8'):
     trunc_name = truncate(name, max_length, encoding)
     if name != trunc_name:
@@ -152,7 +144,13 @@ def process_user_attribute(name, value):
                 list, dict, tuple)
 
         if isinstance(value, valid_types_text):
-            key, val = truncate_attribute_value(name, value)
+            trunc_value = truncate(value)
+            if value != trunc_value:
+                _logger.debug('Attribute value exceeds maximum length '
+                        '(%r bytes). Truncating value: %r=%r.',
+                        MAX_ATTRIBUTE_LENGTH, name, trunc_value)
+
+            key, val = name, trunc_value
         elif isinstance(value, valid_types_not_text):
             key, val = name, value
         else:

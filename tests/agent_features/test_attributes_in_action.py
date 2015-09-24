@@ -11,14 +11,15 @@ from testing_support.fixtures import (validate_transaction_trace_attributes,
 
 
 URL_PARAM = 'some_key'
-URL_PARAM_VAL = 'some_value'
-REQUEST_URL = '/?'+ URL_PARAM + '=' + URL_PARAM_VAL
+URL_PARAM2 = 'second_key'
+REQUEST_URL = '/?'+ URL_PARAM + '=someval&' + URL_PARAM2 + '=anotherval'
 REQUEST_HEADERS = [('Content-Type', 'text/html; charset=utf-8'),
         ('Content-Length', '10'),]
 
 TRACE_ERROR_AGENT_KEYS = ['wsgi.output.time', 'response.status', 'request.method',
         'request.headers.content-type', 'request.headers.content-length']
-AGENT_KEYS_ALL = TRACE_ERROR_AGENT_KEYS + ['request.parameters.'+URL_PARAM]
+AGENT_KEYS_ALL = TRACE_ERROR_AGENT_KEYS + ['request.parameters.'+URL_PARAM,
+        'request.parameters.'+URL_PARAM2]
 
 EVENT_INTRINSICS = ('name', 'duration', 'type', 'timestamp')
 EVENT_AGENT_KEYS = ['response.status', 'request.method',
@@ -107,7 +108,7 @@ _expected_absent_attributes = {
 def test_transaction_event_default_attribute_settings():
     response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
-# Browser monitoring off by default
+# Browser monitoring off by default, turn on and check default destinations
 
 _override_settings = {
         'browser_monitoring.attributes.enabled' : True,
@@ -121,10 +122,9 @@ _expected_attributes = {
 
 _expected_absent_attributes = {
         'agent' : BROWSER_AGENT_KEYS,
-        'user' : ['test_key'],
 }
 
-@validate_browser_attributes(_expected_attributes, {})
+@validate_browser_attributes(_expected_attributes, _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_browser_default_attribute_settings():
     response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
@@ -171,7 +171,8 @@ _expected_absent_attributes = {
         'user' : [],
 }
 
-@validate_transaction_event_attributes(_expected_attributes)
+@validate_transaction_event_attributes(_expected_attributes,
+        _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_transaction_event_include_request_params():
     response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
@@ -189,10 +190,9 @@ _expected_attributes = {
 
 _expected_absent_attributes = {
         'agent' : BROWSER_AGENT_KEYS,
-        'user' : ['test_key'],
 }
 
-@validate_browser_attributes(_expected_attributes, {})
+@validate_browser_attributes(_expected_attributes, _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_browser_include_request_params():
     response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
@@ -205,12 +205,18 @@ _override_settings = {
 }
 
 _expected_attributes = {
-        'agent' : AGENT_KEYS_ALL,
+        'agent' : TRACE_ERROR_AGENT_KEYS + ['request.parameters.'+URL_PARAM],
         'user' : ['test_key'],
         'intrinsic' : ['trip_id']
 }
 
-@validate_transaction_error_trace_attributes(_expected_attributes)
+_expected_absent_attributes = {
+        'agent' : ['request.parameters.'+URL_PARAM2],
+        'user' : []
+}
+
+@validate_transaction_error_trace_attributes(_expected_attributes,
+        _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_error_trace_in_transaction_include_exclude():
     run_failing_request()
@@ -220,7 +226,8 @@ _override_settings = {
         'transaction_tracer.attributes.include': ['request.parameters.'+URL_PARAM],
 }
 
-@validate_transaction_trace_attributes(_expected_attributes)
+@validate_transaction_trace_attributes(_expected_attributes,
+        _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_transaction_trace_include_exclude():
     response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
@@ -231,17 +238,18 @@ _override_settings = {
 }
 
 _expected_attributes = {
-        'agent' : AGENT_KEYS_ALL,
+        'agent' : EVENT_AGENT_KEYS + ['request.parameters.'+URL_PARAM],
         'user' : ['test_key'],
         'intrinsic' : EVENT_INTRINSICS
 }
 
 _expected_absent_attributes = {
-        'agent' : [],
+        'agent' : ['request.parameters.'+URL_PARAM2],
         'user' : [],
 }
 
-@validate_transaction_event_attributes(_expected_attributes)
+@validate_transaction_event_attributes(_expected_attributes,
+        _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_transaction_event_include_exclude():
     response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
@@ -249,8 +257,8 @@ def test_transaction_event_include_exclude():
 
 _override_settings = {
         'browser_monitoring.attributes.enabled' : True,
-        'transaction_tracer.attributes.exclude': ['test_key'],
         'browser_monitoring.attributes.include': ['*'],
+        'browser_monitoring.attributes.exclude': ['test_key'],
 }
 
 _expected_attributes = {
@@ -260,13 +268,13 @@ _expected_attributes = {
 }
 
 _expected_absent_attributes = {
-        'agent' : BROWSER_AGENT_KEYS,
+        'agent': [],
         'user' : ['test_key'],
 }
 
-@validate_browser_attributes(_expected_attributes, {})
+@validate_browser_attributes(_expected_attributes, _expected_absent_attributes)
 @override_application_settings(_override_settings)
-def test_browser_include_request_params():
+def test_browser_include_exclude_request_params():
     response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
 # ========================= capture_params True
@@ -304,7 +312,8 @@ _expected_absent_attributes = {
         'user' : [],
 }
 
-@validate_transaction_event_attributes(_expected_attributes)
+@validate_transaction_event_attributes(_expected_attributes,
+        _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_transaction_event_deprecated_capture_params_true():
     response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
@@ -325,7 +334,7 @@ _expected_absent_attributes = {
         'user' : [],
 }
 
-@validate_browser_attributes({}, _expected_absent_attributes)
+@validate_browser_attributes(_expected_attributes, _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_browser_deprecated_capture_params_true():
     response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
@@ -373,7 +382,8 @@ _expected_absent_attributes = {
         'user' : [],
 }
 
-@validate_transaction_event_attributes(_expected_attributes)
+@validate_transaction_event_attributes(_expected_attributes,
+        _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_transaction_event_deprecated_capture_params_false():
     response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
@@ -394,7 +404,7 @@ _expected_absent_attributes = {
         'user' : [],
 }
 
-@validate_browser_attributes({}, _expected_absent_attributes)
+@validate_browser_attributes(_expected_attributes, _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_browser_deprecated_capture_params_false():
     response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
@@ -425,7 +435,6 @@ _override_settings = {
 def test_transaction_trace_exclude_intrinsic():
     response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
-
 _override_settings = {
         'transaction_events.attributes.exclude': ['name', 'duration',
             'timestamp', 'type'],
@@ -442,7 +451,8 @@ _expected_absent_attributes = {
         'user' : [],
 }
 
-@validate_transaction_event_attributes(_expected_attributes)
+@validate_transaction_event_attributes(_expected_attributes,
+        _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_transaction_event_exclude_intrinsic():
     response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
@@ -463,9 +473,9 @@ _expected_absent_attributes = {
         'user' : [],
 }
 
-@validate_browser_attributes({}, _expected_absent_attributes)
+@validate_browser_attributes(_expected_attributes, _expected_absent_attributes)
 @override_application_settings(_override_settings)
-def test_browser_deprecated_capture_params_false():
+def test_browser_exclude_intrinsic():
     response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
 # =========================  attributes off
@@ -535,7 +545,7 @@ _expected_absent_attributes = {
         'user' : ['test_key'],
 }
 
-@validate_browser_attributes({}, _expected_absent_attributes)
+@validate_browser_attributes(_expected_attributes, _expected_absent_attributes)
 @override_application_settings({})
 def test_browser_attributes_disabled():
     response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)

@@ -136,7 +136,7 @@ class Transaction(object):
         self.suppress_apdex = False
         self.suppress_transaction_trace = False
 
-        self.capture_params = False
+        self.capture_params = None
         self.ignored_params = []
 
         self.response_code = 0

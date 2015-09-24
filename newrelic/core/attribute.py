@@ -13,15 +13,16 @@ _logger = logging.getLogger(__name__)
 _Attribute = namedtuple('_Attribute',
         ['name', 'value', 'destinations'])
 
-# The following destinations are created here, never changed, and only used in
-# create_agent_attributes. It is placed at the module level here as an optimization
+# The following destinations are created here, never changed, and only
+# used increate_agent_attributes. It is placed at the module level here
+# as an optimization.
 
-# All agent attributes go to transaction traces and error traces by default
+# All agent attributes go to transaction traces and error traces by default.
 
 _DESTINATIONS = DST_ERROR_COLLECTOR | DST_TRANSACTION_TRACER
 _DESTINATIONS_WITH_EVENTS = _DESTINATIONS | DST_TRANSACTION_EVENTS
 
-# The following subset goes to transaction events by default
+# The following subset goes to transaction events by default.
 
 _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = [
         'request.method',

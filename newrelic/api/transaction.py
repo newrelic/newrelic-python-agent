@@ -27,7 +27,8 @@ from newrelic.core.transaction_cache import transaction_cache
 from newrelic.core.thread_utilization import utilization_tracker
 
 from ..core.attribute import (create_attributes, create_agent_attributes,
-        create_user_attributes)
+        create_user_attributes, truncate, process_user_attribute,
+        MAX_NUM_USER_ATTRIBUTES)
 from ..core.attribute_filter import (DST_NONE, DST_ERROR_COLLECTOR,
         DST_TRANSACTION_TRACER)
 from ..core.stack_trace import exception_stack
@@ -806,7 +807,12 @@ class Transaction(object):
                         new_val = v[0]
                     else:
                         new_val = ",".join(v)
-                    r_attrs[new_key] = new_val
+
+                    final_key, final_val = process_user_attribute(new_key,
+                            new_val)
+
+                    if final_key:
+                        r_attrs[final_key] = final_val
 
                 if self.capture_params is None:
                     attributes_request = create_attributes(r_attrs,
@@ -1177,12 +1183,24 @@ class Transaction(object):
 
     def add_custom_parameter(self, name, value):
         if not self._settings:
-            return
+            return False
 
         if self._settings.high_security:
             _logger.debug('Cannot add custom parameter in High Security Mode.')
+            return False
+
+        if len(self._custom_params) >= MAX_NUM_USER_ATTRIBUTES:
+            _logger.warning('Maximum number of custom attributes already '
+                    'added. Dropping attribute: %r=%r', name, value)
+            return False
+
+        key, val = process_user_attribute(name, value)
+
+        if key is None:
+            return False
         else:
-            self._custom_params[name] = value
+            self._custom_params[key] = val
+            return True
 
     def add_custom_parameters(self, items):
         # items is a list of (name, value) tuples.
@@ -1301,7 +1319,9 @@ def capture_request_params(flag=True):
 def add_custom_parameter(key, value):
     transaction = current_transaction()
     if transaction:
-        transaction.add_custom_parameter(key, value)
+        return transaction.add_custom_parameter(key, value)
+    else:
+        return False
 
 def add_user_attribute(key, value):
     #warnings.warn('API change. Use add_custom_parameter() instead of '

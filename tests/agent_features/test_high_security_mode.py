@@ -4,8 +4,7 @@ import webtest
 
 from testing_support.fixtures import (override_application_settings,
     validate_custom_parameters, validate_transaction_errors,
-    validate_request_params, validate_parameter_groups,
-    validate_attributes_complete)
+    validate_request_params, validate_attributes_complete)
 
 from newrelic.agent import (background_task, add_custom_parameter,
     record_exception, wsgi_application, current_transaction)

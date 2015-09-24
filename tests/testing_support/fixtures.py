@@ -1007,30 +1007,6 @@ def validate_request_params(required_params=[], forgone_params=[]):
 
     return _validate_request_params
 
-def validate_parameter_groups(group, required_params=[], forgone_params=[]):
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
-    def _validate_parameter_groups(wrapped, instance, args, kwargs):
-        def _bind_params(transaction, *args, **kwargs):
-            return transaction
-
-        transaction = _bind_params(*args, **kwargs)
-
-        for name, value in required_params:
-            assert name in transaction.parameter_groups[group], ('name=%r, '
-                    'params=%r' % (name, transaction.parameter_groups[group]))
-            assert transaction.parameter_groups[group][name] == value, (
-                    'name=%r, value=%r, params=%r' % (name, value,
-                    transaction.parameter_groups[group]))
-
-        for name, value in forgone_params:
-            assert name not in transaction.parameter_groups[group], ('name=%r,'
-                    ' params=%r' % (name, transaction.parameter_groups[group]))
-
-        return wrapped(*args, **kwargs)
-
-    return _validate_parameter_groups
-
 def validate_attributes(attr_type, required_attr_names=[],
         forgone_attr_names=[]):
     @transient_function_wrapper('newrelic.core.stats_engine',

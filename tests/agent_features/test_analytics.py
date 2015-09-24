@@ -113,32 +113,33 @@ def test_capture_attributes_enabled():
 
     obfuscation_key = settings.license_key[:13]
 
-    attributes = json.loads(deobfuscate(data['userAttributes'],
+    attributes = json.loads(deobfuscate(data['atts'],
             obfuscation_key))
+    user_attrs = attributes['u']
 
-    assert attributes['user'] == u'user-name'
-    assert attributes['account'] == u'account-name'
-    assert attributes['product'] == u'product-name'
-
-    if six.PY2:
-        assert attributes['bytes'] == u'bytes-value'
-    else:
-        assert 'bytes' not in attributes
-
-    assert attributes['string'] == u'string-value'
-    assert attributes['unicode'] == u'unicode-value'
-
-    assert attributes['integer'] == 1
-    assert attributes['float'] == 1.0
+    assert user_attrs['user'] == u'user-name'
+    assert user_attrs['account'] == u'account-name'
+    assert user_attrs['product'] == u'product-name'
 
     if six.PY2:
-        assert attributes['invalid-utf8'] == b'\xe2'.decode('latin-1')
-        assert attributes['multibyte-utf8'] == b'\xe2\x88\x9a'.decode('latin-1')
+        assert user_attrs['bytes'] == u'bytes-value'
     else:
-        assert 'invalid-utf8' not in attributes
-        assert 'multibyte-utf8' not in attributes
+        assert 'bytes' not in user_attrs
 
-    assert attributes['multibyte-unicode'] == b'\xe2\x88\x9a'.decode('utf-8')
+    assert user_attrs['string'] == u'string-value'
+    assert user_attrs['unicode'] == u'unicode-value'
+
+    assert user_attrs['integer'] == 1
+    assert user_attrs['float'] == 1.0
+
+    if six.PY2:
+        assert user_attrs['invalid-utf8'] == b'\xe2'.decode('latin-1')
+        assert user_attrs['multibyte-utf8'] == b'\xe2\x88\x9a'.decode('latin-1')
+    else:
+        assert 'invalid-utf8' not in user_attrs
+        assert 'multibyte-utf8' not in user_attrs
+
+    assert user_attrs['multibyte-unicode'] == b'\xe2\x88\x9a'.decode('utf-8')
 
 _test_no_attributes_recorded_settings = {
     'browser_monitoring.attributes.enabled': True }
@@ -176,10 +177,10 @@ def test_no_attributes_recorded():
 
     data = json.loads(footer.split('NREUM.info=')[1])
 
-    # As we are not recording any user attributes, we should not
+    # As we are not recording any user or agent attributes, we should not
     # actually have an entry at all in the footer.
 
-    assert 'userAttributes' not in data
+    assert 'atts' not in data
 
 _test_analytic_events_capture_attributes_disabled_settings = {
     'transaction_events.attributes.enabled': False,
@@ -217,12 +218,12 @@ def test_analytic_events_capture_attributes_disabled():
 
     assert header.find('NREUM') != -1
 
-    # Now validate that userAttributes is not present, since should
-    # be disabled.
+    # Now validate that attributes are present, since browser monitoring should
+    # be enabled.
 
     data = json.loads(footer.split('NREUM.info=')[1])
 
-    assert 'userAttributes' in data
+    assert 'atts' in data
 
 @validate_analytics_sample_data(name='WebTransaction/Uri/')
 def test_capture_attributes_default():
@@ -249,12 +250,12 @@ def test_capture_attributes_default():
 
     assert header.find('NREUM') != -1
 
-    # Now validate that userAttributes is not present, since should
+    # Now validate that attributes are not present, since should
     # be disabled.
 
     data = json.loads(footer.split('NREUM.info=')[1])
 
-    assert 'userAttributes' not in data
+    assert 'atts' not in data
 
 _test_analytic_events_background_task_settings = {
     'browser_monitoring.attributes.enabled': True }
@@ -307,12 +308,12 @@ def test_capture_attributes_disabled():
 
     assert header.find('NREUM') != -1
 
-    # Now validate that userAttributes is not present, since should
+    # Now validate that attributes are not present, since should
     # be disabled.
 
     data = json.loads(footer.split('NREUM.info=')[1])
 
-    assert 'userAttributes' not in data
+    assert 'atts' not in data
 
 @transient_function_wrapper('newrelic.core.stats_engine',
         'SampledDataSet.add')
@@ -352,12 +353,12 @@ def test_collect_analytic_events_disabled():
 
     assert header.find('NREUM') != -1
 
-    # Now validate that userAttributes is not present, since should
-    # be disabled.
+    # Now validate that attributes are present, since should
+    # be enabled.
 
     data = json.loads(footer.split('NREUM.info=')[1])
 
-    assert 'userAttributes' in data
+    assert 'atts' in data
 
 _test_analytic_events_disabled_settings = {
     'transaction_events.enabled': False,
@@ -392,12 +393,12 @@ def test_analytic_events_disabled():
 
     assert header.find('NREUM') != -1
 
-    # Now validate that userAttributes is not present, since should
-    # be disabled.
+    # Now validate that attributes are present, since should
+    # be enabled.
 
     data = json.loads(footer.split('NREUM.info=')[1])
 
-    assert 'userAttributes' in data
+    assert 'atts' in data
 
 # -------------- Test call counts in analytic events ----------------
 

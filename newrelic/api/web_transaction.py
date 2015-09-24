@@ -21,6 +21,8 @@ from ..common.object_wrapper import wrap_object, FunctionWrapper
 from ..common.encoding_utils import (obfuscate, deobfuscate, json_encode,
     json_decode)
 
+from ..core.attribute_filter import DST_BROWSER_MONITORING
+
 from ..packages import six
 
 _logger = logging.getLogger(__name__)
@@ -46,14 +48,6 @@ def _lookup_environ_setting(environ, name, default=False):
         except AttributeError:
             pass
     return flag
-
-def _extract_token(cookie):
-    try:
-        t = re.search(r"\bNRAGENT=(tk=.{16})", cookie)
-        token = re.search(r"^tk=([^\"<'>]+)$", t.group(1)) if t else None
-        return token and token.group(1)
-    except Exception:
-        pass
 
 def _parse_synthetics_header(header):
     # Return a dictionary of values from Synthetics header
@@ -158,10 +152,6 @@ class WebTransaction(Transaction):
         script_name = environ.get('SCRIPT_NAME', None)
         path_info = environ.get('PATH_INFO', None)
         http_cookie = environ.get('HTTP_COOKIE', None)
-
-        if http_cookie and ("NRAGENT" in http_cookie):
-            self.rum_token = _extract_token(http_cookie)
-            self.rum_trace = True if self.rum_token else False
 
         self._request_uri = request_uri
 
@@ -532,15 +522,19 @@ class WebTransaction(Transaction):
         # collector is not meant to send a non empty value for the
         # js_agent_loader value if browser_monitoring.loader is set to
         # 'none'.
-        #
-        # The JavaScript agent loader is supposed to be ASCII. We verify
-        # that is the case by encoding it as ASCII to get a byte string.
-        # In the case of Python 2, we actually then use the encoded value
-        # as we need a native string, which for Python 2 is a byte string.
-        # If encoding as ASCII fails we will return an empty string.
 
         if self._settings.js_agent_loader:
             header = _js_agent_header_fragment % self._settings.js_agent_loader
+
+            # To avoid any issues with browser encodings, we will make sure that
+            # the javascript we inject for the browser agent is ASCII encodable.
+            # Since we obfuscate all agent and user attributes, and the transaction
+            # name with base 64 encoding, this will preserve those strings, if
+            # they have values outside of the ASCII character set.
+            # In the case of Python 2, we actually then use the encoded value
+            # as we need a native string, which for Python 2 is a byte string.
+            # If encoding as ASCII fails we will return an empty string.
+
             try:
                 if six.PY2:
                     header = header.encode('ascii')
@@ -571,7 +565,7 @@ class WebTransaction(Transaction):
     def browser_timing_footer(self):
         """Returns the JavaScript footer to be included in any HTML
         response to perform real user monitoring. This function returns
-        the header as a native Python string. In Python 2 native strings
+        the footer as a native Python string. In Python 2 native strings
         are stored as bytes. In Python 3 native strings are stored as
         unicode.
 
@@ -604,67 +598,55 @@ class WebTransaction(Transaction):
 
         obfuscation_key = self._settings.license_key[:13]
 
-        txn_name = obfuscate(self.path, obfuscation_key)
+        intrinsics = self.browser_monitoring_intrinsics(obfuscation_key)
 
-        queue_start = self.queue_start or self.start_time
-        start_time = self.start_time
-        end_time = time.time()
+        # filter user and agent attributes
 
-        queue_duration = int((start_time - queue_start) * 1000)
-        request_duration = int((end_time - start_time) * 1000)
+        def _filter(params):
+            for key, value in params.items():
+                if not isinstance(key, six.string_types):
+                    continue
+                if (not isinstance(value, six.string_types) and
+                        not isinstance(value, float) and
+                        not isinstance(value, six.integer_types)):
+                    continue
+                yield key, value
 
-        config_dict = {
-            "beacon": self._settings.beacon,
-            "errorBeacon": self._settings.error_beacon,
-            "licenseKey": self._settings.browser_key,
-            "applicationID": self._settings.application_id,
-            "transactionName": txn_name,
-            "queueTime": queue_duration,
-            "applicationTime": request_duration,
-            "agent": self._settings.js_agent_file,
-        }
+        attributes = {}
 
-        additional_params = []
+        user_attributes = {}
+        for attr in self.user_attributes:
+            if attr.destinations & DST_BROWSER_MONITORING:
+                user_attributes[attr.name] = attr.value
 
-        threshold = self._settings.transaction_tracer.transaction_threshold
-        if threshold is None:
-            threshold = self.apdex * 4
+        user_attributes = dict(_filter(user_attributes))
 
-        if request_duration >= threshold:
-            if self.rum_token:
-                additional_params.append(('agentToken', self.rum_token))
-                additional_params.append(('ttGuid', self.guid))
+        if user_attributes:
+            attributes['u'] = user_attributes
 
-        if self._settings.browser_monitoring.attributes.enabled:
-            def _filter(params):
-                for key, value in params.items():
-                    if not isinstance(key, six.string_types):
-                        continue
-                    if (not isinstance(value, six.string_types) and
-                            not isinstance(value, float) and
-                            not isinstance(value, six.integer_types)):
-                        continue
-                    yield key, value
+        agent_attributes = {}
+        for attr in self.agent_attributes:
+            if attr.destinations & DST_BROWSER_MONITORING:
+                agent_attributes[attr.name] = attr.value
 
-            user_attributes = dict(_filter(self._custom_params))
+        if agent_attributes:
+            attributes['a'] = agent_attributes
 
-            if user_attributes:
-                user_attributes = obfuscate(json_encode(user_attributes),
-                        obfuscation_key)
+        # create the data structure that pull all our data in
 
-                additional_params.append(('userAttributes', user_attributes))
+        footer_data = intrinsics
 
-        if self._settings.browser_monitoring.ssl_for_http is not None:
-            additional_params.append(('sslForHttp',
-                self._settings.browser_monitoring.ssl_for_http))
+        if attributes:
+            attributes = obfuscate(json_encode(attributes), obfuscation_key)
+            footer_data['atts'] = attributes
 
-        # Add in the additional params to the footer config dictionary.
+        footer = _js_agent_footer_fragment % json_encode(footer_data)
 
-        config_dict.update(additional_params)
-        footer = _js_agent_footer_fragment % json_encode(config_dict)
-
-        # The JavaScript agent loader is supposed to be ASCII. We verify
-        # that is the case by encoding it as ASCII to get a byte string.
+        # To avoid any issues with browser encodings, we will make sure that
+        # the javascript we inject for the browser agent is ASCII encodable.
+        # Since we obfuscate all agent and user attributes, and the transaction
+        # name with base 64 encoding, this will preserve those strings, if
+        # they have values outside of the ASCII character set.
         # In the case of Python 2, we actually then use the encoded value
         # as we need a native string, which for Python 2 is a byte string.
         # If encoding as ASCII fails we will return an empty string.
@@ -690,6 +672,33 @@ class WebTransaction(Transaction):
             self.rum_footer_generated = True
 
         return footer
+
+    def browser_monitoring_intrinsics(self, obfuscation_key):
+        txn_name = obfuscate(self.path, obfuscation_key)
+
+        queue_start = self.queue_start or self.start_time
+        start_time = self.start_time
+        end_time = time.time()
+
+        queue_duration = int((start_time - queue_start) * 1000)
+        request_duration = int((end_time - start_time) * 1000)
+
+        intrinsics = {
+            "beacon": self._settings.beacon,
+            "errorBeacon": self._settings.error_beacon,
+            "licenseKey": self._settings.browser_key,
+            "applicationID": self._settings.application_id,
+            "transactionName": txn_name,
+            "queueTime": queue_duration,
+            "applicationTime": request_duration,
+            "agent": self._settings.js_agent_file,
+        }
+
+        if self._settings.browser_monitoring.ssl_for_http is not None:
+            ssl_for_http = self._settings.browser_monitoring.ssl_for_http
+            intrinsics['sslForHttp'] = ssl_for_http
+
+        return intrinsics
 
 class _WSGIApplicationIterable(object):
 

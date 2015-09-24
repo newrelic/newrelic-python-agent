@@ -281,7 +281,6 @@ class StatsEngine(object):
         self.__metric_ids = {}
         self.__synthetics_events = []
         self.__synthetics_transactions = []
-        self.__browser_transactions = []
         self.__xray_transactions = []
         self.xray_sessions = {}
 
@@ -675,23 +674,6 @@ class StatsEngine(object):
             self.__slow_transaction = transaction
             self.__slow_transaction_map[name] = transaction.duration
 
-    def _update_browser_transaction(self, transaction):
-        """Check if transaction is a browser trace and save it to the
-        __browser_transaction
-        """
-
-        settings = self.__settings
-
-        if not transaction.rum_trace:
-            return
-
-        # Check if we have enough browser transactions before adding the
-        # current transaction to the list.
-
-        maximum = settings.agent_limits.browser_transactions
-        if len(self.__browser_transactions) < maximum:
-            self.__browser_transactions.append(transaction)
-
     def _update_synthetics_transaction(self, transaction):
         """Check if transaction is a synthetics trace and save it to
         __synthetics_transactions.
@@ -796,7 +778,6 @@ class StatsEngine(object):
 
             if transaction.duration >= threshold:
                 self._update_slow_transaction(transaction)
-                self._update_browser_transaction(transaction)
 
         # Create the analytic (transaction) event and add it to the
         # appropriate "bucket." Synthetic requests are saved in one,
@@ -977,13 +958,12 @@ class StatsEngine(object):
             return []
 
         # Create a set 'traces' that is a union of slow transaction,
-        # browser_transactions, xray_transactions, and Synthetics
-        # transactions. This ensures we don't send duplicates of a transaction.
+        # xray_transactions, and Synthetics transactions.
+        # This ensures we don't send duplicates of a transaction.
 
         traces = set()
         if self.__slow_transaction:
             traces.add(self.__slow_transaction)
-        traces.update(self.__browser_transactions)
         traces.update(self.__xray_transactions)
         traces.update(self.__synthetics_transactions)
 
@@ -1078,7 +1058,7 @@ class StatsEngine(object):
             root = transaction_trace.root
             xray_id = getattr(trace, 'xray_id', None)
 
-            if (xray_id or trace.rum_trace or trace.record_tt):
+            if (xray_id or trace.record_tt):
                 force_persist = True
             else:
                 force_persist = False
@@ -1184,7 +1164,6 @@ class StatsEngine(object):
         self.__metric_ids = {}
         self.__synthetics_events = []
         self.__synthetics_transactions = []
-        self.__browser_transactions = []
         self.__xray_transactions = []
         self.xray_sessions = {}
 
@@ -1279,7 +1258,6 @@ class StatsEngine(object):
         self.__sql_stats_table = {}
         self.__slow_transaction = None
         self.__transaction_errors = []
-        self.__browser_transactions = []
         self.__xray_transactions = []
         self.__synthetics_events = []
         self.__synthetics_transactions = []
@@ -1415,22 +1393,9 @@ class StatsEngine(object):
 
         # Restore original slow transaction if slower than any newer slow
         # transaction. Also append any saved transactions corresponding to
-        # browser and x-ray traces, trimming them at the maximum to be kept.
+        # x-ray traces, trimming them at the maximum to be kept.
 
         if merge_traces:
-
-            # Limit number of browser traces to the limit (10)
-            # FIXME - snapshot.__browser_transactions has only one element. So
-            # we can use the following code:
-            #
-            # maximum = settings.agent_limits.browser_transactions
-            # if len(self.__browser_transactions) < maximum:
-            #     self.__browser_transactions.extend(
-            #                               snapshot.__browser_transactions)
-
-            maximum = settings.agent_limits.browser_transactions
-            self.__browser_transactions.extend(snapshot.__browser_transactions)
-            self.__browser_transactions = self.__browser_transactions[:maximum]
 
             # Limit number of xray traces to the limit (10)
             # Spill over traces after the limit should have no x-ray ids. This

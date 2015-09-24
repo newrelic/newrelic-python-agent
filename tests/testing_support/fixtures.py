@@ -1031,7 +1031,8 @@ def validate_parameter_groups(group, required_params=[], forgone_params=[]):
 
     return _validate_parameter_groups
 
-def validate_attributes(type, required_attr_names=[], forgone_attr_names=[]):
+def validate_attributes(attr_type, required_attr_names=[],
+        forgone_attr_names=[]):
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
     def _validate_attributes(wrapped, instance, args, kwargs):
@@ -1040,13 +1041,13 @@ def validate_attributes(type, required_attr_names=[], forgone_attr_names=[]):
 
         transaction = _bind_params(*args, **kwargs)
 
-        if type == 'intrinsic':
+        if attr_type == 'intrinsic':
             attributes = transaction.trace_intrinsics
             attribute_names = attributes.keys()
-        elif type == 'agent':
+        elif attr_type == 'agent':
             attributes = transaction.agent_attributes
             attribute_names = [a.name for a in attributes]
-        elif type == 'user':
+        elif attr_type == 'user':
             attributes = transaction.user_attributes
             attribute_names = [a.name for a in attributes]
 

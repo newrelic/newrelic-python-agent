@@ -430,7 +430,6 @@ class Transaction(object):
                     (framework, version), 1)
 
         request_params = {}
-        parameter_groups = {}
 
         if self.capture_params:
             request_params = self._request_params
@@ -456,7 +455,6 @@ class Transaction(object):
                 apdex_t=self.apdex,
                 suppress_apdex=self.suppress_apdex,
                 custom_metrics=self._custom_metrics,
-                parameter_groups=parameter_groups,
                 guid=self.guid,
                 cpu_time=self._cpu_user_time_value,
                 suppress_transaction_trace=self.suppress_transaction_trace,

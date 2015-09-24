@@ -435,13 +435,6 @@ class Transaction(object):
         if self.capture_params:
             request_params = self._request_params
 
-        if self._request_environment:
-            parameter_groups['Request environment'] = self._request_environment
-        if self._response_properties:
-            parameter_groups['Response properties'] = self._response_properties
-        if self._transaction_metrics:
-            parameter_groups['Transaction metrics'] = self._transaction_metrics
-
         node = newrelic.core.transaction_node.TransactionNode(
                 settings=self._settings,
                 path=self.path,

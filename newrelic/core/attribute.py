@@ -139,9 +139,14 @@ def process_user_attribute(name, value):
         return FAILED_RESULT
 
     else:
+
+        # Cast to string, if necessary
+
+        value = sanitize(value)
+
+        # Check length after casting
+
         valid_types_text = (six.text_type, six.binary_type)
-        valid_types_not_text = (bool, float, six.integer_types,
-                list, dict, tuple)
 
         if isinstance(value, valid_types_text):
             trunc_value = truncate(value)
@@ -150,10 +155,22 @@ def process_user_attribute(name, value):
                         '(%r bytes). Truncating value: %r=%r.',
                         MAX_ATTRIBUTE_LENGTH, name, trunc_value)
 
-            key, val = name, trunc_value
-        elif isinstance(value, valid_types_not_text):
-            key, val = name, value
-        else:
-            return FAILED_RESULT
+            value = trunc_value
 
-        return (key, val)
+        return (name, value)
+
+def sanitize(value):
+
+    # Return value unchanged, if it's a valid type that is supported by
+    # Insights. Otherwise, convert value to a string.
+
+    valid_value_types = (six.text_type, six.binary_type, bool, float,
+            six.integer_types)
+
+    if not isinstance(value, valid_value_types):
+        original = value
+        value = str(value)
+        _logger.debug('Attribute value is of type: %r. Casting %r to '
+                'string: %s', type(value), original, value)
+
+    return value

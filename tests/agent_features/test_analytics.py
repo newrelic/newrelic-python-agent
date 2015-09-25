@@ -121,25 +121,23 @@ def test_capture_attributes_enabled():
     assert user_attrs['account'] == u'account-name'
     assert user_attrs['product'] == u'product-name'
 
-    if six.PY2:
-        assert user_attrs['bytes'] == u'bytes-value'
-    else:
-        assert 'bytes' not in user_attrs
+    # When you round-trip through json encoding and json decoding, you
+    # always end up with unicode (unicode in Python 2, str in Python 3.)
+    #
+    # Previously, we would drop attribute values of type 'bytes' in Python 3.
+    # Now, we accept them and `json_encode` uses an encoding of 'latin-1',
+    # just like it does for Python 2.
 
+    assert user_attrs['bytes'] == u'bytes-value'
     assert user_attrs['string'] == u'string-value'
     assert user_attrs['unicode'] == u'unicode-value'
 
+    assert user_attrs['invalid-utf8'] == b'\xe2'.decode('latin-1')
+    assert user_attrs['multibyte-utf8'] == b'\xe2\x88\x9a'.decode('latin-1')
+    assert user_attrs['multibyte-unicode'] == b'\xe2\x88\x9a'.decode('utf-8')
+
     assert user_attrs['integer'] == 1
     assert user_attrs['float'] == 1.0
-
-    if six.PY2:
-        assert user_attrs['invalid-utf8'] == b'\xe2'.decode('latin-1')
-        assert user_attrs['multibyte-utf8'] == b'\xe2\x88\x9a'.decode('latin-1')
-    else:
-        assert 'invalid-utf8' not in user_attrs
-        assert 'multibyte-utf8' not in user_attrs
-
-    assert user_attrs['multibyte-unicode'] == b'\xe2\x88\x9a'.decode('utf-8')
 
 _test_no_attributes_recorded_settings = {
     'browser_monitoring.attributes.enabled': True }

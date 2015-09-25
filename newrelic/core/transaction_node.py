@@ -374,22 +374,11 @@ class TransactionNode(_TransactionNode):
         # Add user and agent attributes to event
 
         user_attributes = {}
-
         for attr in self.user_attributes:
             if attr.destinations & DST_TRANSACTION_EVENTS:
-                # We only retain any attributes which have string type for key
-                # and string or numeric for value.
-                if not isinstance(attr.name, six.string_types):
-                    continue
-                if (not isinstance(attr.value, six.string_types) and
-                        not isinstance(attr.value, float) and
-                        not isinstance(attr.value, six.integer_types)):
-                    continue
-
                 user_attributes[attr.name] = attr.value
 
         agent_attributes = {}
-
         for attr in self.agent_attributes:
             if attr.destinations & DST_TRANSACTION_EVENTS:
                 agent_attributes[attr.name] = attr.value

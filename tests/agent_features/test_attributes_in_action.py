@@ -157,7 +157,8 @@ _override_settings = {
         'transaction_tracer.attributes.exclude': ['request.parameters.*'],
 }
 
-@validate_transaction_trace_attributes(_expected_attributes)
+@validate_transaction_trace_attributes(_expected_attributes,
+        _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_transaction_trace_exclude_request_params():
     response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
@@ -190,7 +191,8 @@ _override_settings = {
         'transaction_tracer.attributes.exclude': ['request.parameters.*'],
 }
 
-@validate_transaction_trace_attributes(_expected_attributes)
+@validate_transaction_trace_attributes(_expected_attributes,
+        _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_transaction_trace_capture_params_exclude_request_params():
     response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)

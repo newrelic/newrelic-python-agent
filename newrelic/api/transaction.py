@@ -991,13 +991,17 @@ class Transaction(object):
 
         # Only add params if High Security Mode is off.
 
+        custom_params = {}
+
         if settings.high_security:
             if params:
                 _logger.debug('Cannot add custom parameters in '
                         'High Security Mode.')
-            custom_params = {}
         else:
-            custom_params = params
+            for k, v in params.items():
+                name, value = process_user_attribute(k, v)
+                if name:
+                    custom_params[name] = value
 
         # Check to see if we need to strip the message before recording it.
 

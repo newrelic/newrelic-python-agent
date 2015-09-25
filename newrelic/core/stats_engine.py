@@ -20,6 +20,7 @@ import newrelic.packages.six as six
 from newrelic.core.attribute_filter import DST_ERROR_COLLECTOR
 from newrelic.core.attribute import create_user_attributes
 
+from .attribute import process_user_attribute
 from .error_collector import TracedError
 from .internal_metrics import (internal_trace, InternalTrace, internal_metric)
 from .database_utils import explain_plan
@@ -500,7 +501,14 @@ class StatsEngine(object):
                         'High Security Mode.')
             attributes = []
         else:
-            attributes = create_user_attributes(params,
+            custom_params = {}
+
+            for k, v in params.items():
+                name, value = process_user_attribute(k, v)
+                if name:
+                    custom_params[name] = value
+
+            attributes = create_user_attributes(custom_params,
                     settings.attribute_filter)
 
         # Check to see if we need to strip the message before recording it.

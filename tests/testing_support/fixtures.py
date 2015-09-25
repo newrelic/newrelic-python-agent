@@ -1170,23 +1170,19 @@ def validate_analytics_sample_data(name, capture_attributes=True,
             assert user_attributes['account'] == u'account-name'
             assert user_attributes['product'] == u'product-name'
 
-            if six.PY2:
-                assert user_attributes['bytes'] == u'bytes-value'
-            else:
-                assert 'bytes' not in user_attributes
+            # Here, attributes have been sanitized, but there's been no
+            # json encoding or decoding, so the type for values in
+            # user_attributes is the same as what was input.
 
-            assert user_attributes['string'] == u'string-value'
+            assert user_attributes['bytes'] == b'bytes-value'
+            assert user_attributes['string'] == 'string-value'
             assert user_attributes['unicode'] == u'unicode-value'
 
             assert user_attributes['integer'] == 1
             assert user_attributes['float'] == 1.0
 
-            if six.PY2:
-                assert user_attributes['invalid-utf8'] == b'\xe2'
-                assert user_attributes['multibyte-utf8'] == b'\xe2\x88\x9a'
-            else:
-                assert 'invalid-utf8' not in user_attributes
-                assert 'multibyte-utf8' not in user_attributes
+            assert user_attributes['invalid-utf8'] == b'\xe2'
+            assert user_attributes['multibyte-utf8'] == b'\xe2\x88\x9a'
 
             multibyte_value = b'\xe2\x88\x9a'.decode('utf-8')
             assert user_attributes['multibyte-unicode'] == multibyte_value

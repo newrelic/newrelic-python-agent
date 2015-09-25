@@ -4,10 +4,13 @@ import webtest
 
 from testing_support.fixtures import (override_application_settings,
     validate_custom_parameters, validate_transaction_errors,
-    validate_request_params, validate_parameter_groups)
+    validate_request_params, validate_attributes_complete)
 
 from newrelic.agent import (background_task, add_custom_parameter,
     record_exception, wsgi_application, current_transaction)
+
+from newrelic.core.attribute import (Attribute, DST_TRANSACTION_TRACER,
+        DST_ERROR_COLLECTOR)
 
 from newrelic.core.config import (global_settings, Settings,
     apply_config_setting)
@@ -403,10 +406,27 @@ def test_other_transaction_hsm_environ_capture_request_params_api_called():
 
     response = target_application.get('/', params='key-1=value-1')
 
+# Make sure we don't display the query string in 'request.headers.referer'
+# Attribute will exist, and value will have query string stripped off.
+
+_required_attr = Attribute(
+        name='request.headers.referer',
+        value='http://example.com/blah',
+        destinations=DST_TRANSACTION_TRACER | DST_ERROR_COLLECTOR)
+
+# This is a token forgone_attr, just to make sure fixture handles it correctly.
+
+_forgone_attr = Attribute(
+        name='NOT FOUND',
+        value='NO VALUE',
+        destinations=0)
+
+_required_attrs = [_required_attr]
+_foregone_attrs = [_forgone_attr]
+
 @override_application_settings(
     _test_transaction_settings_hsm_enabled_capture_params)
-@validate_parameter_groups('Request environment',
-        required_params=[('HTTP_REFERER', 'http://example.com/blah')])
+@validate_attributes_complete('agent', _required_attrs, _foregone_attrs)
 def test_http_referrer_url_is_sanitized_in_hsm():
     target_application = webtest.TestApp(
             target_wsgi_application_capture_params)

@@ -1007,30 +1007,6 @@ def validate_request_params(required_params=[], forgone_params=[]):
 
     return _validate_request_params
 
-def validate_parameter_groups(group, required_params=[], forgone_params=[]):
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
-    def _validate_parameter_groups(wrapped, instance, args, kwargs):
-        def _bind_params(transaction, *args, **kwargs):
-            return transaction
-
-        transaction = _bind_params(*args, **kwargs)
-
-        for name, value in required_params:
-            assert name in transaction.parameter_groups[group], ('name=%r, '
-                    'params=%r' % (name, transaction.parameter_groups[group]))
-            assert transaction.parameter_groups[group][name] == value, (
-                    'name=%r, value=%r, params=%r' % (name, value,
-                    transaction.parameter_groups[group]))
-
-        for name, value in forgone_params:
-            assert name not in transaction.parameter_groups[group], ('name=%r,'
-                    ' params=%r' % (name, transaction.parameter_groups[group]))
-
-        return wrapped(*args, **kwargs)
-
-    return _validate_parameter_groups
-
 def validate_attributes(attr_type, required_attr_names=[],
         forgone_attr_names=[]):
     @transient_function_wrapper('newrelic.core.stats_engine',
@@ -1062,6 +1038,62 @@ def validate_attributes(attr_type, required_attr_names=[],
         return wrapped(*args, **kwargs)
 
     return _validate_attributes
+
+def validate_attributes_complete(attr_type, required_attrs=[],
+        forgone_attrs=[]):
+
+    # This differs from `validate_attributes` in that all fields of
+    # Attribute must match (name, value, and destinations), not just
+    # name. It's a more thorough test, but it's more of a pain to set
+    # up, since you have to pass lists of Attributes to required_attrs
+    # and forgone_attrs.
+    #
+    # Args:
+    #
+    #       attr_type: 'intrinsic' or 'agent' or 'user'
+    #       required_attrs: List of Attributes that must be present.
+    #       forgone_attrs: List of Attributes that must NOT be present.
+    #
+    # Note:
+    #
+    # The 'intrinsics' come from `transaction.trace_intrinsics`.
+
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_attributes_complete(wrapped, instance, args, kwargs):
+        def _bind_params(transaction, *args, **kwargs):
+            return transaction
+
+        transaction = _bind_params(*args, **kwargs)
+        attribute_filter = transaction.settings.attribute_filter
+
+        if attr_type == 'intrinsic':
+
+            # Intrinsics are stored as a dict, so for consistency's sake
+            # in this test, we convert them to Attributes.
+
+            items = transaction.trace_intrinsics
+            attributes = create_attributes(items,
+                    DST_ERROR_COLLECTOR | DST_TRANSACTION_TRACER,
+                    attribute_filter)
+
+        elif attr_type == 'agent':
+            attributes = transaction.agent_attributes
+
+        elif attr_type == 'user':
+            attributes = transaction.user_attributes
+
+        for required_attr in required_attrs:
+            assert required_attr in attributes, ('name=%r, attributes=%r)' %
+                    (required_attr, attributes))
+
+        for forgone_attr in forgone_attrs:
+            assert forgone_attr not in attributes, ('name=%r, attributes=%r)' %
+                    (forgone_attr, attributes))
+
+        return wrapped(*args, **kwargs)
+
+    return _validate_attributes_complete
 
 def validate_database_trace_inputs(sql_parameters_type):
 

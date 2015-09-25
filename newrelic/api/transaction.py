@@ -443,7 +443,6 @@ class Transaction(object):
                 request_uri=self._request_uri,
                 response_code=self.response_code,
                 request_params=request_params,
-                custom_params=self._custom_params,
                 queue_start=self.queue_start,
                 start_time=self.start_time,
                 end_time=self.end_time,

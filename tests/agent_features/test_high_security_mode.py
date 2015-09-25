@@ -10,7 +10,7 @@ from newrelic.agent import (background_task, add_custom_parameter,
     record_exception, wsgi_application, current_transaction)
 
 from newrelic.core.attribute import (Attribute, DST_TRANSACTION_TRACER,
-        DST_ERROR_COLLECTOR)
+        DST_ERROR_COLLECTOR, DST_ALL)
 
 from newrelic.core.config import (global_settings, Settings,
     apply_config_setting)
@@ -414,12 +414,12 @@ _required_attr = Attribute(
         value='http://example.com/blah',
         destinations=DST_TRANSACTION_TRACER | DST_ERROR_COLLECTOR)
 
-# This is a token forgone_attr, just to make sure fixture handles it correctly.
+# Check that the unsanitized version isn't present either, for any destinations.
 
 _forgone_attr = Attribute(
-        name='NOT FOUND',
-        value='NO VALUE',
-        destinations=0)
+        name='request.headers.referer',
+        value='http://example.com/blah?query=value',
+        destinations=DST_ALL)
 
 _required_attrs = [_required_attr]
 _foregone_attrs = [_forgone_attr]

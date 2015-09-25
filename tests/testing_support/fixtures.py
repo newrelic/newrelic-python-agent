@@ -1046,7 +1046,10 @@ def validate_attributes_complete(attr_type, required_attrs=[],
     # Attribute must match (name, value, and destinations), not just
     # name. It's a more thorough test, but it's more of a pain to set
     # up, since you have to pass lists of Attributes to required_attrs
-    # and forgone_attrs.
+    # and forgone_attrs. For required destinations, the attribute will
+    # match if at least the required destinations are present. For
+    # forgone attributes the test will fail if any of the destinations
+    # provided in the forgone attribute are found.
     #
     # Args:
     #
@@ -1083,13 +1086,30 @@ def validate_attributes_complete(attr_type, required_attrs=[],
         elif attr_type == 'user':
             attributes = transaction.user_attributes
 
+        # re-organize attributes into a dict by name
+
+        attributes = dict(
+                [(a.name,{'value': a.value, 'dest': a.destinations})
+                for a in attributes]
+        )
+
+        # Check that name and value are present and match, and at least the
+        # destinations provided.
+
         for required_attr in required_attrs:
-            assert required_attr in attributes, ('name=%r, attributes=%r)' %
-                    (required_attr, attributes))
+            name, value, dest = required_attr
+            assert name in attributes
+            assert value == attributes[name]['value']
+            assert dest & attributes[name]['dest'] == dest
+
+        # check that the name & value are NOT going to ANY
+        # of the destinations provided as forgone
 
         for forgone_attr in forgone_attrs:
-            assert forgone_attr not in attributes, ('name=%r, attributes=%r)' %
-                    (forgone_attr, attributes))
+            name, value, dest = forgone_attr
+            if name in attributes:
+                if value == attributes[name]['value']:
+                    assert dest & attributes[name]['dest'] == 0
 
         return wrapped(*args, **kwargs)
 

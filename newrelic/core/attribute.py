@@ -26,10 +26,10 @@ _DESTINATIONS_WITH_EVENTS = _DESTINATIONS | DST_TRANSACTION_EVENTS
 
 _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = [
         'request.method',
-        'request.headers.content-type',
-        'request.headers.content-length',
+        'request.headers.contentType',
+        'request.headers.contentLength',
         'response.status',
-        'response.content-length'
+        'response.contentLength'
 ]
 
 MAX_NUM_USER_ATTRIBUTES = 64

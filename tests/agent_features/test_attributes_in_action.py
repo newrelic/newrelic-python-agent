@@ -16,19 +16,19 @@ REQUEST_URL = '/?'+ URL_PARAM + '=someval&' + URL_PARAM2 + '=anotherval'
 REQUEST_HEADERS = [('Content-Type', 'text/html; charset=utf-8'),
         ('Content-Length', '10'),]
 
-TRACE_ERROR_AGENT_KEYS = ['wsgi.output.time', 'response.status', 'request.method',
-        'request.headers.content-type', 'request.headers.content-length']
+TRACE_ERROR_AGENT_KEYS = ['wsgi.output.seconds', 'response.status', 'request.method',
+        'request.headers.contentType', 'request.headers.contentLength']
 AGENT_KEYS_ALL = TRACE_ERROR_AGENT_KEYS + ['request.parameters.'+URL_PARAM,
         'request.parameters.'+URL_PARAM2]
 
 EVENT_INTRINSICS = ('name', 'duration', 'type', 'timestamp')
 EVENT_AGENT_KEYS = ['response.status', 'request.method',
-        'request.headers.content-type', 'request.headers.content-length']
+        'request.headers.contentType', 'request.headers.contentLength']
 
 BROWSER_INTRINSIC_KEYS = ["beacon", "errorBeacon", "licenseKey", "applicationID",
         "transactionName", "queueTime", "applicationTime", "agent"]
-BROWSER_AGENT_KEYS = ['request.method', 'request.headers.content-type',
-        'request.headers.content-length']
+BROWSER_AGENT_KEYS = ['request.method', 'request.headers.contentType',
+        'request.headers.contentLength']
 
 @wsgi_application()
 def exceptional_wsgi_application(environ, start_response):
@@ -98,7 +98,7 @@ _expected_attributes = {
 }
 
 _expected_absent_attributes = {
-        'agent' : ['wsgi.output.time'],
+        'agent' : ['wsgi.output.seconds'],
         'user' : [],
 }
 
@@ -235,7 +235,7 @@ _expected_attributes = {
 }
 
 _expected_absent_attributes = {
-        'agent' : ['wsgi.output.time'],
+        'agent' : ['wsgi.output.seconds'],
         'user' : [],
 }
 
@@ -450,7 +450,7 @@ _expected_attributes = {
 }
 
 _expected_absent_attributes = {
-        'agent' : ['wsgi.output.time', 'request.parameters.'+URL_PARAM],
+        'agent' : ['wsgi.output.seconds', 'request.parameters.'+URL_PARAM],
         'user' : [],
 }
 
@@ -520,7 +520,7 @@ _expected_attributes = {
 }
 
 _expected_absent_attributes = {
-        'agent' : ['wsgi.output.time'],
+        'agent' : ['wsgi.output.seconds'],
         'user' : [],
 }
 
@@ -589,7 +589,7 @@ _expected_attributes = {
 }
 
 _expected_absent_attributes = {
-        'agent' : ['wsgi.output.time'],
+        'agent' : ['wsgi.output.seconds'],
         'user' : [],
 }
 

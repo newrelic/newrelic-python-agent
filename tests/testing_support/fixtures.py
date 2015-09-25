@@ -983,7 +983,7 @@ def validate_browser_attributes(required_params={}, forgone_params={}):
 
     return _validate_browser_attributes
 
-def validate_request_params(required_params=[], forgone_params=[]):
+def validate_request_params_omitted():
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
     def _validate_request_params(wrapped, instance, args, kwargs):
@@ -992,16 +992,9 @@ def validate_request_params(required_params=[], forgone_params=[]):
 
         transaction = _bind_params(*args, **kwargs)
 
-        for name, value in required_params:
-            assert name in transaction.request_params, ('name=%r, '
-                    'params=%r' % (name, transaction.request_params))
-            assert transaction.request_params[name] == value, (
-                    'name=%r, value=%r, params=%r' % (name, value,
-                    transaction.request_params))
-
-        for name, value in forgone_params:
-            assert name not in transaction.request_params, ('name=%r, '
-                    'params=%r' % (name, transaction.request_params))
+        for attr in transaction.agent_attributes:
+            if attr.name.startswith('request.parameters'):
+                assert attr.destination == DST_NONE
 
         return wrapped(*args, **kwargs)
 

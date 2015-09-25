@@ -129,6 +129,74 @@ _expected_absent_attributes = {
 def test_browser_default_attribute_settings():
     response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
+# ========================= exclude request params
+
+_override_settings = {
+        'error_collector.attributes.exclude': ['request.parameters.*'],
+}
+
+_expected_attributes = {
+        'agent' : TRACE_ERROR_AGENT_KEYS,
+        'user' : ['test_key'],
+        'intrinsic' : ['trip_id']
+}
+
+_expected_absent_attributes = {
+        'agent' : ['request.parameters.'+URL_PARAM,
+                   'request.parameters.'+URL_PARAM2],
+        'user' : [],
+}
+
+@validate_transaction_error_trace_attributes(_expected_attributes,
+        _expected_absent_attributes)
+@override_application_settings(_override_settings)
+def test_error_trace_in_transaction_exclude_request_params():
+    run_failing_request()
+
+_override_settings = {
+        'transaction_tracer.attributes.exclude': ['request.parameters.*'],
+}
+
+@validate_transaction_trace_attributes(_expected_attributes,
+        _expected_absent_attributes)
+@override_application_settings(_override_settings)
+def test_transaction_trace_exclude_request_params():
+    response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
+
+_override_settings = {
+        'capture_params': True,
+        'error_collector.attributes.exclude': ['request.parameters.*'],
+}
+
+_expected_attributes = {
+        'agent' : TRACE_ERROR_AGENT_KEYS,
+        'user' : ['test_key'],
+        'intrinsic' : ['trip_id']
+}
+
+_expected_absent_attributes = {
+        'agent' : ['request.parameters.'+URL_PARAM,
+                   'request.parameters.'+URL_PARAM2],
+        'user' : [],
+}
+
+@validate_transaction_error_trace_attributes(_expected_attributes,
+        _expected_absent_attributes)
+@override_application_settings(_override_settings)
+def test_error_trace_in_transaction_capture_params_exclude_request_params():
+    run_failing_request()
+
+_override_settings = {
+        'capture_params': True,
+        'transaction_tracer.attributes.exclude': ['request.parameters.*'],
+}
+
+@validate_transaction_trace_attributes(_expected_attributes,
+        _expected_absent_attributes)
+@override_application_settings(_override_settings)
+def test_transaction_trace_capture_params_exclude_request_params():
+    response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
+
 # ========================= include request params
 
 _override_settings = {

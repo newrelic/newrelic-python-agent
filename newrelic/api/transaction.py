@@ -136,8 +136,7 @@ class Transaction(object):
         self.suppress_apdex = False
         self.suppress_transaction_trace = False
 
-        self.capture_params = False
-        self.ignored_params = []
+        self.capture_params = None
 
         self.response_code = 0
 
@@ -801,10 +800,7 @@ class Transaction(object):
 
                 for k, v in self._request_params.items():
                     new_key = 'request.parameters.%s' % k
-                    if len(v) == 1:
-                        new_val = v[0]
-                    else:
-                        new_val = ",".join(v)
+                    new_val = ",".join(v)
 
                     final_key, final_val = process_user_attribute(new_key,
                             new_val)

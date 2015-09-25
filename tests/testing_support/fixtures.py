@@ -1191,9 +1191,11 @@ def validate_analytics_sample_data(name, capture_attributes=True,
             multibyte_value = b'\xe2\x88\x9a'.decode('utf-8')
             assert user_attributes['multibyte-unicode'] == multibyte_value
 
-            assert 'list' not in user_attributes
-            assert 'tuple' not in user_attributes
-            assert 'dict' not in user_attributes
+            # Objects get converted to strings.
+
+            assert user_attributes['list'] == '[]'
+            assert user_attributes['dict'] == '{}'
+            assert user_attributes['tuple'] == '()'
 
         else:
             assert user_attributes == {}

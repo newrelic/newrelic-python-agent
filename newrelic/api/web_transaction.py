@@ -600,26 +600,12 @@ class WebTransaction(Transaction):
 
         intrinsics = self.browser_monitoring_intrinsics(obfuscation_key)
 
-        # filter user and agent attributes
-
-        def _filter(params):
-            for key, value in params.items():
-                if not isinstance(key, six.string_types):
-                    continue
-                if (not isinstance(value, six.string_types) and
-                        not isinstance(value, float) and
-                        not isinstance(value, six.integer_types)):
-                    continue
-                yield key, value
-
         attributes = {}
 
         user_attributes = {}
         for attr in self.user_attributes:
             if attr.destinations & DST_BROWSER_MONITORING:
                 user_attributes[attr.name] = attr.value
-
-        user_attributes = dict(_filter(user_attributes))
 
         if user_attributes:
             attributes['u'] = user_attributes

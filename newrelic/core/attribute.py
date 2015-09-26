@@ -171,6 +171,6 @@ def sanitize(value):
         original = value
         value = str(value)
         _logger.debug('Attribute value is of type: %r. Casting %r to '
-                'string: %s', type(value), original, value)
+                'string: %s', type(original), original, value)
 
     return value

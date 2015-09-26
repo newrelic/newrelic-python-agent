@@ -273,8 +273,8 @@ def test_browser_include_request_params():
 # ========================= include and exclude request parameters
 
 _override_settings = {
-        'error_collector.attributes.exclude': ['request.parameters.*'],
-        'error_collector.attributes.include': ['request.parameters.'+URL_PARAM],
+        'error_collector.attributes.include': ['request.parameters.*'],
+        'error_collector.attributes.exclude': ['request.parameters.'+URL_PARAM2],
 }
 
 _expected_attributes = {
@@ -295,8 +295,8 @@ def test_error_trace_in_transaction_include_exclude():
     run_failing_request()
 
 _override_settings = {
-        'transaction_tracer.attributes.exclude': ['request.parameters.*'],
-        'transaction_tracer.attributes.include': ['request.parameters.'+URL_PARAM],
+        'transaction_tracer.attributes.include': ['request.parameters.*'],
+        'transaction_tracer.attributes.exclude': ['request.parameters.'+URL_PARAM2],
 }
 
 @validate_transaction_trace_attributes(_expected_attributes,
@@ -306,8 +306,8 @@ def test_transaction_trace_include_exclude():
     response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
 _override_settings = {
-        'transaction_events.attributes.exclude': ['request.parameters.*'],
-        'transaction_events.attributes.include': ['*', 'request.parameters.'+URL_PARAM],
+        'transaction_events.attributes.include': ['request.parameters.*'],
+        'transaction_events.attributes.exclude': ['request.parameters.'+URL_PARAM2],
 }
 
 _expected_attributes = {
@@ -329,13 +329,14 @@ def test_transaction_event_include_exclude():
 
 _override_settings = {
         'browser_monitoring.attributes.enabled' : True,
-        'browser_monitoring.attributes.include': ['*', 'request.parameters.'+URL_PARAM],
-        'browser_monitoring.attributes.exclude': ['request.parameters.*'],
+        'browser_monitoring.attributes.include': ['request.parameters.*'],
+        'browser_monitoring.attributes.exclude': ['request.parameters.'+URL_PARAM2],
 }
 
 _expected_attributes = {
         'agent' : ['request.parameters.'+URL_PARAM],
         'user' : USER_ATTRS,
+        'intrinsic' : BROWSER_INTRINSIC_KEYS,
 }
 
 _expected_absent_attributes = {

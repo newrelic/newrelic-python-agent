@@ -18,6 +18,8 @@ REQUEST_HEADERS = [('Content-Type', 'text/html; charset=utf-8'),
 
 REQ_PARAMS = ['request.parameters.'+URL_PARAM,'request.parameters.'+URL_PARAM2]
 
+USER_ATTRS = ['puppies', 'sunshine']
+
 TRACE_ERROR_AGENT_KEYS = ['wsgi.output.seconds', 'response.status', 'request.method',
         'request.headers.contentType', 'request.headers.contentLength']
 AGENT_KEYS_ALL = TRACE_ERROR_AGENT_KEYS + REQ_PARAMS
@@ -35,7 +37,8 @@ ABSENT_BROWSER_KEYS = ['request.method', 'request.headers.contentType',
 @wsgi_application()
 def exceptional_wsgi_application(environ, start_response):
 
-    add_custom_parameter('test_key', 'test_value')
+    add_custom_parameter(USER_ATTRS[0], 'test_value')
+    add_custom_parameter(USER_ATTRS[1], 'test_value')
 
     start_response('500 :(',[])
 
@@ -48,7 +51,8 @@ def normal_wsgi_application(environ, start_response):
     output = '<html><head>header</head><body><p>RESPONSE</p></body></html>'
     output = output.encode('UTF-8')
 
-    add_custom_parameter('test_key', 'test_value')
+    add_custom_parameter(USER_ATTRS[0], 'test_value')
+    add_custom_parameter(USER_ATTRS[1], 'test_value')
 
     response_headers = [('Content-Type', 'text/html; charset=utf-8'),
                         ('Content-Length', str(len(output)))]
@@ -72,7 +76,7 @@ def run_failing_request():
 
 _expected_attributes = {
         'agent' : TRACE_ERROR_AGENT_KEYS,
-        'user' : ['test_key'],
+        'user' : USER_ATTRS,
         'intrinsic' : ['trip_id']
 }
 
@@ -95,7 +99,7 @@ def test_transaction_trace_default_attribute_settings():
 
 _expected_attributes = {
         'agent' : EVENT_AGENT_KEYS,
-        'user' : ['test_key'],
+        'user' : USER_ATTRS,
         'intrinsic' : EVENT_INTRINSICS
 }
 
@@ -118,7 +122,7 @@ _override_settings = {
 
 _expected_attributes = {
         'agent' : [],
-        'user' : ['test_key'],
+        'user' : USER_ATTRS,
         'intrinsic' : BROWSER_INTRINSIC_KEYS,
 }
 
@@ -139,7 +143,7 @@ _override_settings = {
 
 _expected_attributes = {
         'agent' : TRACE_ERROR_AGENT_KEYS,
-        'user' : ['test_key'],
+        'user' : USER_ATTRS,
         'intrinsic' : ['trip_id']
 }
 
@@ -171,7 +175,7 @@ _override_settings = {
 
 _expected_attributes = {
         'agent' : TRACE_ERROR_AGENT_KEYS,
-        'user' : ['test_key'],
+        'user' : USER_ATTRS,
         'intrinsic' : ['trip_id']
 }
 
@@ -205,7 +209,7 @@ _override_settings = {
 
 _expected_attributes = {
         'agent' : AGENT_KEYS_ALL,
-        'user' : ['test_key'],
+        'user' : USER_ATTRS,
         'intrinsic' : ['trip_id']
 }
 
@@ -230,7 +234,7 @@ _override_settings = {
 
 _expected_attributes = {
         'agent' : EVENT_AGENT_KEYS + REQ_PARAMS,
-        'user' : ['test_key'],
+        'user' : USER_ATTRS,
         'intrinsic' : EVENT_INTRINSICS
 }
 
@@ -252,7 +256,7 @@ _override_settings = {
 
 _expected_attributes = {
         'agent' : REQ_PARAMS,
-        'user' : ['test_key'],
+        'user' : USER_ATTRS,
         'intrinsic' : BROWSER_INTRINSIC_KEYS,
 }
 
@@ -275,7 +279,7 @@ _override_settings = {
 
 _expected_attributes = {
         'agent' : TRACE_ERROR_AGENT_KEYS + ['request.parameters.'+URL_PARAM],
-        'user' : ['test_key'],
+        'user' : USER_ATTRS,
         'intrinsic' : ['trip_id']
 }
 
@@ -308,7 +312,7 @@ _override_settings = {
 
 _expected_attributes = {
         'agent' : EVENT_AGENT_KEYS + ['request.parameters.'+URL_PARAM],
-        'user' : ['test_key'],
+        'user' : USER_ATTRS,
         'intrinsic' : EVENT_INTRINSICS
 }
 
@@ -331,12 +335,11 @@ _override_settings = {
 
 _expected_attributes = {
         'agent' : ['request.parameters.'+URL_PARAM],
-        'user' : ['test_key'],
-        'intrinsic' : BROWSER_INTRINSIC_KEYS,
+        'user' : USER_ATTRS,
 }
 
 _expected_absent_attributes = {
-        'agent': ['request.parameters.'+URL_PARAM2],
+        'agent': ABSENT_BROWSER_KEYS + ['request.parameters.'+URL_PARAM2],
         'user' : [],
 }
 
@@ -348,18 +351,18 @@ def test_browser_include_exclude_request_params():
 # ========================= exclude user attribute
 
 _override_settings = {
-        'error_collector.attributes.exclude': ['test_key'],
+        'error_collector.attributes.exclude': ['puppies'],
 }
 
 _expected_attributes = {
         'agent' : TRACE_ERROR_AGENT_KEYS,
-        'user' : [],
+        'user' : ['sunshine'],
         'intrinsic' : ['trip_id']
 }
 
 _expected_absent_attributes = {
         'agent' : REQ_PARAMS,
-        'user' : ['test_key'],
+        'user' : ['puppies'],
 }
 
 @validate_transaction_error_trace_attributes(_expected_attributes,
@@ -369,7 +372,7 @@ def test_error_trace_in_transaction_exclude_user_attribute():
     run_failing_request()
 
 _override_settings = {
-        'transaction_tracer.attributes.exclude': ['test_key'],
+        'transaction_tracer.attributes.exclude': ['puppies'],
 }
 
 @validate_transaction_trace_attributes(_expected_attributes,
@@ -379,18 +382,18 @@ def test_transaction_trace_exclude_user_attribute():
     response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
 _override_settings = {
-        'transaction_events.attributes.exclude': ['test_key'],
+        'transaction_events.attributes.exclude': ['puppies'],
 }
 
 _expected_attributes = {
         'agent' : EVENT_AGENT_KEYS,
-        'user' : [],
+        'user' : ['sunshine'],
         'intrinsic' : EVENT_INTRINSICS
 }
 
 _expected_absent_attributes = {
         'agent' : REQ_PARAMS,
-        'user' : ['test_key'],
+        'user' : ['puppies'],
 }
 
 @validate_transaction_event_attributes(_expected_attributes,
@@ -401,18 +404,18 @@ def test_transaction_event_exclude_user_attribute():
 
 _override_settings = {
         'browser_monitoring.attributes.enabled' : True,
-        'browser_monitoring.attributes.exclude': ['test_key'],
+        'browser_monitoring.attributes.exclude': ['puppies'],
 }
 
 _expected_attributes = {
         'agent': [],
-        'user' : [],
+        'user' : ['sunshine'],
         'intrinsic' : BROWSER_INTRINSIC_KEYS,
 }
 
 _expected_absent_attributes = {
         'agent' : ABSENT_BROWSER_KEYS + REQ_PARAMS,
-        'user' : ['test_key'],
+        'user' : ['puppies'],
 }
 
 @validate_browser_attributes(_expected_attributes, _expected_absent_attributes)
@@ -428,7 +431,7 @@ _override_settings = {
 
 _expected_attributes = {
         'agent' : AGENT_KEYS_ALL,
-        'user' : ['test_key'],
+        'user' : USER_ATTRS,
         'intrinsic' : ['trip_id']
 }
 
@@ -446,7 +449,7 @@ def test_transaction_trace_deprecated_capture_params_true():
 
 _expected_attributes = {
         'agent' : EVENT_AGENT_KEYS,
-        'user' : ['test_key'],
+        'user' : USER_ATTRS,
         'intrinsic' : EVENT_INTRINSICS
 }
 
@@ -468,7 +471,7 @@ _override_settings = {
 
 _expected_attributes = {
         'agent' : [],
-        'user' : ['test_key'],
+        'user' : USER_ATTRS,
         'intrinsic' : BROWSER_INTRINSIC_KEYS,
 }
 
@@ -490,7 +493,7 @@ _override_settings = {
 
 _expected_attributes = {
         'agent' : TRACE_ERROR_AGENT_KEYS,
-        'user' : ['test_key'],
+        'user' : USER_ATTRS,
         'intrinsic' : ['trip_id']
 }
 
@@ -516,7 +519,7 @@ def test_transaction_trace_deprecated_capture_params_false():
 
 _expected_attributes = {
         'agent' : EVENT_AGENT_KEYS,
-        'user' : ['test_key'],
+        'user' : USER_ATTRS,
         'intrinsic' : EVENT_INTRINSICS
 }
 
@@ -538,7 +541,7 @@ _override_settings = {
 
 _expected_attributes = {
         'agent' : [],
-        'user' : ['test_key'],
+        'user' : USER_ATTRS,
         'intrinsic' : BROWSER_INTRINSIC_KEYS,
 }
 
@@ -560,7 +563,7 @@ _override_settings = {
 
 _expected_attributes = {
         'agent' : TRACE_ERROR_AGENT_KEYS,
-        'user' : ['test_key'],
+        'user' : USER_ATTRS,
         'intrinsic' : ['trip_id']
 }
 
@@ -592,7 +595,7 @@ _override_settings = {
 
 _expected_attributes = {
         'agent' : EVENT_AGENT_KEYS,
-        'user' : ['test_key'],
+        'user' : USER_ATTRS,
         'intrinsic' : EVENT_INTRINSICS
 }
 
@@ -614,7 +617,7 @@ _override_settings = {
 
 _expected_attributes = {
         'agent' : [],
-        'user' : ['test_key'],
+        'user' : USER_ATTRS,
         'intrinsic' : BROWSER_INTRINSIC_KEYS,
 }
 
@@ -642,7 +645,7 @@ _expected_attributes = {
 
 _expected_absent_attributes = {
         'agent' : AGENT_KEYS_ALL,
-        'user' : ['test_key'],
+        'user' : USER_ATTRS,
 }
 
 @validate_transaction_error_trace_attributes(_expected_attributes,
@@ -673,7 +676,7 @@ _expected_attributes = {
 
 _expected_absent_attributes = {
         'agent' : AGENT_KEYS_ALL,
-        'user' : ['test_key'],
+        'user' : USER_ATTRS,
 }
 
 @validate_transaction_event_attributes(_expected_attributes,
@@ -692,7 +695,7 @@ _expected_attributes = {
 
 _expected_absent_attributes = {
         'agent' : ABSENT_BROWSER_KEYS + REQ_PARAMS,
-        'user' : ['test_key'],
+        'user' : USER_ATTRS,
 }
 
 @validate_browser_attributes(_expected_attributes, _expected_absent_attributes)

@@ -1086,30 +1086,36 @@ def validate_attributes_complete(attr_type, required_attrs=[],
         elif attr_type == 'user':
             attributes = transaction.user_attributes
 
-        # re-organize attributes into a dict by name
+        def _find_match(a, attributes):
+            # Match by name and value. Ignore destination.
+            return next((match for match in attributes if
+                    match.name == a.name and
+                    match.value == a.value), None)
 
-        attributes = dict(
-                [(a.name,{'value': a.value, 'dest': a.destinations})
-                for a in attributes]
-        )
+        # Check that there is a name/value match, and that the destinations
+        # for the matched attribute include the ones in required.
 
-        # Check that name and value are present and match, and at least the
-        # destinations provided.
+        for required in required_attrs:
+            match = _find_match(required, attributes)
+            assert match, ('required=%r, attributes=%r' % (required,
+                    attributes))
 
-        for required_attr in required_attrs:
-            name, value, dest = required_attr
-            assert name in attributes
-            assert value == attributes[name]['value']
-            assert dest & attributes[name]['dest'] == dest
+            result_dest = required.destinations & match.destinations
+            assert result_dest == required.destinations, ('required=%r, '
+                    'attributes=%r' % (required, attributes))
 
-        # check that the name & value are NOT going to ANY
-        # of the destinations provided as forgone
+        # Check that the name and value are NOT going to ANY of the
+        # destinations provided as forgone, either because there is no
+        # name/value match, or because there is a name/value match, but
+        # the destinations do not include the ones in forgone.
 
-        for forgone_attr in forgone_attrs:
-            name, value, dest = forgone_attr
-            if name in attributes:
-                if value == attributes[name]['value']:
-                    assert dest & attributes[name]['dest'] == 0
+        for forgone in forgone_attrs:
+            match = _find_match(forgone, attributes)
+
+            if match:
+                result_dest = forgone.destinations & match.destinations
+                assert result_dest == 0, ('forgone=%r, attributes=%r' %
+                        (forgone, attributes))
 
         return wrapped(*args, **kwargs)
 

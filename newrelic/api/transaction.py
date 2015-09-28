@@ -775,7 +775,7 @@ class Transaction(object):
         if self._thread_utilization_value:
             a_attrs['thread.concurrency'] = self._thread_utilization_value
         if self.queue_wait != 0 :
-            a_attrs['webfrontend.queuetime'] = '%.4f' % self.queue_wait
+            a_attrs['webfrontend.queue.seconds'] = '%.4f' % self.queue_wait
 
         agent_attributes = create_agent_attributes(a_attrs,
                 self.attribute_filter)

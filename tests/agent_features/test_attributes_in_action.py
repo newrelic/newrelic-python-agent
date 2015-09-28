@@ -424,6 +424,58 @@ _expected_absent_attributes = {
 def test_browser_exclude_user_attribute():
     response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
+# ========================= exclude agent attribute
+
+_override_settings = {
+    'attributes.exclude': ['request.*'],
+    'attributes.include': ['request.headers.*']
+}
+
+_expected_attributes = {
+        'agent' : ['wsgi.output.seconds', 'response.status',
+                'request.headers.contentType', 'request.headers.contentLength'],
+        'user' : USER_ATTRS,
+        'intrinsic' : ['trip_id']
+}
+
+_expected_absent_attributes = {
+        'agent' : ['request.method'] + REQ_PARAMS,
+        'user' : [],
+}
+
+@validate_transaction_error_trace_attributes(_expected_attributes,
+        _expected_absent_attributes)
+@override_application_settings(_override_settings)
+def test_error_trace_in_transaction_exclude_agent_attribute():
+    run_failing_request()
+
+@validate_transaction_trace_attributes(_expected_attributes,
+        _expected_absent_attributes)
+@override_application_settings(_override_settings)
+def test_transaction_trace_exclude_agent_attribute():
+    response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
+
+_expected_attributes = {
+        'agent' : ['response.status', 'request.headers.contentType',
+                'request.headers.contentLength'],
+        'user' : USER_ATTRS,
+        'intrinsic' : EVENT_INTRINSICS
+}
+
+_expected_absent_attributes = {
+        'agent' : ['request.method','wsgi.output.seconds'] + REQ_PARAMS,
+        'user' : [],
+}
+
+@validate_transaction_event_attributes(_expected_attributes,
+        _expected_absent_attributes)
+@override_application_settings(_override_settings)
+def test_transaction_event_exclude_agent_attribute():
+    response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
+
+# The only agent attributes browser has are request parameters, which are tested
+# in the request parameters test cases
+
 # ========================= capture_params True
 
 _override_settings = {

@@ -671,6 +671,65 @@ class Transaction(object):
         return i_attrs
 
     @property
+    def request_parameters_attributes(self):
+        # Request parameters are a special case of agent attributes, so
+        # they must be added on to agent_attributes separately
+
+        # There are 3 cases we need to handle:
+        #
+        # 1. LEGACY: capture_params = False
+        #
+        #    Don't add request parameters at all, which means they will not
+        #    go through the AttributeFilter.
+        #
+        # 2. LEGACY: capture_params = True
+        #
+        #    Filter request parameters through the AttributeFilter, but
+        #    set the destinations to `TRANSACTION_TRACER | ERROR_COLLECTOR`.
+        #
+        #    If the user does not add any additional attribute filtering
+        #    rules, this will result in the same outcome as the old
+        #    capture_params = True behavior. They will be added to transaction
+        #    traces and error traces.
+        #
+        # 3. CURRENT: capture_params is None
+        #
+        #    Filter request parameters through the AttributeFilter, but set
+        #    the destinations to NONE.
+        #
+        #    That means by default, request parameters won't get included in
+        #    any destination. But, it will allow user added include/exclude
+        #    attribute filtering rules to be applied to the request parameters.
+
+        attributes_request = []
+
+        if (self.capture_params is None) or self.capture_params:
+
+            if self._request_params:
+
+                r_attrs = {}
+
+                for k, v in self._request_params.items():
+                    new_key = 'request.parameters.%s' % k
+                    new_val = ",".join(v)
+
+                    final_key, final_val = process_user_attribute(new_key,
+                            new_val)
+
+                    if final_key:
+                        r_attrs[final_key] = final_val
+
+                if self.capture_params is None:
+                    attributes_request = create_attributes(r_attrs,
+                            DST_NONE, self.attribute_filter)
+                elif self.capture_params:
+                    attributes_request = create_attributes(r_attrs,
+                            DST_ERROR_COLLECTOR | DST_TRANSACTION_TRACER,
+                            self.attribute_filter)
+
+        return attributes_request
+
+    @property
     def agent_attributes(self):
         a_attrs = {}
         req_env = self._request_environment
@@ -721,61 +780,9 @@ class Transaction(object):
         agent_attributes = create_agent_attributes(a_attrs,
                 self.attribute_filter)
 
-        # Request parameters are a special case of agent attributes, so
-        # they must be added on to agent_attributes separately
+        # Include request parameters in agent attributes
 
-        # There are 3 cases we need to handle:
-        #
-        # 1. LEGACY: capture_params = False
-        #
-        #    Don't add request parameters at all, which means they will not
-        #    go through the AttributeFilter.
-        #
-        # 2. LEGACY: capture_params = True
-        #
-        #    Filter request parameters through the AttributeFilter, but
-        #    set the destinations to `TRANSACTION_TRACER | ERROR_COLLECTOR`.
-        #
-        #    If the user does not add any additional attribute filtering
-        #    rules, this will result in the same outcome as the old
-        #    capture_params = True behavior. They will be added to transaction
-        #    traces and error traces.
-        #
-        # 3. CURRENT: capture_params is None
-        #
-        #    Filter request parameters through the AttributeFilter, but set
-        #    the destinations to NONE.
-        #
-        #    That means by default, request parameters won't get included in
-        #    any destination. But, it will allow user added include/exclude
-        #    attribute filtering rules to be applied to the request parameters.
-
-        if (self.capture_params is None) or self.capture_params:
-
-            if self._request_params:
-
-                r_attrs = {}
-                attributes_request = {}
-
-                for k, v in self._request_params.items():
-                    new_key = 'request.parameters.%s' % k
-                    new_val = ",".join(v)
-
-                    final_key, final_val = process_user_attribute(new_key,
-                            new_val)
-
-                    if final_key:
-                        r_attrs[final_key] = final_val
-
-                if self.capture_params is None:
-                    attributes_request = create_attributes(r_attrs,
-                            DST_NONE, self.attribute_filter)
-                elif self.capture_params:
-                    attributes_request = create_attributes(r_attrs,
-                            DST_ERROR_COLLECTOR | DST_TRANSACTION_TRACER,
-                            self.attribute_filter)
-
-                agent_attributes.extend(attributes_request)
+        agent_attributes.extend(self.request_parameters_attributes)
 
         return agent_attributes
 

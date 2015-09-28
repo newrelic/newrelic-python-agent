@@ -993,8 +993,7 @@ def validate_request_params_omitted():
         transaction = _bind_params(*args, **kwargs)
 
         for attr in transaction.agent_attributes:
-            if attr.name.startswith('request.parameters'):
-                assert attr.destination == DST_NONE
+            assert not attr.name.startswith('request.parameters')
 
         return wrapped(*args, **kwargs)
 

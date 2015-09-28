@@ -1046,7 +1046,10 @@ def validate_attributes_complete(attr_type, required_attrs=[],
     # Attribute must match (name, value, and destinations), not just
     # name. It's a more thorough test, but it's more of a pain to set
     # up, since you have to pass lists of Attributes to required_attrs
-    # and forgone_attrs.
+    # and forgone_attrs. For required destinations, the attribute will
+    # match if at least the required destinations are present. For
+    # forgone attributes the test will fail if any of the destinations
+    # provided in the forgone attribute are found.
     #
     # Args:
     #
@@ -1083,13 +1086,36 @@ def validate_attributes_complete(attr_type, required_attrs=[],
         elif attr_type == 'user':
             attributes = transaction.user_attributes
 
-        for required_attr in required_attrs:
-            assert required_attr in attributes, ('name=%r, attributes=%r)' %
-                    (required_attr, attributes))
+        def _find_match(a, attributes):
+            # Match by name and value. Ignore destination.
+            return next((match for match in attributes if
+                    match.name == a.name and
+                    match.value == a.value), None)
 
-        for forgone_attr in forgone_attrs:
-            assert forgone_attr not in attributes, ('name=%r, attributes=%r)' %
-                    (forgone_attr, attributes))
+        # Check that there is a name/value match, and that the destinations
+        # for the matched attribute include the ones in required.
+
+        for required in required_attrs:
+            match = _find_match(required, attributes)
+            assert match, ('required=%r, attributes=%r' % (required,
+                    attributes))
+
+            result_dest = required.destinations & match.destinations
+            assert result_dest == required.destinations, ('required=%r, '
+                    'attributes=%r' % (required, attributes))
+
+        # Check that the name and value are NOT going to ANY of the
+        # destinations provided as forgone, either because there is no
+        # name/value match, or because there is a name/value match, but
+        # the destinations do not include the ones in forgone.
+
+        for forgone in forgone_attrs:
+            match = _find_match(forgone, attributes)
+
+            if match:
+                result_dest = forgone.destinations & match.destinations
+                assert result_dest == 0, ('forgone=%r, attributes=%r' %
+                        (forgone, attributes))
 
         return wrapped(*args, **kwargs)
 

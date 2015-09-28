@@ -8,10 +8,10 @@ from newrelic.agent import (set_transaction_name, add_custom_parameter,
 
 from testing_support.fixtures import override_application_settings
 
-FIXTURE = os.path.join(os.curdir, 'fixtures', 'rum_client_config.json')
 
 def _load_tests():
-    with open(FIXTURE, 'r') as fh:
+    fixture = os.path.join(os.curdir, 'fixtures', 'rum_client_config.json')
+    with open(fixture, 'r') as fh:
         js = fh.read()
     return json.loads(js)
 
@@ -70,7 +70,8 @@ def test_browser_montioring(testname, apptime_milliseconds, queuetime_millisecon
                 extra_environ={'txn_name': str(transaction_name),
                 'user_attrs': json.dumps(user_attributes)})
 
-        # We actually put the "footer" in the header
+        # We actually put the "footer" in the header, the first script is the
+        # agent "header", the second one is where the data lives, hence the [1].
 
         footer = response.html.html.head.find_all('script')[1]
         footer_data = json.loads(footer.text.split('NREUM.info=')[1])

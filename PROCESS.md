@@ -139,9 +139,9 @@ carried out to do the actual release.
 Ideally, this should be done a day in advance. The key pieces of information that
 you'll need to fill out the release form are:
 
-    * Link to the release notes (draft is OK.)
-    * Risk level assessment (Low, Medium or High)
-    * Brief description of feature(s) in release
+  1. Link to the release notes (draft version is OK.)
+  2. Risk level assessment (Low, Medium or High)
+  3. Brief description of feature(s) in release
 
 1. Check out the ``develop`` branch of the Python agent repository and
 update the version number in ``newrelic/__init__.py`` for the release.
@@ -158,7 +158,9 @@ run and ensure package builds.
 4. Perform any other final adhoc local tests deemed necessary for the release.
 
 5. Commit change made to ``newrelic/__init__.py`` into the ``develop``
-branch.
+branch. Format the commit message like this:
+
+        Increment version to A.B.C for release.
 
 6. Follow ``git-flow`` procedure to create a release branch with name
 ``vA.B.C``.
@@ -187,7 +189,9 @@ when trying to compare branches.
 odd/even numbering scheme, ``B`` should always be odd after this change.
 
 11. Commit change made to ``newrelic/__init__.py`` into the ``develop``
-branch.
+branch. Format the commit message like this:
+
+        Increment version to A.B.C for development.
 
 12. Push both the ``develop`` and ``master`` branches back to the GIT repo.
 

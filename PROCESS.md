@@ -123,6 +123,10 @@ Details for obtaining access to our account on PyPi can be found at:
 
 * [Python Agent Managing the Package Index](https://newrelic.atlassian.net/wiki/display/eng/Python+Agent+Managing+The+Package+Index)
 
+Details for obtaining access to our own download site can be found at:
+
+* [Python Agent Managing The Download Site](https://newrelic.atlassian.net/wiki/display/eng/Python+Agent+Managing+The+Download+Site)
+
 In cases where it is necessary to provide a test version to a customer prior
 to an official release, these would generally be made available via:
 
@@ -232,9 +236,9 @@ directory for the download with an ``.md5`` extension which contains the MD5
 hash of the package.
 
     For more details on working with the New Relic download site and
-transferring files across see: [Managing the Package Index][pkg_index].
+transferring files across see: [Managing the Download Site][download].
 
-[pkg_index]: https://newrelic.atlassian.net/wiki/display/eng/Python+Agent+Managing+The+Package+Index
+[download]: https://newrelic.atlassian.net/wiki/display/eng/Python+Agent+Managing+The+Download+Site
 
 17. Ensure that release notes are updated for the new version. These are
 hosted at: https://docs.newrelic.com/docs/release-notes/agent-release-notes/python-release-notes

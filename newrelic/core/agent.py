@@ -281,6 +281,13 @@ class Agent(object):
         if application:
             return application.configuration
 
+    def application_attribute_filter(self, app_name):
+        """Returns the attribute filter for the application."""
+
+        application = self._applications.get(app_name)
+        if application:
+            return application.attribute_filter
+
     def activate_application(self, app_name, linked_applications=[],
                              timeout=None):
         """Initiates activation for the named application if this has

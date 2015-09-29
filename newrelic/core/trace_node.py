@@ -1,8 +1,7 @@
 from collections import namedtuple
 
 RootNode = namedtuple('RootNode',
-        ['start_time', 'request_params', 'custom_params', 'root',
-        'parameter_groups'])
+        ['start_time', 'empty0', 'empty1', 'root', 'attributes'])
 
 def root_start_time(root):
     return root.start_time / 1000.0

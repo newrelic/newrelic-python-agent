@@ -26,6 +26,11 @@ from newrelic.core.stats_engine import CustomMetrics
 from newrelic.core.transaction_cache import transaction_cache
 from newrelic.core.thread_utilization import utilization_tracker
 
+from ..core.attribute import (create_attributes, create_agent_attributes,
+        create_user_attributes, truncate, process_user_attribute,
+        MAX_NUM_USER_ATTRIBUTES)
+from ..core.attribute_filter import (DST_NONE, DST_ERROR_COLLECTOR,
+        DST_TRANSACTION_TRACER)
 from ..core.stack_trace import exception_stack
 from ..common.encoding_utils import generate_path_hash
 
@@ -131,15 +136,13 @@ class Transaction(object):
         self.suppress_apdex = False
         self.suppress_transaction_trace = False
 
-        self.capture_params = False
-        self.ignored_params = []
+        self.capture_params = None
 
         self.response_code = 0
 
         self.apdex = 0
 
         self.rum_token = None
-        self.rum_trace = False
 
         # 16-digit random hex. Padded with zeros in the front.
         self.guid = '%016x' % random.getrandbits(64)
@@ -379,51 +382,32 @@ class Transaction(object):
         if self.response_code != 0:
             self._response_properties['STATUS'] = str(self.response_code)
 
-        metrics = self._transaction_metrics
-
-        if self._bytes_read != 0:
-            metrics['WSGI/Input/Bytes'] = self._bytes_read
-        if self._bytes_sent != 0:
-            metrics['WSGI/Output/Bytes'] = self._bytes_sent
-        if self._calls_read != 0:
-            metrics['WSGI/Input/Calls/read'] = self._calls_read
-        if self._calls_readline != 0:
-            metrics['WSGI/Input/Calls/readline'] = self._calls_readline
-        if self._calls_readlines != 0:
-            metrics['WSGI/Input/Calls/readlines'] = self._calls_readlines
-        if self._calls_write != 0:
-            metrics['WSGI/Output/Calls/write'] = self._calls_write
-        if self._calls_yield != 0:
-            metrics['WSGI/Output/Calls/yield'] = self._calls_yield
-
-        if self._thread_utilization_value:
-            metrics['Thread/Concurrency'] = \
-                    '%.4f' % self._thread_utilization_value
-
         read_duration = 0
         if self._read_start:
             read_duration = self._read_end - self._read_start
-            metrics['WSGI/Input/Time'] = '%.4f' % read_duration
-        self.record_custom_metric('Python/WSGI/Input/Time', read_duration)
 
         sent_duration = 0
         if self._sent_start:
             if not self._sent_end:
                 self._sent_end = time.time()
             sent_duration = self._sent_end - self._sent_start
-            metrics['WSGI/Output/Time'] = '%.4f' % sent_duration
-        self.record_custom_metric('Python/WSGI/Output/Time',
-                           sent_duration)
 
         if self.queue_start:
             queue_wait = self.start_time - self.queue_start
             if queue_wait < 0:
                 queue_wait = 0
-            metrics['WebFrontend/QueueTime'] = '%.4f' % queue_wait
+
+        # _sent_end should already be set by this point, but in case it
+        # isn't, set it now before we record the custom metrics.
+
+        if self._sent_start:
+            if not self._sent_end:
+                self._sent_end = time.time()
 
         self.record_custom_metric('Python/WSGI/Input/Bytes',
                            self._bytes_read)
-
+        self.record_custom_metric('Python/WSGI/Input/Time',
+                           self.read_duration)
         self.record_custom_metric('Python/WSGI/Input/Calls/read',
                            self._calls_read)
         self.record_custom_metric('Python/WSGI/Input/Calls/readline',
@@ -433,6 +417,8 @@ class Transaction(object):
 
         self.record_custom_metric('Python/WSGI/Output/Bytes',
                            self._bytes_sent)
+        self.record_custom_metric('Python/WSGI/Output/Time',
+                           self.sent_duration)
         self.record_custom_metric('Python/WSGI/Output/Calls/yield',
                            self._calls_yield)
         self.record_custom_metric('Python/WSGI/Output/Calls/write',
@@ -444,18 +430,9 @@ class Transaction(object):
                     (framework, version), 1)
 
         request_params = {}
-        parameter_groups = {}
 
         if self.capture_params:
             request_params = self._request_params
-
-        if self._request_environment:
-            parameter_groups['Request environment'] = self._request_environment
-        if self._response_properties:
-            parameter_groups['Response properties'] = self._response_properties
-
-        if self._transaction_metrics:
-            parameter_groups['Transaction metrics'] = self._transaction_metrics
 
         node = newrelic.core.transaction_node.TransactionNode(
                 settings=self._settings,
@@ -465,8 +442,6 @@ class Transaction(object):
                 name=self._name,
                 request_uri=self._request_uri,
                 response_code=self.response_code,
-                request_params=request_params,
-                custom_params=self._custom_params,
                 queue_start=self.queue_start,
                 start_time=self.start_time,
                 end_time=self.end_time,
@@ -478,9 +453,7 @@ class Transaction(object):
                 apdex_t=self.apdex,
                 suppress_apdex=self.suppress_apdex,
                 custom_metrics=self._custom_metrics,
-                parameter_groups=parameter_groups,
                 guid=self.guid,
-                rum_trace = self.rum_trace,
                 cpu_time=self._cpu_user_time_value,
                 suppress_transaction_trace=self.suppress_transaction_trace,
                 client_cross_process_id=self.client_cross_process_id,
@@ -495,6 +468,9 @@ class Transaction(object):
                 path_hash=self.path_hash,
                 referring_path_hash=self._referring_path_hash,
                 alternate_path_hashes=self.alternate_path_hashes,
+                trace_intrinsics=self.trace_intrinsics,
+                agent_attributes=self.agent_attributes,
+                user_attributes=self.user_attributes,
                 )
 
         # Clear settings as we are all done and don't need it
@@ -632,6 +608,186 @@ class Transaction(object):
             self._alternate_path_hashes[identifier] = path_hash
 
         return path_hash
+
+    @property
+    def attribute_filter(self):
+        return self._settings.attribute_filter
+
+    @property
+    def read_duration(self):
+        read_duration = 0
+        if self._read_start and self._read_end:
+            read_duration = self._read_end - self._read_start
+        return read_duration
+
+    @property
+    def sent_duration(self):
+        sent_duration = 0
+        if self._sent_start and self._sent_end:
+            sent_duration = self._sent_end - self._sent_start
+        return sent_duration
+
+    @property
+    def queue_wait(self):
+        queue_wait = 0
+        if self.queue_start:
+            queue_wait = self.start_time - self.queue_start
+            if queue_wait < 0:
+                queue_wait = 0
+        return queue_wait
+
+    @property
+    def trace_intrinsics(self):
+        """Intrinsic attributes for transaction traces and error traces"""
+        i_attrs = {}
+
+        if self.referring_transaction_guid:
+            i_attrs['referring_transaction_guid'] = self.referring_transaction_guid
+        if self.client_cross_process_id:
+            i_attrs['client_cross_process_id'] = self.client_cross_process_id
+        if self.trip_id:
+            i_attrs['trip_id'] = self.trip_id
+        if self.path_hash:
+            i_attrs['path_hash'] = self.path_hash
+        if self.synthetics_resource_id:
+            i_attrs['synthetics_resource_id'] = self.synthetics_resource_id
+        if self.synthetics_job_id:
+            i_attrs['synthetics_job_id'] = self.synthetics_job_id
+        if self.synthetics_monitor_id:
+            i_attrs['synthetics_monitor_id'] = self.synthetics_monitor_id
+
+        # Add in special CPU time value for UI to display CPU burn.
+
+        # XXX Disable cpu time value for CPU burn as was
+        # previously reporting incorrect value and we need to
+        # fix it, at least on Linux to report just the CPU time
+        # for the executing thread.
+
+        # if self._cpu_user_time_value:
+        #     i_attrs['cpu_time'] = self._cpu_user_time_value
+
+        return i_attrs
+
+    @property
+    def request_parameters_attributes(self):
+        # Request parameters are a special case of agent attributes, so
+        # they must be added on to agent_attributes separately
+
+        # There are 3 cases we need to handle:
+        #
+        # 1. LEGACY: capture_params = False
+        #
+        #    Don't add request parameters at all, which means they will not
+        #    go through the AttributeFilter.
+        #
+        # 2. LEGACY: capture_params = True
+        #
+        #    Filter request parameters through the AttributeFilter, but
+        #    set the destinations to `TRANSACTION_TRACER | ERROR_COLLECTOR`.
+        #
+        #    If the user does not add any additional attribute filtering
+        #    rules, this will result in the same outcome as the old
+        #    capture_params = True behavior. They will be added to transaction
+        #    traces and error traces.
+        #
+        # 3. CURRENT: capture_params is None
+        #
+        #    Filter request parameters through the AttributeFilter, but set
+        #    the destinations to NONE.
+        #
+        #    That means by default, request parameters won't get included in
+        #    any destination. But, it will allow user added include/exclude
+        #    attribute filtering rules to be applied to the request parameters.
+
+        attributes_request = []
+
+        if (self.capture_params is None) or self.capture_params:
+
+            if self._request_params:
+
+                r_attrs = {}
+
+                for k, v in self._request_params.items():
+                    new_key = 'request.parameters.%s' % k
+                    new_val = ",".join(v)
+
+                    final_key, final_val = process_user_attribute(new_key,
+                            new_val)
+
+                    if final_key:
+                        r_attrs[final_key] = final_val
+
+                if self.capture_params is None:
+                    attributes_request = create_attributes(r_attrs,
+                            DST_NONE, self.attribute_filter)
+                elif self.capture_params:
+                    attributes_request = create_attributes(r_attrs,
+                            DST_ERROR_COLLECTOR | DST_TRANSACTION_TRACER,
+                            self.attribute_filter)
+
+        return attributes_request
+
+    @property
+    def agent_attributes(self):
+        a_attrs = {}
+        req_env = self._request_environment
+
+        if req_env.get('REQUEST_METHOD', None):
+            a_attrs['request.method'] = req_env['REQUEST_METHOD']
+        if req_env.get('HTTP_USER_AGENT', None):
+            a_attrs['request.headers.userAgent'] = req_env['HTTP_USER_AGENT']
+        if req_env.get('HTTP_REFERER', None):
+            a_attrs['request.headers.referer'] = req_env['HTTP_REFERER']
+        if req_env.get('CONTENT_TYPE', None):
+            a_attrs['request.headers.contentType'] = req_env['CONTENT_TYPE']
+        if req_env.get('CONTENT_LENGTH', None):
+            a_attrs['request.headers.contentLength'] = req_env['CONTENT_LENGTH']
+
+        resp_props = self._response_properties
+
+        if resp_props.get('STATUS', None):
+            a_attrs['response.status'] = resp_props['STATUS']
+        if resp_props.get('CONTENT_LENGTH', None):
+            a_attrs['response.contentLength'] = resp_props['CONTENT_LENGTH']
+
+        if self.read_duration != 0:
+            a_attrs['wsgi.input.seconds'] = '%.4f' % self.read_duration
+        if self._bytes_read != 0:
+            a_attrs['wsgi.input.bytes'] = self._bytes_read
+        if self._calls_read != 0:
+            a_attrs['wsgi.input.calls.read'] = self._calls_read
+        if self._calls_readline != 0:
+            a_attrs['wsgi.input.calls.readline'] = self._calls_readline
+        if self._calls_readlines != 0:
+            a_attrs['wsgi.input.calls.readlines'] = self._calls_readlines
+
+        if self.sent_duration != 0:
+            a_attrs['wsgi.output.seconds'] = '%.4f' % self.sent_duration
+        if self._bytes_sent != 0:
+            a_attrs['wsgi.output.bytes'] = self._bytes_sent
+        if self._calls_write != 0:
+            a_attrs['wsgi.output.calls.write'] = self._calls_write
+        if self._calls_yield != 0:
+            a_attrs['wsgi.output.calls.yield'] = self._calls_yield
+
+        if self._thread_utilization_value:
+            a_attrs['thread.concurrency'] = self._thread_utilization_value
+        if self.queue_wait != 0 :
+            a_attrs['webfrontend.queue.seconds'] = '%.4f' % self.queue_wait
+
+        agent_attributes = create_agent_attributes(a_attrs,
+                self.attribute_filter)
+
+        # Include request parameters in agent attributes
+
+        agent_attributes.extend(self.request_parameters_attributes)
+
+        return agent_attributes
+
+    @property
+    def user_attributes(self):
+        return create_user_attributes(self._custom_params,
+                self.attribute_filter)
 
     def add_profile_sample(self, stack_trace):
         if self._state != self.STATE_RUNNING:
@@ -840,17 +996,17 @@ class Transaction(object):
 
         # Only add params if High Security Mode is off.
 
+        custom_params = {}
+
         if settings.high_security:
-            custom_params = {}
-
-        else:
             if params:
-                custom_params = dict(self._custom_params)
-                custom_params.update(params)
-            else:
-                custom_params = self._custom_params
-
-        exc_type = exc.__name__
+                _logger.debug('Cannot add custom parameters in '
+                        'High Security Mode.')
+        else:
+            for k, v in params.items():
+                name, value = process_user_attribute(k, v)
+                if name:
+                    custom_params[name] = value
 
         # Check to see if we need to strip the message before recording it.
 
@@ -989,14 +1145,29 @@ class Transaction(object):
 
     def add_custom_parameter(self, name, value):
         if not self._settings:
-            return
+            return False
 
-        if not self._settings.high_security:
-            self._custom_params[name] = value
+        if self._settings.high_security:
+            _logger.debug('Cannot add custom parameter in High Security Mode.')
+            return False
+
+        if len(self._custom_params) >= MAX_NUM_USER_ATTRIBUTES:
+            _logger.debug('Maximum number of custom attributes already '
+                    'added. Dropping attribute: %r=%r', name, value)
+            return False
+
+        key, val = process_user_attribute(name, value)
+
+        if key is None:
+            return False
+        else:
+            self._custom_params[key] = val
+            return True
 
     def add_custom_parameters(self, items):
+        # items is a list of (name, value) tuples.
         for name, value in items:
-            self._custom_params[name] = value
+            self.add_custom_parameter(name, value)
 
     def add_user_attribute(self, name, value):
         #warnings.warn('Internal API change. Use add_custom_parameter() '
@@ -1110,7 +1281,9 @@ def capture_request_params(flag=True):
 def add_custom_parameter(key, value):
     transaction = current_transaction()
     if transaction:
-        transaction.add_custom_parameter(key, value)
+        return transaction.add_custom_parameter(key, value)
+    else:
+        return False
 
 def add_user_attribute(key, value):
     #warnings.warn('API change. Use add_custom_parameter() instead of '

@@ -1,19 +1,31 @@
 import webtest
 import json
 
+try:
+    from urllib2 import urlopen  # Py2.X
+except ImportError:
+    from urllib.request import urlopen   # Py3.X
+
+import sqlite3 as db
+
 from newrelic.packages import six
 
-from testing_support.fixtures import override_application_settings
+from testing_support.fixtures import (override_application_settings,
+        validate_analytics_sample_data)
 
 from newrelic.agent import (add_user_attribute, add_custom_parameter,
-    get_browser_timing_header, get_browser_timing_footer,
-    application_settings, wsgi_application, transient_function_wrapper)
+        get_browser_timing_header, get_browser_timing_footer,
+        application_settings, wsgi_application, transient_function_wrapper)
 
 from newrelic.common.encoding_utils import deobfuscate
+
+DATABASE_NAME = ':memory:'
 
 @wsgi_application()
 def target_wsgi_application(environ, start_response):
     status = '200 OK'
+
+    path = environ.get('PATH_INFO')
 
     if environ.get('record_attributes', 'TRUE') == 'TRUE':
         # The add_user_attribute() call is now just an alias for
@@ -40,6 +52,16 @@ def target_wsgi_application(environ, start_response):
         add_custom_parameter('tuple', ())
         add_custom_parameter('dict', {})
 
+    if path == '/db' or path == '/dbext':
+        connection = db.connect(DATABASE_NAME)
+        connection.execute("""create table test_db (a, b, c)""")
+
+    if path == '/ext' or path == '/dbext':
+        r = urlopen('http://www.google.com')
+        r.read(10)
+        r = urlopen('http://www.python.org')
+        r.read(10)
+
     text = '<html><head>%s</head><body><p>RESPONSE</p>%s</body></html>'
 
     output = (text % (get_browser_timing_header(),
@@ -53,68 +75,10 @@ def target_wsgi_application(environ, start_response):
 
 target_application = webtest.TestApp(target_wsgi_application)
 
-def validate_analytics_sample_data(name, capture_attributes=True):
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'SampledDataSet.add')
-    def _validate_analytics_sample_data(wrapped, instance, args, kwargs):
-        def _bind_params(sample, *args, **kwargs):
-            return sample
-
-        sample = _bind_params(*args, **kwargs)
-
-        assert isinstance(sample, list)
-        assert len(sample) == 2
-
-        record, params = sample
-
-        assert record['type'] == 'Transaction'
-        assert record['name'] == name
-        assert record['timestamp'] >= 0.0
-        assert record['duration'] >= 0.0
-
-        assert 'queueDuration' not in record
-        assert 'externalDuration' not in record
-        assert 'databaseDuration' not in record
-        assert 'memcacheDuration' not in record
-
-        if capture_attributes:
-            assert params['user'] == u'user-name'
-            assert params['account'] == u'account-name'
-            assert params['product'] == u'product-name'
-
-            if six.PY2:
-                assert params['bytes'] == u'bytes-value'
-            else:
-                assert 'bytes' not in params
-
-            assert params['string'] == u'string-value'
-            assert params['unicode'] == u'unicode-value'
-
-            assert params['integer'] == 1
-            assert params['float'] == 1.0
-
-            if six.PY2:
-                assert params['invalid-utf8'] == b'\xe2'
-                assert params['multibyte-utf8'] == b'\xe2\x88\x9a'
-            else:
-                assert 'invalid-utf8' not in params
-                assert 'multibyte-utf8' not in params
-
-            assert params['multibyte-unicode'] == b'\xe2\x88\x9a'.decode('utf-8')
-
-            assert 'list' not in params
-            assert 'tuple' not in params
-            assert 'dict' not in params
-
-        else:
-            assert params == {}
-
-        return wrapped(*args, **kwargs)
-
-    return _validate_analytics_sample_data
+#====================== Test cases ====================================
 
 _test_capture_attributes_enabled_settings = {
-    'browser_monitoring.capture_attributes': True }
+    'browser_monitoring.attributes.enabled': True }
 
 @validate_analytics_sample_data(name='WebTransaction/Uri/')
 @override_application_settings(_test_capture_attributes_enabled_settings)
@@ -122,7 +86,7 @@ def test_capture_attributes_enabled():
     settings = application_settings()
 
     assert settings.browser_monitoring.enabled
-    assert settings.browser_monitoring.capture_attributes
+    assert settings.browser_monitoring.attributes.enabled
 
     assert settings.js_agent_loader
 
@@ -132,7 +96,7 @@ def test_capture_attributes_enabled():
     content = response.html.html.body.p.text
     footer = response.html.html.body.script.text
 
-    # Validate actual body content as sansity check.
+    # Validate actual body content as sanity check.
 
     assert content == 'RESPONSE'
 
@@ -149,35 +113,34 @@ def test_capture_attributes_enabled():
 
     obfuscation_key = settings.license_key[:13]
 
-    attributes = json.loads(deobfuscate(data['userAttributes'], 
+    attributes = json.loads(deobfuscate(data['atts'],
             obfuscation_key))
+    user_attrs = attributes['u']
 
-    assert attributes['user'] == u'user-name'
-    assert attributes['account'] == u'account-name'
-    assert attributes['product'] == u'product-name'
+    assert user_attrs['user'] == u'user-name'
+    assert user_attrs['account'] == u'account-name'
+    assert user_attrs['product'] == u'product-name'
 
-    if six.PY2:
-        assert attributes['bytes'] == u'bytes-value'
-    else:
-        assert 'bytes' not in attributes
+    # When you round-trip through json encoding and json decoding, you
+    # always end up with unicode (unicode in Python 2, str in Python 3.)
+    #
+    # Previously, we would drop attribute values of type 'bytes' in Python 3.
+    # Now, we accept them and `json_encode` uses an encoding of 'latin-1',
+    # just like it does for Python 2.
 
-    assert attributes['string'] == u'string-value'
-    assert attributes['unicode'] == u'unicode-value'
+    assert user_attrs['bytes'] == u'bytes-value'
+    assert user_attrs['string'] == u'string-value'
+    assert user_attrs['unicode'] == u'unicode-value'
 
-    assert attributes['integer'] == 1
-    assert attributes['float'] == 1.0
+    assert user_attrs['invalid-utf8'] == b'\xe2'.decode('latin-1')
+    assert user_attrs['multibyte-utf8'] == b'\xe2\x88\x9a'.decode('latin-1')
+    assert user_attrs['multibyte-unicode'] == b'\xe2\x88\x9a'.decode('utf-8')
 
-    if six.PY2:
-        assert attributes['invalid-utf8'] == b'\xe2'.decode('latin-1')
-        assert attributes['multibyte-utf8'] == b'\xe2\x88\x9a'.decode('latin-1')
-    else:
-        assert 'invalid-utf8' not in attributes
-        assert 'multibyte-utf8' not in attributes
-
-    assert attributes['multibyte-unicode'] == b'\xe2\x88\x9a'.decode('utf-8')
+    assert user_attrs['integer'] == 1
+    assert user_attrs['float'] == 1.0
 
 _test_no_attributes_recorded_settings = {
-    'browser_monitoring.capture_attributes': True }
+    'browser_monitoring.attributes.enabled': True }
 
 @validate_analytics_sample_data(name='WebTransaction/Uri/',
         capture_attributes=False)
@@ -186,7 +149,7 @@ def test_no_attributes_recorded():
     settings = application_settings()
 
     assert settings.browser_monitoring.enabled
-    assert settings.browser_monitoring.capture_attributes
+    assert settings.browser_monitoring.attributes.enabled
 
     assert settings.js_agent_loader
 
@@ -197,7 +160,7 @@ def test_no_attributes_recorded():
     content = response.html.html.body.p.text
     footer = response.html.html.body.script.text
 
-    # Validate actual body content as sansity check.
+    # Validate actual body content as sanity check.
 
     assert content == 'RESPONSE'
 
@@ -212,14 +175,14 @@ def test_no_attributes_recorded():
 
     data = json.loads(footer.split('NREUM.info=')[1])
 
-    # As we are not recording any user attributes, we should not
+    # As we are not recording any user or agent attributes, we should not
     # actually have an entry at all in the footer.
 
-    assert 'userAttributes' not in data 
+    assert 'atts' not in data
 
 _test_analytic_events_capture_attributes_disabled_settings = {
-    'analytics_events.capture_attributes': False,
-    'browser_monitoring.capture_attributes': True }
+    'transaction_events.attributes.enabled': False,
+    'browser_monitoring.attributes.enabled': True }
 
 @validate_analytics_sample_data(name='WebTransaction/Uri/',
         capture_attributes=False)
@@ -229,12 +192,11 @@ def test_analytic_events_capture_attributes_disabled():
     settings = application_settings()
 
     assert settings.collect_analytics_events
-    assert settings.analytics_events.enabled
-    assert settings.analytics_events.transactions.enabled
-    assert not settings.analytics_events.capture_attributes
+    assert settings.transaction_events.enabled
+    assert not settings.transaction_events.attributes.enabled
 
     assert settings.browser_monitoring.enabled
-    assert settings.browser_monitoring.capture_attributes
+    assert settings.browser_monitoring.attributes.enabled
 
     assert settings.js_agent_loader
 
@@ -244,7 +206,7 @@ def test_analytic_events_capture_attributes_disabled():
     content = response.html.html.body.p.text
     footer = response.html.html.body.script.text
 
-    # Validate actual body content as sansity check.
+    # Validate actual body content as sanity check.
 
     assert content == 'RESPONSE'
 
@@ -254,19 +216,19 @@ def test_analytic_events_capture_attributes_disabled():
 
     assert header.find('NREUM') != -1
 
-    # Now validate that userAttributes is not present, since should
-    # be disabled.
+    # Now validate that attributes are present, since browser monitoring should
+    # be enabled.
 
     data = json.loads(footer.split('NREUM.info=')[1])
 
-    assert 'userAttributes' in data
+    assert 'atts' in data
 
 @validate_analytics_sample_data(name='WebTransaction/Uri/')
 def test_capture_attributes_default():
     settings = application_settings()
 
     assert settings.browser_monitoring.enabled
-    assert not settings.browser_monitoring.capture_attributes
+    assert not settings.browser_monitoring.attributes.enabled
 
     assert settings.js_agent_loader
 
@@ -276,7 +238,7 @@ def test_capture_attributes_default():
     content = response.html.html.body.p.text
     footer = response.html.html.body.script.text
 
-    # Validate actual body content as sansity check.
+    # Validate actual body content as sanity check.
 
     assert content == 'RESPONSE'
 
@@ -286,15 +248,15 @@ def test_capture_attributes_default():
 
     assert header.find('NREUM') != -1
 
-    # Now validate that userAttributes is not present, since should
+    # Now validate that attributes are not present, since should
     # be disabled.
 
     data = json.loads(footer.split('NREUM.info=')[1])
 
-    assert 'userAttributes' not in data
+    assert 'atts' not in data
 
 _test_analytic_events_background_task_settings = {
-    'browser_monitoring.capture_attributes': True }
+    'browser_monitoring.attributes.enabled': True }
 
 @validate_analytics_sample_data(name='OtherTransaction/Uri/')
 @override_application_settings(
@@ -303,11 +265,10 @@ def test_analytic_events_background_task():
     settings = application_settings()
 
     assert settings.collect_analytics_events
-    assert settings.analytics_events.enabled
-    assert settings.analytics_events.transactions.enabled
+    assert settings.transaction_events.enabled
 
     assert settings.browser_monitoring.enabled
-    assert settings.browser_monitoring.capture_attributes
+    assert settings.browser_monitoring.attributes.enabled
 
     assert settings.js_agent_loader
 
@@ -317,7 +278,7 @@ def test_analytic_events_background_task():
     assert response.html.html.head.script is None
 
 _test_capture_attributes_disabled_settings = {
-    'browser_monitoring.capture_attributes': False }
+    'browser_monitoring.attributes.enabled': False }
 
 @validate_analytics_sample_data(name='WebTransaction/Uri/')
 @override_application_settings(_test_capture_attributes_disabled_settings)
@@ -325,7 +286,7 @@ def test_capture_attributes_disabled():
     settings = application_settings()
 
     assert settings.browser_monitoring.enabled
-    assert not settings.browser_monitoring.capture_attributes
+    assert not settings.browser_monitoring.attributes.enabled
 
     assert settings.js_agent_loader
 
@@ -335,7 +296,7 @@ def test_capture_attributes_disabled():
     content = response.html.html.body.p.text
     footer = response.html.html.body.script.text
 
-    # Validate actual body content as sansity check.
+    # Validate actual body content as sanity check.
 
     assert content == 'RESPONSE'
 
@@ -345,12 +306,12 @@ def test_capture_attributes_disabled():
 
     assert header.find('NREUM') != -1
 
-    # Now validate that userAttributes is not present, since should
+    # Now validate that attributes are not present, since should
     # be disabled.
 
     data = json.loads(footer.split('NREUM.info=')[1])
 
-    assert 'userAttributes' not in data
+    assert 'atts' not in data
 
 @transient_function_wrapper('newrelic.core.stats_engine',
         'SampledDataSet.add')
@@ -360,7 +321,7 @@ def validate_no_analytics_sample_data(wrapped, instance, args, kwargs):
 
 _test_collect_analytic_events_disabled_settings = {
     'collect_analytics_events': False,
-    'browser_monitoring.capture_attributes': True }
+    'browser_monitoring.attributes.enabled': True }
 
 @validate_no_analytics_sample_data
 @override_application_settings(_test_collect_analytic_events_disabled_settings)
@@ -370,7 +331,7 @@ def test_collect_analytic_events_disabled():
     assert not settings.collect_analytics_events
 
     assert settings.browser_monitoring.enabled
-    assert settings.browser_monitoring.capture_attributes
+    assert settings.browser_monitoring.attributes.enabled
 
     assert settings.js_agent_loader
 
@@ -380,7 +341,7 @@ def test_collect_analytic_events_disabled():
     content = response.html.html.body.p.text
     footer = response.html.html.body.script.text
 
-    # Validate actual body content as sansity check.
+    # Validate actual body content as sanity check.
 
     assert content == 'RESPONSE'
 
@@ -390,16 +351,16 @@ def test_collect_analytic_events_disabled():
 
     assert header.find('NREUM') != -1
 
-    # Now validate that userAttributes is not present, since should
-    # be disabled.
+    # Now validate that attributes are present, since should
+    # be enabled.
 
     data = json.loads(footer.split('NREUM.info=')[1])
 
-    assert 'userAttributes' in data
+    assert 'atts' in data
 
 _test_analytic_events_disabled_settings = {
-    'analytics_events.enabled': False,
-    'browser_monitoring.capture_attributes': True }
+    'transaction_events.enabled': False,
+    'browser_monitoring.attributes.enabled': True }
 
 @validate_no_analytics_sample_data
 @override_application_settings(_test_analytic_events_disabled_settings)
@@ -407,10 +368,10 @@ def test_analytic_events_disabled():
     settings = application_settings()
 
     assert settings.collect_analytics_events
-    assert not settings.analytics_events.enabled
+    assert not settings.transaction_events.enabled
 
     assert settings.browser_monitoring.enabled
-    assert settings.browser_monitoring.capture_attributes
+    assert settings.browser_monitoring.attributes.enabled
 
     assert settings.js_agent_loader
 
@@ -420,7 +381,7 @@ def test_analytic_events_disabled():
     content = response.html.html.body.p.text
     footer = response.html.html.body.script.text
 
-    # Validate actual body content as sansity check.
+    # Validate actual body content as sanity check.
 
     assert content == 'RESPONSE'
 
@@ -430,51 +391,96 @@ def test_analytic_events_disabled():
 
     assert header.find('NREUM') != -1
 
-    # Now validate that userAttributes is not present, since should
-    # be disabled.
+    # Now validate that attributes are present, since should
+    # be enabled.
 
     data = json.loads(footer.split('NREUM.info=')[1])
 
-    assert 'userAttributes' in data
+    assert 'atts' in data
 
-_test_analytic_events_transactions_disabled_settings = {
-    'analytics_events.transactions.enabled': False,
-    'browser_monitoring.capture_attributes': True }
+# -------------- Test call counts in analytic events ----------------
 
-@validate_no_analytics_sample_data
-@override_application_settings(
-        _test_analytic_events_transactions_disabled_settings)
-def test_analytic_events_transactions_disabled():
+@validate_analytics_sample_data(name='WebTransaction/Uri/')
+def test_no_database_or_external_attributes_in_analytics():
+    """Make no external calls or database calls in the transaction and check
+    if the analytic event doesn't have the databaseCallCount, databaseDuration,
+    externalCallCount and externalDuration attributes.
+
+    """
     settings = application_settings()
 
-    assert settings.collect_analytics_events
-    assert settings.analytics_events.enabled
-    assert not settings.analytics_events.transactions.enabled
-
     assert settings.browser_monitoring.enabled
-    assert settings.browser_monitoring.capture_attributes
-
-    assert settings.js_agent_loader
 
     response = target_application.get('/')
 
-    header = response.html.html.head.script.text
-    content = response.html.html.body.p.text
-    footer = response.html.html.body.script.text
+    # Validation of analytic data happens in the decorator.
 
-    # Validate actual body content as sansity check.
+    content = response.html.html.body.p.text
+
+    # Validate actual body content as sanity check.
 
     assert content == 'RESPONSE'
 
-    # We no longer are in control of the JS contents of the header so
-    # just check to make sure it contains at least the magic string
-    # 'NREUM'.
+@validate_analytics_sample_data(name='WebTransaction/Uri/db',
+        database_call_count=2)
+def test_database_attributes_in_analytics():
+    """Make database calls in the transaction and check if the analytic
+    event has the databaseCallCount and databaseDuration attributes.
 
-    assert header.find('NREUM') != -1
+    """
+    settings = application_settings()
 
-    # Now validate that userAttributes is not present, since should
-    # be disabled.
+    assert settings.browser_monitoring.enabled
 
-    data = json.loads(footer.split('NREUM.info=')[1])
+    response = target_application.get('/db')
 
-    assert 'userAttributes' in data
+    # Validation of analytic data happens in the decorator.
+
+    content = response.html.html.body.p.text
+
+    # Validate actual body content as sanity check.
+
+    assert content == 'RESPONSE'
+
+@validate_analytics_sample_data(name='WebTransaction/Uri/ext',
+        external_call_count=2)
+def test_external_attributes_in_analytics():
+    """Make external calls in the transaction and check if the analytic
+    event has the externalCallCount and externalDuration attributes.
+
+    """
+    settings = application_settings()
+
+    assert settings.browser_monitoring.enabled
+
+    response = target_application.get('/ext')
+
+    # Validation of analytic data happens in the decorator.
+
+    content = response.html.html.body.p.text
+
+    # Validate actual body content as sanity check.
+
+    assert content == 'RESPONSE'
+
+@validate_analytics_sample_data(name='WebTransaction/Uri/dbext',
+        database_call_count=2, external_call_count=2)
+def test_database_and_external_attributes_in_analytics():
+    """Make external calls and database calls in the transaction and check if
+    the analytic event has the databaseCallCount, databaseDuration,
+    externalCallCount and externalDuration attributes.
+
+    """
+    settings = application_settings()
+
+    assert settings.browser_monitoring.enabled
+
+    response = target_application.get('/dbext')
+
+    # Validation of analytic data happens in the decorator.
+
+    content = response.html.html.body.p.text
+
+    # Validate actual body content as sanity check.
+
+    assert content == 'RESPONSE'

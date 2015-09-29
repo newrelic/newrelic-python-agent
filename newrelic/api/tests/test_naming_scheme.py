@@ -4,20 +4,21 @@ import time
 import newrelic.packages.six as six
 
 from newrelic.api.application import application_instance
-from newrelic.core.config import global_settings, create_settings_snapshot
+from newrelic.core.config import global_settings, apply_server_side_settings
 from newrelic.api.web_transaction import WebTransaction, wsgi_application
 from newrelic.api.transaction import current_transaction
 from newrelic.api.object_wrapper import callable_name
 
 class MockApplication(object):
     def __init__(self, settings, name='Python Application'):
-        self.global_settings = create_settings_snapshot()
+        self.global_settings = apply_server_side_settings()
         self.global_settings.enabled = True
-        self.settings = create_settings_snapshot(settings)
+        self.settings = apply_server_side_settings(settings)
         self.name = name
         self.active = True
         self.enabled = True
         self.thread_utilization = None
+        self.attribute_filter = None
     def activate(self):
         pass
     def normalize_name(self, name, rule_type):

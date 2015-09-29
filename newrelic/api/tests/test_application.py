@@ -29,5 +29,21 @@ class TestCase(newrelic.tests.test_cases.TestCase):
         application2 = newrelic.api.application.application_instance()
         self.assertEqual(id(application1), id(application2))
 
+    def test_attribute_filter_before_registration(self):
+        self.assertEqual(settings.attribute_filter, None)
+
+    def test_attribute_filter_after_registration(self):
+        application = newrelic.api.application.application_instance()
+        attribute_filter = application.settings.attribute_filter
+
+        # Performing an 'isinstance' test would require importing
+        # newrelic.core.attribute_filter. Instead, let's just test
+        # if attribute_filter has the right interface. (If it walks
+        # like a duck, quacks like a duck...)
+
+        self.assertTrue(hasattr(attribute_filter, 'apply'))
+        self.assertTrue(hasattr(attribute_filter, 'rules'))
+        self.assertTrue(hasattr(attribute_filter, 'enabled_destinations'))
+
 if __name__ == '__main__':
     unittest.main()

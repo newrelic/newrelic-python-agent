@@ -89,10 +89,7 @@ def test_footer_attributes():
 
     assert txn_name == u'WebTransaction/Uri/'
 
-    assert data['agentToken'] == token
-    assert len(data['ttGuid']) == 16
-
-    assert 'userAttributes' not in data
+    assert 'atts' not in data
 
 _test_rum_ssl_for_http_is_none = {
     'browser_monitoring.enabled': True,
@@ -882,8 +879,8 @@ _test_html_insertion_param_on_error_settings = {
 }
 
 @override_application_settings(_test_html_insertion_param_on_error_settings)
-@validate_transaction_errors(errors=[_runtime_error_name],
-        required_params=[('key', 'value')])
+@validate_transaction_errors(errors=[_runtime_error_name])
+@validate_custom_parameters(required_params=[('key', 'value')])
 def test_html_insertion_param_on_error():
     try:
         response = target_application_param_on_error.get('/', status=500)

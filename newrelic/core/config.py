@@ -14,6 +14,8 @@ import logging
 import copy
 import socket
 
+from .attribute_filter import AttributeFilter
+
 try:
     import urlparse
 except ImportError:
@@ -41,10 +43,14 @@ class Settings(object):
     def __contains__(self, item):
         return hasattr(self, item)
 
+class AttributesSettings(Settings): pass
 class ThreadProfilerSettings(Settings): pass
 class TransactionTracerSettings(Settings): pass
+class TransactionTracerAttributesSettings(Settings): pass
 class ErrorCollectorSettings(Settings): pass
+class ErrorCollectorAttributesSettings(Settings): pass
 class BrowserMonitorSettings(Settings): pass
+class BrowserMonitorAttributesSettings(Settings): pass
 class TransactionNameSettings(Settings): pass
 class TransactionMetricsSettings(Settings): pass
 class RumSettings(Settings): pass
@@ -54,19 +60,22 @@ class ConsoleSettings(Settings): pass
 class DebugSettings(Settings): pass
 class CrossApplicationTracerSettings(Settings): pass
 class XraySessionSettings(Settings): pass
-class AnalyticsEventsSettings(Settings): pass
-class AnalyticsEventsTransactionsSettings(Settings): pass
+class TransactionEventsSettings(Settings): pass
+class TransactionEventsAttributesSettings(Settings): pass
 class ProcessHostSettings(Settings): pass
 class SyntheticsSettings(Settings): pass
 class UtilizationSettings(Settings): pass
 class StripExceptionMessageSettings(Settings): pass
 
 _settings = Settings()
+_settings.attributes = AttributesSettings()
 _settings.thread_profiler = ThreadProfilerSettings()
-_settings.xray_session = XraySessionSettings()
 _settings.transaction_tracer = TransactionTracerSettings()
+_settings.transaction_tracer.attributes = TransactionTracerAttributesSettings()
 _settings.error_collector = ErrorCollectorSettings()
+_settings.error_collector.attributes = ErrorCollectorAttributesSettings()
 _settings.browser_monitoring = BrowserMonitorSettings()
+_settings.browser_monitoring.attributes = BrowserMonitorAttributesSettings()
 _settings.transaction_name = TransactionNameSettings()
 _settings.transaction_metrics = TransactionMetricsSettings()
 _settings.rum = RumSettings()
@@ -75,8 +84,9 @@ _settings.agent_limits = AgentLimitsSettings()
 _settings.console = ConsoleSettings()
 _settings.debug = DebugSettings()
 _settings.cross_application_tracer = CrossApplicationTracerSettings()
-_settings.analytics_events = AnalyticsEventsSettings()
-_settings.analytics_events.transactions = AnalyticsEventsTransactionsSettings()
+_settings.xray_session = XraySessionSettings()
+_settings.transaction_events = TransactionEventsSettings()
+_settings.transaction_events.attributes = TransactionEventsAttributesSettings()
 _settings.process_host = ProcessHostSettings()
 _settings.synthetics = SyntheticsSettings()
 _settings.utilization = UtilizationSettings()
@@ -167,6 +177,16 @@ def _parse_ignore_status_codes(value, target):
                 target.add(int(item))
     return target
 
+def _parse_attributes(s):
+    valid = []
+    for item in s.split():
+        if '*' not in item[:-1] and len(item.encode('utf-8')) < 256:
+            valid.append(item)
+        else:
+            _logger.warning('Improperly formatted attribute: %r', item)
+    return valid
+
+
 _LOG_LEVEL = {
     'CRITICAL': logging.CRITICAL,
     'ERROR': logging.ERROR,
@@ -214,6 +234,8 @@ _settings.developer_mode = _environ_as_bool('NEW_RELIC_DEVELOPER_MODE', False)
 
 _settings.high_security = _environ_as_bool('NEW_RELIC_HIGH_SECURITY', False)
 
+_settings.attribute_filter = None
+
 _settings.collect_errors = True
 _settings.collect_traces = True
 _settings.collect_analytics_events = True
@@ -221,7 +243,7 @@ _settings.collect_analytics_events = True
 _settings.apdex_t = 0.5
 _settings.web_transactions_apdex = {}
 
-_settings.capture_params = False
+_settings.capture_params = None
 _settings.ignored_params = []
 
 _settings.capture_environ = True
@@ -255,14 +277,19 @@ _settings.cross_process_id = None
 _settings.trusted_account_ids = []
 _settings.encoding_key = None
 
+_settings.attributes.enabled = True
+_settings.attributes.exclude = []
+_settings.attributes.include = []
+
 _settings.thread_profiler.enabled = True
 _settings.cross_application_tracer.enabled = True
 _settings.xray_session.enabled = True
 
-_settings.analytics_events.enabled = True
-_settings.analytics_events.capture_attributes = True
-_settings.analytics_events.max_samples_stored = 1200
-_settings.analytics_events.transactions.enabled = True
+_settings.transaction_events.enabled = True
+_settings.transaction_events.max_samples_stored = 1200
+_settings.transaction_events.attributes.enabled = True
+_settings.transaction_events.attributes.exclude = []
+_settings.transaction_events.attributes.include = []
 
 _settings.transaction_tracer.enabled = True
 _settings.transaction_tracer.transaction_threshold = None
@@ -273,14 +300,18 @@ _settings.transaction_tracer.explain_threshold = 0.5
 _settings.transaction_tracer.function_trace = []
 _settings.transaction_tracer.generator_trace = []
 _settings.transaction_tracer.top_n = 20
-_settings.transaction_tracer.capture_attributes = True
+_settings.transaction_tracer.attributes.enabled = True
+_settings.transaction_tracer.attributes.exclude = []
+_settings.transaction_tracer.attributes.include = []
 
 _settings.error_collector.enabled = True
 _settings.error_collector.capture_source = False
 _settings.error_collector.ignore_errors = []
 _settings.error_collector.ignore_status_codes = _parse_ignore_status_codes(
         '100-102 200-208 226 300-308 404', set())
-_settings.error_collector.capture_attributes = True
+_settings.error_collector.attributes.enabled = True
+_settings.error_collector.attributes.exclude = []
+_settings.error_collector.attributes.include = []
 
 _settings.browser_monitoring.enabled = True
 _settings.browser_monitoring.auto_instrument = True
@@ -288,8 +319,10 @@ _settings.browser_monitoring.loader = 'rum'  # Valid values: 'full', 'none'
 _settings.browser_monitoring.loader_version = None
 _settings.browser_monitoring.debug = False
 _settings.browser_monitoring.ssl_for_http = None
-_settings.browser_monitoring.capture_attributes = False
 _settings.browser_monitoring.content_type = ['text/html']
+_settings.browser_monitoring.attributes.enabled = False
+_settings.browser_monitoring.attributes.exclude = []
+_settings.browser_monitoring.attributes.include = []
 
 _settings.transaction_name.limit = None
 _settings.transaction_name.naming_scheme = os.environ.get(
@@ -312,7 +345,6 @@ _settings.agent_limits.errors_per_transaction = 5
 _settings.agent_limits.errors_per_harvest = 20
 _settings.agent_limits.slow_transaction_dry_harvests = 5
 _settings.agent_limits.thread_profiler_nodes = 20000
-_settings.agent_limits.browser_transactions = 10
 _settings.agent_limits.xray_transactions = 10
 _settings.agent_limits.xray_profile_overhead = 0.05
 _settings.agent_limits.xray_profile_maximum = 500
@@ -517,7 +549,7 @@ def fetch_config_setting(settings_object, name):
 
     return target
 
-def create_settings_snapshot(server_side_config={}, settings=_settings):
+def apply_server_side_settings(server_side_config={}, settings=_settings):
     """Create a snapshot of the global default settings and overlay it
     with any server side configuration settings. Any local settings
     overrides to take precedence over server side configuration settings
@@ -527,7 +559,7 @@ def create_settings_snapshot(server_side_config={}, settings=_settings):
 
     >>> server_config = { 'browser_monitoring.auto_instrument': False }
     >>>
-    >>> settings_snapshot = create_settings_snapshot(server_config)
+    >>> settings_snapshot = apply_server_side_settings(server_config)
 
     """
 
@@ -565,6 +597,17 @@ def create_settings_snapshot(server_side_config={}, settings=_settings):
         apply_config_setting(settings_snapshot, name, value)
 
     return settings_snapshot
+
+def finalize_application_settings(server_side_config={}, settings=_settings):
+    """Overlay server-side settings and add attribute filter."""
+
+    application_settings = apply_server_side_settings(
+            server_side_config, settings)
+
+    application_settings.attribute_filter = AttributeFilter(
+            flatten_settings(application_settings))
+
+    return application_settings
 
 def ignore_status_code(status):
     return status in _settings.error_collector.ignore_status_codes

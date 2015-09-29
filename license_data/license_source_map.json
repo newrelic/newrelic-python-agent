@@ -755,6 +755,12 @@
             "New Relic"
         ]
     },
+    "newrelic/core/attribute.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/core/attribute_filter.py": {
         "hash": "n/a",
         "libraries": [

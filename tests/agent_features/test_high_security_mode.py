@@ -4,10 +4,13 @@ import webtest
 
 from testing_support.fixtures import (override_application_settings,
     validate_custom_parameters, validate_transaction_errors,
-    validate_request_params, validate_parameter_groups)
+    validate_request_params_omitted, validate_attributes_complete)
 
 from newrelic.agent import (background_task, add_custom_parameter,
-    record_exception, wsgi_application)
+    record_exception, wsgi_application, current_transaction)
+
+from newrelic.core.attribute import (Attribute, DST_TRANSACTION_TRACER,
+        DST_ERROR_COLLECTOR, DST_ALL)
 
 from newrelic.core.config import (global_settings, Settings,
     apply_config_setting)
@@ -60,6 +63,13 @@ _hsm_local_config_file_settings_enabled = [
         'high_security': True,
         'ssl': True,
         'capture_params': True,
+        'transaction_tracer.record_sql': 'raw',
+        'strip_exception_messages.enabled': True,
+    },
+    {
+        'high_security': True,
+        'ssl': True,
+        'capture_params': None,
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': True,
     },
@@ -130,7 +140,7 @@ def test_local_config_file_hsm_override_enabled(settings):
     apply_local_high_security_mode_setting(settings)
 
     assert settings.ssl
-    assert not settings.capture_params
+    assert settings.capture_params not in (True, None)
     assert settings.transaction_tracer.record_sql in ('off', 'obfuscated')
     assert settings.strip_exception_messages.enabled
 
@@ -273,11 +283,29 @@ _test_transaction_settings_hsm_enabled = {
 def test_other_transaction_hsm_custom_parameters_disabled():
     add_custom_parameter('key', 'value')
 
+@override_application_settings(_test_transaction_settings_hsm_disabled)
+@validate_custom_parameters(required_params=[('key-1', 'value-1'),
+        ('key-2', 'value-2')])
+@background_task()
+def test_other_transaction_hsm_multiple_custom_parameters_disabled():
+    transaction = current_transaction()
+    transaction.add_custom_parameters([('key-1', 'value-1'),
+            ('key-2', 'value-2')])
+
 @override_application_settings(_test_transaction_settings_hsm_enabled)
 @validate_custom_parameters(forgone_params=[('key', 'value')])
 @background_task()
 def test_other_transaction_hsm_custom_parameters_enabled():
     add_custom_parameter('key', 'value')
+
+@override_application_settings(_test_transaction_settings_hsm_enabled)
+@validate_custom_parameters(forgone_params=[('key-1', 'value-1'),
+        ('key-2', 'value-2')])
+@background_task()
+def test_other_transaction_hsm_multiple_custom_parameters_enabled():
+    transaction = current_transaction()
+    transaction.add_custom_parameters([('key-1', 'value-1'),
+            ('key-2', 'value-2')])
 
 class TestException(Exception): pass
 
@@ -285,7 +313,8 @@ _test_exception_name = '%s:%s' % (__name__, TestException.__name__)
 
 @override_application_settings(_test_transaction_settings_hsm_disabled)
 @validate_transaction_errors(errors=[_test_exception_name],
-    required_params=[('key-1', 'value-1'), ('key-2', 'value-2')])
+        required_params=[('key-2', 'value-2')])
+@validate_custom_parameters(required_params=[('key-1', 'value-1')])
 @background_task()
 def test_other_transaction_hsm_error_parameters_disabled():
     add_custom_parameter('key-1', 'value-1')
@@ -296,7 +325,8 @@ def test_other_transaction_hsm_error_parameters_disabled():
 
 @override_application_settings(_test_transaction_settings_hsm_enabled)
 @validate_transaction_errors(errors=[_test_exception_name],
-    forgone_params=[('key-1', 'value-1'), ('key-2', 'value-2')])
+    forgone_params=[('key-2', 'value-2')])
+@validate_custom_parameters(forgone_params=[('key-1', 'value-1')])
 @background_task()
 def test_other_transaction_hsm_error_parameters_enabled():
     add_custom_parameter('key-1', 'value-1')
@@ -334,7 +364,7 @@ _test_transaction_settings_hsm_enabled_capture_params = {
 
 @override_application_settings(
     _test_transaction_settings_hsm_enabled_capture_params)
-@validate_request_params(forgone_params=[('key-1', 'value-1')])
+@validate_request_params_omitted()
 def test_other_transaction_hsm_environ_capture_request_params():
     target_application = webtest.TestApp(
             target_wsgi_application_capture_params)
@@ -343,7 +373,7 @@ def test_other_transaction_hsm_environ_capture_request_params():
 
 @override_application_settings(
     _test_transaction_settings_hsm_enabled_capture_params)
-@validate_request_params(forgone_params=[('key-1', 'value-1')])
+@validate_request_params_omitted()
 def test_other_transaction_hsm_environ_capture_request_params_disabled():
     target_application = webtest.TestApp(
             target_wsgi_application_capture_params)
@@ -356,7 +386,7 @@ def test_other_transaction_hsm_environ_capture_request_params_disabled():
 
 @override_application_settings(
     _test_transaction_settings_hsm_enabled_capture_params)
-@validate_request_params(forgone_params=[('key-1', 'value-1')])
+@validate_request_params_omitted()
 def test_other_transaction_hsm_environ_capture_request_params_enabled():
     target_application = webtest.TestApp(
             target_wsgi_application_capture_params)
@@ -369,17 +399,34 @@ def test_other_transaction_hsm_environ_capture_request_params_enabled():
 
 @override_application_settings(
     _test_transaction_settings_hsm_enabled_capture_params)
-@validate_request_params(forgone_params=[('key-1', 'value-1')])
+@validate_request_params_omitted()
 def test_other_transaction_hsm_environ_capture_request_params_api_called():
     target_application = webtest.TestApp(
             target_wsgi_application_capture_params_api_called)
 
     response = target_application.get('/', params='key-1=value-1')
 
+# Make sure we don't display the query string in 'request.headers.referer'
+# Attribute will exist, and value will have query string stripped off.
+
+_required_attr = Attribute(
+        name='request.headers.referer',
+        value='http://example.com/blah',
+        destinations=DST_TRANSACTION_TRACER | DST_ERROR_COLLECTOR)
+
+# Check that the unsanitized version isn't present either, for any destinations.
+
+_forgone_attr = Attribute(
+        name='request.headers.referer',
+        value='http://example.com/blah?query=value',
+        destinations=DST_ALL)
+
+_required_attrs = [_required_attr]
+_foregone_attrs = [_forgone_attr]
+
 @override_application_settings(
     _test_transaction_settings_hsm_enabled_capture_params)
-@validate_parameter_groups('Request environment',
-        required_params=[('HTTP_REFERER', 'http://example.com/blah')])
+@validate_attributes_complete('agent', _required_attrs, _foregone_attrs)
 def test_http_referrer_url_is_sanitized_in_hsm():
     target_application = webtest.TestApp(
             target_wsgi_application_capture_params)

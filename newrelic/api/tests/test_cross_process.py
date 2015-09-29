@@ -5,7 +5,7 @@ import json
 import newrelic.packages.six as six
 
 from newrelic.api.application import application_instance
-from newrelic.core.config import global_settings, create_settings_snapshot
+from newrelic.core.config import global_settings, apply_server_side_settings
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.common.encoding_utils import deobfuscate, obfuscate
 
@@ -33,7 +33,7 @@ class TestCase(unittest.TestCase):
 
         application = Application()
 
-        application.global_settings = create_settings_snapshot()
+        application.global_settings = apply_server_side_settings()
         application.global_settings.enabled = True
 
         settings = {}
@@ -44,7 +44,7 @@ class TestCase(unittest.TestCase):
         settings['encoding_key'] = encoding_key
         settings['trusted_account_ids'] = trusted_account_ids
 
-        application.settings = create_settings_snapshot(settings)
+        application.settings = apply_server_side_settings(settings)
 
         application.active = True
         application.enabled = True

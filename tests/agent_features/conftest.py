@@ -17,6 +17,7 @@ _default_settings = {
     'debug.log_data_collector_payloads': True,
     'debug.record_transaction_failure': True,
     'debug.log_autorum_middleware': True,
+    'agent_limits.errors_per_harvest' : 100,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(

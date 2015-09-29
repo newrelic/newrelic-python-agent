@@ -22,8 +22,8 @@ import newrelic.packages.requests as requests
 from newrelic.packages.requests import certs
 
 from newrelic import version
-from newrelic.core.config import (global_settings, create_settings_snapshot,
-        global_settings_dump)
+from newrelic.core.config import (global_settings, global_settings_dump,
+        apply_server_side_settings, finalize_application_settings)
 from newrelic.core.internal_metrics import (internal_trace, InternalTrace,
         internal_metric)
 
@@ -1034,9 +1034,10 @@ class ApplicationSession(object):
 
             # The agent configuration for the application in constructed
             # by taking a snapshot of the locally constructed
-            # configuration and overlaying it with that from the server.
+            # configuration and overlaying it with that from the server,
+            # as well as creating the attribute filter.
 
-            application_config = create_settings_snapshot(server_config)
+            application_config = finalize_application_settings(server_config)
 
         except NetworkInterfaceException:
             # The reason for errors of this type have already been logged.

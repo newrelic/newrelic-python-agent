@@ -135,8 +135,13 @@ Once work has finished on a development version and all testing has been
 performed and the code approved for release, the following steps should be
 carried out to do the actual release.
 
-0. Talk to CAB (a hipchat room) and give them the links to the CAB approval
-   document. Get their approval before proceeding.
+0. Schedule the release with the [CAB Tool](https://upboard.datanerd.us/changes).
+Ideally, this should be done a day in advance. The key pieces of information that
+you'll need to fill out the release form are:
+
+    * Link to the release notes (draft is OK.)
+    * Risk level assessment (Low, Medium or High)
+    * Brief description of feature(s) in release
 
 1. Check out the ``develop`` branch of the Python agent repository and
 update the version number in ``newrelic/__init__.py`` for the release.

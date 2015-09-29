@@ -215,6 +215,14 @@ the form ``vA.B.C.D``, where ``D`` is now the build number from
 This should be the same commit as already had the tag ``vA.B.C`` which was
 added by ``git-flow``.
 
+    From the command line:
+
+        # Create tag
+        git tag vA.B.C.D
+
+        # Tags don't get pushed to GHE automatically, so you must do it.
+        git push origin vA.B.C.D
+
 15. In Jenkins mark the corresponding build in ``Python_Agent-MASTER`` as
 keep forever.
 

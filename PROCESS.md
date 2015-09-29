@@ -169,11 +169,19 @@ branch. Format the commit message like this:
 string will become the final tag ``git-flow`` will add when finishing the
 release.
 
+    From the command line:
+
+        git flow release start vA.B.C
+
 7. If necessary, push release branch back to github for further testing by
 the rest of the Python agent team. Wait for confirmation before proceeding
 if such testing is required.
 
 8. Follow ``git-flow`` procedure to finish the release branch.
+
+    From the command line:
+
+        git flow release finish vA.B.C
 
 9. Switch back to the ``develop`` branch and perform a merge from
 ``master`` back into the ``develop`` branch.

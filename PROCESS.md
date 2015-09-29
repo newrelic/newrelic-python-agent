@@ -166,7 +166,7 @@ release.
 the rest of the Python agent team. Wait for confirmation before proceeding
 if such testing is required.
 
-8. Follow ``git-glow`` procedure to finish the release branch.
+8. Follow ``git-flow`` procedure to finish the release branch.
 
 9. Switch back to the ``develop`` branch and perform a merge from
 ``master`` back into the ``develop`` branch.

@@ -290,14 +290,26 @@ added by git-flow.
 15. In Jenkins, mark the corresponding build in ``Python_Agent-MASTER`` as
 keep forever.
 
+    1. Click on [Python_Agent-Master][master].
+    2. Click on a build in "Build History" in the left sidebar.
+    3. Click on blue "Keep this build forever" button in top-right corner.
+
+[master]: https://pdx-hudson.datanerd.us/view/Python/job/Python_Agent-MASTER/
+
 16. Upload the package to the ``release`` directory for ``python_agent`` on
 hosts used by ``download.newrelic.com``. Generate a file in the same
 directory for the download with an ``.md5`` extension which contains the MD5
 hash of the package.
 
+    1. Click on [Python_Agent-Master][master].
+    2. Click on a build in "Build History" in the left sidebar.
+    3. Scroll to bottom and click "default" under the "Configurations" heading.
+    4. Gaze upon the wonder of the link to the tarball under "Build Artifacts".
+
     For more details on working with the New Relic download site and
 transferring files across see: [Managing the Download Site][download].
 
+[master]: https://pdx-hudson.datanerd.us/view/Python/job/Python_Agent-MASTER/
 [download]: https://newrelic.atlassian.net/wiki/display/eng/Python+Agent+Managing+The+Download+Site
 
 17. Update the ``python_agent_version`` configuration to ``A.B.C.D`` in APM

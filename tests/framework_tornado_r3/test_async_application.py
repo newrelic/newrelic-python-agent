@@ -10,7 +10,8 @@ from newrelic.packages import six
 
 from _test_async_application import (get_tornado_app, HelloRequestHandler,
         SleepRequestHandler, OneCallbackRequestHandler,
-        NamedStackContextWrapRequestHandler, MultipleCallbacksRequestHandler)
+        NamedStackContextWrapRequestHandler, MultipleCallbacksRequestHandler,
+        FinishExceptionRequestHandler, ReturnExceptionRequestHandler)
 
 from testing_support.fixtures import (
     tornado_validate_count_transaction_metrics,
@@ -75,9 +76,11 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         try:
             response = future.result()
         except tornado.httpclient.HTTPError:
+            print("HERE 1")
             if not is_http_error:
                 raise
         else:
+            print("HERE 2")
             self.assertFalse(is_http_error, "Client did not receive an error "
                     "though one was expected.")
             return response
@@ -209,6 +212,25 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=['tornado.gen:BadYieldError'])
-    @tornado_validate_count_transaction_metrics('_test_async_application:CoroutineExceptionRequestHandler.get')
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:CoroutineExceptionRequestHandler.get')
     def test_coroutine_exception(self):
         self.fetch_exception('/coroutine-exception')
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(errors=[])
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:FinishExceptionRequestHandler.get')
+    def test_finish_exception(self):
+        response = self.fetch_response('/finish-exception')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, FinishExceptionRequestHandler.RESPONSE)
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(errors=[])
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:ReturnExceptionRequestHandler.get')
+    def test_return_exception(self):
+        response = self.fetch_response('/return-exception')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, ReturnExceptionRequestHandler.RESPONSE)

@@ -111,6 +111,29 @@ class CoroutineExceptionRequestHandler(RequestHandler):
         raise tornado.gen.BadYieldError
         self.finish(self.RESPONSE)  # This will never be called.
 
+# This isn't really an exception but a legitimate way to end request handling.
+class FinishExceptionRequestHandler(RequestHandler):
+    RESPONSE = b'Finish'
+
+    def get(self):
+        self.write(self.RESPONSE)
+        raise tornado.web.Finish()
+
+class ReturnExceptionRequestHandler(RequestHandler):
+    TEMPLATE = b'Return %s'
+    RESPONSE = b'Return 1'  # 1 is the output from self.one()
+
+    @tornado.gen.coroutine
+    def get(self):
+        x = yield self.one()
+        self.finish(self.TEMPLATE % x)
+
+    # This really isn't an exception but the standard with to return from a
+    # coroutine.
+    @tornado.gen.coroutine
+    def one(self):
+        raise tornado.gen.Return(1)
+
 def get_tornado_app():
     return Application([
         ('/', HelloRequestHandler),
@@ -121,4 +144,6 @@ def get_tornado_app():
         ('/sync-exception', SyncExceptionRequestHandler),
         ('/callback-exception', CallbackExceptionRequestHandler),
         ('/coroutine-exception', CoroutineExceptionRequestHandler),
+        ('/finish-exception', FinishExceptionRequestHandler),
+        ('/return-exception', ReturnExceptionRequestHandler),
     ])

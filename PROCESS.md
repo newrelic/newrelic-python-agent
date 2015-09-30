@@ -132,6 +132,47 @@ to an official release, these would generally be made available via:
 
 * http://download.newrelic.com/python_agent/testing/
 
+Pre-Release Steps
+-----------------
+
+1.  Create drafts of any new or changed documentation. Notify the "Documentation"
+heroes about each changed document, and let them know when we plan to release, so
+that they can plan to release the new documentation immediately after we release.
+
+    Getting to "final copy" on the documentation can take a bit of back and forth,
+so the earlier this step can be done, the better.
+
+2.  Schedule the release with the [CAB Tool](https://upboard.datanerd.us/changes).
+Ideally, this should be done at least a day in advance. The key pieces of information that
+you'll need to fill out the release form are:
+
+  1. Link to the release notes (draft version is OK.)
+  2. Risk level assessment (Low, Medium or High)
+  3. Brief description of feature(s) in release
+
+2.  Draft the release notes. These are
+hosted at: https://docs.newrelic.com/docs/release-notes/agent-release-notes/python-release-notes.
+
+    To create a draft of the release notes, log in to the documentation site
+(through Onelogin), go to the release notes for the previous release, and
+click the 'Clone Content' link. Be sure to take 'Clone of' out of the page title.
+There are also at least three places where the version number must be updated in the
+page. Increment the build number by one from the previous release. Most likely,
+that will be the build number for the release version. If it isn't, it will
+need to be changed during the release process.
+
+3.  Draft the New & Noteworthy update for Foglights for each Foglights project that
+is being released. This should be a short summary of what the feature is, focusing
+on how it benefits our customers, and written in a way that will make sense to both
+Engineering and Sales/Marketing.
+
+    An image (usually a screenshot) **MUST** be included in each New & Noteworthy.
+
+4.  Draft the Support notes for the release. This is where we describe key things that
+Support will need to know about the release, but aren't necessarily in the public
+documentation, such as specific problems to look out for, new configuration settings,
+etc. Include links to the release notes and any changed or new documentation.
+
 Performing a Standard Release
 -----------------------------
 
@@ -240,41 +281,20 @@ transferring files across see: [Managing the Download Site][download].
 
 [download]: https://newrelic.atlassian.net/wiki/display/eng/Python+Agent+Managing+The+Download+Site
 
-17. Ensure that release notes are updated for the new version. These are
-hosted at: https://docs.newrelic.com/docs/release-notes/agent-release-notes/python-release-notes
-
-    It is easiest to clone an existing set of release notes and change the
-content, just make sure you take 'Clone of' out of the page title. There are
-also at least three places where the version number must be updated in the
-page.
-
-    If preparing in advance and don't know the full version number, use ``X``
-for the last number. When you go to release you should change all instances of
-``X`` and **ALSO** reset the date/time for the release else it will show the
-date/time for the old page.
-
-    When renaming ``X`` and saving page, in a separate window check that you
-can get to the page in question. If it goes into a redirect loop then you need
-to go into the page and find 'Url Redirects' down the bottom of page and
-delete any bogus URL redirects. This may only be an issue if you accidentally
-publish the page with ``X`` and rename afterwards, so make sure the ``X`` is
-changed before publishing. Either way, perhaps check there are no redirects as
-they shouldn't be needed on new page.
-
-    Note that publishing the page by saying that it is ready for publication
-will make it public straight away, there is no review process.
-
-18. Update the ``python_agent_version`` configuration to ``A.B.C.D`` in APM
+17. Update the ``python_agent_version`` configuration to ``A.B.C.D`` in APM
 systems configuration page at: https://rpm.newrelic.com/admin/system_configurations.
 
     If we need to notify existing users to update their older agents, also
 update the ``min_python_agent_version`` to ``A.B.C.D``.
 
-19. Create a new Python package index (PyPi) entry for the new release and
+18. Create a new Python package index (PyPi) entry for the new release and
 attach the tar ball.
 
     Validate that ``pip install`` of package into a virtual environment works
 and that a ``newrelic-admin validate-config`` test runs okay.
+
+19. Make the "Release Notes" public. (You don't need to have the Documentation
+Team do this step. We have the authority to publish release notes.)
 
 20. Make sure any documentation specific to the release is marked as ready
 for publication and a JIRA issue created in DOCS project to have it
@@ -287,8 +307,8 @@ interested parties. Include a copy of the public release notes, plus a
 separate section if necessary with additional details that may be relevant
 to internal parties.
 
-22. Send a separate email to ``python-support@newrelic.com`` if there is
-any special extra information that the support team should be aware of.
+22. Send an email to ``python-support@newrelic.com`` with the Support notes
+drafted in the pre-release steps.
 
 23. Add New & Noteworthy entries (multiple) via Fog Lights for the key
 feature(s) or improvement(s) in the release.

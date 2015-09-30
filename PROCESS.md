@@ -214,7 +214,7 @@ branch. Format the commit message like this:
 string will become the final tag git-flow will add when finishing the
 release.
 
-    From the command line:
+    Confirm that you are in the `develop` branch, then run:
 
         git flow release start vA.B.C
 
@@ -228,8 +228,15 @@ if such testing is required.
 
         git flow release finish vA.B.C
 
+    You will be prompted to create a merge commit message and a git tag. Hitting
+enter and accepting the default is fine.
+
 9. Switch back to the ``develop`` branch and perform a merge from
 ``master`` back into the ``develop`` branch.
+
+    Confirm that you are on the `develop` branch, then run:
+
+        git merge master
 
     This is to synchronize the two branches so git doesn't keep tracking them
 as completely parallel paths of development with consequent strange results
@@ -247,6 +254,11 @@ branch. Format the commit message like this:
         Increment version to A.B.C for development.
 
 12. Push both the ``develop`` and ``master`` branches back to the GIT repo.
+
+    From the command line:
+
+        git push origin develop
+        git push origin master
 
     This action will also trigger the Jenkins ``Python_Agent-MASTER`` and
 ``Python_Agent-DEVELOP`` jobs.
@@ -266,6 +278,7 @@ added by git-flow.
         git tag vA.B.C.D
 
         # Tags don't get pushed to GHE automatically, so you must do it.
+        git push origin vA.B.C
         git push origin vA.B.C.D
 
 15. In Jenkins mark the corresponding build in ``Python_Agent-MASTER`` as

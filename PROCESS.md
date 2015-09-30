@@ -296,6 +296,19 @@ keep forever.
 
 [master]: https://pdx-hudson.datanerd.us/view/Python/job/Python_Agent-MASTER/
 
+16. Download the source tarball from Jenkins that you just marked as "Keep
+forever". This will be the tarball you upload to `download.newrelic.com` and
+to `PyPI`.
+
+17. Create an MD5 file with the same name as the source tarball, but with an
+`.md5` extension. (Example: `newrelic-2.56.0.42.tar.gz.md5`.)
+
+    Get the MD5 of the package with this command:
+
+        md5 newrelic-2.56.0.42.tar.gz
+
+    Cut and paste the MD5 into the `newrelic-2.56.0.42.tar.gz.md5` file.
+
 16. Upload the package to the ``release`` directory for ``python_agent`` on
 hosts used by ``download.newrelic.com``. Generate a file in the same
 directory for the download with an ``.md5`` extension which contains the MD5

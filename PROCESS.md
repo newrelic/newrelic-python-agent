@@ -207,11 +207,11 @@ branch. Format the commit message like this:
 
         Increment version to A.B.C for release.
 
-6. Follow ``git-flow`` procedure to create a release branch with name
+6. Follow git-flow procedure to create a release branch with name
 ``vA.B.C``.
 
     With our odd/even numbering scheme, ``B`` should always be even. This
-string will become the final tag ``git-flow`` will add when finishing the
+string will become the final tag git-flow will add when finishing the
 release.
 
     From the command line:
@@ -222,7 +222,7 @@ release.
 the rest of the Python agent team. Wait for confirmation before proceeding
 if such testing is required.
 
-8. Follow ``git-flow`` procedure to finish the release branch.
+8. Follow git-flow procedure to finish the release branch.
 
     From the command line:
 
@@ -258,7 +258,7 @@ pass okay.
 the form ``vA.B.C.D``, where ``D`` is now the build number from
 ``Python_Agent-MASTER`` and make sure the tag is pushed to github master.
 This should be the same commit as already had the tag ``vA.B.C`` which was
-added by ``git-flow``.
+added by git-flow.
 
     From the command line:
 

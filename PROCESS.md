@@ -261,7 +261,11 @@ branch. Format the commit message like this:
         git push origin master
 
     This action will also trigger the Jenkins ``Python_Agent-MASTER`` and
-``Python_Agent-DEVELOP`` jobs.
+``Python_Agent-DEVELOP`` jobs. If the automatic trigger does not work, then
+run the tests manually in Jenkins.
+
+    In addition, run the `Python_Agent-DOCKER-NEW` tests manually for the
+`master` branch. Click `Build with parameters` and set the branch to `master`.
 
 13. Check that ``Python_Agent-MASTER-TESTS`` in Jenkins runs and all tests
 pass okay.

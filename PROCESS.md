@@ -330,6 +330,10 @@ and that a ``newrelic-admin validate-config`` test runs okay.
 
 [pypi]: https://newrelic.atlassian.net/wiki/display/eng/Python+Agent+Managing+The+Package+Index)
 
+19. Verify that the build number is correct in the version string in the release notes. If
+it needs to change, edit the release notes, but get in touch with the Documentation team so
+that they can change the URL for the release notes page.
+
 19. Make the "Release Notes" public. (You don't need to have the Documentation
 Team do this step. We have the authority to publish release notes.)
 

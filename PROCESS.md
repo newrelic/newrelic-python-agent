@@ -355,6 +355,3 @@ feature(s) or improvement(s) in the release.
 24. Make sure that all JIRA stories associated with the release version have
 been updated as having been released. The current agent dashboard can be
 found at: https://newrelic.atlassian.net/secure/Dashboard.jspa?selectPageId=11912
-
-25. Switch over JIRA Python agent filters for current/next/next+1 releases
-so current dashboard now shows issues for next release.

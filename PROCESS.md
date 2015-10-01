@@ -192,6 +192,10 @@ run and ensure package builds.
 
 3. Run locally ``./tests.sh`` to ensure that all base level unit tests pass.
 
+    This test can also be run in docker, with `packnsend`:
+
+        packnsend run /data/tests.sh
+
 4. Perform any other final adhoc local tests deemed necessary for the release.
 
 5. Commit change made to ``newrelic/__init__.py`` into the ``develop``

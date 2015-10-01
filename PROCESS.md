@@ -287,7 +287,7 @@ added by git-flow.
 keep forever.
 
     1. Click on [Python_Agent-Master][master].
-    2. Click on a build in "Build History" in the left sidebar.
+    2. Click on the most-recent build in "Build History" in the left sidebar.
     3. Click on blue "Keep this build forever" button in top-right corner.
 
 [master]: https://pdx-hudson.datanerd.us/view/Python/job/Python_Agent-MASTER/

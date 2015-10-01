@@ -323,11 +323,12 @@ systems configuration page at: https://rpm.newrelic.com/admin/system_configurati
     If we need to notify existing users to update their older agents, also
 update the ``min_python_agent_version`` to ``A.B.C.D``.
 
-18. Create a new Python package index (PyPi) entry for the new release and
-attach the tar ball.
+18. Follow the instructions on the wiki page to [upload the source package toPyPI][pypi].
 
     Validate that ``pip install`` of package into a virtual environment works
 and that a ``newrelic-admin validate-config`` test runs okay.
+
+[pypi]: https://newrelic.atlassian.net/wiki/display/eng/Python+Agent+Managing+The+Package+Index)
 
 19. Make the "Release Notes" public. (You don't need to have the Documentation
 Team do this step. We have the authority to publish release notes.)

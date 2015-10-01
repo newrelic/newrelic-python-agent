@@ -305,7 +305,7 @@ to `PyPI`.
 
     Cut and paste the MD5 into the `newrelic-2.56.0.42.tar.gz.md5` file.
 
-16. Upload the package to the ``release`` directory for ``python_agent`` on
+18. Upload the package to the ``release`` directory for ``python_agent`` on
 hosts used by ``download.newrelic.com``. Generate a file in the same
 directory for the download with an ``.md5`` extension which contains the MD5
 hash of the package.
@@ -321,44 +321,44 @@ transferring files across see: [Managing the Download Site][download].
 [master]: https://pdx-hudson.datanerd.us/view/Python/job/Python_Agent-MASTER/
 [download]: https://newrelic.atlassian.net/wiki/display/eng/Python+Agent+Managing+The+Download+Site
 
-17. Update the ``python_agent_version`` configuration to ``A.B.C.D`` in APM
+19. Update the ``python_agent_version`` configuration to ``A.B.C.D`` in APM
 systems configuration page at: https://rpm.newrelic.com/admin/system_configurations.
 
     If we need to notify existing users to update their older agents, also
 update the ``min_python_agent_version`` to ``A.B.C.D``.
 
-18. Follow the instructions on the wiki page to [upload the source package toPyPI][pypi].
+20. Follow the instructions on the wiki page to [upload the source package toPyPI][pypi].
 
     Validate that ``pip install`` of package into a virtual environment works
 and that a ``newrelic-admin validate-config`` test runs okay.
 
 [pypi]: https://newrelic.atlassian.net/wiki/display/eng/Python+Agent+Managing+The+Package+Index)
 
-19. Verify that the build number is correct in the version string in the release notes. If
+21. Verify that the build number is correct in the version string in the release notes. If
 it needs to change, edit the release notes, but get in touch with the Documentation team so
 that they can change the URL for the release notes page.
 
-19. Make the "Release Notes" public. (You don't need to have the Documentation
+22. Make the "Release Notes" public. (You don't need to have the Documentation
 Team do this step. We have the authority to publish release notes.)
 
-20. Make sure any documentation specific to the release is marked as ready
+23. Make sure any documentation specific to the release is marked as ready
 for publication and a JIRA issue created in DOCS project to have it
 released. Ask someone in the DOCS team to perform the update to production
 if important to get to production quickly.
 
-21. Send an email to ``agent-releases@newrelic.com`` notifying them about
+24. Send an email to ``agent-releases@newrelic.com`` notifying them about
 the release. This will go to agent-team, partnership-team, and other
 interested parties. Include a copy of the public release notes, plus a
 separate section if necessary with additional details that may be relevant
 to internal parties.
 
-22. Send an email to ``python-support@newrelic.com`` with the Support notes
+25. Send an email to ``python-support@newrelic.com`` with the Support notes
 drafted in the pre-release steps.
 
-23. Notify Python Agent HipChat room that release is out!
+26. Notify Python Agent HipChat room that release is out!
 
-23. Add New & Noteworthy entries (multiple) via Fog Lights for the key
+27. Add New & Noteworthy entries (multiple) via Fog Lights for the key
 feature(s) or improvement(s) in the release.
 
-24. Make sure that all JIRA stories associated with the release version have
+28. Make sure that all JIRA stories associated with the release version have
 been updated as having been released.

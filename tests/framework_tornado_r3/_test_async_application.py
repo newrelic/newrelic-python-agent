@@ -120,13 +120,14 @@ class FinishExceptionRequestHandler(RequestHandler):
         raise tornado.web.Finish()
 
 class ReturnExceptionRequestHandler(RequestHandler):
-    TEMPLATE = b'Return %s'
+    RESPONSE_TEMPLATE = u'Return %s'
     RESPONSE = b'Return 1'  # 1 is the output from self.one()
 
     @tornado.gen.coroutine
     def get(self):
         x = yield self.one()
-        self.finish(self.TEMPLATE % x)
+        response = self.RESPONSE_TEMPLATE % x
+        self.finish(response.encode('ascii'))
 
     # This really isn't an exception but the standard with to return from a
     # coroutine.

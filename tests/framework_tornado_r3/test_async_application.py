@@ -76,11 +76,9 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         try:
             response = future.result()
         except tornado.httpclient.HTTPError:
-            print("HERE 1")
             if not is_http_error:
                 raise
         else:
-            print("HERE 2")
             self.assertFalse(is_http_error, "Client did not receive an error "
                     "though one was expected.")
             return response

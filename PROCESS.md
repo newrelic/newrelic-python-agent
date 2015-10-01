@@ -296,6 +296,14 @@ keep forever.
 forever". This will be the tarball you upload to `download.newrelic.com` and
 to `PyPI`.
 
+    1. Click on [Python_Agent-Master][master].
+    2. Click on the most-recent build (the one you marked as "Keep" in the
+       previous step) in "Build History" in the left sidebar.
+    3. Scroll to bottom and click "default" under the "Configurations" heading.
+    4. Click the link to the tarball under "Build Artifacts".
+
+[master]: https://pdx-hudson.datanerd.us/view/Python/job/Python_Agent-MASTER/
+
 17. Create an MD5 file with the same name as the source tarball, but with an
 `.md5` extension. (Example: `newrelic-2.56.0.42.tar.gz.md5`.)
 
@@ -305,20 +313,12 @@ to `PyPI`.
 
     Cut and paste the MD5 into the `newrelic-2.56.0.42.tar.gz.md5` file.
 
-18. Upload the package to the ``release`` directory for ``python_agent`` on
-hosts used by ``download.newrelic.com``. Generate a file in the same
-directory for the download with an ``.md5`` extension which contains the MD5
-hash of the package.
-
-    1. Click on [Python_Agent-Master][master].
-    2. Click on a build in "Build History" in the left sidebar.
-    3. Scroll to bottom and click "default" under the "Configurations" heading.
-    4. Gaze upon the wonder of the link to the tarball under "Build Artifacts".
+18. Upload the source package and the MD5 file to the ``release`` directory
+for ``python_agent`` on hosts used by ``download.newrelic.com``.
 
     For more details on working with the New Relic download site and
 transferring files across see: [Managing the Download Site][download].
 
-[master]: https://pdx-hudson.datanerd.us/view/Python/job/Python_Agent-MASTER/
 [download]: https://newrelic.atlassian.net/wiki/display/eng/Python+Agent+Managing+The+Download+Site
 
 19. Update the ``python_agent_version`` configuration to ``A.B.C.D`` in APM

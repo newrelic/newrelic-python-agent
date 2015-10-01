@@ -341,10 +341,8 @@ that they can change the URL for the release notes page.
 22. Make the "Release Notes" public. (You don't need to have the Documentation
 Team do this step. We have the authority to publish release notes.)
 
-23. Make sure any documentation specific to the release is marked as ready
-for publication and a JIRA issue created in DOCS project to have it
-released. Ask someone in the DOCS team to perform the update to production
-if important to get to production quickly.
+23. Contact the Documentation team so they can release any new or changed
+public documentation.
 
 24. Send an email to ``agent-releases@newrelic.com`` notifying them about
 the release. This will go to agent-team, partnership-team, and other

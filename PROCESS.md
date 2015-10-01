@@ -347,6 +347,8 @@ to internal parties.
 22. Send an email to ``python-support@newrelic.com`` with the Support notes
 drafted in the pre-release steps.
 
+23. Notify Python Agent HipChat room that release is out!
+
 23. Add New & Noteworthy entries (multiple) via Fog Lights for the key
 feature(s) or improvement(s) in the release.
 

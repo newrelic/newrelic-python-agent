@@ -100,6 +100,28 @@ def test_capture_request_params_default():
     response = target_application.get('/?foo=bar')
     assert response.body == b'Hello World!'
 
+_required_display_host_default = []
+_forgone_display_host_default = ['host.displayName']
+
+@validate_attributes('agent', _required_display_host_default,
+        _forgone_display_host_default)
+def test_display_host_default():
+    target_application = webtest.TestApp(target_wsgi_application)
+    response = target_application.get('/')
+    assert response.body == b'Hello World!'
+
+_settings_display_host_custom = {'process_host.display_name': 'CUSTOM NAME'}
+_required_display_host_custom = ['host.displayName']
+_forgone_display_host_custom = []
+
+@override_application_settings(_settings_display_host_custom)
+@validate_attributes('agent', _required_display_host_custom,
+        _forgone_display_host_custom)
+def test_display_host_custom():
+    target_application = webtest.TestApp(target_wsgi_application)
+    response = target_application.get('/')
+    assert response.body == b'Hello World!'
+
 # Tests for truncate()
 
 def test_truncate_string():

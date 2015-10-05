@@ -341,6 +341,10 @@ def _process_configuration(section):
                      'get', _map_inc_excl_attributes)
     _process_setting(section, 'error_collector.enabled',
                      'getboolean', None)
+    _process_setting(section, 'error_collector.capture_events',
+                     'getboolean', None)
+    _process_setting(section, 'error_collector.max_event_samples_stored',
+                     'getint', None)
     _process_setting(section, 'error_collector.capture_source',
                      'getboolean', None)
     _process_setting(section, 'error_collector.ignore_errors',

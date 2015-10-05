@@ -398,6 +398,41 @@ class TransactionNode(_TransactionNode):
 
         return intrinsics
 
+    def error_events(self, stats_table):
+
+        errors = []
+        for error in self.errors:
+
+            intrinsics = self.error_event_intrinsics(error, stats_table)
+
+            # Add user and agent attributes to event
+
+            user_attributes = {}
+            for attr in self.user_attributes:
+                if attr.destinations & DST_TRANSACTION_EVENTS:
+                    user_attributes[attr.name] = attr.value
+
+            agent_attributes = {}
+            for attr in self.agent_attributes:
+                if attr.destinations & DST_TRANSACTION_EVENTS:
+                    agent_attributes[attr.name] = attr.value
+
+            error_event = [intrinsics, user_attributes, agent_attributes]
+            errors.append(error_event)
+
+        return errors
+
+    def error_event_intrinsics(self, error, stats_table):
+
+        intrinsics = self._event_intrinsics(stats_table)
+
+        intrinsics['type'] = "TransactionError"
+        intrinsics['error.class'] = error.type
+        intrinsics['error.message'] = error.message
+        intrinsics['transactionName'] = self.path
+
+        return intrinsics
+
     def _event_intrinsics(self, stats_table):
         """Common attributes for analytics events"""
 

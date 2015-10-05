@@ -399,7 +399,6 @@ def validate_transaction_errors(errors=[], required_params=[],
             return transaction
 
         transaction = _bind_params(*args, **kwargs)
-
         if errors and isinstance(errors[0], (tuple, list)):
             expected = sorted(errors)
             captured = sorted([(e.type, e.message) for e in transaction.errors])
@@ -587,6 +586,35 @@ def validate_transaction_event_attributes(required_params={},
         return result
 
     return _validate_transaction_event_attributes
+
+def validate_transaction_error_event(required_intrinsics):
+    """Validate error event data on transaction node, for a transaction with
+    a single error.
+    """
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_transaction_error_event(wrapped, instance, args, kwargs):
+        def _bind_params(transaction, *args, **kwargs):
+            return transaction
+
+        transaction = _bind_params(*args, **kwargs)
+
+        error_events = transaction.error_events({})
+
+        assert len(error_events) == 1
+        event = error_events[0]
+
+        assert len(event) == 3 # [intrinsic, user, agent attributes]
+
+        # check for all  of the required intrinsic attributes
+
+        assert event[0]['timestamp'] < time.time()
+        for attr, value in required_intrinsics.items():
+            assert event[0][attr] == value, "Expected value for attribute {} : {}, Found : {}".format(attr, value, event[0][attr])
+
+        return wrapped(*args, **kwargs)
+
+    return _validate_transaction_error_event
 
 def validate_synthetics_transaction_trace(required_params={},
         forgone_params={}, should_exist=True):

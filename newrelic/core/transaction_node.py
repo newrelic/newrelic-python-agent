@@ -391,10 +391,18 @@ class TransactionNode(_TransactionNode):
 
         settings = self.settings
 
-        intrinsics = {}
+        intrinsics = self._event_intrinsics(stats_table)
 
         intrinsics['type'] = 'Transaction'
         intrinsics['name'] = self.path
+
+        return intrinsics
+
+    def _event_intrinsics(self, stats_table):
+        """Common attributes for analytics events"""
+
+        intrinsics = {}
+
         intrinsics['timestamp'] = self.start_time
         intrinsics['duration'] = self.duration
 

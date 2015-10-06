@@ -13,8 +13,13 @@ ERROR = ValueError(ERR_MESSAGE)
 
 @wsgi_application()
 def exceptional_wsgi_application(environ, start_response):
+
+    if 'err_message' in environ:
+        err_message = environ['err_message']
+    else:
+        err_message = 'Generic error message'
     try:
-        raise ERROR
+        raise ValueError(err_message)
     except:
         start_response('500 :(',[])
         raise
@@ -31,7 +36,8 @@ _intrinsic_attributes = {
 @validate_transaction_error_event(_intrinsic_attributes)
 def test_transaction_error_event():
     try:
-        response = exceptional_application.get(TRANS_URI)
+        response = exceptional_application.get(TRANS_URI,
+            extra_environ={'err_message' : ERR_MESSAGE})
     except ValueError:
         pass
 

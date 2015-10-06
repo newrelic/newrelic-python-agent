@@ -730,6 +730,7 @@ class Transaction(object):
     @property
     def agent_attributes(self):
         a_attrs = {}
+        settings = self._settings
         req_env = self._request_environment
 
         if req_env.get('REQUEST_METHOD', None):
@@ -770,6 +771,8 @@ class Transaction(object):
         if self._calls_yield != 0:
             a_attrs['wsgi.output.calls.yield'] = self._calls_yield
 
+        if self._settings.process_host.display_name:
+            a_attrs['host.displayName'] = settings.process_host.display_name
         if self._thread_utilization_value:
             a_attrs['thread.concurrency'] = self._thread_utilization_value
         if self.queue_wait != 0 :

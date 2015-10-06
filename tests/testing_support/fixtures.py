@@ -610,11 +610,41 @@ def validate_transaction_error_event(required_intrinsics):
 
         assert event[0]['timestamp'] < time.time()
         for attr, value in required_intrinsics.items():
-            assert event[0][attr] == value, "Expected value for attribute {} : {}, Found : {}".format(attr, value, event[0][attr])
+            assert event[0][attr] == value, (
+                    'name=%r, value=%r, intrinsics=%r' %
+                    (attr, value, event[0]))
 
         return wrapped(*args, **kwargs)
 
     return _validate_transaction_error_event
+
+def validate_non_transaction_error_event(required_intrinsics):
+    """Validate error event data for a single error occuring outside of a
+    transaction.
+    """
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_exception')
+    def _validate_non_transaction_error_event(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+
+            event = instance._error_event_cache
+
+            assert len(event) == 3 # [intrinsic, user, agent attributes]
+
+            # check for all  of the required intrinsic attributes
+
+            assert event[0]['timestamp'] < time.time()
+            for attr, value in required_intrinsics.items():
+                assert event[0][attr] == value, (
+                        'name=%r, value=%r, intrinsics=%r' %
+                        (attr, value, event[0]))
+        return result
+
+    return _validate_non_transaction_error_event
 
 def validate_synthetics_transaction_trace(required_params={},
         forgone_params={}, should_exist=True):

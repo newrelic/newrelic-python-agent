@@ -433,8 +433,16 @@ class TransactionNode(_TransactionNode):
 
         return intrinsics
 
+
     def _event_intrinsics(self, stats_table):
         """Common attributes for analytics events"""
+
+        if hasattr(self, '_event_intrinsics_cache'):
+
+            # We don't want to execute this function more than once, since
+            # it should always yield the same data per transaction
+
+            return self._event_intrinsics_cache
 
         intrinsics = {}
 
@@ -503,6 +511,8 @@ class TransactionNode(_TransactionNode):
 
         _add_call_time('Datastore/all', 'databaseDuration')
         _add_call_count('Datastore/all', 'databaseCallCount')
+
+        self._event_intrinsics_cache = intrinsics
 
         return intrinsics
 

@@ -1,7 +1,9 @@
 import sys
 import time
 
-from newrelic.agent import (record_exception, application, callable_name)
+from newrelic.agent import (record_exception, application, callable_name,
+        application_settings)
+from newrelic.common.encoding_utils import obfuscate, json_encode
 
 from testing_support.fixtures import (validate_error_event_sample_data,
         validate_non_transaction_error_event)
@@ -12,6 +14,17 @@ from testing_support.test_applications import (target_application,
 
 ERR_MESSAGE = 'Transaction had bad value'
 ERROR = ValueError(ERR_MESSAGE)
+
+def make_cross_agent_header(settings):
+    encoded_cross_process_id = obfuscate(settings.cross_process_id,
+                settings.encoding_key)
+    transaction_data = [7, 1, 77, '/path-hash']
+    encoded_transaction = obfuscate(json_encode(transaction_data),
+                settings.encoding_key)
+
+    headers = {'X-NewRelic-Transaction': encoded_transaction,
+               'X-NewRelic-ID': encoded_cross_process_id}
+    return headers
 
 _user_attributes = user_attributes_added()
 
@@ -69,10 +82,25 @@ def test_transaction_error_background_task():
     }
     response = target_application.get('/', extra_environ=test_environ)
 
-# -------------- Test Error Events outside of transaction ----------------
+_intrinsic_attributes = {
+    'error.class': callable_name(ERROR),
+    'error.message': ERR_MESSAGE,
+    'transactionName' : 'WebTransaction/Uri/',
+    'nr.referringTransactionGuid': 7,
+}
 
-ERR_MESSAGE = 'Transaction had bad value'
-ERROR = ValueError(ERR_MESSAGE)
+@validate_error_event_sample_data(required_attrs=_intrinsic_attributes,
+        required_user_attrs=_user_attributes)
+def test_transaction_error_cross_agent():
+    test_environ = {
+                'err_message' : ERR_MESSAGE,
+    }
+    settings = application_settings()
+    headers = make_cross_agent_header(settings)
+    response = target_application.get('/', headers=headers,
+            extra_environ=test_environ)
+
+# -------------- Test Error Events outside of transaction ----------------
 
 _intrinsic_attributes = {
     'error.class': callable_name(ERROR),

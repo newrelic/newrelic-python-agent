@@ -1300,6 +1300,11 @@ def _validate_event_attributes(intrinsics, user_attributes,
     else:
         assert 'queueDuration' not in intrinsics
 
+    if 'nr.referringTransactionGuid' in required_intrinsics:
+        guid = required_intrinsics['nr.referringTransactionGuid']
+        assert intrinsics['nr.referringTransactionGuid'] == guid
+    else:
+        assert 'nr.referringTransactionGuid' not in intrinsics
 
 def override_application_name(app_name):
     # The argument here cannot be named 'name', or else it triggers

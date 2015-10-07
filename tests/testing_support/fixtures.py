@@ -1188,8 +1188,8 @@ def validate_database_trace_inputs(sql_parameters_type):
 
     return _validate_database_trace_inputs
 
-def validate_transaction_event_sample_data(name, capture_attributes={},
-        database_call_count=0, external_call_count=0, queue_duration=False):
+def validate_transaction_event_sample_data(required_attrs,
+        required_user_attrs={}):
     """This test depends on values in the test application from
     agent_features/test_analytics.py, and is only meant to be run as a
     validation with those tests.
@@ -1208,22 +1208,19 @@ def validate_transaction_event_sample_data(name, capture_attributes={},
         intrinsics, user_attributes, agent_attributes = sample
 
         assert intrinsics['type'] == 'Transaction'
-        assert intrinsics['name'] == name
+        assert intrinsics['name'] == required_attrs['name']
 
         _validate_event_attributes(intrinsics,
                                    user_attributes,
-                                   agent_attributes,
-                                   capture_attributes,
-                                   database_call_count,
-                                   external_call_count,
-                                   queue_duration)
+                                   required_attrs,
+                                   required_user_attrs,
+                                   )
 
         return wrapped(*args, **kwargs)
 
     return _validate_transaction_event_sample_data
 
-def validate_error_event_sample_data(required_attrs, capture_attributes={},
-        database_call_count=0, external_call_count=0, queue_duration=False):
+def validate_error_event_sample_data(required_attrs, required_user_attrs={}):
     """This test depends on values in the test application from
     agent_features/test_analytics.py, and is only meant to be run as a
     validation with those tests.
@@ -1253,52 +1250,52 @@ def validate_error_event_sample_data(required_attrs, capture_attributes={},
             # These intrinsics should always be present
 
             assert intrinsics['type'] == 'TransactionError'
-            assert intrinsics['transactionName'] == required_attrs['transactionName']
+            assert (intrinsics['transactionName'] ==
+                    required_attrs['transactionName'])
             assert intrinsics['error.class'] == required_attrs['error.class']
-            assert intrinsics['error.message'] == required_attrs['error.message']
+            assert (intrinsics['error.message'] ==
+                    required_attrs['error.message'])
 
             _validate_event_attributes(intrinsics,
                                        user_attributes,
-                                       agent_attributes,
-                                       capture_attributes,
-                                       database_call_count,
-                                       external_call_count,
-                                       queue_duration)
+                                       required_attrs,
+                                       required_user_attrs)
 
         return wrapped(*args, **kwargs)
 
     return _validate_error_event_sample_data
 
-def _validate_event_attributes(intrinsics, user_attributes, agent_attributes,
-            capture_attributes, database_call_count, external_call_count,
-            queue_duration):
+def _validate_event_attributes(intrinsics, user_attributes,
+            required_intrinsics, required_user):
 
     assert intrinsics['timestamp'] >= 0.0
     assert intrinsics['duration'] >= 0.0
 
     assert 'memcacheDuration' not in intrinsics
 
-    if capture_attributes:
-        for attr, value in capture_attributes.items():
+    if required_user:
+        for attr, value in required_user.items():
             assert user_attributes[attr] == value
     else:
         assert user_attributes == {}
 
-    if database_call_count:
+    if 'databaseCallCount' in required_intrinsics:
         assert intrinsics['databaseDuration'] > 0
-        assert intrinsics['databaseCallCount'] == database_call_count
+        call_count = required_intrinsics['databaseCallCount']
+        assert intrinsics['databaseCallCount'] == call_count
     else:
         assert 'databaseDuration' not in intrinsics
         assert 'databaseCallCount' not in intrinsics
 
-    if external_call_count:
+    if 'externalCallCount' in required_intrinsics:
         assert intrinsics['externalDuration'] > 0
-        assert intrinsics['externalCallCount'] == external_call_count
+        call_count = required_intrinsics['externalCallCount']
+        assert intrinsics['externalCallCount'] == call_count
     else:
         assert 'externalDuration' not in intrinsics
         assert 'externalCallCount' not in intrinsics
 
-    if queue_duration:
+    if intrinsics.get('queueDuration', False):
         assert intrinsics['queueDuration'] > 0
     else:
         assert 'queueDuration' not in intrinsics

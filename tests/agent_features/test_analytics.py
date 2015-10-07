@@ -16,7 +16,12 @@ _user_attributes = user_attributes_added()
 _test_capture_attributes_enabled_settings = {
     'browser_monitoring.attributes.enabled': True }
 
-@validate_transaction_event_sample_data(name='WebTransaction/Uri/', capture_attributes=_user_attributes)
+_intrinsic_attributes = {
+        'name': 'WebTransaction/Uri/'
+}
+
+@validate_transaction_event_sample_data(required_attrs=_intrinsic_attributes,
+        required_user_attrs=_user_attributes)
 @override_application_settings(_test_capture_attributes_enabled_settings)
 def test_capture_attributes_enabled():
     settings = application_settings()
@@ -78,8 +83,8 @@ def test_capture_attributes_enabled():
 _test_no_attributes_recorded_settings = {
     'browser_monitoring.attributes.enabled': True }
 
-@validate_transaction_event_sample_data(name='WebTransaction/Uri/',
-        capture_attributes={})
+@validate_transaction_event_sample_data(required_attrs=_intrinsic_attributes,
+        required_user_attrs={})
 @override_application_settings(_test_no_attributes_recorded_settings)
 def test_no_attributes_recorded():
     settings = application_settings()
@@ -120,8 +125,8 @@ _test_analytic_events_capture_attributes_disabled_settings = {
     'transaction_events.attributes.enabled': False,
     'browser_monitoring.attributes.enabled': True }
 
-@validate_transaction_event_sample_data(name='WebTransaction/Uri/',
-        capture_attributes={})
+@validate_transaction_event_sample_data(required_attrs=_intrinsic_attributes,
+        required_user_attrs={})
 @override_application_settings(
         _test_analytic_events_capture_attributes_disabled_settings)
 def test_analytic_events_capture_attributes_disabled():
@@ -159,7 +164,8 @@ def test_analytic_events_capture_attributes_disabled():
 
     assert 'atts' in data
 
-@validate_transaction_event_sample_data(name='WebTransaction/Uri/', capture_attributes=_user_attributes)
+@validate_transaction_event_sample_data(required_attrs=_intrinsic_attributes,
+        required_user_attrs=_user_attributes)
 def test_capture_attributes_default():
     settings = application_settings()
 
@@ -194,9 +200,12 @@ def test_capture_attributes_default():
 _test_analytic_events_background_task_settings = {
     'browser_monitoring.attributes.enabled': True }
 
+_intrinsic_attributes = {
+        'name': 'OtherTransaction/Uri/'
+}
 
-@validate_transaction_event_sample_data(name='OtherTransaction/Uri/',
-        capture_attributes=_user_attributes)
+@validate_transaction_event_sample_data(required_attrs=_intrinsic_attributes,
+        required_user_attrs=_user_attributes)
 @override_application_settings(
         _test_analytic_events_background_task_settings)
 def test_analytic_events_background_task():
@@ -218,7 +227,12 @@ def test_analytic_events_background_task():
 _test_capture_attributes_disabled_settings = {
     'browser_monitoring.attributes.enabled': False }
 
-@validate_transaction_event_sample_data(name='WebTransaction/Uri/', capture_attributes=_user_attributes)
+_intrinsic_attributes = {
+        'name': 'WebTransaction/Uri/'
+}
+
+@validate_transaction_event_sample_data(required_attrs=_intrinsic_attributes,
+        required_user_attrs=_user_attributes)
 @override_application_settings(_test_capture_attributes_disabled_settings)
 def test_capture_attributes_disabled():
     settings = application_settings()
@@ -338,7 +352,8 @@ def test_analytic_events_disabled():
 
 # -------------- Test call counts in analytic events ----------------
 
-@validate_transaction_event_sample_data(name='WebTransaction/Uri/', capture_attributes=_user_attributes)
+@validate_transaction_event_sample_data(required_attrs=_intrinsic_attributes,
+        required_user_attrs=_user_attributes)
 def test_no_database_or_external_attributes_in_analytics():
     """Make no external calls or database calls in the transaction and check
     if the analytic event doesn't have the databaseCallCount, databaseDuration,
@@ -359,8 +374,13 @@ def test_no_database_or_external_attributes_in_analytics():
 
     assert content == 'RESPONSE'
 
-@validate_transaction_event_sample_data(name='WebTransaction/Uri/db',
-        capture_attributes=_user_attributes, database_call_count=2)
+_intrinsic_attributes = {
+        'name': 'WebTransaction/Uri/db',
+        'databaseCallCount': 2,
+}
+
+@validate_transaction_event_sample_data(required_attrs=_intrinsic_attributes,
+        required_user_attrs=_user_attributes)
 def test_database_attributes_in_analytics():
     """Make database calls in the transaction and check if the analytic
     event has the databaseCallCount and databaseDuration attributes.
@@ -383,8 +403,13 @@ def test_database_attributes_in_analytics():
 
     assert content == 'RESPONSE'
 
-@validate_transaction_event_sample_data(name='WebTransaction/Uri/ext',
-        capture_attributes=_user_attributes, external_call_count=2)
+_intrinsic_attributes = {
+        'name': 'WebTransaction/Uri/ext',
+        'externalCallCount': 2,
+}
+
+@validate_transaction_event_sample_data(required_attrs=_intrinsic_attributes,
+        required_user_attrs=_user_attributes)
 def test_external_attributes_in_analytics():
     """Make external calls in the transaction and check if the analytic
     event has the externalCallCount and externalDuration attributes.
@@ -407,9 +432,14 @@ def test_external_attributes_in_analytics():
 
     assert content == 'RESPONSE'
 
-@validate_transaction_event_sample_data(name='WebTransaction/Uri/dbext',
-        capture_attributes=_user_attributes, database_call_count=2,
-        external_call_count=2)
+_intrinsic_attributes = {
+        'name': 'WebTransaction/Uri/dbext',
+        'databaseCallCount': 2,
+        'externalCallCount': 2,
+}
+
+@validate_transaction_event_sample_data(required_attrs=_intrinsic_attributes,
+        required_user_attrs=_user_attributes)
 def test_database_and_external_attributes_in_analytics():
     """Make external calls and database calls in the transaction and check if
     the analytic event has the databaseCallCount, databaseDuration,

@@ -30,6 +30,9 @@ _custom_parameters = {
 }
 
 def user_attributes_added():
+    """Expected values when the custom parameters in this file are added as user
+    attributes
+    """
     user_attributes = _custom_parameters.copy()
     user_attributes['list'] = '[]'
     user_attributes['tuple'] = '()'

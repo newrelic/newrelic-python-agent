@@ -58,27 +58,27 @@ def test_capture_attributes_enabled():
             obfuscation_key))
     user_attrs = attributes['u']
 
-    assert user_attrs['user'] == u'user-name'
-    assert user_attrs['account'] == u'account-name'
-    assert user_attrs['product'] == u'product-name'
 
     # When you round-trip through json encoding and json decoding, you
     # always end up with unicode (unicode in Python 2, str in Python 3.)
     #
     # Previously, we would drop attribute values of type 'bytes' in Python 3.
     # Now, we accept them and `json_encode` uses an encoding of 'latin-1',
-    # just like it does for Python 2.
+    # just like it does for Python 2. This only applies to attributes in browser
+    # monitoring
 
-    assert user_attrs['bytes'] == u'bytes-value'
-    assert user_attrs['string'] == u'string-value'
-    assert user_attrs['unicode'] == u'unicode-value'
+    browser_attributes = _user_attributes.copy()
 
-    assert user_attrs['invalid-utf8'] == b'\xe2'.decode('latin-1')
-    assert user_attrs['multibyte-utf8'] == b'\xe2\x88\x9a'.decode('latin-1')
-    assert user_attrs['multibyte-unicode'] == b'\xe2\x88\x9a'.decode('utf-8')
+    browser_attributes['bytes'] = u'bytes-value'
+    browser_attributes['invalid-utf8'] = _user_attributes[
+                                            'invalid-utf8'].decode('latin-1')
+    browser_attributes['multibyte-utf8'] = _user_attributes[
+                                            'multibyte-utf8'].decode('latin-1')
 
-    assert user_attrs['integer'] == 1
-    assert user_attrs['float'] == 1.0
+    for attr, value in browser_attributes.items():
+        assert user_attrs[attr] == value, (
+                "attribute %r expected %r, found %r" %
+                (attr, value, user_attrs[attr]))
 
 _test_no_attributes_recorded_settings = {
     'browser_monitoring.attributes.enabled': True }

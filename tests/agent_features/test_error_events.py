@@ -6,7 +6,9 @@ from newrelic.agent import (record_exception, application, callable_name)
 from testing_support.fixtures import (validate_error_event_sample_data,
         validate_non_transaction_error_event)
 from testing_support.test_applications import (target_application,
-            user_attributes_added)
+        user_attributes_added)
+
+# Error in test app hard-coded as a ValueError
 
 ERR_MESSAGE = 'Transaction had bad value'
 ERROR = ValueError(ERR_MESSAGE)
@@ -21,8 +23,11 @@ _intrinsic_attributes = {
 
 @validate_error_event_sample_data(required_attrs=_intrinsic_attributes)
 def test_transaction_error_event_no_extra_attributes():
-    response = target_application.get('/', extra_environ={
-            'record_attributes': 'FALSE'})
+    test_environ = {
+                'err_message' : ERR_MESSAGE,
+                'record_attributes': 'FALSE'
+    }
+    response = target_application.get('/', extra_environ=test_environ)
 
 _intrinsic_attributes = {
     'error.class': callable_name(ERROR),
@@ -55,7 +60,7 @@ _intrinsic_attributes = {
 
 @validate_error_event_sample_data(required_attrs=_intrinsic_attributes,
         required_user_attrs=_user_attributes)
-def test_background_task():
+def test_transaction_error_background_task():
     test_environ = {
                 'err_message' : ERR_MESSAGE,
                 'external' : '2',

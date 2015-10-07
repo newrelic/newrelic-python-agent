@@ -12,9 +12,6 @@ from newrelic.agent import (add_user_attribute, add_custom_parameter,
         wsgi_application, record_exception, get_browser_timing_header,
         get_browser_timing_footer)
 
-ERR_MESSAGE = 'Transaction had bad value'
-ERROR = ValueError(ERR_MESSAGE)
-
 _custom_parameters = {
         'user' : 'user-name',
         'account' : 'account-name',
@@ -67,10 +64,11 @@ def target_wsgi_application(environ, start_response):
             r = urlopen('http://www.python.org')
             r.read(10)
 
-    try:
-        raise ERROR
-    except ValueError:
-        record_exception(*sys.exc_info())
+    if 'err_message' in environ:
+        try:
+            raise ValueError(environ['err_message'])
+        except ValueError:
+            record_exception(*sys.exc_info())
 
     text = '<html><head>%s</head><body><p>RESPONSE</p>%s</body></html>'
 

@@ -1214,7 +1214,7 @@ def validate_database_trace_inputs(sql_parameters_type):
 
     return _validate_database_trace_inputs
 
-def validate_analytics_sample_data(name, capture_attributes=True,
+def validate_transaction_event_sample_data(name, capture_attributes=True,
         database_call_count=0, external_call_count=0):
     """This test depends on values in the test application from
     agent_features/test_analytics.py, and is only meant to be run as a
@@ -1222,7 +1222,7 @@ def validate_analytics_sample_data(name, capture_attributes=True,
     """
     @transient_function_wrapper('newrelic.core.stats_engine',
             'SampledDataSet.add')
-    def _validate_analytics_sample_data(wrapped, instance, args, kwargs):
+    def _validate_transaction_event_sample_data(wrapped, instance, args, kwargs):
         def _bind_params(sample, *args, **kwargs):
             return sample
 
@@ -1235,60 +1235,70 @@ def validate_analytics_sample_data(name, capture_attributes=True,
 
         assert intrinsics['type'] == 'Transaction'
         assert intrinsics['name'] == name
-        assert intrinsics['timestamp'] >= 0.0
-        assert intrinsics['duration'] >= 0.0
 
-        assert 'queueDuration' not in intrinsics
-        assert 'memcacheDuration' not in intrinsics
-
-        if capture_attributes:
-            assert user_attributes['user'] == u'user-name'
-            assert user_attributes['account'] == u'account-name'
-            assert user_attributes['product'] == u'product-name'
-
-            # Here, attributes have been sanitized, but there's been no
-            # json encoding or decoding, so the type for values in
-            # user_attributes is the same as what was input.
-
-            assert user_attributes['bytes'] == b'bytes-value'
-            assert user_attributes['string'] == 'string-value'
-            assert user_attributes['unicode'] == u'unicode-value'
-
-            assert user_attributes['integer'] == 1
-            assert user_attributes['float'] == 1.0
-
-            assert user_attributes['invalid-utf8'] == b'\xe2'
-            assert user_attributes['multibyte-utf8'] == b'\xe2\x88\x9a'
-
-            multibyte_value = b'\xe2\x88\x9a'.decode('utf-8')
-            assert user_attributes['multibyte-unicode'] == multibyte_value
-
-            # Objects get converted to strings.
-
-            assert user_attributes['list'] == '[]'
-            assert user_attributes['dict'] == '{}'
-            assert user_attributes['tuple'] == '()'
-
-        else:
-            assert user_attributes == {}
-
-        if database_call_count:
-            assert intrinsics['databaseDuration'] > 0
-            assert intrinsics['databaseCallCount'] == database_call_count
-        else:
-            assert 'databaseDuration' not in intrinsics
-            assert 'databaseCallCount' not in intrinsics
-
-        if external_call_count:
-            assert intrinsics['externalDuration'] > 0
-            assert intrinsics['externalCallCount'] == external_call_count
-        else:
-            assert 'externalDuration' not in intrinsics
-            assert 'externalCallCount' not in intrinsics
+        _validate_event_attributes(intrinsics,
+                                   user_attributes,
+                                   agent_attributes,
+                                   capture_attributes,
+                                   database_call_count,
+                                   external_call_count)
 
         return wrapped(*args, **kwargs)
 
-    return _validate_analytics_sample_data
+    return _validate_transaction_event_sample_data
+
+def _validate_event_attributes(intrinsics, user_attributes, agent_attributes,
+            capture_attributes, database_call_count, external_call_count):
+    assert intrinsics['timestamp'] >= 0.0
+    assert intrinsics['duration'] >= 0.0
+
+    assert 'queueDuration' not in intrinsics
+    assert 'memcacheDuration' not in intrinsics
+
+    if capture_attributes:
+        assert user_attributes['user'] == u'user-name'
+        assert user_attributes['account'] == u'account-name'
+        assert user_attributes['product'] == u'product-name'
+
+        # Here, attributes have been sanitized, but there's been no
+        # json encoding or decoding, so the type for values in
+        # user_attributes is the same as what was input.
+
+        assert user_attributes['bytes'] == b'bytes-value'
+        assert user_attributes['string'] == 'string-value'
+        assert user_attributes['unicode'] == u'unicode-value'
+
+        assert user_attributes['integer'] == 1
+        assert user_attributes['float'] == 1.0
+
+        assert user_attributes['invalid-utf8'] == b'\xe2'
+        assert user_attributes['multibyte-utf8'] == b'\xe2\x88\x9a'
+
+        multibyte_value = b'\xe2\x88\x9a'.decode('utf-8')
+        assert user_attributes['multibyte-unicode'] == multibyte_value
+
+        # Objects get converted to strings.
+
+        assert user_attributes['list'] == '[]'
+        assert user_attributes['dict'] == '{}'
+        assert user_attributes['tuple'] == '()'
+
+    else:
+        assert user_attributes == {}
+
+    if database_call_count:
+        assert intrinsics['databaseDuration'] > 0
+        assert intrinsics['databaseCallCount'] == database_call_count
+    else:
+        assert 'databaseDuration' not in intrinsics
+        assert 'databaseCallCount' not in intrinsics
+
+    if external_call_count:
+        assert intrinsics['externalDuration'] > 0
+        assert intrinsics['externalCallCount'] == external_call_count
+    else:
+        assert 'externalDuration' not in intrinsics
+        assert 'externalCallCount' not in intrinsics
 
 def override_application_name(app_name):
     # The argument here cannot be named 'name', or else it triggers

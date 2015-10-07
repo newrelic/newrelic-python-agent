@@ -587,37 +587,6 @@ def validate_transaction_event_attributes(required_params={},
 
     return _validate_transaction_event_attributes
 
-def validate_transaction_error_event(required_intrinsics):
-    """Validate error event data on transaction node, for a transaction with
-    a single error.
-    """
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
-    def _validate_transaction_error_event(wrapped, instance, args, kwargs):
-        def _bind_params(transaction, *args, **kwargs):
-            return transaction
-
-        transaction = _bind_params(*args, **kwargs)
-
-        error_events = transaction.error_events({})
-
-        assert len(error_events) == 1
-        event = error_events[0]
-
-        assert len(event) == 3 # [intrinsic, user, agent attributes]
-
-        # check for all  of the required intrinsic attributes
-
-        assert event[0]['timestamp'] < time.time()
-        for attr, value in required_intrinsics.items():
-            assert event[0][attr] == value, (
-                    'name=%r, value=%r, intrinsics=%r' %
-                    (attr, value, event[0]))
-
-        return wrapped(*args, **kwargs)
-
-    return _validate_transaction_error_event
-
 def validate_non_transaction_error_event(required_intrinsics):
     """Validate error event data for a single error occuring outside of a
     transaction.
@@ -1247,8 +1216,53 @@ def validate_transaction_event_sample_data(name, capture_attributes=True,
 
     return _validate_transaction_event_sample_data
 
+def validate_error_event_sample_data(name, capture_attributes=True,
+        database_call_count=0, external_call_count=0):
+    """This test depends on values in the test application from
+    agent_features/test_analytics.py, and is only meant to be run as a
+    validation with those tests.
+    """
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_error_event_sample_data(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+
+            def _bind_params(transaction, *args, **kwargs):
+                return transaction
+
+            transaction = _bind_params(*args, **kwargs)
+
+            error_events = transaction.error_events(instance.stats_table)
+            sample = error_events[0]
+
+            assert isinstance(sample, list)
+            assert len(sample) == 3
+
+            intrinsics, user_attributes, agent_attributes = sample
+
+            assert intrinsics['type'] == 'TransactionError'
+            assert intrinsics['transactionName'] == name
+            assert intrinsics['error.class'] == 'exceptions:ValueError'
+            assert intrinsics['error.message'] == 'Bad value!'
+
+            _validate_event_attributes(intrinsics,
+                                       user_attributes,
+                                       agent_attributes,
+                                       capture_attributes,
+                                       database_call_count,
+                                       external_call_count)
+
+        return wrapped(*args, **kwargs)
+
+    return _validate_error_event_sample_data
+
 def _validate_event_attributes(intrinsics, user_attributes, agent_attributes,
             capture_attributes, database_call_count, external_call_count):
+
     assert intrinsics['timestamp'] >= 0.0
     assert intrinsics['duration'] >= 0.0
 

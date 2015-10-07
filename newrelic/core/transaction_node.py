@@ -396,6 +396,27 @@ class TransactionNode(_TransactionNode):
         intrinsics['type'] = 'Transaction'
         intrinsics['name'] = self.path
 
+        def _add_if_not_empty(key, value):
+            if value:
+                intrinsics[key] = value
+
+        if self.path_hash:
+            intrinsics['nr.guid'] = self.guid
+            intrinsics['nr.tripId'] = self.trip_id
+            intrinsics['nr.pathHash'] = self.path_hash
+
+            _add_if_not_empty('nr.referringPathHash',
+                    self.referring_path_hash)
+            _add_if_not_empty('nr.alternatePathHashes',
+                    ','.join(self.alternate_path_hashes))
+            _add_if_not_empty('nr.referringTransactionGuid',
+                    self.referring_transaction_guid)
+            _add_if_not_empty('nr.apdexPerfZone',
+                    self.apdex_perf_zone())
+
+        if self.synthetics_resource_id:
+            intrinsics['nr.guid'] = self.guid
+
         return intrinsics
 
     def error_events(self, stats_table):
@@ -431,6 +452,11 @@ class TransactionNode(_TransactionNode):
         intrinsics['error.message'] = error.message
         intrinsics['transactionName'] = self.path
 
+        intrinsics['nr.transactionGuid'] = self.guid
+        if self.referring_transaction_guid:
+            guid = self.referring_transaction_guid
+            intrinsics['nr.referringTransactionGuid'] = guid
+
         return intrinsics
 
 
@@ -449,28 +475,9 @@ class TransactionNode(_TransactionNode):
         intrinsics['timestamp'] = self.start_time
         intrinsics['duration'] = self.duration
 
-        def _add_if_not_empty(key, value):
-            if value:
-                intrinsics[key] = value
-
-        if self.path_hash:
-            intrinsics['nr.guid'] = self.guid
-            intrinsics['nr.tripId'] = self.trip_id
-            intrinsics['nr.pathHash'] = self.path_hash
-
-            _add_if_not_empty('nr.referringPathHash',
-                    self.referring_path_hash)
-            _add_if_not_empty('nr.alternatePathHashes',
-                    ','.join(self.alternate_path_hashes))
-            _add_if_not_empty('nr.referringTransactionGuid',
-                    self.referring_transaction_guid)
-            _add_if_not_empty('nr.apdexPerfZone',
-                    self.apdex_perf_zone())
-
         # Add the Synthetics attributes to the intrinsics dict.
 
         if self.synthetics_resource_id:
-            intrinsics['nr.guid'] = self.guid
             intrinsics['nr.syntheticsResourceId'] = self.synthetics_resource_id
             intrinsics['nr.syntheticsJobId'] = self.synthetics_job_id
             intrinsics['nr.syntheticsMonitorId'] = self.synthetics_monitor_id

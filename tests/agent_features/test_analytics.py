@@ -1,100 +1,21 @@
 import sys
-import webtest
 import json
 
-try:
-    from urllib2 import urlopen  # Py2.X
-except ImportError:
-    from urllib.request import urlopen   # Py3.X
-
-import sqlite3 as db
-
-from newrelic.packages import six
-
-from testing_support.fixtures import (override_application_settings,
-        validate_transaction_event_sample_data, validate_error_event_sample_data,
-        validate_non_transaction_error_event)
-
-from newrelic.agent import (add_user_attribute, add_custom_parameter,
-        get_browser_timing_header, get_browser_timing_footer,
-        application_settings, wsgi_application, transient_function_wrapper,
+from newrelic.agent import (application_settings, transient_function_wrapper,
         record_exception, application, callable_name)
 
 from newrelic.common.encoding_utils import deobfuscate
 
-DATABASE_NAME = ':memory:'
+from testing_support.fixtures import (override_application_settings,
+        validate_transaction_event_sample_data, validate_error_event_sample_data,
+        validate_non_transaction_error_event)
+from testing_support.test_applications import (target_application,
+            user_attributes_added)
+
 ERR_MESSAGE = 'Transaction had bad value'
 ERROR = ValueError(ERR_MESSAGE)
 
-_custom_parameters = {
-        'user' : 'user-name',
-        'account' : 'account-name',
-        'product' : 'product-name',
-        'bytes' : b'bytes-value',
-        'string' : 'string-value',
-        'unicode' : u'unicode-value',
-        'integer' : 1,
-        'float' : 1.0,
-        'invalid-utf8' : b'\xe2',
-        'multibyte-utf8' : b'\xe2\x88\x9a',
-        'multibyte-unicode' : b'\xe2\x88\x9a'.decode('utf-8'),
-        'list' : [],
-        'tuple' : (),
-        'dict' : {},
-}
-
-@wsgi_application()
-def target_wsgi_application(environ, start_response):
-    status = '200 OK'
-
-    path = environ.get('PATH_INFO')
-
-    if environ.get('record_attributes', 'TRUE') == 'TRUE':
-
-        # The add_user_attribute() call is now just an alias for
-        # calling add_custom_parameter() but for backward compatibility
-        # still need to check it works.
-
-        for attr, val in _custom_parameters.items():
-            if attr in ['user', 'product', 'account']:
-                add_user_attribute(attr, val)
-            else:
-                add_custom_parameter(attr, val)
-
-    if 'db' in environ and int(environ['db']) > 0:
-        connection = db.connect(":memory:")
-        for i in range(int(environ['db']) - 1):
-            connection.execute("""create table test_db (a, b, c)""")
-
-    if 'external' in environ:
-        for i in range(int(environ['external'])):
-            r = urlopen('http://www.python.org')
-            r.read(10)
-
-    try:
-        raise ERROR
-    except ValueError:
-        record_exception(*sys.exc_info())
-
-    text = '<html><head>%s</head><body><p>RESPONSE</p>%s</body></html>'
-
-    output = (text % (get_browser_timing_header(),
-            get_browser_timing_footer())).encode('UTF-8')
-
-    response_headers = [('Content-type', 'text/html; charset=utf-8'),
-                        ('Content-Length', str(len(output)))]
-    start_response(status, response_headers)
-
-    return [output]
-
-target_application = webtest.TestApp(target_wsgi_application)
-
-# transform user attributes into expected values:
-
-_user_attributes = _custom_parameters.copy()
-_user_attributes['list'] = '[]'
-_user_attributes['tuple'] = '()'
-_user_attributes['dict'] = '{}'
+_user_attributes = user_attributes_added()
 
 _error_intrinsics = {
     'error.class': callable_name(ERROR),

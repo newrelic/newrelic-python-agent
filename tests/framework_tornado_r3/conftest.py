@@ -1,7 +1,8 @@
 import pytest
 
 from testing_support.fixtures import (code_coverage_fixture,
-        collector_agent_registration_fixture, collector_available_fixture)
+        collector_agent_registration_fixture, collector_available_fixture,
+        wrap_record_transaction_fixture, clear_record_transaction_list)
 
 _coverage_source = [
     'newrelic.hooks.framework_tornado_r3',
@@ -23,9 +24,14 @@ collector_agent_registration = collector_agent_registration_fixture(
         default_settings=_default_settings)
 
 @pytest.fixture(scope='session')
-def session_initialization(code_coverage, collector_agent_registration):
+def session_initialization(code_coverage, collector_agent_registration,
+        wrap_record_transaction_fixture):
     pass
 
 @pytest.fixture(scope='function')
 def requires_data_collector(collector_available_fixture):
+    pass
+
+@pytest.fixture(scope='function')
+def prepare_record_transaction(clear_record_transaction_list):
     pass

@@ -1512,3 +1512,223 @@ def error_is_saved(error, app_name=None):
     stats = core_application_stats_engine(app_name)
     errors = stats.error_data()
     return error_name in [e.type for e in errors if e.type == error_name]
+
+# The following fixtures and validation functions are used in the Tornado 4
+# instrumentation.
+
+# To validate the contents of a recorded transaction one would use the fixtures
+# wrap_record_transaction_fixture and clear_record_transaction_list. The first
+# fixture runs once per test session and wraps record_transaction so it writes
+# to _RECORDED_TRANSACTIONS. The clear_record_transaction_list ensures that
+# the transactions are cleared out for each test.
+
+# _RECORDED_TRANSACTIONS is a list of all the transaction recorded during a
+# test. It gets cleared at the beginning of each test by the
+# clear_record_transaction_list fixture.
+
+_RECORDED_TRANSACTIONS = []
+
+@pytest.fixture(scope='function')
+def clear_record_transaction_list():
+    global _RECORDED_TRANSACTIONS
+    # Truncate the _RECORDED_TRANSACTIONS list. This actually assigns
+    # _RECORDED_TRANSACTIONS a new, empty list so it is a new object.
+    # This is fine since _RECORDED_TRANSACTIONS is private to this module, but
+    # could lead to problems if one tries to export it.
+    _RECORDED_TRANSACTIONS = []
+
+@pytest.fixture(scope='session')
+def wrap_record_transaction_fixture(request):
+
+    def _nr_wrapper_record_transaction(wrapped, instance, args, kwargs):
+        def _bind_params(transaction, *args, **kwargs):
+            return transaction
+
+        transaction = _bind_params(*args, **kwargs)
+        errors = sorted([(e.type, e.message) for e in transaction.errors])
+
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+
+        metrics = instance.stats_table
+        _RECORDED_TRANSACTIONS.append((metrics, errors))
+
+    wrap_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction', _nr_wrapper_record_transaction)
+
+def tornado_validate_count_transaction_metrics(name, group='Function',
+        background_task=False, scoped_metrics=[], rollup_metrics=[],
+        custom_metrics=[]):
+    """Decorator to validates count metrics.
+
+    Arguments:
+      name: metric name
+      background_task: A boolean. If True the top level path of the metric
+          is WebTransaction. Otherwise it is OtherTransaction.
+      group: The second level path of the metric.
+      scoped_metrics: A list of 2-tuples representing an expected metric:
+        (scoped_metric_name, expected_count)
+      rollup_metrics: A list of 2-tuples representing a rollup metric:
+        (rollup_metric_name, expected_count)
+      custom_metrics: A list of 2-tuple representing a custom metric:
+        (custom_metric_name, expected_count)
+
+    Note, this only validates the first transaction in the test.
+
+    """
+
+    def _validate_metric_count(metrics, name, scope, count):
+        key = (name, scope)
+        metric = metrics.get(key)
+
+        def _metrics_table():
+            return 'metric=%r, metrics=%r' % (key, metrics)
+
+        def _metric_details():
+            return 'metric=%r, count=%r' % (key, metric.call_count)
+
+        assert metric is not None, _metrics_table()
+        assert metric.call_count == count, _metric_details()
+
+    @function_wrapper
+    def _validate(wrapped, instance, args, kwargs):
+        wrapped(*args, **kwargs)
+
+        if background_task:
+            rollup_metric = 'OtherTransaction/all'
+            transaction_metric = 'OtherTransaction/%s/%s' % (group, name)
+        else:
+            rollup_metric = 'WebTransaction'
+            transaction_metric = 'WebTransaction/%s/%s' % (group, name)
+
+        # We only validate the first recorded transaction
+        metrics, errors = _RECORDED_TRANSACTIONS[0]
+
+        # validate top level metrics
+        _validate_metric_count(metrics, rollup_metric, '', 1)
+        _validate_metric_count(metrics, transaction_metric, '', 1)
+
+        # validate passed in metrics
+        for scoped_name, scoped_count in scoped_metrics:
+            _validate_metric_count(
+                    metrics, scoped_name, transaction_metric, scoped_count)
+
+        for rollup_name, rollup_count in rollup_metrics:
+            _validate_metric_count(metrics, rollup_name, '', rollup_count)
+
+        for custom_name, custom_count in custom_metrics:
+            _validate_metric_count(metrics, custom_name, '', custom_count)
+
+    return _validate
+
+def tornado_validate_time_transaction_metrics(name, group='Function',
+        background_task=False, scoped_metrics=[], rollup_metrics=[],
+        custom_metrics=[]):
+    """Decorator to validates time metrics.
+
+    Arguments:
+      name: metric name
+      background_task: A boolean. If True the top level path of the metric
+          is WebTransaction. Otherwise it is OtherTransaction.
+      group: The second level path of the metric.
+      scoped_metrics: A list of 2-tuples representing an expected metric:
+        (scoped_metric_name, (min_time, max_time))
+      rollup_metrics: A list of 2-tuples representing a rollup metric:
+        (rollup_metric_name, (min_time, max_time))
+      custom_metrics: A list of 2-tuple representing a custom metric:
+        (custom_metric_name, (min_time, max_time))
+
+    Note, this only validates the first transaction in the test.
+
+    """
+
+    def _validate_metric_times(metrics, name, scope, call_time_range):
+        key = (name, scope)
+        metric = metrics.get(key)
+
+        min_call_time, max_call_time = call_time_range
+
+        def _metrics_table():
+            return 'metric=%r, metrics=%r' % (key, metrics)
+
+        def _metric_details():
+            return 'metric=%r, total_call_time=%r' % (
+                key, metric.total_call_time)
+
+        assert metric is not None, _metrics_table()
+        assert metric.total_call_time >= min_call_time, (
+            _metric_details())
+        assert metric.total_call_time <= max_call_time, (
+            _metric_details())
+
+    @function_wrapper
+    def _validate(wrapped, instance, args, kwargs):
+        wrapped(*args, **kwargs)
+
+        # We only validate the first recorded transaction
+        metrics, errors = _RECORDED_TRANSACTIONS[0]
+
+        for scoped_name, scoped_time_range in scoped_metrics:
+            _validate_metric_times(
+                    metrics, scoped_name, transaction_metric, scoped_time_range)
+
+        for rollup_name, rollup_time_range in rollup_metrics:
+            _validate_metric_times(metrics, rollup_name, '', rollup_time_range)
+
+        for custom_name, custom_time_range in custom_metrics:
+            _validate_metric_times(metrics, custom_name, '', custom_time_range)
+
+    return _validate
+
+def tornado_validate_errors(errors=[]):
+    """Decorator to validate errors.
+
+    Arguments:
+      errors: A list of expected error types as strings. If empty this will test
+         that no errors have occurred.
+
+    Note, this only validates the first transaction in the test.
+
+    """
+
+    @function_wrapper
+    def _validate_transaction_errors(wrapped, instance, args, kwargs):
+        wrapped(*args, **kwargs)
+
+        # We only validate the first recorded transaction
+        metrics, errs = _RECORDED_TRANSACTIONS[0]
+
+        # Sort captured errors. They are recorded in the format:
+        # (type-string, error-message)
+        # so we extract the first element and sort it.
+        if len(errs):
+            captured, _ = zip(*errs)
+            captured = sorted(captured)
+        else:
+            captured = []
+
+        # Sort expected errors
+        expected = sorted(errors)
+
+        assert expected == captured, 'expected=%r, captured=%r, errors=%r' % (
+                expected, captured, errors)
+
+    return _validate_transaction_errors
+
+def tornado_validate_transaction_cache_empty():
+    """Validates the transaction cache is empty after all requests are serviced.
+
+    """
+
+    @function_wrapper
+    def validate_cache_empty(wrapped, instance, args, kwargs):
+        from newrelic.core.transaction_cache import transaction_cache
+        transaction = transaction_cache().current_transaction()
+        assert None == transaction
+        wrapped(*args, **kwargs)
+        transaction = transaction_cache().current_transaction()
+        assert None == transaction
+
+    return validate_cache_empty

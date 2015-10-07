@@ -1,6 +1,6 @@
 import logging
 
-from newrelic.agent import current_transaction
+from newrelic.agent import current_transaction, ignore_status_code
 
 _logger = logging.getLogger(__name__)
 
@@ -12,6 +12,10 @@ def record_exception(transaction, exc_info):
 
     exc = exc_info[0]
     value = exc_info[1]
+
+    # Not an error so we just return.
+    if exc is tornado.web.Finish:
+        return
 
     if exc is tornado.web.HTTPError:
         if ignore_status_code(value.status_code):
@@ -49,7 +53,8 @@ def purge_current_transaction():
 
 def replace_current_transaction(new_transaction):
     old_transaction = purge_current_transaction()
-    new_transaction.save_transaction()
+    if new_transaction:
+        new_transaction.save_transaction()
     return old_transaction
 
 def finalize_request_monitoring(request, exc=None, value=None, tb=None):
@@ -64,8 +69,8 @@ def finalize_request_monitoring(request, exc=None, value=None, tb=None):
 
 def finalize_transaction(transaction, exc=None, value=None, tb=None):
     if transaction is None:
-        _logger.error('Runtime instrumentation error. Attempting to finalize an '
-                'empty transaction. Please report this issue to New Relic '
+        _logger.error('Runtime instrumentation error. Attempting to finalize '
+                'an empty transaction. Please report this issue to New Relic '
                 'support.\n%s', ''.join(traceback.format_stack()[:-1]))
         return
 
@@ -81,5 +86,7 @@ def finalize_transaction(transaction, exc=None, value=None, tb=None):
             request._nr_transaction = None
         transaction._nr_current_request = None
 
-        if old_transaction is not None:
+        # We place the previous transaction back in the cache unless
+        # it is the transaction that just completed.
+        if old_transaction != transaction:
             replace_current_transaction(old_transaction)

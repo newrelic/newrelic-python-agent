@@ -4,7 +4,7 @@ from newrelic.agent import (wrap_function_wrapper, FunctionTrace,
     callable_name)
 from six.moves import range
 from .util import (record_exception, retrieve_current_transaction,
-                   replace_current_transaction)
+        replace_current_transaction)
 
 def _nr_wrapper_stack_context_wrap_(wrapped, instance, args, kwargs):
 
@@ -71,8 +71,7 @@ def _create_transaction_aware_fxn(fxn, args, kwargs):
         return None
 
     def _transaction_aware_fxn(*fxn_args, **fxn_kwargs):
-        old_transaction = retrieve_current_transaction()
-        replace_current_transaction(transaction)
+        old_transaction = replace_current_transaction(transaction)
         name = callable_name(fxn)
         with FunctionTrace(transaction, name=name):
             ret = fxn(*fxn_args, **fxn_kwargs)
@@ -81,5 +80,37 @@ def _create_transaction_aware_fxn(fxn, args, kwargs):
 
     return _transaction_aware_fxn
 
+# This allows us to capture all exceptions that get swallowed by the ioloop.
+# If we instrument the exception handler directly this will cause us to call
+# record exception twice. However, this is ok because we in
+# transaction.record_exception we filter repeats.
+def _nr_wrapper_ExceptionStackContext__init__(wrapped, instance, args, kwargs):
+
+    assert instance is not None
+
+    result = wrapped(*args, **kwargs)
+
+    # instance is now an initiated ExceptionStackContext object.
+    instance.exception_handler = _wrap_exception_handler(instance.exception_handler)
+
+    return result
+
+def _wrap_exception_handler(exception_handler):
+
+    # QUESTION: Should I be using functools.wraps or some wrapt equivalent?
+    def _wrapped_exception_handler(type, value, traceback):
+        is_exception_swallowed = exception_handler(type, value, traceback)
+
+        if is_exception_swallowed:
+            transaction = retrieve_current_transaction()
+            if transaction is not None:
+                record_exception(transaction, (type, value, traceback))
+
+        return is_exception_swallowed
+
+    return _wrapped_exception_handler
+
 def instrument_tornado_stack_context(module):
     wrap_function_wrapper(module, 'wrap', _nr_wrapper_stack_context_wrap_)
+    wrap_function_wrapper(module, 'ExceptionStackContext.__init__',
+            _nr_wrapper_ExceptionStackContext__init__)

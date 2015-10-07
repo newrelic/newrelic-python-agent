@@ -68,48 +68,83 @@ class MultipleCallbacksRequestHandler(RequestHandler):
     def finish_callback(self):
         self.finish(self.RESPONSE)
 
-DEFAULT_HTTP_PORT = 2456
+class SyncExceptionRequestHandler(RequestHandler):
+    RESPONSE = b'sync exception'
 
-class TestServer(threading.Thread):
-    def __init__(self, http_port=DEFAULT_HTTP_PORT):
-        super(TestServer, self).__init__()
-        self.http_server = None
-        self.application = None
-        self.http_port = http_port
-        self.server_ready = threading.Event()
+    def get(self):
+        divide = 10/0  # exception
+        self.write(self.RESPONSE)  # never executed
 
-    def run(self):
-        self.application = Application([
-            ('/', HelloRequestHandler),
-            ('/sleep', SleepRequestHandler),
-            ('/one-callback', OneCallbackRequestHandler),
-            ('/named-wrap-callback', NamedStackContextWrapRequestHandler),
-            ('/multiple-callbacks', MultipleCallbacksRequestHandler),
-            ])
-        self.http_server = HTTPServer(self.application)
-        self.http_server.listen(self.http_port, '')
-        ioloop = tornado.ioloop.IOLoop.current()
-        ioloop.add_callback(self.server_ready.set)
-        ioloop.start()
+class CallbackExceptionRequestHandler(RequestHandler):
+    RESPONSE = b'callback exception'
+    _MAX_COUNTER = 5
 
-    # The following methods are intended to be called from different thread than
-    # the running TestServer thread.
-    def get_url(self, path=''):
-        return 'http://localhost:%s/%s' % (self.http_port, path)
+    @tornado.web.asynchronous
+    def get(self):
+        tornado.ioloop.IOLoop.current().add_callback(self.counter_callback, 1)
 
-    def stop_server(self):
-        self.http_server.stop()
-        ioloop = tornado.ioloop.IOLoop.instance()
-        ioloop.add_callback(ioloop.stop)
-        self.join()
+    def counter_callback(self, counter):
+        if counter < self._MAX_COUNTER:
+            tornado.ioloop.IOLoop.current().add_callback(
+                self.counter_callback, counter+1)
+        elif count == 3:  # exception since count (vs counter) is not defined
+            pass
+        else:
+            tornado.ioloop.IOLoop.current().add_callback(self.finish_callback)
 
-class TestClient(threading.Thread):
-    def __init__(self, url):
-        super(TestClient, self).__init__()
-        self.url = url
-        self.response = None
+    def finish_callback(self):
+        self.finish(self.RESPONSE)
 
-    def run(self):
-        client = HTTPClient()
-        self.response = client.fetch(self.url)
-        client.close()
+class CoroutineExceptionRequestHandler(RequestHandler):
+    RESPONSE = b'coroutine exception'
+
+    @tornado.gen.coroutine
+    def get(self):
+        # Scheduling on_finish is a hack that is needed because we require
+        # on_finish to be called to close the transaction. When an exception is
+        # thrown here on_finish will not be scheduled on the IOLoop causing us
+        # to timeout in the tests (though checking manually the correct
+        # transaction is written). The mechanism for exiting a transaction will
+        # change and when it does we should remove this manual scheduling of
+        # on_finish. See PYTHON-1707.
+        tornado.ioloop.IOLoop.current().add_callback(self.on_finish)
+        raise tornado.gen.BadYieldError
+        self.finish(self.RESPONSE)  # This will never be called.
+
+# This isn't really an exception but a legitimate way to end request handling.
+class FinishExceptionRequestHandler(RequestHandler):
+    RESPONSE = b'Finish'
+
+    def get(self):
+        self.write(self.RESPONSE)
+        raise tornado.web.Finish()
+
+class ReturnExceptionRequestHandler(RequestHandler):
+    RESPONSE_TEMPLATE = u'Return %s'
+    RESPONSE = b'Return 1'  # 1 is the output from self.one()
+
+    @tornado.gen.coroutine
+    def get(self):
+        x = yield self.one()
+        response = self.RESPONSE_TEMPLATE % x
+        self.finish(response.encode('ascii'))
+
+    # This really isn't an exception but the standard with to return from a
+    # coroutine.
+    @tornado.gen.coroutine
+    def one(self):
+        raise tornado.gen.Return(1)
+
+def get_tornado_app():
+    return Application([
+        ('/', HelloRequestHandler),
+        ('/sleep', SleepRequestHandler),
+        ('/one-callback', OneCallbackRequestHandler),
+        ('/named-wrap-callback', NamedStackContextWrapRequestHandler),
+        ('/multiple-callbacks', MultipleCallbacksRequestHandler),
+        ('/sync-exception', SyncExceptionRequestHandler),
+        ('/callback-exception', CallbackExceptionRequestHandler),
+        ('/coroutine-exception', CoroutineExceptionRequestHandler),
+        ('/finish-exception', FinishExceptionRequestHandler),
+        ('/return-exception', ReturnExceptionRequestHandler),
+    ])

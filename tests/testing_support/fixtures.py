@@ -604,13 +604,18 @@ def validate_non_transaction_error_event(required_intrinsics):
 
             assert len(event) == 3 # [intrinsic, user, agent attributes]
 
-            # check for all  of the required intrinsic attributes
+            intrinsics = event[0]
 
-            assert event[0]['timestamp'] < time.time()
-            for attr, value in required_intrinsics.items():
-                assert event[0][attr] == value, (
-                        'name=%r, value=%r, intrinsics=%r' %
-                        (attr, value, event[0]))
+            # The following attributes are all required, and also the only
+            # intrinsic attributes that can be included in an error event
+            # recorded outside of a transaction
+
+            assert intrinsics['type'] == 'TransactionError'
+            assert intrinsics['transactionName'] == None
+            assert intrinsics['error.class'] == required_intrinsics['error.class']
+            assert intrinsics['error.message'] == required_intrinsics['error.message']
+            assert intrinsics['timestamp'] < time.time()
+
         return result
 
     return _validate_non_transaction_error_event
@@ -1184,7 +1189,7 @@ def validate_database_trace_inputs(sql_parameters_type):
     return _validate_database_trace_inputs
 
 def validate_transaction_event_sample_data(name, capture_attributes={},
-        database_call_count=0, external_call_count=0):
+        database_call_count=0, external_call_count=0, queue_duration=False):
     """This test depends on values in the test application from
     agent_features/test_analytics.py, and is only meant to be run as a
     validation with those tests.
@@ -1210,14 +1215,15 @@ def validate_transaction_event_sample_data(name, capture_attributes={},
                                    agent_attributes,
                                    capture_attributes,
                                    database_call_count,
-                                   external_call_count)
+                                   external_call_count,
+                                   queue_duration)
 
         return wrapped(*args, **kwargs)
 
     return _validate_transaction_event_sample_data
 
-def validate_error_event_sample_data(required_attrs, capture_attributes=True,
-        database_call_count=0, external_call_count=0):
+def validate_error_event_sample_data(required_attrs, capture_attributes={},
+        database_call_count=0, external_call_count=0, queue_duration=False):
     """This test depends on values in the test application from
     agent_features/test_analytics.py, and is only meant to be run as a
     validation with those tests.
@@ -1256,19 +1262,20 @@ def validate_error_event_sample_data(required_attrs, capture_attributes=True,
                                        agent_attributes,
                                        capture_attributes,
                                        database_call_count,
-                                       external_call_count)
+                                       external_call_count,
+                                       queue_duration)
 
         return wrapped(*args, **kwargs)
 
     return _validate_error_event_sample_data
 
 def _validate_event_attributes(intrinsics, user_attributes, agent_attributes,
-            capture_attributes, database_call_count, external_call_count):
+            capture_attributes, database_call_count, external_call_count,
+            queue_duration):
 
     assert intrinsics['timestamp'] >= 0.0
     assert intrinsics['duration'] >= 0.0
 
-    assert 'queueDuration' not in intrinsics
     assert 'memcacheDuration' not in intrinsics
 
     if capture_attributes:
@@ -1290,6 +1297,12 @@ def _validate_event_attributes(intrinsics, user_attributes, agent_attributes,
     else:
         assert 'externalDuration' not in intrinsics
         assert 'externalCallCount' not in intrinsics
+
+    if queue_duration:
+        assert intrinsics['queueDuration'] > 0
+    else:
+        assert 'queueDuration' not in intrinsics
+
 
 def override_application_name(app_name):
     # The argument here cannot be named 'name', or else it triggers

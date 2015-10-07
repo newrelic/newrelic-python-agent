@@ -60,7 +60,7 @@ def target_wsgi_application(environ, start_response):
     if 'db' in environ and int(environ['db']) > 0:
         connection = db.connect(":memory:")
         for i in range(int(environ['db']) - 1):
-            connection.execute("""create table test_db (a, b, c)""")
+            connection.execute("create table test_db%d (a, b, c)" % i)
 
     if 'external' in environ:
         for i in range(int(environ['external'])):

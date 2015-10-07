@@ -1,27 +1,15 @@
-import sys
 import json
 
-from newrelic.agent import (application_settings, transient_function_wrapper,
-        record_exception, application, callable_name)
+from newrelic.agent import (application_settings, transient_function_wrapper)
 
 from newrelic.common.encoding_utils import deobfuscate
 
 from testing_support.fixtures import (override_application_settings,
-        validate_transaction_event_sample_data, validate_error_event_sample_data,
-        validate_non_transaction_error_event)
+        validate_transaction_event_sample_data)
 from testing_support.test_applications import (target_application,
             user_attributes_added)
 
-ERR_MESSAGE = 'Transaction had bad value'
-ERROR = ValueError(ERR_MESSAGE)
-
 _user_attributes = user_attributes_added()
-
-_error_intrinsics = {
-    'error.class': callable_name(ERROR),
-    'error.message': ERR_MESSAGE,
-    'transactionName' : 'WebTransaction/Uri/'
-}
 
 #====================== Test cases ====================================
 
@@ -29,7 +17,6 @@ _test_capture_attributes_enabled_settings = {
     'browser_monitoring.attributes.enabled': True }
 
 @validate_transaction_event_sample_data(name='WebTransaction/Uri/', capture_attributes=_user_attributes)
-@validate_error_event_sample_data(required_attrs=_error_intrinsics, capture_attributes=_user_attributes)
 @override_application_settings(_test_capture_attributes_enabled_settings)
 def test_capture_attributes_enabled():
     settings = application_settings()
@@ -93,8 +80,6 @@ _test_no_attributes_recorded_settings = {
 
 @validate_transaction_event_sample_data(name='WebTransaction/Uri/',
         capture_attributes={})
-@validate_error_event_sample_data(required_attrs=_error_intrinsics,
-        capture_attributes={})
 @override_application_settings(_test_no_attributes_recorded_settings)
 def test_no_attributes_recorded():
     settings = application_settings()
@@ -137,8 +122,6 @@ _test_analytic_events_capture_attributes_disabled_settings = {
 
 @validate_transaction_event_sample_data(name='WebTransaction/Uri/',
         capture_attributes={})
-@validate_error_event_sample_data(required_attrs=_error_intrinsics,
-        capture_attributes={})
 @override_application_settings(
         _test_analytic_events_capture_attributes_disabled_settings)
 def test_analytic_events_capture_attributes_disabled():
@@ -177,7 +160,6 @@ def test_analytic_events_capture_attributes_disabled():
     assert 'atts' in data
 
 @validate_transaction_event_sample_data(name='WebTransaction/Uri/', capture_attributes=_user_attributes)
-@validate_error_event_sample_data(required_attrs=_error_intrinsics, capture_attributes=_user_attributes)
 def test_capture_attributes_default():
     settings = application_settings()
 
@@ -212,15 +194,8 @@ def test_capture_attributes_default():
 _test_analytic_events_background_task_settings = {
     'browser_monitoring.attributes.enabled': True }
 
-_error_intrinsics = {
-    'error.class': callable_name(ERROR),
-    'error.message': ERR_MESSAGE,
-    'transactionName' : 'OtherTransaction/Uri/'
-}
 
 @validate_transaction_event_sample_data(name='OtherTransaction/Uri/',
-        capture_attributes=_user_attributes)
-@validate_error_event_sample_data(required_attrs=_error_intrinsics,
         capture_attributes=_user_attributes)
 @override_application_settings(
         _test_analytic_events_background_task_settings)
@@ -243,14 +218,7 @@ def test_analytic_events_background_task():
 _test_capture_attributes_disabled_settings = {
     'browser_monitoring.attributes.enabled': False }
 
-_error_intrinsics = {
-    'error.class': callable_name(ERROR),
-    'error.message': ERR_MESSAGE,
-    'transactionName' : 'WebTransaction/Uri/'
-}
-
 @validate_transaction_event_sample_data(name='WebTransaction/Uri/', capture_attributes=_user_attributes)
-@validate_error_event_sample_data(required_attrs=_error_intrinsics, capture_attributes=_user_attributes)
 @override_application_settings(_test_capture_attributes_disabled_settings)
 def test_capture_attributes_disabled():
     settings = application_settings()
@@ -294,7 +262,6 @@ _test_collect_analytic_events_disabled_settings = {
     'browser_monitoring.attributes.enabled': True }
 
 @validate_no_analytics_sample_data
-@validate_error_event_sample_data(required_attrs=_error_intrinsics, capture_attributes=_user_attributes)
 @override_application_settings(_test_collect_analytic_events_disabled_settings)
 def test_collect_analytic_events_disabled():
     settings = application_settings()
@@ -334,7 +301,6 @@ _test_analytic_events_disabled_settings = {
     'browser_monitoring.attributes.enabled': True }
 
 @validate_no_analytics_sample_data
-@validate_error_event_sample_data(required_attrs=_error_intrinsics, capture_attributes=_user_attributes)
 @override_application_settings(_test_analytic_events_disabled_settings)
 def test_analytic_events_disabled():
     settings = application_settings()
@@ -370,12 +336,9 @@ def test_analytic_events_disabled():
 
     assert 'atts' in data
 
-# FIXME -- test for no error events once configuration merged in
-
 # -------------- Test call counts in analytic events ----------------
 
 @validate_transaction_event_sample_data(name='WebTransaction/Uri/', capture_attributes=_user_attributes)
-@validate_error_event_sample_data(required_attrs=_error_intrinsics, capture_attributes=_user_attributes)
 def test_no_database_or_external_attributes_in_analytics():
     """Make no external calls or database calls in the transaction and check
     if the analytic event doesn't have the databaseCallCount, databaseDuration,
@@ -396,15 +359,7 @@ def test_no_database_or_external_attributes_in_analytics():
 
     assert content == 'RESPONSE'
 
-_error_intrinsics = {
-    'error.class': callable_name(ERROR),
-    'error.message': ERR_MESSAGE,
-    'transactionName' : 'WebTransaction/Uri/db'
-}
-
 @validate_transaction_event_sample_data(name='WebTransaction/Uri/db',
-        capture_attributes=_user_attributes, database_call_count=2)
-@validate_error_event_sample_data(required_attrs=_error_intrinsics,
         capture_attributes=_user_attributes, database_call_count=2)
 def test_database_attributes_in_analytics():
     """Make database calls in the transaction and check if the analytic
@@ -428,15 +383,7 @@ def test_database_attributes_in_analytics():
 
     assert content == 'RESPONSE'
 
-_error_intrinsics = {
-    'error.class': callable_name(ERROR),
-    'error.message': ERR_MESSAGE,
-    'transactionName' : 'WebTransaction/Uri/ext'
-}
-
 @validate_transaction_event_sample_data(name='WebTransaction/Uri/ext',
-        capture_attributes=_user_attributes, external_call_count=2)
-@validate_error_event_sample_data(required_attrs=_error_intrinsics,
         capture_attributes=_user_attributes, external_call_count=2)
 def test_external_attributes_in_analytics():
     """Make external calls in the transaction and check if the analytic
@@ -460,16 +407,7 @@ def test_external_attributes_in_analytics():
 
     assert content == 'RESPONSE'
 
-_error_intrinsics = {
-    'error.class': callable_name(ERROR),
-    'error.message': ERR_MESSAGE,
-    'transactionName' : 'WebTransaction/Uri/dbext'
-}
-
 @validate_transaction_event_sample_data(name='WebTransaction/Uri/dbext',
-        capture_attributes=_user_attributes, database_call_count=2,
-        external_call_count=2)
-@validate_error_event_sample_data(required_attrs=_error_intrinsics,
         capture_attributes=_user_attributes, database_call_count=2,
         external_call_count=2)
 def test_database_and_external_attributes_in_analytics():
@@ -495,24 +433,3 @@ def test_database_and_external_attributes_in_analytics():
     # Validate actual body content as sanity check.
 
     assert content == 'RESPONSE'
-
-# -------------- Test Error Events outside of transaction ----------------
-
-ERR_MESSAGE = 'Transaction had bad value'
-ERROR = ValueError(ERR_MESSAGE)
-
-_intrinsic_attributes = {
-    'type': 'TransactionError',
-    'error.class': callable_name(ERROR),
-    'error.message': ERR_MESSAGE,
-    'transactionName': None,
-}
-
-@validate_non_transaction_error_event(_intrinsic_attributes)
-def test_error_event_outside_transaction():
-    try:
-        raise ERROR
-    except ValueError:
-        app = application()
-        record_exception(*sys.exc_info(), application=app)
-

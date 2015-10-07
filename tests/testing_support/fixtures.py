@@ -1306,6 +1306,14 @@ def _validate_event_attributes(intrinsics, user_attributes,
     else:
         assert 'nr.referringTransactionGuid' not in intrinsics
 
+    if 'nr.syntheticsResourceId' in required_intrinsics:
+        res_id = required_intrinsics['nr.syntheticsResourceId']
+        job_id = required_intrinsics['nr.syntheticsJobId']
+        monitor_id = required_intrinsics['nr.syntheticsMonitorId']
+        assert intrinsics['nr.syntheticsResourceId'] == res_id
+        assert intrinsics['nr.syntheticsJobId'] == job_id
+        assert intrinsics['nr.syntheticsMonitorId'] == monitor_id
+
 def override_application_name(app_name):
     # The argument here cannot be named 'name', or else it triggers
     # a PyPy bug. Hence, we use 'app_name' instead.

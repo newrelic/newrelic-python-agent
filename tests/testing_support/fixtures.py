@@ -1183,7 +1183,7 @@ def validate_database_trace_inputs(sql_parameters_type):
 
     return _validate_database_trace_inputs
 
-def validate_transaction_event_sample_data(name, capture_attributes=True,
+def validate_transaction_event_sample_data(name, capture_attributes={},
         database_call_count=0, external_call_count=0):
     """This test depends on values in the test application from
     agent_features/test_analytics.py, and is only meant to be run as a
@@ -1216,7 +1216,7 @@ def validate_transaction_event_sample_data(name, capture_attributes=True,
 
     return _validate_transaction_event_sample_data
 
-def validate_error_event_sample_data(name, capture_attributes=True,
+def validate_error_event_sample_data(required_attrs, capture_attributes=True,
         database_call_count=0, external_call_count=0):
     """This test depends on values in the test application from
     agent_features/test_analytics.py, and is only meant to be run as a
@@ -1244,10 +1244,12 @@ def validate_error_event_sample_data(name, capture_attributes=True,
 
             intrinsics, user_attributes, agent_attributes = sample
 
+            # These intrinsics should always be present
+
             assert intrinsics['type'] == 'TransactionError'
-            assert intrinsics['transactionName'] == name
-            assert intrinsics['error.class'] == 'exceptions:ValueError'
-            assert intrinsics['error.message'] == 'Bad value!'
+            assert intrinsics['transactionName'] == required_attrs['transactionName']
+            assert intrinsics['error.class'] == required_attrs['error.class']
+            assert intrinsics['error.message'] == required_attrs['error.message']
 
             _validate_event_attributes(intrinsics,
                                        user_attributes,
@@ -1270,33 +1272,8 @@ def _validate_event_attributes(intrinsics, user_attributes, agent_attributes,
     assert 'memcacheDuration' not in intrinsics
 
     if capture_attributes:
-        assert user_attributes['user'] == u'user-name'
-        assert user_attributes['account'] == u'account-name'
-        assert user_attributes['product'] == u'product-name'
-
-        # Here, attributes have been sanitized, but there's been no
-        # json encoding or decoding, so the type for values in
-        # user_attributes is the same as what was input.
-
-        assert user_attributes['bytes'] == b'bytes-value'
-        assert user_attributes['string'] == 'string-value'
-        assert user_attributes['unicode'] == u'unicode-value'
-
-        assert user_attributes['integer'] == 1
-        assert user_attributes['float'] == 1.0
-
-        assert user_attributes['invalid-utf8'] == b'\xe2'
-        assert user_attributes['multibyte-utf8'] == b'\xe2\x88\x9a'
-
-        multibyte_value = b'\xe2\x88\x9a'.decode('utf-8')
-        assert user_attributes['multibyte-unicode'] == multibyte_value
-
-        # Objects get converted to strings.
-
-        assert user_attributes['list'] == '[]'
-        assert user_attributes['dict'] == '{}'
-        assert user_attributes['tuple'] == '()'
-
+        for attr, value in capture_attributes.items():
+            assert user_attributes[attr] == value
     else:
         assert user_attributes == {}
 

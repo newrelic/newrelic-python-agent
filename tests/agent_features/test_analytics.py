@@ -23,6 +23,25 @@ from newrelic.agent import (add_user_attribute, add_custom_parameter,
 from newrelic.common.encoding_utils import deobfuscate
 
 DATABASE_NAME = ':memory:'
+ERR_MESSAGE = 'Transaction had bad value'
+ERROR = ValueError(ERR_MESSAGE)
+
+_custom_parameters = {
+        'user' : 'user-name',
+        'account' : 'account-name',
+        'product' : 'product-name',
+        'bytes' : b'bytes-value',
+        'string' : 'string-value',
+        'unicode' : u'unicode-value',
+        'integer' : 1,
+        'float' : 1.0,
+        'invalid-utf8' : b'\xe2',
+        'multibyte-utf8' : b'\xe2\x88\x9a',
+        'multibyte-unicode' : b'\xe2\x88\x9a'.decode('utf-8'),
+        'list' : [],
+        'tuple' : (),
+        'dict' : {},
+}
 
 @wsgi_application()
 def target_wsgi_application(environ, start_response):
@@ -31,42 +50,29 @@ def target_wsgi_application(environ, start_response):
     path = environ.get('PATH_INFO')
 
     if environ.get('record_attributes', 'TRUE') == 'TRUE':
+
         # The add_user_attribute() call is now just an alias for
         # calling add_custom_parameter() but for backward compatibility
         # still need to check it works.
 
-        add_user_attribute('user', 'user-name')
-        add_user_attribute('account', 'account-name')
-        add_user_attribute('product', 'product-name')
+        for attr, val in _custom_parameters.items():
+            if attr in ['user', 'product', 'account']:
+                add_user_attribute(attr, val)
+            else:
+                add_custom_parameter(attr, val)
 
-        add_custom_parameter('bytes', b'bytes-value')
-        add_custom_parameter('string', 'string-value')
-        add_custom_parameter('unicode', u'unicode-value')
+    if 'db' in environ and int(environ['db']) > 0:
+        connection = db.connect(":memory:")
+        for i in range(int(environ['db']) - 1):
+            connection.execute("""create table test_db (a, b, c)""")
 
-        add_custom_parameter('integer', 1)
-        add_custom_parameter('float', 1.0)
-
-        add_custom_parameter('invalid-utf8', b'\xe2')
-        add_custom_parameter('multibyte-utf8', b'\xe2\x88\x9a')
-        add_custom_parameter('multibyte-unicode',
-                b'\xe2\x88\x9a'.decode('utf-8'))
-
-        add_custom_parameter('list', [])
-        add_custom_parameter('tuple', ())
-        add_custom_parameter('dict', {})
-
-    if path == '/db' or path == '/dbext':
-        connection = db.connect(DATABASE_NAME)
-        connection.execute("""create table test_db (a, b, c)""")
-
-    if path == '/ext' or path == '/dbext':
-        r = urlopen('http://www.google.com')
-        r.read(10)
-        r = urlopen('http://www.python.org')
-        r.read(10)
+    if 'external' in environ:
+        for i in range(int(environ['external'])):
+            r = urlopen('http://www.python.org')
+            r.read(10)
 
     try:
-        raise ValueError('Bad value!')
+        raise ERROR
     except ValueError:
         record_exception(*sys.exc_info())
 
@@ -83,13 +89,26 @@ def target_wsgi_application(environ, start_response):
 
 target_application = webtest.TestApp(target_wsgi_application)
 
+# transform user attributes into expected values:
+
+_user_attributes = _custom_parameters.copy()
+_user_attributes['list'] = '[]'
+_user_attributes['tuple'] = '()'
+_user_attributes['dict'] = '{}'
+
+_error_intrinsics = {
+    'error.class': callable_name(ERROR),
+    'error.message': ERR_MESSAGE,
+    'transactionName' : 'WebTransaction/Uri/'
+}
+
 #====================== Test cases ====================================
 
 _test_capture_attributes_enabled_settings = {
     'browser_monitoring.attributes.enabled': True }
 
-@validate_transaction_event_sample_data(name='WebTransaction/Uri/')
-@validate_error_event_sample_data(name='WebTransaction/Uri/')
+@validate_transaction_event_sample_data(name='WebTransaction/Uri/', capture_attributes=_user_attributes)
+@validate_error_event_sample_data(required_attrs=_error_intrinsics, capture_attributes=_user_attributes)
 @override_application_settings(_test_capture_attributes_enabled_settings)
 def test_capture_attributes_enabled():
     settings = application_settings()
@@ -152,9 +171,9 @@ _test_no_attributes_recorded_settings = {
     'browser_monitoring.attributes.enabled': True }
 
 @validate_transaction_event_sample_data(name='WebTransaction/Uri/',
-        capture_attributes=False)
-@validate_error_event_sample_data(name='WebTransaction/Uri/',
-        capture_attributes=False)
+        capture_attributes={})
+@validate_error_event_sample_data(required_attrs=_error_intrinsics,
+        capture_attributes={})
 @override_application_settings(_test_no_attributes_recorded_settings)
 def test_no_attributes_recorded():
     settings = application_settings()
@@ -196,9 +215,9 @@ _test_analytic_events_capture_attributes_disabled_settings = {
     'browser_monitoring.attributes.enabled': True }
 
 @validate_transaction_event_sample_data(name='WebTransaction/Uri/',
-        capture_attributes=False)
-@validate_error_event_sample_data(name='WebTransaction/Uri/',
-        capture_attributes=False)
+        capture_attributes={})
+@validate_error_event_sample_data(required_attrs=_error_intrinsics,
+        capture_attributes={})
 @override_application_settings(
         _test_analytic_events_capture_attributes_disabled_settings)
 def test_analytic_events_capture_attributes_disabled():
@@ -236,8 +255,8 @@ def test_analytic_events_capture_attributes_disabled():
 
     assert 'atts' in data
 
-@validate_transaction_event_sample_data(name='WebTransaction/Uri/')
-@validate_error_event_sample_data(name='WebTransaction/Uri/')
+@validate_transaction_event_sample_data(name='WebTransaction/Uri/', capture_attributes=_user_attributes)
+@validate_error_event_sample_data(required_attrs=_error_intrinsics, capture_attributes=_user_attributes)
 def test_capture_attributes_default():
     settings = application_settings()
 
@@ -272,8 +291,16 @@ def test_capture_attributes_default():
 _test_analytic_events_background_task_settings = {
     'browser_monitoring.attributes.enabled': True }
 
-@validate_transaction_event_sample_data(name='OtherTransaction/Uri/')
-@validate_error_event_sample_data(name='OtherTransaction/Uri/')
+_error_intrinsics = {
+    'error.class': callable_name(ERROR),
+    'error.message': ERR_MESSAGE,
+    'transactionName' : 'OtherTransaction/Uri/'
+}
+
+@validate_transaction_event_sample_data(name='OtherTransaction/Uri/',
+        capture_attributes=_user_attributes)
+@validate_error_event_sample_data(required_attrs=_error_intrinsics,
+        capture_attributes=_user_attributes)
 @override_application_settings(
         _test_analytic_events_background_task_settings)
 def test_analytic_events_background_task():
@@ -295,8 +322,14 @@ def test_analytic_events_background_task():
 _test_capture_attributes_disabled_settings = {
     'browser_monitoring.attributes.enabled': False }
 
-@validate_transaction_event_sample_data(name='WebTransaction/Uri/')
-@validate_error_event_sample_data(name='WebTransaction/Uri/')
+_error_intrinsics = {
+    'error.class': callable_name(ERROR),
+    'error.message': ERR_MESSAGE,
+    'transactionName' : 'WebTransaction/Uri/'
+}
+
+@validate_transaction_event_sample_data(name='WebTransaction/Uri/', capture_attributes=_user_attributes)
+@validate_error_event_sample_data(required_attrs=_error_intrinsics, capture_attributes=_user_attributes)
 @override_application_settings(_test_capture_attributes_disabled_settings)
 def test_capture_attributes_disabled():
     settings = application_settings()
@@ -340,7 +373,7 @@ _test_collect_analytic_events_disabled_settings = {
     'browser_monitoring.attributes.enabled': True }
 
 @validate_no_analytics_sample_data
-@validate_error_event_sample_data(name='WebTransaction/Uri/')
+@validate_error_event_sample_data(required_attrs=_error_intrinsics, capture_attributes=_user_attributes)
 @override_application_settings(_test_collect_analytic_events_disabled_settings)
 def test_collect_analytic_events_disabled():
     settings = application_settings()
@@ -380,7 +413,7 @@ _test_analytic_events_disabled_settings = {
     'browser_monitoring.attributes.enabled': True }
 
 @validate_no_analytics_sample_data
-@validate_error_event_sample_data(name='WebTransaction/Uri/')
+@validate_error_event_sample_data(required_attrs=_error_intrinsics, capture_attributes=_user_attributes)
 @override_application_settings(_test_analytic_events_disabled_settings)
 def test_analytic_events_disabled():
     settings = application_settings()
@@ -420,8 +453,8 @@ def test_analytic_events_disabled():
 
 # -------------- Test call counts in analytic events ----------------
 
-@validate_transaction_event_sample_data(name='WebTransaction/Uri/')
-@validate_error_event_sample_data(name='WebTransaction/Uri/')
+@validate_transaction_event_sample_data(name='WebTransaction/Uri/', capture_attributes=_user_attributes)
+@validate_error_event_sample_data(required_attrs=_error_intrinsics, capture_attributes=_user_attributes)
 def test_no_database_or_external_attributes_in_analytics():
     """Make no external calls or database calls in the transaction and check
     if the analytic event doesn't have the databaseCallCount, databaseDuration,
@@ -442,10 +475,16 @@ def test_no_database_or_external_attributes_in_analytics():
 
     assert content == 'RESPONSE'
 
+_error_intrinsics = {
+    'error.class': callable_name(ERROR),
+    'error.message': ERR_MESSAGE,
+    'transactionName' : 'WebTransaction/Uri/db'
+}
+
 @validate_transaction_event_sample_data(name='WebTransaction/Uri/db',
-        database_call_count=2)
-@validate_error_event_sample_data(name='WebTransaction/Uri/db',
-        database_call_count=2)
+        capture_attributes=_user_attributes, database_call_count=2)
+@validate_error_event_sample_data(required_attrs=_error_intrinsics,
+        capture_attributes=_user_attributes, database_call_count=2)
 def test_database_attributes_in_analytics():
     """Make database calls in the transaction and check if the analytic
     event has the databaseCallCount and databaseDuration attributes.
@@ -455,7 +494,10 @@ def test_database_attributes_in_analytics():
 
     assert settings.browser_monitoring.enabled
 
-    response = target_application.get('/db')
+    test_environ = {
+                'db' : '2',
+    }
+    response = target_application.get('/db', extra_environ=test_environ)
 
     # Validation of analytic data happens in the decorator.
 
@@ -465,10 +507,16 @@ def test_database_attributes_in_analytics():
 
     assert content == 'RESPONSE'
 
+_error_intrinsics = {
+    'error.class': callable_name(ERROR),
+    'error.message': ERR_MESSAGE,
+    'transactionName' : 'WebTransaction/Uri/ext'
+}
+
 @validate_transaction_event_sample_data(name='WebTransaction/Uri/ext',
-        external_call_count=2)
-@validate_error_event_sample_data(name='WebTransaction/Uri/ext',
-        external_call_count=2)
+        capture_attributes=_user_attributes, external_call_count=2)
+@validate_error_event_sample_data(required_attrs=_error_intrinsics,
+        capture_attributes=_user_attributes, external_call_count=2)
 def test_external_attributes_in_analytics():
     """Make external calls in the transaction and check if the analytic
     event has the externalCallCount and externalDuration attributes.
@@ -478,7 +526,10 @@ def test_external_attributes_in_analytics():
 
     assert settings.browser_monitoring.enabled
 
-    response = target_application.get('/ext')
+    test_environ = {
+                'external' : '2',
+    }
+    response = target_application.get('/ext', extra_environ=test_environ)
 
     # Validation of analytic data happens in the decorator.
 
@@ -488,10 +539,18 @@ def test_external_attributes_in_analytics():
 
     assert content == 'RESPONSE'
 
+_error_intrinsics = {
+    'error.class': callable_name(ERROR),
+    'error.message': ERR_MESSAGE,
+    'transactionName' : 'WebTransaction/Uri/dbext'
+}
+
 @validate_transaction_event_sample_data(name='WebTransaction/Uri/dbext',
-        database_call_count=2, external_call_count=2)
-@validate_error_event_sample_data(name='WebTransaction/Uri/dbext',
-        database_call_count=2, external_call_count=2)
+        capture_attributes=_user_attributes, database_call_count=2,
+        external_call_count=2)
+@validate_error_event_sample_data(required_attrs=_error_intrinsics,
+        capture_attributes=_user_attributes, database_call_count=2,
+        external_call_count=2)
 def test_database_and_external_attributes_in_analytics():
     """Make external calls and database calls in the transaction and check if
     the analytic event has the databaseCallCount, databaseDuration,
@@ -502,7 +561,11 @@ def test_database_and_external_attributes_in_analytics():
 
     assert settings.browser_monitoring.enabled
 
-    response = target_application.get('/dbext')
+    test_environ = {
+                'db' : '2',
+                'external' : '2',
+    }
+    response = target_application.get('/dbext', extra_environ=test_environ)
 
     # Validation of analytic data happens in the decorator.
 

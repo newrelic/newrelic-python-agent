@@ -40,7 +40,7 @@ def user_attributes_added():
     return user_attributes
 
 @wsgi_application()
-def target_wsgi_application(environ, start_response):
+def sample_wsgi_application_fully_featured(environ, start_response):
     status = '200 OK'
 
     path = environ.get('PATH_INFO')
@@ -84,4 +84,4 @@ def target_wsgi_application(environ, start_response):
 
     return [output]
 
-target_application = webtest.TestApp(target_wsgi_application)
+fully_featured_application = webtest.TestApp(sample_wsgi_application_fully_featured)

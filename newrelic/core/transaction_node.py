@@ -389,8 +389,6 @@ class TransactionNode(_TransactionNode):
     def transaction_event_intrinsics(self, stats_table):
         """Put together the intrinsic attributes for a transaction event"""
 
-        settings = self.settings
-
         intrinsics = self._event_intrinsics(stats_table)
 
         intrinsics['type'] = 'Transaction'
@@ -463,12 +461,13 @@ class TransactionNode(_TransactionNode):
     def _event_intrinsics(self, stats_table):
         """Common attributes for analytics events"""
 
-        if hasattr(self, '_event_intrinsics_cache'):
+        cache = getattr(self, '_event_intrinsics_cache', None)
+        if cache is not None:
 
             # We don't want to execute this function more than once, since
             # it should always yield the same data per transaction
 
-            return self._event_intrinsics_cache
+            return cache
 
         intrinsics = {}
 

@@ -399,6 +399,7 @@ def validate_transaction_errors(errors=[], required_params=[],
             return transaction
 
         transaction = _bind_params(*args, **kwargs)
+
         if errors and isinstance(errors[0], (tuple, list)):
             expected = sorted(errors)
             captured = sorted([(e.type, e.message) for e in transaction.errors])

@@ -6,7 +6,7 @@ from newrelic.common.encoding_utils import deobfuscate
 
 from testing_support.fixtures import (override_application_settings,
         validate_transaction_event_sample_data)
-from testing_support.test_applications import (target_application,
+from testing_support.sample_applications import (fully_featured_application,
             user_attributes_added)
 
 _user_attributes = user_attributes_added()
@@ -31,7 +31,7 @@ def test_capture_attributes_enabled():
 
     assert settings.js_agent_loader
 
-    response = target_application.get('/')
+    response = fully_featured_application.get('/')
 
     header = response.html.html.head.script.text
     content = response.html.html.body.p.text
@@ -94,7 +94,7 @@ def test_no_attributes_recorded():
 
     assert settings.js_agent_loader
 
-    response = target_application.get('/', extra_environ={
+    response = fully_featured_application.get('/', extra_environ={
             'record_attributes': 'FALSE'})
 
     header = response.html.html.head.script.text
@@ -141,7 +141,7 @@ def test_analytic_events_capture_attributes_disabled():
 
     assert settings.js_agent_loader
 
-    response = target_application.get('/')
+    response = fully_featured_application.get('/')
 
     header = response.html.html.head.script.text
     content = response.html.html.body.p.text
@@ -174,7 +174,7 @@ def test_capture_attributes_default():
 
     assert settings.js_agent_loader
 
-    response = target_application.get('/')
+    response = fully_featured_application.get('/')
 
     header = response.html.html.head.script.text
     content = response.html.html.body.p.text
@@ -219,7 +219,7 @@ def test_analytic_events_background_task():
 
     assert settings.js_agent_loader
 
-    response = target_application.get('/', extra_environ={
+    response = fully_featured_application.get('/', extra_environ={
             'newrelic.set_background_task': True})
 
     assert response.html.html.head.script is None
@@ -242,7 +242,7 @@ def test_capture_attributes_disabled():
 
     assert settings.js_agent_loader
 
-    response = target_application.get('/')
+    response = fully_featured_application.get('/')
 
     header = response.html.html.head.script.text
     content = response.html.html.body.p.text
@@ -287,7 +287,7 @@ def test_collect_analytic_events_disabled():
 
     assert settings.js_agent_loader
 
-    response = target_application.get('/')
+    response = fully_featured_application.get('/')
 
     header = response.html.html.head.script.text
     content = response.html.html.body.p.text
@@ -327,7 +327,7 @@ def test_analytic_events_disabled():
 
     assert settings.js_agent_loader
 
-    response = target_application.get('/')
+    response = fully_featured_application.get('/')
 
     header = response.html.html.head.script.text
     content = response.html.html.body.p.text
@@ -364,7 +364,7 @@ def test_no_database_or_external_attributes_in_analytics():
 
     assert settings.browser_monitoring.enabled
 
-    response = target_application.get('/')
+    response = fully_featured_application.get('/')
 
     # Validation of analytic data happens in the decorator.
 
@@ -393,7 +393,7 @@ def test_database_attributes_in_analytics():
     test_environ = {
                 'db' : '2',
     }
-    response = target_application.get('/db', extra_environ=test_environ)
+    response = fully_featured_application.get('/db', extra_environ=test_environ)
 
     # Validation of analytic data happens in the decorator.
 
@@ -422,7 +422,8 @@ def test_external_attributes_in_analytics():
     test_environ = {
                 'external' : '2',
     }
-    response = target_application.get('/ext', extra_environ=test_environ)
+    response = fully_featured_application.get('/ext',
+            extra_environ=test_environ)
 
     # Validation of analytic data happens in the decorator.
 
@@ -454,7 +455,8 @@ def test_database_and_external_attributes_in_analytics():
                 'db' : '2',
                 'external' : '2',
     }
-    response = target_application.get('/dbext', extra_environ=test_environ)
+    response = fully_featured_application.get('/dbext',
+            extra_environ=test_environ)
 
     # Validation of analytic data happens in the decorator.
 

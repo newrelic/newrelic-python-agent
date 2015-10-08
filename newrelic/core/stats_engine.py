@@ -554,8 +554,8 @@ class StatsEngine(object):
 
     def _error_event(self, error):
 
-        # this method is for recording error events outside of transactions,
-        # don't let the poorly named 'type' fool you.
+        # This method is for recording error events outside of transactions,
+        # don't let the poorly named 'type' attribute fool you.
 
         intrinsics = {
                 'type' : 'TransactionError',
@@ -565,12 +565,11 @@ class StatsEngine(object):
                 'transactionName' : None,
         }
 
-        # leave agent attributes field blank since not a transaction
+        # Leave agent attributes field blank since not a transaction
 
         error_event = [intrinsics, error.parameters['userAttributes'], {}]
 
         return error_event
-
 
     def record_custom_metric(self, name, value):
         """Record a single value metric, merging the data with any data

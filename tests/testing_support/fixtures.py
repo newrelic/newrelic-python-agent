@@ -1269,6 +1269,7 @@ def validate_error_event_sample_data(required_attrs, required_user_attrs=True):
             assert intrinsics['error.class'] == required_attrs['error.class']
             assert (intrinsics['error.message'] ==
                     required_attrs['error.message'])
+            assert intrinsics['nr.transactionGuid'] is not None
 
             _validate_event_attributes(intrinsics,
                                        user_attributes,

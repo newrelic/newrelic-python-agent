@@ -628,7 +628,8 @@ def validate_non_transaction_error_event(required_intrinsics):
             assert intrinsics['transactionName'] == None
             assert intrinsics['error.class'] == required_intrinsics['error.class']
             assert intrinsics['error.message'] == required_intrinsics['error.message']
-            assert intrinsics['timestamp'] < time.time()
+            now = time.time()
+            assert intrinsics['timestamp'] < now
 
         return result
 
@@ -1283,7 +1284,8 @@ def validate_error_event_sample_data(required_attrs, required_user_attrs=True):
 def _validate_event_attributes(intrinsics, user_attributes,
             required_intrinsics, required_user):
 
-    assert intrinsics['timestamp'] >= 0.0
+    now = time.time()
+    assert intrinsics['timestamp'] < now
     assert intrinsics['duration'] >= 0.0
 
     assert 'memcacheDuration' not in intrinsics

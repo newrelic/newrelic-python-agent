@@ -16,7 +16,7 @@ from newrelic.agent import (initialize, register_application,
         get_browser_timing_footer)
 
 from newrelic.common.encoding_utils import (unpack_field, json_encode,
-        deobfuscate, json_decode)
+        deobfuscate, json_decode, obfuscate)
 
 from newrelic.core.config import (apply_config_setting, flatten_settings)
 from newrelic.core.database_utils import SQLConnections
@@ -333,6 +333,17 @@ def catch_background_exceptions(wrapped, instance, args, kwargs):
         raise_background_exceptions.count -= 1
         if raise_background_exceptions.count == 0:
             raise_background_exceptions.event.set()
+
+def make_cross_agent_headers(payload, encoding_key, cat_id):
+    value = obfuscate(json_encode(payload), encoding_key)
+    id_value = obfuscate(cat_id, encoding_key)
+    return {'X-NewRelic-Transaction': value, 'X-NewRelic-ID': id_value}
+
+def make_synthetics_header(account_id, resource_id, job_id, monitor_id,
+            encoding_key, version=1):
+    value = [version, account_id, resource_id, job_id, monitor_id]
+    value = obfuscate(json_encode(value), encoding_key)
+    return {'X-NewRelic-Synthetics': value}
 
 def validate_transaction_metrics(name, group='Function',
         background_task=False, scoped_metrics=[], rollup_metrics=[],

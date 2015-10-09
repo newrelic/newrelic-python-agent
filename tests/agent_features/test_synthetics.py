@@ -7,7 +7,8 @@ from newrelic.common.encoding_utils import (deobfuscate, obfuscate,
 from newrelic.core.agent import agent_instance
 
 from testing_support.fixtures import (validate_synthetics_event,
-        validate_synthetics_transaction_trace, override_application_settings)
+        validate_synthetics_transaction_trace, override_application_settings,
+        make_synthetics_header)
 from testing_support.external_fixtures import (
         validate_synthetics_external_trace_header)
 
@@ -23,12 +24,11 @@ _override_settings = {
     'synthetics.enabled': True,
 }
 
-def make_synthetics_header(version='1', account_id=ACCOUNT_ID,
+def _make_synthetics_header(version='1', account_id=ACCOUNT_ID,
         resource_id=SYNTHETICS_RESOURCE_ID, job_id=SYNTHETICS_JOB_ID,
         monitor_id=SYNTHETICS_MONITOR_ID, encoding_key=ENCODING_KEY):
-    value = [version, account_id, resource_id, job_id, monitor_id]
-    value = obfuscate(json_encode(value), encoding_key)
-    return {'X-NewRelic-Synthetics': value}
+    return make_synthetics_header(account_id, resource_id, job_id,
+            monitor_id, encoding_key, version)
 
 def decode_header(header, encoding_key=ENCODING_KEY):
     result = deobfuscate(header, encoding_key)
@@ -59,26 +59,26 @@ _test_valid_synthetics_event_forgone = []
         _test_valid_synthetics_event_forgone, should_exist=True)
 @override_application_settings(_override_settings)
 def test_valid_synthetics_event():
-    headers = make_synthetics_header()
+    headers = _make_synthetics_header()
     response = target_application.get('/', headers=headers)
 
 @validate_synthetics_event([], [], should_exist=False)
 @override_application_settings(_override_settings)
 def test_no_synthetics_event_unsupported_version():
-    headers = make_synthetics_header(version='0')
+    headers = _make_synthetics_header(version='0')
     response = target_application.get('/', headers=headers)
 
 @validate_synthetics_event([], [], should_exist=False)
 @override_application_settings(_override_settings)
 def test_no_synthetics_event_untrusted_account():
-    headers = make_synthetics_header(account_id='999')
+    headers = _make_synthetics_header(account_id='999')
     response = target_application.get('/', headers=headers)
 
 @validate_synthetics_event([], [], should_exist=False)
 @override_application_settings(_override_settings)
 def test_no_synthetics_event_mismatched_encoding_key():
     encoding_key = 'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz'
-    headers = make_synthetics_header(encoding_key=encoding_key)
+    headers = _make_synthetics_header(encoding_key=encoding_key)
     response = target_application.get('/', headers=headers)
 
 _test_valid_synthetics_tt_required = {
@@ -89,7 +89,7 @@ _test_valid_synthetics_tt_required = {
 @validate_synthetics_transaction_trace(_test_valid_synthetics_tt_required)
 @override_application_settings(_override_settings)
 def test_valid_synthetics_in_transaction_trace():
-    headers = make_synthetics_header()
+    headers = _make_synthetics_header()
     response = target_application.get('/', headers=headers)
 
 @validate_synthetics_transaction_trace([], _test_valid_synthetics_tt_required,
@@ -107,17 +107,17 @@ _disabled_settings = {
 @validate_synthetics_event([], [], should_exist=False)
 @override_application_settings(_disabled_settings)
 def test_synthetics_disabled():
-    headers = make_synthetics_header()
+    headers = _make_synthetics_header()
     response = target_application.get('/', headers=headers)
 
 _external_synthetics_header = ('X-NewRelic-Synthetics',
-        make_synthetics_header()['X-NewRelic-Synthetics'])
+        _make_synthetics_header()['X-NewRelic-Synthetics'])
 
 @validate_synthetics_external_trace_header(
         required_header=_external_synthetics_header, should_exist=True)
 @override_application_settings(_override_settings)
 def test_valid_synthetics_external_trace_header():
-    headers = make_synthetics_header()
+    headers = _make_synthetics_header()
     response = target_application.get('/', headers=headers)
 
 @validate_synthetics_external_trace_header(should_exist=False)
@@ -135,7 +135,7 @@ def _synthetics_limit_test(num_requests, num_events, num_transactions):
 
     # Send requests
 
-    headers = make_synthetics_header()
+    headers = _make_synthetics_header()
     for i in range(num_requests):
         response = target_application.get('/', headers=headers)
 

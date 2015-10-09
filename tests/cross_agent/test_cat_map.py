@@ -14,7 +14,8 @@ from newrelic.agent import (get_browser_timing_header, set_transaction_name,
         transient_function_wrapper, current_transaction)
 from newrelic.common.encoding_utils import (obfuscate, json_encode)
 from testing_support.fixtures import (override_application_settings,
-        override_application_name, validate_tt_parameters)
+        override_application_name, validate_tt_parameters,
+        make_cross_agent_headers)
 
 ENCODING_KEY = '1234567890123456789012345678901234567890'
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -123,11 +124,6 @@ def validate_analytics_catmap_data(name, expected_attributes=(),
 
     return _validate_analytics_sample_data
 
-def _make_headers(payload):
-    value = obfuscate(json_encode(payload), ENCODING_KEY)
-    id_value = obfuscate('1#1', ENCODING_KEY)
-    return {'X-NewRelic-Transaction': value, 'X-NewRelic-ID': id_value}
-
 @pytest.mark.parametrize(_parameters, load_tests())
 def test_cat_map(name, appName, transactionName, transactionGuid,
         inboundPayload, outboundRequests, expectedIntrinsicFields,
@@ -166,10 +162,9 @@ def test_cat_map(name, appName, transactionName, transactionGuid,
             txn_name = transactionName
             guid = transactionGuid
 
-        response = target_application.get('/',
-                headers=_make_headers(inboundPayload),
-                extra_environ={'txn': txn_name,
-                    'guid': guid})
+        headers = make_cross_agent_headers(inboundPayload, ENCODING_KEY, '1#1')
+        response = target_application.get('/', headers=headers,
+                extra_environ={'txn': txn_name, 'guid': guid})
 
         # Validation of analytic data happens in the decorator.
 

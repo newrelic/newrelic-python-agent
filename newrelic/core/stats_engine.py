@@ -545,7 +545,31 @@ class StatsEngine(object):
                 type=fullname,
                 parameters=params)
 
+        # FIXME: Purely a placeholder to be able to fetch out error events
+        # for tests while the rest of stats engine code for collecting error
+        # events hasn't been added. That will go here instead.
+        self._error_event_cache = self._error_event(error_details)
+
         self.__transaction_errors.append(error_details)
+
+    def _error_event(self, error):
+
+        # This method is for recording error events outside of transactions,
+        # don't let the poorly named 'type' attribute fool you.
+
+        intrinsics = {
+                'type' : 'TransactionError',
+                'error.class' : error.type,
+                'error.message' : error.message,
+                'timestamp' : error.start_time,
+                'transactionName' : None,
+        }
+
+        # Leave agent attributes field blank since not a transaction
+
+        error_event = [intrinsics, error.parameters['userAttributes'], {}]
+
+        return error_event
 
     def record_custom_metric(self, name, value):
         """Record a single value metric, merging the data with any data

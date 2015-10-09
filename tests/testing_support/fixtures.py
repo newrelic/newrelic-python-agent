@@ -16,7 +16,7 @@ from newrelic.agent import (initialize, register_application,
         get_browser_timing_footer)
 
 from newrelic.common.encoding_utils import (unpack_field, json_encode,
-        deobfuscate, json_decode)
+        deobfuscate, json_decode, obfuscate)
 
 from newrelic.core.config import (apply_config_setting, flatten_settings)
 from newrelic.core.database_utils import SQLConnections
@@ -26,6 +26,8 @@ from newrelic.packages import requests
 
 from newrelic.core.agent import agent_instance
 from newrelic.core.attribute_filter import AttributeFilter
+
+from testing_support.sample_applications import user_attributes_added
 
 _logger = logging.getLogger('newrelic.tests')
 
@@ -334,6 +336,17 @@ def catch_background_exceptions(wrapped, instance, args, kwargs):
         if raise_background_exceptions.count == 0:
             raise_background_exceptions.event.set()
 
+def make_cross_agent_headers(payload, encoding_key, cat_id):
+    value = obfuscate(json_encode(payload), encoding_key)
+    id_value = obfuscate(cat_id, encoding_key)
+    return {'X-NewRelic-Transaction': value, 'X-NewRelic-ID': id_value}
+
+def make_synthetics_header(account_id, resource_id, job_id, monitor_id,
+            encoding_key, version=1):
+    value = [version, account_id, resource_id, job_id, monitor_id]
+    value = obfuscate(json_encode(value), encoding_key)
+    return {'X-NewRelic-Synthetics': value}
+
 def validate_transaction_metrics(name, group='Function',
         background_task=False, scoped_metrics=[], rollup_metrics=[],
         custom_metrics=[]):
@@ -587,6 +600,40 @@ def validate_transaction_event_attributes(required_params={},
         return result
 
     return _validate_transaction_event_attributes
+
+def validate_non_transaction_error_event(required_intrinsics):
+    """Validate error event data for a single error occuring outside of a
+    transaction.
+    """
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_exception')
+    def _validate_non_transaction_error_event(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+
+            event = instance._error_event_cache
+
+            assert len(event) == 3 # [intrinsic, user, agent attributes]
+
+            intrinsics = event[0]
+
+            # The following attributes are all required, and also the only
+            # intrinsic attributes that can be included in an error event
+            # recorded outside of a transaction
+
+            assert intrinsics['type'] == 'TransactionError'
+            assert intrinsics['transactionName'] == None
+            assert intrinsics['error.class'] == required_intrinsics['error.class']
+            assert intrinsics['error.message'] == required_intrinsics['error.message']
+            now = time.time()
+            assert intrinsics['timestamp'] < now
+
+        return result
+
+    return _validate_non_transaction_error_event
 
 def validate_synthetics_transaction_trace(required_params={},
         forgone_params={}, should_exist=True):
@@ -1156,15 +1203,15 @@ def validate_database_trace_inputs(sql_parameters_type):
 
     return _validate_database_trace_inputs
 
-def validate_analytics_sample_data(name, capture_attributes=True,
-        database_call_count=0, external_call_count=0):
+def validate_transaction_event_sample_data(required_attrs,
+        required_user_attrs=True):
     """This test depends on values in the test application from
     agent_features/test_analytics.py, and is only meant to be run as a
     validation with those tests.
     """
     @transient_function_wrapper('newrelic.core.stats_engine',
             'SampledDataSet.add')
-    def _validate_analytics_sample_data(wrapped, instance, args, kwargs):
+    def _validate_transaction_event_sample_data(wrapped, instance, args, kwargs):
         def _bind_params(sample, *args, **kwargs):
             return sample
 
@@ -1176,61 +1223,114 @@ def validate_analytics_sample_data(name, capture_attributes=True,
         intrinsics, user_attributes, agent_attributes = sample
 
         assert intrinsics['type'] == 'Transaction'
-        assert intrinsics['name'] == name
-        assert intrinsics['timestamp'] >= 0.0
-        assert intrinsics['duration'] >= 0.0
+        assert intrinsics['name'] == required_attrs['name']
 
-        assert 'queueDuration' not in intrinsics
-        assert 'memcacheDuration' not in intrinsics
-
-        if capture_attributes:
-            assert user_attributes['user'] == u'user-name'
-            assert user_attributes['account'] == u'account-name'
-            assert user_attributes['product'] == u'product-name'
-
-            # Here, attributes have been sanitized, but there's been no
-            # json encoding or decoding, so the type for values in
-            # user_attributes is the same as what was input.
-
-            assert user_attributes['bytes'] == b'bytes-value'
-            assert user_attributes['string'] == 'string-value'
-            assert user_attributes['unicode'] == u'unicode-value'
-
-            assert user_attributes['integer'] == 1
-            assert user_attributes['float'] == 1.0
-
-            assert user_attributes['invalid-utf8'] == b'\xe2'
-            assert user_attributes['multibyte-utf8'] == b'\xe2\x88\x9a'
-
-            multibyte_value = b'\xe2\x88\x9a'.decode('utf-8')
-            assert user_attributes['multibyte-unicode'] == multibyte_value
-
-            # Objects get converted to strings.
-
-            assert user_attributes['list'] == '[]'
-            assert user_attributes['dict'] == '{}'
-            assert user_attributes['tuple'] == '()'
-
-        else:
-            assert user_attributes == {}
-
-        if database_call_count:
-            assert intrinsics['databaseDuration'] > 0
-            assert intrinsics['databaseCallCount'] == database_call_count
-        else:
-            assert 'databaseDuration' not in intrinsics
-            assert 'databaseCallCount' not in intrinsics
-
-        if external_call_count:
-            assert intrinsics['externalDuration'] > 0
-            assert intrinsics['externalCallCount'] == external_call_count
-        else:
-            assert 'externalDuration' not in intrinsics
-            assert 'externalCallCount' not in intrinsics
+        _validate_event_attributes(intrinsics,
+                                   user_attributes,
+                                   required_attrs,
+                                   required_user_attrs,
+                                   )
 
         return wrapped(*args, **kwargs)
 
-    return _validate_analytics_sample_data
+    return _validate_transaction_event_sample_data
+
+def validate_error_event_sample_data(required_attrs, required_user_attrs=True):
+    """This test depends on values in the test application from
+    agent_features/test_analytics.py, and is only meant to be run as a
+    validation with those tests.
+    """
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_error_event_sample_data(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+
+            def _bind_params(transaction, *args, **kwargs):
+                return transaction
+
+            transaction = _bind_params(*args, **kwargs)
+
+            error_events = transaction.error_events(instance.stats_table)
+            sample = error_events[0]
+
+            assert isinstance(sample, list)
+            assert len(sample) == 3
+
+            intrinsics, user_attributes, agent_attributes = sample
+
+            # These intrinsics should always be present
+
+            assert intrinsics['type'] == 'TransactionError'
+            assert (intrinsics['transactionName'] ==
+                    required_attrs['transactionName'])
+            assert intrinsics['error.class'] == required_attrs['error.class']
+            assert (intrinsics['error.message'] ==
+                    required_attrs['error.message'])
+            assert intrinsics['nr.transactionGuid'] is not None
+
+            _validate_event_attributes(intrinsics,
+                                       user_attributes,
+                                       required_attrs,
+                                       required_user_attrs)
+
+        return wrapped(*args, **kwargs)
+
+    return _validate_error_event_sample_data
+
+def _validate_event_attributes(intrinsics, user_attributes,
+            required_intrinsics, required_user):
+
+    now = time.time()
+    assert intrinsics['timestamp'] < now
+    assert intrinsics['duration'] >= 0.0
+
+    assert 'memcacheDuration' not in intrinsics
+
+    if required_user:
+        required_user_attributes = user_attributes_added()
+        for attr, value in required_user_attributes.items():
+            assert user_attributes[attr] == value
+    else:
+        assert user_attributes == {}
+
+    if 'databaseCallCount' in required_intrinsics:
+        assert intrinsics['databaseDuration'] > 0
+        call_count = required_intrinsics['databaseCallCount']
+        assert intrinsics['databaseCallCount'] == call_count
+    else:
+        assert 'databaseDuration' not in intrinsics
+        assert 'databaseCallCount' not in intrinsics
+
+    if 'externalCallCount' in required_intrinsics:
+        assert intrinsics['externalDuration'] > 0
+        call_count = required_intrinsics['externalCallCount']
+        assert intrinsics['externalCallCount'] == call_count
+    else:
+        assert 'externalDuration' not in intrinsics
+        assert 'externalCallCount' not in intrinsics
+
+    if intrinsics.get('queueDuration', False):
+        assert intrinsics['queueDuration'] > 0
+    else:
+        assert 'queueDuration' not in intrinsics
+
+    if 'nr.referringTransactionGuid' in required_intrinsics:
+        guid = required_intrinsics['nr.referringTransactionGuid']
+        assert intrinsics['nr.referringTransactionGuid'] == guid
+    else:
+        assert 'nr.referringTransactionGuid' not in intrinsics
+
+    if 'nr.syntheticsResourceId' in required_intrinsics:
+        res_id = required_intrinsics['nr.syntheticsResourceId']
+        job_id = required_intrinsics['nr.syntheticsJobId']
+        monitor_id = required_intrinsics['nr.syntheticsMonitorId']
+        assert intrinsics['nr.syntheticsResourceId'] == res_id
+        assert intrinsics['nr.syntheticsJobId'] == job_id
+        assert intrinsics['nr.syntheticsMonitorId'] == monitor_id
 
 def override_application_name(app_name):
     # The argument here cannot be named 'name', or else it triggers

@@ -389,14 +389,10 @@ class TransactionNode(_TransactionNode):
     def transaction_event_intrinsics(self, stats_table):
         """Put together the intrinsic attributes for a transaction event"""
 
-        settings = self.settings
-
-        intrinsics = {}
+        intrinsics = self._event_intrinsics(stats_table)
 
         intrinsics['type'] = 'Transaction'
         intrinsics['name'] = self.path
-        intrinsics['timestamp'] = self.start_time
-        intrinsics['duration'] = self.duration
 
         def _add_if_not_empty(key, value):
             if value:
@@ -416,10 +412,71 @@ class TransactionNode(_TransactionNode):
             _add_if_not_empty('nr.apdexPerfZone',
                     self.apdex_perf_zone())
 
+        if self.synthetics_resource_id:
+            intrinsics['nr.guid'] = self.guid
+
+        return intrinsics
+
+    def error_events(self, stats_table):
+
+        errors = []
+        for error in self.errors:
+
+            intrinsics = self.error_event_intrinsics(error, stats_table)
+
+            # Add user and agent attributes to event
+
+            user_attributes = {}
+            for attr in self.user_attributes:
+                if attr.destinations & DST_TRANSACTION_EVENTS:
+                    user_attributes[attr.name] = attr.value
+
+            agent_attributes = {}
+            for attr in self.agent_attributes:
+                if attr.destinations & DST_TRANSACTION_EVENTS:
+                    agent_attributes[attr.name] = attr.value
+
+            error_event = [intrinsics, user_attributes, agent_attributes]
+            errors.append(error_event)
+
+        return errors
+
+    def error_event_intrinsics(self, error, stats_table):
+
+        intrinsics = self._event_intrinsics(stats_table)
+
+        intrinsics['type'] = "TransactionError"
+        intrinsics['error.class'] = error.type
+        intrinsics['error.message'] = error.message
+        intrinsics['transactionName'] = self.path
+
+        intrinsics['nr.transactionGuid'] = self.guid
+        if self.referring_transaction_guid:
+            guid = self.referring_transaction_guid
+            intrinsics['nr.referringTransactionGuid'] = guid
+
+        return intrinsics
+
+
+    def _event_intrinsics(self, stats_table):
+        """Common attributes for analytics events"""
+
+        cache = getattr(self, '_event_intrinsics_cache', None)
+        if cache is not None:
+
+            # We don't want to execute this function more than once, since
+            # it should always yield the same data per transaction
+
+            return cache
+
+        intrinsics = {}
+
+        intrinsics['timestamp'] = self.start_time
+        intrinsics['duration'] = self.duration
+
         # Add the Synthetics attributes to the intrinsics dict.
 
         if self.synthetics_resource_id:
-            intrinsics['nr.guid'] = self.guid
             intrinsics['nr.syntheticsResourceId'] = self.synthetics_resource_id
             intrinsics['nr.syntheticsJobId'] = self.synthetics_job_id
             intrinsics['nr.syntheticsMonitorId'] = self.synthetics_monitor_id
@@ -460,6 +517,8 @@ class TransactionNode(_TransactionNode):
 
         _add_call_time('Datastore/all', 'databaseDuration')
         _add_call_count('Datastore/all', 'databaseCallCount')
+
+        self._event_intrinsics_cache = intrinsics
 
         return intrinsics
 

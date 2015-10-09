@@ -27,6 +27,8 @@ from newrelic.packages import requests
 from newrelic.core.agent import agent_instance
 from newrelic.core.attribute_filter import AttributeFilter
 
+from testing_support.sample_applications import user_attributes_added
+
 _logger = logging.getLogger('newrelic.tests')
 
 def _environ_as_bool(name, default=False):
@@ -1201,7 +1203,7 @@ def validate_database_trace_inputs(sql_parameters_type):
     return _validate_database_trace_inputs
 
 def validate_transaction_event_sample_data(required_attrs,
-        required_user_attrs={}):
+        required_user_attrs=True):
     """This test depends on values in the test application from
     agent_features/test_analytics.py, and is only meant to be run as a
     validation with those tests.
@@ -1232,7 +1234,7 @@ def validate_transaction_event_sample_data(required_attrs,
 
     return _validate_transaction_event_sample_data
 
-def validate_error_event_sample_data(required_attrs, required_user_attrs={}):
+def validate_error_event_sample_data(required_attrs, required_user_attrs=True):
     """This test depends on values in the test application from
     agent_features/test_analytics.py, and is only meant to be run as a
     validation with those tests.
@@ -1286,7 +1288,8 @@ def _validate_event_attributes(intrinsics, user_attributes,
     assert 'memcacheDuration' not in intrinsics
 
     if required_user:
-        for attr, value in required_user.items():
+        required_user_attributes = user_attributes_added()
+        for attr, value in required_user_attributes.items():
             assert user_attributes[attr] == value
     else:
         assert user_attributes == {}

@@ -8,8 +8,7 @@ from newrelic.common.encoding_utils import obfuscate, json_encode
 from testing_support.fixtures import (validate_error_event_sample_data,
         validate_non_transaction_error_event, override_application_settings,
         make_cross_agent_headers, make_synthetics_header)
-from testing_support.sample_applications import (fully_featured_application,
-        user_attributes_added)
+from testing_support.sample_applications import (fully_featured_application)
 
 # Error in test app hard-coded as a ValueError
 SYNTHETICS_RESOURCE_ID = '09845779-16ef-4fa7-b7f2-44da8e62931c'
@@ -19,15 +18,14 @@ SYNTHETICS_MONITOR_ID = 'dc452ae9-1a93-4ab5-8a33-600521e9cd00'
 ERR_MESSAGE = 'Transaction had bad value'
 ERROR = ValueError(ERR_MESSAGE)
 
-_user_attributes = user_attributes_added()
-
 _intrinsic_attributes = {
         'error.class': callable_name(ERROR),
         'error.message': ERR_MESSAGE,
         'transactionName' : 'WebTransaction/Uri/'
 }
 
-@validate_error_event_sample_data(required_attrs=_intrinsic_attributes)
+@validate_error_event_sample_data(required_attrs=_intrinsic_attributes,
+        required_user_attrs=False)
 def test_transaction_error_event_no_extra_attributes():
     test_environ = {
                 'err_message' : ERR_MESSAGE,
@@ -45,7 +43,7 @@ _intrinsic_attributes = {
 }
 
 @validate_error_event_sample_data(required_attrs=_intrinsic_attributes,
-        required_user_attrs=_user_attributes)
+        required_user_attrs=True)
 def test_transaction_error_event_lotsa_attributes():
     test_environ = {
             'err_message' : ERR_MESSAGE,
@@ -65,7 +63,7 @@ _intrinsic_attributes = {
 }
 
 @validate_error_event_sample_data(required_attrs=_intrinsic_attributes,
-        required_user_attrs=_user_attributes)
+        required_user_attrs=True)
 def test_transaction_error_background_task():
     test_environ = {
             'err_message' : ERR_MESSAGE,
@@ -83,7 +81,7 @@ _intrinsic_attributes = {
 }
 
 @validate_error_event_sample_data(required_attrs=_intrinsic_attributes,
-        required_user_attrs=_user_attributes)
+        required_user_attrs=True)
 def test_transaction_error_cross_agent():
     test_environ = {
             'err_message' : ERR_MESSAGE,
@@ -105,7 +103,7 @@ _intrinsic_attributes = {
 }
 
 @validate_error_event_sample_data(required_attrs=_intrinsic_attributes,
-        required_user_attrs=_user_attributes)
+        required_user_attrs=True)
 def test_transaction_error_with_synthetics():
     test_environ = {
             'err_message' : ERR_MESSAGE,

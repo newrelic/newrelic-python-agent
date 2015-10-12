@@ -1,5 +1,4 @@
 import sys
-import webtest
 
 try:
     from urllib2 import urlopen  # Py2.X
@@ -40,7 +39,7 @@ def user_attributes_added():
     return user_attributes
 
 @wsgi_application()
-def sample_wsgi_application_fully_featured(environ, start_response):
+def fully_featured_app(environ, start_response):
     status = '200 OK'
 
     path = environ.get('PATH_INFO')
@@ -83,5 +82,3 @@ def sample_wsgi_application_fully_featured(environ, start_response):
     start_response(status, response_headers)
 
     return [output]
-
-fully_featured_application = webtest.TestApp(sample_wsgi_application_fully_featured)

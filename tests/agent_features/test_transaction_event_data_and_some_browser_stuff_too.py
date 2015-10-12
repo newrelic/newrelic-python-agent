@@ -1,14 +1,17 @@
 import json
+import webtest
 
-from newrelic.agent import (application_settings, transient_function_wrapper)
+from newrelic.agent import application_settings, transient_function_wrapper
 
 from newrelic.common.encoding_utils import deobfuscate
 
 from testing_support.fixtures import (override_application_settings,
         validate_transaction_event_sample_data)
-from testing_support.sample_applications import (fully_featured_application,
+from testing_support.sample_applications import (fully_featured_app,
             user_attributes_added)
 
+
+fully_featured_application = webtest.TestApp(fully_featured_app)
 _user_attributes = user_attributes_added()
 
 #====================== Test cases ====================================

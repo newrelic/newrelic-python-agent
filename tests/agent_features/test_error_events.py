@@ -8,7 +8,8 @@ from newrelic.common.encoding_utils import obfuscate, json_encode
 
 from testing_support.fixtures import (validate_error_event_sample_data,
         validate_non_transaction_error_event, override_application_settings,
-        make_cross_agent_headers, make_synthetics_header)
+        make_cross_agent_headers, make_synthetics_header,
+        core_application_stats_engine_error)
 from testing_support.sample_applications import fully_featured_app
 
 
@@ -124,16 +125,20 @@ def test_transaction_error_with_synthetics():
 
 # -------------- Test Error Events outside of transaction ----------------
 
+class ErrorEventOutsideTransactionError(Exception):
+    pass
+outside_error = ErrorEventOutsideTransactionError(ERR_MESSAGE)
+
 _intrinsic_attributes = {
-        'error.class': callable_name(ERROR),
+        'error.class': callable_name(outside_error),
         'error.message': ERR_MESSAGE,
 }
 
 @validate_non_transaction_error_event(_intrinsic_attributes)
 def test_error_event_outside_transaction():
     try:
-        raise ERROR
-    except ValueError:
+        raise outside_error
+    except ErrorEventOutsideTransactionError:
         app = application()
         record_exception(*sys.exc_info(), application=app)
 

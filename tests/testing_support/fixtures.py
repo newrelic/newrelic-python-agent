@@ -602,19 +602,24 @@ def validate_transaction_event_attributes(required_params={},
     return _validate_transaction_event_attributes
 
 def validate_non_transaction_error_event(required_intrinsics):
-    """Validate error event data for a single error occuring outside of a
+    """Validate error event data for a single error occurring outside of a
     transaction.
     """
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_exception')
     def _validate_non_transaction_error_event(wrapped, instance, args, kwargs):
+
+        # clear out any existing errors from main stats engine before running
+
+        core_application_reset_stats()
+
         try:
             result = wrapped(*args, **kwargs)
         except:
             raise
         else:
 
-            event = instance._error_event_cache
+            event = instance.error_events.samples[0]
 
             assert len(event) == 3 # [intrinsic, user, agent attributes]
 
@@ -1489,6 +1494,10 @@ def core_application_stats_engine_error(error_type, app_name=None):
     stats = core_application_stats_engine(app_name)
     errors = stats.error_data()
     return next((e for e in errors if e.type == error_type), None)
+
+def core_application_reset_stats(app_name=None):
+    stats = core_application_stats_engine(app_name)
+    stats.reset_stats(stats.settings)
 
 def error_is_saved(error, app_name=None):
     """Return True, if an error of a particular type has already been saved.

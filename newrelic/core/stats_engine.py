@@ -273,6 +273,7 @@ class StatsEngine(object):
         self.__settings = None
         self.__stats_table = {}
         self.__transaction_events = SampledDataSet()
+        self.__error_events = SampledDataSet()
         self.__sql_stats_table = {}
         self.__slow_transaction = None
         self.__slow_transaction_map = {}
@@ -316,6 +317,11 @@ class StatsEngine(object):
     @property
     def synthetics_transactions(self):
         return self.__synthetics_transactions
+
+    @property
+    def error_events(self):
+        return self.__error_events
+
 
     def update_metric_ids(self, metric_ids):
         """Updates the dictionary containing the mappings from metric
@@ -545,10 +551,10 @@ class StatsEngine(object):
                 type=fullname,
                 parameters=params)
 
-        # FIXME: Purely a placeholder to be able to fetch out error events
-        # for tests while the rest of stats engine code for collecting error
-        # events hasn't been added. That will go here instead.
-        self._error_event_cache = self._error_event(error_details)
+        # Save this error as a trace and an event.
+
+        event = self._error_event(error_details)
+        self.__error_events.add(event)
 
         self.__transaction_errors.append(error_details)
 
@@ -811,7 +817,7 @@ class StatsEngine(object):
             if transaction.duration >= threshold:
                 self._update_slow_transaction(transaction)
 
-        # Create the analytic (transaction) event and add it to the
+        # Create the transaction event and add it to the
         # appropriate "bucket." Synthetic requests are saved in one,
         # while transactions from regular requests are saved in another.
 
@@ -827,6 +833,12 @@ class StatsEngine(object):
 
             event = transaction.transaction_event(self.__stats_table)
             self.__transaction_events.add(event)
+
+        if (settings.error_collector.enabled and
+                settings.error_collector.capture_events):
+            events = transaction.error_events(self.__stats_table)
+            for event in events:
+                self.__error_events.add(event)
 
     @internal_trace('Supportability/Python/StatsEngine/Calls/metric_data')
     def metric_data(self, normalizer=None):
@@ -1200,6 +1212,7 @@ class StatsEngine(object):
         self.xray_sessions = {}
 
         self.reset_transaction_events()
+        self.reset_error_events()
 
     def reset_metric_stats(self):
         """Resets the accumulated statistics back to initial state for
@@ -1220,6 +1233,13 @@ class StatsEngine(object):
                     self.__settings.transaction_events.max_samples_stored)
         else:
             self.__transaction_events = SampledDataSet()
+
+    def reset_error_events(self):
+        if self.__settings is not None:
+            self.__error_events = SampledDataSet(
+                    self.__settings.error_collector.max_event_samples_stored)
+        else:
+            self.__error_events = SampledDataSet()
 
     def reset_synthetics_events(self):
         """Resets the accumulated statistics back to initial state for

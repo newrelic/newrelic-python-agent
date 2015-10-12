@@ -9,7 +9,8 @@ from newrelic.common.encoding_utils import obfuscate, json_encode
 from testing_support.fixtures import (validate_error_event_sample_data,
         validate_non_transaction_error_event, override_application_settings,
         make_cross_agent_headers, make_synthetics_header)
-from testing_support.sample_applications import sample_wsgi_application_fully_featured
+from testing_support.sample_applications import fully_featured_app
+
 
 # Error in test app hard-coded as a ValueError
 SYNTHETICS_RESOURCE_ID = '09845779-16ef-4fa7-b7f2-44da8e62931c'
@@ -19,7 +20,7 @@ SYNTHETICS_MONITOR_ID = 'dc452ae9-1a93-4ab5-8a33-600521e9cd00'
 ERR_MESSAGE = 'Transaction had bad value'
 ERROR = ValueError(ERR_MESSAGE)
 
-fully_featured_application = webtest.TestApp(sample_wsgi_application_fully_featured)
+fully_featured_application = webtest.TestApp(fully_featured_app)
 
 _intrinsic_attributes = {
         'error.class': callable_name(ERROR),

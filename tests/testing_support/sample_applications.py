@@ -39,7 +39,7 @@ def user_attributes_added():
     return user_attributes
 
 @wsgi_application()
-def sample_wsgi_application_fully_featured(environ, start_response):
+def fully_featured_app(environ, start_response):
     status = '200 OK'
 
     path = environ.get('PATH_INFO')

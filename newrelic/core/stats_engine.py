@@ -1199,11 +1199,7 @@ class StatsEngine(object):
         self.__xray_transactions = []
         self.xray_sessions = {}
 
-        if settings is not None:
-            self.__transaction_events = SampledDataSet(
-                    settings.transaction_events.max_samples_stored)
-        else:
-            self.__transaction_events = SampledDataSet()
+        self.reset_transaction_events()
 
     def reset_metric_stats(self):
         """Resets the accumulated statistics back to initial state for
@@ -1294,11 +1290,7 @@ class StatsEngine(object):
         self.__synthetics_events = []
         self.__synthetics_transactions = []
 
-        if self.__settings is not None:
-            self.__transaction_events = SampledDataSet(
-                    self.__settings.transaction_events.max_samples_stored)
-        else:
-            self.__transaction_events = SampledDataSet()
+        self.reset_transaction_events()
 
         return stats
 

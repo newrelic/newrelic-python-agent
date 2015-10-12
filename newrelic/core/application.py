@@ -1310,14 +1310,14 @@ class Application(object):
                     if (configuration.collect_analytics_events and
                             configuration.transaction_events.enabled):
 
-                        sampled_data_set = stats.sampled_data_set
+                        transaction_events = stats.transaction_events
 
                         internal_metric('Supportability/Python/'
                                 'RequestSampler/requests',
-                                sampled_data_set.count)
+                                transaction_events.count)
                         internal_metric('Supportability/Python/'
                                 'RequestSampler/samples',
-                                len(sampled_data_set.samples))
+                                len(transaction_events.samples))
 
                     # Create a metric_normalizer based on normalize_name
                     # If metric rename rules are empty, set normalizer
@@ -1361,7 +1361,7 @@ class Application(object):
                     if (configuration.collect_analytics_events and
                             configuration.transaction_events.enabled):
 
-                        samples = stats.sampled_data_set.samples
+                        samples = stats.transaction_events.samples
                         all_analytic_events.extend(samples)
 
                     if len(all_analytic_events):
@@ -1371,7 +1371,7 @@ class Application(object):
                         self._active_session.analytic_event_data(
                                 all_analytic_events)
 
-                    stats.reset_sampled_data()
+                    stats.reset_transaction_events()
                     stats.reset_synthetics_events()
 
                     # Successful, so we update the stats engine with the
@@ -1528,9 +1528,11 @@ class Application(object):
                             # Only merge back sampled data at present.
 
                             self._stats_engine.merge_other_stats(stats,
-                                    merge_traces=False, merge_errors=False,
-                                    merge_sql=False, merge_samples=True,
-                                    merge_synthetics_events = True,
+                                    merge_traces=False,
+                                    merge_errors=False,
+                                    merge_sql=False,
+                                    merge_transaction_events=True,
+                                    merge_synthetics_events=True,
                                     rollback=True)
 
                         else:

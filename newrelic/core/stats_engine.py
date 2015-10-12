@@ -272,7 +272,7 @@ class StatsEngine(object):
     def __init__(self):
         self.__settings = None
         self.__stats_table = {}
-        self.__sampled_data_set = SampledDataSet()
+        self.__transaction_events = SampledDataSet()
         self.__sql_stats_table = {}
         self.__slow_transaction = None
         self.__slow_transaction_map = {}
@@ -306,8 +306,8 @@ class StatsEngine(object):
         return self.__metric_ids
 
     @property
-    def sampled_data_set(self):
-        return self.__sampled_data_set
+    def transaction_events(self):
+        return self.__transaction_events
 
     @property
     def synthetics_events(self):
@@ -826,7 +826,7 @@ class StatsEngine(object):
                 settings.transaction_events.enabled):
 
             event = transaction.transaction_event(self.__stats_table)
-            self.__sampled_data_set.add(event)
+            self.__transaction_events.add(event)
 
     @internal_trace('Supportability/Python/StatsEngine/Calls/metric_data')
     def metric_data(self, normalizer=None):
@@ -1200,10 +1200,10 @@ class StatsEngine(object):
         self.xray_sessions = {}
 
         if settings is not None:
-            self.__sampled_data_set = SampledDataSet(
+            self.__transaction_events = SampledDataSet(
                     settings.transaction_events.max_samples_stored)
         else:
-            self.__sampled_data_set = SampledDataSet()
+            self.__transaction_events = SampledDataSet()
 
     def reset_metric_stats(self):
         """Resets the accumulated statistics back to initial state for
@@ -1213,17 +1213,17 @@ class StatsEngine(object):
 
         self.__stats_table = {}
 
-    def reset_sampled_data(self):
+    def reset_transaction_events(self):
         """Resets the accumulated statistics back to initial state for
         sample analytics data.
 
         """
 
         if self.__settings is not None:
-            self.__sampled_data_set = SampledDataSet(
+            self.__transaction_events = SampledDataSet(
                     self.__settings.transaction_events.max_samples_stored)
         else:
-            self.__sampled_data_set = SampledDataSet()
+            self.__transaction_events = SampledDataSet()
 
     def reset_synthetics_events(self):
         """Resets the accumulated statistics back to initial state for
@@ -1295,10 +1295,10 @@ class StatsEngine(object):
         self.__synthetics_transactions = []
 
         if self.__settings is not None:
-            self.__sampled_data_set = SampledDataSet(
+            self.__transaction_events = SampledDataSet(
                     self.__settings.transaction_events.max_samples_stored)
         else:
-            self.__sampled_data_set = SampledDataSet()
+            self.__transaction_events = SampledDataSet()
 
         return stats
 
@@ -1344,14 +1344,14 @@ class StatsEngine(object):
                 stats.merge_stats(other)
 
     def merge_other_stats(self, snapshot, merge_traces=True,
-            merge_errors=True, merge_sql=True, merge_samples=True,
+            merge_errors=True, merge_sql=True, merge_transaction_events=True,
             merge_synthetics_events=True, rollback=False):
 
         """Merges non metric data from a snapshot. This would only be
         used when merging data from a single transaction into main
         stats engine. It is assumed the snapshot has newer data and
         that any existing data takes precedence where what should be
-        collected is not otherwised based on time.
+        collected is not otherwise based on time.
 
         """
 
@@ -1361,8 +1361,8 @@ class StatsEngine(object):
         if rollback:
             _logger.debug('Performing rollback of non metric data into '
                     'subsequent harvest period where merge_traces=%r, '
-                    'merge_errors=%r, merge_sql=%r and merge_samples=%r.',
-                    merge_traces, merge_errors, merge_sql, merge_samples)
+                    'merge_errors=%r, merge_sql=%r and merge_transaction_events=%r.',
+                    merge_traces, merge_errors, merge_sql, merge_transaction_events)
 
         settings = self.__settings
 
@@ -1374,18 +1374,18 @@ class StatsEngine(object):
         # and applying the new data over the top. This gives precedence
         # to the newer data.
 
-        if merge_samples:
+        if merge_transaction_events:
             if rollback:
-                new_sample_data_set = self.__sampled_data_set
-                self.__sampled_data_set = snapshot.__sampled_data_set
+                new_transaction_events = self.__transaction_events
+                self.__transaction_events = snapshot.__transaction_events
 
-                for sample in new_sample_data_set.samples:
-                    self.__sampled_data_set.add(sample)
+                for sample in new_transaction_events.samples:
+                    self.__transaction_events.add(sample)
 
             else:
-                if snapshot.__sampled_data_set.count == 1:
-                    self.__sampled_data_set.add(
-                            snapshot.__sampled_data_set.samples[0])
+                if snapshot.__transaction_events.count == 1:
+                    self.__transaction_events.add(
+                            snapshot.__transaction_events.samples[0])
 
         # Merge Synthetic analytic events, following same rules as for
         # sampled data set described above.

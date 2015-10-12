@@ -528,11 +528,11 @@ def validate_database_duration():
         else:
 
             metrics = instance.stats_table
-            sampled_data_set = instance.sampled_data_set
+            transaction_events = instance.transaction_events
 
-            assert sampled_data_set.count == 1
+            assert transaction_events.count == 1
 
-            event = sampled_data_set.samples[0]
+            event = transaction_events.samples[0]
             intrinsics = event[0]
 
             # As long as we are sending 'Database' metrics, then
@@ -579,7 +579,7 @@ def validate_transaction_event_attributes(required_params={},
         except:
             raise
         else:
-            event_data = instance.sampled_data_set
+            event_data = instance.transaction_events
             # grab first transaction event in data set
             intrinsics, user_attributes, agent_attributes = event_data.samples[0]
 
@@ -913,7 +913,7 @@ def validate_transaction_event_collector_json():
         except:
             raise
         else:
-            samples = instance.sampled_data_set.samples
+            samples = instance.transaction_events.samples
 
             # recreate what happens right before data is sent to the collector
             # in data_collector.py during the harvest via analytic_event_data

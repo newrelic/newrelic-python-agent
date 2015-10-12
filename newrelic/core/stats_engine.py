@@ -1316,37 +1316,7 @@ class StatsEngine(object):
 
         return stats
 
-    def merge_metric_stats(self, snapshot, rollback=False):
-
-        """Merges metric data from a snapshot. This is used when merging
-        data from a single transaction into main stats engine. It would
-        also be done if the sending of the metric data from the harvest
-        failed and wanted to keep accumulating it for subsequent
-        harvest.
-
-        """
-
-        if not self.__settings:
-            return
-
-        if rollback:
-            _logger.debug('Performing rollback of metric data into '
-                    'subsequent harvest period.')
-
-        # Merge back data into any new data which has been
-        # accumulated.
-
-        for key, other in six.iteritems(snapshot.__stats_table):
-            stats = self.__stats_table.get(key)
-            if not stats:
-                self.__stats_table[key] = copy.copy(other)
-            else:
-                stats.merge_stats(other)
-
-    def merge_other_stats(self, snapshot, merge_traces=True,
-            merge_errors=True, merge_sql=True, merge_transaction_events=True,
-            merge_synthetics_events=True, rollback=False):
-
+    def merge_stats(self, snapshot):
         """Merges non metric data from a snapshot. This would only be
         used when merging data from a single transaction into main
         stats engine. It is assumed the snapshot has newer data and
@@ -1358,27 +1328,46 @@ class StatsEngine(object):
         if not self.__settings:
             return
 
-        if rollback:
-            _logger.debug('Performing rollback of non metric data into '
-                    'subsequent harvest period where merge_traces=%r, '
-                    'merge_errors=%r, merge_sql=%r and merge_transaction_events=%r.',
-                    merge_traces, merge_errors, merge_sql, merge_transaction_events)
+        self._merge_metric_stats(snapshot, rollback=False)
+        self._merge_transaction_events(snapshot, rollback=False)
+        self._merge_synthetics_events(snapshot, rollback=False)
+        self._merge_errors(snapshot)
+        self._merge_sql(snapshot)
+        self._merge_traces(snapshot)
 
-        if merge_transaction_events:
-            self._merge_transaction_events(snapshot, rollback)
+    def rollback_stats(self, snapshot):
 
-        if merge_synthetics_events:
-            self._merge_synthetics_events(snapshot, rollback)
+        if not self.__settings:
+            return
 
+        _logger.debug('Performing rollback of non metric data into '
+                'subsequent harvest period. Metric data and transaction events'
+                'will be preserved and rolled into next harvest')
 
-        if merge_errors:
-            self._merge_errors(snapshot)
+        # Only merge back sampled data at present.
 
-        if merge_sql:
-            self._merge_sql(snapshot)
+        self._merge_metric_stats(snapshot, rollback=True)
+        self._merge_transaction_events(snapshot, rollback=True)
+        self._merge_synthetics_events(snapshot, rollback=True)
 
-        if merge_traces:
-            self._merge_traces(snapshot)
+    def _merge_metric_stats(self, snapshot, rollback=False):
+        """Merges metric data from a snapshot. This is used when merging
+        data from a single transaction into main stats engine. It would
+        also be done if the sending of the metric data from the harvest
+        failed and wanted to keep accumulating it for subsequent
+        harvest.
+
+        """
+
+        # Merge back data into any new data which has been
+        # accumulated.
+
+        for key, other in six.iteritems(snapshot.__stats_table):
+            stats = self.__stats_table.get(key)
+            if not stats:
+                self.__stats_table[key] = copy.copy(other)
+            else:
+                stats.merge_stats(other)
 
     def _merge_transaction_events(self, snapshot, rollback):
 

@@ -826,8 +826,7 @@ class Application(object):
                     internal_metric('Supportability/Python/Transaction/'
                             'Counts/metric_data', stats.metric_data_count())
 
-                    self._stats_engine.merge_metric_stats(stats)
-                    self._stats_engine.merge_other_stats(stats)
+                    self._stats_engine.merge_stats(stats)
 
                     # We merge the internal statistics here as well even
                     # though have popped out of the context where we are
@@ -1228,7 +1227,9 @@ class Application(object):
 
                     stats_custom = self._stats_custom_engine.harvest_snapshot()
 
-                stats.merge_metric_stats(stats_custom)
+                # stats_custom should only contain metric stats, no transactions
+
+                stats.merge_stats(stats_custom)
 
                 # Now merge in any metrics from the data samplers
                 # associated with this application.
@@ -1522,18 +1523,8 @@ class Application(object):
                         maximum = agent_limits.merge_stats_maximum
 
                         if self._merge_count <= maximum:
-                            self._stats_engine.merge_metric_stats(
-                                    stats, rollback=True)
 
-                            # Only merge back sampled data at present.
-
-                            self._stats_engine.merge_other_stats(stats,
-                                    merge_traces=False,
-                                    merge_errors=False,
-                                    merge_sql=False,
-                                    merge_transaction_events=True,
-                                    merge_synthetics_events=True,
-                                    rollback=True)
+                            self._stats_engine.rollback_stats(stats)
 
                         else:
                             _logger.error('Unable to report main transaction '

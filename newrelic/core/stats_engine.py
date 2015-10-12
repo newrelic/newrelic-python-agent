@@ -1364,9 +1364,25 @@ class StatsEngine(object):
                     'merge_errors=%r, merge_sql=%r and merge_transaction_events=%r.',
                     merge_traces, merge_errors, merge_sql, merge_transaction_events)
 
-        settings = self.__settings
+        if merge_transaction_events:
+            self._merge_transaction_events(snapshot, rollback)
 
-        # Merge in sampled data set. For normal case, as this is merging
+        if merge_synthetics_events:
+            self._merge_synthetics_events(snapshot, rollback)
+
+
+        if merge_errors:
+            self._merge_errors(snapshot)
+
+        if merge_sql:
+            self._merge_sql(snapshot)
+
+        if merge_traces:
+            self._merge_traces(snapshot)
+
+    def _merge_transaction_events(self, snapshot, rollback):
+
+        # Merge in transaction events. For normal case, as this is merging
         # data from a single transaction, there should only be one. Just
         # to avoid issues, if there is more than one, don't merge. In
         # the case of a rollback merge because of a network issue, then
@@ -1374,127 +1390,129 @@ class StatsEngine(object):
         # and applying the new data over the top. This gives precedence
         # to the newer data.
 
-        if merge_transaction_events:
-            if rollback:
-                new_transaction_events = self.__transaction_events
-                self.__transaction_events = snapshot.__transaction_events
+        if rollback:
+            new_transaction_events = self.__transaction_events
+            self.__transaction_events = snapshot.__transaction_events
 
-                for sample in new_transaction_events.samples:
-                    self.__transaction_events.add(sample)
+            for sample in new_transaction_events.samples:
+                self.__transaction_events.add(sample)
 
-            else:
-                if snapshot.__transaction_events.count == 1:
-                    self.__transaction_events.add(
-                            snapshot.__transaction_events.samples[0])
+        else:
+            if snapshot.__transaction_events.count == 1:
+                self.__transaction_events.add(
+                        snapshot.__transaction_events.samples[0])
+
+    def _merge_synthetics_events(self, snapshot, rollback):
 
         # Merge Synthetic analytic events, following same rules as for
-        # sampled data set described above.
+        # transaction events.
 
-        if merge_synthetics_events:
-            if rollback:
-                self.__synthetics_events.extend(snapshot.__synthetics_events)
-            else:
-                if len(snapshot.__synthetics_events) == 1:
-                    self.__synthetics_events.append(
-                        snapshot.__synthetics_events[0])
+        if rollback:
+            self.__synthetics_events.extend(snapshot.__synthetics_events)
+        else:
+            if len(snapshot.__synthetics_events) == 1:
+                self.__synthetics_events.append(
+                    snapshot.__synthetics_events[0])
 
-            maximum = settings.agent_limits.synthetics_events
-            self.__synthetics_events = self.__synthetics_events[:maximum]
+        maximum = self.__settings.agent_limits.synthetics_events
+        self.__synthetics_events = self.__synthetics_events[:maximum]
+
+    def _merge_errors(self, snapshot):
 
         # Append snapshot error details at end to maintain time
         # based order and then trim at maximum to be kept.
 
-        if merge_errors:
-            maximum = settings.agent_limits.errors_per_harvest
-            self.__transaction_errors.extend(snapshot.__transaction_errors)
-            self.__transaction_errors = self.__transaction_errors[:maximum]
+        maximum = self.__settings.agent_limits.errors_per_harvest
+        self.__transaction_errors.extend(snapshot.__transaction_errors)
+        self.__transaction_errors = self.__transaction_errors[:maximum]
+
+    def _merge_sql(self, snapshot):
 
         # Add sql traces to the set of existing entries. If over
         # the limit of how many to collect, only merge in if already
         # seen the specific SQL.
 
-        if merge_sql:
-            maximum = settings.agent_limits.slow_sql_data
-            for key, other in six.iteritems(snapshot.__sql_stats_table):
-                stats = self.__sql_stats_table.get(key)
-                if not stats:
-                    if len(self.__sql_stats_table) < maximum:
-                        self.__sql_stats_table[key] = copy.copy(other)
-                else:
-                    stats.merge_stats(other)
+        maximum = self.__settings.agent_limits.slow_sql_data
+        for key, other in six.iteritems(snapshot.__sql_stats_table):
+            stats = self.__sql_stats_table.get(key)
+            if not stats:
+                if len(self.__sql_stats_table) < maximum:
+                    self.__sql_stats_table[key] = copy.copy(other)
+            else:
+                stats.merge_stats(other)
+
+    def _merge_traces(self, snapshot):
 
         # Restore original slow transaction if slower than any newer slow
         # transaction. Also append any saved transactions corresponding to
         # x-ray traces, trimming them at the maximum to be kept.
 
-        if merge_traces:
+        # Limit number of xray traces to the limit (10)
+        # Spill over traces after the limit should have no x-ray ids. This
+        # qualifies the trace to be considered for slow transaction.
 
-            # Limit number of xray traces to the limit (10)
-            # Spill over traces after the limit should have no x-ray ids. This
-            # qualifies the trace to be considered for slow transaction.
+        maximum = self.__settings.agent_limits.xray_transactions
+        self.__xray_transactions.extend(snapshot.__xray_transactions)
+        for txn in self.__xray_transactions[maximum:]:
+            txn.xray_id = None
+        self.__xray_transactions = self.__xray_transactions[:maximum]
 
-            maximum = settings.agent_limits.xray_transactions
-            self.__xray_transactions.extend(snapshot.__xray_transactions)
-            for txn in self.__xray_transactions[maximum:]:
-                txn.xray_id = None
-            self.__xray_transactions = self.__xray_transactions[:maximum]
+        # Limit number of Synthetics transactions
 
-            # Limit number of Synthetics transactions
+        maximum = self.__settings.agent_limits.synthetics_transactions
+        self.__synthetics_transactions.extend(
+                snapshot.__synthetics_transactions)
+        synthetics_slice = self.__synthetics_transactions[:maximum]
+        self.__synthetics_transactions = synthetics_slice
 
-            maximum = settings.agent_limits.synthetics_transactions
-            self.__synthetics_transactions.extend(
-                    snapshot.__synthetics_transactions)
-            synthetics_slice = self.__synthetics_transactions[:maximum]
-            self.__synthetics_transactions = synthetics_slice
+        transaction = snapshot.__slow_transaction
 
-            transaction = snapshot.__slow_transaction
+        # If the transaction has an xray_id then it does not qualify to
+        # be considered for slow transaction.  This is because in the Core
+        # app, there is logic to NOT show TTs with x-ray ids in the
+        # WebTransactions tab. If a TT has xray_id it is only shown under
+        # the x-ray page.
 
-            # If the transaction has an xray_id then it does not qualify to
-            # be considered for slow transaction.  This is because in the Core
-            # app, there is logic to NOT show TTs with x-ray ids in the
-            # WebTransactions tab. If a TT has xray_id it is only shown under
-            # the x-ray page.
+        xray_id = getattr(transaction, 'xray_id', None)
+        if transaction and xray_id is None:
+            name = transaction.path
+            duration = transaction.duration
 
-            xray_id = getattr(transaction, 'xray_id', None)
-            if transaction and xray_id is None:
-                name = transaction.path
-                duration = transaction.duration
+            slowest = 0
+            if self.__slow_transaction:
+                slowest = self.__slow_transaction.duration
+            if name in self.__slow_transaction_map:
+                slowest = max(self.__slow_transaction_map[name], slowest)
 
-                slowest = 0
+            if duration > slowest:
+                # We are going to replace the prior slow
+                # transaction. We need to be a bit tricky here. If
+                # we are overriding an existing slow transaction for
+                # a different name, then we need to restore in the
+                # transaction map what the previous slowest duration
+                # was for that, or remove it if there wasn't one.
+                # This is so we do not incorrectly suppress it given
+                # that it was never actually reported as the slowest
+                # transaction.
+
                 if self.__slow_transaction:
-                    slowest = self.__slow_transaction.duration
+                    if self.__slow_transaction.path != name:
+                        if self.__slow_transaction_old_duration:
+                            self.__slow_transaction_map[
+                                    self.__slow_transaction.path] = (
+                                    self.__slow_transaction_old_duration)
+                        else:
+                            del self.__slow_transaction_map[
+                                    self.__slow_transaction.path]
+
                 if name in self.__slow_transaction_map:
-                    slowest = max(self.__slow_transaction_map[name], slowest)
+                    self.__slow_transaction_old_duration = (
+                            self.__slow_transaction_map[name])
+                else:
+                    self.__slow_transaction_old_duration = None
 
-                if duration > slowest:
-                    # We are going to replace the prior slow
-                    # transaction. We need to be a bit tricky here. If
-                    # we are overriding an existing slow transaction for
-                    # a different name, then we need to restore in the
-                    # transaction map what the previous slowest duration
-                    # was for that, or remove it if there wasn't one.
-                    # This is so we do not incorrectly suppress it given
-                    # that it was never actually reported as the slowest
-                    # transaction.
-
-                    if self.__slow_transaction:
-                        if self.__slow_transaction.path != name:
-                            if self.__slow_transaction_old_duration:
-                                self.__slow_transaction_map[
-                                        self.__slow_transaction.path] = (
-                                        self.__slow_transaction_old_duration)
-                            else:
-                                del self.__slow_transaction_map[
-                                        self.__slow_transaction.path]
-
-                    if name in self.__slow_transaction_map:
-                        self.__slow_transaction_old_duration = (
-                                self.__slow_transaction_map[name])
-                    else:
-                        self.__slow_transaction_old_duration = None
-
-                    self.__slow_transaction = transaction
-                    self.__slow_transaction_map[name] = duration
+                self.__slow_transaction = transaction
+                self.__slow_transaction_map[name] = duration
 
     def merge_custom_metrics(self, metrics):
         """Merges in a set of custom metrics. The metrics should be

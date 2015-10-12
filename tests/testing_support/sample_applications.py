@@ -1,5 +1,4 @@
 import sys
-import webtest
 
 try:
     from urllib2 import urlopen  # Py2.X
@@ -83,5 +82,3 @@ def sample_wsgi_application_fully_featured(environ, start_response):
     start_response(status, response_headers)
 
     return [output]
-
-fully_featured_application = webtest.TestApp(sample_wsgi_application_fully_featured)

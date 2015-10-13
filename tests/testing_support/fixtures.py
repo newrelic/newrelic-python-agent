@@ -580,26 +580,32 @@ def validate_transaction_event_attributes(required_params={},
             raise
         else:
             event_data = instance.transaction_events
-            # grab first transaction event in data set
-            intrinsics, user_attributes, agent_attributes = event_data.samples[0]
 
-            if required_params:
-                for param in required_params['agent']:
-                    assert param in agent_attributes
-                for param in required_params['user']:
-                    assert param in user_attributes
-                for param in required_params['intrinsic']:
-                    assert param in intrinsics
-
-            if forgone_params:
-                for param in forgone_params['agent']:
-                    assert param not in agent_attributes
-                for param in forgone_params['user']:
-                    assert param not in user_attributes
+            check_event_attributes(event_data, required_params, forgone_params)
 
         return result
 
     return _validate_transaction_event_attributes
+
+def check_event_attributes(event_data, required_params, forgone_params):
+
+    # grab first transaction event in data set
+
+    intrinsics, user_attributes, agent_attributes = event_data.samples[0]
+
+    if required_params:
+        for param in required_params['agent']:
+            assert param in agent_attributes
+        for param in required_params['user']:
+            assert param in user_attributes
+        for param in required_params['intrinsic']:
+            assert param in intrinsics
+
+    if forgone_params:
+        for param in forgone_params['agent']:
+            assert param not in agent_attributes
+        for param in forgone_params['user']:
+            assert param not in user_attributes
 
 def validate_non_transaction_error_event(required_intrinsics):
     """Validate error event data for a single error occurring outside of a

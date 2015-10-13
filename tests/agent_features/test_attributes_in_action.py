@@ -24,8 +24,8 @@ TRACE_ERROR_AGENT_KEYS = ['wsgi.output.seconds', 'response.status', 'request.met
         'request.headers.contentType', 'request.headers.contentLength']
 AGENT_KEYS_ALL = TRACE_ERROR_AGENT_KEYS + REQ_PARAMS
 
-EVENT_INTRINSICS = ('name', 'duration', 'type', 'timestamp')
-EVENT_AGENT_KEYS = ['response.status', 'request.method',
+TRANS_EVENT_INTRINSICS = ('name', 'duration', 'type', 'timestamp')
+TRANS_EVENT_AGENT_KEYS = ['response.status', 'request.method',
         'request.headers.contentType', 'request.headers.contentLength']
 
 BROWSER_INTRINSIC_KEYS = ["beacon", "errorBeacon", "licenseKey", "applicationID",
@@ -98,9 +98,9 @@ def test_transaction_trace_default_attribute_settings():
     response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
 _expected_attributes = {
-        'agent' : EVENT_AGENT_KEYS,
+        'agent' : TRANS_EVENT_AGENT_KEYS,
         'user' : USER_ATTRS,
-        'intrinsic' : EVENT_INTRINSICS
+        'intrinsic' : TRANS_EVENT_INTRINSICS
 }
 
 _expected_absent_attributes = {
@@ -233,9 +233,9 @@ _override_settings = {
 }
 
 _expected_attributes = {
-        'agent' : EVENT_AGENT_KEYS + REQ_PARAMS,
+        'agent' : TRANS_EVENT_AGENT_KEYS + REQ_PARAMS,
         'user' : USER_ATTRS,
-        'intrinsic' : EVENT_INTRINSICS
+        'intrinsic' : TRANS_EVENT_INTRINSICS
 }
 
 _expected_absent_attributes = {
@@ -311,9 +311,9 @@ _override_settings = {
 }
 
 _expected_attributes = {
-        'agent' : EVENT_AGENT_KEYS + ['request.parameters.'+URL_PARAM],
+        'agent' : TRANS_EVENT_AGENT_KEYS + ['request.parameters.'+URL_PARAM],
         'user' : USER_ATTRS,
-        'intrinsic' : EVENT_INTRINSICS
+        'intrinsic' : TRANS_EVENT_INTRINSICS
 }
 
 _expected_absent_attributes = {
@@ -387,9 +387,9 @@ _override_settings = {
 }
 
 _expected_attributes = {
-        'agent' : EVENT_AGENT_KEYS,
+        'agent' : TRANS_EVENT_AGENT_KEYS,
         'user' : ['sunshine'],
-        'intrinsic' : EVENT_INTRINSICS
+        'intrinsic' : TRANS_EVENT_INTRINSICS
 }
 
 _expected_absent_attributes = {
@@ -459,7 +459,7 @@ _expected_attributes = {
         'agent' : ['response.status', 'request.headers.contentType',
                 'request.headers.contentLength'],
         'user' : USER_ATTRS,
-        'intrinsic' : EVENT_INTRINSICS
+        'intrinsic' : TRANS_EVENT_INTRINSICS
 }
 
 _expected_absent_attributes = {
@@ -501,9 +501,9 @@ def test_transaction_trace_deprecated_capture_params_true():
 # capture_params should not affect transaction events or browser
 
 _expected_attributes = {
-        'agent' : EVENT_AGENT_KEYS,
+        'agent' : TRANS_EVENT_AGENT_KEYS,
         'user' : USER_ATTRS,
-        'intrinsic' : EVENT_INTRINSICS
+        'intrinsic' : TRANS_EVENT_INTRINSICS
 }
 
 _expected_absent_attributes = {
@@ -571,9 +571,9 @@ def test_transaction_trace_deprecated_capture_params_false():
 # capture_params should not affect transaction events
 
 _expected_attributes = {
-        'agent' : EVENT_AGENT_KEYS,
+        'agent' : TRANS_EVENT_AGENT_KEYS,
         'user' : USER_ATTRS,
-        'intrinsic' : EVENT_INTRINSICS
+        'intrinsic' : TRANS_EVENT_INTRINSICS
 }
 
 _expected_absent_attributes = {
@@ -647,9 +647,9 @@ _override_settings = {
 }
 
 _expected_attributes = {
-        'agent' : EVENT_AGENT_KEYS,
+        'agent' : TRANS_EVENT_AGENT_KEYS,
         'user' : USER_ATTRS,
-        'intrinsic' : EVENT_INTRINSICS
+        'intrinsic' : TRANS_EVENT_INTRINSICS
 }
 
 _expected_absent_attributes = {
@@ -724,7 +724,7 @@ _override_settings = {
 _expected_attributes = {
         'user' : [],
         'agent' : [],
-        'intrinsic' : EVENT_INTRINSICS
+        'intrinsic' : TRANS_EVENT_INTRINSICS
 }
 
 _expected_absent_attributes = {

@@ -1041,6 +1041,26 @@ def validate_browser_attributes(required_params={}, forgone_params={}):
 
     return _validate_browser_attributes
 
+def validate_error_event_attributes(required_params={}, forgone_params={}):
+    """Check the error event for attributes, expect only one error to be
+    present in the transaction.
+    """
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_error_event_attributes(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+
+            event_data = instance.error_events
+
+            check_event_attributes(event_data, required_params, forgone_params)
+
+    return _validate_error_event_attributes
+
+
 def validate_request_params_omitted():
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')

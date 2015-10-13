@@ -428,12 +428,12 @@ class TransactionNode(_TransactionNode):
 
             user_attributes = {}
             for attr in self.user_attributes:
-                if attr.destinations & DST_TRANSACTION_EVENTS:
+                if attr.destinations & DST_ERROR_COLLECTOR:
                     user_attributes[attr.name] = attr.value
 
             agent_attributes = {}
             for attr in self.agent_attributes:
-                if attr.destinations & DST_TRANSACTION_EVENTS:
+                if attr.destinations & DST_ERROR_COLLECTOR:
                     agent_attributes[attr.name] = attr.value
 
             error_event = [intrinsics, user_attributes, agent_attributes]

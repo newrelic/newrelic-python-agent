@@ -7,7 +7,7 @@ from testing_support.fixtures import (validate_transaction_trace_attributes,
         validate_transaction_error_trace_attributes,
         override_application_settings, core_application_stats_engine_error,
         check_error_attributes, validate_transaction_event_attributes,
-        validate_browser_attributes)
+        validate_browser_attributes, validate_error_event_attributes)
 
 
 URL_PARAM = 'some_key'
@@ -32,6 +32,9 @@ BROWSER_INTRINSIC_KEYS = ["beacon", "errorBeacon", "licenseKey", "applicationID"
         "transactionName", "queueTime", "applicationTime", "agent"]
 ABSENT_BROWSER_KEYS = ['request.method', 'request.headers.contentType',
         'request.headers.contentLength']
+
+ERROR_EVENT_INTRINSICS = ('type', 'error.class', 'error.message', 'timestamp',
+        'transactionName', 'duration')
 
 
 @wsgi_application()
@@ -80,11 +83,19 @@ _expected_attributes = {
         'intrinsic' : ['trip_id']
 }
 
+_expected_attributes_event = {
+        'agent' : TRACE_ERROR_AGENT_KEYS,
+        'user' : USER_ATTRS,
+        'intrinsic' : ERROR_EVENT_INTRINSICS
+}
+
 _expected_absent_attributes = {
         'agent' : REQ_PARAMS,
         'user' : [],
 }
 
+@validate_error_event_attributes(_expected_attributes_event,
+        _expected_absent_attributes)
 @validate_transaction_error_trace_attributes(_expected_attributes,
         _expected_absent_attributes)
 @override_application_settings({})
@@ -213,6 +224,13 @@ _expected_attributes = {
         'intrinsic' : ['trip_id']
 }
 
+_expected_attributes_event = {
+        'agent' : AGENT_KEYS_ALL,
+        'user' : USER_ATTRS,
+        'intrinsic' : ERROR_EVENT_INTRINSICS
+}
+
+@validate_error_event_attributes(_expected_attributes_event)
 @validate_transaction_error_trace_attributes(_expected_attributes)
 @override_application_settings(_override_settings)
 def test_error_trace_in_transaction_include_request_params():
@@ -283,11 +301,19 @@ _expected_attributes = {
         'intrinsic' : ['trip_id']
 }
 
+_expected_attributes_event = {
+        'agent' : TRACE_ERROR_AGENT_KEYS + ['request.parameters.'+URL_PARAM],
+        'user' : USER_ATTRS,
+        'intrinsic' : ERROR_EVENT_INTRINSICS
+}
+
 _expected_absent_attributes = {
         'agent' : ['request.parameters.'+URL_PARAM2],
         'user' : []
 }
 
+@validate_error_event_attributes(_expected_attributes_event,
+        _expected_absent_attributes)
 @validate_transaction_error_trace_attributes(_expected_attributes,
         _expected_absent_attributes)
 @override_application_settings(_override_settings)
@@ -361,11 +387,19 @@ _expected_attributes = {
         'intrinsic' : ['trip_id']
 }
 
+_expected_attributes_event = {
+        'agent' : TRACE_ERROR_AGENT_KEYS,
+        'user' : ['sunshine'],
+        'intrinsic' : ERROR_EVENT_INTRINSICS
+}
+
 _expected_absent_attributes = {
         'agent' : REQ_PARAMS,
         'user' : ['puppies'],
 }
 
+@validate_error_event_attributes(_expected_attributes_event,
+        _expected_absent_attributes)
 @validate_transaction_error_trace_attributes(_expected_attributes,
         _expected_absent_attributes)
 @override_application_settings(_override_settings)
@@ -438,11 +472,20 @@ _expected_attributes = {
         'intrinsic' : ['trip_id']
 }
 
+_expected_attributes_event = {
+        'agent' : ['wsgi.output.seconds', 'response.status',
+                'request.headers.contentType', 'request.headers.contentLength'],
+        'user' : USER_ATTRS,
+        'intrinsic' : ERROR_EVENT_INTRINSICS
+}
+
 _expected_absent_attributes = {
         'agent' : ['request.method'] + REQ_PARAMS,
         'user' : [],
 }
 
+@validate_error_event_attributes(_expected_attributes_event,
+        _expected_absent_attributes)
 @validate_transaction_error_trace_attributes(_expected_attributes,
         _expected_absent_attributes)
 @override_application_settings(_override_settings)
@@ -488,6 +531,13 @@ _expected_attributes = {
         'intrinsic' : ['trip_id']
 }
 
+_expected_attributes_event = {
+        'agent' : AGENT_KEYS_ALL,
+        'user' : USER_ATTRS,
+        'intrinsic' : ERROR_EVENT_INTRINSICS
+}
+
+@validate_error_event_attributes(_expected_attributes_event)
 @validate_transaction_error_trace_attributes(_expected_attributes)
 @override_application_settings(_override_settings)
 def test_error_trace_in_transaction_deprecated_capture_params_true():
@@ -550,11 +600,19 @@ _expected_attributes = {
         'intrinsic' : ['trip_id']
 }
 
+_expected_attributes_event = {
+        'agent' : TRACE_ERROR_AGENT_KEYS,
+        'user' : USER_ATTRS,
+        'intrinsic' : ERROR_EVENT_INTRINSICS
+}
+
 _expected_absent_attributes = {
         'agent' : REQ_PARAMS,
         'user' : [],
 }
 
+@validate_error_event_attributes(_expected_attributes_event,
+        _expected_absent_attributes)
 @validate_transaction_error_trace_attributes(_expected_attributes,
         _expected_absent_attributes)
 @override_application_settings(_override_settings)
@@ -620,11 +678,19 @@ _expected_attributes = {
         'intrinsic' : ['trip_id']
 }
 
+_expected_attributes_event = {
+        'agent' : TRACE_ERROR_AGENT_KEYS,
+        'user' : USER_ATTRS,
+        'intrinsic' : ERROR_EVENT_INTRINSICS
+}
+
 _expected_absent_attributes = {
         'agent' : REQ_PARAMS,
         'user' : [],
 }
 
+@validate_error_event_attributes(_expected_attributes_event,
+        _expected_absent_attributes)
 @validate_transaction_error_trace_attributes(_expected_attributes,
         _expected_absent_attributes)
 @override_application_settings(_override_settings)
@@ -696,11 +762,19 @@ _expected_attributes = {
         'intrinsic' : ['trip_id']
 }
 
+_expected_attributes_event= {
+        'user' : [],
+        'agent' : [],
+        'intrinsic' : ERROR_EVENT_INTRINSICS
+}
+
 _expected_absent_attributes = {
         'agent' : AGENT_KEYS_ALL,
         'user' : USER_ATTRS,
 }
 
+@validate_error_event_attributes(_expected_attributes_event,
+        _expected_absent_attributes)
 @validate_transaction_error_trace_attributes(_expected_attributes,
         _expected_absent_attributes)
 @override_application_settings(_override_settings)
@@ -780,7 +854,6 @@ def test_error_trace_outside_transaction():
 
     check_error_attributes(my_error.parameters, _expected_attributes,
             is_transaction=False)
-
 
 class OutsideNoParamsError(Exception):
     pass

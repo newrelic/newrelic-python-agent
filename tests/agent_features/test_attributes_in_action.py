@@ -5,9 +5,9 @@ from newrelic.agent import (application, callable_name,
 
 from testing_support.fixtures import (validate_transaction_trace_attributes,
         validate_transaction_error_trace_attributes,
-        override_application_settings, core_application_stats_engine_error,
-        check_error_attributes, validate_transaction_event_attributes,
-        validate_browser_attributes, validate_error_event_attributes)
+        override_application_settings, validate_transaction_event_attributes,
+        validate_browser_attributes, validate_error_event_attributes,
+        validate_error_trace_attributes_outside_transaction)
 
 
 URL_PARAM = 'some_key'
@@ -836,24 +836,22 @@ class OutsideWithParamsError(Exception):
     pass
 OutsideWithParamsError.name = callable_name(OutsideWithParamsError)
 
-def test_error_trace_outside_transaction():
 
-    _expected_attributes = {
-            'user' : ['test_key'],
-            'agent' : [],
-            'intrinsic' : []
-            }
+_expected_attributes = {
+        'user' : ['test_key'],
+        'agent' : [],
+        'intrinsic' : []
+}
+
+@validate_error_trace_attributes_outside_transaction(OutsideWithParamsError.name,
+        _expected_attributes)
+def test_error_trace_outside_transaction():
 
     try:
         raise OutsideWithParamsError("Error outside transaction")
     except OutsideWithParamsError:
         application_instance = application()
         application_instance.record_exception(params={'test_key': 'test_value'})
-
-    my_error = core_application_stats_engine_error(OutsideWithParamsError.name)
-
-    check_error_attributes(my_error.parameters, _expected_attributes,
-            is_transaction=False)
 
 class OutsideNoParamsError(Exception):
     pass
@@ -863,24 +861,21 @@ _override_settings = {
         'error_collector.attributes.exclude' : ['test_key']
 }
 
+_expected_attributes = {}
+
+_expected_absent_attributes = {
+        'user' : ['test_key'],
+        'agent' : [],
+        'intrinsic' : []
+}
+
+@validate_error_trace_attributes_outside_transaction(OutsideNoParamsError.name,
+        _expected_attributes, _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_error_trace_outside_transaction_excluded_user_param():
-
-    _expected_attributes = {}
-
-    _expected_absent_attributes = {
-            'user' : ['test_key'],
-            'agent' : [],
-            'intrinsic' : []
-            }
 
     try:
         raise OutsideNoParamsError("Error outside transaction")
     except OutsideNoParamsError:
         application_instance = application()
         application_instance.record_exception(params={'test_key': 'test_value'})
-
-    my_error = core_application_stats_engine_error(OutsideNoParamsError.name)
-
-    check_error_attributes(my_error.parameters, _expected_attributes,
-            _expected_absent_attributes, is_transaction=False)

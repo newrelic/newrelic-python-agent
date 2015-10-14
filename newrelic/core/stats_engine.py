@@ -1343,7 +1343,8 @@ class StatsEngine(object):
         self._merge_metric_stats(snapshot, rollback=False)
         self._merge_transaction_events(snapshot, rollback=False)
         self._merge_synthetics_events(snapshot, rollback=False)
-        self._merge_errors(snapshot)
+        self._merge_error_events(snapshot, rollback=False)
+        self._merge_error_traces(snapshot)
         self._merge_sql(snapshot)
         self._merge_traces(snapshot)
 
@@ -1361,6 +1362,7 @@ class StatsEngine(object):
         self._merge_metric_stats(snapshot, rollback=True)
         self._merge_transaction_events(snapshot, rollback=True)
         self._merge_synthetics_events(snapshot, rollback=True)
+        self._merge_error_events(snapshot, rollback=True)
 
     def _merge_metric_stats(self, snapshot, rollback=False):
         """Merges metric data from a snapshot. This is used when merging
@@ -1418,7 +1420,23 @@ class StatsEngine(object):
         maximum = self.__settings.agent_limits.synthetics_events
         self.__synthetics_events = self.__synthetics_events[:maximum]
 
-    def _merge_errors(self, snapshot):
+    def _merge_error_events(self, snapshot, rollback):
+
+        # Same applies as comment in _merge_transaction_events.
+
+        if rollback:
+            new_error_events = self.__error_events
+            self.__error_events = snapshot.__error_events
+
+            for sample in new_error_events.samples:
+                self.__error_events.add(sample)
+
+        else:
+            if snapshot.__error_events.count == 1:
+                self.__error_events.add(
+                        snapshot.__error_events.samples[0])
+
+    def _merge_error_traces(self, snapshot):
 
         # Append snapshot error details at end to maintain time
         # based order and then trim at maximum to be kept.

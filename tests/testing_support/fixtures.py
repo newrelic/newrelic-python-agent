@@ -588,8 +588,11 @@ def validate_transaction_event_attributes(required_params={},
     return _validate_transaction_event_attributes
 
 def check_event_attributes(event_data, required_params, forgone_params):
-
-    # grab first transaction event in data set
+    """Check the event attributes from a single (first) event in a
+    SampledDataSet. If necessary, clear out previous errors from StatsEngine
+    prior to saving error, so that the desired error is the only one present
+    in the data set.
+    """
 
     intrinsics, user_attributes, agent_attributes = event_data.samples[0]
 
@@ -1077,6 +1080,28 @@ def validate_error_trace_attributes_outside_transaction(err_name,
                     is_transaction=False)
 
     return _validate_error_trace_attributes_outside_transaction
+
+def validate_error_event_attributes_outside_transaction(required_params={},
+        forgone_params={}):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_exception')
+    def _validate_error_event_attributes_outside_transaction(wrapped, instance,
+            args, kwargs):
+
+        # clear out any existing errors from main stats engine before running
+
+        core_application_reset_stats()
+
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            event_data = instance.error_events
+
+            check_event_attributes(event_data, required_params, forgone_params)
+
+    return _validate_error_event_attributes_outside_transaction
 
 def validate_request_params_omitted():
     @transient_function_wrapper('newrelic.core.stats_engine',

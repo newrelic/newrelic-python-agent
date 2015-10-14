@@ -7,7 +7,8 @@ from testing_support.fixtures import (validate_transaction_trace_attributes,
         validate_transaction_error_trace_attributes,
         override_application_settings, validate_transaction_event_attributes,
         validate_browser_attributes, validate_error_event_attributes,
-        validate_error_trace_attributes_outside_transaction)
+        validate_error_trace_attributes_outside_transaction,
+        validate_error_event_attributes_outside_transaction)
 
 
 URL_PARAM = 'some_key'
@@ -832,6 +833,9 @@ def test_browser_attributes_disabled():
 
 # =========================  outside transaction (error trace only)
 
+INTRSICS_NO_TRANS = ('type', 'error.class', 'error.message', 'timestamp',
+        'transactionName')
+
 class OutsideWithParamsError(Exception):
     pass
 OutsideWithParamsError.name = callable_name(OutsideWithParamsError)
@@ -843,6 +847,13 @@ _expected_attributes = {
         'intrinsic' : []
 }
 
+_expected_attributes_event = {
+    'user' : ['test_key'],
+    'agent' : [],
+    'intrinsic' : INTRSICS_NO_TRANS
+}
+
+@validate_error_event_attributes_outside_transaction(_expected_attributes_event)
 @validate_error_trace_attributes_outside_transaction(OutsideWithParamsError.name,
         _expected_attributes)
 def test_error_trace_outside_transaction():
@@ -863,12 +874,20 @@ _override_settings = {
 
 _expected_attributes = {}
 
+_expected_attributes_event = {
+    'user' : [],
+    'agent' : [],
+    'intrinsic' : INTRSICS_NO_TRANS
+}
+
 _expected_absent_attributes = {
         'user' : ['test_key'],
         'agent' : [],
         'intrinsic' : []
 }
 
+@validate_error_event_attributes_outside_transaction(_expected_attributes_event,
+        _expected_absent_attributes)
 @validate_error_trace_attributes_outside_transaction(OutsideNoParamsError.name,
         _expected_attributes, _expected_absent_attributes)
 @override_application_settings(_override_settings)

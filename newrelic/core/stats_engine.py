@@ -1340,10 +1340,10 @@ class StatsEngine(object):
         if not self.__settings:
             return
 
-        self._merge_metric_stats(snapshot, rollback=False)
-        self._merge_transaction_events(snapshot, rollback=False)
-        self._merge_synthetics_events(snapshot, rollback=False)
-        self._merge_error_events(snapshot, rollback=False)
+        self._merge_metric_stats(snapshot)
+        self._merge_transaction_events(snapshot)
+        self._merge_synthetics_events(snapshot)
+        self._merge_error_events(snapshot)
         self._merge_error_traces(snapshot)
         self._merge_sql(snapshot)
         self._merge_traces(snapshot)
@@ -1353,7 +1353,7 @@ class StatsEngine(object):
         if not self.__settings:
             return
 
-        _logger.debug('Performing rollback of non metric data into '
+        _logger.debug('Performing rollback of data into '
                 'subsequent harvest period. Metric data and transaction events'
                 'will be preserved and rolled into next harvest')
 
@@ -1383,7 +1383,7 @@ class StatsEngine(object):
             else:
                 stats.merge_stats(other)
 
-    def _merge_transaction_events(self, snapshot, rollback):
+    def _merge_transaction_events(self, snapshot, rollback=False):
 
         # Merge in transaction events. For normal case, as this is merging
         # data from a single transaction, there should only be one. Just
@@ -1405,7 +1405,7 @@ class StatsEngine(object):
                 self.__transaction_events.add(
                         snapshot.__transaction_events.samples[0])
 
-    def _merge_synthetics_events(self, snapshot, rollback):
+    def _merge_synthetics_events(self, snapshot, rollback=False):
 
         # Merge Synthetic analytic events, following same rules as for
         # transaction events.
@@ -1420,7 +1420,7 @@ class StatsEngine(object):
         maximum = self.__settings.agent_limits.synthetics_events
         self.__synthetics_events = self.__synthetics_events[:maximum]
 
-    def _merge_error_events(self, snapshot, rollback):
+    def _merge_error_events(self, snapshot, rollback=False):
 
         # Same applies as comment in _merge_transaction_events.
 

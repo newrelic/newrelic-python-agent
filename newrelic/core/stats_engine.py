@@ -1311,6 +1311,7 @@ class StatsEngine(object):
         self.__synthetics_transactions = []
 
         self.reset_transaction_events()
+        self.reset_error_events()
 
         return stats
 

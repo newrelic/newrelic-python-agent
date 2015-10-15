@@ -1229,7 +1229,7 @@ class Application(object):
 
                 # stats_custom should only contain metric stats, no transactions
 
-                stats.merge_stats(stats_custom)
+                stats.merge_metric_stats(stats_custom)
 
                 # Now merge in any metrics from the data samplers
                 # associated with this application.

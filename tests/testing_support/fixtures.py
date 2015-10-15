@@ -1076,8 +1076,8 @@ def validate_error_trace_attributes_outside_transaction(err_name,
         else:
             target_error = core_application_stats_engine_error(err_name)
 
-            check_error_attributes(target_error.parameters, required_params, forgone_params,
-                    is_transaction=False)
+            check_error_attributes(target_error.parameters, required_params,
+                    forgone_params, is_transaction=False)
 
     return _validate_error_trace_attributes_outside_transaction
 

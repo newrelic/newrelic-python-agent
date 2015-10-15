@@ -322,7 +322,6 @@ class StatsEngine(object):
     def error_events(self):
         return self.__error_events
 
-
     def update_metric_ids(self, metric_ids):
         """Updates the dictionary containing the mappings from metric
         (name, scope) to the integer identifier supplied back from the
@@ -1375,7 +1374,9 @@ class StatsEngine(object):
         """
 
         # Merge back data into any new data which has been
-        # accumulated.
+        # accumulated. Because of the nature/order of how this is called
+        # from the harvest loop in application.py, a rollback looks the same
+        # as a merge-forward
 
         for key, other in six.iteritems(snapshot.__stats_table):
             stats = self.__stats_table.get(key)

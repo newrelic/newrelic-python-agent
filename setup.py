@@ -117,21 +117,23 @@ long_description = '''Python agent for the `New Relic`_ web application performa
 '''
 
 kwargs = dict(
-  name = "newrelic",
-  version = package_version,
-  description = "New Relic Python Agent",
-  long_description = long_description,
-  url = "http://newrelic.com/docs/python/new-relic-for-python",
-  author = "New Relic",
-  author_email = "support@newrelic.com",
-  license = license,
-  classifiers = classifiers,
-  packages = packages,
-  package_data = { 'newrelic': ['newrelic.ini', 'LICENSE',
-          'packages/requests/LICENSE', 'packages/requests/NOTICE',
-          'packages/requests/cacert.pem'] },
-  extra_path = ( "newrelic", "newrelic-%s" % package_version ),
-  scripts = [ 'scripts/newrelic-admin' ],
+        name = "newrelic",
+        version = package_version,
+        description = "New Relic Python Agent",
+        long_description = long_description,
+        url = "http://newrelic.com/docs/python/new-relic-for-python",
+        author = "New Relic",
+        author_email = "support@newrelic.com",
+        maintainer = 'New Relic',
+        maintainer_email = 'support@newrelic.com',
+        license = license,
+        classifiers = classifiers,
+        packages = packages,
+        package_data = { 'newrelic': ['newrelic.ini', 'LICENSE',
+              'packages/requests/LICENSE', 'packages/requests/NOTICE',
+              'packages/requests/cacert.pem'] },
+        extra_path = ( "newrelic", "newrelic-%s" % package_version ),
+        scripts = [ 'scripts/newrelic-admin' ],
 )
 
 if with_setuptools:

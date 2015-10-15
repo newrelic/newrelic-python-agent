@@ -27,12 +27,31 @@ script_directory = os.path.dirname(__file__)
 if not script_directory:
     script_directory = os.getcwd()
 
+def get_license(file_name):
+
+    # The license file contains the licenses for all libraries we use, so cut
+    # out the part concerning new relic.
+
+    with open(file_name) as lf:
+        license_text = lf.read()
+
+    # The new relic license is the last section, under the following line:
+
+    new_relic_license = license_text.split(
+            'All other components of this product are:')[-1]
+
+    # clean up
+
+    new_relic_license = new_relic_license.replace('-'*75, '')
+    new_relic_license = new_relic_license.strip()
+
+    return new_relic_license
+
 develop_file = os.path.join(script_directory, 'DEVELOP')
 version_file = os.path.join(script_directory, 'VERSION')
 license_file = os.path.join(script_directory, 'newrelic', 'LICENSE')
 
-license =  'Copyright (c)' + open(license_file).read().split(
-        75*'-')[-2].strip().split('Copyright (c)')[1]
+license =  get_license(license_file)
 
 if os.path.exists(develop_file):
     # Building from source repository.

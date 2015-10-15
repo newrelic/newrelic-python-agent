@@ -160,11 +160,19 @@ _expected_attributes = {
         'intrinsic' : ['trip_id']
 }
 
+_expected_attributes_event = {
+        'agent' : TRACE_ERROR_AGENT_KEYS,
+        'user' : USER_ATTRS,
+        'intrinsic' : ERROR_EVENT_INTRINSICS
+}
+
 _expected_absent_attributes = {
         'agent' : REQ_PARAMS,
         'user' : [],
 }
 
+@validate_error_event_attributes(_expected_attributes_event,
+        _expected_absent_attributes)
 @validate_transaction_error_trace_attributes(_expected_attributes,
         _expected_absent_attributes)
 @override_application_settings(_override_settings)

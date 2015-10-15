@@ -1359,12 +1359,12 @@ class StatsEngine(object):
 
         # Only merge back sampled data at present.
 
-        self.merge_metric_stats(snapshot, rollback=True)
+        self.merge_metric_stats(snapshot)
         self._merge_transaction_events(snapshot, rollback=True)
         self._merge_synthetics_events(snapshot, rollback=True)
         self._merge_error_events(snapshot, rollback=True)
 
-    def merge_metric_stats(self, snapshot, rollback=False):
+    def merge_metric_stats(self, snapshot):
         """Merges metric data from a snapshot. This is used when merging
         data from a single transaction into main stats engine. It would
         also be done if the sending of the metric data from the harvest

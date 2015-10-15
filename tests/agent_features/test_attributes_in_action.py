@@ -8,7 +8,8 @@ from testing_support.fixtures import (validate_transaction_trace_attributes,
         override_application_settings, validate_transaction_event_attributes,
         validate_browser_attributes, validate_error_event_attributes,
         validate_error_trace_attributes_outside_transaction,
-        validate_error_event_attributes_outside_transaction)
+        validate_error_event_attributes_outside_transaction,
+        reset_core_stats_engine)
 
 
 URL_PARAM = 'some_key'
@@ -853,6 +854,7 @@ _expected_attributes_event = {
     'intrinsic' : INTRSICS_NO_TRANS
 }
 
+@reset_core_stats_engine()
 @validate_error_event_attributes_outside_transaction(_expected_attributes_event)
 @validate_error_trace_attributes_outside_transaction(OutsideWithParamsError.name,
         _expected_attributes)
@@ -886,6 +888,7 @@ _expected_absent_attributes = {
         'intrinsic' : []
 }
 
+@reset_core_stats_engine()
 @validate_error_event_attributes_outside_transaction(_expected_attributes_event,
         _expected_absent_attributes)
 @validate_error_trace_attributes_outside_transaction(OutsideNoParamsError.name,

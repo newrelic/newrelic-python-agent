@@ -618,10 +618,6 @@ def validate_non_transaction_error_event(required_intrinsics):
             'StatsEngine.record_exception')
     def _validate_non_transaction_error_event(wrapped, instance, args, kwargs):
 
-        # clear out any existing errors from main stats engine before running
-
-        core_application_reset_stats()
-
         try:
             result = wrapped(*args, **kwargs)
         except:
@@ -1088,10 +1084,6 @@ def validate_error_event_attributes_outside_transaction(required_params={},
     def _validate_error_event_attributes_outside_transaction(wrapped, instance,
             args, kwargs):
 
-        # clear out any existing errors from main stats engine before running
-
-        core_application_reset_stats()
-
         try:
             result = wrapped(*args, **kwargs)
         except:
@@ -1529,6 +1521,16 @@ def code_coverage_fixture(source=['newrelic']):
 
     return _code_coverage_fixture
 
+def reset_core_stats_engine():
+
+    @function_wrapper
+    def _reset_core_stats_engine(wrapped, instance, args, kwargs):
+        stats = core_application_stats_engine()
+        stats.reset_stats(stats.settings)
+        return wrapped(*args, **kwargs)
+
+    return _reset_core_stats_engine
+
 def core_application_stats_engine(app_name=None):
     """Return the StatsEngine object from the core application object.
 
@@ -1562,10 +1564,6 @@ def core_application_stats_engine_error(error_type, app_name=None):
     stats = core_application_stats_engine(app_name)
     errors = stats.error_data()
     return next((e for e in errors if e.type == error_type), None)
-
-def core_application_reset_stats(app_name=None):
-    stats = core_application_stats_engine(app_name)
-    stats.reset_stats(stats.settings)
 
 def error_is_saved(error, app_name=None):
     """Return True, if an error of a particular type has already been saved.

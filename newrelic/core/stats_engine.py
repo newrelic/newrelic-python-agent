@@ -1328,8 +1328,8 @@ class StatsEngine(object):
 
         return stats
 
-    def merge_stats(self, snapshot):
-        """Merges non metric data from a snapshot. This would only be
+    def merge(self, snapshot):
+        """Merges data from a snapshot. This would only be
         used when merging data from a single transaction into main
         stats engine. It is assumed the snapshot has newer data and
         that any existing data takes precedence where what should be
@@ -1348,7 +1348,7 @@ class StatsEngine(object):
         self._merge_sql(snapshot)
         self._merge_traces(snapshot)
 
-    def rollback_stats(self, snapshot):
+    def rollback(self, snapshot):
 
         if not self.__settings:
             return

@@ -826,7 +826,7 @@ class Application(object):
                     internal_metric('Supportability/Python/Transaction/'
                             'Counts/metric_data', stats.metric_data_count())
 
-                    self._stats_engine.merge_stats(stats)
+                    self._stats_engine.merge(stats)
 
                     # We merge the internal statistics here as well even
                     # though have popped out of the context where we are
@@ -1524,7 +1524,7 @@ class Application(object):
 
                         if self._merge_count <= maximum:
 
-                            self._stats_engine.rollback_stats(stats)
+                            self._stats_engine.rollback(stats)
 
                         else:
                             _logger.error('Unable to report main transaction '

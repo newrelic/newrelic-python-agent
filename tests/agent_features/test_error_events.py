@@ -8,8 +8,7 @@ from newrelic.common.encoding_utils import obfuscate, json_encode
 
 from testing_support.fixtures import (validate_error_event_sample_data,
         validate_non_transaction_error_event, override_application_settings,
-        make_cross_agent_headers, make_synthetics_header,
-        core_application_stats_engine_error)
+        make_cross_agent_headers, make_synthetics_header)
 from testing_support.sample_applications import fully_featured_app
 
 

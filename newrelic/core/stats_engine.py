@@ -1409,8 +1409,10 @@ class StatsEngine(object):
 
     def _merge_synthetics_events(self, snapshot, rollback=False):
 
-        # Merge Synthetic analytic events, following same rules as for
-        # transaction events.
+        # Merge Synthetic analytic events, appending to the list
+        # that contains events from previous transactions. Cap this list a
+        # a maximum, so that newer events over the limit will be thrown out.
+        # Unless, this is a rollback, then favor the newer events.
 
         if rollback:
             self.__synthetics_events.extend(snapshot.__synthetics_events)
@@ -1424,7 +1426,10 @@ class StatsEngine(object):
 
     def _merge_error_events(self, snapshot, rollback=False):
 
-        # Same applies as comment in _merge_transaction_events.
+        # Merge in error events, there can be multiple errors per transaction.
+        # Favor the newer events by adding to the data set on top on the
+        # existing events, except in a rollback - then favor the existing
+        # events, since they will be newer.
 
         if rollback:
             new_error_events = self.__error_events
@@ -1434,9 +1439,8 @@ class StatsEngine(object):
                 self.__error_events.add(sample)
 
         else:
-            if snapshot.__error_events.count == 1:
-                self.__error_events.add(
-                        snapshot.__error_events.samples[0])
+            for err in snapshot.__error_events.samples:
+                self.__error_events.add(err)
 
     def _merge_error_traces(self, snapshot):
 

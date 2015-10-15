@@ -100,7 +100,7 @@ _expected_absent_attributes = {
 @validate_transaction_error_trace_attributes(_expected_attributes,
         _expected_absent_attributes)
 @override_application_settings({})
-def test_error_trace_in_transaction_default_settings():
+def test_error_in_transaction_default_settings():
     run_failing_request()
 
 @validate_transaction_trace_attributes(_expected_attributes,
@@ -167,7 +167,7 @@ _expected_absent_attributes = {
 @validate_transaction_error_trace_attributes(_expected_attributes,
         _expected_absent_attributes)
 @override_application_settings(_override_settings)
-def test_error_trace_in_transaction_exclude_request_params():
+def test_error_in_transaction_exclude_request_params():
     run_failing_request()
 
 _override_settings = {
@@ -199,7 +199,7 @@ _expected_absent_attributes = {
 @validate_transaction_error_trace_attributes(_expected_attributes,
         _expected_absent_attributes)
 @override_application_settings(_override_settings)
-def test_error_trace_in_transaction_capture_params_exclude_request_params():
+def test_error_in_transaction_capture_params_exclude_request_params():
     run_failing_request()
 
 _override_settings = {
@@ -234,7 +234,7 @@ _expected_attributes_event = {
 @validate_error_event_attributes(_expected_attributes_event)
 @validate_transaction_error_trace_attributes(_expected_attributes)
 @override_application_settings(_override_settings)
-def test_error_trace_in_transaction_include_request_params():
+def test_error_in_transaction_include_request_params():
     run_failing_request()
 
 _override_settings = {
@@ -318,7 +318,7 @@ _expected_absent_attributes = {
 @validate_transaction_error_trace_attributes(_expected_attributes,
         _expected_absent_attributes)
 @override_application_settings(_override_settings)
-def test_error_trace_in_transaction_include_exclude():
+def test_error_in_transaction_include_exclude():
     run_failing_request()
 
 _override_settings = {
@@ -404,7 +404,7 @@ _expected_absent_attributes = {
 @validate_transaction_error_trace_attributes(_expected_attributes,
         _expected_absent_attributes)
 @override_application_settings(_override_settings)
-def test_error_trace_in_transaction_exclude_user_attribute():
+def test_error_in_transaction_exclude_user_attribute():
     run_failing_request()
 
 _override_settings = {
@@ -490,7 +490,7 @@ _expected_absent_attributes = {
 @validate_transaction_error_trace_attributes(_expected_attributes,
         _expected_absent_attributes)
 @override_application_settings(_override_settings)
-def test_error_trace_in_transaction_exclude_agent_attribute():
+def test_error_in_transaction_exclude_agent_attribute():
     run_failing_request()
 
 @validate_transaction_trace_attributes(_expected_attributes,
@@ -541,7 +541,7 @@ _expected_attributes_event = {
 @validate_error_event_attributes(_expected_attributes_event)
 @validate_transaction_error_trace_attributes(_expected_attributes)
 @override_application_settings(_override_settings)
-def test_error_trace_in_transaction_deprecated_capture_params_true():
+def test_error_in_transaction_deprecated_capture_params_true():
     run_failing_request()
 
 @validate_transaction_trace_attributes(_expected_attributes)
@@ -617,7 +617,7 @@ _expected_absent_attributes = {
 @validate_transaction_error_trace_attributes(_expected_attributes,
         _expected_absent_attributes)
 @override_application_settings(_override_settings)
-def test_error_trace_in_transaction_deprecated_capture_params_false():
+def test_error_in_transaction_deprecated_capture_params_false():
     run_failing_request()
 
 
@@ -695,7 +695,7 @@ _expected_absent_attributes = {
 @validate_transaction_error_trace_attributes(_expected_attributes,
         _expected_absent_attributes)
 @override_application_settings(_override_settings)
-def test_error_trace_in_transaction_exclude_intrinsic():
+def test_error_in_transaction_exclude_intrinsic():
     run_failing_request()
 
 _override_settings = {
@@ -779,7 +779,7 @@ _expected_absent_attributes = {
 @validate_transaction_error_trace_attributes(_expected_attributes,
         _expected_absent_attributes)
 @override_application_settings(_override_settings)
-def test_error_trace_in_transaction_attributes_disabled():
+def test_error_in_transaction_attributes_disabled():
     run_failing_request()
 
 _override_settings = {
@@ -831,7 +831,7 @@ _expected_absent_attributes = {
 def test_browser_attributes_disabled():
     response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
-# =========================  outside transaction (error trace only)
+# =========================  outside transaction (error traces and events only)
 
 INTRSICS_NO_TRANS = ('type', 'error.class', 'error.message', 'timestamp',
         'transactionName')
@@ -856,7 +856,7 @@ _expected_attributes_event = {
 @validate_error_event_attributes_outside_transaction(_expected_attributes_event)
 @validate_error_trace_attributes_outside_transaction(OutsideWithParamsError.name,
         _expected_attributes)
-def test_error_trace_outside_transaction():
+def test_error_outside_transaction():
 
     try:
         raise OutsideWithParamsError("Error outside transaction")
@@ -891,7 +891,7 @@ _expected_absent_attributes = {
 @validate_error_trace_attributes_outside_transaction(OutsideNoParamsError.name,
         _expected_attributes, _expected_absent_attributes)
 @override_application_settings(_override_settings)
-def test_error_trace_outside_transaction_excluded_user_param():
+def test_error_outside_transaction_excluded_user_param():
 
     try:
         raise OutsideNoParamsError("Error outside transaction")

@@ -1300,7 +1300,8 @@ def validate_transaction_event_sample_data(required_attrs,
 
     return _validate_transaction_event_sample_data
 
-def validate_error_event_sample_data(required_attrs, required_user_attrs=True):
+def validate_error_event_sample_data(required_attrs, required_user_attrs=True,
+            num_errors=1):
     """This test depends on values in the test application from
     agent_features/test_analytics.py, and is only meant to be run as a
     validation with those tests.
@@ -1320,27 +1321,28 @@ def validate_error_event_sample_data(required_attrs, required_user_attrs=True):
             transaction = _bind_params(*args, **kwargs)
 
             error_events = transaction.error_events(instance.stats_table)
-            sample = error_events[0]
+            assert len(error_events) == num_errors
+            for sample in error_events:
 
-            assert isinstance(sample, list)
-            assert len(sample) == 3
+                assert isinstance(sample, list)
+                assert len(sample) == 3
 
-            intrinsics, user_attributes, agent_attributes = sample
+                intrinsics, user_attributes, agent_attributes = sample
 
-            # These intrinsics should always be present
+                # These intrinsics should always be present
 
-            assert intrinsics['type'] == 'TransactionError'
-            assert (intrinsics['transactionName'] ==
-                    required_attrs['transactionName'])
-            assert intrinsics['error.class'] == required_attrs['error.class']
-            assert (intrinsics['error.message'] ==
-                    required_attrs['error.message'])
-            assert intrinsics['nr.transactionGuid'] is not None
+                assert intrinsics['type'] == 'TransactionError'
+                assert (intrinsics['transactionName'] ==
+                        required_attrs['transactionName'])
+                assert intrinsics['error.class'] == required_attrs['error.class']
+                assert intrinsics['error.message'].startswith(
+                        required_attrs['error.message'])
+                assert intrinsics['nr.transactionGuid'] is not None
 
-            _validate_event_attributes(intrinsics,
-                                       user_attributes,
-                                       required_attrs,
-                                       required_user_attrs)
+                _validate_event_attributes(intrinsics,
+                                           user_attributes,
+                                           required_attrs,
+                                           required_user_attrs)
 
         return wrapped(*args, **kwargs)
 

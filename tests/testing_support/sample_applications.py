@@ -67,10 +67,16 @@ def fully_featured_app(environ, start_response):
             r.read(10)
 
     if 'err_message' in environ:
-        try:
-            raise ValueError(environ['err_message'])
-        except ValueError:
-            record_exception(*sys.exc_info())
+        n_errors = int(environ.get('n_errors', 1))
+        for i in range(n_errors):
+            try:
+
+                # append number to stats engine to get unique errors, so they
+                # don't immediately get filtered out.
+
+                raise ValueError(environ['err_message'] + str(i))
+            except ValueError:
+                record_exception(*sys.exc_info())
 
     text = '<html><head>%s</head><body><p>RESPONSE</p>%s</body></html>'
 

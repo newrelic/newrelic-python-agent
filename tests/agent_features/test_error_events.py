@@ -122,6 +122,20 @@ def test_transaction_error_with_synthetics():
     response = fully_featured_application.get('/', headers=headers,
             extra_environ=test_environ)
 
+_intrinsic_attributes = {
+        'error.class': callable_name(ERROR),
+        'error.message': ERR_MESSAGE,
+        'transactionName' : 'WebTransaction/Uri/'
+}
+
+@validate_error_event_sample_data(required_attrs=_intrinsic_attributes,
+        required_user_attrs=True, num_errors=2)
+def test_multiple_errors_in_transaction():
+    test_environ = {
+                'err_message' : ERR_MESSAGE,
+                'n_errors': '2',
+    }
+    response = fully_featured_application.get('/', extra_environ=test_environ)
 
 # -------------- Test Error Events outside of transaction ----------------
 

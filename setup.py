@@ -42,8 +42,7 @@ def get_license(file_name):
 
     # clean up
 
-    new_relic_license = new_relic_license.replace('-'*75, '')
-    new_relic_license = new_relic_license.strip()
+    new_relic_license = new_relic_license.strip('\n -')
 
     return new_relic_license
 

@@ -30,12 +30,12 @@ if not script_directory:
 def get_license(file_name):
 
     # The license file contains the licenses for all libraries we use, so cut
-    # out the part concerning new relic.
+    # out the part concerning New Relic.
 
     with open(file_name) as lf:
         license_text = lf.read()
 
-    # The new relic license is the last section, under the following line:
+    # The New Relic license is the last section, under the following line:
 
     new_relic_license = license_text.split(
             'All other components of this product are:')[-1]
@@ -92,28 +92,28 @@ class optional_build_ext(build_ext):
             raise BuildExtFailed()
 
 packages = [
-  "newrelic",
-  "newrelic.admin",
-  "newrelic.api",
-  "newrelic.bootstrap",
-  "newrelic.common",
-  "newrelic.core",
-  "newrelic.extras",
-  "newrelic.extras.framework_django",
-  "newrelic.extras.framework_django.templatetags",
-  "newrelic.hooks",
-  "newrelic.hooks.framework_tornado",
-  "newrelic.network",
-  "newrelic/packages",
-  "newrelic/packages/requests",
-  "newrelic/packages/requests/packages",
-  "newrelic/packages/requests/packages/chardet",
-  "newrelic/packages/requests/packages/urllib3",
-  "newrelic/packages/requests/packages/urllib3/packages",
-  "newrelic/packages/requests/packages/urllib3/packages/ssl_match_hostname",
-  "newrelic/packages/requests/packages/urllib3/util",
-  "newrelic/packages/wrapt",
-  "newrelic.samplers",
+        "newrelic",
+        "newrelic.admin",
+        "newrelic.api",
+        "newrelic.bootstrap",
+        "newrelic.common",
+        "newrelic.core",
+        "newrelic.extras",
+        "newrelic.extras.framework_django",
+        "newrelic.extras.framework_django.templatetags",
+        "newrelic.hooks",
+        "newrelic.hooks.framework_tornado",
+        "newrelic.network",
+        "newrelic/packages",
+        "newrelic/packages/requests",
+        "newrelic/packages/requests/packages",
+        "newrelic/packages/requests/packages/chardet",
+        "newrelic/packages/requests/packages/urllib3",
+        "newrelic/packages/requests/packages/urllib3/packages",
+        "newrelic/packages/requests/packages/urllib3/packages/ssl_match_hostname",
+        "newrelic/packages/requests/packages/urllib3/util",
+        "newrelic/packages/wrapt",
+        "newrelic.samplers",
 ]
 
 classifiers = [

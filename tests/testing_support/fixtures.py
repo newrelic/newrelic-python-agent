@@ -610,13 +610,12 @@ def check_event_attributes(event_data, required_params, forgone_params):
         for param in forgone_params['user']:
             assert param not in user_attributes
 
-def validate_non_transaction_error_event(required_intrinsics):
+def validate_non_transaction_error_event(required_intrinsics, num_errors=1):
     """Validate error event data for a single error occurring outside of a
     transaction.
     """
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_exception')
-    def _validate_non_transaction_error_event(wrapped, instance, args, kwargs):
+    @function_wrapper
+    def _validate_non_transaction_error_event(wrapped, instace, args, kwargs):
 
         try:
             result = wrapped(*args, **kwargs)
@@ -624,22 +623,26 @@ def validate_non_transaction_error_event(required_intrinsics):
             raise
         else:
 
-            event = instance.error_events.samples[0]
+            stats = core_application_stats_engine(None)
 
-            assert len(event) == 3 # [intrinsic, user, agent attributes]
+            assert stats.error_events.count == num_errors
+            for event in stats.error_events.samples:
 
-            intrinsics = event[0]
+                assert len(event) == 3 # [intrinsic, user, agent attributes]
 
-            # The following attributes are all required, and also the only
-            # intrinsic attributes that can be included in an error event
-            # recorded outside of a transaction
+                intrinsics = event[0]
 
-            assert intrinsics['type'] == 'TransactionError'
-            assert intrinsics['transactionName'] == None
-            assert intrinsics['error.class'] == required_intrinsics['error.class']
-            assert intrinsics['error.message'] == required_intrinsics['error.message']
-            now = time.time()
-            assert intrinsics['timestamp'] <= now
+                # The following attributes are all required, and also the only
+                # intrinsic attributes that can be included in an error event
+                # recorded outside of a transaction
+
+                assert intrinsics['type'] == 'TransactionError'
+                assert intrinsics['transactionName'] == None
+                assert intrinsics['error.class'] == required_intrinsics['error.class']
+                assert intrinsics['error.message'].startswith(
+                        required_intrinsics['error.message'])
+                now = time.time()
+                assert intrinsics['timestamp'] <= now
 
         return result
 

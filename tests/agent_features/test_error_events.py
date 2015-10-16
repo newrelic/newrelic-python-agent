@@ -157,3 +157,12 @@ def test_error_event_outside_transaction():
         app = application()
         record_exception(*sys.exc_info(), application=app)
 
+@reset_core_stats_engine()
+@validate_non_transaction_error_event(_intrinsic_attributes, num_errors=2)
+def test_multiple_error_events_outside_transaction():
+    app = application()
+    for i in range(2):
+        try:
+            raise ErrorEventOutsideTransactionError(ERR_MESSAGE+str(i))
+        except ErrorEventOutsideTransactionError:
+            record_exception(*sys.exc_info(), application=app)

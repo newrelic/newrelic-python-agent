@@ -1,7 +1,7 @@
 import sys
 
-from newrelic.agent import (wrap_function_wrapper, FunctionTrace,
-    callable_name)
+from newrelic.agent import (FunctionTrace, callable_name, function_wrapper,
+    wrap_function_wrapper)
 from six.moves import range
 from .util import (record_exception, retrieve_current_transaction,
         replace_current_transaction)
@@ -91,24 +91,31 @@ def _nr_wrapper_ExceptionStackContext__init__(wrapped, instance, args, kwargs):
     result = wrapped(*args, **kwargs)
 
     # instance is now an initiated ExceptionStackContext object.
-    instance.exception_handler = _wrap_exception_handler(instance.exception_handler)
+    instance.exception_handler = _wrap_exception_handler(
+            instance.exception_handler)
 
     return result
 
-def _wrap_exception_handler(exception_handler):
+@function_wrapper
+def _wrap_exception_handler(wrapped, instance, args, kwargs):
+    # wrapped is the exception_handler member variable of an
+    # ExceptionStackContext object. Here is an example:
+    # esc = ExceptionStackContext(exception_handler)
+    # esc.exception_handler = _wrap_exception_handler(esc.expection_handler)
 
-    # QUESTION: Should I be using functools.wraps or some wrapt equivalent?
-    def _wrapped_exception_handler(type, value, traceback):
-        is_exception_swallowed = exception_handler(type, value, traceback)
+    def _bind_params(type, value, traceback, *args, **kwargs):
+        return type, value, traceback
 
-        if is_exception_swallowed:
-            transaction = retrieve_current_transaction()
-            if transaction is not None:
-                record_exception(transaction, (type, value, traceback))
+    type, value, traceback = _bind_params(*args, **kwargs)
 
-        return is_exception_swallowed
+    is_exception_swallowed = wrapped(*args, **kwargs)
 
-    return _wrapped_exception_handler
+    if is_exception_swallowed:
+        transaction = retrieve_current_transaction()
+        if transaction is not None:
+            record_exception(transaction, (type, value, traceback))
+
+    return is_exception_swallowed
 
 def instrument_tornado_stack_context(module):
     wrap_function_wrapper(module, 'wrap', _nr_wrapper_stack_context_wrap_)

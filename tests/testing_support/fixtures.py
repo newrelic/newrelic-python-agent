@@ -1536,6 +1536,38 @@ def _validate_event_attributes(intrinsics, user_attributes,
     if 'port' in required_intrinsics:
         assert intrinsics['port'] == required_intrinsics['port']
 
+def validate_transaction_exception_message(expected_message):
+    """Test exception message encoding/decoding for a single error"""
+
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_transaction_exception_message(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            error = instance.error_data()[0]
+
+            # make sure we have the one error we are testing
+
+            # Because we ultimately care what is sent to APM, run the exception
+            # data through the encoding code that is would be run through before
+            # being sent to the collector.
+
+            encoded_error = json_encode(error)
+
+            # to decode, use un-adultered json loading methods
+
+            decoded_json = json.loads(encoded_error)
+
+            message = decoded_json[2]
+            assert expected_message == message
+
+        return result
+
+    return _validate_transaction_exception_message
+
 def override_application_name(app_name):
     # The argument here cannot be named 'name', or else it triggers
     # a PyPy bug. Hence, we use 'app_name' instead.
@@ -1730,3 +1762,25 @@ def error_is_saved(error, app_name=None):
     stats = core_application_stats_engine(app_name)
     errors = stats.error_data()
     return error_name in [e.type for e in errors if e.type == error_name]
+
+def reset_default_encoding(encoding):
+
+    @function_wrapper
+    def _reset_default_encoding(wrapped, instance, args, kwargs):
+
+        # Shouldn't normally ever do this...
+
+        six.moves.reload_module(sys)
+        original_encoding = sys.getdefaultencoding()
+        sys.setdefaultencoding(encoding)
+
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        finally:
+            sys.setdefaultencoding(original_encoding)
+
+        return result
+
+    return _reset_default_encoding

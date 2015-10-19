@@ -533,11 +533,20 @@ class StatsEngine(object):
             message = STRIP_EXCEPTION_MESSAGE
         else:
             try:
-                message = str(value)
+                # Favor unicode in exception messages.
+
+                message = six.text_type(value)
+
             except Exception:
                 try:
-                    # Assume JSON encoding can handle unicode.
-                    message = six.text_type(value)
+
+                    # If exception cannot be represented in unicode, this means
+                    # that it is a byte string encoded with an encoding
+                    # that is not compatible with the default system encoding.
+                    # So, just pass this byte string along.
+
+                    message = str(value)
+
                 except Exception:
                     message = '<unprintable %s object>' % type(value).__name__
 

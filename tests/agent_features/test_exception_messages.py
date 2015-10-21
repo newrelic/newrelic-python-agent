@@ -6,7 +6,7 @@ import pytest
 from newrelic.agent import background_task, record_exception, application
 
 from testing_support.fixtures import (validate_transaction_exception_message,
-        reset_default_encoding, validate_application_exception_message,
+        set_default_encoding, validate_application_exception_message,
         reset_core_stats_engine)
 
 UNICODE_MESSAGE = u'I❤️🐍'
@@ -20,7 +20,7 @@ INCORRECTLY_DECODED_BYTES_PY3 = u"b'I\\xe2\\x9d\\xa4\\xef\\xb8\\x8f\\xf0\\x9f\\x
 # ---------------- Python 2
 
 @pytest.mark.skipif(six.PY3, reason="Testing Python 2 string behavior")
-@reset_default_encoding('ascii')
+@set_default_encoding('ascii')
 @validate_transaction_exception_message(UNICODE_MESSAGE)
 @background_task()
 def test_py2_transaction_exception_message_unicode():
@@ -32,7 +32,7 @@ def test_py2_transaction_exception_message_unicode():
         record_exception()
 
 @pytest.mark.skipif(six.PY3, reason="Testing Python 2 string behavior")
-@reset_default_encoding('ascii')
+@set_default_encoding('ascii')
 @validate_transaction_exception_message(UNICODE_ENGLISH)
 @background_task()
 def test_py2_transaction_exception_message_unicode_english():
@@ -44,7 +44,7 @@ def test_py2_transaction_exception_message_unicode_english():
         record_exception()
 
 @pytest.mark.skipif(six.PY3, reason="Testing Python 2 string behavior")
-@reset_default_encoding('ascii')
+@set_default_encoding('ascii')
 @validate_transaction_exception_message(UNICODE_ENGLISH)
 @background_task()
 def test_py2_transaction_exception_message_bytes_english():
@@ -55,7 +55,7 @@ def test_py2_transaction_exception_message_bytes_english():
         record_exception()
 
 @pytest.mark.skipif(six.PY3, reason="Testing Python 2 string behavior")
-@reset_default_encoding('ascii')
+@set_default_encoding('ascii')
 @validate_transaction_exception_message(INCORRECTLY_DECODED_BYTES_PY2)
 @background_task()
 def test_py2_transaction_exception_message_bytes_non_english():
@@ -69,7 +69,7 @@ def test_py2_transaction_exception_message_bytes_non_english():
         record_exception()
 
 @pytest.mark.skipif(six.PY3, reason="Testing Python 2 string behavior")
-@reset_default_encoding('ascii')
+@set_default_encoding('ascii')
 @validate_transaction_exception_message(INCORRECTLY_DECODED_BYTES_PY2)
 @background_task()
 def test_py2_transaction_exception_message_bytes_implicit_encoding_non_english():
@@ -87,7 +87,7 @@ def test_py2_transaction_exception_message_bytes_implicit_encoding_non_english()
         record_exception()
 
 @pytest.mark.skipif(six.PY3, reason="Testing Python 2 string behavior")
-@reset_default_encoding('utf-8')
+@set_default_encoding('utf-8')
 @validate_transaction_exception_message(UNICODE_MESSAGE)
 @background_task()
 def test_py2_transaction_exception_message_unicode_utf8_encoding():
@@ -100,7 +100,7 @@ def test_py2_transaction_exception_message_unicode_utf8_encoding():
         record_exception()
 
 @pytest.mark.skipif(six.PY3, reason="Testing Python 2 string behavior")
-@reset_default_encoding('utf-8')
+@set_default_encoding('utf-8')
 @validate_transaction_exception_message(UNICODE_MESSAGE)
 @background_task()
 def test_py2_transaction_exception_message_bytes_utf8_encoding_non_english():
@@ -162,7 +162,7 @@ def test_py3_transaction_exception_message_bytes_non_english():
 
 @pytest.mark.skipif(six.PY3, reason="Testing Python 2 string behavior")
 @reset_core_stats_engine()
-@reset_default_encoding('ascii')
+@set_default_encoding('ascii')
 @validate_application_exception_message(UNICODE_MESSAGE)
 def test_py2_application_exception_message_unicode():
     """Assert unicode message when using non-ascii characters is preserved,
@@ -175,7 +175,7 @@ def test_py2_application_exception_message_unicode():
 
 @pytest.mark.skipif(six.PY3, reason="Testing Python 2 string behavior")
 @reset_core_stats_engine()
-@reset_default_encoding('ascii')
+@set_default_encoding('ascii')
 @validate_application_exception_message(UNICODE_ENGLISH)
 def test_py2_application_exception_message_unicode_english():
     """Assert unicode message when using ascii compatible characters preserved,
@@ -188,7 +188,7 @@ def test_py2_application_exception_message_unicode_english():
 
 @pytest.mark.skipif(six.PY3, reason="Testing Python 2 string behavior")
 @reset_core_stats_engine()
-@reset_default_encoding('ascii')
+@set_default_encoding('ascii')
 @validate_application_exception_message(UNICODE_ENGLISH)
 def test_py2_application_exception_message_bytes_english():
     """Assert byte string of ascii characters decodes sensibly"""
@@ -200,7 +200,7 @@ def test_py2_application_exception_message_bytes_english():
 
 @pytest.mark.skipif(six.PY3, reason="Testing Python 2 string behavior")
 @reset_core_stats_engine()
-@reset_default_encoding('ascii')
+@set_default_encoding('ascii')
 @validate_application_exception_message(INCORRECTLY_DECODED_BYTES_PY2)
 def test_py2_application_exception_message_bytes_non_english():
     """Assert known situation where (explicitly) utf-8 encoded byte string gets
@@ -215,7 +215,7 @@ def test_py2_application_exception_message_bytes_non_english():
 
 @pytest.mark.skipif(six.PY3, reason="Testing Python 2 string behavior")
 @reset_core_stats_engine()
-@reset_default_encoding('ascii')
+@set_default_encoding('ascii')
 @validate_application_exception_message(INCORRECTLY_DECODED_BYTES_PY2)
 def test_py2_application_exception_message_bytes_implicit_encoding_non_english():
     """Assert known situation where (implicitly) utf-8 encoded byte string gets
@@ -234,7 +234,7 @@ def test_py2_application_exception_message_bytes_implicit_encoding_non_english()
 
 @pytest.mark.skipif(six.PY3, reason="Testing Python 2 string behavior")
 @reset_core_stats_engine()
-@reset_default_encoding('utf-8')
+@set_default_encoding('utf-8')
 @validate_application_exception_message(UNICODE_MESSAGE)
 def test_py2_application_exception_message_unicode_utf8_encoding():
     """Assert unicode error message is preserved with sys non-default utf-8
@@ -248,7 +248,7 @@ def test_py2_application_exception_message_unicode_utf8_encoding():
 
 @pytest.mark.skipif(six.PY3, reason="Testing Python 2 string behavior")
 @reset_core_stats_engine()
-@reset_default_encoding('utf-8')
+@set_default_encoding('utf-8')
 @validate_application_exception_message(UNICODE_MESSAGE)
 def test_py2_application_exception_message_bytes_utf8_encoding_non_english():
     """Assert utf-8 encoded byte produces correct exception message when sys

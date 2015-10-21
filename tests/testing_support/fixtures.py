@@ -1547,7 +1547,10 @@ def validate_transaction_exception_message(expected_message):
         except:
             raise
         else:
-            error = instance.error_data()[0]
+
+            error_data = instance.error_data()
+            assert len(error_data) == 1
+            error = error_data[0]
 
             # make sure we have the one error we are testing
 
@@ -1580,7 +1583,10 @@ def validate_application_exception_message(expected_message):
         except:
             raise
         else:
-            error = instance.error_data()[0]
+
+            error_data = instance.error_data()
+            assert len(error_data) == 1
+            error = error_data[0]
 
             # make sure we have the one error we are testing
 
@@ -1796,12 +1802,22 @@ def error_is_saved(error, app_name=None):
     errors = stats.error_data()
     return error_name in [e.type for e in errors if e.type == error_name]
 
-def reset_default_encoding(encoding):
+def set_default_encoding(encoding):
+    """Changes the default encoding of the global environment. Only works in
+    Python 2, will cause an error in Python 3
+    """
+
+    # If using this with other decorators/fixtures that depend on the system
+    # default encoding, this decorator must be on wrapped on top of them.
 
     @function_wrapper
-    def _reset_default_encoding(wrapped, instance, args, kwargs):
+    def _set_default_encoding(wrapped, instance, args, kwargs):
 
-        # Shouldn't normally ever do this...
+        # This technique of reloading the sys module is necessary because the
+        # method is removed during initialization of Python. Doing this is
+        # highly frowned upon, but it is the only way to test how our agent
+        # behaves when different sys encodings are used. For more information
+        # on this: http://bit.ly/1xBNxRc
 
         six.moves.reload_module(sys)
         original_encoding = sys.getdefaultencoding()
@@ -1816,4 +1832,4 @@ def reset_default_encoding(encoding):
 
         return result
 
-    return _reset_default_encoding
+    return _set_default_encoding

@@ -1445,9 +1445,10 @@ class StatsEngine(object):
 
     def _merge_error_events(self, snapshot):
 
-        # Merge in error events, since we using reservoir sampling that gives
-        # equal probability to keeping each event, merge is the same as rollback
-        # There may be multiple error events per transaction.
+        # Merge in error events. Since we are using reservoir sampling that
+        # gives equal probability to keeping each event, merge is the same as
+        # rollback. There may be multiple error events per transaction. Rollback
+        # is the same as normal merge due to reservoir sampling.
 
         for err in snapshot.__error_events.samples:
             self.__error_events.add(err)

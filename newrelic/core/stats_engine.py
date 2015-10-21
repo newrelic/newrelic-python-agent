@@ -1503,44 +1503,7 @@ class StatsEngine(object):
             # Restore original slow transaction if slower than any newer slow
             # transaction.
 
-            name = transaction.path
-            duration = transaction.duration
-
-            slowest = 0
-            if self.__slow_transaction:
-                slowest = self.__slow_transaction.duration
-            if name in self.__slow_transaction_map:
-                slowest = max(self.__slow_transaction_map[name], slowest)
-
-            if duration > slowest:
-                # We are going to replace the prior slow
-                # transaction. We need to be a bit tricky here. If
-                # we are overriding an existing slow transaction for
-                # a different name, then we need to restore in the
-                # transaction map what the previous slowest duration
-                # was for that, or remove it if there wasn't one.
-                # This is so we do not incorrectly suppress it given
-                # that it was never actually reported as the slowest
-                # transaction.
-
-                if self.__slow_transaction:
-                    if self.__slow_transaction.path != name:
-                        if self.__slow_transaction_old_duration:
-                            self.__slow_transaction_map[
-                                    self.__slow_transaction.path] = (
-                                    self.__slow_transaction_old_duration)
-                        else:
-                            del self.__slow_transaction_map[
-                                    self.__slow_transaction.path]
-
-                if name in self.__slow_transaction_map:
-                    self.__slow_transaction_old_duration = (
-                            self.__slow_transaction_map[name])
-                else:
-                    self.__slow_transaction_old_duration = None
-
-                self.__slow_transaction = transaction
-                self.__slow_transaction_map[name] = duration
+            self._update_slow_transaction(transaction)
 
     def merge_custom_metrics(self, metrics):
         """Merges in a set of custom metrics. The metrics should be

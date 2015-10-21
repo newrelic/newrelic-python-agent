@@ -24,7 +24,8 @@ INCORRECTLY_DECODED_BYTES_PY3 = u"b'I\\xe2\\x9d\\xa4\\xef\\xb8\\x8f\\xf0\\x9f\\x
 @validate_transaction_exception_message(UNICODE_MESSAGE)
 @background_task()
 def test_py2_transaction_exception_message_unicode():
-    """Assert unicode error message is preserved with sys default encoding"""
+    """Assert unicode message when using non-ascii characters is preserved,
+    with sys default encoding"""
     try:
         raise ValueError(UNICODE_MESSAGE)
     except ValueError:
@@ -35,7 +36,8 @@ def test_py2_transaction_exception_message_unicode():
 @validate_transaction_exception_message(UNICODE_ENGLISH)
 @background_task()
 def test_py2_transaction_exception_message_unicode_english():
-    """Assert byte string of ascii characters is passed on"""
+    """Assert unicode message when using ascii compatible characters preserved,
+    with sys default encoding"""
     try:
         raise ValueError(UNICODE_ENGLISH)
     except ValueError:
@@ -46,7 +48,7 @@ def test_py2_transaction_exception_message_unicode_english():
 @validate_transaction_exception_message(UNICODE_ENGLISH)
 @background_task()
 def test_py2_transaction_exception_message_bytes_english():
-    """Assert byte string of ascii characters is passed on"""
+    """Assert byte string of ascii characters decodes sensibly"""
     try:
         raise ValueError(BYTES_ENGLISH)
     except ValueError:
@@ -57,8 +59,9 @@ def test_py2_transaction_exception_message_bytes_english():
 @validate_transaction_exception_message(INCORRECTLY_DECODED_BYTES_PY2)
 @background_task()
 def test_py2_transaction_exception_message_bytes_non_english():
-    """Assert known situation where utf-8 encoded byte string gets mangled when
-    default sys encoding is ascii.
+    """Assert known situation where (explicitly) utf-8 encoded byte string gets
+    mangled when default sys encoding is ascii. THIS TEST ASSERTS THAT THE
+    MESSAGE IS WRONG. We do not expect it to work now, or in the future.
     """
     try:
         raise ValueError(BYTES_UTF8_ENCODED)
@@ -71,7 +74,8 @@ def test_py2_transaction_exception_message_bytes_non_english():
 @background_task()
 def test_py2_transaction_exception_message_bytes_implicit_encoding_non_english():
     """Assert known situation where (implicitly) utf-8 encoded byte string gets
-    mangled when default sys encoding is ascii
+    mangled when default sys encoding is ascii. THIS TEST ASSERTS THAT THE
+    MESSAGE IS WRONG. We do not expect it to work now, or in the future.
     """
     try:
 
@@ -101,7 +105,7 @@ def test_py2_transaction_exception_message_unicode_utf8_encoding():
 @background_task()
 def test_py2_transaction_exception_message_bytes_utf8_encoding_non_english():
     """Assert utf-8 encoded byte produces correct exception message when sys
-    encoding is also utf-8
+    encoding is also utf-8.
     """
     try:
 
@@ -118,7 +122,8 @@ def test_py2_transaction_exception_message_bytes_utf8_encoding_non_english():
 @validate_transaction_exception_message(UNICODE_MESSAGE)
 @background_task()
 def test_py3_transaction_exception_message_bytes_non_english_unicode():
-    """Assert (native) unicode exception message is preserved"""
+    """Assert (native) unicode exception message is preserved when when
+    non-ascii compatible characters present"""
     try:
         raise ValueError(UNICODE_MESSAGE)
     except ValueError:
@@ -128,7 +133,8 @@ def test_py3_transaction_exception_message_bytes_non_english_unicode():
 @validate_transaction_exception_message(UNICODE_ENGLISH)
 @background_task()
 def test_py3_transaction_exception_message_unicode_english():
-    """Assert (native) unicode exception message is preserved"""
+    """Assert (native) unicode exception message is preserved, when characters
+    are ascii-compatible"""
     try:
         raise ValueError(UNICODE_ENGLISH)
     except ValueError:
@@ -142,7 +148,8 @@ def test_py3_transaction_exception_message_bytes_non_english():
     string in python 3 (that is using str(), not using encode/decode methods).
     This is because all characters in bytes are literals, no implicit
     decoding happens, like it does in python 2. You just shouldn't use bytes
-    for exception messages in Python 3.
+    for exception messages in Python 3. THIS TEST ASSERTS THAT THE
+    MESSAGE IS WRONG. We do not expect it to work now, or in the future.
     """
     try:
         raise ValueError(BYTES_UTF8_ENCODED)
@@ -158,7 +165,8 @@ def test_py3_transaction_exception_message_bytes_non_english():
 @reset_default_encoding('ascii')
 @validate_application_exception_message(UNICODE_MESSAGE)
 def test_py2_application_exception_message_unicode():
-    """Assert unicode error message is preserved with sys default encoding"""
+    """Assert unicode message when using non-ascii characters is preserved,
+    with sys default encoding"""
     try:
         raise ValueError(UNICODE_MESSAGE)
     except ValueError:
@@ -170,7 +178,8 @@ def test_py2_application_exception_message_unicode():
 @reset_default_encoding('ascii')
 @validate_application_exception_message(UNICODE_ENGLISH)
 def test_py2_application_exception_message_unicode_english():
-    """Assert byte string of ascii characters is passed on"""
+    """Assert unicode message when using ascii compatible characters preserved,
+    with sys default encoding"""
     try:
         raise ValueError(UNICODE_ENGLISH)
     except ValueError:
@@ -182,7 +191,7 @@ def test_py2_application_exception_message_unicode_english():
 @reset_default_encoding('ascii')
 @validate_application_exception_message(UNICODE_ENGLISH)
 def test_py2_application_exception_message_bytes_english():
-    """Assert byte string of ascii characters is passed on"""
+    """Assert byte string of ascii characters decodes sensibly"""
     try:
         raise ValueError(BYTES_ENGLISH)
     except ValueError:
@@ -194,8 +203,9 @@ def test_py2_application_exception_message_bytes_english():
 @reset_default_encoding('ascii')
 @validate_application_exception_message(INCORRECTLY_DECODED_BYTES_PY2)
 def test_py2_application_exception_message_bytes_non_english():
-    """Assert known situation where utf-8 encoded byte string gets mangled when
-    default sys encoding is ascii.
+    """Assert known situation where (explicitly) utf-8 encoded byte string gets
+    mangled when default sys encoding is ascii. THIS TEST ASSERTS THAT THE
+    MESSAGE IS WRONG. We do not expect it to work now, or in the future.
     """
     try:
         raise ValueError(BYTES_UTF8_ENCODED)
@@ -209,7 +219,8 @@ def test_py2_application_exception_message_bytes_non_english():
 @validate_application_exception_message(INCORRECTLY_DECODED_BYTES_PY2)
 def test_py2_application_exception_message_bytes_implicit_encoding_non_english():
     """Assert known situation where (implicitly) utf-8 encoded byte string gets
-    mangled when default sys encoding is ascii
+    mangled when default sys encoding is ascii. THIS TEST ASSERTS THAT THE
+    MESSAGE IS WRONG. We do not expect it to work now, or in the future.
     """
     try:
 
@@ -241,7 +252,7 @@ def test_py2_application_exception_message_unicode_utf8_encoding():
 @validate_application_exception_message(UNICODE_MESSAGE)
 def test_py2_application_exception_message_bytes_utf8_encoding_non_english():
     """Assert utf-8 encoded byte produces correct exception message when sys
-    encoding is also utf-8
+    encoding is also utf-8.
     """
     try:
 
@@ -259,7 +270,8 @@ def test_py2_application_exception_message_bytes_utf8_encoding_non_english():
 @reset_core_stats_engine()
 @validate_application_exception_message(UNICODE_MESSAGE)
 def test_py3_application_exception_message_bytes_non_english_unicode():
-    """Assert (native) unicode exception message is preserved"""
+    """Assert (native) unicode exception message is preserved when when
+    non-ascii compatible characters present"""
     try:
         raise ValueError(UNICODE_MESSAGE)
     except ValueError:
@@ -270,7 +282,8 @@ def test_py3_application_exception_message_bytes_non_english_unicode():
 @reset_core_stats_engine()
 @validate_application_exception_message(UNICODE_ENGLISH)
 def test_py3_application_exception_message_unicode_english():
-    """Assert (native) unicode exception message is preserved"""
+    """Assert (native) unicode exception message is preserved, when characters
+    are ascii-compatible"""
     try:
         raise ValueError(UNICODE_ENGLISH)
     except ValueError:
@@ -285,7 +298,8 @@ def test_py3_application_exception_message_bytes_non_english():
     string in python 3 (that is using str(), not using encode/decode methods).
     This is because all characters in bytes are literals, no implicit
     decoding happens, like it does in python 2. You just shouldn't use bytes
-    for exception messages in Python 3.
+    for exception messages in Python 3. THIS TEST ASSERTS THAT THE
+    MESSAGE IS WRONG. We do not expect it to work now, or in the future.
     """
     try:
         raise ValueError(BYTES_UTF8_ENCODED)

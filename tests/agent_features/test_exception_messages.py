@@ -9,12 +9,12 @@ from testing_support.fixtures import (validate_transaction_exception_message,
         set_default_encoding, validate_application_exception_message,
         reset_core_stats_engine)
 
-UNICODE_MESSAGE = u'I❤️🐍'
+UNICODE_MESSAGE = u'I💜🐍'
 UNICODE_ENGLISH = u'I love python'
 BYTES_ENGLISH = b'I love python'
-BYTES_UTF8_ENCODED = b'I\xe2\x9d\xa4\xef\xb8\x8f\xf0\x9f\x90\x8d'
-INCORRECTLY_DECODED_BYTES_PY2 = u'I\u00e2\u009d\u00a4\u00ef\u00b8\u008f\u00f0\u009f\u0090\u008d'
-INCORRECTLY_DECODED_BYTES_PY3 = u"b'I\\xe2\\x9d\\xa4\\xef\\xb8\\x8f\\xf0\\x9f\\x90\\x8d'"
+BYTES_UTF8_ENCODED = b'I\xf0\x9f\x92\x9c\xf0\x9f\x90\x8d'
+INCORRECTLY_DECODED_BYTES_PY2 = u'I\u00f0\u009f\u0092\u009c\u00f0\u009f\u0090\u008d'
+INCORRECTLY_DECODED_BYTES_PY3 = u"b'I\\xf0\\x9f\\x92\\x9c\\xf0\\x9f\\x90\\x8d'"
 # =================== Exception messages during transaction ====================
 
 # ---------------- Python 2
@@ -82,7 +82,7 @@ def test_py2_transaction_exception_message_bytes_implicit_encoding_non_english()
         # Bytes literal with non-ascii compatible characters only allowed in
         # python 2
 
-        raise ValueError('I❤️🐍')
+        raise ValueError('I💜🐍')
     except ValueError:
         record_exception()
 
@@ -112,7 +112,7 @@ def test_py2_transaction_exception_message_bytes_utf8_encoding_non_english():
         # Bytes literal with non-ascii compatible characters only allowed in
         # python 2
 
-        raise ValueError('I❤️🐍')
+        raise ValueError('I💜🐍')
     except ValueError:
         record_exception()
 
@@ -227,7 +227,7 @@ def test_py2_application_exception_message_bytes_implicit_encoding_non_english()
         # Bytes literal with non-ascii compatible characters only allowed in
         # python 2
 
-        raise ValueError('I❤️🐍')
+        raise ValueError('I💜🐍')
     except ValueError:
         app = application()
         record_exception(application=app)
@@ -259,7 +259,7 @@ def test_py2_application_exception_message_bytes_utf8_encoding_non_english():
         # Bytes literal with non-ascii compatible characters only allowed in
         # python 2
 
-        raise ValueError('I❤️🐍')
+        raise ValueError('I💜🐍')
     except ValueError:
         app = application()
         record_exception(application=app)

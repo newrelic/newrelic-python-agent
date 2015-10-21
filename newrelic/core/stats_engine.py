@@ -427,7 +427,10 @@ class StatsEngine(object):
 
         error_collector = settings.error_collector
 
-        if not error_collector.enabled or not settings.collect_errors:
+        if not error_collector.enabled:
+            return
+
+        if not settings.collect_errors and not settings.collect_error_events:
             return
 
         if (len(self.__transaction_errors) >=
@@ -552,10 +555,12 @@ class StatsEngine(object):
 
         # Save this error as a trace and an event.
 
-        event = self._error_event(error_details)
-        self.__error_events.add(event)
+        if error_collector.capture_events and settings.collect_error_events:
+            event = self._error_event(error_details)
+            self.__error_events.add(event)
 
-        self.__transaction_errors.append(error_details)
+        if settings.collect_errors:
+            self.__transaction_errors.append(error_details)
 
     def _error_event(self, error):
 
@@ -833,8 +838,8 @@ class StatsEngine(object):
             event = transaction.transaction_event(self.__stats_table)
             self.__transaction_events.add(event)
 
-        if (settings.error_collector.enabled and
-                settings.error_collector.capture_events):
+        if (error_collector.capture_events and error_collector.enabled
+                and settings.collect_error_events):
             events = transaction.error_events(self.__stats_table)
             for event in events:
                 self.__error_events.add(event)

@@ -610,7 +610,7 @@ def check_event_attributes(event_data, required_params, forgone_params):
         for param in forgone_params['user']:
             assert param not in user_attributes
 
-def validate_non_transaction_error_event(required_intrinsics, num_errors=1):
+def validate_non_transaction_error_event(required_intrinsics={}, num_errors=1):
     """Validate error event data for a single error occurring outside of a
     transaction.
     """
@@ -1303,11 +1303,31 @@ def validate_transaction_event_sample_data(required_attrs,
 
     return _validate_transaction_event_sample_data
 
-def validate_error_event_sample_data(required_attrs, required_user_attrs=True,
+def validate_error_event_on_stats_engine(num_errors=1):
+    """Validate that the correct number of error events are saved to StatsEngine
+    after a transaction
+    """
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_error_event_on_stats_engine(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+
+            error_events = instance.error_events.samples
+            assert len(error_events) == num_errors
+
+        return result
+
+    return _validate_error_event_on_stats_engine
+
+def validate_error_event_sample_data(required_attrs={}, required_user_attrs=True,
             num_errors=1):
-    """This test depends on values in the test application from
-    agent_features/test_analytics.py, and is only meant to be run as a
-    validation with those tests.
+    """Validate the data collected for error_events. This test depends on values
+    in the test application from agent_features/test_analytics.py, and is only
+    meant to be run as a validation with those tests.
     """
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')

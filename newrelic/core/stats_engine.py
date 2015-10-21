@@ -1333,7 +1333,8 @@ class StatsEngine(object):
         used when merging data from a single transaction into main
         stats engine. It is assumed the snapshot has newer data and
         that any existing data takes precedence where what should be
-        collected is not otherwise based on time.
+        collected is not otherwise based on time, or when reservoir sampling
+        is used.
 
         """
 
@@ -1349,6 +1350,13 @@ class StatsEngine(object):
         self._merge_traces(snapshot)
 
     def rollback(self, snapshot):
+        """Rollback data from an older copy of StatsEngine into this one.
+        Existing data takes precedence, except where reservoir sampling is used.
+        """
+
+        # This is for the case of a rollback merge because of a network issue,
+        # and data (snapshot) from a previous harvest must be incorporated into
+        # the current main StatsEngine (self).
 
         if not self.__settings:
             return
@@ -1362,7 +1370,7 @@ class StatsEngine(object):
         self.merge_metric_stats(snapshot)
         self._merge_transaction_events(snapshot, rollback=True)
         self._merge_synthetics_events(snapshot, rollback=True)
-        self._merge_error_events(snapshot, rollback=True)
+        self._merge_error_events(snapshot)
 
     def merge_metric_stats(self, snapshot):
         """Merges metric data from a snapshot. This is used when merging
@@ -1370,7 +1378,6 @@ class StatsEngine(object):
         also be done if the sending of the metric data from the harvest
         failed and wanted to keep accumulating it for subsequent
         harvest.
-
         """
 
         # Merge back data into any new data which has been
@@ -1387,19 +1394,17 @@ class StatsEngine(object):
 
     def _merge_transaction_events(self, snapshot, rollback=False):
 
-        # Merge in transaction events. For normal case, as this is merging
-        # data from a single transaction, there should only be one. Just
-        # to avoid issues, if there is more than one, don't merge. In
-        # the case of a rollback merge because of a network issue, then
-        # we have to merge differently, restoring the old sampled data
-        # and applying the new data over the top. This gives precedence
-        # to the newer data.
+        # Merge in transaction events. In the normal case snapshot is a
+        # StatsEngine from a single transaction, and should only have one event.
+        # Just to avoid issues, if there is more than one, don't merge.
+
+        # If this is a rollback, snapshot is a copy of a previous main
+        # StatsEngine, and self is still the current main StatsEngine. Then
+        # we are merging multiple events, but still using the reservoir sampling
+        # that gives equal probability for keeping all events
 
         if rollback:
-            new_transaction_events = self.__transaction_events
-            self.__transaction_events = snapshot.__transaction_events
-
-            for sample in new_transaction_events.samples:
+            for sample in snapshot.__transaction_events.samples:
                 self.__transaction_events.add(sample)
 
         else:
@@ -1410,9 +1415,15 @@ class StatsEngine(object):
     def _merge_synthetics_events(self, snapshot, rollback=False):
 
         # Merge Synthetic analytic events, appending to the list
-        # that contains events from previous transactions. Cap this list a
-        # a maximum, so that newer events over the limit will be thrown out.
-        # Unless, this is a rollback, then favor the newer events.
+        # that contains events from previous transactions. In the normal
+        # case snapshot is a StatsEngine from a single transaction, and should
+        # only have one event. Cap this list at a maximum, so that newer events
+        # over the limit will be thrown out.
+
+        # If this is a rollback, snapshot is a copy of a previous main
+        # StatsEngine, and self is still the current main StatsEngine,
+        # Thus, the events already existing in this object will be newer than
+        # those in snapshot, and we favor the newer events.
 
         if rollback:
             self.__synthetics_events.extend(snapshot.__synthetics_events)
@@ -1424,28 +1435,20 @@ class StatsEngine(object):
         maximum = self.__settings.agent_limits.synthetics_events
         self.__synthetics_events = self.__synthetics_events[:maximum]
 
-    def _merge_error_events(self, snapshot, rollback=False):
+    def _merge_error_events(self, snapshot):
 
-        # Merge in error events, there can be multiple errors per transaction.
-        # Favor the newer events by adding to the data set on top on the
-        # existing events, except in a rollback - then favor the existing
-        # events, since they will be newer.
+        # Merge in error events, since we using reservoir sampling that gives
+        # equal probability to keeping each event, merge is the same as rollback
+        # There may be multiple error events per transaction.
 
-        if rollback:
-            new_error_events = self.__error_events
-            self.__error_events = snapshot.__error_events
-
-            for sample in new_error_events.samples:
-                self.__error_events.add(sample)
-
-        else:
-            for err in snapshot.__error_events.samples:
-                self.__error_events.add(err)
+        for err in snapshot.__error_events.samples:
+            self.__error_events.add(err)
 
     def _merge_error_traces(self, snapshot):
 
         # Append snapshot error details at end to maintain time
-        # based order and then trim at maximum to be kept.
+        # based order and then trim at maximum to be kept. snapshot will
+        # always have newer data.
 
         maximum = self.__settings.agent_limits.errors_per_harvest
         self.__transaction_errors.extend(snapshot.__transaction_errors)
@@ -1468,11 +1471,7 @@ class StatsEngine(object):
 
     def _merge_traces(self, snapshot):
 
-        # Restore original slow transaction if slower than any newer slow
-        # transaction. Also append any saved transactions corresponding to
-        # x-ray traces, trimming them at the maximum to be kept.
-
-        # Limit number of xray traces to the limit (10)
+        # Limit number of x-ray traces to the limit.
         # Spill over traces after the limit should have no x-ray ids. This
         # qualifies the trace to be considered for slow transaction.
 
@@ -1500,6 +1499,10 @@ class StatsEngine(object):
 
         xray_id = getattr(transaction, 'xray_id', None)
         if transaction and xray_id is None:
+
+            # Restore original slow transaction if slower than any newer slow
+            # transaction.
+
             name = transaction.path
             duration = transaction.duration
 

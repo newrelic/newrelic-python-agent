@@ -1460,14 +1460,14 @@ class StatsEngine(object):
         # the limit of how many to collect, only merge in if already
         # seen the specific SQL.
 
-        maximum = self.__settings.agent_limits.slow_sql_data
-        for key, other in six.iteritems(snapshot.__sql_stats_table):
+        for key, slow_sql_stats in six.iteritems(snapshot.__sql_stats_table):
             stats = self.__sql_stats_table.get(key)
             if not stats:
+                maximum = self.__settings.agent_limits.slow_sql_data
                 if len(self.__sql_stats_table) < maximum:
-                    self.__sql_stats_table[key] = copy.copy(other)
+                    self.__sql_stats_table[key] = copy.copy(slow_sql_stats)
             else:
-                stats.merge_stats(other)
+                stats.merge_stats(slow_sql_stats)
 
     def _merge_traces(self, snapshot):
 

@@ -1385,6 +1385,9 @@ class StatsEngine(object):
         harvest.
         """
 
+        if not self.__settings:
+            return
+
         # Merge back data into any new data which has been
         # accumulated. Because of the nature/order of how this is called
         # from the harvest loop in application.py, a rollback looks the same

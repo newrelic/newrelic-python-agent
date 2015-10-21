@@ -31,6 +31,7 @@ _intrinsic_attributes = {
 
 @validate_error_event_sample_data(required_attrs=_intrinsic_attributes,
         required_user_attrs=False)
+@validate_error_event_on_stats_engine(num_errors=1)
 def test_transaction_error_event_no_extra_attributes():
     test_environ = {
                 'err_message' : ERR_MESSAGE,
@@ -130,6 +131,7 @@ _intrinsic_attributes = {
 
 @validate_error_event_sample_data(required_attrs=_intrinsic_attributes,
         required_user_attrs=True, num_errors=2)
+@validate_error_event_on_stats_engine(num_errors=2)
 def test_multiple_errors_in_transaction():
     test_environ = {
                 'err_message' : ERR_MESSAGE,

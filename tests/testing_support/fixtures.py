@@ -1366,8 +1366,7 @@ def validate_error_event_sample_data(required_attrs={}, required_user_attrs=True
                                            user_attributes,
                                            required_attrs,
                                            required_user_attrs)
-
-        return wrapped(*args, **kwargs)
+        return result
 
     return _validate_error_event_sample_data
 

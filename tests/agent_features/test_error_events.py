@@ -8,7 +8,8 @@ from newrelic.common.encoding_utils import obfuscate, json_encode
 
 from testing_support.fixtures import (validate_error_event_sample_data,
         validate_non_transaction_error_event, override_application_settings,
-        make_cross_agent_headers, make_synthetics_header)
+        make_cross_agent_headers, make_synthetics_header,
+        reset_core_stats_engine, validate_error_event_count)
 from testing_support.sample_applications import fully_featured_app
 
 
@@ -30,6 +31,7 @@ _intrinsic_attributes = {
 
 @validate_error_event_sample_data(required_attrs=_intrinsic_attributes,
         required_user_attrs=False)
+@validate_error_event_count(num_errors=1)
 def test_transaction_error_event_no_extra_attributes():
     test_environ = {
                 'err_message' : ERR_MESSAGE,
@@ -121,19 +123,112 @@ def test_transaction_error_with_synthetics():
     response = fully_featured_application.get('/', headers=headers,
             extra_environ=test_environ)
 
-
-# -------------- Test Error Events outside of transaction ----------------
-
 _intrinsic_attributes = {
         'error.class': callable_name(ERROR),
         'error.message': ERR_MESSAGE,
+        'transactionName' : 'WebTransaction/Uri/'
 }
 
+@validate_error_event_sample_data(required_attrs=_intrinsic_attributes,
+        required_user_attrs=True, num_errors=2)
+@validate_error_event_count(num_errors=2)
+def test_multiple_errors_in_transaction():
+    test_environ = {
+                'err_message' : ERR_MESSAGE,
+                'n_errors': '2',
+    }
+    response = fully_featured_application.get('/', extra_environ=test_environ)
+
+
+@override_application_settings({'error_collector.enabled' : False})
+@validate_error_event_sample_data(num_errors=0)
+@validate_error_event_count(num_errors=0)
+def test_error_collector_disabled():
+    """If error_collector is disabled, don't event collect error info. There
+    should be an empty result from transaction_node.error_event"""
+    test_environ = {
+                'err_message' : ERR_MESSAGE,
+    }
+    response = fully_featured_application.get('/', extra_environ=test_environ)
+
+@override_application_settings({'collect_error_events' : False})
+@validate_error_event_count(num_errors=0)
+def test_collect_error_events_false():
+    """Don't save error events to stats engine. Error info can be collected
+        for error traces, so we only validate that event is not on stats engine,
+        not that it can't be generated from the transaction node."""
+    test_environ = {
+                'err_message' : ERR_MESSAGE,
+    }
+    response = fully_featured_application.get('/', extra_environ=test_environ)
+
+@override_application_settings({'error_collector.capture_events' : False})
+@validate_error_event_count(num_errors=0)
+def test_collect_error_capture_events_disabled():
+    """Don't save error events to stats engine. Error info can be collected
+        for error traces, so we only validate that event is not on stats engine,
+        not that it can't be generated from the transaction node."""
+    test_environ = {
+                'err_message' : ERR_MESSAGE,
+    }
+    response = fully_featured_application.get('/', extra_environ=test_environ)
+
+# -------------- Test Error Events outside of transaction ----------------
+
+class ErrorEventOutsideTransactionError(Exception):
+    pass
+outside_error = ErrorEventOutsideTransactionError(ERR_MESSAGE)
+
+_intrinsic_attributes = {
+        'error.class': callable_name(outside_error),
+        'error.message': ERR_MESSAGE,
+}
+
+@reset_core_stats_engine()
 @validate_non_transaction_error_event(_intrinsic_attributes)
 def test_error_event_outside_transaction():
     try:
-        raise ERROR
-    except ValueError:
+        raise outside_error
+    except ErrorEventOutsideTransactionError:
         app = application()
         record_exception(*sys.exc_info(), application=app)
 
+@reset_core_stats_engine()
+@validate_non_transaction_error_event(_intrinsic_attributes, num_errors=2)
+def test_multiple_error_events_outside_transaction():
+    app = application()
+    for i in range(2):
+        try:
+            raise ErrorEventOutsideTransactionError(ERR_MESSAGE+str(i))
+        except ErrorEventOutsideTransactionError:
+            record_exception(*sys.exc_info(), application=app)
+
+@reset_core_stats_engine()
+@override_application_settings({'error_collector.enabled' : False})
+@validate_non_transaction_error_event(num_errors=0)
+def test_error_event_outside_transaction_error_collector_disabled():
+    try:
+        raise outside_error
+    except ErrorEventOutsideTransactionError:
+        app = application()
+        record_exception(*sys.exc_info(), application=app)
+
+@reset_core_stats_engine()
+@override_application_settings({'error_collector.capture_events' : False})
+@validate_non_transaction_error_event(num_errors=0)
+def test_error_event_outside_transaction_capture_events_disabled():
+    try:
+        raise outside_error
+    except ErrorEventOutsideTransactionError:
+        app = application()
+        record_exception(*sys.exc_info(), application=app)
+
+@reset_core_stats_engine()
+@override_application_settings({'collect_error_events' : False})
+@validate_non_transaction_error_event(num_errors=0)
+def test_error_event_outside_transaction_collect_error_events_false():
+    try:
+        raise outside_error
+    except ErrorEventOutsideTransactionError:
+        app = application()
+        record_exception(*sys.exc_info(), application=app)

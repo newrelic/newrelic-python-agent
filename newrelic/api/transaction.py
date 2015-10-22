@@ -922,7 +922,10 @@ class Transaction(object):
         settings = self._settings
         error_collector = settings.error_collector
 
-        if not error_collector.enabled or not settings.collect_errors:
+        if not error_collector.enabled:
+            return
+
+        if not settings.collect_errors and not settings.collect_error_events:
             return
 
         # If no exception details provided, use current exception.

@@ -826,8 +826,7 @@ class Application(object):
                     internal_metric('Supportability/Python/Transaction/'
                             'Counts/metric_data', stats.metric_data_count())
 
-                    self._stats_engine.merge_metric_stats(stats)
-                    self._stats_engine.merge_other_stats(stats)
+                    self._stats_engine.merge(stats)
 
                     # We merge the internal statistics here as well even
                     # though have popped out of the context where we are
@@ -1228,6 +1227,8 @@ class Application(object):
 
                     stats_custom = self._stats_custom_engine.harvest_snapshot()
 
+                # stats_custom should only contain metric stats, no transactions
+
                 stats.merge_metric_stats(stats_custom)
 
                 # Now merge in any metrics from the data samplers
@@ -1310,14 +1311,14 @@ class Application(object):
                     if (configuration.collect_analytics_events and
                             configuration.transaction_events.enabled):
 
-                        sampled_data_set = stats.sampled_data_set
+                        transaction_events = stats.transaction_events
 
                         internal_metric('Supportability/Python/'
                                 'RequestSampler/requests',
-                                sampled_data_set.count)
+                                transaction_events.count)
                         internal_metric('Supportability/Python/'
                                 'RequestSampler/samples',
-                                len(sampled_data_set.samples))
+                                len(transaction_events.samples))
 
                     # Create a metric_normalizer based on normalize_name
                     # If metric rename rules are empty, set normalizer
@@ -1361,7 +1362,7 @@ class Application(object):
                     if (configuration.collect_analytics_events and
                             configuration.transaction_events.enabled):
 
-                        samples = stats.sampled_data_set.samples
+                        samples = stats.transaction_events.samples
                         all_analytic_events.extend(samples)
 
                     if len(all_analytic_events):
@@ -1371,7 +1372,7 @@ class Application(object):
                         self._active_session.analytic_event_data(
                                 all_analytic_events)
 
-                    stats.reset_sampled_data()
+                    stats.reset_transaction_events()
                     stats.reset_synthetics_events()
 
                     # Successful, so we update the stats engine with the
@@ -1522,16 +1523,8 @@ class Application(object):
                         maximum = agent_limits.merge_stats_maximum
 
                         if self._merge_count <= maximum:
-                            self._stats_engine.merge_metric_stats(
-                                    stats, rollback=True)
 
-                            # Only merge back sampled data at present.
-
-                            self._stats_engine.merge_other_stats(stats,
-                                    merge_traces=False, merge_errors=False,
-                                    merge_sql=False, merge_samples=True,
-                                    merge_synthetics_events = True,
-                                    rollback=True)
+                            self._stats_engine.rollback(stats)
 
                         else:
                             _logger.error('Unable to report main transaction '

@@ -528,11 +528,11 @@ def validate_database_duration():
         else:
 
             metrics = instance.stats_table
-            sampled_data_set = instance.sampled_data_set
+            transaction_events = instance.transaction_events
 
-            assert sampled_data_set.count == 1
+            assert transaction_events.count == 1
 
-            event = sampled_data_set.samples[0]
+            event = transaction_events.samples[0]
             intrinsics = event[0]
 
             # As long as we are sending 'Database' metrics, then
@@ -579,57 +579,70 @@ def validate_transaction_event_attributes(required_params={},
         except:
             raise
         else:
-            event_data = instance.sampled_data_set
-            # grab first transaction event in data set
-            intrinsics, user_attributes, agent_attributes = event_data.samples[0]
+            event_data = instance.transaction_events
 
-            if required_params:
-                for param in required_params['agent']:
-                    assert param in agent_attributes
-                for param in required_params['user']:
-                    assert param in user_attributes
-                for param in required_params['intrinsic']:
-                    assert param in intrinsics
-
-            if forgone_params:
-                for param in forgone_params['agent']:
-                    assert param not in agent_attributes
-                for param in forgone_params['user']:
-                    assert param not in user_attributes
+            check_event_attributes(event_data, required_params, forgone_params)
 
         return result
 
     return _validate_transaction_event_attributes
 
-def validate_non_transaction_error_event(required_intrinsics):
-    """Validate error event data for a single error occuring outside of a
+def check_event_attributes(event_data, required_params, forgone_params):
+    """Check the event attributes from a single (first) event in a
+    SampledDataSet. If necessary, clear out previous errors from StatsEngine
+    prior to saving error, so that the desired error is the only one present
+    in the data set.
+    """
+
+    intrinsics, user_attributes, agent_attributes = event_data.samples[0]
+
+    if required_params:
+        for param in required_params['agent']:
+            assert param in agent_attributes
+        for param in required_params['user']:
+            assert param in user_attributes
+        for param in required_params['intrinsic']:
+            assert param in intrinsics
+
+    if forgone_params:
+        for param in forgone_params['agent']:
+            assert param not in agent_attributes
+        for param in forgone_params['user']:
+            assert param not in user_attributes
+
+def validate_non_transaction_error_event(required_intrinsics={}, num_errors=1):
+    """Validate error event data for a single error occurring outside of a
     transaction.
     """
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_exception')
-    def _validate_non_transaction_error_event(wrapped, instance, args, kwargs):
+    @function_wrapper
+    def _validate_non_transaction_error_event(wrapped, instace, args, kwargs):
+
         try:
             result = wrapped(*args, **kwargs)
         except:
             raise
         else:
 
-            event = instance._error_event_cache
+            stats = core_application_stats_engine(None)
 
-            assert len(event) == 3 # [intrinsic, user, agent attributes]
+            assert stats.error_events.count == num_errors
+            for event in stats.error_events.samples:
 
-            intrinsics = event[0]
+                assert len(event) == 3 # [intrinsic, user, agent attributes]
 
-            # The following attributes are all required, and also the only
-            # intrinsic attributes that can be included in an error event
-            # recorded outside of a transaction
+                intrinsics = event[0]
 
-            assert intrinsics['type'] == 'TransactionError'
-            assert intrinsics['transactionName'] == None
-            assert intrinsics['error.class'] == required_intrinsics['error.class']
-            assert intrinsics['error.message'] == required_intrinsics['error.message']
-            now = time.time()
-            assert intrinsics['timestamp'] < now
+                # The following attributes are all required, and also the only
+                # intrinsic attributes that can be included in an error event
+                # recorded outside of a transaction
+
+                assert intrinsics['type'] == 'TransactionError'
+                assert intrinsics['transactionName'] == None
+                assert intrinsics['error.class'] == required_intrinsics['error.class']
+                assert intrinsics['error.message'].startswith(
+                        required_intrinsics['error.message'])
+                now = time.time()
+                assert intrinsics['timestamp'] <= now
 
         return result
 
@@ -913,7 +926,7 @@ def validate_transaction_event_collector_json():
         except:
             raise
         else:
-            samples = instance.sampled_data_set.samples
+            samples = instance.transaction_events.samples
 
             # recreate what happens right before data is sent to the collector
             # in data_collector.py during the harvest via analytic_event_data
@@ -1029,6 +1042,61 @@ def validate_browser_attributes(required_params={}, forgone_params={}):
         return result
 
     return _validate_browser_attributes
+
+def validate_error_event_attributes(required_params={}, forgone_params={}):
+    """Check the error event for attributes, expect only one error to be
+    present in the transaction.
+    """
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_error_event_attributes(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+
+            event_data = instance.error_events
+
+            check_event_attributes(event_data, required_params, forgone_params)
+
+    return _validate_error_event_attributes
+
+def validate_error_trace_attributes_outside_transaction(err_name,
+        required_params={}, forgone_params={}):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_exception')
+    def _validate_error_trace_attributes_outside_transaction(wrapped, instance,
+            args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            target_error = core_application_stats_engine_error(err_name)
+
+            check_error_attributes(target_error.parameters, required_params,
+                    forgone_params, is_transaction=False)
+
+    return _validate_error_trace_attributes_outside_transaction
+
+def validate_error_event_attributes_outside_transaction(required_params={},
+        forgone_params={}):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_exception')
+    def _validate_error_event_attributes_outside_transaction(wrapped, instance,
+            args, kwargs):
+
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            event_data = instance.error_events
+
+            check_event_attributes(event_data, required_params, forgone_params)
+
+    return _validate_error_event_attributes_outside_transaction
 
 def validate_request_params_omitted():
     @transient_function_wrapper('newrelic.core.stats_engine',
@@ -1235,10 +1303,31 @@ def validate_transaction_event_sample_data(required_attrs,
 
     return _validate_transaction_event_sample_data
 
-def validate_error_event_sample_data(required_attrs, required_user_attrs=True):
-    """This test depends on values in the test application from
-    agent_features/test_analytics.py, and is only meant to be run as a
-    validation with those tests.
+def validate_error_event_count(num_errors=1):
+    """Validate that the correct number of error events are saved to StatsEngine
+    after a transaction
+    """
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_error_event_on_stats_engine(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+
+            error_events = instance.error_events.samples
+            assert len(error_events) == num_errors
+
+        return result
+
+    return _validate_error_event_on_stats_engine
+
+def validate_error_event_sample_data(required_attrs={}, required_user_attrs=True,
+            num_errors=1):
+    """Validate the data collected for error_events. This test depends on values
+    in the test application from agent_features/test_analytics.py, and is only
+    meant to be run as a validation with those tests.
     """
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
@@ -1255,29 +1344,29 @@ def validate_error_event_sample_data(required_attrs, required_user_attrs=True):
             transaction = _bind_params(*args, **kwargs)
 
             error_events = transaction.error_events(instance.stats_table)
-            sample = error_events[0]
+            assert len(error_events) == num_errors
+            for sample in error_events:
 
-            assert isinstance(sample, list)
-            assert len(sample) == 3
+                assert isinstance(sample, list)
+                assert len(sample) == 3
 
-            intrinsics, user_attributes, agent_attributes = sample
+                intrinsics, user_attributes, agent_attributes = sample
 
-            # These intrinsics should always be present
+                # These intrinsics should always be present
 
-            assert intrinsics['type'] == 'TransactionError'
-            assert (intrinsics['transactionName'] ==
-                    required_attrs['transactionName'])
-            assert intrinsics['error.class'] == required_attrs['error.class']
-            assert (intrinsics['error.message'] ==
-                    required_attrs['error.message'])
-            assert intrinsics['nr.transactionGuid'] is not None
+                assert intrinsics['type'] == 'TransactionError'
+                assert (intrinsics['transactionName'] ==
+                        required_attrs['transactionName'])
+                assert intrinsics['error.class'] == required_attrs['error.class']
+                assert intrinsics['error.message'].startswith(
+                        required_attrs['error.message'])
+                assert intrinsics['nr.transactionGuid'] is not None
 
-            _validate_event_attributes(intrinsics,
-                                       user_attributes,
-                                       required_attrs,
-                                       required_user_attrs)
-
-        return wrapped(*args, **kwargs)
+                _validate_event_attributes(intrinsics,
+                                           user_attributes,
+                                           required_attrs,
+                                           required_user_attrs)
+        return result
 
     return _validate_error_event_sample_data
 
@@ -1285,7 +1374,7 @@ def _validate_event_attributes(intrinsics, user_attributes,
             required_intrinsics, required_user):
 
     now = time.time()
-    assert intrinsics['timestamp'] < now
+    assert intrinsics['timestamp'] <= now
     assert intrinsics['duration'] >= 0.0
 
     assert 'memcacheDuration' not in intrinsics
@@ -1455,6 +1544,16 @@ def code_coverage_fixture(source=['newrelic']):
         cov.start()
 
     return _code_coverage_fixture
+
+def reset_core_stats_engine():
+
+    @function_wrapper
+    def _reset_core_stats_engine(wrapped, instance, args, kwargs):
+        stats = core_application_stats_engine()
+        stats.reset_stats(stats.settings)
+        return wrapped(*args, **kwargs)
+
+    return _reset_core_stats_engine
 
 def core_application_stats_engine(app_name=None):
     """Return the StatsEngine object from the core application object.

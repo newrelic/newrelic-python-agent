@@ -1303,7 +1303,7 @@ def validate_transaction_event_sample_data(required_attrs,
 
     return _validate_transaction_event_sample_data
 
-def validate_error_event_on_stats_engine(num_errors=1):
+def validate_error_event_count(num_errors=1):
     """Validate that the correct number of error events are saved to StatsEngine
     after a transaction
     """

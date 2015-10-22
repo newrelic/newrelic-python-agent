@@ -789,6 +789,12 @@ class StatsEngine(object):
                 self.__transaction_errors = self.__transaction_errors[:
                         settings.agent_limits.errors_per_harvest]
 
+        if (error_collector.capture_events and error_collector.enabled
+                and settings.collect_error_events):
+            events = transaction.error_events(self.__stats_table)
+            for event in events:
+                self.__error_events.add(event)
+
         # Capture any sql traces if transaction tracer enabled.
 
         if slow_sql.enabled and settings.collect_traces:
@@ -837,12 +843,6 @@ class StatsEngine(object):
 
             event = transaction.transaction_event(self.__stats_table)
             self.__transaction_events.add(event)
-
-        if (error_collector.capture_events and error_collector.enabled
-                and settings.collect_error_events):
-            events = transaction.error_events(self.__stats_table)
-            for event in events:
-                self.__error_events.add(event)
 
     @internal_trace('Supportability/Python/StatsEngine/Calls/metric_data')
     def metric_data(self, normalizer=None):

@@ -233,6 +233,23 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, ReturnExceptionRequestHandler.RESPONSE)
 
+
+    # The following 3 functions are helper functions used to test exceptions
+    # occuring outside of a transaction.
+    def after_divide(self):
+        self.stop()
+
+    def divide_by_zero(self):
+        quotient = 0
+        try:
+            quotient = 5/0
+        finally:
+            self.io_loop.add_callback(self.after_divide)
+        return quotient
+
+    def schedule_divide_by_zero(self):
+        self.io_loop.add_callback(self.divide_by_zero)
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[], expect_transaction=False,
             app_exceptions=[select_python_version(
@@ -241,35 +258,42 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
     def test_no_transaction_exception(self):
         # We have to wrap this whole test inside a try/except block because
         # of how the test framework deals with exceptions. If an exception
-        # occurs during a test, outside of a web transaction, the test
-        # framework will reraise it causing the test to fail. In the
-        # tornado framwork testing.py contains a method run which runs these
-        # tests. It calls __rethrow, which reraises the error. In a tornado
-        # app. one does not expect the server to crash on an exception so
-        # exceptions are caught and logged but the server does not crash.
-        # See tornado's ioloop.py, handle_callback_exception.
+        # occurs during a test, the test framework will reraise it causing the
+        # test to fail. In the tornado framwork testing.py contains a method,
+        # run, which runs these tests. It calls __rethrow, which reraises the
+        # error. In a tornado app, the server does not crash on an exception,
+        # it is simply logged. See tornado's ioloop.py,
+        # handle_callback_exception.
         #
         # One other difference between the test and a Tornado app alluded to
         # above is the code path to recording the exception is different. That
-        # is in a test, an exception handler is passed to an
+        # is in this test, an exception handler is passed to an
         # ExceptionStackContext object. In a Tornado app, this error will
         # get caught in the ioloop.py, handle_callback_exception method.
         # So while here, we ARE testing that exceptions outside of transactions
         # will get recorded, we ARE NOT testing the code path that goes through
-        # the handle_callback_exception in ioloop.py.
+        # the handle_callback_exception in ioloop.py. To test the ioloop code
+        # path see test_threaded_no_transaction_exception.
         try:
-            def after_divide():
-                self.stop()
-
-            def divide_by_zero():
-                quotient = 0
-                try:
-                    quotient = 5/0
-                finally:
-                    self.io_loop.add_callback(after_divide)
-                return quotient
-
-            self.io_loop.add_callback(divide_by_zero)
+            self.schedule_divide_by_zero()
             self.wait(timeout=5.0)
         except:
             pass
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(errors=[], expect_transaction=False,
+            app_exceptions=[select_python_version(
+                    py2='exceptions:ZeroDivisionError',
+                    py3='builtins:ZeroDivisionError')])
+    def test_threaded_no_transaction_exception(self):
+        # This tests spawns a thread to schedule an exception throwing function
+        # onto the IOLoop. We do this to exercise the exception code path we
+        # see in an actual Tornado app. Scheduling the task from the main
+        # thread, which contains the IOLoop, goes through a special test
+        # exception handler, see test: test_no_transaction_exception.
+
+        import threading
+        t = threading.Thread(target=self.schedule_divide_by_zero)
+        t.start()
+        t.join(5.0)
+        self.wait(timeout=5.0)

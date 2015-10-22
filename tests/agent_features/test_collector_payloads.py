@@ -1,7 +1,8 @@
 import webtest
 
 from testing_support.fixtures import (validate_error_trace_collector_json,
-        validate_tt_collector_json, validate_transaction_event_collector_json)
+        validate_tt_collector_json, validate_transaction_event_collector_json,
+        validate_error_event_collector_json)
 
 from newrelic.agent import wsgi_application
 
@@ -25,6 +26,7 @@ normal_application = webtest.TestApp(normal_wsgi_application)
 
 
 @validate_error_trace_collector_json()
+@validate_error_event_collector_json()
 def test_error_trace_json():
     try:
         response = exceptional_application.get('/')
@@ -38,3 +40,4 @@ def test_transaction_trace_json():
 @validate_transaction_event_collector_json()
 def test_transaction_event_json():
     response = normal_application.get('/')
+

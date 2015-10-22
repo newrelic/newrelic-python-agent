@@ -916,6 +916,55 @@ def validate_error_trace_collector_json():
 
     return _validate_error_trace_collector_json
 
+def validate_error_event_collector_json(num_errors=1):
+    """Validate the format, types and number of errors of the data we
+    send to the collector for harvest.
+    """
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_error_event_collector_json(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+
+            samples = instance.error_events.samples
+            s_info = instance.error_events_sampling_info()
+            agent_run_id = 666
+
+            # emulate the payload used in data_collector.py
+
+            payload = (agent_run_id, s_info, samples)
+            collector_json = json_encode(payload)
+
+            decoded_json = json.loads(collector_json)
+
+            assert decoded_json[0] == agent_run_id
+
+            sampling_info = decoded_json[1]
+
+            reservoir_size = instance.settings.error_collector.max_event_samples_stored
+
+            assert sampling_info['reservoir_size'] == reservoir_size
+            assert sampling_info['events_seen'] == num_errors
+
+            error_events = decoded_json[2]
+
+            assert len(error_events) == num_errors
+            for event in error_events:
+
+                # event is an array containing intrinsics, user-attributes,
+                # and agent-attributes
+
+                assert len(event) == 3
+                for d in event:
+                    assert isinstance(d, dict)
+
+        return result
+
+    return _validate_error_event_collector_json
+
 def validate_transaction_event_collector_json():
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')

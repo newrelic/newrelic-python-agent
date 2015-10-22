@@ -963,6 +963,17 @@ class ApplicationSession(object):
                 'analytic_event_data', self.license_key, self.agent_run_id,
                 payload)
 
+    def send_error_events(self, sampling_info, error_data):
+        """Called to submit sample set for analytics.
+
+        """
+
+        payload = (self.agent_run_id, sampling_info, error_data)
+
+        return self.send_request(self.requests_session, self.collector_url,
+                'error_event_data', self.license_key, self.agent_run_id,
+                payload)
+
     @classmethod
     def create_session(cls, license_key, app_name, linked_applications,
             environment, settings):

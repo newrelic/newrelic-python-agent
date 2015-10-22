@@ -1558,6 +1558,37 @@ def wrap_record_transaction_fixture(request):
     wrap_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction', _nr_wrapper_record_transaction)
 
+# _RECORDED_APP_EXCEPTIONS is used to store exceptions occuring outside of
+# a transaction. Otherwise, the strategy for recording them is the same as
+# _RECORDED_TRANSACTIONS.
+_RECORDED_APP_EXCEPTIONS = []
+
+@pytest.fixture(scope='function')
+def clear_record_app_exception_list():
+    global _RECORDED_APP_EXCEPTIONS
+    _RECORDED_APP_EXCEPTIONS = []
+
+@pytest.fixture(scope='session')
+def wrap_record_app_exception_fixture(request):
+
+    def _nr_wrapper_record_exception(wrapped, instance, args, kwargs):
+        def _bind_params(exc, value, *args, **kwargs):
+            return value
+
+        value = _bind_params(*args, **kwargs)
+        fullname = "%s:%s" % (
+                value.__class__.__module__, value.__class__.__name__)
+
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+
+        _RECORDED_APP_EXCEPTIONS.append(fullname)
+
+    wrap_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_exception', _nr_wrapper_record_exception)
+
 def tornado_validate_count_transaction_metrics(name, group='Function',
         background_task=False, scoped_metrics=[], rollup_metrics=[],
         custom_metrics=[]):
@@ -1682,7 +1713,8 @@ def tornado_validate_time_transaction_metrics(name, group='Function',
 
     return _validate
 
-def tornado_validate_errors(errors=[]):
+def tornado_validate_errors(errors=[], app_exceptions=[],
+        expect_transaction=True):
     """Decorator to validate errors.
 
     Arguments:
@@ -1693,10 +1725,7 @@ def tornado_validate_errors(errors=[]):
 
     """
 
-    @function_wrapper
-    def _validate_transaction_errors(wrapped, instance, args, kwargs):
-        wrapped(*args, **kwargs)
-
+    def _validate_transaction_errors():
         # We only validate the first recorded transaction
         metrics, errs = _RECORDED_TRANSACTIONS[0]
 
@@ -1715,7 +1744,23 @@ def tornado_validate_errors(errors=[]):
         assert expected == captured, 'expected=%r, captured=%r, errors=%r' % (
                 expected, captured, errors)
 
-    return _validate_transaction_errors
+    def _validate_app_exceptions():
+        assert len(app_exceptions) == len(_RECORDED_APP_EXCEPTIONS)
+        sorted_expected = sorted(app_exceptions)
+        sorted_errors = sorted(_RECORDED_APP_EXCEPTIONS)
+        for expect, err in zip(sorted_expected, sorted_errors):
+            assert expect == err
+
+    @function_wrapper
+    def _validate_errors(wrapped, instance, args, kwargs):
+        wrapped(*args, **kwargs)
+        if expect_transaction:
+            _validate_transaction_errors()
+        else:
+            assert 0 == len(_RECORDED_TRANSACTIONS)
+        _validate_app_exceptions()
+
+    return _validate_errors
 
 def tornado_validate_transaction_cache_empty():
     """Validates the transaction cache is empty after all requests are serviced.

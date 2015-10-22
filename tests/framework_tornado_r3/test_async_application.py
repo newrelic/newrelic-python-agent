@@ -232,3 +232,44 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         response = self.fetch_response('/return-exception')
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, ReturnExceptionRequestHandler.RESPONSE)
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(errors=[], expect_transaction=False,
+            app_exceptions=[select_python_version(
+                    py2='exceptions:ZeroDivisionError',
+                    py3='builtins:ZeroDivisionError')])
+    def test_no_transaction_exception(self):
+        # We have to wrap this whole test inside a try/except block because
+        # of how the test framework deals with exceptions. If an exception
+        # occurs during a test, outside of a web transaction, the test
+        # framework will reraise it causing the test to fail. In the
+        # tornado framwork testing.py contains a method run which runs these
+        # tests. It calls __rethrow, which reraises the error. In a tornado
+        # app. one does not expect the server to crash on an exception so
+        # exceptions are caught and logged but the server does not crash.
+        # See tornado's ioloop.py, handle_callback_exception.
+        #
+        # One other difference between the test and a Tornado app alluded to
+        # above is the code path to recording the exception is different. That
+        # is in a test, an exception handler is passed to an
+        # ExceptionStackContext object. In a Tornado app, this error will
+        # get caught in the ioloop.py, handle_callback_exception method.
+        # So while here, we ARE testing that exceptions outside of transactions
+        # will get recorded, we ARE NOT testing the code path that goes through
+        # the handle_callback_exception in ioloop.py.
+        try:
+            def after_divide():
+                self.stop()
+
+            def divide_by_zero():
+                quotient = 0
+                try:
+                    quotient = 5/0
+                finally:
+                    self.io_loop.add_callback(after_divide)
+                return quotient
+
+            self.io_loop.add_callback(divide_by_zero)
+            self.wait(timeout=5.0)
+        except:
+            pass

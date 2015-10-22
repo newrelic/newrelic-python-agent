@@ -1816,8 +1816,8 @@ def set_default_encoding(encoding):
         # This technique of reloading the sys module is necessary because the
         # method is removed during initialization of Python. Doing this is
         # highly frowned upon, but it is the only way to test how our agent
-        # behaves when different sys encodings are used. For more information
-        # on this: http://bit.ly/1xBNxRc
+        # behaves when different sys encodings are used. For more information,
+        # see this Stack Overflow post: http://bit.ly/1xBNxRc
 
         six.moves.reload_module(sys)
         original_encoding = sys.getdefaultencoding()

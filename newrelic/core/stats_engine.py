@@ -1334,13 +1334,8 @@ class StatsEngine(object):
         return stats
 
     def merge(self, snapshot):
-        """Merges data from a snapshot. This would only be
-        used when merging data from a single transaction into main
-        stats engine. It is assumed the snapshot has newer data and
-        that any existing data takes precedence where what should be
-        collected is not otherwise based on time, or when reservoir sampling
-        is used.
-
+        """Merges data from a single transaction. Snapshot is an instance of
+        StatsEngine that contains stats for the single transaction.
         """
 
         if not self.__settings:
@@ -1355,13 +1350,10 @@ class StatsEngine(object):
         self._merge_traces(snapshot)
 
     def rollback(self, snapshot):
-        """Rollback data from an older copy of StatsEngine into this one.
-        Existing data takes precedence, except where reservoir sampling is used.
+        """Performs a "rollback" merge after a failed harvest. Snapshot is a
+        copy of the main StatsEngine data that we attempted to harvest, but
+        failed. Not all types of data get merged during a rollback.
         """
-
-        # This is for the case of a rollback merge because of a network issue,
-        # and data (snapshot) from a previous harvest must be incorporated into
-        # the current main StatsEngine (self).
 
         if not self.__settings:
             return
@@ -1370,28 +1362,20 @@ class StatsEngine(object):
                 'subsequent harvest period. Metric data and transaction events'
                 'will be preserved and rolled into next harvest')
 
-        # Only merge back sampled data at present.
-
         self.merge_metric_stats(snapshot)
         self._merge_transaction_events(snapshot, rollback=True)
         self._merge_synthetics_events(snapshot, rollback=True)
         self._merge_error_events(snapshot)
 
     def merge_metric_stats(self, snapshot):
-        """Merges metric data from a snapshot. This is used when merging
-        data from a single transaction into main stats engine. It would
-        also be done if the sending of the metric data from the harvest
-        failed and wanted to keep accumulating it for subsequent
-        harvest.
+        """Merges metric data from a snapshot. This is used both when merging
+        data from a single transaction into the main stats engine, and for
+        performing a rollback merge. In either case, the merge is done the exact
+        same way.
         """
 
         if not self.__settings:
             return
-
-        # Merge back data into any new data which has been
-        # accumulated. Because of the nature/order of how this is called
-        # from the harvest loop in application.py, a rollback looks the same
-        # as a merge-forward
 
         for key, other in six.iteritems(snapshot.__stats_table):
             stats = self.__stats_table.get(key)
@@ -1447,8 +1431,7 @@ class StatsEngine(object):
 
         # Merge in error events. Since we are using reservoir sampling that
         # gives equal probability to keeping each event, merge is the same as
-        # rollback. There may be multiple error events per transaction. Rollback
-        # is the same as normal merge due to reservoir sampling.
+        # rollback. There may be multiple error events per transaction.
 
         for err in snapshot.__error_events.samples:
             self.__error_events.add(err)

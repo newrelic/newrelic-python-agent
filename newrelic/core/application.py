@@ -1369,7 +1369,7 @@ class Application(object):
                         _logger.debug('Sending analytics event data '
                                 'for harvest of %r.', self._app_name)
 
-                        self._active_session.analytic_event_data(
+                        self._active_session.send_transaction_events(
                                 all_analytic_events)
 
                     stats.reset_transaction_events()

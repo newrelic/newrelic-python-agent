@@ -952,7 +952,7 @@ class ApplicationSession(object):
                 'get_xray_metadata', self.license_key, self.agent_run_id,
                 payload)
 
-    def analytic_event_data(self, sample_set):
+    def send_transaction_events(self, sample_set):
         """Called to submit sample set for analytics.
 
         """

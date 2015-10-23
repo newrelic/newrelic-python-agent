@@ -88,3 +88,18 @@ def fully_featured_app(environ, start_response):
     start_response(status, response_headers)
 
     return [output]
+
+@wsgi_application()
+def simple_exceptional_app(environ, start_response):
+
+    start_response('500 :(',[])
+
+    raise ValueError('Transaction had bad value')
+
+@wsgi_application()
+def simple_app(environ, start_response):
+    status = '200 OK'
+
+    start_response(status, response_headers=[])
+
+    return []

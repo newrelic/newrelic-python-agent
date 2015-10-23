@@ -952,6 +952,8 @@ class ApplicationSession(object):
                 'get_xray_metadata', self.license_key, self.agent_run_id,
                 payload)
 
+    @internal_trace('Supportability/Python/Collector/Calls/'
+            'send_transaction_events')
     def send_transaction_events(self, sample_set):
         """Called to submit sample set for analytics.
 
@@ -963,6 +965,7 @@ class ApplicationSession(object):
                 'analytic_event_data', self.license_key, self.agent_run_id,
                 payload)
 
+    @internal_trace('Supportability/Python/Collector/Calls/send_error_events')
     def send_error_events(self, sampling_info, error_data):
         """Called to submit sample set for analytics.
 

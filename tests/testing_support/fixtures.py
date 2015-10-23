@@ -1293,6 +1293,12 @@ def validate_transaction_event_sample_data(required_attrs,
         assert intrinsics['type'] == 'Transaction'
         assert intrinsics['name'] == required_attrs['name']
 
+        # check that error event intrinsics haven't bled in
+
+        assert 'error.class' not in intrinsics
+        assert 'error.message' not in intrinsics
+        assert 'transactionName' not in intrinsics
+
         _validate_event_attributes(intrinsics,
                                    user_attributes,
                                    required_attrs,
@@ -1361,6 +1367,10 @@ def validate_error_event_sample_data(required_attrs={}, required_user_attrs=True
                 assert intrinsics['error.message'].startswith(
                         required_attrs['error.message'])
                 assert intrinsics['nr.transactionGuid'] is not None
+
+                # check that transaction event intrinsics haven't bled in
+
+                assert 'name' not in intrinsics
 
                 _validate_event_attributes(intrinsics,
                                            user_attributes,

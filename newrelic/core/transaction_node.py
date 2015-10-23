@@ -467,7 +467,7 @@ class TransactionNode(_TransactionNode):
             # We don't want to execute this function more than once, since
             # it should always yield the same data per transaction
 
-            return cache
+            return self._event_intrinsics_cache.copy()
 
         intrinsics = {}
 
@@ -518,7 +518,7 @@ class TransactionNode(_TransactionNode):
         _add_call_time('Datastore/all', 'databaseDuration')
         _add_call_count('Datastore/all', 'databaseCallCount')
 
-        self._event_intrinsics_cache = intrinsics
+        self._event_intrinsics_cache = intrinsics.copy()
 
         return intrinsics
 

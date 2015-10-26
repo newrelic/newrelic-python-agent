@@ -944,7 +944,8 @@ def validate_error_event_collector_json(num_errors=1):
 
             sampling_info = decoded_json[1]
 
-            reservoir_size = instance.settings.error_collector.max_event_samples_stored
+            ec_settings = instance.settings.error_collector
+            reservoir_size = ec_settings.max_event_samples_stored
 
             assert sampling_info['reservoir_size'] == reservoir_size
             assert sampling_info['events_seen'] == num_errors

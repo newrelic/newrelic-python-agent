@@ -323,9 +323,8 @@ class StatsEngine(object):
         return self.__error_events
 
     def error_events_sampling_info(self):
-        reservoir_size = self.__settings.error_collector.max_event_samples_stored
         sampling_info = {
-                'reservoir_size' : reservoir_size,
+                'reservoir_size' : self.error_events.capacity,
                 'events_seen' : self.error_events.count
         }
         return sampling_info

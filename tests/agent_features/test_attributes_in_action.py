@@ -884,6 +884,38 @@ _expected_absent_attributes = {
 def test_browser_attributes_disabled():
     response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
+# =========================  exclude error parameter
+
+_override_settings = {
+        'error_collector.attributes.exclude' : ERROR_PARAMS
+}
+
+_expected_attributes = {
+        'agent' : TRACE_ERROR_AGENT_KEYS,
+        'user' : USER_ATTRS,
+        'intrinsic' : ['trip_id']
+}
+
+_expected_attributes_event = {
+        'agent' : TRACE_ERROR_AGENT_KEYS,
+        'user' : USER_ATTRS,
+        'intrinsic' : ERROR_EVENT_INTRINSICS
+}
+
+_expected_absent_attributes = {
+        'agent' : REQ_PARAMS,
+        'user' : ERROR_PARAMS,
+}
+
+@validate_error_event_attributes(_expected_attributes_event,
+        _expected_absent_attributes)
+@validate_transaction_error_trace_attributes(_expected_attributes,
+        _expected_absent_attributes)
+@override_application_settings(_override_settings)
+def test_error_in_transaction_error_param_excluded():
+    response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
+
+
 # =========================  outside transaction (error traces and events only)
 
 INTRSICS_NO_TRANS = ('type', 'error.class', 'error.message', 'timestamp',

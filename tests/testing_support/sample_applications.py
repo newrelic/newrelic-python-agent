@@ -28,6 +28,10 @@ _custom_parameters = {
         'dict' : {},
 }
 
+_err_param = {
+        'err-param' : 'value'
+}
+
 def user_attributes_added():
     """Expected values when the custom parameters in this file are added as user
     attributes
@@ -38,13 +42,17 @@ def user_attributes_added():
     user_attributes['dict'] = '{}'
     return user_attributes
 
+def error_user_params_added():
+    return _err_param.copy()
+
 @wsgi_application()
 def fully_featured_app(environ, start_response):
     status = '200 OK'
 
     path = environ.get('PATH_INFO')
+    use_user_attrs = environ.get('record_attributes', 'TRUE') == 'TRUE'
 
-    if environ.get('record_attributes', 'TRUE') == 'TRUE':
+    if use_user_attrs:
 
         # The add_user_attribute() call is now just an alias for
         # calling add_custom_parameter() but for backward compatibility
@@ -76,7 +84,10 @@ def fully_featured_app(environ, start_response):
 
                 raise ValueError(environ['err_message'] + str(i))
             except ValueError:
-                record_exception(*sys.exc_info())
+                if use_user_attrs:
+                    record_exception(params=_err_param)
+                else:
+                    record_exception()
 
     text = '<html><head>%s</head><body><p>RESPONSE</p>%s</body></html>'
 

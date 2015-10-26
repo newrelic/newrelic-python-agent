@@ -426,15 +426,23 @@ class TransactionNode(_TransactionNode):
 
             # Add user and agent attributes to event
 
+            agent_attributes = {}
+            for attr in self.agent_attributes:
+                if attr.destinations & DST_ERROR_COLLECTOR:
+                    agent_attributes[attr.name] = attr.value
+
             user_attributes = {}
             for attr in self.user_attributes:
                 if attr.destinations & DST_ERROR_COLLECTOR:
                     user_attributes[attr.name] = attr.value
 
-            agent_attributes = {}
-            for attr in self.agent_attributes:
+            # add error specific custom params to this error's userAttributes
+
+            err_attrs = create_user_attributes(error.custom_params,
+                    self.settings.attribute_filter)
+            for attr in err_attrs:
                 if attr.destinations & DST_ERROR_COLLECTOR:
-                    agent_attributes[attr.name] = attr.value
+                    user_attributes[attr.name] = attr.value
 
             error_event = [intrinsics, user_attributes, agent_attributes]
             errors.append(error_event)

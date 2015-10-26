@@ -27,7 +27,8 @@ from newrelic.packages import requests
 from newrelic.core.agent import agent_instance
 from newrelic.core.attribute_filter import AttributeFilter
 
-from testing_support.sample_applications import user_attributes_added
+from testing_support.sample_applications import (user_attributes_added,
+        error_user_params_added)
 
 _logger = logging.getLogger('newrelic.tests')
 
@@ -648,7 +649,8 @@ def check_event_attributes(event_data, required_params, forgone_params):
         for param in forgone_params['user']:
             assert param not in user_attributes
 
-def validate_non_transaction_error_event(required_intrinsics={}, num_errors=1):
+def validate_non_transaction_error_event(required_intrinsics={}, num_errors=1,
+            required_params={}):
     """Validate error event data for a single error occurring outside of a
     transaction.
     """
@@ -681,6 +683,13 @@ def validate_non_transaction_error_event(required_intrinsics={}, num_errors=1):
                         required_intrinsics['error.message'])
                 now = time.time()
                 assert intrinsics['timestamp'] <= now
+
+                user_params = event[1]
+                for name, value in required_params:
+                    assert name in user_params, ('name=%r, params=%r' % (name,
+                            user_params))
+                    assert user_params[name] == value, ('name=%r, value=%r, '
+                            'params=%r' % (name, value, user_params))
 
         return result
 
@@ -1464,6 +1473,11 @@ def validate_error_event_sample_data(required_attrs={}, required_user_attrs=True
                                            user_attributes,
                                            required_attrs,
                                            required_user_attrs)
+                if required_user_attrs:
+                    error_user_params = error_user_params_added()
+                    for param, value in error_user_params.items():
+                        assert user_attributes[param] == value
+
         return result
 
     return _validate_error_event_sample_data

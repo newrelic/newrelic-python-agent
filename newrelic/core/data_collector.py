@@ -714,7 +714,7 @@ def apply_high_security_mode_fixups(local_settings, server_settings):
     # Note that security settings we may want to remove can appear at
     # both the top level of the server settings, but also nested within
     # the 'agent_config' sub dictionary. Those settings at the top level
-    # represent how the settings were previously overriden for high
+    # represent how the settings were previously overridden for high
     # security mode. Those in 'agent_config' correspond to server side
     # configuration as set by the user.
 
@@ -738,7 +738,7 @@ def apply_high_security_mode_fixups(local_settings, server_settings):
             del server_settings[setting]
 
     # When server side configuration is disabled, there will be no
-    # agent_config value in server_settings, so no more fixups
+    # agent_config value in server_settings, so no more fix-ups
     # are required.
 
     if 'agent_config' not in server_settings:
@@ -952,7 +952,9 @@ class ApplicationSession(object):
                 'get_xray_metadata', self.license_key, self.agent_run_id,
                 payload)
 
-    def analytic_event_data(self, sample_set):
+    @internal_trace('Supportability/Python/Collector/Calls/'
+            'send_transaction_events')
+    def send_transaction_events(self, sample_set):
         """Called to submit sample set for analytics.
 
         """
@@ -963,6 +965,18 @@ class ApplicationSession(object):
                 'analytic_event_data', self.license_key, self.agent_run_id,
                 payload)
 
+    @internal_trace('Supportability/Python/Collector/Calls/send_error_events')
+    def send_error_events(self, sampling_info, error_data):
+        """Called to submit sample set for analytics.
+
+        """
+
+        payload = (self.agent_run_id, sampling_info, error_data)
+
+        return self.send_request(self.requests_session, self.collector_url,
+                'error_event_data', self.license_key, self.agent_run_id,
+                payload)
+
     @classmethod
     def create_session(cls, license_key, app_name, linked_applications,
             environment, settings):
@@ -970,13 +984,13 @@ class ApplicationSession(object):
         """Registers the agent for the specified application with the data
         collector and retrieves the server side configuration. Returns a
         session object if successful through which subsequent calls to the
-        data collector are made. If unsucessful then None is returned.
+        data collector are made. If unsuccessful then None is returned.
 
         """
 
         start = time.time()
 
-        # If no license key provided in the call, fallback to using that
+        # If no license key provided in the call, fall back to using that
         # from the agent configuration file or environment variables.
         # Flag an error if the result still seems invalid.
 
@@ -1261,7 +1275,7 @@ def create_session(license_key, app_name, linked_applications,
         session = ApplicationSession.create_session(license_key, app_name,
                 linked_applications, environment, settings)
 
-    # When session creation is unsucessful None is returned. We need to catch
+    # When session creation is unsuccessful None is returned. We need to catch
     # that and return None. Session creation can fail if data-collector is down
     # or if the configuration is wrong, such as having the capture_params true
     # in high security mode.

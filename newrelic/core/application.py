@@ -1369,11 +1369,25 @@ class Application(object):
                         _logger.debug('Sending analytics event data '
                                 'for harvest of %r.', self._app_name)
 
-                        self._active_session.analytic_event_data(
+                        self._active_session.send_transaction_events(
                                 all_analytic_events)
 
                     stats.reset_transaction_events()
                     stats.reset_synthetics_events()
+
+                    if (configuration.collect_error_events and
+                            configuration.error_collector.capture_events and
+                            configuration.error_collector.enabled and
+                            stats.error_events.count > 0):
+                        _logger.debug('Sending error event data '
+                                'for harvest of %r.', self._app_name)
+
+                        samples = stats.error_events.samples
+                        sampling_info = stats.error_events_sampling_info()
+                        self._active_session.send_error_events(sampling_info,
+                                samples)
+
+                    stats.reset_error_events()
 
                     # Successful, so we update the stats engine with the
                     # new metric IDs and reset the reporting period

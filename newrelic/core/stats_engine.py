@@ -322,6 +322,13 @@ class StatsEngine(object):
     def error_events(self):
         return self.__error_events
 
+    def error_events_sampling_info(self):
+        sampling_info = {
+                'reservoir_size' : self.error_events.capacity,
+                'events_seen' : self.error_events.count
+        }
+        return sampling_info
+
     def update_metric_ids(self, metric_ids):
         """Updates the dictionary containing the mappings from metric
         (name, scope) to the integer identifier supplied back from the

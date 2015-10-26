@@ -20,7 +20,7 @@ from newrelic.core.attribute_filter import (DST_ERROR_COLLECTOR,
         DST_TRANSACTION_TRACER, DST_TRANSACTION_EVENTS)
 
 _TransactionNode = namedtuple('_TransactionNode',
-        ['settings', 'path', 'type', 'group', 'name', 'request_uri',
+        ['settings', 'path', 'type', 'group', 'name', 'port', 'request_uri',
         'response_code', 'queue_start','start_time', 'end_time', 'duration',
         'exclusive', 'children', 'errors', 'slow_sql', 'apdex_t',
         'suppress_apdex', 'custom_metrics', 'guid', 'cpu_time',

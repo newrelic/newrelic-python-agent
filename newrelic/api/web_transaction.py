@@ -131,6 +131,13 @@ class WebTransaction(Transaction):
         if settings.high_security:
             self.capture_params = False
 
+        # WSGI spec says SERVER_PORT "can never be empty string",
+        # but I'm going to set a default value anyway...
+
+        port = environ.get('SERVER_PORT', None)
+        if port:
+            self._port = int(port)
+
         # Extract from the WSGI environ dictionary
         # details of the URL path. This will be set as
         # default path for the web transaction. This can

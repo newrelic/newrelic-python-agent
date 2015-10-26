@@ -474,6 +474,9 @@ class TransactionNode(_TransactionNode):
         intrinsics['timestamp'] = self.start_time
         intrinsics['duration'] = self.duration
 
+        if self.port:
+            intrinsics['port'] = self.port
+
         # Add the Synthetics attributes to the intrinsics dict.
 
         if self.synthetics_resource_id:

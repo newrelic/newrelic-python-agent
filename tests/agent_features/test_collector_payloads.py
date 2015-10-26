@@ -12,8 +12,14 @@ normal_application = webtest.TestApp(simple_app)
 
 
 @validate_error_trace_collector_json()
-@validate_error_event_collector_json()
 def test_error_trace_json():
+    try:
+        response = exceptional_application.get('/')
+    except ValueError:
+        pass
+
+@validate_error_event_collector_json()
+def test_error_event_json():
     try:
         response = exceptional_application.get('/')
     except ValueError:

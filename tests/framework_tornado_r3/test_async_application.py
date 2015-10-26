@@ -4,6 +4,7 @@ import tornado.testing
 
 import select
 import time
+import threading
 
 from newrelic.agent import wrap_function_wrapper
 from newrelic.packages import six
@@ -255,30 +256,20 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
             app_exceptions=[select_python_version(
                     py2='exceptions:ZeroDivisionError',
                     py3='builtins:ZeroDivisionError')])
-    def test_no_transaction_exception(self):
-        # We have to wrap this whole test inside a try/except block because
-        # of how the test framework deals with exceptions. If an exception
-        # occurs during a test, the test framework will reraise it causing the
-        # test to fail. In the tornado framwork testing.py contains a method,
-        # run, which runs these tests. It calls __rethrow, which reraises the
-        # error. In a tornado app, the server does not crash on an exception,
-        # it is simply logged. See tornado's ioloop.py,
-        # handle_callback_exception.
-        #
-        # One other difference between the test and a Tornado app alluded to
-        # above is the code path to recording the exception is different. That
-        # is in this test, an exception handler is passed to an
-        # ExceptionStackContext object. In a Tornado app, this error will
-        # get caught in the ioloop.py, handle_callback_exception method.
-        # So while here, we ARE testing that exceptions outside of transactions
-        # will get recorded, we ARE NOT testing the code path that goes through
-        # the handle_callback_exception in ioloop.py. To test the ioloop code
-        # path see test_threaded_no_transaction_exception.
-        try:
+    def test_stack_context_no_transaction_exception(self):
+        # This tests that we record exceptions when they are not in a
+        # transaction, but they do occur within a stack context. That is they
+        # are scheduled asynchronously in a way where one wants to keep track of
+        # the stack context, such as via a context manager. Just as a note,
+        # it is possible for code written by an application developer to occur
+        # within an ExceptionStackContext implicitly, request handlers do this
+        # for example.
+
+        # The lambda here is an exception handler which swallows the exception.
+        with tornado.stack_context.ExceptionStackContext(
+                lambda type, value, traceback: True):
             self.schedule_divide_by_zero()
-            self.wait(timeout=5.0)
-        except:
-            pass
+        self.wait(timeout=5.0)
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[], expect_transaction=False,
@@ -286,13 +277,12 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
                     py2='exceptions:ZeroDivisionError',
                     py3='builtins:ZeroDivisionError')])
     def test_threaded_no_transaction_exception(self):
-        # This tests spawns a thread to schedule an exception throwing function
-        # onto the IOLoop. We do this to exercise the exception code path we
-        # see in an actual Tornado app. Scheduling the task from the main
-        # thread, which contains the IOLoop, goes through a special test
-        # exception handler, see test: test_no_transaction_exception.
-
-        import threading
+        # This tests that we record exceptions when an error occurs outside a
+        # transaction and outside a stack context. This can be done when a job
+        # is scheduled from another thread or is initiated outside of an
+        # ExceptionStackContext context manager. By default, tests are run
+        # inside an ExceptionStackContext so we spawn a new thread for this
+        # test.
         t = threading.Thread(target=self.schedule_divide_by_zero)
         t.start()
         t.join(5.0)

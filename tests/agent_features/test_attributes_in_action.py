@@ -1,7 +1,7 @@
 import webtest
 
 from newrelic.agent import (application, callable_name,
-        wsgi_application, add_custom_parameter)
+        wsgi_application, add_custom_parameter, record_exception)
 
 from testing_support.fixtures import (validate_transaction_trace_attributes,
         validate_transaction_error_trace_attributes,
@@ -38,17 +38,6 @@ ABSENT_BROWSER_KEYS = ['request.method', 'request.headers.contentType',
 ERROR_EVENT_INTRINSICS = ('type', 'error.class', 'error.message', 'timestamp',
         'transactionName', 'duration')
 
-
-@wsgi_application()
-def exceptional_wsgi_application(environ, start_response):
-
-    add_custom_parameter(USER_ATTRS[0], 'test_value')
-    add_custom_parameter(USER_ATTRS[1], 'test_value')
-
-    start_response('500 :(',[])
-
-    raise ValueError('Transaction had bad value')
-
 @wsgi_application()
 def normal_wsgi_application(environ, start_response):
     status = '200 OK'
@@ -63,16 +52,14 @@ def normal_wsgi_application(environ, start_response):
                         ('Content-Length', str(len(output)))]
     start_response(status, response_headers)
 
+    try:
+        raise ValueError('Transaction had bad value')
+    except ValueError:
+        record_exception()
+
     return [output]
 
-exceptional_application = webtest.TestApp(exceptional_wsgi_application)
 normal_application = webtest.TestApp(normal_wsgi_application)
-
-def run_failing_request():
-    try:
-        response = exceptional_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
-    except ValueError:
-        pass
 
 # ===== Tests for checking the presence and format of agent attributes ========
 # =============================================================================
@@ -102,7 +89,7 @@ _expected_absent_attributes = {
         _expected_absent_attributes)
 @override_application_settings({})
 def test_error_in_transaction_default_settings():
-    run_failing_request()
+    response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
 @validate_transaction_trace_attributes(_expected_attributes,
         _expected_absent_attributes)
@@ -177,7 +164,7 @@ _expected_absent_attributes = {
         _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_error_in_transaction_exclude_request_params():
-    run_failing_request()
+    response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
 _override_settings = {
         'transaction_tracer.attributes.exclude': ['request.parameters.*'],
@@ -209,7 +196,7 @@ _expected_absent_attributes = {
         _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_error_in_transaction_capture_params_exclude_request_params():
-    run_failing_request()
+    response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
 _override_settings = {
         'capture_params': True,
@@ -244,7 +231,7 @@ _expected_attributes_event = {
 @validate_transaction_error_trace_attributes(_expected_attributes)
 @override_application_settings(_override_settings)
 def test_error_in_transaction_include_request_params():
-    run_failing_request()
+    response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
 _override_settings = {
         'transaction_tracer.attributes.include': ['request.parameters.*'],
@@ -328,7 +315,7 @@ _expected_absent_attributes = {
         _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_error_in_transaction_include_exclude():
-    run_failing_request()
+    response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
 _override_settings = {
         'transaction_tracer.attributes.include': ['request.parameters.*'],
@@ -414,7 +401,7 @@ _expected_absent_attributes = {
         _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_error_in_transaction_exclude_user_attribute():
-    run_failing_request()
+    response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
 _override_settings = {
         'transaction_tracer.attributes.exclude': ['puppies'],
@@ -500,7 +487,7 @@ _expected_absent_attributes = {
         _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_error_in_transaction_exclude_agent_attribute():
-    run_failing_request()
+    response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
 @validate_transaction_trace_attributes(_expected_attributes,
         _expected_absent_attributes)
@@ -551,7 +538,7 @@ _expected_attributes_event = {
 @validate_transaction_error_trace_attributes(_expected_attributes)
 @override_application_settings(_override_settings)
 def test_error_in_transaction_deprecated_capture_params_true():
-    run_failing_request()
+    response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
 @validate_transaction_trace_attributes(_expected_attributes)
 @override_application_settings(_override_settings)
@@ -627,7 +614,7 @@ _expected_absent_attributes = {
         _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_error_in_transaction_deprecated_capture_params_false():
-    run_failing_request()
+    response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
 
 @validate_transaction_trace_attributes(_expected_attributes,
@@ -705,7 +692,7 @@ _expected_absent_attributes = {
         _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_error_in_transaction_exclude_intrinsic():
-    run_failing_request()
+    response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
 _override_settings = {
         'transaction_tracer.attributes.exclude': ['trip_id'],
@@ -789,7 +776,7 @@ _expected_absent_attributes = {
         _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_error_in_transaction_attributes_disabled():
-    run_failing_request()
+    response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
 _override_settings = {
         'transaction_tracer.attributes.enabled' : False

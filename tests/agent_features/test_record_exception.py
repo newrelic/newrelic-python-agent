@@ -33,6 +33,18 @@ def test_record_exception_no_exc_info():
     except RuntimeError:
         record_exception()
 
+_test_record_exception_custom_params = [
+        (_runtime_error_name, 'one')]
+
+@validate_transaction_errors(errors=_test_record_exception_custom_params,
+        required_params=[('key', 'value')])
+@background_task()
+def test_record_exception_custom_params():
+    try:
+        raise RuntimeError('one')
+    except RuntimeError:
+        record_exception(*sys.exc_info(), params={'key': 'value'})
+
 _test_record_exception_multiple_different_type = [
         (_runtime_error_name, 'one'),
         (_type_error_name, 'two')]

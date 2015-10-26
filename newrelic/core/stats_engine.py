@@ -512,9 +512,9 @@ class StatsEngine(object):
             custom_params = {}
 
             for k, v in params.items():
-                name, value = process_user_attribute(k, v)
+                name, val = process_user_attribute(k, v)
                 if name:
-                    custom_params[name] = value
+                    custom_params[name] = val
 
             attributes = create_user_attributes(custom_params,
                     settings.attribute_filter)

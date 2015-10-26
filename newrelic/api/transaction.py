@@ -1010,9 +1010,9 @@ class Transaction(object):
                         'High Security Mode.')
         else:
             for k, v in params.items():
-                name, value = process_user_attribute(k, v)
+                name, val = process_user_attribute(k, v)
                 if name:
-                    custom_params[name] = value
+                    custom_params[name] = val
 
         # Check to see if we need to strip the message before recording it.
 

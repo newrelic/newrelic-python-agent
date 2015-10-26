@@ -2,7 +2,8 @@ import sys
 
 from testing_support.fixtures import (validate_transaction_errors,
         override_application_settings, core_application_stats_engine,
-        core_application_stats_engine_error, error_is_saved)
+        core_application_stats_engine_error, error_is_saved,
+        reset_core_stats_engine, validate_application_errors)
 
 from newrelic.agent import (background_task, record_exception,
         application_settings, application, callable_name)
@@ -10,6 +11,8 @@ from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 
 _runtime_error_name = callable_name(RuntimeError)
 _type_error_name = callable_name(TypeError)
+
+# =============== Test errors during a transaction ===============
 
 _test_record_exception_sys_exc_info = [
         (_runtime_error_name, 'one')]
@@ -78,6 +81,70 @@ def test_record_exception_multiple_same_type():
         raise RuntimeError('two')
     except RuntimeError:
         record_exception()
+
+# =============== Test errors outside a transaction ===============
+
+_test_application_exception = [
+        (_runtime_error_name, 'one')]
+
+@reset_core_stats_engine()
+@validate_application_errors(errors=_test_application_exception)
+def test_application_exception():
+    try:
+        raise RuntimeError('one')
+    except RuntimeError:
+        application_instance = application()
+        record_exception(application=application_instance)
+
+_test_application_exception_sys_exc_info = [
+        (_runtime_error_name, 'one')]
+
+@reset_core_stats_engine()
+@validate_application_errors(errors=_test_application_exception_sys_exc_info)
+def test_application_exception_sys_exec_info():
+    try:
+        raise RuntimeError('one')
+    except RuntimeError:
+        application_instance = application()
+        record_exception(*sys.exc_info(), application=application_instance)
+
+_test_application_exception_custom_params = [
+        (_runtime_error_name, 'one')]
+
+@reset_core_stats_engine()
+@validate_application_errors(errors=_test_application_exception_custom_params,
+        required_params=[('key', 'value')])
+def test_application_exception_custom_params():
+    try:
+        raise RuntimeError('one')
+    except RuntimeError:
+        application_instance = application()
+        record_exception(params={'key': 'value'},
+                application=application_instance)
+
+_test_application_exception_multiple = [
+        (_runtime_error_name, 'one'),
+        (_runtime_error_name, 'one')]
+
+@reset_core_stats_engine()
+@validate_application_errors(errors=_test_application_exception_multiple)
+@background_task()
+def test_application_exception_multiple():
+    """Exceptions submitted straight to the stats engine doesn't check for
+    duplicates
+    """
+    application_instance = application()
+    try:
+        raise RuntimeError('one')
+    except RuntimeError:
+        record_exception(application=application_instance)
+
+    try:
+        raise RuntimeError('one')
+    except RuntimeError:
+        record_exception(application=application_instance)
+
+# =============== Test exception message stripping/whitelisting ===============
 
 _test_record_exception_strip_message_disabled = [
         (_runtime_error_name, 'one')]

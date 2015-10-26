@@ -312,26 +312,26 @@ class TestException(Exception): pass
 _test_exception_name = '%s:%s' % (__name__, TestException.__name__)
 
 @override_application_settings(_test_transaction_settings_hsm_disabled)
-@validate_transaction_errors(errors=[_test_exception_name],
+@validate_transaction_errors(errors=[(_test_exception_name, 'test message')],
         required_params=[('key-2', 'value-2')])
 @validate_custom_parameters(required_params=[('key-1', 'value-1')])
 @background_task()
 def test_other_transaction_hsm_error_parameters_disabled():
     add_custom_parameter('key-1', 'value-1')
     try:
-        raise TestException()
+        raise TestException('test message')
     except Exception:
         record_exception(params={'key-2': 'value-2'})
 
 @override_application_settings(_test_transaction_settings_hsm_enabled)
-@validate_transaction_errors(errors=[_test_exception_name],
+@validate_transaction_errors(errors=[(_test_exception_name, 'test message')],
     forgone_params=[('key-2', 'value-2')])
 @validate_custom_parameters(forgone_params=[('key-1', 'value-1')])
 @background_task()
 def test_other_transaction_hsm_error_parameters_enabled():
     add_custom_parameter('key-1', 'value-1')
     try:
-        raise TestException()
+        raise TestException('test message')
     except Exception:
         record_exception(params={'key-2': 'value-2'})
 

@@ -439,6 +439,44 @@ def validate_transaction_errors(errors=[], required_params=[],
 
     return _validate_transaction_errors
 
+def validate_application_errors(errors=[], required_params=[],
+        forgone_params=[]):
+    @function_wrapper
+    def _validate_application_errors(wrapped, instace, args, kwargs):
+
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+
+            stats = core_application_stats_engine()
+
+            app_errors = stats.error_data()
+
+            expected = sorted(errors)
+            captured = sorted([(e.type, e.message) for e in stats.error_data()])
+
+            assert expected == captured, ('expected=%r, captured=%r, '
+                    'errors=%r' % (expected, captured, app_errors))
+
+            for e in app_errors:
+                for name, value in required_params:
+                    assert name in e.parameters['userAttributes'], ('name=%r, '
+                            'params=%r' % (name, e.parameters))
+                    assert e.parameters['userAttributes'][name] == value, (
+                            'name=%r, value=%r, params=%r' %
+                            (name, value, e.parameters))
+
+                for name, value in forgone_params:
+                    assert name not in e.parameters['userAttributes'], (
+                            'name=%r, params=%r' % (name, e.parameters))
+
+        return result
+
+    return _validate_application_errors
+
+
 def validate_custom_parameters(required_params=[], forgone_params=[]):
 
     @transient_function_wrapper('newrelic.core.stats_engine',

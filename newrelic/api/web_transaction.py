@@ -136,7 +136,10 @@ class WebTransaction(Transaction):
 
         port = environ.get('SERVER_PORT', None)
         if port:
-            self._port = int(port)
+            try:
+                self._port = int(port)
+            except Exception:
+                pass
 
         # Extract from the WSGI environ dictionary
         # details of the URL path. This will be set as

@@ -74,6 +74,7 @@ class Transaction(object):
         self._node_stack = []
 
         self._request_uri = None
+        self._port = None
 
         self.queue_start = 0.0
 
@@ -440,6 +441,7 @@ class Transaction(object):
                 type=transaction_type,
                 group=group,
                 name=self._name,
+                port=self._port,
                 request_uri=self._request_uri,
                 response_code=self.response_code,
                 queue_start=self.queue_start,

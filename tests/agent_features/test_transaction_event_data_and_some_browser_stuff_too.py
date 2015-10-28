@@ -1,12 +1,14 @@
 import json
 import webtest
 
-from newrelic.agent import application_settings, transient_function_wrapper
+from newrelic.agent import (application_settings, transient_function_wrapper,
+        background_task)
 
 from newrelic.common.encoding_utils import deobfuscate
 
 from testing_support.fixtures import (override_application_settings,
-        validate_transaction_event_sample_data)
+        validate_transaction_event_sample_data,
+        validate_transaction_event_attributes)
 from testing_support.sample_applications import (fully_featured_app,
             user_attributes_added)
 
@@ -20,7 +22,8 @@ _test_capture_attributes_enabled_settings = {
     'browser_monitoring.attributes.enabled': True }
 
 _intrinsic_attributes = {
-        'name': 'WebTransaction/Uri/'
+        'name': 'WebTransaction/Uri/',
+        'port': 80,
 }
 
 @validate_transaction_event_sample_data(required_attrs=_intrinsic_attributes,
@@ -468,3 +471,23 @@ def test_database_and_external_attributes_in_analytics():
     # Validate actual body content as sanity check.
 
     assert content == 'RESPONSE'
+
+# -------------- Test background tasks ----------------
+
+_expected_attributes = {
+        'user': [],
+        'agent': [],
+        'intrinsic' : ('name', 'duration', 'type', 'timestamp'),
+}
+
+_expected_absent_attributes = {
+        'user': ('foo'),
+        'agent': ('response.status', 'request.method'),
+        'intrinsic': ('port'),
+}
+
+@validate_transaction_event_attributes(_expected_attributes,
+        _expected_absent_attributes)
+@background_task()
+def test_background_task_intrinsics_has_no_port():
+    pass

@@ -26,7 +26,8 @@ fully_featured_application = webtest.TestApp(fully_featured_app)
 _intrinsic_attributes = {
         'error.class': callable_name(ERROR),
         'error.message': ERR_MESSAGE,
-        'transactionName' : 'WebTransaction/Uri/'
+        'transactionName' : 'WebTransaction/Uri/',
+        'port': 80,     # SERVER_PORT default value in webtest WSGI environ
 }
 
 @validate_error_event_sample_data(required_attrs=_intrinsic_attributes,
@@ -34,8 +35,8 @@ _intrinsic_attributes = {
 @validate_error_event_count(num_errors=1)
 def test_transaction_error_event_no_extra_attributes():
     test_environ = {
-                'err_message' : ERR_MESSAGE,
-                'record_attributes': 'FALSE'
+            'err_message' : ERR_MESSAGE,
+            'record_attributes': 'FALSE'
     }
     response = fully_featured_application.get('/', extra_environ=test_environ)
 
@@ -46,6 +47,7 @@ _intrinsic_attributes = {
         'databaseCallCount': 2,
         'externalCallCount': 2,
         'queueDuration': True,
+        'port': 8888,
 }
 
 @validate_error_event_sample_data(required_attrs=_intrinsic_attributes,
@@ -56,6 +58,7 @@ def test_transaction_error_event_lotsa_attributes():
             'external' : '2',
             'db' : '2',
             'mod_wsgi.queue_start' : ('t=%r' % time.time()),
+            'SERVER_PORT': '8888',
     }
     response = fully_featured_application.get('/', extra_environ=test_environ)
 

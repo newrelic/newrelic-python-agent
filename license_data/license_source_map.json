@@ -1,4 +1,10 @@
 {
+    "deploy/Dockerfile": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/LICENSE": {
         "hash": "n/a",
         "libraries": [

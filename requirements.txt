@@ -4,3 +4,4 @@ devpi-server
 eventlet
 pip<1.5
 virtualenv<1.11
+twine

@@ -1377,15 +1377,22 @@ class Application(object):
 
                     if (configuration.collect_error_events and
                             configuration.error_collector.capture_events and
-                            configuration.error_collector.enabled and
-                            stats.error_events.count > 0):
-                        _logger.debug('Sending error event data '
-                                'for harvest of %r.', self._app_name)
+                            configuration.error_collector.enabled):
 
-                        samples = stats.error_events.samples
-                        sampling_info = stats.error_events_sampling_info()
-                        self._active_session.send_error_events(sampling_info,
-                                samples)
+                        if stats.error_events.count > 0:
+                            _logger.debug('Sending error event data '
+                                    'for harvest of %r.', self._app_name)
+
+                            error_events = stats.error_events
+                            samples = error_events.samples
+                            samp_info = stats.error_events_sampling_info()
+                            self._active_session.send_error_events(samp_info,
+                                    samples)
+
+                        internal_metric('Supportability/Python/Events/'
+                                'TransactionError/Seen', error_events.count)
+                        internal_metric('Supportability/Python/Events/'
+                                'TransactionError/Sent', len(samples))
 
                     stats.reset_error_events()
 

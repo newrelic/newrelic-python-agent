@@ -1,7 +1,8 @@
 import logging
+import sys
 
 from newrelic.agent import wrap_function_wrapper
-from .util import finalize_transaction
+from .util import finalize_transaction, record_exception
 
 _logger = logging.getLogger(__name__)
 
@@ -32,6 +33,13 @@ def _nr_wrapper_IOLoop__run_callback_(wrapped, instance, args, kwargs):
             finalize_transaction(callback._nr_transaction)
     return ret
 
+def _nr_wrapper_IOLoop_handle_callback_exception_(
+        wrapped, instance, args, kwargs):
+    record_exception(sys.exc_info())
+    return wrapped(*args, **kwargs)
+
 def instrument_tornado_ioloop(module):
     wrap_function_wrapper(module, 'IOLoop._run_callback',
             _nr_wrapper_IOLoop__run_callback_)
+    wrap_function_wrapper(module, 'IOLoop.handle_callback_exception',
+            _nr_wrapper_IOLoop_handle_callback_exception_)

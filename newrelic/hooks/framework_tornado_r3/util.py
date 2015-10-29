@@ -1,10 +1,11 @@
 import logging
 
-from newrelic.agent import current_transaction, ignore_status_code
+from newrelic.agent import (application as application_instance,
+        current_transaction, ignore_status_code)
 
 _logger = logging.getLogger(__name__)
 
-def record_exception(transaction, exc_info):
+def record_exception(exc_info):
     # Record the details of any exception ignoring status codes which
     # have been configured to be ignored.
 
@@ -21,7 +22,15 @@ def record_exception(transaction, exc_info):
         if ignore_status_code(value.status_code):
             return
 
-    transaction.record_exception(*exc_info)
+    transaction = retrieve_current_transaction()
+    if transaction:
+        transaction.record_exception(*exc_info)
+    else:
+        # If we are not in a transaction we record the exception to the default
+        # application specified in the agent configuration.
+        application = application_instance()
+        if application and application.enabled:
+            application.record_exception(*exc_info)
 
 def retrieve_current_transaction():
     # Retrieves the current transaction regardless of whether it has

@@ -44,7 +44,7 @@ def _nr_wrapper_stack_context_wrap_(wrapped, instance, args, kwargs):
         stack_context_wrapped_fxn._nr_transaction = transaction
         return stack_context_wrapped_fxn
     except:  # Catch all.
-        record_exception(transaction, sys.exc_info())
+        record_exception(sys.exc_info())
         raise
 
 def _create_transaction_aware_fxn(fxn, args, kwargs):
@@ -111,9 +111,7 @@ def _wrap_exception_handler(wrapped, instance, args, kwargs):
     is_exception_swallowed = wrapped(*args, **kwargs)
 
     if is_exception_swallowed:
-        transaction = retrieve_current_transaction()
-        if transaction is not None:
-            record_exception(transaction, (type, value, traceback))
+        record_exception((type, value, traceback))
 
     return is_exception_swallowed
 

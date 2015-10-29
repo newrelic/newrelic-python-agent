@@ -4,6 +4,7 @@ import tornado.testing
 
 import select
 import time
+import threading
 
 from newrelic.agent import wrap_function_wrapper
 from newrelic.packages import six
@@ -232,3 +233,57 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         response = self.fetch_response('/return-exception')
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, ReturnExceptionRequestHandler.RESPONSE)
+
+
+    # The following 3 functions are helper functions used to test exceptions
+    # occuring outside of a transaction.
+    def after_divide(self):
+        self.stop()
+
+    def divide_by_zero(self):
+        quotient = 0
+        try:
+            quotient = 5/0
+        finally:
+            self.io_loop.add_callback(self.after_divide)
+        return quotient
+
+    def schedule_divide_by_zero(self):
+        self.io_loop.add_callback(self.divide_by_zero)
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(errors=[], expect_transaction=False,
+            app_exceptions=[select_python_version(
+                    py2='exceptions:ZeroDivisionError',
+                    py3='builtins:ZeroDivisionError')])
+    def test_stack_context_no_transaction_exception(self):
+        # This tests that we record exceptions when they are not in a
+        # transaction, but they do occur within a stack context. That is they
+        # are scheduled asynchronously in a way where one wants to keep track of
+        # the stack context, such as via a context manager. Just as a note,
+        # it is possible for code written by an application developer to occur
+        # within an ExceptionStackContext implicitly, request handlers do this
+        # for example.
+
+        # The lambda here is an exception handler which swallows the exception.
+        with tornado.stack_context.ExceptionStackContext(
+                lambda type, value, traceback: True):
+            self.schedule_divide_by_zero()
+        self.wait(timeout=5.0)
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(errors=[], expect_transaction=False,
+            app_exceptions=[select_python_version(
+                    py2='exceptions:ZeroDivisionError',
+                    py3='builtins:ZeroDivisionError')])
+    def test_threaded_no_transaction_exception(self):
+        # This tests that we record exceptions when an error occurs outside a
+        # transaction and outside a stack context. This can be done when a job
+        # is scheduled from another thread or is initiated outside of an
+        # ExceptionStackContext context manager. By default, tests are run
+        # inside an ExceptionStackContext so we spawn a new thread for this
+        # test.
+        t = threading.Thread(target=self.schedule_divide_by_zero)
+        t.start()
+        t.join(5.0)
+        self.wait(timeout=5.0)

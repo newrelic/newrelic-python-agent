@@ -71,15 +71,11 @@ def _nr_wrapper_RequestHandler__execute_(wrapped, instance, args, kwargs):
 def _nr_wrapper_RequestHandler__handle_request_exception_(wrapped, instance,
         args, kwargs):
 
-    transaction = retrieve_current_transaction()
-
     # sys.exc_info() will have the correct exception context.
     # _handle_request_exception is private to tornado's web.py and also uses
     # sys.exc_info. The exception context has explicitly set the type, value,
     # and traceback.
-    if transaction is not None:
-        record_exception(transaction, sys.exc_info())
-
+    record_exception(sys.exc_info())
     return wrapped(*args, **kwargs)
 
 def instrument_tornado_web(module):

@@ -24,34 +24,6 @@ class InternalTrace(object):
         if self.metrics is not None:
             self.metrics.record_custom_metric(self.name, duration)
 
-class xInternalTraceWrapper(object):
-
-    def __init__(self, wrapped, name=None):
-        self.wrapped = wrapped
-        self.name = name
-
-    def execute(self, wrapped, *args, **kwargs):
-        metrics = getattr(_context, 'current', None)
-
-        if metrics is None:
-            return wrapped(*args, **kwargs)
-
-        with InternalTrace(self.name, metrics):
-            return wrapped(*args, **kwargs)
-
-    def __get__(self, instance, klass):
-        if instance is None:
-            return self
-
-        def wrapper(*args, **kwargs):
-            descriptor = self.wrapped.__get__(instance, klass)
-            return self.execute(descriptor, *args, **kwargs)
-
-        return wrapper
-
-    def __call__(self, *args, **kwargs):
-        return self.execute(self.wrapped, *args, **kwargs)
-
 class InternalTraceWrapper(object):
 
     def __init__(self, wrapped, name):

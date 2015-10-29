@@ -1576,8 +1576,7 @@ def wrap_record_app_exception_fixture(request):
             return value
 
         value = _bind_params(*args, **kwargs)
-        fullname = "%s:%s" % (
-                value.__class__.__module__, value.__class__.__name__)
+        fullname = callable_name(value)
 
         try:
             result = wrapped(*args, **kwargs)

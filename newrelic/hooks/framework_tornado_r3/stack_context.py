@@ -17,7 +17,7 @@ def _nr_wrapper_stack_context_wrap_(wrapped, instance, args, kwargs):
     if fxn is None:
         return wrapped(*args, **kwargs)
 
-    transaction_aware_fxn = _create_transaction_aware_fxn(fxn, args, kwargs)
+    transaction_aware_fxn = _create_transaction_aware_fxn(fxn)
 
     # If transaction_aware_fxn is None then it is either not being called in
     # the context of a transaction or it is already wrapped.
@@ -47,7 +47,7 @@ def _nr_wrapper_stack_context_wrap_(wrapped, instance, args, kwargs):
         record_exception(sys.exc_info())
         raise
 
-def _create_transaction_aware_fxn(fxn, args, kwargs):
+def _create_transaction_aware_fxn(fxn):
     # Returns a version of fxn that will switch context to the appropriate
     # transaction and then restore the previous transaction on exit.
     # If fxn is already transaction aware or if there is no transaction
@@ -70,15 +70,16 @@ def _create_transaction_aware_fxn(fxn, args, kwargs):
     if transaction is None:
         return None
 
-    def _transaction_aware_fxn(*fxn_args, **fxn_kwargs):
+    @function_wrapper
+    def _make_transaction_aware(wrapped, instance, args, kwargs):
         old_transaction = replace_current_transaction(transaction)
         name = callable_name(fxn)
         with FunctionTrace(transaction, name=name):
-            ret = fxn(*fxn_args, **fxn_kwargs)
+            ret = fxn(*args, **kwargs)
         replace_current_transaction(old_transaction)
         return ret
 
-    return _transaction_aware_fxn
+    return _make_transaction_aware(fxn)
 
 # This allows us to capture all exceptions that get swallowed by the ioloop.
 # If we instrument the exception handler directly this will cause us to call

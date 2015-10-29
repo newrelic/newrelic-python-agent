@@ -241,6 +241,14 @@ class SampledDataSet(object):
                 self.samples[index] = sample
         self.count += 1
 
+    def merge(self, other_data_set):
+        for item in other_data_set.samples:
+            self.add(item)
+
+        # Make sure count includes total items seen from merged set
+
+        self.count += other_data_set.count - len(other_data_set.samples)
+
 class StatsEngine(object):
 
     """The stats engine object holds the accumulated transactions metrics,
@@ -1440,8 +1448,7 @@ class StatsEngine(object):
         # gives equal probability to keeping each event, merge is the same as
         # rollback. There may be multiple error events per transaction.
 
-        for err in snapshot.__error_events.samples:
-            self.__error_events.add(err)
+        self.__error_events.merge(snapshot.error_events)
 
     def _merge_error_traces(self, snapshot):
 

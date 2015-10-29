@@ -38,5 +38,40 @@ class TestSampledDataSet(unittest.TestCase):
         self.assertEqual(len(instance.samples), 100)
         self.assertEqual(instance.count, 200)
 
+    def test_merge_sampled_data_set_under_capacity(self):
+        a = SampledDataSet(capacity=100)
+        b = SampledDataSet(capacity=100)
+
+        count_a = 10
+        count_b = 12
+        for i in range(count_a):
+            a.add(i)
+
+        for i in range(count_b):
+            b.add(i)
+
+        a.merge(b)
+
+        self.assertEqual(a.count, count_a + count_b)
+        self.assertEqual(a.count, len(a.samples))
+
+    def test_merge_sampled_data_set_over_capacity(self):
+        capacity = 100
+        a = SampledDataSet(capacity=capacity)
+        b = SampledDataSet(capacity=capacity)
+
+        count_a = 110
+        count_b = 200
+        for i in range(count_a):
+            a.add(i)
+
+        for i in range(count_b):
+            b.add(i)
+
+        a.merge(b)
+
+        self.assertEqual(a.count, count_a + count_b)
+        self.assertEqual(len(a.samples), capacity)
+
 if __name__ == '__main__':
     unittest.main()

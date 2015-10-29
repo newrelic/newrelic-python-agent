@@ -196,6 +196,19 @@ def test_error_event_outside_transaction():
         app = application()
         record_exception(*sys.exc_info(), application=app)
 
+_err_params = {'key': 'value'}
+
+@reset_core_stats_engine()
+@validate_non_transaction_error_event(_intrinsic_attributes,
+        required_params=tuple(_err_params.items()))
+def test_error_event_with_params_outside_transaction():
+    try:
+        raise outside_error
+    except ErrorEventOutsideTransactionError:
+        app = application()
+        record_exception(*sys.exc_info(), params=_err_params,
+                application=app)
+
 @reset_core_stats_engine()
 @validate_non_transaction_error_event(_intrinsic_attributes, num_errors=2)
 def test_multiple_error_events_outside_transaction():

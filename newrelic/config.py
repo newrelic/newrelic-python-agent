@@ -1949,6 +1949,9 @@ def _process_module_builtin_defaults():
         _process_module_definition('tornado.ioloop',
                 'newrelic.hooks.framework_tornado_r3.ioloop',
                 'instrument_tornado_ioloop')
+        _process_module_definition('tornado.gen',
+                'newrelic.hooks.framework_tornado_r3.gen',
+                'instrument_tornado_gen')
 
     elif 'tornado.instrumentation.r1' in _settings.feature_flag:
         _process_module_definition('tornado.wsgi',

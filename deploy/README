@@ -1,0 +1,74 @@
+Deployment
+==========
+
+There are several tasks that need to run as Jenkins jobs to build and deploy the Python agent. Most of the jobs run in PDX Jenkins, while one job must run in CHI Jenkins.
+
+Overview of Jobs
+----------------
+
+### PDX Jenkins Jobs
+
+1. Build source distribution package.
+2. Upload package to Artifactory.
+3. Upload package to PyPI.
+
+### CHI Jenkins Jobs
+
+1. Upload package to download.newrelic.com (chi-www-1 and chi-www-2).
+
+PDX Jenkins Jobs
+----------------
+
+The build and deploy jobs run in our [Jenkins server for the Python Agent team][jenkins], which was set up using ["Jenkins as a Service"][jaas].
+
+[jenkins]: https://python-agent-build.pdx.vm.datanerd.us/
+[jaas]: https://source.datanerd.us/tools/jenkins-documentation
+
+### Build Node
+
+Each job will run on a "build node", which is an EC2 instance. The EC2 instances already have Docker installed on them, so most jobs will run inside of a Docker container. You define what Docker image a job should run in when you define the Jenkins job.
+
+Our build and deploy jobs all use the Docker image defined in the `deploy/Dockerfile`. It is a minimal image that contains `Python 2`, `Python 3` and `twine`, as well as a few other tools needed.
+
+### Configuration and Credentials
+
+Uploading to PyPI requires a `.pypirc` file, which defines the URLs for the PyPI repositories, as well as the username for our accounts.
+
+Uploading to PyPI and Artifactory both require the use of a password. Passwords are *NOT* stored in the scripts, nor in `.pypirc`. In Jenkins, they are defined as "secret text" in "Credentials", and each job that needs access to the credentials defines an environment variable which is used to pass the password to the build node. When running scripts locally, you must define the necessary environment variables.
+
+### Jobs
+
+1.  Build source distribution package.
+
+    We call the standard `build.sh` script to build the source distribution package.
+
+2.  Upload package to Artifactory.
+
+    Artifactory is an internal repository for "build artifacts", which serves 2 purposes for us. It is a permanent archive of all of our released source packages. And, because it can be accessed from both the PDX and CHI data centers, it provides a mechanism to transfer the source package from the PDX data center, where the package is built, to the CHI data center, where the job to upload the package to download.newrelic.com will run. (Only CHI Jenkins can access the download.newrelic.com servers.)
+
+    Artifactory exposes an API like PyPI, but we aren't using it, because it allows already existing packages to be overwritten, even when the Artifactory user does not have DELETE permissions. Instead, we upload the package with `curl` through their REST API.
+
+    We call `upload-to-artifactory.sh` to upload the package to Artifactory.
+
+3.  Upload package to PyPI.
+
+    Running `upload-to-pypi.sh` will complete the following three steps:
+
+    1. Download package from Artifactory.
+    2. Register package with PyPI.
+    3. Upload package to PyPI.
+
+    In Jenkins, this is a parameterized build. That means that you can define if the job will upload the package to Test PyPI (`pypi-test` in `.pypirc`), or if it will upload it to the real PyPI (`pypi-production`). By default, the script will upload to Test PyPI.
+
+CHI Jenkins Jobs
+----------------
+
+1.  Upload package to download.newrelic.com (chi-www-1 and chi-www-2).
+
+    This script must be run from CHI Jenkins, or else while you are connected to the CHI VPN. It assumes that your SSH key allows you to log into the download servers (`chi-www-1` and `chi-www-2`) as the `download` user. The CHI Jenkins job must be configured to use a build node that has credentials to log into the download servers.
+
+    Running `upload-to-newrelic-download-site.sh` will complete the following two steps:
+
+    1. Download package from Artifactory.
+    2. Upload the package to the download servers.
+

@@ -9,6 +9,8 @@ from testing_support.fixtures import (override_application_settings,
 from newrelic.agent import (background_task, add_custom_parameter,
     record_exception, wsgi_application, current_transaction)
 
+from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
+
 from newrelic.core.attribute import (Attribute, DST_TRANSACTION_TRACER,
         DST_ERROR_COLLECTOR, DST_ALL)
 
@@ -272,10 +274,17 @@ def test_remote_config_hsm_fixups_server_side_disabled():
     assert 'high_security' not in settings
 
 _test_transaction_settings_hsm_disabled = {
-    'high_security': False }
+        'high_security': False
+}
+
+# Normally, in HSM the exception message would be stripped just by turning on
+# high_security. However, these tests (like all of our tests) overrides the
+# settings after agent initialization where this setting is fixed up.
 
 _test_transaction_settings_hsm_enabled = {
-    'high_security': True }
+        'high_security': True,
+        'strip_exception_messages.enabled' : True
+ }
 
 @override_application_settings(_test_transaction_settings_hsm_disabled)
 @validate_custom_parameters(required_params=[('key', 'value')])
@@ -324,8 +333,8 @@ def test_other_transaction_hsm_error_parameters_disabled():
         record_exception(params={'key-2': 'value-2'})
 
 @override_application_settings(_test_transaction_settings_hsm_enabled)
-@validate_transaction_errors(errors=[(_test_exception_name, 'test message')],
-    forgone_params=[('key-2', 'value-2')])
+@validate_transaction_errors(errors=[(_test_exception_name,
+        STRIP_EXCEPTION_MESSAGE)], forgone_params=[('key-2', 'value-2')])
 @validate_custom_parameters(forgone_params=[('key-1', 'value-1')])
 @background_task()
 def test_other_transaction_hsm_error_parameters_enabled():

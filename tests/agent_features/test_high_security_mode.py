@@ -3,11 +3,13 @@ import pytest
 import webtest
 
 from testing_support.fixtures import (override_application_settings,
-    validate_custom_parameters, validate_transaction_errors,
-    validate_request_params_omitted, validate_attributes_complete)
+        validate_custom_parameters, validate_transaction_errors,
+        validate_request_params_omitted, validate_attributes_complete,
+        validate_non_transaction_error_event, reset_core_stats_engine)
 
 from newrelic.agent import (background_task, add_custom_parameter,
-    record_exception, wsgi_application, current_transaction)
+        record_exception, wsgi_application, current_transaction, application,
+        callable_name)
 
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 
@@ -15,7 +17,7 @@ from newrelic.core.attribute import (Attribute, DST_TRANSACTION_TRACER,
         DST_ERROR_COLLECTOR, DST_ALL)
 
 from newrelic.core.config import (global_settings, Settings,
-    apply_config_setting)
+        apply_config_setting)
 
 from newrelic.config import apply_local_high_security_mode_setting
 from newrelic.core.data_collector import apply_high_security_mode_fixups
@@ -343,6 +345,39 @@ def test_other_transaction_hsm_error_parameters_enabled():
         raise TestException('test message')
     except Exception:
         record_exception(params={'key-2': 'value-2'})
+
+_err_message = "Error! :("
+_intrinsic_attributes = {
+        'error.class': callable_name(TestException),
+        'error.message': _err_message,
+}
+
+@reset_core_stats_engine()
+@override_application_settings(_test_transaction_settings_hsm_disabled)
+@validate_non_transaction_error_event(required_intrinsics=_intrinsic_attributes,
+        required_user={'key-1': 'value-1'})
+def test_non_transaction_hsm_error_parameters_disabled():
+    try:
+        raise TestException(_err_message)
+    except Exception:
+        app = application()
+        record_exception(params={'key-1': 'value-1'}, application=app)
+
+_intrinsic_attributes = {
+        'error.class': callable_name(TestException),
+        'error.message': STRIP_EXCEPTION_MESSAGE,
+}
+
+@reset_core_stats_engine()
+@override_application_settings(_test_transaction_settings_hsm_enabled)
+@validate_non_transaction_error_event(required_intrinsics=_intrinsic_attributes,
+        forgone_user={'key-1': 'value-1'})
+def test_non_transaction_hsm_error_parameters_enabled():
+    try:
+        raise TestException(_err_message)
+    except Exception:
+        app = application()
+        record_exception(params={'key-1': 'value-1'}, application=app)
 
 @wsgi_application()
 def target_wsgi_application_capture_params(environ, start_response):

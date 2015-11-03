@@ -14,7 +14,7 @@ from _test_async_application import (get_tornado_app, HelloRequestHandler,
         NamedStackContextWrapRequestHandler, MultipleCallbacksRequestHandler,
         FinishExceptionRequestHandler, ReturnExceptionRequestHandler)
 
-from testing_support.fixtures import (
+from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
     tornado_validate_time_transaction_metrics,
     tornado_validate_errors, tornado_validate_transaction_cache_empty)

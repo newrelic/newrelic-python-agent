@@ -1,9 +1,11 @@
 import pytest
 
 from testing_support.fixtures import (code_coverage_fixture,
-        collector_agent_registration_fixture, collector_available_fixture,
-        wrap_record_transaction_fixture, clear_record_transaction_list,
-        wrap_record_app_exception_fixture, clear_record_app_exception_list)
+        collector_agent_registration_fixture, collector_available_fixture)
+
+from tornado_fixtures import (wrap_record_transaction_fixture,
+        clear_record_transaction_list, wrap_record_app_exception_fixture,
+        clear_record_app_exception_list)
 
 _coverage_source = [
     'newrelic.hooks.framework_tornado_r3',

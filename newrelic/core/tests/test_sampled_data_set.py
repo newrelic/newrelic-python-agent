@@ -9,7 +9,7 @@ class TestSampledDataSet(unittest.TestCase):
 
         self.assertEqual(instance.samples, [])
         self.assertEqual(instance.capacity, 100)
-        self.assertEqual(instance.count, 0)
+        self.assertEqual(instance.num_seen, 0)
 
     def test_single_item(self):
         instance = SampledDataSet()
@@ -17,7 +17,7 @@ class TestSampledDataSet(unittest.TestCase):
         instance.add(1)
 
         self.assertEqual(instance.samples, [1])
-        self.assertEqual(instance.count, 1)
+        self.assertEqual(instance.num_seen, 1)
 
     def test_at_capacity(self):
         instance = SampledDataSet(100)
@@ -25,9 +25,9 @@ class TestSampledDataSet(unittest.TestCase):
         for i in range(100):
             instance.add(i)
 
-        self.assertEqual(len(instance.samples), 100)
+        self.assertEqual(instance.num_samples, 100)
         self.assertEqual(sorted(instance.samples), list(range(100)))
-        self.assertEqual(instance.count, 100)
+        self.assertEqual(instance.num_seen, 100)
 
     def test_over_capacity(self):
         instance = SampledDataSet(100)
@@ -35,8 +35,8 @@ class TestSampledDataSet(unittest.TestCase):
         for i in range(200):
             instance.add(i)
 
-        self.assertEqual(len(instance.samples), 100)
-        self.assertEqual(instance.count, 200)
+        self.assertEqual(instance.num_samples, 100)
+        self.assertEqual(instance.num_seen, 200)
 
     def test_merge_sampled_data_set_under_capacity(self):
         a = SampledDataSet(capacity=100)
@@ -52,8 +52,8 @@ class TestSampledDataSet(unittest.TestCase):
 
         a.merge(b)
 
-        self.assertEqual(a.count, count_a + count_b)
-        self.assertEqual(a.count, len(a.samples))
+        self.assertEqual(a.num_seen, count_a + count_b)
+        self.assertEqual(a.num_seen, a.num_samples)
 
     def test_merge_sampled_data_set_over_capacity(self):
         capacity = 100
@@ -70,8 +70,8 @@ class TestSampledDataSet(unittest.TestCase):
 
         a.merge(b)
 
-        self.assertEqual(a.count, count_a + count_b)
-        self.assertEqual(len(a.samples), capacity)
+        self.assertEqual(a.num_seen, count_a + count_b)
+        self.assertEqual(a.num_samples, capacity)
 
 if __name__ == '__main__':
     unittest.main()

@@ -569,7 +569,7 @@ def validate_database_duration():
             metrics = instance.stats_table
             transaction_events = instance.transaction_events
 
-            assert transaction_events.count == 1
+            assert transaction_events.num_seen == 1
 
             event = transaction_events.samples[0]
             intrinsics = event[0]
@@ -665,7 +665,7 @@ def validate_non_transaction_error_event(required_intrinsics={}, num_errors=1,
 
             stats = core_application_stats_engine(None)
 
-            assert stats.error_events.count == num_errors
+            assert stats.error_events.num_seen == num_errors
             for event in stats.error_events.samples:
 
                 assert len(event) == 3 # [intrinsic, user, agent attributes]

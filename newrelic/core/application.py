@@ -1367,10 +1367,10 @@ class Application(object):
 
                         internal_metric('Supportability/Python/'
                                 'RequestSampler/requests',
-                                transaction_events.count)
+                                transaction_events.num_seen)
                         internal_metric('Supportability/Python/'
                                 'RequestSampler/samples',
-                                len(transaction_events.samples))
+                                transaction_events.num_samples)
 
                     stats.reset_transaction_events()
                     stats.reset_synthetics_events()
@@ -1379,20 +1379,20 @@ class Application(object):
                             configuration.error_collector.capture_events and
                             configuration.error_collector.enabled):
 
-                        if stats.error_events.count > 0:
+                        num_error_samples = stats.error_events.num_samples
+                        error_events = stats.error_events
+                        if num_error_samples > 0:
                             _logger.debug('Sending error event data '
                                     'for harvest of %r.', self._app_name)
 
-                            error_events = stats.error_events
-                            samples = error_events.samples
                             samp_info = stats.error_events_sampling_info()
                             self._active_session.send_error_events(samp_info,
-                                    samples)
+                                    error_events.samples)
 
                         internal_metric('Supportability/Python/Events/'
-                                'TransactionError/Seen', error_events.count)
+                                'TransactionError/Seen', error_events.num_seen)
                         internal_metric('Supportability/Python/Events/'
-                                'TransactionError/Sent', len(samples))
+                                'TransactionError/Sent', num_error_samples)
 
                     stats.reset_error_events()
 

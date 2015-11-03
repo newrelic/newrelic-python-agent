@@ -695,6 +695,26 @@ def validate_non_transaction_error_event(required_intrinsics={}, num_errors=1,
 
     return _validate_non_transaction_error_event
 
+def validate_application_error_trace_count(num_errors):
+    """Validate error event data for a single error occurring outside of a
+        transaction.
+    """
+    @function_wrapper
+    def _validate_application_error_trace_count(wrapped, instace, args, kwargs):
+
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+
+            stats = core_application_stats_engine(None)
+            assert len(stats.error_data()) == num_errors
+
+        return result
+
+    return _validate_application_error_trace_count
+
 def validate_synthetics_transaction_trace(required_params={},
         forgone_params={}, should_exist=True):
     @transient_function_wrapper('newrelic.core.stats_engine',
@@ -1425,6 +1445,22 @@ def validate_error_event_count(num_errors=1):
         return result
 
     return _validate_error_event_on_stats_engine
+
+def validate_transaction_error_trace_count(num_errors):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_transaction_error_trace_count(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            traced_errors = instance.error_data()
+            assert len(traced_errors) == num_errors
+
+        return result
+
+    return _validate_transaction_error_trace_count
 
 def validate_error_event_sample_data(required_attrs={}, required_user_attrs=True,
             num_errors=1):

@@ -3,7 +3,9 @@ import sys
 from testing_support.fixtures import (validate_transaction_errors,
         override_application_settings, core_application_stats_engine,
         core_application_stats_engine_error, error_is_saved,
-        reset_core_stats_engine, validate_application_errors)
+        reset_core_stats_engine, validate_application_errors,
+        validate_transaction_error_trace_count,
+        validate_application_error_trace_count)
 
 from newrelic.agent import (background_task, record_exception,
         application_settings, application, callable_name)
@@ -323,3 +325,30 @@ def test_record_exception_strip_message_not_in_whitelist_outside_transaction():
 
     my_error = core_application_stats_engine_error(_error_four_name)
     assert my_error.message == STRIP_EXCEPTION_MESSAGE
+
+# =============== Test exception limits ===============
+
+_limit = 5
+
+@override_application_settings({'agent_limits.errors_per_transaction': _limit})
+@validate_transaction_error_trace_count(_limit)
+@background_task()
+def test_transaction_error_trace_limit():
+    for i in range(_limit+1):
+        try:
+            raise RuntimeError('error'+str(i))
+        except RuntimeError:
+            record_exception()
+
+_limit = 20
+
+@override_application_settings({'agent_limits.errors_per_harvest': _limit})
+@reset_core_stats_engine()
+@validate_application_error_trace_count(_limit)
+def test_application_error_trace_limit():
+    for i in range(_limit+1):
+        try:
+            raise RuntimeError('error'+str(i))
+        except RuntimeError:
+            application_instance = application()
+            application_instance.record_exception()

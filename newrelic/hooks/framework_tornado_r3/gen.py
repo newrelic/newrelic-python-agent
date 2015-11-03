@@ -60,18 +60,20 @@ def _nr_wrapper_Runner__init__(wrapped, instance, args, kwargs):
     try:
         frame_record = get_frame(1)
     except ValueError:
-        _logger.warning('tornado.gen.Runner is being created at the top of the '
+        _logger.debug('tornado.gen.Runner is being created at the top of the '
                 'stack. That means the Runner object is being created outside '
                 'of a tornado.gen decorator. NewRelic will not be able to '
                 'name this instrumented function meaningfully (it will be '
                 'name lambda.')
         return wrapped(*args, **kwargs)
 
-    if 'func' in frame_record.f_locals:
+    if ('__name__' in frame_record.f_globals and
+            frame_record.f_globals['__name__'] == 'tornado.gen' and
+            'func' in frame_record.f_locals):
         instance._nr_coroutine_name = _coroutine_name(
                 frame_record.f_locals['func'])
     else:
-        _logger.warning('tornado.gen.Runner is being called outside of a '
+        _logger.debug('tornado.gen.Runner is being called outside of a '
                 'tornado.gen decorator. NewRelic will not be able to name '
                 'this instrumented function meaningfully (it will be named '
                 'lambda).')

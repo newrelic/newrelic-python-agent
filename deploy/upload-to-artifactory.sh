@@ -2,31 +2,79 @@
 
 # Upload source distribution package in `dist` directory to Artifactory.
 #
-# Our `pypi-newrelic` Artifactory repository can be accessed with the
-# PyPI API, so we can use `twine` to upload the package. Unlike the real
-# PyPI, we don't register the package first. We simply upload it.
+# If running locally, you'll need to set two environment variables:
+#
+#   1. ARTIFACTORY_PASSWORD
+#   2. AGENT_VERSION
+#
+# Requires: git, md5sum, and curl.
 
 set -e
 
-# If running locally, you'll need to set this environment variable. It should
-# already be set when running in a Jenkins job.
+# Validate environment variables
 
-if test x"$PYPI_NEWRELIC_PASSWORD" = x""
+if test x"$ARTIFACTORY_PASSWORD" = x""
 then
     echo
-    echo "ERROR: PYPI_NEWRELIC_PASSWORD environment variable is not set."
-    echo "       Use password for pypi-newrelic repository in Artifactory."
+    echo "ERROR: ARTIFACTORY_PASSWORD environment variable is not set."
     exit 1
 fi
 
+if test x"$AGENT_VERSION" = x""
+then
+    echo
+    echo "ERROR: AGENT_VERSION environment variable is not set."
+    exit 1
+fi
+
+# Construct file path, URL endpoint, etc.
+
+ARTIFACTORY_USER=python-agent
+ARTIFACTORY_ENDPOINT=http://pdx-artifacts.pdx.vm.datanerd.us:8081/artifactory/simple/pypi-newrelic/newrelic
+
 GIT_REPO_ROOT=$(git rev-parse --show-toplevel)
-
-PYPIRC=$GIT_REPO_ROOT/deploy/.pypirc
-
 DIST_DIR=$GIT_REPO_ROOT/dist
 
-twine upload \
-    --repository pypi-newrelic \
-    --config-file $PYPIRC \
-    --password $PYPI_NEWRELIC_PASSWORD \
-    $DIST_DIR/newrelic*.tar.gz
+PACKAGE_NAME=newrelic-$AGENT_VERSION.tar.gz
+
+FILE_PATH=$DIST_DIR/$PACKAGE_NAME
+UPLOAD_URL=$ARTIFACTORY_ENDPOINT/$AGENT_VERSION/$PACKAGE_NAME
+
+# Get MD5 checksum of file to upload, so Artifactory can verify it.
+
+MD5_CHECKSUM=$(md5sum $FILE_PATH | awk '{print $1}')
+
+# Upload the agent source distribution package with curl.
+#
+# Use `--write-out` to store the HTTP status response code in the last
+# line of RESPONSE, so we can check to see if the upload succeeded.
+
+echo
+echo "Uploading to: $UPLOAD_URL"
+
+RESPONSE=$(curl -q \
+    --silent \
+    --show-error \
+    --write-out "\n%{http_code}" \
+    --header "X-Checksum-Md5: $MD5_CHECKSUM" \
+    --user "$ARTIFACTORY_USER:$ARTIFACTORY_PASSWORD" \
+    --upload-file "$FILE_PATH" \
+    "$UPLOAD_URL")
+
+echo
+echo "Response:"
+echo "$RESPONSE"
+
+# Verify upload was successful.
+
+HTTP_RESPONSE_STATUS=$(echo "$RESPONSE" | tail -1)
+
+if test x"$HTTP_RESPONSE_STATUS" = x"201"
+then
+    echo
+    echo "SUCCESS: Agent uploaded."
+else
+    echo
+    echo "ERROR: Agent NOT uploaded."
+    exit 1
+fi

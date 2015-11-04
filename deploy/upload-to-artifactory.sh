@@ -42,7 +42,19 @@ UPLOAD_URL=$ARTIFACTORY_ENDPOINT/$AGENT_VERSION/$PACKAGE_NAME
 
 # Get MD5 checksum of file to upload, so Artifactory can verify it.
 
-MD5_CHECKSUM=$(md5sum $FILE_PATH | awk '{print $1}')
+MD5_OUTPUT=$(md5sum $FILE_PATH)
+MD5_CHECKSUM=$(echo $MD5_OUTPUT | awk '{print $1}')
+
+echo
+echo "Computing MD5 checksum"
+echo "$MD5_CHECKSUM"
+
+if test x"$MD5_CHECKSUM" = x""
+then
+    echo
+    echo "ERROR: MD5_CHECKSUM cannot be empty."
+    exit 1
+fi
 
 # Upload the agent source distribution package with curl.
 #

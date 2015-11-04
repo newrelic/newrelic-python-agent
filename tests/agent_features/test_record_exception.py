@@ -5,7 +5,9 @@ from testing_support.fixtures import (validate_transaction_errors,
         core_application_stats_engine_error, error_is_saved,
         reset_core_stats_engine, validate_application_errors,
         validate_transaction_error_trace_count,
-        validate_application_error_trace_count)
+        validate_application_error_trace_count,
+        validate_transaction_error_event_count,
+        validate_application_error_event_count  )
 
 from newrelic.agent import (background_task, record_exception,
         application_settings, application, callable_name)
@@ -328,25 +330,60 @@ def test_record_exception_strip_message_not_in_whitelist_outside_transaction():
 
 # =============== Test exception limits ===============
 
-_limit = 5
+_tt_limit = 5
 
-@override_application_settings({'agent_limits.errors_per_transaction': _limit})
-@validate_transaction_error_trace_count(_limit)
+@override_application_settings(
+        {'agent_limits.errors_per_transaction': _tt_limit})
+@validate_transaction_error_trace_count(_tt_limit)
 @background_task()
 def test_transaction_error_trace_limit():
-    for i in range(_limit+1):
+    for i in range(_tt_limit+1):
         try:
             raise RuntimeError('error'+str(i))
         except RuntimeError:
             record_exception()
 
-_limit = 20
+_app_limit = 20
 
-@override_application_settings({'agent_limits.errors_per_harvest': _limit})
+@override_application_settings({'agent_limits.errors_per_harvest': _app_limit})
 @reset_core_stats_engine()
-@validate_application_error_trace_count(_limit)
+@validate_application_error_trace_count(_app_limit)
 def test_application_error_trace_limit():
-    for i in range(_limit+1):
+    for i in range(_app_limit+1):
+        try:
+            raise RuntimeError('error'+str(i))
+        except RuntimeError:
+            application_instance = application()
+            application_instance.record_exception()
+
+# The limit for errors on transactions is shared for traces and errors
+
+_te_limit = 5
+
+@override_application_settings({
+        'agent_limits.errors_per_transaction': _te_limit,
+        'error_collector.max_event_samples_stored': _te_limit+2})
+@validate_transaction_error_event_count(_te_limit)
+@background_task()
+def test_transaction_error_event_limit():
+    for i in range(_te_limit+1):
+        try:
+            raise RuntimeError('error'+str(i))
+        except RuntimeError:
+            record_exception()
+
+# The harvest limit for error traces doesn't affect events
+
+_trace_limit = 20
+_event_limit = 25
+
+@override_application_settings({
+        'agent_limits.errors_per_harvest': _trace_limit,
+        'error_collector.max_event_samples_stored': _event_limit})
+@reset_core_stats_engine()
+@validate_application_error_event_count(_event_limit)
+def test_application_error_event_limit():
+    for i in range(_event_limit+1):
         try:
             raise RuntimeError('error'+str(i))
         except RuntimeError:

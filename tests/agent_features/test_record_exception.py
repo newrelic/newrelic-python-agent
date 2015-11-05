@@ -337,44 +337,42 @@ def _raise_errors(num_errors, application=None):
         except RuntimeError:
             record_exception(application=application)
 
-_tt_limit = 5
+_errors_per_transaction_limit = 5
+_num_errors_transaction = 6
+_errors_per_harvest_limit = 20
+_num_errors_app = 26
+_error_event_limit = 25
 
 @override_application_settings(
-        {'agent_limits.errors_per_transaction': _tt_limit})
-@validate_transaction_error_trace_count(_tt_limit)
+        {'agent_limits.errors_per_transaction': _errors_per_transaction_limit})
+@validate_transaction_error_trace_count(_errors_per_transaction_limit)
 @background_task()
 def test_transaction_error_trace_limit():
-    _raise_errors(_tt_limit+1)
+    _raise_errors(_num_errors_transaction)
 
-_app_limit = 20
-
-@override_application_settings({'agent_limits.errors_per_harvest': _app_limit})
+@override_application_settings(
+        {'agent_limits.errors_per_harvest': _errors_per_harvest_limit})
 @reset_core_stats_engine()
-@validate_application_error_trace_count(_app_limit)
+@validate_application_error_trace_count(_errors_per_harvest_limit)
 def test_application_error_trace_limit():
-    _raise_errors(_app_limit+1, application())
+    _raise_errors(_num_errors_app, application())
 
 # The limit for errors on transactions is shared for traces and errors
 
-_te_limit = 5
-
 @override_application_settings({
-        'agent_limits.errors_per_transaction': _te_limit,
-        'error_collector.max_event_samples_stored': _te_limit+2})
-@validate_transaction_error_event_count(_te_limit)
+        'agent_limits.errors_per_transaction': _errors_per_transaction_limit,
+        'error_collector.max_event_samples_stored': _error_event_limit})
+@validate_transaction_error_event_count(_errors_per_transaction_limit)
 @background_task()
 def test_transaction_error_event_limit():
-    _raise_errors(_te_limit+1)
+    _raise_errors(_num_errors_transaction)
 
 # The harvest limit for error traces doesn't affect events
 
-_trace_limit = 20
-_event_limit = 25
-
 @override_application_settings({
-        'agent_limits.errors_per_harvest': _trace_limit,
-        'error_collector.max_event_samples_stored': _event_limit})
+        'agent_limits.errors_per_harvest': _errors_per_harvest_limit,
+        'error_collector.max_event_samples_stored': _error_event_limit})
 @reset_core_stats_engine()
-@validate_application_error_event_count(_event_limit)
+@validate_application_error_event_count(_error_event_limit)
 def test_application_error_event_limit():
-    _raise_errors(_event_limit+1, application())
+    _raise_errors(_num_errors_app, application())

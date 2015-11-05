@@ -10,13 +10,9 @@
 
 set -e
 
-# Define various file and URL locations.
+# Run from the top of the repository directory.
 
-GIT_REPO_ROOT=$(git rev-parse --show-toplevel)
-
-PYPIRC=$GIT_REPO_ROOT/deploy/.pypirc
-ARTIFACTORY=http://pdx-artifacts.pdx.vm.datanerd.us:8081/artifactory
-ARTIFACTORY_PYPI_URL=$ARTIFACTORY/simple/pypi-newrelic
+cd $(git rev-parse --show-toplevel)
 
 # Define functions
 
@@ -69,36 +65,24 @@ verify_md5_checksum()
     fi
 }
 
-# Validate environment variables
+# Set and validate environment variables
 
 echo
 echo "=== Start downloading ==="
 echo
 echo "Checking environment variables"
 
-if test x"$AGENT_VERSION" = x""
-then
-    echo "ERROR: AGENT_VERSION environment variable is not set."
-    exit 1
-fi
+source ./deploy/common.sh
 
 # If we get to this point, environment variables are OK.
 
 echo "... AGENT_VERSION = $AGENT_VERSION"
-
-# Use environment variables to construct package path and download URL.
-
-PACKAGE_NAME=newrelic-$AGENT_VERSION.tar.gz
-
-PACKAGE_PATH=$GIT_REPO_ROOT/dist/$PACKAGE_NAME
-PACKAGE_URL=$ARTIFACTORY_PYPI_URL/newrelic/$AGENT_VERSION/$PACKAGE_NAME
-
-MD5_PATH=$PACKAGE_PATH.md5
-MD5_URL=$PACKAGE_URL.md5
+echo "... PACKAGE_PATH  = $PACKAGE_PATH"
+echo "... PACKAGE_URL   = $PACKAGE_URL"
+echo "... MD5_PATH      = $MD5_PATH"
+echo "... MD5_URL       = $MD5_URL"
 
 # Run commands
-
-cd $GIT_REPO_ROOT
 
 download_from_artifactory $PACKAGE_PATH $PACKAGE_URL
 download_from_artifactory $MD5_PATH $MD5_URL

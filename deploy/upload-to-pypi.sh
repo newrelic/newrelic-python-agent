@@ -21,13 +21,9 @@
 
 set -e
 
-# Define various file and URL locations.
+# Run from the top of the repository directory.
 
-GIT_REPO_ROOT=$(git rev-parse --show-toplevel)
-
-PYPIRC=$GIT_REPO_ROOT/deploy/.pypirc
-ARTIFACTORY=http://pdx-artifacts.pdx.vm.datanerd.us:8081/artifactory
-ARTIFACTORY_PYPI_URL=$ARTIFACTORY/simple/pypi-newrelic
+cd $(git rev-parse --show-toplevel)
 
 # Define functions
 
@@ -60,12 +56,14 @@ twine_command()
         $PKG_PATH
 }
 
-# Validate environment variables
+# Set and validate environment variables
 
 echo
 echo "=== Start uploading ==="
 echo
 echo "Checking environment variables."
+
+source ./deploy/common.sh
 
 if test x"$PYPI_REPOSITORY" = x""
 then
@@ -91,26 +89,13 @@ case $PYPI_REPOSITORY in
         ;;
 esac
 
-if test x"$AGENT_VERSION" = x""
-then
-    echo "ERROR: AGENT_VERSION environment variable is not set."
-    exit 1
-fi
-
 # If we get to this point, environment variables are OK.
 
 echo "... PYPI_REPOSITORY = $PYPI_REPOSITORY"
-echo "... AGENT_VERSION = $AGENT_VERSION"
-
-# Use environment variables to construct package path and download URL.
-
-PACKAGE_NAME=newrelic-$AGENT_VERSION.tar.gz
-PACKAGE_PATH=$GIT_REPO_ROOT/dist/$PACKAGE_NAME
-PACKAGE_URL=$ARTIFACTORY_PYPI_URL/newrelic/$AGENT_VERSION/$PACKAGE_NAME
+echo "... AGENT_VERSION   = $AGENT_VERSION"
+echo "... PACKAGE_PATH    = $PACKAGE_PATH"
 
 # Run upload commands
-
-cd $GIT_REPO_ROOT
 
 twine_command register $PACKAGE_PATH
 twine_command upload $PACKAGE_PATH

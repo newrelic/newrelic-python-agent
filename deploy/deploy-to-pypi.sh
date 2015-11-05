@@ -17,9 +17,5 @@
 
 set -e
 
-GIT_REPO_ROOT=$(git rev-parse --show-toplevel)
-
-cd $GIT_REPO_ROOT
-
 deploy/download-from-artifactory.sh
 deploy/upload-to-pypi.sh

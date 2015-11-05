@@ -226,20 +226,32 @@ class SampledDataSet(object):
     def __init__(self, capacity=100):
         self.samples = []
         self.capacity = capacity
-        self.count = 0
+        self.num_seen = 0
+
+    @property
+    def num_samples(self):
+        return len(self.samples)
 
     def reset(self):
         self.samples = []
-        self.count = 0
+        self.num_seen = 0
 
     def add(self, sample):
-        if len(self.samples) < self.capacity:
+        if self.num_samples < self.capacity:
             self.samples.append(sample)
         else:
-            index = random.randint(0, self.count)
+            index = random.randint(0, self.num_seen)
             if index < self.capacity:
                 self.samples[index] = sample
-        self.count += 1
+        self.num_seen += 1
+
+    def merge(self, other_data_set):
+        for item in other_data_set.samples:
+            self.add(item)
+
+        # Make sure num_seen includes total items seen from merged set
+
+        self.num_seen += other_data_set.num_seen - other_data_set.num_samples
 
 class StatsEngine(object):
 
@@ -325,7 +337,7 @@ class StatsEngine(object):
     def error_events_sampling_info(self):
         sampling_info = {
                 'reservoir_size' : self.error_events.capacity,
-                'events_seen' : self.error_events.count
+                'events_seen' : self.error_events.num_seen
         }
         return sampling_info
 
@@ -1416,7 +1428,7 @@ class StatsEngine(object):
                 self.__transaction_events.add(sample)
 
         else:
-            if snapshot.__transaction_events.count == 1:
+            if snapshot.__transaction_events.num_samples == 1:
                 self.__transaction_events.add(
                         snapshot.__transaction_events.samples[0])
 
@@ -1449,8 +1461,7 @@ class StatsEngine(object):
         # gives equal probability to keeping each event, merge is the same as
         # rollback. There may be multiple error events per transaction.
 
-        for err in snapshot.__error_events.samples:
-            self.__error_events.add(err)
+        self.__error_events.merge(snapshot.error_events)
 
     def _merge_error_traces(self, snapshot):
 

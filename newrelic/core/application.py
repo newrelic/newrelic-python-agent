@@ -1305,21 +1305,6 @@ class Application(object):
 
                     configuration = self._active_session.configuration
 
-                    # Report internal metrics about sample data set
-                    # for analytics.
-
-                    if (configuration.collect_analytics_events and
-                            configuration.transaction_events.enabled):
-
-                        transaction_events = stats.transaction_events
-
-                        internal_metric('Supportability/Python/'
-                                'RequestSampler/requests',
-                                transaction_events.count)
-                        internal_metric('Supportability/Python/'
-                                'RequestSampler/samples',
-                                len(transaction_events.samples))
-
                     # Create a metric_normalizer based on normalize_name
                     # If metric rename rules are empty, set normalizer
                     # to None and the stats engine will skip steps as
@@ -1339,14 +1324,14 @@ class Application(object):
 
                     metric_data = stats.metric_data(metric_normalizer)
 
-                    internal_metric('Supportability/Python/Harvest/Counts/'
-                            'metric_data', len(metric_data))
-
                     _logger.debug('Sending metric data for harvest of %r.',
                             self._app_name)
 
                     metric_ids = self._active_session.send_metric_data(
-                      self._period_start, period_end, metric_data)
+                            self._period_start, period_end, metric_data)
+
+                    internal_metric('Supportability/Python/Harvest/Counts/'
+                            'metric_data', len(metric_data))
 
                     stats.reset_metric_stats()
 
@@ -1372,20 +1357,42 @@ class Application(object):
                         self._active_session.send_transaction_events(
                                 all_analytic_events)
 
+                    # Report internal metrics about sample data set
+                    # for analytics.
+
+                    if (configuration.collect_analytics_events and
+                            configuration.transaction_events.enabled):
+
+                        transaction_events = stats.transaction_events
+
+                        internal_metric('Supportability/Python/'
+                                'RequestSampler/requests',
+                                transaction_events.num_seen)
+                        internal_metric('Supportability/Python/'
+                                'RequestSampler/samples',
+                                transaction_events.num_samples)
+
                     stats.reset_transaction_events()
                     stats.reset_synthetics_events()
 
                     if (configuration.collect_error_events and
                             configuration.error_collector.capture_events and
-                            configuration.error_collector.enabled and
-                            stats.error_events.count > 0):
-                        _logger.debug('Sending error event data '
-                                'for harvest of %r.', self._app_name)
+                            configuration.error_collector.enabled):
 
-                        samples = stats.error_events.samples
-                        sampling_info = stats.error_events_sampling_info()
-                        self._active_session.send_error_events(sampling_info,
-                                samples)
+                        num_error_samples = stats.error_events.num_samples
+                        error_events = stats.error_events
+                        if num_error_samples > 0:
+                            _logger.debug('Sending error event data '
+                                    'for harvest of %r.', self._app_name)
+
+                            samp_info = stats.error_events_sampling_info()
+                            self._active_session.send_error_events(samp_info,
+                                    error_events.samples)
+
+                        internal_metric('Supportability/Python/Events/'
+                                'TransactionError/Seen', error_events.num_seen)
+                        internal_metric('Supportability/Python/Events/'
+                                'TransactionError/Sent', num_error_samples)
 
                     stats.reset_error_events()
 

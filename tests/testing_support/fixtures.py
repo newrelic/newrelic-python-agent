@@ -650,7 +650,7 @@ def check_event_attributes(event_data, required_params, forgone_params):
             assert param not in user_attributes
 
 def validate_non_transaction_error_event(required_intrinsics={}, num_errors=1,
-            required_params={}):
+            required_user={}, forgone_user=[]):
     """Validate error event data for a single error occurring outside of a
     transaction.
     """
@@ -685,11 +685,14 @@ def validate_non_transaction_error_event(required_intrinsics={}, num_errors=1,
                 assert intrinsics['timestamp'] <= now
 
                 user_params = event[1]
-                for name, value in required_params:
+                for name, value in required_user.items():
                     assert name in user_params, ('name=%r, params=%r' % (name,
                             user_params))
                     assert user_params[name] == value, ('name=%r, value=%r, '
                             'params=%r' % (name, value, user_params))
+
+                for param in forgone_user:
+                    assert param not in user_params
 
         return result
 

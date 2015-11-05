@@ -200,7 +200,7 @@ _err_params = {'key': 'value'}
 
 @reset_core_stats_engine()
 @validate_non_transaction_error_event(_intrinsic_attributes,
-        required_params=tuple(_err_params.items()))
+        required_user=_err_params)
 def test_error_event_with_params_outside_transaction():
     try:
         raise outside_error

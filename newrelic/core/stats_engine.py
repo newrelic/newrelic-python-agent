@@ -452,10 +452,6 @@ class StatsEngine(object):
         if not settings.collect_errors and not settings.collect_error_events:
             return
 
-        if (len(self.__transaction_errors) >=
-                settings.agent_limits.errors_per_harvest):
-            return
-
         # If no exception details provided, use current exception.
 
         if exc is None and value is None and tb is None:
@@ -587,7 +583,8 @@ class StatsEngine(object):
             event = self._error_event(error_details)
             self.__error_events.add(event)
 
-        if settings.collect_errors:
+        if settings.collect_errors and (len(self.__transaction_errors) <
+                settings.agent_limits.errors_per_harvest):
             self.__transaction_errors.append(error_details)
 
     def _error_event(self, error):

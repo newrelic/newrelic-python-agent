@@ -29,20 +29,18 @@ fi
 
 # Construct file path, URL endpoint, etc.
 
+GIT_REPO_ROOT=$(git rev-parse --show-toplevel)
+
 ARTIFACTORY_USER=python-agent
 ARTIFACTORY_ENDPOINT=http://pdx-artifacts.pdx.vm.datanerd.us:8081/artifactory/simple/pypi-newrelic/newrelic
 
-GIT_REPO_ROOT=$(git rev-parse --show-toplevel)
-DIST_DIR=$GIT_REPO_ROOT/dist
-
 PACKAGE_NAME=newrelic-$AGENT_VERSION.tar.gz
-
-FILE_PATH=$DIST_DIR/$PACKAGE_NAME
-UPLOAD_URL=$ARTIFACTORY_ENDPOINT/$AGENT_VERSION/$PACKAGE_NAME
+PACKAGE_PATH=$GIT_REPO_ROOT/dist/$PACKAGE_NAME
+PACKAGE_URL=$ARTIFACTORY_ENDPOINT/$AGENT_VERSION/$PACKAGE_NAME
 
 # Get MD5 checksum of file to upload, so Artifactory can verify it.
 
-MD5_OUTPUT=$(md5sum $FILE_PATH)
+MD5_OUTPUT=$(md5sum $PACKAGE_PATH)
 MD5_CHECKSUM=$(echo $MD5_OUTPUT | awk '{print $1}')
 
 echo
@@ -62,7 +60,7 @@ fi
 # line of RESPONSE, so we can check to see if the upload succeeded.
 
 echo
-echo "Uploading to: $UPLOAD_URL"
+echo "Uploading to: $PACKAGE_URL"
 
 RESPONSE=$(curl -q \
     --silent \
@@ -70,8 +68,8 @@ RESPONSE=$(curl -q \
     --write-out "\n%{http_code}" \
     --header "X-Checksum-Md5: $MD5_CHECKSUM" \
     --user "$ARTIFACTORY_USER:$ARTIFACTORY_PASSWORD" \
-    --upload-file "$FILE_PATH" \
-    "$UPLOAD_URL")
+    --upload-file "$PACKAGE_PATH" \
+    "$PACKAGE_URL")
 
 echo
 echo "Response:"

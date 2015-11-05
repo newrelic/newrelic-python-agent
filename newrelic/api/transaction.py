@@ -741,6 +741,10 @@ class Transaction(object):
             a_attrs['request.headers.userAgent'] = req_env['HTTP_USER_AGENT']
         if req_env.get('HTTP_REFERER', None):
             a_attrs['request.headers.referer'] = req_env['HTTP_REFERER']
+        if req_env.get('HTTP_HOST', None):
+            a_attrs['request.headers.host'] = req_env['HTTP_HOST']
+        if req_env.get('HTTP_ACCEPT', None):
+            a_attrs['request.headers.accept'] = req_env['HTTP_ACCEPT']
         if req_env.get('CONTENT_TYPE', None):
             a_attrs['request.headers.contentType'] = req_env['CONTENT_TYPE']
         if req_env.get('CONTENT_LENGTH', None):

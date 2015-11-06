@@ -11,7 +11,18 @@
 
 set -e
 
-# Validate environment variables
+# Run from the top of the repository directory.
+
+cd $(git rev-parse --show-toplevel)
+
+# Set and validate environment variables
+
+echo
+echo "=== Start uploading ==="
+echo
+echo "Checking environment variables."
+
+. ./deploy/common.sh
 
 if test x"$ARTIFACTORY_PASSWORD" = x""
 then
@@ -20,29 +31,15 @@ then
     exit 1
 fi
 
-if test x"$AGENT_VERSION" = x""
-then
-    echo
-    echo "ERROR: AGENT_VERSION environment variable is not set."
-    exit 1
-fi
+# If we get to this point, environment variables are OK.
 
-# Construct file path, URL endpoint, etc.
-
-ARTIFACTORY_USER=python-agent
-ARTIFACTORY_ENDPOINT=http://pdx-artifacts.pdx.vm.datanerd.us:8081/artifactory/simple/pypi-newrelic/newrelic
-
-GIT_REPO_ROOT=$(git rev-parse --show-toplevel)
-DIST_DIR=$GIT_REPO_ROOT/dist
-
-PACKAGE_NAME=newrelic-$AGENT_VERSION.tar.gz
-
-FILE_PATH=$DIST_DIR/$PACKAGE_NAME
-UPLOAD_URL=$ARTIFACTORY_ENDPOINT/$AGENT_VERSION/$PACKAGE_NAME
+echo "... AGENT_VERSION = $AGENT_VERSION"
+echo "... PACKAGE_PATH  = $PACKAGE_PATH"
+echo "... PACKAGE_URL   = $PACKAGE_URL"
 
 # Get MD5 checksum of file to upload, so Artifactory can verify it.
 
-MD5_OUTPUT=$(md5sum $FILE_PATH)
+MD5_OUTPUT=$(md5sum $PACKAGE_PATH)
 MD5_CHECKSUM=$(echo $MD5_OUTPUT | awk '{print $1}')
 
 echo
@@ -62,7 +59,7 @@ fi
 # line of RESPONSE, so we can check to see if the upload succeeded.
 
 echo
-echo "Uploading to: $UPLOAD_URL"
+echo "Uploading to: $PACKAGE_URL"
 
 RESPONSE=$(curl -q \
     --silent \
@@ -70,8 +67,8 @@ RESPONSE=$(curl -q \
     --write-out "\n%{http_code}" \
     --header "X-Checksum-Md5: $MD5_CHECKSUM" \
     --user "$ARTIFACTORY_USER:$ARTIFACTORY_PASSWORD" \
-    --upload-file "$FILE_PATH" \
-    "$UPLOAD_URL")
+    --upload-file "$PACKAGE_PATH" \
+    "$PACKAGE_URL")
 
 echo
 echo "Response:"

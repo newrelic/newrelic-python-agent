@@ -22,6 +22,8 @@ echo "=== Start uploading ==="
 echo
 echo "Checking environment variables."
 
+# Source common variables
+
 . ./deploy/common.sh
 
 if test x"$ARTIFACTORY_PASSWORD" = x""

@@ -2,9 +2,8 @@
 
 # Upload a source distribution package to a PyPI repository.
 #
-# First, this script will download the package from Artifactory. Then, it
-# will register it and upload it to either the Test PyPI repository, or the
-# real production PyPI.
+# This script will register and upload a package to either the
+# Test PyPI repository, or the real production PyPI.
 #
 # You must define several environment variables: one of the the PyPI
 # password variables (either the password for testing PyPI, or the password

@@ -62,7 +62,7 @@ echo "=== Start uploading ==="
 echo
 echo "Checking environment variables."
 
-source ./deploy/common.sh
+. ./deploy/common.sh
 
 if test x"$PYPI_REPOSITORY" = x""
 then

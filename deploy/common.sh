@@ -22,6 +22,14 @@ ARTIFACTORY=http://pdx-artifacts.pdx.vm.datanerd.us:8081/artifactory
 ARTIFACTORY_PYPI_URL=$ARTIFACTORY/simple/pypi-newrelic
 ARTIFACTORY_USER=python-agent
 
+DOWNLOAD_USER=download
+DOWNLOAD_HOSTS="chi-www-1 chi-www-2"
+
+# By default, deploy agent to `testing` subdirectory. For a real release,
+# override `DOWNLOAD_DIR` to point to the `release` directory.
+
+DOWNLOAD_DIR=/data/nr-yum-repo/python_agent/testing
+
 # Set "Constructed" Global Variables that require AGENT_VERSION.
 
 PACKAGE_NAME=newrelic-$AGENT_VERSION.tar.gz

@@ -11,7 +11,18 @@
 
 set -e
 
-# Validate environment variables
+# Run from the top of the repository directory.
+
+cd $(git rev-parse --show-toplevel)
+
+# Set and validate environment variables
+
+echo
+echo "=== Start uploading ==="
+echo
+echo "Checking environment variables."
+
+source deploy/common.sh
 
 if test x"$ARTIFACTORY_PASSWORD" = x""
 then
@@ -20,23 +31,11 @@ then
     exit 1
 fi
 
-if test x"$AGENT_VERSION" = x""
-then
-    echo
-    echo "ERROR: AGENT_VERSION environment variable is not set."
-    exit 1
-fi
+# If we get to this point, environment variables are OK.
 
-# Construct file path, URL endpoint, etc.
-
-GIT_REPO_ROOT=$(git rev-parse --show-toplevel)
-
-ARTIFACTORY_USER=python-agent
-ARTIFACTORY_ENDPOINT=http://pdx-artifacts.pdx.vm.datanerd.us:8081/artifactory/simple/pypi-newrelic/newrelic
-
-PACKAGE_NAME=newrelic-$AGENT_VERSION.tar.gz
-PACKAGE_PATH=$GIT_REPO_ROOT/dist/$PACKAGE_NAME
-PACKAGE_URL=$ARTIFACTORY_ENDPOINT/$AGENT_VERSION/$PACKAGE_NAME
+echo "... AGENT_VERSION = $AGENT_VERSION"
+echo "... PACKAGE_PATH  = $PACKAGE_PATH"
+echo "... PACKAGE_URL   = $PACKAGE_URL"
 
 # Get MD5 checksum of file to upload, so Artifactory can verify it.
 

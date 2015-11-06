@@ -20,6 +20,7 @@ PYPIRC=$GIT_REPO_ROOT/deploy/.pypirc
 
 ARTIFACTORY=http://pdx-artifacts.pdx.vm.datanerd.us:8081/artifactory
 ARTIFACTORY_PYPI_URL=$ARTIFACTORY/simple/pypi-newrelic
+ARTIFACTORY_USER=python-agent
 
 # Set "Constructed" Global Variables that require AGENT_VERSION.
 

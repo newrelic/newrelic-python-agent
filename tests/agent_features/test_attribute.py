@@ -42,7 +42,8 @@ def test_intrinsics():
     assert response.body == b'Hello World!'
 
 _required_agent = ['request.method', 'wsgi.output.seconds', 'response.status',
-                   'request.headers.host', 'request.headers.accept']
+                   'request.headers.host', 'request.headers.accept',
+                   'response.contentType', 'response.contentLength']
 _forgone_agent = []
 
 @validate_attributes('agent', _required_agent, _forgone_agent)

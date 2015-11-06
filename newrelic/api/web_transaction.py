@@ -425,15 +425,18 @@ class WebTransaction(Transaction):
         except Exception:
             pass
 
-        # Extract response content length for inclusion in custom
-        # parameters returned for slow transactions and errors.
+        # Extract response content length and type for inclusion in agent
+        # attributes
 
         try:
-            header = [x for x in response_headers
-                    if x[0].lower() == 'content-length'][-1:]
 
-            if header:
-                self._response_properties['CONTENT_LENGTH'] = header[0][1]
+            for header, value in response_headers:
+                lower_header = header.lower()
+                if 'content-length' == lower_header:
+                    self._response_properties['CONTENT_LENGTH'] = value
+                elif 'content-type' == lower_header:
+                    self._response_properties['CONTENT_TYPE'] = value
+
         except Exception:
             pass
 

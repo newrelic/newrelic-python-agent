@@ -250,7 +250,7 @@ _settings.ignored_params = []
 _settings.capture_environ = True
 _settings.include_environ = ['REQUEST_METHOD', 'HTTP_USER_AGENT',
                               'HTTP_REFERER', 'CONTENT_TYPE',
-                              'CONTENT_LENGTH']
+                              'CONTENT_LENGTH', 'HTTP_HOST', 'HTTP_ACCEPT']
 
 _settings.max_stack_trace_lines = 50
 

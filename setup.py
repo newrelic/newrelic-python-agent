@@ -21,36 +21,12 @@ from distutils.command.build_ext import build_ext
 from distutils.errors import (CCompilerError, DistutilsExecError,
         DistutilsPlatformError)
 
-copyright = '(C) Copyright 2010-2015 New Relic Inc. All rights reserved.'
-
 script_directory = os.path.dirname(__file__)
 if not script_directory:
     script_directory = os.getcwd()
 
-def get_license(file_name):
-
-    # The license file contains the licenses for all libraries we use, so cut
-    # out the part concerning New Relic.
-
-    with open(file_name) as lf:
-        license_text = lf.read()
-
-    # The New Relic license is the last section, under the following line:
-
-    new_relic_license = license_text.split(
-            'All other components of this product are:')[-1]
-
-    # clean up
-
-    new_relic_license = new_relic_license.strip('\n -')
-
-    return new_relic_license
-
 develop_file = os.path.join(script_directory, 'DEVELOP')
 version_file = os.path.join(script_directory, 'VERSION')
-license_file = os.path.join(script_directory, 'newrelic', 'LICENSE')
-
-license =  get_license(license_file)
 
 if os.path.exists(develop_file):
     # Building from source repository.
@@ -144,7 +120,7 @@ kwargs = dict(
         author_email = "support@newrelic.com",
         maintainer = 'New Relic',
         maintainer_email = 'support@newrelic.com',
-        license = license,
+        license = 'New Relic License',
         classifiers = classifiers,
         packages = packages,
         package_data = { 'newrelic': ['newrelic.ini', 'LICENSE',

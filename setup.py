@@ -27,6 +27,7 @@ if not script_directory:
 
 develop_file = os.path.join(script_directory, 'DEVELOP')
 version_file = os.path.join(script_directory, 'VERSION')
+readme_file = os.path.join(script_directory, 'README.rst')
 
 if os.path.exists(develop_file):
     # Building from source repository.
@@ -104,17 +105,11 @@ classifiers = [
         "Topic :: System :: Monitoring",
 ]
 
-long_description = '''Python agent for the `New Relic`_ web application performance monitoring service. Check the `release notes`_ for what has changed in this version.
-
-.. _New Relic: http://www.newrelic.com
-.. _release notes: https://docs.newrelic.com/docs/release-notes/agent-release-notes/python-release-notes
-'''
-
 kwargs = dict(
         name = "newrelic",
         version = package_version,
         description = "New Relic Python Agent",
-        long_description = long_description,
+        long_description = open(readme_file).read(),
         url = "http://newrelic.com/docs/python/new-relic-for-python",
         author = "New Relic",
         author_email = "support@newrelic.com",

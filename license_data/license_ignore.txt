@@ -25,7 +25,6 @@ autom4te.cache
 Makefile
 scripts
 DEVELOP
-INSTALL
 MANIFEST.in
 Makefile.in
 build.sh

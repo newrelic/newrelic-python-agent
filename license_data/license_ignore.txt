@@ -28,7 +28,6 @@ DEVELOP
 INSTALL
 MANIFEST.in
 Makefile.in
-README
 build.sh
 configure
 configure.in

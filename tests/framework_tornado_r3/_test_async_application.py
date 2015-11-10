@@ -135,6 +135,28 @@ class ReturnExceptionRequestHandler(RequestHandler):
     def one(self):
         raise tornado.gen.Return(1)
 
+class IOLoopDivideRequestHandler(RequestHandler):
+    RESPONSE = u'Division %s / %s = %s'
+
+    @tornado.gen.coroutine
+    def get(self, a, b):
+        a = float(a)
+        b = float(b)
+        quotient = yield self.divide(a, b)
+        response = self.RESPONSE % (a, b, quotient)
+        self.finish(response.encode('ascii'))
+
+    def divide(self, a, b):
+        f = tornado.concurrent.Future()
+
+        # We add the callback to do the division.
+        tornado.ioloop.IOLoop.current().add_callback(self._divide, f, a, b)
+
+        return f
+
+    def _divide(self, future, a, b):
+        future.set_result(a/b)
+
 def get_tornado_app():
     return Application([
         ('/', HelloRequestHandler),
@@ -147,4 +169,5 @@ def get_tornado_app():
         ('/coroutine-exception', CoroutineExceptionRequestHandler),
         ('/finish-exception', FinishExceptionRequestHandler),
         ('/return-exception', ReturnExceptionRequestHandler),
+        ('/ioloop-divide/(\d+)/(\d+)', IOLoopDivideRequestHandler),
     ])

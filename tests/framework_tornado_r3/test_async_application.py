@@ -287,3 +287,15 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         t.start()
         t.join(5.0)
         self.wait(timeout=5.0)
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(errors=[])
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:IOLoopDivideRequestHandler.get',
+            scoped_metrics=[
+                # Class name is missing from this metric. This would be improved
+                # if the class name is present. We are verifying the current
+                # behavior.
+                ('Function/_test_async_application:get (coroutine)', 1)])
+    def test_coroutine_names_not_lambda(self):
+        response = self.fetch_response('/ioloop-divide/10000/10')

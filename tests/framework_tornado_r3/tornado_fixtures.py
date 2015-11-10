@@ -87,7 +87,7 @@ def wrap_record_app_exception_fixture(request):
 
 def tornado_validate_count_transaction_metrics(name, group='Function',
         background_task=False, scoped_metrics=[], rollup_metrics=[],
-        custom_metrics=[]):
+        custom_metrics=[], forgone_metric_substrings=[]):
     """Decorator to validates count metrics.
 
     Arguments:
@@ -119,6 +119,16 @@ def tornado_validate_count_transaction_metrics(name, group='Function',
         assert metric is not None, _metrics_table()
         assert metric.call_count == count, _metric_details()
 
+    def _validate_forgone_metric_substrings(metrics, forgone_substrings):
+        def _substring_found(substring, metric):
+            return ('Found substring "%s" in metric "%s"' % (substring, metric))
+
+        for foregone_substring in forgone_substrings:
+            for key in metrics.keys():
+                name, _ = key
+                assert -1 == name.find(foregone_substring), (
+                        _substring_found(foregone_substring, name))
+
     @function_wrapper
     def _validate(wrapped, instance, args, kwargs):
         wrapped(*args, **kwargs)
@@ -147,6 +157,9 @@ def tornado_validate_count_transaction_metrics(name, group='Function',
 
         for custom_name, custom_count in custom_metrics:
             _validate_metric_count(metrics, custom_name, '', custom_count)
+
+        # validate forgone metrics regular expressions
+        _validate_forgone_metric_substrings(metrics, forgone_metric_substrings)
 
     return _validate
 

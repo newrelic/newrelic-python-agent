@@ -296,6 +296,7 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
                 # Class name is missing from this metric. This would be improved
                 # if the class name is present. We are verifying the current
                 # behavior.
-                ('Function/_test_async_application:get (coroutine)', 1)])
+                ('Function/_test_async_application:get (coroutine)', 1)],
+            forgone_metric_substrings=['lambda'])
     def test_coroutine_names_not_lambda(self):
         response = self.fetch_response('/ioloop-divide/10000/10')

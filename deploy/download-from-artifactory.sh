@@ -72,6 +72,8 @@ echo "=== Start downloading ==="
 echo
 echo "Checking environment variables"
 
+# Source common variables
+
 . ./deploy/common.sh
 
 # If we get to this point, environment variables are OK.

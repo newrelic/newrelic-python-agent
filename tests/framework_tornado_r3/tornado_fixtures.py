@@ -48,6 +48,8 @@ def wrap_record_transaction_fixture(request):
         metrics = instance.stats_table
         _RECORDED_TRANSACTIONS.append((metrics, errors))
 
+        return result
+
     wrap_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction', _nr_wrapper_record_transaction)
 
@@ -77,6 +79,8 @@ def wrap_record_app_exception_fixture(request):
             raise
 
         _RECORDED_APP_EXCEPTIONS.append(fullname)
+
+        return result
 
     wrap_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_exception', _nr_wrapper_record_exception)

@@ -81,3 +81,12 @@ def internal_metric(name, value):
     metrics = getattr(_context, 'current', None)
     if metrics is not None:
         metrics.record_custom_metric(name, value)
+
+def internal_count_metric(name, count):
+    """Create internal metric where only count has a value.
+
+    All other fields have a value of 0.
+    """
+
+    count_metric = {'count': count}
+    internal_metric(name, count_metric)

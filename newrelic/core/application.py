@@ -24,7 +24,7 @@ from newrelic.core.environment import environment_settings
 from newrelic.core.rules_engine import RulesEngine, SegmentCollapseEngine
 from newrelic.core.stats_engine import StatsEngine, CustomMetrics
 from newrelic.core.internal_metrics import (InternalTrace,
-        InternalTraceContext, internal_metric)
+        InternalTraceContext, internal_metric, internal_count_metric)
 from newrelic.core.xray_session import XraySession
 from newrelic.core.profile_sessions import profile_session_manager
 
@@ -1389,9 +1389,9 @@ class Application(object):
                             self._active_session.send_error_events(samp_info,
                                     error_events.samples)
 
-                        internal_metric('Supportability/Events/'
+                        internal_count_metric('Supportability/Events/'
                                 'TransactionError/Seen', error_events.num_seen)
-                        internal_metric('Supportability/Events/'
+                        internal_count_metric('Supportability/Events/'
                                 'TransactionError/Sent', num_error_samples)
 
                     stats.reset_error_events()

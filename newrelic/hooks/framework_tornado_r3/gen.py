@@ -46,10 +46,10 @@ def _nr_wrapper_Runner__init__(wrapped, instance, args, kwargs):
     # running in Runner and can associate metrics with it.
     # One strategy would be to store the function name on the transaction.
     # This can be problematic because an asynchronous/blocking action can occur
-    # in _make_coroutine_wrapper.wrapper before Runner.__init__ is called. This
-    # means other coroutines could run in the transaction between when we
+    # in the call to _make_coroutine_wrapper.wrapper before Runner.__init__.
+    # This means other coroutines could run in the transaction between when we
     # record the function name in the transaction and before Runner.__init__
-    # is called. Since these coroutines run asynchronously and don't nest we
+    # is called. Since these coroutines run asynchronously and don't nest, we
     # can't use a stack to keep track of which _make_coroutine_wrapper.wrapper
     # call belongs to which Runner.__init__ call.
 
@@ -58,7 +58,18 @@ def _nr_wrapper_Runner__init__(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     try:
+        # The only place in the Tornado code where a Runner is instantiated
+        # is in _make_coroutine_wrapper in Tornado's gen.py. We look up the
+        # stack from this call to __init__ to get the function name.
+        # In Python 2 we look up one frame. In Python 3 and PyPy, our wrapping
+        # gets in the way and we have to look up 2 frames. In general, we want
+        # to go up the call stack until we first encounter the tornado.gen
+        # module. We verify that the frame is in tornado.gen immediately outside
+        # this try block.
         frame_record = get_frame(1)
+        if frame_record.f_globals['__name__'] != 'tornado.gen':
+            frame_record = get_frame(2)
+
     except ValueError:
         _logger.debug('tornado.gen.Runner is being created at the top of the '
                 'stack. That means the Runner object is being created outside '

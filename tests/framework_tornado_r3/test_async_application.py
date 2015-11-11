@@ -293,10 +293,11 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:IOLoopDivideRequestHandler.get',
             scoped_metrics=[
-                # Class name is missing from this metric. This would be improved
-                # if the class name is present. We are verifying the current
-                # behavior.
-                ('Function/_test_async_application:get (coroutine)', 1)],
+                # The class name is missing from this metric in python 2
+                # though it should be present. See PYTHON-1798.
+                select_python_version(
+                    py2=('Function/_test_async_application:get (coroutine)', 1),
+                    py3=('Function/_test_async_application:IOLoopDivideRequestHandler.get (coroutine)', 1))],
             forgone_metric_substrings=['lambda'])
     def test_coroutine_names_not_lambda(self):
         response = self.fetch_response('/ioloop-divide/10000/10')

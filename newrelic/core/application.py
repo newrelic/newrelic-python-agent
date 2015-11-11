@@ -1389,9 +1389,9 @@ class Application(object):
                             self._active_session.send_error_events(samp_info,
                                     error_events.samples)
 
-                        internal_metric('Supportability/Python/Events/'
+                        internal_metric('Supportability/Events/'
                                 'TransactionError/Seen', error_events.num_seen)
-                        internal_metric('Supportability/Python/Events/'
+                        internal_metric('Supportability/Events/'
                                 'TransactionError/Sent', num_error_samples)
 
                     stats.reset_error_events()

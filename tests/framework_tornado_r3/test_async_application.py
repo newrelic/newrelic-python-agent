@@ -12,7 +12,8 @@ from newrelic.packages import six
 from _test_async_application import (get_tornado_app, HelloRequestHandler,
         SleepRequestHandler, OneCallbackRequestHandler,
         NamedStackContextWrapRequestHandler, MultipleCallbacksRequestHandler,
-        FinishExceptionRequestHandler, ReturnExceptionRequestHandler)
+        FinishExceptionRequestHandler, ReturnExceptionRequestHandler,
+        IOLoopDivideRequestHandler,)
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
@@ -301,3 +302,6 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
             forgone_metric_substrings=['lambda'])
     def test_coroutine_names_not_lambda(self):
         response = self.fetch_response('/ioloop-divide/10000/10')
+        expected = (IOLoopDivideRequestHandler.RESPONSE % (
+                10000.0, 10.0, 10000.0/10.0)).encode('ascii')
+        self.assertEqual(response.body, expected)

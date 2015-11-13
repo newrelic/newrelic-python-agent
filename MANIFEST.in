@@ -1,4 +1,4 @@
-include INSTALL
+include README.rst
 include VERSION
 include newrelic/newrelic.ini
 include newrelic/LICENSE

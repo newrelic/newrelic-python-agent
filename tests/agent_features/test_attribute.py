@@ -4,10 +4,12 @@ import webtest
 from newrelic.agent import (wsgi_application, add_custom_parameter,
     background_task)
 from newrelic.packages import six
-from newrelic.core.attribute import truncate, sanitize, MAX_64_BIT_INT
+from newrelic.core.attribute import (truncate, sanitize, Attribute,
+    MAX_64_BIT_INT, _DESTINATIONS_WITH_EVENTS)
 
 from testing_support.fixtures import (override_application_settings,
-    validate_attributes, validate_custom_parameters)
+    validate_attributes, validate_attributes_complete,
+    validate_custom_parameters)
 
 
 # Python 3 lacks longs
@@ -39,13 +41,15 @@ def test_intrinsics():
     response = target_application.get('/')
     assert response.body == b'Hello World!'
 
-_required_agent = ['request.method', 'wsgi.output.seconds', 'response.status']
+_required_agent = ['request.method', 'wsgi.output.seconds', 'response.status',
+                   'request.headers.host', 'request.headers.accept',
+                   'response.contentType', 'response.contentLength']
 _forgone_agent = []
 
 @validate_attributes('agent', _required_agent, _forgone_agent)
 def test_agent():
     target_application = webtest.TestApp(target_wsgi_application)
-    response = target_application.get('/')
+    response = target_application.get('/', extra_environ={'HTTP_ACCEPT': '*/*'})
     assert response.body == b'Hello World!'
 
 _required_user = []
@@ -98,6 +102,32 @@ _forgone_request_default = []
 def test_capture_request_params_default():
     target_application = webtest.TestApp(target_wsgi_application)
     response = target_application.get('/?foo=bar')
+    assert response.body == b'Hello World!'
+
+_required_display_host_default = []
+_forgone_display_host_default = ['host.displayName']
+
+@validate_attributes('agent', _required_display_host_default,
+        _forgone_display_host_default)
+def test_display_host_default():
+    target_application = webtest.TestApp(target_wsgi_application)
+    response = target_application.get('/')
+    assert response.body == b'Hello World!'
+
+_settings_display_host_custom = {'process_host.display_name': 'CUSTOM NAME'}
+
+_display_name_attribute = Attribute(name='host.displayName',
+        value='CUSTOM NAME', destinations=_DESTINATIONS_WITH_EVENTS)
+_required_display_host_custom = [_display_name_attribute]
+
+_forgone_display_host_custom = []
+
+@override_application_settings(_settings_display_host_custom)
+@validate_attributes_complete('agent', _required_display_host_custom,
+        _forgone_display_host_custom)
+def test_display_host_custom():
+    target_application = webtest.TestApp(target_wsgi_application)
+    response = target_application.get('/')
     assert response.body == b'Hello World!'
 
 # Tests for truncate()

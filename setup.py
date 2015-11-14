@@ -21,15 +21,13 @@ from distutils.command.build_ext import build_ext
 from distutils.errors import (CCompilerError, DistutilsExecError,
         DistutilsPlatformError)
 
-copyright = '(C) Copyright 2010-2015 New Relic Inc. All rights reserved.'
-
 script_directory = os.path.dirname(__file__)
 if not script_directory:
     script_directory = os.getcwd()
 
 develop_file = os.path.join(script_directory, 'DEVELOP')
 version_file = os.path.join(script_directory, 'VERSION')
-license_file = os.path.join(script_directory, 'LICENSE')
+readme_file = os.path.join(script_directory, 'README.rst')
 
 if os.path.exists(develop_file):
     # Building from source repository.
@@ -71,44 +69,60 @@ class optional_build_ext(build_ext):
             raise BuildExtFailed()
 
 packages = [
-  "newrelic",
-  "newrelic.admin",
-  "newrelic.api",
-  "newrelic.bootstrap",
-  "newrelic.common",
-  "newrelic.core",
-  "newrelic.extras",
-  "newrelic.extras.framework_django",
-  "newrelic.extras.framework_django.templatetags",
-  "newrelic.hooks",
-  "newrelic.hooks.framework_tornado",
-  "newrelic.network",
-  "newrelic/packages",
-  "newrelic/packages/requests",
-  "newrelic/packages/requests/packages",
-  "newrelic/packages/requests/packages/chardet",
-  "newrelic/packages/requests/packages/urllib3",
-  "newrelic/packages/requests/packages/urllib3/packages",
-  "newrelic/packages/requests/packages/urllib3/packages/ssl_match_hostname",
-  "newrelic/packages/requests/packages/urllib3/util",
-  "newrelic/packages/wrapt",
-  "newrelic.samplers",
+        "newrelic",
+        "newrelic.admin",
+        "newrelic.api",
+        "newrelic.bootstrap",
+        "newrelic.common",
+        "newrelic.core",
+        "newrelic.extras",
+        "newrelic.extras.framework_django",
+        "newrelic.extras.framework_django.templatetags",
+        "newrelic.hooks",
+        "newrelic.hooks.framework_tornado",
+        "newrelic.network",
+        "newrelic/packages",
+        "newrelic/packages/requests",
+        "newrelic/packages/requests/packages",
+        "newrelic/packages/requests/packages/chardet",
+        "newrelic/packages/requests/packages/urllib3",
+        "newrelic/packages/requests/packages/urllib3/packages",
+        "newrelic/packages/requests/packages/urllib3/packages/ssl_match_hostname",
+        "newrelic/packages/requests/packages/urllib3/util",
+        "newrelic/packages/wrapt",
+        "newrelic.samplers",
+]
+
+classifiers = [
+        "Development Status :: 5 - Production/Stable",
+        "License :: Other/Proprietary License",
+        "Programming Language :: Python :: 2.6",
+        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.3",
+        "Programming Language :: Python :: 3.4",
+        "Programming Language :: Python :: Implementation :: CPython",
+        "Programming Language :: Python :: Implementation :: PyPy",
+        "Topic :: System :: Monitoring",
 ]
 
 kwargs = dict(
-  name = "newrelic",
-  version = package_version,
-  description = "Python agent for New Relic",
-  author = "New Relic",
-  author_email = "support@newrelic.com",
-  license = copyright,
-  url = "http://www.newrelic.com",
-  packages = packages,
-  package_data = { 'newrelic': ['newrelic.ini', 'LICENSE',
-          'packages/requests/LICENSE', 'packages/requests/NOTICE',
-          'packages/requests/cacert.pem'] },
-  extra_path = ( "newrelic", "newrelic-%s" % package_version ),
-  scripts = [ 'scripts/newrelic-admin' ],
+        name = "newrelic",
+        version = package_version,
+        description = "New Relic Python Agent",
+        long_description = open(readme_file).read(),
+        url = "http://newrelic.com/docs/python/new-relic-for-python",
+        author = "New Relic",
+        author_email = "support@newrelic.com",
+        maintainer = 'New Relic',
+        maintainer_email = 'support@newrelic.com',
+        license = 'New Relic License',
+        classifiers = classifiers,
+        packages = packages,
+        package_data = { 'newrelic': ['newrelic.ini', 'LICENSE',
+              'packages/requests/LICENSE', 'packages/requests/NOTICE',
+              'packages/requests/cacert.pem'] },
+        extra_path = ( "newrelic", "newrelic-%s" % package_version ),
+        scripts = [ 'scripts/newrelic-admin' ],
 )
 
 if with_setuptools:
@@ -126,6 +140,10 @@ def with_librt():
 
 def run_setup(with_extensions):
     def _run_setup():
+
+        # Create a local copy of kwargs, if there is no c compiler run_setup
+        # will need to be re-run, and these arguments can not be present.
+
         kwargs_tmp = dict(kwargs)
 
         if with_extensions:

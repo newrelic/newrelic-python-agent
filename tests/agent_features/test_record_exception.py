@@ -2,7 +2,12 @@ import sys
 
 from testing_support.fixtures import (validate_transaction_errors,
         override_application_settings, core_application_stats_engine,
-        core_application_stats_engine_error, error_is_saved)
+        core_application_stats_engine_error, error_is_saved,
+        reset_core_stats_engine, validate_application_errors,
+        validate_transaction_error_trace_count,
+        validate_application_error_trace_count,
+        validate_transaction_error_event_count,
+        validate_application_error_event_count  )
 
 from newrelic.agent import (background_task, record_exception,
         application_settings, application, callable_name)
@@ -10,6 +15,8 @@ from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 
 _runtime_error_name = callable_name(RuntimeError)
 _type_error_name = callable_name(TypeError)
+
+# =============== Test errors during a transaction ===============
 
 _test_record_exception_sys_exc_info = [
         (_runtime_error_name, 'one')]
@@ -32,6 +39,18 @@ def test_record_exception_no_exc_info():
         raise RuntimeError('one')
     except RuntimeError:
         record_exception()
+
+_test_record_exception_custom_params = [
+        (_runtime_error_name, 'one')]
+
+@validate_transaction_errors(errors=_test_record_exception_custom_params,
+        required_params=[('key', 'value')])
+@background_task()
+def test_record_exception_custom_params():
+    try:
+        raise RuntimeError('one')
+    except RuntimeError:
+        record_exception(*sys.exc_info(), params={'key': 'value'})
 
 _test_record_exception_multiple_different_type = [
         (_runtime_error_name, 'one'),
@@ -66,6 +85,70 @@ def test_record_exception_multiple_same_type():
         raise RuntimeError('two')
     except RuntimeError:
         record_exception()
+
+# =============== Test errors outside a transaction ===============
+
+_test_application_exception = [
+        (_runtime_error_name, 'one')]
+
+@reset_core_stats_engine()
+@validate_application_errors(errors=_test_application_exception)
+def test_application_exception():
+    try:
+        raise RuntimeError('one')
+    except RuntimeError:
+        application_instance = application()
+        record_exception(application=application_instance)
+
+_test_application_exception_sys_exc_info = [
+        (_runtime_error_name, 'one')]
+
+@reset_core_stats_engine()
+@validate_application_errors(errors=_test_application_exception_sys_exc_info)
+def test_application_exception_sys_exec_info():
+    try:
+        raise RuntimeError('one')
+    except RuntimeError:
+        application_instance = application()
+        record_exception(*sys.exc_info(), application=application_instance)
+
+_test_application_exception_custom_params = [
+        (_runtime_error_name, 'one')]
+
+@reset_core_stats_engine()
+@validate_application_errors(errors=_test_application_exception_custom_params,
+        required_params=[('key', 'value')])
+def test_application_exception_custom_params():
+    try:
+        raise RuntimeError('one')
+    except RuntimeError:
+        application_instance = application()
+        record_exception(params={'key': 'value'},
+                application=application_instance)
+
+_test_application_exception_multiple = [
+        (_runtime_error_name, 'one'),
+        (_runtime_error_name, 'one')]
+
+@reset_core_stats_engine()
+@validate_application_errors(errors=_test_application_exception_multiple)
+@background_task()
+def test_application_exception_multiple():
+    """Exceptions submitted straight to the stats engine doesn't check for
+    duplicates
+    """
+    application_instance = application()
+    try:
+        raise RuntimeError('one')
+    except RuntimeError:
+        record_exception(application=application_instance)
+
+    try:
+        raise RuntimeError('one')
+    except RuntimeError:
+        record_exception(application=application_instance)
+
+# =============== Test exception message stripping/whitelisting ===============
 
 _test_record_exception_strip_message_disabled = [
         (_runtime_error_name, 'one')]
@@ -244,3 +327,52 @@ def test_record_exception_strip_message_not_in_whitelist_outside_transaction():
 
     my_error = core_application_stats_engine_error(_error_four_name)
     assert my_error.message == STRIP_EXCEPTION_MESSAGE
+
+# =============== Test exception limits ===============
+
+def _raise_errors(num_errors, application=None):
+    for i in range(num_errors):
+        try:
+            raise RuntimeError('error'+str(i))
+        except RuntimeError:
+            record_exception(application=application)
+
+_errors_per_transaction_limit = 5
+_num_errors_transaction = 6
+_errors_per_harvest_limit = 20
+_num_errors_app = 26
+_error_event_limit = 25
+
+@override_application_settings(
+        {'agent_limits.errors_per_transaction': _errors_per_transaction_limit})
+@validate_transaction_error_trace_count(_errors_per_transaction_limit)
+@background_task()
+def test_transaction_error_trace_limit():
+    _raise_errors(_num_errors_transaction)
+
+@override_application_settings(
+        {'agent_limits.errors_per_harvest': _errors_per_harvest_limit})
+@reset_core_stats_engine()
+@validate_application_error_trace_count(_errors_per_harvest_limit)
+def test_application_error_trace_limit():
+    _raise_errors(_num_errors_app, application())
+
+# The limit for errors on transactions is shared for traces and errors
+
+@override_application_settings({
+        'agent_limits.errors_per_transaction': _errors_per_transaction_limit,
+        'error_collector.max_event_samples_stored': _error_event_limit})
+@validate_transaction_error_event_count(_errors_per_transaction_limit)
+@background_task()
+def test_transaction_error_event_limit():
+    _raise_errors(_num_errors_transaction)
+
+# The harvest limit for error traces doesn't affect events
+
+@override_application_settings({
+        'agent_limits.errors_per_harvest': _errors_per_harvest_limit,
+        'error_collector.max_event_samples_stored': _error_event_limit})
+@reset_core_stats_engine()
+@validate_application_error_event_count(_error_event_limit)
+def test_application_error_event_limit():
+    _raise_errors(_num_errors_app, application())

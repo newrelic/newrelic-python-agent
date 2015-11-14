@@ -25,6 +25,7 @@ _DESTINATIONS_WITH_EVENTS = _DESTINATIONS | DST_TRANSACTION_EVENTS
 # The following subset goes to transaction events by default.
 
 _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = [
+        'host.displayName',
         'request.method',
         'request.headers.contentType',
         'request.headers.contentLength',

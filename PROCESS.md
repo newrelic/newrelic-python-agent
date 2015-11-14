@@ -123,10 +123,55 @@ Details for obtaining access to our account on PyPi can be found at:
 
 * [Python Agent Managing the Package Index](https://newrelic.atlassian.net/wiki/display/eng/Python+Agent+Managing+The+Package+Index)
 
+Details for obtaining access to our own download site can be found at:
+
+* [Python Agent Managing The Download Site](https://newrelic.atlassian.net/wiki/display/eng/Python+Agent+Managing+The+Download+Site)
+
 In cases where it is necessary to provide a test version to a customer prior
 to an official release, these would generally be made available via:
 
 * http://download.newrelic.com/python_agent/testing/
+
+Pre-Release Steps
+-----------------
+
+1.  Create drafts of any new or changed documentation. Notify the "Documentation"
+heroes about each changed document, and let them know when we plan to release, so
+that they can plan to release the new documentation immediately after we release.
+
+    Getting to "final copy" on the documentation can take a bit of back and forth,
+so the earlier this step can be done, the better.
+
+2.  Schedule the release with the [CAB Tool](https://upboard.datanerd.us/changes).
+Ideally, this should be done at least a day in advance. The key pieces of information that
+you'll need to fill out the release form are:
+
+  1. Link to the release notes (draft version is OK.)
+  2. Risk level assessment (Low, Medium or High)
+  3. Brief description of feature(s) in release
+
+2.  Draft the release notes. These are
+hosted at: https://docs.newrelic.com/docs/release-notes/agent-release-notes/python-release-notes.
+
+    To create a draft of the release notes, log in to the documentation site
+(through Onelogin), go to the release notes for the previous release, and
+click the 'Clone Content' link. Be sure to take 'Clone of' out of the page title.
+There are also at least three places where the version number must be updated in the
+page. Increment the build number by one from the previous release. Most likely,
+that will be the build number for the release version. If it isn't, it will
+need to be changed during the release process.
+
+3.  Draft the New & Noteworthy update for Foglights for each Foglights project that
+is being released. This should be a short summary of what the feature is, focusing
+on how it benefits our customers, and written in a way that will make sense to both
+Engineering and Sales/Marketing.
+
+    An image (usually a screenshot) **MUST** be included in each New & Noteworthy.
+
+4.  Draft the Support notes for the release. This is where we describe key things that
+Support will need to know about the release, but aren't necessarily in the public
+documentation, such as specific problems to look out for, new configuration settings,
+etc. Include links to the release notes and any changed or new documentation.
 
 Performing a Standard Release
 -----------------------------
@@ -134,9 +179,6 @@ Performing a Standard Release
 Once work has finished on a development version and all testing has been
 performed and the code approved for release, the following steps should be
 carried out to do the actual release.
-
-0. Talk to CAB (a hipchat room) and give them the links to the CAB approval
-   document. Get their approval before proceeding.
 
 1. Check out the ``develop`` branch of the Python agent repository and
 update the version number in ``newrelic/__init__.py`` for the release.
@@ -150,26 +192,47 @@ run and ensure package builds.
 
 3. Run locally ``./tests.sh`` to ensure that all base level unit tests pass.
 
+    This test can also be run in docker, with `packnsend`:
+
+        packnsend run /data/tests.sh
+
 4. Perform any other final adhoc local tests deemed necessary for the release.
 
 5. Commit change made to ``newrelic/__init__.py`` into the ``develop``
-branch.
+branch. Format the commit message like this:
 
-6. Follow ``git-flow`` procedure to create a release branch with name
+        Increment version to A.B.C for release.
+
+6. Follow git-flow procedure to create a release branch with name
 ``vA.B.C``.
 
     With our odd/even numbering scheme, ``B`` should always be even. This
-string will become the final tag ``git-flow`` will add when finishing the
+string will become the final tag git-flow will add when finishing the
 release.
+
+    Confirm that you are in the `develop` branch, then run:
+
+        git flow release start vA.B.C
 
 7. If necessary, push release branch back to github for further testing by
 the rest of the Python agent team. Wait for confirmation before proceeding
 if such testing is required.
 
-8. Follow ``git-glow`` procedure to finish the release branch.
+8. Follow git-flow procedure to finish the release branch.
+
+    From the command line:
+
+        git flow release finish vA.B.C
+
+    You will be prompted to create a merge commit message and a git tag. Hitting
+enter and accepting the default is fine.
 
 9. Switch back to the ``develop`` branch and perform a merge from
 ``master`` back into the ``develop`` branch.
+
+    Confirm that you are on the `develop` branch, then run:
+
+        git merge master
 
     This is to synchronize the two branches so git doesn't keep tracking them
 as completely parallel paths of development with consequent strange results
@@ -182,12 +245,25 @@ when trying to compare branches.
 odd/even numbering scheme, ``B`` should always be odd after this change.
 
 11. Commit change made to ``newrelic/__init__.py`` into the ``develop``
-branch.
+branch. Format the commit message like this:
+
+        Increment version to A.B.C for development.
 
 12. Push both the ``develop`` and ``master`` branches back to the GIT repo.
 
+    From the command line:
+
+        git push origin develop
+        git push origin master
+
     This action will also trigger the Jenkins ``Python_Agent-MASTER`` and
-``Python_Agent-DEVELOP`` jobs.
+``Python_Agent-DEVELOP`` jobs. If the automatic trigger does not work, then
+run the tests manually in [Jenkins][Jenkins].
+
+[Jenkins]: https://pdx-hudson.datanerd.us/view/Python/
+
+    In addition, run the `Python_Agent-DOCKER-NEW` tests manually for the
+`master` branch. Click `Build with parameters` and set the branch to `master`.
 
 13. Check that ``Python_Agent-MASTER-TESTS`` in Jenkins runs and all tests
 pass okay.
@@ -196,77 +272,91 @@ pass okay.
 the form ``vA.B.C.D``, where ``D`` is now the build number from
 ``Python_Agent-MASTER`` and make sure the tag is pushed to github master.
 This should be the same commit as already had the tag ``vA.B.C`` which was
-added by ``git-flow``.
+added by git-flow.
 
-15. In Jenkins mark the corresponding build in ``Python_Agent-MASTER`` as
+    From the command line:
+
+        # Create tag
+        git tag vA.B.C.D
+
+        # Tags don't get pushed to GHE automatically, so you must do it.
+        git push origin vA.B.C
+        git push origin vA.B.C.D
+
+15. In Jenkins, mark the corresponding build in ``Python_Agent-MASTER`` as
 keep forever.
 
-16. Upload the package to the ``release`` directory for ``python_agent`` on
-hosts used by ``download.newrelic.com``. Generate a file in the same
-directory for the download with an ``.md5`` extension which contains the MD5
-hash of the package.
+    1. Click on [Python_Agent-Master][master].
+    2. Click on the most-recent build in "Build History" in the left sidebar.
+    3. Click on blue "Keep this build forever" button in top-right corner.
+
+[master]: https://pdx-hudson.datanerd.us/view/Python/job/Python_Agent-MASTER/
+
+16. Download the source tarball from Jenkins that you just marked as "Keep
+forever". This will be the tarball you upload to `download.newrelic.com` and
+to `PyPI`.
+
+    1. Click on [Python_Agent-Master][master].
+    2. Click on the most-recent build (the one you marked as "Keep" in the
+       previous step) in "Build History" in the left sidebar.
+    3. Scroll to bottom and click "default" under the "Configurations" heading.
+    4. Click the link to the tarball under "Build Artifacts".
+
+[master]: https://pdx-hudson.datanerd.us/view/Python/job/Python_Agent-MASTER/
+
+17. Create an MD5 file with the same name as the source tarball, but with an
+`.md5` extension. (Example: `newrelic-2.56.0.42.tar.gz.md5`.)
+
+    Get the MD5 of the package with this command:
+
+        md5 newrelic-2.56.0.42.tar.gz
+
+    Cut and paste the MD5 into the `newrelic-2.56.0.42.tar.gz.md5` file.
+
+18. Upload the source package and the MD5 file to the ``release`` directory
+for ``python_agent`` on hosts used by ``download.newrelic.com``.
 
     For more details on working with the New Relic download site and
-transferring files across see: [Managing the Package Index][pkg_index].
+transferring files across see: [Managing the Download Site][download].
 
-[pkg_index]: https://newrelic.atlassian.net/wiki/display/eng/Python+Agent+Managing+The+Package+Index
+[download]: https://newrelic.atlassian.net/wiki/display/eng/Python+Agent+Managing+The+Download+Site
 
-17. Ensure that release notes are updated for the new version. These are
-hosted at: https://docs.newrelic.com/docs/release-notes/agent-release-notes/python-release-notes
-
-    It is easiest to clone an existing set of release notes and change the
-content, just make sure you take 'Clone of' out of the page title. There are
-also at least three places where the version number must be updated in the
-page.
-
-    If preparing in advance and don't know the full version number, use ``X``
-for the last number. When you go to release you should change all instances of
-``X`` and **ALSO** reset the date/time for the release else it will show the
-date/time for the old page.
-
-    When renaming ``X`` and saving page, in a separate window check that you
-can get to the page in question. If it goes into a redirect loop then you need
-to go into the page and find 'Url Redirects' down the bottom of page and
-delete any bogus URL redirects. This may only be an issue if you accidentally
-publish the page with ``X`` and rename afterwards, so make sure the ``X`` is
-changed before publishing. Either way, perhaps check there are no redirects as
-they shouldn't be needed on new page.
-
-    Note that publishing the page by saying that it is ready for publication
-will make it public straight away, there is no review process.
-
-18. Update the ``python_agent_version`` configuration to ``A.B.C.D`` in APM
+19. Update the ``python_agent_version`` configuration to ``A.B.C.D`` in APM
 systems configuration page at: https://rpm.newrelic.com/admin/system_configurations.
 
     If we need to notify existing users to update their older agents, also
 update the ``min_python_agent_version`` to ``A.B.C.D``.
 
-19. Create a new Python package index (PyPi) entry for the new release and
-attach the tar ball.
+20. Follow the instructions on the wiki page to [upload the source package toPyPI][pypi].
 
     Validate that ``pip install`` of package into a virtual environment works
 and that a ``newrelic-admin validate-config`` test runs okay.
 
-20. Make sure any documentation specific to the release is marked as ready
-for publication and a JIRA issue created in DOCS project to have it
-released. Ask someone in the DOCS team to perform the update to production
-if important to get to production quickly.
+[pypi]: https://newrelic.atlassian.net/wiki/display/eng/Python+Agent+Managing+The+Package+Index)
 
-21. Send an email to ``agent-releases@newrelic.com`` notifying them about
+21. Verify that the build number is correct in the version string in the release notes. If
+it needs to change, edit the release notes, but get in touch with the Documentation team so
+that they can change the URL for the release notes page.
+
+22. Make the "Release Notes" public. (You don't need to have the Documentation
+Team do this step. We have the authority to publish release notes.)
+
+23. Contact the Documentation team so they can release any new or changed
+public documentation.
+
+24. Send an email to ``agent-releases@newrelic.com`` notifying them about
 the release. This will go to agent-team, partnership-team, and other
 interested parties. Include a copy of the public release notes, plus a
 separate section if necessary with additional details that may be relevant
 to internal parties.
 
-22. Send a separate email to ``python-support@newrelic.com`` if there is
-any special extra information that the support team should be aware of.
+25. Send an email to ``python-support@newrelic.com`` with the Support notes
+drafted in the pre-release steps.
 
-23. Add New & Noteworthy entries (multiple) via Fog Lights for the key
+26. Notify Python Agent HipChat room that release is out!
+
+27. Add New & Noteworthy entries (multiple) via Fog Lights for the key
 feature(s) or improvement(s) in the release.
 
-24. Make sure that all JIRA stories associated with the release version have
-been updated as having been released. The current agent dashboard can be
-found at: https://newrelic.atlassian.net/secure/Dashboard.jspa?selectPageId=11912
-
-25. Switch over JIRA Python agent filters for current/next/next+1 releases
-so current dashboard now shows issues for next release.
+28. Make sure that all JIRA stories associated with the release version have
+been updated as having been released.

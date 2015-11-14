@@ -226,20 +226,32 @@ class SampledDataSet(object):
     def __init__(self, capacity=100):
         self.samples = []
         self.capacity = capacity
-        self.count = 0
+        self.num_seen = 0
+
+    @property
+    def num_samples(self):
+        return len(self.samples)
 
     def reset(self):
         self.samples = []
-        self.count = 0
+        self.num_seen = 0
 
     def add(self, sample):
-        if len(self.samples) < self.capacity:
+        if self.num_samples < self.capacity:
             self.samples.append(sample)
         else:
-            index = random.randint(0, self.count)
+            index = random.randint(0, self.num_seen)
             if index < self.capacity:
                 self.samples[index] = sample
-        self.count += 1
+        self.num_seen += 1
+
+    def merge(self, other_data_set):
+        for item in other_data_set.samples:
+            self.add(item)
+
+        # Make sure num_seen includes total items seen from merged set
+
+        self.num_seen += other_data_set.num_seen - other_data_set.num_samples
 
 class StatsEngine(object):
 
@@ -272,7 +284,8 @@ class StatsEngine(object):
     def __init__(self):
         self.__settings = None
         self.__stats_table = {}
-        self.__sampled_data_set = SampledDataSet()
+        self.__transaction_events = SampledDataSet()
+        self.__error_events = SampledDataSet()
         self.__sql_stats_table = {}
         self.__slow_transaction = None
         self.__slow_transaction_map = {}
@@ -306,8 +319,8 @@ class StatsEngine(object):
         return self.__metric_ids
 
     @property
-    def sampled_data_set(self):
-        return self.__sampled_data_set
+    def transaction_events(self):
+        return self.__transaction_events
 
     @property
     def synthetics_events(self):
@@ -316,6 +329,17 @@ class StatsEngine(object):
     @property
     def synthetics_transactions(self):
         return self.__synthetics_transactions
+
+    @property
+    def error_events(self):
+        return self.__error_events
+
+    def error_events_sampling_info(self):
+        sampling_info = {
+                'reservoir_size' : self.error_events.capacity,
+                'events_seen' : self.error_events.num_seen
+        }
+        return sampling_info
 
     def update_metric_ids(self, metric_ids):
         """Updates the dictionary containing the mappings from metric
@@ -422,11 +446,10 @@ class StatsEngine(object):
 
         error_collector = settings.error_collector
 
-        if not error_collector.enabled or not settings.collect_errors:
+        if not error_collector.enabled:
             return
 
-        if (len(self.__transaction_errors) >=
-                settings.agent_limits.errors_per_harvest):
+        if not settings.collect_errors and not settings.collect_error_events:
             return
 
         # If no exception details provided, use current exception.
@@ -504,9 +527,9 @@ class StatsEngine(object):
             custom_params = {}
 
             for k, v in params.items():
-                name, value = process_user_attribute(k, v)
+                name, val = process_user_attribute(k, v)
                 if name:
-                    custom_params[name] = value
+                    custom_params[name] = val
 
             attributes = create_user_attributes(custom_params,
                     settings.attribute_filter)
@@ -518,11 +541,20 @@ class StatsEngine(object):
             message = STRIP_EXCEPTION_MESSAGE
         else:
             try:
-                message = str(value)
+                # Favor unicode in exception messages.
+
+                message = six.text_type(value)
+
             except Exception:
                 try:
-                    # Assume JSON encoding can handle unicode.
-                    message = six.text_type(value)
+
+                    # If exception cannot be represented in unicode, this means
+                    # that it is a byte string encoded with an encoding
+                    # that is not compatible with the default system encoding.
+                    # So, just pass this byte string along.
+
+                    message = str(value)
+
                 except Exception:
                     message = '<unprintable %s object>' % type(value).__name__
 
@@ -545,7 +577,34 @@ class StatsEngine(object):
                 type=fullname,
                 parameters=params)
 
-        self.__transaction_errors.append(error_details)
+        # Save this error as a trace and an event.
+
+        if error_collector.capture_events and settings.collect_error_events:
+            event = self._error_event(error_details)
+            self.__error_events.add(event)
+
+        if settings.collect_errors and (len(self.__transaction_errors) <
+                settings.agent_limits.errors_per_harvest):
+            self.__transaction_errors.append(error_details)
+
+    def _error_event(self, error):
+
+        # This method is for recording error events outside of transactions,
+        # don't let the poorly named 'type' attribute fool you.
+
+        intrinsics = {
+                'type' : 'TransactionError',
+                'error.class' : error.type,
+                'error.message' : error.message,
+                'timestamp' : error.start_time,
+                'transactionName' : None,
+        }
+
+        # Leave agent attributes field blank since not a transaction
+
+        error_event = [intrinsics, error.parameters['userAttributes'], {}]
+
+        return error_event
 
     def record_custom_metric(self, name, value):
         """Record a single value metric, merging the data with any data
@@ -755,6 +814,12 @@ class StatsEngine(object):
                 self.__transaction_errors = self.__transaction_errors[:
                         settings.agent_limits.errors_per_harvest]
 
+        if (error_collector.capture_events and error_collector.enabled
+                and settings.collect_error_events):
+            events = transaction.error_events(self.__stats_table)
+            for event in events:
+                self.__error_events.add(event)
+
         # Capture any sql traces if transaction tracer enabled.
 
         if slow_sql.enabled and settings.collect_traces:
@@ -787,7 +852,7 @@ class StatsEngine(object):
             if transaction.duration >= threshold:
                 self._update_slow_transaction(transaction)
 
-        # Create the analytic (transaction) event and add it to the
+        # Create the transaction event and add it to the
         # appropriate "bucket." Synthetic requests are saved in one,
         # while transactions from regular requests are saved in another.
 
@@ -802,7 +867,7 @@ class StatsEngine(object):
                 settings.transaction_events.enabled):
 
             event = transaction.transaction_event(self.__stats_table)
-            self.__sampled_data_set.add(event)
+            self.__transaction_events.add(event)
 
     @internal_trace('Supportability/Python/StatsEngine/Calls/metric_data')
     def metric_data(self, normalizer=None):
@@ -1175,11 +1240,8 @@ class StatsEngine(object):
         self.__xray_transactions = []
         self.xray_sessions = {}
 
-        if settings is not None:
-            self.__sampled_data_set = SampledDataSet(
-                    settings.transaction_events.max_samples_stored)
-        else:
-            self.__sampled_data_set = SampledDataSet()
+        self.reset_transaction_events()
+        self.reset_error_events()
 
     def reset_metric_stats(self):
         """Resets the accumulated statistics back to initial state for
@@ -1189,17 +1251,24 @@ class StatsEngine(object):
 
         self.__stats_table = {}
 
-    def reset_sampled_data(self):
+    def reset_transaction_events(self):
         """Resets the accumulated statistics back to initial state for
         sample analytics data.
 
         """
 
         if self.__settings is not None:
-            self.__sampled_data_set = SampledDataSet(
+            self.__transaction_events = SampledDataSet(
                     self.__settings.transaction_events.max_samples_stored)
         else:
-            self.__sampled_data_set = SampledDataSet()
+            self.__transaction_events = SampledDataSet()
+
+    def reset_error_events(self):
+        if self.__settings is not None:
+            self.__error_events = SampledDataSet(
+                    self.__settings.error_collector.max_event_samples_stored)
+        else:
+            self.__error_events = SampledDataSet()
 
     def reset_synthetics_events(self):
         """Resets the accumulated statistics back to initial state for
@@ -1270,11 +1339,8 @@ class StatsEngine(object):
         self.__synthetics_events = []
         self.__synthetics_transactions = []
 
-        if self.__settings is not None:
-            self.__sampled_data_set = SampledDataSet(
-                    self.__settings.transaction_events.max_samples_stored)
-        else:
-            self.__sampled_data_set = SampledDataSet()
+        self.reset_transaction_events()
+        self.reset_error_events()
 
         return stats
 
@@ -1292,25 +1358,49 @@ class StatsEngine(object):
 
         return stats
 
-    def merge_metric_stats(self, snapshot, rollback=False):
-
-        """Merges metric data from a snapshot. This is used when merging
-        data from a single transaction into main stats engine. It would
-        also be done if the sending of the metric data from the harvest
-        failed and wanted to keep accumulating it for subsequent
-        harvest.
-
+    def merge(self, snapshot):
+        """Merges data from a single transaction. Snapshot is an instance of
+        StatsEngine that contains stats for the single transaction.
         """
 
         if not self.__settings:
             return
 
-        if rollback:
-            _logger.debug('Performing rollback of metric data into '
-                    'subsequent harvest period.')
+        self.merge_metric_stats(snapshot)
+        self._merge_transaction_events(snapshot)
+        self._merge_synthetics_events(snapshot)
+        self._merge_error_events(snapshot)
+        self._merge_error_traces(snapshot)
+        self._merge_sql(snapshot)
+        self._merge_traces(snapshot)
 
-        # Merge back data into any new data which has been
-        # accumulated.
+    def rollback(self, snapshot):
+        """Performs a "rollback" merge after a failed harvest. Snapshot is a
+        copy of the main StatsEngine data that we attempted to harvest, but
+        failed. Not all types of data get merged during a rollback.
+        """
+
+        if not self.__settings:
+            return
+
+        _logger.debug('Performing rollback of data into '
+                'subsequent harvest period. Metric data and transaction events'
+                'will be preserved and rolled into next harvest')
+
+        self.merge_metric_stats(snapshot)
+        self._merge_transaction_events(snapshot, rollback=True)
+        self._merge_synthetics_events(snapshot, rollback=True)
+        self._merge_error_events(snapshot)
+
+    def merge_metric_stats(self, snapshot):
+        """Merges metric data from a snapshot. This is used both when merging
+        data from a single transaction into the main stats engine, and for
+        performing a rollback merge. In either case, the merge is done the exact
+        same way.
+        """
+
+        if not self.__settings:
+            return
 
         for key, other in six.iteritems(snapshot.__stats_table):
             stats = self.__stats_table.get(key)
@@ -1319,158 +1409,117 @@ class StatsEngine(object):
             else:
                 stats.merge_stats(other)
 
-    def merge_other_stats(self, snapshot, merge_traces=True,
-            merge_errors=True, merge_sql=True, merge_samples=True,
-            merge_synthetics_events=True, rollback=False):
+    def _merge_transaction_events(self, snapshot, rollback=False):
 
-        """Merges non metric data from a snapshot. This would only be
-        used when merging data from a single transaction into main
-        stats engine. It is assumed the snapshot has newer data and
-        that any existing data takes precedence where what should be
-        collected is not otherwised based on time.
+        # Merge in transaction events. In the normal case snapshot is a
+        # StatsEngine from a single transaction, and should only have one event.
+        # Just to avoid issues, if there is more than one, don't merge.
 
-        """
-
-        if not self.__settings:
-            return
+        # If this is a rollback, snapshot is a copy of a previous main
+        # StatsEngine, and self is still the current main StatsEngine. Then
+        # we are merging multiple events, but still using the reservoir sampling
+        # that gives equal probability for keeping all events
 
         if rollback:
-            _logger.debug('Performing rollback of non metric data into '
-                    'subsequent harvest period where merge_traces=%r, '
-                    'merge_errors=%r, merge_sql=%r and merge_samples=%r.',
-                    merge_traces, merge_errors, merge_sql, merge_samples)
+            for sample in snapshot.__transaction_events.samples:
+                self.__transaction_events.add(sample)
 
-        settings = self.__settings
+        else:
+            if snapshot.__transaction_events.num_samples == 1:
+                self.__transaction_events.add(
+                        snapshot.__transaction_events.samples[0])
 
-        # Merge in sampled data set. For normal case, as this is merging
-        # data from a single transaction, there should only be one. Just
-        # to avoid issues, if there is more than one, don't merge. In
-        # the case of a rollback merge because of a network issue, then
-        # we have to merge differently, restoring the old sampled data
-        # and applying the new data over the top. This gives precedence
-        # to the newer data.
+    def _merge_synthetics_events(self, snapshot, rollback=False):
 
-        if merge_samples:
-            if rollback:
-                new_sample_data_set = self.__sampled_data_set
-                self.__sampled_data_set = snapshot.__sampled_data_set
+        # Merge Synthetic analytic events, appending to the list
+        # that contains events from previous transactions. In the normal
+        # case snapshot is a StatsEngine from a single transaction, and should
+        # only have one event. Cap this list at a maximum, so that newer events
+        # over the limit will be thrown out.
 
-                for sample in new_sample_data_set.samples:
-                    self.__sampled_data_set.add(sample)
+        # If this is a rollback, snapshot is a copy of a previous main
+        # StatsEngine, and self is still the current main StatsEngine,
+        # Thus, the events already existing in this object will be newer than
+        # those in snapshot, and we favor the newer events.
 
-            else:
-                if snapshot.__sampled_data_set.count == 1:
-                    self.__sampled_data_set.add(
-                            snapshot.__sampled_data_set.samples[0])
+        if rollback:
+            self.__synthetics_events.extend(snapshot.__synthetics_events)
+        else:
+            if len(snapshot.__synthetics_events) == 1:
+                self.__synthetics_events.append(
+                    snapshot.__synthetics_events[0])
 
-        # Merge Synthetic analytic events, following same rules as for
-        # sampled data set described above.
+        maximum = self.__settings.agent_limits.synthetics_events
+        self.__synthetics_events = self.__synthetics_events[:maximum]
 
-        if merge_synthetics_events:
-            if rollback:
-                self.__synthetics_events.extend(snapshot.__synthetics_events)
-            else:
-                if len(snapshot.__synthetics_events) == 1:
-                    self.__synthetics_events.append(
-                        snapshot.__synthetics_events[0])
+    def _merge_error_events(self, snapshot):
 
-            maximum = settings.agent_limits.synthetics_events
-            self.__synthetics_events = self.__synthetics_events[:maximum]
+        # Merge in error events. Since we are using reservoir sampling that
+        # gives equal probability to keeping each event, merge is the same as
+        # rollback. There may be multiple error events per transaction.
+
+        self.__error_events.merge(snapshot.error_events)
+
+    def _merge_error_traces(self, snapshot):
 
         # Append snapshot error details at end to maintain time
-        # based order and then trim at maximum to be kept.
+        # based order and then trim at maximum to be kept. snapshot will
+        # always have newer data.
 
-        if merge_errors:
-            maximum = settings.agent_limits.errors_per_harvest
-            self.__transaction_errors.extend(snapshot.__transaction_errors)
-            self.__transaction_errors = self.__transaction_errors[:maximum]
+        maximum = self.__settings.agent_limits.errors_per_harvest
+        self.__transaction_errors.extend(snapshot.__transaction_errors)
+        self.__transaction_errors = self.__transaction_errors[:maximum]
+
+    def _merge_sql(self, snapshot):
 
         # Add sql traces to the set of existing entries. If over
         # the limit of how many to collect, only merge in if already
         # seen the specific SQL.
 
-        if merge_sql:
-            maximum = settings.agent_limits.slow_sql_data
-            for key, other in six.iteritems(snapshot.__sql_stats_table):
-                stats = self.__sql_stats_table.get(key)
-                if not stats:
-                    if len(self.__sql_stats_table) < maximum:
-                        self.__sql_stats_table[key] = copy.copy(other)
-                else:
-                    stats.merge_stats(other)
+        for key, slow_sql_stats in six.iteritems(snapshot.__sql_stats_table):
+            stats = self.__sql_stats_table.get(key)
+            if not stats:
+                maximum = self.__settings.agent_limits.slow_sql_data
+                if len(self.__sql_stats_table) < maximum:
+                    self.__sql_stats_table[key] = copy.copy(slow_sql_stats)
+            else:
+                stats.merge_stats(slow_sql_stats)
 
-        # Restore original slow transaction if slower than any newer slow
-        # transaction. Also append any saved transactions corresponding to
-        # x-ray traces, trimming them at the maximum to be kept.
+    def _merge_traces(self, snapshot):
 
-        if merge_traces:
+        # Limit number of x-ray traces to the limit.
+        # Spill over traces after the limit should have no x-ray ids. This
+        # qualifies the trace to be considered for slow transaction.
 
-            # Limit number of xray traces to the limit (10)
-            # Spill over traces after the limit should have no x-ray ids. This
-            # qualifies the trace to be considered for slow transaction.
+        maximum = self.__settings.agent_limits.xray_transactions
+        self.__xray_transactions.extend(snapshot.__xray_transactions)
+        for txn in self.__xray_transactions[maximum:]:
+            txn.xray_id = None
+        self.__xray_transactions = self.__xray_transactions[:maximum]
 
-            maximum = settings.agent_limits.xray_transactions
-            self.__xray_transactions.extend(snapshot.__xray_transactions)
-            for txn in self.__xray_transactions[maximum:]:
-                txn.xray_id = None
-            self.__xray_transactions = self.__xray_transactions[:maximum]
+        # Limit number of Synthetics transactions
 
-            # Limit number of Synthetics transactions
+        maximum = self.__settings.agent_limits.synthetics_transactions
+        self.__synthetics_transactions.extend(
+                snapshot.__synthetics_transactions)
+        synthetics_slice = self.__synthetics_transactions[:maximum]
+        self.__synthetics_transactions = synthetics_slice
 
-            maximum = settings.agent_limits.synthetics_transactions
-            self.__synthetics_transactions.extend(
-                    snapshot.__synthetics_transactions)
-            synthetics_slice = self.__synthetics_transactions[:maximum]
-            self.__synthetics_transactions = synthetics_slice
+        transaction = snapshot.__slow_transaction
 
-            transaction = snapshot.__slow_transaction
+        # If the transaction has an xray_id then it does not qualify to
+        # be considered for slow transaction.  This is because in the Core
+        # app, there is logic to NOT show TTs with x-ray ids in the
+        # WebTransactions tab. If a TT has xray_id it is only shown under
+        # the x-ray page.
 
-            # If the transaction has an xray_id then it does not qualify to
-            # be considered for slow transaction.  This is because in the Core
-            # app, there is logic to NOT show TTs with x-ray ids in the
-            # WebTransactions tab. If a TT has xray_id it is only shown under
-            # the x-ray page.
+        xray_id = getattr(transaction, 'xray_id', None)
+        if transaction and xray_id is None:
 
-            xray_id = getattr(transaction, 'xray_id', None)
-            if transaction and xray_id is None:
-                name = transaction.path
-                duration = transaction.duration
+            # Restore original slow transaction if slower than any newer slow
+            # transaction.
 
-                slowest = 0
-                if self.__slow_transaction:
-                    slowest = self.__slow_transaction.duration
-                if name in self.__slow_transaction_map:
-                    slowest = max(self.__slow_transaction_map[name], slowest)
-
-                if duration > slowest:
-                    # We are going to replace the prior slow
-                    # transaction. We need to be a bit tricky here. If
-                    # we are overriding an existing slow transaction for
-                    # a different name, then we need to restore in the
-                    # transaction map what the previous slowest duration
-                    # was for that, or remove it if there wasn't one.
-                    # This is so we do not incorrectly suppress it given
-                    # that it was never actually reported as the slowest
-                    # transaction.
-
-                    if self.__slow_transaction:
-                        if self.__slow_transaction.path != name:
-                            if self.__slow_transaction_old_duration:
-                                self.__slow_transaction_map[
-                                        self.__slow_transaction.path] = (
-                                        self.__slow_transaction_old_duration)
-                            else:
-                                del self.__slow_transaction_map[
-                                        self.__slow_transaction.path]
-
-                    if name in self.__slow_transaction_map:
-                        self.__slow_transaction_old_duration = (
-                                self.__slow_transaction_map[name])
-                    else:
-                        self.__slow_transaction_old_duration = None
-
-                    self.__slow_transaction = transaction
-                    self.__slow_transaction_map[name] = duration
+            self._update_slow_transaction(transaction)
 
     def merge_custom_metrics(self, metrics):
         """Merges in a set of custom metrics. The metrics should be

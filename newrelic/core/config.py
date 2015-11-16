@@ -26,6 +26,7 @@ except ImportError:
 # reservoir. Error Events have a different default size.
 
 DEFAULT_RESERVOIR_SIZE = 1200
+ERROR_EVENT_RESERVOIR_SIZE = 100
 
 class _NullHandler(logging.Handler):
     def emit(self, record):
@@ -319,7 +320,7 @@ _settings.transaction_tracer.attributes.include = []
 
 _settings.error_collector.enabled = True
 _settings.error_collector.capture_events = True
-_settings.error_collector.max_event_samples_stored = 100
+_settings.error_collector.max_event_samples_stored = ERROR_EVENT_RESERVOIR_SIZE
 _settings.error_collector.capture_source = False
 _settings.error_collector.ignore_errors = []
 _settings.error_collector.ignore_status_codes = _parse_ignore_status_codes(

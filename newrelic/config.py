@@ -390,6 +390,10 @@ def _process_configuration(section):
                      'get', _map_inc_excl_attributes)
     _process_setting(section, 'transaction_events.attributes.include',
                      'get', _map_inc_excl_attributes)
+    _process_setting(section, 'custom_insights_events.enabled',
+                     'getboolean', None)
+    _process_setting(section, 'custom_insights_events.max_samples_stored',
+                     'getint', None)
     _process_setting(section, 'local_daemon.socket_path',
                      'get', None)
     _process_setting(section, 'local_daemon.synchronous_startup',

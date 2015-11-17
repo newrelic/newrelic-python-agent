@@ -31,23 +31,16 @@ echo "Checking README.rst for non-ascii characters"
 
 README_FILE=README.rst
 
-if test -e "$README_FILE"
+$PYTHON27 ascii-check.py $README_FILE
+
+STATUS_CODE=$?
+if test "$STATUS_CODE" != 0
 then
-    file "$README_FILE" | grep -q ASCII
-
-    STATUS_CODE=$?
-    if test "$STATUS_CODE" != 0
-    then
-        echo "$README_FILE contains non-ascii characters."
-        exit 1
-    else
-        echo "$README_FILE is OK."
-        echo
-    fi
-
-else
-    echo "$README_FILE does not exist!"
+    echo "$README_FILE contains non-ascii characters."
     exit 1
+else
+    echo "$README_FILE is OK."
+    echo
 fi
 
 export LICENSE_REVIEWER_METAFILE_PATH=license_data

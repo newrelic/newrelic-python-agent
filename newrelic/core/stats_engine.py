@@ -286,6 +286,7 @@ class StatsEngine(object):
         self.__stats_table = {}
         self.__transaction_events = SampledDataSet()
         self.__error_events = SampledDataSet()
+        self.__custom_events = SampledDataSet()
         self.__sql_stats_table = {}
         self.__slow_transaction = None
         self.__slow_transaction_map = {}
@@ -321,6 +322,10 @@ class StatsEngine(object):
     @property
     def transaction_events(self):
         return self.__transaction_events
+
+    @property
+    def custom_events(self):
+        return self.__custom_events
 
     @property
     def synthetics_events(self):

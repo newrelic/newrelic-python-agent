@@ -947,6 +947,12 @@
             "New Relic"
         ]
     },
+    "newrelic/core/tests/test_stats_engine.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/core/thread_utilization.py": {
         "hash": "n/a",
         "libraries": [

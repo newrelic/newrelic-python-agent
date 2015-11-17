@@ -198,36 +198,25 @@ run and ensure package builds.
 
 4. Perform any other final adhoc local tests deemed necessary for the release.
 
-5. Commit change made to ``newrelic/__init__.py`` into the ``develop``
-branch. Format the commit message like this:
+5. Create a release branch
+
+6. Commit change made to ``newrelic/__init__.py`` into the release
+branch you just created. Format the commit message like this:
 
         Increment version to A.B.C for release.
 
-6. Follow git-flow procedure to create a release branch with name
-``vA.B.C``.
+7. Push that branch up, and create a pull request from the release branch to
+``develop``. Get someone to add the "sidekick:approved" label and merge. This is
+necessary because no changes can to added to the code without being side-kick
+approved. Security will keep sending you emails if you don't do this.
 
-    With our odd/even numbering scheme, ``B`` should always be even. This
-string will become the final tag git-flow will add when finishing the
-release.
+8. Create a PR from ``develop`` to ``master``. The PR should be titled:
 
-    Confirm that you are in the `develop` branch, then run:
+        Merge develop into master for release A.B.C
 
-        git flow release start vA.B.C
+9. Get a buddy to sidekick and merge this PR.
 
-7. If necessary, push release branch back to github for further testing by
-the rest of the Python agent team. Wait for confirmation before proceeding
-if such testing is required.
-
-8. Follow git-flow procedure to finish the release branch.
-
-    From the command line:
-
-        git flow release finish vA.B.C
-
-    You will be prompted to create a merge commit message and a git tag. Hitting
-enter and accepting the default is fine.
-
-9. Switch back to the ``develop`` branch and perform a merge from
+10. Switch back to the ``develop`` branch and perform a merge from
 ``master`` back into the ``develop`` branch.
 
     Confirm that you are on the `develop` branch, then run:
@@ -238,18 +227,7 @@ enter and accepting the default is fine.
 as completely parallel paths of development with consequent strange results
 when trying to compare branches.
 
-10. In the ``develop`` branch, increment the version number in
-``newrelic/__init__.py`` to be that of next development release number.
-
-    That is, increment ``B`` if next version is minor version. With our
-odd/even numbering scheme, ``B`` should always be odd after this change.
-
-11. Commit change made to ``newrelic/__init__.py`` into the ``develop``
-branch. Format the commit message like this:
-
-        Increment version to A.B.C for development.
-
-12. Push both the ``develop`` and ``master`` branches back to the GIT repo.
+11. Push both the ``develop`` and ``master`` branches back to the GIT repo.
 
     From the command line:
 
@@ -265,98 +243,113 @@ run the tests manually in [Jenkins][Jenkins].
     In addition, run the `Python_Agent-DOCKER-NEW` tests manually for the
 `master` branch. Click `Build with parameters` and set the branch to `master`.
 
-13. Check that ``Python_Agent-MASTER-TESTS`` in Jenkins runs and all tests
+12. Check that ``Python_Agent-MASTER-TESTS`` in Jenkins runs and all tests
 pass okay.
 
-14. Tag the release in the ``master`` branch on the GIT repo with tag of
-the form ``vA.B.C.D``, where ``D`` is now the build number from
-``Python_Agent-MASTER`` and make sure the tag is pushed to github master.
-This should be the same commit as already had the tag ``vA.B.C`` which was
-added by git-flow.
+13. Tag the release in the ``master`` branch on the GIT repo with tag of
+the form ``vA.B.C`` and ``vA.B.C.D``, where ``D`` is now the build number. Push
+the tags to Github master.
 
     From the command line:
 
-        # Create tag
+        # Create tags
+        git tag vA.B.C
         git tag vA.B.C.D
 
         # Tags don't get pushed to GHE automatically, so you must do it.
         git push origin vA.B.C
         git push origin vA.B.C.D
 
-15. In Jenkins, mark the corresponding build in ``Python_Agent-MASTER`` as
-keep forever.
+14. In Jenkins, build and upload the release to Artifactory.
 
-    1. Click on [Python_Agent-Master][master].
-    2. Click on the most-recent build in "Build History" in the left sidebar.
-    3. Click on blue "Keep this build forever" button in top-right corner.
+    1. Log in and go to [build-and-archive-package][build].
+    2. From the menu on the left select "Build with Parameters"
+    3. Type in the version number INCLUDING the next build that will be created when you push the build button
+    4. Push the build button
 
+    This will build and upload the package to artifactory
+
+[build]:https://python-agent-build.pdx.vm.datanerd.us/view/DEPLOYMENT/job/build-and-archive-package/
 [master]: https://pdx-hudson.datanerd.us/view/Python/job/Python_Agent-MASTER/
 
-16. Download the source tarball from Jenkins that you just marked as "Keep
-forever". This will be the tarball you upload to `download.newrelic.com` and
-to `PyPI`.
+15. Check Artifactory upload
 
-    1. Click on [Python_Agent-Master][master].
-    2. Click on the most-recent build (the one you marked as "Keep" in the
-       previous step) in "Build History" in the left sidebar.
-    3. Scroll to bottom and click "default" under the "Configurations" heading.
-    4. Click the link to the tarball under "Build Artifacts".
+    1. Go to [Artifactory][artifactory].
+    2. In the navigator on the left, go to ``pypi-newrelic``->``A.B.C.D``->``newrelic-A.B.C.D.tar.gz``. Check that the Checksum for MD5 says ""(Uploaded: Identical)""
 
-[master]: https://pdx-hudson.datanerd.us/view/Python/job/Python_Agent-MASTER/
+[artifactory]:http://pdx-artifacts.pdx.vm.datanerd.us:8081/artifactory/webapp/browserepo.html?0
 
-17. Create an MD5 file with the same name as the source tarball, but with an
-`.md5` extension. (Example: `newrelic-2.56.0.42.tar.gz.md5`.)
+16. Upload from Artifactory to PyPI
 
-    Get the MD5 of the package with this command:
+    1. Go back to Jenkins, and select the other project, [deploy-to-pypi][deploy-pypi]
+    2. From the menu on the left select "Build with Parameters"
+    3. From the drop down menu `PYPI_REPOSITORY`, select pypi-production. Type in the version number, including the build in the `AGENT_VERSION` box.
+    4. Push the build button
+    5. Go to PyPI and check that the version uploaded. Validate that ``pip install`` of package into a virtual environment works and that a ``newrelic-admin validate-config`` test runs okay
 
-        md5 newrelic-2.56.0.42.tar.gz
+[deploy-pypi]:https://python-agent-build.pdx.vm.datanerd.us/view/DEPLOYMENT/job/deploy-to-pypi/
 
-    Cut and paste the MD5 into the `newrelic-2.56.0.42.tar.gz.md5` file.
+17. Upload from Artifactory to the New Relic Download site.
 
-18. Upload the source package and the MD5 file to the ``release`` directory
-for ``python_agent`` on hosts used by ``download.newrelic.com``.
+    1. Log into Chicago VPN
+    2. Log into Jenkins in Chicago and go to job [Python-agent-deploy-to-download][chi-deploy]
+    3. Copy the value of ``DOWNLOAD_DIR`` from this screen (you'll need it in the next)
+    4. On the menu on the left select "Build with Parameters"
+    5. Fill in the agent version number, and paste in the download dir
+    6. Push the build button
+    7. Check that you can download the package [from the web][download-release]
 
     For more details on working with the New Relic download site and
-transferring files across see: [Managing the Download Site][download].
+transferring files across see: [Managing the Download Site][download-wiki].
 
-[download]: https://newrelic.atlassian.net/wiki/display/eng/Python+Agent+Managing+The+Download+Site
+[chi-deploy]: https://chi-hudson.newrelic.com/
+[download-wiki]: https://newrelic.atlassian.net/wiki/display/eng/Python+Agent+Managing+The+Download+Site
+[download-release]: http://download.newrelic.com/python_agent/release/
 
-19. Update the ``python_agent_version`` configuration to ``A.B.C.D`` in APM
+18. Update the ``python_agent_version`` configuration to ``A.B.C.D`` in APM
 systems configuration page at: https://rpm.newrelic.com/admin/system_configurations.
 
     If we need to notify existing users to update their older agents, also
 update the ``min_python_agent_version`` to ``A.B.C.D``.
 
-20. Follow the instructions on the wiki page to [upload the source package toPyPI][pypi].
-
-    Validate that ``pip install`` of package into a virtual environment works
-and that a ``newrelic-admin validate-config`` test runs okay.
-
-[pypi]: https://newrelic.atlassian.net/wiki/display/eng/Python+Agent+Managing+The+Package+Index)
-
-21. Verify that the build number is correct in the version string in the release notes. If
+19. Verify that the build number is correct in the version string in the release notes. If
 it needs to change, edit the release notes, but get in touch with the Documentation team so
 that they can change the URL for the release notes page.
 
-22. Make the "Release Notes" public. (You don't need to have the Documentation
+20. Make the "Release Notes" public. (You don't need to have the Documentation
 Team do this step. We have the authority to publish release notes.)
 
-23. Contact the Documentation team so they can release any new or changed
+21. Contact the Documentation team so they can release any new or changed
 public documentation.
 
-24. Send an email to ``agent-releases@newrelic.com`` notifying them about
+22. Send an email to ``agent-releases@newrelic.com`` notifying them about
 the release. This will go to agent-team, partnership-team, and other
 interested parties. Include a copy of the public release notes, plus a
 separate section if necessary with additional details that may be relevant
 to internal parties.
 
-25. Send an email to ``python-support@newrelic.com`` with the Support notes
+23. Send an email to ``python-support@newrelic.com`` with the Support notes
 drafted in the pre-release steps.
 
-26. Notify Python Agent HipChat room that release is out!
+24. Notify Python Agent HipChat room that release is out!
 
-27. Add New & Noteworthy entries (multiple) via Fog Lights for the key
+25. Add New & Noteworthy entries (multiple) via Fog Lights for the key
 feature(s) or improvement(s) in the release.
 
-28. Make sure that all JIRA stories associated with the release version have
+26. Create a branch off ``develop`` to increment the version number for development.
+
+27. Update the version number in``newrelic/__init__.py`` to be that of next development release number.
+
+    That is, increment ``B`` if next version is minor version. With our
+odd/even numbering scheme, ``B`` should always be odd after this change.
+
+    Format the commit message like this:
+
+        Increment version to A.B.C for development.
+
+28. Create a PR for merging in the increment branch into ``develop``.
+
+29. Get a buddy to sidekick and merge this PR.
+
+30. Make sure that all JIRA stories associated with the release version have
 been updated as having been released.

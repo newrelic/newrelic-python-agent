@@ -25,6 +25,31 @@ fi
 
 echo "Using Python: $PYTHON27"
 
+# Avoid a broken setup.py!
+
+echo "Checking README.rst for non-ascii characters"
+
+README_FILE=README.rst
+
+if test -e "$README_FILE"
+then
+    file "$README_FILE" | grep -q ASCII
+
+    STATUS_CODE=$?
+    if test "$STATUS_CODE" != 0
+    then
+        echo "$README_FILE contains non-ascii characters."
+        exit 1
+    else
+        echo "$README_FILE is OK."
+        echo
+    fi
+
+else
+    echo "$README_FILE does not exist!"
+    exit 1
+fi
+
 export LICENSE_REVIEWER_METAFILE_PATH=license_data
 
 $PYTHON27 license_reviewer.py review

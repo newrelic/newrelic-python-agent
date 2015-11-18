@@ -4,7 +4,7 @@ New Relic Python Agent
 
 The ``newrelic`` package instruments your application for performance monitoring and advanced performance analytics with `New Relic`_.
 
-Pinpoint and solve Python application performance issues down to the line of code. `New Relic APM`_ is the only tool you’ll need to see everything in your Python application—from the end user experience to server monitoring. Trace problems down to slow database queries, slow 3rd party APIs and web services, caching layers, and more. Monitor your app in a production environment and make sure your app can stand a big spike in traffic by running scalability reports.
+Pinpoint and solve Python application performance issues down to the line of code. `New Relic APM`_ is the only tool you'll need to see everything in your Python application, from the end user experience to server monitoring. Trace problems down to slow database queries, slow 3rd party APIs and web services, caching layers, and more. Monitor your app in a production environment and make sure your app can stand a big spike in traffic by running scalability reports.
 
 Visit `Python Application Performance Monitoring with New Relic`_ to learn more.
 

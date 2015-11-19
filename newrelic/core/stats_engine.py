@@ -286,6 +286,7 @@ class StatsEngine(object):
         self.__stats_table = {}
         self.__transaction_events = SampledDataSet()
         self.__error_events = SampledDataSet()
+        self.__custom_events = SampledDataSet()
         self.__sql_stats_table = {}
         self.__slow_transaction = None
         self.__slow_transaction_map = {}
@@ -321,6 +322,10 @@ class StatsEngine(object):
     @property
     def transaction_events(self):
         return self.__transaction_events
+
+    @property
+    def custom_events(self):
+        return self.__custom_events
 
     @property
     def synthetics_events(self):
@@ -1242,6 +1247,7 @@ class StatsEngine(object):
 
         self.reset_transaction_events()
         self.reset_error_events()
+        self.reset_custom_events()
 
     def reset_metric_stats(self):
         """Resets the accumulated statistics back to initial state for
@@ -1269,6 +1275,13 @@ class StatsEngine(object):
                     self.__settings.error_collector.max_event_samples_stored)
         else:
             self.__error_events = SampledDataSet()
+
+    def reset_custom_events(self):
+        if self.__settings is not None:
+            self.__custom_events = SampledDataSet(
+                    self.__settings.custom_insights_events.max_samples_stored)
+        else:
+            self.__custom_events = SampledDataSet()
 
     def reset_synthetics_events(self):
         """Resets the accumulated statistics back to initial state for
@@ -1341,6 +1354,7 @@ class StatsEngine(object):
 
         self.reset_transaction_events()
         self.reset_error_events()
+        self.reset_custom_events()
 
         return stats
 

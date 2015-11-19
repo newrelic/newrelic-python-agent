@@ -87,6 +87,7 @@ class Transaction(object):
 
         self._errors = []
         self._slow_sql = []
+        self._custom_events = []
 
         self._stack_trace_count = 0
         self._explain_plan_count = 0
@@ -1093,6 +1094,15 @@ class Transaction(object):
         for name, value in metrics:
             self._custom_metrics.record_custom_metric(name, value)
 
+    def record_custom_event(self, event_type, params):
+        intrinsic = {
+            'type': event_type,
+            'timestamp': time.time(),
+        }
+
+        event = [intrinsic, params]
+        self._custom_events.append(event)
+
     def record_metric(self, name, value):
         warnings.warn('Internal API change. Use record_custom_metric() '
                 'instead of record_metric().', DeprecationWarning,
@@ -1370,3 +1380,9 @@ def record_custom_metrics(metrics, application=None):
     else:
         if application.enabled:
             application.record_custom_metrics(metrics)
+
+def record_custom_event(event_type, params, application=None):
+    if application is None:
+        transaction = current_transaction()
+        if transaction:
+            transaction.record_custom_event(event_type, params)

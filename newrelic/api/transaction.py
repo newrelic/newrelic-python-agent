@@ -453,6 +453,7 @@ class Transaction(object):
                 children=tuple(children),
                 errors=tuple(self._errors),
                 slow_sql=tuple(self._slow_sql),
+                custom_events=tuple(self._custom_events),
                 apdex_t=self.apdex,
                 suppress_apdex=self.suppress_apdex,
                 custom_metrics=self._custom_metrics,

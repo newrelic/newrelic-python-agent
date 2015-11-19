@@ -611,6 +611,17 @@ class StatsEngine(object):
 
         return error_event
 
+    def record_custom_event(self, event):
+
+        settings = self.__settings
+
+        if not settings:
+            return
+
+        if (settings.collect_custom_events
+                and settings.custom_insights_events.enabled):
+            self.__custom_events.add(event)
+
     def record_custom_metric(self, name, value):
         """Record a single value metric, merging the data with any data
         from prior value metrics with the same name.
@@ -778,6 +789,7 @@ class StatsEngine(object):
         error_collector = settings.error_collector
         transaction_tracer = settings.transaction_tracer
         slow_sql = settings.slow_sql
+        custom_events = settings.custom_insights_events
 
         # Record the apdex, value and time metrics generated from the
         # transaction. Whether time metrics are reported as distinct
@@ -873,6 +885,12 @@ class StatsEngine(object):
 
             event = transaction.transaction_event(self.__stats_table)
             self.__transaction_events.add(event)
+
+        # Add the custom events
+
+        if custom_events.enabled and settings.collect_custom_events:
+            for event in transaction.iter_custom_events():
+                self.record_custom_event(event)
 
     @internal_trace('Supportability/Python/StatsEngine/Calls/metric_data')
     def metric_data(self, normalizer=None):

@@ -1669,6 +1669,32 @@ def validate_application_exception_message(expected_message):
 
     return _validate_application_exception_message
 
+def validate_transaction_record_custom_event(event_type, required_params):
+    @transient_function_wrapper('newrelic.api.transaction',
+            'Transaction.record_custom_event')
+    def _validate_transaction_record_custom_event(wrapped, instance, args,
+            kwargs):
+
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            custom_events = instance._custom_events
+            assert len(custom_events) == 1
+
+            custom_event = custom_events[-1]
+            intrinsic = custom_event[0]
+            user = custom_event[1]
+
+            assert intrinsic['type'] == event_type
+
+            user_set = set(user.items())
+            required_set = set(required_params.items())
+            assert user_set == required_set
+
+    return _validate_transaction_record_custom_event
+
 def override_application_name(app_name):
     # The argument here cannot be named 'name', or else it triggers
     # a PyPy bug. Hence, we use 'app_name' instead.

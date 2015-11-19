@@ -15,7 +15,7 @@ class TestStatsEngineCustomEvents(unittest.TestCase):
         self.assertEqual(stats.custom_events.num_samples, 0)
         self.assertEqual(stats.custom_events.num_seen, 0)
 
-    def test_custom_events_after_reset_stats(self):
+    def test_custom_events_reset_stats_set_capacity(self):
         stats = StatsEngine()
         self.assertEqual(stats.custom_events.capacity, 100)
 
@@ -33,6 +33,17 @@ class TestStatsEngineCustomEvents(unittest.TestCase):
 
         self.assertEqual(stats.custom_events.capacity,
                 stats.transaction_events.capacity)
+
+    def test_custom_events_reset_stats_after_adding_samples(self):
+        stats = StatsEngine()
+
+        stats.custom_events.add('event')
+        self.assertEqual(stats.custom_events.num_samples, 1)
+        self.assertEqual(stats.custom_events.num_seen, 1)
+
+        stats.reset_stats(self.settings)
+        self.assertEqual(stats.custom_events.num_samples, 0)
+        self.assertEqual(stats.custom_events.num_seen, 0)
 
 
 if __name__ == '__main__':

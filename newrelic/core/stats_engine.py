@@ -1403,6 +1403,7 @@ class StatsEngine(object):
         self._merge_synthetics_events(snapshot)
         self._merge_error_events(snapshot)
         self._merge_error_traces(snapshot)
+        self._merge_custom_events(snapshot)
         self._merge_sql(snapshot)
         self._merge_traces(snapshot)
 
@@ -1423,6 +1424,7 @@ class StatsEngine(object):
         self._merge_transaction_events(snapshot, rollback=True)
         self._merge_synthetics_events(snapshot, rollback=True)
         self._merge_error_events(snapshot)
+        self._merge_custom_events(snapshot, rollback=True)
 
     def merge_metric_stats(self, snapshot):
         """Merges metric data from a snapshot. This is used both when merging
@@ -1491,6 +1493,10 @@ class StatsEngine(object):
         # rollback. There may be multiple error events per transaction.
 
         self.__error_events.merge(snapshot.error_events)
+
+    def _merge_custom_events(self, snapshot, rollback=False):
+
+        self.__custom_events.merge(snapshot.custom_events)
 
     def _merge_error_traces(self, snapshot):
 

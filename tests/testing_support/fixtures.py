@@ -1688,12 +1688,53 @@ def validate_transaction_record_custom_event(event_type, required_params):
             user = custom_event[1]
 
             assert intrinsic['type'] == event_type
+            assert 'timestamp' in intrinsic
 
             user_set = set(user.items())
             required_set = set(required_params.items())
             assert user_set == required_set
 
     return _validate_transaction_record_custom_event
+
+def validate_custom_event(event):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_custom_event(wrapped, instance, args, kwargs):
+
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            assert instance.custom_events.num_samples == 1
+
+            custom_event = instance.custom_events.samples[0]
+            intrinsic = custom_event[0]
+            user = custom_event[1]
+
+            event_type = event[0]['type']
+            params = event[1].items()
+
+            assert intrinsic['type'] == event_type
+            assert 'timestamp' in intrinsic
+
+            user_set = set(user.items())
+            params_set = set(params)
+            assert user_set == params_set
+
+    return _validate_custom_event
+
+def validate_custom_event_count(count):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_custom_event_count(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            assert instance.custom_events.num_samples == count
+    return _validate_custom_event_count
 
 def override_application_name(app_name):
     # The argument here cannot be named 'name', or else it triggers

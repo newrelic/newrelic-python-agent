@@ -151,40 +151,43 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         self.assertEqual(responses[1].code, 200)
         self.assertEqual(responses[1].body, SleepRequestHandler.RESPONSE)
 
+    scoped_metrics = [('Function/_test_async_application:'
+            'OneCallbackRequestHandler.finish_callback', 1)]
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[])
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:OneCallbackRequestHandler.get',
-            scoped_metrics=[
-                    ('Function/_test_async_application:OneCallbackRequestHandler.finish_callback',
-                     1)])
+            scoped_metrics=scoped_metrics)
     def test_one_callback(self):
         response = self.fetch_response('/one-callback')
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, OneCallbackRequestHandler.RESPONSE)
 
+    scoped_metrics = [('Function/_test_async_application:'
+            'NamedStackContextWrapRequestHandler.finish_callback', 1)])
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[])
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:NamedStackContextWrapRequestHandler.get',
-            scoped_metrics=[
-                    ('Function/_test_async_application:NamedStackContextWrapRequestHandler.finish_callback',
-                     1)])
+            scoped_metrics=scoped_metrics)
     def test_named_wrapped_callback(self):
         response = self.fetch_response('/named-wrap-callback')
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body,
                 NamedStackContextWrapRequestHandler.RESPONSE)
 
+    scoped_metrics = [('Function/_test_async_application:'
+            'MultipleCallbacksRequestHandler.finish_callback', 1),
+            ('Function/_test_async_application:'
+             'MultipleCallbacksRequestHandler.counter_callback', 2)]
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[])
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:MultipleCallbacksRequestHandler.get',
-            scoped_metrics=[
-                ('Function/_test_async_application:MultipleCallbacksRequestHandler.finish_callback',
-                 1),
-                ('Function/_test_async_application:MultipleCallbacksRequestHandler.counter_callback',
-                 2)])
+            scoped_metrics=scoped_metrics)
     def test_multiple_callbacks(self):
         response = self.fetch_response('/multiple-callbacks')
         self.assertEqual(response.code, 200)
@@ -200,13 +203,14 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
     def test_sync_exception(self):
         self.fetch_exception('/sync-exception')
 
+    scoped_metrics = [('Function/_test_async_application:'
+            'CallbackExceptionRequestHandler.counter_callback', 5)]
+
     @tornado_validate_errors(errors=[select_python_version(
             py2='exceptions:NameError', py3='builtins:NameError')])
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:CallbackExceptionRequestHandler.get',
-            scoped_metrics=[
-                ('Function/_test_async_application:CallbackExceptionRequestHandler.counter_callback',
-                 5)])
+            scoped_metrics=scoped_metrics)
     def test_callback_exception(self):
         self.fetch_exception('/callback-exception')
 
@@ -289,16 +293,19 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         t.join(5.0)
         self.wait(timeout=5.0)
 
+    # The class name is missing from this metric in python 2
+    # though it should be present. See PYTHON-1798.
+    scoped_metrics = [select_python_version(
+            py2_scoped_metric = (
+                'Function/_test_async_application:get (coroutine)', 1),
+                'Function/_test_async_application:IOLoopDivideRequestHandler.'
+                'get (coroutine)', 1)]
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[])
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:IOLoopDivideRequestHandler.get',
-            scoped_metrics=[
-                # The class name is missing from this metric in python 2
-                # though it should be present. See PYTHON-1798.
-                select_python_version(
-                    py2=('Function/_test_async_application:get (coroutine)', 1),
-                    py3=('Function/_test_async_application:IOLoopDivideRequestHandler.get (coroutine)', 1))],
+            scoped_metrics=scoped_metrics,
             forgone_metric_substrings=['lambda'])
     def test_coroutine_names_not_lambda(self):
         response = self.fetch_response('/ioloop-divide/10000/10')

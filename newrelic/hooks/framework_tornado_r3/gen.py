@@ -63,8 +63,8 @@ def _nr_wrapper_Runner__init__(wrapped, instance, args, kwargs):
         # In Python 2 we look up one frame. In Python 3 and PyPy, our wrapping
         # gets in the way and we have to look up 2 frames. In general, we want
         # to go up the call stack until we first encounter the tornado.gen
-        # module. We verify that the frame is in tornado.gen immediately outside
-        # this try block.
+        # module. We verify that the first or second frame outside of
+        # this function is in tornado.gen.
         frame_record = get_frame(1)
         if frame_record.f_globals['__name__'] != 'tornado.gen':
             frame_record = get_frame(2)
@@ -74,7 +74,7 @@ def _nr_wrapper_Runner__init__(wrapped, instance, args, kwargs):
                 'stack. That means the Runner object is being created outside '
                 'of a tornado.gen decorator. NewRelic will not be able to '
                 'name this instrumented function meaningfully (it will be '
-                'name lambda.')
+                'named lambda.')
         return wrapped(*args, **kwargs)
 
     if ('__name__' in frame_record.f_globals and

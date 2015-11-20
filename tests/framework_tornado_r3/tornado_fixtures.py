@@ -126,7 +126,7 @@ def tornado_validate_count_transaction_metrics(name, group='Function',
         for foregone_substring in forgone_substrings:
             for key in metrics.keys():
                 name, _ = key
-                assert -1 == name.find(foregone_substring), (
+                assert forgone_string not in name, (
                         _substring_found(foregone_substring, name))
 
     @function_wrapper

@@ -80,7 +80,7 @@ def _create_transaction_aware_fxn(fxn):
             # Coroutines are wrapped in lambdas when they are scheduled.
             # See tornado.gen.Runner.run(). In this case, we don't know the
             # name until the function is run. We only know it then because we
-            # pass out the name as an atribute on the result.
+            # pass out the name as an attribute on the result.
             # We update the name now.
             if (ft is not None and ret is not None and
                     hasattr(ret, '_nr_coroutine_name')):

@@ -60,14 +60,7 @@ def _nr_wrapper_Runner__init__(wrapped, instance, args, kwargs):
         # The only place in the Tornado code where a Runner is instantiated
         # is in _make_coroutine_wrapper in Tornado's gen.py. We look up the
         # stack from this call to __init__ to get the function name.
-        # In Python 2 we look up one frame. In Python 3 and PyPy, our wrapping
-        # gets in the way and we have to look up 2 frames. In general, we want
-        # to go up the call stack until we first encounter the tornado.gen
-        # module. We verify that the first or second frame outside of
-        # this function is in tornado.gen.
-        frame_record = get_frame(1)
-        if frame_record.f_globals['__name__'] != 'tornado.gen':
-            frame_record = get_frame(2)
+        frame = get_frame(1)
 
     except ValueError:
         _logger.debug('tornado.gen.Runner is being created at the top of the '
@@ -77,11 +70,23 @@ def _nr_wrapper_Runner__init__(wrapped, instance, args, kwargs):
                 'named lambda.')
         return wrapped(*args, **kwargs)
 
-    if ('__name__' in frame_record.f_globals and
-            frame_record.f_globals['__name__'] == 'tornado.gen' and
-            'func' in frame_record.f_locals):
+    # In Python 2 we look up one frame. In Python 3 and PyPy, our wrapping
+    # gets in the way and we have to look up 2 frames. In general, we want
+    # to go up the call stack until we first encounter the tornado.gen
+    # module. We restrict our search to 5 frames.
+    max_frame_depth = 5
+    frame_depth = 1
+    while frame and frame_depth <= max_frame_depth:
+        if frame.f_globals['__name__'] == 'tornado.gen':
+            break
+        frame = frame.f_back
+        frame_depth += 1
+
+    if ('__name__' in frame.f_globals and
+            frame.f_globals['__name__'] == 'tornado.gen' and
+            'func' in frame.f_locals):
         instance._nr_coroutine_name = _coroutine_name(
-                frame_record.f_locals['func'])
+                frame.f_locals['func'])
     else:
         _logger.debug('tornado.gen.Runner is being called outside of a '
                 'tornado.gen decorator. NewRelic will not be able to name '

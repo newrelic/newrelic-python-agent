@@ -2,6 +2,8 @@ import sys
 import webtest
 import json
 
+import six
+
 from testing_support.fixtures import (override_application_settings,
     validate_transaction_errors, validate_custom_parameters)
 
@@ -45,7 +47,7 @@ def test_footer_attributes():
     assert settings.browser_key
     assert settings.browser_monitoring.loader_version
     assert settings.js_agent_loader
-    assert settings.js_agent_file
+    assert isinstance(settings.js_agent_file, six.string_types)
     assert settings.beacon
     assert settings.error_beacon
 

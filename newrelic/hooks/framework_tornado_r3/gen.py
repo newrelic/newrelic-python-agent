@@ -16,6 +16,10 @@ try:
     import sys
     get_frame = sys._getframe
 except:
+    _logger.warning('You are using a python implemenation without '
+            'sys._getframe which is used by New Relic to get meaningful names '
+            'for coroutines. We are falling back to use inspect.stack which is '
+            'very slow.')
     import inspect
     def getframe(depth):
         return inspect.stack(0)[depth]
@@ -82,16 +86,19 @@ def _nr_wrapper_Runner__init__(wrapped, instance, args, kwargs):
         frame = frame.f_back
         frame_depth += 1
 
+    # Verify that we are in the frame we think we are.
     if ('__name__' in frame.f_globals and
             frame.f_globals['__name__'] == 'tornado.gen' and
-            'func' in frame.f_locals):
+            'func' in frame.f_locals and
+            'replace_callback' in frame.f_locals and
+            frame.f_code.co_name == 'wrapper'):
         instance._nr_coroutine_name = _coroutine_name(
                 frame.f_locals['func'])
     else:
         _logger.debug('tornado.gen.Runner is being called outside of a '
-                'tornado.gen decorator. NewRelic will not be able to name '
-                'this instrumented function meaningfully (it will be named '
-                'lambda).')
+                'tornado.gen decorator (or the tornado implemenation has '
+                'changed). NewRelic will not be able to name this instrumented '
+                'function meaningfully (it will be named lambda).')
 
     return wrapped(*args, **kwargs)
 

@@ -623,6 +623,12 @@
             "New Relic"
         ]
     },
+    "newrelic/common/certs.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/common/encoding_utils.py": {
         "hash": "n/a",
         "libraries": [

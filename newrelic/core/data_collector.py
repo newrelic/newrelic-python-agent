@@ -19,7 +19,7 @@ import newrelic.packages.six as six
 
 import newrelic.packages.requests as requests
 
-from newrelic.packages.requests import certs
+from newrelic.common import certs
 
 from newrelic import version
 from newrelic.core.config import (global_settings, global_settings_dump,

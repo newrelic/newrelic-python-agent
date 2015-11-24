@@ -1387,3 +1387,6 @@ def record_custom_event(event_type, params, application=None):
         transaction = current_transaction()
         if transaction:
             transaction.record_custom_event(event_type, params)
+    else:
+        if application.enabled:
+            application.record_custom_event(event_type, params)

@@ -139,18 +139,26 @@ class IOLoopDivideRequestHandler(RequestHandler):
     RESPONSE = u'Division %s / %s = %s'
 
     @tornado.gen.coroutine
-    def get(self, a, b):
+    def get(self, a, b, immediate=False):
         a = float(a)
         b = float(b)
-        quotient = yield self.divide(a, b)
+        immediate = (True if immediate == 'immediate' else False)
+        quotient = yield self.divide(a, b, immediate=immediate)
         response = self.RESPONSE % (a, b, quotient)
         self.finish(response.encode('ascii'))
 
-    def divide(self, a, b):
+    def divide(self, a, b, immediate):
         f = tornado.concurrent.Future()
 
-        # We add the callback to do the division.
-        tornado.ioloop.IOLoop.current().add_callback(self._divide, f, a, b)
+        if immediate:
+            # Set future result immediately. In this case we never need to
+            # call run on the tornado.gen.Runner object and the coroutine isn't
+            # really asynchronous.
+            f.set_result(a/b)
+        else:
+            # We add a callback to do the division. In this case we are in a
+            # coroutine which actually run asynchronously.
+            tornado.ioloop.IOLoop.current().add_callback(self._divide, f, a, b)
 
         return f
 
@@ -169,5 +177,5 @@ def get_tornado_app():
         ('/coroutine-exception', CoroutineExceptionRequestHandler),
         ('/finish-exception', FinishExceptionRequestHandler),
         ('/return-exception', ReturnExceptionRequestHandler),
-        ('/ioloop-divide/(\d+)/(\d+)', IOLoopDivideRequestHandler),
+        ('/ioloop-divide/(\d+)/(\d+)/?(\w+)?', IOLoopDivideRequestHandler),
     ])

@@ -165,7 +165,7 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         self.assertEqual(response.body, OneCallbackRequestHandler.RESPONSE)
 
     scoped_metrics = [('Function/_test_async_application:'
-            'NamedStackContextWrapRequestHandler.finish_callback', 1)])
+            'NamedStackContextWrapRequestHandler.finish_callback', 1)]
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[])
@@ -296,10 +296,9 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
     # The class name is missing from this metric in python 2
     # though it should be present. See PYTHON-1798.
     scoped_metrics = [select_python_version(
-            py2_scoped_metric = (
-                'Function/_test_async_application:get (coroutine)', 1),
-                'Function/_test_async_application:IOLoopDivideRequestHandler.'
-                'get (coroutine)', 1)]
+            py2=('Function/_test_async_application:get (coroutine)', 1),
+            py3=('Function/_test_async_application:IOLoopDivideRequestHandler.'
+                 'get (coroutine)', 1))]
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[])
@@ -309,6 +308,21 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
             forgone_metric_substrings=['lambda'])
     def test_coroutine_names_not_lambda(self):
         response = self.fetch_response('/ioloop-divide/10000/10')
+        expected = (IOLoopDivideRequestHandler.RESPONSE % (
+                10000.0, 10.0, 10000.0/10.0)).encode('ascii')
+        self.assertEqual(response.body, expected)
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(errors=[])
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:IOLoopDivideRequestHandler.get',
+            # PYTHON-1810 means We don't properly instrument the first time we
+            # enter a coroutine. Once that is fixed we should start seeing a
+            # scoped metric and should capture the scoped metric here.
+            # scoped_metrics=scoped_metrics,
+            forgone_metric_substrings=['lambda'])
+    def test_immediate_coroutine_names_not_lambda(self):
+        response = self.fetch_response('/ioloop-divide/10000/10/immediate')
         expected = (IOLoopDivideRequestHandler.RESPONSE % (
                 10000.0, 10.0, 10000.0/10.0)).encode('ascii')
         self.assertEqual(response.body, expected)

@@ -671,6 +671,12 @@
             "New Relic"
         ]
     },
+    "newrelic/common/tests/test_certs.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/common/tests/test_in_function.py": {
         "hash": "n/a",
         "libraries": [

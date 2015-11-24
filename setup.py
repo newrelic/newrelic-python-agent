@@ -119,6 +119,7 @@ kwargs = dict(
         classifiers = classifiers,
         packages = packages,
         package_data = { 'newrelic': ['newrelic.ini', 'LICENSE',
+              'common/cacert.pem',
               'packages/requests/LICENSE', 'packages/requests/NOTICE',
               'packages/requests/cacert.pem'] },
         extra_path = ( "newrelic", "newrelic-%s" % package_version ),

@@ -165,7 +165,7 @@ def validate_synthetics_external_trace_header(required_header=(),
                         _Transaction(transaction))
                 assert required_header in external_headers, (
                         'required_header=%r, ''external_headers=%r' % (
-                        header, external_headers))
+                        required_header, external_headers))
 
         return result
 

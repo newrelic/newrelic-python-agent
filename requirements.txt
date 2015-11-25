@@ -1,6 +1,7 @@
-tox<1.7.0
-lock_file
 devpi-server
 eventlet
+lock_file
 pip<1.5
+tox<1.7.0
+twine
 virtualenv<1.11

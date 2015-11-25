@@ -3,17 +3,21 @@ import pytest
 import webtest
 
 from testing_support.fixtures import (override_application_settings,
-    validate_custom_parameters, validate_transaction_errors,
-    validate_request_params_omitted, validate_attributes_complete)
+        validate_custom_parameters, validate_transaction_errors,
+        validate_request_params_omitted, validate_attributes_complete,
+        validate_non_transaction_error_event, reset_core_stats_engine)
 
 from newrelic.agent import (background_task, add_custom_parameter,
-    record_exception, wsgi_application, current_transaction)
+        record_exception, wsgi_application, current_transaction, application,
+        callable_name)
+
+from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 
 from newrelic.core.attribute import (Attribute, DST_TRANSACTION_TRACER,
         DST_ERROR_COLLECTOR, DST_ALL)
 
 from newrelic.core.config import (global_settings, Settings,
-    apply_config_setting)
+        apply_config_setting)
 
 from newrelic.config import apply_local_high_security_mode_setting
 from newrelic.core.data_collector import apply_high_security_mode_fixups
@@ -122,7 +126,7 @@ def parameterize_hsm_local_config(settings_list):
     return pytest.mark.parametrize('settings', settings_object_list)
 
 @parameterize_hsm_local_config(_hsm_local_config_file_settings_disabled)
-def test_local_config_file_hsm_override_disabled(settings):
+def test_local_config_file_override_hsm_disabled(settings):
     original_ssl = settings.ssl
     original_capture_params = settings.capture_params
     original_record_sql = settings.transaction_tracer.record_sql
@@ -136,7 +140,7 @@ def test_local_config_file_hsm_override_disabled(settings):
     assert settings.strip_exception_messages.enabled == original_strip_messages
 
 @parameterize_hsm_local_config(_hsm_local_config_file_settings_enabled)
-def test_local_config_file_hsm_override_enabled(settings):
+def test_local_config_file_override_hsm_enabled(settings):
     apply_local_high_security_mode_setting(settings)
 
     assert settings.ssl
@@ -144,7 +148,7 @@ def test_local_config_file_hsm_override_enabled(settings):
     assert settings.transaction_tracer.record_sql in ('off', 'obfuscated')
     assert settings.strip_exception_messages.enabled
 
-_hsm_server_side_config_settings_disabled = [
+_server_side_config_settings_hsm_disabled = [
     (
         {
             'high_security': False,
@@ -177,7 +181,7 @@ _hsm_server_side_config_settings_disabled = [
     ),
 ]
 
-_hsm_server_side_config_settings_enabled = [
+_server_side_config_settings_hsm_enabled = [
     (
         {
             'high_security': True,
@@ -219,8 +223,8 @@ _hsm_server_side_config_settings_enabled = [
 ]
 
 @pytest.mark.parametrize('local_settings,server_settings',
-        _hsm_server_side_config_settings_disabled)
-def test_remote_config_hsm_fixups_disabled(local_settings, server_settings):
+        _server_side_config_settings_hsm_disabled)
+def test_remote_config_fixups_hsm_disabled(local_settings, server_settings):
     assert 'high_security' in local_settings
     assert local_settings['high_security'] == False
 
@@ -243,8 +247,8 @@ def test_remote_config_hsm_fixups_disabled(local_settings, server_settings):
     assert agent_config['strip_exception_messages.enabled'] == original_strip_messages
 
 @pytest.mark.parametrize('local_settings,server_settings',
-        _hsm_server_side_config_settings_enabled)
-def test_remote_config_hsm_fixups_enabled(local_settings, server_settings):
+        _server_side_config_settings_hsm_enabled)
+def test_remote_config_fixups_hsm_enabled(local_settings, server_settings):
     assert 'high_security' in local_settings
     assert local_settings['high_security'] == True
 
@@ -272,22 +276,29 @@ def test_remote_config_hsm_fixups_server_side_disabled():
     assert 'high_security' not in settings
 
 _test_transaction_settings_hsm_disabled = {
-    'high_security': False }
+        'high_security': False
+}
+
+# Normally, in HSM the exception message would be stripped just by turning on
+# high_security. However, these tests (like all of our tests) overrides the
+# settings after agent initialization where this setting is fixed up.
 
 _test_transaction_settings_hsm_enabled = {
-    'high_security': True }
+        'high_security': True,
+        'strip_exception_messages.enabled' : True
+ }
 
 @override_application_settings(_test_transaction_settings_hsm_disabled)
 @validate_custom_parameters(required_params=[('key', 'value')])
 @background_task()
-def test_other_transaction_hsm_custom_parameters_disabled():
+def test_other_transaction_custom_parameters_hsm_disabled():
     add_custom_parameter('key', 'value')
 
 @override_application_settings(_test_transaction_settings_hsm_disabled)
 @validate_custom_parameters(required_params=[('key-1', 'value-1'),
         ('key-2', 'value-2')])
 @background_task()
-def test_other_transaction_hsm_multiple_custom_parameters_disabled():
+def test_other_transaction_multiple_custom_parameters_hsm_disabled():
     transaction = current_transaction()
     transaction.add_custom_parameters([('key-1', 'value-1'),
             ('key-2', 'value-2')])
@@ -295,14 +306,14 @@ def test_other_transaction_hsm_multiple_custom_parameters_disabled():
 @override_application_settings(_test_transaction_settings_hsm_enabled)
 @validate_custom_parameters(forgone_params=[('key', 'value')])
 @background_task()
-def test_other_transaction_hsm_custom_parameters_enabled():
+def test_other_transaction_custom_parameters_hsm_enabled():
     add_custom_parameter('key', 'value')
 
 @override_application_settings(_test_transaction_settings_hsm_enabled)
 @validate_custom_parameters(forgone_params=[('key-1', 'value-1'),
         ('key-2', 'value-2')])
 @background_task()
-def test_other_transaction_hsm_multiple_custom_parameters_enabled():
+def test_other_transaction_multiple_custom_parameters_hsm_enabled():
     transaction = current_transaction()
     transaction.add_custom_parameters([('key-1', 'value-1'),
             ('key-2', 'value-2')])
@@ -312,28 +323,61 @@ class TestException(Exception): pass
 _test_exception_name = '%s:%s' % (__name__, TestException.__name__)
 
 @override_application_settings(_test_transaction_settings_hsm_disabled)
-@validate_transaction_errors(errors=[_test_exception_name],
+@validate_transaction_errors(errors=[(_test_exception_name, 'test message')],
         required_params=[('key-2', 'value-2')])
 @validate_custom_parameters(required_params=[('key-1', 'value-1')])
 @background_task()
-def test_other_transaction_hsm_error_parameters_disabled():
+def test_other_transaction_error_parameters_hsm_disabled():
     add_custom_parameter('key-1', 'value-1')
     try:
-        raise TestException()
+        raise TestException('test message')
     except Exception:
         record_exception(params={'key-2': 'value-2'})
 
 @override_application_settings(_test_transaction_settings_hsm_enabled)
-@validate_transaction_errors(errors=[_test_exception_name],
-    forgone_params=[('key-2', 'value-2')])
+@validate_transaction_errors(errors=[(_test_exception_name,
+        STRIP_EXCEPTION_MESSAGE)], forgone_params=[('key-2', 'value-2')])
 @validate_custom_parameters(forgone_params=[('key-1', 'value-1')])
 @background_task()
-def test_other_transaction_hsm_error_parameters_enabled():
+def test_other_transaction_error_parameters_hsm_enabled():
     add_custom_parameter('key-1', 'value-1')
     try:
-        raise TestException()
+        raise TestException('test message')
     except Exception:
         record_exception(params={'key-2': 'value-2'})
+
+_err_message = "Error! :("
+_intrinsic_attributes = {
+        'error.class': callable_name(TestException),
+        'error.message': _err_message,
+}
+
+@reset_core_stats_engine()
+@override_application_settings(_test_transaction_settings_hsm_disabled)
+@validate_non_transaction_error_event(required_intrinsics=_intrinsic_attributes,
+        required_user={'key-1': 'value-1'})
+def test_non_transaction_error_parameters_hsm_disabled():
+    try:
+        raise TestException(_err_message)
+    except Exception:
+        app = application()
+        record_exception(params={'key-1': 'value-1'}, application=app)
+
+_intrinsic_attributes = {
+        'error.class': callable_name(TestException),
+        'error.message': STRIP_EXCEPTION_MESSAGE,
+}
+
+@reset_core_stats_engine()
+@override_application_settings(_test_transaction_settings_hsm_enabled)
+@validate_non_transaction_error_event(required_intrinsics=_intrinsic_attributes,
+        forgone_user={'key-1': 'value-1'})
+def test_non_transaction_error_parameters_hsm_enabled():
+    try:
+        raise TestException(_err_message)
+    except Exception:
+        app = application()
+        record_exception(params={'key-1': 'value-1'}, application=app)
 
 @wsgi_application()
 def target_wsgi_application_capture_params(environ, start_response):
@@ -365,7 +409,7 @@ _test_transaction_settings_hsm_enabled_capture_params = {
 @override_application_settings(
     _test_transaction_settings_hsm_enabled_capture_params)
 @validate_request_params_omitted()
-def test_other_transaction_hsm_environ_capture_request_params():
+def test_transaction_hsm_enabled_environ_capture_request_params():
     target_application = webtest.TestApp(
             target_wsgi_application_capture_params)
 
@@ -374,7 +418,7 @@ def test_other_transaction_hsm_environ_capture_request_params():
 @override_application_settings(
     _test_transaction_settings_hsm_enabled_capture_params)
 @validate_request_params_omitted()
-def test_other_transaction_hsm_environ_capture_request_params_disabled():
+def test_transaction_hsm_enabled_environ_capture_request_params_disabled():
     target_application = webtest.TestApp(
             target_wsgi_application_capture_params)
 
@@ -387,7 +431,7 @@ def test_other_transaction_hsm_environ_capture_request_params_disabled():
 @override_application_settings(
     _test_transaction_settings_hsm_enabled_capture_params)
 @validate_request_params_omitted()
-def test_other_transaction_hsm_environ_capture_request_params_enabled():
+def test_transaction_hsm_enabled_environ_capture_request_params_enabled():
     target_application = webtest.TestApp(
             target_wsgi_application_capture_params)
 
@@ -400,7 +444,7 @@ def test_other_transaction_hsm_environ_capture_request_params_enabled():
 @override_application_settings(
     _test_transaction_settings_hsm_enabled_capture_params)
 @validate_request_params_omitted()
-def test_other_transaction_hsm_environ_capture_request_params_api_called():
+def test_transaction_hsm_enabled_environ_capture_request_params_api_called():
     target_application = webtest.TestApp(
             target_wsgi_application_capture_params_api_called)
 

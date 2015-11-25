@@ -8,15 +8,39 @@
 rm -rf build dist
 rm -rf *.egg-info
 
-
 # Get the path to python2.7 version.
-# license_reviewer.py
 
-if test x"$BUILD_NUMBER" != x""
+PYTHON27="/usr/bin/python2.7"
+
+# Python 2.7 on the PDX Jenkins build node 'build-ubuntu1004-32' is
+# in a non-standard location, so we check the NODE_LABELS env var.
+
+if test x"$NODE_LABELS" != x""
 then
-    PYTHON27="$HOME/python-tools/python-2.7-ucs4/bin/python2.7"
+    if echo $NODE_LABELS | grep -q "build-ubuntu1004-32"
+    then
+        PYTHON27="$HOME/python-tools/python-2.7-ucs4/bin/python2.7"
+    fi
+fi
+
+echo "Using Python: $PYTHON27"
+
+# Avoid a broken setup.py!
+
+echo "Checking README.rst for non-ascii characters"
+
+README_FILE=README.rst
+
+$PYTHON27 ascii-check.py $README_FILE
+
+STATUS_CODE=$?
+if test "$STATUS_CODE" != 0
+then
+    echo "$README_FILE contains non-ascii characters."
+    exit 1
 else
-    PYTHON27="/usr/bin/python2.7"
+    echo "$README_FILE is OK."
+    echo
 fi
 
 export LICENSE_REVIEWER_METAFILE_PATH=license_data

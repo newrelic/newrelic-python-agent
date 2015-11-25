@@ -8,6 +8,7 @@ README.md
 *.pyo
 
 notebooks
+deploy
 docker
 python-tools
 tests
@@ -24,10 +25,8 @@ autom4te.cache
 Makefile
 scripts
 DEVELOP
-INSTALL
 MANIFEST.in
 Makefile.in
-README
 build.sh
 configure
 configure.in
@@ -39,6 +38,7 @@ tox-admin.ini
 tox.ini
 license_data
 license_reviewer.py
+ascii-check.py
 PROCESS.md
 
 .tox

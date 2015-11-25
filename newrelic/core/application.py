@@ -24,7 +24,7 @@ from newrelic.core.environment import environment_settings
 from newrelic.core.rules_engine import RulesEngine, SegmentCollapseEngine
 from newrelic.core.stats_engine import StatsEngine, CustomMetrics
 from newrelic.core.internal_metrics import (InternalTrace,
-        InternalTraceContext, internal_metric)
+        InternalTraceContext, internal_metric, internal_count_metric)
 from newrelic.core.xray_session import XraySession
 from newrelic.core.profile_sessions import profile_session_manager
 
@@ -826,8 +826,7 @@ class Application(object):
                     internal_metric('Supportability/Python/Transaction/'
                             'Counts/metric_data', stats.metric_data_count())
 
-                    self._stats_engine.merge_metric_stats(stats)
-                    self._stats_engine.merge_other_stats(stats)
+                    self._stats_engine.merge(stats)
 
                     # We merge the internal statistics here as well even
                     # though have popped out of the context where we are
@@ -1228,6 +1227,8 @@ class Application(object):
 
                     stats_custom = self._stats_custom_engine.harvest_snapshot()
 
+                # stats_custom should only contain metric stats, no transactions
+
                 stats.merge_metric_stats(stats_custom)
 
                 # Now merge in any metrics from the data samplers
@@ -1304,21 +1305,6 @@ class Application(object):
 
                     configuration = self._active_session.configuration
 
-                    # Report internal metrics about sample data set
-                    # for analytics.
-
-                    if (configuration.collect_analytics_events and
-                            configuration.transaction_events.enabled):
-
-                        sampled_data_set = stats.sampled_data_set
-
-                        internal_metric('Supportability/Python/'
-                                'RequestSampler/requests',
-                                sampled_data_set.count)
-                        internal_metric('Supportability/Python/'
-                                'RequestSampler/samples',
-                                len(sampled_data_set.samples))
-
                     # Create a metric_normalizer based on normalize_name
                     # If metric rename rules are empty, set normalizer
                     # to None and the stats engine will skip steps as
@@ -1338,14 +1324,14 @@ class Application(object):
 
                     metric_data = stats.metric_data(metric_normalizer)
 
-                    internal_metric('Supportability/Python/Harvest/Counts/'
-                            'metric_data', len(metric_data))
-
                     _logger.debug('Sending metric data for harvest of %r.',
                             self._app_name)
 
                     metric_ids = self._active_session.send_metric_data(
-                      self._period_start, period_end, metric_data)
+                            self._period_start, period_end, metric_data)
+
+                    internal_metric('Supportability/Python/Harvest/Counts/'
+                            'metric_data', len(metric_data))
 
                     stats.reset_metric_stats()
 
@@ -1361,18 +1347,54 @@ class Application(object):
                     if (configuration.collect_analytics_events and
                             configuration.transaction_events.enabled):
 
-                        samples = stats.sampled_data_set.samples
+                        samples = stats.transaction_events.samples
                         all_analytic_events.extend(samples)
 
                     if len(all_analytic_events):
                         _logger.debug('Sending analytics event data '
                                 'for harvest of %r.', self._app_name)
 
-                        self._active_session.analytic_event_data(
+                        self._active_session.send_transaction_events(
                                 all_analytic_events)
 
-                    stats.reset_sampled_data()
+                    # Report internal metrics about sample data set
+                    # for analytics.
+
+                    if (configuration.collect_analytics_events and
+                            configuration.transaction_events.enabled):
+
+                        transaction_events = stats.transaction_events
+
+                        internal_metric('Supportability/Python/'
+                                'RequestSampler/requests',
+                                transaction_events.num_seen)
+                        internal_metric('Supportability/Python/'
+                                'RequestSampler/samples',
+                                transaction_events.num_samples)
+
+                    stats.reset_transaction_events()
                     stats.reset_synthetics_events()
+
+                    if (configuration.collect_error_events and
+                            configuration.error_collector.capture_events and
+                            configuration.error_collector.enabled):
+
+                        num_error_samples = stats.error_events.num_samples
+                        error_events = stats.error_events
+                        if num_error_samples > 0:
+                            _logger.debug('Sending error event data '
+                                    'for harvest of %r.', self._app_name)
+
+                            samp_info = stats.error_events_sampling_info()
+                            self._active_session.send_error_events(samp_info,
+                                    error_events.samples)
+
+                        internal_count_metric('Supportability/Events/'
+                                'TransactionError/Seen', error_events.num_seen)
+                        internal_count_metric('Supportability/Events/'
+                                'TransactionError/Sent', num_error_samples)
+
+                    stats.reset_error_events()
 
                     # Successful, so we update the stats engine with the
                     # new metric IDs and reset the reporting period
@@ -1522,16 +1544,8 @@ class Application(object):
                         maximum = agent_limits.merge_stats_maximum
 
                         if self._merge_count <= maximum:
-                            self._stats_engine.merge_metric_stats(
-                                    stats, rollback=True)
 
-                            # Only merge back sampled data at present.
-
-                            self._stats_engine.merge_other_stats(stats,
-                                    merge_traces=False, merge_errors=False,
-                                    merge_sql=False, merge_samples=True,
-                                    merge_synthetics_events = True,
-                                    rollback=True)
+                            self._stats_engine.rollback(stats)
 
                         else:
                             _logger.error('Unable to report main transaction '

@@ -41,13 +41,15 @@ def test_intrinsics():
     response = target_application.get('/')
     assert response.body == b'Hello World!'
 
-_required_agent = ['request.method', 'wsgi.output.seconds', 'response.status']
+_required_agent = ['request.method', 'wsgi.output.seconds', 'response.status',
+                   'request.headers.host', 'request.headers.accept',
+                   'response.contentType', 'response.contentLength']
 _forgone_agent = []
 
 @validate_attributes('agent', _required_agent, _forgone_agent)
 def test_agent():
     target_application = webtest.TestApp(target_wsgi_application)
-    response = target_application.get('/')
+    response = target_application.get('/', extra_environ={'HTTP_ACCEPT': '*/*'})
     assert response.body == b'Hello World!'
 
 _required_user = []

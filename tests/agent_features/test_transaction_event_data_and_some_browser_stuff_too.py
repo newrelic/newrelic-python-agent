@@ -1,86 +1,33 @@
-import webtest
 import json
+import webtest
 
-try:
-    from urllib2 import urlopen  # Py2.X
-except ImportError:
-    from urllib.request import urlopen   # Py3.X
-
-import sqlite3 as db
-
-from newrelic.packages import six
-
-from testing_support.fixtures import (override_application_settings,
-        validate_analytics_sample_data)
-
-from newrelic.agent import (add_user_attribute, add_custom_parameter,
-        get_browser_timing_header, get_browser_timing_footer,
-        application_settings, wsgi_application, transient_function_wrapper)
+from newrelic.agent import (application_settings, transient_function_wrapper,
+        background_task)
 
 from newrelic.common.encoding_utils import deobfuscate
 
-DATABASE_NAME = ':memory:'
+from testing_support.fixtures import (override_application_settings,
+        validate_transaction_event_sample_data,
+        validate_transaction_event_attributes)
+from testing_support.sample_applications import (fully_featured_app,
+            user_attributes_added)
 
-@wsgi_application()
-def target_wsgi_application(environ, start_response):
-    status = '200 OK'
 
-    path = environ.get('PATH_INFO')
-
-    if environ.get('record_attributes', 'TRUE') == 'TRUE':
-        # The add_user_attribute() call is now just an alias for
-        # calling add_custom_parameter() but for backward compatibility
-        # still need to check it works.
-
-        add_user_attribute('user', 'user-name')
-        add_user_attribute('account', 'account-name')
-        add_user_attribute('product', 'product-name')
-
-        add_custom_parameter('bytes', b'bytes-value')
-        add_custom_parameter('string', 'string-value')
-        add_custom_parameter('unicode', u'unicode-value')
-
-        add_custom_parameter('integer', 1)
-        add_custom_parameter('float', 1.0)
-
-        add_custom_parameter('invalid-utf8', b'\xe2')
-        add_custom_parameter('multibyte-utf8', b'\xe2\x88\x9a')
-        add_custom_parameter('multibyte-unicode',
-                b'\xe2\x88\x9a'.decode('utf-8'))
-
-        add_custom_parameter('list', [])
-        add_custom_parameter('tuple', ())
-        add_custom_parameter('dict', {})
-
-    if path == '/db' or path == '/dbext':
-        connection = db.connect(DATABASE_NAME)
-        connection.execute("""create table test_db (a, b, c)""")
-
-    if path == '/ext' or path == '/dbext':
-        r = urlopen('http://www.google.com')
-        r.read(10)
-        r = urlopen('http://www.python.org')
-        r.read(10)
-
-    text = '<html><head>%s</head><body><p>RESPONSE</p>%s</body></html>'
-
-    output = (text % (get_browser_timing_header(),
-            get_browser_timing_footer())).encode('UTF-8')
-
-    response_headers = [('Content-type', 'text/html; charset=utf-8'),
-                        ('Content-Length', str(len(output)))]
-    start_response(status, response_headers)
-
-    return [output]
-
-target_application = webtest.TestApp(target_wsgi_application)
+fully_featured_application = webtest.TestApp(fully_featured_app)
+_user_attributes = user_attributes_added()
 
 #====================== Test cases ====================================
 
 _test_capture_attributes_enabled_settings = {
     'browser_monitoring.attributes.enabled': True }
 
-@validate_analytics_sample_data(name='WebTransaction/Uri/')
+_intrinsic_attributes = {
+        'name': 'WebTransaction/Uri/',
+        'port': 80,
+}
+
+@validate_transaction_event_sample_data(required_attrs=_intrinsic_attributes,
+        required_user_attrs=_user_attributes)
 @override_application_settings(_test_capture_attributes_enabled_settings)
 def test_capture_attributes_enabled():
     settings = application_settings()
@@ -90,7 +37,7 @@ def test_capture_attributes_enabled():
 
     assert settings.js_agent_loader
 
-    response = target_application.get('/')
+    response = fully_featured_application.get('/')
 
     header = response.html.html.head.script.text
     content = response.html.html.body.p.text
@@ -117,33 +64,33 @@ def test_capture_attributes_enabled():
             obfuscation_key))
     user_attrs = attributes['u']
 
-    assert user_attrs['user'] == u'user-name'
-    assert user_attrs['account'] == u'account-name'
-    assert user_attrs['product'] == u'product-name'
 
     # When you round-trip through json encoding and json decoding, you
     # always end up with unicode (unicode in Python 2, str in Python 3.)
     #
     # Previously, we would drop attribute values of type 'bytes' in Python 3.
     # Now, we accept them and `json_encode` uses an encoding of 'latin-1',
-    # just like it does for Python 2.
+    # just like it does for Python 2. This only applies to attributes in browser
+    # monitoring
 
-    assert user_attrs['bytes'] == u'bytes-value'
-    assert user_attrs['string'] == u'string-value'
-    assert user_attrs['unicode'] == u'unicode-value'
+    browser_attributes = _user_attributes.copy()
 
-    assert user_attrs['invalid-utf8'] == b'\xe2'.decode('latin-1')
-    assert user_attrs['multibyte-utf8'] == b'\xe2\x88\x9a'.decode('latin-1')
-    assert user_attrs['multibyte-unicode'] == b'\xe2\x88\x9a'.decode('utf-8')
+    browser_attributes['bytes'] = u'bytes-value'
+    browser_attributes['invalid-utf8'] = _user_attributes[
+                                            'invalid-utf8'].decode('latin-1')
+    browser_attributes['multibyte-utf8'] = _user_attributes[
+                                            'multibyte-utf8'].decode('latin-1')
 
-    assert user_attrs['integer'] == 1
-    assert user_attrs['float'] == 1.0
+    for attr, value in browser_attributes.items():
+        assert user_attrs[attr] == value, (
+                "attribute %r expected %r, found %r" %
+                (attr, value, user_attrs[attr]))
 
 _test_no_attributes_recorded_settings = {
     'browser_monitoring.attributes.enabled': True }
 
-@validate_analytics_sample_data(name='WebTransaction/Uri/',
-        capture_attributes=False)
+@validate_transaction_event_sample_data(required_attrs=_intrinsic_attributes,
+        required_user_attrs={})
 @override_application_settings(_test_no_attributes_recorded_settings)
 def test_no_attributes_recorded():
     settings = application_settings()
@@ -153,7 +100,7 @@ def test_no_attributes_recorded():
 
     assert settings.js_agent_loader
 
-    response = target_application.get('/', extra_environ={
+    response = fully_featured_application.get('/', extra_environ={
             'record_attributes': 'FALSE'})
 
     header = response.html.html.head.script.text
@@ -184,8 +131,8 @@ _test_analytic_events_capture_attributes_disabled_settings = {
     'transaction_events.attributes.enabled': False,
     'browser_monitoring.attributes.enabled': True }
 
-@validate_analytics_sample_data(name='WebTransaction/Uri/',
-        capture_attributes=False)
+@validate_transaction_event_sample_data(required_attrs=_intrinsic_attributes,
+        required_user_attrs={})
 @override_application_settings(
         _test_analytic_events_capture_attributes_disabled_settings)
 def test_analytic_events_capture_attributes_disabled():
@@ -200,7 +147,7 @@ def test_analytic_events_capture_attributes_disabled():
 
     assert settings.js_agent_loader
 
-    response = target_application.get('/')
+    response = fully_featured_application.get('/')
 
     header = response.html.html.head.script.text
     content = response.html.html.body.p.text
@@ -223,7 +170,8 @@ def test_analytic_events_capture_attributes_disabled():
 
     assert 'atts' in data
 
-@validate_analytics_sample_data(name='WebTransaction/Uri/')
+@validate_transaction_event_sample_data(required_attrs=_intrinsic_attributes,
+        required_user_attrs=_user_attributes)
 def test_capture_attributes_default():
     settings = application_settings()
 
@@ -232,7 +180,7 @@ def test_capture_attributes_default():
 
     assert settings.js_agent_loader
 
-    response = target_application.get('/')
+    response = fully_featured_application.get('/')
 
     header = response.html.html.head.script.text
     content = response.html.html.body.p.text
@@ -258,7 +206,12 @@ def test_capture_attributes_default():
 _test_analytic_events_background_task_settings = {
     'browser_monitoring.attributes.enabled': True }
 
-@validate_analytics_sample_data(name='OtherTransaction/Uri/')
+_intrinsic_attributes = {
+        'name': 'OtherTransaction/Uri/'
+}
+
+@validate_transaction_event_sample_data(required_attrs=_intrinsic_attributes,
+        required_user_attrs=_user_attributes)
 @override_application_settings(
         _test_analytic_events_background_task_settings)
 def test_analytic_events_background_task():
@@ -272,7 +225,7 @@ def test_analytic_events_background_task():
 
     assert settings.js_agent_loader
 
-    response = target_application.get('/', extra_environ={
+    response = fully_featured_application.get('/', extra_environ={
             'newrelic.set_background_task': True})
 
     assert response.html.html.head.script is None
@@ -280,7 +233,12 @@ def test_analytic_events_background_task():
 _test_capture_attributes_disabled_settings = {
     'browser_monitoring.attributes.enabled': False }
 
-@validate_analytics_sample_data(name='WebTransaction/Uri/')
+_intrinsic_attributes = {
+        'name': 'WebTransaction/Uri/'
+}
+
+@validate_transaction_event_sample_data(required_attrs=_intrinsic_attributes,
+        required_user_attrs=_user_attributes)
 @override_application_settings(_test_capture_attributes_disabled_settings)
 def test_capture_attributes_disabled():
     settings = application_settings()
@@ -290,7 +248,7 @@ def test_capture_attributes_disabled():
 
     assert settings.js_agent_loader
 
-    response = target_application.get('/')
+    response = fully_featured_application.get('/')
 
     header = response.html.html.head.script.text
     content = response.html.html.body.p.text
@@ -335,7 +293,7 @@ def test_collect_analytic_events_disabled():
 
     assert settings.js_agent_loader
 
-    response = target_application.get('/')
+    response = fully_featured_application.get('/')
 
     header = response.html.html.head.script.text
     content = response.html.html.body.p.text
@@ -375,7 +333,7 @@ def test_analytic_events_disabled():
 
     assert settings.js_agent_loader
 
-    response = target_application.get('/')
+    response = fully_featured_application.get('/')
 
     header = response.html.html.head.script.text
     content = response.html.html.body.p.text
@@ -400,7 +358,8 @@ def test_analytic_events_disabled():
 
 # -------------- Test call counts in analytic events ----------------
 
-@validate_analytics_sample_data(name='WebTransaction/Uri/')
+@validate_transaction_event_sample_data(required_attrs=_intrinsic_attributes,
+        required_user_attrs=_user_attributes)
 def test_no_database_or_external_attributes_in_analytics():
     """Make no external calls or database calls in the transaction and check
     if the analytic event doesn't have the databaseCallCount, databaseDuration,
@@ -411,7 +370,7 @@ def test_no_database_or_external_attributes_in_analytics():
 
     assert settings.browser_monitoring.enabled
 
-    response = target_application.get('/')
+    response = fully_featured_application.get('/')
 
     # Validation of analytic data happens in the decorator.
 
@@ -421,8 +380,13 @@ def test_no_database_or_external_attributes_in_analytics():
 
     assert content == 'RESPONSE'
 
-@validate_analytics_sample_data(name='WebTransaction/Uri/db',
-        database_call_count=2)
+_intrinsic_attributes = {
+        'name': 'WebTransaction/Uri/db',
+        'databaseCallCount': 2,
+}
+
+@validate_transaction_event_sample_data(required_attrs=_intrinsic_attributes,
+        required_user_attrs=_user_attributes)
 def test_database_attributes_in_analytics():
     """Make database calls in the transaction and check if the analytic
     event has the databaseCallCount and databaseDuration attributes.
@@ -432,7 +396,10 @@ def test_database_attributes_in_analytics():
 
     assert settings.browser_monitoring.enabled
 
-    response = target_application.get('/db')
+    test_environ = {
+                'db' : '2',
+    }
+    response = fully_featured_application.get('/db', extra_environ=test_environ)
 
     # Validation of analytic data happens in the decorator.
 
@@ -442,8 +409,13 @@ def test_database_attributes_in_analytics():
 
     assert content == 'RESPONSE'
 
-@validate_analytics_sample_data(name='WebTransaction/Uri/ext',
-        external_call_count=2)
+_intrinsic_attributes = {
+        'name': 'WebTransaction/Uri/ext',
+        'externalCallCount': 2,
+}
+
+@validate_transaction_event_sample_data(required_attrs=_intrinsic_attributes,
+        required_user_attrs=_user_attributes)
 def test_external_attributes_in_analytics():
     """Make external calls in the transaction and check if the analytic
     event has the externalCallCount and externalDuration attributes.
@@ -453,7 +425,11 @@ def test_external_attributes_in_analytics():
 
     assert settings.browser_monitoring.enabled
 
-    response = target_application.get('/ext')
+    test_environ = {
+                'external' : '2',
+    }
+    response = fully_featured_application.get('/ext',
+            extra_environ=test_environ)
 
     # Validation of analytic data happens in the decorator.
 
@@ -463,8 +439,14 @@ def test_external_attributes_in_analytics():
 
     assert content == 'RESPONSE'
 
-@validate_analytics_sample_data(name='WebTransaction/Uri/dbext',
-        database_call_count=2, external_call_count=2)
+_intrinsic_attributes = {
+        'name': 'WebTransaction/Uri/dbext',
+        'databaseCallCount': 2,
+        'externalCallCount': 2,
+}
+
+@validate_transaction_event_sample_data(required_attrs=_intrinsic_attributes,
+        required_user_attrs=_user_attributes)
 def test_database_and_external_attributes_in_analytics():
     """Make external calls and database calls in the transaction and check if
     the analytic event has the databaseCallCount, databaseDuration,
@@ -475,7 +457,12 @@ def test_database_and_external_attributes_in_analytics():
 
     assert settings.browser_monitoring.enabled
 
-    response = target_application.get('/dbext')
+    test_environ = {
+                'db' : '2',
+                'external' : '2',
+    }
+    response = fully_featured_application.get('/dbext',
+            extra_environ=test_environ)
 
     # Validation of analytic data happens in the decorator.
 
@@ -484,3 +471,23 @@ def test_database_and_external_attributes_in_analytics():
     # Validate actual body content as sanity check.
 
     assert content == 'RESPONSE'
+
+# -------------- Test background tasks ----------------
+
+_expected_attributes = {
+        'user': [],
+        'agent': [],
+        'intrinsic' : ('name', 'duration', 'type', 'timestamp'),
+}
+
+_expected_absent_attributes = {
+        'user': ('foo'),
+        'agent': ('response.status', 'request.method'),
+        'intrinsic': ('port'),
+}
+
+@validate_transaction_event_attributes(_expected_attributes,
+        _expected_absent_attributes)
+@background_task()
+def test_background_task_intrinsics_has_no_port():
+    pass

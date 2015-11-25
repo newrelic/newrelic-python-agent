@@ -237,6 +237,7 @@ _settings.high_security = _environ_as_bool('NEW_RELIC_HIGH_SECURITY', False)
 _settings.attribute_filter = None
 
 _settings.collect_errors = True
+_settings.collect_error_events = True
 _settings.collect_traces = True
 _settings.collect_analytics_events = True
 
@@ -249,7 +250,7 @@ _settings.ignored_params = []
 _settings.capture_environ = True
 _settings.include_environ = ['REQUEST_METHOD', 'HTTP_USER_AGENT',
                               'HTTP_REFERER', 'CONTENT_TYPE',
-                              'CONTENT_LENGTH']
+                              'CONTENT_LENGTH', 'HTTP_HOST', 'HTTP_ACCEPT']
 
 _settings.max_stack_trace_lines = 50
 
@@ -305,6 +306,8 @@ _settings.transaction_tracer.attributes.exclude = []
 _settings.transaction_tracer.attributes.include = []
 
 _settings.error_collector.enabled = True
+_settings.error_collector.capture_events = True
+_settings.error_collector.max_event_samples_stored = 100
 _settings.error_collector.capture_source = False
 _settings.error_collector.ignore_errors = []
 _settings.error_collector.ignore_status_codes = _parse_ignore_status_codes(

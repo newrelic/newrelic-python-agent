@@ -1,4 +1,16 @@
 {
+    "README.rst": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "deploy/Dockerfile": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/LICENSE": {
         "hash": "n/a",
         "libraries": [
@@ -605,6 +617,18 @@
             "time.monotonic"
         ]
     },
+    "newrelic/common/cacert.pem": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/certs.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/common/encoding_utils.py": {
         "hash": "n/a",
         "libraries": [
@@ -642,6 +666,12 @@
         ]
     },
     "newrelic/common/tests/__init__.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
+    "newrelic/common/tests/test_certs.py": {
         "hash": "n/a",
         "libraries": [
             "New Relic"

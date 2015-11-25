@@ -74,6 +74,7 @@ class Transaction(object):
         self._node_stack = []
 
         self._request_uri = None
+        self._port = None
 
         self.queue_start = 0.0
 
@@ -440,6 +441,7 @@ class Transaction(object):
                 type=transaction_type,
                 group=group,
                 name=self._name,
+                port=self._port,
                 request_uri=self._request_uri,
                 response_code=self.response_code,
                 queue_start=self.queue_start,
@@ -739,6 +741,10 @@ class Transaction(object):
             a_attrs['request.headers.userAgent'] = req_env['HTTP_USER_AGENT']
         if req_env.get('HTTP_REFERER', None):
             a_attrs['request.headers.referer'] = req_env['HTTP_REFERER']
+        if req_env.get('HTTP_HOST', None):
+            a_attrs['request.headers.host'] = req_env['HTTP_HOST']
+        if req_env.get('HTTP_ACCEPT', None):
+            a_attrs['request.headers.accept'] = req_env['HTTP_ACCEPT']
         if req_env.get('CONTENT_TYPE', None):
             a_attrs['request.headers.contentType'] = req_env['CONTENT_TYPE']
         if req_env.get('CONTENT_LENGTH', None):
@@ -750,6 +756,8 @@ class Transaction(object):
             a_attrs['response.status'] = resp_props['STATUS']
         if resp_props.get('CONTENT_LENGTH', None):
             a_attrs['response.contentLength'] = resp_props['CONTENT_LENGTH']
+        if resp_props.get('CONTENT_TYPE', None):
+            a_attrs['response.contentType'] = resp_props['CONTENT_TYPE']
 
         if self.read_duration != 0:
             a_attrs['wsgi.input.seconds'] = '%.4f' % self.read_duration
@@ -922,7 +930,10 @@ class Transaction(object):
         settings = self._settings
         error_collector = settings.error_collector
 
-        if not error_collector.enabled or not settings.collect_errors:
+        if not error_collector.enabled:
+            return
+
+        if not settings.collect_errors and not settings.collect_error_events:
             return
 
         # If no exception details provided, use current exception.
@@ -1007,9 +1018,9 @@ class Transaction(object):
                         'High Security Mode.')
         else:
             for k, v in params.items():
-                name, value = process_user_attribute(k, v)
+                name, val = process_user_attribute(k, v)
                 if name:
-                    custom_params[name] = value
+                    custom_params[name] = val
 
         # Check to see if we need to strip the message before recording it.
 
@@ -1018,11 +1029,21 @@ class Transaction(object):
             message = STRIP_EXCEPTION_MESSAGE
         else:
             try:
-                message = str(value)
+
+                # Favor unicode in exception messages.
+
+                message = six.text_type(value)
+
             except Exception:
                 try:
-                    # Assume JSON encoding can handle unicode.
-                    message = six.text_type(value)
+
+                    # If exception cannot be represented in unicode, this means
+                    # that it is a byte string encoded with an encoding
+                    # that is not compatible with the default system encoding.
+                    # So, just pass this byte string along.
+
+                    message = str(value)
+
                 except Exception:
                     message = '<unprintable %s object>' % type(value).__name__
 

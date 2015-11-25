@@ -116,6 +116,7 @@ kwargs = dict(
         maintainer = 'New Relic',
         maintainer_email = 'support@newrelic.com',
         license = 'New Relic License',
+        zip_safe = False,
         classifiers = classifiers,
         packages = packages,
         package_data = { 'newrelic': ['newrelic.ini', 'LICENSE',

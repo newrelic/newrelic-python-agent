@@ -6,6 +6,7 @@ import os
 from . import command, usage
 
 from ..agent import initialize, global_settings
+from ..common import certs
 from ..network.addresses import proxy_details
 
 from ..packages import requests
@@ -83,8 +84,10 @@ def local_config(args):
 
     headers['X-API-Key'] = api_key
 
+    cert_loc = certs.where()
+
     r = requests.post(url, proxies=proxies, headers=headers,
-            timeout=timeout, data=data)
+            timeout=timeout, data=data, verify=cert_loc)
 
     if r.status_code != 201:
         raise RuntimeError('An unexpected HTTP response of %r was received '

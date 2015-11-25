@@ -8,7 +8,6 @@ import os
 from ..packages import six
 
 from ..packages import requests
-from ..packages.requests import certs
 
 from .. import version as agent_version
 
@@ -17,6 +16,7 @@ from .exceptions import (NetworkInterfaceException, ForceAgentRestart,
         ForceAgentDisconnect, DiscardDataForRequest, RetryDataForRequest,
         ServerIsUnavailable)
 
+from ..common import certs
 from ..common.encoding_utils import json_encode, json_decode
 
 _logger = logging.getLogger(__name__)

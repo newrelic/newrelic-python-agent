@@ -28,7 +28,7 @@ from newrelic.core.thread_utilization import utilization_tracker
 
 from ..core.attribute import (create_attributes, create_agent_attributes,
         create_user_attributes, truncate, process_user_attribute,
-        MAX_NUM_USER_ATTRIBUTES)
+        process_event_type, MAX_NUM_USER_ATTRIBUTES)
 from ..core.attribute_filter import (DST_NONE, DST_ERROR_COLLECTOR,
         DST_TRANSACTION_TRACER)
 from ..core.stack_trace import exception_stack
@@ -1096,12 +1096,24 @@ class Transaction(object):
             self._custom_metrics.record_custom_metric(name, value)
 
     def record_custom_event(self, event_type, params):
+
+        name = process_event_type(event_type)
+
+        if name is None:
+            return
+
+        attributes = {}
+        for k, v in params.items():
+            key, value = process_user_attribute(k, v)
+            if key:
+                attributes[key] = value
+
         intrinsics = {
-            'type': event_type,
+            'type': name,
             'timestamp': time.time(),
         }
 
-        event = [intrinsics, params]
+        event = [intrinsics, attributes]
         self._custom_events.append(event)
 
     def record_metric(self, name, value):

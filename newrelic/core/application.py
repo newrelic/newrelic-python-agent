@@ -16,6 +16,7 @@ import newrelic.packages.six as six
 
 from newrelic.samplers.data_sampler import DataSampler
 
+from newrelic.core.attribute import process_event_type, process_user_attribute
 from newrelic.core.config import global_settings_dump, global_settings
 from newrelic.core.data_collector import create_session
 from newrelic.network.exceptions import (ForceAgentRestart,
@@ -738,12 +739,23 @@ class Application(object):
         if not self._active_session:
             return
 
+        name = process_event_type(event_type)
+
+        if name is None:
+            return
+
+        attributes = {}
+        for k, v in params.items():
+            key, value = process_user_attribute(k, v)
+            if key:
+                attributes[key] = value
+
         intrinsics = {
-            'type': event_type,
+            'type': name,
             'timestamp': time.time(),
         }
 
-        event = [intrinsics, params]
+        event = [intrinsics, attributes]
 
         with self._stats_custom_lock:
             self._global_events_account += 1

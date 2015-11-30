@@ -13,7 +13,8 @@ from _test_async_application import (get_tornado_app, HelloRequestHandler,
         SleepRequestHandler, OneCallbackRequestHandler,
         NamedStackContextWrapRequestHandler, MultipleCallbacksRequestHandler,
         FinishExceptionRequestHandler, ReturnExceptionRequestHandler,
-        IOLoopDivideRequestHandler, PostCallbackRequestHandler)
+        IOLoopDivideRequestHandler, EngineDivideRequestHandler,
+        PostCallbackRequestHandler,)
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
@@ -348,5 +349,34 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
     def test_immediate_coroutine_names_not_lambda(self):
         response = self.fetch_response('/ioloop-divide/10000/10/immediate')
         expected = (IOLoopDivideRequestHandler.RESPONSE % (
+                10000.0, 10.0, 10000.0/10.0)).encode('ascii')
+        self.assertEqual(response.body, expected)
+
+    # The following 2 tests are the "engine" version of the coroutine tests
+    # above.
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(errors=[])
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:EngineDivideRequestHandler.get',
+            scoped_metrics=scoped_metrics,
+            forgone_metric_substrings=['lambda'])
+    def test_engine_names_not_lambda(self):
+        response = self.fetch_response('/engine-divide/10000/10')
+        expected = (EngineDivideRequestHandler.RESPONSE % (
+                10000.0, 10.0, 10000.0/10.0)).encode('ascii')
+        self.assertEqual(response.body, expected)
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(errors=[])
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:EngineDivideRequestHandler.get',
+            # PYTHON-1810 means We don't properly instrument the first time we
+            # enter a coroutine. Once that is fixed we should start seeing a
+            # scoped metric and should capture the scoped metric here.
+            # scoped_metrics=scoped_metrics,
+            forgone_metric_substrings=['lambda'])
+    def test_immediate_engine_names_not_lambda(self):
+        response = self.fetch_response('/engine-divide/10000/10/immediate')
+        expected = (EngineDivideRequestHandler.RESPONSE % (
                 10000.0, 10.0, 10000.0/10.0)).encode('ascii')
         self.assertEqual(response.body, expected)

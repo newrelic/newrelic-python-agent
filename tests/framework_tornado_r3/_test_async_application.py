@@ -149,17 +149,8 @@ class ReturnExceptionRequestHandler(RequestHandler):
     def one(self):
         raise tornado.gen.Return(1)
 
-class IOLoopDivideRequestHandler(RequestHandler):
+class DivideRequestHandler(RequestHandler):
     RESPONSE = u'Division %s / %s = %s'
-
-    @tornado.gen.coroutine
-    def get(self, a, b, immediate=False):
-        a = float(a)
-        b = float(b)
-        immediate = (True if immediate == 'immediate' else False)
-        quotient = yield self.divide(a, b, immediate=immediate)
-        response = self.RESPONSE % (a, b, quotient)
-        self.finish(response.encode('ascii'))
 
     def divide(self, a, b, immediate):
         f = tornado.concurrent.Future()
@@ -179,6 +170,29 @@ class IOLoopDivideRequestHandler(RequestHandler):
     def _divide(self, future, a, b):
         future.set_result(a/b)
 
+class IOLoopDivideRequestHandler(DivideRequestHandler):
+
+    @tornado.gen.coroutine
+    def get(self, a, b, immediate=False):
+        a = float(a)
+        b = float(b)
+        immediate = (True if immediate == 'immediate' else False)
+        quotient = yield self.divide(a, b, immediate=immediate)
+        response = self.RESPONSE % (a, b, quotient)
+        self.finish(response.encode('ascii'))
+
+class EngineDivideRequestHandler(DivideRequestHandler):
+
+    @tornado.web.asynchronous
+    @tornado.gen.engine
+    def get(self, a, b, immediate=False):
+        a = float(a)
+        b = float(b)
+        immediate = (True if immediate == 'immediate' else False)
+        quotient = yield self.divide(a, b, immediate=immediate)
+        response = self.RESPONSE % (a, b, quotient)
+        self.finish(response.encode('ascii'))
+
 def get_tornado_app():
     return Application([
         ('/', HelloRequestHandler),
@@ -193,4 +207,5 @@ def get_tornado_app():
         ('/finish-exception', FinishExceptionRequestHandler),
         ('/return-exception', ReturnExceptionRequestHandler),
         ('/ioloop-divide/(\d+)/(\d+)/?(\w+)?', IOLoopDivideRequestHandler),
+        ('/engine-divide/(\d+)/(\d+)/?(\w+)?', EngineDivideRequestHandler),
     ])

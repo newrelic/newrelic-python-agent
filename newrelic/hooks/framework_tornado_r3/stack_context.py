@@ -3,6 +3,7 @@ import sys
 from newrelic.agent import (FunctionTrace, callable_name, function_wrapper,
     wrap_function_wrapper)
 from six.moves import range
+from .gen import NoneProxy
 from .util import (record_exception, retrieve_current_transaction,
         replace_current_transaction)
 
@@ -74,8 +75,22 @@ def _create_transaction_aware_fxn(fxn):
     def _make_transaction_aware(wrapped, instance, args, kwargs):
         old_transaction = replace_current_transaction(transaction)
         name = callable_name(fxn)
-        with FunctionTrace(transaction, name=name):
+        with FunctionTrace(transaction, name=name) as ft:
             ret = fxn(*args, **kwargs)
+            # Coroutines are wrapped in lambdas when they are scheduled.
+            # See tornado.gen.Runner.run(). In this case, we don't know the
+            # name until the function is run. We only know it then because we
+            # pass out the name as an attribute on the result.
+            # We update the name now.
+            if (ft is not None and ret is not None and
+                    hasattr(ret, '_nr_coroutine_name')):
+                ft.name = ret._nr_coroutine_name
+                # To be able to attach the name to the return value of a
+                # coroutine we need to have the coroutine return an object.
+                # If it returns None, we have created a proxy object. We now
+                # restore the original None value.
+                if type(ret) == NoneProxy:
+                    ret = None
         replace_current_transaction(old_transaction)
         return ret
 

@@ -43,7 +43,8 @@ def test_intrinsics():
 
 _required_agent = ['request.method', 'wsgi.output.seconds', 'response.status',
                    'request.headers.host', 'request.headers.accept',
-                   'response.contentType', 'response.contentLength']
+                   'response.headers.contentType',
+                   'response.headers.contentLength']
 _forgone_agent = []
 
 @validate_attributes('agent', _required_agent, _forgone_agent)

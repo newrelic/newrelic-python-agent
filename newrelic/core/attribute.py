@@ -104,7 +104,7 @@ def check_name_is_string(name):
 
 def check_max_int(value, max_int=MAX_64_BIT_INT):
     if isinstance(value, six.integer_types) and value > max_int:
-        raise IntTooLargeException
+        raise IntTooLargeException()
 
 def process_user_attribute(name, value):
 

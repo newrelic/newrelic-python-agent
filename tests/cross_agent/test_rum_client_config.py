@@ -91,7 +91,13 @@ def test_browser_montioring(testname, apptime_milliseconds, queuetime_millisecon
         # Check that all other values are correct
 
         for key, value in expected.items():
-            if value == "":
+
+            # If there are no attributes, the spec allows us to omit the
+            # 'atts' field altogether, so we do. But, the cross agent tests
+            # don't omit it, so we need to special case 'atts' when we compare
+            # to 'expected'.
+
+            if key == 'atts' and value == '':
                 assert key not in footer_data
             else:
                 assert footer_data[key] == value

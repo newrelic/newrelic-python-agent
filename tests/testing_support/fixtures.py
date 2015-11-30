@@ -15,6 +15,7 @@ from newrelic.agent import (initialize, register_application,
         wrap_function_wrapper, ObjectProxy, application, callable_name,
         get_browser_timing_footer)
 
+from newrelic.common import certs
 from newrelic.common.encoding_utils import (unpack_field, json_encode,
         deobfuscate, json_decode, obfuscate)
 
@@ -228,11 +229,13 @@ def collector_agent_registration_fixture(app_name=None, default_settings={},
 
         headers['X-API-Key'] = settings.api_key
 
+        cert_loc = certs.where()
+
         if not use_fake_collector and not use_developer_mode:
             try:
                 _logger.debug("Record deployment marker at %s" % url)
                 r = requests.post(url, proxies=proxies, headers=headers,
-                        timeout=timeout, data=data)
+                        timeout=timeout, data=data, verify=cert_loc)
             except Exception:
                 _logger.exception("Unable to record deployment marker.")
                 pass

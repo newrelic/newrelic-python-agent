@@ -1696,11 +1696,25 @@ def validate_transaction_record_custom_event(event_type, required_params):
 
     return _validate_transaction_record_custom_event
 
-def validate_custom_event(event):
+def _validate_custom_event(recorded_event, required_event):
+    assert len(recorded_event) == 2 # [intrinsic, user attributes]
+
+    intrinsics = recorded_event[0]
+
+    assert intrinsics['type'] == required_event[0]['type']
+    now = time.time()
+    assert intrinsics['timestamp'] <= now
+    assert intrinsics['timestamp'] >= required_event[0]['timestamp']
+
+    recorded_set = set(recorded_event[1].items())
+    required_params_set = set(required_event[1].items())
+    assert recorded_set == required_params_set
+
+def validate_custom_event_inside_transaction(required_event):
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
-    def _validate_custom_event(wrapped, instance, args, kwargs):
-
+    def _validate_custom_event_inside_transaction(wrapped, instance,
+            args, kwargs):
         try:
             result = wrapped(*args, **kwargs)
         except:
@@ -1709,20 +1723,27 @@ def validate_custom_event(event):
             assert instance.custom_events.num_samples == 1
 
             custom_event = instance.custom_events.samples[0]
-            intrinsic = custom_event[0]
-            user = custom_event[1]
+            _validate_custom_event(custom_event, required_event)
 
-            event_type = event[0]['type']
-            params = event[1].items()
+    return _validate_custom_event_inside_transaction
 
-            assert intrinsic['type'] == event_type
-            assert 'timestamp' in intrinsic
+def validate_custom_event_outside_transaction(required_event):
 
-            user_set = set(user.items())
-            params_set = set(params)
-            assert user_set == params_set
+    @function_wrapper
+    def _validate_custom_event_outside_transaction(wrapped, instance,
+            args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            stats = core_application_stats_engine(None)
+            assert stats.custom_events.num_seen == 1
 
-    return _validate_custom_event
+            custom_event = stats.custom_events.samples[0]
+            _validate_custom_event(custom_event, required_event)
+
+    return _validate_custom_event_outside_transaction
 
 def validate_custom_event_count(count):
     @transient_function_wrapper('newrelic.core.stats_engine',

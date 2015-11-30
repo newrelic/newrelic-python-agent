@@ -755,9 +755,9 @@ class Transaction(object):
         if resp_props.get('STATUS', None):
             a_attrs['response.status'] = resp_props['STATUS']
         if resp_props.get('CONTENT_LENGTH', None):
-            a_attrs['response.contentLength'] = resp_props['CONTENT_LENGTH']
+            a_attrs['response.headers.contentLength'] = resp_props['CONTENT_LENGTH']
         if resp_props.get('CONTENT_TYPE', None):
-            a_attrs['response.contentType'] = resp_props['CONTENT_TYPE']
+            a_attrs['response.headers.contentType'] = resp_props['CONTENT_TYPE']
 
         if self.read_duration != 0:
             a_attrs['wsgi.input.seconds'] = '%.4f' % self.read_duration

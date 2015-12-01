@@ -30,7 +30,7 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
 
         # We wrap record_transaction in every test because we want this wrapping
         # to happen after the one in test fixture. Since that's a session scoped
-        # fixture that will hapen after the module is loaded but before the
+        # fixture that will happen after the module is loaded but before the
         # tests are invoked. It may be possible to change the scoping of the
         # fixture (module level?) and wrap is on the module level.
         wrap_function_wrapper('newrelic.core.stats_engine',
@@ -152,6 +152,8 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         self.assertEqual(responses[1].body, SleepRequestHandler.RESPONSE)
 
     scoped_metrics = [('Function/_test_async_application:'
+            'OneCallbackRequestHandler.get', 1),
+            ('Function/_test_async_application:'
             'OneCallbackRequestHandler.finish_callback', 1)]
 
     @tornado_validate_transaction_cache_empty()
@@ -165,6 +167,8 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         self.assertEqual(response.body, OneCallbackRequestHandler.RESPONSE)
 
     scoped_metrics = [('Function/_test_async_application:'
+            'NamedStackContextWrapRequestHandler.get', 1),
+            ('Function/_test_async_application:'
             'NamedStackContextWrapRequestHandler.finish_callback', 1)]
 
     @tornado_validate_transaction_cache_empty()
@@ -179,6 +183,8 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
                 NamedStackContextWrapRequestHandler.RESPONSE)
 
     scoped_metrics = [('Function/_test_async_application:'
+            'MultipleCallbacksRequestHandler.get', 1),
+            ('Function/_test_async_application:'
             'MultipleCallbacksRequestHandler.finish_callback', 1),
             ('Function/_test_async_application:'
              'MultipleCallbacksRequestHandler.counter_callback', 2)]
@@ -204,6 +210,8 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         self.fetch_exception('/sync-exception')
 
     scoped_metrics = [('Function/_test_async_application:'
+            'CallbackExceptionRequestHandler.get', 1),
+            ('Function/_test_async_application:'
             'CallbackExceptionRequestHandler.counter_callback', 5)]
 
     @tornado_validate_errors(errors=[select_python_version(

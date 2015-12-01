@@ -354,6 +354,14 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
 
     # The following 2 tests are the "engine" version of the coroutine tests
     # above.
+
+    # The class name is missing from this metric in python 2
+    # though it should be present. See PYTHON-1798.
+    scoped_metrics = [select_python_version(
+            py2=('Function/_test_async_application:get (coroutine)', 1),
+            py3=('Function/_test_async_application:EngineDivideRequestHandler.'
+                 'get (coroutine)', 1))]
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[])
     @tornado_validate_count_transaction_metrics(

@@ -1669,12 +1669,11 @@ def validate_application_exception_message(expected_message):
 
     return _validate_application_exception_message
 
-def validate_transaction_record_custom_event(event_type, required_params):
+def validate_transaction_record_custom_event(required_event):
     @transient_function_wrapper('newrelic.api.transaction',
             'Transaction.record_custom_event')
     def _validate_transaction_record_custom_event(wrapped, instance, args,
             kwargs):
-
         try:
             result = wrapped(*args, **kwargs)
         except:
@@ -1683,16 +1682,8 @@ def validate_transaction_record_custom_event(event_type, required_params):
             custom_events = instance._custom_events
             assert len(custom_events) == 1
 
-            custom_event = custom_events[-1]
-            intrinsic = custom_event[0]
-            user = custom_event[1]
-
-            assert intrinsic['type'] == event_type
-            assert 'timestamp' in intrinsic
-
-            user_set = set(user.items())
-            required_set = set(required_params.items())
-            assert user_set == required_set
+            custom_event = custom_events[0]
+            _validate_custom_event(custom_event, required_event)
 
     return _validate_transaction_record_custom_event
 
@@ -1702,13 +1693,12 @@ def _validate_custom_event(recorded_event, required_event):
     intrinsics = recorded_event[0]
 
     assert intrinsics['type'] == required_event[0]['type']
+
     now = time.time()
     assert intrinsics['timestamp'] <= now
     assert intrinsics['timestamp'] >= required_event[0]['timestamp']
 
-    recorded_set = set(recorded_event[1].items())
-    required_params_set = set(required_event[1].items())
-    assert recorded_set == required_params_set
+    assert recorded_event[1].items() == required_event[1].items()
 
 def validate_custom_event_inside_transaction(required_event):
     @transient_function_wrapper('newrelic.core.stats_engine',
@@ -1728,7 +1718,6 @@ def validate_custom_event_inside_transaction(required_event):
     return _validate_custom_event_inside_transaction
 
 def validate_custom_event_outside_transaction(required_event):
-
     @function_wrapper
     def _validate_custom_event_outside_transaction(wrapped, instance,
             args, kwargs):
@@ -1738,7 +1727,7 @@ def validate_custom_event_outside_transaction(required_event):
             raise
         else:
             stats = core_application_stats_engine(None)
-            assert stats.custom_events.num_seen == 1
+            assert stats.custom_events.num_samples == 1
 
             custom_event = stats.custom_events.samples[0]
             _validate_custom_event(custom_event, required_event)

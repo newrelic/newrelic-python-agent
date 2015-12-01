@@ -10,18 +10,6 @@ from testing_support.fixtures import (reset_core_stats_engine,
         override_application_settings)
 
 
-@reset_core_stats_engine()
-@validate_transaction_record_custom_event('CustomType', {})
-@background_task()
-def test_custom_events_record_in_transaction():
-    record_custom_event('CustomType', {})
-
-@reset_core_stats_engine()
-@validate_transaction_record_custom_event('CustomType', {1: 2, 'foo': 'bar'})
-@background_task()
-def test_custom_events_record_in_transaction_with_params():
-    record_custom_event('CustomType', {1: 2, 'foo': 'bar'})
-
 _now = time.time()
 
 _intrinsic = {
@@ -30,6 +18,18 @@ _intrinsic = {
 }
 _user_params = {'foo': 'bar'}
 _event = [_intrinsic, _user_params]
+
+@reset_core_stats_engine()
+@validate_transaction_record_custom_event([_intrinsic, {}])
+@background_task()
+def test_custom_events_record_in_transaction():
+    record_custom_event('FooEvent', {})
+
+@reset_core_stats_engine()
+@validate_transaction_record_custom_event(_event)
+@background_task()
+def test_custom_events_record_in_transaction_with_params():
+    record_custom_event('FooEvent', _user_params)
 
 @reset_core_stats_engine()
 @validate_custom_event_inside_transaction(_event)

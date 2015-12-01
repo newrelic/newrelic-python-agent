@@ -734,6 +734,21 @@ class Application(object):
                 self._global_events_account += 1
                 self._stats_custom_engine.record_custom_metric(name, value)
 
+    def record_custom_event(self, event_type, params):
+        if not self._active_session:
+            return
+
+        intrinsics = {
+            'type': event_type,
+            'timestamp': time.time(),
+        }
+
+        event = [intrinsics, params]
+
+        with self._stats_custom_lock:
+            self._global_events_account += 1
+            self._stats_engine.record_custom_event(event)
+
     def record_transaction(self, data, profile_samples=None):
         """Record a single transaction against this application."""
 

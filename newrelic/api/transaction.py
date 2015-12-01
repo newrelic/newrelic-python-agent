@@ -87,6 +87,7 @@ class Transaction(object):
 
         self._errors = []
         self._slow_sql = []
+        self._custom_events = []
 
         self._stack_trace_count = 0
         self._explain_plan_count = 0
@@ -452,6 +453,7 @@ class Transaction(object):
                 children=tuple(children),
                 errors=tuple(self._errors),
                 slow_sql=tuple(self._slow_sql),
+                custom_events=tuple(self._custom_events),
                 apdex_t=self.apdex,
                 suppress_apdex=self.suppress_apdex,
                 custom_metrics=self._custom_metrics,
@@ -1093,6 +1095,15 @@ class Transaction(object):
         for name, value in metrics:
             self._custom_metrics.record_custom_metric(name, value)
 
+    def record_custom_event(self, event_type, params):
+        intrinsics = {
+            'type': event_type,
+            'timestamp': time.time(),
+        }
+
+        event = [intrinsics, params]
+        self._custom_events.append(event)
+
     def record_metric(self, name, value):
         warnings.warn('Internal API change. Use record_custom_metric() '
                 'instead of record_metric().', DeprecationWarning,
@@ -1370,3 +1381,21 @@ def record_custom_metrics(metrics, application=None):
     else:
         if application.enabled:
             application.record_custom_metrics(metrics)
+
+def record_custom_event(event_type, params, application=None):
+    """Record a custom event.
+
+    Args:
+        event_type (str): The type (name) of the custom event.
+        params (dict): Attributes to add to the event.
+        application (newrelic.api.Application): Application instance.
+
+    """
+
+    if application is None:
+        transaction = current_transaction()
+        if transaction:
+            transaction.record_custom_event(event_type, params)
+    else:
+        if application.enabled:
+            application.record_custom_event(event_type, params)

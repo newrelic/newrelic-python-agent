@@ -21,6 +21,13 @@ try:
 except ImportError:
     import urllib.parse as urlparse
 
+
+# By default, Transaction Events and Custom Events have the same size
+# reservoir. Error Events have a different default size.
+
+DEFAULT_RESERVOIR_SIZE = 1200
+ERROR_EVENT_RESERVOIR_SIZE = 100
+
 class _NullHandler(logging.Handler):
     def emit(self, record):
         pass
@@ -62,6 +69,7 @@ class CrossApplicationTracerSettings(Settings): pass
 class XraySessionSettings(Settings): pass
 class TransactionEventsSettings(Settings): pass
 class TransactionEventsAttributesSettings(Settings): pass
+class CustomInsightsEventsSettings(Settings): pass
 class ProcessHostSettings(Settings): pass
 class SyntheticsSettings(Settings): pass
 class UtilizationSettings(Settings): pass
@@ -87,6 +95,7 @@ _settings.cross_application_tracer = CrossApplicationTracerSettings()
 _settings.xray_session = XraySessionSettings()
 _settings.transaction_events = TransactionEventsSettings()
 _settings.transaction_events.attributes = TransactionEventsAttributesSettings()
+_settings.custom_insights_events = CustomInsightsEventsSettings()
 _settings.process_host = ProcessHostSettings()
 _settings.synthetics = SyntheticsSettings()
 _settings.utilization = UtilizationSettings()
@@ -240,6 +249,7 @@ _settings.collect_errors = True
 _settings.collect_error_events = True
 _settings.collect_traces = True
 _settings.collect_analytics_events = True
+_settings.collect_custom_events = True
 
 _settings.apdex_t = 0.5
 _settings.web_transactions_apdex = {}
@@ -287,10 +297,13 @@ _settings.cross_application_tracer.enabled = True
 _settings.xray_session.enabled = True
 
 _settings.transaction_events.enabled = True
-_settings.transaction_events.max_samples_stored = 1200
+_settings.transaction_events.max_samples_stored = DEFAULT_RESERVOIR_SIZE
 _settings.transaction_events.attributes.enabled = True
 _settings.transaction_events.attributes.exclude = []
 _settings.transaction_events.attributes.include = []
+
+_settings.custom_insights_events.enabled = True
+_settings.custom_insights_events.max_samples_stored = DEFAULT_RESERVOIR_SIZE
 
 _settings.transaction_tracer.enabled = True
 _settings.transaction_tracer.transaction_threshold = None
@@ -307,7 +320,7 @@ _settings.transaction_tracer.attributes.include = []
 
 _settings.error_collector.enabled = True
 _settings.error_collector.capture_events = True
-_settings.error_collector.max_event_samples_stored = 100
+_settings.error_collector.max_event_samples_stored = ERROR_EVENT_RESERVOIR_SIZE
 _settings.error_collector.capture_source = False
 _settings.error_collector.ignore_errors = []
 _settings.error_collector.ignore_status_codes = _parse_ignore_status_codes(

@@ -1383,6 +1383,15 @@ def record_custom_metrics(metrics, application=None):
             application.record_custom_metrics(metrics)
 
 def record_custom_event(event_type, params, application=None):
+    """Record a custom event.
+
+    Args:
+        event_type (str): The type (name) of the custom event.
+        params (dict): Attributes to add to the event.
+        application (newrelic.api.Application): Application instance.
+
+    """
+
     if application is None:
         transaction = current_transaction()
         if transaction:

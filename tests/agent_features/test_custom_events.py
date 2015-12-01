@@ -43,6 +43,52 @@ def test_add_custom_event_to_application_stats_engine():
     app = application()
     record_custom_event('FooEvent', _user_params, application=app)
 
+@reset_core_stats_engine()
+@validate_custom_event_count(count=0)
+@background_task()
+def test_custom_event_inside_transaction_bad_event_type():
+    record_custom_event('!@#$%^&*()', {'foo': 'bar'})
+
+@reset_core_stats_engine()
+@validate_custom_event_count(count=0)
+@background_task()
+def test_custom_event_outside_transaction_bad_event_type():
+    app = application()
+    record_custom_event('!@#$%^&*()', {'foo': 'bar'}, application=app)
+
+_mixed_params = {'foo': 'bar', 123: 'bad key'}
+
+@reset_core_stats_engine()
+@validate_custom_event_inside_transaction(_event)
+@background_task()
+def test_custom_event_inside_transaction_mixed_params():
+    record_custom_event('FooEvent', _mixed_params)
+
+@reset_core_stats_engine()
+@validate_custom_event_outside_transaction(_event)
+@background_task()
+def test_custom_event_outside_transaction_mixed_params():
+    app = application()
+    record_custom_event('FooEvent', _mixed_params, application=app)
+
+_bad_params = {'*' * 256: 'too long', 123: 'bad key'}
+_event_with_no_params = [{'type': 'FooEvent', 'timestamp': _now}, {}]
+
+@reset_core_stats_engine()
+@validate_custom_event_inside_transaction(_event_with_no_params)
+@background_task()
+def test_custom_event_inside_transaction_bad_params():
+    record_custom_event('FooEvent', _bad_params)
+
+@reset_core_stats_engine()
+@validate_custom_event_outside_transaction(_event_with_no_params)
+@background_task()
+def test_custom_event_outside_transaction_bad_params():
+    app = application()
+    record_custom_event('FooEvent', _bad_params, application=app)
+
+# Tests for Custom Events configuration settings
+
 @override_application_settings({'collect_custom_events': False})
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)

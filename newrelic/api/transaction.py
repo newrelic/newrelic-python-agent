@@ -1096,12 +1096,12 @@ class Transaction(object):
             self._custom_metrics.record_custom_metric(name, value)
 
     def record_custom_event(self, event_type, params):
-        intrinsic = {
+        intrinsics = {
             'type': event_type,
             'timestamp': time.time(),
         }
 
-        event = [intrinsic, params]
+        event = [intrinsics, params]
         self._custom_events.append(event)
 
     def record_metric(self, name, value):

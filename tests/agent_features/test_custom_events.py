@@ -12,15 +12,15 @@ from testing_support.fixtures import (reset_core_stats_engine,
 
 _now = time.time()
 
-_intrinsic = {
+_intrinsics = {
     'type': 'FooEvent',
     'timestamp': _now,
 }
 _user_params = {'foo': 'bar'}
-_event = [_intrinsic, _user_params]
+_event = [_intrinsics, _user_params]
 
 @reset_core_stats_engine()
-@validate_transaction_record_custom_event([_intrinsic, {}])
+@validate_transaction_record_custom_event([_intrinsics, {}])
 @background_task()
 def test_custom_events_record_in_transaction():
     record_custom_event('FooEvent', {})

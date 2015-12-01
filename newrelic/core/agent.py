@@ -471,6 +471,13 @@ class Agent(object):
 
         application.record_custom_metrics(metrics)
 
+    def record_custom_event(self, app_name, event_type, params):
+        application = self._applications.get(app_name, None)
+        if application is None or not application.active:
+            return
+
+        application.record_custom_event(event_type, params)
+
     def record_metrics(self, app_name, metrics):
         warnings.warn('Internal API change. Use record_custom_metrics() '
                 'instead of record_metrics().', DeprecationWarning,

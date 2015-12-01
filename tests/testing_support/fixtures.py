@@ -1669,6 +1669,83 @@ def validate_application_exception_message(expected_message):
 
     return _validate_application_exception_message
 
+def _validate_custom_event(recorded_event, required_event):
+    assert len(recorded_event) == 2 # [intrinsic, user attributes]
+
+    intrinsics = recorded_event[0]
+
+    assert intrinsics['type'] == required_event[0]['type']
+
+    now = time.time()
+    assert intrinsics['timestamp'] <= now
+    assert intrinsics['timestamp'] >= required_event[0]['timestamp']
+
+    assert recorded_event[1].items() == required_event[1].items()
+
+def validate_transaction_record_custom_event(required_event):
+    @transient_function_wrapper('newrelic.api.transaction',
+            'Transaction.record_custom_event')
+    def _validate_transaction_record_custom_event(wrapped, instance, args,
+            kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            custom_events = instance._custom_events
+            assert len(custom_events) == 1
+
+            custom_event = custom_events[0]
+            _validate_custom_event(custom_event, required_event)
+
+    return _validate_transaction_record_custom_event
+
+def validate_custom_event_inside_transaction(required_event):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_custom_event_inside_transaction(wrapped, instance,
+            args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            assert instance.custom_events.num_samples == 1
+
+            custom_event = instance.custom_events.samples[0]
+            _validate_custom_event(custom_event, required_event)
+
+    return _validate_custom_event_inside_transaction
+
+def validate_custom_event_outside_transaction(required_event):
+    @function_wrapper
+    def _validate_custom_event_outside_transaction(wrapped, instance,
+            args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            stats = core_application_stats_engine(None)
+            assert stats.custom_events.num_samples == 1
+
+            custom_event = stats.custom_events.samples[0]
+            _validate_custom_event(custom_event, required_event)
+
+    return _validate_custom_event_outside_transaction
+
+def validate_custom_event_count(count):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_custom_event_count(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            assert instance.custom_events.num_samples == count
+    return _validate_custom_event_count
+
 def override_application_name(app_name):
     # The argument here cannot be named 'name', or else it triggers
     # a PyPy bug. Hence, we use 'app_name' instead.

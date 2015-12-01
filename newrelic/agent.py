@@ -14,7 +14,7 @@ from .api.transaction import (current_transaction, set_transaction_name,
         add_framework_info, record_exception, get_browser_timing_header,
         get_browser_timing_footer, disable_browser_autorum,
         suppress_transaction_trace, record_custom_metric,
-        record_custom_metrics)
+        record_custom_metrics, record_custom_event)
 
 # DEPRECATED - The name_transaction() call is deprecated and the
 # set_transaction_name() function should be used instead.

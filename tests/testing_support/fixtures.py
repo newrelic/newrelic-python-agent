@@ -1669,6 +1669,19 @@ def validate_application_exception_message(expected_message):
 
     return _validate_application_exception_message
 
+def _validate_custom_event(recorded_event, required_event):
+    assert len(recorded_event) == 2 # [intrinsic, user attributes]
+
+    intrinsics = recorded_event[0]
+
+    assert intrinsics['type'] == required_event[0]['type']
+
+    now = time.time()
+    assert intrinsics['timestamp'] <= now
+    assert intrinsics['timestamp'] >= required_event[0]['timestamp']
+
+    assert recorded_event[1].items() == required_event[1].items()
+
 def validate_transaction_record_custom_event(required_event):
     @transient_function_wrapper('newrelic.api.transaction',
             'Transaction.record_custom_event')
@@ -1686,19 +1699,6 @@ def validate_transaction_record_custom_event(required_event):
             _validate_custom_event(custom_event, required_event)
 
     return _validate_transaction_record_custom_event
-
-def _validate_custom_event(recorded_event, required_event):
-    assert len(recorded_event) == 2 # [intrinsic, user attributes]
-
-    intrinsics = recorded_event[0]
-
-    assert intrinsics['type'] == required_event[0]['type']
-
-    now = time.time()
-    assert intrinsics['timestamp'] <= now
-    assert intrinsics['timestamp'] >= required_event[0]['timestamp']
-
-    assert recorded_event[1].items() == required_event[1].items()
 
 def validate_custom_event_inside_transaction(required_event):
     @transient_function_wrapper('newrelic.core.stats_engine',

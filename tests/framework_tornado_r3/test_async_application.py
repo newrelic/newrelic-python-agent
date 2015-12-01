@@ -13,7 +13,7 @@ from _test_async_application import (get_tornado_app, HelloRequestHandler,
         SleepRequestHandler, OneCallbackRequestHandler,
         NamedStackContextWrapRequestHandler, MultipleCallbacksRequestHandler,
         FinishExceptionRequestHandler, ReturnExceptionRequestHandler,
-        IOLoopDivideRequestHandler,)
+        IOLoopDivideRequestHandler, PostCallbackRequestHandler)
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
@@ -61,17 +61,18 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         if self.waits_counter == self.waits_expected:
             self.stop()
 
-    def fetch_response(self, path, is_http_error=False):
+    def fetch_response(self, path, is_http_error=False, **kwargs):
         # For each request we need to wait for 2 events: the response and a call
         # to record transaction.
         self.waits_expected += 2
 
         # Make a request to the server.
-        future = self.http_client.fetch(self.get_url(path), self.fetch_finished)
+        future = self.http_client.fetch(self.get_url(path), self.fetch_finished,
+                **kwargs)
         try:
             self.wait(timeout=5.0)
         except:
-            self.assertTrue(False, "Timeout occured waiting for response")
+            self.assertTrue(False, "Timeout occurred waiting for response")
 
         # Retrieve the server response. An exception will be raised
         # if the server did not respond successfully.
@@ -165,6 +166,21 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         response = self.fetch_response('/one-callback')
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, OneCallbackRequestHandler.RESPONSE)
+
+    scoped_metrics = [('Function/_test_async_application:'
+            'PostCallbackRequestHandler.post', 1),
+            ('Function/_test_async_application:'
+            'PostCallbackRequestHandler.do_stuff', 1)]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(errors=[])
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:PostCallbackRequestHandler.post',
+            scoped_metrics=scoped_metrics)
+    def test_post_method_one_callback(self):
+        response = self.fetch_response('/post', method="POST", body="test")
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, PostCallbackRequestHandler.RESPONSE)
 
     scoped_metrics = [('Function/_test_async_application:'
             'NamedStackContextWrapRequestHandler.get', 1),

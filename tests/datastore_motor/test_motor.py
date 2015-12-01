@@ -1,8 +1,10 @@
 import pytest
 
-from motor import MotorClient, MotorDatabase, MotorCollection
+from motor import (MotorClient, MotorReplicaSetClient, MotorDatabase,
+        MotorCollection)
 
 from newrelic.agent import callable_name
+
 
 # Tests verify that our patch to __getattr__ works.
 #
@@ -13,6 +15,10 @@ from newrelic.agent import callable_name
 def test_callable_name_motor_client():
     client = MotorClient()
     assert callable_name(client) == 'motor:MotorClient'
+
+def test_callable_name_motor_replica_set_client():
+    client = MotorReplicaSetClient(replicaSet='foo')
+    assert callable_name(client) == 'motor:MotorReplicaSetClient'
 
 def test_callable_name_motor_database():
     client = MotorClient()

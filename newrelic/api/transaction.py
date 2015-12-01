@@ -762,7 +762,7 @@ class Transaction(object):
             a_attrs['response.headers.contentType'] = resp_props['CONTENT_TYPE']
 
         if self.read_duration != 0:
-            a_attrs['wsgi.input.seconds'] = '%.4f' % self.read_duration
+            a_attrs['wsgi.input.seconds'] = self.read_duration
         if self._bytes_read != 0:
             a_attrs['wsgi.input.bytes'] = self._bytes_read
         if self._calls_read != 0:
@@ -773,7 +773,7 @@ class Transaction(object):
             a_attrs['wsgi.input.calls.readlines'] = self._calls_readlines
 
         if self.sent_duration != 0:
-            a_attrs['wsgi.output.seconds'] = '%.4f' % self.sent_duration
+            a_attrs['wsgi.output.seconds'] = self.sent_duration
         if self._bytes_sent != 0:
             a_attrs['wsgi.output.bytes'] = self._bytes_sent
         if self._calls_write != 0:
@@ -786,7 +786,7 @@ class Transaction(object):
         if self._thread_utilization_value:
             a_attrs['thread.concurrency'] = self._thread_utilization_value
         if self.queue_wait != 0 :
-            a_attrs['webfrontend.queue.seconds'] = '%.4f' % self.queue_wait
+            a_attrs['webfrontend.queue.seconds'] = self.queue_wait
 
         agent_attributes = create_agent_attributes(a_attrs,
                 self.attribute_filter)

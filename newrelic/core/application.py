@@ -738,12 +738,12 @@ class Application(object):
         if not self._active_session:
             return
 
-        intrinsic = {
+        intrinsics = {
             'type': event_type,
             'timestamp': time.time(),
         }
 
-        event = [intrinsic, params]
+        event = [intrinsics, params]
 
         with self._stats_custom_lock:
             self._global_events_account += 1

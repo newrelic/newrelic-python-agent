@@ -967,7 +967,7 @@ class ApplicationSession(object):
 
     @internal_trace('Supportability/Python/Collector/Calls/send_error_events')
     def send_error_events(self, sampling_info, error_data):
-        """Called to submit sample set for analytics.
+        """Called to submit sample set for error events.
 
         """
 

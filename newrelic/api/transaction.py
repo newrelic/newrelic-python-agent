@@ -737,29 +737,29 @@ class Transaction(object):
         settings = self._settings
         req_env = self._request_environment
 
-        if req_env.get('REQUEST_METHOD', None):
-            a_attrs['request.method'] = req_env['REQUEST_METHOD']
-        if req_env.get('HTTP_USER_AGENT', None):
-            a_attrs['request.headers.userAgent'] = req_env['HTTP_USER_AGENT']
-        if req_env.get('HTTP_REFERER', None):
-            a_attrs['request.headers.referer'] = req_env['HTTP_REFERER']
-        if req_env.get('HTTP_HOST', None):
-            a_attrs['request.headers.host'] = req_env['HTTP_HOST']
         if req_env.get('HTTP_ACCEPT', None):
             a_attrs['request.headers.accept'] = req_env['HTTP_ACCEPT']
-        if req_env.get('CONTENT_TYPE', None):
-            a_attrs['request.headers.contentType'] = req_env['CONTENT_TYPE']
         if req_env.get('CONTENT_LENGTH', None):
             a_attrs['request.headers.contentLength'] = req_env['CONTENT_LENGTH']
+        if req_env.get('CONTENT_TYPE', None):
+            a_attrs['request.headers.contentType'] = req_env['CONTENT_TYPE']
+        if req_env.get('HTTP_HOST', None):
+            a_attrs['request.headers.host'] = req_env['HTTP_HOST']
+        if req_env.get('HTTP_REFERER', None):
+            a_attrs['request.headers.referer'] = req_env['HTTP_REFERER']
+        if req_env.get('HTTP_USER_AGENT', None):
+            a_attrs['request.headers.userAgent'] = req_env['HTTP_USER_AGENT']
+        if req_env.get('REQUEST_METHOD', None):
+            a_attrs['request.method'] = req_env['REQUEST_METHOD']
 
         resp_props = self._response_properties
 
-        if resp_props.get('STATUS', None):
-            a_attrs['response.status'] = resp_props['STATUS']
         if resp_props.get('CONTENT_LENGTH', None):
             a_attrs['response.headers.contentLength'] = resp_props['CONTENT_LENGTH']
         if resp_props.get('CONTENT_TYPE', None):
             a_attrs['response.headers.contentType'] = resp_props['CONTENT_TYPE']
+        if resp_props.get('STATUS', None):
+            a_attrs['response.status'] = resp_props['STATUS']
 
         if self.read_duration != 0:
             a_attrs['wsgi.input.seconds'] = self.read_duration

@@ -9,7 +9,7 @@ from newrelic.core.attribute import (truncate, sanitize, Attribute,
 
 from testing_support.fixtures import (override_application_settings,
     validate_attributes, validate_attributes_complete,
-    validate_custom_parameters, validate_attribute_types)
+    validate_custom_parameters, validate_agent_attribute_types)
 from testing_support.sample_applications import fully_featured_app
 
 
@@ -312,7 +312,7 @@ agent_attributes = {
     'response.status': str,
 }
 
-@validate_attribute_types(agent_attributes)
+@validate_agent_attribute_types(agent_attributes)
 def test_agent_attribute_types():
     test_environ = {'CONTENT_TYPE': 'HTML', 'CONTENT_LENGTH': '100',
                 'HTTP_USER_AGENT': 'Firefox', 'HTTP_REFERER': 'somewhere',

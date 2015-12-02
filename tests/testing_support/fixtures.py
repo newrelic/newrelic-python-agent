@@ -1371,10 +1371,10 @@ def validate_attributes_complete(attr_type, required_attrs=[],
 
     return _validate_attributes_complete
 
-def validate_attribute_types(required_attrs):
+def validate_agent_attribute_types(required_attrs):
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
-    def _validate_attribute_types(wrapped, instance, args, kwargs):
+    def _validate_agent_attribute_types(wrapped, instance, args, kwargs):
         def _bind_params(transaction, *args, **kwargs):
             return transaction
 
@@ -1390,7 +1390,7 @@ def validate_attribute_types(required_attrs):
 
         return wrapped(*args, **kwargs)
 
-    return _validate_attribute_types
+    return _validate_agent_attribute_types
 
 def validate_database_trace_inputs(sql_parameters_type):
 

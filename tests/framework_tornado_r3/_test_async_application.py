@@ -202,7 +202,8 @@ class PrepareOnFinishRequestHandler(RequestHandler):
     def get(self):
         self.finish(self.RESPONSE)
 
-    #TODO add on_finish method
+    def on_finish(self):
+        pass
 
 class PrepareOnFinishRequestHandlerSubclass(PrepareOnFinishRequestHandler):
     def get(self):

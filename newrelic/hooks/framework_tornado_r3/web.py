@@ -3,7 +3,7 @@ import traceback
 import sys
 
 from newrelic.agent import (callable_name, wrap_function_wrapper,
-        FunctionTraceWrapper)
+        FunctionTraceWrapper, FunctionWrapper)
 from .util import (retrieve_request_transaction, retrieve_current_transaction,
         record_exception)
 
@@ -102,11 +102,12 @@ def _nr_wrapper_RequestHandler__init__(wrapped, instance, args, kwargs):
     if _find_defined_class(instance.prepare) != 'RequestHandler':
         instance.prepare = FunctionTraceWrapper(instance.prepare)
 
+    instance.on_finish = FunctionWrapper(instance.on_finish,
+            _nr_wrapper_RequestHandler_on_finish_)
+
     return wrapped(*args, **kwargs)
 
 def instrument_tornado_web(module):
-    wrap_function_wrapper(module, 'RequestHandler.on_finish',
-            _nr_wrapper_RequestHandler_on_finish_)
     wrap_function_wrapper(module, 'RequestHandler._execute',
             _nr_wrapper_RequestHandler__execute_)
     wrap_function_wrapper(module, 'RequestHandler._handle_request_exception',

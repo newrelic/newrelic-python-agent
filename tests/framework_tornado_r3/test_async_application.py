@@ -14,7 +14,8 @@ from _test_async_application import (get_tornado_app, HelloRequestHandler,
         NamedStackContextWrapRequestHandler, MultipleCallbacksRequestHandler,
         FinishExceptionRequestHandler, ReturnExceptionRequestHandler,
         IOLoopDivideRequestHandler, EngineDivideRequestHandler,
-        PostCallbackRequestHandler, PrepareOnFinishRequestHandler)
+        PostCallbackRequestHandler, PrepareOnFinishRequestHandler,
+        PrepareOnFinishRequestHandlerSubclass)
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
@@ -404,3 +405,24 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         response = self.fetch_response('/bookend')
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, PrepareOnFinishRequestHandler.RESPONSE)
+
+    scoped_metrics = [
+            select_python_version(
+                    py2=('Function/_test_async_application:'
+                            'PrepareOnFinishRequestHandlerSubclass.prepare', 1),
+                    py3=('Function/_test_async_application:'
+                            'PrepareOnFinishRequestHandler.prepare', 1)),
+            ('Function/_test_async_application:'
+                    'PrepareOnFinishRequestHandlerSubclass.get', 1)
+    ]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:PrepareOnFinishRequestHandlerSubclass.get',
+            scoped_metrics=scoped_metrics)
+    def test_prepare_on_finish_subclass_instrumented(self):
+        response = self.fetch_response('/bookend-subclass')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body,
+            PrepareOnFinishRequestHandlerSubclass.RESPONSE)

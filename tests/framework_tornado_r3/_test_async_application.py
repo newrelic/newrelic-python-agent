@@ -194,7 +194,7 @@ class EngineDivideRequestHandler(DivideRequestHandler):
         self.finish(response.encode('ascii'))
 
 class PrepareOnFinishRequestHandler(RequestHandler):
-    RESPONSE = u'bookend get'
+    RESPONSE = b'bookend get'
 
     def prepare(self):
         pass
@@ -203,6 +203,10 @@ class PrepareOnFinishRequestHandler(RequestHandler):
         self.finish(self.RESPONSE)
 
     #TODO add on_finish method
+
+class PrepareOnFinishRequestHandlerSubclass(PrepareOnFinishRequestHandler):
+    def get(self):
+        self.finish(self.RESPONSE)
 
 def get_tornado_app():
     return Application([
@@ -220,4 +224,5 @@ def get_tornado_app():
         ('/ioloop-divide/(\d+)/(\d+)/?(\w+)?', IOLoopDivideRequestHandler),
         ('/engine-divide/(\d+)/(\d+)/?(\w+)?', EngineDivideRequestHandler),
         ('/bookend', PrepareOnFinishRequestHandler),
+        ('/bookend-subclass', PrepareOnFinishRequestHandlerSubclass),
     ])

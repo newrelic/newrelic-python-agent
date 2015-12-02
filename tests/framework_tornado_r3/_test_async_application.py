@@ -193,6 +193,17 @@ class EngineDivideRequestHandler(DivideRequestHandler):
         response = self.RESPONSE % (a, b, quotient)
         self.finish(response.encode('ascii'))
 
+class PrepareOnFinishRequestHandler(RequestHandler):
+    RESPONSE = u'bookend get'
+
+    def prepare(self):
+        pass
+
+    def get(self):
+        self.finish(self.RESPONSE)
+
+    #TODO add on_finish method
+
 def get_tornado_app():
     return Application([
         ('/', HelloRequestHandler),
@@ -208,4 +219,5 @@ def get_tornado_app():
         ('/return-exception', ReturnExceptionRequestHandler),
         ('/ioloop-divide/(\d+)/(\d+)/?(\w+)?', IOLoopDivideRequestHandler),
         ('/engine-divide/(\d+)/(\d+)/?(\w+)?', EngineDivideRequestHandler),
+        ('/bookend', PrepareOnFinishRequestHandler),
     ])

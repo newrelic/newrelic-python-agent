@@ -14,7 +14,7 @@ from _test_async_application import (get_tornado_app, HelloRequestHandler,
         NamedStackContextWrapRequestHandler, MultipleCallbacksRequestHandler,
         FinishExceptionRequestHandler, ReturnExceptionRequestHandler,
         IOLoopDivideRequestHandler, EngineDivideRequestHandler,
-        PostCallbackRequestHandler,)
+        PostCallbackRequestHandler, PrepareOnFinishRequestHandler)
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
@@ -111,7 +111,8 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
-            '_test_async_application:HelloRequestHandler.get')
+            '_test_async_application:HelloRequestHandler.get',
+            forgone_metric_substrings=['prepare'])
     def test_simple_response(self):
         response = self.fetch_response('/')
         self.assertEqual(response.code, 200)
@@ -388,3 +389,18 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         expected = (EngineDivideRequestHandler.RESPONSE % (
                 10000.0, 10.0, 10000.0/10.0)).encode('ascii')
         self.assertEqual(response.body, expected)
+
+    scoped_metrics = [('Function/_test_async_application:'
+            'PrepareOnFinishRequestHandler.prepare', 1),
+            ('Function/_test_async_application:'
+            'PrepareOnFinishRequestHandler.get', 1),]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:PrepareOnFinishRequestHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_prepare_on_finish_instrumented(self):
+        response = self.fetch_response('/bookend')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, PrepareOnFinishRequestHandler.RESPONSE)

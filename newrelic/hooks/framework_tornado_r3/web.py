@@ -9,6 +9,13 @@ from .util import (retrieve_request_transaction, retrieve_current_transaction,
 
 _logger = logging.getLogger(__name__)
 
+def _find_defined_class(meth):
+    mro = type.mro(meth.__self__.__class__)
+    for cls in mro:
+        if meth.__name__ in cls.__dict__:
+            return cls.__name__
+    return None
+
 def _nr_wrapper_RequestHandler_on_finish_(wrapped, instance, args, kwargs):
 
     assert instance is not None
@@ -88,6 +95,12 @@ def _nr_wrapper_RequestHandler__init__(wrapped, instance, args, kwargs):
         if func is not None:
             wrapped_func = FunctionTraceWrapper(func)
             setattr(instance, method, wrapped_func)
+
+    # Only instrument prepare if it has been re-implemented by the user, the
+    # stub on RequestHandler is meaningless noise.
+
+    if _find_defined_class(instance.prepare) != 'RequestHandler':
+        instance.prepare = FunctionTraceWrapper(instance.prepare)
 
     return wrapped(*args, **kwargs)
 

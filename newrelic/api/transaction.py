@@ -1103,10 +1103,18 @@ class Transaction(object):
             return
 
         attributes = {}
+        dropped  = {}
         for k, v in params.items():
             key, value = process_user_attribute(k, v)
             if key:
-                attributes[key] = value
+                if len(attributes) >= MAX_NUM_USER_ATTRIBUTES:
+                    dropped[key] = value
+                    _logger.debug('Maximum number of attributes already '
+                            'added. Dropping attribute: %r=%r', key, value)
+                else:
+                    attributes[key] = value
+            else:
+                dropped[k] = v
 
         intrinsics = {
             'type': name,
@@ -1115,6 +1123,10 @@ class Transaction(object):
 
         event = [intrinsics, attributes]
         self._custom_events.append(event)
+
+        if dropped:
+            _logger.debug('Event %r recorded without dropped attributes: %r',
+                    name, dropped)
 
     def record_metric(self, name, value):
         warnings.warn('Internal API change. Use record_custom_metric() '

@@ -16,7 +16,8 @@ import newrelic.packages.six as six
 
 from newrelic.samplers.data_sampler import DataSampler
 
-from newrelic.core.attribute import process_event_type, process_user_attribute
+from newrelic.core.attribute import (process_event_type, process_user_attribute,
+        MAX_NUM_USER_ATTRIBUTES)
 from newrelic.core.config import global_settings_dump, global_settings
 from newrelic.core.data_collector import create_session
 from newrelic.network.exceptions import (ForceAgentRestart,
@@ -745,10 +746,18 @@ class Application(object):
             return
 
         attributes = {}
+        dropped = {}
         for k, v in params.items():
             key, value = process_user_attribute(k, v)
             if key:
-                attributes[key] = value
+                if len(attributes) >= MAX_NUM_USER_ATTRIBUTES:
+                    dropped[key] = value
+                    _logger.debug('Maximum number of attributes already '
+                            'added. Dropping attribute: %r=%r', key, value)
+                else:
+                    attributes[key] = value
+            else:
+                dropped[k] = v
 
         intrinsics = {
             'type': name,
@@ -760,6 +769,10 @@ class Application(object):
         with self._stats_custom_lock:
             self._global_events_account += 1
             self._stats_engine.record_custom_event(event)
+
+        if dropped:
+            _logger.debug('Event %r recorded without dropped attributes: %r',
+                    name, dropped)
 
     def record_transaction(self, data, profile_samples=None):
         """Record a single transaction against this application."""

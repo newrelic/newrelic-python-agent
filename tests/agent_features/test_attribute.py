@@ -299,6 +299,7 @@ fully_featured_application = webtest.TestApp(fully_featured_app)
 # Types are only defined in the spec for agent attributes, not intrinsics.
 
 agent_attributes = {
+    'request.headers.accept': str,
     'request.headers.contentLength' : int,
     'request.headers.contentType' : str,
     'request.headers.host': str,
@@ -306,10 +307,9 @@ agent_attributes = {
     'request.headers.userAgent': str,
     'request.method': str,
     'request.parameters.test': str,
-    'request.headers.accept': str,
-    'response.status': str,
-    'response.headers.contentType': str,
     'response.headers.contentLength': int,
+    'response.headers.contentType': str,
+    'response.status': str,
 }
 
 @validate_attribute_types(agent_attributes)

@@ -10,6 +10,8 @@ from .util import (retrieve_request_transaction, retrieve_current_transaction,
 _logger = logging.getLogger(__name__)
 
 def _find_defined_class(meth):
+    # Returns the name of the class where the bound function method 'meth'
+    # is implemented.
     mro = type.mro(meth.__self__.__class__)
     for cls in mro:
         if meth.__name__ in cls.__dict__:
@@ -96,11 +98,16 @@ def _nr_wrapper_RequestHandler__init__(wrapped, instance, args, kwargs):
             wrapped_func = FunctionTraceWrapper(func)
             setattr(instance, method, wrapped_func)
 
-    # Only instrument prepare if it has been re-implemented by the user, the
-    # stub on RequestHandler is meaningless noise.
+    # Only instrument prepare or on_finish if it has been re-implemented by
+    # the user, the stubs on RequestHandler are meaningless noise.
 
     if _find_defined_class(instance.prepare) != 'RequestHandler':
         instance.prepare = FunctionTraceWrapper(instance.prepare)
+
+    if _find_defined_class(instance.on_finish) != 'RequestHandler':
+        instance.on_finish = FunctionTraceWrapper(instance.on_finish)
+
+    # We also always wrap on_finish as part of keeping track of transactions
 
     instance.on_finish = FunctionWrapper(instance.on_finish,
             _nr_wrapper_RequestHandler_on_finish_)

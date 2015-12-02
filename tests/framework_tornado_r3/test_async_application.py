@@ -113,7 +113,7 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:HelloRequestHandler.get',
-            forgone_metric_substrings=['prepare'])
+            forgone_metric_substrings=['prepare', 'on_finish'])
     def test_simple_response(self):
         response = self.fetch_response('/')
         self.assertEqual(response.code, 200)
@@ -394,7 +394,9 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
     scoped_metrics = [('Function/_test_async_application:'
             'PrepareOnFinishRequestHandler.prepare', 1),
             ('Function/_test_async_application:'
-            'PrepareOnFinishRequestHandler.get', 1),]
+            'PrepareOnFinishRequestHandler.get', 1),
+            ('Function/_test_async_application:'
+            'PrepareOnFinishRequestHandler.on_finish', 1),]
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
@@ -409,11 +411,16 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
     scoped_metrics = [
             select_python_version(
                     py2=('Function/_test_async_application:'
-                            'PrepareOnFinishRequestHandlerSubclass.prepare', 1),
+                         'PrepareOnFinishRequestHandlerSubclass.prepare', 1),
                     py3=('Function/_test_async_application:'
-                            'PrepareOnFinishRequestHandler.prepare', 1)),
+                         'PrepareOnFinishRequestHandler.prepare', 1)),
             ('Function/_test_async_application:'
-                    'PrepareOnFinishRequestHandlerSubclass.get', 1)
+                    'PrepareOnFinishRequestHandlerSubclass.get', 1),
+            select_python_version(
+                    py2=('Function/_test_async_application:'
+                         'PrepareOnFinishRequestHandlerSubclass.on_finish', 1),
+                    py3=('Function/_test_async_application:'
+                         'PrepareOnFinishRequestHandler.on_finish', 1)),
     ]
 
     @tornado_validate_transaction_cache_empty()

@@ -1341,6 +1341,8 @@ class Application(object):
                     _logger.debug('Sending metric data for harvest of %r.',
                             self._app_name)
 
+                    # Send metrics
+
                     metric_ids = self._active_session.send_metric_data(
                             self._period_start, period_end, metric_data)
 
@@ -1388,6 +1390,8 @@ class Application(object):
 
                     stats.reset_transaction_events()
                     stats.reset_synthetics_events()
+
+                    # Send error events
 
                     if (configuration.collect_error_events and
                             configuration.error_collector.capture_events and

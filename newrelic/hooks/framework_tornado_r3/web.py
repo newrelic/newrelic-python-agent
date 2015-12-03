@@ -3,11 +3,20 @@ import traceback
 import sys
 
 from newrelic.agent import (callable_name, wrap_function_wrapper,
-        FunctionTraceWrapper)
+        FunctionTraceWrapper, FunctionWrapper)
 from .util import (retrieve_request_transaction, retrieve_current_transaction,
         record_exception)
 
 _logger = logging.getLogger(__name__)
+
+def _find_defined_class(meth):
+    # Returns the name of the class where the bound function method 'meth'
+    # is implemented.
+    mro = meth.__self__.__class__.__mro__
+    for cls in mro:
+        if meth.__name__ in cls.__dict__:
+            return cls.__name__
+    return None
 
 def _nr_wrapper_RequestHandler_on_finish_(wrapped, instance, args, kwargs):
 
@@ -89,11 +98,23 @@ def _nr_wrapper_RequestHandler__init__(wrapped, instance, args, kwargs):
             wrapped_func = FunctionTraceWrapper(func)
             setattr(instance, method, wrapped_func)
 
+    # Only instrument prepare or on_finish if it has been re-implemented by
+    # the user, the stubs on RequestHandler are meaningless noise.
+
+    if _find_defined_class(instance.prepare) != 'RequestHandler':
+        instance.prepare = FunctionTraceWrapper(instance.prepare)
+
+    if _find_defined_class(instance.on_finish) != 'RequestHandler':
+        instance.on_finish = FunctionTraceWrapper(instance.on_finish)
+
+    # We also always wrap on_finish as part of keeping track of transactions
+
+    instance.on_finish = FunctionWrapper(instance.on_finish,
+            _nr_wrapper_RequestHandler_on_finish_)
+
     return wrapped(*args, **kwargs)
 
 def instrument_tornado_web(module):
-    wrap_function_wrapper(module, 'RequestHandler.on_finish',
-            _nr_wrapper_RequestHandler_on_finish_)
     wrap_function_wrapper(module, 'RequestHandler._execute',
             _nr_wrapper_RequestHandler__execute_)
     wrap_function_wrapper(module, 'RequestHandler._handle_request_exception',

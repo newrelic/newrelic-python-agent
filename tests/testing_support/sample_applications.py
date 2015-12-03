@@ -9,7 +9,7 @@ import sqlite3 as db
 
 from newrelic.agent import (add_user_attribute, add_custom_parameter,
         wsgi_application, record_exception, get_browser_timing_header,
-        get_browser_timing_footer)
+        get_browser_timing_footer, record_custom_event)
 
 _custom_parameters = {
         'user' : 'user-name',
@@ -113,4 +113,13 @@ def simple_app(environ, start_response):
 
     start_response(status, response_headers=[])
 
+    return []
+
+@wsgi_application()
+def simple_custom_event_app(environ, start_response):
+
+    params = {'snowman': u'\u2603', 'foo': 'bar'}
+    record_custom_event('SimpleAppEvent', params)
+
+    start_response(status='200 OK', response_headers=[])
     return []

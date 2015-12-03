@@ -12,7 +12,7 @@ _logger = logging.getLogger(__name__)
 def _find_defined_class(meth):
     # Returns the name of the class where the bound function method 'meth'
     # is implemented.
-    mro = type.mro(meth.__self__.__class__)
+    mro = meth.__self__.__class__.__mro__
     for cls in mro:
         if meth.__name__ in cls.__dict__:
             return cls.__name__

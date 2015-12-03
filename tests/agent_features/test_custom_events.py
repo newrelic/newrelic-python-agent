@@ -2,6 +2,7 @@ import pytest
 import time
 
 from newrelic.agent import background_task, record_custom_event, application
+from newrelic.core.custom_event import process_event_type
 
 from testing_support.fixtures import (reset_core_stats_engine,
         validate_transaction_record_custom_event, validate_custom_event_count,
@@ -9,6 +10,31 @@ from testing_support.fixtures import (reset_core_stats_engine,
         validate_custom_event_outside_transaction,
         override_application_settings)
 
+# Test process_event_type()
+
+def test_process_event_type_name_is_string():
+    name = 'string'
+    assert process_event_type(name) == name
+
+def test_process_event_type_name_is_not_string():
+    name = 42
+    assert process_event_type(name) is None
+
+def test_process_event_type_name_ok_length():
+    ok_name = 'CustomEventType'
+    assert process_event_type(ok_name) == ok_name
+
+def test_process_event_type_name_too_long():
+    too_long = 'a' * 256
+    assert process_event_type(too_long) is None
+
+def test_process_event_type_name_valid_chars():
+    valid_name = 'az09: '
+    assert process_event_type(valid_name) == valid_name
+
+def test_process_event_type_name_invalid_chars():
+    invalid_name = '&'
+    assert process_event_type(invalid_name) is None
 
 _now = time.time()
 

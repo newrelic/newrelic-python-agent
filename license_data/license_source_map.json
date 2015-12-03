@@ -803,6 +803,12 @@
             "New Relic"
         ]
     },
+    "newrelic/core/custom_event.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/core/data_collector.py": {
         "hash": "n/a",
         "libraries": [

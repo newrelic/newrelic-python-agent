@@ -977,6 +977,18 @@ class ApplicationSession(object):
                 'error_event_data', self.license_key, self.agent_run_id,
                 payload)
 
+    @internal_trace('Supportability/Python/Collector/Calls/send_custom_events')
+    def send_custom_events(self, sampling_info, custom_event_data):
+        """Called to submit sample set for custom events.
+
+        """
+
+        payload = (self.agent_run_id, sampling_info, custom_event_data)
+
+        return self.send_request(self.requests_session, self.collector_url,
+                'custom_event_data', self.license_key, self.agent_run_id,
+                payload)
+
     @classmethod
     def create_session(cls, license_key, app_name, linked_applications,
             environment, settings):

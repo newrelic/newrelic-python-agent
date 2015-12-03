@@ -1414,6 +1414,21 @@ class Application(object):
 
                     stats.reset_error_events()
 
+                    # Send custom events
+
+                    if (configuration.collect_custom_events and
+                            configuration.custom_insights_events.enabled):
+
+                        if stats.custom_events.num_samples > 0:
+                            _logger.debug('Sending custom event data '
+                                    'for harvest of %r.', self._app_name)
+
+                        self._active_session.send_custom_events(
+                                stats.custom_events.sampling_info,
+                                stats.custom_events.samples)
+
+                    stats.reset_custom_events()
+
                     # Successful, so we update the stats engine with the
                     # new metric IDs and reset the reporting period
                     # start time. If an error occurs after this point,

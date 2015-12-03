@@ -19,15 +19,19 @@ def check_event_type_valid_chars(name):
         raise NameInvalidCharactersException()
 
 def process_event_type(name):
+    """Perform all necessary validation on a potential event type.
 
-    # Perform all necessary checks on a potential event type.
-    #
-    # Returns:
-    #       name if name is OK.
-    #       NONE if name isn't.
-    #
-    # If any of these checks fail, they will raise an exception, so we
-    # log a message, and return None.
+    If any of the validation checks fail, they will raise an exception
+    which we catch, so we can log a message, and return None.
+
+    Args:
+        name (str): The type (name) of the custom event.
+
+    Returns:
+          name, if name is OK.
+          NONE, if name isn't.
+
+    """
 
     FAILED_RESULT = None
 

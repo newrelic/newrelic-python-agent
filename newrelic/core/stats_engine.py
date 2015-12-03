@@ -232,6 +232,13 @@ class SampledDataSet(object):
     def num_samples(self):
         return len(self.samples)
 
+    @property
+    def sampling_info(self):
+        return {
+            'reservoir_size' : self.capacity,
+            'events_seen' : self.num_seen
+        }
+
     def reset(self):
         self.samples = []
         self.num_seen = 0

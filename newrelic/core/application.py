@@ -16,7 +16,10 @@ import newrelic.packages.six as six
 
 from newrelic.samplers.data_sampler import DataSampler
 
+from newrelic.core.attribute import (process_user_attribute,
+        MAX_NUM_USER_ATTRIBUTES)
 from newrelic.core.config import global_settings_dump, global_settings
+from newrelic.core.custom_event import process_event_type, create_custom_event
 from newrelic.core.data_collector import create_session
 from newrelic.network.exceptions import (ForceAgentRestart,
         ForceAgentDisconnect, DiscardDataForRequest, RetryDataForRequest)
@@ -738,16 +741,12 @@ class Application(object):
         if not self._active_session:
             return
 
-        intrinsics = {
-            'type': event_type,
-            'timestamp': time.time(),
-        }
+        event = create_custom_event(event_type, params)
 
-        event = [intrinsics, params]
-
-        with self._stats_custom_lock:
-            self._global_events_account += 1
-            self._stats_engine.record_custom_event(event)
+        if event:
+            with self._stats_custom_lock:
+                self._global_events_account += 1
+                self._stats_engine.record_custom_event(event)
 
     def record_transaction(self, data, profile_samples=None):
         """Record a single transaction against this application."""

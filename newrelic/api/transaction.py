@@ -31,6 +31,7 @@ from ..core.attribute import (create_attributes, create_agent_attributes,
         MAX_NUM_USER_ATTRIBUTES)
 from ..core.attribute_filter import (DST_NONE, DST_ERROR_COLLECTOR,
         DST_TRANSACTION_TRACER)
+from ..core.custom_event import process_event_type, create_custom_event
 from ..core.stack_trace import exception_stack
 from ..common.encoding_utils import generate_path_hash
 
@@ -1096,13 +1097,9 @@ class Transaction(object):
             self._custom_metrics.record_custom_metric(name, value)
 
     def record_custom_event(self, event_type, params):
-        intrinsics = {
-            'type': event_type,
-            'timestamp': time.time(),
-        }
-
-        event = [intrinsics, params]
-        self._custom_events.append(event)
+        event = create_custom_event(event_type, params)
+        if event:
+            self._custom_events.append(event)
 
     def record_metric(self, name, value):
         warnings.warn('Internal API change. Use record_custom_metric() '

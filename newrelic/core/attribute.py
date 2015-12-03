@@ -1,5 +1,4 @@
 import logging
-import re
 
 from collections import namedtuple
 
@@ -37,12 +36,10 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = [
 MAX_NUM_USER_ATTRIBUTES = 64
 MAX_ATTRIBUTE_LENGTH = 255
 MAX_64_BIT_INT = 2 ** 63 -1
-EVENT_TYPE_VALID_CHARS_REGEX = re.compile(r'^[a-zA-Z0-9:_ ]+$')
 
 class NameTooLongException(Exception): pass
 class NameIsNotStringException(Exception): pass
 class IntTooLargeException(Exception): pass
-class NameInvalidCharactersException(Exception): pass
 
 class Attribute(_Attribute):
 
@@ -109,11 +106,6 @@ def check_max_int(value, max_int=MAX_64_BIT_INT):
     if isinstance(value, six.integer_types) and value > max_int:
         raise IntTooLargeException()
 
-def check_event_type_valid_chars(name):
-    regex = EVENT_TYPE_VALID_CHARS_REGEX
-    if not regex.match(name):
-        raise NameInvalidCharactersException()
-
 def process_user_attribute(name, value):
 
     # Perform all necessary checks on a potential attribute.
@@ -167,42 +159,6 @@ def process_user_attribute(name, value):
             value = trunc_value
 
         return (name, value)
-
-def process_event_type(name):
-
-    # Perform all necessary checks on a potential event type.
-    #
-    # Returns:
-    #       name if name is OK.
-    #       NONE if name isn't.
-    #
-    # If any of these checks fail, they will raise an exception, so we
-    # log a message, and return None.
-
-    FAILED_RESULT = None
-
-    try:
-        check_name_is_string(name)
-        check_name_length(name)
-        check_event_type_valid_chars(name)
-
-    except NameIsNotStringException:
-        _logger.debug('Event type must be a string. Dropping '
-                'event: %r', name)
-        return FAILED_RESULT
-
-    except NameTooLongException:
-        _logger.debug('Event type exceeds maximum length. Dropping '
-                'event: %r', name)
-        return FAILED_RESULT
-
-    except NameInvalidCharactersException:
-        _logger.debug('Event type has invalid characters. Dropping '
-                'event: %r', name)
-        return FAILED_RESULT
-
-    else:
-        return name
 
 def sanitize(value):
 

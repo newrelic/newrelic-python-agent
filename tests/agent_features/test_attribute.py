@@ -5,7 +5,7 @@ from newrelic.agent import (wsgi_application, add_custom_parameter,
     background_task)
 from newrelic.packages import six
 from newrelic.core.attribute import (truncate, sanitize, Attribute,
-    process_event_type, MAX_64_BIT_INT, _DESTINATIONS_WITH_EVENTS)
+    MAX_64_BIT_INT, _DESTINATIONS_WITH_EVENTS)
 
 from testing_support.fixtures import (override_application_settings,
     validate_attributes, validate_attributes_complete,
@@ -334,29 +334,3 @@ class Foo(object): pass
 def test_sanitize_object():
     f = Foo()
     assert sanitize(f) == str(f)
-
-# Test process_event_type()
-
-def test_process_event_type_name_is_string():
-    name = 'string'
-    assert process_event_type(name) == name
-
-def test_process_event_type_name_is_not_string():
-    name = 42
-    assert process_event_type(name) is None
-
-def test_process_event_type_name_ok_length():
-    ok_name = 'CustomEventType'
-    assert process_event_type(ok_name) == ok_name
-
-def test_process_event_type_name_too_long():
-    too_long = 'a' * 256
-    assert process_event_type(too_long) is None
-
-def test_process_event_type_name_valid_chars():
-    valid_name = 'az09: '
-    assert process_event_type(valid_name) == valid_name
-
-def test_process_event_type_name_invalid_chars():
-    invalid_name = '&'
-    assert process_event_type(invalid_name) is None

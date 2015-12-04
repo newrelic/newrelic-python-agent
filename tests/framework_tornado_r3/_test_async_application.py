@@ -38,6 +38,9 @@ class OneCallbackRequestHandler(RequestHandler):
 class AllMethodsCallbackRequestHandler(RequestHandler):
     RESPONSE = b'post callback'
 
+    def head(self):
+        self.set_status(200)
+
     @tornado.gen.coroutine
     def post(self):
         self.write(self.RESPONSE)

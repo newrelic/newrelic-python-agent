@@ -793,11 +793,6 @@ class StatsEngine(object):
 
         settings = self.__settings
 
-        error_collector = settings.error_collector
-        transaction_tracer = settings.transaction_tracer
-        slow_sql = settings.slow_sql
-        custom_events = settings.custom_insights_events
-
         # Record the apdex, value and time metrics generated from the
         # transaction. Whether time metrics are reported as distinct
         # metrics or into a rollup is in part controlled via settings
@@ -828,6 +823,8 @@ class StatsEngine(object):
         # Capture any errors if error collection is enabled.
         # Only retain maximum number allowed per harvest.
 
+        error_collector = settings.error_collector
+
         if (error_collector.enabled and settings.collect_errors and
                 len(self.__transaction_errors) <
                 settings.agent_limits.errors_per_harvest):
@@ -846,7 +843,7 @@ class StatsEngine(object):
 
         # Capture any sql traces if transaction tracer enabled.
 
-        if slow_sql.enabled and settings.collect_traces:
+        if settings.slow_sql.enabled and settings.collect_traces:
             with InternalTrace('Supportability/Python/TransactionNode/Calls/'
                     'slow_sql_nodes'):
                 for node in transaction.slow_sql_nodes(self):
@@ -859,8 +856,10 @@ class StatsEngine(object):
         # recording of transaction trace for this transaction
         # has not been suppressed.
 
+        transaction_tracer = settings.transaction_tracer
+
         if (not transaction.suppress_transaction_trace and
-                    transaction_tracer.enabled and settings.collect_traces):
+                transaction_tracer.enabled and settings.collect_traces):
 
             # Transactions saved for x-ray session and Synthetics transactions
             # do not depend on the transaction threshold.
@@ -896,6 +895,7 @@ class StatsEngine(object):
         # Skip adding custom events to the transaction's SampledDataSet.
         # They will be added directly from the TransactionNode to the
         # application's SampledDataSet in Application.record_transaction().
+        # See PYTHON-1820.
 
     @internal_trace('Supportability/Python/StatsEngine/Calls/metric_data')
     def metric_data(self, normalizer=None):

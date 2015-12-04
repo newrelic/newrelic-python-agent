@@ -14,7 +14,7 @@ from _test_async_application import (get_tornado_app, HelloRequestHandler,
         NamedStackContextWrapRequestHandler, MultipleCallbacksRequestHandler,
         FinishExceptionRequestHandler, ReturnExceptionRequestHandler,
         IOLoopDivideRequestHandler, EngineDivideRequestHandler,
-        PostCallbackRequestHandler, PrepareOnFinishRequestHandler,
+        AllMethodsCallbackRequestHandler, PrepareOnFinishRequestHandler,
         PrepareOnFinishRequestHandlerSubclass)
 
 from tornado_fixtures import (
@@ -171,19 +171,19 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         self.assertEqual(response.body, OneCallbackRequestHandler.RESPONSE)
 
     scoped_metrics = [('Function/_test_async_application:'
-            'PostCallbackRequestHandler.post', 1),
+            'AllMethodsCallbackRequestHandler.post', 1),
             ('Function/_test_async_application:'
-            'PostCallbackRequestHandler.do_stuff', 1)]
+            'AllMethodsCallbackRequestHandler.do_stuff', 1)]
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[])
     @tornado_validate_count_transaction_metrics(
-            '_test_async_application:PostCallbackRequestHandler.post',
+            '_test_async_application:AllMethodsCallbackRequestHandler.post',
             scoped_metrics=scoped_metrics)
     def test_post_method_one_callback(self):
-        response = self.fetch_response('/post', method="POST", body="test")
+        response = self.fetch_response('/anymethod', method="POST", body="test")
         self.assertEqual(response.code, 200)
-        self.assertEqual(response.body, PostCallbackRequestHandler.RESPONSE)
+        self.assertEqual(response.body, AllMethodsCallbackRequestHandler.RESPONSE)
 
     scoped_metrics = [('Function/_test_async_application:'
             'NamedStackContextWrapRequestHandler.get', 1),

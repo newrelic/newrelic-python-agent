@@ -35,7 +35,7 @@ class OneCallbackRequestHandler(RequestHandler):
     def finish_callback(self):
         self.finish(self.RESPONSE)
 
-class PostCallbackRequestHandler(RequestHandler):
+class AllMethodsCallbackRequestHandler(RequestHandler):
     RESPONSE = b'post callback'
 
     @tornado.gen.coroutine
@@ -214,7 +214,7 @@ def get_tornado_app():
         ('/', HelloRequestHandler),
         ('/sleep', SleepRequestHandler),
         ('/one-callback', OneCallbackRequestHandler),
-        ('/post', PostCallbackRequestHandler),
+        ('/anymethod', AllMethodsCallbackRequestHandler),
         ('/named-wrap-callback', NamedStackContextWrapRequestHandler),
         ('/multiple-callbacks', MultipleCallbacksRequestHandler),
         ('/sync-exception', SyncExceptionRequestHandler),

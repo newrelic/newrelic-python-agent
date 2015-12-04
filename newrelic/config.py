@@ -753,6 +753,10 @@ def apply_local_high_security_mode_setting(settings):
         _logger.info(log_template, 'strip_exception_messages.enabled',
                 False, True)
 
+    if settings.custom_insights_events.enabled:
+        settings.custom_insights_events.enabled = False
+        _logger.info(log_template, 'custom_insights_events', True, False)
+
     return settings
 
 def _load_configuration(config_file=None, environment=None,

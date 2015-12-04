@@ -1431,13 +1431,22 @@ class Application(object):
                     if (configuration.collect_custom_events and
                             configuration.custom_insights_events.enabled):
 
-                        if stats.custom_events.num_samples > 0:
+                        customs = stats.custom_events
+
+                        if customs.num_samples > 0:
                             _logger.debug('Sending custom event data '
                                     'for harvest of %r.', self._app_name)
 
                         self._active_session.send_custom_events(
-                                stats.custom_events.sampling_info,
-                                stats.custom_events.samples)
+                                customs.sampling_info, customs.samples)
+
+                        internal_count_metric('Supportability/Events/'
+                                'Customer/Seen', customs.num_seen)
+                        internal_count_metric('Supportability/Events/'
+                                'Customer/Sent', customs.num_samples)
+                        internal_count_metric('Supportability/Events/'
+                                'Customer/Dropped',
+                                customs.num_seen - customs.num_samples)
 
                     stats.reset_custom_events()
 

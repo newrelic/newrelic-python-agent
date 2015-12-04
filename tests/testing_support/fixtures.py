@@ -1745,15 +1745,15 @@ def validate_custom_event_in_application_stats_engine(required_event):
     return _validate_custom_event_in_application_stats_engine
 
 def validate_custom_event_count(count):
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
+    @function_wrapper
     def _validate_custom_event_count(wrapped, instance, args, kwargs):
         try:
             result = wrapped(*args, **kwargs)
         except:
             raise
         else:
-            assert instance.custom_events.num_samples == count
+            stats = core_application_stats_engine(None)
+            assert stats.custom_events.num_samples == count
     return _validate_custom_event_count
 
 def override_application_name(app_name):

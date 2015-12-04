@@ -1,15 +1,18 @@
 import os
 import pytest
+import time
 import webtest
 
 from testing_support.fixtures import (override_application_settings,
         validate_custom_parameters, validate_transaction_errors,
         validate_request_params_omitted, validate_attributes_complete,
-        validate_non_transaction_error_event, reset_core_stats_engine)
+        validate_non_transaction_error_event, reset_core_stats_engine,
+        validate_custom_event_in_application_stats_engine,
+        validate_custom_event_count)
 
 from newrelic.agent import (background_task, add_custom_parameter,
         record_exception, wsgi_application, current_transaction, application,
-        callable_name)
+        callable_name, record_custom_event)
 
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 
@@ -313,7 +316,8 @@ _test_transaction_settings_hsm_disabled = {
 
 _test_transaction_settings_hsm_enabled = {
         'high_security': True,
-        'strip_exception_messages.enabled' : True
+        'strip_exception_messages.enabled' : True,
+        'custom_insights_events.enabled': False,
  }
 
 @override_application_settings(_test_transaction_settings_hsm_disabled)
@@ -477,6 +481,38 @@ def test_transaction_hsm_enabled_environ_capture_request_params_api_called():
             target_wsgi_application_capture_params_api_called)
 
     response = target_application.get('/', params='key-1=value-1')
+
+# Custom events
+
+_event_type = 'SimpleAppEvent'
+_params = {'snowman': u'\u2603', 'foo': 'bar'}
+
+@wsgi_application()
+def simple_custom_event_app(environ, start_response):
+    record_custom_event(_event_type, _params)
+    start_response(status='200 OK', response_headers=[])
+    return []
+
+_intrinsics = {
+    'type': _event_type,
+    'timestamp': time.time()
+}
+
+_required_event = [_intrinsics, _params]
+
+@reset_core_stats_engine()
+@validate_custom_event_in_application_stats_engine(_required_event)
+@override_application_settings(_test_transaction_settings_hsm_disabled)
+def test_custom_event_hsm_disabled():
+    target_application = webtest.TestApp(simple_custom_event_app)
+    response = target_application.get('/')
+
+@reset_core_stats_engine()
+@validate_custom_event_count(count=0)
+@override_application_settings(_test_transaction_settings_hsm_enabled)
+def test_custom_event_hsm_enabled():
+    target_application = webtest.TestApp(simple_custom_event_app)
+    response = target_application.get('/')
 
 # Make sure we don't display the query string in 'request.headers.referer'
 # Attribute will exist, and value will have query string stripped off.

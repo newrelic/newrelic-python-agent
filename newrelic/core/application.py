@@ -832,7 +832,6 @@ class Application(object):
                     if settings.debug.record_transaction_failure:
                         raise
 
-
             with self._stats_lock:
                 try:
                     self._transaction_count += 1
@@ -849,7 +848,7 @@ class Application(object):
                     # them (as we do for other events), then there's the
                     # possibility of double-sampling. For other types of
                     # events, we capture too few per transaction to have to
-                    # worry about double sampling.
+                    # worry about double sampling. See PYTHON-1820.
 
                     for event in data.iter_custom_events():
                         self._global_events_account += 1

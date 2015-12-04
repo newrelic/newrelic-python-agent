@@ -842,6 +842,18 @@ class Application(object):
 
                     self._stats_engine.merge(stats)
 
+                    # Add custom events directly to the application's
+                    # SampledDataSet. If we had added the custom events
+                    # to the transaction's SampledDataSet and then merged
+                    # them (as we do for other events), then there's the
+                    # possibility of double-sampling. For other types of
+                    # events, we capture too few per transaction to have to
+                    # worry about double sampling. See PYTHON-1820.
+
+                    for event in data.iter_custom_events():
+                        self._global_events_account += 1
+                        self._stats_engine.record_custom_event(event)
+
                     # We merge the internal statistics here as well even
                     # though have popped out of the context where we are
                     # recording. This is okay so long as don't record
@@ -1341,6 +1353,8 @@ class Application(object):
                     _logger.debug('Sending metric data for harvest of %r.',
                             self._app_name)
 
+                    # Send metrics
+
                     metric_ids = self._active_session.send_metric_data(
                             self._period_start, period_end, metric_data)
 
@@ -1389,6 +1403,8 @@ class Application(object):
                     stats.reset_transaction_events()
                     stats.reset_synthetics_events()
 
+                    # Send error events
+
                     if (configuration.collect_error_events and
                             configuration.error_collector.capture_events and
                             configuration.error_collector.enabled):
@@ -1409,6 +1425,21 @@ class Application(object):
                                 'TransactionError/Sent', num_error_samples)
 
                     stats.reset_error_events()
+
+                    # Send custom events
+
+                    if (configuration.collect_custom_events and
+                            configuration.custom_insights_events.enabled):
+
+                        if stats.custom_events.num_samples > 0:
+                            _logger.debug('Sending custom event data '
+                                    'for harvest of %r.', self._app_name)
+
+                        self._active_session.send_custom_events(
+                                stats.custom_events.sampling_info,
+                                stats.custom_events.samples)
+
+                    stats.reset_custom_events()
 
                     # Successful, so we update the stats engine with the
                     # new metric IDs and reset the reporting period

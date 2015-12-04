@@ -1098,6 +1098,51 @@ def validate_transaction_event_collector_json():
 
     return _validate_transaction_event_collector_json
 
+def validate_custom_event_collector_json(num_events=1):
+    """Validate the format, types and number of custom events."""
+
+    @transient_function_wrapper('newrelic.core.application',
+            'Application.record_transaction')
+    def _validate_custom_event_collector_json(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            stats = instance._stats_engine
+            settings = stats.settings
+
+            agent_run_id = 666
+            sampling_info = stats.custom_events.sampling_info
+            samples = stats.custom_events.samples
+
+            # Emulate the payload used in data_collector.py
+
+            payload = (agent_run_id, sampling_info, samples)
+            collector_json = json_encode(payload)
+
+            decoded_json = json.loads(collector_json)
+
+            decoded_agent_run_id = decoded_json[0]
+            decoded_sampling_info = decoded_json[1]
+            decoded_events = decoded_json[2]
+
+            assert decoded_agent_run_id == agent_run_id
+            assert decoded_sampling_info == sampling_info
+
+            max_setting = settings.custom_insights_events.max_samples_stored
+            assert decoded_sampling_info['reservoir_size'] == max_setting
+
+            assert decoded_sampling_info['events_seen'] == num_events
+            assert len(decoded_events) == num_events
+
+            for (intrinsics, attributes) in decoded_events:
+                assert isinstance(intrinsics, dict)
+                assert isinstance(attributes, dict)
+
+        return result
+
+    return _validate_custom_event_collector_json
 
 def validate_tt_parameters(required_params={}, forgone_params={}):
     @transient_function_wrapper('newrelic.core.stats_engine',
@@ -1682,44 +1727,9 @@ def _validate_custom_event(recorded_event, required_event):
 
     assert recorded_event[1].items() == required_event[1].items()
 
-def validate_transaction_record_custom_event(required_event):
-    @transient_function_wrapper('newrelic.api.transaction',
-            'Transaction.record_custom_event')
-    def _validate_transaction_record_custom_event(wrapped, instance, args,
-            kwargs):
-        try:
-            result = wrapped(*args, **kwargs)
-        except:
-            raise
-        else:
-            custom_events = instance._custom_events
-            assert len(custom_events) == 1
-
-            custom_event = custom_events[0]
-            _validate_custom_event(custom_event, required_event)
-
-    return _validate_transaction_record_custom_event
-
-def validate_custom_event_inside_transaction(required_event):
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
-    def _validate_custom_event_inside_transaction(wrapped, instance,
-            args, kwargs):
-        try:
-            result = wrapped(*args, **kwargs)
-        except:
-            raise
-        else:
-            assert instance.custom_events.num_samples == 1
-
-            custom_event = instance.custom_events.samples[0]
-            _validate_custom_event(custom_event, required_event)
-
-    return _validate_custom_event_inside_transaction
-
-def validate_custom_event_outside_transaction(required_event):
+def validate_custom_event_in_application_stats_engine(required_event):
     @function_wrapper
-    def _validate_custom_event_outside_transaction(wrapped, instance,
+    def _validate_custom_event_in_application_stats_engine(wrapped, instance,
             args, kwargs):
         try:
             result = wrapped(*args, **kwargs)
@@ -1732,7 +1742,7 @@ def validate_custom_event_outside_transaction(required_event):
             custom_event = stats.custom_events.samples[0]
             _validate_custom_event(custom_event, required_event)
 
-    return _validate_custom_event_outside_transaction
+    return _validate_custom_event_in_application_stats_engine
 
 def validate_custom_event_count(count):
     @transient_function_wrapper('newrelic.core.stats_engine',

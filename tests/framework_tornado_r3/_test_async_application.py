@@ -36,13 +36,18 @@ class OneCallbackRequestHandler(RequestHandler):
         self.finish(self.RESPONSE)
 
 class AllMethodsCallbackRequestHandler(RequestHandler):
-    RESPONSE = b'post callback'
+    RESPONSE = b'anything is possible'
 
     def head(self):
         self.set_status(200)
 
     @tornado.gen.coroutine
     def post(self):
+        self.write(self.RESPONSE)
+        tornado.ioloop.IOLoop.current().add_callback(self.do_stuff)
+
+    @tornado.gen.coroutine
+    def delete(self):
         self.write(self.RESPONSE)
         tornado.ioloop.IOLoop.current().add_callback(self.do_stuff)
 

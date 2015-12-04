@@ -51,6 +51,11 @@ class AllMethodsCallbackRequestHandler(RequestHandler):
         self.write(self.RESPONSE)
         tornado.ioloop.IOLoop.current().add_callback(self.do_stuff)
 
+    @tornado.gen.coroutine
+    def patch(self):
+        self.write(self.RESPONSE)
+        tornado.ioloop.IOLoop.current().add_callback(self.do_stuff)
+
     def do_stuff(self):
         # posts always return right away, so this work is done after the
         # the response has been sent (but should still be including in our

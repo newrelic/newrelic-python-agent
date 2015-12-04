@@ -214,6 +214,21 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         self.assertEqual(response.body, AllMethodsCallbackRequestHandler.RESPONSE)
 
     scoped_metrics = [('Function/_test_async_application:'
+            'AllMethodsCallbackRequestHandler.patch', 1),
+            ('Function/_test_async_application:'
+            'AllMethodsCallbackRequestHandler.do_stuff', 1)]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(errors=[])
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:AllMethodsCallbackRequestHandler.patch',
+            scoped_metrics=scoped_metrics)
+    def test_patch_method_one_callback(self):
+        response = self.fetch_response('/anymethod', method="PATCH", body="test")
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, AllMethodsCallbackRequestHandler.RESPONSE)
+
+    scoped_metrics = [('Function/_test_async_application:'
             'NamedStackContextWrapRequestHandler.get', 1),
             ('Function/_test_async_application:'
             'NamedStackContextWrapRequestHandler.finish_callback', 1)]

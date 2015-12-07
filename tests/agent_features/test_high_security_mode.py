@@ -1,15 +1,18 @@
 import os
 import pytest
+import time
 import webtest
 
 from testing_support.fixtures import (override_application_settings,
         validate_custom_parameters, validate_transaction_errors,
         validate_request_params_omitted, validate_attributes_complete,
-        validate_non_transaction_error_event, reset_core_stats_engine)
+        validate_non_transaction_error_event, reset_core_stats_engine,
+        validate_custom_event_in_application_stats_engine,
+        validate_custom_event_count)
 
 from newrelic.agent import (background_task, add_custom_parameter,
         record_exception, wsgi_application, current_transaction, application,
-        callable_name)
+        callable_name, record_custom_event)
 
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 
@@ -38,6 +41,7 @@ _hsm_local_config_file_settings_disabled = [
         'capture_params': True,
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': False,
+        'custom_insights_events.enabled': True,
     },
     {
         'high_security': False,
@@ -45,6 +49,7 @@ _hsm_local_config_file_settings_disabled = [
         'capture_params': False,
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': False,
+        'custom_insights_events.enabled': False,
     },
     {
         'high_security': False,
@@ -52,6 +57,7 @@ _hsm_local_config_file_settings_disabled = [
         'capture_params': False,
         'transaction_tracer.record_sql': 'obfuscated',
         'strip_exception_messages.enabled': True,
+        'custom_insights_events.enabled': True,
     },
     {
         'high_security': False,
@@ -59,6 +65,7 @@ _hsm_local_config_file_settings_disabled = [
         'capture_params': False,
         'transaction_tracer.record_sql': 'off',
         'strip_exception_messages.enabled': True,
+        'custom_insights_events.enabled': False,
     },
 ]
 
@@ -69,6 +76,7 @@ _hsm_local_config_file_settings_enabled = [
         'capture_params': True,
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': True,
+        'custom_insights_events.enabled': True,
     },
     {
         'high_security': True,
@@ -76,6 +84,7 @@ _hsm_local_config_file_settings_enabled = [
         'capture_params': None,
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': True,
+        'custom_insights_events.enabled': True,
     },
     {
         'high_security': True,
@@ -83,6 +92,7 @@ _hsm_local_config_file_settings_enabled = [
         'capture_params': True,
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': True,
+        'custom_insights_events.enabled': True,
     },
     {
         'high_security': True,
@@ -90,6 +100,7 @@ _hsm_local_config_file_settings_enabled = [
         'capture_params': False,
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': True,
+        'custom_insights_events.enabled': True,
     },
     {
         'high_security': True,
@@ -97,6 +108,7 @@ _hsm_local_config_file_settings_enabled = [
         'capture_params': True,
         'transaction_tracer.record_sql': 'obfuscated',
         'strip_exception_messages.enabled': True,
+        'custom_insights_events.enabled': True,
     },
     {
         'high_security': True,
@@ -104,6 +116,7 @@ _hsm_local_config_file_settings_enabled = [
         'capture_params': True,
         'transaction_tracer.record_sql': 'off',
         'strip_exception_messages.enabled': True,
+        'custom_insights_events.enabled': True,
     },
     {
         'high_security': True,
@@ -111,6 +124,7 @@ _hsm_local_config_file_settings_enabled = [
         'capture_params': True,
         'transaction_tracer.record_sql': 'raw',
         'strip_exception_messages.enabled': False,
+        'custom_insights_events.enabled': False,
     },
 ]
 
@@ -131,6 +145,7 @@ def test_local_config_file_override_hsm_disabled(settings):
     original_capture_params = settings.capture_params
     original_record_sql = settings.transaction_tracer.record_sql
     original_strip_messages = settings.strip_exception_messages.enabled
+    original_custom_events = settings.custom_insights_events.enabled
 
     apply_local_high_security_mode_setting(settings)
 
@@ -138,6 +153,7 @@ def test_local_config_file_override_hsm_disabled(settings):
     assert settings.capture_params == original_capture_params
     assert settings.transaction_tracer.record_sql == original_record_sql
     assert settings.strip_exception_messages.enabled == original_strip_messages
+    assert settings.custom_insights_events.enabled == original_custom_events
 
 @parameterize_hsm_local_config(_hsm_local_config_file_settings_enabled)
 def test_local_config_file_override_hsm_enabled(settings):
@@ -147,6 +163,7 @@ def test_local_config_file_override_hsm_enabled(settings):
     assert settings.capture_params not in (True, None)
     assert settings.transaction_tracer.record_sql in ('off', 'obfuscated')
     assert settings.strip_exception_messages.enabled
+    assert settings.custom_insights_events.enabled is False
 
 _server_side_config_settings_hsm_disabled = [
     (
@@ -155,12 +172,14 @@ _server_side_config_settings_hsm_disabled = [
             'capture_params': False,
             'transaction_tracer.record_sql': 'obfuscated',
             'strip_exception_messages.enabled': True,
+            'custom_insights_events.enabled': False,
         },
         {
             u'agent_config': {
                 u'capture_params': True,
                 u'transaction_tracer.record_sql': u'raw',
                 u'strip_exception_messages.enabled': False,
+                u'custom_insights_events.enabled': True,
             },
         },
     ),
@@ -170,12 +189,14 @@ _server_side_config_settings_hsm_disabled = [
             'capture_params': True,
             'transaction_tracer.record_sql': 'raw',
             'strip_exception_messages.enabled': False,
+            'custom_insights_events.enabled': True,
         },
         {
             u'agent_config': {
                 u'capture_params': False,
                 u'transaction_tracer.record_sql': u'off',
                 u'strip_exception_messages.enabled': True,
+                u'custom_insights_events.enabled': False,
             },
         },
     ),
@@ -188,16 +209,19 @@ _server_side_config_settings_hsm_enabled = [
             'capture_params': False,
             'transaction_tracer.record_sql': 'obfuscated',
             'strip_exception_messages.enabled': True,
+            'custom_insights_events.enabled': False,
         },
         {
             u'high_security': True,
             u'capture_params': False,
             u'transaction_tracer.record_sql': u'obfuscated',
             u'strip_exception_messages.enabled': True,
+            u'custom_insights_events.enabled': False,
             u'agent_config': {
                 u'capture_params': False,
                 u'transaction_tracer.record_sql': u'obfuscated',
                 u'strip_exception_messages.enabled': True,
+                u'custom_insights_events.enabled': False,
             },
         },
     ),
@@ -207,16 +231,19 @@ _server_side_config_settings_hsm_enabled = [
             'capture_params': False,
             'transaction_tracer.record_sql': 'obfuscated',
             'strip_exception_messages.enabled': True,
+            'custom_insights_events.enabled': False,
         },
         {
             u'high_security': True,
             u'capture_params': False,
             u'transaction_tracer.record_sql': u'obfuscated',
             u'strip_exception_messages.enabled': True,
+            u'custom_insights_events.enabled': False,
             u'agent_config': {
                 u'capture_params': True,
                 u'transaction_tracer.record_sql': u'raw',
                 u'strip_exception_messages.enabled': False,
+                u'custom_insights_events.enabled': True,
             },
         },
     ),
@@ -235,6 +262,7 @@ def test_remote_config_fixups_hsm_disabled(local_settings, server_settings):
     original_capture_params = agent_config['capture_params']
     original_record_sql = agent_config['transaction_tracer.record_sql']
     original_strip_messages = agent_config['strip_exception_messages.enabled']
+    original_custom_events = agent_config['custom_insights_events.enabled']
 
     settings = apply_high_security_mode_fixups(local_settings, server_settings)
 
@@ -245,6 +273,7 @@ def test_remote_config_fixups_hsm_disabled(local_settings, server_settings):
     assert agent_config['capture_params'] == original_capture_params
     assert agent_config['transaction_tracer.record_sql'] == original_record_sql
     assert agent_config['strip_exception_messages.enabled'] == original_strip_messages
+    assert agent_config['custom_insights_events.enabled'] == original_custom_events
 
 @pytest.mark.parametrize('local_settings,server_settings',
         _server_side_config_settings_hsm_enabled)
@@ -262,10 +291,12 @@ def test_remote_config_fixups_hsm_enabled(local_settings, server_settings):
     assert u'capture_params' not in settings
     assert u'transaction_tracer.record_sql' not in settings
     assert u'strip_exception_messages.enabled' not in settings
+    assert u'custom_insights_events.enabled' not in settings
 
     assert u'capture_params' not in agent_config
     assert u'transaction_tracer.record_sql' not in agent_config
     assert u'strip_exception_messages.enabled' not in agent_config
+    assert u'custom_insights_events.enabled' not in agent_config
 
 def test_remote_config_hsm_fixups_server_side_disabled():
     local_settings = {'high_security': True}
@@ -285,7 +316,8 @@ _test_transaction_settings_hsm_disabled = {
 
 _test_transaction_settings_hsm_enabled = {
         'high_security': True,
-        'strip_exception_messages.enabled' : True
+        'strip_exception_messages.enabled' : True,
+        'custom_insights_events.enabled': False,
  }
 
 @override_application_settings(_test_transaction_settings_hsm_disabled)
@@ -449,6 +481,38 @@ def test_transaction_hsm_enabled_environ_capture_request_params_api_called():
             target_wsgi_application_capture_params_api_called)
 
     response = target_application.get('/', params='key-1=value-1')
+
+# Custom events
+
+_event_type = 'SimpleAppEvent'
+_params = {'snowman': u'\u2603', 'foo': 'bar'}
+
+@wsgi_application()
+def simple_custom_event_app(environ, start_response):
+    record_custom_event(_event_type, _params)
+    start_response(status='200 OK', response_headers=[])
+    return []
+
+_intrinsics = {
+    'type': _event_type,
+    'timestamp': time.time()
+}
+
+_required_event = [_intrinsics, _params]
+
+@reset_core_stats_engine()
+@validate_custom_event_in_application_stats_engine(_required_event)
+@override_application_settings(_test_transaction_settings_hsm_disabled)
+def test_custom_event_hsm_disabled():
+    target_application = webtest.TestApp(simple_custom_event_app)
+    response = target_application.get('/')
+
+@reset_core_stats_engine()
+@validate_custom_event_count(count=0)
+@override_application_settings(_test_transaction_settings_hsm_enabled)
+def test_custom_event_hsm_enabled():
+    target_application = webtest.TestApp(simple_custom_event_app)
+    response = target_application.get('/')
 
 # Make sure we don't display the query string in 'request.headers.referer'
 # Attribute will exist, and value will have query string stripped off.

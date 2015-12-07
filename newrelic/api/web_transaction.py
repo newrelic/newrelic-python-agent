@@ -392,6 +392,13 @@ class WebTransaction(Transaction):
             self._request_environment['HTTP_REFERER'] = \
                 _remove_query_string(self._request_environment['HTTP_REFERER'])
 
+        try:
+            if 'CONTENT_LENGTH' in self._request_environment:
+                self._request_environment['CONTENT_LENGTH'] = int(
+                        self._request_environment['CONTENT_LENGTH'])
+        except Exception:
+            del self._request_environment['CONTENT_LENGTH']
+
         # Flags for tracking whether RUM header and footer have been
         # generated.
 
@@ -433,7 +440,7 @@ class WebTransaction(Transaction):
             for header, value in response_headers:
                 lower_header = header.lower()
                 if 'content-length' == lower_header:
-                    self._response_properties['CONTENT_LENGTH'] = value
+                    self._response_properties['CONTENT_LENGTH'] = int(value)
                 elif 'content-type' == lower_header:
                     self._response_properties['CONTENT_TYPE'] = value
 

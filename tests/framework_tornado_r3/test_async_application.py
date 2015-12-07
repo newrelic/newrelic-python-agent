@@ -6,7 +6,8 @@ import select
 import time
 import threading
 
-from newrelic.agent import wrap_function_wrapper
+from newrelic.agent import wrap_function_wrapper, FunctionWrapper
+from newrelic.core.stats_engine import StatsEngine
 from newrelic.packages import six
 
 from _test_async_application import (get_tornado_app, HelloRequestHandler,
@@ -30,16 +31,18 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         super(TornadoTest, self).setUp()
 
         # We wrap record_transaction in every test because we want this wrapping
-        # to happen after the one in test fixture. Since that's a session scoped
-        # fixture that will happen after the module is loaded but before the
-        # tests are invoked. It may be possible to change the scoping of the
-        # fixture (module level?) and wrap is on the module level.
-        wrap_function_wrapper('newrelic.core.stats_engine',
-                'StatsEngine.record_transaction',
+        # to happen after the one in test fixture. Also, this must be wrapped on
+        # a per test basis to capture the correct instance of this class
+        self.unwrapped_record_transaction = StatsEngine.record_transaction
+        StatsEngine.record_transaction = FunctionWrapper(
+                StatsEngine.record_transaction,
                 self.stop_after_record_transaction)
 
         self.waits_expected = 0
         self.waits_counter = 0
+
+    def tearDown(self):
+        StatsEngine.record_transaction = self.unwrapped_record_transaction
 
     def get_app(self):
         return get_tornado_app()

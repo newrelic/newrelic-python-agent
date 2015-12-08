@@ -28,7 +28,7 @@ DOWNLOAD_HOSTS="chi-www-1 chi-www-2"
 # By default, deploy agent to `testing` subdirectory. For a real release,
 # override `DOWNLOAD_DIR` to point to the `release` directory.
 
-DOWNLOAD_DIR=/data/nr-yum-repo/python_agent/testing
+DOWNLOAD_DIR=${DOWNLOAD_DIR:-/data/nr-yum-repo/python_agent/testing}
 
 # Set "Constructed" Global Variables that require AGENT_VERSION.
 

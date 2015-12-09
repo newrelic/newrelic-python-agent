@@ -741,6 +741,11 @@ class Application(object):
         if not self._active_session:
             return
 
+        settings = self._stats_engine.settings
+
+        if settings is None or not settings.custom_insights_events.enabled:
+            return
+
         event = create_custom_event(event_type, params)
 
         if event:

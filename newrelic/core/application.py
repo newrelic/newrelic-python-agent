@@ -1437,8 +1437,8 @@ class Application(object):
                             _logger.debug('Sending custom event data '
                                     'for harvest of %r.', self._app_name)
 
-                        self._active_session.send_custom_events(
-                                customs.sampling_info, customs.samples)
+                            self._active_session.send_custom_events(
+                                    customs.sampling_info, customs.samples)
 
                         dropped = customs.num_seen - customs.num_samples
 

@@ -1103,6 +1103,14 @@ class Transaction(object):
             self._custom_metrics.record_custom_metric(name, value)
 
     def record_custom_event(self, event_type, params):
+        settings = self._settings
+
+        if not settings:
+            return
+
+        if not settings.custom_insights_events.enabled:
+            return
+
         event = create_custom_event(event_type, params)
         if event:
             self._custom_events.append(event)

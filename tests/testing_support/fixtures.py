@@ -2003,3 +2003,16 @@ def set_default_encoding(encoding):
         return result
 
     return _set_default_encoding
+
+def function_not_called(module, name):
+    """Verify that a function is not called.
+
+    Assert False, if it is.
+
+    """
+
+    @transient_function_wrapper(module, name)
+    def _function_not_called_(wrapped, instance, args, kwargs):
+        assert False
+
+    return _function_not_called_

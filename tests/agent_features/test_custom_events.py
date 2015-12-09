@@ -7,7 +7,7 @@ from newrelic.core.custom_event import process_event_type
 from testing_support.fixtures import (reset_core_stats_engine,
         validate_custom_event_count,
         validate_custom_event_in_application_stats_engine,
-        override_application_settings)
+        override_application_settings, function_not_called)
 
 # Test process_event_type()
 
@@ -121,3 +121,22 @@ def test_custom_event_settings_check_collector_flag():
 @background_task()
 def test_custom_event_settings_check_custom_insights_enabled():
     record_custom_event('FooEvent', _user_params)
+
+# Test that record_custom_event() methods will short-circuit.
+#
+# If the custom_insights_events setting is False, verify that the
+# `create_custom_event()` function is not called, in order to avoid the
+# event_type and attribute processing.
+
+@override_application_settings({'custom_insights_events.enabled': False})
+@function_not_called('newrelic.api.transaction', 'create_custom_event')
+@background_task()
+def test_transaction_create_custom_event_not_called():
+    record_custom_event('FooEvent', _user_params)
+
+@override_application_settings({'custom_insights_events.enabled': False})
+@function_not_called('newrelic.core.application', 'create_custom_event')
+@background_task()
+def test_application_create_custom_event_not_called():
+    app = application()
+    record_custom_event('FooEvent', _user_params, application=app)

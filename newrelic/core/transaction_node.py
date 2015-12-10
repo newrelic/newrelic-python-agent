@@ -532,8 +532,3 @@ class TransactionNode(_TransactionNode):
         self._event_intrinsics_cache = intrinsics.copy()
 
         return intrinsics
-
-    def iter_custom_events(self):
-        for event in self.custom_events:
-            yield event
-

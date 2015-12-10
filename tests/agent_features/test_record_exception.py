@@ -376,3 +376,23 @@ def test_transaction_error_event_limit():
 @validate_application_error_event_count(_error_event_limit)
 def test_application_error_event_limit():
     _raise_errors(_num_errors_app, application())
+
+# =============== Test params is not a dict ===============
+
+@reset_core_stats_engine()
+@validate_transaction_error_trace_count(num_errors=1)
+@background_task()
+def test_transaction_record_exception_params_not_a_dict():
+    try:
+        raise RuntimeError()
+    except RuntimeError:
+        record_exception(*sys.exc_info(), params=[1,2,3])
+
+@reset_core_stats_engine()
+@validate_application_error_trace_count(num_errors=1)
+def test_application_record_exception_params_not_a_dict():
+    try:
+        raise RuntimeError()
+    except RuntimeError:
+        record_exception(*sys.exc_info(), params=[1,2,3],
+                application=application())

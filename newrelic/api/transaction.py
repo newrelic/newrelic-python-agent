@@ -1020,10 +1020,16 @@ class Transaction(object):
                 _logger.debug('Cannot add custom parameters in '
                         'High Security Mode.')
         else:
-            for k, v in params.items():
-                name, val = process_user_attribute(k, v)
-                if name:
-                    custom_params[name] = val
+            try:
+                for k, v in params.items():
+                    name, val = process_user_attribute(k, v)
+                    if name:
+                        custom_params[name] = val
+            except Exception:
+                _logger.debug('Parameters failed to validate for unknown '
+                        'reason. Dropping parameters for error: %r. Check '
+                        'traceback for clues.', fullname, exc_info=True)
+                custom_params = {}
 
         # Check to see if we need to strip the message before recording it.
 

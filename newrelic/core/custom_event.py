@@ -82,19 +82,22 @@ def create_custom_event(event_type, params):
         return None
 
     attributes = {}
-    dropped  = {}
-    for k, v in params.items():
-        key, value = process_user_attribute(k, v)
-        if key:
-            if len(attributes) >= MAX_NUM_USER_ATTRIBUTES:
-                dropped[key] = value
-                _logger.debug('Maximum number of attributes already '
-                        'added to event %r. Dropping attribute: %r=%r',
-                        name, key, value)
-            else:
-                attributes[key] = value
-        else:
-            dropped[k] = v
+
+    try:
+        for k, v in params.items():
+            key, value = process_user_attribute(k, v)
+            if key:
+                if len(attributes) >= MAX_NUM_USER_ATTRIBUTES:
+                    _logger.debug('Maximum number of attributes already '
+                            'added to event %r. Dropping attribute: %r=%r',
+                            name, key, value)
+                else:
+                    attributes[key] = value
+    except Exception:
+        _logger.debug('Attributes failed to validate for unknown reason. '
+                'Check traceback for clues. Dropping event: %r.', name,
+                exc_info=True)
+        return None
 
     intrinsics = {
         'type': name,

@@ -82,19 +82,15 @@ def create_custom_event(event_type, params):
         return None
 
     attributes = {}
-    dropped  = {}
     for k, v in params.items():
         key, value = process_user_attribute(k, v)
         if key:
             if len(attributes) >= MAX_NUM_USER_ATTRIBUTES:
-                dropped[key] = value
                 _logger.debug('Maximum number of attributes already '
                         'added to event %r. Dropping attribute: %r=%r',
                         name, key, value)
             else:
                 attributes[key] = value
-        else:
-            dropped[k] = v
 
     intrinsics = {
         'type': name,

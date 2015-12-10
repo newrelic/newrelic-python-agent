@@ -32,22 +32,33 @@ class OneCallbackRequestHandler(RequestHandler):
     def get(self):
         tornado.ioloop.IOLoop.current().add_callback(self.finish_callback)
 
+    @tornado.web.asynchronous
+    def head(self):
+        self.set_status(200)
+        tornado.ioloop.IOLoop.current().add_callback(self.finish_callback)
+
+    @tornado.web.asynchronous
+    def post(self):
+        tornado.ioloop.IOLoop.current().add_callback(self.finish_callback)
+
+    @tornado.web.asynchronous
+    def delete(self):
+        tornado.ioloop.IOLoop.current().add_callback(self.finish_callback)
+
+    @tornado.web.asynchronous
+    def patch(self):
+        tornado.ioloop.IOLoop.current().add_callback(self.finish_callback)
+
+    @tornado.web.asynchronous
+    def put(self):
+        tornado.ioloop.IOLoop.current().add_callback(self.finish_callback)
+
+    @tornado.web.asynchronous
+    def options(self):
+        tornado.ioloop.IOLoop.current().add_callback(self.finish_callback)
+
     def finish_callback(self):
         self.finish(self.RESPONSE)
-
-class PostCallbackRequestHandler(RequestHandler):
-    RESPONSE = b'post callback'
-
-    @tornado.gen.coroutine
-    def post(self):
-        self.write(self.RESPONSE)
-        tornado.ioloop.IOLoop.current().add_callback(self.do_stuff)
-
-    def do_stuff(self):
-        # posts always return right away, so this work is done after the
-        # the response has been sent (but should still be including in our
-        # metrics).
-        pass
 
 class NamedStackContextWrapRequestHandler(RequestHandler):
     RESPONSE = b'another callback'
@@ -214,7 +225,6 @@ def get_tornado_app():
         ('/', HelloRequestHandler),
         ('/sleep', SleepRequestHandler),
         ('/one-callback', OneCallbackRequestHandler),
-        ('/post', PostCallbackRequestHandler),
         ('/named-wrap-callback', NamedStackContextWrapRequestHandler),
         ('/multiple-callbacks', MultipleCallbacksRequestHandler),
         ('/sync-exception', SyncExceptionRequestHandler),

@@ -6,7 +6,8 @@ import select
 import time
 import threading
 
-from newrelic.agent import wrap_function_wrapper
+from newrelic.agent import wrap_function_wrapper, FunctionWrapper
+from newrelic.core.stats_engine import StatsEngine
 from newrelic.packages import six
 
 from _test_async_application import (get_tornado_app, HelloRequestHandler,
@@ -14,8 +15,7 @@ from _test_async_application import (get_tornado_app, HelloRequestHandler,
         NamedStackContextWrapRequestHandler, MultipleCallbacksRequestHandler,
         FinishExceptionRequestHandler, ReturnExceptionRequestHandler,
         IOLoopDivideRequestHandler, EngineDivideRequestHandler,
-        PostCallbackRequestHandler, PrepareOnFinishRequestHandler,
-        PrepareOnFinishRequestHandlerSubclass)
+        PrepareOnFinishRequestHandler, PrepareOnFinishRequestHandlerSubclass)
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
@@ -31,16 +31,18 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         super(TornadoTest, self).setUp()
 
         # We wrap record_transaction in every test because we want this wrapping
-        # to happen after the one in test fixture. Since that's a session scoped
-        # fixture that will happen after the module is loaded but before the
-        # tests are invoked. It may be possible to change the scoping of the
-        # fixture (module level?) and wrap is on the module level.
-        wrap_function_wrapper('newrelic.core.stats_engine',
-                'StatsEngine.record_transaction',
+        # to happen after the one in test fixture. Also, this must be wrapped on
+        # a per test basis to capture the correct instance of this class
+        self.unwrapped_record_transaction = StatsEngine.record_transaction
+        StatsEngine.record_transaction = FunctionWrapper(
+                StatsEngine.record_transaction,
                 self.stop_after_record_transaction)
 
         self.waits_expected = 0
         self.waits_counter = 0
+
+    def tearDown(self):
+        StatsEngine.record_transaction = self.unwrapped_record_transaction
 
     def get_app(self):
         return get_tornado_app()
@@ -171,19 +173,94 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         self.assertEqual(response.body, OneCallbackRequestHandler.RESPONSE)
 
     scoped_metrics = [('Function/_test_async_application:'
-            'PostCallbackRequestHandler.post', 1),
+            'OneCallbackRequestHandler.post', 1),
             ('Function/_test_async_application:'
-            'PostCallbackRequestHandler.do_stuff', 1)]
+            'OneCallbackRequestHandler.finish_callback', 1)]
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[])
     @tornado_validate_count_transaction_metrics(
-            '_test_async_application:PostCallbackRequestHandler.post',
+            '_test_async_application:OneCallbackRequestHandler.post',
             scoped_metrics=scoped_metrics)
     def test_post_method_one_callback(self):
-        response = self.fetch_response('/post', method="POST", body="test")
+        response = self.fetch_response('/one-callback', method="POST", body="test")
         self.assertEqual(response.code, 200)
-        self.assertEqual(response.body, PostCallbackRequestHandler.RESPONSE)
+        self.assertEqual(response.body, OneCallbackRequestHandler.RESPONSE)
+
+    scoped_metrics = [('Function/_test_async_application:'
+            'OneCallbackRequestHandler.head', 1),
+            ('Function/_test_async_application:'
+            'OneCallbackRequestHandler.finish_callback', 1)]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(errors=[])
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:OneCallbackRequestHandler.head',
+            scoped_metrics=scoped_metrics)
+    def test_head_method_one_callback(self):
+        response = self.fetch_response('/one-callback', method="HEAD")
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, '')
+
+    scoped_metrics = [('Function/_test_async_application:'
+            'OneCallbackRequestHandler.delete', 1),
+            ('Function/_test_async_application:'
+            'OneCallbackRequestHandler.finish_callback', 1)]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(errors=[])
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:OneCallbackRequestHandler.delete',
+            scoped_metrics=scoped_metrics)
+    def test_delete_method_one_callback(self):
+        response = self.fetch_response('/one-callback', method="DELETE")
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, OneCallbackRequestHandler.RESPONSE)
+
+    scoped_metrics = [('Function/_test_async_application:'
+            'OneCallbackRequestHandler.patch', 1),
+            ('Function/_test_async_application:'
+            'OneCallbackRequestHandler.finish_callback', 1)]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(errors=[])
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:OneCallbackRequestHandler.patch',
+            scoped_metrics=scoped_metrics)
+    def test_patch_method_one_callback(self):
+        response = self.fetch_response('/one-callback', method="PATCH", body="test")
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, OneCallbackRequestHandler.RESPONSE)
+
+    scoped_metrics = [('Function/_test_async_application:'
+            'OneCallbackRequestHandler.put', 1),
+            ('Function/_test_async_application:'
+            'OneCallbackRequestHandler.finish_callback', 1)]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(errors=[])
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:OneCallbackRequestHandler.put',
+            scoped_metrics=scoped_metrics)
+    def test_put_method_one_callback(self):
+        response = self.fetch_response('/one-callback', method="PUT", body="test")
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, OneCallbackRequestHandler.RESPONSE)
+
+    scoped_metrics = [('Function/_test_async_application:'
+            'OneCallbackRequestHandler.options', 1),
+            ('Function/_test_async_application:'
+            'OneCallbackRequestHandler.finish_callback', 1)]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(errors=[])
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:OneCallbackRequestHandler.options',
+            scoped_metrics=scoped_metrics)
+    def test_options_method_one_callback(self):
+        response = self.fetch_response('/one-callback', method="OPTIONS")
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, OneCallbackRequestHandler.RESPONSE)
 
     scoped_metrics = [('Function/_test_async_application:'
             'NamedStackContextWrapRequestHandler.get', 1),

@@ -1,11 +1,12 @@
 import sys
+import pytest
 import webtest
 
 from newrelic.agent import (wsgi_application, add_custom_parameter,
     background_task)
 from newrelic.packages import six
 from newrelic.core.attribute import (truncate, sanitize, Attribute,
-    MAX_64_BIT_INT, _DESTINATIONS_WITH_EVENTS)
+    CastingFailureException, MAX_64_BIT_INT, _DESTINATIONS_WITH_EVENTS)
 
 from testing_support.fixtures import (override_application_settings,
     validate_attributes, validate_attributes_complete,
@@ -364,3 +365,19 @@ class Foo(object): pass
 def test_sanitize_object():
     f = Foo()
     assert sanitize(f) == str(f)
+
+class TypeErrorString(object):
+    def __str__(self):
+        return 42
+
+def test_str_raises_type_error():
+    with pytest.raises(CastingFailureException):
+        sanitize(TypeErrorString())
+
+class AttributeErrorString(object):
+    def __str__(self):
+        raise AttributeError()
+
+def test_str_raises_attribute_error():
+    with pytest.raises(CastingFailureException):
+        sanitize(AttributeErrorString())

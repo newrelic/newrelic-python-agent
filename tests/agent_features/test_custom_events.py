@@ -100,6 +100,12 @@ def test_custom_event_outside_transaction_bad_params():
     app = application()
     record_custom_event('FooEvent', _bad_params, application=app)
 
+@reset_core_stats_engine()
+@validate_custom_event_count(count=0)
+@background_task()
+def test_custom_event_params_not_a_dict():
+    record_custom_event('ParamsListEvent', ['not', 'a', 'dict'])
+
 # Tests for Custom Events configuration settings
 
 @override_application_settings({'collect_custom_events': False})

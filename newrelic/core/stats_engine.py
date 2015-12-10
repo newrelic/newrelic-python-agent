@@ -538,10 +538,16 @@ class StatsEngine(object):
         else:
             custom_params = {}
 
-            for k, v in params.items():
-                name, val = process_user_attribute(k, v)
-                if name:
-                    custom_params[name] = val
+            try:
+                for k, v in params.items():
+                    name, val = process_user_attribute(k, v)
+                    if name:
+                        custom_params[name] = val
+            except Exception:
+                _logger.debug('Parameters failed to validate for unknown '
+                        'reason. Dropping parameters for error: %r. Check '
+                        'traceback for clues.', fullname, exc_info=True)
+                custom_params = {}
 
             attributes = create_user_attributes(custom_params,
                     settings.attribute_filter)

@@ -847,18 +847,6 @@ class Application(object):
 
                     self._stats_engine.merge(stats)
 
-                    # Add custom events directly to the application's
-                    # SampledDataSet. If we had added the custom events
-                    # to the transaction's SampledDataSet and then merged
-                    # them (as we do for other events), then there's the
-                    # possibility of double-sampling. For other types of
-                    # events, we capture too few per transaction to have to
-                    # worry about double sampling. See PYTHON-1820.
-
-                    for event in data.iter_custom_events():
-                        self._global_events_account += 1
-                        self._stats_engine.record_custom_event(event)
-
                     # We merge the internal statistics here as well even
                     # though have popped out of the context where we are
                     # recording. This is okay so long as don't record

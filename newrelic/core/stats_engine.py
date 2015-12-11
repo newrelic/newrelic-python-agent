@@ -898,10 +898,11 @@ class StatsEngine(object):
             event = transaction.transaction_event(self.__stats_table)
             self.__transaction_events.add(event)
 
-        # Skip adding custom events to the transaction's SampledDataSet.
-        # They will be added directly from the TransactionNode to the
-        # application's SampledDataSet in Application.record_transaction().
-        # See PYTHON-1820.
+        # Merge in custom events
+
+        if (settings.collect_custom_events and
+                settings.custom_insights_events.enabled):
+            self.custom_events.merge(transaction.custom_events)
 
     @internal_trace('Supportability/Python/StatsEngine/Calls/metric_data')
     def metric_data(self, normalizer=None):

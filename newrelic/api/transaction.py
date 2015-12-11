@@ -22,7 +22,7 @@ import newrelic.core.transaction_node
 import newrelic.core.database_node
 import newrelic.core.error_node
 
-from newrelic.core.stats_engine import CustomMetrics
+from newrelic.core.stats_engine import CustomMetrics, SampledDataSet
 from newrelic.core.transaction_cache import transaction_cache
 from newrelic.core.thread_utilization import utilization_tracker
 
@@ -31,6 +31,7 @@ from ..core.attribute import (create_attributes, create_agent_attributes,
         MAX_NUM_USER_ATTRIBUTES)
 from ..core.attribute_filter import (DST_NONE, DST_ERROR_COLLECTOR,
         DST_TRANSACTION_TRACER)
+from ..core.config import DEFAULT_RESERVOIR_SIZE
 from ..core.custom_event import process_event_type, create_custom_event
 from ..core.stack_trace import exception_stack
 from ..common.encoding_utils import generate_path_hash
@@ -88,7 +89,7 @@ class Transaction(object):
 
         self._errors = []
         self._slow_sql = []
-        self._custom_events = []
+        self._custom_events = SampledDataSet(capacity=DEFAULT_RESERVOIR_SIZE)
 
         self._stack_trace_count = 0
         self._explain_plan_count = 0
@@ -454,7 +455,7 @@ class Transaction(object):
                 children=tuple(children),
                 errors=tuple(self._errors),
                 slow_sql=tuple(self._slow_sql),
-                custom_events=tuple(self._custom_events),
+                custom_events=self._custom_events,
                 apdex_t=self.apdex,
                 suppress_apdex=self.suppress_apdex,
                 custom_metrics=self._custom_metrics,
@@ -1113,7 +1114,7 @@ class Transaction(object):
 
         event = create_custom_event(event_type, params)
         if event:
-            self._custom_events.append(event)
+            self._custom_events.add(event)
 
     def record_metric(self, name, value):
         warnings.warn('Internal API change. Use record_custom_metric() '

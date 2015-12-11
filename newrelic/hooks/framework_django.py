@@ -1093,11 +1093,14 @@ def instrument_django_template_base(module):
     settings = global_settings()
 
     if 'django.instrumentation.inclusion-tags.r1' in settings.feature_flag:
-        wrap_function_wrapper(module, 'generic_tag_compiler',
-                _nr_wrapper_django_template_base_generic_tag_compiler_)
 
-        wrap_function_wrapper(module, 'Library.tag',
-                _nr_wrapper_django_template_base_Library_tag_)
+        if hasattr(module, 'generic_tag_compiler'):
+            wrap_function_wrapper(module, 'generic_tag_compiler',
+                    _nr_wrapper_django_template_base_generic_tag_compiler_)
 
-        wrap_function_wrapper(module, 'Library.inclusion_tag',
+        if hasattr(module, 'Library'):
+            wrap_function_wrapper(module, 'Library.tag',
+                    _nr_wrapper_django_template_base_Library_tag_)
+
+            wrap_function_wrapper(module, 'Library.inclusion_tag',
                 _nr_wrapper_django_template_base_Library_inclusion_tag_)

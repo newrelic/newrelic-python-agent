@@ -1,15 +1,17 @@
 import sys
+import pytest
 import webtest
 
 from newrelic.agent import (wsgi_application, add_custom_parameter,
     background_task)
 from newrelic.packages import six
 from newrelic.core.attribute import (truncate, sanitize, Attribute,
-    MAX_64_BIT_INT, _DESTINATIONS_WITH_EVENTS)
+    CastingFailureException, MAX_64_BIT_INT, _DESTINATIONS_WITH_EVENTS)
 
 from testing_support.fixtures import (override_application_settings,
     validate_attributes, validate_attributes_complete,
-    validate_custom_parameters)
+    validate_custom_parameters, validate_agent_attribute_types)
+from testing_support.sample_applications import fully_featured_app
 
 
 # Python 3 lacks longs
@@ -43,7 +45,8 @@ def test_intrinsics():
 
 _required_agent = ['request.method', 'wsgi.output.seconds', 'response.status',
                    'request.headers.host', 'request.headers.accept',
-                   'response.contentType', 'response.contentLength']
+                   'response.headers.contentType',
+                   'response.headers.contentLength']
 _forgone_agent = []
 
 @validate_attributes('agent', _required_agent, _forgone_agent)
@@ -290,6 +293,34 @@ def test_capture_request_params_value_too_long():
     response = target_application.get('/?foo=%s' % TOO_LONG)
     assert response.body == b'Hello World!'
 
+# Test attribute types are according to Agent-Attributes spec.
+
+fully_featured_application = webtest.TestApp(fully_featured_app)
+
+# Types are only defined in the spec for agent attributes, not intrinsics.
+
+agent_attributes = {
+    'request.headers.accept': str,
+    'request.headers.contentLength' : int,
+    'request.headers.contentType' : str,
+    'request.headers.host': str,
+    'request.headers.referer': str,
+    'request.headers.userAgent': str,
+    'request.method': str,
+    'request.parameters.test': str,
+    'response.headers.contentLength': int,
+    'response.headers.contentType': str,
+    'response.status': str,
+}
+
+@validate_agent_attribute_types(agent_attributes)
+def test_agent_attribute_types():
+    test_environ = {'CONTENT_TYPE': 'HTML', 'CONTENT_LENGTH': '100',
+                'HTTP_USER_AGENT': 'Firefox', 'HTTP_REFERER': 'somewhere',
+                'HTTP_ACCEPT': 'everything'}
+    response = fully_featured_application.get('/?test=val',
+                extra_environ=test_environ)
+
 # Test sanitize()
 
 def test_sanitize_string():
@@ -334,3 +365,19 @@ class Foo(object): pass
 def test_sanitize_object():
     f = Foo()
     assert sanitize(f) == str(f)
+
+class TypeErrorString(object):
+    def __str__(self):
+        return 42
+
+def test_str_raises_type_error():
+    with pytest.raises(CastingFailureException):
+        sanitize(TypeErrorString())
+
+class AttributeErrorString(object):
+    def __str__(self):
+        raise AttributeError()
+
+def test_str_raises_attribute_error():
+    with pytest.raises(CastingFailureException):
+        sanitize(AttributeErrorString())

@@ -731,7 +731,8 @@ def apply_high_security_mode_fixups(local_settings, server_settings):
     # settings returned.
 
     security_settings = ('capture_params', 'transaction_tracer.record_sql',
-            'strip_exception_messages.enabled')
+            'strip_exception_messages.enabled',
+            'custom_insights_events.enabled')
 
     for setting in security_settings:
         if setting in server_settings:
@@ -967,7 +968,7 @@ class ApplicationSession(object):
 
     @internal_trace('Supportability/Python/Collector/Calls/send_error_events')
     def send_error_events(self, sampling_info, error_data):
-        """Called to submit sample set for analytics.
+        """Called to submit sample set for error events.
 
         """
 
@@ -975,6 +976,18 @@ class ApplicationSession(object):
 
         return self.send_request(self.requests_session, self.collector_url,
                 'error_event_data', self.license_key, self.agent_run_id,
+                payload)
+
+    @internal_trace('Supportability/Python/Collector/Calls/send_custom_events')
+    def send_custom_events(self, sampling_info, custom_event_data):
+        """Called to submit sample set for custom events.
+
+        """
+
+        payload = (self.agent_run_id, sampling_info, custom_event_data)
+
+        return self.send_request(self.requests_session, self.collector_url,
+                'custom_event_data', self.license_key, self.agent_run_id,
                 payload)
 
     @classmethod

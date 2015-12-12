@@ -1098,6 +1098,51 @@ def validate_transaction_event_collector_json():
 
     return _validate_transaction_event_collector_json
 
+def validate_custom_event_collector_json(num_events=1):
+    """Validate the format, types and number of custom events."""
+
+    @transient_function_wrapper('newrelic.core.application',
+            'Application.record_transaction')
+    def _validate_custom_event_collector_json(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            stats = instance._stats_engine
+            settings = stats.settings
+
+            agent_run_id = 666
+            sampling_info = stats.custom_events.sampling_info
+            samples = stats.custom_events.samples
+
+            # Emulate the payload used in data_collector.py
+
+            payload = (agent_run_id, sampling_info, samples)
+            collector_json = json_encode(payload)
+
+            decoded_json = json.loads(collector_json)
+
+            decoded_agent_run_id = decoded_json[0]
+            decoded_sampling_info = decoded_json[1]
+            decoded_events = decoded_json[2]
+
+            assert decoded_agent_run_id == agent_run_id
+            assert decoded_sampling_info == sampling_info
+
+            max_setting = settings.custom_insights_events.max_samples_stored
+            assert decoded_sampling_info['reservoir_size'] == max_setting
+
+            assert decoded_sampling_info['events_seen'] == num_events
+            assert len(decoded_events) == num_events
+
+            for (intrinsics, attributes) in decoded_events:
+                assert isinstance(intrinsics, dict)
+                assert isinstance(attributes, dict)
+
+        return result
+
+    return _validate_custom_event_collector_json
 
 def validate_tt_parameters(required_params={}, forgone_params={}):
     @transient_function_wrapper('newrelic.core.stats_engine',
@@ -1370,6 +1415,27 @@ def validate_attributes_complete(attr_type, required_attrs=[],
         return wrapped(*args, **kwargs)
 
     return _validate_attributes_complete
+
+def validate_agent_attribute_types(required_attrs):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_agent_attribute_types(wrapped, instance, args, kwargs):
+        def _bind_params(transaction, *args, **kwargs):
+            return transaction
+
+        transaction = _bind_params(*args, **kwargs)
+        attributes = transaction.agent_attributes
+        attr_vals = {}
+        for attr in attributes:
+            attr_vals[attr.name] = attr.value
+
+        for attr_name, attr_type in required_attrs.items():
+            assert attr_name in attr_vals
+            assert isinstance(attr_vals[attr_name], attr_type)
+
+        return wrapped(*args, **kwargs)
+
+    return _validate_agent_attribute_types
 
 def validate_database_trace_inputs(sql_parameters_type):
 
@@ -1669,6 +1735,48 @@ def validate_application_exception_message(expected_message):
 
     return _validate_application_exception_message
 
+def _validate_custom_event(recorded_event, required_event):
+    assert len(recorded_event) == 2 # [intrinsic, user attributes]
+
+    intrinsics = recorded_event[0]
+
+    assert intrinsics['type'] == required_event[0]['type']
+
+    now = time.time()
+    assert intrinsics['timestamp'] <= now
+    assert intrinsics['timestamp'] >= required_event[0]['timestamp']
+
+    assert recorded_event[1].items() == required_event[1].items()
+
+def validate_custom_event_in_application_stats_engine(required_event):
+    @function_wrapper
+    def _validate_custom_event_in_application_stats_engine(wrapped, instance,
+            args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            stats = core_application_stats_engine(None)
+            assert stats.custom_events.num_samples == 1
+
+            custom_event = stats.custom_events.samples[0]
+            _validate_custom_event(custom_event, required_event)
+
+    return _validate_custom_event_in_application_stats_engine
+
+def validate_custom_event_count(count):
+    @function_wrapper
+    def _validate_custom_event_count(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            stats = core_application_stats_engine(None)
+            assert stats.custom_events.num_samples == count
+    return _validate_custom_event_count
+
 def override_application_name(app_name):
     # The argument here cannot be named 'name', or else it triggers
     # a PyPy bug. Hence, we use 'app_name' instead.
@@ -1895,3 +2003,16 @@ def set_default_encoding(encoding):
         return result
 
     return _set_default_encoding
+
+def function_not_called(module, name):
+    """Verify that a function is not called.
+
+    Assert False, if it is.
+
+    """
+
+    @transient_function_wrapper(module, name)
+    def _function_not_called_(wrapped, instance, args, kwargs):
+        assert False
+
+    return _function_not_called_

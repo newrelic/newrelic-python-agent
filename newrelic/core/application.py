@@ -16,7 +16,10 @@ import newrelic.packages.six as six
 
 from newrelic.samplers.data_sampler import DataSampler
 
+from newrelic.core.attribute import (process_user_attribute,
+        MAX_NUM_USER_ATTRIBUTES)
 from newrelic.core.config import global_settings_dump, global_settings
+from newrelic.core.custom_event import process_event_type, create_custom_event
 from newrelic.core.data_collector import create_session
 from newrelic.network.exceptions import (ForceAgentRestart,
         ForceAgentDisconnect, DiscardDataForRequest, RetryDataForRequest)
@@ -734,6 +737,22 @@ class Application(object):
                 self._global_events_account += 1
                 self._stats_custom_engine.record_custom_metric(name, value)
 
+    def record_custom_event(self, event_type, params):
+        if not self._active_session:
+            return
+
+        settings = self._stats_engine.settings
+
+        if settings is None or not settings.custom_insights_events.enabled:
+            return
+
+        event = create_custom_event(event_type, params)
+
+        if event:
+            with self._stats_custom_lock:
+                self._global_events_account += 1
+                self._stats_engine.record_custom_event(event)
+
     def record_transaction(self, data, profile_samples=None):
         """Record a single transaction against this application."""
 
@@ -1327,6 +1346,8 @@ class Application(object):
                     _logger.debug('Sending metric data for harvest of %r.',
                             self._app_name)
 
+                    # Send metrics
+
                     metric_ids = self._active_session.send_metric_data(
                             self._period_start, period_end, metric_data)
 
@@ -1375,6 +1396,8 @@ class Application(object):
                     stats.reset_transaction_events()
                     stats.reset_synthetics_events()
 
+                    # Send error events
+
                     if (configuration.collect_error_events and
                             configuration.error_collector.capture_events and
                             configuration.error_collector.enabled):
@@ -1395,6 +1418,35 @@ class Application(object):
                                 'TransactionError/Sent', num_error_samples)
 
                     stats.reset_error_events()
+
+                    # Send custom events
+
+                    if (configuration.collect_custom_events and
+                            configuration.custom_insights_events.enabled):
+
+                        customs = stats.custom_events
+
+                        if customs.num_samples > 0:
+                            _logger.debug('Sending custom event data '
+                                    'for harvest of %r.', self._app_name)
+
+                            self._active_session.send_custom_events(
+                                    customs.sampling_info, customs.samples)
+
+                        dropped = customs.num_seen - customs.num_samples
+
+                        internal_count_metric('Supportability/Events/'
+                                'Customer/Seen', customs.num_seen)
+                        internal_count_metric('Supportability/Events/'
+                                'Customer/Sent', customs.num_samples)
+                        internal_count_metric('Supportability/Events/'
+                                'Customer/Dropped', dropped)
+
+                        if dropped > 0:
+                            _logger.debug('Dropped %d custom events out of '
+                                    '%d.', dropped, customs.num_seen)
+
+                    stats.reset_custom_events()
 
                     # Successful, so we update the stats engine with the
                     # new metric IDs and reset the reporting period

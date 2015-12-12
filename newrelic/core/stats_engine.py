@@ -232,6 +232,13 @@ class SampledDataSet(object):
     def num_samples(self):
         return len(self.samples)
 
+    @property
+    def sampling_info(self):
+        return {
+            'reservoir_size' : self.capacity,
+            'events_seen' : self.num_seen
+        }
+
     def reset(self):
         self.samples = []
         self.num_seen = 0
@@ -286,6 +293,7 @@ class StatsEngine(object):
         self.__stats_table = {}
         self.__transaction_events = SampledDataSet()
         self.__error_events = SampledDataSet()
+        self.__custom_events = SampledDataSet()
         self.__sql_stats_table = {}
         self.__slow_transaction = None
         self.__slow_transaction_map = {}
@@ -321,6 +329,10 @@ class StatsEngine(object):
     @property
     def transaction_events(self):
         return self.__transaction_events
+
+    @property
+    def custom_events(self):
+        return self.__custom_events
 
     @property
     def synthetics_events(self):
@@ -526,10 +538,16 @@ class StatsEngine(object):
         else:
             custom_params = {}
 
-            for k, v in params.items():
-                name, val = process_user_attribute(k, v)
-                if name:
-                    custom_params[name] = val
+            try:
+                for k, v in params.items():
+                    name, val = process_user_attribute(k, v)
+                    if name:
+                        custom_params[name] = val
+            except Exception:
+                _logger.debug('Parameters failed to validate for unknown '
+                        'reason. Dropping parameters for error: %r. Check '
+                        'traceback for clues.', fullname, exc_info=True)
+                custom_params = {}
 
             attributes = create_user_attributes(custom_params,
                     settings.attribute_filter)
@@ -605,6 +623,17 @@ class StatsEngine(object):
         error_event = [intrinsics, error.parameters['userAttributes'], {}]
 
         return error_event
+
+    def record_custom_event(self, event):
+
+        settings = self.__settings
+
+        if not settings:
+            return
+
+        if (settings.collect_custom_events
+                and settings.custom_insights_events.enabled):
+            self.__custom_events.add(event)
 
     def record_custom_metric(self, name, value):
         """Record a single value metric, merging the data with any data
@@ -770,10 +799,6 @@ class StatsEngine(object):
 
         settings = self.__settings
 
-        error_collector = settings.error_collector
-        transaction_tracer = settings.transaction_tracer
-        slow_sql = settings.slow_sql
-
         # Record the apdex, value and time metrics generated from the
         # transaction. Whether time metrics are reported as distinct
         # metrics or into a rollup is in part controlled via settings
@@ -804,6 +829,8 @@ class StatsEngine(object):
         # Capture any errors if error collection is enabled.
         # Only retain maximum number allowed per harvest.
 
+        error_collector = settings.error_collector
+
         if (error_collector.enabled and settings.collect_errors and
                 len(self.__transaction_errors) <
                 settings.agent_limits.errors_per_harvest):
@@ -822,7 +849,7 @@ class StatsEngine(object):
 
         # Capture any sql traces if transaction tracer enabled.
 
-        if slow_sql.enabled and settings.collect_traces:
+        if settings.slow_sql.enabled and settings.collect_traces:
             with InternalTrace('Supportability/Python/TransactionNode/Calls/'
                     'slow_sql_nodes'):
                 for node in transaction.slow_sql_nodes(self):
@@ -835,8 +862,10 @@ class StatsEngine(object):
         # recording of transaction trace for this transaction
         # has not been suppressed.
 
+        transaction_tracer = settings.transaction_tracer
+
         if (not transaction.suppress_transaction_trace and
-                    transaction_tracer.enabled and settings.collect_traces):
+                transaction_tracer.enabled and settings.collect_traces):
 
             # Transactions saved for x-ray session and Synthetics transactions
             # do not depend on the transaction threshold.
@@ -868,6 +897,12 @@ class StatsEngine(object):
 
             event = transaction.transaction_event(self.__stats_table)
             self.__transaction_events.add(event)
+
+        # Merge in custom events
+
+        if (settings.collect_custom_events and
+                settings.custom_insights_events.enabled):
+            self.custom_events.merge(transaction.custom_events)
 
     @internal_trace('Supportability/Python/StatsEngine/Calls/metric_data')
     def metric_data(self, normalizer=None):
@@ -1242,6 +1277,7 @@ class StatsEngine(object):
 
         self.reset_transaction_events()
         self.reset_error_events()
+        self.reset_custom_events()
 
     def reset_metric_stats(self):
         """Resets the accumulated statistics back to initial state for
@@ -1269,6 +1305,13 @@ class StatsEngine(object):
                     self.__settings.error_collector.max_event_samples_stored)
         else:
             self.__error_events = SampledDataSet()
+
+    def reset_custom_events(self):
+        if self.__settings is not None:
+            self.__custom_events = SampledDataSet(
+                    self.__settings.custom_insights_events.max_samples_stored)
+        else:
+            self.__custom_events = SampledDataSet()
 
     def reset_synthetics_events(self):
         """Resets the accumulated statistics back to initial state for
@@ -1341,6 +1384,7 @@ class StatsEngine(object):
 
         self.reset_transaction_events()
         self.reset_error_events()
+        self.reset_custom_events()
 
         return stats
 
@@ -1371,6 +1415,7 @@ class StatsEngine(object):
         self._merge_synthetics_events(snapshot)
         self._merge_error_events(snapshot)
         self._merge_error_traces(snapshot)
+        self._merge_custom_events(snapshot)
         self._merge_sql(snapshot)
         self._merge_traces(snapshot)
 
@@ -1391,6 +1436,7 @@ class StatsEngine(object):
         self._merge_transaction_events(snapshot, rollback=True)
         self._merge_synthetics_events(snapshot, rollback=True)
         self._merge_error_events(snapshot)
+        self._merge_custom_events(snapshot, rollback=True)
 
     def merge_metric_stats(self, snapshot):
         """Merges metric data from a snapshot. This is used both when merging
@@ -1459,6 +1505,10 @@ class StatsEngine(object):
         # rollback. There may be multiple error events per transaction.
 
         self.__error_events.merge(snapshot.error_events)
+
+    def _merge_custom_events(self, snapshot, rollback=False):
+
+        self.__custom_events.merge(snapshot.custom_events)
 
     def _merge_error_traces(self, snapshot):
 

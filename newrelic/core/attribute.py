@@ -40,6 +40,7 @@ MAX_64_BIT_INT = 2 ** 63 -1
 class NameTooLongException(Exception): pass
 class NameIsNotStringException(Exception): pass
 class IntTooLargeException(Exception): pass
+class CastingFailureException(Exception): pass
 
 class Attribute(_Attribute):
 
@@ -104,7 +105,7 @@ def check_name_is_string(name):
 
 def check_max_int(value, max_int=MAX_64_BIT_INT):
     if isinstance(value, six.integer_types) and value > max_int:
-        raise IntTooLargeException
+        raise IntTooLargeException()
 
 def process_user_attribute(name, value):
 
@@ -124,6 +125,8 @@ def process_user_attribute(name, value):
         check_name_length(name)
         check_max_int(value)
 
+        value = sanitize(value)
+
     except NameIsNotStringException:
         _logger.debug('Attribute name must be a string. Dropping '
                 'attribute: %r=%r', name, value)
@@ -139,11 +142,12 @@ def process_user_attribute(name, value):
                 'Dropping attribute: %r=%r', name, value)
         return FAILED_RESULT
 
+    except CastingFailureException:
+        _logger.debug('Attribute value cannot be cast to a string. '
+                'Dropping attribute: %r=%r', name, value)
+        return FAILED_RESULT
+
     else:
-
-        # Cast to string, if necessary
-
-        value = sanitize(value)
 
         # Check length after casting
 
@@ -164,14 +168,21 @@ def sanitize(value):
 
     # Return value unchanged, if it's a valid type that is supported by
     # Insights. Otherwise, convert value to a string.
+    #
+    # Raise CastingFailureException, if str(value) somehow fails.
 
     valid_value_types = (six.text_type, six.binary_type, bool, float,
             six.integer_types)
 
     if not isinstance(value, valid_value_types):
         original = value
-        value = str(value)
-        _logger.debug('Attribute value is of type: %r. Casting %r to '
-                'string: %s', type(original), original, value)
+
+        try:
+            value = str(value)
+        except Exception:
+            raise CastingFailureException()
+        else:
+            _logger.debug('Attribute value is of type: %r. Casting %r to '
+                    'string: %s', type(original), original, value)
 
     return value

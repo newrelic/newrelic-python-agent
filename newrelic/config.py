@@ -389,6 +389,10 @@ def _process_configuration(section):
                      'get', _map_inc_excl_attributes)
     _process_setting(section, 'transaction_events.attributes.include',
                      'get', _map_inc_excl_attributes)
+    _process_setting(section, 'custom_insights_events.enabled',
+                     'getboolean', None)
+    _process_setting(section, 'custom_insights_events.max_samples_stored',
+                     'getint', None)
     _process_setting(section, 'local_daemon.socket_path',
                      'get', None)
     _process_setting(section, 'local_daemon.synchronous_startup',
@@ -747,6 +751,10 @@ def apply_local_high_security_mode_setting(settings):
         settings.strip_exception_messages.enabled = True
         _logger.info(log_template, 'strip_exception_messages.enabled',
                 False, True)
+
+    if settings.custom_insights_events.enabled:
+        settings.custom_insights_events.enabled = False
+        _logger.info(log_template, 'custom_insights_events', True, False)
 
     return settings
 

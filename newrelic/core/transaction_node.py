@@ -22,8 +22,8 @@ from newrelic.core.attribute_filter import (DST_ERROR_COLLECTOR,
 _TransactionNode = namedtuple('_TransactionNode',
         ['settings', 'path', 'type', 'group', 'name', 'port', 'request_uri',
         'response_code', 'queue_start','start_time', 'end_time', 'duration',
-        'exclusive', 'children', 'errors', 'slow_sql', 'apdex_t',
-        'suppress_apdex', 'custom_metrics', 'guid', 'cpu_time',
+        'exclusive', 'children', 'errors', 'slow_sql', 'custom_events',
+        'apdex_t', 'suppress_apdex', 'custom_metrics', 'guid', 'cpu_time',
         'suppress_transaction_trace', 'client_cross_process_id',
         'referring_transaction_guid', 'record_tt', 'synthetics_resource_id',
         'synthetics_job_id', 'synthetics_monitor_id', 'synthetics_header',
@@ -532,4 +532,3 @@ class TransactionNode(_TransactionNode):
         self._event_intrinsics_cache = intrinsics.copy()
 
         return intrinsics
-

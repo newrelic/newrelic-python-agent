@@ -22,7 +22,7 @@ import newrelic.core.transaction_node
 import newrelic.core.database_node
 import newrelic.core.error_node
 
-from newrelic.core.stats_engine import CustomMetrics
+from newrelic.core.stats_engine import CustomMetrics, SampledDataSet
 from newrelic.core.transaction_cache import transaction_cache
 from newrelic.core.thread_utilization import utilization_tracker
 
@@ -31,6 +31,8 @@ from ..core.attribute import (create_attributes, create_agent_attributes,
         MAX_NUM_USER_ATTRIBUTES)
 from ..core.attribute_filter import (DST_NONE, DST_ERROR_COLLECTOR,
         DST_TRANSACTION_TRACER)
+from ..core.config import DEFAULT_RESERVOIR_SIZE
+from ..core.custom_event import process_event_type, create_custom_event
 from ..core.stack_trace import exception_stack
 from ..common.encoding_utils import generate_path_hash
 
@@ -87,6 +89,7 @@ class Transaction(object):
 
         self._errors = []
         self._slow_sql = []
+        self._custom_events = SampledDataSet(capacity=DEFAULT_RESERVOIR_SIZE)
 
         self._stack_trace_count = 0
         self._explain_plan_count = 0
@@ -452,6 +455,7 @@ class Transaction(object):
                 children=tuple(children),
                 errors=tuple(self._errors),
                 slow_sql=tuple(self._slow_sql),
+                custom_events=self._custom_events,
                 apdex_t=self.apdex,
                 suppress_apdex=self.suppress_apdex,
                 custom_metrics=self._custom_metrics,
@@ -735,32 +739,32 @@ class Transaction(object):
         settings = self._settings
         req_env = self._request_environment
 
-        if req_env.get('REQUEST_METHOD', None):
-            a_attrs['request.method'] = req_env['REQUEST_METHOD']
-        if req_env.get('HTTP_USER_AGENT', None):
-            a_attrs['request.headers.userAgent'] = req_env['HTTP_USER_AGENT']
-        if req_env.get('HTTP_REFERER', None):
-            a_attrs['request.headers.referer'] = req_env['HTTP_REFERER']
-        if req_env.get('HTTP_HOST', None):
-            a_attrs['request.headers.host'] = req_env['HTTP_HOST']
         if req_env.get('HTTP_ACCEPT', None):
             a_attrs['request.headers.accept'] = req_env['HTTP_ACCEPT']
-        if req_env.get('CONTENT_TYPE', None):
-            a_attrs['request.headers.contentType'] = req_env['CONTENT_TYPE']
         if req_env.get('CONTENT_LENGTH', None):
             a_attrs['request.headers.contentLength'] = req_env['CONTENT_LENGTH']
+        if req_env.get('CONTENT_TYPE', None):
+            a_attrs['request.headers.contentType'] = req_env['CONTENT_TYPE']
+        if req_env.get('HTTP_HOST', None):
+            a_attrs['request.headers.host'] = req_env['HTTP_HOST']
+        if req_env.get('HTTP_REFERER', None):
+            a_attrs['request.headers.referer'] = req_env['HTTP_REFERER']
+        if req_env.get('HTTP_USER_AGENT', None):
+            a_attrs['request.headers.userAgent'] = req_env['HTTP_USER_AGENT']
+        if req_env.get('REQUEST_METHOD', None):
+            a_attrs['request.method'] = req_env['REQUEST_METHOD']
 
         resp_props = self._response_properties
 
+        if resp_props.get('CONTENT_LENGTH', None):
+            a_attrs['response.headers.contentLength'] = resp_props['CONTENT_LENGTH']
+        if resp_props.get('CONTENT_TYPE', None):
+            a_attrs['response.headers.contentType'] = resp_props['CONTENT_TYPE']
         if resp_props.get('STATUS', None):
             a_attrs['response.status'] = resp_props['STATUS']
-        if resp_props.get('CONTENT_LENGTH', None):
-            a_attrs['response.contentLength'] = resp_props['CONTENT_LENGTH']
-        if resp_props.get('CONTENT_TYPE', None):
-            a_attrs['response.contentType'] = resp_props['CONTENT_TYPE']
 
         if self.read_duration != 0:
-            a_attrs['wsgi.input.seconds'] = '%.4f' % self.read_duration
+            a_attrs['wsgi.input.seconds'] = self.read_duration
         if self._bytes_read != 0:
             a_attrs['wsgi.input.bytes'] = self._bytes_read
         if self._calls_read != 0:
@@ -771,7 +775,7 @@ class Transaction(object):
             a_attrs['wsgi.input.calls.readlines'] = self._calls_readlines
 
         if self.sent_duration != 0:
-            a_attrs['wsgi.output.seconds'] = '%.4f' % self.sent_duration
+            a_attrs['wsgi.output.seconds'] = self.sent_duration
         if self._bytes_sent != 0:
             a_attrs['wsgi.output.bytes'] = self._bytes_sent
         if self._calls_write != 0:
@@ -784,7 +788,7 @@ class Transaction(object):
         if self._thread_utilization_value:
             a_attrs['thread.concurrency'] = self._thread_utilization_value
         if self.queue_wait != 0 :
-            a_attrs['webfrontend.queue.seconds'] = '%.4f' % self.queue_wait
+            a_attrs['webfrontend.queue.seconds'] = self.queue_wait
 
         agent_attributes = create_agent_attributes(a_attrs,
                 self.attribute_filter)
@@ -1017,10 +1021,16 @@ class Transaction(object):
                 _logger.debug('Cannot add custom parameters in '
                         'High Security Mode.')
         else:
-            for k, v in params.items():
-                name, val = process_user_attribute(k, v)
-                if name:
-                    custom_params[name] = val
+            try:
+                for k, v in params.items():
+                    name, val = process_user_attribute(k, v)
+                    if name:
+                        custom_params[name] = val
+            except Exception:
+                _logger.debug('Parameters failed to validate for unknown '
+                        'reason. Dropping parameters for error: %r. Check '
+                        'traceback for clues.', fullname, exc_info=True)
+                custom_params = {}
 
         # Check to see if we need to strip the message before recording it.
 
@@ -1092,6 +1102,19 @@ class Transaction(object):
     def record_custom_metrics(self, metrics):
         for name, value in metrics:
             self._custom_metrics.record_custom_metric(name, value)
+
+    def record_custom_event(self, event_type, params):
+        settings = self._settings
+
+        if not settings:
+            return
+
+        if not settings.custom_insights_events.enabled:
+            return
+
+        event = create_custom_event(event_type, params)
+        if event:
+            self._custom_events.add(event)
 
     def record_metric(self, name, value):
         warnings.warn('Internal API change. Use record_custom_metric() '
@@ -1370,3 +1393,21 @@ def record_custom_metrics(metrics, application=None):
     else:
         if application.enabled:
             application.record_custom_metrics(metrics)
+
+def record_custom_event(event_type, params, application=None):
+    """Record a custom event.
+
+    Args:
+        event_type (str): The type (name) of the custom event.
+        params (dict): Attributes to add to the event.
+        application (newrelic.api.Application): Application instance.
+
+    """
+
+    if application is None:
+        transaction = current_transaction()
+        if transaction:
+            transaction.record_custom_event(event_type, params)
+    else:
+        if application.enabled:
+            application.record_custom_event(event_type, params)

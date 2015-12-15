@@ -1,7 +1,7 @@
 import logging
 
-from newrelic.agent import (callable_name, function_wrapper,
-    wrap_function_wrapper)
+from newrelic.agent import (FunctionTrace, callable_name,
+    function_wrapper, wrap_function_wrapper)
 from .util import retrieve_current_transaction
 
 _logger = logging.getLogger(__name__)
@@ -122,6 +122,34 @@ def _nr_wrapper_Runner_run_(wrapped, instance, args, kwargs):
 
     return result
 
+@function_wrapper
+def _wrap_decorated(wrapped, instance, args, kwargs):
+    # Wraps the output of a tornado decorator.
+    #
+    # For an example see our wrapper for coroutine,
+    # _nr_wrapper_coroutine_wrapper_.
+
+    transaction = retrieve_current_transaction()
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    name = callable_name(wrapped)
+    with FunctionTrace(transaction, name=name):
+        return wrapped(*args, **kwargs)
+
+# We explictly wrap the first time we enter a coroutine decorated function.
+def _nr_wrapper_coroutine_wrapper_(wrapped, instance, args, kwargs):
+    func = wrapped(*args, **kwargs)
+    return _wrap_decorated(func)
+
+# We explicitly wrap the first time we enter an engine decorated function.
+def _nr_wrapper_engine_wrapper_(wrapped, instance, args, kwargs):
+    func = wrapped(*args, **kwargs)
+    return _wrap_decorated(func)
+
 def instrument_tornado_gen(module):
     wrap_function_wrapper(module, 'Runner.__init__', _nr_wrapper_Runner__init__)
     wrap_function_wrapper(module, 'Runner.run', _nr_wrapper_Runner_run_)
+    wrap_function_wrapper(module, 'coroutine', _nr_wrapper_coroutine_wrapper_)
+    wrap_function_wrapper(module, 'engine', _nr_wrapper_engine_wrapper_)

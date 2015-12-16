@@ -1945,6 +1945,9 @@ def _process_module_builtin_defaults():
         _process_module_definition('tornado.httpserver',
                 'newrelic.hooks.framework_tornado_r3.httpserver',
                 'instrument_tornado_httpserver')
+        _process_module_definition('tornado.httpclient',
+                'newrelic.hooks.framework_tornado_r3.httpclient',
+                'instrument_tornado_httpclient')
         _process_module_definition('tornado.httputil',
                 'newrelic.hooks.framework_tornado_r3.httputil',
                 'instrument_tornado_httputil')

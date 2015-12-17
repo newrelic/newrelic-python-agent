@@ -4,12 +4,7 @@ from newrelic.agent import (ExternalTrace, FunctionTrace, function_wrapper,
         wrap_function_wrapper, callable_name)
 from .util import retrieve_current_transaction
 
-def _nr_wrapper_httpclient_HTTPClient_fetch_(wrapped, instance, args, kwargs):
-
-    transaction = retrieve_current_transaction()
-
-    if transaction is None:
-        return wrapped(*args, **kwargs)
+def _extract_url(*args, **kwargs):
 
     def _extract_request(request, *args, **kwargs):
         return request
@@ -21,6 +16,17 @@ def _nr_wrapper_httpclient_HTTPClient_fetch_(wrapped, instance, args, kwargs):
         url = request.url
     else:
         url = request
+
+    return url
+
+def _nr_wrapper_httpclient_HTTPClient_fetch_(wrapped, instance, args, kwargs):
+
+    transaction = retrieve_current_transaction()
+
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    url = _extract_url(*args, **kwargs)
 
     with ExternalTrace(transaction, 'tornado.httpclient', url):
         return wrapped(*args, **kwargs)
@@ -33,16 +39,7 @@ def _nr_wrapper_httpclient_AsyncHTTPClient_fetch_(
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    def _extract_request(request, *args, **kwargs):
-        return request
-
-    request = _extract_request(*args, **kwargs)
-
-    # request is either a string or a HTTPRequest object
-    if isinstance(request, HTTPRequest):
-        url = request.url
-    else:
-        url = request
+    url = _extract_url(*args, **kwargs)
 
     # For some reason if callback is not passed in to fetch, we don't see its
     # default value, None, in args or kwargs. We extract it now.

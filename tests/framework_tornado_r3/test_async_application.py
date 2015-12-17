@@ -15,7 +15,8 @@ from _test_async_application import (get_tornado_app, HelloRequestHandler,
         NamedStackContextWrapRequestHandler, MultipleCallbacksRequestHandler,
         FinishExceptionRequestHandler, ReturnExceptionRequestHandler,
         IOLoopDivideRequestHandler, EngineDivideRequestHandler,
-        PrepareOnFinishRequestHandler, PrepareOnFinishRequestHandlerSubclass)
+        PrepareOnFinishRequestHandler, PrepareOnFinishRequestHandlerSubclass,
+        TestExternalHTTPServer)
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
@@ -542,3 +543,85 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body,
             PrepareOnFinishRequestHandlerSubclass.RESPONSE)
+
+    # The port number 8989 matches the port number in TestExternalHTTPServer
+    scoped_metrics = [('Function/_test_async_application:'
+            'AsyncFetchRequestHandler.get', 1),
+            ('Function/_test_async_application:'
+            'AsyncFetchRequestHandler.process_response', 1),
+            ('Function/_test_async_application:AsyncFetchRequestHandler.'
+             'process_response [http://localhost:8989]', 1),
+            ('External/localhost:8989/tornado.httpclient/', 1)
+    ]
+
+    rollup_metrics = [('External/allWeb', 1), ('External/all', 1)]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:AsyncFetchRequestHandler.get',
+            scoped_metrics=scoped_metrics,
+            rollup_metrics=rollup_metrics)
+    def test_async_httpclient_raw_url_fetch(self):
+        external = TestExternalHTTPServer()
+        external.start()
+        response = self.fetch_response('/async-fetch/rawurl/%s' % external.port)
+        external.stop()
+
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, external.RESPONSE)
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:AsyncFetchRequestHandler.get',
+            scoped_metrics=scoped_metrics,
+            rollup_metrics=rollup_metrics)
+    def test_async_httpclient_request_object_fetch(self):
+        external = TestExternalHTTPServer()
+        external.start()
+        response = self.fetch_response(
+                '/async-fetch/requestobj/%s' % external.port)
+        external.stop()
+
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, external.RESPONSE)
+
+    # The port number 8989 matches the port number in TestExternalHTTPServer
+    scoped_metrics = [('Function/_test_async_application:'
+            'SyncFetchRequestHandler.get', 1),
+            ('External/localhost:8989/tornado.httpclient/', 1)
+    ]
+
+    rollup_metrics = [('External/allWeb', 1), ('External/all', 1)]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:SyncFetchRequestHandler.get',
+            scoped_metrics=scoped_metrics,
+            rollup_metrics=rollup_metrics)
+    def test_sync_httpclient_raw_url_fetch(self):
+        external = TestExternalHTTPServer()
+        external.start()
+        response = self.fetch_response('/sync-fetch/rawurl/%s' % external.port)
+        external.stop()
+
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, external.RESPONSE)
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:SyncFetchRequestHandler.get',
+            scoped_metrics=scoped_metrics,
+            rollup_metrics=rollup_metrics)
+    def test_sync_httpclient_request_object_fetch(self):
+        external = TestExternalHTTPServer()
+        external.start()
+        response = self.fetch_response(
+                '/sync-fetch/requestobj/%s' % external.port)
+        external.stop()
+
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, external.RESPONSE)

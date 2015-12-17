@@ -1,10 +1,11 @@
+import BaseHTTPServer
 import functools
 import threading
 import tornado
 
 from newrelic.agent import function_wrapper
 
-from tornado.httpclient import HTTPClient
+from tornado.httpclient import AsyncHTTPClient, HTTPClient, HTTPRequest
 from tornado.web import Application, RequestHandler
 from tornado.httpserver import HTTPServer
 
@@ -234,6 +235,39 @@ class PrepareOnFinishRequestHandlerSubclass(PrepareOnFinishRequestHandler):
     def get(self):
         self.finish(self.RESPONSE)
 
+class AsyncFetchRequestHandler(RequestHandler):
+
+    @tornado.web.asynchronous
+    def get(self, request_type, port):
+        url = 'http://localhost:%s' % port
+        client = AsyncHTTPClient()
+        # We test with a request object and a raw url as well as using the
+        # callback as a positional argument and as a keyword argument.
+        if request_type == 'requestobj':
+            request = HTTPRequest(url)
+            client.fetch(url, self.process_response)
+        else:
+            request = url
+            client.fetch(url, callback=self.process_response)
+
+    def process_response(self, response):
+        self.finish(response.body)
+
+class SyncFetchRequestHandler(RequestHandler):
+
+    def get(self, request_type, port):
+        url = 'http://localhost:%s' % port
+        client = HTTPClient()
+
+        # We test with a either request object or a raw url.
+        if request_type == 'requestobj':
+            request = HTTPRequest(url)
+        else:
+            request = url
+
+        response = client.fetch(url)
+        self.finish(response.body)
+
 def get_tornado_app():
     return Application([
         ('/', HelloRequestHandler),
@@ -251,4 +285,45 @@ def get_tornado_app():
         ('/nested-divide/(\d+)/(\d+)/?', NestedCoroutineDivideRequestHandler),
         ('/bookend', PrepareOnFinishRequestHandler),
         ('/bookend-subclass', PrepareOnFinishRequestHandlerSubclass),
+        ('/async-fetch/(\w)+/(\d+)', AsyncFetchRequestHandler),
+        ('/sync-fetch/(\w)+/(\d+)', SyncFetchRequestHandler),
     ])
+
+# This defines an external server we can make requests to. We don't make
+# requests to other urls in our Torndao app because:
+# 1) We don't want to pollute the record transaction output in a test.
+# 2) When we make a synchronous fetch, we don't want to block our tests.
+
+class TestExternalHTTPServer(threading.Thread):
+    RESPONSE = 'external response'
+
+    class ExternalHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(TestExternalHTTPServer.RESPONSE)
+
+    def __init__(self, *args, **kwargs):
+        super(TestExternalHTTPServer, self).__init__(*args, **kwargs)
+        # We hardcode the port number to 8989. This allows us to easily use the
+        # port number in the expected metrics that we validate without
+        # reworking the fixtures. If we want to safer and have the OS hand us an
+        # available port we would do:
+        #
+        # self.httpd = BaseHTTPServer.HTTPServer(('localhost', 0),
+        #         TestExternalHTTPServer.ExternalHandler)
+        # self.port = self.httpd.socket.getsockname()[1]
+        self.port = 8989
+        self.httpd = BaseHTTPServer.HTTPServer(('localhost', 8989),
+                TestExternalHTTPServer.ExternalHandler)
+        self.daemon = True
+
+    def run(self):
+        self.httpd.serve_forever()
+
+    def stop(self):
+        # Shutdowns the httpd server.
+        self.httpd.shutdown()
+        # Close the socket so we can reuse it.
+        self.httpd.socket.close()
+        self.join()

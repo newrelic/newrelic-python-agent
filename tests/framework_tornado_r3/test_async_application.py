@@ -200,7 +200,7 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
     def test_head_method_one_callback(self):
         response = self.fetch_response('/one-callback', method="HEAD")
         self.assertEqual(response.code, 200)
-        self.assertEqual(response.body, '')
+        self.assertEqual(response.body, b'')
 
     scoped_metrics = [('Function/_test_async_application:'
             'OneCallbackRequestHandler.delete', 1),
@@ -416,14 +416,17 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
                 10000.0, 10.0, 10000.0/10.0)).encode('ascii')
         self.assertEqual(response.body, expected)
 
+    # We have 2 calls to get. One is from the wrapped request handler and one
+    # is from it being a coroutine.
+    scoped_metrics = [
+            ('Function/_test_async_application:IOLoopDivideRequestHandler.get',
+            2)]
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[])
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:IOLoopDivideRequestHandler.get',
-            # PYTHON-1810 means We don't properly instrument the first time we
-            # enter a coroutine. Once that is fixed we should start seeing a
-            # scoped metric and should capture the scoped metric here.
-            # scoped_metrics=scoped_metrics,
+            scoped_metrics=scoped_metrics,
             forgone_metric_substrings=['lambda'])
     def test_immediate_coroutine_names_not_lambda(self):
         response = self.fetch_response('/ioloop-divide/10000/10/immediate')
@@ -453,19 +456,48 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
                 10000.0, 10.0, 10000.0/10.0)).encode('ascii')
         self.assertEqual(response.body, expected)
 
+    # There is an issue with callable name. With the coroutine wrapper, we
+    # preserve the name of the method and get the class name in the method name
+    # path. However, with the gen.engine wrapper, we get the method name without
+    # the classname. We get the full name from wrapping the GET request handler.
+    scoped_metrics = select_python_version(
+            py2=[('Function/_test_async_application:'
+                'EngineDivideRequestHandler.get', 1),
+                ('Function/_test_async_application:get', 1)],
+            py3=[('Function/_test_async_application:EngineDivideRequestHandler.'
+                  'get', 2)])
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[])
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:EngineDivideRequestHandler.get',
-            # PYTHON-1810 means We don't properly instrument the first time we
-            # enter a coroutine. Once that is fixed we should start seeing a
-            # scoped metric and should capture the scoped metric here.
-            # scoped_metrics=scoped_metrics,
+            scoped_metrics=scoped_metrics,
             forgone_metric_substrings=['lambda'])
     def test_immediate_engine_names_not_lambda(self):
         response = self.fetch_response('/engine-divide/10000/10/immediate')
         expected = (EngineDivideRequestHandler.RESPONSE % (
                 10000.0, 10.0, 10000.0/10.0)).encode('ascii')
+        self.assertEqual(response.body, expected)
+
+    scoped_metrics = select_python_version(
+            py2=[('Function/_test_async_application:'
+                'NestedCoroutineDivideRequestHandler.do_divide', 1),
+                ('Function/_test_async_application:do_divide (coroutine)', 1)],
+            py3=[('Function/_test_async_application:'
+                'NestedCoroutineDivideRequestHandler.do_divide', 1),
+                ('Function/_test_async_application:NestedCoroutineDivide'
+                'RequestHandler.do_divide (coroutine)', 1)])
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(errors=[])
+    @tornado_validate_count_transaction_metrics(
+        '_test_async_application:NestedCoroutineDivideRequestHandler.get',
+        scoped_metrics=scoped_metrics,
+        forgone_metric_substrings=['lambda'])
+    def test_coroutine_first_time(self):
+        response = self.fetch_response('/nested-divide/100/10/')
+        expected = (EngineDivideRequestHandler.RESPONSE % (
+                100.0, 10.0, 100.0/10.0)).encode('ascii')
         self.assertEqual(response.body, expected)
 
     scoped_metrics = [('Function/_test_async_application:'

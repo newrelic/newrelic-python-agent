@@ -204,6 +204,20 @@ class EngineDivideRequestHandler(DivideRequestHandler):
         response = self.RESPONSE % (a, b, quotient)
         self.finish(response.encode('ascii'))
 
+class NestedCoroutineDivideRequestHandler(DivideRequestHandler):
+
+    @tornado.gen.coroutine
+    def get(self, a, b):
+        a = float(a)
+        b = float(b)
+        yield self.do_divide(a, b)
+        response = self.RESPONSE % (a, b,  self.quotient)
+        self.finish(response.encode('ascii'))
+
+    @tornado.gen.coroutine
+    def do_divide(self, a, b):
+        self.quotient = yield self.divide(a, b, False)
+
 class PrepareOnFinishRequestHandler(RequestHandler):
     RESPONSE = b'bookend get'
 
@@ -234,6 +248,7 @@ def get_tornado_app():
         ('/return-exception', ReturnExceptionRequestHandler),
         ('/ioloop-divide/(\d+)/(\d+)/?(\w+)?', IOLoopDivideRequestHandler),
         ('/engine-divide/(\d+)/(\d+)/?(\w+)?', EngineDivideRequestHandler),
+        ('/nested-divide/(\d+)/(\d+)/?', NestedCoroutineDivideRequestHandler),
         ('/bookend', PrepareOnFinishRequestHandler),
         ('/bookend-subclass', PrepareOnFinishRequestHandlerSubclass),
     ])

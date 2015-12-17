@@ -41,35 +41,22 @@ def _nr_wrapper_httpclient_AsyncHTTPClient_fetch_(
 
     url = _extract_url(*args, **kwargs)
 
-    # For some reason if callback is not passed in to fetch, we don't see its
-    # default value, None, in args or kwargs. We extract it now.
+    # For some reason, if callback is not passed in to fetch, we don't see its
+    # default value, None, in args or kwargs. If callback exists we extract it
+    # now and replace it with a wrapped version to associate the url with the
+    # callback.
+    @function_wrapper
+    def _wrap_callback(wrapped, instance, args, kwargs):
+        name = callable_name(wrapped)
+        name = "%s [%s]" % (name, url)
+        with FunctionTrace(transaction, name=name):
+            return wrapped(*args, **kwargs)
+
     if len(args) > 1:
-        callback = args[1]
+        args = list(args)
+        args[1] = _wrap_callback(args[1])
     elif 'callback' in kwargs:
-        callback = kwargs['callback']
-    else:
-        callback = None
-
-    if callback is not None:
-        # We want to time the response handler and change its name to associate
-        # it with the url.
-        @function_wrapper
-        def _wrap_callback(wrapped, instance, args, kwargs):
-            name = callable_name(wrapped)
-            name = "%s [%s]" % (name, url)
-            with FunctionTrace(transaction, name=name):
-                return wrapped(*args, **kwargs)
-
-        wrapped_callback = _wrap_callback(callback)
-
-        # We want to replace the callback with our wrapped_callback. It was
-        # either passed in as a positional argument at index 1 or as a keyword
-        # argument using 'callback'.
-        if len(args) > 1:
-            args = list(args)
-            args[1] = wrapped_callback
-        else:
-            kwargs['callback'] = wrapped_callback
+        kwargs['callback'] = _wrap_callback(kwargs['callback'])
 
     with ExternalTrace(transaction, 'tornado.httpclient', url):
         return wrapped(*args, **kwargs)

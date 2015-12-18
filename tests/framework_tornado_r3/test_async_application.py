@@ -408,8 +408,8 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
     @tornado_validate_errors(errors=[])
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:IOLoopDivideRequestHandler.get',
-            scoped_metrics=scoped_metrics,
-            forgone_metric_substrings=['lambda'])
+            scoped_metrics=scoped_metrics,)
+            # forgone_metric_substrings=['lambda']) # may add after PYTHON-1847
     def test_coroutine_names_not_lambda(self):
         response = self.fetch_response('/ioloop-divide/10000/10')
         expected = (IOLoopDivideRequestHandler.RESPONSE % (
@@ -426,8 +426,8 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
     @tornado_validate_errors(errors=[])
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:IOLoopDivideRequestHandler.get',
-            scoped_metrics=scoped_metrics,
-            forgone_metric_substrings=['lambda'])
+            scoped_metrics=scoped_metrics,)
+            # forgone_metric_substrings=['lambda']) # may add after PYTHON-1847
     def test_immediate_coroutine_names_not_lambda(self):
         response = self.fetch_response('/ioloop-divide/10000/10/immediate')
         expected = (IOLoopDivideRequestHandler.RESPONSE % (
@@ -448,8 +448,8 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
     @tornado_validate_errors(errors=[])
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:EngineDivideRequestHandler.get',
-            scoped_metrics=scoped_metrics,
-            forgone_metric_substrings=['lambda'])
+            scoped_metrics=scoped_metrics,)
+            # forgone_metric_substrings=['lambda']) # may add after PYTHON-1847
     def test_engine_names_not_lambda(self):
         response = self.fetch_response('/engine-divide/10000/10')
         expected = (EngineDivideRequestHandler.RESPONSE % (
@@ -471,8 +471,8 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
     @tornado_validate_errors(errors=[])
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:EngineDivideRequestHandler.get',
-            scoped_metrics=scoped_metrics,
-            forgone_metric_substrings=['lambda'])
+            scoped_metrics=scoped_metrics,)
+            # forgone_metric_substrings=['lambda']) # may add after PYTHON-1847
     def test_immediate_engine_names_not_lambda(self):
         response = self.fetch_response('/engine-divide/10000/10/immediate')
         expected = (EngineDivideRequestHandler.RESPONSE % (
@@ -492,8 +492,8 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
     @tornado_validate_errors(errors=[])
     @tornado_validate_count_transaction_metrics(
         '_test_async_application:NestedCoroutineDivideRequestHandler.get',
-        scoped_metrics=scoped_metrics,
-        forgone_metric_substrings=['lambda'])
+        scoped_metrics=scoped_metrics,)
+        # forgone_metric_substrings=['lambda']) # may add after PYTHON-1847
     def test_coroutine_first_time(self):
         response = self.fetch_response('/nested-divide/100/10/')
         expected = (EngineDivideRequestHandler.RESPONSE % (

@@ -1,7 +1,11 @@
-import BaseHTTPServer
 import functools
 import threading
 import tornado
+
+try:
+    import BaseHTTPServer
+except:
+    import http.server as BaseHTTPServer
 
 from newrelic.agent import function_wrapper
 
@@ -295,7 +299,7 @@ def get_tornado_app():
 # 2) When we make a synchronous fetch, we don't want to block our tests.
 
 class TestExternalHTTPServer(threading.Thread):
-    RESPONSE = 'external response'
+    RESPONSE = b'external response'
 
     class ExternalHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         def do_GET(self):

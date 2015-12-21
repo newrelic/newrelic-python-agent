@@ -85,6 +85,7 @@ def initiate_request_monitoring(request):
 
     # Records state of transaction
     transaction._is_finalized = False
+    transaction._ref_count = 0
 
     # Record framework information for generation of framework metrics.
 

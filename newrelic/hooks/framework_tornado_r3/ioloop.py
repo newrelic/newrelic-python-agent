@@ -1,8 +1,8 @@
 import logging
 import sys
 
-from newrelic.agent import wrap_function_wrapper
-from .util import finalize_transaction, record_exception
+from newrelic.agent import wrap_function_wrapper, FunctionWrapper
+from .util import finalize_transaction, record_exception, retrieve_current_transaction
 
 _logger = logging.getLogger(__name__)
 
@@ -26,11 +26,19 @@ def _nr_wrapper_IOLoop__run_callback_(wrapped, instance, args, kwargs):
 
     ret = wrapped(*args, **kwargs)
 
-    # Finalize the callback if it is done.
     if hasattr(callback, '_nr_transaction'):
         transaction = callback._nr_transaction
-        if transaction._is_request_finished and not transaction._is_finalized:
+        transaction._ref_count -= 1
+
+        # Mark this callback as ran so calls to cancel timers know not to
+        # decrement the callback ref count
+
+        callback._nr_callback_ran = True
+
+        # Finalize the transaction if this is the last callback.
+        if transaction._ref_count == 0:
             finalize_transaction(callback._nr_transaction)
+
     return ret
 
 def _nr_wrapper_IOLoop_handle_callback_exception_(
@@ -38,8 +46,47 @@ def _nr_wrapper_IOLoop_handle_callback_exception_(
     record_exception(sys.exc_info())
     return wrapped(*args, **kwargs)
 
+def _nr_wrapper_PollIOLoop_remove_timeout(wrapped, instance, args, kwargs):
+
+    callback = args[0].callback.func
+    if hasattr(callback, '_nr_transaction'):
+        transaction = callback._nr_transaction
+        if not hasattr(callback, '_nr_callback_ran'):
+            transaction._ref_count -= 1
+
+            # Finalize the transaction if this is the last callback.
+            if transaction._ref_count == 0:
+                finalize_transaction(callback._nr_transaction)
+
+    return wrapped(*args, **kwargs)
+
+def _increment_ref_count(wrapped, instance, args, kwargs):
+    transaction = retrieve_current_transaction()
+    if transaction is None:
+        return wrapped(*args, **kwargs)
+
+    transaction._ref_count += 1
+    return wrapped(*args, **kwargs)
+
+def _nr_wrapper_PollIOLoop_add_callback(wrapped, instance, args, kwargs):
+    return _increment_ref_count(wrapped, instance, args, kwargs)
+
+def _nr_wrapper_PollIOLoop_add_callback_from_signal(wrapped, instance, args, kwargs):
+    return _increment_ref_count(wrapped, instance, args, kwargs)
+
+def _nr_wrapper_PollIOLoop_call_at(wrapped, instance, args, kwargs):
+    return _increment_ref_count(wrapped, instance, args, kwargs)
+
 def instrument_tornado_ioloop(module):
     wrap_function_wrapper(module, 'IOLoop._run_callback',
             _nr_wrapper_IOLoop__run_callback_)
     wrap_function_wrapper(module, 'IOLoop.handle_callback_exception',
             _nr_wrapper_IOLoop_handle_callback_exception_)
+    wrap_function_wrapper(module, 'PollIOLoop.add_callback',
+            _nr_wrapper_PollIOLoop_add_callback)
+    wrap_function_wrapper(module, 'PollIOLoop.add_callback_from_signal',
+            _nr_wrapper_PollIOLoop_add_callback_from_signal)
+    wrap_function_wrapper(module, 'PollIOLoop.call_at',
+            _nr_wrapper_PollIOLoop_call_at)
+    wrap_function_wrapper(module, 'PollIOLoop.remove_timeout',
+            _nr_wrapper_PollIOLoop_remove_timeout)

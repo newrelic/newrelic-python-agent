@@ -65,12 +65,11 @@ class NamedStackContextWrapRequestHandler(RequestHandler):
 
     @tornado.web.asynchronous
     def get(self):
-        # This may be a little frail since we add the callback directly to
-        # ioloop's callback list. We do this since we want to test that using a
-        # named argument to parsed out correctly and the tornado internals don't
-        # use the named argument.
-        tornado.ioloop.IOLoop.current()._callbacks.append(functools.partial(
-                tornado.stack_context.wrap(fn=self.finish_callback)))
+        # stackcontext.wrap will not re-wrap an already wrapped callback,
+        # so this allows us to test that we can extract the callback, if it
+        # is used as a keyword arg.
+        tornado.ioloop.IOLoop.current().add_callback(
+                tornado.stack_context.wrap(fn=self.finish_callback))
 
     def finish_callback(self):
         self.finish(self.RESPONSE)

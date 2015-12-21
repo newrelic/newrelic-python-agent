@@ -217,6 +217,56 @@ class NestedCoroutineDivideRequestHandler(DivideRequestHandler):
     def do_divide(self, a, b):
         self.quotient = yield self.divide(a, b, False)
 
+class ReturnFirstDivideRequestHandler(DivideRequestHandler):
+    RESPONSE = "Return immediately"
+
+    @tornado.gen.coroutine
+    def get(self, a, b):
+        self.finish(self.RESPONSE.encode('ascii'))
+        a = float(a)
+        b = float(b)
+        answer = yield self.do_divide(a, b)
+
+    @tornado.gen.coroutine
+    def do_divide(self, a, b):
+        self.quotient = yield self.divide(a, b, False)
+
+class CallLaterRequestHandler(RequestHandler):
+    RESPONSE = "Return immediately"
+
+    def get(self, cancel=False):
+        self.finish(self.RESPONSE)
+        timeout = tornado.ioloop.IOLoop.current().call_later(0.005, self.later)
+        cancel = (True if cancel == 'cancel' else False)
+        if cancel:
+            tornado.ioloop.IOLoop.current().remove_timeout(timeout)
+
+    def later(self):
+        pass
+
+class CancelAfterRanCallLaterRequestHandler(RequestHandler):
+    RESPONSE = "Return immediately"
+
+    @tornado.gen.coroutine
+    def get(self):
+        self.finish(self.RESPONSE)
+        timeout = tornado.ioloop.IOLoop.current().call_later(0.005, self.later)
+        yield tornado.gen.sleep(0.01)
+        tornado.ioloop.IOLoop.current().remove_timeout(timeout)
+
+    def later(self):
+        pass
+
+class AddCallbackFromSignalRequestHandler(RequestHandler):
+    RESPONSE = "Return immediately"
+
+    def get(self):
+        self.finish(self.RESPONSE)
+        tornado.ioloop.IOLoop.current().add_callback_from_signal(self.later)
+
+    def later(self):
+        pass
+
 class PrepareOnFinishRequestHandler(RequestHandler):
     RESPONSE = b'bookend get'
 
@@ -248,6 +298,10 @@ def get_tornado_app():
         ('/ioloop-divide/(\d+)/(\d+)/?(\w+)?', IOLoopDivideRequestHandler),
         ('/engine-divide/(\d+)/(\d+)/?(\w+)?', EngineDivideRequestHandler),
         ('/nested-divide/(\d+)/(\d+)/?', NestedCoroutineDivideRequestHandler),
+        ('/return-divide/(\d+)/(\d+)/?', ReturnFirstDivideRequestHandler),
+        ('/call-at/?(\w+)?', CallLaterRequestHandler),
+        ('/cancel-timer', CancelAfterRanCallLaterRequestHandler),
+        ('/signal-callback', AddCallbackFromSignalRequestHandler),
         ('/bookend', PrepareOnFinishRequestHandler),
         ('/bookend-subclass', PrepareOnFinishRequestHandlerSubclass),
     ])

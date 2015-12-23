@@ -237,8 +237,14 @@ class CallLaterRequestHandler(RequestHandler):
     def get(self, cancel=False):
         self.finish(self.RESPONSE)
         timeout = tornado.ioloop.IOLoop.current().call_later(0.005, self.later)
+
         cancel = (True if cancel == 'cancel' else False)
         if cancel:
+
+            # first call to cancel will decrement counter, second should be
+            # ignored
+
+            tornado.ioloop.IOLoop.current().remove_timeout(timeout)
             tornado.ioloop.IOLoop.current().remove_timeout(timeout)
 
     def later(self):

@@ -1,7 +1,7 @@
 import logging
 import sys
 
-from newrelic.agent import wrap_function_wrapper, FunctionWrapper
+from newrelic.agent import wrap_function_wrapper
 from .util import finalize_transaction, record_exception, retrieve_current_transaction
 
 _logger = logging.getLogger(__name__)
@@ -48,15 +48,27 @@ def _nr_wrapper_IOLoop_handle_callback_exception_(
 
 def _nr_wrapper_PollIOLoop_remove_timeout(wrapped, instance, args, kwargs):
 
-    callback = args[0].callback.func
+    # Once a timeout is canceled, it's callback will be set to None, in this
+    # case we have already decremented our counter
+
+    def _callback_extractor(timeout, *args, **kwargs):
+        if timeout.callback is None:
+                return None
+        else:
+            try:
+                return timeout.callback.func
+            except:
+                _logger.error('Runtime instrumentation error. A callback is '
+                        'registered on the ioloop that isn\'t wrapped in '
+                        'functools.partial. Perhaps a nonstandard IOLoop is being'
+                        'used?')
+                return None
+
+    callback = _callback_extractor(*args, **kwargs)
     if hasattr(callback, '_nr_transaction'):
         transaction = callback._nr_transaction
         if not hasattr(callback, '_nr_callback_ran'):
             transaction._ref_count -= 1
-
-            # Finalize the transaction if this is the last callback.
-            if transaction._ref_count == 0:
-                finalize_transaction(callback._nr_transaction)
 
     return wrapped(*args, **kwargs)
 

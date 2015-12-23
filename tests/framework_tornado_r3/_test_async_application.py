@@ -257,16 +257,6 @@ class CancelAfterRanCallLaterRequestHandler(RequestHandler):
     def later(self):
         pass
 
-class AddCallbackFromSignalRequestHandler(RequestHandler):
-    RESPONSE = "Return immediately"
-
-    def get(self):
-        self.finish(self.RESPONSE)
-        tornado.ioloop.IOLoop.current().add_callback_from_signal(self.later)
-
-    def later(self):
-        pass
-
 class PrepareOnFinishRequestHandler(RequestHandler):
     RESPONSE = b'bookend get'
 
@@ -301,7 +291,6 @@ def get_tornado_app():
         ('/return-divide/(\d+)/(\d+)/?', ReturnFirstDivideRequestHandler),
         ('/call-at/?(\w+)?', CallLaterRequestHandler),
         ('/cancel-timer', CancelAfterRanCallLaterRequestHandler),
-        ('/signal-callback', AddCallbackFromSignalRequestHandler),
         ('/bookend', PrepareOnFinishRequestHandler),
         ('/bookend-subclass', PrepareOnFinishRequestHandlerSubclass),
     ])

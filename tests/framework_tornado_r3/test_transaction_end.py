@@ -3,8 +3,7 @@ from newrelic.packages import six
 from tornado_base_test import TornadoBaseTest
 
 from _test_async_application import (ReturnFirstDivideRequestHandler,
-        CallLaterRequestHandler, CancelAfterRanCallLaterRequestHandler,
-        AddCallbackFromSignalRequestHandler)
+        CallLaterRequestHandler, CancelAfterRanCallLaterRequestHandler)
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
@@ -94,21 +93,4 @@ class TornadoTest(TornadoBaseTest):
     def test_cancel_call_at_after_callback_ran(self):
         response = self.fetch_response('/cancel-timer')
         expected = CancelAfterRanCallLaterRequestHandler.RESPONSE
-        self.assertEqual(response.body, expected)
-
-    scoped_metrics = [
-            ('Function/_test_async_application:'
-                    'AddCallbackFromSignalRequestHandler.later', 1),
-            ('Function/_test_async_application:'
-                    'AddCallbackFromSignalRequestHandler.get', 1),
-    ]
-
-    @tornado_validate_transaction_cache_empty()
-    @tornado_validate_errors(errors=[])
-    @tornado_validate_count_transaction_metrics(
-            '_test_async_application:AddCallbackFromSignalRequestHandler.get',
-            scoped_metrics=scoped_metrics)
-    def test_add_callback_from_signal(self):
-        response = self.fetch_response('/signal-callback')
-        expected = AddCallbackFromSignalRequestHandler.RESPONSE
         self.assertEqual(response.body, expected)

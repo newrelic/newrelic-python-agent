@@ -71,9 +71,6 @@ def _increment_ref_count(wrapped, instance, args, kwargs):
 def _nr_wrapper_PollIOLoop_add_callback(wrapped, instance, args, kwargs):
     return _increment_ref_count(wrapped, instance, args, kwargs)
 
-def _nr_wrapper_PollIOLoop_add_callback_from_signal(wrapped, instance, args, kwargs):
-    return _increment_ref_count(wrapped, instance, args, kwargs)
-
 def _nr_wrapper_PollIOLoop_call_at(wrapped, instance, args, kwargs):
     return _increment_ref_count(wrapped, instance, args, kwargs)
 
@@ -84,8 +81,6 @@ def instrument_tornado_ioloop(module):
             _nr_wrapper_IOLoop_handle_callback_exception_)
     wrap_function_wrapper(module, 'PollIOLoop.add_callback',
             _nr_wrapper_PollIOLoop_add_callback)
-    wrap_function_wrapper(module, 'PollIOLoop.add_callback_from_signal',
-            _nr_wrapper_PollIOLoop_add_callback_from_signal)
     wrap_function_wrapper(module, 'PollIOLoop.call_at',
             _nr_wrapper_PollIOLoop_call_at)
     wrap_function_wrapper(module, 'PollIOLoop.remove_timeout',

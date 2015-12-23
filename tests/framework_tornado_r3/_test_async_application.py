@@ -218,21 +218,21 @@ class NestedCoroutineDivideRequestHandler(DivideRequestHandler):
         self.quotient = yield self.divide(a, b, False)
 
 class ReturnFirstDivideRequestHandler(DivideRequestHandler):
-    RESPONSE = "Return immediately"
+    RESPONSE = b"Return immediately"
 
     @tornado.gen.coroutine
     def get(self, a, b):
         self.finish(self.RESPONSE.encode('ascii'))
         a = float(a)
         b = float(b)
-        answer = yield self.do_divide(a, b)
+        yield self.do_divide(a, b)
 
     @tornado.gen.coroutine
     def do_divide(self, a, b):
         self.quotient = yield self.divide(a, b, False)
 
 class CallLaterRequestHandler(RequestHandler):
-    RESPONSE = "Return immediately"
+    RESPONSE = b"Return immediately"
 
     def get(self, cancel=False):
         self.finish(self.RESPONSE)
@@ -251,7 +251,7 @@ class CallLaterRequestHandler(RequestHandler):
         pass
 
 class CancelAfterRanCallLaterRequestHandler(RequestHandler):
-    RESPONSE = "Return immediately"
+    RESPONSE = b"Return immediately"
 
     @tornado.gen.coroutine
     def get(self):

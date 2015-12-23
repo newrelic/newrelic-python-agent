@@ -80,9 +80,6 @@ def initiate_request_monitoring(request):
 
     transaction._nr_current_request = weakref.ref(request)
 
-    # Records state of request
-    transaction._is_request_finished = False
-
     # Records state of transaction
     transaction._is_finalized = False
     transaction._ref_count = 0

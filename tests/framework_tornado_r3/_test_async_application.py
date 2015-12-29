@@ -1,11 +1,5 @@
 import functools
-import threading
 import tornado
-
-try:
-    import BaseHTTPServer
-except:
-    import http.server as BaseHTTPServer
 
 from newrelic.agent import function_wrapper
 
@@ -292,42 +286,3 @@ def get_tornado_app():
         ('/async-fetch/(\w)+/(\d+)', AsyncFetchRequestHandler),
         ('/sync-fetch/(\w)+/(\d+)', SyncFetchRequestHandler),
     ])
-
-# This defines an external server we can make requests to. We don't make
-# requests to other urls in our Torndao app because:
-# 1) We don't want to pollute the record transaction output in a test.
-# 2) When we make a synchronous fetch, we don't want to block our tests.
-
-class TestExternalHTTPServer(threading.Thread):
-    RESPONSE = b'external response'
-
-    class ExternalHandler(BaseHTTPServer.BaseHTTPRequestHandler):
-        def do_GET(self):
-            self.send_response(200)
-            self.end_headers()
-            self.wfile.write(TestExternalHTTPServer.RESPONSE)
-
-    def __init__(self, *args, **kwargs):
-        super(TestExternalHTTPServer, self).__init__(*args, **kwargs)
-        # We hardcode the port number to 8989. This allows us to easily use the
-        # port number in the expected metrics that we validate without
-        # reworking the fixtures. If we want to safer and have the OS hand us an
-        # available port we would do:
-        #
-        # self.httpd = BaseHTTPServer.HTTPServer(('localhost', 0),
-        #         TestExternalHTTPServer.ExternalHandler)
-        # self.port = self.httpd.socket.getsockname()[1]
-        self.port = 8989
-        self.httpd = BaseHTTPServer.HTTPServer(('localhost', 8989),
-                TestExternalHTTPServer.ExternalHandler)
-        self.daemon = True
-
-    def run(self):
-        self.httpd.serve_forever()
-
-    def stop(self):
-        # Shutdowns the httpd server.
-        self.httpd.shutdown()
-        # Close the socket so we can reuse it.
-        self.httpd.socket.close()
-        self.join()

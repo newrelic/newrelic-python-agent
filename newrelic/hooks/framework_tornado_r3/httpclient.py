@@ -41,10 +41,9 @@ def _nr_wrapper_httpclient_AsyncHTTPClient_fetch_(
 
     url = _extract_url(*args, **kwargs)
 
-    # For some reason, if callback is not passed in to fetch, we don't see its
-    # default value, None, in args or kwargs. If callback exists we extract it
-    # now and replace it with a wrapped version to associate the url with the
-    # callback.
+    # If callback is not passed in to fetch, we don't see its default value,
+    # None, in args or kwargs. If callback exists we extract it now and replace
+    # it with a wrapped version to associate the url with the callback.
     @function_wrapper
     def _wrap_callback(wrapped, instance, args, kwargs):
         name = callable_name(wrapped)

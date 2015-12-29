@@ -15,8 +15,9 @@ from _test_async_application import (get_tornado_app, HelloRequestHandler,
         NamedStackContextWrapRequestHandler, MultipleCallbacksRequestHandler,
         FinishExceptionRequestHandler, ReturnExceptionRequestHandler,
         IOLoopDivideRequestHandler, EngineDivideRequestHandler,
-        PrepareOnFinishRequestHandler, PrepareOnFinishRequestHandlerSubclass,
-        TestExternalHTTPServer)
+        PrepareOnFinishRequestHandler, PrepareOnFinishRequestHandlerSubclass)
+
+from testing_support.mock_external_http_server import MockExternalHTTPServer
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
@@ -544,7 +545,7 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         self.assertEqual(response.body,
             PrepareOnFinishRequestHandlerSubclass.RESPONSE)
 
-    # The port number 8989 matches the port number in TestExternalHTTPServer
+    # The port number 8989 matches the port number in MockExternalHTTPServer
     scoped_metrics = [('Function/_test_async_application:'
             'AsyncFetchRequestHandler.get', 1),
             ('Function/_test_async_application:'
@@ -563,7 +564,7 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
             scoped_metrics=scoped_metrics,
             rollup_metrics=rollup_metrics)
     def test_async_httpclient_raw_url_fetch(self):
-        external = TestExternalHTTPServer()
+        external = MockExternalHTTPServer()
         external.start()
         response = self.fetch_response('/async-fetch/rawurl/%s' % external.port)
         external.stop()
@@ -578,7 +579,7 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
             scoped_metrics=scoped_metrics,
             rollup_metrics=rollup_metrics)
     def test_async_httpclient_request_object_fetch(self):
-        external = TestExternalHTTPServer()
+        external = MockExternalHTTPServer()
         external.start()
         response = self.fetch_response(
                 '/async-fetch/requestobj/%s' % external.port)
@@ -587,7 +588,7 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, external.RESPONSE)
 
-    # The port number 8989 matches the port number in TestExternalHTTPServer
+    # The port number 8989 matches the port number in MockExternalHTTPServer
     scoped_metrics = [('Function/_test_async_application:'
             'SyncFetchRequestHandler.get', 1),
             ('External/localhost:8989/tornado.httpclient/', 1)
@@ -602,7 +603,7 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
             scoped_metrics=scoped_metrics,
             rollup_metrics=rollup_metrics)
     def test_sync_httpclient_raw_url_fetch(self):
-        external = TestExternalHTTPServer()
+        external = MockExternalHTTPServer()
         external.start()
         response = self.fetch_response('/sync-fetch/rawurl/%s' % external.port)
         external.stop()
@@ -617,7 +618,7 @@ class TornadoTest(tornado.testing.AsyncHTTPTestCase):
             scoped_metrics=scoped_metrics,
             rollup_metrics=rollup_metrics)
     def test_sync_httpclient_request_object_fetch(self):
-        external = TestExternalHTTPServer()
+        external = MockExternalHTTPServer()
         external.start()
         response = self.fetch_response(
                 '/sync-fetch/requestobj/%s' % external.port)

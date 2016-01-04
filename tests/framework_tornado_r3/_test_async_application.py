@@ -1,10 +1,9 @@
 import functools
-import threading
 import tornado
 
 from newrelic.agent import function_wrapper
 
-from tornado.httpclient import HTTPClient
+from tornado.httpclient import AsyncHTTPClient, HTTPClient, HTTPRequest
 from tornado.web import Application, RequestHandler
 from tornado.httpserver import HTTPServer
 
@@ -234,6 +233,39 @@ class PrepareOnFinishRequestHandlerSubclass(PrepareOnFinishRequestHandler):
     def get(self):
         self.finish(self.RESPONSE)
 
+class AsyncFetchRequestHandler(RequestHandler):
+
+    @tornado.web.asynchronous
+    def get(self, request_type, port):
+        url = 'http://localhost:%s' % port
+        client = AsyncHTTPClient()
+        # We test with a request object and a raw url as well as using the
+        # callback as a positional argument and as a keyword argument.
+        if request_type == 'requestobj':
+            request = HTTPRequest(url)
+            client.fetch(url, self.process_response)
+        else:
+            request = url
+            client.fetch(url, callback=self.process_response)
+
+    def process_response(self, response):
+        self.finish(response.body)
+
+class SyncFetchRequestHandler(RequestHandler):
+
+    def get(self, request_type, port):
+        url = 'http://localhost:%s' % port
+        client = HTTPClient()
+
+        # We test with a either request object or a raw url.
+        if request_type == 'requestobj':
+            request = HTTPRequest(url)
+        else:
+            request = url
+
+        response = client.fetch(url)
+        self.finish(response.body)
+
 def get_tornado_app():
     return Application([
         ('/', HelloRequestHandler),
@@ -251,4 +283,6 @@ def get_tornado_app():
         ('/nested-divide/(\d+)/(\d+)/?', NestedCoroutineDivideRequestHandler),
         ('/bookend', PrepareOnFinishRequestHandler),
         ('/bookend-subclass', PrepareOnFinishRequestHandlerSubclass),
+        ('/async-fetch/(\w)+/(\d+)', AsyncFetchRequestHandler),
+        ('/sync-fetch/(\w)+/(\d+)', SyncFetchRequestHandler),
     ])

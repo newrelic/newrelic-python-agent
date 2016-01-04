@@ -222,7 +222,7 @@ class ReturnFirstDivideRequestHandler(DivideRequestHandler):
 
     @tornado.gen.coroutine
     def get(self, a, b):
-        self.finish(self.RESPONSE.encode('ascii'))
+        self.finish(self.RESPONSE)
         a = float(a)
         b = float(b)
         yield self.do_divide(a, b)

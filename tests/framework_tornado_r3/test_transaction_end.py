@@ -25,11 +25,11 @@ class TornadoTest(TornadoBaseTest):
                 ('Function/_test_async_application:get (coroutine)', 1),],
             py3=[('Function/_test_async_application:'
                     'ReturnFirstDivideRequestHandler.do_divide', 1),
-                ('Function/_test_async_application:WorkAfterReturn'
+                ('Function/_test_async_application:ReturnFirstDivide'
                     'RequestHandler.do_divide (coroutine)', 1),
                 ('Function/_test_async_application:'
                     'ReturnFirstDivideRequestHandler.get', 2),
-                ('Function/_test_async_application:WorkAfterReturn'
+                ('Function/_test_async_application:ReturnFirstDivide'
                     'RequestHandler.get (coroutine)', 1),])
 
     @tornado_validate_transaction_cache_empty()

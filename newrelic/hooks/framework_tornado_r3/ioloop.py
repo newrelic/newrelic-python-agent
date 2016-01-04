@@ -2,7 +2,8 @@ import logging
 import sys
 
 from newrelic.agent import wrap_function_wrapper
-from .util import finalize_transaction, record_exception, retrieve_current_transaction
+from .util import (finalize_transaction, record_exception,
+        retrieve_current_transaction)
 
 _logger = logging.getLogger(__name__)
 
@@ -60,8 +61,8 @@ def _nr_wrapper_PollIOLoop_remove_timeout(wrapped, instance, args, kwargs):
             except:
                 _logger.error('Runtime instrumentation error. A callback is '
                         'registered on the ioloop that isn\'t wrapped in '
-                        'functools.partial. Perhaps a nonstandard IOLoop is being'
-                        'used?')
+                        'functools.partial. Perhaps a nonstandard IOLoop is '
+                        'being used?')
                 return None
 
     callback = _callback_extractor(*args, **kwargs)

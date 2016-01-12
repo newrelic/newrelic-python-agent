@@ -27,7 +27,8 @@ def _nr_wrapper_IOLoop__run_callback_(wrapped, instance, args, kwargs):
 
     ret = wrapped(*args, **kwargs)
 
-    if hasattr(callback, '_nr_transaction'):
+    transaction = getattr(callback, '_nr_transaction', None)
+    if transaction is not None:
         transaction = callback._nr_transaction
         transaction._ref_count -= 1
 
@@ -66,7 +67,9 @@ def _nr_wrapper_PollIOLoop_remove_timeout(wrapped, instance, args, kwargs):
                 return None
 
     callback = _callback_extractor(*args, **kwargs)
-    if hasattr(callback, '_nr_transaction'):
+
+    transaction = getattr(callback, '_nr_transaction', None)
+    if transaction is not None:
         transaction = callback._nr_transaction
         if not hasattr(callback, '_nr_callback_ran'):
             transaction._ref_count -= 1

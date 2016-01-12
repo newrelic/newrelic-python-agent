@@ -13,15 +13,11 @@ def _nr_wrapper_stack_context_wrap_(wrapped, instance, args, kwargs):
 
     fxn = _fxn_arg_extractor(*args, **kwargs)
 
-    if fxn is None:
-        return wrapped(*args, **kwargs)
-
     transaction_aware_fxn = create_transaction_aware_fxn(fxn)
 
-    # If transaction_aware_fxn is None then it is either not being called in
-    # the context of a transaction or it is already wrapped.
-    # Either way we do not need to wrap this function.
-    if not transaction_aware_fxn:
+    # If transaction_aware_fxn is None then it is already wrapped, or the fxn
+    # is None.
+    if transaction_aware_fxn is None:
         return wrapped(*args, **kwargs)
 
     transaction = retrieve_current_transaction()

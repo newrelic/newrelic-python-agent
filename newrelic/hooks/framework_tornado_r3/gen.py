@@ -2,7 +2,7 @@ import logging
 
 from newrelic.agent import (FunctionTrace, callable_name,
     function_wrapper, wrap_function_wrapper)
-from .util import retrieve_current_transaction
+from .util import retrieve_current_transaction, NoneProxy
 
 _logger = logging.getLogger(__name__)
 
@@ -25,13 +25,6 @@ except:
         return inspect.stack(0)[depth]
     get_frame = getframe
 
-
-# To pass the name of the coroutine back we attach it as an attribute to a
-# returned value. If this returned value is None, we instead pass up a
-# NoneProxy object with the attribute. When the attribute is consumed we must
-# restore the None value.
-class NoneProxy(object):
-    pass
 
 def _coroutine_name(func):
     # Because of how coroutines get scheduled they will look like plain

@@ -71,6 +71,10 @@ def initiate_request_monitoring(request):
 
     transaction.__enter__()
 
+    # Immediately purge the transaction from the cache, so we don't associate
+    # Tornado internals inappropriately with this transaction.
+    purge_current_transaction()
+
     request._nr_transaction = transaction
 
     # We also need to add a reference to the request object in to the

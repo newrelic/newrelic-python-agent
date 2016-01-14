@@ -51,7 +51,8 @@ class TornadoTest(TornadoBaseTest):
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
-            '_test_async_application:SleepRequestHandler.get')
+            '_test_async_application:SleepRequestHandler.get',
+            transaction_count=2)
     @tornado_validate_time_transaction_metrics(
             '_test_with_unittest:SleepRequestHandler.get',
             custom_metrics = [(

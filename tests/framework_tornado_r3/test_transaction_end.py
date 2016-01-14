@@ -1,9 +1,13 @@
+import threading
+
 from newrelic.packages import six
+from six.moves import http_client
 
 from tornado_base_test import TornadoBaseTest
 
 from _test_async_application import (ReturnFirstDivideRequestHandler,
-        CallLaterRequestHandler, CancelAfterRanCallLaterRequestHandler)
+        CallLaterRequestHandler, CancelAfterRanCallLaterRequestHandler,
+        OneCallbackRequestHandler)
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
@@ -94,3 +98,38 @@ class TornadoTest(TornadoBaseTest):
         response = self.fetch_response('/cancel-timer')
         expected = CancelAfterRanCallLaterRequestHandler.RESPONSE
         self.assertEqual(response.body, expected)
+
+    scoped_metrics = [('Function/_test_async_application:'
+            'OneCallbackRequestHandler.get', 1),
+            ('Function/_test_async_application:'
+            'OneCallbackRequestHandler.finish_callback', 1)]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:OneCallbackRequestHandler.get',
+            scoped_metrics=scoped_metrics, transaction_count=2)
+    def test_two_requests_on_the_same_connection(self):
+
+        def make_streaming_requests(server):
+            conn = http_client.HTTPConnection(server)
+
+            conn.putrequest('GET', '/one-callback')
+            conn.endheaders()
+            resp = conn.getresponse()
+            msg = resp.read()
+
+            conn.putrequest('GET', '/one-callback')
+            conn.endheaders()
+            resp = conn.getresponse()
+            msg = resp.read()
+
+            self.assertEqual(msg, OneCallbackRequestHandler.RESPONSE)
+            conn.close()
+            self.io_loop.add_callback(self.stop)
+
+        server = 'localhost:%s' % self.get_http_port()
+        t = threading.Thread(target=make_streaming_requests, args=(server,))
+        t.start()
+        self.wait(timeout=5.0)
+        t.join(10.0)

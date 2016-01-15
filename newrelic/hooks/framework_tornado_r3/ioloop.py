@@ -1,5 +1,6 @@
 import logging
 import sys
+import traceback
 
 from newrelic.agent import wrap_function_wrapper
 from .util import (finalize_transaction, record_exception,
@@ -76,8 +77,16 @@ def _nr_wrapper_PollIOLoop_remove_timeout(wrapped, instance, args, kwargs):
 
     return wrapped(*args, **kwargs)
 
-def _increment_ref_count(wrapped, instance, args, kwargs):
+def _increment_ref_count(callback, wrapped, instance, args, kwargs):
     transaction = retrieve_current_transaction()
+
+    if hasattr(callback, '_nr_transaction'):
+        if transaction is not callback._nr_transaction:
+            _logger.error('Callback added to ioloop with different transaction'
+                    'attached as in the cache.Please report this issue to New '
+                    'Relic support.\n%s',''.join(traceback.format_stack()[:-1]))
+            transaction = callback._nr_transaction
+
     if transaction is None:
         return wrapped(*args, **kwargs)
 
@@ -85,10 +94,20 @@ def _increment_ref_count(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 def _nr_wrapper_PollIOLoop_add_callback(wrapped, instance, args, kwargs):
-    return _increment_ref_count(wrapped, instance, args, kwargs)
+
+    def _callback_extractor(callback, *args, **kwargs):
+        return callback
+    callback = _callback_extractor(*args, **kwargs)
+
+    return _increment_ref_count(callback, wrapped, instance, args, kwargs)
 
 def _nr_wrapper_PollIOLoop_call_at(wrapped, instance, args, kwargs):
-    return _increment_ref_count(wrapped, instance, args, kwargs)
+
+    def _callback_extractor(deadline, callback, *args, **kwargs):
+        return callback
+    callback = _callback_extractor(*args, **kwargs)
+
+    return _increment_ref_count(callback, wrapped, instance, args, kwargs)
 
 def instrument_tornado_ioloop(module):
     wrap_function_wrapper(module, 'IOLoop._run_callback',

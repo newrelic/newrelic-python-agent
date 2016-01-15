@@ -92,6 +92,13 @@ def finalize_transaction(transaction, exc=None, value=None, tb=None):
                 'support.\n%s', ''.join(traceback.format_stack()[:-1]))
         return
 
+    if transaction._is_finalized:
+        _logger.error('Runtime instrumentation error. Attempting to finalize '
+                'a transaction which has already been finalized. Please report '
+                'this issue to New Relic support.\n%s',
+                ''.join(traceback.format_stack()[:-1]))
+        return
+
     old_transaction = replace_current_transaction(transaction)
 
     try:

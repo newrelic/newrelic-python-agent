@@ -162,7 +162,7 @@ def tornado_validate_count_transaction_metrics(name, group='Function',
             transaction_metric = 'WebTransaction/%s/%s' % (group, name)
 
         assert (_NUM_FINIALIZED_TRANSACTIONS == len(_RECORDED_TRANSACTIONS) ==
-                transaction_count), ('Expected # of transactions=%d;'
+                transaction_count), ('Expected # of transactions=%d; '
                 '# of recorded transactions=%d; # of times finalize called=%d'
                 % (transaction_count, len(_RECORDED_TRANSACTIONS),
                  _NUM_FINIALIZED_TRANSACTIONS ))

@@ -110,6 +110,7 @@ class TornadoTest(TornadoBaseTest):
             '_test_async_application:OneCallbackRequestHandler.get',
             scoped_metrics=scoped_metrics, transaction_count=2)
     def test_two_requests_on_the_same_connection(self):
+        # This tests emulates the keep-alive behavior that chrome uses
 
         def make_streaming_requests(server):
             conn = http_client.HTTPConnection(server)

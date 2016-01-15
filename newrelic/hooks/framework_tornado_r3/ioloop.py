@@ -82,7 +82,7 @@ def _increment_ref_count(callback, wrapped, instance, args, kwargs):
 
     if hasattr(callback, '_nr_transaction'):
         if transaction is not callback._nr_transaction:
-            _logger.error('Callback added to ioloop with different transaction'
+            _logger.error('Callback added to ioloop with different transaction '
                     'attached as in the cache.Please report this issue to New '
                     'Relic support.\n%s',''.join(traceback.format_stack()[:-1]))
             transaction = callback._nr_transaction

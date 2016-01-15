@@ -5,7 +5,6 @@ from .util import (record_exception, retrieve_current_transaction,
 
 def _nr_wrapper_Future_add_done_callback(wrapped, instance, args, kwargs):
     def _fxn_arg_extractor(fn, *args, **kwargs):
-        # fn is the name of the callable argument in stack_context.wrap
         return fn
 
     fxn = _fxn_arg_extractor(*args, **kwargs)

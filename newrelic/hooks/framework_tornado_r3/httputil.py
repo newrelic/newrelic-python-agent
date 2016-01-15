@@ -71,6 +71,10 @@ def initiate_request_monitoring(request):
 
     transaction.__enter__()
 
+    # Immediately purge the transaction from the cache, so we don't associate
+    # Tornado internals inappropriately with this transaction.
+    purge_current_transaction()
+
     request._nr_transaction = transaction
 
     # We also need to add a reference to the request object in to the
@@ -80,11 +84,9 @@ def initiate_request_monitoring(request):
 
     transaction._nr_current_request = weakref.ref(request)
 
-    # Records state of request
-    transaction._is_request_finished = False
-
     # Records state of transaction
     transaction._is_finalized = False
+    transaction._ref_count = 0
 
     # Record framework information for generation of framework metrics.
 

@@ -64,12 +64,11 @@ class NamedStackContextWrapRequestHandler(RequestHandler):
 
     @tornado.web.asynchronous
     def get(self):
-        # This may be a little frail since we add the callback directly to
-        # ioloop's callback list. We do this since we want to test that using a
-        # named argument to parsed out correctly and the tornado internals don't
-        # use the named argument.
-        tornado.ioloop.IOLoop.current()._callbacks.append(functools.partial(
-                tornado.stack_context.wrap(fn=self.finish_callback)))
+        # stackcontext.wrap will not re-wrap an already wrapped callback,
+        # so this allows us to test that we can extract the callback, if it
+        # is used as a keyword arg.
+        tornado.ioloop.IOLoop.current().add_callback(
+                tornado.stack_context.wrap(fn=self.finish_callback))
 
     def finish_callback(self):
         self.finish(self.RESPONSE)
@@ -217,6 +216,52 @@ class NestedCoroutineDivideRequestHandler(DivideRequestHandler):
     def do_divide(self, a, b):
         self.quotient = yield self.divide(a, b, False)
 
+class ReturnFirstDivideRequestHandler(DivideRequestHandler):
+    RESPONSE = b"Return immediately"
+
+    @tornado.gen.coroutine
+    def get(self, a, b):
+        self.finish(self.RESPONSE)
+        a = float(a)
+        b = float(b)
+        yield self.do_divide(a, b)
+
+    @tornado.gen.coroutine
+    def do_divide(self, a, b):
+        self.quotient = yield self.divide(a, b, False)
+
+class CallLaterRequestHandler(RequestHandler):
+    RESPONSE = b"Return immediately"
+
+    def get(self, cancel=False):
+        self.finish(self.RESPONSE)
+        timeout = tornado.ioloop.IOLoop.current().call_later(0.005, self.later)
+
+        cancel = (True if cancel == 'cancel' else False)
+        if cancel:
+
+            # first call to cancel will decrement counter, second should be
+            # ignored
+
+            tornado.ioloop.IOLoop.current().remove_timeout(timeout)
+            tornado.ioloop.IOLoop.current().remove_timeout(timeout)
+
+    def later(self):
+        pass
+
+class CancelAfterRanCallLaterRequestHandler(RequestHandler):
+    RESPONSE = b"Return immediately"
+
+    @tornado.gen.coroutine
+    def get(self):
+        self.finish(self.RESPONSE)
+        timeout = tornado.ioloop.IOLoop.current().call_later(0.005, self.later)
+        yield tornado.gen.sleep(0.01)
+        tornado.ioloop.IOLoop.current().remove_timeout(timeout)
+
+    def later(self):
+        pass
+
 class PrepareOnFinishRequestHandler(RequestHandler):
     RESPONSE = b'bookend get'
 
@@ -281,6 +326,9 @@ def get_tornado_app():
         ('/ioloop-divide/(\d+)/(\d+)/?(\w+)?', IOLoopDivideRequestHandler),
         ('/engine-divide/(\d+)/(\d+)/?(\w+)?', EngineDivideRequestHandler),
         ('/nested-divide/(\d+)/(\d+)/?', NestedCoroutineDivideRequestHandler),
+        ('/return-divide/(\d+)/(\d+)/?', ReturnFirstDivideRequestHandler),
+        ('/call-at/?(\w+)?', CallLaterRequestHandler),
+        ('/cancel-timer', CancelAfterRanCallLaterRequestHandler),
         ('/bookend', PrepareOnFinishRequestHandler),
         ('/bookend-subclass', PrepareOnFinishRequestHandlerSubclass),
         ('/async-fetch/(\w)+/(\d+)', AsyncFetchRequestHandler),

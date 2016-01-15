@@ -19,16 +19,25 @@ _logger = logging.getLogger('newrelic.tests.tornado')
 # test. It gets cleared at the beginning of each test by the
 # clear_record_transaction_list fixture.
 
+# We also want to keep track of the number of times we try to finalize a
+# transaction, so we can check that this matches the number of times we expect,
+# and should be equal to the number of transactions in _RECORDED_TRANSACTIONS.
+# Otherwise, it means we have attempted to record a transaction more that once,
+# which is considered and error (although it won't raise one)
+
 _RECORDED_TRANSACTIONS = []
+_NUM_FINIALIZED_TRANSACTIONS = 0
 
 @pytest.fixture(scope='function')
 def clear_record_transaction_list():
     global _RECORDED_TRANSACTIONS
+    global _NUM_FINIALIZED_TRANSACTIONS
     # Truncate the _RECORDED_TRANSACTIONS list. This actually assigns
     # _RECORDED_TRANSACTIONS a new, empty list so it is a new object.
     # This is fine since _RECORDED_TRANSACTIONS is private to this module, but
     # could lead to problems if one tries to export it.
     _RECORDED_TRANSACTIONS = []
+    _NUM_FINIALIZED_TRANSACTIONS = 0
 
 @pytest.fixture(scope='session')
 def wrap_record_transaction_fixture(request):
@@ -53,7 +62,19 @@ def wrap_record_transaction_fixture(request):
     wrap_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction', _nr_wrapper_record_transaction)
 
-# _RECORDED_APP_EXCEPTIONS is used to store exceptions occuring outside of
+@pytest.fixture(scope='session')
+def wrap_transaction_exit_fixture(request):
+
+    def _nr_wrapper_Transaction__exit__(wrapped, instance, args, kwargs):
+        global _NUM_FINIALIZED_TRANSACTIONS
+        _NUM_FINIALIZED_TRANSACTIONS += 1
+
+        return wrapped(*args, **kwargs)
+
+    wrap_function_wrapper('newrelic.api.transaction',
+            'Transaction.__exit__', _nr_wrapper_Transaction__exit__)
+
+# _RECORDED_APP_EXCEPTIONS is used to store exceptions occurring outside of
 # a transaction. Otherwise, the strategy for recording them is the same as
 # _RECORDED_TRANSACTIONS.
 _RECORDED_APP_EXCEPTIONS = []
@@ -87,7 +108,7 @@ def wrap_record_app_exception_fixture(request):
 
 def tornado_validate_count_transaction_metrics(name, group='Function',
         background_task=False, scoped_metrics=[], rollup_metrics=[],
-        custom_metrics=[], forgone_metric_substrings=[]):
+        custom_metrics=[], forgone_metric_substrings=[], transaction_count=1):
     """Decorator to validates count metrics.
 
     Arguments:
@@ -139,6 +160,12 @@ def tornado_validate_count_transaction_metrics(name, group='Function',
         else:
             rollup_metric = 'WebTransaction'
             transaction_metric = 'WebTransaction/%s/%s' % (group, name)
+
+        assert (_NUM_FINIALIZED_TRANSACTIONS == len(_RECORDED_TRANSACTIONS) ==
+                transaction_count), ('Expected # of transactions=%d; '
+                '# of recorded transactions=%d; # of times finalize called=%d'
+                % (transaction_count, len(_RECORDED_TRANSACTIONS),
+                 _NUM_FINIALIZED_TRANSACTIONS ))
 
         # We only validate the first recorded transaction
         metrics, errors = _RECORDED_TRANSACTIONS[0]

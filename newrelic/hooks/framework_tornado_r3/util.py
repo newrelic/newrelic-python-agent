@@ -1,9 +1,18 @@
 import logging
 
 from newrelic.agent import (application as application_instance,
-        current_transaction, ignore_status_code)
+        current_transaction, ignore_status_code, function_wrapper,
+        callable_name, FunctionTrace)
 
 _logger = logging.getLogger(__name__)
+
+
+# To pass the name of the coroutine back we attach it as an attribute to a
+# returned value. If this returned value is None, we instead pass up a
+# NoneProxy object with the attribute. When the attribute is consumed we must
+# restore the None value.
+class NoneProxy(object):
+    pass
 
 def record_exception(exc_info):
     # Record the details of any exception ignoring status codes which
@@ -83,6 +92,13 @@ def finalize_transaction(transaction, exc=None, value=None, tb=None):
                 'support.\n%s', ''.join(traceback.format_stack()[:-1]))
         return
 
+    if transaction._is_finalized:
+        _logger.error('Runtime instrumentation error. Attempting to finalize '
+                'a transaction which has already been finalized. Please report '
+                'this issue to New Relic support.\n%s',
+                ''.join(traceback.format_stack()[:-1]))
+        return
+
     old_transaction = replace_current_transaction(transaction)
 
     try:
@@ -99,3 +115,54 @@ def finalize_transaction(transaction, exc=None, value=None, tb=None):
         # it is the transaction that just completed.
         if old_transaction != transaction:
             replace_current_transaction(old_transaction)
+
+def create_transaction_aware_fxn(fxn):
+    # Returns a version of fxn that will switch context to the appropriate
+    # transaction and then restore the previous transaction on exit.
+    # If fxn is already transaction aware or if there is no transaction
+    # associated with fxn, this will return None.
+
+    # If fxn already has the stored transaction we don't want to rewrap it
+    # since this is also cause Tornado's stack_context.wrap to rewrap it.
+    # That Tornado method will also return the input fxn immediately if
+    # previously wrapped.
+
+    if fxn is None or hasattr(fxn, '_nr_transaction'):
+        return None
+
+    # We want to get the transaction associated with this path of execution
+    # whether or not we are actively recording information about it.
+    transaction = retrieve_current_transaction()
+
+    @function_wrapper
+    def transaction_aware(wrapped, instance, args, kwargs):
+        old_transaction = replace_current_transaction(transaction)
+        name = callable_name(fxn)
+        if transaction is None:
+
+            # A transaction will be None for fxns scheduled on the ioloop not
+            # associated with a transaction. We want to preserve this make sure
+            # then that there is no transaction in the cache when fxn is run.
+            ret = fxn(*args, **kwargs)
+        else:
+            with FunctionTrace(transaction, name=name) as ft:
+                ret = fxn(*args, **kwargs)
+                # Coroutines are wrapped in lambdas when they are scheduled.
+                # See tornado.gen.Runner.run(). In this case, we don't know the
+                # name until the function is run. We only know it then because we
+                # pass out the name as an attribute on the result.
+                # We update the name now.
+                if (ft is not None and ret is not None and
+                        hasattr(ret, '_nr_coroutine_name')):
+                    ft.name = ret._nr_coroutine_name
+                    # To be able to attach the name to the return value of a
+                    # coroutine we need to have the coroutine return an object.
+                    # If it returns None, we have created a proxy object. We now
+                    # restore the original None value.
+                    if type(ret) == NoneProxy:
+                        ret = None
+
+        replace_current_transaction(old_transaction)
+        return ret
+
+    return transaction_aware(fxn)

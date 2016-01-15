@@ -3,9 +3,9 @@ import traceback
 import sys
 
 from newrelic.agent import (callable_name, wrap_function_wrapper,
-        FunctionTraceWrapper, FunctionWrapper)
-from .util import (retrieve_request_transaction, retrieve_current_transaction,
-        record_exception)
+        FunctionTraceWrapper)
+from .util import (retrieve_request_transaction, record_exception,
+        finalize_transaction, replace_current_transaction)
 
 _logger = logging.getLogger(__name__)
 
@@ -17,32 +17,6 @@ def _find_defined_class(meth):
         if meth.__name__ in cls.__dict__:
             return cls.__name__
     return None
-
-def _nr_wrapper_RequestHandler_on_finish_(wrapped, instance, args, kwargs):
-
-    assert instance is not None
-
-    request = instance.request
-
-    if request is None:
-        _logger.error('Runtime instrumentation error. Calling on_finish on '
-                'a RequestHandler when no request is present. Please '
-                'report this issue to New Relic support.\n%s',
-                ''.join(traceback.format_stack()[:-1]))
-        return wrapped(*args, **kwargs)
-
-    transaction = retrieve_request_transaction(request)
-
-    if transaction is None:
-        _logger.error('Runtime instrumentation error. Calling on_finish on '
-                'a RequestHandler when no transaction is present. Please '
-                'report this issue to New Relic support.\n%s',
-                ''.join(traceback.format_stack()[:-1]))
-        return wrapped(*args, **kwargs)
-
-    transaction._is_request_finished = True
-
-    return wrapped(*args, **kwargs)
 
 def _nr_wrapper_RequestHandler__execute_(wrapped, instance, args, kwargs):
     handler = instance
@@ -76,7 +50,21 @@ def _nr_wrapper_RequestHandler__execute_(wrapped, instance, args, kwargs):
 
     transaction.set_transaction_name(name)
 
-    return wrapped(*args, **kwargs)
+    # We need to set the current transaction so that the user code executed by
+    # running _execute is traced to the transaction we grabbed off the request
+
+    old_transaction = replace_current_transaction(transaction)
+
+    result = wrapped(*args, **kwargs)
+
+    replace_current_transaction(old_transaction)
+
+    # Finalize the transaction if nothing was scheduled on the IOLoop
+
+    if transaction._ref_count == 0:
+        finalize_transaction(transaction)
+
+    return result
 
 def _nr_wrapper_RequestHandler__handle_request_exception_(wrapped, instance,
         args, kwargs):
@@ -106,11 +94,6 @@ def _nr_wrapper_RequestHandler__init__(wrapped, instance, args, kwargs):
 
     if _find_defined_class(instance.on_finish) != 'RequestHandler':
         instance.on_finish = FunctionTraceWrapper(instance.on_finish)
-
-    # We also always wrap on_finish as part of keeping track of transactions
-
-    instance.on_finish = FunctionWrapper(instance.on_finish,
-            _nr_wrapper_RequestHandler_on_finish_)
 
     return wrapped(*args, **kwargs)
 

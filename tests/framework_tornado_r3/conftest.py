@@ -6,7 +6,7 @@ from testing_support.fixtures import (code_coverage_fixture,
 
 from tornado_fixtures import (wrap_record_transaction_fixture,
         clear_record_transaction_list, wrap_record_app_exception_fixture,
-        clear_record_app_exception_list)
+        clear_record_app_exception_list, wrap_transaction_exit_fixture)
 
 _default_settings = {
     'feature_flag': set(['tornado.instrumentation.r3']),
@@ -40,7 +40,8 @@ code_coverage = code_coverage_fixture(source=_coverage_source)
 
 @pytest.fixture(scope='session')
 def session_initialization(code_coverage, collector_agent_registration,
-        wrap_record_transaction_fixture, wrap_record_app_exception_fixture):
+        wrap_record_transaction_fixture, wrap_record_app_exception_fixture,
+        wrap_transaction_exit_fixture):
     pass
 
 @pytest.fixture(scope='function')

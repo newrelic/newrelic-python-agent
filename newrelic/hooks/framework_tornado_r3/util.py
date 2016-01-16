@@ -1,4 +1,5 @@
 import logging
+import traceback
 
 from newrelic.agent import (application as application_instance,
         current_transaction, ignore_status_code, function_wrapper,

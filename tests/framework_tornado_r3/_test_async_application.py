@@ -278,6 +278,56 @@ class PrepareOnFinishRequestHandlerSubclass(PrepareOnFinishRequestHandler):
     def get(self):
         self.finish(self.RESPONSE)
 
+class PrepareBaseRequestHandler(RequestHandler):
+    RESPONSE = b'preparedness'
+
+    def resolve_future(self, f):
+        f.set_result(None)
+
+    # I would put a shared get method here, but python 2 & 3 name
+    # methods differently depending if they're inherited
+
+class PrepareReturnsFutureHandler(PrepareBaseRequestHandler):
+
+    def prepare(self):
+        f = tornado.concurrent.Future()
+        tornado.ioloop.IOLoop.current().add_callback(self.resolve_future, f)
+        return f
+
+    def get(self):
+        self.write(self.RESPONSE)
+
+class PrepareCoroutineReturnsFutureHandler(PrepareBaseRequestHandler):
+
+    @tornado.gen.coroutine
+    def prepare(self):
+        f = tornado.concurrent.Future()
+        tornado.ioloop.IOLoop.current().add_callback(self.resolve_future, f)
+        yield f
+
+    def get(self):
+        self.write(self.RESPONSE)
+
+class PrepareCoroutineFutureDoesNotResolveHandler(PrepareBaseRequestHandler):
+
+    @tornado.gen.coroutine
+    def prepare(self):
+        f = tornado.concurrent.Future()
+        return f
+
+    def get(self):
+        self.write(self.RESPONSE)
+
+class PrepareFinishesHandler(RequestHandler):
+    RESPONSE = b'preparedness'
+
+    def prepare(self):
+        self.finish(self.RESPONSE)
+
+    def get(self):
+        # this should never get called
+        pass
+
 class AsyncFetchRequestHandler(RequestHandler):
 
     @tornado.web.asynchronous
@@ -361,4 +411,8 @@ def get_tornado_app():
         ('/async-fetch/(\w)+/(\d+)', AsyncFetchRequestHandler),
         ('/sync-fetch/(\w)+/(\d+)', SyncFetchRequestHandler),
         ('/run-sync-add/(\d+)/(\d+)', RunSyncAddRequestHandler),
+        ('/prepare-future', PrepareReturnsFutureHandler),
+        ('/prepare-coroutine', PrepareCoroutineReturnsFutureHandler),
+        ('/prepare-unresolved', PrepareCoroutineFutureDoesNotResolveHandler),
+        ('/prepare-finish', PrepareFinishesHandler),
     ])

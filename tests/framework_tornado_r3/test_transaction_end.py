@@ -7,7 +7,10 @@ from tornado_base_test import TornadoBaseTest
 
 from _test_async_application import (ReturnFirstDivideRequestHandler,
         CallLaterRequestHandler, CancelAfterRanCallLaterRequestHandler,
-        OneCallbackRequestHandler)
+        OneCallbackRequestHandler, PrepareReturnsFutureHandler,
+        PrepareCoroutineReturnsFutureHandler,
+        PrepareCoroutineFutureDoesNotResolveHandler,
+        PrepareFinishesHandler)
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
@@ -134,3 +137,77 @@ class TornadoTest(TornadoBaseTest):
         t.start()
         self.wait(timeout=5.0)
         t.join(10.0)
+
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'PrepareReturnsFutureHandler.prepare', 1),
+            ('Function/_test_async_application:'
+                    'PrepareReturnsFutureHandler.get', 1),
+    ]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:PrepareReturnsFutureHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_prepare_returns_future(self):
+        response = self.fetch_response('/prepare-future')
+        expected = PrepareReturnsFutureHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    scoped_metrics = select_python_version(
+            py2=[('Function/_test_async_application:'
+                    'PrepareCoroutineReturnsFutureHandler.prepare', 2),
+                ('Function/_test_async_application:prepare (coroutine)', 1),
+                ('Function/_test_async_application:'
+                    'PrepareCoroutineReturnsFutureHandler.get', 1)],
+            py3=[('Function/_test_async_application:'
+                    'PrepareCoroutineReturnsFutureHandler.prepare', 2),
+                ('Function/_test_async_application:PrepareCoroutineReturns'
+                    'FutureHandler.prepare (coroutine)', 1),
+                ('Function/_test_async_application:'
+                    'PrepareCoroutineReturnsFutureHandler.get', 1)])
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:PrepareCoroutineReturnsFutureHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_prepare_coroutine(self):
+        response = self.fetch_response('/prepare-coroutine')
+        expected = PrepareCoroutineReturnsFutureHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'PrepareCoroutineFutureDoesNotResolveHandler.prepare', 2),
+            ('Function/_test_async_application:'
+                    'PrepareCoroutineFutureDoesNotResolveHandler.get', 1),
+    ]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:PrepareCoroutine'
+                    'FutureDoesNotResolveHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_prepare_coroutine_future_does_not_resolve(self):
+        response = self.fetch_response('/prepare-unresolved')
+        expected = PrepareCoroutineFutureDoesNotResolveHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    # get is never called if the request finishes in prepare
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'PrepareFinishesHandler.prepare', 1),
+    ]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:PrepareFinishesHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_prepare_with_finish(self):
+        response = self.fetch_response('/prepare-finish')
+        expected = PrepareFinishesHandler.RESPONSE
+        self.assertEqual(response.body, expected)

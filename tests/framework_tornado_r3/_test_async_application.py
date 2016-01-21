@@ -328,6 +328,22 @@ class PrepareFinishesHandler(RequestHandler):
         # this should never get called
         pass
 
+class OnFinishWithGetCoroutineHandler(RequestHandler):
+    RESPONSE = b'get coroutine with on finish'
+
+    @tornado.gen.coroutine
+    def get(self):
+        f = tornado.concurrent.Future()
+        tornado.ioloop.IOLoop.current().add_callback(self.resolve_future, f)
+        yield f
+        self.write(self.RESPONSE)
+
+    def resolve_future(self, f):
+        f.set_result(None)
+
+    def on_finish(self):
+        pass
+
 class AsyncFetchRequestHandler(RequestHandler):
 
     @tornado.web.asynchronous
@@ -415,4 +431,5 @@ def get_tornado_app():
         ('/prepare-coroutine', PrepareCoroutineReturnsFutureHandler),
         ('/prepare-unresolved', PrepareCoroutineFutureDoesNotResolveHandler),
         ('/prepare-finish', PrepareFinishesHandler),
+        ('/on_finish-get-coroutine', OnFinishWithGetCoroutineHandler),
     ])

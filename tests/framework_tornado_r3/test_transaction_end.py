@@ -10,7 +10,7 @@ from _test_async_application import (ReturnFirstDivideRequestHandler,
         OneCallbackRequestHandler, PrepareReturnsFutureHandler,
         PrepareCoroutineReturnsFutureHandler,
         PrepareCoroutineFutureDoesNotResolveHandler,
-        PrepareFinishesHandler)
+        PrepareFinishesHandler, OnFinishWithGetCoroutineHandler)
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
@@ -210,4 +210,22 @@ class TornadoTest(TornadoBaseTest):
     def test_prepare_with_finish(self):
         response = self.fetch_response('/prepare-finish')
         expected = PrepareFinishesHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'OnFinishWithGetCoroutineHandler.on_finish', 1),
+            ('Function/_test_async_application:'
+                    'OnFinishWithGetCoroutineHandler.get', 2),
+    ]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:OnFinishWithGetCoroutineHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_on_finish_instrumented_with_coroutine_handler(self):
+        # on_finish called from _execute that has yielded
+        response = self.fetch_response('/on_finish-get-coroutine')
+        expected = OnFinishWithGetCoroutineHandler.RESPONSE
         self.assertEqual(response.body, expected)

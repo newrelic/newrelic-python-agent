@@ -2,20 +2,22 @@ import logging
 import traceback
 
 from newrelic.agent import wrap_function_wrapper
-from .util import finalize_request_monitoring
+from .util import possibly_finalize_transaction
 
 _logger = logging.getLogger(__name__)
 
 # For every request either finish() or on_connection_close() is called on the
-# _ServerRequestAdapter. If finish() is called we handle to end of the request
-# in the request handler. Otherwise we handle it here.
+# _ServerRequestAdapter. We require that one of these methods is called before
+# the transaction is allowed to be finalized.
 
-def _nr_wrapper__ServerRequestAdapter_on_connection_close_(wrapped, instance,
-        args, kwargs):
-
+def _transaction_can_finalize(wrapped, instance, args, kwargs):
     assert instance is not None
 
-    request = instance.connection._nr_current_request()
+    if instance.delegate is not None:
+        request = instance.delegate.request
+    else:
+        request = instance.request
+
     if request is None:
         _logger.error('Runtime instrumentation error. Ending request '
                 'monitoring on ServerRequestAdapter when no request is '
@@ -23,10 +25,31 @@ def _nr_wrapper__ServerRequestAdapter_on_connection_close_(wrapped, instance,
                 ''.join(traceback.format_stack()[:-1]))
         return wrapped(*args, **kwargs)
 
-    result = wrapped(*args, **kwargs)
-    finalize_request_monitoring(request)
-    return result
+    # We grab the transaction off of the request.
+    if not hasattr(request, '_nr_transaction'):
+        return wrapped(*args, **kwargs)
+
+    if request._nr_transaction is None:
+        return wrapped(*args, **kwargs)
+
+    transaction = request._nr_transaction
+
+    try:
+        return wrapped(*args, **kwargs)
+    finally:
+        transaction._can_finalize = True
+        possibly_finalize_transaction(transaction)
+
+def _nr_wrapper__ServerRequestAdapter_on_connection_close_(wrapped, instance,
+        args, kwargs):
+    return _transaction_can_finalize(wrapped, instance, args, kwargs)
+
+def _nr_wrapper__ServerRequestAdapter_finish_(wrapped, instance,
+        args, kwargs):
+    return _transaction_can_finalize(wrapped, instance, args, kwargs)
 
 def instrument_tornado_httpserver(module):
     wrap_function_wrapper(module, '_ServerRequestAdapter.on_connection_close',
             _nr_wrapper__ServerRequestAdapter_on_connection_close_)
+    wrap_function_wrapper(module, '_ServerRequestAdapter.finish',
+            _nr_wrapper__ServerRequestAdapter_finish_)

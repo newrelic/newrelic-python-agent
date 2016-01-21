@@ -5,7 +5,7 @@ import sys
 from newrelic.agent import (callable_name, wrap_function_wrapper,
         FunctionTraceWrapper)
 from .util import (retrieve_request_transaction, record_exception,
-        finalize_transaction, replace_current_transaction)
+        replace_current_transaction)
 
 _logger = logging.getLogger(__name__)
 
@@ -58,11 +58,6 @@ def _nr_wrapper_RequestHandler__execute_(wrapped, instance, args, kwargs):
     result = wrapped(*args, **kwargs)
 
     replace_current_transaction(old_transaction)
-
-    # Finalize the transaction if nothing was scheduled on the IOLoop
-
-    if transaction._ref_count == 0:
-        finalize_transaction(transaction)
 
     return result
 

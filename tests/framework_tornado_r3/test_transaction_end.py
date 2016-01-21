@@ -12,7 +12,9 @@ from _test_async_application import (ReturnFirstDivideRequestHandler,
         PrepareCoroutineFutureDoesNotResolveHandler,
         PrepareFinishesHandler, OnFinishWithGetCoroutineHandler,
         ThreadScheduledCallbackRequestHandler,
-        CallbackOnThreadExecutorRequestHandler)
+        CallbackOnThreadExecutorRequestHandler,
+        ThreadScheduledCallAtRequestHandler,
+        CallAtOnThreadExecutorRequestHandler)
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
@@ -262,4 +264,36 @@ class TornadoTest(TornadoBaseTest):
     def test_thread_ran_callback(self):
         response = self.fetch_response('/thread-ran-callback')
         expected = CallbackOnThreadExecutorRequestHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'ThreadScheduledCallAtRequestHandler.get', 1),
+    ]
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:ThreadScheduledCallAtRequestHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_thread_scheduled_call_at(self):
+        response = self.fetch_response('/thread-scheduled-call_at')
+        expected = ThreadScheduledCallAtRequestHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    # Since the threaded callback is *scheduled* on the main thread, it
+    # should still be included in the transaction
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'CallAtOnThreadExecutorRequestHandler.get', 1),
+            ('Function/_test_async_application:'
+                    'CallAtOnThreadExecutorRequestHandler.do_thing', 1),
+    ]
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:CallAtOnThreadExecutorRequestHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_thread_ran_call_at(self):
+        response = self.fetch_response('/thread-ran-call_at')
+        expected = CallAtOnThreadExecutorRequestHandler.RESPONSE
         self.assertEqual(response.body, expected)

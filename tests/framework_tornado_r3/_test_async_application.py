@@ -434,6 +434,37 @@ class CallbackOnThreadExecutorRequestHandler(RequestHandler):
     def do_thing(self):
         pass
 
+class ThreadScheduledCallAtRequestHandler(RequestHandler):
+    RESPONSE = b'call_at threading'
+
+    _executor = concurrent.futures.ThreadPoolExecutor(2)
+
+    def get(self):
+        self.schedule_thing()
+        self.write(self.RESPONSE)
+
+    @tornado.concurrent.run_on_executor(executor='_executor')
+    def schedule_thing(self):
+        # call later calls call_at, but does the time math for you
+        tornado.ioloop.IOLoop.current().call_later(0.1, self.do_thing)
+
+    def do_thing(self):
+        pass
+
+class CallAtOnThreadExecutorRequestHandler(RequestHandler):
+    RESPONSE = b'call_at threading'
+
+    _executor = concurrent.futures.ThreadPoolExecutor(2)
+
+    def get(self):
+        # call later calls call_at, but does the time math for you
+        tornado.ioloop.IOLoop.current().call_later(0.1, self.do_thing)
+        self.write(self.RESPONSE)
+
+    @tornado.concurrent.run_on_executor(executor='_executor')
+    def do_thing(self):
+        pass
+
 def get_tornado_app():
     return Application([
         ('/', HelloRequestHandler),
@@ -464,4 +495,6 @@ def get_tornado_app():
         ('/on_finish-get-coroutine', OnFinishWithGetCoroutineHandler),
         ('/thread-scheduled-callback', ThreadScheduledCallbackRequestHandler),
         ('/thread-ran-callback', CallbackOnThreadExecutorRequestHandler),
+        ('/thread-scheduled-call_at', ThreadScheduledCallAtRequestHandler),
+        ('/thread-ran-call_at', CallAtOnThreadExecutorRequestHandler),
     ])

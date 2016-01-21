@@ -1,3 +1,4 @@
+import concurrent.futures
 import functools
 import tornado
 
@@ -404,6 +405,35 @@ class RunSyncAddRequestHandler(RequestHandler):
     def RESPONSE(cls, total):
         return (cls.RESPONSE_TEMPLATE % total).encode('ascii')
 
+class ThreadScheduledCallbackRequestHandler(RequestHandler):
+    RESPONSE = b'callback threading'
+
+    _executor = concurrent.futures.ThreadPoolExecutor(2)
+
+    def get(self):
+        self.schedule_thing()
+        self.write(self.RESPONSE)
+
+    @tornado.concurrent.run_on_executor(executor='_executor')
+    def schedule_thing(self):
+        tornado.ioloop.IOLoop.current().add_callback(self.do_thing)
+
+    def do_thing(self):
+        pass
+
+class CallbackOnThreadExecutorRequestHandler(RequestHandler):
+    RESPONSE = b'callback threading'
+
+    _executor = concurrent.futures.ThreadPoolExecutor(2)
+
+    def get(self):
+        tornado.ioloop.IOLoop.current().add_callback(self.do_thing)
+        self.write(self.RESPONSE)
+
+    @tornado.concurrent.run_on_executor(executor='_executor')
+    def do_thing(self):
+        pass
+
 def get_tornado_app():
     return Application([
         ('/', HelloRequestHandler),
@@ -432,4 +462,6 @@ def get_tornado_app():
         ('/prepare-unresolved', PrepareCoroutineFutureDoesNotResolveHandler),
         ('/prepare-finish', PrepareFinishesHandler),
         ('/on_finish-get-coroutine', OnFinishWithGetCoroutineHandler),
+        ('/thread-scheduled-callback', ThreadScheduledCallbackRequestHandler),
+        ('/thread-ran-callback', CallbackOnThreadExecutorRequestHandler),
     ])

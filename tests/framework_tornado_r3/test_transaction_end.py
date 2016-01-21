@@ -10,7 +10,9 @@ from _test_async_application import (ReturnFirstDivideRequestHandler,
         OneCallbackRequestHandler, PrepareReturnsFutureHandler,
         PrepareCoroutineReturnsFutureHandler,
         PrepareCoroutineFutureDoesNotResolveHandler,
-        PrepareFinishesHandler, OnFinishWithGetCoroutineHandler)
+        PrepareFinishesHandler, OnFinishWithGetCoroutineHandler,
+        ThreadScheduledCallbackRequestHandler,
+        CallbackOnThreadExecutorRequestHandler)
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
@@ -228,4 +230,36 @@ class TornadoTest(TornadoBaseTest):
         # on_finish called from _execute that has yielded
         response = self.fetch_response('/on_finish-get-coroutine')
         expected = OnFinishWithGetCoroutineHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'ThreadScheduledCallbackRequestHandler.get', 1),
+    ]
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:ThreadScheduledCallbackRequestHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_thread_scheduled_callback(self):
+        response = self.fetch_response('/thread-scheduled-callback')
+        expected = ThreadScheduledCallbackRequestHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    # Since the threaded callback is *scheduled* on the main thread, it
+    # should still be included in the transaction
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'CallbackOnThreadExecutorRequestHandler.get', 1),
+            ('Function/_test_async_application:'
+                    'CallbackOnThreadExecutorRequestHandler.do_thing', 1),
+    ]
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:CallbackOnThreadExecutorRequestHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_thread_ran_callback(self):
+        response = self.fetch_response('/thread-ran-callback')
+        expected = CallbackOnThreadExecutorRequestHandler.RESPONSE
         self.assertEqual(response.body, expected)

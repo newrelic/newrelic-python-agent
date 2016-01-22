@@ -49,6 +49,10 @@ def _nr_wrapper_HTTPServerRequest__init__(wrapped, instance, args, kwargs):
     name = callable_name(wrapped)
     transaction.set_transaction_name(name)
 
+    # Use HTTPServerRequest start time as transaction start time.
+
+    transaction.start_time = request._start_time
+
     return result
 
 def initiate_request_monitoring(request):

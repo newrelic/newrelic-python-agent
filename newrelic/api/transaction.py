@@ -82,6 +82,7 @@ class Transaction(object):
 
         self.start_time = 0.0
         self.end_time = 0.0
+        self.last_byte_time = 0.0
 
         self.stopped = False
 
@@ -450,6 +451,7 @@ class Transaction(object):
                 queue_start=self.queue_start,
                 start_time=self.start_time,
                 end_time=self.end_time,
+                last_byte_time=self.last_byte_time,
                 duration=duration,
                 exclusive=exclusive,
                 children=tuple(children),

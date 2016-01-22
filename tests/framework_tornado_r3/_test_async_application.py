@@ -465,6 +465,34 @@ class CallAtOnThreadExecutorRequestHandler(RequestHandler):
     def do_thing(self):
         pass
 
+class AddFutureRequestHanlder(RequestHandler):
+    RESPONSE = b'Add future'
+
+    def get(self):
+        f = tornado.concurrent.Future()
+        tornado.ioloop.IOLoop.current().add_future(f, self.do_thing)
+        self.write(self.RESPONSE)
+
+        # resolve the future non-synchronously, after _execute here finishes
+        tornado.ioloop.IOLoop.current().add_callback(f.set_result, (None,))
+
+    def do_thing(self, future):
+        pass
+
+class AddDoneCallbackRequestHanlder(RequestHandler):
+    RESPONSE = b'Add future'
+
+    def get(self):
+        f = tornado.concurrent.Future()
+        f.add_done_callback(lambda future: tornado.ioloop.IOLoop.current().add_callback(self.do_thing))
+        self.write(self.RESPONSE)
+
+        # resolve the future non-synchronously, after _execute here finishes
+        tornado.ioloop.IOLoop.current().add_callback(f.set_result, (None,))
+
+    def do_thing(self):
+        pass
+
 def get_tornado_app():
     return Application([
         ('/', HelloRequestHandler),
@@ -497,4 +525,6 @@ def get_tornado_app():
         ('/thread-ran-callback', CallbackOnThreadExecutorRequestHandler),
         ('/thread-scheduled-call_at', ThreadScheduledCallAtRequestHandler),
         ('/thread-ran-call_at', CallAtOnThreadExecutorRequestHandler),
+        ('/add-future', AddFutureRequestHanlder),
+        ('/add_done_callback', AddDoneCallbackRequestHanlder),
     ])

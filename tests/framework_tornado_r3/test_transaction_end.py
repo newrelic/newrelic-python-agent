@@ -14,7 +14,8 @@ from _test_async_application import (ReturnFirstDivideRequestHandler,
         ThreadScheduledCallbackRequestHandler,
         CallbackOnThreadExecutorRequestHandler,
         ThreadScheduledCallAtRequestHandler,
-        CallAtOnThreadExecutorRequestHandler)
+        CallAtOnThreadExecutorRequestHandler, AddFutureRequestHanlder,
+        AddDoneCallbackRequestHanlder)
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
@@ -296,4 +297,36 @@ class TornadoTest(TornadoBaseTest):
     def test_thread_ran_call_at(self):
         response = self.fetch_response('/thread-ran-call_at')
         expected = CallAtOnThreadExecutorRequestHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'AddFutureRequestHanlder.get', 1),
+            ('Function/_test_async_application:'
+                    'AddFutureRequestHanlder.do_thing', 1),
+    ]
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:AddFutureRequestHanlder.get',
+            scoped_metrics=scoped_metrics)
+    def test_add_future(self):
+        response = self.fetch_response('/add-future')
+        expected = AddFutureRequestHanlder.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'AddDoneCallbackRequestHanlder.get', 1),
+            ('Function/_test_async_application:'
+                    'AddDoneCallbackRequestHanlder.do_thing', 1),
+    ]
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:AddDoneCallbackRequestHanlder.get',
+            scoped_metrics=scoped_metrics)
+    def test_add_done_callback(self):
+        response = self.fetch_response('/add_done_callback')
+        expected = AddDoneCallbackRequestHanlder.RESPONSE
         self.assertEqual(response.body, expected)

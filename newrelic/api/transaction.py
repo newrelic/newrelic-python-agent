@@ -325,6 +325,13 @@ class Transaction(object):
 
         duration = self.end_time - self.start_time
 
+        # Set the last_byte_time for Web Transactions. If it hasn't
+        # already been set, then last_byte_time is the same as the
+        # Transaction end time.
+
+        if not self.background_task and self.last_byte_time == 0.0:
+            self.last_byte_time = self.end_time
+
         # Calculate overall user time.
 
         if not self._cpu_user_time_end:

@@ -298,6 +298,22 @@ def tornado_validate_errors(errors=[], app_exceptions=[],
 
     return _validate_errors
 
+def tornado_run_validator(func):
+    """Get the transaction_node saved in _RECORDED_TRANSACTIONS[0]
+    and run func(transaction_node).
+
+    If func returns True, test passes.
+
+    """
+    @function_wrapper
+    def _validator(wrapped, instance, args, kwargs):
+        wrapped(*args, **kwargs)
+        transaction_node, _, _ = _RECORDED_TRANSACTIONS[0]
+        result = func(transaction_node)
+        assert result
+
+    return _validator
+
 def tornado_validate_transaction_cache_empty():
     """Validates the transaction cache is empty after all requests are serviced.
 

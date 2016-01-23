@@ -20,7 +20,8 @@ from testing_support.mock_external_http_server import MockExternalHTTPServer
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
     tornado_validate_time_transaction_metrics,
-    tornado_validate_errors, tornado_validate_transaction_cache_empty)
+    tornado_validate_errors, tornado_validate_transaction_cache_empty,
+    tornado_run_validator)
 
 def select_python_version(py2, py3):
     return six.PY3 and py3 or py2
@@ -552,3 +553,12 @@ class TornadoTest(TornadoBaseTest):
         response = self.fetch_response('/run-sync-add/%s/%s' % (a,b))
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, RunSyncAddRequestHandler.RESPONSE(a+b))
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_run_validator(lambda x: x.last_byte_time > 0.0)
+    @tornado_run_validator(lambda x: x.last_byte_time > x.start_time)
+    @tornado_run_validator(lambda x: x.last_byte_time < x.end_time)
+    def test_last_byte_time_hello_world(self):
+        response = self.fetch_response('/')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, HelloRequestHandler.RESPONSE)

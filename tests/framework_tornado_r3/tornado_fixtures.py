@@ -1,3 +1,4 @@
+import inspect
 import pytest
 import logging
 
@@ -305,12 +306,16 @@ def tornado_run_validator(func):
     If func returns True, test passes.
 
     """
+    def _first_source_line(func):
+        lines, line_num = inspect.getsourcelines(func)
+        return 'FAILED at line %d: %s' % (line_num, lines[0].strip())
+
     @function_wrapper
     def _validator(wrapped, instance, args, kwargs):
         wrapped(*args, **kwargs)
         transaction_node, _, _ = _RECORDED_TRANSACTIONS[0]
         result = func(transaction_node)
-        assert result
+        assert result, _first_source_line(func)
 
     return _validator
 

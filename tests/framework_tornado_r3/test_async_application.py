@@ -10,10 +10,10 @@ from tornado_base_test import TornadoBaseTest
 from _test_async_application import (HelloRequestHandler,
         SleepRequestHandler, OneCallbackRequestHandler,
         NamedStackContextWrapRequestHandler, MultipleCallbacksRequestHandler,
-        FinishExceptionRequestHandler, ReturnExceptionRequestHandler,
-        IOLoopDivideRequestHandler, EngineDivideRequestHandler,
-        PrepareOnFinishRequestHandler, PrepareOnFinishRequestHandlerSubclass,
-        RunSyncAddRequestHandler, )
+        CallLaterRequestHandler, FinishExceptionRequestHandler,
+        ReturnExceptionRequestHandler, IOLoopDivideRequestHandler,
+        EngineDivideRequestHandler, PrepareOnFinishRequestHandler,
+        PrepareOnFinishRequestHandlerSubclass, RunSyncAddRequestHandler)
 
 from testing_support.mock_external_http_server import MockExternalHTTPServer
 
@@ -562,3 +562,14 @@ class TornadoTest(TornadoBaseTest):
         response = self.fetch_response('/')
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, HelloRequestHandler.RESPONSE)
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_run_validator(lambda x: x.last_byte_time > 0.0)
+    @tornado_run_validator(lambda x: x.last_byte_time > x.start_time)
+    @tornado_run_validator(lambda x: x.last_byte_time < x.end_time)
+    @tornado_run_validator(lambda x: x.last_byte_time + 0.00499 < x.end_time)
+    @tornado_run_validator(lambda x: x.last_byte_time + 0.05 > x.end_time)
+    def test_last_byte_time_sleep(self):
+        response = self.fetch_response('/call-at')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, CallLaterRequestHandler.RESPONSE)

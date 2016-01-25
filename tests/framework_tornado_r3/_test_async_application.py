@@ -279,26 +279,22 @@ class PrepareOnFinishRequestHandlerSubclass(PrepareOnFinishRequestHandler):
     def get(self):
         self.finish(self.RESPONSE)
 
-class PrepareBaseRequestHandler(RequestHandler):
+class PrepareReturnsFutureHandler(RequestHandler):
     RESPONSE = b'preparedness'
-
-    def resolve_future(self, f):
-        f.set_result(None)
-
-    # I would put a shared get method here, but python 2 & 3 name
-    # methods differently depending if they're inherited
-
-class PrepareReturnsFutureHandler(PrepareBaseRequestHandler):
 
     def prepare(self):
         f = tornado.concurrent.Future()
         tornado.ioloop.IOLoop.current().add_callback(self.resolve_future, f)
         return f
 
+    def resolve_future(self, f):
+        f.set_result(None)
+
     def get(self):
         self.write(self.RESPONSE)
 
-class PrepareCoroutineReturnsFutureHandler(PrepareBaseRequestHandler):
+class PrepareCoroutineReturnsFutureHandler(RequestHandler):
+    RESPONSE = b'preparedness'
 
     @tornado.gen.coroutine
     def prepare(self):
@@ -306,10 +302,14 @@ class PrepareCoroutineReturnsFutureHandler(PrepareBaseRequestHandler):
         tornado.ioloop.IOLoop.current().add_callback(self.resolve_future, f)
         yield f
 
+    def resolve_future(self, f):
+        f.set_result(None)
+
     def get(self):
         self.write(self.RESPONSE)
 
-class PrepareCoroutineFutureDoesNotResolveHandler(PrepareBaseRequestHandler):
+class PrepareCoroutineFutureDoesNotResolveHandler(RequestHandler):
+    RESPONSE = b'preparedness'
 
     @tornado.gen.coroutine
     def prepare(self):

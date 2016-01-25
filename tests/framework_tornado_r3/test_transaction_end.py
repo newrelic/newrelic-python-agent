@@ -148,6 +148,8 @@ class TornadoTest(TornadoBaseTest):
                     'PrepareReturnsFutureHandler.prepare', 1),
             ('Function/_test_async_application:'
                     'PrepareReturnsFutureHandler.get', 1),
+            ('Function/_test_async_application:'
+                    'PrepareReturnsFutureHandler.resolve_future', 1),
     ]
 
     @tornado_validate_transaction_cache_empty()
@@ -165,13 +167,17 @@ class TornadoTest(TornadoBaseTest):
                     'PrepareCoroutineReturnsFutureHandler.prepare', 2),
                 ('Function/_test_async_application:prepare (coroutine)', 1),
                 ('Function/_test_async_application:'
-                    'PrepareCoroutineReturnsFutureHandler.get', 1)],
+                    'PrepareCoroutineReturnsFutureHandler.get', 1),
+                ('Function/_test_async_application:'
+                    'PrepareCoroutineReturnsFutureHandler.resolve_future', 1)],
             py3=[('Function/_test_async_application:'
                     'PrepareCoroutineReturnsFutureHandler.prepare', 2),
                 ('Function/_test_async_application:PrepareCoroutineReturns'
                     'FutureHandler.prepare (coroutine)', 1),
                 ('Function/_test_async_application:'
-                    'PrepareCoroutineReturnsFutureHandler.get', 1)])
+                    'PrepareCoroutineReturnsFutureHandler.get', 1),
+                ('Function/_test_async_application:'
+                    'PrepareCoroutineReturnsFutureHandler.resolve_future', 1)])
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()

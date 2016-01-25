@@ -3,7 +3,7 @@ import sys
 import traceback
 
 from newrelic.agent import wrap_function_wrapper
-from .util import (finalize_transaction, record_exception,
+from .util import (possibly_finalize_transaction, record_exception,
         retrieve_current_transaction)
 
 _logger = logging.getLogger(__name__)
@@ -39,8 +39,7 @@ def _nr_wrapper_IOLoop__run_callback_(wrapped, instance, args, kwargs):
         callback._nr_callback_ran = True
 
         # Finalize the transaction if this is the last callback.
-        if transaction._ref_count == 0:
-            finalize_transaction(callback._nr_transaction)
+        possibly_finalize_transaction(callback._nr_transaction)
 
     return ret
 

@@ -1,4 +1,5 @@
 import logging
+import traceback
 
 from newrelic.agent import (application as application_instance,
         current_transaction, ignore_status_code, function_wrapper,
@@ -75,17 +76,7 @@ def replace_current_transaction(new_transaction):
         new_transaction.save_transaction()
     return old_transaction
 
-def finalize_request_monitoring(request, exc=None, value=None, tb=None):
-    # Finalize monitoring of the transaction.
-    transaction = retrieve_request_transaction(request)
-    try:
-        finalize_transaction(transaction, exc, value, tb)
-    finally:
-        # This should be set to None in finalize transaction but in case it
-        # isn't we set it to None here.
-        request._nr_transaction = None
-
-def finalize_transaction(transaction, exc=None, value=None, tb=None):
+def possibly_finalize_transaction(transaction, exc=None, value=None, tb=None):
     if transaction is None:
         _logger.error('Runtime instrumentation error. Attempting to finalize '
                 'an empty transaction. Please report this issue to New Relic '
@@ -99,6 +90,10 @@ def finalize_transaction(transaction, exc=None, value=None, tb=None):
                 ''.join(traceback.format_stack()[:-1]))
         return
 
+    if transaction._can_finalize and transaction._ref_count == 0:
+        _finalize_transaction(transaction, exc, value, tb)
+
+def _finalize_transaction(transaction, exc=None, value=None, tb=None):
     old_transaction = replace_current_transaction(transaction)
 
     try:

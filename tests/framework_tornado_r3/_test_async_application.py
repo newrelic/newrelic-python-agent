@@ -311,6 +311,33 @@ class SyncFetchRequestHandler(RequestHandler):
         response = client.fetch(url)
         self.finish(response.body)
 
+class RunSyncAddRequestHandler(RequestHandler):
+    RESPONSE_TEMPLATE = 'The sum is %s'
+
+    def __init__(self, *args, **kwargs):
+        super(RunSyncAddRequestHandler, self).__init__(*args, **kwargs)
+        self.my_io_loop = tornado.ioloop.IOLoop(make_current=False)
+
+    def get(self, a, b):
+        self.a = int(a)
+        self.b = int(b)
+        total = self.my_io_loop.run_sync(self.async_add)
+        response = self.RESPONSE_TEMPLATE % total
+        self.finish(response.encode('ascii'))
+
+    def async_add(self):
+        future = tornado.concurrent.Future()
+        self.my_io_loop.add_callback(self.add, future)
+        return future
+
+    def add(self, future):
+        self.total = self.a + self.b
+        future.set_result(self.a + self.b)
+
+    @classmethod
+    def RESPONSE(cls, total):
+        return (cls.RESPONSE_TEMPLATE % total).encode('ascii')
+
 def get_tornado_app():
     return Application([
         ('/', HelloRequestHandler),
@@ -333,4 +360,5 @@ def get_tornado_app():
         ('/bookend-subclass', PrepareOnFinishRequestHandlerSubclass),
         ('/async-fetch/(\w)+/(\d+)', AsyncFetchRequestHandler),
         ('/sync-fetch/(\w)+/(\d+)', SyncFetchRequestHandler),
+        ('/run-sync-add/(\d+)/(\d+)', RunSyncAddRequestHandler),
     ])

@@ -12,7 +12,8 @@ from _test_async_application import (HelloRequestHandler,
         NamedStackContextWrapRequestHandler, MultipleCallbacksRequestHandler,
         FinishExceptionRequestHandler, ReturnExceptionRequestHandler,
         IOLoopDivideRequestHandler, EngineDivideRequestHandler,
-        PrepareOnFinishRequestHandler, PrepareOnFinishRequestHandlerSubclass)
+        PrepareOnFinishRequestHandler, PrepareOnFinishRequestHandlerSubclass,
+        RunSyncAddRequestHandler, )
 
 from testing_support.mock_external_http_server import MockExternalHTTPServer
 
@@ -540,3 +541,14 @@ class TornadoTest(TornadoBaseTest):
 
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, external.RESPONSE)
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:RunSyncAddRequestHandler.get')
+    def test_run_sync_response(self):
+        a = 3
+        b = 4
+        response = self.fetch_response('/run-sync-add/%s/%s' % (a,b))
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, RunSyncAddRequestHandler.RESPONSE(a+b))

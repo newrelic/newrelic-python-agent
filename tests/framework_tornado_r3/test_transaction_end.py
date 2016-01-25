@@ -14,8 +14,8 @@ from _test_async_application import (ReturnFirstDivideRequestHandler,
         ThreadScheduledCallbackRequestHandler,
         CallbackOnThreadExecutorRequestHandler,
         ThreadScheduledCallAtRequestHandler,
-        CallAtOnThreadExecutorRequestHandler, AddFutureRequestHanlder,
-        AddDoneCallbackRequestHanlder)
+        CallAtOnThreadExecutorRequestHandler, AddFutureRequestHandler,
+        AddDoneCallbackRequestHandler)
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
@@ -301,32 +301,32 @@ class TornadoTest(TornadoBaseTest):
 
     scoped_metrics = [
             ('Function/_test_async_application:'
-                    'AddFutureRequestHanlder.get', 1),
+                    'AddFutureRequestHandler.get', 1),
             ('Function/_test_async_application:'
-                    'AddFutureRequestHanlder.do_thing', 1),
+                    'AddFutureRequestHandler.do_thing', 1),
     ]
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
-            '_test_async_application:AddFutureRequestHanlder.get',
+            '_test_async_application:AddFutureRequestHandler.get',
             scoped_metrics=scoped_metrics)
     def test_add_future(self):
         response = self.fetch_response('/add-future')
-        expected = AddFutureRequestHanlder.RESPONSE
+        expected = AddFutureRequestHandler.RESPONSE
         self.assertEqual(response.body, expected)
 
     scoped_metrics = [
             ('Function/_test_async_application:'
-                    'AddDoneCallbackRequestHanlder.get', 1),
+                    'AddDoneCallbackRequestHandler.get', 1),
             ('Function/_test_async_application:'
-                    'AddDoneCallbackRequestHanlder.do_thing', 1),
+                    'AddDoneCallbackRequestHandler.do_thing', 1),
     ]
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
-            '_test_async_application:AddDoneCallbackRequestHanlder.get',
+            '_test_async_application:AddDoneCallbackRequestHandler.get',
             scoped_metrics=scoped_metrics)
     def test_add_done_callback(self):
         response = self.fetch_response('/add_done_callback')
-        expected = AddDoneCallbackRequestHanlder.RESPONSE
+        expected = AddDoneCallbackRequestHandler.RESPONSE
         self.assertEqual(response.body, expected)

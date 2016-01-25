@@ -313,6 +313,8 @@ class PrepareCoroutineFutureDoesNotResolveHandler(PrepareBaseRequestHandler):
 
     @tornado.gen.coroutine
     def prepare(self):
+        # Due to how Tornado works internally, since this coroutine returns a
+        # future, it won't hang. It would hang if it were to yield the future.
         f = tornado.concurrent.Future()
         return f
 
@@ -465,7 +467,7 @@ class CallAtOnThreadExecutorRequestHandler(RequestHandler):
     def do_thing(self):
         pass
 
-class AddFutureRequestHanlder(RequestHandler):
+class AddFutureRequestHandler(RequestHandler):
     RESPONSE = b'Add future'
 
     def get(self):
@@ -473,13 +475,13 @@ class AddFutureRequestHanlder(RequestHandler):
         tornado.ioloop.IOLoop.current().add_future(f, self.do_thing)
         self.write(self.RESPONSE)
 
-        # resolve the future non-synchronously, after _execute here finishes
+        # resolve the future asynchronously, after _execute here finishes
         tornado.ioloop.IOLoop.current().add_callback(f.set_result, (None,))
 
     def do_thing(self, future):
         pass
 
-class AddDoneCallbackRequestHanlder(RequestHandler):
+class AddDoneCallbackRequestHandler(RequestHandler):
     RESPONSE = b'Add future'
 
     def get(self):
@@ -487,7 +489,7 @@ class AddDoneCallbackRequestHanlder(RequestHandler):
         f.add_done_callback(lambda future: tornado.ioloop.IOLoop.current().add_callback(self.do_thing))
         self.write(self.RESPONSE)
 
-        # resolve the future non-synchronously, after _execute here finishes
+        # resolve the future asynchronously, after _execute here finishes
         tornado.ioloop.IOLoop.current().add_callback(f.set_result, (None,))
 
     def do_thing(self):
@@ -525,6 +527,6 @@ def get_tornado_app():
         ('/thread-ran-callback', CallbackOnThreadExecutorRequestHandler),
         ('/thread-scheduled-call_at', ThreadScheduledCallAtRequestHandler),
         ('/thread-ran-call_at', CallAtOnThreadExecutorRequestHandler),
-        ('/add-future', AddFutureRequestHanlder),
-        ('/add_done_callback', AddDoneCallbackRequestHanlder),
+        ('/add-future', AddFutureRequestHandler),
+        ('/add_done_callback', AddDoneCallbackRequestHandler),
     ])

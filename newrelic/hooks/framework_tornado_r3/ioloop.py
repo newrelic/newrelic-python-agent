@@ -25,18 +25,18 @@ def _nr_wrapper_IOLoop__run_callback_(wrapped, instance, args, kwargs):
             return None
 
     callback = _callback_extractor(*args, **kwargs)
-
-    ret = wrapped(*args, **kwargs)
-
     transaction = getattr(callback, '_nr_transaction', None)
     if transaction is not None:
-        transaction = callback._nr_transaction
-        transaction._ref_count -= 1
-
         # Mark this callback as ran so calls to cancel timers know not to
         # decrement the callback ref count
 
         callback._nr_callback_ran = True
+
+
+    ret = wrapped(*args, **kwargs)
+
+    if transaction is not None:
+        transaction._ref_count -= 1
 
         # Finalize the transaction if this is the last callback.
         possibly_finalize_transaction(callback._nr_transaction)
@@ -69,8 +69,10 @@ def _nr_wrapper_PollIOLoop_remove_timeout(wrapped, instance, args, kwargs):
     callback = _callback_extractor(*args, **kwargs)
 
     transaction = getattr(callback, '_nr_transaction', None)
+
+    ret = wrapped(*args, **kwargs)
+
     if transaction is not None:
-        transaction = callback._nr_transaction
         if not hasattr(callback, '_nr_callback_ran'):
             transaction._ref_count -= 1
 
@@ -78,7 +80,7 @@ def _nr_wrapper_PollIOLoop_remove_timeout(wrapped, instance, args, kwargs):
             # only be possible if remove_timeout was called from a thread.
             possibly_finalize_transaction(transaction)
 
-    return wrapped(*args, **kwargs)
+    return ret
 
 def _increment_ref_count(callback, wrapped, instance, args, kwargs):
     transaction = retrieve_current_transaction()

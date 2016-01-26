@@ -555,6 +555,7 @@ class TornadoTest(TornadoBaseTest):
         self.assertEqual(response.body, RunSyncAddRequestHandler.RESPONSE(a+b))
 
     @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
     @tornado_run_validator(lambda x: x.last_byte_time > 0.0)
     @tornado_run_validator(lambda x: x.last_byte_time > x.start_time)
     @tornado_run_validator(lambda x: x.last_byte_time < x.end_time)
@@ -564,6 +565,7 @@ class TornadoTest(TornadoBaseTest):
         self.assertEqual(response.body, HelloRequestHandler.RESPONSE)
 
     @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
     @tornado_run_validator(lambda x: x.last_byte_time > 0.0)
     @tornado_run_validator(lambda x: x.last_byte_time > x.start_time)
     @tornado_run_validator(lambda x: x.last_byte_time < x.end_time)

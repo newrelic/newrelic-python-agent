@@ -7,7 +7,15 @@ from tornado_base_test import TornadoBaseTest
 
 from _test_async_application import (ReturnFirstDivideRequestHandler,
         CallLaterRequestHandler, CancelAfterRanCallLaterRequestHandler,
-        OneCallbackRequestHandler)
+        OneCallbackRequestHandler, PrepareReturnsFutureHandler,
+        PrepareCoroutineReturnsFutureHandler,
+        PrepareCoroutineFutureDoesNotResolveHandler,
+        PrepareFinishesHandler, OnFinishWithGetCoroutineHandler,
+        ThreadScheduledCallbackRequestHandler,
+        CallbackOnThreadExecutorRequestHandler,
+        ThreadScheduledCallAtRequestHandler,
+        CallAtOnThreadExecutorRequestHandler, AddFutureRequestHandler,
+        AddDoneCallbackRequestHandler)
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
@@ -134,3 +142,197 @@ class TornadoTest(TornadoBaseTest):
         t.start()
         self.wait(timeout=5.0)
         t.join(10.0)
+
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'PrepareReturnsFutureHandler.prepare', 1),
+            ('Function/_test_async_application:'
+                    'PrepareReturnsFutureHandler.get', 1),
+            ('Function/_test_async_application:'
+                    'PrepareReturnsFutureHandler.resolve_future', 1),
+    ]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:PrepareReturnsFutureHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_prepare_returns_future(self):
+        response = self.fetch_response('/prepare-future')
+        expected = PrepareReturnsFutureHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    scoped_metrics = select_python_version(
+            py2=[('Function/_test_async_application:'
+                    'PrepareCoroutineReturnsFutureHandler.prepare', 2),
+                ('Function/_test_async_application:prepare (coroutine)', 1),
+                ('Function/_test_async_application:'
+                    'PrepareCoroutineReturnsFutureHandler.get', 1),
+                ('Function/_test_async_application:'
+                    'PrepareCoroutineReturnsFutureHandler.resolve_future', 1)],
+            py3=[('Function/_test_async_application:'
+                    'PrepareCoroutineReturnsFutureHandler.prepare', 2),
+                ('Function/_test_async_application:PrepareCoroutineReturns'
+                    'FutureHandler.prepare (coroutine)', 1),
+                ('Function/_test_async_application:'
+                    'PrepareCoroutineReturnsFutureHandler.get', 1),
+                ('Function/_test_async_application:'
+                    'PrepareCoroutineReturnsFutureHandler.resolve_future', 1)])
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:PrepareCoroutineReturnsFutureHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_prepare_coroutine(self):
+        response = self.fetch_response('/prepare-coroutine')
+        expected = PrepareCoroutineReturnsFutureHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'PrepareCoroutineFutureDoesNotResolveHandler.prepare', 2),
+            ('Function/_test_async_application:'
+                    'PrepareCoroutineFutureDoesNotResolveHandler.get', 1),
+    ]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:PrepareCoroutine'
+                    'FutureDoesNotResolveHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_prepare_coroutine_future_does_not_resolve(self):
+        response = self.fetch_response('/prepare-unresolved')
+        expected = PrepareCoroutineFutureDoesNotResolveHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    # get is never called if the request finishes in prepare
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'PrepareFinishesHandler.prepare', 1),
+    ]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:PrepareFinishesHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_prepare_with_finish(self):
+        response = self.fetch_response('/prepare-finish')
+        expected = PrepareFinishesHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'OnFinishWithGetCoroutineHandler.on_finish', 1),
+            ('Function/_test_async_application:'
+                    'OnFinishWithGetCoroutineHandler.get', 2),
+    ]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:OnFinishWithGetCoroutineHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_on_finish_instrumented_with_coroutine_handler(self):
+        # on_finish called from _execute that has yielded
+        response = self.fetch_response('/on_finish-get-coroutine')
+        expected = OnFinishWithGetCoroutineHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'ThreadScheduledCallbackRequestHandler.get', 1),
+    ]
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:ThreadScheduledCallbackRequestHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_thread_scheduled_callback(self):
+        response = self.fetch_response('/thread-scheduled-callback')
+        expected = ThreadScheduledCallbackRequestHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    # Since the threaded callback is *scheduled* on the main thread, it
+    # should still be included in the transaction
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'CallbackOnThreadExecutorRequestHandler.get', 1),
+            ('Function/_test_async_application:'
+                    'CallbackOnThreadExecutorRequestHandler.do_thing', 1),
+    ]
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:CallbackOnThreadExecutorRequestHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_thread_ran_callback(self):
+        response = self.fetch_response('/thread-ran-callback')
+        expected = CallbackOnThreadExecutorRequestHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'ThreadScheduledCallAtRequestHandler.get', 1),
+    ]
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:ThreadScheduledCallAtRequestHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_thread_scheduled_call_at(self):
+        response = self.fetch_response('/thread-scheduled-call_at')
+        expected = ThreadScheduledCallAtRequestHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    # Since the threaded callback is *scheduled* on the main thread, it
+    # should still be included in the transaction
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'CallAtOnThreadExecutorRequestHandler.get', 1),
+            ('Function/_test_async_application:'
+                    'CallAtOnThreadExecutorRequestHandler.do_thing', 1),
+    ]
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:CallAtOnThreadExecutorRequestHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_thread_ran_call_at(self):
+        response = self.fetch_response('/thread-ran-call_at')
+        expected = CallAtOnThreadExecutorRequestHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'AddFutureRequestHandler.get', 1),
+            ('Function/_test_async_application:'
+                    'AddFutureRequestHandler.do_thing', 1),
+    ]
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:AddFutureRequestHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_add_future(self):
+        response = self.fetch_response('/add-future')
+        expected = AddFutureRequestHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'AddDoneCallbackRequestHandler.get', 1),
+            ('Function/_test_async_application:'
+                    'AddDoneCallbackRequestHandler.do_thing', 1),
+    ]
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:AddDoneCallbackRequestHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_add_done_callback(self):
+        response = self.fetch_response('/add_done_callback')
+        expected = AddDoneCallbackRequestHandler.RESPONSE
+        self.assertEqual(response.body, expected)

@@ -1,3 +1,4 @@
+import concurrent.futures
 import functools
 import tornado
 
@@ -278,6 +279,74 @@ class PrepareOnFinishRequestHandlerSubclass(PrepareOnFinishRequestHandler):
     def get(self):
         self.finish(self.RESPONSE)
 
+class PrepareReturnsFutureHandler(RequestHandler):
+    RESPONSE = b'preparedness'
+
+    def prepare(self):
+        f = tornado.concurrent.Future()
+        tornado.ioloop.IOLoop.current().add_callback(self.resolve_future, f)
+        return f
+
+    def resolve_future(self, f):
+        f.set_result(None)
+
+    def get(self):
+        self.write(self.RESPONSE)
+
+class PrepareCoroutineReturnsFutureHandler(RequestHandler):
+    RESPONSE = b'preparedness'
+
+    @tornado.gen.coroutine
+    def prepare(self):
+        f = tornado.concurrent.Future()
+        tornado.ioloop.IOLoop.current().add_callback(self.resolve_future, f)
+        yield f
+
+    def resolve_future(self, f):
+        f.set_result(None)
+
+    def get(self):
+        self.write(self.RESPONSE)
+
+class PrepareCoroutineFutureDoesNotResolveHandler(RequestHandler):
+    RESPONSE = b'preparedness'
+
+    @tornado.gen.coroutine
+    def prepare(self):
+        # Due to how Tornado works internally, since this coroutine returns a
+        # future, it won't hang. It would hang if it were to yield the future.
+        f = tornado.concurrent.Future()
+        return f
+
+    def get(self):
+        self.write(self.RESPONSE)
+
+class PrepareFinishesHandler(RequestHandler):
+    RESPONSE = b'preparedness'
+
+    def prepare(self):
+        self.finish(self.RESPONSE)
+
+    def get(self):
+        # this should never get called
+        pass
+
+class OnFinishWithGetCoroutineHandler(RequestHandler):
+    RESPONSE = b'get coroutine with on finish'
+
+    @tornado.gen.coroutine
+    def get(self):
+        f = tornado.concurrent.Future()
+        tornado.ioloop.IOLoop.current().add_callback(self.resolve_future, f)
+        yield f
+        self.write(self.RESPONSE)
+
+    def resolve_future(self, f):
+        f.set_result(None)
+
+    def on_finish(self):
+        pass
+
 class AsyncFetchRequestHandler(RequestHandler):
 
     @tornado.web.asynchronous
@@ -338,6 +407,94 @@ class RunSyncAddRequestHandler(RequestHandler):
     def RESPONSE(cls, total):
         return (cls.RESPONSE_TEMPLATE % total).encode('ascii')
 
+class ThreadScheduledCallbackRequestHandler(RequestHandler):
+    RESPONSE = b'callback threading'
+
+    _executor = concurrent.futures.ThreadPoolExecutor(2)
+
+    def get(self):
+        self.schedule_thing()
+        self.write(self.RESPONSE)
+
+    @tornado.concurrent.run_on_executor(executor='_executor')
+    def schedule_thing(self):
+        tornado.ioloop.IOLoop.current().add_callback(self.do_thing)
+
+    def do_thing(self):
+        pass
+
+class CallbackOnThreadExecutorRequestHandler(RequestHandler):
+    RESPONSE = b'callback threading'
+
+    _executor = concurrent.futures.ThreadPoolExecutor(2)
+
+    def get(self):
+        tornado.ioloop.IOLoop.current().add_callback(self.do_thing)
+        self.write(self.RESPONSE)
+
+    @tornado.concurrent.run_on_executor(executor='_executor')
+    def do_thing(self):
+        pass
+
+class ThreadScheduledCallAtRequestHandler(RequestHandler):
+    RESPONSE = b'call_at threading'
+
+    _executor = concurrent.futures.ThreadPoolExecutor(2)
+
+    def get(self):
+        self.schedule_thing()
+        self.write(self.RESPONSE)
+
+    @tornado.concurrent.run_on_executor(executor='_executor')
+    def schedule_thing(self):
+        # call later calls call_at, but does the time math for you
+        tornado.ioloop.IOLoop.current().call_later(0.1, self.do_thing)
+
+    def do_thing(self):
+        pass
+
+class CallAtOnThreadExecutorRequestHandler(RequestHandler):
+    RESPONSE = b'call_at threading'
+
+    _executor = concurrent.futures.ThreadPoolExecutor(2)
+
+    def get(self):
+        # call later calls call_at, but does the time math for you
+        tornado.ioloop.IOLoop.current().call_later(0.1, self.do_thing)
+        self.write(self.RESPONSE)
+
+    @tornado.concurrent.run_on_executor(executor='_executor')
+    def do_thing(self):
+        pass
+
+class AddFutureRequestHandler(RequestHandler):
+    RESPONSE = b'Add future'
+
+    def get(self):
+        f = tornado.concurrent.Future()
+        tornado.ioloop.IOLoop.current().add_future(f, self.do_thing)
+        self.write(self.RESPONSE)
+
+        # resolve the future asynchronously, after _execute here finishes
+        tornado.ioloop.IOLoop.current().add_callback(f.set_result, (None,))
+
+    def do_thing(self, future):
+        pass
+
+class AddDoneCallbackRequestHandler(RequestHandler):
+    RESPONSE = b'Add future'
+
+    def get(self):
+        f = tornado.concurrent.Future()
+        f.add_done_callback(lambda future: tornado.ioloop.IOLoop.current().add_callback(self.do_thing))
+        self.write(self.RESPONSE)
+
+        # resolve the future asynchronously, after _execute here finishes
+        tornado.ioloop.IOLoop.current().add_callback(f.set_result, (None,))
+
+    def do_thing(self):
+        pass
+
 def get_tornado_app():
     return Application([
         ('/', HelloRequestHandler),
@@ -361,4 +518,15 @@ def get_tornado_app():
         ('/async-fetch/(\w)+/(\d+)', AsyncFetchRequestHandler),
         ('/sync-fetch/(\w)+/(\d+)', SyncFetchRequestHandler),
         ('/run-sync-add/(\d+)/(\d+)', RunSyncAddRequestHandler),
+        ('/prepare-future', PrepareReturnsFutureHandler),
+        ('/prepare-coroutine', PrepareCoroutineReturnsFutureHandler),
+        ('/prepare-unresolved', PrepareCoroutineFutureDoesNotResolveHandler),
+        ('/prepare-finish', PrepareFinishesHandler),
+        ('/on_finish-get-coroutine', OnFinishWithGetCoroutineHandler),
+        ('/thread-scheduled-callback', ThreadScheduledCallbackRequestHandler),
+        ('/thread-ran-callback', CallbackOnThreadExecutorRequestHandler),
+        ('/thread-scheduled-call_at', ThreadScheduledCallAtRequestHandler),
+        ('/thread-ran-call_at', CallAtOnThreadExecutorRequestHandler),
+        ('/add-future', AddFutureRequestHandler),
+        ('/add_done_callback', AddDoneCallbackRequestHandler),
     ])

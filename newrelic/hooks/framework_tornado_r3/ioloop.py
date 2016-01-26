@@ -74,6 +74,10 @@ def _nr_wrapper_PollIOLoop_remove_timeout(wrapped, instance, args, kwargs):
         if not hasattr(callback, '_nr_callback_ran'):
             transaction._ref_count -= 1
 
+            # Finalize the transaction if this is the last callback, this should
+            # only be possible if remove_timeout was called from a thread.
+            possibly_finalize_transaction(transaction)
+
     return wrapped(*args, **kwargs)
 
 def _increment_ref_count(callback, wrapped, instance, args, kwargs):

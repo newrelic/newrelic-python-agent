@@ -1,6 +1,8 @@
 import concurrent.futures
 import functools
 import tornado
+import threading
+import time
 
 from newrelic.agent import function_wrapper
 
@@ -505,6 +507,23 @@ class SimpleStreamingRequestHandler(RequestHandler):
     def post(self):
         self.write(self.RESPONSE)
 
+class LastTimeoutFromThreadRequestHandler(RequestHandler):
+    RESPONSE = b'bad programmer'
+
+    def get(self):
+        timeout = tornado.ioloop.IOLoop.current().call_later(5, self.last_callback)
+        t = threading.Thread(target=self.cancel_callback, args=(timeout,))
+        self.write(self.RESPONSE)
+        t.start()
+
+    def cancel_callback(self, timeout):
+        # add a sleep to allow get to finish
+        time.sleep(0.1)
+        tornado.ioloop.IOLoop.current().remove_timeout(timeout)
+
+    def last_callback(self):
+        pass
+
 def get_tornado_app():
     return Application([
         ('/', HelloRequestHandler),
@@ -540,4 +559,5 @@ def get_tornado_app():
         ('/thread-ran-call_at', CallAtOnThreadExecutorRequestHandler),
         ('/add-future', AddFutureRequestHandler),
         ('/add_done_callback', AddDoneCallbackRequestHandler),
+        ('/remove-last-timeout', LastTimeoutFromThreadRequestHandler),
     ])

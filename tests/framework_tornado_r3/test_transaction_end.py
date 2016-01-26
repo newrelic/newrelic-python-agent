@@ -15,7 +15,7 @@ from _test_async_application import (ReturnFirstDivideRequestHandler,
         CallbackOnThreadExecutorRequestHandler,
         ThreadScheduledCallAtRequestHandler,
         CallAtOnThreadExecutorRequestHandler, AddFutureRequestHandler,
-        AddDoneCallbackRequestHandler)
+        AddDoneCallbackRequestHandler, LastTimeoutFromThreadRequestHandler)
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
@@ -335,4 +335,18 @@ class TornadoTest(TornadoBaseTest):
     def test_add_done_callback(self):
         response = self.fetch_response('/add_done_callback')
         expected = AddDoneCallbackRequestHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'LastTimeoutFromThreadRequestHandler.get', 1),
+    ]
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:LastTimeoutFromThreadRequestHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_last_timeout_removed_in_thread(self):
+        response = self.fetch_response('/remove-last-timeout')
+        expected = LastTimeoutFromThreadRequestHandler.RESPONSE
         self.assertEqual(response.body, expected)

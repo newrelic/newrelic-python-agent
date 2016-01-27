@@ -323,14 +323,17 @@ class Transaction(object):
         if not self.stopped:
             self.end_time = time.time()
 
+        # Calculate transaction duration
+
         duration = self.end_time - self.start_time
 
-        # Set the last_byte_time for Web Transactions. If it hasn't
-        # already been set, then last_byte_time is the same as the
-        # Transaction end time.
+        # Calculate response time. Calculation depends on whether
+        # a web response was sent back.
 
-        if not self.background_task and self.last_byte_time == 0.0:
-            self.last_byte_time = self.end_time
+        if self.last_byte_time == 0.0:
+            response_time = duration
+        else:
+            response_time = self.last_byte_time - self.start_time
 
         # Calculate overall user time.
 

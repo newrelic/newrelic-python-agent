@@ -570,7 +570,6 @@ class TornadoTest(TornadoBaseTest):
     @tornado_run_validator(lambda x: x.last_byte_time > x.start_time)
     @tornado_run_validator(lambda x: x.last_byte_time < x.end_time)
     @tornado_run_validator(lambda x: x.last_byte_time + 0.00499 < x.end_time)
-    @tornado_run_validator(lambda x: x.last_byte_time + 0.1 > x.end_time)
     def test_last_byte_time_sleep(self):
         response = self.fetch_response('/call-at')
         self.assertEqual(response.code, 200)

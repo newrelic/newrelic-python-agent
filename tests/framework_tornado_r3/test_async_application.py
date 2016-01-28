@@ -599,10 +599,12 @@ class TornadoTest(TornadoBaseTest):
             conn.close()
             self.io_loop.add_callback(self.waits_counter_check)
 
+        server = 'localhost:%s' % self.get_http_port()
+        t = threading.Thread(target=close_connection_during_request,
+                args=(server,))
+
         self.waits_expected = 2
 
-        server = 'localhost:%s' % self.get_http_port()
-        t = threading.Thread(target=close_connection_during_request, args=(server,))
         t.start()
         self.wait(timeout=5.0)
         t.join(10.0)

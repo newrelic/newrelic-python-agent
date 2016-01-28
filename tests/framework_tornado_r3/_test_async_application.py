@@ -534,6 +534,83 @@ class LastTimeoutFromThreadRequestHandler(RequestHandler):
     def last_callback(self):
         pass
 
+class SimpleThreadedFutureRequestHandler(RequestHandler):
+    """This handler creates a future and passes it to a thread, which should
+    resolve immediately, while the current method still has the transaction
+    in the cache.
+    """
+    RESPONSE = b'bad programmer'
+
+    def get(self, add_future=False):
+        f = tornado.concurrent.Future()
+
+        add_future = (True if add_future == 'add_future' else False)
+
+        if add_future:
+            # When the future resolves, add a callback to the ioloop, wrapped
+            # with a context that contains this transaction
+            tornado.ioloop.IOLoop.current().add_future(f, self.do_stuff)
+        else:
+            # Add a callback to the future, which will be wrapped in
+            # a context that contains this transaction, and will run in the
+            # thread we pass the future to
+            f.add_done_callback(self.do_stuff)
+
+        # Resolve the future in a different thread, this will pass with it
+        # the transaction piggy-backed on the callback inside the future
+        threading.Thread(target=f.set_result, args=(None,)).start()
+        self.write(self.RESPONSE)
+
+    def do_stuff(self, f=None):
+         pass
+
+class BusyWaitThreadedFutureRequestHandler(RequestHandler):
+    """This handler creates a future and passes it to a thread, but with timing
+    so that the callback from the future will be running when a callback
+    from the main thread kicks in.
+    """
+    RESPONSE = b'bad programmer'
+
+    def get(self, add_future=False):
+        f = tornado.concurrent.Future()
+
+        add_future = (True if add_future == 'add_future' else False)
+
+        if add_future:
+            # When the future resolves, add a callback to the ioloop, wrapped
+            # with a context that contains this transaction
+            tornado.ioloop.IOLoop.current().add_future(f, self.busy_wait)
+        else:
+            # Add a callback to the future, which will be wrapped in
+            # a context that contains this transaction, and will run in the
+            # thread we pass the future to
+            f.add_done_callback(self.busy_wait)
+
+        self.write(self.RESPONSE)
+
+        # Resolve the future in a different thread, this will pass with it
+        # the transaction piggy-backed on the callback inside the future
+        t = threading.Thread(target=self.resolve_future, args=(f,))
+        t.start()
+
+        # Schedule a callback later that should be captured by the agent, but
+        # run during the middle of the threaded callback
+        tornado.ioloop.IOLoop.current().call_later(0.15, self.do_stuff)
+
+    def resolve_future(self, future):
+        time.sleep(0.1)
+        future.set_result(None)
+
+    def busy_wait(self, f=None, dt=1):
+        # We need this to take up enough time so that its likely to be "active"
+        # when our main thread scheduled callback kicks in
+        current_time = time.time()
+        while (time.time() < current_time+dt):
+            pass
+
+    def do_stuff(self):
+        pass
+
 def get_tornado_app():
     return Application([
         ('/', HelloRequestHandler),
@@ -570,4 +647,6 @@ def get_tornado_app():
         ('/add-future', AddFutureRequestHandler),
         ('/add_done_callback', AddDoneCallbackRequestHandler),
         ('/remove-last-timeout', LastTimeoutFromThreadRequestHandler),
+        ('/future-thread/?(\w+)?', SimpleThreadedFutureRequestHandler),
+        ('/future-thread-2/?(\w+)?', BusyWaitThreadedFutureRequestHandler),
     ])

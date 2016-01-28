@@ -98,16 +98,35 @@ def _increment_ref_count(callback, wrapped, instance, args, kwargs):
     transaction = retrieve_current_transaction()
 
     if hasattr(callback, '_nr_transaction'):
+
+        if callback._nr_transaction is not None:
+            current_thread_id = transaction_cache().current_thread_id()
+            if current_thread_id != callback._nr_transaction.thread_id:
+                # Callback being added not in the main thread; ignore.
+
+                # Since we are not incrementing the counter for this callback,
+                # we need to remove the transaction from the callback, so it
+                # doesn't get decremented either.
+                callback._nr_transaction = None
+                return wrapped(*args, **kwargs)
+
         if transaction is not callback._nr_transaction:
-            _logger.error('Callback added to ioloop with different transaction '
-                    'attached as in the cache.Please report this issue to New '
-                    'Relic support.\n%s',''.join(traceback.format_stack()[:-1]))
-            transaction = callback._nr_transaction
+            _logger.error('Attempt to add callback to ioloop with different '
+                    'transaction attached than in the cache. Please report this'
+                    ' issue to New Relic support.\n%s',
+                    ''.join(traceback.format_stack()[:-1]))
+
+            # Since we are not incrementing the counter for this callback,
+            # we need to remove the transaction from the callback, so it doesn't
+            # get decremented either.
+            callback._nr_transaction = None
+            return wrapped(*args, **kwargs)
 
     if transaction is None:
         return wrapped(*args, **kwargs)
 
     transaction._ref_count += 1
+
     return wrapped(*args, **kwargs)
 
 def _nr_wrapper_PollIOLoop_add_callback(wrapped, instance, args, kwargs):

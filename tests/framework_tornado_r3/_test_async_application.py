@@ -495,6 +495,16 @@ class AddDoneCallbackRequestHandler(RequestHandler):
     def do_thing(self):
         pass
 
+@tornado.web.stream_request_body
+class SimpleStreamingRequestHandler(RequestHandler):
+    RESPONSE = b'streaming post'
+
+    def data_received(self, chunk):
+        pass
+
+    def post(self):
+        self.write(self.RESPONSE)
+
 def get_tornado_app():
     return Application([
         ('/', HelloRequestHandler),
@@ -515,6 +525,7 @@ def get_tornado_app():
         ('/cancel-timer', CancelAfterRanCallLaterRequestHandler),
         ('/bookend', PrepareOnFinishRequestHandler),
         ('/bookend-subclass', PrepareOnFinishRequestHandlerSubclass),
+        ('/stream', SimpleStreamingRequestHandler),
         ('/async-fetch/(\w)+/(\d+)', AsyncFetchRequestHandler),
         ('/sync-fetch/(\w)+/(\d+)', SyncFetchRequestHandler),
         ('/run-sync-add/(\d+)/(\d+)', RunSyncAddRequestHandler),

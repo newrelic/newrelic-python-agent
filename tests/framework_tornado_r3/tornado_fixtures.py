@@ -1,3 +1,4 @@
+import inspect
 import pytest
 import logging
 
@@ -55,7 +56,7 @@ def wrap_record_transaction_fixture(request):
             raise
 
         metrics = instance.stats_table
-        _RECORDED_TRANSACTIONS.append((metrics, errors))
+        _RECORDED_TRANSACTIONS.append((transaction, metrics, errors))
 
         return result
 
@@ -168,7 +169,7 @@ def tornado_validate_count_transaction_metrics(name, group='Function',
                  _NUM_FINIALIZED_TRANSACTIONS ))
 
         # We only validate the first recorded transaction
-        metrics, errors = _RECORDED_TRANSACTIONS[0]
+        _, metrics, errors = _RECORDED_TRANSACTIONS[0]
 
         # validate top level metrics
         _validate_metric_count(metrics, rollup_metric, '', 1)
@@ -235,7 +236,7 @@ def tornado_validate_time_transaction_metrics(name, group='Function',
         wrapped(*args, **kwargs)
 
         # We only validate the first recorded transaction
-        metrics, errors = _RECORDED_TRANSACTIONS[0]
+        _, metrics, errors = _RECORDED_TRANSACTIONS[0]
 
         for scoped_name, scoped_time_range in scoped_metrics:
             _validate_metric_times(
@@ -263,7 +264,7 @@ def tornado_validate_errors(errors=[], app_exceptions=[],
 
     def _validate_transaction_errors():
         # We only validate the first recorded transaction
-        metrics, errs = _RECORDED_TRANSACTIONS[0]
+        _, metrics, errs = _RECORDED_TRANSACTIONS[0]
 
         # Sort captured errors. They are recorded in the format:
         # (type-string, error-message)
@@ -297,6 +298,26 @@ def tornado_validate_errors(errors=[], app_exceptions=[],
         _validate_app_exceptions()
 
     return _validate_errors
+
+def tornado_run_validator(func):
+    """Get the transaction_node saved in _RECORDED_TRANSACTIONS[0]
+    and run func(transaction_node).
+
+    If func returns True, test passes.
+
+    """
+    def _first_source_line(func):
+        lines, line_num = inspect.getsourcelines(func)
+        return 'FAILED at line %d: %s' % (line_num, lines[0].strip())
+
+    @function_wrapper
+    def _validator(wrapped, instance, args, kwargs):
+        wrapped(*args, **kwargs)
+        transaction_node, _, _ = _RECORDED_TRANSACTIONS[0]
+        result = func(transaction_node)
+        assert result, _first_source_line(func)
+
+    return _validator
 
 def tornado_validate_transaction_cache_empty():
     """Validates the transaction cache is empty after all requests are serviced.

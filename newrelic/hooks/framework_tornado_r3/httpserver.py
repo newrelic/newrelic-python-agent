@@ -38,6 +38,13 @@ def _transaction_can_finalize(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
     finally:
         transaction._can_finalize = True
+
+        # If finish() has been called, then request._finish_time will
+        # be set and it should be used as transaction.last_byte_time.
+
+        if request._finish_time:
+            transaction.last_byte_time = request._finish_time
+
         possibly_finalize_transaction(transaction)
 
 def _nr_wrapper__ServerRequestAdapter_on_connection_close_(wrapped, instance,

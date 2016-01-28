@@ -31,9 +31,12 @@ def _nr_wrapper_HTTPServerRequest__init__(wrapped, instance, args, kwargs):
 
     result = wrapped(*args, **kwargs)
 
-    # instance is now an initiated HTTPRequestServer object. Since instance was
+    # instance is now an initiated HTTPServerRequest object. Since instance was
     # just created there can not be a previously associated transaction.
-    transaction = initiate_request_monitoring(instance)
+
+    request = instance
+    transaction = initiate_request_monitoring(request)
+
     if transaction is None:
         # transaction is not enabled. We return immediately.
         return result
@@ -45,6 +48,10 @@ def _nr_wrapper_HTTPServerRequest__init__(wrapped, instance, args, kwargs):
 
     name = callable_name(wrapped)
     transaction.set_transaction_name(name)
+
+    # Use HTTPServerRequest start time as transaction start time.
+
+    transaction.start_time = request._start_time
 
     return result
 

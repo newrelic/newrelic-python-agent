@@ -10,17 +10,18 @@ from tornado_base_test import TornadoBaseTest
 from _test_async_application import (HelloRequestHandler,
         SleepRequestHandler, OneCallbackRequestHandler,
         NamedStackContextWrapRequestHandler, MultipleCallbacksRequestHandler,
-        FinishExceptionRequestHandler, ReturnExceptionRequestHandler,
-        IOLoopDivideRequestHandler, EngineDivideRequestHandler,
-        PrepareOnFinishRequestHandler, PrepareOnFinishRequestHandlerSubclass,
-        RunSyncAddRequestHandler, )
+        CallLaterRequestHandler, FinishExceptionRequestHandler,
+        ReturnExceptionRequestHandler, IOLoopDivideRequestHandler,
+        EngineDivideRequestHandler, PrepareOnFinishRequestHandler,
+        PrepareOnFinishRequestHandlerSubclass, RunSyncAddRequestHandler)
 
 from testing_support.mock_external_http_server import MockExternalHTTPServer
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
     tornado_validate_time_transaction_metrics,
-    tornado_validate_errors, tornado_validate_transaction_cache_empty)
+    tornado_validate_errors, tornado_validate_transaction_cache_empty,
+    tornado_run_validator)
 
 def select_python_version(py2, py3):
     return six.PY3 and py3 or py2
@@ -552,3 +553,57 @@ class TornadoTest(TornadoBaseTest):
         response = self.fetch_response('/run-sync-add/%s/%s' % (a,b))
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, RunSyncAddRequestHandler.RESPONSE(a+b))
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_run_validator(lambda x: x.last_byte_time > 0.0)
+    @tornado_run_validator(lambda x: x.last_byte_time > x.start_time)
+    @tornado_run_validator(lambda x: x.last_byte_time < x.end_time)
+    def test_last_byte_time_hello_world(self):
+        response = self.fetch_response('/')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, HelloRequestHandler.RESPONSE)
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_run_validator(lambda x: x.last_byte_time > 0.0)
+    @tornado_run_validator(lambda x: x.last_byte_time > x.start_time)
+    @tornado_run_validator(lambda x: x.last_byte_time < x.end_time)
+    @tornado_run_validator(lambda x: x.last_byte_time + 0.00499 < x.end_time)
+    def test_last_byte_time_sleep(self):
+        response = self.fetch_response('/call-at')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, CallLaterRequestHandler.RESPONSE)
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_run_validator(lambda x: x.last_byte_time == 0.0)
+    def test_connection_closed_streaming_request_handler(self):
+
+        def close_connection_during_request(server):
+
+            # We don't have precise control over the number of chunks that will
+            # be streamed so we set the body size somewhere in greater than 2
+            # chunks not too much bigger.
+
+            request_body_size = 600
+            conn = six.moves.http_client.HTTPConnection(server)
+            conn.putrequest('POST', '/stream')
+            conn.putheader('Content-Length', str(request_body_size))
+            conn.endheaders()
+
+            # Don't send entire request body before closing connection.
+
+            conn.send(b'aaaaa')
+            conn.close()
+            self.io_loop.add_callback(self.waits_counter_check)
+
+        server = 'localhost:%s' % self.get_http_port()
+        t = threading.Thread(target=close_connection_during_request,
+                args=(server,))
+
+        self.waits_expected = 2
+
+        t.start()
+        self.wait(timeout=5.0)
+        t.join(10.0)

@@ -329,6 +329,10 @@ class Transaction(object):
 
         # Calculate response time. Calculation depends on whether
         # a web response was sent back.
+        #
+        # NOTE: response_time isn't used now. When we complete
+        # PYTHON-1704, we will use response time for the total
+        # time async metrics.
 
         if self.last_byte_time == 0.0:
             response_time = duration

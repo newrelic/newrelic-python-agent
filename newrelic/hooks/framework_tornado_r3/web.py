@@ -72,13 +72,9 @@ def _nr_wrapper_RequestHandler__execute_(wrapped, instance, args, kwargs):
     # We need to set the current transaction so that the user code executed by
     # running _execute is traced to the transaction we grabbed off the request
 
-    old_transaction = replace_current_transaction(transaction)
+    with transaction_context(transaction):
+      return wrapped(*args, **kwargs)
 
-    result = wrapped(*args, **kwargs)
-
-    replace_current_transaction(old_transaction)
-
-    return result
 
 def _nr_wrapper_RequestHandler__handle_request_exception_(wrapped, instance,
         args, kwargs):

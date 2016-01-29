@@ -109,6 +109,11 @@ def _nr_wrapper_RequestHandler__init__(wrapped, instance, args, kwargs):
         instance.data_received =  _requesthandler_method_wrapper(
                 instance.data_received)
 
+    # A user probably has not overridden on_connection_close but we want to
+    # associate it with the transaction since it indicates a bad end state.
+    instance.on_connection_close = _requesthandler_method_wrapper(
+        instance.on_connection_close)
+
     return wrapped(*args, **kwargs)
 
 def instrument_tornado_web(module):

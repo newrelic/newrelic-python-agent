@@ -69,7 +69,8 @@ class TornadoTest(TornadoBaseTest):
         # We don't use assertAlmostEqual since delta isn't supported in 2.6.
         # Also assert(Greater|Less)Than is only in > 2.6.
         self.assertTrue(duration >= 2.0)
-        self.assertTrue(duration <= 2.3)
+        # If the requests were run synchronously they would take >= 4.0 secs.
+        self.assertTrue(duration <= 3.9)
         self.assertEqual(responses[0].code, 200)
         self.assertEqual(responses[0].body, SleepRequestHandler.RESPONSE)
         self.assertEqual(responses[1].code, 200)

@@ -2,8 +2,8 @@ import logging
 import traceback
 import sys
 
-from newrelic.agent import (callable_name, wrap_function_wrapper,
-        FunctionTraceWrapper)
+from newrelic.agent import (callable_name, function_wrapper,
+        wrap_function_wrapper, FunctionTrace, FunctionTraceWrapper)
 from .util import (retrieve_request_transaction, record_exception,
         replace_current_transaction)
 
@@ -17,6 +17,25 @@ def _find_defined_class(meth):
         if meth.__name__ in cls.__dict__:
             return cls.__name__
     return None
+
+class transaction_context(object):
+    def __init__(self, transaction):
+        self.transaction = transaction
+
+    def __enter__(self):
+        self.old_transaction = replace_current_transaction(self.transaction)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        replace_current_transaction(self.old_transaction)
+
+@function_wrapper
+def _requesthandler_method_wrapper(wrapped, instance, args, kwargs):
+    request = instance.request
+    transaction = retrieve_request_transaction(request)
+    name = callable_name(wrapped)
+    with transaction_context(transaction):
+        with FunctionTrace(transaction, name=name):
+            return wrapped(*args, **kwargs)
 
 def _nr_wrapper_RequestHandler__execute_(wrapped, instance, args, kwargs):
     handler = instance
@@ -89,6 +108,10 @@ def _nr_wrapper_RequestHandler__init__(wrapped, instance, args, kwargs):
 
     if _find_defined_class(instance.on_finish) != 'RequestHandler':
         instance.on_finish = FunctionTraceWrapper(instance.on_finish)
+
+    if _find_defined_class(instance.data_received) != 'RequestHandler':
+        instance.data_received =  _requesthandler_method_wrapper(
+                instance.data_received)
 
     return wrapped(*args, **kwargs)
 

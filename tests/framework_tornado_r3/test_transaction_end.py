@@ -251,7 +251,8 @@ class TornadoTest(TornadoBaseTest):
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:ThreadScheduledCallbackRequestHandler.get',
-            scoped_metrics=scoped_metrics)
+            scoped_metrics=scoped_metrics,
+            forgone_metric_substrings=['do_thing'])
     def test_thread_scheduled_callback(self):
         response = self.fetch_response('/thread-scheduled-callback')
         expected = ThreadScheduledCallbackRequestHandler.RESPONSE
@@ -283,7 +284,8 @@ class TornadoTest(TornadoBaseTest):
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:ThreadScheduledCallAtRequestHandler.get',
-            scoped_metrics=scoped_metrics)
+            scoped_metrics=scoped_metrics,
+            forgone_metric_substrings=['do_thing'])
     def test_thread_scheduled_call_at(self):
         response = self.fetch_response('/thread-scheduled-call_at')
         expected = ThreadScheduledCallAtRequestHandler.RESPONSE

@@ -536,10 +536,12 @@ class TornadoTest(TornadoBaseTest):
 
     scoped_metrics = [
             ('Function/_test_async_application:'
-             'SimpleStreamingRequestHandler.data_received', 1),
-           ('Function/_test_async_application:'
-             'SimpleStreamingRequestHandler.on_connection_close', 1),
-    ]
+                    'SimpleStreamingRequestHandler.data_received', 1),
+            select_python_version(
+                py2=('Function/_test_async_application:'
+                     'SimpleStreamingRequestHandler.on_connection_close', 1),
+                py3=('Function/tornado.web:'
+                     'RequestHandler.on_connection_close', 1))]
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()

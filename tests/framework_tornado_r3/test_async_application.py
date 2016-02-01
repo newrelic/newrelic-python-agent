@@ -13,7 +13,8 @@ from _test_async_application import (HelloRequestHandler,
         CallLaterRequestHandler, FinishExceptionRequestHandler,
         ReturnExceptionRequestHandler, IOLoopDivideRequestHandler,
         EngineDivideRequestHandler, PrepareOnFinishRequestHandler,
-        PrepareOnFinishRequestHandlerSubclass, RunSyncAddRequestHandler)
+        PrepareOnFinishRequestHandlerSubclass, RunSyncAddRequestHandler,
+        SimpleStreamingRequestHandler)
 
 from testing_support.mock_external_http_server import MockExternalHTTPServer
 
@@ -461,6 +462,114 @@ class TornadoTest(TornadoBaseTest):
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body,
             PrepareOnFinishRequestHandlerSubclass.RESPONSE)
+
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+             'SimpleStreamingRequestHandler.post', 1),
+            ('Function/_test_async_application:'
+             'SimpleStreamingRequestHandler.data_received', 3),
+    ]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:SimpleStreamingRequestHandler.post',
+            scoped_metrics=scoped_metrics)
+    def test_fixed_length_streaming_request_handler(self):
+
+        def make_streaming_request(server):
+            # We don't have precise control over the number of chunks that will
+            # be streamed so we set the body size somewhere in greater than 2
+            # chunks not too much bigger.
+            request_body_size = 600
+            conn = six.moves.http_client.HTTPConnection(server)
+            conn.putrequest('POST', '/stream')
+            conn.putheader('Content-Length', str(request_body_size))
+            conn.endheaders()
+            conn.send(b'a' * request_body_size)
+            resp = conn.getresponse()
+            msg = resp.read()
+            self.assertEqual(msg, SimpleStreamingRequestHandler.RESPONSE)
+            conn.close()
+            self.io_loop.add_callback(self.waits_counter_check)
+
+        server = 'localhost:%s' % self.get_http_port()
+        self.waits_expected = 2
+        t = threading.Thread(target=make_streaming_request, args=(server,))
+        t.start()
+        self.wait(timeout=5.0)
+        t.join(5.0)
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:SimpleStreamingRequestHandler.post',
+            scoped_metrics=scoped_metrics)
+    def test_dynamic_length_streaming_request_handler(self):
+
+        def make_streaming_request(server):
+            # We don't have precise control over how the chunking will be done
+            # by tornado so we sent the chunk size to be small.
+            num_chunks = 3
+            chunk_byte_size = 5
+            chunk_hex = hex(chunk_byte_size)[2:]
+            chunk = 'a' * chunk_byte_size
+            conn = six.moves.http_client.HTTPConnection(server)
+            conn.putrequest('POST', '/stream')
+            conn.putheader('Transfer-Encoding', 'chunked')
+            conn.endheaders()
+            for i in range(0, num_chunks):
+                to_send = '%s\r\n%s\r\n' % (chunk_hex, chunk)
+                conn.send(to_send.encode('ascii'))
+            conn.send('0\r\n'.encode('ascii'))
+            resp = conn.getresponse()
+            msg = resp.read()
+            self.assertEqual(msg, SimpleStreamingRequestHandler.RESPONSE)
+            conn.close()
+            self.io_loop.add_callback(self.waits_counter_check)
+
+        server = 'localhost:%s' % self.get_http_port()
+        self.waits_expected = 2
+        t = threading.Thread(target=make_streaming_request, args=(server,))
+        t.start()
+        self.wait(timeout=5.0)
+        t.join(5.0)
+
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'SimpleStreamingRequestHandler.data_received', 1),
+            select_python_version(
+                py2=('Function/_test_async_application:'
+                     'SimpleStreamingRequestHandler.on_connection_close', 1),
+                py3=('Function/tornado.web:'
+                     'RequestHandler.on_connection_close', 1))]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:SimpleStreamingRequestHandler.post',
+            scoped_metrics=scoped_metrics)
+    def test_dropped_streaming_request_handler(self):
+
+        def make_streaming_request(server):
+            # We don't have precise control over the number of chunks that will
+            # be streamed so we set the body size somewhere in greater than 2
+            # chunks not too much bigger.
+            request_body_size = 600
+            conn = six.moves.http_client.HTTPConnection(server)
+            conn.putrequest('POST', '/stream')
+            conn.putheader('Content-Length', str(request_body_size))
+            conn.endheaders()
+            conn.send(b'a')
+            conn.close()
+            self.io_loop.add_callback(self.waits_counter_check)
+
+        server = 'localhost:%s' % self.get_http_port()
+        self.waits_expected = 2
+        t = threading.Thread(target=make_streaming_request, args=(server,))
+        t.start()
+        self.wait(timeout=5.0)
+        t.join(5.0)
 
     # The port number 8989 matches the port number in MockExternalHTTPServer
     scoped_metrics = [('Function/_test_async_application:'

@@ -27,6 +27,9 @@ class TornadoBaseTest(tornado.testing.AsyncHTTPTestCase):
     def get_app(self):
         return get_tornado_app()
 
+    def get_httpserver_options(self):
+        return { 'chunk_size': 250 }
+
     # These tests validate the server response and the data written
     # in record_transaction. Before we can validate this, we need to ensure that
     # the response has been returned and record_transaction has been called.

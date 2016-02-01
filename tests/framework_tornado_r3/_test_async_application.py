@@ -511,15 +511,25 @@ class LastTimeoutFromThreadRequestHandler(RequestHandler):
     RESPONSE = b'bad programmer'
 
     def get(self):
-        timeout = tornado.ioloop.IOLoop.current().call_later(5, self.last_callback)
+        timeout = tornado.ioloop.IOLoop.current().call_later(10, self.last_callback)
         t = threading.Thread(target=self.cancel_callback, args=(timeout,))
         self.write(self.RESPONSE)
         t.start()
 
     def cancel_callback(self, timeout):
-        # add a sleep to allow get to finish
-        time.sleep(0.1)
+
+        # Make sure that the get method has finished, so that the transaction
+        # will finalize in the remove_timeout wrapper
+        transaction = timeout.callback.func._nr_transaction
+        while not transaction._can_finalize:
+            time.sleep(0.01)
+
+        assert transaction._ref_count == 1
+
         tornado.ioloop.IOLoop.current().remove_timeout(timeout)
+
+        assert transaction._ref_count == 0
+        assert transaction._is_finalized
 
     def last_callback(self):
         pass

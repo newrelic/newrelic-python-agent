@@ -539,7 +539,7 @@ class SimpleThreadedFutureRequestHandler(RequestHandler):
     resolve immediately, while the current method still has the transaction
     in the cache.
     """
-    RESPONSE = b'bad programmer'
+    RESPONSE = b"please don't do this"
 
     def get(self, add_future=False):
         f = tornado.concurrent.Future()
@@ -558,7 +558,9 @@ class SimpleThreadedFutureRequestHandler(RequestHandler):
 
         # Resolve the future in a different thread, this will pass with it
         # the transaction piggy-backed on the callback inside the future
-        threading.Thread(target=f.set_result, args=(None,)).start()
+        t = threading.Thread(target=f.set_result, args=(None,))
+        t.start()
+        t.join()
         self.write(self.RESPONSE)
 
     def do_stuff(self, f=None):
@@ -566,7 +568,7 @@ class SimpleThreadedFutureRequestHandler(RequestHandler):
 
 class BusyWaitThreadedFutureRequestHandler(RequestHandler):
     """This handler creates a future and passes it to a thread, but with timing
-    so that the callback from the future will be running when a callback
+    so that the callback from the future will likely be running when a callback
     from the main thread kicks in.
     """
     RESPONSE = b'bad programmer'

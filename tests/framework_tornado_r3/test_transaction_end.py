@@ -393,7 +393,9 @@ class TornadoTest(TornadoBaseTest):
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:BusyWaitThreadedFutureRequestHandler.get',
-            scoped_metrics=scoped_metrics)
+            scoped_metrics=scoped_metrics,
+            forgone_metric_substrings=['busy_wait'],
+            )
     def test_future_resolved_in_thread_complex_add_done_callback(self):
         response = self.fetch_response('/future-thread-2')
         expected = BusyWaitThreadedFutureRequestHandler.RESPONSE
@@ -404,6 +406,8 @@ class TornadoTest(TornadoBaseTest):
                     'BusyWaitThreadedFutureRequestHandler.get', 1),
             ('Function/_test_async_application:'
                     'BusyWaitThreadedFutureRequestHandler.do_stuff', 1),
+            ('Function/_test_async_application:'
+                    'BusyWaitThreadedFutureRequestHandler.busy_wait', 1),
     ]
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()

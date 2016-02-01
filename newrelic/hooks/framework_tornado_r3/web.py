@@ -3,9 +3,9 @@ import traceback
 import sys
 
 from newrelic.agent import (callable_name, function_wrapper,
-        wrap_function_wrapper, FunctionTrace, FunctionTraceWrapper)
-from .util import (retrieve_request_transaction, record_exception,
-        replace_current_transaction)
+        wrap_function_wrapper, FunctionTrace)
+from .util import (retrieve_current_transaction, retrieve_request_transaction,
+        record_exception, replace_current_transaction)
 
 _logger = logging.getLogger(__name__)
 
@@ -32,10 +32,23 @@ class transaction_context(object):
 def _requesthandler_method_wrapper(wrapped, instance, args, kwargs):
     request = instance.request
     transaction = retrieve_request_transaction(request)
+
+    if transaction is None:
+        # If transaction is None we don't want to trace this function.
+        return wrapped(*args, **kwargs)
+
     name = callable_name(wrapped)
-    with transaction_context(transaction):
+    current_transaction = retrieve_current_transaction()
+
+    if transaction == current_transaction:
+        # We trace the function if we are already in the correct transaction.
         with FunctionTrace(transaction, name=name):
             return wrapped(*args, **kwargs)
+    else:
+        # Swap in the correct transaction if aren't already in it.
+        with transaction_context(transaction):
+            with FunctionTrace(transaction, name=name):
+                return wrapped(*args, **kwargs)
 
 def _nr_wrapper_RequestHandler__execute_(wrapped, instance, args, kwargs):
     handler = instance
@@ -93,17 +106,17 @@ def _nr_wrapper_RequestHandler__init__(wrapped, instance, args, kwargs):
     for method in methods:
         func = getattr(instance, method, None)
         if func is not None:
-            wrapped_func = FunctionTraceWrapper(func)
+            wrapped_func = _requesthandler_method_wrapper(func)
             setattr(instance, method, wrapped_func)
 
     # Only instrument prepare or on_finish if it has been re-implemented by
     # the user, the stubs on RequestHandler are meaningless noise.
 
     if _find_defined_class(instance.prepare) != 'RequestHandler':
-        instance.prepare = FunctionTraceWrapper(instance.prepare)
+        instance.prepare = _requesthandler_method_wrapper(instance.prepare)
 
     if _find_defined_class(instance.on_finish) != 'RequestHandler':
-        instance.on_finish = FunctionTraceWrapper(instance.on_finish)
+        instance.on_finish = _requesthandler_method_wrapper(instance.on_finish)
 
     if _find_defined_class(instance.data_received) != 'RequestHandler':
         instance.data_received =  _requesthandler_method_wrapper(

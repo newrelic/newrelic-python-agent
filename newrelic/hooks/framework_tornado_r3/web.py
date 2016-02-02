@@ -28,28 +28,6 @@ class transaction_context(object):
     def __exit__(self, exc_type, exc_value, traceback):
         replace_current_transaction(self.old_transaction)
 
-@function_wrapper
-def _requesthandler_method_wrapper(wrapped, instance, args, kwargs):
-    request = instance.request
-    transaction = retrieve_request_transaction(request)
-
-    if transaction is None:
-        # If transaction is None we don't want to trace this function.
-        return wrapped(*args, **kwargs)
-
-    name = callable_name(wrapped)
-    current_transaction = retrieve_current_transaction()
-
-    if transaction == current_transaction:
-        # We trace the function if we are already in the correct transaction.
-        with FunctionTrace(transaction, name=name):
-            return wrapped(*args, **kwargs)
-    else:
-        # Swap in the correct transaction if aren't already in it.
-        with transaction_context(transaction):
-            with FunctionTrace(transaction, name=name):
-                return wrapped(*args, **kwargs)
-
 def _nr_wrapper_RequestHandler__execute_(wrapped, instance, args, kwargs):
     handler = instance
     request = handler.request
@@ -88,7 +66,6 @@ def _nr_wrapper_RequestHandler__execute_(wrapped, instance, args, kwargs):
     with transaction_context(transaction):
       return wrapped(*args, **kwargs)
 
-
 def _nr_wrapper_RequestHandler__handle_request_exception_(wrapped, instance,
         args, kwargs):
 
@@ -99,6 +76,37 @@ def _nr_wrapper_RequestHandler__handle_request_exception_(wrapped, instance,
     record_exception(sys.exc_info())
     return wrapped(*args, **kwargs)
 
+# The following 2 methods are used to trace request handler member functions.
+@function_wrapper
+def _requesthandler_transaction_function_trace(wrapped, instance, args, kwargs):
+    # Use this function tracer when the function you want to trace is called
+    # synchronously from a function that is not run inside the transaction,
+    # such as http1connection.HTTP1Connection._read_message.
+    request = instance.request
+    transaction = retrieve_request_transaction(request)
+
+    if transaction is None:
+        # If transaction is None we don't want to trace this function.
+        return wrapped(*args, **kwargs)
+
+    current_transaction = retrieve_current_transaction()
+
+    with transaction_context(transaction):
+        name = callable_name(wrapped)
+        with FunctionTrace(transaction, name=name):
+            return wrapped(*args, **kwargs)
+
+@function_wrapper
+def _requesthandler_function_trace(wrapped, instance, args, kwargs):
+    # Use this function tracer when a function you want to trace is called
+    # synchronously from a function that is already in the transaction, such as
+    # web.RequestHandler._execute.
+    transaction = retrieve_current_transaction()
+
+    name = callable_name(wrapped)
+    with FunctionTrace(transaction, name=name):
+        return wrapped(*args, **kwargs)
+
 def _nr_wrapper_RequestHandler__init__(wrapped, instance, args, kwargs):
 
     methods = ['head', 'get', 'post', 'delete', 'patch', 'put', 'options']
@@ -106,25 +114,25 @@ def _nr_wrapper_RequestHandler__init__(wrapped, instance, args, kwargs):
     for method in methods:
         func = getattr(instance, method, None)
         if func is not None:
-            wrapped_func = _requesthandler_method_wrapper(func)
+            wrapped_func = _requesthandler_function_trace(func)
             setattr(instance, method, wrapped_func)
 
     # Only instrument prepare or on_finish if it has been re-implemented by
     # the user, the stubs on RequestHandler are meaningless noise.
 
     if _find_defined_class(instance.prepare) != 'RequestHandler':
-        instance.prepare = _requesthandler_method_wrapper(instance.prepare)
+        instance.prepare = _requesthandler_function_trace(instance.prepare)
 
     if _find_defined_class(instance.on_finish) != 'RequestHandler':
-        instance.on_finish = _requesthandler_method_wrapper(instance.on_finish)
+        instance.on_finish = _requesthandler_function_trace(instance.on_finish)
 
     if _find_defined_class(instance.data_received) != 'RequestHandler':
-        instance.data_received =  _requesthandler_method_wrapper(
+        instance.data_received =  _requesthandler_transaction_function_trace(
                 instance.data_received)
 
     # A user probably has not overridden on_connection_close but we want to
     # associate it with the transaction since it indicates a bad end state.
-    instance.on_connection_close = _requesthandler_method_wrapper(
+    instance.on_connection_close = _requesthandler_transaction_function_trace(
         instance.on_connection_close)
 
     return wrapped(*args, **kwargs)

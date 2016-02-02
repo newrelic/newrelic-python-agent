@@ -99,8 +99,7 @@ def _increment_ref_count(callback, wrapped, instance, args, kwargs):
     if hasattr(callback, '_nr_transaction'):
 
         if callback._nr_transaction is not None:
-            this_thread_id = current_thread_id()
-            if this_thread_id != callback._nr_transaction.thread_id:
+            if current_thread_id() != callback._nr_transaction.thread_id:
                 # Callback being added not in the main thread; ignore.
 
                 # Since we are not incrementing the counter for this callback,

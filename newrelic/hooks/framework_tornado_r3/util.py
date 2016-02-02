@@ -138,8 +138,7 @@ def create_transaction_aware_fxn(fxn):
 
         if transaction is not None:
             # Callback run outside the main thread must not affect the cache
-            this_thread_id = current_thread_id()
-            if transaction.thread_id != this_thread_id:
+            if transaction.thread_id != current_thread_id():
                 return fxn(*args, **kwargs)
 
         old_transaction = replace_current_transaction(transaction)

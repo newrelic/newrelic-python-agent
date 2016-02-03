@@ -3,6 +3,7 @@ import sys
 import traceback
 
 from newrelic.agent import wrap_function_wrapper
+from newrelic.core.transaction_cache import transaction_cache
 from .util import (possibly_finalize_transaction, record_exception,
         retrieve_current_transaction)
 
@@ -25,18 +26,18 @@ def _nr_wrapper_IOLoop__run_callback_(wrapped, instance, args, kwargs):
             return None
 
     callback = _callback_extractor(*args, **kwargs)
-
-    ret = wrapped(*args, **kwargs)
-
     transaction = getattr(callback, '_nr_transaction', None)
     if transaction is not None:
-        transaction = callback._nr_transaction
-        transaction._ref_count -= 1
-
         # Mark this callback as ran so calls to cancel timers know not to
         # decrement the callback ref count
 
         callback._nr_callback_ran = True
+
+
+    ret = wrapped(*args, **kwargs)
+
+    if transaction is not None:
+        transaction._ref_count -= 1
 
         # Finalize the transaction if this is the last callback.
         possibly_finalize_transaction(callback._nr_transaction)
@@ -69,12 +70,29 @@ def _nr_wrapper_PollIOLoop_remove_timeout(wrapped, instance, args, kwargs):
     callback = _callback_extractor(*args, **kwargs)
 
     transaction = getattr(callback, '_nr_transaction', None)
+
+    ret = wrapped(*args, **kwargs)
+
     if transaction is not None:
-        transaction = callback._nr_transaction
         if not hasattr(callback, '_nr_callback_ran'):
+
+            current_thread_id = transaction_cache().current_thread_id()
+            if transaction.thread_id != current_thread_id:
+                _logger.debug('ioloop.remove_timeout being called from a '
+                        'different thread as the transaction. Callback with ID '
+                        '%r, was scheduled in thread %r and removed in thread '
+                        '%r. This could potentially cause a race condition that'
+                        ' could cause the agent to lose data on this '
+                        'transaction.', id(callback), transaction.thread_id,
+                        current_thread_id)
+
             transaction._ref_count -= 1
 
-    return wrapped(*args, **kwargs)
+            # Finalize the transaction if this is the last callback, this should
+            # only be possible if remove_timeout was called from a thread.
+            possibly_finalize_transaction(transaction)
+
+    return ret
 
 def _increment_ref_count(callback, wrapped, instance, args, kwargs):
     transaction = retrieve_current_transaction()

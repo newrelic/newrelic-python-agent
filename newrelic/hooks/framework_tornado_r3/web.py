@@ -89,8 +89,6 @@ def _requesthandler_transaction_function_trace(wrapped, instance, args, kwargs):
         # If transaction is None we don't want to trace this function.
         return wrapped(*args, **kwargs)
 
-    current_transaction = retrieve_current_transaction()
-
     with transaction_context(transaction):
         name = callable_name(wrapped)
         with FunctionTrace(transaction, name=name):

@@ -4,7 +4,7 @@ import tornado
 import threading
 import time
 
-from newrelic.agent import function_wrapper
+from newrelic.agent import function_wrapper, current_transaction
 
 from tornado.httpclient import AsyncHTTPClient, HTTPClient, HTTPRequest
 from tornado.web import Application, RequestHandler
@@ -569,16 +569,19 @@ class SimpleThreadedFutureRequestHandler(RequestHandler):
 class BusyWaitThreadedFutureRequestHandler(RequestHandler):
     """This handler creates a future and passes it to a thread, but with timing
     so that the callback from the future will likely be running when a callback
-    from the main thread kicks in.
+    from the main thread kicks in. We cannot absolutely guarantee that this
+    will be the base, but there are assert statements in busy_wait that will
+    fail and thus let us know if the timing was not as intended for this test
+    case.
     """
     RESPONSE = b'bad programmer'
 
     def get(self, add_future=False):
         f = tornado.concurrent.Future()
 
-        add_future = (True if add_future == 'add_future' else False)
+        self.add_future = (True if add_future == 'add_future' else False)
 
-        if add_future:
+        if self.add_future:
             # When the future resolves, add a callback to the ioloop, wrapped
             # with a context that contains this transaction
             tornado.ioloop.IOLoop.current().add_future(f, self.busy_wait)
@@ -592,26 +595,48 @@ class BusyWaitThreadedFutureRequestHandler(RequestHandler):
 
         # Resolve the future in a different thread, this will pass with it
         # the transaction piggy-backed on the callback inside the future
-        t = threading.Thread(target=self.resolve_future, args=(f,))
+        transaction = current_transaction()
+        t = threading.Thread(target=self.resolve_future, args=(f, transaction))
         t.start()
 
         # Schedule a callback later that should be captured by the agent, but
         # run during the middle of the threaded callback
         tornado.ioloop.IOLoop.current().call_later(0.15, self.do_stuff)
 
-    def resolve_future(self, future):
-        time.sleep(0.1)
+    def resolve_future(self, future, transaction):
+        # Make sure that the get method has finished
+        while not transaction._can_finalize:
+            time.sleep(0.01)
+
         future.set_result(None)
 
     def busy_wait(self, f=None, dt=1):
         # We need this to take up enough time so that its likely to be "active"
-        # when our main thread scheduled callback kicks in
+        # when our main thread scheduled callback kicks in. If this is running
+        # in a thread, as a result of add_done_callback, do_stuff should be able
+        # to add and remove the transaction object from the cache *while* this
+        # function is running. Otherwise, if this is running in the main thread
+        # as a result of add_future, it will block do_stuff's ability to run,
+        # and it will run on the IO loop after.
+
+        assert not hasattr(self, 'stuff_done'), ('busy_wait started before get '
+                'method finished')
+
         current_time = time.time()
         while (time.time() < current_time+dt):
             pass
 
+        if self.add_future:
+            assert not hasattr(self, 'stuff_done'), ('This should not be '
+                    'possible since both bust_wait and do_stuff are on the '
+                    'ioloop, and the previous assert checked that it has not '
+                    'ran. If this assert fails, just give up now.')
+        else:
+            assert hasattr(self, 'stuff_done'), ('do_stuff was not finished '
+                    ' during busy_wait')
+
     def do_stuff(self):
-        pass
+        self.stuff_done = True
 
 def get_tornado_app():
     return Application([

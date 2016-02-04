@@ -75,15 +75,15 @@ def _nr_wrapper_PollIOLoop_remove_timeout(wrapped, instance, args, kwargs):
     if transaction is not None:
         if not hasattr(callback, '_nr_callback_ran'):
 
-            current_thread_id = transaction_cache().current_thread_id()
-            if transaction.thread_id != current_thread_id:
+            thread_id = current_thread_id()
+            if transaction.thread_id != thread_id:
                 _logger.debug('ioloop.remove_timeout being called from a '
                         'different thread as the transaction. Callback with ID '
                         '%r, was scheduled in thread %r and removed in thread '
                         '%r. This could potentially cause a race condition that'
                         ' could cause the agent to lose data on this '
                         'transaction.', id(callback), transaction.thread_id,
-                        current_thread_id)
+                        thread_id)
 
             transaction._ref_count -= 1
 

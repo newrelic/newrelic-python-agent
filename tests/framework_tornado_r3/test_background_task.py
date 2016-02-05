@@ -80,7 +80,10 @@ class TornadoTest(TornadoBaseTest):
         self.io_loop.add_callback(do_stuff_background_task)
         self.wait(timeout=5.0)
 
-    # TODO: Why is `do_stuff` called 2 times?
+    # do_stuff has a count of 2 because it is wrapped twice:
+    #
+    #   function_trace()
+    #   add_callback
 
     scoped_metrics = [('Function/test_background_task:do_stuff', 2)]
 
@@ -95,7 +98,7 @@ class TornadoTest(TornadoBaseTest):
         add_callback_background_task(self.io_loop, do_stuff)
         self.wait(timeout=5.0)
 
-    # TODO: Why is `do_error` called 2 times?
+    # do_error has a count of 2 for the same reason that do_stuff does above.
 
     scoped_metrics = [('Function/test_background_task:do_error', 2)]
     errors = ['test_background_task:ExceptionAfterTransactionRecorded']

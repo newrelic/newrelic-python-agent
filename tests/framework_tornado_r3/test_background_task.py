@@ -1,7 +1,5 @@
 import tornado.gen
 
-from newrelic.packages import six
-
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import function_trace
 
@@ -10,10 +8,6 @@ from tornado_base_test import TornadoBaseTest
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
     tornado_validate_errors, tornado_validate_transaction_cache_empty)
-
-
-def select_python_version(py2, py3):
-    return six.PY3 and py3 or py2
 
 
 # Define functions and background tasks at the module level, so

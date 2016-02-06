@@ -58,6 +58,12 @@ def schedule_and_cancel_callback_task(io_loop):
     io_loop.remove_timeout(timeout)
     do_stuff()
 
+@background_task()
+@tornado.gen.coroutine
+def spawn_callback_background_task(io_loop):
+    io_loop.spawn_callback(do_stuff)
+    do_stuff()
+
 
 # Actual tests start here!
 
@@ -151,4 +157,17 @@ class TornadoTest(TornadoBaseTest):
     def test_background_task_schedule_cancel_callback(self):
         self.waits_expected += 1
         schedule_and_cancel_callback_task(self.io_loop)
+        self.wait(timeout=5.0)
+
+    scoped_metrics = [('Function/test_background_task:do_stuff', 3)]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            'test_background_task:spawn_callback_background_task',
+            background_task=True,
+            scoped_metrics=scoped_metrics)
+    def test_background_task_spawn_callback(self):
+        self.waits_expected += 1
+        spawn_callback_background_task(self.io_loop)
         self.wait(timeout=5.0)

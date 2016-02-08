@@ -19,6 +19,12 @@ class BackgroundTask(Transaction):
 
         self.background_task = True
 
+        # Set async related attributes
+
+        self._ref_count = 0
+        self._can_finalize = False
+        self._is_finalized = False
+
         # Bail out if the transaction is running in a
         # disabled state.
 
@@ -99,8 +105,15 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
                 if not manager.__exit__(*sys.exc_info()):
                     raise
         finally:
-            if success:
+            if success and manager._ref_count == 0:
+                manager._is_finalized = True
                 manager.__exit__(None, None, None)
+            else:
+                manager._can_finalize = True
+
+                old_transaction = current_transaction()
+                if old_transaction is not None:
+                    old_transaction.drop_transaction()
 
     return FunctionWrapper(wrapped, wrapper)
 

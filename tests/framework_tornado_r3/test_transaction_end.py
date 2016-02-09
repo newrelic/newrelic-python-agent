@@ -27,20 +27,19 @@ def select_python_version(py2, py3):
 
 class TornadoTest(TornadoBaseTest):
 
-    # The count of 2 for the get method should be reduced to 1 after PYTHON-1851
     scoped_metrics = select_python_version(
             py2=[('Function/_test_async_application:'
                     'ReturnFirstDivideRequestHandler.do_divide', 1),
                 ('Function/_test_async_application:do_divide (coroutine)', 1),
                 ('Function/_test_async_application:'
-                    'ReturnFirstDivideRequestHandler.get', 2),
+                    'ReturnFirstDivideRequestHandler.get', 1),
                 ('Function/_test_async_application:get (coroutine)', 1),],
             py3=[('Function/_test_async_application:'
                     'ReturnFirstDivideRequestHandler.do_divide', 1),
                 ('Function/_test_async_application:ReturnFirstDivide'
                     'RequestHandler.do_divide (coroutine)', 1),
                 ('Function/_test_async_application:'
-                    'ReturnFirstDivideRequestHandler.get', 2),
+                    'ReturnFirstDivideRequestHandler.get', 1),
                 ('Function/_test_async_application:ReturnFirstDivide'
                     'RequestHandler.get (coroutine)', 1),])
 
@@ -88,12 +87,12 @@ class TornadoTest(TornadoBaseTest):
             py2=[('Function/_test_async_application:'
                     'CancelAfterRanCallLaterRequestHandler.later', 1),
                 ('Function/_test_async_application:'
-                    'CancelAfterRanCallLaterRequestHandler.get', 2),
+                    'CancelAfterRanCallLaterRequestHandler.get', 1),
                 ('Function/_test_async_application:get (coroutine)', 1),],
             py3=[('Function/_test_async_application:'
                     'CancelAfterRanCallLaterRequestHandler.later', 1),
                 ('Function/_test_async_application:'
-                    'CancelAfterRanCallLaterRequestHandler.get', 2),
+                    'CancelAfterRanCallLaterRequestHandler.get', 1),
                 ('Function/_test_async_application:CancelAfterRanCallLater'
                     'RequestHandler.get (coroutine)', 1),])
 
@@ -227,7 +226,7 @@ class TornadoTest(TornadoBaseTest):
             ('Function/_test_async_application:'
                     'OnFinishWithGetCoroutineHandler.on_finish', 1),
             ('Function/_test_async_application:'
-                    'OnFinishWithGetCoroutineHandler.get', 2),
+                    'OnFinishWithGetCoroutineHandler.get', 1),
     ]
 
     @tornado_validate_transaction_cache_empty()

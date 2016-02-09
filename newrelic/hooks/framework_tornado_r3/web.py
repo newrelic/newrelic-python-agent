@@ -111,7 +111,13 @@ def _nr_wrapper_RequestHandler__init__(wrapped, instance, args, kwargs):
 
     for method in methods:
         func = getattr(instance, method, None)
-        if func is not None:
+
+        # Check `_nr_last_object` attribute to see if we've already
+        # wrapped func. For instance, if the method has been decorated
+        # with `@tornado.gen.coroutine`, then we've already wrapped it,
+        # so we don't want to wrap it again.
+
+        if func is not None and not hasattr(func, '_nr_last_object'):
             wrapped_func = _requesthandler_function_trace(func)
             setattr(instance, method, wrapped_func)
 

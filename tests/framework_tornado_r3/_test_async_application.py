@@ -570,7 +570,7 @@ class BusyWaitThreadedFutureRequestHandler(RequestHandler):
     """This handler creates a future and passes it to a thread, but with timing
     so that the callback from the future will likely be running when a callback
     from the main thread kicks in. We cannot absolutely guarantee that this
-    will be the base, but there are assert statements in busy_wait that will
+    will be the case, but there are assert statements in busy_wait that will
     fail and thus let us know if the timing was not as intended for this test
     case.
     """
@@ -623,8 +623,7 @@ class BusyWaitThreadedFutureRequestHandler(RequestHandler):
                 'method finished')
 
         current_time = time.time()
-        while (time.time() < current_time+dt):
-            pass
+        time.sleep(dt)
 
         if self.add_future:
             assert not hasattr(self, 'stuff_done'), ('This should not be '

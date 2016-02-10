@@ -542,6 +542,9 @@ class SimpleThreadedFutureRequestHandler(RequestHandler):
     RESPONSE = b"please don't do this"
 
     def get(self, add_future=False):
+        # Tornado futures are not thread safe, however that should not,
+        # in itself, cause this test to fail because we do not access the future
+        # from the main thread once we start the thread that we pass it to.
         f = tornado.concurrent.Future()
 
         add_future = (True if add_future == 'add_future' else False)
@@ -577,6 +580,9 @@ class BusyWaitThreadedFutureRequestHandler(RequestHandler):
     RESPONSE = b'bad programmer'
 
     def get(self, add_future=False):
+        # Tornado futures are not thread safe, however that should not,
+        # in itself, cause this test to fail because we do not access the future
+        # from the main thread once we start the thread that we pass it to.
         f = tornado.concurrent.Future()
 
         self.add_future = (True if add_future == 'add_future' else False)

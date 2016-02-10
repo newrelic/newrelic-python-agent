@@ -584,12 +584,12 @@ class BusyWaitThreadedFutureRequestHandler(RequestHandler):
         if self.add_future:
             # When the future resolves, add a callback to the ioloop, wrapped
             # with a context that contains this transaction
-            tornado.ioloop.IOLoop.current().add_future(f, self.busy_wait)
+            tornado.ioloop.IOLoop.current().add_future(f, self.long_wait)
         else:
             # Add a callback to the future, which will be wrapped in
             # a context that contains this transaction, and will run in the
             # thread we pass the future to
-            f.add_done_callback(self.busy_wait)
+            f.add_done_callback(self.long_wait)
 
         self.write(self.RESPONSE)
 
@@ -610,7 +610,7 @@ class BusyWaitThreadedFutureRequestHandler(RequestHandler):
 
         future.set_result(None)
 
-    def busy_wait(self, f=None, dt=1):
+    def long_wait(self, f=None):
         # We need this to take up enough time so that its likely to be "active"
         # when our main thread scheduled callback kicks in. If this is running
         # in a thread, as a result of add_done_callback, do_stuff should be able
@@ -619,12 +619,12 @@ class BusyWaitThreadedFutureRequestHandler(RequestHandler):
         # as a result of add_future, it will block do_stuff's ability to run,
         # and it will run on the IO loop after.
 
-        assert not hasattr(self, 'stuff_done'), ('busy_wait started before get '
+        assert not hasattr(self, 'stuff_done'), ('long_wait started before get '
                 'method finished. Test timing incorrect, may need to re-run '
                 'test')
 
         current_time = time.time()
-        time.sleep(dt)
+        time.sleep(1)
 
         if self.add_future:
             assert not hasattr(self, 'stuff_done'), ('This should not be '
@@ -633,7 +633,7 @@ class BusyWaitThreadedFutureRequestHandler(RequestHandler):
                     'ran. If this assert fails, just give up now.')
         else:
             assert hasattr(self, 'stuff_done'), ('do_stuff was not finished '
-                    ' during busy_wait. Test timing incorrect, may need to '
+                    ' during long_wait. Test timing incorrect, may need to '
                     're-run test')
 
     def do_stuff(self):

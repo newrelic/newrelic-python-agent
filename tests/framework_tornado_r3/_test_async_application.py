@@ -620,7 +620,8 @@ class BusyWaitThreadedFutureRequestHandler(RequestHandler):
         # and it will run on the IO loop after.
 
         assert not hasattr(self, 'stuff_done'), ('busy_wait started before get '
-                'method finished')
+                'method finished. Test timing incorrect, may need to re-run '
+                'test')
 
         current_time = time.time()
         time.sleep(dt)
@@ -632,7 +633,8 @@ class BusyWaitThreadedFutureRequestHandler(RequestHandler):
                     'ran. If this assert fails, just give up now.')
         else:
             assert hasattr(self, 'stuff_done'), ('do_stuff was not finished '
-                    ' during busy_wait')
+                    ' during busy_wait. Test timing incorrect, may need to '
+                    're-run test')
 
     def do_stuff(self):
         self.stuff_done = True

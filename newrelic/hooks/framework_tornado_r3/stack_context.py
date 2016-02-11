@@ -2,8 +2,8 @@ import sys
 
 from newrelic.agent import function_wrapper, wrap_function_wrapper
 from six.moves import range
-from .util import (record_exception, retrieve_current_transaction,
-        replace_current_transaction, create_transaction_aware_fxn)
+from .util import (create_transaction_aware_fxn, record_exception,
+        retrieve_current_transaction, transaction_context)
 
 def _nr_wrapper_stack_context_wrap_(wrapped, instance, args, kwargs):
 
@@ -54,29 +54,31 @@ def _nr_wrapper_ExceptionStackContext__init__(wrapped, instance, args, kwargs):
     result = wrapped(*args, **kwargs)
 
     # instance is now an initiated ExceptionStackContext object.
-    instance.exception_handler = _wrap_exception_handler(
-            instance.exception_handler)
+    instance.exception_handler = _instrument_exception_handler(instance)
 
     return result
 
-@function_wrapper
-def _wrap_exception_handler(wrapped, instance, args, kwargs):
-    # wrapped is the exception_handler member variable of an
-    # ExceptionStackContext object. Here is an example:
-    # esc = ExceptionStackContext(exception_handler)
-    # esc.exception_handler = _wrap_exception_handler(esc.expection_handler)
+def _instrument_exception_handler(esc_instance):
+    # We keep track of the transaction the ExceptionHandler was instantiated in.
+    transaction = retrieve_current_transaction()
 
-    def _bind_params(type, value, traceback, *args, **kwargs):
-        return type, value, traceback
+    @function_wrapper
+    def _wrap_exception_handler(wrapped, instance, args, kwargs):
 
-    type, value, traceback = _bind_params(*args, **kwargs)
+        def _bind_params(type, value, traceback, *args, **kwargs):
+            return type, value, traceback
 
-    is_exception_swallowed = wrapped(*args, **kwargs)
+        type, value, traceback = _bind_params(*args, **kwargs)
 
-    if is_exception_swallowed:
-        record_exception((type, value, traceback))
+        is_exception_swallowed = wrapped(*args, **kwargs)
 
-    return is_exception_swallowed
+        if is_exception_swallowed:
+            with transaction_context(transaction):
+                record_exception((type, value, traceback))
+
+        return is_exception_swallowed
+
+    return _wrap_exception_handler(esc_instance.exception_handler)
 
 def instrument_tornado_stack_context(module):
     wrap_function_wrapper(module, 'wrap', _nr_wrapper_stack_context_wrap_)

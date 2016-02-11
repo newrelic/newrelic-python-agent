@@ -5,7 +5,7 @@ import sys
 from newrelic.agent import (callable_name, function_wrapper,
         wrap_function_wrapper, FunctionTrace)
 from .util import (retrieve_current_transaction, retrieve_request_transaction,
-        record_exception, replace_current_transaction)
+        record_exception, transaction_context)
 
 _logger = logging.getLogger(__name__)
 
@@ -17,16 +17,6 @@ def _find_defined_class(meth):
         if meth.__name__ in cls.__dict__:
             return cls.__name__
     return None
-
-class transaction_context(object):
-    def __init__(self, transaction):
-        self.transaction = transaction
-
-    def __enter__(self):
-        self.old_transaction = replace_current_transaction(self.transaction)
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        replace_current_transaction(self.old_transaction)
 
 def _nr_wrapper_RequestHandler__execute_(wrapped, instance, args, kwargs):
     handler = instance
@@ -69,12 +59,14 @@ def _nr_wrapper_RequestHandler__execute_(wrapped, instance, args, kwargs):
 def _nr_wrapper_RequestHandler__handle_request_exception_(wrapped, instance,
         args, kwargs):
 
-    # sys.exc_info() will have the correct exception context.
-    # _handle_request_exception is private to tornado's web.py and also uses
-    # sys.exc_info. The exception context has explicitly set the type, value,
-    # and traceback.
-    record_exception(sys.exc_info())
-    return wrapped(*args, **kwargs)
+    transaction = retrieve_request_transaction(instance.request)
+    with transaction_context(transaction):
+        # sys.exc_info() will have the correct exception context.
+        # _handle_request_exception is private to tornado's web.py and also uses
+        # sys.exc_info. The exception context has explicitly set the type, value,
+        # and traceback.
+        record_exception(sys.exc_info())
+        return wrapped(*args, **kwargs)
 
 # The following 2 methods are used to trace request handler member functions.
 @function_wrapper

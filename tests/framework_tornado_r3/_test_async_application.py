@@ -4,7 +4,7 @@ import tornado
 import threading
 import time
 
-from newrelic.agent import function_wrapper
+from newrelic.agent import function_wrapper, current_transaction
 
 from tornado.httpclient import AsyncHTTPClient, HTTPClient, HTTPRequest
 from tornado.web import Application, RequestHandler
@@ -534,6 +534,117 @@ class LastTimeoutFromThreadRequestHandler(RequestHandler):
     def last_callback(self):
         pass
 
+class SimpleThreadedFutureRequestHandler(RequestHandler):
+    """This handler creates a future and passes it to a thread, which should
+    resolve immediately, while the current method still has the transaction
+    in the cache.
+    """
+    RESPONSE = b"please don't do this"
+
+    def get(self, add_future=False):
+        # Tornado futures are not thread safe, however that should not,
+        # in itself, cause this test to fail because we do not access the future
+        # from the main thread once we start the thread that we pass it to.
+        f = tornado.concurrent.Future()
+
+        add_future = (True if add_future == 'add_future' else False)
+
+        if add_future:
+            # When the future resolves, add a callback to the ioloop, wrapped
+            # with a context that contains this transaction
+            tornado.ioloop.IOLoop.current().add_future(f, self.do_stuff)
+        else:
+            # Add a callback to the future, which will be wrapped in
+            # a context that contains this transaction, and will run in the
+            # thread we pass the future to
+            f.add_done_callback(self.do_stuff)
+
+        # Resolve the future in a different thread, this will pass with it
+        # the transaction piggy-backed on the callback inside the future
+        t = threading.Thread(target=f.set_result, args=(None,))
+        t.start()
+        t.join()
+        self.write(self.RESPONSE)
+
+    def do_stuff(self, f=None):
+         pass
+
+class BusyWaitThreadedFutureRequestHandler(RequestHandler):
+    """This handler creates a future and passes it to a thread, but with timing
+    so that the callback from the future will likely be running when a callback
+    from the main thread kicks in. We cannot absolutely guarantee that this
+    will be the case, but there are assert statements in busy_wait that will
+    fail and thus let us know if the timing was not as intended for this test
+    case.
+    """
+    RESPONSE = b'bad programmer'
+
+    def get(self, add_future=False):
+        # Tornado futures are not thread safe, however that should not,
+        # in itself, cause this test to fail because we do not access the future
+        # from the main thread once we start the thread that we pass it to.
+        f = tornado.concurrent.Future()
+
+        self.add_future = (True if add_future == 'add_future' else False)
+
+        if self.add_future:
+            # When the future resolves, add a callback to the ioloop, wrapped
+            # with a context that contains this transaction
+            tornado.ioloop.IOLoop.current().add_future(f, self.long_wait)
+        else:
+            # Add a callback to the future, which will be wrapped in
+            # a context that contains this transaction, and will run in the
+            # thread we pass the future to
+            f.add_done_callback(self.long_wait)
+
+        self.write(self.RESPONSE)
+
+        # Resolve the future in a different thread, this will pass with it
+        # the transaction piggy-backed on the callback inside the future
+        transaction = current_transaction()
+        t = threading.Thread(target=self.resolve_future, args=(f, transaction))
+        t.start()
+
+        # Schedule a callback later that should be captured by the agent, but
+        # run during the middle of the threaded callback
+        tornado.ioloop.IOLoop.current().call_later(0.15, self.do_stuff)
+
+    def resolve_future(self, future, transaction):
+        # Make sure that the get method has finished
+        while not transaction._can_finalize:
+            time.sleep(0.01)
+
+        future.set_result(None)
+
+    def long_wait(self, f=None):
+        # We need this to take up enough time so that its likely to be "active"
+        # when our main thread scheduled callback kicks in. If this is running
+        # in a thread, as a result of add_done_callback, do_stuff should be able
+        # to add and remove the transaction object from the cache *while* this
+        # function is running. Otherwise, if this is running in the main thread
+        # as a result of add_future, it will block do_stuff's ability to run,
+        # and it will run on the IO loop after.
+
+        assert not hasattr(self, 'stuff_done'), ('long_wait started before get '
+                'method finished. Test timing incorrect, may need to re-run '
+                'test')
+
+        current_time = time.time()
+        time.sleep(1)
+
+        if self.add_future:
+            assert not hasattr(self, 'stuff_done'), ('This should not be '
+                    'possible since both bust_wait and do_stuff are on the '
+                    'ioloop, and the previous assert checked that it has not '
+                    'ran. If this assert fails, just give up now.')
+        else:
+            assert hasattr(self, 'stuff_done'), ('do_stuff was not finished '
+                    ' during long_wait. Test timing incorrect, may need to '
+                    're-run test')
+
+    def do_stuff(self):
+        self.stuff_done = True
+
 def get_tornado_app():
     return Application([
         ('/', HelloRequestHandler),
@@ -570,4 +681,6 @@ def get_tornado_app():
         ('/add-future', AddFutureRequestHandler),
         ('/add_done_callback', AddDoneCallbackRequestHandler),
         ('/remove-last-timeout', LastTimeoutFromThreadRequestHandler),
+        ('/future-thread/?(\w+)?', SimpleThreadedFutureRequestHandler),
+        ('/future-thread-2/?(\w+)?', BusyWaitThreadedFutureRequestHandler),
     ])

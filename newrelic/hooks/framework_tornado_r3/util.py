@@ -4,6 +4,7 @@ import traceback
 from newrelic.agent import (application as application_instance,
         current_transaction, ignore_status_code, function_wrapper,
         callable_name, FunctionTrace)
+from newrelic.core.transaction_cache import transaction_cache
 
 _logger = logging.getLogger(__name__)
 
@@ -14,6 +15,9 @@ _logger = logging.getLogger(__name__)
 # restore the None value.
 class NoneProxy(object):
     pass
+
+def current_thread_id():
+    return transaction_cache().current_thread_id()
 
 def record_exception(exc_info):
     # Record the details of any exception ignoring status codes which
@@ -131,6 +135,12 @@ def create_transaction_aware_fxn(fxn):
 
     @function_wrapper
     def transaction_aware(wrapped, instance, args, kwargs):
+
+        if transaction is not None:
+            # Callback run outside the main thread must not affect the cache
+            if transaction.thread_id != current_thread_id():
+                return fxn(*args, **kwargs)
+
         old_transaction = replace_current_transaction(transaction)
         name = callable_name(fxn)
         if transaction is None:
@@ -158,6 +168,7 @@ def create_transaction_aware_fxn(fxn):
                         ret = None
 
         replace_current_transaction(old_transaction)
+
         return ret
 
     return transaction_aware(fxn)

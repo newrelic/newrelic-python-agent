@@ -15,7 +15,9 @@ from _test_async_application import (ReturnFirstDivideRequestHandler,
         CallbackOnThreadExecutorRequestHandler,
         ThreadScheduledCallAtRequestHandler,
         CallAtOnThreadExecutorRequestHandler, AddFutureRequestHandler,
-        AddDoneCallbackRequestHandler, LastTimeoutFromThreadRequestHandler)
+        AddDoneCallbackRequestHandler, LastTimeoutFromThreadRequestHandler,
+        SimpleThreadedFutureRequestHandler,
+        BusyWaitThreadedFutureRequestHandler)
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
@@ -249,7 +251,8 @@ class TornadoTest(TornadoBaseTest):
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:ThreadScheduledCallbackRequestHandler.get',
-            scoped_metrics=scoped_metrics)
+            scoped_metrics=scoped_metrics,
+            forgone_metric_substrings=['do_thing'])
     def test_thread_scheduled_callback(self):
         response = self.fetch_response('/thread-scheduled-callback')
         expected = ThreadScheduledCallbackRequestHandler.RESPONSE
@@ -281,7 +284,8 @@ class TornadoTest(TornadoBaseTest):
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:ThreadScheduledCallAtRequestHandler.get',
-            scoped_metrics=scoped_metrics)
+            scoped_metrics=scoped_metrics,
+            forgone_metric_substrings=['do_thing'])
     def test_thread_scheduled_call_at(self):
         response = self.fetch_response('/thread-scheduled-call_at')
         expected = ThreadScheduledCallAtRequestHandler.RESPONSE
@@ -349,4 +353,70 @@ class TornadoTest(TornadoBaseTest):
     def test_last_timeout_removed_in_thread(self):
         response = self.fetch_response('/remove-last-timeout')
         expected = LastTimeoutFromThreadRequestHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'SimpleThreadedFutureRequestHandler.get', 1),
+    ]
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:SimpleThreadedFutureRequestHandler.get',
+            scoped_metrics=scoped_metrics,
+            forgone_metric_substrings=['do_stuff'])
+    def test_future_resolved_in_thread_add_done_callback(self):
+        response = self.fetch_response('/future-thread')
+        expected = SimpleThreadedFutureRequestHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'SimpleThreadedFutureRequestHandler.get', 1),
+    ]
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:SimpleThreadedFutureRequestHandler.get',
+            scoped_metrics=scoped_metrics,
+            forgone_metric_substrings=['do_stuff'])
+    def test_future_resolved_in_thread_add_future(self):
+        response = self.fetch_response('/future-thread/add_future')
+        expected = SimpleThreadedFutureRequestHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'BusyWaitThreadedFutureRequestHandler.get', 1),
+            ('Function/_test_async_application:'
+                    'BusyWaitThreadedFutureRequestHandler.do_stuff', 1),
+    ]
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:BusyWaitThreadedFutureRequestHandler.get',
+            scoped_metrics=scoped_metrics,
+            forgone_metric_substrings=['long_wait'],
+            )
+    def test_future_resolved_in_thread_complex_add_done_callback(self):
+        response = self.fetch_response('/future-thread-2')
+        expected = BusyWaitThreadedFutureRequestHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'BusyWaitThreadedFutureRequestHandler.get', 1),
+            ('Function/_test_async_application:'
+                    'BusyWaitThreadedFutureRequestHandler.do_stuff', 1),
+            ('Function/_test_async_application:'
+                    'BusyWaitThreadedFutureRequestHandler.long_wait', 1),
+    ]
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:BusyWaitThreadedFutureRequestHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_future_resolved_in_thread_complex_add_future(self):
+        response = self.fetch_response('/future-thread-2/add_future')
+        expected = BusyWaitThreadedFutureRequestHandler.RESPONSE
         self.assertEqual(response.body, expected)

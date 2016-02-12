@@ -458,7 +458,8 @@ class Transaction(object):
                 path=self.path,
                 type=transaction_type,
                 group=group,
-                name=self._name,
+                base_name=self._name,
+                name_for_metric=self.name_for_metric,
                 port=self._port,
                 request_uri=self._request_uri,
                 response_code=self.response_code,
@@ -532,6 +533,14 @@ class Transaction(object):
         return self._application
 
     @property
+    def type(self):
+        if self.background_task:
+            transaction_type = 'OtherTransaction'
+        else:
+            transaction_type = 'WebTransaction'
+        return transaction_type
+
+    @property
     def name(self):
         return self._name
 
@@ -540,14 +549,8 @@ class Transaction(object):
         return self._group
 
     @property
-    def path(self):
-        if self._frozen_path:
-            return self._frozen_path
-
-        if self.background_task:
-            transaction_type = 'OtherTransaction'
-        else:
-            transaction_type = 'WebTransaction'
+    def name_for_metric(self):
+        """Combine group and name for use as transaction name in metrics."""
 
         group = self._group
 
@@ -557,23 +560,31 @@ class Transaction(object):
             else:
                 group = 'Uri'
 
-        name = self._name
+        transaction_name = self._name
 
-        if name is None:
-            name = '<undefined>'
+        if transaction_name is None:
+            transaction_name = '<undefined>'
 
         # Stripping the leading slash on the request URL held by
-        # name when type is 'Uri' is to keep compatibility with
-        # PHP agent and also possibly other agents. Leading
+        # transaction_name when type is 'Uri' is to keep compatibility
+        # with PHP agent and also possibly other agents. Leading
         # slash it not deleted for other category groups as the
         # leading slash may be significant in that situation.
 
-        if self._group in ['Uri', 'NormalizedUri'] and name[:1] == '/':
-            path = '%s/%s%s' % (transaction_type, group, name)
+        if (group in ('Uri', 'NormalizedUri') and
+                transaction_name.startswith('/')):
+            name = '%s%s' % (group, transaction_name)
         else:
-            path = '%s/%s/%s' % (transaction_type, group, name)
+            name = '%s/%s' % (group, transaction_name)
 
-        return path
+        return name
+
+    @property
+    def path(self):
+        if self._frozen_path:
+            return self._frozen_path
+
+        return '%s/%s' % (self.type, self.name_for_metric)
 
     @property
     def profile_sample(self):

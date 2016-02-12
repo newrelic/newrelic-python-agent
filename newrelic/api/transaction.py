@@ -329,10 +329,6 @@ class Transaction(object):
 
         # Calculate response time. Calculation depends on whether
         # a web response was sent back.
-        #
-        # NOTE: response_time isn't used now. When we complete
-        # PYTHON-1704, we will use response time for the total
-        # time async metrics.
 
         if self.last_byte_time == 0.0:
             response_time = duration
@@ -378,6 +374,14 @@ class Transaction(object):
         children = root.children
 
         exclusive = duration + root.exclusive
+
+        # Calculate total time.
+        #
+        # Because we do not track activity on threads, we do not
+        # have separate async components, so our total_time
+        # is equal to the duration of the transaction.
+
+        total_time = duration
 
         # Construct final root node of transaction trace.
         # Freeze path in case not already done. This will
@@ -467,6 +471,8 @@ class Transaction(object):
                 start_time=self.start_time,
                 end_time=self.end_time,
                 last_byte_time=self.last_byte_time,
+                total_time=total_time,
+                response_time=response_time,
                 duration=duration,
                 exclusive=exclusive,
                 children=tuple(children),

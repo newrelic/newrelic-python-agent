@@ -23,14 +23,15 @@ from newrelic.core.attribute_filter import (DST_ERROR_COLLECTOR,
 _TransactionNode = namedtuple('_TransactionNode',
         ['settings', 'path', 'type', 'group', 'base_name', 'name_for_metric',
         'port', 'request_uri', 'response_code', 'queue_start','start_time',
-        'end_time', 'last_byte_time', 'duration', 'exclusive', 'children',
-        'errors', 'slow_sql', 'custom_events', 'apdex_t', 'suppress_apdex',
-        'custom_metrics', 'guid', 'cpu_time', 'suppress_transaction_trace',
-        'client_cross_process_id', 'referring_transaction_guid', 'record_tt',
-        'synthetics_resource_id', 'synthetics_job_id', 'synthetics_monitor_id',
-        'synthetics_header', 'is_part_of_cat', 'trip_id', 'path_hash',
-        'referring_path_hash', 'alternate_path_hashes', 'trace_intrinsics',
-        'agent_attributes', 'user_attributes'])
+        'end_time', 'last_byte_time', 'response_time', 'total_time',
+        'duration', 'exclusive', 'children', 'errors', 'slow_sql',
+        'custom_events', 'apdex_t', 'suppress_apdex', 'custom_metrics', 'guid',
+        'cpu_time', 'suppress_transaction_trace', 'client_cross_process_id',
+        'referring_transaction_guid', 'record_tt', 'synthetics_resource_id',
+        'synthetics_job_id', 'synthetics_monitor_id', 'synthetics_header',
+        'is_part_of_cat', 'trip_id', 'path_hash', 'referring_path_hash',
+        'alternate_path_hashes', 'trace_intrinsics', 'agent_attributes',
+        'user_attributes'])
 
 class TransactionNode(_TransactionNode):
 
@@ -82,7 +83,7 @@ class TransactionNode(_TransactionNode):
             yield TimeMetric(
                     name='HttpDispatcher',
                     scope='',
-                    duration=self.duration,
+                    duration=self.response_time,
                     exclusive=None)
 
             # Upstream queue time within any web server front end.
@@ -109,7 +110,7 @@ class TransactionNode(_TransactionNode):
         yield TimeMetric(
                 name=self.path,
                 scope='',
-                duration=self.duration,
+                duration=self.response_time,
                 exclusive=self.exclusive)
 
         # Generate the rollup metric.
@@ -122,8 +123,38 @@ class TransactionNode(_TransactionNode):
         yield TimeMetric(
                 name=rollup,
                 scope='',
-                duration=self.duration,
+                duration=self.response_time,
                 exclusive=self.exclusive)
+
+        # Yield Unscoped Total Time metrics.
+
+        if self.type == 'WebTransaction':
+
+            yield TimeMetric(
+                    name='WebTransactionTotalTime/%s' % self.name_for_metric,
+                    scope='',
+                    duration=self.total_time,
+                    exclusive=self.total_time)
+
+            yield TimeMetric(
+                    name='WebTransactionTotalTime',
+                    scope='',
+                    duration=self.total_time,
+                    exclusive=self.total_time)
+
+        else:
+
+            yield TimeMetric(
+                    name='OtherTransactionTotalTime/%s' % self.name_for_metric,
+                    scope='',
+                    duration=self.total_time,
+                    exclusive=self.total_time)
+
+            yield TimeMetric(
+                    name='OtherTransactionTotalTime',
+                    scope='',
+                    duration=self.total_time,
+                    exclusive=self.total_time)
 
         if self.errors:
             # Generate overall rollup metric indicating if errors present.

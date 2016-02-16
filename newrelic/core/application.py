@@ -85,6 +85,7 @@ class Application(object):
 
         self._agent_commands_lock = threading.Lock()
         self._data_samplers_lock = threading.Lock()
+        self._data_samplers_started = False
 
         # We setup empty rules engines here even though they will be
         # replaced when application first registered. This is done to
@@ -648,6 +649,8 @@ class Application(object):
                              'this problem persists, please report this '
                              'problem to the provider of the data source.',
                              data_sampler.name)
+
+            self._data_samplers_started = True
 
     def stop_data_samplers(self):
         """Stop any data samplers. This will be called when the active

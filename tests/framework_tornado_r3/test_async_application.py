@@ -4,6 +4,7 @@ import threading
 import tornado.testing
 
 from newrelic.agent import background_task
+from newrelic.core.agent import agent_instance
 from newrelic.core.stats_engine import StatsEngine
 from newrelic.packages import six
 
@@ -932,3 +933,17 @@ class TornadoTest(TornadoBaseTest):
             forgone_metric_substrings=['do_stuff'])
     def test_runner_ref_count_error(self):
         response = self.fetch_exception('/runner-error')
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_run_validator(lambda x: 'thread.concurrency' not in [i.name for i in x.agent_attributes])
+    def test_thread_utilization_disabled(self):
+
+        agent = agent_instance()
+        app = agent.application('Python Agent Test (framework_tornado_r3)')
+        while not app._data_samplers_started:
+            time.sleep(0.1)
+
+        response = self.fetch_response('/')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, HelloRequestHandler.RESPONSE)

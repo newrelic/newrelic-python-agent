@@ -125,11 +125,18 @@ class transaction_context(object):
     def __exit__(self, exc_type, exc_value, traceback):
         replace_current_transaction(self.old_transaction)
 
-def create_transaction_aware_fxn(fxn):
+def create_transaction_aware_fxn(fxn, fxn_for_name=None):
     # Returns a version of fxn that will switch context to the appropriate
     # transaction and then restore the previous transaction on exit.
     # If fxn is already transaction aware or if there is no transaction
     # associated with fxn, this will return None.
+    #
+    # fxn_for_name is used to get the name we want to associate to our
+    # transaction aware fxn (by calling callable_name(fxn_for_name). It
+    # defaults to fxn. One may not want to use the default when fxn itself
+    # is a wrapped function and we want to pass in the inner function for
+    # naming. This happens, for example, when Tornado wraps a function in
+    # stack_context.wrap and then we want to wrap the output function.
 
     # If fxn already has the stored transaction we don't want to rewrap it
     # since this is also cause Tornado's stack_context.wrap to rewrap it.
@@ -138,6 +145,9 @@ def create_transaction_aware_fxn(fxn):
 
     if fxn is None or hasattr(fxn, '_nr_transaction'):
         return None
+
+    if fxn_for_name is None:
+        fxn_for_name = fxn
 
     # We want to get the transaction associated with this path of execution
     # whether or not we are actively recording information about it.
@@ -159,7 +169,7 @@ def create_transaction_aware_fxn(fxn):
                 ret = fxn(*args, **kwargs)
 
             else:
-                name = callable_name(fxn)
+                name = callable_name(fxn_for_name)
                 with FunctionTrace(transaction, name=name) as ft:
                     ret = fxn(*args, **kwargs)
                     # Coroutines are wrapped in lambdas when they are scheduled.

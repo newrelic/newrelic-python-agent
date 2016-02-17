@@ -33,7 +33,17 @@ def _nr_wrapper_stack_context_wrap_(wrapped, instance, args, kwargs):
 # When an exception occurs in a stack context wrapped function,
 # _handle_exception is called. We wrap it to record the exception.
 def _nr_wrapper_handle_exception_(wrapped, instance, args, kwargs):
-    record_exception(sys.exc_info())
+
+    # Pull out the passed in exception. In python 2.7 and pypy this matches
+    # sys.exc_info(). However, in python 3 sys.exc_info() can return
+    # (None, None, None) in some contexts.
+
+    def _exc_extractor(tail, exc, *args, **kwargs):
+        return exc
+
+    exc = _exc_extractor(*args, **kwargs)
+
+    record_exception(exc)
     return wrapped(*args, **kwargs)
 
 def instrument_tornado_stack_context(module):

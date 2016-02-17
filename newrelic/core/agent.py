@@ -434,6 +434,18 @@ class Agent(object):
                     instance.register_data_source(source, name,
                             settings, **properties)
 
+    def remove_data_source(self, names):
+        source_name, factory_name = names
+
+        with self._lock:
+            source_names = [s[0].__name__ for s in self._data_sources[None]]
+            if source_name in source_names:
+                idx = source_names.index(source_name)
+                self._data_sources[None].pop(idx)
+
+            for application in list(six.itervalues(self._applications)):
+                application.remove_data_source(factory_name)
+
     def record_exception(self, app_name, exc=None, value=None, tb=None,
             params={}, ignore_errors=[]):
 

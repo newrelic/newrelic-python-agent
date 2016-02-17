@@ -163,9 +163,8 @@ def create_transaction_aware_fxn(fxn, fxn_for_name=None):
 
         with transaction_context(transaction):
             if transaction is None:
-                # A transaction will be None for fxns scheduled on the ioloop not
-                # associated with a transaction. We want to preserve this make sure
-                # then that there is no transaction in the cache when fxn is run.
+                # A transaction will be None for fxns scheduled on the ioloop
+                # not associated with a transaction.
                 ret = fxn(*args, **kwargs)
 
             else:
@@ -173,18 +172,18 @@ def create_transaction_aware_fxn(fxn, fxn_for_name=None):
                 with FunctionTrace(transaction, name=name) as ft:
                     ret = fxn(*args, **kwargs)
                     # Coroutines are wrapped in lambdas when they are scheduled.
-                    # See tornado.gen.Runner.run(). In this case, we don't know the
-                    # name until the function is run. We only know it then because we
-                    # pass out the name as an attribute on the result.
-                    # We update the name now.
+                    # See tornado.gen.Runner.run(). In this case, we don't know
+                    # the name until the function is run. We only know it then
+                    # because we pass out the name as an attribute on the
+                    # result. We update the name now.
 
                     if (ft is not None and ret is not None and
                             hasattr(ret, '_nr_coroutine_name')):
                         ft.name = ret._nr_coroutine_name
                         # To be able to attach the name to the return value of a
-                        # coroutine we need to have the coroutine return an object.
-                        # If it returns None, we have created a proxy object. We now
-                        # restore the original None value.
+                        # coroutine we need to have the coroutine return an
+                        # object. If it returns None, we have created a proxy
+                        # object. We now restore the original None value.
                         if type(ret) == NoneProxy:
                             ret = None
 

@@ -1020,7 +1020,7 @@ def _module_import_hook(target, module, function):
             # Thread utilization data is meaningless in a tornado app
 
             agent_instance = newrelic.core.agent.agent_instance()
-            agent_instance.remove_data_source(('thread_utilization_data_source', 'Thread Utilization'))
+            agent_instance.remove_thread_utilization()
 
 
     return _instrument

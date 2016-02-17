@@ -434,8 +434,9 @@ class Agent(object):
                     instance.register_data_source(source, name,
                             settings, **properties)
 
-    def remove_data_source(self, names):
-        source_name, factory_name = names
+    def remove_thread_utilization(self):
+        source_name = 'thread_utilization_data_source'
+        factory_name = 'Thread Utilization'
 
         with self._lock:
             source_names = [s[0].__name__ for s in self._data_sources[None]]
@@ -443,8 +444,18 @@ class Agent(object):
                 idx = source_names.index(source_name)
                 self._data_sources[None].pop(idx)
 
+            # Clear out the data samplers that add thread utilization custom
+            # metrics every harvest (for each application)
+
             for application in list(six.itervalues(self._applications)):
                 application.remove_data_source(factory_name)
+
+        # The thread utilization data source may have been started, so we
+        # must clear out the list of trackers that transactions will use to add
+        # thread.concurrency attributes
+
+        from newrelic.core.thread_utilization import _utilization_trackers
+        _utilization_trackers.clear()
 
     def record_exception(self, app_name, exc=None, value=None, tb=None,
             params={}, ignore_errors=[]):

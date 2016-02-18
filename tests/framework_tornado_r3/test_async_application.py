@@ -336,11 +336,9 @@ class TornadoTest(TornadoBaseTest):
                 10000.0, 10.0, 10000.0/10.0)).encode('ascii')
         self.assertEqual(response.body, expected)
 
-    # We have 2 calls to get. One is from the wrapped request handler and one
-    # is from it being a coroutine.
     scoped_metrics = [
             ('Function/_test_async_application:IOLoopDivideRequestHandler.get',
-            2)]
+            1)]
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[])

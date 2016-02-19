@@ -5,7 +5,7 @@ import sys
 from newrelic.agent import (callable_name, function_wrapper,
         wrap_function_wrapper, FunctionTrace)
 from .util import (retrieve_current_transaction, retrieve_request_transaction,
-        record_exception, transaction_context)
+        record_exception, TransactionContext)
 
 _logger = logging.getLogger(__name__)
 
@@ -53,14 +53,14 @@ def _nr_wrapper_RequestHandler__execute_(wrapped, instance, args, kwargs):
     # We need to set the current transaction so that the user code executed by
     # running _execute is traced to the transaction we grabbed off the request
 
-    with transaction_context(transaction):
+    with TransactionContext(transaction):
       return wrapped(*args, **kwargs)
 
 def _nr_wrapper_RequestHandler__handle_request_exception_(wrapped, instance,
         args, kwargs):
 
     transaction = retrieve_request_transaction(instance.request)
-    with transaction_context(transaction):
+    with TransactionContext(transaction):
         # sys.exc_info() will have the correct exception context.
         # _handle_request_exception is private to tornado's web.py and also uses
         # sys.exc_info. The exception context has explicitly set the type, value,
@@ -81,7 +81,7 @@ def _requesthandler_transaction_function_trace(wrapped, instance, args, kwargs):
         # If transaction is None we don't want to trace this function.
         return wrapped(*args, **kwargs)
 
-    with transaction_context(transaction):
+    with TransactionContext(transaction):
         name = callable_name(wrapped)
         with FunctionTrace(transaction, name=name):
             return wrapped(*args, **kwargs)

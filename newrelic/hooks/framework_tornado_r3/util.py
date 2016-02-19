@@ -115,7 +115,7 @@ def _finalize_transaction(transaction, exc=None, value=None, tb=None):
         if old_transaction != transaction:
             replace_current_transaction(old_transaction)
 
-class transaction_context(object):
+class TransactionContext(object):
     def __init__(self, transaction):
         self.transaction = transaction
 
@@ -161,7 +161,7 @@ def create_transaction_aware_fxn(fxn, fxn_for_name=None):
             if transaction.thread_id != current_thread_id():
                 return fxn(*args, **kwargs)
 
-        with transaction_context(transaction):
+        with TransactionContext(transaction):
             if transaction is None:
                 # A transaction will be None for fxns scheduled on the ioloop
                 # not associated with a transaction.

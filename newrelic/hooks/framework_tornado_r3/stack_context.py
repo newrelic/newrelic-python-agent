@@ -3,9 +3,23 @@ import sys
 from newrelic.agent import function_wrapper, wrap_function_wrapper
 from six.moves import range
 from .util import (create_transaction_aware_fxn, record_exception,
-        retrieve_current_transaction, transaction_context)
+        retrieve_current_transaction)
 
 def _nr_wrapper_stack_context_wrap_(wrapped, instance, args, kwargs):
+    # Lots of wrapping going on here. There's the original function, and
+    # then 2 layers of wrapping around it.
+    #
+    # unwrapped_fxn (unwrapped original):
+    #     The original function passed into `stack_context.wrap()`.
+    #
+    # wrapped_fxn (wrapped by Tornado):
+    #    The resulting function after `unwrapped_fxn` has been wrapped by
+    #    `stack_context.wrap()`.
+    #
+    # transaction_aware_fxn (wrapped by NR agent):
+    #    The resulting function after our `create_transaction_aware_fxn()`
+    #    has wrapped `wrapped_fxn` and associated it with the current
+    #    transaction.
 
     def _fxn_arg_extractor(fn, *args, **kwargs):
         # fn is the name of the callable argument in stack_context.wrap

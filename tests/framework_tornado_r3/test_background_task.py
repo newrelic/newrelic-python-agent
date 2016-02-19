@@ -25,7 +25,7 @@ def do_stuff():
 
 @function_trace()
 def yield_stuff():
-    raise Return('yielded stuff')
+    raise tornado.gen.Return('yielded stuff')
 
 class ExceptionAfterTransactionRecorded(Exception): pass
 

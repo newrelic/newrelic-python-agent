@@ -2,83 +2,67 @@ import sys
 
 from newrelic.agent import function_wrapper, wrap_function_wrapper
 from six.moves import range
-from .util import (record_exception, retrieve_current_transaction,
-        replace_current_transaction, create_transaction_aware_fxn)
+from .util import (create_transaction_aware_fxn, record_exception,
+        retrieve_current_transaction)
 
 def _nr_wrapper_stack_context_wrap_(wrapped, instance, args, kwargs):
+    # Lots of wrapping going on here. There's the original function, and
+    # then 2 layers of wrapping around it.
+    #
+    # unwrapped_fxn (unwrapped original):
+    #     The original function passed into `stack_context.wrap()`.
+    #
+    # wrapped_fxn (wrapped by Tornado):
+    #    The resulting function after `unwrapped_fxn` has been wrapped by
+    #    `stack_context.wrap()`.
+    #
+    # transaction_aware_fxn (wrapped by NR agent):
+    #    The resulting function after our `create_transaction_aware_fxn()`
+    #    has wrapped `wrapped_fxn` and associated it with the current
+    #    transaction.
 
     def _fxn_arg_extractor(fn, *args, **kwargs):
         # fn is the name of the callable argument in stack_context.wrap
         return fn
 
-    fxn = _fxn_arg_extractor(*args, **kwargs)
+    unwrapped_fxn = _fxn_arg_extractor(*args, **kwargs)
+    wrapped_fxn = wrapped(*args, **kwargs)
 
-    transaction_aware_fxn = create_transaction_aware_fxn(fxn)
+    transaction_aware_fxn = create_transaction_aware_fxn(wrapped_fxn,
+            unwrapped_fxn)
 
-    # If transaction_aware_fxn is None then it is already wrapped, or the fxn
-    # is None.
     if transaction_aware_fxn is None:
-        return wrapped(*args, **kwargs)
+        return wrapped_fxn
 
-    transaction = retrieve_current_transaction()
+    # To prevent stack_context.wrap from re-wrapping this function we attach
+    # Tornado's attribute indicating the function was wrapped here.
+    transaction_aware_fxn._wrapped = True
 
-    # We replace the function we call in the callback with the transaction aware
-    # version of the function.
-    if len(args) > 0:
-        args = list(args)
-        args[0] = transaction_aware_fxn
-    else:
-        # Keyword argument name for the callable function is 'fn'.
-        kwargs['fn'] = transaction_aware_fxn
+    # To prevent us from re-wrapping and to associate the transaction with the
+    # function, we attach the transaction as an attribute.
+    transaction_aware_fxn._nr_transaction = retrieve_current_transaction()
 
-    try:
-        stack_context_wrapped_fxn = wrapped(*args, **kwargs)
-        # Since our context aware function is wrapped by the stack context
-        # wrapper function we label the newly wrapped function with our
-        # transaction to keep track of it.
-        stack_context_wrapped_fxn._nr_transaction = transaction
-        return stack_context_wrapped_fxn
-    except:  # Catch all.
-        record_exception(sys.exc_info())
-        raise
+    return transaction_aware_fxn
 
+# When an exception occurs in a stack context wrapped function,
+# _handle_exception is called. We wrap it to record the exception.
+def _nr_wrapper_handle_exception_(wrapped, instance, args, kwargs):
 
-# This allows us to capture all exceptions that get swallowed by the ioloop.
-# If we instrument the exception handler directly this will cause us to call
-# record exception twice. However, this is ok because we in
-# transaction.record_exception we filter repeats.
-def _nr_wrapper_ExceptionStackContext__init__(wrapped, instance, args, kwargs):
+    # We extract the exception passed in. This handler is called from outside
+    # an except block. In python3, sys.exc_info() will be cleared when the
+    # except block exits (this is more aggressive clearing than occurs in
+    # python2) so we can't call sys.exc_info() to record the exception.
+    # Instead we retrieve the exception from the argument passed in.
 
-    assert instance is not None
+    def _exc_extractor(tail, exc, *args, **kwargs):
+        return exc
 
-    result = wrapped(*args, **kwargs)
+    exc = _exc_extractor(*args, **kwargs)
 
-    # instance is now an initiated ExceptionStackContext object.
-    instance.exception_handler = _wrap_exception_handler(
-            instance.exception_handler)
-
-    return result
-
-@function_wrapper
-def _wrap_exception_handler(wrapped, instance, args, kwargs):
-    # wrapped is the exception_handler member variable of an
-    # ExceptionStackContext object. Here is an example:
-    # esc = ExceptionStackContext(exception_handler)
-    # esc.exception_handler = _wrap_exception_handler(esc.expection_handler)
-
-    def _bind_params(type, value, traceback, *args, **kwargs):
-        return type, value, traceback
-
-    type, value, traceback = _bind_params(*args, **kwargs)
-
-    is_exception_swallowed = wrapped(*args, **kwargs)
-
-    if is_exception_swallowed:
-        record_exception((type, value, traceback))
-
-    return is_exception_swallowed
+    record_exception(exc)
+    return wrapped(*args, **kwargs)
 
 def instrument_tornado_stack_context(module):
     wrap_function_wrapper(module, 'wrap', _nr_wrapper_stack_context_wrap_)
-    wrap_function_wrapper(module, 'ExceptionStackContext.__init__',
-            _nr_wrapper_ExceptionStackContext__init__)
+    wrap_function_wrapper(module, '_handle_exception',
+            _nr_wrapper_handle_exception_)

@@ -126,14 +126,6 @@ class CoroutineExceptionRequestHandler(RequestHandler):
 
     @tornado.gen.coroutine
     def get(self):
-        # Scheduling on_finish is a hack that is needed because we require
-        # on_finish to be called to close the transaction. When an exception is
-        # thrown here on_finish will not be scheduled on the IOLoop causing us
-        # to timeout in the tests (though checking manually the correct
-        # transaction is written). The mechanism for exiting a transaction will
-        # change and when it does we should remove this manual scheduling of
-        # on_finish. See PYTHON-1707.
-        tornado.ioloop.IOLoop.current().add_callback(self.on_finish)
         raise tornado.gen.BadYieldError
         self.finish(self.RESPONSE)  # This will never be called.
 

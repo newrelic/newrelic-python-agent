@@ -48,9 +48,11 @@ def _nr_wrapper_stack_context_wrap_(wrapped, instance, args, kwargs):
 # _handle_exception is called. We wrap it to record the exception.
 def _nr_wrapper_handle_exception_(wrapped, instance, args, kwargs):
 
-    # Pull out the passed in exception. In python 2.7 and pypy this matches
-    # sys.exc_info(). However, in python 3 sys.exc_info() can return
-    # (None, None, None) in some contexts.
+    # We extract the exception passed in. This handler is called from outside
+    # an except block. In python3, sys.exc_info() will be cleared when the
+    # except block exits (this is more aggressive clearing than occurs in
+    # python2) so we can't call sys.exc_info() to record the exception.
+    # Instead we retrieve the exception from the argument passed in.
 
     def _exc_extractor(tail, exc, *args, **kwargs):
         return exc

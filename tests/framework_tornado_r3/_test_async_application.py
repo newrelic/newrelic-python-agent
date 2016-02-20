@@ -5,6 +5,7 @@ import threading
 import time
 
 from newrelic.agent import function_wrapper, current_transaction
+from newrelic.hooks.framework_tornado_r3.util import TransactionContext
 
 from tornado.httpclient import AsyncHTTPClient, HTTPClient, HTTPRequest
 from tornado.web import Application, RequestHandler
@@ -499,14 +500,16 @@ class SimpleStreamingRequestHandler(RequestHandler):
     def post(self):
         self.write(self.RESPONSE)
 
-class LastTimeoutFromThreadRequestHandler(RequestHandler):
-    RESPONSE = b'bad programmer'
+class CancelTimeoutOutsideTransactionRequestHandler(RequestHandler):
+    RESPONSE = b'cancel timeout outside transaction'
 
     def get(self):
-        timeout = tornado.ioloop.IOLoop.current().call_later(10, self.last_callback)
-        t = threading.Thread(target=self.cancel_callback, args=(timeout,))
+        timeout = tornado.ioloop.IOLoop.current().call_later(
+                10, self.last_callback)
         self.write(self.RESPONSE)
-        t.start()
+        with TransactionContext(None):
+            tornado.ioloop.IOLoop.current().add_callback(
+                self.cancel_callback, timeout)
 
     def cancel_callback(self, timeout):
 
@@ -672,7 +675,7 @@ def get_tornado_app():
         ('/thread-ran-call_at', CallAtOnThreadExecutorRequestHandler),
         ('/add-future', AddFutureRequestHandler),
         ('/add_done_callback', AddDoneCallbackRequestHandler),
-        ('/remove-last-timeout', LastTimeoutFromThreadRequestHandler),
+        ('/remove-last-timeout', CancelTimeoutOutsideTransactionRequestHandler),
         ('/future-thread/?(\w+)?', SimpleThreadedFutureRequestHandler),
         ('/future-thread-2/?(\w+)?', BusyWaitThreadedFutureRequestHandler),
     ])

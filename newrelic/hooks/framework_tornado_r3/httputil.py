@@ -73,9 +73,6 @@ def initiate_request_monitoring(request):
     purge_current_transaction()
     transaction = WebTransaction(application, environ)
 
-    if not transaction.enabled:
-        return
-
     transaction.__enter__()
 
     # Immediately purge the transaction from the cache, so we don't associate

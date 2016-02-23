@@ -35,23 +35,34 @@ def _nr_wrapper_HTTPServerRequest__init__(wrapped, instance, args, kwargs):
     # just created there can not be a previously associated transaction.
 
     request = instance
-    transaction = initiate_request_monitoring(request)
 
-    if transaction is None:
-        # transaction is not enabled. We return immediately.
-        return result
+    if is_websocket(request):
+        transaction = None
+    else:
+        transaction = initiate_request_monitoring(request)
 
-    # Name transaction initially after the wrapped function so that if
-    # the connection is dropped before all the request content is read,
-    # then we don't get metric grouping issues with it being named after
-    # the URL.
+    # Transaction can still be None at this point, if it wasn't enabled during
+    # WebTransaction.__init__().
 
-    name = callable_name(wrapped)
-    transaction.set_transaction_name(name)
+    if transaction:
 
-    # Use HTTPServerRequest start time as transaction start time.
+        # Name transaction initially after the wrapped function so that if
+        # the connection is dropped before all the request content is read,
+        # then we don't get metric grouping issues with it being named after
+        # the URL.
 
-    transaction.start_time = request._start_time
+        name = callable_name(wrapped)
+        transaction.set_transaction_name(name)
+
+        # Use HTTPServerRequest start time as transaction start time.
+
+        transaction.start_time = request._start_time
+
+    # Even if transaction is `None`, we still attach it to the request, so we
+    # can distinguish between a missing _nr_transaction attribute (error) from
+    # the case where _nr_transaction is None (ok).
+
+    request._nr_transaction = transaction
 
     return result
 
@@ -67,19 +78,17 @@ def initiate_request_monitoring(request):
 
     environ = request_environment(application, request)
 
-    # We now start recording the actual web transaction. Bail out though
-    # if it turns out that recording of transactions is not enabled.
+    # We now start recording the actual web transaction.
 
     purge_current_transaction()
-    transaction = WebTransaction(application, environ)
 
+    transaction = WebTransaction(application, environ)
     transaction.__enter__()
 
     # Immediately purge the transaction from the cache, so we don't associate
     # Tornado internals inappropriately with this transaction.
-    purge_current_transaction()
 
-    request._nr_transaction = transaction
+    purge_current_transaction()
 
     # We also need to add a reference to the request object in to the
     # transaction object so we can later access it in a deferred. We
@@ -89,12 +98,14 @@ def initiate_request_monitoring(request):
     transaction._nr_current_request = weakref.ref(request)
 
     # Records state of transaction
+
     transaction._is_finalized = False
     transaction._ref_count = 0
 
     # For server requests We only allow the transaction to be closed when
     # either 'finish' or 'on_connection_close' is called on an
     # associated HTTPMessageDelegate.
+
     transaction._can_finalize = False
 
     # Record framework information for generation of framework metrics.
@@ -167,6 +178,9 @@ def request_environment(application, request):
                 result[key] = value
 
     return result
+
+def is_websocket(request):
+    return request.headers.get('Upgrade', '').lower() == 'websocket'
 
 def instrument_tornado_httputil(module):
     wrap_function_wrapper(module, 'HTTPServerRequest.__init__',

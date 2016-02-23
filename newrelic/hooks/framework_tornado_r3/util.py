@@ -66,7 +66,9 @@ def retrieve_request_transaction(request):
                 ''.join(traceback.format_stack()[:-1]))
         return None
     else:
-        if transaction.stopped:
+        if transaction is None:
+            return None
+        elif transaction.stopped:
             return None
         elif transaction.ignore_transaction:
             return None
@@ -123,6 +125,7 @@ def _finalize_transaction(transaction, exc=None, value=None, tb=None):
     finally:
         transaction._is_finalized = True
         request = retrieve_transaction_request(transaction)
+
         if request is not None:
             request._nr_transaction = None
         transaction._nr_current_request = None

@@ -32,10 +32,6 @@ def _nr_wrapper_RequestHandler__execute_(wrapped, instance, args, kwargs):
     transaction = retrieve_request_transaction(request)
 
     if transaction is None:
-        _logger.error('Runtime instrumentation error. Calling _execute on '
-                'a RequestHandler when no transaction is present. Please '
-                'report this issue to New Relic support.\n%s',
-                ''.join(traceback.format_stack()[:-1]))
         return wrapped(*args, **kwargs)
 
     if request.method not in handler.SUPPORTED_METHODS:

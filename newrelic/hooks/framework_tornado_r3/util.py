@@ -56,7 +56,24 @@ def retrieve_current_transaction():
 
 def retrieve_request_transaction(request):
     # Retrieves any transaction already associated with the request.
-    return getattr(request, '_nr_transaction', None)
+
+    try:
+        transaction = getattr(request, '_nr_transaction')
+    except AttributeError:
+        _logger.error('Runtime instrumentation error. Attempt to retrieve '
+                'the transaction from the request object failed. Please '
+                'report this issue to New Relic support.\n%s',
+                ''.join(traceback.format_stack()[:-1]))
+        return None
+    else:
+        if transaction.stopped:
+            return None
+        elif transaction.ignore_transaction:
+            return None
+        elif not transaction.enabled:
+            return None
+
+        return transaction
 
 def retrieve_transaction_request(transaction):
     # Retrieves any request already associated with the transaction.

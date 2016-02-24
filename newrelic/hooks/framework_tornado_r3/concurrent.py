@@ -9,7 +9,8 @@ def _nr_wrapper_Future_add_done_callback(wrapped, instance, args, kwargs):
 
     fxn = _fxn_arg_extractor(*args, **kwargs)
 
-    transaction_aware_fxn = create_transaction_aware_fxn(fxn)
+    transaction_aware_fxn = create_transaction_aware_fxn(fxn,
+            check_finalized=True)
 
     # If transaction_aware_fxn is None then it is already wrapped, or the fxn
     # is None.

@@ -125,23 +125,27 @@ class TransactionContext(object):
     def __exit__(self, exc_type, exc_value, traceback):
         replace_current_transaction(self.old_transaction)
 
-def create_transaction_aware_fxn(fxn, fxn_for_name=None):
+def create_transaction_aware_fxn(fxn, fxn_for_name=None, check_finalized=False):
     # Returns a version of fxn that will switch context to the appropriate
     # transaction and then restore the previous transaction on exit.
     # If fxn is already transaction aware or if there is no transaction
     # associated with fxn, this will return None.
     #
-    # fxn_for_name is used to get the name we want to associate to our
-    # transaction aware fxn (by calling callable_name(fxn_for_name). It
-    # defaults to fxn. One may not want to use the default when fxn itself
-    # is a wrapped function and we want to pass in the inner function for
-    # naming. This happens, for example, when Tornado wraps a function in
-    # stack_context.wrap and then we want to wrap the output function.
-
-    # If fxn already has the stored transaction we don't want to rewrap it
-    # since this is also cause Tornado's stack_context.wrap to rewrap it.
-    # That Tornado method will also return the input fxn immediately if
-    # previously wrapped.
+    # Arguments:
+    #  fxn: The function we want to wrap in a transaction aware context.
+    #  fxn_for_name: Defaults to fxn. The function we want to use the get the
+    #      name for our transaction aware fxn (by calling
+    #      callable_name(fxn_for_name). One may not want to use the default fxn
+    #      iteself if is wrapped and we want to use the inner function for
+    #      naming. This happens, for example, when tornado wraps a function in
+    #      stack_context.wrap and we want to wrap the output function.
+    #  check_finalized: Defaults to False. Usually we don't check whether the
+    #      transaction is finalized before executing the transaction aware
+    #      function. If it already is finalized we log an error. Sometimes it
+    #      is not an error for a function to run after the transaction is
+    #      resolved. If it is attached to a future, for example. In these cases,
+    #      setting this to True will prevent us from logging an error if the
+    #      transaction is finalized.
 
     if fxn is None or hasattr(fxn, '_nr_transaction'):
         return None
@@ -155,21 +159,28 @@ def create_transaction_aware_fxn(fxn, fxn_for_name=None):
 
     @function_wrapper
     def transaction_aware(wrapped, instance, args, kwargs):
+        # transaction is not assignable in a closure so we create a variable
+        # that is.
+        inner_transaction = transaction
 
-        if transaction is not None:
+        if inner_transaction is not None:
             # Callback run outside the main thread must not affect the cache
             if transaction.thread_id != current_thread_id():
                 return fxn(*args, **kwargs)
 
-        with TransactionContext(transaction):
-            if transaction is None:
+        if (check_finalized and inner_transaction is not None and
+                inner_transaction._is_finalized):
+            inner_transaction = None
+
+        with TransactionContext(inner_transaction):
+            if inner_transaction is None:
                 # A transaction will be None for fxns scheduled on the ioloop
                 # not associated with a transaction.
                 ret = fxn(*args, **kwargs)
 
             else:
                 name = callable_name(fxn_for_name)
-                with FunctionTrace(transaction, name=name) as ft:
+                with FunctionTrace(inner_transaction, name=name) as ft:
                     ret = fxn(*args, **kwargs)
                     # Coroutines are wrapped in lambdas when they are scheduled.
                     # See tornado.gen.Runner.run(). In this case, we don't know

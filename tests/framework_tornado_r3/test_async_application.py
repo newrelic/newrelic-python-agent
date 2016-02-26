@@ -14,7 +14,8 @@ from _test_async_application import (HelloRequestHandler,
         ReturnExceptionRequestHandler, IOLoopDivideRequestHandler,
         EngineDivideRequestHandler, PrepareOnFinishRequestHandler,
         PrepareOnFinishRequestHandlerSubclass, RunSyncAddRequestHandler,
-        SimpleStreamingRequestHandler)
+        SimpleStreamingRequestHandler, DoubleWrapRequestHandler,
+        FutureDoubleWrapRequestHandler)
 
 from testing_support.mock_external_http_server import MockExternalHTTPServer
 
@@ -572,8 +573,6 @@ class TornadoTest(TornadoBaseTest):
     # The port number 8989 matches the port number in MockExternalHTTPServer
     scoped_metrics = [('Function/_test_async_application:'
             'AsyncFetchRequestHandler.get', 1),
-            ('Function/_test_async_application:'
-            'AsyncFetchRequestHandler.process_response', 1),
             ('Function/_test_async_application:AsyncFetchRequestHandler.'
              'process_response [http://localhost:8989]', 1),
             ('External/localhost:8989/tornado.httpclient/', 1)
@@ -715,3 +714,47 @@ class TornadoTest(TornadoBaseTest):
         t.start()
         self.wait(timeout=5.0)
         t.join(10.0)
+
+    scoped_metrics = [('Function/_test_async_application:'
+            'DoubleWrapRequestHandler.get', 1),
+            ('Function/_test_async_application:'
+             'DoubleWrapRequestHandler.do_stuff', 1)]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:DoubleWrapRequestHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_no_double_wrap(self):
+        response = self.fetch_response('/double-wrap')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, DoubleWrapRequestHandler.RESPONSE)
+
+    scoped_metrics = [('Function/_test_async_application:'
+            'FutureDoubleWrapRequestHandler.get', 1),
+            ('Function/_test_async_application:'
+             'FutureDoubleWrapRequestHandler.resolve_future', 1),
+            ('Function/_test_async_application:'
+             'FutureDoubleWrapRequestHandler.do_stuff', 1)]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:FutureDoubleWrapRequestHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_no_add_done_double_wrap(self):
+        response = self.fetch_response('/done-callback-double-wrap/add_done')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body,
+                FutureDoubleWrapRequestHandler.RESPONSE)
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:FutureDoubleWrapRequestHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_no_add_future_double_wrap(self):
+        response = self.fetch_response('/done-callback-double-wrap/add_future')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body,
+                FutureDoubleWrapRequestHandler.RESPONSE)

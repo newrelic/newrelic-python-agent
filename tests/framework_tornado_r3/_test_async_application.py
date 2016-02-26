@@ -4,7 +4,7 @@ import tornado
 import threading
 import time
 
-from newrelic.agent import current_transaction
+from newrelic.agent import current_transaction, function_trace
 from newrelic.hooks.framework_tornado_r3.util import TransactionContext
 
 from tornado.httpclient import AsyncHTTPClient, HTTPClient, HTTPRequest
@@ -692,6 +692,37 @@ class AddDoneCallbackAddsCallbackRequestHandler(RequestHandler):
             each request."""
         cls.CLEANUP = cleanup
 
+class DoubleWrapRequestHandler(RequestHandler):
+    RESPONSE = b'double wrap'
+
+    def get(self):
+        tornado.ioloop.IOLoop.current().add_callback(self.do_stuff)
+        self.write(self.RESPONSE)
+
+    @function_trace()
+    def do_stuff(self):
+        pass
+
+class FutureDoubleWrapRequestHandler(RequestHandler):
+    RESPONSE = b'future double wrap'
+
+    @tornado.web.asynchronous
+    def get(self, method):
+        f = tornado.concurrent.Future()
+        if method == 'add_done':
+            f.add_done_callback(self.do_stuff)
+        elif method == 'add_future':
+            tornado.ioloop.IOLoop.current().add_future(f, self.do_stuff)
+
+        tornado.ioloop.IOLoop.current().add_callback(self.resolve_future, f)
+
+    def resolve_future(self, f):
+        f.set_result(None)
+
+    @function_trace()
+    def do_stuff(self, future):
+        self.finish(self.RESPONSE)
+
 def get_tornado_app():
     return Application([
         ('/', HelloRequestHandler),
@@ -731,4 +762,6 @@ def get_tornado_app():
         ('/future-thread/?(\w+)?', SimpleThreadedFutureRequestHandler),
         ('/future-thread-2/?(\w+)?', BusyWaitThreadedFutureRequestHandler),
         ('/add-done-callback/(\w+)', AddDoneCallbackAddsCallbackRequestHandler),
+        ('/double-wrap', DoubleWrapRequestHandler),
+        ('/done-callback-double-wrap/(\w+)', FutureDoubleWrapRequestHandler),
     ])

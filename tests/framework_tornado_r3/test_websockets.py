@@ -7,6 +7,8 @@ from tornado.websocket import websocket_connect, WebSocketHandler
 from tornado_fixtures import (tornado_validate_transaction_cache_empty,
         tornado_validate_errors)
 
+from testing_support.fixtures import function_not_called
+
 
 class BaseWebSocketsHandler(WebSocketHandler):
 
@@ -49,6 +51,7 @@ class TornadoWebSocketsTest(BaseWebSocketsTest):
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(expect_transaction=False)
+    @function_not_called('newrelic.api.transaction', 'Transaction.__init__')
     @tornado.testing.gen_test
     def test_no_transaction_no_errors(self):
         url = self.get_url('/')

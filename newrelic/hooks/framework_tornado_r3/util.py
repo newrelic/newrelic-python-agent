@@ -66,15 +66,6 @@ def retrieve_request_transaction(request):
                 ''.join(traceback.format_stack()[:-1]))
         return None
     else:
-        if transaction is None:
-            return None
-        elif transaction.stopped:
-            return None
-        elif transaction.ignore_transaction:
-            return None
-        elif not transaction.enabled:
-            return None
-
         return transaction
 
 def retrieve_transaction_request(transaction):

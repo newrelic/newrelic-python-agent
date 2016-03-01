@@ -366,9 +366,13 @@ def validate_transaction_metrics(name, group='Function',
     if background_task:
         rollup_metric = 'OtherTransaction/all'
         transaction_metric = 'OtherTransaction/%s/%s' % (group, name)
+        total_time_rollup_metric = 'OtherTransactionTotalTime'
+        total_time_transaction_metric = 'OtherTransactionTotalTime/%s/%s' % (group, name)
     else:
         rollup_metric = 'WebTransaction'
         transaction_metric = 'WebTransaction/%s/%s' % (group, name)
+        total_time_rollup_metric = 'WebTransactionTotalTime'
+        total_time_transaction_metric = 'WebTransactionTotalTime/%s/%s' % (group, name)
 
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
@@ -399,6 +403,8 @@ def validate_transaction_metrics(name, group='Function',
 
             _validate(rollup_metric, '', 1)
             _validate(transaction_metric, '', 1)
+            _validate(total_time_rollup_metric, '', 1)
+            _validate(total_time_transaction_metric, '', 1)
 
             for scoped_name, scoped_count in scoped_metrics:
                 _validate(scoped_name, transaction_metric, scoped_count)

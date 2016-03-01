@@ -453,7 +453,7 @@ class TornadoTest(TornadoBaseTest):
         #    again.
 
         self.waits_expected += 1
-        AddDoneCallbackAddsCallbackRequestHandler.set_do_work(
+        AddDoneCallbackAddsCallbackRequestHandler.set_cleanup(
                 self.waits_counter_check)
 
         response = self.fetch_response('/add-done-callback/tornado')
@@ -475,7 +475,7 @@ class TornadoTest(TornadoBaseTest):
         # Tornado's Future class.
 
         self.waits_expected += 1
-        AddDoneCallbackAddsCallbackRequestHandler.set_do_work(
+        AddDoneCallbackAddsCallbackRequestHandler.set_cleanup(
                 self.waits_counter_check)
 
         response = self.fetch_response('/add-done-callback/python')

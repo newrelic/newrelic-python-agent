@@ -377,9 +377,10 @@ class Transaction(object):
 
         # Calculate total time.
         #
-        # Because we do not track activity on threads, we do not
-        # have separate async components, so our total_time
-        # is equal to the duration of the transaction.
+        # Because we do not track activity on threads, and we currently
+        # don't allocate waiting time in the IOLoop to separate segments
+        # (like External or Datastore), for right now, our total_time is
+        # equal to the duration of the transaction.
 
         total_time = duration
 

@@ -3,6 +3,8 @@ import threading
 
 import tornado.testing
 
+from newrelic.agent import background_task
+from newrelic.core.stats_engine import StatsEngine
 from newrelic.packages import six
 
 from tornado_base_test import TornadoBaseTest
@@ -758,3 +760,29 @@ class TornadoTest(TornadoBaseTest):
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body,
                 FutureDoubleWrapRequestHandler.RESPONSE)
+
+    def check_http_dispatcher_metric(transaction_node):
+        """Verify that HttpDispatcher time is using response_time, by
+        checking that it's value is different than (and less than)
+        transaction duration.
+
+        """
+        # I need to pass in a StatsEngine object to time_metrics(), even
+        # though it's not used.
+
+        empty_stats = StatsEngine()
+
+        http_dispatcher_metric = next(m for m
+                in transaction_node.time_metrics(empty_stats)
+                if m.name == 'HttpDispatcher')
+
+        return http_dispatcher_metric.duration < transaction_node.duration
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_run_validator(lambda x: x.response_time < x.duration)
+    @tornado_run_validator(check_http_dispatcher_metric)
+    def test_http_dispatcher_uses_response_time_not_duration(self):
+        response = self.fetch_response('/call-at')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, CallLaterRequestHandler.RESPONSE)

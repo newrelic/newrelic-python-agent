@@ -57,8 +57,12 @@ def _nr_wrapper__ServerRequestAdapter_finish_(wrapped, instance,
     return _transaction_can_finalize(wrapped, instance, args, kwargs)
 
 def instrument_tornado_httpserver(module):
+
     # Thread utilization data is meaningless in a tornado app. Remove it here,
-    # once, since we know it has been imported now.
+    # once, since we know that tornado has been imported now. The following call
+    # to agent_instance will initialize data sources, if they have not been
+    # already. Thus, we know that this is a single place that we can remove the
+    # thread utilization, regardless of the order of imports/agent registration.
 
     agent_inst = agent_instance()
     agent_inst.remove_thread_utilization()

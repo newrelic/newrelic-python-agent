@@ -175,13 +175,7 @@ class Agent(object):
 
             instance.register_data_source(cpu_usage_data_source)
             instance.register_data_source(memory_usage_data_source)
-
-            # Don't register thread utilization data source if the customer
-            # is using tornado, since the data is meaningless.
-
-            tornado_modules = [x for x in sys.modules if x.startswith('tornado')]
-            if len(tornado_modules) == 0:
-                instance.register_data_source(thread_utilization_data_source)
+            instance.register_data_source(thread_utilization_data_source)
 
             for callable in Agent._startup_callables:
                 callable()

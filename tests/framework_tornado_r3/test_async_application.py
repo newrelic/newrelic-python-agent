@@ -786,3 +786,44 @@ class TornadoTest(TornadoBaseTest):
         response = self.fetch_response('/call-at')
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, CallLaterRequestHandler.RESPONSE)
+
+    def check_total_time_metrics(transaction_node):
+        """Verify that the two TotalTime metrics for a transaction have
+        the same value as the transaction duration.
+
+        For web transactions, the metrics start with:
+
+            WebTransactionTotalTime/
+
+        For background transactions, the metrics start with:
+
+            OtherTransactionTotalTime/
+
+        """
+        # I need to pass in a StatsEngine object to time_metrics(), even
+        # though it's not used.
+
+        empty_stats = StatsEngine()
+
+        metrics = list(m for m
+                in transaction_node.time_metrics(empty_stats)
+                if 'TransactionTotalTime' in m.name)
+        assert len(metrics) == 2
+
+        return all(metric.duration == transaction_node.duration
+                for metric in metrics)
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_run_validator(check_total_time_metrics)
+    def test_total_time_metrics_use_duration_web_transaction(self):
+        response = self.fetch_response('/call-at')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, CallLaterRequestHandler.RESPONSE)
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_run_validator(check_total_time_metrics)
+    @background_task()
+    def test_total_time_metrics_use_duration_background_task(self):
+        time.sleep(0.1)

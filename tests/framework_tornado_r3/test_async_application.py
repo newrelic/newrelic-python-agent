@@ -6,6 +6,7 @@ import tornado.testing
 from newrelic.agent import background_task
 from newrelic.core.agent import agent_instance
 from newrelic.core.stats_engine import StatsEngine
+from newrelic.core.thread_utilization import _utilization_trackers
 from newrelic.packages import six
 
 from tornado_base_test import TornadoBaseTest
@@ -934,6 +935,16 @@ class TornadoTest(TornadoBaseTest):
     def test_runner_ref_count_error(self):
         response = self.fetch_exception('/runner-error')
 
+    # For this thread utilization test, we want to make sure that both the
+    # transaction isn't sending up attributes related to thread utilization,
+    # and also that the harvest isn't sending up utilization metrics, which are
+    # used for "capacity" in APM. We check this by asserting that the machinery
+    # that generates these metrics, thread_utilization_data_source & it's
+    # 'Thread Utilization' data sampler, have been removed. _utilization_trackers
+    # is actually used by transactions, and should agree with the
+    # tornado_run_validator check, but we check that it is also clear here,
+    # for completeness.
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_run_validator(lambda x: 'thread.concurrency' not in [i.name for i in x.agent_attributes])
@@ -943,6 +954,15 @@ class TornadoTest(TornadoBaseTest):
         app = agent.application('Python Agent Test (framework_tornado_r3)')
         while not app._data_samplers_started:
             time.sleep(0.1)
+
+        source_names = [s[0].__name__ for s in agent._data_sources[None]]
+        assert 'thread_utilization_data_source' not in source_names
+
+        for app in agent._applications.values():
+            sampler_names = [x.name for x in app._data_samplers]
+            assert 'Thread Utilization' not in sampler_names
+
+        assert len(_utilization_trackers) == 0
 
         response = self.fetch_response('/')
         self.assertEqual(response.code, 200)

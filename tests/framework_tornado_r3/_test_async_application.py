@@ -646,6 +646,8 @@ class AddDoneCallbackAddsCallbackRequestHandler(RequestHandler):
     transaction to finalize multiple times."""
     RESPONSE = b"Add done callback adds a callback."
 
+    DO_WORK = None
+
     def get(self, future_type):
         if future_type == 'tornado':
             f = tornado.concurrent.Future()
@@ -670,8 +672,20 @@ class AddDoneCallbackAddsCallbackRequestHandler(RequestHandler):
         tornado.ioloop.IOLoop.current().add_callback(self.do_work)
 
     def do_work(self):
-        pass
+        if self.DO_WORK:
+            self.DO_WORK()
+            self.DO_WORK = None
 
+    @classmethod
+    def set_do_work(cls, new_work):
+        """To be used by a test suite to inject a function into this handler
+
+        Argument:
+          new_work: A function to be called at the end of the request handler.
+            This will only be invoked for 1 request. If you want this to be
+            called for subsequent request, one must set this before each
+            request."""
+        cls.DO_WORK = new_work
 
 def get_tornado_app():
     return Application([

@@ -28,6 +28,8 @@ from tornado_fixtures import (
     tornado_validate_time_transaction_metrics,
     tornado_validate_errors, tornado_validate_transaction_cache_empty)
 
+from testing_support.fixtures import function_not_called
+
 def select_python_version(py2, py3):
     return six.PY3 and py3 or py2
 
@@ -426,55 +428,6 @@ class TornadoTest(TornadoBaseTest):
         expected = BusyWaitThreadedFutureRequestHandler.RESPONSE
         self.assertEqual(response.body, expected)
 
-    # This context manager wraps ioloop.possibly_finalize_transaction so we can
-    # count the number of times the transaction tries to finalize from the
-    # ioloop. The context manager returns a list with the counts in the first
-    # element. Note, trying to wrap possibly_finalize_transaction in util,
-    # where it is defined, didn't seem to work. It seems like the version
-    # referenced by ioloop is different by this point in the test executation.
-    @contextlib.contextmanager
-    def count_ioloop_possibly_finalize(self):
-
-        # This keeps track of the number of attempts to finalize the transaction
-        # in the ioloop. We use a list here because, in python 2, an integer is
-        # not mutable in a closure, ie wrap_possibly_finalize.
-        possibly_finalize_counter = [0]
-
-        def wrap_possibly_finalize(wrapped, instance, args, kwargs):
-            possibly_finalize_counter[0] += 1
-            ret = wrapped(*args, **kwargs)
-            self.waits_counter_check()
-            return ret
-
-        # Even though the response is returned and the transaction finalizes
-        # we want to wait until all the callbacks complete before verifying the
-        # test results. We increment the wait counter and decrement it when
-        # the last callback completes.
-        self.waits_expected += 1
-        def increment_wait_counter_wrapper(wrapped, instance, args, kwargs):
-            ret = wrapped(*args, **kwargs)
-            self.waits_counter_check()
-            return ret
-
-        old_possibly_finalize_transaction = (
-                newrelic.hooks.framework_tornado_r3.ioloop.possibly_finalize_transaction)
-        old_do_work = AddDoneCallbackAddsCallbackRequestHandler.do_work
-
-        newrelic.hooks.framework_tornado_r3.ioloop.possibly_finalize_transaction = FunctionWrapper(
-            newrelic.hooks.framework_tornado_r3.ioloop.possibly_finalize_transaction,
-            wrap_possibly_finalize)
-
-        AddDoneCallbackAddsCallbackRequestHandler.do_work = FunctionWrapper(
-            AddDoneCallbackAddsCallbackRequestHandler.do_work,
-            increment_wait_counter_wrapper)
-
-        yield possibly_finalize_counter
-
-        # Restore the wrapped functions.
-        newrelic.hooks.framework_tornado_r3.ioloop.possibly_finalize_transaction = (
-            old_possibly_finalize_transaction)
-        AddDoneCallbackAddsCallbackRequestHandler.do_work = old_do_work
-
     scoped_metrics = [
             ('Function/_test_async_application:'
                     'AddDoneCallbackAddsCallbackRequestHandler.get', 1)
@@ -486,6 +439,8 @@ class TornadoTest(TornadoBaseTest):
             '_test_async_application:AddDoneCallbackAddsCallbackRequestHandler.get',
             scoped_metrics=scoped_metrics, forgone_metric_substrings=[
                     'resolve_future', 'schedule_work', 'do_work'])
+    @function_not_called('newrelic.hooks.framework_tornado_r3.ioloop',
+            'possibly_finalize_transaction')
     def test_tornado_add_done_callback_does_not_multiple_finalize(self):
         # We are testing the following scenario:
         #
@@ -497,11 +452,13 @@ class TornadoTest(TornadoBaseTest):
         #    callback doesn't cause the transaction to attempt to finalize
         #    again.
 
-        with self.count_ioloop_possibly_finalize() as counter:
-            response = self.fetch_response('/add-done-callback/tornado')
-            expected = AddDoneCallbackAddsCallbackRequestHandler.RESPONSE
-            self.assertEqual(response.body, expected)
-            self.assertEqual(counter[0], 0)
+        self.waits_expected += 1
+        AddDoneCallbackAddsCallbackRequestHandler.set_do_work(
+                self.waits_counter_check)
+
+        response = self.fetch_response('/add-done-callback/tornado')
+        expected = AddDoneCallbackAddsCallbackRequestHandler.RESPONSE
+        self.assertEqual(response.body, expected)
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
@@ -509,14 +466,18 @@ class TornadoTest(TornadoBaseTest):
             '_test_async_application:AddDoneCallbackAddsCallbackRequestHandler.get',
             scoped_metrics=scoped_metrics, forgone_metric_substrings=[
                     'resolve_future', 'schedule_work', 'do_work'])
+    @function_not_called('newrelic.hooks.framework_tornado_r3.ioloop',
+            'possibly_finalize_transaction')
     def test_python_add_done_callback_does_not_multiple_finalize(self):
         # This is the same as:
         #    test_tornado_add_done_callback_does_not_multiple_finalize
         # except we use native python concurrent.futures.Future instead of
         # Tornado's Future class.
 
-        with self.count_ioloop_possibly_finalize() as counter:
-            response = self.fetch_response('/add-done-callback/python')
-            expected = AddDoneCallbackAddsCallbackRequestHandler.RESPONSE
-            self.assertEqual(response.body, expected)
-            self.assertEqual(counter[0], 0)
+        self.waits_expected += 1
+        AddDoneCallbackAddsCallbackRequestHandler.set_do_work(
+                self.waits_counter_check)
+
+        response = self.fetch_response('/add-done-callback/python')
+        expected = AddDoneCallbackAddsCallbackRequestHandler.RESPONSE
+        self.assertEqual(response.body, expected)

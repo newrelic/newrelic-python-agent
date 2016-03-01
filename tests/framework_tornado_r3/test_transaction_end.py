@@ -1,4 +1,3 @@
-import contextlib
 import newrelic.hooks.framework_tornado_r3.ioloop
 import threading
 

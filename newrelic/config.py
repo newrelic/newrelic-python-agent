@@ -1015,14 +1015,6 @@ def _module_import_hook(target, module, function):
 
             _raise_instrumentation_error('import-hook', locals())
 
-        if target.__name__.startswith('tornado'):
-
-            # Thread utilization data is meaningless in a tornado app
-
-            agent_instance = newrelic.core.agent.agent_instance()
-            agent_instance.remove_thread_utilization()
-
-
     return _instrument
 
 def _process_module_configuration():

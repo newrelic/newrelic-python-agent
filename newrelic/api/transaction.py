@@ -359,7 +359,7 @@ class Transaction(object):
 
         if self._utilization_tracker:
             self._utilization_tracker.exit_transaction()
-            if self._thread_utilization_start and duration > 0.0:
+            if self._thread_utilization_start is not None and duration > 0.0:
                 if not self._thread_utilization_end:
                     self._thread_utilization_end = (
                             self._utilization_tracker.utilization_count())

@@ -630,7 +630,6 @@ class Application(object):
         transactions commences.
 
         """
-
         with self._data_samplers_lock:
             _logger.debug('Starting data samplers for application %r.',
                     self._app_name)
@@ -681,14 +680,19 @@ class Application(object):
     def remove_data_source(self, name):
         with self._data_samplers_lock:
 
-            data_sampler = filter(lambda x: x.name == name, self._data_samplers)
+            data_sampler = [x for x in self._data_samplers if x.name == name]
 
             if len(data_sampler) > 0:
+
+                # Should be at most one data sampler for a given name.
+
                 data_sampler = data_sampler[0]
+
                 try:
                     _logger.debug('Removing/Stopping data sampler for %r in '
                              'application %r.', data_sampler.name,
                              self._app_name)
+
                     data_sampler.stop()
 
                 except Exception:

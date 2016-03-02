@@ -1,5 +1,7 @@
+import newrelic.hooks.framework_tornado_r3.ioloop
 import threading
 
+from newrelic.agent import FunctionWrapper
 from newrelic.packages import six
 from six.moves import http_client
 
@@ -17,12 +19,15 @@ from _test_async_application import (ReturnFirstDivideRequestHandler,
         CallAtOnThreadExecutorRequestHandler, AddFutureRequestHandler,
         AddDoneCallbackRequestHandler, SimpleThreadedFutureRequestHandler,
         CancelTimeoutOutsideTransactionRequestHandler,
-        BusyWaitThreadedFutureRequestHandler)
+        BusyWaitThreadedFutureRequestHandler,
+        AddDoneCallbackAddsCallbackRequestHandler)
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
     tornado_validate_time_transaction_metrics,
     tornado_validate_errors, tornado_validate_transaction_cache_empty)
+
+from testing_support.fixtures import function_not_called
 
 def select_python_version(py2, py3):
     return six.PY3 and py3 or py2
@@ -420,4 +425,58 @@ class TornadoTest(TornadoBaseTest):
     def test_future_resolved_in_thread_complex_add_future(self):
         response = self.fetch_response('/future-thread-2/add_future')
         expected = BusyWaitThreadedFutureRequestHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'AddDoneCallbackAddsCallbackRequestHandler.get', 1)
+    ]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:AddDoneCallbackAddsCallbackRequestHandler.get',
+            scoped_metrics=scoped_metrics, forgone_metric_substrings=[
+                    'resolve_future', 'schedule_work', 'do_work'])
+    @function_not_called('newrelic.hooks.framework_tornado_r3.ioloop',
+            'possibly_finalize_transaction')
+    def test_tornado_add_done_callback_does_not_multiple_finalize(self):
+        # We are testing the following scenario:
+        #
+        # 1) During a transaction a future has a callback added using
+        #    add_done_callback.
+        # 2) The transaction finalizes.
+        # 3) The future is resolved which fires the callback.
+        # 4) The callback calls add_callback. We want to verify that the 2nd
+        #    callback doesn't cause the transaction to attempt to finalize
+        #    again.
+
+        self.waits_expected += 1
+        AddDoneCallbackAddsCallbackRequestHandler.set_cleanup(
+                self.waits_counter_check)
+
+        response = self.fetch_response('/add-done-callback/tornado')
+        expected = AddDoneCallbackAddsCallbackRequestHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:AddDoneCallbackAddsCallbackRequestHandler.get',
+            scoped_metrics=scoped_metrics, forgone_metric_substrings=[
+                    'resolve_future', 'schedule_work', 'do_work'])
+    @function_not_called('newrelic.hooks.framework_tornado_r3.ioloop',
+            'possibly_finalize_transaction')
+    def test_python_add_done_callback_does_not_multiple_finalize(self):
+        # This is the same as:
+        #    test_tornado_add_done_callback_does_not_multiple_finalize
+        # except we use native python concurrent.futures.Future instead of
+        # Tornado's Future class.
+
+        self.waits_expected += 1
+        AddDoneCallbackAddsCallbackRequestHandler.set_cleanup(
+                self.waits_counter_check)
+
+        response = self.fetch_response('/add-done-callback/python')
+        expected = AddDoneCallbackAddsCallbackRequestHandler.RESPONSE
         self.assertEqual(response.body, expected)

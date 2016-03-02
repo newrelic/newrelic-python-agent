@@ -4,7 +4,7 @@ import tornado
 import threading
 import time
 
-from newrelic.agent import function_wrapper, current_transaction
+from newrelic.agent import current_transaction
 from newrelic.hooks.framework_tornado_r3.util import TransactionContext
 
 from tornado.httpclient import AsyncHTTPClient, HTTPClient, HTTPRequest
@@ -640,6 +640,58 @@ class BusyWaitThreadedFutureRequestHandler(RequestHandler):
     def do_stuff(self):
         self.stuff_done = True
 
+class AddDoneCallbackAddsCallbackRequestHandler(RequestHandler):
+    """This adds a callback in an add_done_callback after the transaction
+    completes. This should not increment/decrement the refcounter causing the
+    transaction to finalize multiple times."""
+    RESPONSE = b"Add done callback adds a callback."
+
+    CLEANUP = None
+
+    def get(self, future_type):
+        if future_type == 'tornado':
+            f = tornado.concurrent.Future()
+        elif future_type == 'python':
+            f = concurrent.futures.Future()
+        else:
+            # raise an error so the test fails
+            raise Tornado4TestException("Bad url in test")
+
+        f.add_done_callback(self.schedule_work)
+
+        with TransactionContext(None):
+            tornado.ioloop.IOLoop.current().add_callback(self.resolve_future, f)
+
+        self.finish(self.RESPONSE)
+
+    def resolve_future(self, f):
+        f.set_result(None)
+
+    def schedule_work(self, f):
+        tornado.ioloop.IOLoop.current().add_callback(self.do_work)
+
+    def do_work(self):
+        with TransactionContext(None):
+            tornado.ioloop.IOLoop.current().add_callback(self.cleanup)
+
+    def cleanup(self):
+        if self.CLEANUP:
+            self.CLEANUP()
+            self.CLEANUP = None
+
+    @classmethod
+    def set_cleanup(cls, cleanup):
+        """To be used by a test suite to inject a function into this handler.
+
+        Argument:
+          cleanup: A function to be called at the end of the request handler
+            after the transaction closes and after a future and its
+            add_done_callback is finished. It runs in a None transaction
+            context. `cleanup` will only be invoked for 1 request. If one wants
+            this to be called for subsequent requests, one must set this before
+            each request."""
+        cls.CLEANUP = cleanup
+
 def get_tornado_app():
     return Application([
         ('/', HelloRequestHandler),
@@ -678,4 +730,5 @@ def get_tornado_app():
         ('/remove-last-timeout', CancelTimeoutOutsideTransactionRequestHandler),
         ('/future-thread/?(\w+)?', SimpleThreadedFutureRequestHandler),
         ('/future-thread-2/?(\w+)?', BusyWaitThreadedFutureRequestHandler),
+        ('/add-done-callback/(\w+)', AddDoneCallbackAddsCallbackRequestHandler),
     ])

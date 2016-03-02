@@ -29,7 +29,7 @@ def _nr_wrapper_stack_context_wrap_(wrapped, instance, args, kwargs):
     wrapped_fxn = wrapped(*args, **kwargs)
 
     transaction_aware_fxn = create_transaction_aware_fxn(wrapped_fxn,
-            unwrapped_fxn)
+            fxn_for_name=unwrapped_fxn)
 
     if transaction_aware_fxn is None:
         return wrapped_fxn

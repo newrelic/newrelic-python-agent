@@ -408,21 +408,6 @@ class Transaction(object):
         if self.response_code != 0:
             self._response_properties['STATUS'] = str(self.response_code)
 
-        read_duration = 0
-        if self._read_start:
-            read_duration = self._read_end - self._read_start
-
-        sent_duration = 0
-        if self._sent_start:
-            if not self._sent_end:
-                self._sent_end = time.time()
-            sent_duration = self._sent_end - self._sent_start
-
-        if self.queue_start:
-            queue_wait = self.start_time - self.queue_start
-            if queue_wait < 0:
-                queue_wait = 0
-
         # _sent_end should already be set by this point, but in case it
         # isn't, set it now before we record the custom metrics.
 

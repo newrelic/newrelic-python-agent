@@ -429,7 +429,7 @@ class Agent(object):
                             settings, **properties)
 
     def remove_thread_utilization(self):
-        source_name = 'thread_utilization_data_source'
+        source_name = thread_utilization_data_source.__name__
         factory_name = 'Thread Utilization'
 
         with self._lock:
@@ -441,7 +441,7 @@ class Agent(object):
             # Clear out the data samplers that add thread utilization custom
             # metrics every harvest (for each application)
 
-            for application in list(six.itervalues(self._applications)):
+            for application in self._applications.values():
                 application.remove_data_source(factory_name)
 
         # The thread utilization data source may have been started, so we

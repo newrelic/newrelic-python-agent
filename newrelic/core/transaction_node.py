@@ -419,6 +419,7 @@ class TransactionNode(_TransactionNode):
 
         intrinsics['type'] = 'Transaction'
         intrinsics['name'] = self.path
+        intrinsics['totalTime'] = self.total_time
 
         def _add_if_not_empty(key, value):
             if value:

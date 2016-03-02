@@ -84,6 +84,8 @@ class Transaction(object):
         self.end_time = 0.0
         self.last_byte_time = 0.0
 
+        self.total_time = None
+
         self.stopped = False
 
         self._trace_node_count = 0
@@ -382,7 +384,7 @@ class Transaction(object):
         # (like External or Datastore), for right now, our total_time is
         # equal to the duration of the transaction.
 
-        total_time = duration
+        self.total_time = duration
 
         # Construct final root node of transaction trace.
         # Freeze path in case not already done. This will
@@ -472,7 +474,7 @@ class Transaction(object):
                 start_time=self.start_time,
                 end_time=self.end_time,
                 last_byte_time=self.last_byte_time,
-                total_time=total_time,
+                total_time=self.total_time,
                 response_time=response_time,
                 duration=duration,
                 exclusive=exclusive,
@@ -695,6 +697,8 @@ class Transaction(object):
             i_attrs['synthetics_job_id'] = self.synthetics_job_id
         if self.synthetics_monitor_id:
             i_attrs['synthetics_monitor_id'] = self.synthetics_monitor_id
+        if self.total_time:
+            i_attrs['totalTime'] = self.total_time
 
         # Add in special CPU time value for UI to display CPU burn.
 

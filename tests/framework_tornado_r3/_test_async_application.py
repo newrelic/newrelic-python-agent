@@ -797,7 +797,6 @@ class FutureDoubleWrapRequestHandler(RequestHandler):
     def do_stuff(self, future):
         self.finish(self.RESPONSE)
 
-
 class RunnerRefCountRequestHandler(RequestHandler):
     """Verify that incrementing/decrementing the ref count in Runner will
     keep the transaction open until yielding from a coroutine completes.
@@ -989,6 +988,47 @@ class NativeFuturesCoroutine(RequestHandler):
     def another_method(self, *args):
         pass
 
+class SyncLateExceptionRequestHandler(RequestHandler):
+    RESPONSE = b'sync late exception'
+
+    def get(self):
+        self.finish(self.RESPONSE)
+        raise Tornado4TestException(self.RESPONSE)
+
+class AsyncLateExceptionRequestHandler(RequestHandler):
+    RESPONSE = b'async late exception'
+
+    @tornado.web.asynchronous
+    def get(self):
+        tornado.ioloop.IOLoop.current().add_callback(self.done)
+
+    def done(self):
+        self.finish(self.RESPONSE)
+        tornado.ioloop.IOLoop.current().add_callback(self.error)
+
+    def error(self):
+        raise Tornado4TestException(self.RESPONSE)
+
+class CoroutineLateExceptionRequestHandler(RequestHandler):
+    RESPONSE = b'coroutine late exception'
+
+    @tornado.gen.coroutine
+    def get(self):
+        _ = yield self.before_finish()
+        self.finish(self.RESPONSE)
+        _ = yield self.after_finish()
+
+    def before_finish(self):
+        f = tornado.concurrent.Future()
+        tornado.ioloop.IOLoop.current().add_callback(self.resolve_future, f)
+        return f
+
+    def resolve_future(self, f):
+        f.set_result(None)
+
+    def after_finish(self):
+        raise Tornado4TestException(self.RESPONSE)
+
 def get_tornado_app():
     return Application([
         ('/', HelloRequestHandler),
@@ -1037,4 +1077,7 @@ def get_tornado_app():
         ('/add-handler-ignore', IgnoreAddHandlerRequestHandler),
         ('/signal-ignore', AddCallbackFromSignalRequestHandler),
         ('/native-future-coroutine/?([\w-]+)?', NativeFuturesCoroutine),
+        ('/sync-late-exception', SyncLateExceptionRequestHandler),
+        ('/async-late-exception', AsyncLateExceptionRequestHandler),
+        ('/coroutine-late-exception', CoroutineLateExceptionRequestHandler),
     ])

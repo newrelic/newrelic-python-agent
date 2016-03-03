@@ -253,11 +253,28 @@ class TornadoTest(TornadoBaseTest):
         self.fetch_exception('/callback-exception')
 
     @tornado_validate_transaction_cache_empty()
-    @tornado_validate_errors(errors=['tornado.gen:BadYieldError'])
+    @tornado_validate_errors(errors=[
+            '_test_async_application:Tornado4TestException'])
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:CoroutineExceptionRequestHandler.get')
-    def test_coroutine_exception(self):
-        self.fetch_exception('/coroutine-exception')
+    def test_coroutine_exception_0(self):
+        r = self.fetch_exception('/coroutine-exception/0')
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(errors=[
+            '_test_async_application:Tornado4TestException'])
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:CoroutineExceptionRequestHandler.get')
+    def test_coroutine_exception_1(self):
+        r = self.fetch_exception('/coroutine-exception/1')
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(errors=[
+            '_test_async_application:Tornado4TestException'])
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:CoroutineException2RequestHandler.get')
+    def test_coroutine_exception_2(self):
+        response = self.fetch_exception('/coroutine-exception-2')
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[])

@@ -132,9 +132,46 @@ class CoroutineExceptionRequestHandler(RequestHandler):
     RESPONSE = b'coroutine exception'
 
     @tornado.gen.coroutine
+    def get(self, error_location):
+        self.location = error_location
+        self.count = 0
+        self.count = yield self.next_count()
+        if self.location == '0':
+            raise Tornado4TestException("location 0")
+
+    def next_count(self):
+        f = tornado.concurrent.Future()
+        tornado.ioloop.IOLoop.current().add_callback(self._inc, f)
+        if self.location == '1':
+            raise Tornado4TestException("location 1")
+        return f
+
+    def _inc(self, f):
+        f.set_result(self.count + 1)
+        if self.location == '2':
+            raise Tornado4TestException("location 2")
+
+# This RequestHandler is equivalent to the RequestHandler above when
+# location is set to 2. However, the testing framework exception handling seems
+# to catch our exception unless we wrap in in asynchronous (which we shouldn't
+# have to do) which prevents us from recording the exception.
+class CoroutineException2RequestHandler(RequestHandler):
+    RESPONSE = b'coroutine exception'
+
+    @tornado.web.asynchronous
+    @tornado.gen.coroutine
     def get(self):
-        raise tornado.gen.BadYieldError
-        self.finish(self.RESPONSE)  # This will never be called.
+        self.count = 0
+        self.count = yield self.next_count()
+
+    def next_count(self):
+        f = tornado.concurrent.Future()
+        tornado.ioloop.IOLoop.current().add_callback(self._inc, f)
+        return f
+
+    def _inc(self, f):
+        f.set_result(self.count + 1)
+        raise Tornado4TestException("ERROR!")
 
 # This isn't really an exception but a legitimate way to end request handling.
 class FinishExceptionRequestHandler(RequestHandler):
@@ -961,7 +998,8 @@ def get_tornado_app():
         ('/multiple-callbacks', MultipleCallbacksRequestHandler),
         ('/sync-exception', SyncExceptionRequestHandler),
         ('/callback-exception', CallbackExceptionRequestHandler),
-        ('/coroutine-exception', CoroutineExceptionRequestHandler),
+        ('/coroutine-exception/(\w+)', CoroutineExceptionRequestHandler),
+        ('/coroutine-exception-2', CoroutineException2RequestHandler),
         ('/finish-exception', FinishExceptionRequestHandler),
         ('/return-exception', ReturnExceptionRequestHandler),
         ('/ioloop-divide/(\d+)/(\d+)/?(\w+)?', IOLoopDivideRequestHandler),

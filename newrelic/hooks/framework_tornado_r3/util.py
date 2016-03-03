@@ -189,39 +189,31 @@ def create_transaction_aware_fxn(fxn, fxn_for_name=None, check_finalized=False,
             inner_transaction = None
 
         with TransactionContext(inner_transaction):
-            if inner_transaction is None:
+            if inner_transaction is None or should_trace is False:
                 # A transaction will be None for fxns scheduled on the ioloop
                 # not associated with a transaction.
                 ret = fxn(*args, **kwargs)
 
             else:
-                if should_trace:
-                    name = callable_name(fxn_for_name)
-                    with FunctionTrace(inner_transaction, name=name) as ft:
-                        ret = _run_and_name_fxn(ft, fxn, args, kwargs)
-                else:
-                    ret = _run_and_name_fxn(None, fxn, args, kwargs)
+                name = callable_name(fxn_for_name)
+                with FunctionTrace(inner_transaction, name=name) as ft:
+                    ret = fxn(*args, **kwargs)
+                    # Coroutines are wrapped in lambdas when they are scheduled.
+                    # See tornado.gen.Runner.run(). In this case, we don't know
+                    # the name until the function is run. We only know it then
+                    # because we pass out the name as an attribute on the
+                    # result. We update the name now.
+
+                    if (ft is not None and ret is not None and
+                            hasattr(ret, '_nr_coroutine_name')):
+                        ft.name = ret._nr_coroutine_name
+                        # To be able to attach the name to the return value of a
+                        # coroutine we need to have the coroutine return an
+                        # object. If it returns None, we have created a proxy
+                        # object. We now restore the original None value.
+                        if type(ret) == NoneProxy:
+                            ret = None
 
         return ret
 
     return transaction_aware(fxn)
-
-def _run_and_name_fxn(function_trace, fxn, args, kwargs):
-    ret = fxn(*args, **kwargs)
-    # Coroutines are wrapped in lambdas when they are scheduled.
-    # See tornado.gen.Runner.run(). In this case, we don't know
-    # the name until the function is run. We only know it then
-    # because we pass out the name as an attribute on the
-    # result. We update the name now.
-
-    if (function_trace is not None and ret is not None and
-            hasattr(ret, '_nr_coroutine_name')):
-        function_trace.name = ret._nr_coroutine_name
-        # To be able to attach the name to the return value of a
-        # coroutine we need to have the coroutine return an
-        # object. If it returns None, we have created a proxy
-        # object. We now restore the original None value.
-        if type(ret) == NoneProxy:
-            ret = None
-
-    return ret

@@ -433,6 +433,9 @@ class Agent(object):
         # Although a static method, this method is intended to only be called
         # after an instance has been created.
 
+        _logger.debug('Removing thread utilization data source from all '
+                'applications')
+
         source_name = thread_utilization_data_source.__name__
         factory_name = 'Thread Utilization'
 

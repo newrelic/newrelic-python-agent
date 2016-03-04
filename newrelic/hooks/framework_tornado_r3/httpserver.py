@@ -2,7 +2,7 @@ import logging
 import traceback
 
 from newrelic.agent import wrap_function_wrapper
-from newrelic.core.agent import agent_instance
+from newrelic.core.agent import remove_thread_utilization
 from .util import possibly_finalize_transaction
 
 _logger = logging.getLogger(__name__)
@@ -64,8 +64,7 @@ def instrument_tornado_httpserver(module):
     # already. Thus, we know that this is a single place that we can remove the
     # thread utilization, regardless of the order of imports/agent registration.
 
-    agent_inst = agent_instance()
-    agent_inst.remove_thread_utilization()
+    remove_thread_utilization()
 
     wrap_function_wrapper(module, '_ServerRequestAdapter.on_connection_close',
             _nr_wrapper__ServerRequestAdapter_on_connection_close_)

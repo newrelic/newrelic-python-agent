@@ -136,7 +136,8 @@ class TransactionContext(object):
     def __exit__(self, exc_type, exc_value, traceback):
         replace_current_transaction(self.old_transaction)
 
-def create_transaction_aware_fxn(fxn, fxn_for_name=None, check_finalized=False):
+def create_transaction_aware_fxn(fxn, fxn_for_name=None, check_finalized=False,
+        should_trace=True):
     # Returns a version of fxn that will switch context to the appropriate
     # transaction and then restore the previous transaction on exit.
     # If fxn is already transaction aware or if there is no transaction
@@ -157,6 +158,10 @@ def create_transaction_aware_fxn(fxn, fxn_for_name=None, check_finalized=False):
     #      resolved. If it is attached to a future, for example. In these cases,
     #      setting this to True will prevent us from logging an error if the
     #      transaction is finalized.
+    #  should_trace: Defaults to True. Usually we want to trace the transaction
+    #      aware function. However, to prevent tracing a function multiple times
+    #      we may not want to trace a particlar function. See our
+    #      instrumentation, stack_context._nr_wrapper_stack_context_wrap.
 
     if fxn is None or hasattr(fxn, '_nr_transaction'):
         return None
@@ -184,7 +189,7 @@ def create_transaction_aware_fxn(fxn, fxn_for_name=None, check_finalized=False):
             inner_transaction = None
 
         with TransactionContext(inner_transaction):
-            if inner_transaction is None:
+            if inner_transaction is None or should_trace is False:
                 # A transaction will be None for fxns scheduled on the ioloop
                 # not associated with a transaction.
                 ret = fxn(*args, **kwargs)

@@ -93,12 +93,7 @@ class TornadoTest(TornadoBaseTest):
         self.io_loop.add_callback(do_stuff_background_task)
         self.wait(timeout=5.0)
 
-    # do_stuff has a count of 2 because it is wrapped twice:
-    #
-    #   function_trace()
-    #   add_callback
-
-    scoped_metrics = [('Function/test_background_task:do_stuff', 2)]
+    scoped_metrics = [('Function/test_background_task:do_stuff', 1)]
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
@@ -111,9 +106,7 @@ class TornadoTest(TornadoBaseTest):
         add_callback_background_task(self.io_loop, do_stuff)
         self.wait(timeout=5.0)
 
-    # do_error has a count of 2 for the same reason that do_stuff does above.
-
-    scoped_metrics = [('Function/test_background_task:do_error', 2)]
+    scoped_metrics = [('Function/test_background_task:do_error', 1)]
     errors = ['test_background_task:ExceptionAfterTransactionRecorded']
 
     @tornado_validate_transaction_cache_empty()
@@ -159,7 +152,7 @@ class TornadoTest(TornadoBaseTest):
         schedule_and_cancel_callback_task(self.io_loop)
         self.wait(timeout=5.0)
 
-    scoped_metrics = [('Function/test_background_task:do_stuff', 3)]
+    scoped_metrics = [('Function/test_background_task:do_stuff', 2)]
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()

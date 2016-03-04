@@ -28,8 +28,16 @@ def _nr_wrapper_stack_context_wrap_(wrapped, instance, args, kwargs):
     unwrapped_fxn = _fxn_arg_extractor(*args, **kwargs)
     wrapped_fxn = wrapped(*args, **kwargs)
 
+    should_trace = not hasattr(unwrapped_fxn, '_nr_last_object')
+
+    # There are circumstances we want to make a function transaction aware
+    # even if we don't want to trace it. If a function is decorated with
+    # @function_trace, it will be traced but it will not yet be linked to a
+    # transaction. Calling create_transaction_aware_fxn with
+    # `should_trace=False` will link the transaction to the function without
+    # re-tracing it.
     transaction_aware_fxn = create_transaction_aware_fxn(wrapped_fxn,
-            fxn_for_name=unwrapped_fxn)
+            fxn_for_name=unwrapped_fxn, should_trace=should_trace)
 
     if transaction_aware_fxn is None:
         return wrapped_fxn

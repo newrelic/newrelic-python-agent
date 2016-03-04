@@ -9,6 +9,8 @@ from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
     tornado_validate_errors, tornado_validate_transaction_cache_empty)
 
+from _test_async_application import ScheduleAndCancelExceptionRequestHandler
+
 def select_python_version(py2, py3):
     return six.PY3 and py3 or py2
 
@@ -85,6 +87,20 @@ class ExceptionTest(TornadoBaseTest):
             '_test_async_application:CoroutineLateExceptionRequestHandler.get')
     def test_coroutine_late_exception(self):
         self.fetch_response('/coroutine-late-exception')
+
+    scoped_metrics = [('Function/_test_async_application:'
+            'ScheduleAndCancelExceptionRequestHandler.get', 1)]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(errors=[])
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:ScheduleAndCancelExceptionRequestHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_schedule_and_cancel_exception(self):
+        response = self.fetch_response('/almost-error')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body,
+                ScheduleAndCancelExceptionRequestHandler.RESPONSE)
 
     # Tests for exceptions happening outside of a transaction
 

@@ -1029,6 +1029,18 @@ class CoroutineLateExceptionRequestHandler(RequestHandler):
     def after_finish(self):
         raise Tornado4TestException(self.RESPONSE)
 
+class ScheduleAndCancelExceptionRequestHandler(RequestHandler):
+    RESPONSE = b'close call'
+
+    def get(self):
+        ioloop = tornado.ioloop.IOLoop.current()
+        timeout = ioloop.call_later(1.0, self.do_error)
+        ioloop.remove_timeout(timeout)
+        self.finish(self.RESPONSE)
+
+    def do_error(self):
+        raise Tornado4TestException("whoops")
+
 def get_tornado_app():
     return Application([
         ('/', HelloRequestHandler),
@@ -1080,4 +1092,5 @@ def get_tornado_app():
         ('/sync-late-exception', SyncLateExceptionRequestHandler),
         ('/async-late-exception', AsyncLateExceptionRequestHandler),
         ('/coroutine-late-exception', CoroutineLateExceptionRequestHandler),
+        ('/almost-error', ScheduleAndCancelExceptionRequestHandler),
     ])

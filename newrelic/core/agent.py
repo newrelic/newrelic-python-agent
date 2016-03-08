@@ -166,19 +166,19 @@ class Agent(object):
 
                 Agent._instance = instance
 
-        if instance:
-            _logger.debug('Activating agent instance.')
+            if instance:
+                _logger.debug('Activating agent instance.')
 
-            instance.activate_agent()
+                instance.activate_agent()
 
-            _logger.debug('Registering builtin data sources.')
+                _logger.debug('Registering builtin data sources.')
 
-            instance.register_data_source(cpu_usage_data_source)
-            instance.register_data_source(memory_usage_data_source)
-            instance.register_data_source(thread_utilization_data_source)
+                instance.register_data_source(cpu_usage_data_source)
+                instance.register_data_source(memory_usage_data_source)
+                instance.register_data_source(thread_utilization_data_source)
 
-            for callable in Agent._startup_callables:
-                callable()
+                for callable in Agent._startup_callables:
+                    callable()
 
         return Agent._instance
 

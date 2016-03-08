@@ -498,7 +498,7 @@ class TransactionNode(_TransactionNode):
         intrinsics = {}
 
         intrinsics['timestamp'] = self.start_time
-        intrinsics['duration'] = self.duration
+        intrinsics['duration'] = self.response_time
 
         if self.port:
             intrinsics['port'] = self.port

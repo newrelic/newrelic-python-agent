@@ -778,10 +778,21 @@ class TornadoTest(TornadoBaseTest):
 
         return http_dispatcher_metric.duration < transaction_node.duration
 
+    def check_duration_intrinsic_attribute(transaction_node):
+        """Verify that `duration` is using response_time."""
+
+        empty_stats = StatsEngine()
+
+        transaction_event = transaction_node.transaction_event(empty_stats)
+        intrinsics, _, _ = transaction_event
+
+        return intrinsics['duration'] < transaction_node.duration
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_run_validator(lambda x: x.response_time < x.duration)
     @tornado_run_validator(check_http_dispatcher_metric)
+    @tornado_run_validator(check_duration_intrinsic_attribute)
     def test_http_dispatcher_uses_response_time_not_duration(self):
         response = self.fetch_response('/call-at')
         self.assertEqual(response.code, 200)

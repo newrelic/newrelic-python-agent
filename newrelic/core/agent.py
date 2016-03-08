@@ -428,10 +428,7 @@ class Agent(object):
                     instance.register_data_source(source, name,
                             settings, **properties)
 
-    @staticmethod
-    def remove_thread_utilization():
-        # Although a static method, this method is intended to only be called
-        # after an instance has been created.
+    def remove_thread_utilization(self):
 
         _logger.debug('Removing thread utilization data source from all '
                 'applications')
@@ -716,9 +713,13 @@ def register_data_source(source, application=None, name=None,
             application and application.name or None, name, settings,
             **properties)
 
+def _remove_thread_utilization():
+    agent = agent_instance()
+    agent.remove_thread_utilization()
+
 def remove_thread_utilization():
     with Agent._instance_lock:
         if Agent._instance:
-            Agent.remove_thread_utilization()
+            _remove_thread_utilization()
         else:
-            Agent.run_on_startup(Agent.remove_thread_utilization)
+            Agent.run_on_startup(_remove_thread_utilization)

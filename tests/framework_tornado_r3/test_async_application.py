@@ -805,9 +805,9 @@ class TornadoTest(TornadoBaseTest):
 
         empty_stats = StatsEngine()
 
-        metrics = list(m for m
+        metrics = [m for m
                 in transaction_node.time_metrics(empty_stats)
-                if 'TransactionTotalTime' in m.name)
+                if 'TransactionTotalTime' in m.name]
         assert len(metrics) == 2
 
         return all(metric.duration == transaction_node.duration

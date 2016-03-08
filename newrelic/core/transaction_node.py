@@ -126,35 +126,26 @@ class TransactionNode(_TransactionNode):
                 duration=self.response_time,
                 exclusive=self.exclusive)
 
-        # Yield Unscoped Total Time metrics.
+        # Generate Unscoped Total Time metrics.
 
         if self.type == 'WebTransaction':
-
-            yield TimeMetric(
-                    name='WebTransactionTotalTime/%s' % self.name_for_metric,
-                    scope='',
-                    duration=self.total_time,
-                    exclusive=self.total_time)
-
-            yield TimeMetric(
-                    name='WebTransactionTotalTime',
-                    scope='',
-                    duration=self.total_time,
-                    exclusive=self.total_time)
-
+            metric_prefix = 'WebTransactionTotalTime'
         else:
+            metric_prefix = 'OtherTransactionTotalTime'
 
-            yield TimeMetric(
-                    name='OtherTransactionTotalTime/%s' % self.name_for_metric,
-                    scope='',
-                    duration=self.total_time,
-                    exclusive=self.total_time)
+        yield TimeMetric(
+                name='%s/%s' % (metric_prefix, self.name_for_metric),
+                scope='',
+                duration=self.total_time,
+                exclusive=self.total_time)
 
-            yield TimeMetric(
-                    name='OtherTransactionTotalTime',
-                    scope='',
-                    duration=self.total_time,
-                    exclusive=self.total_time)
+        yield TimeMetric(
+                name=metric_prefix,
+                scope='',
+                duration=self.total_time,
+                exclusive=self.total_time)
+
+        # Generate Error metrics
 
         if self.errors:
             # Generate overall rollup metric indicating if errors present.

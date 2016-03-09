@@ -68,6 +68,14 @@ class ExceptionTest(TornadoBaseTest):
     @tornado_validate_errors(errors=[
             '_test_async_application:Tornado4TestException'])
     @tornado_validate_count_transaction_metrics(
+            '_test_async_application:CallbackFromCoroutineRequestHandler.get')
+    def test_callback_from_coroutine_exception(self):
+        response = self.fetch_exception('/callback-from-coroutine')
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(errors=[
+            '_test_async_application:Tornado4TestException'])
+    @tornado_validate_count_transaction_metrics(
             '_test_async_application:SyncLateExceptionRequestHandler.get')
     def test_sync_late_exception(self):
         self.fetch_response('/sync-late-exception')

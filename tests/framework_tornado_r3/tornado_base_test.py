@@ -58,8 +58,9 @@ class TornadoBaseTest(tornado.testing.AsyncHTTPTestCase):
                 **kwargs)
         try:
             self.wait(timeout=5.0)
-        except:
-            self.assertTrue(False, "Timeout occurred waiting for response")
+        except Exception as e:
+            self.assertTrue(False, "Error occurred waiting for response: "
+                    "%s, %s" % (type(e), e))
 
         # Retrieve the server response. An exception will be raised
         # if the server did not respond successfully.

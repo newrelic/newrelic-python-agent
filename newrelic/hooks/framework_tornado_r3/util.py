@@ -214,6 +214,12 @@ def create_transaction_aware_fxn(fxn, fxn_for_name=None, check_finalized=False,
                         if type(ret) == NoneProxy:
                             ret = None
 
+        # If decrementing the ref count in Runner.run() takes it to 0, then
+        # we need to end the transaction here.
+
+        if inner_transaction and inner_transaction._ref_count == 0:
+            possibly_finalize_transaction(inner_transaction)
+
         return ret
 
     return transaction_aware(fxn)

@@ -93,6 +93,11 @@ def _nr_wrapper_Runner__init__(wrapped, instance, args, kwargs):
                 'changed). NewRelic will not be able to name this instrumented '
                 'function meaningfully (it will be named lambda).')
 
+    # Bump the ref count, so we don't end the transaction before
+    # the Runner finishes.
+
+    transaction._ref_count += 1
+
     return wrapped(*args, **kwargs)
 
 def _nr_wrapper_Runner_run_(wrapped, instance, args, kwargs):
@@ -112,6 +117,9 @@ def _nr_wrapper_Runner_run_(wrapped, instance, args, kwargs):
     if (hasattr(instance, '_nr_coroutine_name') and
             instance._nr_coroutine_name is not None):
         result._nr_coroutine_name = instance._nr_coroutine_name
+
+    if instance.finished:
+        transaction._ref_count -= 1
 
     return result
 

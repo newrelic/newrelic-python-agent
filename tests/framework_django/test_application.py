@@ -239,6 +239,16 @@ def test_html_insertion_content_length_header():
 
     assert 'Content-Length' in response.headers
 
+@override_application_settings(_test_html_insertion_settings)
+def test_html_insertion_manual_tag_instrumentation():
+    response = test_application.get('/template_tags')
+
+    # Assert that the instrumentation is not inappropriately escaped
+
+    response.mustcontain('<!-- NREUM HEADER -->',
+            no=['&lt;!-- NREUM HEADER --&gt'])
+
+
 _test_application_inclusion_tag_scoped_metrics = [
         ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
         ('Python/WSGI/Application', 1),

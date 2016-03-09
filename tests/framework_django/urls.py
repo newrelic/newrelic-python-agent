@@ -23,4 +23,5 @@ urlpatterns = patterns('',
         'views.html_insertion_named_attachment_header',
         name='html_insertion_named_attachment_header'),
     url(r'^inclusion_tag$', 'views.inclusion_tag', name='inclusion_tag'),
+    url(r'^template_tags$', 'views.template_tags', name='template_tags'),
 )

@@ -125,6 +125,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'dummy_app',
+    'newrelic.extras.framework_django',
     # 'framework_django.test_application',
     # Uncomment the next line to enable the admin:
     # 'django.contrib.admin',

@@ -1,12 +1,14 @@
 import sys
 import os
 
-# This test script is intended to be ran manually. This is because it deals with
-# code that can run a couple different ways for agent initialization/
-# registration, and the test code deals with this already by the time you get to
-# a test case.
+# This test script can be run manually, but is also a part of the automated
+# tests in this directory.
 
 def remove_utilization_tester(now=True, queue=None):
+
+    # If this function was launched as a subprocess (e.g. using
+    # multiprocessing), we need to clear out all newrelic and tornado packages
+    # that were copied over from the parent process.
 
     to_remove = [x for x in sys.modules if x.startswith('newrelic') or x.startswith('tornado')]
     for module in to_remove:
@@ -14,21 +16,42 @@ def remove_utilization_tester(now=True, queue=None):
         del module
 
     import newrelic.agent
-    from newrelic.core.agent import agent_instance
+    from newrelic.core.agent import agent_instance, Agent
     from newrelic.core.thread_utilization import _utilization_trackers
 
     newrelic.agent.initialize(os.path.join(os.path.abspath(os.path.dirname(__file__)),'remove_utilization.ini'))
 
-    if now:
-        newrelic.agent.register_application(timeout=10)
-        import tornado.httpserver
-    else:
-        import tornado.httpserver
-        newrelic.agent.register_application(timeout=10)
-
-    agent = agent_instance()
-
     try:
+        if now:
+
+            newrelic.agent.register_application(timeout=10)
+
+            # When we register the application first, we have an opportunity to
+            # check that the thread utilization is in fact added to the data,
+            # sources, before tornado is imported and removes it.
+
+            # reading a private variable outside the class, calling
+            # agent_instance will actually create a new instance if one didn't
+            # exist, which would make this assert pointless
+
+            assert Agent._instance
+            agent = agent_instance()
+            source_names = [s[0].__name__ for s in agent._data_sources[None]]
+            assert 'thread_utilization_data_source' in source_names
+
+            import tornado.httpserver
+
+        else:
+
+            # In this case the thread utilization will be removed immediately
+            # following registration
+
+            import tornado.httpserver
+            assert Agent._instance is None
+            newrelic.agent.register_application(timeout=10)
+
+        agent = agent_instance()
+
         source_names = [s[0].__name__ for s in agent._data_sources[None]]
         assert 'thread_utilization_data_source' not in source_names
 

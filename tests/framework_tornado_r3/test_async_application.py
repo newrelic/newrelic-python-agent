@@ -1,5 +1,6 @@
 import time
 import threading
+import multiprocessing
 
 import tornado.testing
 
@@ -937,7 +938,7 @@ class TornadoTest(TornadoBaseTest):
     def test_runner_ref_count_error(self):
         response = self.fetch_exception('/runner-error')
 
-    # For this thread utilization test, we want to make sure that both the
+    # For these thread utilization tests, we want to make sure that both the
     # transaction isn't sending up attributes related to thread utilization,
     # and also that the harvest isn't sending up utilization metrics, which are
     # used for "capacity" in APM. We check this by asserting that the machinery
@@ -950,28 +951,20 @@ class TornadoTest(TornadoBaseTest):
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_run_validator(lambda x: 'thread.concurrency' not in [i.name for i in x.agent_attributes])
-    def test_thread_utilization_disabled(self):
-
-        agent = agent_instance()
-        app = agent.application('Python Agent Test (framework_tornado_r3)')
-        while not app._data_samplers_started:
-            time.sleep(0.1)
-
-        source_names = [s[0].__name__ for s in agent._data_sources[None]]
-        assert 'thread_utilization_data_source' not in source_names
-
-        for app in agent._applications.values():
-            sampler_names = [x.name for x in app._data_samplers]
-            assert 'Thread Utilization' not in sampler_names
-
-        assert len(_utilization_trackers) == 0
+    def test_thread_utilization_disabled_on_transaction(self):
+        # Since this test suite imported tornado, we should see that the thread
+        # utilization attributes are not on the transaction.
 
         response = self.fetch_response('/')
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, HelloRequestHandler.RESPONSE)
 
+    # What we want to test here is code that is executed during agent
+    # initialization/registration. Thus we launch the agent in a new process
+    # so that we can run the import-initialization-registration process
+    # manually and make assertions against it.
+
     def test_thread_utilization_disabled_immediate(self):
-        import multiprocessing
         q = multiprocessing.Queue()
         process = multiprocessing.Process(target=remove_utilization_tester,
                 kwargs={'queue': q})
@@ -981,7 +974,6 @@ class TornadoTest(TornadoBaseTest):
         assert result == 'PASS'
 
     def test_thread_utilization_disabled_scheduled(self):
-        import multiprocessing
         q = multiprocessing.Queue()
         process = multiprocessing.Process(target=remove_utilization_tester,
                 kwargs={'now': False, 'queue': q})

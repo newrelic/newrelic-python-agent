@@ -1,4 +1,5 @@
 import logging
+import sys
 import traceback
 
 from newrelic.agent import (application as application_instance,
@@ -189,15 +190,28 @@ def create_transaction_aware_fxn(fxn, fxn_for_name=None, check_finalized=False,
             inner_transaction = None
 
         with TransactionContext(inner_transaction):
-            if inner_transaction is None or should_trace is False:
+            if inner_transaction is None:
+                ret = fxn(*args, **kwargs)
+            elif should_trace is False:
                 # A transaction will be None for fxns scheduled on the ioloop
                 # not associated with a transaction.
-                ret = fxn(*args, **kwargs)
-
+                try:
+                    ret = fxn(*args, **kwargs)
+                except:
+                    record_exception(sys.exc_info())
+                    wrapped._nr_recorded_exception = True
+                    raise
             else:
                 name = callable_name(fxn_for_name)
                 with FunctionTrace(inner_transaction, name=name) as ft:
-                    ret = fxn(*args, **kwargs)
+
+                    try:
+                        ret = fxn(*args, **kwargs)
+                    except:
+                        record_exception(sys.exc_info())
+                        wrapped._nr_recorded_exception = True
+                        raise
+
                     # Coroutines are wrapped in lambdas when they are scheduled.
                     # See tornado.gen.Runner.run(). In this case, we don't know
                     # the name until the function is run. We only know it then
@@ -207,6 +221,7 @@ def create_transaction_aware_fxn(fxn, fxn_for_name=None, check_finalized=False,
                     if (ft is not None and ret is not None and
                             hasattr(ret, '_nr_coroutine_name')):
                         ft.name = ret._nr_coroutine_name
+
                         # To be able to attach the name to the return value of a
                         # coroutine we need to have the coroutine return an
                         # object. If it returns None, we have created a proxy

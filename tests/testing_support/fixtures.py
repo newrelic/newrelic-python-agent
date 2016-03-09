@@ -364,11 +364,22 @@ def validate_transaction_metrics(name, group='Function',
         custom_metrics=[]):
 
     if background_task:
-        rollup_metric = 'OtherTransaction/all'
-        transaction_metric = 'OtherTransaction/%s/%s' % (group, name)
+        unscoped_metrics = [
+            'OtherTransaction/all',
+            'OtherTransaction/%s/%s' % (group, name),
+            'OtherTransactionTotalTime',
+            'OtherTransactionTotalTime/%s/%s' % (group, name),
+        ]
+        transaction_scope_name = 'OtherTransaction/%s/%s' % (group, name)
     else:
-        rollup_metric = 'WebTransaction'
-        transaction_metric = 'WebTransaction/%s/%s' % (group, name)
+        unscoped_metrics = [
+            'HttpDispatcher',
+            'WebTransaction',
+            'WebTransaction/%s/%s' % (group, name),
+            'WebTransactionTotalTime',
+            'WebTransactionTotalTime/%s/%s' % (group, name),
+        ]
+        transaction_scope_name = 'WebTransaction/%s/%s' % (group, name)
 
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
@@ -397,11 +408,11 @@ def validate_transaction_metrics(name, group='Function',
                 else:
                     assert metric is None, _metrics_table()
 
-            _validate(rollup_metric, '', 1)
-            _validate(transaction_metric, '', 1)
+            for unscoped_metric in unscoped_metrics:
+                _validate(unscoped_metric, '', 1)
 
             for scoped_name, scoped_count in scoped_metrics:
-                _validate(scoped_name, transaction_metric, scoped_count)
+                _validate(scoped_name, transaction_scope_name, scoped_count)
 
             for rollup_name, rollup_count in rollup_metrics:
                 _validate(rollup_name, '', rollup_count)

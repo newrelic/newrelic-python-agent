@@ -30,6 +30,8 @@ from tornado_fixtures import (
     tornado_validate_errors, tornado_validate_transaction_cache_empty,
     tornado_run_validator)
 
+from remove_utilization_tester import remove_utilization_tester
+
 def select_python_version(py2, py3):
     return six.PY3 and py3 or py2
 
@@ -967,3 +969,23 @@ class TornadoTest(TornadoBaseTest):
         response = self.fetch_response('/')
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, HelloRequestHandler.RESPONSE)
+
+    def test_thread_utilization_disabled_immediate(self):
+        import multiprocessing
+        q = multiprocessing.Queue()
+        process = multiprocessing.Process(target=remove_utilization_tester,
+                kwargs={'queue': q})
+        process.start()
+        result = q.get(timeout=10)
+
+        assert result == 'PASS'
+
+    def test_thread_utilization_disabled_scheduled(self):
+        import multiprocessing
+        q = multiprocessing.Queue()
+        process = multiprocessing.Process(target=remove_utilization_tester,
+                kwargs={'now': False, 'queue': q})
+        process.start()
+        result = q.get(timeout=10)
+
+        assert result == 'PASS'

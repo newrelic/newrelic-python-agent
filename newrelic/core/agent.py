@@ -436,18 +436,16 @@ class Agent(object):
         source_name = thread_utilization_data_source.__name__
         factory_name = 'Thread Utilization'
 
-        instance = agent_instance()
-
-        with instance._lock:
-            source_names = [s[0].__name__ for s in instance._data_sources[None]]
+        with self._lock:
+            source_names = [s[0].__name__ for s in self._data_sources[None]]
             if source_name in source_names:
                 idx = source_names.index(source_name)
-                instance._data_sources[None].pop(idx)
+                self._data_sources[None].pop(idx)
 
             # Clear out the data samplers that add thread utilization custom
             # metrics every harvest (for each application)
 
-            for application in instance._applications.values():
+            for application in self._applications.values():
                 application.remove_data_source(factory_name)
 
         # The thread utilization data source may have been started, so we

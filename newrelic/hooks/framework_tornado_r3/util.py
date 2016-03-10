@@ -191,16 +191,18 @@ def create_transaction_aware_fxn(fxn, fxn_for_name=None, check_finalized=False,
 
         with TransactionContext(inner_transaction):
             if inner_transaction is None:
-                ret = fxn(*args, **kwargs)
-            elif should_trace is False:
                 # A transaction will be None for fxns scheduled on the ioloop
                 # not associated with a transaction.
+                ret = fxn(*args, **kwargs)
+
+            elif should_trace is False:
                 try:
                     ret = fxn(*args, **kwargs)
                 except:
                     record_exception(sys.exc_info())
                     wrapped._nr_recorded_exception = True
                     raise
+
             else:
                 name = callable_name(fxn_for_name)
                 with FunctionTrace(inner_transaction, name=name) as ft:

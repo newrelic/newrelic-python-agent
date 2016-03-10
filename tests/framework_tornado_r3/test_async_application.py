@@ -847,6 +847,21 @@ class TornadoTest(TornadoBaseTest):
             ('Function/_test_async_application:'
              'RunnerRefCountRequestHandler.do_stuff', 1)]
 
+    # The class name is missing from the coroutine metrics in python 2,
+    # even though it should be present. See PYTHON-1798.
+
+    coroutine_metrics = [
+        select_python_version(
+            py2=('Function/_test_async_application:get (coroutine)', 1),
+            py3=('Function/_test_async_application:'
+                 'RunnerRefCountRequestHandler.get (coroutine)', 1)),
+        select_python_version(
+            py2=('Function/_test_async_application:coro (coroutine)', 1),
+            py3=('Function/_test_async_application:'
+                 'RunnerRefCountRequestHandler.coro (coroutine)', 1))]
+
+    scoped_metrics.extend(coroutine_metrics)
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
@@ -864,6 +879,17 @@ class TornadoTest(TornadoBaseTest):
             ('Function/_test_async_application:'
              'RunnerRefCountSyncGetRequestHandler.do_stuff', 1)]
 
+    # The class name is missing from the coroutine metrics in python 2,
+    # even though it should be present. See PYTHON-1798.
+
+    coroutine_metrics = [
+        select_python_version(
+            py2=('Function/_test_async_application:coro (coroutine)', 1),
+            py3=('Function/_test_async_application:'
+                 'RunnerRefCountSyncGetRequestHandler.coro (coroutine)', 1))]
+
+    scoped_metrics.extend(coroutine_metrics)
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
@@ -879,6 +905,21 @@ class TornadoTest(TornadoBaseTest):
             'RunnerRefCountErrorRequestHandler.get', 1),
             ('Function/_test_async_application:'
              'RunnerRefCountErrorRequestHandler.coro', 1)]
+
+    # The class name is missing from the coroutine metrics in python 2,
+    # even though it should be present. See PYTHON-1798.
+
+    coroutine_metrics = [
+        select_python_version(
+            py2=('Function/_test_async_application:get (coroutine)', 1),
+            py3=('Function/_test_async_application:'
+                 'RunnerRefCountErrorRequestHandler.get (coroutine)', 1)),
+        select_python_version(
+            py2=('Function/_test_async_application:coro (coroutine)', 1),
+            py3=('Function/_test_async_application:'
+                 'RunnerRefCountErrorRequestHandler.coro (coroutine)', 1))]
+
+    scoped_metrics.extend(coroutine_metrics)
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[select_python_version(

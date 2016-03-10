@@ -3,8 +3,6 @@ import threading
 import logging
 import functools
 
-from django.utils.safestring import mark_safe
-
 from newrelic.packages import six
 
 from newrelic.agent import (FunctionWrapper, callable_name,
@@ -188,10 +186,14 @@ def register_browser_timing_middleware(middleware):
 # libraries when performing step to instrument the middleware.
 
 def newrelic_browser_timing_header():
+    from django.utils.safestring import mark_safe
+
     transaction = current_transaction()
     return transaction and mark_safe(transaction.browser_timing_header()) or ''
 
 def newrelic_browser_timing_footer():
+    from django.utils.safestring import mark_safe
+
     transaction = current_transaction()
     return transaction and mark_safe(transaction.browser_timing_footer()) or ''
 

@@ -950,7 +950,8 @@ class TornadoTest(TornadoBaseTest):
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
-    @tornado_run_validator(lambda x: 'thread.concurrency' not in [i.name for i in x.agent_attributes])
+    @tornado_run_validator(lambda x:
+            'thread.concurrency' not in [i.name for i in x.agent_attributes])
     def test_thread_utilization_disabled_on_transaction(self):
         # Since this test suite imported tornado, we should see that the thread
         # utilization attributes are not on the transaction.

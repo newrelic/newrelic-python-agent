@@ -10,7 +10,8 @@ def remove_utilization_tester(now=True, queue=None):
     # multiprocessing), we need to clear out all newrelic and tornado packages
     # that were copied over from the parent process.
 
-    to_remove = [x for x in sys.modules if x.startswith('newrelic') or x.startswith('tornado')]
+    to_remove = [x for x in sys.modules
+            if x.startswith('newrelic') or x.startswith('tornado')]
     for module in to_remove:
         sys.modules.pop(module)
         del module
@@ -19,7 +20,9 @@ def remove_utilization_tester(now=True, queue=None):
     from newrelic.core.agent import agent_instance, Agent
     from newrelic.core.thread_utilization import _utilization_trackers
 
-    newrelic.agent.initialize(os.path.join(os.path.abspath(os.path.dirname(__file__)),'remove_utilization.ini'))
+    config_file = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+            'remove_utilization.ini')
+    newrelic.agent.initialize(config_file)
 
     try:
         if now:
@@ -27,12 +30,13 @@ def remove_utilization_tester(now=True, queue=None):
             newrelic.agent.register_application(timeout=10)
 
             # When we register the application first, we have an opportunity to
-            # check that the thread utilization is in fact added to the data,
-            # sources, before tornado is imported and removes it.
+            # check that thread utilization is, in fact, added to _data_sources,
+            # before tornado is imported and removes it.
 
-            # reading a private variable outside the class, calling
-            # agent_instance will actually create a new instance if one didn't
-            # exist, which would make this assert pointless
+            # We assert that the Agent instance has been created by reading
+            # the private _instance variable, since calling agent_instance()
+            # will actually create a new instance if one didn't already exist,
+            # which would make this assert pointless.
 
             assert Agent._instance
             agent = agent_instance()
@@ -43,7 +47,7 @@ def remove_utilization_tester(now=True, queue=None):
 
         else:
 
-            # In this case the thread utilization will be removed immediately
+            # In this case, the thread utilization will be removed immediately
             # following registration
 
             import tornado.httpserver

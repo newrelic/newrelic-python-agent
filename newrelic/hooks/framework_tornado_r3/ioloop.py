@@ -45,7 +45,15 @@ def _nr_wrapper_IOLoop__run_callback_(wrapped, instance, args, kwargs):
 
 def _nr_wrapper_IOLoop_handle_callback_exception_(
         wrapped, instance, args, kwargs):
-    record_exception(sys.exc_info())
+
+    def _callback_extractor(callback, *args, **kwargs):
+        return callback
+
+    cb = _callback_extractor(*args, **kwargs)
+    if not (hasattr(cb.func, '_nr_last_object') and
+            hasattr(cb.func._nr_last_object, '_nr_recorded_exception')):
+        record_exception(sys.exc_info())
+
     return wrapped(*args, **kwargs)
 
 def _nr_wrapper_PollIOLoop_remove_timeout(wrapped, instance, args, kwargs):

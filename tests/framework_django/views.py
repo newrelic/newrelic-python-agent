@@ -62,3 +62,6 @@ def html_insertion_named_attachment_header(request):
 
 def inclusion_tag(request):
     return render(request, 'main.html', {}, content_type="text/html")
+
+def template_tags(request):
+    return render(request, 'main.html', {}, content_type="text/html")

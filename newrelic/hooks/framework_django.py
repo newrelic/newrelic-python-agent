@@ -186,12 +186,16 @@ def register_browser_timing_middleware(middleware):
 # libraries when performing step to instrument the middleware.
 
 def newrelic_browser_timing_header():
+    from django.utils.safestring import mark_safe
+
     transaction = current_transaction()
-    return transaction and transaction.browser_timing_header() or ''
+    return transaction and mark_safe(transaction.browser_timing_header()) or ''
 
 def newrelic_browser_timing_footer():
+    from django.utils.safestring import mark_safe
+
     transaction = current_transaction()
-    return transaction and transaction.browser_timing_footer() or ''
+    return transaction and mark_safe(transaction.browser_timing_footer()) or ''
 
 # Addition of instrumentation for middleware. Can only do this
 # after Django itself has constructed the list of middleware. We

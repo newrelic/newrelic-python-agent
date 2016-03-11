@@ -723,6 +723,109 @@ class FutureDoubleWrapRequestHandler(RequestHandler):
     def do_stuff(self, future):
         self.finish(self.RESPONSE)
 
+
+class RunnerRefCountRequestHandler(RequestHandler):
+    """Verify that incrementing/decrementing the ref count in Runner will
+    keep the transaction open until yielding from a coroutine completes.
+
+    """
+
+    RESPONSE = b'runner test'
+
+    def initialize(self):
+        self.io_loop = tornado.ioloop.IOLoop.current()
+        self.result_future = tornado.concurrent.Future()
+
+    def resolve(self, f):
+        f.set_result('resolved!')
+
+    @function_trace()
+    def do_stuff(self):
+        pass
+
+    @tornado.gen.coroutine
+    def coro(self):
+        yield self.result_future
+
+    @tornado.gen.coroutine
+    def get(self):
+
+        # Schedule future resolution after calling `yield self.coro()`
+
+        with TransactionContext(None):
+            self.io_loop.add_callback(self.resolve, self.result_future)
+
+        result = yield self.coro()
+
+        # If transaction closes prematurely, calling do_stuff() will
+        # produce this error (because cache will have None):
+        #
+        #     "Attempt to add callback to ioloop with different
+        #      transaction attached than in the cache."
+        #
+        # If transaction remains open (as it should), we can check for
+        # the `do_stuff` metric to confirm it is in the transaction.
+
+        self.do_stuff()
+        self.write(self.RESPONSE)
+
+
+class RunnerRefCountSyncGetRequestHandler(RunnerRefCountRequestHandler):
+    """Verify that the transaction will be closed in coro() after the
+    response is sent back. Since no transaction aware callbacks have been
+    added to the IOLoop, we can see that decrementing the ref count to 0
+    in Runner.run() is what causes the transaction to close.
+
+    """
+
+    RESPONSE = b'runner sync get test'
+
+    @function_trace()
+    def do_stuff(self):
+        pass
+
+    @tornado.gen.coroutine
+    def coro(self):
+        # Schedule future resolution after calling `yield self.result_future`
+
+        with TransactionContext(None):
+            self.io_loop.add_callback(self.resolve, self.result_future)
+
+        result = yield self.result_future
+        self.do_stuff()
+
+    def get(self):
+        result_future = self.coro()
+        self.write(self.RESPONSE)
+
+
+class RunnerRefCountErrorRequestHandler(RunnerRefCountRequestHandler):
+    """Verify that the Runner ref count keeps the transaction open
+    after the yield in get(), and that the error is recorded against
+    the still open transaction.
+
+    """
+
+    RESPONSE = b'runner error test'
+
+    @tornado.gen.coroutine
+    def coro(self):
+        yield self.result_future
+
+    @tornado.gen.coroutine
+    def get(self):
+        with TransactionContext(None):
+            self.io_loop.add_callback(self.resolve, self.result_future)
+
+        result = yield self.coro()
+        bad_divide = 1/0
+
+        # Nothing beyond here gets called
+
+        self.do_stuff()
+        self.write(self.RESPONSE)
+
+
 def get_tornado_app():
     return Application([
         ('/', HelloRequestHandler),
@@ -764,4 +867,7 @@ def get_tornado_app():
         ('/add-done-callback/(\w+)', AddDoneCallbackAddsCallbackRequestHandler),
         ('/double-wrap', DoubleWrapRequestHandler),
         ('/done-callback-double-wrap/(\w+)', FutureDoubleWrapRequestHandler),
+        ('/runner', RunnerRefCountRequestHandler),
+        ('/runner-sync-get', RunnerRefCountSyncGetRequestHandler),
+        ('/runner-error', RunnerRefCountErrorRequestHandler),
     ])

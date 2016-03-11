@@ -123,6 +123,8 @@ def tornado_validate_count_transaction_metrics(name, group='Function',
         (rollup_metric_name, expected_count)
       custom_metrics: A list of 2-tuple representing a custom metric:
         (custom_metric_name, expected_count)
+      forgone_metric_substrings: A list of strings which should not be in
+        any of the recorded metrics.
 
     Note, this only validates the first transaction in the test.
 

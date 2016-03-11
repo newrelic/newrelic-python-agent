@@ -1,10 +1,13 @@
 import time
 import threading
+import multiprocessing
 
 import tornado.testing
 
 from newrelic.agent import background_task
+from newrelic.core.agent import agent_instance
 from newrelic.core.stats_engine import StatsEngine
+from newrelic.core.thread_utilization import _utilization_trackers
 from newrelic.packages import six
 
 from tornado_base_test import TornadoBaseTest
@@ -27,6 +30,8 @@ from tornado_fixtures import (
     tornado_validate_time_transaction_metrics,
     tornado_validate_errors, tornado_validate_transaction_cache_empty,
     tornado_run_validator)
+
+from remove_utilization_tester import remove_utilization_tester
 
 def select_python_version(py2, py3):
     return six.PY3 and py3 or py2
@@ -932,3 +937,48 @@ class TornadoTest(TornadoBaseTest):
             forgone_metric_substrings=['do_stuff'])
     def test_runner_ref_count_error(self):
         response = self.fetch_exception('/runner-error')
+
+    # For these thread utilization tests, we want to make sure that both the
+    # transaction isn't sending up attributes related to thread utilization,
+    # and also that the harvest isn't sending up utilization metrics, which are
+    # used for "capacity" in APM. We check this by asserting that the machinery
+    # that generates these metrics, thread_utilization_data_source & it's
+    # 'Thread Utilization' data sampler, have been removed. _utilization_trackers
+    # is actually used by transactions, and should agree with the
+    # tornado_run_validator check, but we check that it is also clear here,
+    # for completeness.
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_run_validator(lambda x:
+            'thread.concurrency' not in [i.name for i in x.agent_attributes])
+    def test_thread_utilization_disabled_on_transaction(self):
+        # Since this test suite imported tornado, we should see that the thread
+        # utilization attributes are not on the transaction.
+
+        response = self.fetch_response('/')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body, HelloRequestHandler.RESPONSE)
+
+    # What we want to test here is code that is executed during agent
+    # initialization/registration. Thus we launch the agent in a new process
+    # so that we can run the import-initialization-registration process
+    # manually and make assertions against it.
+
+    def test_thread_utilization_disabled_immediate(self):
+        q = multiprocessing.Queue()
+        process = multiprocessing.Process(target=remove_utilization_tester,
+                kwargs={'queue': q})
+        process.start()
+        result = q.get(timeout=10)
+
+        assert result == 'PASS'
+
+    def test_thread_utilization_disabled_scheduled(self):
+        q = multiprocessing.Queue()
+        process = multiprocessing.Process(target=remove_utilization_tester,
+                kwargs={'now': False, 'queue': q})
+        process.start()
+        result = q.get(timeout=10)
+
+        assert result == 'PASS'

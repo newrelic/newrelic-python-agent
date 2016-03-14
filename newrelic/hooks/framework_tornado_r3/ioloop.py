@@ -45,8 +45,16 @@ def _nr_wrapper_IOLoop_handle_callback_exception_(
         return callback
 
     cb = _callback_extractor(*args, **kwargs)
-    if not (hasattr(cb.func, '_nr_last_object') and
-            hasattr(cb.func._nr_last_object, '_nr_recorded_exception')):
+
+    if hasattr(cb, 'func'):
+        if not (hasattr(cb.func, '_nr_last_object') and
+                hasattr(cb.func._nr_last_object, '_nr_recorded_exception')):
+            record_exception(sys.exc_info())
+    else:
+        # If cb is an unexpected form (ie it's not a callback wrapped in a
+        # partial function) we record an error against the app. This can happen,
+        # for example, when too many file handles get opened and cb will be a
+        # tuple of the form: (socketobject, FunctionWrapper).
         record_exception(sys.exc_info())
 
     return wrapped(*args, **kwargs)

@@ -27,12 +27,6 @@ def _nr_wrapper_IOLoop__run_callback_(wrapped, instance, args, kwargs):
 
     callback = _callback_extractor(*args, **kwargs)
     transaction = getattr(callback, '_nr_transaction', None)
-    if transaction is not None:
-        # Mark this callback as ran so calls to cancel timers know not to
-        # decrement the callback ref count
-
-        callback._nr_callback_ran = True
-
 
     ret = wrapped(*args, **kwargs)
 
@@ -56,51 +50,6 @@ def _nr_wrapper_IOLoop_handle_callback_exception_(
         record_exception(sys.exc_info())
 
     return wrapped(*args, **kwargs)
-
-def _nr_wrapper_PollIOLoop_remove_timeout(wrapped, instance, args, kwargs):
-
-    # Once a timeout is canceled, it's callback will be set to None, in this
-    # case we have already decremented our counter
-
-    def _callback_extractor(timeout, *args, **kwargs):
-        if timeout.callback is None:
-                return None
-        else:
-            try:
-                return timeout.callback.func
-            except:
-                _logger.error('Runtime instrumentation error. A callback is '
-                        'registered on the ioloop that isn\'t wrapped in '
-                        'functools.partial. Perhaps a nonstandard IOLoop is '
-                        'being used?')
-                return None
-
-    callback = _callback_extractor(*args, **kwargs)
-
-    transaction = getattr(callback, '_nr_transaction', None)
-
-    ret = wrapped(*args, **kwargs)
-
-    if transaction is not None:
-        if not hasattr(callback, '_nr_callback_ran'):
-
-            thread_id = current_thread_id()
-            if transaction.thread_id != thread_id:
-                _logger.debug('ioloop.remove_timeout being called from a '
-                        'different thread as the transaction. Callback with ID '
-                        '%r, was scheduled in thread %r and removed in thread '
-                        '%r. This could potentially cause a race condition that'
-                        ' could cause the agent to lose data on this '
-                        'transaction.', id(callback), transaction.thread_id,
-                        thread_id)
-
-            transaction._ref_count -= 1
-
-            # Finalize the transaction if this is the last callback, this should
-            # only be possible if remove_timeout was called from a thread.
-            possibly_finalize_transaction(transaction)
-
-    return ret
 
 def _increment_ref_count(callback, wrapped, instance, args, kwargs):
     transaction = retrieve_current_transaction()
@@ -146,11 +95,8 @@ def _nr_wrapper_PollIOLoop_add_callback(wrapped, instance, args, kwargs):
 
 def _nr_wrapper_PollIOLoop_call_at(wrapped, instance, args, kwargs):
 
-    def _callback_extractor(deadline, callback, *args, **kwargs):
-        return callback
-    callback = _callback_extractor(*args, **kwargs)
-
-    return _increment_ref_count(callback, wrapped, instance, args, kwargs)
+    with TransactionContext(None):
+        return wrapped(*args, **kwargs)
 
 def _nr_wrapper_PollIOLoop_add_handler(wrapped, instance, args, kwargs):
 
@@ -175,7 +121,5 @@ def instrument_tornado_ioloop(module):
             _nr_wrapper_PollIOLoop_add_callback)
     wrap_function_wrapper(module, 'PollIOLoop.call_at',
             _nr_wrapper_PollIOLoop_call_at)
-    wrap_function_wrapper(module, 'PollIOLoop.remove_timeout',
-            _nr_wrapper_PollIOLoop_remove_timeout)
     wrap_function_wrapper(module, 'PollIOLoop.add_handler',
             _nr_wrapper_PollIOLoop_add_handler)

@@ -18,7 +18,6 @@ from _test_async_application import (ReturnFirstDivideRequestHandler,
         ThreadScheduledCallAtRequestHandler,
         CallAtOnThreadExecutorRequestHandler, AddFutureRequestHandler,
         AddDoneCallbackRequestHandler, SimpleThreadedFutureRequestHandler,
-        CancelTimeoutOutsideTransactionRequestHandler,
         BusyWaitThreadedFutureRequestHandler,
         AddDoneCallbackAddsCallbackRequestHandler)
 
@@ -62,8 +61,6 @@ class TornadoTest(TornadoBaseTest):
 
     scoped_metrics = [
             ('Function/_test_async_application:'
-                    'CallLaterRequestHandler.later', 1),
-            ('Function/_test_async_application:'
                     'CallLaterRequestHandler.get', 1),
     ]
 
@@ -71,7 +68,8 @@ class TornadoTest(TornadoBaseTest):
     @tornado_validate_errors(errors=[])
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:CallLaterRequestHandler.get',
-            scoped_metrics=scoped_metrics)
+            scoped_metrics=scoped_metrics,
+            forgone_metric_substrings=['later'])
     def test_call_at(self):
         response = self.fetch_response('/call-at')
         expected = CallLaterRequestHandler.RESPONSE
@@ -92,13 +90,9 @@ class TornadoTest(TornadoBaseTest):
 
     scoped_metrics = select_python_version(
             py2=[('Function/_test_async_application:'
-                    'CancelAfterRanCallLaterRequestHandler.later', 1),
-                ('Function/_test_async_application:'
                     'CancelAfterRanCallLaterRequestHandler.get', 1),
                 ('Function/_test_async_application:get (coroutine)', 1),],
             py3=[('Function/_test_async_application:'
-                    'CancelAfterRanCallLaterRequestHandler.later', 1),
-                ('Function/_test_async_application:'
                     'CancelAfterRanCallLaterRequestHandler.get', 1),
                 ('Function/_test_async_application:CancelAfterRanCallLater'
                     'RequestHandler.get (coroutine)', 1),])
@@ -107,7 +101,7 @@ class TornadoTest(TornadoBaseTest):
     @tornado_validate_errors(errors=[])
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:CancelAfterRanCallLaterRequestHandler.get',
-            scoped_metrics=scoped_metrics)
+            scoped_metrics=scoped_metrics, forgone_metric_substrings=['later'])
     def test_cancel_call_at_after_callback_ran(self):
         response = self.fetch_response('/cancel-timer')
         expected = CancelAfterRanCallLaterRequestHandler.RESPONSE
@@ -295,19 +289,18 @@ class TornadoTest(TornadoBaseTest):
         expected = ThreadScheduledCallAtRequestHandler.RESPONSE
         self.assertEqual(response.body, expected)
 
-    # Since the threaded callback is *scheduled* on the main thread, it
-    # should still be included in the transaction
+    # The threaded callback is *scheduled* on the main thread, but we
+    # don't trace timeout callbacks
     scoped_metrics = [
             ('Function/_test_async_application:'
                     'CallAtOnThreadExecutorRequestHandler.get', 1),
-            ('Function/_test_async_application:'
-                    'CallAtOnThreadExecutorRequestHandler.do_thing', 1),
     ]
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:CallAtOnThreadExecutorRequestHandler.get',
-            scoped_metrics=scoped_metrics)
+            scoped_metrics=scoped_metrics,
+            forgone_metric_substrings=['do_thing'])
     def test_thread_ran_call_at(self):
         response = self.fetch_response('/thread-ran-call_at')
         expected = CallAtOnThreadExecutorRequestHandler.RESPONSE
@@ -343,22 +336,6 @@ class TornadoTest(TornadoBaseTest):
     def test_add_done_callback(self):
         response = self.fetch_response('/add_done_callback')
         expected = AddDoneCallbackRequestHandler.RESPONSE
-        self.assertEqual(response.body, expected)
-
-    scoped_metrics = [
-            ('Function/_test_async_application:'
-                    'CancelTimeoutOutsideTransactionRequestHandler.get', 1),
-    ]
-    @tornado_validate_transaction_cache_empty()
-    @tornado_validate_errors()
-    @tornado_validate_count_transaction_metrics(
-            '_test_async_application:'
-            'CancelTimeoutOutsideTransactionRequestHandler.get',
-            scoped_metrics=scoped_metrics,
-            forgone_metric_substrings=['last_callback'])
-    def test_last_timeout_removed_outside_transaction(self):
-        response = self.fetch_response('/remove-last-timeout')
-        expected = CancelTimeoutOutsideTransactionRequestHandler.RESPONSE
         self.assertEqual(response.body, expected)
 
     scoped_metrics = [

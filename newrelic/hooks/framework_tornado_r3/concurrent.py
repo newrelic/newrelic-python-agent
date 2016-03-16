@@ -12,7 +12,7 @@ def _nr_wrapper_Future_add_done_callback(wrapped, instance, args, kwargs):
     should_trace = not hasattr(fxn, '_nr_last_object')
 
     transaction_aware_fxn = create_transaction_aware_fxn(fxn,
-            check_finalized=True, should_trace=should_trace)
+            should_trace=should_trace)
 
     # If transaction_aware_fxn is None then it is already wrapped, or the fxn
     # is None.

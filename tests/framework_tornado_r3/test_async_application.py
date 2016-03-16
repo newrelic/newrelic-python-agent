@@ -22,7 +22,7 @@ from _test_async_application import (HelloRequestHandler,
         SimpleStreamingRequestHandler, DoubleWrapRequestHandler,
         FutureDoubleWrapRequestHandler, RunnerRefCountRequestHandler,
         RunnerRefCountSyncGetRequestHandler, RunnerRefCountErrorRequestHandler,
-        TransactionAwareFunctionAferFinalize)
+        TransactionAwareFunctionAferFinalize, IgnoreAddHandlerRequestHandler)
 
 from testing_support.mock_external_http_server import MockExternalHTTPServer
 
@@ -998,3 +998,20 @@ class TornadoTest(TornadoBaseTest):
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body,
                 TransactionAwareFunctionAferFinalize.RESPONSE)
+
+    scoped_metrics = [('Function/_test_async_application:'
+            'IgnoreAddHandlerRequestHandler.get', 1),
+            ('Function/_test_async_application:'
+             'IgnoreAddHandlerRequestHandler.send_message', 1)]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:IgnoreAddHandlerRequestHandler.get',
+            scoped_metrics=scoped_metrics,
+            forgone_metric_substrings=['handle_message'])
+    def test_add_handler_ignore(self):
+        response = self.fetch_response('/add-handler-ignore')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body,
+                IgnoreAddHandlerRequestHandler.RESPONSE)

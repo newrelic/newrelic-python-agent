@@ -1,5 +1,6 @@
 import concurrent.futures
 import functools
+import socket
 import tornado
 import threading
 import time
@@ -11,6 +12,10 @@ from tornado.httpclient import AsyncHTTPClient, HTTPClient, HTTPRequest
 from tornado.web import Application, RequestHandler
 from tornado.httpserver import HTTPServer
 from tornado import stack_context
+from tornado.ioloop import IOLoop
+from tornado.iostream import IOStream
+from tornado.testing import bind_unused_port
+
 
 class Tornado4TestException(Exception):
     pass
@@ -859,6 +864,43 @@ class RunnerRefCountErrorRequestHandler(RunnerRefCountRequestHandler):
         self.write(self.RESPONSE)
 
 
+class IgnoreAddHandlerRequestHandler(RequestHandler):
+    """Verify that handler functions added to the IOLoop during
+    a transaction are not associated with the transaction.
+
+    """
+
+    RESPONSE = b'add handler'
+
+    def initialize(self):
+        listener, port = bind_unused_port()
+        self.listener = listener
+        self.port = port
+        self.host = '127.0.0.1'
+        self.io_loop = IOLoop.current()
+
+    @staticmethod
+    def handle_message(fd, events):
+        pass
+
+    @tornado.gen.coroutine
+    def send_message(self):
+        stream = IOStream(socket.socket())
+
+        yield stream.connect((self.host, self.port))
+        yield stream.write(b'message')
+        stream.close()
+
+        raise tornado.gen.Return(None)
+
+    @tornado.gen.coroutine
+    def get(self):
+        self.io_loop.add_handler(self.listener, self.handle_message,
+                IOLoop.READ)
+        yield self.send_message()
+        self.write(self.RESPONSE)
+
+
 def get_tornado_app():
     return Application([
         ('/', HelloRequestHandler),
@@ -904,4 +946,5 @@ def get_tornado_app():
         ('/runner-sync-get', RunnerRefCountSyncGetRequestHandler),
         ('/runner-error', RunnerRefCountErrorRequestHandler),
         ('/orphan', TransactionAwareFunctionAferFinalize),
+        ('/add-handler-ignore', IgnoreAddHandlerRequestHandler),
     ])

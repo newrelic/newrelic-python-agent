@@ -640,13 +640,34 @@ class BusyWaitThreadedFutureRequestHandler(RequestHandler):
     def do_stuff(self):
         self.stuff_done = True
 
-class AddDoneCallbackAddsCallbackRequestHandler(RequestHandler):
+class CleanUpableRequestHandler(RequestHandler):
+
+    CLEANUP = None
+
+    def cleanup(self):
+        if self.CLEANUP:
+            self.CLEANUP()
+            self.CLEANUP = None
+
+    @classmethod
+    def set_cleanup(cls, cleanup):
+        """To be used by a test suite to inject a function into this handler.
+
+        Argument:
+          cleanup: A function to be called at the end of the request handler
+            after the transaction closes and after a future and its
+            add_done_callback is finished. It runs in a None transaction
+            context. `cleanup` will only be invoked for 1 request. If one wants
+            this to be called for subsequent requests, one must set this before
+            each request."""
+        cls.CLEANUP = cleanup
+
+class AddDoneCallbackAddsCallbackRequestHandler(CleanUpableRequestHandler):
     """This adds a callback in an add_done_callback after the transaction
     completes. This should not increment/decrement the refcounter causing the
     transaction to finalize multiple times."""
     RESPONSE = b"Add done callback adds a callback."
 
-    CLEANUP = None
 
     def get(self, future_type):
         if future_type == 'tornado':
@@ -673,24 +694,6 @@ class AddDoneCallbackAddsCallbackRequestHandler(RequestHandler):
     def do_work(self):
         with TransactionContext(None):
             tornado.ioloop.IOLoop.current().add_callback(self.cleanup)
-
-    def cleanup(self):
-        if self.CLEANUP:
-            self.CLEANUP()
-            self.CLEANUP = None
-
-    @classmethod
-    def set_cleanup(cls, cleanup):
-        """To be used by a test suite to inject a function into this handler.
-
-        Argument:
-          cleanup: A function to be called at the end of the request handler
-            after the transaction closes and after a future and its
-            add_done_callback is finished. It runs in a None transaction
-            context. `cleanup` will only be invoked for 1 request. If one wants
-            this to be called for subsequent requests, one must set this before
-            each request."""
-        cls.CLEANUP = cleanup
 
 class DoubleWrapRequestHandler(RequestHandler):
     RESPONSE = b'double wrap'

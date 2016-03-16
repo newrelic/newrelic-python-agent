@@ -10,6 +10,7 @@ from newrelic.hooks.framework_tornado_r3.util import TransactionContext
 from tornado.httpclient import AsyncHTTPClient, HTTPClient, HTTPRequest
 from tornado.web import Application, RequestHandler
 from tornado.httpserver import HTTPServer
+from tornado import stack_context
 
 class Tornado4TestException(Exception):
     pass
@@ -695,6 +696,36 @@ class AddDoneCallbackAddsCallbackRequestHandler(CleanUpableRequestHandler):
         with TransactionContext(None):
             tornado.ioloop.IOLoop.current().add_callback(self.cleanup)
 
+class TransactionAwareFunctionAferFinalize(CleanUpableRequestHandler):
+    RESPONSE = b'orphaned function'
+
+    def get(self):
+        self.write(self.RESPONSE)
+
+        # Wrap the function up with this transaction
+
+        func = stack_context.wrap(self.orphan)
+
+        # But schedule it to run after the transaction has finalized by putting
+        # it on the io_loop through a None context
+
+        with TransactionContext(None):
+
+            # place the call to the function inside a lambda so add_callback
+            # here places its own stack context with None transaction around the
+            # callback arg.
+
+            tornado.ioloop.IOLoop.current().add_callback(lambda: func())
+
+    def orphan(self):
+        # Since the error we are testing for here is a log message, not a raised
+        # Exception, we assert against the condition that would raise it when
+        # this function finishes.
+
+        transaction = current_transaction()
+        assert transaction is None
+        self.cleanup()
+
 class DoubleWrapRequestHandler(RequestHandler):
     RESPONSE = b'double wrap'
 
@@ -873,4 +904,5 @@ def get_tornado_app():
         ('/runner', RunnerRefCountRequestHandler),
         ('/runner-sync-get', RunnerRefCountSyncGetRequestHandler),
         ('/runner-error', RunnerRefCountErrorRequestHandler),
+        ('/orphan', TransactionAwareFunctionAferFinalize),
     ])

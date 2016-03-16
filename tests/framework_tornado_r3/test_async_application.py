@@ -21,7 +21,8 @@ from _test_async_application import (HelloRequestHandler,
         PrepareOnFinishRequestHandlerSubclass, RunSyncAddRequestHandler,
         SimpleStreamingRequestHandler, DoubleWrapRequestHandler,
         FutureDoubleWrapRequestHandler, RunnerRefCountRequestHandler,
-        RunnerRefCountSyncGetRequestHandler, RunnerRefCountErrorRequestHandler)
+        RunnerRefCountSyncGetRequestHandler, RunnerRefCountErrorRequestHandler,
+        TransactionAwareFunctionAferFinalize)
 
 from testing_support.mock_external_http_server import MockExternalHTTPServer
 
@@ -982,3 +983,18 @@ class TornadoTest(TornadoBaseTest):
         result = q.get(timeout=10)
 
         assert result == 'PASS'
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:TransactionAwareFunctionAferFinalize.get',
+            forgone_metric_substrings=['orphan'])
+    def test_transaction_aware_function_ran_after_finalize(self):
+        self.waits_expected += 1
+        TransactionAwareFunctionAferFinalize.set_cleanup(
+                self.waits_counter_check)
+
+        response = self.fetch_response('/orphan')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body,
+                TransactionAwareFunctionAferFinalize.RESPONSE)

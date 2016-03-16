@@ -185,8 +185,7 @@ def create_transaction_aware_fxn(fxn, fxn_for_name=None, check_finalized=False,
             if transaction.thread_id != current_thread_id():
                 return fxn(*args, **kwargs)
 
-        if (check_finalized and inner_transaction is not None and
-                inner_transaction._is_finalized):
+        if inner_transaction is not None and inner_transaction._is_finalized:
             inner_transaction = None
 
         with TransactionContext(inner_transaction):

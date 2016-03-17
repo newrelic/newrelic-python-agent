@@ -656,11 +656,10 @@ class CleanUpableRequestHandler(RequestHandler):
 
         Argument:
           cleanup: A function to be called at the end of the request handler
-            after the transaction closes and after a future and its
-            add_done_callback is finished. It runs in a None transaction
-            context. `cleanup` will only be invoked for 1 request. If one wants
-            this to be called for subsequent requests, one must set this before
-            each request."""
+            after the transaction closes. The handler should run this in a None
+            transaction context after all other work is done. `cleanup` will
+            only be invoked for 1 request. If one wants this to be called for
+            subsequent requests, one must set this before each request."""
         cls.CLEANUP = cleanup
 
 class AddDoneCallbackAddsCallbackRequestHandler(CleanUpableRequestHandler):

@@ -3,6 +3,7 @@ import sys
 import traceback
 
 from newrelic.agent import wrap_function_wrapper
+from newrelic.core.agent import remove_thread_utilization
 from .util import (possibly_finalize_transaction, record_exception,
         retrieve_current_transaction, current_thread_id)
 
@@ -152,6 +153,15 @@ def _nr_wrapper_PollIOLoop_call_at(wrapped, instance, args, kwargs):
     return _increment_ref_count(callback, wrapped, instance, args, kwargs)
 
 def instrument_tornado_ioloop(module):
+
+    # Thread utilization data is meaningless in a tornado app. Remove it here,
+    # once, since we know that tornado has been imported now. The following call
+    # to agent_instance will initialize data sources, if they have not been
+    # already. Thus, we know that this is a single place that we can remove the
+    # thread utilization, regardless of the order of imports/agent registration.
+
+    remove_thread_utilization()
+
     wrap_function_wrapper(module, 'IOLoop._run_callback',
             _nr_wrapper_IOLoop__run_callback_)
     wrap_function_wrapper(module, 'IOLoop.handle_callback_exception',

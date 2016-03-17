@@ -971,7 +971,7 @@ class TornadoTest(TornadoBaseTest):
         process = multiprocessing.Process(target=remove_utilization_tester,
                 kwargs={'queue': q})
         process.start()
-        result = q.get(timeout=10)
+        result = q.get(timeout=15)
 
         assert result == 'PASS'
 
@@ -980,7 +980,7 @@ class TornadoTest(TornadoBaseTest):
         process = multiprocessing.Process(target=remove_utilization_tester,
                 kwargs={'now': False, 'queue': q})
         process.start()
-        result = q.get(timeout=10)
+        result = q.get(timeout=15)
 
         assert result == 'PASS'
 

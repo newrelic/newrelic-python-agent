@@ -43,14 +43,14 @@ def remove_utilization_tester(now=True, queue=None):
             source_names = [s[0].__name__ for s in agent._data_sources[None]]
             assert 'thread_utilization_data_source' in source_names
 
-            import tornado.httpserver
+            import tornado.ioloop
 
         else:
 
             # In this case, the thread utilization will be removed immediately
             # following registration
 
-            import tornado.httpserver
+            import tornado.ioloop
             assert Agent._instance is None
             newrelic.agent.register_application(timeout=10)
 

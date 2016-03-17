@@ -164,21 +164,23 @@ def create_transaction_aware_fxn(fxn, fxn_for_name=None, should_trace=True):
 
     # We want to get the transaction associated with this path of execution
     # whether or not we are actively recording information about it.
-    transaction = retrieve_current_transaction()
+    transaction = [retrieve_current_transaction()]
 
     @function_wrapper
     def transaction_aware(wrapped, instance, args, kwargs):
-        # transaction is not assignable in a closure so we create a variable
-        # that is.
-        inner_transaction = transaction
+        # Variables from the outer scope are not assignable in a closure,
+        # so we use a mutable object to hold the transaction, so we can
+        # change it if we need to.
+        inner_transaction = transaction[0]
 
         if inner_transaction is not None:
             # Callback run outside the main thread must not affect the cache
-            if transaction.thread_id != current_thread_id():
+            if inner_transaction.thread_id != current_thread_id():
                 return fxn(*args, **kwargs)
 
         if inner_transaction is not None and inner_transaction._is_finalized:
             inner_transaction = None
+            transaction[0] = None
 
         with TransactionContext(inner_transaction):
             if inner_transaction is None:

@@ -10,6 +10,7 @@ from newrelic.hooks.framework_tornado_r3.util import TransactionContext
 from tornado.httpclient import AsyncHTTPClient, HTTPClient, HTTPRequest
 from tornado.web import Application, RequestHandler
 from tornado.httpserver import HTTPServer
+from tornado import stack_context
 
 class Tornado4TestException(Exception):
     pass
@@ -640,13 +641,33 @@ class BusyWaitThreadedFutureRequestHandler(RequestHandler):
     def do_stuff(self):
         self.stuff_done = True
 
-class AddDoneCallbackAddsCallbackRequestHandler(RequestHandler):
+class CleanUpableRequestHandler(RequestHandler):
+
+    CLEANUP = None
+
+    def cleanup(self):
+        if self.CLEANUP:
+            self.CLEANUP()
+            self.CLEANUP = None
+
+    @classmethod
+    def set_cleanup(cls, cleanup):
+        """To be used by a test suite to inject a function into this handler.
+
+        Argument:
+          cleanup: A function to be called at the end of the request handler
+            after the transaction closes. The handler should run this in a None
+            transaction context after all other work is done. `cleanup` will
+            only be invoked for 1 request. If one wants this to be called for
+            subsequent requests, one must set this before each request."""
+        cls.CLEANUP = cleanup
+
+class AddDoneCallbackAddsCallbackRequestHandler(CleanUpableRequestHandler):
     """This adds a callback in an add_done_callback after the transaction
     completes. This should not increment/decrement the refcounter causing the
     transaction to finalize multiple times."""
     RESPONSE = b"Add done callback adds a callback."
 
-    CLEANUP = None
 
     def get(self, future_type):
         if future_type == 'tornado':
@@ -674,23 +695,35 @@ class AddDoneCallbackAddsCallbackRequestHandler(RequestHandler):
         with TransactionContext(None):
             tornado.ioloop.IOLoop.current().add_callback(self.cleanup)
 
-    def cleanup(self):
-        if self.CLEANUP:
-            self.CLEANUP()
-            self.CLEANUP = None
+class TransactionAwareFunctionAferFinalize(CleanUpableRequestHandler):
+    RESPONSE = b'orphaned function'
 
-    @classmethod
-    def set_cleanup(cls, cleanup):
-        """To be used by a test suite to inject a function into this handler.
+    def get(self):
+        self.write(self.RESPONSE)
 
-        Argument:
-          cleanup: A function to be called at the end of the request handler
-            after the transaction closes and after a future and its
-            add_done_callback is finished. It runs in a None transaction
-            context. `cleanup` will only be invoked for 1 request. If one wants
-            this to be called for subsequent requests, one must set this before
-            each request."""
-        cls.CLEANUP = cleanup
+        # Wrap the function up with this transaction
+
+        func = stack_context.wrap(self.orphan)
+
+        # But schedule it to run after the transaction has finalized by putting
+        # it on the io_loop through a None context
+
+        with TransactionContext(None):
+
+            # place the call to the function inside a lambda so add_callback
+            # here places its own stack context with None transaction around the
+            # callback arg.
+
+            tornado.ioloop.IOLoop.current().add_callback(lambda: func())
+
+    def orphan(self):
+        # Since the error we are testing for here is a log message, not a raised
+        # Exception, we assert against the condition that would raise it when
+        # this function finishes.
+
+        transaction = current_transaction()
+        assert transaction is None
+        self.cleanup()
 
 class DoubleWrapRequestHandler(RequestHandler):
     RESPONSE = b'double wrap'
@@ -870,4 +903,5 @@ def get_tornado_app():
         ('/runner', RunnerRefCountRequestHandler),
         ('/runner-sync-get', RunnerRefCountSyncGetRequestHandler),
         ('/runner-error', RunnerRefCountErrorRequestHandler),
+        ('/orphan', TransactionAwareFunctionAferFinalize),
     ])

@@ -137,8 +137,7 @@ class TransactionContext(object):
     def __exit__(self, exc_type, exc_value, traceback):
         replace_current_transaction(self.old_transaction)
 
-def create_transaction_aware_fxn(fxn, fxn_for_name=None, check_finalized=False,
-        should_trace=True):
+def create_transaction_aware_fxn(fxn, fxn_for_name=None, should_trace=True):
     # Returns a version of fxn that will switch context to the appropriate
     # transaction and then restore the previous transaction on exit.
     # If fxn is already transaction aware or if there is no transaction
@@ -149,19 +148,12 @@ def create_transaction_aware_fxn(fxn, fxn_for_name=None, check_finalized=False,
     #  fxn_for_name: Defaults to fxn. The function we want to use the get the
     #      name for our transaction aware fxn (by calling
     #      callable_name(fxn_for_name). One may not want to use the default fxn
-    #      iteself if is wrapped and we want to use the inner function for
+    #      itself if is wrapped and we want to use the inner function for
     #      naming. This happens, for example, when tornado wraps a function in
     #      stack_context.wrap and we want to wrap the output function.
-    #  check_finalized: Defaults to False. Usually we don't check whether the
-    #      transaction is finalized before executing the transaction aware
-    #      function. If it already is finalized we log an error. Sometimes it
-    #      is not an error for a function to run after the transaction is
-    #      resolved. If it is attached to a future, for example. In these cases,
-    #      setting this to True will prevent us from logging an error if the
-    #      transaction is finalized.
     #  should_trace: Defaults to True. Usually we want to trace the transaction
     #      aware function. However, to prevent tracing a function multiple times
-    #      we may not want to trace a particlar function. See our
+    #      we may not want to trace a particular function. See our
     #      instrumentation, stack_context._nr_wrapper_stack_context_wrap.
 
     if fxn is None or hasattr(fxn, '_nr_transaction'):
@@ -172,22 +164,23 @@ def create_transaction_aware_fxn(fxn, fxn_for_name=None, check_finalized=False,
 
     # We want to get the transaction associated with this path of execution
     # whether or not we are actively recording information about it.
-    transaction = retrieve_current_transaction()
+    transaction = [retrieve_current_transaction()]
 
     @function_wrapper
     def transaction_aware(wrapped, instance, args, kwargs):
-        # transaction is not assignable in a closure so we create a variable
-        # that is.
-        inner_transaction = transaction
+        # Variables from the outer scope are not assignable in a closure,
+        # so we use a mutable object to hold the transaction, so we can
+        # change it if we need to.
+        inner_transaction = transaction[0]
 
         if inner_transaction is not None:
             # Callback run outside the main thread must not affect the cache
-            if transaction.thread_id != current_thread_id():
+            if inner_transaction.thread_id != current_thread_id():
                 return fxn(*args, **kwargs)
 
-        if (check_finalized and inner_transaction is not None and
-                inner_transaction._is_finalized):
+        if inner_transaction is not None and inner_transaction._is_finalized:
             inner_transaction = None
+            transaction[0] = None
 
         with TransactionContext(inner_transaction):
             if inner_transaction is None:

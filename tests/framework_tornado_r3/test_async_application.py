@@ -947,9 +947,7 @@ class TornadoTest(TornadoBaseTest):
     # This is a departure from our usually end-to-end tests of making a
     # request handler and exercising it because the tornado test machinery
     # will catch the exception itself before our instrumentation of the ioloop
-    # has a chance to capture and log the error. An end-to-end test that was
-    # manually used to test this was to register a handler via
-    # ioloop.add_handler that through an exception.
+    # has a chance to capture and log the error.
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors = [],
                              app_exceptions=[select_python_version(
@@ -985,7 +983,7 @@ class TornadoTest(TornadoBaseTest):
         fxn = tornado.stack_context.wrap(cb)
         fxn = functools.partial(fxn, 1)
 
-        # Tests that an exception will be recorded
+        # Tests that an exception will be recorded.
         io_loop = IOLoop.current()
         io_loop.handle_callback_exception(fxn)
 

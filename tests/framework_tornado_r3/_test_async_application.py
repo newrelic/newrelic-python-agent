@@ -878,10 +878,10 @@ class IgnoreAddHandlerRequestHandler(RequestHandler):
         self.port = port
         self.host = '127.0.0.1'
         self.io_loop = IOLoop.current()
+        self.message = None
 
-    @staticmethod
-    def handle_message(fd, events):
-        pass
+    def handle_message(self, fd, events):
+        self.message = b'add handler'
 
     @tornado.gen.coroutine
     def send_message(self):
@@ -897,8 +897,14 @@ class IgnoreAddHandlerRequestHandler(RequestHandler):
     def get(self):
         self.io_loop.add_handler(self.listener, self.handle_message,
                 IOLoop.READ)
+
         yield self.send_message()
-        self.write(self.RESPONSE)
+        assert self.message == self.RESPONSE
+
+        self.write(self.message)
+
+    def on_finish(self):
+        self.io_loop.remove_handler(self.listener)
 
 
 def get_tornado_app():

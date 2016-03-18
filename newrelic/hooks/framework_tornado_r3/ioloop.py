@@ -5,7 +5,7 @@ import traceback
 from newrelic.agent import wrap_function_wrapper
 from newrelic.core.agent import remove_thread_utilization
 from .util import (possibly_finalize_transaction, record_exception,
-        retrieve_current_transaction, current_thread_id)
+        retrieve_current_transaction, current_thread_id, TransactionContext)
 
 _logger = logging.getLogger(__name__)
 
@@ -152,6 +152,11 @@ def _nr_wrapper_PollIOLoop_call_at(wrapped, instance, args, kwargs):
 
     return _increment_ref_count(callback, wrapped, instance, args, kwargs)
 
+def _nr_wrapper_PollIOLoop_add_handler(wrapped, instance, args, kwargs):
+
+    with TransactionContext(None):
+        return wrapped(*args, **kwargs)
+
 def instrument_tornado_ioloop(module):
 
     # Thread utilization data is meaningless in a tornado app. Remove it here,
@@ -172,3 +177,5 @@ def instrument_tornado_ioloop(module):
             _nr_wrapper_PollIOLoop_call_at)
     wrap_function_wrapper(module, 'PollIOLoop.remove_timeout',
             _nr_wrapper_PollIOLoop_remove_timeout)
+    wrap_function_wrapper(module, 'PollIOLoop.add_handler',
+            _nr_wrapper_PollIOLoop_add_handler)

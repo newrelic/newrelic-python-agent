@@ -506,35 +506,6 @@ class SimpleStreamingRequestHandler(RequestHandler):
     def post(self):
         self.write(self.RESPONSE)
 
-class CancelTimeoutOutsideTransactionRequestHandler(RequestHandler):
-    RESPONSE = b'cancel timeout outside transaction'
-
-    def get(self):
-        timeout = tornado.ioloop.IOLoop.current().call_later(
-                10, self.last_callback)
-        self.write(self.RESPONSE)
-        with TransactionContext(None):
-            tornado.ioloop.IOLoop.current().add_callback(
-                self.cancel_callback, timeout)
-
-    def cancel_callback(self, timeout):
-
-        # Make sure that the get method has finished, so that the transaction
-        # will finalize in the remove_timeout wrapper
-        transaction = timeout.callback.func._nr_transaction
-        while not transaction._can_finalize:
-            time.sleep(0.01)
-
-        assert transaction._ref_count == 1
-
-        tornado.ioloop.IOLoop.current().remove_timeout(timeout)
-
-        assert transaction._ref_count == 0
-        assert transaction._is_finalized
-
-    def last_callback(self):
-        pass
-
 class SimpleThreadedFutureRequestHandler(RequestHandler):
     """This handler creates a future and passes it to a thread, which should
     resolve immediately, while the current method still has the transaction
@@ -606,9 +577,9 @@ class BusyWaitThreadedFutureRequestHandler(RequestHandler):
         t = threading.Thread(target=self.resolve_future, args=(f, transaction))
         t.start()
 
-        # Schedule a callback later that should be captured by the agent, but
-        # run during the middle of the threaded callback
-        tornado.ioloop.IOLoop.current().call_later(0.15, self.do_stuff)
+        # Schedule a callback later that should be captured by the agent, the
+        # goal is to run during the middle of the threaded callback
+        tornado.ioloop.IOLoop.current().add_callback(self.do_stuff)
 
     def resolve_future(self, future, transaction):
         # Make sure that the get method has finished
@@ -635,7 +606,7 @@ class BusyWaitThreadedFutureRequestHandler(RequestHandler):
 
         if self.add_future:
             assert not hasattr(self, 'stuff_done'), ('This should not be '
-                    'possible since both bust_wait and do_stuff are on the '
+                    'possible since both long_wait and do_stuff are on the '
                     'ioloop, and the previous assert checked that it has not '
                     'ran. If this assert fails, just give up now.')
         else:
@@ -643,7 +614,11 @@ class BusyWaitThreadedFutureRequestHandler(RequestHandler):
                     ' during long_wait. Test timing incorrect, may need to '
                     're-run test')
 
+    @tornado.gen.coroutine
     def do_stuff(self):
+        # Wait to run later, to come back during the middle of the threaded
+        # callback (at least for the add_future case)
+        yield tornado.gen.sleep(0.15)
         self.stuff_done = True
 
 class CleanUpableRequestHandler(RequestHandler):
@@ -942,7 +917,6 @@ def get_tornado_app():
         ('/thread-ran-call_at', CallAtOnThreadExecutorRequestHandler),
         ('/add-future', AddFutureRequestHandler),
         ('/add_done_callback', AddDoneCallbackRequestHandler),
-        ('/remove-last-timeout', CancelTimeoutOutsideTransactionRequestHandler),
         ('/future-thread/?(\w+)?', SimpleThreadedFutureRequestHandler),
         ('/future-thread-2/?(\w+)?', BusyWaitThreadedFutureRequestHandler),
         ('/add-done-callback/(\w+)', AddDoneCallbackAddsCallbackRequestHandler),

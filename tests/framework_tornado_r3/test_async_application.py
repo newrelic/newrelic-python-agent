@@ -1,7 +1,10 @@
+import functools
 import time
 import threading
 import multiprocessing
 
+from tornado.ioloop import IOLoop
+import tornado.stack_context
 import tornado.testing
 
 from newrelic.agent import background_task
@@ -938,6 +941,57 @@ class TornadoTest(TornadoBaseTest):
             forgone_metric_substrings=['do_stuff'])
     def test_runner_ref_count_error(self):
         response = self.fetch_exception('/runner-error')
+
+    # The purpose of this test is to ensure ioloop.handle_callback_exception
+    # does not crash when the passed in argument is not a function.
+    # This is a departure from our usually end-to-end tests of making a
+    # request handler and exercising it because the tornado test machinery
+    # will catch the exception itself before our instrumentation of the ioloop
+    # has a chance to capture and log the error.
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(errors = [],
+                             app_exceptions=[select_python_version(
+                                     py2='__builtin__:NoneType',
+                                     py3='builtins:NoneType')] * 5,
+                             expect_transaction=False)
+    def test_handle_callback_exception(self):
+        io_loop = IOLoop.current()
+        io_loop.handle_callback_exception(("foo", "bar"))
+        io_loop.handle_callback_exception({})
+        io_loop.handle_callback_exception(5)
+        io_loop.handle_callback_exception("A string")
+        io_loop.handle_callback_exception(object())
+
+    # This tests that we ignore recorded partial functions if the new relic
+    # attribute is set. Like the above test, we do not do an end-to-end test
+    # but instead add a more traditional unit test because the tornado testing
+    # internals will catch the exception before the ioloop exception handler
+    # catches it.
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(errors = [],
+                             app_exceptions=[select_python_version(
+                                     py2='__builtin__:NoneType',
+                                     py3='builtins:NoneType')],
+                             expect_transaction=False)
+    def test_handle_callback_exception_already_recorded(self):
+
+        # Create a callback wrapped in a stack context and a partial to mimic
+        # the tornado internals.
+        def cb(foo, bar):
+            pass
+
+        fxn = tornado.stack_context.wrap(cb)
+        fxn = functools.partial(fxn, 1)
+
+        # Tests that an exception will be recorded.
+        io_loop = IOLoop.current()
+        io_loop.handle_callback_exception(fxn)
+
+        # If the _nr_recorded_exception is set we do not record another
+        # exception.
+        fxn.func._nr_last_object._nr_recorded_exception = True
+        io_loop.handle_callback_exception(fxn)
+
 
     # For these thread utilization tests, we want to make sure that both the
     # transaction isn't sending up attributes related to thread utilization,

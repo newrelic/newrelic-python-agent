@@ -24,6 +24,8 @@ RUN apt-get update
 RUN apt-get install -y python2.6 python2.6-dev
 RUN apt-get install -y python2.7 python2.7-dev
 RUN apt-get install -y python3.3 python3.3-dev
+RUN apt-get install -y python3.4 python3.4-dev
+RUN apt-get install -y python3.5 python3.5-dev
 
 # Needed for psycopg2cffi tests.
 RUN apt-get install -y libffi-dev

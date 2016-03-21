@@ -36,7 +36,7 @@ RUN ln -s /usr/local/pypy-2.5.1-linux64/bin/pypy /usr/local/bin/pypy
 RUN wget https://bitbucket.org/pypa/setuptools/raw/bootstrap/ez_setup.py
 RUN python ez_setup.py
 
-RUN wget https://raw.github.com/pypa/pip/master/contrib/get-pip.py
+RUN wget https://bootstrap.pypa.io/get-pip.py
 RUN python get-pip.py
 
 RUN pip install 'pip<1.5' 'virtualenv==1.11.6' 'tox<1.7.0'

@@ -411,15 +411,17 @@ class RunSyncAddRequestHandler(RequestHandler):
 class ThreadScheduledCallbackRequestHandler(RequestHandler):
     RESPONSE = b'callback threading'
 
-    _executor = concurrent.futures.ThreadPoolExecutor(2)
+    def initialize(self):
+        self.executor = concurrent.futures.ThreadPoolExecutor(2)
+        self.io_loop = tornado.ioloop.IOLoop.current()
 
     def get(self):
         self.schedule_thing()
         self.write(self.RESPONSE)
 
-    @tornado.concurrent.run_on_executor(executor='_executor')
+    @tornado.concurrent.run_on_executor
     def schedule_thing(self):
-        tornado.ioloop.IOLoop.current().add_callback(self.do_thing)
+        self.io_loop.add_callback(self.do_thing)
 
     def do_thing(self):
         pass
@@ -427,29 +429,33 @@ class ThreadScheduledCallbackRequestHandler(RequestHandler):
 class CallbackOnThreadExecutorRequestHandler(RequestHandler):
     RESPONSE = b'callback threading'
 
-    _executor = concurrent.futures.ThreadPoolExecutor(2)
+    def initialize(self):
+        self.executor = concurrent.futures.ThreadPoolExecutor(2)
+        self.io_loop = tornado.ioloop.IOLoop.current()
 
     def get(self):
         tornado.ioloop.IOLoop.current().add_callback(self.do_thing)
         self.write(self.RESPONSE)
 
-    @tornado.concurrent.run_on_executor(executor='_executor')
+    @tornado.concurrent.run_on_executor
     def do_thing(self):
         pass
 
 class ThreadScheduledCallAtRequestHandler(RequestHandler):
     RESPONSE = b'call_at threading'
 
-    _executor = concurrent.futures.ThreadPoolExecutor(2)
+    def initialize(self):
+        self.executor = concurrent.futures.ThreadPoolExecutor(2)
+        self.io_loop = tornado.ioloop.IOLoop.current()
 
     def get(self):
         self.schedule_thing()
         self.write(self.RESPONSE)
 
-    @tornado.concurrent.run_on_executor(executor='_executor')
+    @tornado.concurrent.run_on_executor
     def schedule_thing(self):
         # call later calls call_at, but does the time math for you
-        tornado.ioloop.IOLoop.current().call_later(0.1, self.do_thing)
+        self.io_loop.call_later(0.1, self.do_thing)
 
     def do_thing(self):
         pass
@@ -457,14 +463,16 @@ class ThreadScheduledCallAtRequestHandler(RequestHandler):
 class CallAtOnThreadExecutorRequestHandler(RequestHandler):
     RESPONSE = b'call_at threading'
 
-    _executor = concurrent.futures.ThreadPoolExecutor(2)
+    def initialize(self):
+        self.executor = concurrent.futures.ThreadPoolExecutor(2)
+        self.io_loop = tornado.ioloop.IOLoop.current()
 
     def get(self):
         # call later calls call_at, but does the time math for you
-        tornado.ioloop.IOLoop.current().call_later(0.1, self.do_thing)
+        self.io_loop.call_later(0.1, self.do_thing)
         self.write(self.RESPONSE)
 
-    @tornado.concurrent.run_on_executor(executor='_executor')
+    @tornado.concurrent.run_on_executor
     def do_thing(self):
         pass
 

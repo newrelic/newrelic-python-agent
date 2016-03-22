@@ -1,5 +1,7 @@
 import newrelic.hooks.framework_tornado_r3.ioloop
+import pytest
 import threading
+import tornado
 
 from newrelic.agent import FunctionWrapper
 from newrelic.packages import six
@@ -196,6 +198,10 @@ class TornadoTest(TornadoBaseTest):
                     'PrepareCoroutineFutureDoesNotResolveHandler.get', 1),
     ]
 
+    # The test in skipif is a string comparison.
+    @pytest.mark.skipif(tornado.version < '4.3',
+            reason='Torando 4.3 no longer asserts that prepare returns None ('
+                'or a future that resolves to None)')
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(

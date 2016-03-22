@@ -56,7 +56,11 @@ class TornadoWebSocketsTest(BaseWebSocketsTest):
     def test_no_transaction_no_errors(self):
         url = self.get_url('/')
         ws = yield self.ws_connect(url)
-        yield ws.write_message('foo')
+        result = ws.write_message('foo')
+
+        # For Tornado >= 4.3, result is a future.
+        if result:
+            yield result
 
         response = yield ws.read_message()
         self.assertEqual(response, b'hello')

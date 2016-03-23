@@ -1,7 +1,6 @@
 import sys
 
 from newrelic.agent import function_wrapper, wrap_function_wrapper
-from six.moves import range
 from .util import (create_transaction_aware_fxn, record_exception,
         retrieve_current_transaction)
 

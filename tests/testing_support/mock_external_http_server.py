@@ -1,6 +1,6 @@
 import threading
 
-from six.moves import BaseHTTPServer
+from newrelic.packages.six.moves import BaseHTTPServer
 
 # This defines an external server test apps can make requests to (instead of
 # www.google.com for example). This provides 3 features:

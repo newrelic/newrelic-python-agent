@@ -386,7 +386,13 @@ class RunSyncAddRequestHandler(RequestHandler):
 
     def __init__(self, *args, **kwargs):
         super(RunSyncAddRequestHandler, self).__init__(*args, **kwargs)
-        self.my_io_loop = tornado.ioloop.IOLoop(make_current=False)
+        # In versions prior to 4.2 there is no 'make_current' argument to
+        # IOLoop. The behavior prior to 4.2 is identical to setting make_current
+        # to False.
+        if tornado.version < '4.2':
+            self.my_io_loop = tornado.ioloop.IOLoop()
+        else:
+            self.my_io_loop = tornado.ioloop.IOLoop(make_current=False)
 
     def get(self, a, b):
         self.a = int(a)

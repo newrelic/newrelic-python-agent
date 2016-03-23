@@ -111,6 +111,12 @@ def _nr_wrapper_PollIOLoop_add_handler(wrapped, instance, args, kwargs):
     with TransactionContext(None):
         return wrapped(*args, **kwargs)
 
+def _nr_wrapper_PollIOLoop_add_callback_from_signal(wrapped, instance, args,
+        kwargs):
+
+    with TransactionContext(None):
+        return wrapped(*args, **kwargs)
+
 def instrument_tornado_ioloop(module):
 
     # Thread utilization data is meaningless in a tornado app. Remove it here,
@@ -131,3 +137,5 @@ def instrument_tornado_ioloop(module):
             _nr_wrapper_PollIOLoop_call_at)
     wrap_function_wrapper(module, 'PollIOLoop.add_handler',
             _nr_wrapper_PollIOLoop_add_handler)
+    wrap_function_wrapper(module, 'PollIOLoop.add_callback_from_signal',
+            _nr_wrapper_PollIOLoop_add_callback_from_signal)

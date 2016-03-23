@@ -21,7 +21,8 @@ from _test_async_application import (ReturnFirstDivideRequestHandler,
         CallAtOnThreadExecutorRequestHandler, AddFutureRequestHandler,
         AddDoneCallbackRequestHandler, SimpleThreadedFutureRequestHandler,
         BusyWaitThreadedFutureRequestHandler,
-        AddDoneCallbackAddsCallbackRequestHandler)
+        AddDoneCallbackAddsCallbackRequestHandler,
+        AddCallbackFromSignalRequestHandler)
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
@@ -251,6 +252,7 @@ class TornadoTest(TornadoBaseTest):
             ('Function/_test_async_application:'
                     'ThreadScheduledCallbackRequestHandler.get', 1),
     ]
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
@@ -270,6 +272,7 @@ class TornadoTest(TornadoBaseTest):
             ('Function/_test_async_application:'
                     'CallbackOnThreadExecutorRequestHandler.do_thing', 1),
     ]
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
@@ -284,6 +287,7 @@ class TornadoTest(TornadoBaseTest):
             ('Function/_test_async_application:'
                     'ThreadScheduledCallAtRequestHandler.get', 1),
     ]
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
@@ -301,6 +305,7 @@ class TornadoTest(TornadoBaseTest):
             ('Function/_test_async_application:'
                     'CallAtOnThreadExecutorRequestHandler.get', 1),
     ]
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
@@ -318,6 +323,7 @@ class TornadoTest(TornadoBaseTest):
             ('Function/_test_async_application:'
                     'AddFutureRequestHandler.do_thing', 1),
     ]
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
@@ -334,6 +340,7 @@ class TornadoTest(TornadoBaseTest):
             ('Function/_test_async_application:'
                     'AddDoneCallbackRequestHandler.do_thing', 1),
     ]
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
@@ -348,6 +355,7 @@ class TornadoTest(TornadoBaseTest):
             ('Function/_test_async_application:'
                     'SimpleThreadedFutureRequestHandler.get', 1),
     ]
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
@@ -363,6 +371,7 @@ class TornadoTest(TornadoBaseTest):
             ('Function/_test_async_application:'
                     'SimpleThreadedFutureRequestHandler.get', 1),
     ]
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
@@ -380,6 +389,7 @@ class TornadoTest(TornadoBaseTest):
             ('Function/_test_async_application:'
                     'BusyWaitThreadedFutureRequestHandler.do_stuff', 1),
     ]
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
@@ -400,6 +410,7 @@ class TornadoTest(TornadoBaseTest):
             ('Function/_test_async_application:'
                     'BusyWaitThreadedFutureRequestHandler.long_wait', 1),
     ]
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()
     @tornado_validate_count_transaction_metrics(
@@ -462,4 +473,20 @@ class TornadoTest(TornadoBaseTest):
 
         response = self.fetch_response('/add-done-callback/python')
         expected = AddDoneCallbackAddsCallbackRequestHandler.RESPONSE
+        self.assertEqual(response.body, expected)
+
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+                    'AddCallbackFromSignalRequestHandler.get', 1),
+    ]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:AddCallbackFromSignalRequestHandler.get',
+            scoped_metrics=scoped_metrics,
+            forgone_metric_substrings=['do_thing'])
+    def test_add_callback_from_signal_ignored(self):
+        response = self.fetch_response('/signal-ignore')
+        expected = AddCallbackFromSignalRequestHandler.RESPONSE
         self.assertEqual(response.body, expected)

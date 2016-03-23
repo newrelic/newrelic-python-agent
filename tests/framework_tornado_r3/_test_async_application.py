@@ -705,6 +705,16 @@ class TransactionAwareFunctionAferFinalize(CleanUpableRequestHandler):
         assert transaction is None
         self.cleanup()
 
+class AddCallbackFromSignalRequestHandler(RequestHandler):
+    RESPONSE = b'ignore add_callback_from_signal'
+
+    def get(self):
+        self.write(self.RESPONSE)
+        tornado.ioloop.IOLoop.current().add_callback_from_signal(self.do_thing)
+
+    def do_thing(self):
+        pass
+
 class DoubleWrapRequestHandler(RequestHandler):
     RESPONSE = b'double wrap'
 
@@ -927,4 +937,5 @@ def get_tornado_app():
         ('/runner-error', RunnerRefCountErrorRequestHandler),
         ('/orphan', TransactionAwareFunctionAferFinalize),
         ('/add-handler-ignore', IgnoreAddHandlerRequestHandler),
+        ('/signal-ignore', AddCallbackFromSignalRequestHandler),
     ])

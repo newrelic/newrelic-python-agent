@@ -5,7 +5,7 @@ import tornado
 
 from newrelic.agent import FunctionWrapper
 from newrelic.packages import six
-from six.moves import http_client
+from newrelic.packages.six.moves import http_client
 
 from tornado_base_test import TornadoBaseTest
 

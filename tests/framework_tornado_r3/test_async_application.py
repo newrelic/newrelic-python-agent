@@ -951,16 +951,21 @@ class TornadoTest(TornadoBaseTest):
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors = [],
                              app_exceptions=[select_python_version(
-                                     py2='__builtin__:NoneType',
-                                     py3='builtins:NoneType')] * 5,
+                                     py2='exceptions:Exception',
+                                     py3='builtins:Exception')] * 5,
                              expect_transaction=False)
     def test_handle_callback_exception(self):
-        io_loop = IOLoop.current()
-        io_loop.handle_callback_exception(("foo", "bar"))
-        io_loop.handle_callback_exception({})
-        io_loop.handle_callback_exception(5)
-        io_loop.handle_callback_exception("A string")
-        io_loop.handle_callback_exception(object())
+        # We need to call handle_callback_exception in an exception context or
+        # an error occurs when Tornado tries to log the error.
+        try:
+            raise Exception("We expect this exception to be logged.")
+        except:
+            io_loop = IOLoop.current()
+            io_loop.handle_callback_exception(("foo", "bar"))
+            io_loop.handle_callback_exception({})
+            io_loop.handle_callback_exception(5)
+            io_loop.handle_callback_exception("A string")
+            io_loop.handle_callback_exception(object())
 
     # This tests that we ignore recorded partial functions if the new relic
     # attribute is set. Like the above test, we do not do an end-to-end test

@@ -19,12 +19,14 @@ from newrelic.core.attribute import create_user_attributes
 from newrelic.core.attribute_filter import (DST_ERROR_COLLECTOR,
         DST_TRANSACTION_TRACER, DST_TRANSACTION_EVENTS)
 
+
 _TransactionNode = namedtuple('_TransactionNode',
-        ['settings', 'path', 'type', 'group', 'name', 'port', 'request_uri',
-        'response_code', 'queue_start','start_time', 'end_time', 'duration',
-        'exclusive', 'children', 'errors', 'slow_sql', 'custom_events',
-        'apdex_t', 'suppress_apdex', 'custom_metrics', 'guid', 'cpu_time',
-        'suppress_transaction_trace', 'client_cross_process_id',
+        ['settings', 'path', 'type', 'group', 'base_name', 'name_for_metric',
+        'port', 'request_uri', 'response_code', 'queue_start','start_time',
+        'end_time', 'last_byte_time', 'response_time', 'total_time',
+        'duration', 'exclusive', 'children', 'errors', 'slow_sql',
+        'custom_events', 'apdex_t', 'suppress_apdex', 'custom_metrics', 'guid',
+        'cpu_time', 'suppress_transaction_trace', 'client_cross_process_id',
         'referring_transaction_guid', 'record_tt', 'synthetics_resource_id',
         'synthetics_job_id', 'synthetics_monitor_id', 'synthetics_header',
         'is_part_of_cat', 'trip_id', 'path_hash', 'referring_path_hash',
@@ -62,7 +64,7 @@ class TransactionNode(_TransactionNode):
         # apdex metric the PHP agent ignores it however. For now
         # we just ignore it.
 
-        if not self.name:
+        if not self.base_name:
             return
 
         if self.type == 'WebTransaction':
@@ -81,7 +83,7 @@ class TransactionNode(_TransactionNode):
             yield TimeMetric(
                     name='HttpDispatcher',
                     scope='',
-                    duration=self.duration,
+                    duration=self.response_time,
                     exclusive=None)
 
             # Upstream queue time within any web server front end.
@@ -108,7 +110,7 @@ class TransactionNode(_TransactionNode):
         yield TimeMetric(
                 name=self.path,
                 scope='',
-                duration=self.duration,
+                duration=self.response_time,
                 exclusive=self.exclusive)
 
         # Generate the rollup metric.
@@ -121,8 +123,29 @@ class TransactionNode(_TransactionNode):
         yield TimeMetric(
                 name=rollup,
                 scope='',
-                duration=self.duration,
+                duration=self.response_time,
                 exclusive=self.exclusive)
+
+        # Generate Unscoped Total Time metrics.
+
+        if self.type == 'WebTransaction':
+            metric_prefix = 'WebTransactionTotalTime'
+        else:
+            metric_prefix = 'OtherTransactionTotalTime'
+
+        yield TimeMetric(
+                name='%s/%s' % (metric_prefix, self.name_for_metric),
+                scope='',
+                duration=self.total_time,
+                exclusive=self.total_time)
+
+        yield TimeMetric(
+                name=metric_prefix,
+                scope='',
+                duration=self.total_time,
+                exclusive=self.total_time)
+
+        # Generate Error metrics
 
         if self.errors:
             # Generate overall rollup metric indicating if errors present.
@@ -166,7 +189,7 @@ class TransactionNode(_TransactionNode):
 
         """
 
-        if not self.name:
+        if not self.base_name:
             return
 
         if self.suppress_apdex:
@@ -198,14 +221,8 @@ class TransactionNode(_TransactionNode):
 
         # Generate the full apdex metric.
 
-        if (self.group in ('Uri', 'NormalizedUri') and
-                self.name.startswith('/')):
-            name = 'Apdex/%s%s' % (self.group, self.name)
-        else:
-            name = 'Apdex/%s/%s' % (self.group, self.name)
-
         yield ApdexMetric(
-                name=name,
+                name='Apdex/%s' % self.name_for_metric,
                 satisfying=satisfying,
                 tolerating=tolerating,
                 frustrating=frustrating,
@@ -393,6 +410,7 @@ class TransactionNode(_TransactionNode):
 
         intrinsics['type'] = 'Transaction'
         intrinsics['name'] = self.path
+        intrinsics['totalTime'] = self.total_time
 
         def _add_if_not_empty(key, value):
             if value:
@@ -480,7 +498,7 @@ class TransactionNode(_TransactionNode):
         intrinsics = {}
 
         intrinsics['timestamp'] = self.start_time
-        intrinsics['duration'] = self.duration
+        intrinsics['duration'] = self.response_time
 
         if self.port:
             intrinsics['port'] = self.port

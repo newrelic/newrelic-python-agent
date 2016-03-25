@@ -85,6 +85,7 @@ class Application(object):
 
         self._agent_commands_lock = threading.Lock()
         self._data_samplers_lock = threading.Lock()
+        self._data_samplers_started = False
 
         # We setup empty rules engines here even though they will be
         # replaced when application first registered. This is done to
@@ -629,7 +630,6 @@ class Application(object):
         transactions commences.
 
         """
-
         with self._data_samplers_lock:
             _logger.debug('Starting data samplers for application %r.',
                     self._app_name)
@@ -648,6 +648,8 @@ class Application(object):
                              'this problem persists, please report this '
                              'problem to the provider of the data source.',
                              data_sampler.name)
+
+            self._data_samplers_started = True
 
     def stop_data_samplers(self):
         """Stop any data samplers. This will be called when the active
@@ -674,6 +676,34 @@ class Application(object):
                              'this problem persists, please report this '
                              'problem to the provider of the data source.',
                              data_sampler.name)
+
+    def remove_data_source(self, name):
+        with self._data_samplers_lock:
+
+            data_sampler = [x for x in self._data_samplers if x.name == name]
+
+            if len(data_sampler) > 0:
+
+                # Should be at most one data sampler for a given name.
+
+                data_sampler = data_sampler[0]
+
+                try:
+                    _logger.debug('Removing/Stopping data sampler for %r in '
+                             'application %r.', data_sampler.name,
+                             self._app_name)
+
+                    data_sampler.stop()
+
+                except Exception:
+
+                    # If sampler has not started yet, it may throw an error.
+
+                    _logger.debug('Exception when stopping '
+                             'data source %r when attempting to remove it.',
+                             data_sampler.name)
+
+                self._data_samplers.remove(data_sampler)
 
     def record_exception(self, exc=None, value=None, tb=None, params={},
             ignore_errors=[]):

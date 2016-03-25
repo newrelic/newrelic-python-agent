@@ -82,6 +82,9 @@ class Transaction(object):
 
         self.start_time = 0.0
         self.end_time = 0.0
+        self.last_byte_time = 0.0
+
+        self.total_time = None
 
         self.stopped = False
 
@@ -322,7 +325,17 @@ class Transaction(object):
         if not self.stopped:
             self.end_time = time.time()
 
+        # Calculate transaction duration
+
         duration = self.end_time - self.start_time
+
+        # Calculate response time. Calculation depends on whether
+        # a web response was sent back.
+
+        if self.last_byte_time == 0.0:
+            response_time = duration
+        else:
+            response_time = self.last_byte_time - self.start_time
 
         # Calculate overall user time.
 
@@ -346,7 +359,7 @@ class Transaction(object):
 
         if self._utilization_tracker:
             self._utilization_tracker.exit_transaction()
-            if self._thread_utilization_start and duration > 0.0:
+            if self._thread_utilization_start is not None and duration > 0.0:
                 if not self._thread_utilization_end:
                     self._thread_utilization_end = (
                             self._utilization_tracker.utilization_count())
@@ -363,6 +376,15 @@ class Transaction(object):
         children = root.children
 
         exclusive = duration + root.exclusive
+
+        # Calculate total time.
+        #
+        # Because we do not track activity on threads, and we currently
+        # don't allocate waiting time in the IOLoop to separate segments
+        # (like External or Datastore), for right now, our total_time is
+        # equal to the duration of the transaction.
+
+        self.total_time = duration
 
         # Construct final root node of transaction trace.
         # Freeze path in case not already done. This will
@@ -385,21 +407,6 @@ class Transaction(object):
 
         if self.response_code != 0:
             self._response_properties['STATUS'] = str(self.response_code)
-
-        read_duration = 0
-        if self._read_start:
-            read_duration = self._read_end - self._read_start
-
-        sent_duration = 0
-        if self._sent_start:
-            if not self._sent_end:
-                self._sent_end = time.time()
-            sent_duration = self._sent_end - self._sent_start
-
-        if self.queue_start:
-            queue_wait = self.start_time - self.queue_start
-            if queue_wait < 0:
-                queue_wait = 0
 
         # _sent_end should already be set by this point, but in case it
         # isn't, set it now before we record the custom metrics.
@@ -443,13 +450,17 @@ class Transaction(object):
                 path=self.path,
                 type=transaction_type,
                 group=group,
-                name=self._name,
+                base_name=self._name,
+                name_for_metric=self.name_for_metric,
                 port=self._port,
                 request_uri=self._request_uri,
                 response_code=self.response_code,
                 queue_start=self.queue_start,
                 start_time=self.start_time,
                 end_time=self.end_time,
+                last_byte_time=self.last_byte_time,
+                total_time=self.total_time,
+                response_time=response_time,
                 duration=duration,
                 exclusive=exclusive,
                 children=tuple(children),
@@ -516,6 +527,14 @@ class Transaction(object):
         return self._application
 
     @property
+    def type(self):
+        if self.background_task:
+            transaction_type = 'OtherTransaction'
+        else:
+            transaction_type = 'WebTransaction'
+        return transaction_type
+
+    @property
     def name(self):
         return self._name
 
@@ -524,14 +543,8 @@ class Transaction(object):
         return self._group
 
     @property
-    def path(self):
-        if self._frozen_path:
-            return self._frozen_path
-
-        if self.background_task:
-            transaction_type = 'OtherTransaction'
-        else:
-            transaction_type = 'WebTransaction'
+    def name_for_metric(self):
+        """Combine group and name for use as transaction name in metrics."""
 
         group = self._group
 
@@ -541,23 +554,31 @@ class Transaction(object):
             else:
                 group = 'Uri'
 
-        name = self._name
+        transaction_name = self._name
 
-        if name is None:
-            name = '<undefined>'
+        if transaction_name is None:
+            transaction_name = '<undefined>'
 
         # Stripping the leading slash on the request URL held by
-        # name when type is 'Uri' is to keep compatibility with
-        # PHP agent and also possibly other agents. Leading
+        # transaction_name when type is 'Uri' is to keep compatibility
+        # with PHP agent and also possibly other agents. Leading
         # slash it not deleted for other category groups as the
         # leading slash may be significant in that situation.
 
-        if self._group in ['Uri', 'NormalizedUri'] and name[:1] == '/':
-            path = '%s/%s%s' % (transaction_type, group, name)
+        if (group in ('Uri', 'NormalizedUri') and
+                transaction_name.startswith('/')):
+            name = '%s%s' % (group, transaction_name)
         else:
-            path = '%s/%s/%s' % (transaction_type, group, name)
+            name = '%s/%s' % (group, transaction_name)
 
-        return path
+        return name
+
+    @property
+    def path(self):
+        if self._frozen_path:
+            return self._frozen_path
+
+        return '%s/%s' % (self.type, self.name_for_metric)
 
     @property
     def profile_sample(self):
@@ -661,6 +682,8 @@ class Transaction(object):
             i_attrs['synthetics_job_id'] = self.synthetics_job_id
         if self.synthetics_monitor_id:
             i_attrs['synthetics_monitor_id'] = self.synthetics_monitor_id
+        if self.total_time:
+            i_attrs['totalTime'] = self.total_time
 
         # Add in special CPU time value for UI to display CPU burn.
 

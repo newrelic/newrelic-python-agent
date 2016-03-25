@@ -26,7 +26,7 @@ TRACE_ERROR_AGENT_KEYS = ['wsgi.output.seconds', 'response.status', 'request.met
         'request.headers.contentType', 'request.headers.contentLength']
 AGENT_KEYS_ALL = TRACE_ERROR_AGENT_KEYS + REQ_PARAMS
 
-TRANS_EVENT_INTRINSICS = ('name', 'duration', 'type', 'timestamp')
+TRANS_EVENT_INTRINSICS = ('name', 'duration', 'type', 'timestamp', 'totalTime')
 TRANS_EVENT_AGENT_KEYS = ['response.status', 'request.method',
         'request.headers.contentType', 'request.headers.contentLength']
 

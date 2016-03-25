@@ -477,7 +477,7 @@ def test_database_and_external_attributes_in_analytics():
 _expected_attributes = {
         'user': [],
         'agent': [],
-        'intrinsic' : ('name', 'duration', 'type', 'timestamp'),
+        'intrinsic' : ('name', 'duration', 'type', 'timestamp', 'totalTime'),
 }
 
 _expected_absent_attributes = {

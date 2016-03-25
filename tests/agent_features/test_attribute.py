@@ -34,7 +34,7 @@ def target_wsgi_application(environ, start_response):
 
     return [output]
 
-_required_intrinsics = ['trip_id']
+_required_intrinsics = ['trip_id', 'totalTime']
 _forgone_intrinsics = []
 
 @validate_attributes('intrinsic', _required_intrinsics, _forgone_intrinsics)

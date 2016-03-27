@@ -1095,3 +1095,15 @@ class TornadoTest(TornadoBaseTest):
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body,
                 NativeFuturesCoroutine.RESPONSE)
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:NativeFuturesCoroutine.get',
+            scoped_metrics=[],
+            forgone_metric_substrings=['resolve', 'excluded_method'])
+    def test_coroutine_yields_native_future_resolves_in_thread(self):
+        response = self.fetch_response('/native-future-coroutine/threaded')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body,
+                NativeFuturesCoroutine.THREAD_RESPONSE)

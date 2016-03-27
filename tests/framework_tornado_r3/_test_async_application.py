@@ -908,27 +908,42 @@ class IgnoreAddHandlerRequestHandler(RequestHandler):
 class NativeFuturesCoroutine(RequestHandler):
 
     RESPONSE = b'native future coroutine'
+    THREAD_RESPONSE = b'native future coroutine in thread'
 
     @tornado.gen.coroutine
-    def get(self):
+    def get(self, threaded=False):
+        use_thread = (True if threaded == 'threaded' else False)
+
         f = concurrent.futures.Future()
 
         # Add a callback so we can check for it's metrics
+
         f.add_done_callback(self.do_thing)
 
         # Resolve the future outside the transaction - this would cause an
         # error if add_done_callback is not instrumented
 
-        with TransactionContext(None):
-            tornado.ioloop.IOLoop.current().add_callback(self.resolve, f)
+        if use_thread:
+            self.finish(self.THREAD_RESPONSE)
 
-        self.finish(self.RESPONSE)
+            t = threading.Thread(target=self.resolve, args=(f,))
+            t.start()
+        else:
+            self.finish(self.RESPONSE)
+
+            with TransactionContext(None):
+                tornado.ioloop.IOLoop.current().add_callback(self.resolve, f)
+
         yield f
 
     def resolve(self, f):
+        f.add_done_callback(self.excluded_method)
         f.set_result(None)
 
     def do_thing(self, *args):
+        pass
+
+    def excluded_method(self, *args):
         pass
 
 def get_tornado_app():
@@ -977,5 +992,5 @@ def get_tornado_app():
         ('/orphan', TransactionAwareFunctionAferFinalize),
         ('/add-handler-ignore', IgnoreAddHandlerRequestHandler),
         ('/signal-ignore', AddCallbackFromSignalRequestHandler),
-        ('/native-future-coroutine', NativeFuturesCoroutine),
+        ('/native-future-coroutine/?(\w+)?', NativeFuturesCoroutine),
     ])

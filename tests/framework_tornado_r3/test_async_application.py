@@ -1089,7 +1089,7 @@ class TornadoTest(TornadoBaseTest):
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:NativeFuturesCoroutine.get',
             scoped_metrics=scoped_metrics,
-            forgone_metric_substrings=['resolve'])
+            forgone_metric_substrings=['resolve', 'excluded_method'])
     def test_coroutine_yields_native_future(self):
         response = self.fetch_response('/native-future-coroutine')
         self.assertEqual(response.code, 200)

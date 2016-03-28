@@ -1082,6 +1082,29 @@ class TornadoTest(TornadoBaseTest):
             py3=('Function/_test_async_application:'
                  'NativeFuturesCoroutine.get (coroutine)', 1)),
             ('Function/_test_async_application:NativeFuturesCoroutine.'
+                 'do_thing', 1),
+            ('Function/_test_async_application:NativeFuturesCoroutine.'
+                 'resolve', 1),
+            ('Function/_test_async_application:NativeFuturesCoroutine.'
+                 'another_method', 1),]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:NativeFuturesCoroutine.get',
+            scoped_metrics=scoped_metrics)
+    def test_coroutine_yields_native_future(self):
+        response = self.fetch_response('/native-future-coroutine/')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body,
+                NativeFuturesCoroutine.RESPONSE)
+
+    scoped_metrics = [
+        select_python_version(
+            py2=('Function/_test_async_application:get (coroutine)', 1),
+            py3=('Function/_test_async_application:'
+                 'NativeFuturesCoroutine.get (coroutine)', 1)),
+            ('Function/_test_async_application:NativeFuturesCoroutine.'
                  'do_thing', 1),]
 
     @tornado_validate_transaction_cache_empty()
@@ -1094,7 +1117,7 @@ class TornadoTest(TornadoBaseTest):
         response = self.fetch_response('/native-future-coroutine/none-context')
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body,
-                NativeFuturesCoroutine.RESPONSE)
+                NativeFuturesCoroutine.NONE_RESPONSE)
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors()

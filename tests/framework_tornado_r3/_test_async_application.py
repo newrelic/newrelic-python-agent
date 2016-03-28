@@ -908,10 +908,11 @@ class IgnoreAddHandlerRequestHandler(RequestHandler):
 class NativeFuturesCoroutine(RequestHandler):
 
     RESPONSE = b'native future coroutine'
+    NONE_RESPONSE = b'native future coroutine in None context'
     THREAD_RESPONSE = b'native future coroutine in thread'
 
     @tornado.gen.coroutine
-    def get(self, resolve_method='inclusive'):
+    def get(self, resolve_method=None):
 
         f = concurrent.futures.Future()
 
@@ -928,12 +929,13 @@ class NativeFuturesCoroutine(RequestHandler):
             t = threading.Thread(target=self.resolve, args=(f,))
             t.start()
         elif resolve_method == 'none-context':
-            self.finish(self.RESPONSE)
+            self.finish(self.NONE_RESPONSE)
 
             with TransactionContext(None):
                 tornado.ioloop.IOLoop.current().add_callback(self.resolve, f)
-        elif resolve_method == 'inclusive':
-            pass
+        elif resolve_method is None:
+            self.finish(self.RESPONSE)
+            tornado.ioloop.IOLoop.current().add_callback(self.resolve, f)
         else:
             raise ValueError("Invalid future resolution method %s"
                     % resolve_method)

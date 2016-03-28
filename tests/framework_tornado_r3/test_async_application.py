@@ -1089,9 +1089,9 @@ class TornadoTest(TornadoBaseTest):
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:NativeFuturesCoroutine.get',
             scoped_metrics=scoped_metrics,
-            forgone_metric_substrings=['resolve', 'excluded_method'])
-    def test_coroutine_yields_native_future(self):
-        response = self.fetch_response('/native-future-coroutine')
+            forgone_metric_substrings=['resolve', 'another_method'])
+    def test_coroutine_yields_native_future_resolves_outside_transaction(self):
+        response = self.fetch_response('/native-future-coroutine/none-context')
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body,
                 NativeFuturesCoroutine.RESPONSE)
@@ -1101,9 +1101,9 @@ class TornadoTest(TornadoBaseTest):
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:NativeFuturesCoroutine.get',
             scoped_metrics=[],
-            forgone_metric_substrings=['resolve', 'excluded_method'])
+            forgone_metric_substrings=['resolve', 'another_method'])
     def test_coroutine_yields_native_future_resolves_in_thread(self):
-        response = self.fetch_response('/native-future-coroutine/threaded')
+        response = self.fetch_response('/native-future-coroutine/thread')
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body,
                 NativeFuturesCoroutine.THREAD_RESPONSE)

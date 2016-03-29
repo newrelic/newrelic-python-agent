@@ -105,76 +105,84 @@ def fake_collector_wrapper(wrapped, instance, args, kwargs):
 
     return wrapped(*args, **kwargs)
 
+def initialize_agent(app_name=None, default_settings={}):
+    settings = global_settings()
+
+    settings.app_name = 'Python Agent Test'
+
+    settings.api_key = os.environ.get('NEW_RELIC_API_KEY',
+            'acb213ed488e0e4b623c005a9811a5113c916c4f983d501')
+    settings.license_key = os.environ.get('NEW_RELIC_LICENSE_KEY',
+            '84325f47e9dec80613e262be4236088a9983d501')
+
+    settings.host = os.environ.get('NEW_RELIC_HOST',
+            'staging-collector.newrelic.com')
+    settings.port = int(os.environ.get('NEW_RELIC_PORT', '0'))
+
+    if settings.host == 'localhost':
+        settings.license_key = 'bootstrap_newrelic_admin_license_key_000'
+        if settings.port == 0:
+            settings.port = 8081
+        settings.ssl = False
+
+    settings.startup_timeout = float(os.environ.get(
+            'NEW_RELIC_STARTUP_TIMEOUT', 20.0))
+    settings.shutdown_timeout = float(os.environ.get(
+            'NEW_RELIC_SHUTDOWN_TIMEOUT', 20.0))
+
+    if app_name is not None:
+        settings.app_name = app_name
+
+    for name, value in default_settings.items():
+        apply_config_setting(settings, name, value)
+
+    env_directory = os.environ.get('TOX_ENVDIR', None)
+
+    if env_directory is not None:
+        log_directory = os.path.join(env_directory, 'log')
+    else:
+        log_directory = '.'
+
+    log_file = os.path.join(log_directory, 'python-agent-test.log')
+    log_level = logging.DEBUG
+
+    try:
+        os.unlink(log_file)
+    except OSError:
+        pass
+
+    class FilteredStreamHandler(logging.StreamHandler):
+        def emit(self, record):
+            if len(logging.root.handlers) != 0:
+                return
+
+            if record.name.startswith('newrelic.packages'):
+                return
+
+            if record.levelno < logging.WARNING:
+                return
+
+            return logging.StreamHandler.emit(self, record)
+
+    _stdout_logger = logging.getLogger('newrelic')
+    _stdout_handler = FilteredStreamHandler(sys.stderr)
+    _stdout_format = '%(levelname)s - %(message)s'
+    _stdout_formatter = logging.Formatter(_stdout_format)
+    _stdout_handler.setFormatter(_stdout_formatter)
+    _stdout_logger.addHandler(_stdout_handler)
+
+    initialize(log_file=log_file, log_level=log_level, ignore_errors=False)
+
 def collector_agent_registration_fixture(app_name=None, default_settings={},
-        linked_applications=[]):
+        linked_applications=[], should_initialize_agent=True):
     @pytest.fixture(scope='session')
     def _collector_agent_registration_fixture(request):
+
+        if should_initialize_agent:
+            initialize_agent(
+                    app_name=app_name, default_settings=default_settings)
+
         settings = global_settings()
-
-        settings.app_name = 'Python Agent Test'
-
-        settings.api_key = os.environ.get('NEW_RELIC_API_KEY',
-                'acb213ed488e0e4b623c005a9811a5113c916c4f983d501')
-        settings.license_key = os.environ.get('NEW_RELIC_LICENSE_KEY',
-                '84325f47e9dec80613e262be4236088a9983d501')
-
-        settings.host = os.environ.get('NEW_RELIC_HOST',
-                'staging-collector.newrelic.com')
-        settings.port = int(os.environ.get('NEW_RELIC_PORT', '0'))
-
-        if settings.host == 'localhost':
-            settings.license_key = 'bootstrap_newrelic_admin_license_key_000'
-            if settings.port == 0:
-                settings.port = 8081
-            settings.ssl = False
-
-        settings.startup_timeout = float(os.environ.get(
-                'NEW_RELIC_STARTUP_TIMEOUT', 20.0))
-        settings.shutdown_timeout = float(os.environ.get(
-                'NEW_RELIC_SHUTDOWN_TIMEOUT', 20.0))
-
-        if app_name is not None:
-            settings.app_name = app_name
-
-        for name, value in default_settings.items():
-            apply_config_setting(settings, name, value)
-
-        env_directory = os.environ.get('TOX_ENVDIR', None)
-
-        if env_directory is not None:
-            log_directory = os.path.join(env_directory, 'log')
-        else:
-            log_directory = '.'
-
-        log_file = os.path.join(log_directory, 'python-agent-test.log')
-        log_level = logging.DEBUG
-
-        try:
-            os.unlink(log_file)
-        except OSError:
-            pass
-
-        class FilteredStreamHandler(logging.StreamHandler):
-            def emit(self, record):
-                if len(logging.root.handlers) != 0:
-                    return
-
-                if record.name.startswith('newrelic.packages'):
-                    return
-
-                if record.levelno < logging.WARNING:
-                    return
-
-                return logging.StreamHandler.emit(self, record)
-
-        _stdout_logger = logging.getLogger('newrelic')
-        _stdout_handler = FilteredStreamHandler(sys.stderr)
-        _stdout_format = '%(levelname)s - %(message)s'
-        _stdout_formatter = logging.Formatter(_stdout_format)
-        _stdout_handler.setFormatter(_stdout_formatter)
-        _stdout_logger.addHandler(_stdout_handler)
-
-        initialize(log_file=log_file, log_level=log_level, ignore_errors=False)
 
         # Determine if should be using an internal fake local
         # collector for the test.
@@ -356,11 +364,22 @@ def validate_transaction_metrics(name, group='Function',
         custom_metrics=[]):
 
     if background_task:
-        rollup_metric = 'OtherTransaction/all'
-        transaction_metric = 'OtherTransaction/%s/%s' % (group, name)
+        unscoped_metrics = [
+            'OtherTransaction/all',
+            'OtherTransaction/%s/%s' % (group, name),
+            'OtherTransactionTotalTime',
+            'OtherTransactionTotalTime/%s/%s' % (group, name),
+        ]
+        transaction_scope_name = 'OtherTransaction/%s/%s' % (group, name)
     else:
-        rollup_metric = 'WebTransaction'
-        transaction_metric = 'WebTransaction/%s/%s' % (group, name)
+        unscoped_metrics = [
+            'HttpDispatcher',
+            'WebTransaction',
+            'WebTransaction/%s/%s' % (group, name),
+            'WebTransactionTotalTime',
+            'WebTransactionTotalTime/%s/%s' % (group, name),
+        ]
+        transaction_scope_name = 'WebTransaction/%s/%s' % (group, name)
 
     @transient_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_transaction')
@@ -389,11 +408,11 @@ def validate_transaction_metrics(name, group='Function',
                 else:
                     assert metric is None, _metrics_table()
 
-            _validate(rollup_metric, '', 1)
-            _validate(transaction_metric, '', 1)
+            for unscoped_metric in unscoped_metrics:
+                _validate(unscoped_metric, '', 1)
 
             for scoped_name, scoped_count in scoped_metrics:
-                _validate(scoped_name, transaction_metric, scoped_count)
+                _validate(scoped_name, transaction_scope_name, scoped_count)
 
             for rollup_name, rollup_count in rollup_metrics:
                 _validate(rollup_name, '', rollup_count)

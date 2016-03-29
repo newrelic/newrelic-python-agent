@@ -166,19 +166,19 @@ class Agent(object):
 
                 Agent._instance = instance
 
-        if instance:
-            _logger.debug('Activating agent instance.')
+            if instance:
+                _logger.debug('Activating agent instance.')
 
-            instance.activate_agent()
+                instance.activate_agent()
 
-            _logger.debug('Registering builtin data sources.')
+                _logger.debug('Registering builtin data sources.')
 
-            instance.register_data_source(cpu_usage_data_source)
-            instance.register_data_source(memory_usage_data_source)
-            instance.register_data_source(thread_utilization_data_source)
+                instance.register_data_source(cpu_usage_data_source)
+                instance.register_data_source(memory_usage_data_source)
+                instance.register_data_source(thread_utilization_data_source)
 
-            for callable in Agent._startup_callables:
-                callable()
+                for callable in Agent._startup_callables:
+                    callable()
 
         return Agent._instance
 
@@ -427,6 +427,33 @@ class Agent(object):
                 if instance is not None:
                     instance.register_data_source(source, name,
                             settings, **properties)
+
+    def remove_thread_utilization(self):
+
+        _logger.debug('Removing thread utilization data source from all '
+                'applications')
+
+        source_name = thread_utilization_data_source.__name__
+        factory_name = 'Thread Utilization'
+
+        with self._lock:
+            source_names = [s[0].__name__ for s in self._data_sources[None]]
+            if source_name in source_names:
+                idx = source_names.index(source_name)
+                self._data_sources[None].pop(idx)
+
+            # Clear out the data samplers that add thread utilization custom
+            # metrics every harvest (for each application)
+
+            for application in self._applications.values():
+                application.remove_data_source(factory_name)
+
+        # The thread utilization data source may have been started, so we
+        # must clear out the list of trackers that transactions will use to add
+        # thread.concurrency attributes
+
+        from newrelic.core.thread_utilization import _utilization_trackers
+        _utilization_trackers.clear()
 
     def record_exception(self, app_name, exc=None, value=None, tb=None,
             params={}, ignore_errors=[]):
@@ -683,3 +710,14 @@ def register_data_source(source, application=None, name=None,
     agent.register_data_source(source,
             application and application.name or None, name, settings,
             **properties)
+
+def _remove_thread_utilization():
+    agent = agent_instance()
+    agent.remove_thread_utilization()
+
+def remove_thread_utilization():
+    with Agent._instance_lock:
+        if Agent._instance:
+            _remove_thread_utilization()
+        else:
+            Agent.run_on_startup(_remove_thread_utilization)

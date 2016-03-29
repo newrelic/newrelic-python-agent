@@ -44,7 +44,8 @@ def test_on_index_agent_disabled():
 def test_routes_not_found():
     response = test_application.get('/missing', status=404)
 
-@requires_routes
-@validate_transaction_errors(errors=['routes.util:RoutesException'])
-def test_routes_missing_url():
-    response = test_application.get('', status=500)
+# FIX ME PYTHON-1957
+# @requires_routes
+# @validate_transaction_errors(errors=['routes.util:RoutesException'])
+# def test_routes_missing_url():
+#     response = test_application.get('', status=500)

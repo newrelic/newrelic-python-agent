@@ -1081,6 +1081,7 @@ class TornadoTest(TornadoBaseTest):
             py2=('Function/_test_async_application:get (coroutine)', 1),
             py3=('Function/_test_async_application:'
                  'NativeFuturesCoroutine.get (coroutine)', 1)),
+            ('Function/_test_async_application:NativeFuturesCoroutine.get', 1),
             ('Function/_test_async_application:NativeFuturesCoroutine.'
                  'do_thing', 1),
             ('Function/_test_async_application:NativeFuturesCoroutine.'
@@ -1104,6 +1105,7 @@ class TornadoTest(TornadoBaseTest):
             py2=('Function/_test_async_application:get (coroutine)', 1),
             py3=('Function/_test_async_application:'
                  'NativeFuturesCoroutine.get (coroutine)', 1)),
+            ('Function/_test_async_application:NativeFuturesCoroutine.get', 1),
             ('Function/_test_async_application:NativeFuturesCoroutine.'
                  'do_thing', 1),]
 

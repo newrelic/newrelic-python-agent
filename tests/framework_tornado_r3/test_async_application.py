@@ -25,7 +25,8 @@ from _test_async_application import (HelloRequestHandler,
         SimpleStreamingRequestHandler, DoubleWrapRequestHandler,
         FutureDoubleWrapRequestHandler, RunnerRefCountRequestHandler,
         RunnerRefCountSyncGetRequestHandler, RunnerRefCountErrorRequestHandler,
-        TransactionAwareFunctionAferFinalize, IgnoreAddHandlerRequestHandler)
+        TransactionAwareFunctionAferFinalize, IgnoreAddHandlerRequestHandler,
+        NativeFuturesCoroutine)
 
 from testing_support.mock_external_http_server import MockExternalHTTPServer
 
@@ -1074,3 +1075,60 @@ class TornadoTest(TornadoBaseTest):
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body,
                 IgnoreAddHandlerRequestHandler.RESPONSE)
+
+    scoped_metrics = [
+        select_python_version(
+            py2=('Function/_test_async_application:get (coroutine)', 1),
+            py3=('Function/_test_async_application:'
+                 'NativeFuturesCoroutine.get (coroutine)', 1)),
+            ('Function/_test_async_application:NativeFuturesCoroutine.get', 1),
+            ('Function/_test_async_application:NativeFuturesCoroutine.'
+                 'do_thing', 1),
+            ('Function/_test_async_application:NativeFuturesCoroutine.'
+                 'resolve', 1),
+            ('Function/_test_async_application:NativeFuturesCoroutine.'
+                 'another_method', 1),]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:NativeFuturesCoroutine.get',
+            scoped_metrics=scoped_metrics)
+    def test_coroutine_yields_native_future(self):
+        response = self.fetch_response('/native-future-coroutine/')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body,
+                NativeFuturesCoroutine.RESPONSE)
+
+    scoped_metrics = [
+        select_python_version(
+            py2=('Function/_test_async_application:get (coroutine)', 1),
+            py3=('Function/_test_async_application:'
+                 'NativeFuturesCoroutine.get (coroutine)', 1)),
+            ('Function/_test_async_application:NativeFuturesCoroutine.get', 1),
+            ('Function/_test_async_application:NativeFuturesCoroutine.'
+                 'do_thing', 1),]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:NativeFuturesCoroutine.get',
+            scoped_metrics=scoped_metrics,
+            forgone_metric_substrings=['resolve', 'another_method'])
+    def test_coroutine_yields_native_future_resolves_outside_transaction(self):
+        response = self.fetch_response('/native-future-coroutine/none-context')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body,
+                NativeFuturesCoroutine.NONE_RESPONSE)
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:NativeFuturesCoroutine.get',
+            scoped_metrics=[],
+            forgone_metric_substrings=['resolve', 'another_method'])
+    def test_coroutine_yields_native_future_resolves_in_thread(self):
+        response = self.fetch_response('/native-future-coroutine/thread')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body,
+                NativeFuturesCoroutine.THREAD_RESPONSE)

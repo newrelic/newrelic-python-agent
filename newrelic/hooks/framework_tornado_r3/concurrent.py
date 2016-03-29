@@ -34,6 +34,9 @@ def _nr_wrapper_Future_add_done_callback(wrapped, instance, args, kwargs):
 
     return wrapped(*args, **kwargs)
 
-def instrument_tornado_concurrent(module):
+def instrument_concurrent(module):
+
+    # This is for instrumenting both tornado futures and python native futures
+
     wrap_function_wrapper(module, 'Future.add_done_callback',
             _nr_wrapper_Future_add_done_callback)

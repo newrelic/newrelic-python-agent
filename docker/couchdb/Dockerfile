@@ -1,7 +1,7 @@
 FROM ubuntu:12.04
 
 RUN apt-get update
-RUN apt-get install -y couchdb=1.0.1-0ubuntu18
+RUN apt-get install -y couchdb
 
 EXPOSE 5984
 

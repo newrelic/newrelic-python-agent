@@ -124,15 +124,11 @@ def initiate_request_monitoring(request):
 def request_environment(request):
     # This creates a WSGI environ dictionary from a Tornado request.
 
-    result = getattr(request, '_nr_request_environ', None)
-
-    if result is not None:
-        return result
-
-    request._nr_request_environ = result = {}
+    result = {}
 
     result['REQUEST_URI'] = request.uri
     result['QUERY_STRING'] = request.query
+    result['REQUEST_METHOD'] = request.method
 
     value = request.headers.get('X-NewRelic-ID')
     if value:
@@ -149,8 +145,6 @@ def request_environment(request):
     value = request.headers.get('X-Queue-Start')
     if value:
         result['HTTP_X_QUEUE_START'] = value
-
-    result['REQUEST_METHOD'] = request.method
 
     value = request.headers.get('User-Agent')
     if value:

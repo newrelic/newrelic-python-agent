@@ -129,13 +129,6 @@ def request_environment(application, request):
     if result is not None:
         return result
 
-    # We don't bother if the agent hasn't as yet been registered.
-
-    settings = application.settings
-
-    if not settings:
-        return {}
-
     request._nr_request_environ = result = {}
 
     result['REQUEST_URI'] = request.uri
@@ -157,25 +150,23 @@ def request_environment(application, request):
     if value:
         result['HTTP_X_QUEUE_START'] = value
 
-    for key in settings.include_environ:
-        if key == 'REQUEST_METHOD':
-            result[key] = request.method
-        elif key == 'HTTP_USER_AGENT':
-            value = request.headers.get('User-Agent')
-            if value:
-                result[key] = value
-        elif key == 'HTTP_REFERER':
-            value = request.headers.get('Referer')
-            if value:
-                result[key] = value
-        elif key == 'CONTENT_TYPE':
-            value = request.headers.get('Content-Type')
-            if value:
-                result[key] = value
-        elif key == 'CONTENT_LENGTH':
-            value = request.headers.get('Content-Length')
-            if value:
-                result[key] = value
+    result['REQUEST_METHOD'] = request.method
+
+    value = request.headers.get('User-Agent')
+    if value:
+        result['HTTP_USER_AGENT'] = value
+
+    value = request.headers.get('Referer')
+    if value:
+        result['HTTP_REFERER'] = value
+
+    value = request.headers.get('Content-Type')
+    if value:
+        result['CONTENT_TYPE'] = value
+
+    value = request.headers.get('Content-Length')
+    if value:
+        result['CONTENT_LENGTH'] = value
 
     return result
 

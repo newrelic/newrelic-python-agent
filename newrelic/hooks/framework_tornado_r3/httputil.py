@@ -76,7 +76,7 @@ def initiate_request_monitoring(request):
     # We need to fake up a WSGI like environ dictionary with the key
     # bits of information we need.
 
-    environ = request_environment(application, request)
+    environ = request_environment(request)
 
     # We now start recording the actual web transaction.
 
@@ -121,7 +121,7 @@ def initiate_request_monitoring(request):
 
     return transaction
 
-def request_environment(application, request):
+def request_environment(request):
     # This creates a WSGI environ dictionary from a Tornado request.
 
     result = getattr(request, '_nr_request_environ', None)

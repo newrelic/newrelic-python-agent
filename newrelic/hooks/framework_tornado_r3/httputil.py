@@ -124,45 +124,45 @@ def initiate_request_monitoring(request):
 def request_environment(request):
     # This creates a WSGI environ dictionary from a Tornado request.
 
-    result = {}
+    environ = {}
 
-    result['REQUEST_URI'] = request.uri
-    result['QUERY_STRING'] = request.query
-    result['REQUEST_METHOD'] = request.method
+    environ['REQUEST_URI'] = request.uri
+    environ['QUERY_STRING'] = request.query
+    environ['REQUEST_METHOD'] = request.method
 
     value = request.headers.get('X-NewRelic-ID')
     if value:
-        result['HTTP_X_NEWRELIC_ID'] = value
+        environ['HTTP_X_NEWRELIC_ID'] = value
 
     value = request.headers.get('X-NewRelic-Transaction')
     if value:
-        result['HTTP_X_NEWRELIC_TRANSACTION'] = value
+        environ['HTTP_X_NEWRELIC_TRANSACTION'] = value
 
     value = request.headers.get('X-Request-Start')
     if value:
-        result['HTTP_X_REQUEST_START'] = value
+        environ['HTTP_X_REQUEST_START'] = value
 
     value = request.headers.get('X-Queue-Start')
     if value:
-        result['HTTP_X_QUEUE_START'] = value
+        environ['HTTP_X_QUEUE_START'] = value
 
     value = request.headers.get('User-Agent')
     if value:
-        result['HTTP_USER_AGENT'] = value
+        environ['HTTP_USER_AGENT'] = value
 
     value = request.headers.get('Referer')
     if value:
-        result['HTTP_REFERER'] = value
+        environ['HTTP_REFERER'] = value
 
     value = request.headers.get('Content-Type')
     if value:
-        result['CONTENT_TYPE'] = value
+        environ['CONTENT_TYPE'] = value
 
     value = request.headers.get('Content-Length')
     if value:
-        result['CONTENT_LENGTH'] = value
+        environ['CONTENT_LENGTH'] = value
 
-    return result
+    return environ
 
 def is_websocket(request):
     return request.headers.get('Upgrade', '').lower() == 'websocket'

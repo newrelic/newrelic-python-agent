@@ -156,8 +156,7 @@ class CallbackFromCoroutineRequestHandler(RequestHandler):
 
     # We should not need the asynchronous decorator here. However, the tornado
     # test framework captures the exception and prevents the tornado app from
-    # capturing it. This is the simplest case I have found to illustrates this
-    # possible tornado bug.
+    # capturing it.
     @tornado.web.asynchronous
     @tornado.gen.coroutine
     def get(self):
@@ -1031,7 +1030,7 @@ class CoroutineLateExceptionRequestHandler(RequestHandler):
     def get(self):
         _ = yield self.before_finish()
         self.finish(self.RESPONSE)
-        _ = yield self.after_finish()
+        raise Tornado4TestException(self.RESPONSE)
 
     def before_finish(self):
         f = tornado.concurrent.Future()
@@ -1040,9 +1039,6 @@ class CoroutineLateExceptionRequestHandler(RequestHandler):
 
     def resolve_future(self, f):
         f.set_result(None)
-
-    def after_finish(self):
-        raise Tornado4TestException(self.RESPONSE)
 
 class ScheduleAndCancelExceptionRequestHandler(RequestHandler):
     RESPONSE = b'close call'

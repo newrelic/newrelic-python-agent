@@ -138,6 +138,10 @@ def request_environment(request):
     if value:
         environ['HTTP_X_NEWRELIC_TRANSACTION'] = value
 
+    value = request.headers.get('X-NewRelic-Synthetics')
+    if value:
+        environ['HTTP_X_NEWRELIC_SYNTHETICS'] = value
+
     value = request.headers.get('X-Request-Start')
     if value:
         environ['HTTP_X_REQUEST_START'] = value

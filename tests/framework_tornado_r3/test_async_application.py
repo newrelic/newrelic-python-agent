@@ -3,6 +3,7 @@ import time
 import threading
 import multiprocessing
 
+from tornado.httputil import HTTPHeaders, HTTPServerRequest
 from tornado.ioloop import IOLoop
 import tornado.stack_context
 import tornado.testing
@@ -12,6 +13,7 @@ from newrelic.core.agent import agent_instance
 from newrelic.core.stats_engine import StatsEngine
 from newrelic.core.thread_utilization import _utilization_trackers
 from newrelic.packages import six
+from newrelic.hooks.framework_tornado_r3.httputil import request_environment
 
 from tornado_base_test import TornadoBaseTest
 
@@ -1132,3 +1134,12 @@ class TornadoTest(TornadoBaseTest):
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body,
                 NativeFuturesCoroutine.THREAD_RESPONSE)
+
+    def test_request_environment(self):
+        value = 'encoded_synthetics_val'
+        headers = HTTPHeaders({'X-NewRelic-Synthetics': value})
+        request = HTTPServerRequest(uri="pupper.com", headers=headers)
+
+        environ = request_environment(request)
+
+        assert 'HTTP_X_NEWRELIC_SYNTHETICS' in environ

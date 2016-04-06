@@ -1,7 +1,7 @@
 import functools
+import multiprocessing
 import time
 import threading
-import multiprocessing
 
 from tornado.httputil import HTTPHeaders, HTTPServerRequest
 from tornado.ioloop import IOLoop
@@ -12,8 +12,8 @@ from newrelic.agent import background_task
 from newrelic.core.agent import agent_instance
 from newrelic.core.stats_engine import StatsEngine
 from newrelic.core.thread_utilization import _utilization_trackers
-from newrelic.packages import six
 from newrelic.hooks.framework_tornado_r3.httputil import request_environment
+from newrelic.packages import six
 
 from tornado_base_test import TornadoBaseTest
 

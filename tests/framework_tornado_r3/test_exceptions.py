@@ -40,59 +40,120 @@ class ExceptionTest(TornadoBaseTest):
     def test_callback_exception(self):
         self.fetch_exception('/callback-exception')
 
+    scoped_metrics = [
+            ('Function/_test_async_application:'
+            'CoroutineExceptionRequestHandler.get', 1),
+            (select_python_version(
+                py2='Function/_test_async_application:get (coroutine)',
+                py3='Function/_test_async_application:'
+                    'CoroutineExceptionRequestHandler.get (coroutine)'),
+             1),
+            ('Function/_test_async_application:'
+            'CoroutineExceptionRequestHandler._inc', 1),]
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[
             '_test_async_application:Tornado4TestException'])
     @tornado_validate_count_transaction_metrics(
-            '_test_async_application:CoroutineExceptionRequestHandler.get')
+            '_test_async_application:CoroutineExceptionRequestHandler.get',
+            scoped_metrics=scoped_metrics)
     def test_coroutine_exception_0(self):
         r = self.fetch_exception('/coroutine-exception/0')
 
+    scoped_metrics = [('Function/_test_async_application:'
+            'CoroutineExceptionRequestHandler.get', 1),
+            ('Function/_test_async_application:'
+            'CoroutineExceptionRequestHandler._inc', 1),]
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[
             '_test_async_application:Tornado4TestException'])
     @tornado_validate_count_transaction_metrics(
-            '_test_async_application:CoroutineExceptionRequestHandler.get')
+            '_test_async_application:CoroutineExceptionRequestHandler.get',
+            scoped_metrics=scoped_metrics)
     def test_coroutine_exception_1(self):
         r = self.fetch_exception('/coroutine-exception/1')
 
+    scoped_metrics = [
+            # The get request handler is double counted. See PYTHON-1967.
+            # ('Function/_test_async_application:'
+            #  'CoroutineException2RequestHandler.get', 1),
+            (select_python_version(
+                py2='Function/_test_async_application:get (coroutine)',
+                py3='Function/_test_async_application:'
+                    'CoroutineException2RequestHandler.get (coroutine)'), 1),
+            ('Function/_test_async_application:'
+            'CoroutineException2RequestHandler._inc', 1),]
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[
             '_test_async_application:Tornado4TestException'])
     @tornado_validate_count_transaction_metrics(
-            '_test_async_application:CoroutineException2RequestHandler.get')
+            '_test_async_application:CoroutineException2RequestHandler.get',
+            scoped_metrics=scoped_metrics)
     def test_coroutine_exception_2(self):
         response = self.fetch_exception('/coroutine-exception-2')
 
+    scoped_metrics = [
+           # The request handler is double counted. See PYTHON-1967.
+           #('Function/_test_async_application:'
+           # 'CallbackFromCoroutineRequestHandler.get', 1),
+            ('Function/_test_async_application:'
+            'CallbackFromCoroutineRequestHandler.error', 1),]
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[
             '_test_async_application:Tornado4TestException'])
     @tornado_validate_count_transaction_metrics(
-            '_test_async_application:CallbackFromCoroutineRequestHandler.get')
+            '_test_async_application:CallbackFromCoroutineRequestHandler.get',
+            scoped_metrics=scoped_metrics)
     def test_callback_from_coroutine_exception(self):
         response = self.fetch_exception('/callback-from-coroutine')
 
+    scoped_metrics = [('Function/_test_async_application:'
+            'SyncLateExceptionRequestHandler.get', 1)]
+
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[
             '_test_async_application:Tornado4TestException'])
     @tornado_validate_count_transaction_metrics(
-            '_test_async_application:SyncLateExceptionRequestHandler.get')
+            '_test_async_application:SyncLateExceptionRequestHandler.get',
+            scoped_metrics=scoped_metrics)
     def test_sync_late_exception(self):
         self.fetch_response('/sync-late-exception')
 
-    @tornado_validate_transaction_cache_empty()
-    @tornado_validate_errors(errors=[
-            '_test_async_application:Tornado4TestException'])
-    @tornado_validate_count_transaction_metrics(
-            '_test_async_application:AsyncLateExceptionRequestHandler.get')
-    def test_async_late_exception(self):
-        self.fetch_response('/async-late-exception')
+    scoped_metrics = [('Function/_test_async_application:'
+            'AsyncLateExceptionRequestHandler.get', 1),
+            ('Function/_test_async_application:'
+            'AsyncLateExceptionRequestHandler.done', 1),
+            ('Function/_test_async_application:'
+            'AsyncLateExceptionRequestHandler.error', 1)]
 
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[
             '_test_async_application:Tornado4TestException'])
     @tornado_validate_count_transaction_metrics(
-            '_test_async_application:CoroutineLateExceptionRequestHandler.get')
+            '_test_async_application:AsyncLateExceptionRequestHandler.get',
+            scoped_metrics=scoped_metrics)
+    def test_async_late_exception(self):
+        self.fetch_response('/async-late-exception')
+
+
+    scoped_metrics = [('Function/_test_async_application:'
+            'CoroutineLateExceptionRequestHandler.get', 1),
+            (select_python_version(
+                py2='Function/_test_async_application:get (coroutine)',
+                py3='Function/_test_async_application:'
+                    'CoroutineLateExceptionRequestHandler.get (coroutine)'), 1),
+            ('Function/_test_async_application:'
+            'CoroutineLateExceptionRequestHandler.resolve_future', 1)]
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(errors=[
+            '_test_async_application:Tornado4TestException'])
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:CoroutineLateExceptionRequestHandler.get',
+            scoped_metrics=scoped_metrics)
     def test_coroutine_late_exception(self):
         self.fetch_response('/coroutine-late-exception')
 
@@ -102,8 +163,10 @@ class ExceptionTest(TornadoBaseTest):
     @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[])
     @tornado_validate_count_transaction_metrics(
-            '_test_async_application:ScheduleAndCancelExceptionRequestHandler.get',
-            scoped_metrics=scoped_metrics)
+            '_test_async_application:ScheduleAndCancelExceptionRequestHandler'
+            '.get',
+            scoped_metrics=scoped_metrics,
+            forgone_metric_substrings=['do_error'])
     def test_schedule_and_cancel_exception(self):
         response = self.fetch_response('/almost-error')
         self.assertEqual(response.code, 200)

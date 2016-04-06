@@ -70,7 +70,8 @@ _test_application_not_found_scoped_metrics = [
         ('Function/django.middleware.csrf:CsrfViewMiddleware.process_response', 1),
         ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_response', 1),
         ('Function/django.middleware.common:CommonMiddleware.process_response', 1),
-        ('Function/newrelic.hooks.framework_django:browser_timing_middleware', 1)]
+        ('Function/newrelic.hooks.framework_django:browser_timing_middleware', 1),
+        ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 'present')]
 
 if DJANGO_VERSION >= (1, 5):
     if six.PY3:
@@ -79,13 +80,6 @@ if DJANGO_VERSION >= (1, 5):
     else:
         _test_application_not_found_scoped_metrics.extend([
                 ('Function/django.http.response:HttpResponseNotFound.close', 1)])
-
-if DJANGO_VERSION >= (1, 8):
-    _test_application_not_found_scoped_metrics.extend([
-            ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 4)])
-else:
-    _test_application_not_found_scoped_metrics.extend([
-            ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 3)])
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('django.views.debug:technical_404_response',
@@ -109,7 +103,8 @@ _test_application_cbv_scoped_metrics = [
         ('Function/django.middleware.csrf:CsrfViewMiddleware.process_response', 1),
         ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_response', 1),
         ('Function/django.middleware.common:CommonMiddleware.process_response', 1),
-        ('Function/newrelic.hooks.framework_django:browser_timing_middleware', 1)]
+        ('Function/newrelic.hooks.framework_django:browser_timing_middleware', 1),
+        ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 'present')]
 
 if DJANGO_VERSION >= (1, 5):
     if six.PY3:
@@ -118,13 +113,6 @@ if DJANGO_VERSION >= (1, 5):
     else:
         _test_application_cbv_scoped_metrics.extend([
                 ('Function/django.http.response:HttpResponse.close', 1)])
-
-if DJANGO_VERSION >= (1, 9):
-    _test_application_cbv_scoped_metrics.extend([
-            ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 1)])
-else:
-    _test_application_cbv_scoped_metrics.extend([
-            ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 2)])
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:MyView.get',
@@ -149,7 +137,8 @@ _test_application_deferred_cbv_scoped_metrics = [
         ('Function/django.middleware.csrf:CsrfViewMiddleware.process_response', 1),
         ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_response', 1),
         ('Function/django.middleware.common:CommonMiddleware.process_response', 1),
-        ('Function/newrelic.hooks.framework_django:browser_timing_middleware', 1)]
+        ('Function/newrelic.hooks.framework_django:browser_timing_middleware', 1),
+        ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 'present')]
 
 if DJANGO_VERSION >= (1, 5):
     if six.PY3:
@@ -158,13 +147,6 @@ if DJANGO_VERSION >= (1, 5):
     else:
         _test_application_deferred_cbv_scoped_metrics.extend([
                 ('Function/django.http.response:HttpResponse.close', 1)])
-
-if DJANGO_VERSION >= (1, 9):
-    _test_application_deferred_cbv_scoped_metrics.extend([
-            ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 1)])
-else:
-    _test_application_deferred_cbv_scoped_metrics.extend([
-            ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 2)])
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:deferred_cbv',
@@ -271,14 +253,11 @@ _test_application_inclusion_tag_scoped_metrics = [
         ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_response', 1),
         ('Function/django.middleware.common:CommonMiddleware.process_response', 1),
         ('Function/newrelic.hooks.framework_django:browser_timing_middleware', 1),
-        ('Template/Render/main.html', 1)]
+        ('Template/Render/main.html', 1),
+        ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 'present')]
 
-if DJANGO_VERSION >= (1, 9):
+if DJANGO_VERSION < (1, 9):
     _test_application_inclusion_tag_scoped_metrics.extend([
-            ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 1)])
-else:
-    _test_application_inclusion_tag_scoped_metrics.extend([
-            ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 2),
             ('Template/Include/results.html', 1)])
 
 @validate_transaction_errors(errors=[])
@@ -304,14 +283,11 @@ _test_inclusion_tag_template_tags_scoped_metrics = [
         ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_response', 1),
         ('Function/django.middleware.common:CommonMiddleware.process_response', 1),
         ('Function/newrelic.hooks.framework_django:browser_timing_middleware', 1),
-        ('Template/Render/main.html', 1)]
+        ('Template/Render/main.html', 1),
+        ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 'present')]
 
-if DJANGO_VERSION >= (1, 9):
+if DJANGO_VERSION < (1, 9):
     _test_inclusion_tag_template_tags_scoped_metrics.extend([
-        ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 1)])
-else:
-    _test_inclusion_tag_template_tags_scoped_metrics.extend([
-        ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 2),
         ('Template/Include/results.html', 1),
         ('Template/Tag/show_results', 1)])
 

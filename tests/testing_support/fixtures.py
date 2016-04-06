@@ -404,7 +404,11 @@ def validate_transaction_metrics(name, group='Function',
 
                 if count is not None:
                     assert metric is not None, _metrics_table()
-                    assert metric.call_count == count, _metric_details()
+                    if count == 'present':
+                        assert metric.call_count > 0, _metric_details()
+                    else:
+                        assert metric.call_count == count, _metric_details()
+
                 else:
                     assert metric is None, _metrics_table()
 

@@ -128,6 +128,20 @@ class CallbackExceptionRequestHandler(RequestHandler):
     def finish_callback(self):
         self.finish(self.RESPONSE)
 
+class CallbackFromCoroutineRequestHandler(RequestHandler):
+    RESPONSE = "callback from coroutine"
+
+    # We should not need the asynchronous decorator here. However, the tornado
+    # test framework captures the exception and prevents the tornado app from
+    # capturing it.
+    @tornado.web.asynchronous
+    @tornado.gen.coroutine
+    def get(self):
+        tornado.ioloop.IOLoop.current().add_callback(self.error)
+
+    def error(self):
+        raise Tornado4TestException("Error")
+
 class CoroutineExceptionRequestHandler(RequestHandler):
     RESPONSE = b'coroutine exception'
 
@@ -150,20 +164,6 @@ class CoroutineExceptionRequestHandler(RequestHandler):
         f.set_result(self.count + 1)
         if self.location == '2':
             raise Tornado4TestException("location 2")
-
-class CallbackFromCoroutineRequestHandler(RequestHandler):
-    RESPONSE = "callback from coroutine"
-
-    # We should not need the asynchronous decorator here. However, the tornado
-    # test framework captures the exception and prevents the tornado app from
-    # capturing it.
-    @tornado.web.asynchronous
-    @tornado.gen.coroutine
-    def get(self):
-        tornado.ioloop.IOLoop.current().add_callback(self.error)
-
-    def error(self):
-        raise Tornado4TestException("Error")
 
 # This RequestHandler is equivalent to the RequestHandler above when
 # location is set to 2. However, the testing framework exception handling seems

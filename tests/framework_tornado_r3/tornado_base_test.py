@@ -66,8 +66,10 @@ class TornadoBaseTest(tornado.testing.AsyncHTTPTestCase):
         # if the server did not respond successfully.
         try:
             response = future.result()
-        except tornado.httpclient.HTTPError:
-            if not is_http_error:
+        except tornado.httpclient.HTTPError as e:
+            if is_http_error:
+                return e.response
+            else:
                 raise
         else:
             self.assertFalse(is_http_error, "Client did not receive an error "
@@ -93,4 +95,4 @@ class TornadoBaseTest(tornado.testing.AsyncHTTPTestCase):
         # makes the logging to stdout less noisy.
         with tornado.testing.ExpectLog('tornado.application',
                 "Uncaught exception GET %s" % path):
-            self.fetch_response(path, is_http_error=True)
+            return self.fetch_response(path, is_http_error=True)

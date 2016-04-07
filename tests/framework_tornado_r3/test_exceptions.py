@@ -9,7 +9,12 @@ from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
     tornado_validate_errors, tornado_validate_transaction_cache_empty)
 
-from _test_async_application import ScheduleAndCancelExceptionRequestHandler
+from _test_async_application import (AsyncLateExceptionRequestHandler,
+        CoroutineLateExceptionRequestHandler,
+        ScheduleAndCancelExceptionRequestHandler,
+        SyncLateExceptionRequestHandler)
+
+INTERNAL_SERVER_ERROR = 'Internal Server Error'
 
 def select_python_version(py2, py3):
     return six.PY3 and py3 or py2
@@ -25,7 +30,9 @@ class ExceptionTest(TornadoBaseTest):
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:SyncExceptionRequestHandler.get')
     def test_sync_exception(self):
-        self.fetch_exception('/sync-exception')
+        response = self.fetch_exception('/sync-exception')
+        self.assertEqual(response.code, 500)
+        self.assertEqual(response.reason, INTERNAL_SERVER_ERROR)
 
     scoped_metrics = [('Function/_test_async_application:'
             'CallbackExceptionRequestHandler.get', 1),
@@ -38,7 +45,9 @@ class ExceptionTest(TornadoBaseTest):
             '_test_async_application:CallbackExceptionRequestHandler.get',
             scoped_metrics=scoped_metrics)
     def test_callback_exception(self):
-        self.fetch_exception('/callback-exception')
+        response = self.fetch_exception('/callback-exception')
+        self.assertEqual(response.code, 500)
+        self.assertEqual(response.reason, INTERNAL_SERVER_ERROR)
 
     scoped_metrics = [
             ('Function/_test_async_application:'
@@ -58,7 +67,9 @@ class ExceptionTest(TornadoBaseTest):
             '_test_async_application:CoroutineExceptionRequestHandler.get',
             scoped_metrics=scoped_metrics)
     def test_coroutine_exception_0(self):
-        r = self.fetch_exception('/coroutine-exception/0')
+        response = self.fetch_exception('/coroutine-exception/0')
+        self.assertEqual(response.code, 500)
+        self.assertEqual(response.reason, INTERNAL_SERVER_ERROR)
 
     scoped_metrics = [('Function/_test_async_application:'
             'CoroutineExceptionRequestHandler.get', 1),
@@ -72,7 +83,9 @@ class ExceptionTest(TornadoBaseTest):
             '_test_async_application:CoroutineExceptionRequestHandler.get',
             scoped_metrics=scoped_metrics)
     def test_coroutine_exception_1(self):
-        r = self.fetch_exception('/coroutine-exception/1')
+        response = self.fetch_exception('/coroutine-exception/1')
+        self.assertEqual(response.code, 500)
+        self.assertEqual(response.reason, INTERNAL_SERVER_ERROR)
 
     scoped_metrics = [
             # The get request handler is double counted. See PYTHON-1967.
@@ -93,6 +106,8 @@ class ExceptionTest(TornadoBaseTest):
             scoped_metrics=scoped_metrics)
     def test_coroutine_exception_2(self):
         response = self.fetch_exception('/coroutine-exception-2')
+        self.assertEqual(response.code, 500)
+        self.assertEqual(response.reason, INTERNAL_SERVER_ERROR)
 
     scoped_metrics = [
            # The request handler is double counted. See PYTHON-1967.
@@ -109,6 +124,8 @@ class ExceptionTest(TornadoBaseTest):
             scoped_metrics=scoped_metrics)
     def test_callback_from_coroutine_exception(self):
         response = self.fetch_exception('/callback-from-coroutine')
+        self.assertEqual(response.code, 500)
+        self.assertEqual(response.reason, INTERNAL_SERVER_ERROR)
 
     scoped_metrics = [('Function/_test_async_application:'
             'SyncLateExceptionRequestHandler.get', 1)]
@@ -120,7 +137,11 @@ class ExceptionTest(TornadoBaseTest):
             '_test_async_application:SyncLateExceptionRequestHandler.get',
             scoped_metrics=scoped_metrics)
     def test_sync_late_exception(self):
-        self.fetch_response('/sync-late-exception')
+        response = self.fetch_response('/sync-late-exception')
+        # Exception occurs after response comes back
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body,
+                SyncLateExceptionRequestHandler.RESPONSE)
 
     scoped_metrics = [('Function/_test_async_application:'
             'AsyncLateExceptionRequestHandler.get', 1),
@@ -136,8 +157,11 @@ class ExceptionTest(TornadoBaseTest):
             '_test_async_application:AsyncLateExceptionRequestHandler.get',
             scoped_metrics=scoped_metrics)
     def test_async_late_exception(self):
-        self.fetch_response('/async-late-exception')
-
+        response = self.fetch_response('/async-late-exception')
+        # Exception occurs after response comes back
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body,
+                AsyncLateExceptionRequestHandler.RESPONSE)
 
     scoped_metrics = [('Function/_test_async_application:'
             'CoroutineLateExceptionRequestHandler.get', 1),
@@ -155,7 +179,11 @@ class ExceptionTest(TornadoBaseTest):
             '_test_async_application:CoroutineLateExceptionRequestHandler.get',
             scoped_metrics=scoped_metrics)
     def test_coroutine_late_exception(self):
-        self.fetch_response('/coroutine-late-exception')
+        response = self.fetch_response('/coroutine-late-exception')
+        # Exception occurs after response comes back
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body,
+                CoroutineLateExceptionRequestHandler.RESPONSE)
 
     scoped_metrics = [('Function/_test_async_application:'
             'ScheduleAndCancelExceptionRequestHandler.get', 1)]

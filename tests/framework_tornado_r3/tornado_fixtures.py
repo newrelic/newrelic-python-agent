@@ -115,7 +115,7 @@ def tornado_validate_count_transaction_metrics(name, group='Function',
     Arguments:
       name: metric name
       background_task: A boolean. If True the top level path of the metric
-          is WebTransaction. Otherwise it is OtherTransaction.
+          is OtherTransaction. Otherwise it is WebTransaction.
       group: The second level path of the metric.
       scoped_metrics: A list of 2-tuples representing an expected metric:
         (scoped_metric_name, expected_count)

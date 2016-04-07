@@ -1135,10 +1135,17 @@ class TornadoTest(TornadoBaseTest):
         self.assertEqual(response.body,
                 NativeFuturesCoroutine.THREAD_RESPONSE)
 
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
     def test_request_environment(self):
         value = 'encoded_synthetics_val'
         headers = HTTPHeaders({'X-NewRelic-Synthetics': value})
         request = HTTPServerRequest(uri="pupper.com", headers=headers)
+
+        # HTTPServerRequest will cause a transaction to be created
+        transaction = request._nr_transaction
+        transaction.save_transaction()
+        transaction.__exit__(None, None, None)
 
         environ = request_environment(request)
 

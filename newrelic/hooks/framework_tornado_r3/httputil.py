@@ -137,6 +137,11 @@ def request_environment(request):
             wsgi_name = 'HTTP_' + header.replace('-', '_').upper()
         environ[wsgi_name] = value
 
+    from tornado.httputil import split_host_and_port
+    port = split_host_and_port(request.host.lower())[1]
+    if port:
+        environ['SERVER_PORT'] = port
+
     return environ
 
 def is_websocket(request):

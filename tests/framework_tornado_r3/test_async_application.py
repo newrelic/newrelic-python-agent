@@ -1069,4 +1069,6 @@ class TornadoTest(TornadoBaseTest):
         environ = request_environment(request)
 
         assert 'HTTP_X_NEWRELIC_SYNTHETICS' in environ
+        assert environ['HTTP_X_NEWRELIC_SYNTHETICS'] == synthetics_value
         assert 'SERVER_PORT' in environ
+        assert environ['SERVER_PORT'] == port_value

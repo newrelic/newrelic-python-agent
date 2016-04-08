@@ -1,8 +1,9 @@
 import functools
+import multiprocessing
 import time
 import threading
-import multiprocessing
 
+from tornado.httputil import HTTPHeaders, HTTPServerRequest
 from tornado.ioloop import IOLoop
 import tornado.stack_context
 import tornado.testing
@@ -11,6 +12,7 @@ from newrelic.agent import background_task
 from newrelic.core.agent import agent_instance
 from newrelic.core.stats_engine import StatsEngine
 from newrelic.core.thread_utilization import _utilization_trackers
+from newrelic.hooks.framework_tornado_r3.httputil import request_environment
 from newrelic.packages import six
 
 from tornado_base_test import TornadoBaseTest
@@ -1049,3 +1051,19 @@ class TornadoTest(TornadoBaseTest):
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body,
                 NativeFuturesCoroutine.THREAD_RESPONSE)
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    def test_request_environment(self):
+        value = 'encoded_synthetics_val'
+        headers = HTTPHeaders({'X-NewRelic-Synthetics': value})
+        request = HTTPServerRequest(uri="pupper.com", headers=headers)
+
+        # HTTPServerRequest will cause a transaction to be created
+        transaction = request._nr_transaction
+        transaction.save_transaction()
+        transaction.__exit__(None, None, None)
+
+        environ = request_environment(request)
+
+        assert 'HTTP_X_NEWRELIC_SYNTHETICS' in environ

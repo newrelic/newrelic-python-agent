@@ -27,6 +27,8 @@ def register_database_client(dbapi2_module, database_name,
 
 class DatabaseTrace(TimeTrace):
 
+    __async_explain_plan_logged = False
+
     def __init__(self, transaction, sql, dbapi2_module=None,
                  connect_params=None, cursor_params=None,
                  sql_parameters=None, execute_params=None):
@@ -61,6 +63,14 @@ class DatabaseTrace(TimeTrace):
         else:
             return 'async' in kwargs and kwargs['async']
 
+    def _log_async_warning(self):
+        # Only log the warning the first time.
+
+        if not DatabaseTrace.__async_explain_plan_logged:
+            DatabaseTrace.__async_explain_plan_logged = True
+            _logger.warning('Explain plans are not supported for queries '
+                    'made over database connections in asynchronous mode.')
+
     def finalize_data(self, transaction, exc=None, value=None, tb=None):
         self.stack_trace = None
 
@@ -82,25 +92,28 @@ class DatabaseTrace(TimeTrace):
                                         x in current_stack(skip=2)]
                     transaction._stack_trace_count += 1
 
-            # Only remember all the params for the calls if know
-            # there is a chance we will need to do an explain
-            # plan. We never allow an explain plan to be done if
-            # an exception occurred in doing the query in case
-            # doing the explain plan with the same inputs could
-            # cause further problems.
+            if self.is_async_mode and tt.explain_enabled:
+                self._log_async_warning()
+            else:
+                # Only remember all the params for the calls if know
+                # there is a chance we will need to do an explain
+                # plan. We never allow an explain plan to be done if
+                # an exception occurred in doing the query in case
+                # doing the explain plan with the same inputs could
+                # cause further problems.
 
-            if (exc is None
-                    and not self.is_async_mode
-                    and tt.explain_enabled
-                    and self.duration >= tt.explain_threshold
-                    and self.connect_params is not None):
-                if (transaction._explain_plan_count <
-                       agent_limits.sql_explain_plans):
-                    connect_params = self.connect_params
-                    cursor_params = self.cursor_params
-                    sql_parameters = self.sql_parameters
-                    execute_params = self.execute_params
-                    transaction._explain_plan_count += 1
+                if (exc is None
+                        and not self.is_async_mode
+                        and tt.explain_enabled
+                        and self.duration >= tt.explain_threshold
+                        and self.connect_params is not None):
+                    if (transaction._explain_plan_count <
+                           agent_limits.sql_explain_plans):
+                        connect_params = self.connect_params
+                        cursor_params = self.cursor_params
+                        sql_parameters = self.sql_parameters
+                        execute_params = self.execute_params
+                        transaction._explain_plan_count += 1
 
         self.sql_format = tt.record_sql
 

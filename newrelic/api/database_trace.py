@@ -49,6 +49,18 @@ class DatabaseTrace(TimeTrace):
         return '<%s %s>' % (self.__class__.__name__, dict(
                 sql=self.sql, dbapi2_module=self.dbapi2_module))
 
+    @property
+    def is_async_mode(self):
+        # Check for `async=1` keyword argument in connect_params, which
+        # indicates that psycopg2 driver is being used in async mode.
+
+        try:
+            _, kwargs = self.connect_params
+        except TypeError:
+            return False
+        else:
+            return 'async' in kwargs and kwargs['async']
+
     def finalize_data(self, transaction, exc=None, value=None, tb=None):
         self.stack_trace = None
 
@@ -78,6 +90,7 @@ class DatabaseTrace(TimeTrace):
             # cause further problems.
 
             if (exc is None
+                    and not self.is_async_mode
                     and tt.explain_enabled
                     and self.duration >= tt.explain_threshold
                     and self.connect_params is not None):

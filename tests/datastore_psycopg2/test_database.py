@@ -7,7 +7,9 @@ import psycopg2.extras
 import pytest
 
 from testing_support.fixtures import (validate_transaction_metrics,
-    validate_database_trace_inputs, validate_transaction_errors)
+    validate_database_trace_inputs, validate_transaction_errors,
+    validate_transaction_slow_sql_count,
+    validate_stats_engine_explain_plan_output)
 
 from testing_support.settings import postgresql_settings
 
@@ -199,6 +201,37 @@ def test_rollback_on_exception():
             raise RuntimeError('error')
     except RuntimeError:
         pass
+
+@validate_stats_engine_explain_plan_output(None)
+@validate_transaction_slow_sql_count(num_slow_sql=3)
+@validate_database_trace_inputs(sql_parameters_type=tuple)
+@background_task()
+def test_async_mode():
+
+    wait = psycopg2.extras.wait_select
+
+    async_conn = psycopg2.connect(
+            database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
+            password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
+            port=DB_SETTINGS['port'], async=1
+    )
+    wait(async_conn)
+    async_cur = async_conn.cursor()
+
+    async_cur.execute("""drop table if exists datastore_psycopg2""")
+    wait(async_cur.connection)
+
+    async_cur.execute("""create table datastore_psycopg2 """
+            """(a integer, b real, c text)""")
+    wait(async_cur.connection)
+
+    async_cur.execute("""select * from datastore_psycopg2""")
+    wait(async_cur.connection)
+
+    for row in async_cur:
+        assert isinstance(row, tuple)
+
+    async_conn.close()
 
 @pytest.mark.skipif(POSTGRESQL_VERSION < (9, 2),
         reason="JSON data type was introduced in Postgres 9.2")

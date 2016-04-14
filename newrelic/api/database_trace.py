@@ -58,18 +58,17 @@ class DatabaseTrace(TimeTrace):
         execute_params = None
 
         settings = transaction.settings
-        transaction_tracer = settings.transaction_tracer
+        tt = settings.transaction_tracer
         agent_limits = settings.agent_limits
 
-        if (transaction_tracer.enabled and settings.collect_traces and
-                transaction_tracer.record_sql != 'off'):
-            if self.duration >= transaction_tracer.stack_trace_threshold:
+        if (tt.enabled and settings.collect_traces and
+                tt.record_sql != 'off'):
+            if self.duration >= tt.stack_trace_threshold:
                 if (transaction._stack_trace_count <
                         agent_limits.slow_sql_stack_trace):
                     self.stack_trace = [transaction._intern_string(x) for
                                         x in current_stack(skip=2)]
                     transaction._stack_trace_count += 1
-
 
             # Only remember all the params for the calls if know
             # there is a chance we will need to do an explain
@@ -78,9 +77,10 @@ class DatabaseTrace(TimeTrace):
             # doing the explain plan with the same inputs could
             # cause further problems.
 
-            if (exc is None and transaction_tracer.explain_enabled and
-                    self.duration >= transaction_tracer.explain_threshold and
-                    self.connect_params is not None):
+            if (exc is None
+                    and tt.explain_enabled
+                    and self.duration >= tt.explain_threshold
+                    and self.connect_params is not None):
                 if (transaction._explain_plan_count <
                        agent_limits.sql_explain_plans):
                     connect_params = self.connect_params
@@ -89,7 +89,7 @@ class DatabaseTrace(TimeTrace):
                     execute_params = self.execute_params
                     transaction._explain_plan_count += 1
 
-        self.sql_format = transaction_tracer.record_sql
+        self.sql_format = tt.record_sql
 
         self.connect_params = connect_params
         self.cursor_params = cursor_params

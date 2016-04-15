@@ -1592,7 +1592,7 @@ def validate_transaction_slow_sql_count(num_slow_sql):
 
     return _validate_transaction_slow_sql_count
 
-def validate_stats_engine_explain_plan_output(expected):
+def validate_stats_engine_explain_plan_output_is_none():
     """This fixture isn't useful by itself, because you need to generate
     explain plans, which doesn't normally occur during record_transaction().
 
@@ -1603,17 +1603,17 @@ def validate_stats_engine_explain_plan_output(expected):
     """
     @transient_function_wrapper('newrelic.core.stats_engine',
             'explain_plan')
-    def _validate_explain_plan_output(wrapped, instance, args, kwargs):
+    def _validate_explain_plan_output_is_none(wrapped, instance, args, kwargs):
         try:
             result = wrapped(*args, **kwargs)
         except:
             raise
         else:
-            assert result == expected
+            assert result is None
 
         return result
 
-    return _validate_explain_plan_output
+    return _validate_explain_plan_output_is_none
 
 def validate_error_event_sample_data(required_attrs={}, required_user_attrs=True,
             num_errors=1):

@@ -6,7 +6,7 @@ import psycopg2ct.extensions
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_database_trace_inputs, validate_transaction_errors,
     validate_transaction_slow_sql_count,
-    validate_stats_engine_explain_plan_output)
+    validate_stats_engine_explain_plan_output_is_none)
 
 from testing_support.settings import postgresql_settings
 
@@ -111,7 +111,7 @@ _test_async_mode_rollup_metrics = [
         ('Datastore/operation/Postgres/drop', 1),
         ('Datastore/operation/Postgres/create', 1)]
 
-@validate_stats_engine_explain_plan_output(None)
+@validate_stats_engine_explain_plan_output_is_none()
 @validate_transaction_slow_sql_count(num_slow_sql=4)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @validate_transaction_metrics('test_database:test_async_mode',

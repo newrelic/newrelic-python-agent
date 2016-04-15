@@ -205,6 +205,7 @@ def test_rollback_on_exception():
 @validate_stats_engine_explain_plan_output(None)
 @validate_transaction_slow_sql_count(num_slow_sql=4)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
+@validate_transaction_errors(errors=[])
 @background_task()
 def test_async_mode():
 

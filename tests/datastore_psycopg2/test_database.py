@@ -203,7 +203,7 @@ def test_rollback_on_exception():
         pass
 
 @validate_stats_engine_explain_plan_output(None)
-@validate_transaction_slow_sql_count(num_slow_sql=3)
+@validate_transaction_slow_sql_count(num_slow_sql=4)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_async_mode():
@@ -223,6 +223,10 @@ def test_async_mode():
 
     async_cur.execute("""create table datastore_psycopg2 """
             """(a integer, b real, c text)""")
+    wait(async_cur.connection)
+
+    async_cur.execute("""insert into datastore_psycopg2 """
+        """values (%s, %s, %s)""", (1, 1.0, '1.0'))
     wait(async_cur.connection)
 
     async_cur.execute("""select * from datastore_psycopg2""")

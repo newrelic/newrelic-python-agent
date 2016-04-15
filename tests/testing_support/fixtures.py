@@ -1593,6 +1593,14 @@ def validate_transaction_slow_sql_count(num_slow_sql):
     return _validate_transaction_slow_sql_count
 
 def validate_stats_engine_explain_plan_output(expected):
+    """This fixture isn't useful by itself, because you need to generate
+    explain plans, which doesn't normally occur during record_transaction().
+
+    Use the `validate_transaction_slow_sql_count` fixture to force the
+    generation of slow sql data after record_transaction(), which will run
+    newrelic.core.stats_engine.explain_plan.
+
+    """
     @transient_function_wrapper('newrelic.core.stats_engine',
             'explain_plan')
     def _validate_explain_plan_output(wrapped, instance, args, kwargs):

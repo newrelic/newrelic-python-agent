@@ -202,9 +202,32 @@ def test_rollback_on_exception():
     except RuntimeError:
         pass
 
+_test_async_mode_scoped_metrics = [
+        ('Function/psycopg2:connect', 1),
+        ('Datastore/statement/Postgres/datastore_psycopg2/select', 1),
+        ('Datastore/statement/Postgres/datastore_psycopg2/insert', 1),
+        ('Datastore/operation/Postgres/drop', 1),
+        ('Datastore/operation/Postgres/create', 1)]
+
+_test_async_mode_rollup_metrics = [
+        ('Datastore/all', 5),
+        ('Datastore/allOther', 5),
+        ('Datastore/Postgres/all', 5),
+        ('Datastore/Postgres/allOther', 5),
+        ('Datastore/operation/Postgres/select', 1),
+        ('Datastore/statement/Postgres/datastore_psycopg2/select', 1),
+        ('Datastore/operation/Postgres/insert', 1),
+        ('Datastore/statement/Postgres/datastore_psycopg2/insert', 1),
+        ('Datastore/operation/Postgres/drop', 1),
+        ('Datastore/operation/Postgres/create', 1)]
+
 @validate_stats_engine_explain_plan_output(None)
 @validate_transaction_slow_sql_count(num_slow_sql=4)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
+@validate_transaction_metrics('test_database:test_async_mode',
+        scoped_metrics=_test_async_mode_scoped_metrics,
+        rollup_metrics=_test_async_mode_rollup_metrics,
+        background_task=True)
 @validate_transaction_errors(errors=[])
 @background_task()
 def test_async_mode():

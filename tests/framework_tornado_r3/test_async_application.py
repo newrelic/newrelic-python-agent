@@ -506,7 +506,7 @@ class TornadoTest(TornadoBaseTest):
     scoped_metrics = [('Function/_test_async_application:'
             'AsyncFetchRequestHandler.get', 1),
             ('Function/_test_async_application:AsyncFetchRequestHandler.'
-             'process_response [http://localhost:8989]', 1),
+             'process_response', 1),
             ('External/localhost:8989/tornado.httpclient/', 1)
     ]
 

@@ -1577,6 +1577,44 @@ def validate_transaction_error_trace_count(num_errors):
 
     return _validate_transaction_error_trace_count
 
+def validate_transaction_slow_sql_count(num_slow_sql):
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_transaction')
+    def _validate_transaction_slow_sql_count(wrapped, instance, args, kwargs):
+        result = wrapped(*args, **kwargs)
+        connections = SQLConnections()
+
+        with connections:
+            slow_sql_traces = instance.slow_sql_data(connections)
+            assert len(slow_sql_traces) == num_slow_sql
+
+        return result
+
+    return _validate_transaction_slow_sql_count
+
+def validate_stats_engine_explain_plan_output_is_none():
+    """This fixture isn't useful by itself, because you need to generate
+    explain plans, which doesn't normally occur during record_transaction().
+
+    Use the `validate_transaction_slow_sql_count` fixture to force the
+    generation of slow sql data after record_transaction(), which will run
+    newrelic.core.stats_engine.explain_plan.
+
+    """
+    @transient_function_wrapper('newrelic.core.stats_engine',
+            'explain_plan')
+    def _validate_explain_plan_output_is_none(wrapped, instance, args, kwargs):
+        try:
+            result = wrapped(*args, **kwargs)
+        except:
+            raise
+        else:
+            assert result is None
+
+        return result
+
+    return _validate_explain_plan_output_is_none
+
 def validate_error_event_sample_data(required_attrs={}, required_user_attrs=True,
             num_errors=1):
     """Validate the data collected for error_events. This test depends on values

@@ -41,22 +41,6 @@ def _nr_wrapper_httpclient_AsyncHTTPClient_fetch_(
 
     url = _extract_url(*args, **kwargs)
 
-    # If callback is not passed in to fetch, we don't see its default value,
-    # None, in args or kwargs. If callback exists we extract it now and replace
-    # it with a wrapped version to associate the url with the callback.
-    @function_wrapper
-    def _wrap_callback(wrapped, instance, args, kwargs):
-        name = callable_name(wrapped)
-        name = "%s [%s]" % (name, url)
-        with FunctionTrace(transaction, name=name):
-            return wrapped(*args, **kwargs)
-
-    if len(args) > 1:
-        args = list(args)
-        args[1] = _wrap_callback(args[1])
-    elif 'callback' in kwargs:
-        kwargs['callback'] = _wrap_callback(kwargs['callback'])
-
     with ExternalTrace(transaction, 'tornado.httpclient', url):
         return wrapped(*args, **kwargs)
 

@@ -4,41 +4,44 @@ from newrelic.agent import (wrap_function_wrapper, current_transaction,
         ExternalTrace)
 import newrelic.api.external_trace
 
-def _nr_wrapper_httplib2_connect_wrapper(wrapped, instance, args, kwargs, scheme):
-    transaction = current_transaction()
+def _nr_wrapper_httplib2_connect_wrapper(scheme):
 
-    if transaction is None:
-        return wrapped(*args, **kwargs)
+    def _nr_wrapper_httplib2_connect_wrapper_inner(wrapped, instance, args,
+            kwargs):
+      transaction = current_transaction()
 
-    def _connect_unbound(instance, *args, **kwargs):
-        return instance
+      if transaction is None:
+          return wrapped(*args, **kwargs)
 
-    if instance is None:
-        instance = _connect_unbound(*args, **kwargs)
+      def _connect_unbound(instance, *args, **kwargs):
+          return instance
 
-    connection = instance
+      if instance is None:
+          instance = _connect_unbound(*args, **kwargs)
 
-    url = '%s://%s' % (scheme, connection.host)
+      connection = instance
 
-    with ExternalTrace(transaction, library='httplib2', url=url) as tracer:
-        # Add the tracer to the connection object. The tracer will be
-        # used in getresponse() to add back into the external trace,
-        # after the trace has already completed, details from the
-        # response headers.
+      url = '%s://%s' % (scheme, connection.host)
 
-        connection._nr_external_tracer = tracer
+      with ExternalTrace(transaction, library='httplib2', url=url) as tracer:
+          # Add the tracer to the connection object. The tracer will be
+          # used in getresponse() to add back into the external trace,
+          # after the trace has already completed, details from the
+          # response headers.
 
-        return wrapped(*args, **kwargs)
+          connection._nr_external_tracer = tracer
+
+          return wrapped(*args, **kwargs)
+
+    return _nr_wrapper_httplib2_connect_wrapper_inner
 
 def instrument(module):
 
     wrap_function_wrapper(module, 'HTTPConnectionWithTimeout.connect',
-            functools.partial(_nr_wrapper_httplib2_connect_wrapper,
-            scheme='http'))
+            _nr_wrapper_httplib2_connect_wrapper('http'))
 
     wrap_function_wrapper(module, 'HTTPSConnectionWithTimeout.connect',
-            functools.partial(_nr_wrapper_httplib2_connect_wrapper,
-            scheme='https'))
+            _nr_wrapper_httplib2_connect_wrapper('https'))
 
     def url_request(connection, uri, *args, **kwargs):
         return uri

@@ -8,11 +8,14 @@ from tornado.ioloop import IOLoop
 import tornado.stack_context
 import tornado.testing
 
-from newrelic.agent import background_task
+from newrelic.agent import application, background_task
 from newrelic.core.agent import agent_instance
 from newrelic.core.stats_engine import StatsEngine
 from newrelic.core.thread_utilization import _utilization_trackers
-from newrelic.hooks.framework_tornado_r3.httputil import request_environment
+from newrelic.hooks.framework_tornado_r3.httputil import (
+        initiate_request_monitoring, request_environment)
+from newrelic.hooks.framework_tornado_r3.util import (
+        retrieve_current_transaction)
 from newrelic.packages import six
 
 from tornado_base_test import TornadoBaseTest
@@ -1072,3 +1075,22 @@ class TornadoTest(TornadoBaseTest):
         assert environ['HTTP_X_NEWRELIC_SYNTHETICS'] == synthetics_value
         assert 'SERVER_PORT' in environ
         assert environ['SERVER_PORT'] == port_value
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(expect_transaction=False)
+    def test_no_unenabled_transaction(self):
+        app = application()
+        old_enabled = app.global_settings.enabled
+
+        try:
+            # Set the application settings to false to simulate that we have not
+            # yet connected to the collector.
+            app.global_settings.enabled = False
+
+            request = HTTPServerRequest(uri="pupper.com", host='localhost')
+            transaction = initiate_request_monitoring(request)
+            self.assertEqual(None, transaction)
+            self.assertEqual(None, retrieve_current_transaction())
+
+        finally:
+            app.global_settings.enabled = old_enabled

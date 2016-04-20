@@ -1,16 +1,21 @@
 import functools
+import multiprocessing
 import time
 import threading
-import multiprocessing
 
+from tornado.httputil import HTTPHeaders, HTTPServerRequest
 from tornado.ioloop import IOLoop
 import tornado.stack_context
 import tornado.testing
 
-from newrelic.agent import background_task
+from newrelic.agent import application, background_task
 from newrelic.core.agent import agent_instance
 from newrelic.core.stats_engine import StatsEngine
 from newrelic.core.thread_utilization import _utilization_trackers
+from newrelic.hooks.framework_tornado_r3.httputil import (
+        initiate_request_monitoring, request_environment)
+from newrelic.hooks.framework_tornado_r3.util import (
+        retrieve_current_transaction)
 from newrelic.packages import six
 
 from tornado_base_test import TornadoBaseTest
@@ -231,35 +236,6 @@ class TornadoTest(TornadoBaseTest):
                 MultipleCallbacksRequestHandler.RESPONSE)
 
     @tornado_validate_transaction_cache_empty()
-    @tornado_validate_errors(errors=[select_python_version(
-            py2='exceptions:ZeroDivisionError',
-            py3='builtins:ZeroDivisionError')])
-    @tornado_validate_count_transaction_metrics(
-            '_test_async_application:SyncExceptionRequestHandler.get')
-    def test_sync_exception(self):
-        self.fetch_exception('/sync-exception')
-
-    scoped_metrics = [('Function/_test_async_application:'
-            'CallbackExceptionRequestHandler.get', 1),
-            ('Function/_test_async_application:'
-            'CallbackExceptionRequestHandler.counter_callback', 5)]
-
-    @tornado_validate_errors(errors=[select_python_version(
-            py2='exceptions:NameError', py3='builtins:NameError')])
-    @tornado_validate_count_transaction_metrics(
-            '_test_async_application:CallbackExceptionRequestHandler.get',
-            scoped_metrics=scoped_metrics)
-    def test_callback_exception(self):
-        self.fetch_exception('/callback-exception')
-
-    @tornado_validate_transaction_cache_empty()
-    @tornado_validate_errors(errors=['tornado.gen:BadYieldError'])
-    @tornado_validate_count_transaction_metrics(
-            '_test_async_application:CoroutineExceptionRequestHandler.get')
-    def test_coroutine_exception(self):
-        self.fetch_exception('/coroutine-exception')
-
-    @tornado_validate_transaction_cache_empty()
     @tornado_validate_errors(errors=[])
     @tornado_validate_count_transaction_metrics(
             '_test_async_application:FinishExceptionRequestHandler.get')
@@ -276,60 +252,6 @@ class TornadoTest(TornadoBaseTest):
         response = self.fetch_response('/return-exception')
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body, ReturnExceptionRequestHandler.RESPONSE)
-
-
-    # The following 3 functions are helper functions used to test exceptions
-    # occuring outside of a transaction.
-    def after_divide(self):
-        self.stop()
-
-    def divide_by_zero(self):
-        quotient = 0
-        try:
-            quotient = 5/0
-        finally:
-            self.io_loop.add_callback(self.after_divide)
-        return quotient
-
-    def schedule_divide_by_zero(self):
-        self.io_loop.add_callback(self.divide_by_zero)
-
-    @tornado_validate_transaction_cache_empty()
-    @tornado_validate_errors(errors=[], expect_transaction=False,
-            app_exceptions=[select_python_version(
-                    py2='exceptions:ZeroDivisionError',
-                    py3='builtins:ZeroDivisionError')])
-    def test_stack_context_no_transaction_exception(self):
-        # This tests that we record exceptions when they are not in a
-        # transaction, but they do occur within a stack context. That is they
-        # are scheduled asynchronously in a way where one wants to keep track of
-        # the stack context, such as via a context manager. Just as a note,
-        # it is possible for code written by an application developer to occur
-        # within an ExceptionStackContext implicitly, request handlers do this
-        # for example.
-
-        # The lambda here is an exception handler which swallows the exception.
-        with tornado.stack_context.ExceptionStackContext(
-                lambda type, value, traceback: True):
-            self.schedule_divide_by_zero()
-        self.wait(timeout=5.0)
-
-    @tornado_validate_transaction_cache_empty()
-    @tornado_validate_errors(errors=[], expect_transaction=False,
-            app_exceptions=[select_python_version(
-                    py2='exceptions:ZeroDivisionError',
-                    py3='builtins:ZeroDivisionError')])
-    def test_threaded_no_transaction_exception(self):
-        # This tests that we record exceptions when an error occurs outside a
-        # transaction and outside a stack context. This can be done when a job
-        # is scheduled from another thread or is initiated outside of an
-        # ExceptionStackContext context manager. By default, tests are run
-        # inside an ExceptionStackContext so we spawn a new thread for this
-        # test.
-        t = threading.Thread(target=self.schedule_divide_by_zero)
-        t.start()
-        t.join(5.0)
-        self.wait(timeout=5.0)
 
     # The class name is missing from this metric in python 2
     # though it should be present. See PYTHON-1798.
@@ -587,7 +509,7 @@ class TornadoTest(TornadoBaseTest):
     scoped_metrics = [('Function/_test_async_application:'
             'AsyncFetchRequestHandler.get', 1),
             ('Function/_test_async_application:AsyncFetchRequestHandler.'
-             'process_response [http://localhost:8989]', 1),
+             'process_response', 1),
             ('External/localhost:8989/tornado.httpclient/', 1)
     ]
 
@@ -1132,3 +1054,43 @@ class TornadoTest(TornadoBaseTest):
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body,
                 NativeFuturesCoroutine.THREAD_RESPONSE)
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors()
+    def test_request_environment(self):
+        synthetics_value = 'encoded_synthetics_val'
+        port_value = 8888
+        headers = HTTPHeaders({'X-NewRelic-Synthetics': synthetics_value})
+        request = HTTPServerRequest(uri="pupper.com", headers=headers,
+                host='localhost:'+str(port_value))
+
+        # HTTPServerRequest will cause a transaction to be created
+        transaction = request._nr_transaction
+        transaction.save_transaction()
+        transaction.__exit__(None, None, None)
+
+        environ = request_environment(request)
+
+        assert 'HTTP_X_NEWRELIC_SYNTHETICS' in environ
+        assert environ['HTTP_X_NEWRELIC_SYNTHETICS'] == synthetics_value
+        assert 'SERVER_PORT' in environ
+        assert environ['SERVER_PORT'] == port_value
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(expect_transaction=False)
+    def test_no_unenabled_transaction(self):
+        app = application()
+        old_enabled = app.global_settings.enabled
+
+        try:
+            # Set the application settings to false to simulate that we have not
+            # yet connected to the collector.
+            app.global_settings.enabled = False
+
+            request = HTTPServerRequest(uri="pupper.com", host='localhost')
+            transaction = initiate_request_monitoring(request)
+            self.assertEqual(None, transaction)
+            self.assertEqual(None, retrieve_current_transaction())
+
+        finally:
+            app.global_settings.enabled = old_enabled

@@ -128,13 +128,64 @@ class CallbackExceptionRequestHandler(RequestHandler):
     def finish_callback(self):
         self.finish(self.RESPONSE)
 
+class CallbackFromCoroutineRequestHandler(RequestHandler):
+    RESPONSE = "callback from coroutine"
+
+    # We should not need the asynchronous decorator here. However, the tornado
+    # test framework captures the exception and prevents the tornado app from
+    # capturing it.
+    @tornado.web.asynchronous
+    @tornado.gen.coroutine
+    def get(self):
+        tornado.ioloop.IOLoop.current().add_callback(self.error)
+
+    def error(self):
+        raise Tornado4TestException("Error")
+
 class CoroutineExceptionRequestHandler(RequestHandler):
     RESPONSE = b'coroutine exception'
 
     @tornado.gen.coroutine
+    def get(self, error_location):
+        self.location = error_location
+        self.count = 0
+        self.count = yield self.next_count()
+        if self.location == '0':
+            raise Tornado4TestException("location 0")
+
+    def next_count(self):
+        f = tornado.concurrent.Future()
+        tornado.ioloop.IOLoop.current().add_callback(self._inc, f)
+        if self.location == '1':
+            raise Tornado4TestException("location 1")
+        return f
+
+    def _inc(self, f):
+        f.set_result(self.count + 1)
+        if self.location == '2':
+            raise Tornado4TestException("location 2")
+
+# This RequestHandler is equivalent to the RequestHandler above when
+# location is set to 2. However, the testing framework exception handling seems
+# to catch our exception unless we wrap in in asynchronous (which we shouldn't
+# have to do) which prevents us from recording the exception.
+class CoroutineException2RequestHandler(RequestHandler):
+    RESPONSE = b'coroutine exception'
+
+    @tornado.web.asynchronous
+    @tornado.gen.coroutine
     def get(self):
-        raise tornado.gen.BadYieldError
-        self.finish(self.RESPONSE)  # This will never be called.
+        self.count = 0
+        self.count = yield self.next_count()
+
+    def next_count(self):
+        f = tornado.concurrent.Future()
+        tornado.ioloop.IOLoop.current().add_callback(self._inc, f)
+        return f
+
+    def _inc(self, f):
+        f.set_result(self.count + 1)
+        raise Tornado4TestException("ERROR!")
 
 # This isn't really an exception but a legitimate way to end request handling.
 class FinishExceptionRequestHandler(RequestHandler):
@@ -760,7 +811,6 @@ class FutureDoubleWrapRequestHandler(RequestHandler):
     def do_stuff(self, future):
         self.finish(self.RESPONSE)
 
-
 class RunnerRefCountRequestHandler(RequestHandler):
     """Verify that incrementing/decrementing the ref count in Runner will
     keep the transaction open until yielding from a coroutine completes.
@@ -952,6 +1002,56 @@ class NativeFuturesCoroutine(RequestHandler):
     def another_method(self, *args):
         pass
 
+class SyncLateExceptionRequestHandler(RequestHandler):
+    RESPONSE = b'sync late exception'
+
+    def get(self):
+        self.finish(self.RESPONSE)
+        raise Tornado4TestException(self.RESPONSE)
+
+class AsyncLateExceptionRequestHandler(RequestHandler):
+    RESPONSE = b'async late exception'
+
+    @tornado.web.asynchronous
+    def get(self):
+        tornado.ioloop.IOLoop.current().add_callback(self.done)
+
+    def done(self):
+        self.finish(self.RESPONSE)
+        tornado.ioloop.IOLoop.current().add_callback(self.error)
+
+    def error(self):
+        raise Tornado4TestException(self.RESPONSE)
+
+class CoroutineLateExceptionRequestHandler(RequestHandler):
+    RESPONSE = b'coroutine late exception'
+
+    @tornado.gen.coroutine
+    def get(self):
+        _ = yield self.before_finish()
+        self.finish(self.RESPONSE)
+        raise Tornado4TestException(self.RESPONSE)
+
+    def before_finish(self):
+        f = tornado.concurrent.Future()
+        tornado.ioloop.IOLoop.current().add_callback(self.resolve_future, f)
+        return f
+
+    def resolve_future(self, f):
+        f.set_result(None)
+
+class ScheduleAndCancelExceptionRequestHandler(RequestHandler):
+    RESPONSE = b'close call'
+
+    def get(self):
+        ioloop = tornado.ioloop.IOLoop.current()
+        timeout = ioloop.call_later(1.0, self.do_error)
+        ioloop.remove_timeout(timeout)
+        self.finish(self.RESPONSE)
+
+    def do_error(self):
+        raise Tornado4TestException("whoops")
+
 def get_tornado_app():
     return Application([
         ('/', HelloRequestHandler),
@@ -961,7 +1061,9 @@ def get_tornado_app():
         ('/multiple-callbacks', MultipleCallbacksRequestHandler),
         ('/sync-exception', SyncExceptionRequestHandler),
         ('/callback-exception', CallbackExceptionRequestHandler),
-        ('/coroutine-exception', CoroutineExceptionRequestHandler),
+        ('/coroutine-exception/(\w+)', CoroutineExceptionRequestHandler),
+        ('/coroutine-exception-2', CoroutineException2RequestHandler),
+        ('/callback-from-coroutine', CallbackFromCoroutineRequestHandler),
         ('/finish-exception', FinishExceptionRequestHandler),
         ('/return-exception', ReturnExceptionRequestHandler),
         ('/ioloop-divide/(\d+)/(\d+)/?(\w+)?', IOLoopDivideRequestHandler),
@@ -999,4 +1101,8 @@ def get_tornado_app():
         ('/add-handler-ignore', IgnoreAddHandlerRequestHandler),
         ('/signal-ignore', AddCallbackFromSignalRequestHandler),
         ('/native-future-coroutine/?([\w-]+)?', NativeFuturesCoroutine),
+        ('/sync-late-exception', SyncLateExceptionRequestHandler),
+        ('/async-late-exception', AsyncLateExceptionRequestHandler),
+        ('/coroutine-late-exception', CoroutineLateExceptionRequestHandler),
+        ('/almost-error', ScheduleAndCancelExceptionRequestHandler),
     ])

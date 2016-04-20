@@ -76,13 +76,17 @@ def initiate_request_monitoring(request):
     # We need to fake up a WSGI like environ dictionary with the key
     # bits of information we need.
 
-    environ = request_environment(application, request)
+    environ = request_environment(request)
 
     # We now start recording the actual web transaction.
 
     purge_current_transaction()
 
     transaction = WebTransaction(application, environ)
+
+    if not transaction.enabled:
+        return None
+
     transaction.__enter__()
 
     # Immediately purge the transaction from the cache, so we don't associate
@@ -121,63 +125,28 @@ def initiate_request_monitoring(request):
 
     return transaction
 
-def request_environment(application, request):
+def request_environment(request):
     # This creates a WSGI environ dictionary from a Tornado request.
 
-    result = getattr(request, '_nr_request_environ', None)
+    environ = {}
 
-    if result is not None:
-        return result
+    environ['REQUEST_URI'] = request.uri
+    environ['QUERY_STRING'] = request.query
+    environ['REQUEST_METHOD'] = request.method
 
-    # We don't bother if the agent hasn't as yet been registered.
+    for header, value in request.headers.items():
+        if header in ['Content-Type', 'Content-Length']:
+            wsgi_name = header.replace('-', '_').upper()
+        else:
+            wsgi_name = 'HTTP_' + header.replace('-', '_').upper()
+        environ[wsgi_name] = value
 
-    settings = application.settings
+    from tornado.httputil import split_host_and_port
+    port = split_host_and_port(request.host.lower())[1]
+    if port:
+        environ['SERVER_PORT'] = port
 
-    if not settings:
-        return {}
-
-    request._nr_request_environ = result = {}
-
-    result['REQUEST_URI'] = request.uri
-    result['QUERY_STRING'] = request.query
-
-    value = request.headers.get('X-NewRelic-ID')
-    if value:
-        result['HTTP_X_NEWRELIC_ID'] = value
-
-    value = request.headers.get('X-NewRelic-Transaction')
-    if value:
-        result['HTTP_X_NEWRELIC_TRANSACTION'] = value
-
-    value = request.headers.get('X-Request-Start')
-    if value:
-        result['HTTP_X_REQUEST_START'] = value
-
-    value = request.headers.get('X-Queue-Start')
-    if value:
-        result['HTTP_X_QUEUE_START'] = value
-
-    for key in settings.include_environ:
-        if key == 'REQUEST_METHOD':
-            result[key] = request.method
-        elif key == 'HTTP_USER_AGENT':
-            value = request.headers.get('User-Agent')
-            if value:
-                result[key] = value
-        elif key == 'HTTP_REFERER':
-            value = request.headers.get('Referer')
-            if value:
-                result[key] = value
-        elif key == 'CONTENT_TYPE':
-            value = request.headers.get('Content-Type')
-            if value:
-                result[key] = value
-        elif key == 'CONTENT_LENGTH':
-            value = request.headers.get('Content-Length')
-            if value:
-                result[key] = value
-
-    return result
+    return environ
 
 def is_websocket(request):
     return request.headers.get('Upgrade', '').lower() == 'websocket'

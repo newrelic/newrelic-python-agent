@@ -35,9 +35,6 @@ RUN tar -C /usr/local -xf pypy-2.5.1-linux64.tar.bz2
 
 RUN ln -s /usr/local/pypy-2.5.1-linux64/bin/pypy /usr/local/bin/pypy
 
-RUN wget https://bitbucket.org/pypa/setuptools/raw/bootstrap/ez_setup.py
-RUN python ez_setup.py
-
 RUN wget https://bootstrap.pypa.io/get-pip.py
 RUN python get-pip.py
 

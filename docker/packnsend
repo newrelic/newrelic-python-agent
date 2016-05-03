@@ -351,6 +351,25 @@ create_docker_base_images()
     done
 }
 
+create_docker_base_images_nocache()
+{
+    IMAGE_LIST=${@:-$ALL_IMAGES}
+    IMAGE_LIST=$(echo $IMAGE_LIST | sed 's/ \+/ /g')
+
+    echo "Creating docker base images, no cache."
+    echo "$IMAGE_LIST"
+
+    for IMG in $IMAGE_LIST
+    do
+        echo
+        echo "Create image: $IMG"
+        echo
+
+        (cd $ROOT_DIRECTORY; docker build --no-cache --rm -t $IMG docker/$IMG)
+
+    done
+}
+
 query_push_pull_authorization()
 {
     # Determine if we are authorized to push and pull to the docker
@@ -624,6 +643,10 @@ case "$COMMAND" in
 
     build)
         create_docker_base_images "$@"
+        ;;
+
+    build_nocache)
+        create_docker_base_images_nocache "$@"
         ;;
 
     push)

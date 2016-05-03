@@ -49,6 +49,14 @@ mkdir -p /wheels
 
 export PIP_INDEX_URL=$DEVPI_SERVER/root/pypi/+simple/
 
+# Treat mysql-connector-python special, since it's externally hosted
+
+MYQL_CONNECTOR_URL='http://cdn.mysql.com/Downloads/Connector-Python/mysql-connector-python-2.0.4.zip#md5=3df394d89300db95163f17c843ef49df'
+
+/venvs/py26/bin/pip wheel --wheel-dir=/wheels $MYQL_CONNECTOR_URL
+/venvs/py27/bin/pip wheel --wheel-dir=/wheels $MYQL_CONNECTOR_URL
+/venvs/py33/bin/pip wheel --wheel-dir=/wheels $MYQL_CONNECTOR_URL
+
 echo
 echo "Building Python 2.6 wheels"
 echo

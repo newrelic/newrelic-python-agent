@@ -563,9 +563,9 @@ print_usage()
     echo "`basename $0`: COMMAND [arg...]"
     echo
     echo "Run Commands:"
-    echo "    run      Run command on test container."
-    echo "    run -i   Run command interactively."
-    echo "    shell    Launch a shell on test container."
+    echo "    run            Run command on test container."
+    echo "    run -i         Run command interactively."
+    echo "    shell          Launch a shell on test container."
     echo
     echo "Management Commands:"
     echo
@@ -574,17 +574,18 @@ print_usage()
     echo "management commands. Otherwise, management commands operate"
     echo "on all images/containers."
     echo
-    echo "    init     Pull images, if authorized, else build."
-    echo "    build    Build base images."
-    echo "    push     Push base images."
-    echo "    pull     Pull base images."
-    echo "    start    Start base containers."
-    echo "    stop     Stop base containers."
-    echo "    cleanup  Delete base images."
+    echo "    init           Pull images, if authorized, else build."
+    echo "    build          Build base images."
+    echo "    build_nocache  Build base images, no cache."
+    echo "    push           Push base images."
+    echo "    pull           Pull base images."
+    echo "    start          Start base containers."
+    echo "    stop           Stop base containers."
+    echo "    cleanup        Delete base images."
     echo
     echo "Help commands:"
-    echo "    list     List base images."
-    echo "    help     Print help message."
+    echo "    list           List base images."
+    echo "    help           Print help message."
     echo
 }
 

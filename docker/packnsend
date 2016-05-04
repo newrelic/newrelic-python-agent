@@ -16,7 +16,6 @@ APP_SERVICE_IMAGES="
     postgresql \
     mysql \
     devpi \
-    squid \
     mongodb \
     redis \
     elasticsearch \
@@ -259,7 +258,6 @@ launch_remote_command()
         --link packnsend-postgresql:postgresql \
         --link packnsend-mysql:mysql \
         --link packnsend-devpi:devpi \
-        --link packnsend-squid:squid \
         --link packnsend-mongodb:mongodb \
         --link packnsend-redis:redis \
         --link packnsend-elasticsearch:elasticsearch \
@@ -293,7 +291,6 @@ launch_remote_command()
             --link packnsend-postgresql:postgresql \
             --link packnsend-mysql:mysql \
             --link packnsend-devpi:devpi \
-            --link packnsend-squid:squid \
             --link packnsend-mongodb:mongodb \
             --link packnsend-redis:redis \
             --link packnsend-elasticsearch:elasticsearch \
@@ -324,7 +321,6 @@ launch_remote_shell()
         --link packnsend-postgresql:postgresql \
         --link packnsend-mysql:mysql \
         --link packnsend-devpi:devpi \
-        --link packnsend-squid:squid \
         --link packnsend-mongodb:mongodb \
         --link packnsend-redis:redis \
         --link packnsend-elasticsearch:elasticsearch \

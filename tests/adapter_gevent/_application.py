@@ -13,7 +13,7 @@ def request_timeout_application(environ, start_response):
     start_response(status, response_headers)
 
     try:
-        yield 'WSGI RESPONSE'
+        yield b'WSGI RESPONSE'
     finally:
         pass
 
@@ -23,13 +23,13 @@ def request_timeout_response(environ, start_response):
     response_headers = [('Content-type', 'text/plain')]
     start_response(status, response_headers)
 
-    yield 'WSGI'
+    yield b'WSGI'
 
     with Timeout(2.0):
         sleep(10.0)
 
-    yield ' '
-    yield 'RESPONSE'
+    yield b' '
+    yield b'RESPONSE'
 
 def request_timeout_finalize(environ, start_response):
     status = '200 OK'
@@ -38,7 +38,7 @@ def request_timeout_finalize(environ, start_response):
     start_response(status, response_headers)
 
     try:
-        yield 'WSGI RESPONSE'
+        yield b'WSGI RESPONSE'
 
     finally:
         with Timeout(2.0):
@@ -62,12 +62,12 @@ def raise_exception_response(environ, start_response):
     response_headers = [('Content-type', 'text/plain')]
     start_response(status, response_headers)
 
-    yield 'WSGI'
+    yield b'WSGI'
 
     raise RuntimeError('raise_exception_response')
 
-    yield ' '
-    yield 'RESPONSE'
+    yield b' '
+    yield b'RESPONSE'
 
 def raise_exception_finalize(environ, start_response):
     status = '200 OK'
@@ -76,7 +76,7 @@ def raise_exception_finalize(environ, start_response):
     start_response(status, response_headers)
 
     try:
-        yield 'WSGI RESPONSE'
+        yield b'WSGI RESPONSE'
 
     finally:
         raise RuntimeError('raise_exception_finalize')
@@ -90,7 +90,7 @@ def application_index(environ, start_response):
     time.sleep(2.0)
 
     try:
-        yield 'WSGI RESPONSE'
+        yield b'WSGI RESPONSE'
     finally:
         pass
 

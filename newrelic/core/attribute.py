@@ -30,7 +30,8 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = [
         'request.headers.contentType',
         'request.headers.contentLength',
         'response.status',
-        'response.contentLength'
+        'response.headers.contentLength',
+        'response.headers.contentType',
 ]
 
 MAX_NUM_USER_ATTRIBUTES = 64

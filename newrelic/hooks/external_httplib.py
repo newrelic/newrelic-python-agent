@@ -16,7 +16,7 @@ def httplib_connect_wrapper(wrapped, instance, args, kwargs, scheme):
 
     connection = instance
 
-    url = '%s://%s' % (scheme, connection.host)
+    url = '%s://%s:%s' % (scheme, connection.host, connection.port)
 
     with ExternalTrace(transaction, library='httplib', url=url) as tracer:
         # Add the tracer to the connection object. The tracer will be

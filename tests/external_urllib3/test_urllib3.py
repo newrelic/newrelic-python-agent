@@ -108,6 +108,20 @@ def test_port_included():
     external.stop()
 
 @validate_transaction_errors(errors=[])
+@validate_transaction_metrics(
+        'test_urllib3:test_HTTPConnection_port_included',
+        scoped_metrics=_test_port_included_scoped_metrics,
+        rollup_metrics=_test_port_included_rollup_metrics,
+        background_task=True)
+@background_task()
+def test_HTTPConnection_port_included():
+    external = MockExternalHTTPServer()
+    external.start()
+    conn = urllib3.connection.HTTPConnection('localhost:8989')
+    conn.request('GET', '/')
+    external.stop()
+
+@validate_transaction_errors(errors=[])
 @background_task()
 @cache_outgoing_headers
 @validate_cross_process_headers

@@ -18,7 +18,10 @@ def httplib_connect_wrapper(wrapped, instance, args, kwargs, scheme):
 
     url = '%s://%s:%s' % (scheme, connection.host, connection.port)
 
-    with ExternalTrace(transaction, library='httplib', url=url) as tracer:
+    # This wrapper is used to wrap more than just httplib
+    library  = instance.__module__.split('.')[0]
+
+    with ExternalTrace(transaction, library=library, url=url) as tracer:
         # Add the tracer to the connection object. The tracer will be
         # used in getresponse() to add back into the external trace,
         # after the trace has already completed, details from the

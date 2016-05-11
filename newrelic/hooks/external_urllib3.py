@@ -7,7 +7,7 @@ from newrelic.hooks.external_httplib import httplib_connect_wrapper
 def _nr_wrapper_make_request_(wrapped, instance, args, kwargs):
 
     def _bind_params(conn, method, url, *args, **kwargs):
-        return "http://%s" % conn.host
+        return "http://%s:%s" % (conn.host, conn.port)
 
     transaction = current_transaction()
 

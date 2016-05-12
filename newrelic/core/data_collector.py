@@ -1152,6 +1152,19 @@ class ApplicationSession(object):
         utilization_settings['total_ram_mib'] = total_physical_memory()
         utilization_settings['hostname'] = hostname
 
+        utilization_conf = {}
+        logical_processor_conf = settings.get('utilization.logical_processors')
+        total_ram_conf = settings.get('utilization.total_ram_mib')
+        hostname_conf = settings.get('utilization.billing_hostname')
+        if logical_processor_conf:
+            utilization_conf['logical_processors'] = logical_processor_conf
+        if total_ram_conf:
+            utilization_conf['total_ram_mib'] = total_ram_conf
+        if hostname_conf:
+            utilization_conf['hostname'] = hostname_conf
+        if utilization_conf:
+            utilization_settings['config'] = utilization_conf
+
         utilization_vendor_settings = {}
         if settings['utilization.detect_aws']:
             aws = aws_data()

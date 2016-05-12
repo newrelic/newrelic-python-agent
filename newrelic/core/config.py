@@ -393,6 +393,12 @@ _settings.debug.disable_certificate_validation = False
 
 _settings.utilization.detect_aws = True
 _settings.utilization.detect_docker = True
+_settings.utilization.logical_processors = int(os.environ.get(
+    'NEW_RELIC_UTILIZATION_LOGICAL_PROCESSORS', 0))
+_settings.utilization.total_ram_mib = int(os.environ.get(
+    'NEW_RELIC_UTILIZATION_TOTAL_RAM_MIB', 0))
+_settings.utilization.billing_hostname = os.environ.get(
+    'NEW_RELIC_UTILIZATION_BILLING_HOSTNAME')
 
 _settings.strip_exception_messages.enabled = False
 _settings.strip_exception_messages.whitelist = []

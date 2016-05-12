@@ -22,7 +22,7 @@ use(extensions) {
         triggers { cron('0 * * * *') }
         label('ec2-linux')
         publishers {
-            //extendedEmail('python-agent-dev@newrelic.com')
+            extendedEmail('python-agent-dev@newrelic.com')
         }
 
         parameters {
@@ -46,9 +46,9 @@ use(extensions) {
             }
         }
 
-        //slack(slackChannel){
-        //    notifySuccess true
-        //}
+        slack(slackChannel){
+            notifySuccess true
+        }
     }
 
     // create all packnsend base tests
@@ -127,9 +127,9 @@ use(extensions) {
                 }
             }
 
-            //slackQuiet(slackChannel) {
-            //    notifySuccess true
-            //}
+            slackQuiet(slackChannel) {
+                notifySuccess true
+            }
         }
     }
 }

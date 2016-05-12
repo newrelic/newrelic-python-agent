@@ -49,9 +49,9 @@ use(extensions) {
                 shell(readFileFromWorkspace('./jenkins/packnsend-buildnpush.sh'))
             }
 
-            //slackQuiet(slackChannel){
-            //    notifySuccess true
-            //}
+            slackQuiet(slackChannel){
+                notifySuccess true
+            }
         }
     }
 }

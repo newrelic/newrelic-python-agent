@@ -39,9 +39,9 @@ use(extensions) {
                 shell(readFileFromWorkspace('./deploy/deploy-to-pypi.sh'))
             }
 
-            //slackQuiet(slackChannel){
-            //    notifySuccess true
-            //}
+            slackQuiet(slackChannel){
+                notifySuccess true
+            }
         }
     }
 
@@ -76,9 +76,9 @@ use(extensions) {
                 }
             }
 
-            //slackQuiet(slackChannel){
-            //    notifySuccess true
-            //}
+            slackQuiet(slackChannel){
+                notifySuccess true
+            }
         }
     }
 }

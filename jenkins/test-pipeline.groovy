@@ -94,4 +94,42 @@ use(extensions) {
             }
         }
     }
+
+    ['develop', 'master', 'pullrequest'].each { jobType ->
+        jaasBaseJob("${testPrefix}-oldstyle-tests-${jobType}") {
+            label('ec2-linux')
+
+            if (jobType == 'pullrequest') {
+                repositoryPR(repoFull)
+                triggers {
+                    // run for all pull requests
+                    pullRequest {
+                        permitAll(true)
+                        useGitHubHooks()
+                    }
+                }
+            }
+            else {
+                repository(repoFull, jobType)
+                triggers {
+                    // trigger on push to develop/master
+                    githubPush()
+                }
+            }
+
+            configure {
+                description('Run the old style tests (i.e. ./tests.sh)')
+                logRotator { numToKeep(10) }
+
+                steps {
+                    shell('./build.sh')
+                    shell('./tests.sh')
+                }
+            }
+
+            //slackQuiet(slackChannel) {
+            //    notifySuccess true
+            //}
+        }
+    }
 }

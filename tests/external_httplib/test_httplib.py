@@ -10,6 +10,7 @@ from testing_support.fixtures import validate_transaction_metrics
 from testing_support.external_fixtures import (cache_outgoing_headers,
     validate_cross_process_headers, insert_incoming_headers,
     validate_external_node_params)
+from testing_support.mock_external_http_server import MockExternalHTTPServer
 
 from newrelic.agent import background_task
 
@@ -56,6 +57,33 @@ def test_httplib_https_request():
     response = connection.getresponse()
     data = response.read()
     connection.close()
+
+_test_httplib_http_request_with_port_scoped_metrics = [
+        ('External/localhost:8989/httplib/', 1)]
+
+_test_httplib_http_request_with_port_rollup_metrics = [
+        ('External/all', 1),
+        ('External/allOther', 1),
+        ('External/localhost:8989/all', 1),
+        ('External/localhost:8989/httplib/', 1)]
+
+@validate_transaction_metrics(
+        'test_httplib:test_httplib_http_with_port_request',
+        scoped_metrics=_test_httplib_http_request_with_port_scoped_metrics,
+        rollup_metrics=_test_httplib_http_request_with_port_rollup_metrics,
+        background_task=True)
+@background_task()
+def test_httplib_http_with_port_request():
+    external = MockExternalHTTPServer()
+    external.start()
+
+    connection = httplib.HTTPConnection('localhost', 8989)
+    connection.request('GET', '/')
+    response = connection.getresponse()
+    data = response.read()
+    connection.close()
+
+    external.stop()
 
 @background_task()
 @cache_outgoing_headers

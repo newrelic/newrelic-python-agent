@@ -9,6 +9,7 @@ from testing_support.fixtures import validate_transaction_metrics
 from testing_support.external_fixtures import (cache_outgoing_headers,
     validate_cross_process_headers, insert_incoming_headers,
     validate_external_node_params)
+from testing_support.mock_external_http_server import MockExternalHTTPServer
 
 from newrelic.agent import background_task
 
@@ -47,6 +48,28 @@ _test_urlopen_https_request_rollup_metrics = [
 @background_task()
 def test_urlopen_https_request():
     urllib2.urlopen('https://www.example.com/')
+
+
+_test_urlopen_http_request_scoped_metrics = [
+        ('External/localhost:8989/urllib2/', 1)]
+
+_test_urlopen_http_request_rollup_metrics = [
+        ('External/all', 1),
+        ('External/allOther', 1),
+        ('External/localhost:8989/all', 1),
+        ('External/localhost:8989/urllib2/', 1)]
+
+@validate_transaction_metrics(
+        'test_urllib2:test_urlopen_http_request_with_port',
+        scoped_metrics=_test_urlopen_http_request_scoped_metrics,
+        rollup_metrics=_test_urlopen_http_request_rollup_metrics,
+        background_task=True)
+@background_task()
+def test_urlopen_http_request_with_port():
+    external = MockExternalHTTPServer()
+    external.start()
+    urllib2.urlopen('http://localhost:8989/')
+    external.stop()
 
 _test_urlopen_file_request_scoped_metrics = [
         ('External/unknown/urllib2/', None)]

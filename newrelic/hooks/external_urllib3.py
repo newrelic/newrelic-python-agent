@@ -32,7 +32,9 @@ def instrument_urllib3_connection(module):
     # urllib3 within the requests package.
 
     wrap_function_wrapper(module, 'HTTPConnection.connect',
-        functools.partial(httplib_connect_wrapper, scheme='http'))
+        functools.partial(httplib_connect_wrapper, scheme='http',
+                library="urllib3"))
 
     wrap_function_wrapper(module, 'HTTPSConnection.connect',
-        functools.partial(httplib_connect_wrapper, scheme='https'))
+        functools.partial(httplib_connect_wrapper, scheme='https',
+                library="urllib3"))

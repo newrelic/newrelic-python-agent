@@ -1,8 +1,9 @@
 import functools
 
 from newrelic.agent import (ExternalTrace, ObjectWrapper, current_transaction)
+from newrelic.packages import six
 
-def httplib_connect_wrapper(wrapped, instance, args, kwargs, scheme):
+def httplib_connect_wrapper(wrapped, instance, args, kwargs, scheme, library):
     transaction = current_transaction()
 
     if transaction is None:
@@ -17,9 +18,6 @@ def httplib_connect_wrapper(wrapped, instance, args, kwargs, scheme):
     connection = instance
 
     url = '%s://%s:%s' % (scheme, connection.host, connection.port)
-
-    # This wrapper is used to wrap more than just httplib
-    library  = instance.__module__.split('.')[0]
 
     with ExternalTrace(transaction, library=library, url=url) as tracer:
         # Add the tracer to the connection object. The tracer will be
@@ -108,17 +106,23 @@ def httplib_putheader_wrapper(wrapped, instance, args, kwargs):
 
 def instrument(module):
 
+    if six.PY2:
+        library = 'httplib'
+    else:
+        library = 'http'
+
+
     module.HTTPConnection.connect = ObjectWrapper(
             module.HTTPConnection.connect,
             None,
-            functools.partial(httplib_connect_wrapper, scheme='http')
-            )
+            functools.partial(httplib_connect_wrapper, scheme='http',
+                    library=library))
 
     module.HTTPSConnection.connect = ObjectWrapper(
             module.HTTPSConnection.connect,
             None,
-            functools.partial(httplib_connect_wrapper, scheme='https')
-            )
+            functools.partial(httplib_connect_wrapper, scheme='https',
+                    library=library))
 
     module.HTTPConnection.endheaders = ObjectWrapper(
             module.HTTPConnection.endheaders,

@@ -98,6 +98,8 @@ use(extensions) {
     ['develop', 'master', 'pullrequest'].each { jobType ->
         jaasBaseJob("${testPrefix}-oldstyle-tests-${jobType}") {
             label('ec2-linux')
+            description('Run the old style tests (i.e. ./tests.sh)')
+            logRotator { numToKeep(10) }
 
             if (jobType == 'pullrequest') {
                 repositoryPR(repoFull)
@@ -117,14 +119,9 @@ use(extensions) {
                 }
             }
 
-            configure {
-                description('Run the old style tests (i.e. ./tests.sh)')
-                logRotator { numToKeep(10) }
-
-                steps {
-                    shell('./build.sh')
-                    shell('./tests.sh')
-                }
+            steps {
+                shell('./build.sh')
+                shell('./tests.sh')
             }
 
             slackQuiet(slackChannel) {

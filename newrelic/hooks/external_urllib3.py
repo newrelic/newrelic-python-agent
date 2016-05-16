@@ -4,10 +4,10 @@ from newrelic.agent import (current_transaction,
         wrap_function_wrapper, ExternalTrace)
 from newrelic.hooks.external_httplib import httplib_connect_wrapper
 
-def _nr_wrapper_make_request_(wrapped, instance, args, kwargs):
+def _nr_wrapper_make_request_(wrapped, instance, args, kwargs, scheme):
 
     def _bind_params(conn, method, url, *args, **kwargs):
-        return "http://%s" % conn.host
+        return "%s://%s:%s" % (scheme, conn.host, conn.port)
 
     transaction = current_transaction()
 
@@ -21,7 +21,9 @@ def _nr_wrapper_make_request_(wrapped, instance, args, kwargs):
 
 def instrument_urllib3_connectionpool(module):
     wrap_function_wrapper(module, 'HTTPConnectionPool._make_request',
-            _nr_wrapper_make_request_)
+            functools.partial(_nr_wrapper_make_request_, scheme='http'))
+    wrap_function_wrapper(module, 'HTTPSConnectionPool._make_request',
+            functools.partial(_nr_wrapper_make_request_, scheme='https'))
 
 def instrument_urllib3_connection(module):
 
@@ -30,7 +32,9 @@ def instrument_urllib3_connection(module):
     # urllib3 within the requests package.
 
     wrap_function_wrapper(module, 'HTTPConnection.connect',
-        functools.partial(httplib_connect_wrapper, scheme='http'))
+        functools.partial(httplib_connect_wrapper, scheme='http',
+                library="urllib3"))
 
     wrap_function_wrapper(module, 'HTTPSConnection.connect',
-        functools.partial(httplib_connect_wrapper, scheme='https'))
+        functools.partial(httplib_connect_wrapper, scheme='https',
+                library="urllib3"))

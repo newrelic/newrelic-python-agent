@@ -5,6 +5,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
 from testing_support.external_fixtures import (cache_outgoing_headers,
     validate_cross_process_headers, insert_incoming_headers,
     validate_external_node_params)
+from testing_support.mock_external_http_server import MockExternalHTTPServer
 
 from newrelic.agent import background_task
 
@@ -82,6 +83,43 @@ def test_https_request_connection_pool_urlopen():
 def test_https_request_connection_pool_request():
     pool = urllib3.HTTPSConnectionPool('www.example.com')
     pool.request('GET', '/index.html')
+
+_test_port_included_scoped_metrics = [
+        ('External/localhost:8989/urllib3/', 1)]
+
+_test_port_included_rollup_metrics = [
+        ('External/all', 1),
+        ('External/allOther', 1),
+        ('External/localhost:8989/all', 1),
+        ('External/localhost:8989/urllib3/', 1)]
+
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics(
+        'test_urllib3:test_port_included',
+        scoped_metrics=_test_port_included_scoped_metrics,
+        rollup_metrics=_test_port_included_rollup_metrics,
+        background_task=True)
+@background_task()
+def test_port_included():
+    external = MockExternalHTTPServer()
+    external.start()
+    conn = urllib3.connection_from_url('localhost:8989')
+    conn.request('GET', '/')
+    external.stop()
+
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics(
+        'test_urllib3:test_HTTPConnection_port_included',
+        scoped_metrics=_test_port_included_scoped_metrics,
+        rollup_metrics=_test_port_included_rollup_metrics,
+        background_task=True)
+@background_task()
+def test_HTTPConnection_port_included():
+    external = MockExternalHTTPServer()
+    external.start()
+    conn = urllib3.connection.HTTPConnection('localhost:8989')
+    conn.request('GET', '/')
+    external.stop()
 
 @validate_transaction_errors(errors=[])
 @background_task()

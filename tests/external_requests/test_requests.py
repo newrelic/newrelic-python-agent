@@ -8,6 +8,7 @@ from testing_support.fixtures import (validate_transaction_metrics,
 from testing_support.external_fixtures import (cache_outgoing_headers,
     validate_cross_process_headers, insert_incoming_headers,
     validate_external_node_params)
+from testing_support.mock_external_http_server import MockExternalHTTPServer
 
 from newrelic.agent import background_task
 
@@ -44,6 +45,30 @@ def test_http_request_get():
 @background_task()
 def test_https_request_get():
     requests.get('https://www.example.com/', verify=False)
+
+_test_requests_http_request_with_port_scoped_metrics = [
+        ('External/localhost:8989/requests/', 1)]
+
+_test_requests_http_request_with_port_rollup_metrics = [
+        ('External/all', 1),
+        ('External/allOther', 1),
+        ('External/localhost:8989/all', 1),
+        ('External/localhost:8989/requests/', 1)]
+
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics(
+        'test_requests:test_http_request_with_port',
+        scoped_metrics=_test_requests_http_request_with_port_scoped_metrics,
+        rollup_metrics=_test_requests_http_request_with_port_rollup_metrics,
+        background_task=True)
+@background_task()
+def test_http_request_with_port():
+    external = MockExternalHTTPServer()
+    external.start()
+
+    requests.get('http://localhost:8989/')
+
+    external.stop()
 
 @pytest.mark.skipif(get_requests_version() < (1, 0),
         reason="Session.send() doesn't exist for requests < v1.0.")

@@ -89,7 +89,12 @@ def view_handler_wrapper(wrapped, instance, args, kwargs):
             raise
 
 def wrap_view_handler(mapped_view):
-    return wrap_callable(mapped_view, view_handler_wrapper)
+    if hasattr(mapped_view, '_nr_wrapped'):
+        return mapped_view
+    else:
+        wrapped = wrap_callable(mapped_view, view_handler_wrapper)
+        wrapped._nr_wrapped = True
+        return wrapped
 
 def default_view_mapper_wrapper(wrapped, instance, args, kwargs):
     wrapper = wrapped(*args, **kwargs)

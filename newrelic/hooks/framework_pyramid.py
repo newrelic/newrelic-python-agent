@@ -31,7 +31,7 @@
 #   be overridden, so tolerate it for now.
 
 from newrelic.agent import (callable_name, current_transaction,
-        wrap_callable, wrap_out_function, wrap_wsgi_application,
+        FunctionWrapper, wrap_out_function, wrap_wsgi_application,
         FunctionTrace, ignore_status_code)
 
 def instrument_pyramid_router(module):
@@ -92,7 +92,7 @@ def wrap_view_handler(mapped_view):
     if hasattr(mapped_view, '_nr_wrapped'):
         return mapped_view
     else:
-        wrapped = wrap_callable(mapped_view, view_handler_wrapper)
+        wrapped = FunctionWrapper(mapped_view, view_handler_wrapper)
         wrapped._nr_wrapped = True
         return wrapped
 
@@ -147,9 +147,9 @@ def instrument_pyramid_config_views(module):
                     wrap_view_handler)
 
     if hasattr(module, 'DefaultViewMapper'):
-        module.DefaultViewMapper.map_class_requestonly = wrap_callable(
+        module.DefaultViewMapper.map_class_requestonly = FunctionWrapper(
                 module.DefaultViewMapper.map_class_requestonly,
                 default_view_mapper_wrapper)
-        module.DefaultViewMapper.map_class_native = wrap_callable(
+        module.DefaultViewMapper.map_class_native = FunctionWrapper(
                 module.DefaultViewMapper.map_class_native,
                 default_view_mapper_wrapper)

@@ -141,10 +141,9 @@ def instrument_pyramid_config_views(module):
     if hasattr(module, 'ViewDeriver'):
         wrap_out_function(module, 'ViewDeriver.__call__',
                 wrap_view_handler)
-    else:
-        if hasattr(module, 'Configurator'):
-            wrap_out_function(module, 'Configurator._derive_view',
-                    wrap_view_handler)
+    elif hasattr(module, 'Configurator'):
+        wrap_out_function(module, 'Configurator._derive_view',
+                wrap_view_handler)
 
     if hasattr(module, 'DefaultViewMapper'):
         module.DefaultViewMapper.map_class_requestonly = FunctionWrapper(

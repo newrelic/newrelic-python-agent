@@ -48,10 +48,6 @@ _logger = logging.getLogger(__name__)
 USER_AGENT = 'NewRelic-PythonAgent/%s (Python %s %s)' % (
          version, sys.version.split()[0], sys.platform)
 
-# settings that should be completely ignored if set server side
-IGNORED_SERVER_SIDE_SETTINGS = ['utilization.logical_processors',
-        'utilization.total_ram_mib', 'utilization.billing_hostname']
-
 # Data collector URL and proxy settings.
 
 def collector_url(server=None):
@@ -708,16 +704,6 @@ def send_request(session, url, method, license_key, agent_run_id=None,
 
     raise DiscardDataForRequest(message)
 
-def remove_ignored_configs(server_settings):
-    if not server_settings.get('agent_config'):
-        return server_settings
-
-    # These settings should be ignored completely
-    for ignored_setting in IGNORED_SERVER_SIDE_SETTINGS:
-        server_settings['agent_config'].pop(ignored_setting, None)
-
-    return server_settings
-
 def apply_high_security_mode_fixups(local_settings, server_settings):
     # When High Security Mode is True in local_settings, then all
     # security related settings should be removed from server_settings.
@@ -1072,11 +1058,6 @@ class ApplicationSession(object):
 
             server_config = apply_high_security_mode_fixups(settings,
                     server_config)
-
-            # Remove values from server_config that should not overwrite the
-            # ones set locally
-
-            server_config = remove_ignored_configs(server_config)
 
             # The agent configuration for the application in constructed
             # by taking a snapshot of the locally constructed

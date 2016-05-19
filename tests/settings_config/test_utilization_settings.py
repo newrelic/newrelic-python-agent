@@ -3,12 +3,16 @@ import pytest
 import tempfile
 
 from newrelic.agent import function_wrapper, global_settings, initialize
-from newrelic.core.data_collector import (ApplicationSession,
-        remove_ignored_configs)
+from newrelic.core.data_collector import ApplicationSession
 
 # these will be reloaded for each test
 import newrelic.config
 import newrelic.core.config
+
+# the specific methods imported here will not be changed when the modules are
+# reloaded
+from newrelic.core.config import (_remove_ignored_configs,
+        finalize_application_settings)
 
 try:
     # python 2.x
@@ -39,13 +43,21 @@ INITIAL_ENV = os.environ
 
 # Tests for loading settings and testing for values precedence
 
+class Environ(object):
+    def __init__(self, env_dict):
+        self.env_dict = env_dict
+
+    def __enter__(self):
+        os.environ.update(self.env_dict)
+
+    def __exit__(self, *args, **kwargs):
+        os.environ.clear()
+        os.environ = INITIAL_ENV
+
 def reset_agent_config(ini_contents, env_dict):
     @function_wrapper
     def reset(wrapped, instance, args, kwargs):
-        os.environ.update(env_dict)
-
-        # wrap in try/except so env vars are always reset
-        try:
+        with Environ(env_dict):
             ini_file = tempfile.NamedTemporaryFile()
             ini_file.write(ini_contents)
             ini_file.seek(0)
@@ -63,13 +75,7 @@ def reset_agent_config(ini_contents, env_dict):
             reload(newrelic.core.config)
             reload(newrelic.config)
             initialize(ini_file.name)
-
             returned = wrapped(*args, **kwargs)
-        except:
-            raise
-        finally:
-            os.environ.clear()
-            os.environ = INITIAL_ENV
 
         return returned
     return reset
@@ -142,7 +148,19 @@ _server_side_config_settings_util_conf = [
 
 @pytest.mark.parametrize('server_settings',
         _server_side_config_settings_util_conf)
-def test_something_more(server_settings):
-    fixed_settings = remove_ignored_configs(server_settings)
+def test_remove_ignored_configs(server_settings):
+    fixed_settings = _remove_ignored_configs(server_settings)
     agent_config = fixed_settings.get('agent_config', {})
     assert 'utilization.billing_hostname' not in agent_config
+
+@reset_agent_config(INI_FILE_WITH_UTIL_CONF, ENV_WITHOUT_UTIL_CONF)
+@pytest.mark.parametrize('server_settings',
+        _server_side_config_settings_util_conf)
+def test_finalize_application_settings(server_settings):
+    settings = global_settings()
+
+    final_settings = finalize_application_settings(
+            server_side_config=server_settings, settings=settings)
+
+    # hostname set in ini_file and not in env vars
+    assert settings.utilization.billing_hostname == 'file-hostname'

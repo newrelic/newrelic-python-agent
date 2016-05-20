@@ -24,6 +24,7 @@ from newrelic.core.data_collector import create_session
 from newrelic.network.exceptions import (ForceAgentRestart,
         ForceAgentDisconnect, DiscardDataForRequest, RetryDataForRequest)
 from newrelic.core.environment import environment_settings
+from newrelic.core.metric import TimeMetric
 from newrelic.core.rules_engine import RulesEngine, SegmentCollapseEngine
 from newrelic.core.stats_engine import StatsEngine, CustomMetrics
 from newrelic.core.internal_metrics import (InternalTrace,
@@ -716,6 +717,9 @@ class Application(object):
         if not self._active_session:
             return
 
+        all_errors_metric = TimeMetric(name='Errors/all', scope='',
+                duration=0.0, exclusive=None)
+
         with self._stats_lock:
             # It may still actually be rejected if no exception
             # supplied or if was in the ignored list. For now
@@ -725,6 +729,7 @@ class Application(object):
             self._global_events_account += 1
             self._stats_engine.record_exception(exc, value, tb,
                     params, ignore_errors)
+            self._stats_engine.record_time_metric(all_errors_metric)
 
     def record_custom_metric(self, name, value):
         """Record a custom metric against the application independent

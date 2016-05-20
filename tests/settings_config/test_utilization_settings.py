@@ -21,11 +21,6 @@ except NameError:
     # python 3.x
     from imp import reload
 
-try:
-    import ConfigParser
-except ImportError:
-    import configparser as ConfigParser
-
 INI_FILE_WITHOUT_UTIL_CONF = b"""
 [newrelic]
 """
@@ -36,8 +31,15 @@ INI_FILE_WITH_UTIL_CONF = b"""
 utilization.billing_hostname = file-hostname
 """
 
+INI_FILE_WITH_BAD_UTIL_CONF = b"""
+[newrelic]
+
+utilization.logical_processors = not-a-number
+"""
+
 ENV_WITHOUT_UTIL_CONF = {}
 ENV_WITH_UTIL_CONF = {'NEW_RELIC_UTILIZATION_BILLING_HOSTNAME': 'env-hostname'}
+ENV_WITH_BAD_UTIL_CONF = {'NEW_RELIC_UTILIZATION_LOGICAL_PROCESSORS': 'notanum'}
 
 INITIAL_ENV = os.environ
 
@@ -79,6 +81,17 @@ def reset_agent_config(ini_contents, env_dict):
 
         return returned
     return reset
+
+def should_raise(except_class):
+    @function_wrapper
+    def raises(wrapped, instance, args, kwargs):
+        try:
+            return wrapped(*args, **kwargs)
+        except except_class:
+            pass
+        else:
+            raise AssertionError('%s should have been raised' % except_class)
+    return raises
 
 @reset_agent_config(INI_FILE_WITHOUT_UTIL_CONF, ENV_WITH_UTIL_CONF)
 def test_billing_hostname_from_env_vars():
@@ -122,6 +135,23 @@ def test_billing_hostname_with_set_in_ini_not_in_env():
             '', [], [], newrelic.core.config.global_settings_dump())
     util_conf = local_config['utilization'].get('config')
     assert util_conf == {'hostname': 'file-hostname'}
+
+@reset_agent_config(INI_FILE_WITH_BAD_UTIL_CONF, ENV_WITHOUT_UTIL_CONF)
+def test_bad_value_in_ini_file():
+    settings = global_settings()
+    assert settings.utilization.logical_processors == 0
+
+    local_config, = ApplicationSession._create_connect_payload(
+            '', [], [], newrelic.core.config.global_settings_dump())
+    util_conf = local_config['utilization'].get('config')
+    assert util_conf == None
+
+@should_raise(ValueError)
+@reset_agent_config(INI_FILE_WITHOUT_UTIL_CONF, ENV_WITH_BAD_UTIL_CONF)
+def test_bad_value_in_env_var():
+    # initialization as part of the reset_agent_config decorator should through
+    # exception, this is asserted in the outermost decorator: should_raise
+    pass
 
 # Tests for combining with server side settings
 

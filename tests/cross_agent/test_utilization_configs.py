@@ -62,7 +62,7 @@ def assert_dicts_equal(dict1, dict2):
     are keys in dict1 that are not in dict2, return False.
 
     """
-    for key in dict1.iterkeys():
+    for key in dict1.keys():
         val1 = dict1.get(key)
         val2 = dict2.get(key)
         if isinstance(val1, dict) and isinstance(val2, dict):

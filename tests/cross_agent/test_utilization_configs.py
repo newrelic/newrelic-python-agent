@@ -56,20 +56,6 @@ def _mock_gethostname(name):
         return name
     return gethostname
 
-def assert_dicts_equal(dict1, dict2):
-    """Assert that all the key, value pairs in dict1 match those found in
-    dict2. There can be some keys in dict2 that are not in dict1, but if there
-    are keys in dict1 that are not in dict2, return False.
-
-    """
-    for key in dict1.keys():
-        val1 = dict1.get(key)
-        val2 = dict2.get(key)
-        if isinstance(val1, dict) and isinstance(val2, dict):
-            assert_dicts_equal(val1, val2)
-        elif val1 != val2:
-            raise AssertionError('For key %s: %s != %s' % (key, val2, val1))
-
 def _update_settings(test):
     """Update the settings dict to reflect the environment variables found in
     the test.
@@ -80,12 +66,18 @@ def _update_settings(test):
         try:
             cc._settings.utilization.logical_processors = int(os.environ.get(
                 'NEW_RELIC_UTILIZATION_LOGICAL_PROCESSORS', 0))
+        except ValueError:
+            # when a non-number is set as a env var for these, they should just
+            # be ignored.
+            cc._settings.utilization.logical_processors = 0
+
+        try:
             cc._settings.utilization.total_ram_mib = int(os.environ.get(
                 'NEW_RELIC_UTILIZATION_TOTAL_RAM_MIB', 0))
         except ValueError:
             # when a non-number is set as a env var for these, they should just
             # be ignored.
-            pass
+            cc._settings.utilization.total_ram_mib = 0
 
         cc._settings.utilization.billing_hostname = os.environ.get(
             'NEW_RELIC_UTILIZATION_BILLING_HOSTNAME')
@@ -110,4 +102,4 @@ def test_billing_hostname_from_env_vars(test):
             '', [], [], settings)
     util_output = local_config['utilization']
     expected_output = test['expected_output_json']
-    assert_dicts_equal(expected_output, util_output)
+    assert expected_output == util_output

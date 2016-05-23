@@ -397,10 +397,23 @@ _settings.debug.disable_certificate_validation = False
 
 _settings.utilization.detect_aws = True
 _settings.utilization.detect_docker = True
-_settings.utilization.logical_processors = int(os.environ.get(
-    'NEW_RELIC_UTILIZATION_LOGICAL_PROCESSORS', 0))
-_settings.utilization.total_ram_mib = int(os.environ.get(
-    'NEW_RELIC_UTILIZATION_TOTAL_RAM_MIB', 0))
+
+# in the case where this is incorrectly set, default it to 0
+# this setting will only be sent to the collector if it is truthy
+try:
+    _settings.utilization.logical_processors = int(os.environ.get(
+        'NEW_RELIC_UTILIZATION_LOGICAL_PROCESSORS', 0))
+except ValueError:
+    _settings.utilization.logical_processors = 0
+
+# in the case where this is incorrectly set, default it to 0
+# this setting will only be sent to the collector if it is truthy
+try:
+    _settings.utilization.total_ram_mib = int(os.environ.get(
+        'NEW_RELIC_UTILIZATION_TOTAL_RAM_MIB', 0))
+except ValueError:
+    _settings.utilization.total_ram_mib = 0
+
 _settings.utilization.billing_hostname = os.environ.get(
     'NEW_RELIC_UTILIZATION_BILLING_HOSTNAME')
 

@@ -34,12 +34,18 @@ utilization.billing_hostname = file-hostname
 INI_FILE_WITH_BAD_UTIL_CONF = b"""
 [newrelic]
 
+utilization.billing_hostname = file-hostname
 utilization.logical_processors = not-a-number
+utilization.total_ram_mib = 12345
 """
 
 ENV_WITHOUT_UTIL_CONF = {}
 ENV_WITH_UTIL_CONF = {'NEW_RELIC_UTILIZATION_BILLING_HOSTNAME': 'env-hostname'}
-ENV_WITH_BAD_UTIL_CONF = {'NEW_RELIC_UTILIZATION_LOGICAL_PROCESSORS': 'notanum'}
+ENV_WITH_BAD_UTIL_CONF = {
+    'NEW_RELIC_UTILIZATION_LOGICAL_PROCESSORS': 'notanum',
+    'NEW_RELIC_UTILIZATION_BILLING_HOSTNAME': 'env-hostname',
+    'NEW_RELIC_UTILIZATION_TOTAL_RAM_MIB': '98765',
+}
 
 INITIAL_ENV = os.environ
 
@@ -81,17 +87,6 @@ def reset_agent_config(ini_contents, env_dict):
 
         return returned
     return reset
-
-def should_raise(except_class):
-    @function_wrapper
-    def raises(wrapped, instance, args, kwargs):
-        try:
-            return wrapped(*args, **kwargs)
-        except except_class:
-            pass
-        else:
-            raise AssertionError('%s should have been raised' % except_class)
-    return raises
 
 @reset_agent_config(INI_FILE_WITHOUT_UTIL_CONF, ENV_WITH_UTIL_CONF)
 def test_billing_hostname_from_env_vars():
@@ -144,14 +139,17 @@ def test_bad_value_in_ini_file():
     local_config, = ApplicationSession._create_connect_payload(
             '', [], [], newrelic.core.config.global_settings_dump())
     util_conf = local_config['utilization'].get('config')
-    assert util_conf == None
+    assert util_conf == {'hostname': 'file-hostname', 'total_ram_mib': 12345}
 
-@should_raise(ValueError)
 @reset_agent_config(INI_FILE_WITHOUT_UTIL_CONF, ENV_WITH_BAD_UTIL_CONF)
 def test_bad_value_in_env_var():
-    # initialization as part of the reset_agent_config decorator should through
-    # exception, this is asserted in the outermost decorator: should_raise
-    pass
+    settings = global_settings()
+    assert settings.utilization.logical_processors == 0
+
+    local_config, = ApplicationSession._create_connect_payload(
+            '', [], [], newrelic.core.config.global_settings_dump())
+    util_conf = local_config['utilization'].get('config')
+    assert util_conf == {'hostname': 'env-hostname', 'total_ram_mib': 98765}
 
 # Tests for combining with server side settings
 

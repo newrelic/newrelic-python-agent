@@ -91,7 +91,7 @@ class UpdatedSettings(object):
     def __exit__(self, *args, **kwargs):
         newrelic.core.config._settings = self.initial_settings
 
-def assert_dicts_equal(dict1, dict2):
+def assert_dicts_less_than_or_equal(dict1, dict2):
     """Assert that all the key, value pairs in dict1 match those found in
     dict2. There can be some keys in dict2 that are not in dict1, but if there
     are keys in dict1 that are not in dict2, raise AssertionError.
@@ -101,7 +101,7 @@ def assert_dicts_equal(dict1, dict2):
         val1 = dict1.get(key)
         val2 = dict2.get(key)
         if isinstance(val1, dict) and isinstance(val2, dict):
-            assert_dicts_equal(val1, val2)
+            assert_dicts_less_than_or_equal(val1, val2)
         elif val1 != val2:
             raise AssertionError('For key %s: %s != %s' % (key, val2, val1))
 
@@ -126,4 +126,4 @@ def test_billing_hostname_from_env_vars(test):
         # assert x == y does not work when running these tests within a docker
         # container b/c util_output will have extra values not found in
         # expected_output
-        assert_dicts_equal(expected_output, util_output)
+        assert_dicts_less_than_or_equal(expected_output, util_output)

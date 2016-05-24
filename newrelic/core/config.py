@@ -108,6 +108,13 @@ _settings.strip_exception_messages = StripExceptionMessageSettings()
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
 _settings.audit_log_file = os.environ.get('NEW_RELIC_AUDIT_LOG', None)
 
+def _environ_as_int(name, default=0):
+    val = os.environ.get(name, default)
+    try:
+        return int(val)
+    except ValueError:
+        return default
+
 def _environ_as_bool(name, default=False):
     flag = os.environ.get(name, default)
     if default is None or default:
@@ -398,24 +405,12 @@ _settings.debug.disable_certificate_validation = False
 _settings.utilization.detect_aws = True
 _settings.utilization.detect_docker = True
 
-# in the case where this is incorrectly set, default it to 0
-# this setting will only be sent to the collector if it is truthy
-try:
-    _settings.utilization.logical_processors = int(os.environ.get(
-        'NEW_RELIC_UTILIZATION_LOGICAL_PROCESSORS', 0))
-except ValueError:
-    _settings.utilization.logical_processors = 0
-
-# in the case where this is incorrectly set, default it to 0
-# this setting will only be sent to the collector if it is truthy
-try:
-    _settings.utilization.total_ram_mib = int(os.environ.get(
-        'NEW_RELIC_UTILIZATION_TOTAL_RAM_MIB', 0))
-except ValueError:
-    _settings.utilization.total_ram_mib = 0
-
+_settings.utilization.logical_processors = _environ_as_int(
+        'NEW_RELIC_UTILIZATION_LOGICAL_PROCESSORS')
+_settings.utilization.total_ram_mib = _environ_as_int(
+        'NEW_RELIC_UTILIZATION_TOTAL_RAM_MIB')
 _settings.utilization.billing_hostname = os.environ.get(
-    'NEW_RELIC_UTILIZATION_BILLING_HOSTNAME')
+        'NEW_RELIC_UTILIZATION_BILLING_HOSTNAME')
 
 _settings.strip_exception_messages.enabled = False
 _settings.strip_exception_messages.whitelist = []

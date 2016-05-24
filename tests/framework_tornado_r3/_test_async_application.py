@@ -1,11 +1,13 @@
 import concurrent.futures
 import functools
 import socket
+import sys
 import tornado
 import threading
 import time
 
-from newrelic.agent import current_transaction, function_trace
+from newrelic.agent import (application as nr_app, current_transaction,
+        function_trace)
 from newrelic.hooks.framework_tornado_r3.util import TransactionContext
 
 from tornado.httpclient import AsyncHTTPClient, HTTPClient, HTTPRequest
@@ -1052,6 +1054,30 @@ class ScheduleAndCancelExceptionRequestHandler(RequestHandler):
     def do_error(self):
         raise Tornado4TestException("whoops")
 
+class OutsideTransactionErrorRequestHandler(CleanUpableRequestHandler):
+    RESPONSE = b'outside transaction error'
+
+    def get(self):
+        with TransactionContext(None):
+            tornado.ioloop.IOLoop.current().add_callback(self.an_error)
+        self.write(self.RESPONSE)
+
+    def an_error(self):
+        # We want to test the behavior of record_exception. To do that in the
+        # context of a real exception we raise one by dividing by 0. In a real
+        # app we wouldn't need to catch it and call record_exception explicitly
+        # since our instrumentation would take care of this for us. However, in
+        # the tests, the test framework will catch it before the tornado code
+        # that we instrument does which causes the test to fail. The test
+        # framework assumes that an uncaught exception in a test is a real
+        # error.
+        try:
+            a = 5/0
+        except:
+            nr_app().record_exception(*sys.exc_info())
+        finally:
+            self.cleanup()
+
 def get_tornado_app():
     return Application([
         ('/', HelloRequestHandler),
@@ -1105,4 +1131,5 @@ def get_tornado_app():
         ('/async-late-exception', AsyncLateExceptionRequestHandler),
         ('/coroutine-late-exception', CoroutineLateExceptionRequestHandler),
         ('/almost-error', ScheduleAndCancelExceptionRequestHandler),
+        ('/outside-transaction-error', OutsideTransactionErrorRequestHandler),
     ])

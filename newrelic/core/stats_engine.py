@@ -21,9 +21,10 @@ from newrelic.core.attribute_filter import DST_ERROR_COLLECTOR
 from newrelic.core.attribute import create_user_attributes
 
 from .attribute import process_user_attribute
+from .database_utils import explain_plan
 from .error_collector import TracedError
 from .internal_metrics import (internal_trace, InternalTrace, internal_metric)
-from .database_utils import explain_plan
+from .metric import TimeMetric
 from .stack_trace import exception_stack
 
 from ..api.settings import STRIP_EXCEPTION_MESSAGE
@@ -604,6 +605,11 @@ class StatsEngine(object):
         if settings.collect_errors and (len(self.__transaction_errors) <
                 settings.agent_limits.errors_per_harvest):
             self.__transaction_errors.append(error_details)
+
+        # Regardless of whether we record the trace or the event we still
+        # want to increment the metric Errors/all
+        self.record_time_metric(TimeMetric(name='Errors/all', scope='',
+                duration=0.0, exclusive=None))
 
     def _error_event(self, error):
 

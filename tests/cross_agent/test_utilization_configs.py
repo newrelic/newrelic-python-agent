@@ -105,6 +105,10 @@ def assert_dicts_less_than_or_equal(dict1, dict2):
         elif val1 != val2:
             raise AssertionError('For key %s: %s != %s' % (key, val2, val1))
 
+_initial_dc_module = newrelic.core.data_collector
+
+def teardown_function(function):
+    newrelic.core.data_collector = _initial_dc_module
 
 @pytest.mark.parametrize('test', _load_tests())
 def test_billing_hostname_from_env_vars(test):

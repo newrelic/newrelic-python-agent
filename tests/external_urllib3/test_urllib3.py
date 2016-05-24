@@ -112,8 +112,7 @@ def test_port_included():
 # Starting in urllib3 1.8, urllib3 wrote their own version of the HTTPConnection
 # class. Previously the httplib/http.client HTTPConnection class was used. We
 # test httplib in a different test directory so we skip this test.
-version_tuple = version2tuple(urllib3.__version__)
-@pytest.mark.skipif(version_tuple[0] == 1 and version_tuple[1] < 8,
+@pytest.mark.skipif(version2tuple(urllib3.__version__) < (1, 8),
         reason='urllib3.connection.HTTPConnection added in 1.8')
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(

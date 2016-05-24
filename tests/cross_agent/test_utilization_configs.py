@@ -5,6 +5,13 @@ import json
 from newrelic.core.data_collector import ApplicationSession
 import newrelic.core.config
 
+try:
+    # python 2.x
+    reload
+except NameError:
+    # python 3.x
+    from imp import reload
+
 INITIAL_ENV = os.environ
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -56,32 +63,33 @@ def _mock_gethostname(name):
         return name
     return gethostname
 
-def _update_settings(test):
-    """Update the settings dict to reflect the environment variables found in
-    the test.
+class UpdatedSettings(object):
+    def __init__(self, test):
+        self.test = test
+        self.initial_settings = newrelic.core.config._settings
 
-    """
-    with Environ(test.get('input_environment_variables')):
-        cc = newrelic.core.config
-        try:
-            cc._settings.utilization.logical_processors = int(os.environ.get(
-                'NEW_RELIC_UTILIZATION_LOGICAL_PROCESSORS', 0))
-        except ValueError:
-            # when a non-number is set as a env var for these, they should just
-            # be ignored.
-            cc._settings.utilization.logical_processors = 0
+    def __enter__(self):
+        """Update the settings dict to reflect the environment variables found in
+        the test.
 
-        try:
-            cc._settings.utilization.total_ram_mib = int(os.environ.get(
-                'NEW_RELIC_UTILIZATION_TOTAL_RAM_MIB', 0))
-        except ValueError:
-            # when a non-number is set as a env var for these, they should just
-            # be ignored.
-            cc._settings.utilization.total_ram_mib = 0
+        """
+        with Environ(self.test.get('input_environment_variables')):
+            # clean settings cache and reload env vars
+            # Note that reload can at times work in unexpected ways. All that
+            # is required here is that the globals (such as
+            # newrelic.core.config._settings) be reset.
+            #
+            # From python docs (2.x and 3.x)
+            # "When a module is reloaded, its dictionary (containing the
+            # module's global variables) is retained. Redefinitions of names
+            # will override the old definitions, so this is generally not a
+            # problem."
+            reload(newrelic.core.config)
+            reload(newrelic.config)
+        return newrelic.core.config.global_settings_dump()
 
-        cc._settings.utilization.billing_hostname = os.environ.get(
-            'NEW_RELIC_UTILIZATION_BILLING_HOSTNAME')
-
+    def __exit__(self, *args, **kwargs):
+        newrelic.core.config._settings = self.initial_settings
 
 @pytest.mark.parametrize('test', _load_tests())
 def test_billing_hostname_from_env_vars(test):
@@ -95,11 +103,9 @@ def test_billing_hostname_from_env_vars(test):
     dc.socket.gethostname = _mock_gethostname(
             test.get('input_hostname'))
 
-    _update_settings(test)
-    settings = newrelic.core.config.global_settings_dump()
-
-    local_config, = ApplicationSession._create_connect_payload(
-            '', [], [], settings)
-    util_output = local_config['utilization']
-    expected_output = test['expected_output_json']
-    assert expected_output == util_output
+    with UpdatedSettings(test) as settings:
+        local_config, = ApplicationSession._create_connect_payload(
+                '', [], [], settings)
+        util_output = local_config['utilization']
+        expected_output = test['expected_output_json']
+        assert expected_output == util_output

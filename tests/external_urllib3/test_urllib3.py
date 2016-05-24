@@ -1,3 +1,4 @@
+import pytest
 import urllib3
 
 from testing_support.fixtures import (validate_transaction_metrics,
@@ -6,6 +7,7 @@ from testing_support.external_fixtures import (cache_outgoing_headers,
     validate_cross_process_headers, insert_incoming_headers,
     validate_external_node_params)
 from testing_support.mock_external_http_server import MockExternalHTTPServer
+from testing_support.util import version2tuple
 
 from newrelic.agent import background_task
 
@@ -107,6 +109,11 @@ def test_port_included():
     conn.request('GET', '/')
     external.stop()
 
+# Starting in urllib3 1.8, urllib3 wrote their own version of the HTTPConnection
+# class. Previously the httplib/http.client HTTPConnection class was used. We
+# test httplib in a different test directory so we skip this test.
+@pytest.mark.skipif(version2tuple(urllib3.__version__) < (1, 8),
+        reason='urllib3.connection.HTTPConnection added in 1.8')
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(
         'test_urllib3:test_HTTPConnection_port_included',

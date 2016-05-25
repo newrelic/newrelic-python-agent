@@ -2,7 +2,7 @@ import pytest
 import os
 import json
 
-# NOTE: the test_billing_hostname_from_env_vars test mocks several of the
+# NOTE: the test_utilization_settings_from_env_vars test mocks several of the
 # methods in newrelic.core.data_collector and does not put them back!
 from newrelic.core.data_collector import ApplicationSession
 import newrelic.core.config
@@ -108,7 +108,7 @@ def assert_dicts_less_than_or_equal(dict1, dict2):
             raise AssertionError('For key %s: %s != %s' % (key, val2, val1))
 
 @pytest.mark.parametrize('test', _load_tests())
-def test_billing_hostname_from_env_vars(test):
+def test_utilization_settings_from_env_vars(test):
     # mock the methods that derive the data for the payload
     dc = newrelic.core.data_collector
     dc.aws_data = _mock_aws_data(test)

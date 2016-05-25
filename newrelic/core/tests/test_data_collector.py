@@ -89,7 +89,7 @@ def payload_asserts(payload, with_aws=True, with_docker=True):
     assert len(payload_data['utilization']) == utilization_len
     assert payload_data['utilization']['hostname'] == HOST
     assert payload_data['utilization']['logical_processors'] == PROCESSOR_COUNT
-    assert payload_data['utilization']['metadata_version'] == 1
+    assert payload_data['utilization']['metadata_version'] == 2
     assert payload_data['utilization']['total_ram_mib'] == MEMORY
     vendors_len = with_aws + with_docker
     if vendors_len:

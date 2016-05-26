@@ -107,6 +107,54 @@ def wrap_record_app_exception_fixture(request):
     wrap_function_wrapper('newrelic.core.stats_engine',
             'StatsEngine.record_exception', _nr_wrapper_record_exception)
 
+# _RECORDED_UNSCOPED_METRIC_COUNTS is used to store unscoped metric counts.
+_RECORDED_UNSCOPED_METRIC_COUNTS = {}
+
+@pytest.fixture(scope='function')
+def clear_record_unscoped_metrics():
+    global _RECORDED_UNSCOPED_METRIC_COUNTS
+    _RECORDED_UNSCOPED_METRIC_COUNTS = {}
+
+@pytest.fixture(scope='session')
+def wrap_record_unscoped_time_metrics():
+
+    def _nr_wrapper_record_time_metric(wrapped, instance, args, kwargs):
+        # key is (name, scope), for unscoped metrics scope == ''
+        key = wrapped(*args, **kwargs)
+        if key[1] == '':
+            if key not in _RECORDED_UNSCOPED_METRIC_COUNTS:
+                _RECORDED_UNSCOPED_METRIC_COUNTS[key] = 1
+            else:
+                _RECORDED_UNSCOPED_METRIC_COUNTS[key] += 1
+
+        return key
+
+    wrap_function_wrapper('newrelic.core.stats_engine',
+            'StatsEngine.record_time_metric', _nr_wrapper_record_time_metric)
+
+def tornado_validate_unscoped_metrics(unscoped_metrics):
+    """Decorate to validate unscoped count metrics.
+
+    Arguments:
+      unscoped_metrics: A 2-tuple, (metric_name, count)
+
+    """
+
+    @function_wrapper
+    def _validate(wrapped, instance, args, kwargs):
+        wrapped(*args, **kwargs)
+
+        for name, count in unscoped_metrics:
+            key = (name, '')
+            assert key in _RECORDED_UNSCOPED_METRIC_COUNTS, (
+                    '%s not in recorded unscoped metrics: %s' %
+                    (name, _RECORDED_UNSCOPED_METRIC_COUNTS,))
+            assert count == _RECORDED_UNSCOPED_METRIC_COUNTS[key], (
+                    'Count for %s, %s  not correct: %s' %
+                    (name, count, _RECORDED_UNSCOPED_METRIC_COUNTS,))
+
+    return _validate
+
 def tornado_validate_count_transaction_metrics(name, group='Function',
         background_task=False, scoped_metrics=[], rollup_metrics=[],
         custom_metrics=[], forgone_metric_substrings=[], transaction_count=1):

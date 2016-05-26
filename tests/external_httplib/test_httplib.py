@@ -10,17 +10,24 @@ from testing_support.fixtures import validate_transaction_metrics
 from testing_support.external_fixtures import (cache_outgoing_headers,
     validate_cross_process_headers, insert_incoming_headers,
     validate_external_node_params)
+from testing_support.mock_external_http_server import MockExternalHTTPServer
 
 from newrelic.agent import background_task
+from newrelic.packages import six
 
-_test_httplib_http_request_scoped_metrics = [
-        ('External/www.example.com/httplib/', 1)]
+def select_python_version(py2, py3):
+    return six.PY3 and py3 or py2
+
+_test_httplib_http_request_scoped_metrics = [ select_python_version(
+        py2=('External/www.example.com/httplib/', 1),
+        py3=('External/www.example.com/http/', 1))]
 
 _test_httplib_http_request_rollup_metrics = [
         ('External/all', 1),
         ('External/allOther', 1),
         ('External/www.example.com/all', 1),
-        ('External/www.example.com/httplib/', 1)]
+        select_python_version(py2=('External/www.example.com/httplib/', 1),
+                              py3=('External/www.example.com/http/', 1))]
 
 @validate_transaction_metrics(
         'test_httplib:test_httplib_http_request',
@@ -35,19 +42,10 @@ def test_httplib_http_request():
     data = response.read()
     connection.close()
 
-_test_httplib_https_request_scoped_metrics = [
-        ('External/www.example.com/httplib/', 1)]
-
-_test_httplib_https_request_rollup_metrics = [
-        ('External/all', 1),
-        ('External/allOther', 1),
-        ('External/www.example.com/all', 1),
-        ('External/www.example.com/httplib/', 1)]
-
 @validate_transaction_metrics(
         'test_httplib:test_httplib_https_request',
-        scoped_metrics=_test_httplib_https_request_scoped_metrics,
-        rollup_metrics=_test_httplib_https_request_rollup_metrics,
+        scoped_metrics=_test_httplib_http_request_scoped_metrics,
+        rollup_metrics=_test_httplib_http_request_rollup_metrics,
         background_task=True)
 @background_task()
 def test_httplib_https_request():
@@ -56,6 +54,35 @@ def test_httplib_https_request():
     response = connection.getresponse()
     data = response.read()
     connection.close()
+
+_test_httplib_http_request_with_port_scoped_metrics = [ select_python_version(
+        py2=('External/localhost:8989/httplib/', 1),
+        py3=('External/localhost:8989/http/', 1))]
+
+_test_httplib_http_request_with_port_rollup_metrics = [
+        ('External/all', 1),
+        ('External/allOther', 1),
+        ('External/localhost:8989/all', 1),
+        select_python_version(py2=('External/localhost:8989/httplib/', 1),
+                              py3=('External/localhost:8989/http/', 1))]
+
+@validate_transaction_metrics(
+        'test_httplib:test_httplib_http_with_port_request',
+        scoped_metrics=_test_httplib_http_request_with_port_scoped_metrics,
+        rollup_metrics=_test_httplib_http_request_with_port_rollup_metrics,
+        background_task=True)
+@background_task()
+def test_httplib_http_with_port_request():
+    external = MockExternalHTTPServer()
+    external.start()
+
+    connection = httplib.HTTPConnection('localhost', 8989)
+    connection.request('GET', '/')
+    response = connection.getresponse()
+    data = response.read()
+    connection.close()
+
+    external.stop()
 
 @background_task()
 @cache_outgoing_headers

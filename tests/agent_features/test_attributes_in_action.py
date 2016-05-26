@@ -23,12 +23,14 @@ REQ_PARAMS = ['request.parameters.'+URL_PARAM,'request.parameters.'+URL_PARAM2]
 USER_ATTRS = ['puppies', 'sunshine']
 
 TRACE_ERROR_AGENT_KEYS = ['wsgi.output.seconds', 'response.status', 'request.method',
-        'request.headers.contentType', 'request.headers.contentLength']
+        'request.headers.contentType', 'request.headers.contentLength',
+        'response.headers.contentLength', 'response.headers.contentType']
 AGENT_KEYS_ALL = TRACE_ERROR_AGENT_KEYS + REQ_PARAMS
 
 TRANS_EVENT_INTRINSICS = ('name', 'duration', 'type', 'timestamp', 'totalTime')
 TRANS_EVENT_AGENT_KEYS = ['response.status', 'request.method',
-        'request.headers.contentType', 'request.headers.contentLength']
+        'request.headers.contentType', 'request.headers.contentLength',
+        'response.headers.contentLength', 'response.headers.contentType']
 
 BROWSER_INTRINSIC_KEYS = ["beacon", "errorBeacon", "licenseKey", "applicationID",
         "transactionName", "queueTime", "applicationTime", "agent"]

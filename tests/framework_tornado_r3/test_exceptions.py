@@ -7,10 +7,12 @@ from tornado_base_test import TornadoBaseTest
 
 from tornado_fixtures import (
     tornado_validate_count_transaction_metrics,
-    tornado_validate_errors, tornado_validate_transaction_cache_empty)
+    tornado_validate_errors, tornado_validate_transaction_cache_empty,
+    tornado_validate_unscoped_metrics)
 
 from _test_async_application import (AsyncLateExceptionRequestHandler,
         CoroutineLateExceptionRequestHandler,
+        OutsideTransactionErrorRequestHandler,
         ScheduleAndCancelExceptionRequestHandler,
         SyncLateExceptionRequestHandler)
 
@@ -253,3 +255,21 @@ class ExceptionTest(TornadoBaseTest):
         t.start()
         t.join(5.0)
         self.wait(timeout=5.0)
+
+    @tornado_validate_transaction_cache_empty()
+    @tornado_validate_errors(errors=[],
+            app_exceptions=[select_python_version(
+                py2='exceptions:ZeroDivisionError',
+                py3='builtins:ZeroDivisionError')])
+    @tornado_validate_count_transaction_metrics(
+            '_test_async_application:OutsideTransactionErrorRequestHandler.get')
+    @tornado_validate_unscoped_metrics([('Errors/all', 1)])
+    def test_outside_transaction_exception(self):
+        self.waits_expected += 1
+        OutsideTransactionErrorRequestHandler.set_cleanup(
+            self.waits_counter_check)
+
+        response = self.fetch_response('/outside-transaction-error')
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body,
+                OutsideTransactionErrorRequestHandler.RESPONSE)

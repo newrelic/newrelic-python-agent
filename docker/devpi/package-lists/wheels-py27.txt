@@ -28,7 +28,6 @@ future
 gearman<3.0.0
 gevent
 greenlet
-mysql-connector-python
 MySQL-python
 oursql
 pg_proboscis

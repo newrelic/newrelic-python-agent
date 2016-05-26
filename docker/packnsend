@@ -16,7 +16,6 @@ APP_SERVICE_IMAGES="
     postgresql \
     mysql \
     devpi \
-    squid \
     mongodb \
     redis \
     elasticsearch \
@@ -259,7 +258,6 @@ launch_remote_command()
         --link packnsend-postgresql:postgresql \
         --link packnsend-mysql:mysql \
         --link packnsend-devpi:devpi \
-        --link packnsend-squid:squid \
         --link packnsend-mongodb:mongodb \
         --link packnsend-redis:redis \
         --link packnsend-elasticsearch:elasticsearch \
@@ -293,7 +291,6 @@ launch_remote_command()
             --link packnsend-postgresql:postgresql \
             --link packnsend-mysql:mysql \
             --link packnsend-devpi:devpi \
-            --link packnsend-squid:squid \
             --link packnsend-mongodb:mongodb \
             --link packnsend-redis:redis \
             --link packnsend-elasticsearch:elasticsearch \
@@ -324,7 +321,6 @@ launch_remote_shell()
         --link packnsend-postgresql:postgresql \
         --link packnsend-mysql:mysql \
         --link packnsend-devpi:devpi \
-        --link packnsend-squid:squid \
         --link packnsend-mongodb:mongodb \
         --link packnsend-redis:redis \
         --link packnsend-elasticsearch:elasticsearch \
@@ -347,6 +343,25 @@ create_docker_base_images()
         echo
 
         (cd $ROOT_DIRECTORY; docker build --rm -t $IMG docker/$IMG)
+
+    done
+}
+
+create_docker_base_images_nocache()
+{
+    IMAGE_LIST=${@:-$ALL_IMAGES}
+    IMAGE_LIST=$(echo $IMAGE_LIST | sed 's/ \+/ /g')
+
+    echo "Creating docker base images, no cache."
+    echo "$IMAGE_LIST"
+
+    for IMG in $IMAGE_LIST
+    do
+        echo
+        echo "Create image: $IMG"
+        echo
+
+        (cd $ROOT_DIRECTORY; docker build --no-cache --rm -t $IMG docker/$IMG)
 
     done
 }
@@ -544,9 +559,9 @@ print_usage()
     echo "`basename $0`: COMMAND [arg...]"
     echo
     echo "Run Commands:"
-    echo "    run      Run command on test container."
-    echo "    run -i   Run command interactively."
-    echo "    shell    Launch a shell on test container."
+    echo "    run            Run command on test container."
+    echo "    run -i         Run command interactively."
+    echo "    shell          Launch a shell on test container."
     echo
     echo "Management Commands:"
     echo
@@ -555,17 +570,18 @@ print_usage()
     echo "management commands. Otherwise, management commands operate"
     echo "on all images/containers."
     echo
-    echo "    init     Pull images, if authorized, else build."
-    echo "    build    Build base images."
-    echo "    push     Push base images."
-    echo "    pull     Pull base images."
-    echo "    start    Start base containers."
-    echo "    stop     Stop base containers."
-    echo "    cleanup  Delete base images."
+    echo "    init           Pull images, if authorized, else build."
+    echo "    build          Build base images."
+    echo "    build_nocache  Build base images, no cache."
+    echo "    push           Push base images."
+    echo "    pull           Pull base images."
+    echo "    start          Start base containers."
+    echo "    stop           Stop base containers."
+    echo "    cleanup        Delete base images."
     echo
     echo "Help commands:"
-    echo "    list     List base images."
-    echo "    help     Print help message."
+    echo "    list           List base images."
+    echo "    help           Print help message."
     echo
 }
 
@@ -624,6 +640,10 @@ case "$COMMAND" in
 
     build)
         create_docker_base_images "$@"
+        ;;
+
+    build_nocache)
+        create_docker_base_images_nocache "$@"
         ;;
 
     push)

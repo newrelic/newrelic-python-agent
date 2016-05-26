@@ -28,6 +28,10 @@ except ImportError:
 DEFAULT_RESERVOIR_SIZE = 1200
 ERROR_EVENT_RESERVOIR_SIZE = 100
 
+# settings that should be completely ignored if set server side
+IGNORED_SERVER_SIDE_SETTINGS = ['utilization.logical_processors',
+        'utilization.total_ram_mib', 'utilization.billing_hostname']
+
 class _NullHandler(logging.Handler):
     def emit(self, record):
         pass
@@ -103,6 +107,13 @@ _settings.strip_exception_messages = StripExceptionMessageSettings()
 
 _settings.log_file = os.environ.get('NEW_RELIC_LOG', None)
 _settings.audit_log_file = os.environ.get('NEW_RELIC_AUDIT_LOG', None)
+
+def _environ_as_int(name, default=0):
+    val = os.environ.get(name, default)
+    try:
+        return int(val)
+    except ValueError:
+        return default
 
 def _environ_as_bool(name, default=False):
     flag = os.environ.get(name, default)
@@ -394,6 +405,13 @@ _settings.debug.disable_certificate_validation = False
 _settings.utilization.detect_aws = True
 _settings.utilization.detect_docker = True
 
+_settings.utilization.logical_processors = _environ_as_int(
+        'NEW_RELIC_UTILIZATION_LOGICAL_PROCESSORS')
+_settings.utilization.total_ram_mib = _environ_as_int(
+        'NEW_RELIC_UTILIZATION_TOTAL_RAM_MIB')
+_settings.utilization.billing_hostname = os.environ.get(
+        'NEW_RELIC_UTILIZATION_BILLING_HOSTNAME')
+
 _settings.strip_exception_messages.enabled = False
 _settings.strip_exception_messages.whitelist = []
 
@@ -617,6 +635,10 @@ def apply_server_side_settings(server_side_config={}, settings=_settings):
 def finalize_application_settings(server_side_config={}, settings=_settings):
     """Overlay server-side settings and add attribute filter."""
 
+    # Remove values from server_config that should not overwrite the
+    # ones set locally
+    server_side_config = _remove_ignored_configs(server_side_config)
+
     application_settings = apply_server_side_settings(
             server_side_config, settings)
 
@@ -624,6 +646,16 @@ def finalize_application_settings(server_side_config={}, settings=_settings):
             flatten_settings(application_settings))
 
     return application_settings
+
+def _remove_ignored_configs(server_settings):
+    if not server_settings.get('agent_config'):
+        return server_settings
+
+    # These settings should be ignored completely
+    for ignored_setting in IGNORED_SERVER_SIDE_SETTINGS:
+        server_settings['agent_config'].pop(ignored_setting, None)
+
+    return server_settings
 
 def ignore_status_code(status):
     return status in _settings.error_collector.ignore_status_codes

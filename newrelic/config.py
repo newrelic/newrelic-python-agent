@@ -478,6 +478,12 @@ def _process_configuration(section):
                      'getboolean', None)
     _process_setting(section, 'utilization.detect_docker',
                      'getboolean', None)
+    _process_setting(section, 'utilization.logical_processors',
+                     'getint', None)
+    _process_setting(section, 'utilization.total_ram_mib',
+                     'getint', None)
+    _process_setting(section, 'utilization.billing_hostname',
+                     'get', None)
     _process_setting(section, 'strip_exception_messages.enabled',
                      'getboolean', None)
     _process_setting(section, 'strip_exception_messages.whitelist',

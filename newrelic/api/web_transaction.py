@@ -72,6 +72,9 @@ def _remove_query_string(url):
     out = urlparse.urlsplit(url)
     return urlparse.urlunsplit((out.scheme, out.netloc, out.path, '', ''))
 
+def _is_websocket(environ):
+    return environ.get('HTTP_UPGRADE') == 'websocket'
+
 class WebTransaction(Transaction):
 
     report_unicode_error = True
@@ -93,6 +96,11 @@ class WebTransaction(Transaction):
         # Initialise the common transaction base class.
 
         super(WebTransaction, self).__init__(application, enabled)
+
+        # Do not create transactions for websocket connections.
+
+        if _is_websocket(environ):
+            self.enabled = False
 
         # Bail out if the transaction is running in a
         # disabled state.
@@ -1334,7 +1342,8 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None,
                     group='Python/WSGI'):
                 with FunctionTrace(transaction, name=callable_name(wrapped)):
                     if (settings and settings.browser_monitoring.enabled and
-                            not transaction.autorum_disabled):
+                            not transaction.autorum_disabled and
+                            not _is_websocket(environ)):
                         middleware = _WSGIApplicationMiddleware(wrapped,
                                 environ, _start_response, transaction)
                         result = middleware()

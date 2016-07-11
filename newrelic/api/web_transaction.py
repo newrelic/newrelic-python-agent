@@ -97,9 +97,15 @@ class WebTransaction(Transaction):
 
         super(WebTransaction, self).__init__(application, enabled)
 
-        # Do not create transactions for websocket connections.
+        # Disable transactions for websocket connections.
+        # Also disable autorum if this is a websocket. This is a good idea for
+        # two reasons. First, RUM is unnecessary for websocket transactions
+        # anyway. Secondly, due to a bug in the gevent-websocket (0.9.5)
+        # package, if our _WSGIApplicationMiddleware is applied a websocket
+        # connection cannot be made.
 
         if _is_websocket(environ):
+            self.autorum_disabled = True
             self.enabled = False
 
         # Bail out if the transaction is running in a
@@ -1342,8 +1348,7 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None,
                     group='Python/WSGI'):
                 with FunctionTrace(transaction, name=callable_name(wrapped)):
                     if (settings and settings.browser_monitoring.enabled and
-                            not transaction.autorum_disabled and
-                            not _is_websocket(environ)):
+                            not transaction.autorum_disabled):
                         middleware = _WSGIApplicationMiddleware(wrapped,
                                 environ, _start_response, transaction)
                         result = middleware()

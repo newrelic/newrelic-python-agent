@@ -18,70 +18,6 @@ is_pypy = '__pypy__' in sys.builtin_module_names
 settings = newrelic.api.settings.settings()
 application = newrelic.api.application.application_instance()
 
-class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
-
-    def test__is_websocket(self):
-        environ = {'HTTP_UPGRADE': 'websocket'}
-        self.assertTrue(newrelic.api.web_transaction._is_websocket(
-            environ))
-        environ = {}
-        self.assertFalse(newrelic.api.web_transaction._is_websocket(
-            environ))
-        environ = {'HTTP_UPGRADE': 'not a websocket'}
-        self.assertFalse(newrelic.api.web_transaction._is_websocket(
-            environ))
-
-    def test_web_transaction_disabled(self):
-        environ = {
-            'HTTP_UPGRADE': 'websocket',
-            'REQUEST_URI': '/web_transaction',
-        }
-        transaction = newrelic.api.web_transaction.WebTransaction(
-                application, environ)
-        with transaction:
-            self.assertFalse(transaction.enabled)
-            self.assertEqual(newrelic.api.transaction.current_transaction(), None)
-
-    def test_no_rum_wsgi_application_wrapper(self):
-        # Test that the WSGIApplicationWrapper function will not apply RUM
-        # middleware if the transaction is a websocket.
-        wrapped = lambda e, s : True
-        start_response = lambda s, h : 'write'
-        _application = application
-        environ = {
-            'HTTP_UPGRADE': 'websocket',
-            'REQUEST_URI': '/web_transaction',
-        }
-
-        wrapped_wsgi_app = newrelic.api.web_transaction.WSGIApplicationWrapper(
-                wrapped, application=_application)
-
-        # Call the now wrapped application. It will return a
-        # _WSGIApplicationIterable object. The generator attribute on this
-        # object is the value of wrapped(*args, **kwargs).
-        func_wrapper = wrapped_wsgi_app(environ, start_response)
-        self.assertEqual(func_wrapper.generator,
-                wrapped(environ, start_response))
-
-    def test_use_rum_when_not_websocket(self):
-        if is_pypy:
-            return
-
-        # Test that the WSGIApplicationWrapper function will apply RUM
-        # middleware if the transaction is not a websocket.
-        wrapped = lambda e, s : True
-        start_response = lambda s, h : 'write'
-        environ = {'REQUEST_URI': '/web_transaction'}
-
-        wrapped_wsgi_app = newrelic.api.web_transaction.WSGIApplicationWrapper(
-                wrapped, application=application)
-
-        # Call the now wrapped application. It will return a
-        # _WSGIApplicationIterable object. The generator attribute on this
-        # object is the middleware instance.
-        func_wrapper = wrapped_wsgi_app(environ, start_response)
-        self.assertEqual(type(func_wrapper.generator), types.GeneratorType)
-
 class TestWebTransaction(newrelic.tests.test_cases.TestCase):
 
     requires_collector = True
@@ -516,6 +452,143 @@ class TestWebTransaction(newrelic.tests.test_cases.TestCase):
             with transaction:
                 pass
             self.assertEqual(transaction.queue_start, 0.0)
+
+class TestWebsocketWebTransaction(newrelic.tests.test_cases.TestCase):
+
+    def test__is_websocket_websocket_in_environ(self):
+        environ = {'HTTP_UPGRADE': 'websocket'}
+        self.assertTrue(newrelic.api.web_transaction._is_websocket(
+            environ))
+
+    def test__is_websocket_empty_environ(self):
+        environ = {}
+        self.assertFalse(newrelic.api.web_transaction._is_websocket(
+            environ))
+
+    def test__is_websocket_websocket_not_in_environ(self):
+        environ = {'HTTP_UPGRADE': 'not a websocket'}
+        self.assertFalse(newrelic.api.web_transaction._is_websocket(
+            environ))
+
+    def test_web_transaction_disabled(self):
+        environ = {
+            'HTTP_UPGRADE': 'websocket',
+            'REQUEST_URI': '/web_transaction',
+        }
+        transaction = newrelic.api.web_transaction.WebTransaction(
+                application, environ)
+        with transaction:
+            self.assertFalse(transaction.enabled)
+            self.assertEqual(newrelic.api.transaction.current_transaction(), None)
+
+    def test_no_rum_wsgi_application_wrapper(self):
+        # Test that the WSGIApplicationWrapper function will not apply RUM
+        # middleware if the transaction is a websocket.
+
+        # If this a transaction is a websocket transaction, do not apply RUM
+        # middleware.  This is due to a bug in gevent-websocket (0.9.5)
+        # package. If our _WSGIApplicationMiddleware is applied a websocket
+        # connection cannot be made. The gevent-websocket package incorrectly
+        # handles applications that return generators (which the middleware is
+        # a type of), therefore middleware application is avoided. It doesn't
+        # make sense for websockets to include RUM anyway.
+
+        def wrapped(environ, start_response):
+            return True
+
+        def start_response(status, headers):
+            return 'write'
+
+        environ = {
+            'HTTP_UPGRADE': 'websocket',
+            'REQUEST_URI': '/web_transaction',
+        }
+
+        wrapped_wsgi_app = newrelic.api.web_transaction.WSGIApplicationWrapper(
+                wrapped, application=application)
+
+        # Call the now wrapped application. It will return a
+        # _WSGIApplicationIterable object. The generator attribute on this
+        # object is the value of wrapped(*args, **kwargs).
+        func_wrapper = wrapped_wsgi_app(environ, start_response)
+        self.assertEqual(func_wrapper.generator,
+                wrapped(environ, start_response))
+
+    def test_use_rum_when_not_websocket(self):
+        if is_pypy:
+            return
+
+        # Test that the WSGIApplicationWrapper function will apply RUM
+        # middleware if the transaction is not a websocket.
+        def wrapped(environ, start_response):
+            return True
+
+        def start_response(status, headers):
+            return 'write'
+
+        environ = {'REQUEST_URI': '/web_transaction'}
+
+        wrapped_wsgi_app = newrelic.api.web_transaction.WSGIApplicationWrapper(
+                wrapped, application=application)
+
+        # Call the now wrapped application. It will return a
+        # _WSGIApplicationIterable object. The generator attribute on this
+        # object is the middleware instance.
+        func_wrapper = wrapped_wsgi_app(environ, start_response)
+        self.assertEqual(type(func_wrapper.generator), types.GeneratorType)
+
+    def test_no_rum_when_not_websocket_and_autorum_disabled_is_True(self):
+        if is_pypy:
+            return
+
+        # If autorum_disabled = True but the transaction is not a websocket,
+        # RUM should not be applied.
+
+        def wrapped(environ, start_response):
+            return True
+
+        def start_response(status, headers):
+            return 'write'
+
+        environ = {
+            'REQUEST_URI': '/web_transaction',
+            'newrelic.disable_browser_autorum': True,
+        }
+
+        wrapped_wsgi_app = newrelic.api.web_transaction.WSGIApplicationWrapper(
+                wrapped, application=application)
+
+        # Call the now wrapped application. It will return a
+        # _WSGIApplicationIterable object. The generator attribute on this
+        # object is the middleware instance.
+        func_wrapper = wrapped_wsgi_app(environ, start_response)
+        self.assertEqual(func_wrapper.generator,
+                wrapped(environ, start_response))
+
+    def test_no_rum_is_websocket_autorum_disabled(self):
+        # If autorum_disabled = True and the transaction is a websocket, RUM
+        # should not be applied.
+        def wrapped(environ, start_response):
+            return True
+
+        def start_response(status, headers):
+            return 'write'
+
+        environ = {
+            'HTTP_UPGRADE': 'websocket',
+            'REQUEST_URI': '/web_transaction',
+            'newrelic.disable_browser_autorum': True,
+        }
+
+        wrapped_wsgi_app = newrelic.api.web_transaction.WSGIApplicationWrapper(
+                wrapped, application=application)
+
+        # Call the now wrapped application. It will return a
+        # _WSGIApplicationIterable object. The generator attribute on this
+        # object is the middleware instance.
+        func_wrapper = wrapped_wsgi_app(environ, start_response)
+        self.assertEqual(func_wrapper.generator,
+                wrapped(environ, start_response))
 
 if __name__ == '__main__':
     unittest.main()

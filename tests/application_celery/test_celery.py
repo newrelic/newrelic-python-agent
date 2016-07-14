@@ -63,3 +63,42 @@ def test_celery_tasks_multiple_function_traces():
     tsum_result = tsum([1, 2, 3, 4])
     assert tsum_result == 10
 
+
+@background_task()
+def test_celery_tasks_ignore_transaction():
+    """
+    No transaction is recorded, due to the call to ignore_transaction(),
+    so no validation fixture is used. The purpose of this test is to make
+    sure the agent doesn't throw an error.
+
+    """
+    add_result = add(1, 2)
+    assert add_result == 3
+
+    ignore_transaction()
+
+    tsum_result = tsum([1, 2, 3])
+    assert tsum_result == 6
+
+
+@validate_transaction_metrics(
+        name='test_celery:test_celery_tasks_end_transaction',
+        scoped_metrics=select_python_version(
+                py2=[('Function/tasks:add.__call__', 1)],
+                py3=[('Function/celery.app.task:Task.__call__', 1)]
+        ),
+        background_task=True)
+@background_task()
+def test_celery_tasks_end_transaction():
+    """
+    Only functions that run before the call to end_of_transaction() are
+    included in the transaction.
+
+    """
+    add_result = add(1, 2)
+    assert add_result == 3
+
+    end_of_transaction()
+
+    tsum_result = tsum([1, 2, 3])
+    assert tsum_result == 6

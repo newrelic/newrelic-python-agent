@@ -19,7 +19,7 @@ from newrelic.api.transaction import current_transaction
 def CeleryTaskWrapper(wrapped, application=None, name=None):
 
     def wrapper(wrapped, instance, args, kwargs):
-        transaction = current_transaction()
+        transaction = current_transaction(active_only=False)
 
         if callable(name):
             # Start Hotfix v2.2.1.
@@ -50,20 +50,38 @@ def CeleryTaskWrapper(wrapped, application=None, name=None):
                 return application
             return application_instance(application)
 
-        # Check to see if we are being called within the context of an
-        # existing transaction. If we are, then we will record the call
-        # as a function trace node instead. This situation can occur
-        # when a function wrapped with Celery task decorator is called
-        # explicitly in the context of an existing transaction.
+        # A Celery Task can be called either outside of a transaction, or
+        # within the context of an existing transaction. There are 3
+        # possibilities we need to handle:
+        #
+        #   1. In an inactive transaction
+        #
+        #      If the end_of_transaction() or ignore_transaction() API calls
+        #      have been invoked, this task may be called in the context
+        #      of an inactive transaction. In this case, don't wrap the task
+        #      in any way. Just run the original function.
+        #
+        #   2. In an active transaction
+        #
+        #      Run the original function inside a FunctionTrace.
+        #
+        #   3. Outside of a transaction
+        #
+        #      This is the typical case for a celery Task. Since it's not
+        #      running inside of an existing transaction, we want to create
+        #      a new background transaction for it.
 
-        if transaction:
+        if transaction and (transaction.ignore_transaction
+                or transaction.stopped):
+            return wrapped(*args, **kwargs)
+
+        elif transaction:
             with FunctionTrace(transaction, callable_name(wrapped)):
                 return wrapped(*args, **kwargs)
 
-        # Otherwise treat it as top level background task.
-
-        with BackgroundTask(_application(), _name, 'Celery'):
-            return wrapped(*args, **kwargs)
+        else:
+            with BackgroundTask(_application(), _name, 'Celery'):
+                return wrapped(*args, **kwargs)
 
     # Start Hotfix v2.2.1.
     #obj = ObjectWrapper(wrapped, None, wrapper)

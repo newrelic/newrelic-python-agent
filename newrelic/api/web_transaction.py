@@ -1339,7 +1339,7 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None,
                                 environ, _start_response, transaction)
                         result = middleware()
                     else:
-                        result = wrapped(*args, **kwargs)
+                        result = wrapped(environ, _start_response)
 
         except:  # Catch all
             transaction.__exit__(*sys.exc_info())

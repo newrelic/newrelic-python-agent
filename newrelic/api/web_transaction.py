@@ -72,6 +72,9 @@ def _remove_query_string(url):
     out = urlparse.urlsplit(url)
     return urlparse.urlunsplit((out.scheme, out.netloc, out.path, '', ''))
 
+def _is_websocket(environ):
+    return environ.get('HTTP_UPGRADE') == 'websocket'
+
 class WebTransaction(Transaction):
 
     report_unicode_error = True
@@ -93,6 +96,17 @@ class WebTransaction(Transaction):
         # Initialise the common transaction base class.
 
         super(WebTransaction, self).__init__(application, enabled)
+
+        # Disable transactions for websocket connections.
+        # Also disable autorum if this is a websocket. This is a good idea for
+        # two reasons. First, RUM is unnecessary for websocket transactions
+        # anyway. Secondly, due to a bug in the gevent-websocket (0.9.5)
+        # package, if our _WSGIApplicationMiddleware is applied a websocket
+        # connection cannot be made.
+
+        if _is_websocket(environ):
+            self.autorum_disabled = True
+            self.enabled = False
 
         # Bail out if the transaction is running in a
         # disabled state.
@@ -1339,7 +1353,7 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None,
                                 environ, _start_response, transaction)
                         result = middleware()
                     else:
-                        result = wrapped(*args, **kwargs)
+                        result = wrapped(environ, _start_response)
 
         except:  # Catch all
             transaction.__exit__(*sys.exc_info())

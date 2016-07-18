@@ -917,6 +917,23 @@ _expected_absent_attributes = {
 def test_error_in_transaction_error_param_excluded():
     response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
+# =========================  browser monitoring disabled
+
+_override_settings = {
+        'browser_monitoring.enabled': False,
+}
+
+_expected_attributes = {
+        'agent' : TRANS_EVENT_AGENT_KEYS,
+        'user' : USER_ATTRS,
+        'intrinsic' : [],
+}
+
+@validate_transaction_trace_attributes(_expected_attributes)
+@validate_transaction_event_attributes(_expected_attributes)
+@override_application_settings(_override_settings)
+def test_browser_monitoring_disabled():
+    response = normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
 # =========================  outside transaction (error traces and events only)
 

@@ -307,7 +307,7 @@ transferring files across see: [Managing the Download Site][download-wiki].
 [download-release]: http://download.newrelic.com/python_agent/release/
 
 18. Update the ``python_agent_version`` configuration to ``A.B.C.D`` in APM
-systems configuration page at: https://rpm.newrelic.com/admin/system_configurations.
+systems configuration page at: https://rpm-admin.newrelic.com/admin/system_configurations.
 
     If we need to notify existing users to update their older agents, also
 update the ``min_python_agent_version`` to ``A.B.C.D``.

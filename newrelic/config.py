@@ -2431,6 +2431,10 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.application_gearman',
             'instrument_gearman_worker')
 
+    _process_module_definition('botocore.endpoint',
+            'newrelic.hooks.external_botocore',
+            'instrument_botocore_endpoint')
+
 def _process_module_entry_points():
     try:
         import pkg_resources

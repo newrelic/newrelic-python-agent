@@ -25,6 +25,8 @@ ARTIFACTORY_USER=python-agent
 DOWNLOAD_USER=download
 DOWNLOAD_HOSTS="chi-www-1 chi-www-2"
 
+AWS_BUCKET=s3://nr-downloads-main/python_agent
+
 # By default, deploy agent to `testing` subdirectory. For a real release,
 # override `DOWNLOAD_DIR` to point to the `release` directory.
 

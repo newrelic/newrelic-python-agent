@@ -9,6 +9,7 @@ from testing_support.fixtures import validate_transaction_metrics
 AWS_ACCESS_KEY_ID = 'AAAAAAAAAAAACCESSKEY'
 AWS_SECRET_ACCESS_KEY = 'AAAAAASECRETKEY'
 AWS_REGION = 'us-east-1'
+UBUNTU_14_04_PARAVIRTUAL_AMI = 'ami-c93a8f3de'
 
 TEST_INSTANCE = 'python-agent-test-%s' % uuid.uuid4()
 
@@ -39,9 +40,10 @@ def test_ec2():
             aws_secret_access_key=AWS_SECRET_ACCESS_KEY
     )
 
-    # Create 1 instance
+    # Create instance
     resp = client.run_instances(
-            ImageId='',
+            ImageId=UBUNTU_14_04_PARAVIRTUAL_AMI,
+            InstanceType='m1.small',
             MinCount=1,
             MaxCount=1,
     )
@@ -49,13 +51,10 @@ def test_ec2():
     assert len(resp['Instances']) == 1
     instance_id = resp['Instances'][0]['InstanceId']
 
-    # Update the instance type
-    resp = client.modify_instance_attribute(
-            InstanceId=instance_id,
-            Attribute='instanceType',
-            InstanceType={'Value': 'i2.4xlarge'},
-    )
+    # Describe instance
+    resp = client.describe_instances(InstanceIds=[instance_id])
     assert resp['ResponseMetadata']['HTTPStatusCode'] == 200
+    assert resp['Reservations'][0]['Instances'][0]['InstanceId'] == instance_id
 
     # Delete instance
     resp = client.terminate_instances(InstanceIds=[instance_id])

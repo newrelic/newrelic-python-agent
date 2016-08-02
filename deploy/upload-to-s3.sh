@@ -41,66 +41,47 @@ upload_to_s3()
     $CMD
 }
 
-# Define function to test if file exists in S3
-
-s3_file_exists()
+abort_if_key_exists_or_error()
 {
-    if test $# -ne 2
+    if test $# -ne 1
     then
         echo
-        echo "ERROR: Wrong number of arguments to s3_file_exists."
+        echo "ERROR: Wrong number of arguments to abort_if_key_exists_or_error."
         exit 1
     fi
 
-    NAME=$1
-    URI=$2
-
-    # $URI already ends in a / so it is not necessary to include one here
-    # between $URI and $NAME
-    CMD="aws s3 ls ${URI}${NAME}"
-
-    echo
-    echo "Running awscli command:"
-    echo $CMD
-
-    # Since `aws s3 ls` does not do an exact match (it matches by prefix), a
-    # further check must be preformed
-    for result in `$CMD | awk '{print $4}'`
-    do
-        if [[ $result = $NAME ]]
-        then
-            return 0
-        fi
-    done
-
-    return 1
-}
-
-# Define function to test s3 connection and settings (such as networking,
-# correct keys, existence of s3 directories, etc.)
-
-test_s3_env_settings()
-{
-    # Since it is only stdout that is redirected to /dev/null, any errors will
-    # still appear in the terminal output.
-    CMD="aws s3 ls $S3_URI"
+    S3_KEY=$1
+    CMD="aws s3 ls $S3_KEY"
 
     echo
     echo "Running awscli command:"
     echo $CMD
 
     set +e
-    $CMD > /dev/null
+    $CMD
+    RETURN_STATUS=$?
+    set -e
 
-    if [[ $? > 0 ]]
+    # Return codes from `aws s3 ls` command:
+    #   0          : Key prefix exists
+    #   1          : Key prefix does not exist
+    #   All others : Error
+    #
+    # http://docs.aws.amazon.com/cli/latest/topic/return-codes.html
+
+    if test $RETURN_STATUS -eq 0
+    then
+        echo
+        echo "ERROR: Key $S3_KEY already exists."
+        exit 1
+
+    elif test $RETURN_STATUS -gt 1
     then
         echo
         echo "ERROR: Running command \`$CMD\` failed."
-        echo "       Confirm networking, permissions, aws keys, and S3_URI then try again."
+        echo "       Confirm networking, permissions, aws keys, and S3_DIR then try again."
         exit 1
     fi
-
-    set -e
 }
 
 # Set and validate environment variables
@@ -137,7 +118,7 @@ then
     exit 1
 fi
 
-S3_URI=s3://$S3_BUCKET/$S3_AGENT_NAME/$S3_RELEASE_TYPE/
+S3_DIR=s3://$S3_BUCKET/$S3_AGENT_NAME/$S3_RELEASE_TYPE/
 
 # If we get to this point, environment variables are OK.
 
@@ -146,46 +127,26 @@ echo "... PACKAGE_NAME   = $PACKAGE_NAME"
 echo "... PACKAGE_PATH   = $PACKAGE_PATH"
 echo "... MD5_NAME       = $MD5_NAME"
 echo "... MD5_PATH       = $MD5_PATH"
-echo "... S3_URI         = $S3_URI"
+echo "... S3_DIR         = $S3_DIR"
 
 # Make sure permissions are right before uploading
 
 chmod 644 $PACKAGE_PATH
 chmod 644 $MD5_PATH
 
-# Check connection to s3. Confirms error cases like networking and proper keys.
-
-echo
-echo "Testing S3 connection"
-echo
-
-test_s3_env_settings  # exits 1 on failure
-
 # Bail, if package version already exists in S3.
 
 echo
 echo "Checking for existing files in S3"
-echo
 
-if s3_file_exists $PACKAGE_NAME $S3_URI
-then
-    echo
-    echo "ERROR: $PACKAGE_NAME already exists at $S3_URI"
-    exit 1
-fi
+S3_PACKAGE_URI=${S3_DIR}${PACKAGE_NAME}
 
-if s3_file_exists $MD5_NAME $S3_URI
-then
-    echo
-    echo "ERROR: $MD5_NAME already exists at $S3_URI"
-    exit 1
-fi
+abort_if_key_exists_or_error $S3_PACKAGE_URI
 
 # Upload to S3
 
 echo
 echo "Uploading to S3"
-echo
 
-upload_to_s3 $PACKAGE_PATH $S3_URI
-upload_to_s3 $MD5_PATH $S3_URI
+upload_to_s3 $PACKAGE_PATH $S3_DIR
+upload_to_s3 $MD5_PATH $S3_DIR

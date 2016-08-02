@@ -1,3 +1,4 @@
+import os
 import uuid
 
 import awscli.clidriver
@@ -6,6 +7,8 @@ import moto
 from newrelic.agent import background_task
 from testing_support.fixtures import validate_transaction_metrics
 
+AWS_ACCESS_KEY_ID = 'AAAAAAAAAAAACCESSKEY'
+AWS_SECRET_ACCESS_KEY = 'AAAAAASECRETKEY'
 AWS_REGION = 'us-east-1'
 AWS_AVAIL_ZONE = 'us-east-1c'
 
@@ -30,6 +33,13 @@ _elb_rollup_metrics = [
 @background_task()
 @moto.mock_elb
 def test_elb():
+
+    # Set required env vars if they are not set already
+    if not os.environ.get('AWS_ACCESS_KEY_ID'):
+        os.environ['AWS_ACCESS_KEY_ID'] = AWS_ACCESS_KEY_ID
+    if not os.environ.get('AWS_SECRET_ACCESS_KEY'):
+        os.environ['AWS_SECRET_ACCESS_KEY'] = AWS_SECRET_ACCESS_KEY
+
     # Under the covers, the `aws` executable creates a driver object then calls
     # its `main` method
     driver = awscli.clidriver.create_clidriver()

@@ -6,8 +6,10 @@ import moto
 from newrelic.agent import background_task
 from testing_support.fixtures import validate_transaction_metrics
 
+AWS_ACCESS_KEY_ID = 'AAAAAAAAAAAACCESSKEY'
+AWS_SECRET_ACCESS_KEY = 'AAAAAASECRETKEY'
+
 TEST_USER = 'python-agent-test-%s' % uuid.uuid4()
-TEST_GROUP = 'python-agent-test-%s' % uuid.uuid4()
 
 _iam_scoped_metrics = [
     ('External/iam.amazonaws.com/botocore/POST', 3),
@@ -28,7 +30,11 @@ _iam_rollup_metrics = [
 @background_task()
 @moto.mock_iam
 def test_iam():
-    iam = boto3.client('iam')
+    iam = boto3.client(
+            'iam',
+            aws_access_key_id=AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+    )
 
     # Create user
     resp = iam.create_user(UserName=TEST_USER)

@@ -10,14 +10,14 @@ TEST_USER = 'python-agent-test-%s' % uuid.uuid4()
 TEST_GROUP = 'python-agent-test-%s' % uuid.uuid4()
 
 _iam_scoped_metrics = [
-    ('External/iam.amazonaws.com/botocore/POST', 6),
+    ('External/iam.amazonaws.com/botocore/POST', 3),
 ]
 
 _iam_rollup_metrics = [
-    ('External/all', 6),
-    ('External/allOther', 6),
-    ('External/iam.amazonaws.com/all', 6),
-    ('External/iam.amazonaws.com/botocore/POST', 6),
+    ('External/all', 3),
+    ('External/allOther', 3),
+    ('External/iam.amazonaws.com/all', 3),
+    ('External/iam.amazonaws.com/botocore/POST', 3),
 ]
 
 @validate_transaction_metrics(
@@ -34,23 +34,10 @@ def test_iam():
     resp = iam.create_user(UserName=TEST_USER)
     assert resp['ResponseMetadata']['HTTPStatusCode'] == 200
 
-    # Create a group
-    resp = iam.create_group(GroupName=TEST_GROUP)
-    assert resp['ResponseMetadata']['HTTPStatusCode'] == 200
-
-    # Add the user to the group
-    resp = iam.add_user_to_group(UserName=TEST_USER, GroupName=TEST_GROUP)
-    assert resp['ResponseMetadata']['HTTPStatusCode'] == 200
-
     # Get the user
     resp = iam.get_user(UserName=TEST_USER)
     assert resp['ResponseMetadata']['HTTPStatusCode'] == 200
     assert resp['User']['UserName'] == TEST_USER
-
-    # Get the group
-    resp = iam.get_group(GroupName=TEST_GROUP)
-    assert resp['ResponseMetadata']['HTTPStatusCode'] == 200
-    assert resp['Group']['GroupName'] == TEST_GROUP
 
     # Delete the user
     resp = iam.delete_user(UserName=TEST_USER)

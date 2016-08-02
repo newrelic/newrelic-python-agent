@@ -9,7 +9,7 @@ from testing_support.fixtures import validate_transaction_metrics
 AWS_ACCESS_KEY_ID = 'AAAAAAAAAAAACCESSKEY'
 AWS_SECRET_ACCESS_KEY = 'AAAAAASECRETKEY'
 AWS_REGION = 'us-east-1'
-UBUNTU_14_04_PARAVIRTUAL_AMI = 'ami-c93a8f3de'
+UBUNTU_14_04_PARAVIRTUAL_AMI = 'ami-c65be9ae'
 
 TEST_INSTANCE = 'python-agent-test-%s' % uuid.uuid4()
 

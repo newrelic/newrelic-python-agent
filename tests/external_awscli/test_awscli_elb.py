@@ -6,19 +6,20 @@ import moto
 from newrelic.agent import background_task
 from testing_support.fixtures import validate_transaction_metrics
 
-AWS_REGION = 'us-west-2'
+AWS_REGION = 'us-east-1'
+AWS_AVAIL_ZONE = 'us-east-1c'
 
-TEST_ELB = 'python-agent-test-%s' % uuid.uuid4()
+TEST_ELB = ('pyagent-test-%s' % uuid.uuid4())[:25]
 
 _elb_scoped_metrics = [
-    ('External/elasticloadbalancing.us-west-2.amazonaws.com/botocore/POST', 4),
+    ('External/elasticloadbalancing.us-east-1.amazonaws.com/botocore/POST', 4),
 ]
 
 _elb_rollup_metrics = [
     ('External/all', 4),
     ('External/allOther', 4),
-    ('External/elasticloadbalancing.us-west-2.amazonaws.com/all', 4),
-    ('External/elasticloadbalancing.us-west-2.amazonaws.com/botocore/POST', 4),
+    ('External/elasticloadbalancing.us-east-1.amazonaws.com/all', 4),
+    ('External/elasticloadbalancing.us-east-1.amazonaws.com/botocore/POST', 4),
 ]
 
 @validate_transaction_metrics(
@@ -37,8 +38,8 @@ def test_elb():
     # `args` is a list of command line arguments, all minus the beginning `aws`
     args = ['elb', 'create-load-balancer', '--load-balancer-name', TEST_ELB,
             '--listeners',
-            'Protocol=HTTP,LoadBalancerPort=12345,InstancePort=2345',
-            '--region', AWS_REGION]
+            'Protocol=HTTP,LoadBalancerPort=1234,InstancePort=4321',
+            '--region', AWS_REGION, '--availability-zones', AWS_AVAIL_ZONE]
     rc = driver.main(args=args)
     assert rc == 0
 

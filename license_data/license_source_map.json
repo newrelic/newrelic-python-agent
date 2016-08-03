@@ -1283,6 +1283,12 @@
             "New Relic"
         ]
     },
+    "newrelic/hooks/external_botocore.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/hooks/external_dropbox.py": {
         "hash": "n/a",
         "libraries": [

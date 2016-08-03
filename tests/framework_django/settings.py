@@ -117,6 +117,14 @@ TEMPLATE_DIRS = (
     [os.path.join(BASE_DIR, 'templates')]
 )
 
+# For Django 1.10 compatability because TEMPLATE_DIRS is deprecated
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': TEMPLATE_DIRS,
+    }
+]
+
 INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',

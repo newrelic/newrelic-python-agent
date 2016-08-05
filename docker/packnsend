@@ -558,6 +558,7 @@ print_usage()
     echo "    pull_with-restart  Pull base images, restart if changed."
     echo "    start              Start base containers."
     echo "    stop               Stop base containers."
+    echo "    restart            Stop, then start base containers."
     echo "    cleanup            Delete base images."
     echo
     echo "Help commands:"
@@ -647,6 +648,11 @@ case "$COMMAND" in
 
     stop)
         stop_application_services "$@"
+        ;;
+
+    restart)
+        stop_application_services "$@"
+        start_application_services "$@"
         ;;
 
     cleanup)

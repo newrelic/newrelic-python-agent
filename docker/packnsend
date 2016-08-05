@@ -576,12 +576,6 @@ case "$COMMAND" in
 
     init)
         pull_docker_base_images "$@"
-        # this variable is no longer set after running pull_docker_base_images,
-        # it is kept here for historical purposes
-        if test $IS_AUTHORIZED_TO_PUSH_PULL = 'false'
-        then
-            create_docker_base_images "$@"
-        fi
         ;;
 
     build)

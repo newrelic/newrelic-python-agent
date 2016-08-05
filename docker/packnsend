@@ -411,43 +411,6 @@ pull_docker_base_images()
     done
 }
 
-pull_docker_images_and_restart() {
-    # Perform a dogestry pull. If the image changed from what was already on
-    # disk, stop the container if it is running. Finally, start the container
-    # ensuring that at the end of this function, all containers will be
-    # running.
-    IMAGE_LIST=${@:-$ALL_IMAGES}
-    IMAGE_LIST=$(echo $IMAGE_LIST | sed 's/ \+/ /g')
-
-    echo "Pull docker base images. Restarting those that have changed."
-    echo "$IMAGE_LIST"
-
-
-    for IMG in $IMAGE_LIST
-    do
-
-        echo
-        echo "Pull image: $IMG"
-        echo
-
-        before_sha=$(docker images -q ${IMG})
-        dogestry -disable-checks pull $DOGESTRY_BUCKET $DOGESTRY_IMG_PATH/$IMG > /dev/null
-        docker tag -f $DOGESTRY_IMG_PATH/$IMG $IMG
-        after_sha=$(docker images -q ${IMG})
-
-        if [ "$before_sha" != "$after_sha" ]
-        then
-            echo "New image sha found"
-            echo "Stopping existing container"
-            stop_application_services $IMG
-        else
-            echo "Image unchanged"
-        fi
-        echo "Starting container"
-        start_application_services $IMG
-    done
-}
-
 start_application_services()
 {
     IMAGE_LIST=${@:-$APP_SERVICE_IMAGES}
@@ -555,7 +518,6 @@ print_usage()
     echo "    build_nocache      Build base images, no cache."
     echo "    push               Push base images."
     echo "    pull               Pull base images."
-    echo "    pull_with-restart  Pull base images, restart if changed."
     echo "    start              Start base containers."
     echo "    stop               Stop base containers."
     echo "    restart            Stop, then start base containers."
@@ -636,10 +598,6 @@ case "$COMMAND" in
 
     pull)
         pull_docker_base_images "$@"
-        ;;
-
-    pull_with_restart)
-        pull_docker_images_and_restart "$@"
         ;;
 
     start)

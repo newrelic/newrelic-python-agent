@@ -1,3 +1,4 @@
 #!/bin/bash -x
 
-./docker/packnsend pull_with_restart
+./docker/packnsend pull
+./docker/packnsend start

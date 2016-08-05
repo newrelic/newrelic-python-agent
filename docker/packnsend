@@ -444,7 +444,7 @@ pull_docker_images_and_restart() {
             echo "Image unchanged"
         fi
         echo "Starting container"
-        start_application_services_safe $IMG
+        start_application_services $IMG
     done
 }
 
@@ -489,38 +489,6 @@ start_application_services()
 
     RUNNING_ID=""
     STOPPED_ID=""
-}
-
-start_application_services_safe()
-{
-    IMAGE_LIST=${@:-$APP_SERVICE_IMAGES}
-    IMAGE_LIST=$(echo $IMAGE_LIST | sed 's/ \+/ /g')
-
-    echo "Start application services."
-
-    for IMG in $IMAGE_LIST
-    do
-
-        echo
-        echo "Start: $IMG"
-
-        # is container already running?
-        docker ps | grep packnsend-$IMG > /dev/null
-        if [[ $? != 1 ]] ; then
-            echo "$IMG already running"
-            continue
-        fi
-        # is container stopped?
-        docker ps -a | grep packnsend-$IMG > /dev/null
-        if [[ $? != 1 ]] ; then
-            echo "$IMG has stopped, restarting"
-            docker start packnsend-$IMG
-            continue
-        fi
-
-        docker run -d --name packnsend-$IMG $IMG
-
-    done
 }
 
 stop_application_services()
@@ -602,8 +570,6 @@ print_usage()
     echo "    pull               Pull base images."
     echo "    pull_with-restart  Pull base images, restart if changed."
     echo "    start              Start base containers."
-    echo "    start_safe         Start base containers, do not error "
-    echo "                       if already running."
     echo "    stop               Stop base containers."
     echo "    cleanup            Delete base images."
     echo
@@ -690,10 +656,6 @@ case "$COMMAND" in
 
     start)
         start_application_services "$@"
-        ;;
-
-    start_safe)
-        start_application_services_safe "$@"
         ;;
 
     stop)

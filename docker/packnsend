@@ -453,6 +453,7 @@ start_application_services()
     IMAGE_LIST=${@:-$APP_SERVICE_IMAGES}
     IMAGE_LIST=$(echo $IMAGE_LIST | sed 's/ \+/ /g')
 
+    echo
     echo "Start application services."
 
     for IMG in $IMAGE_LIST
@@ -461,9 +462,33 @@ start_application_services()
         echo
         echo "Start: $IMG"
 
+        # Is container already running?
+
+        RUNNING_ID=$(docker ps | grep packnsend-$IMG | awk '{print $1}')
+
+        if test -n "$RUNNING_ID"
+        then
+            echo "$RUNNING_ID is already running."
+            continue
+        fi
+
+        # Is container in stopped state?
+
+        STOPPED_ID=$(docker ps -a | grep packnsend-$IMG | awk '{print $1}')
+
+        if test -n "$STOPPED_ID"
+        then
+            echo "$STOPPED_ID was stopped. Now restarting."
+            docker start packnsend-$IMG
+            continue
+        fi
+
         docker run -d --name packnsend-$IMG $IMG
 
     done
+
+    RUNNING_ID=""
+    STOPPED_ID=""
 }
 
 start_application_services_safe()

@@ -501,31 +501,18 @@ stop_application_services()
 
     for IMG in $IMAGE_LIST
     do
+        echo
+        echo "packnsend-$IMG"
 
-        docker stop -t=0 packnsend-$IMG
+        SERVICE_ID=$(docker ps -a | grep packnsend-$IMG | awk '{print $1}')
+        test -n "$SERVICE_ID" && echo "$SERVICE_ID"
 
+        test -n "$SERVICE_ID" && docker stop -t=0 "$SERVICE_ID" > /dev/null
+        test -n "$SERVICE_ID" && docker kill "$SERVICE_ID" > /dev/null
+        test -n "$SERVICE_ID" && docker rm "$SERVICE_ID" > /dev/null
     done
 
-    echo
-    echo "Kill application services."
-
-    for IMG in $IMAGE_LIST
-    do
-
-        docker kill packnsend-$IMG
-
-    done
-
-    echo
-    echo "Remove application services."
-
-    for IMG in $IMAGE_LIST
-    do
-
-        docker rm packnsend-$IMG
-
-    done
-
+    SERVICE_ID=""
 }
 
 delete_docker_base_images()

@@ -45,6 +45,41 @@ use(extensions) {
         }
     }
 
+    baseJob('deploy-to-s3') {
+        label('ec2-linux')
+        repo(repoFull)
+        branch('master')
+
+        configure {
+            description('Upload the source distribution package to our S3 bucket.')
+            logRotator { numToKeep(10) }
+            buildInDockerImage('./deploy')
+
+            parameters {
+                choiceParam('S3_RELEASE_TYPE', ['testing', 'archive', 'release'],
+                        'The specific S3 directory name to upload the distribution to.')
+                stringParam('AGENT_VERSION', '', 'Version of the agent to release. (Ex. 2.56.0.42)')
+            }
+
+            wrappers {
+                credentialsBinding {
+                    string('AWS_ACCESS_KEY_ID',
+                           '448d1824-c480-4a00-8d78-a25ee72ed7db')
+                    string('AWS_SECRET_ACCESS_KEY',
+                           'c6af0f0d-f67b-4fd3-89cc-2cb7e92decc9')
+                }
+            }
+
+            steps {
+                shell('./deploy/deploy-to-s3.sh')
+            }
+
+            slackQuiet(slackChannel){
+                notifySuccess true
+            }
+        }
+    }
+
     baseJob('build-and-archive-package') {
         label('ec2-linux')
         repo(repoFull)

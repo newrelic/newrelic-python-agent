@@ -36,7 +36,7 @@ use(extensions) {
             }
 
             steps {
-                shell(readFileFromWorkspace('./deploy/deploy-to-pypi.sh'))
+                shell('./deploy/deploy-to-pypi.sh')
             }
 
             slackQuiet(slackChannel){
@@ -101,8 +101,8 @@ use(extensions) {
             }
 
             steps {
-                shell(readFileFromWorkspace('./build.sh'))
-                shell(readFileFromWorkspace('./deploy/upload-to-artifactory.sh'))
+                shell('./build.sh')
+                shell('./deploy/upload-to-artifactory.sh')
             }
 
             publishers {

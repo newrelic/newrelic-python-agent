@@ -45,7 +45,7 @@ use(extensions) {
                     env('AWS_SECRET_ACCESS_KEY', '${NR_DOCKER_DEV_SECRET_ACCESS_KEY}')
                     env('DOCKER_HOST', 'unix:///var/run/docker.sock')
                 }
-                shell(readFileFromWorkspace('./jenkins/packnsend-buildnpush.sh'))
+                shell('./jenkins/packnsend-buildnpush.sh')
             }
 
             slackQuiet(slackChannel){

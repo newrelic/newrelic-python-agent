@@ -18,8 +18,7 @@ use(extensions) {
         dslPath('jenkins')
 
         configure {
-            // this name method is deprecated but it still works
-            name("${testPrefix}-dsl-seed")
+            displayName("${testPrefix}-dsl-seed")
 
             // set repository a second time to ensure building from develop
             // branch instead of master

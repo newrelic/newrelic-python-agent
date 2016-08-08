@@ -15,7 +15,7 @@ use(extensions) {
     projectSeedJob() {
         repo(repoGHE)
         org(organization)
-        dslPath('./jenkins')
+        dslPath('jenkins')
 
         configure {
             // this name method is deprecated but it still works

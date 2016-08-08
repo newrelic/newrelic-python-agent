@@ -36,6 +36,9 @@ use(extensions) {
             }
 
             steps {
+                environmentVariables {
+                    env('PATH', '/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin')
+                }
                 shell('./deploy/deploy-to-pypi.sh')
             }
 
@@ -71,6 +74,9 @@ use(extensions) {
             }
 
             steps {
+                environmentVariables {
+                    env('PATH', '/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin')
+                }
                 shell('./deploy/deploy-to-s3.sh')
             }
 
@@ -101,6 +107,9 @@ use(extensions) {
             }
 
             steps {
+                environmentVariables {
+                    env('PATH', '/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin')
+                }
                 shell('./build.sh')
                 shell('./deploy/upload-to-artifactory.sh')
             }

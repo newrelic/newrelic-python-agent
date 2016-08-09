@@ -9,8 +9,8 @@ String slackChannel = '#python-agent'
 // Views for any build and deploy jobs
 
 use(extensions) {
-    view('Python_Agent_Deploy', 'Deployment jobs',
-         '(deploy-to-pypi)|(build-and-archive-package)')
+    view('PY_Deploy', 'Deployment jobs',
+         '(deploy-to-pypi)|(deploy-to-s3)|(build-and-archive-package)')
 
     baseJob('deploy-to-pypi') {
         label('ec2-linux')

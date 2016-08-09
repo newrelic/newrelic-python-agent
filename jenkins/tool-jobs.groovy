@@ -10,7 +10,7 @@ String slackChannel = '#python-agent'
 // Views for any tool-like jobs
 
 use(extensions) {
-    view('Python_Agent_Tools', 'A view for some tools', "${testPrefix}.*")
+    view('PY_Tools', 'A view for some tools', "${testPrefix}.*")
 
     projectSeedJob() {
         repo(repoGHE)

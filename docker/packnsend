@@ -470,9 +470,13 @@ stop_application_services()
         SERVICE_ID=$(docker ps -a | grep packnsend-$IMG | awk '{print $1}')
         test -n "$SERVICE_ID" && echo "$SERVICE_ID"
 
-        test -n "$SERVICE_ID" && docker stop -t=0 "$SERVICE_ID" > /dev/null
-        test -n "$SERVICE_ID" && docker kill "$SERVICE_ID" > /dev/null
-        test -n "$SERVICE_ID" && docker rm "$SERVICE_ID" > /dev/null
+        if test -n "$SERVICE_ID"
+        then
+            docker stop -t=0 "$SERVICE_ID" > /dev/null || exit 1
+            docker kill "$SERVICE_ID" > /dev/null || exit 1
+            docker rm "$SERVICE_ID" > /dev/null || exit 1
+        fi
+
     done
 
     SERVICE_ID=""

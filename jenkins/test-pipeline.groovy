@@ -61,16 +61,12 @@ use(extensions) {
                 branch('${GIT_REPOSITORY_BRANCH}')
 
                 configure {
+                    blockOnJobs('.*-Reset-Nodes')
                     description(test.description)
                     logRotator { numToKeep(10) }
                     if (test.disabled == "true") {
                         println "    Disabling test ${test.name}"
                         disabled()
-                    }
-
-                    blockOn(['.*-Reset-Nodes']) {
-                        blockLevel('GLOBAL')
-                        scanQueueFor('ALL')
                     }
 
                     parameters {
@@ -106,10 +102,7 @@ use(extensions) {
             label('ec2-linux')
             description('Run the old style tests (i.e. ./tests.sh)')
             logRotator { numToKeep(10) }
-            blockOn(['.*-Reset-Nodes']) {
-                blockLevel('GLOBAL')
-                scanQueueFor('ALL')
-            }
+            blockOnJobs('.*-Reset-Nodes')
 
             if (jobType == 'pullrequest') {
                 repositoryPR(repoFull)

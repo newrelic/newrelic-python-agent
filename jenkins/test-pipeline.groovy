@@ -87,7 +87,7 @@ use(extensions) {
                             env('AWS_SECRET_ACCESS_KEY', '${NR_DOCKER_DEV_SECRET_ACCESS_KEY}')
                             env('DOCKER_HOST', 'unix:///var/run/docker.sock')
                         }
-                        shell(readFileFromWorkspace('./jenkins/setup_node.sh'))
+                        shell('./jenkins/prep_node_for_test.sh')
                         for (testCmd in test.commands) {
                             shell(testCmd)
                         }

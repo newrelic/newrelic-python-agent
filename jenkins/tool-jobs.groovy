@@ -89,7 +89,7 @@ use(extensions) {
                     env('AWS_SECRET_ACCESS_KEY', '${NR_DOCKER_DEV_SECRET_ACCESS_KEY}')
                     env('DOCKER_HOST', 'unix:///var/run/docker.sock')
                 }
-                shell('./jenkins/setup_node.sh --restart')
+                shell('./jenkins/refresh_docker_containers.sh')
             }
 
             slackQuiet(slackChannel){

@@ -1,4 +1,4 @@
-import newrelic.jenkins.extensions
+import pyextensions.pyextensions
 
 String organization = 'python-agent'
 String repoGHE = 'python_agent'
@@ -8,7 +8,7 @@ String slackChannel = '#python-agent'
 
 // Views for any build and deploy jobs
 
-use(extensions) {
+use(pyextensions) {
     view('PY_Deploy', 'Deployment jobs',
          '(deploy-to-pypi)|(deploy-to-s3)|(build-and-archive-package)')
 

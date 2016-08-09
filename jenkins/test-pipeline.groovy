@@ -1,5 +1,5 @@
 import groovy.json.JsonSlurper
-import newrelic.jenkins.extensions
+import pyextensions.pyextensions
 
 String organization = 'python-agent'
 String repoGHE = 'python_agent'
@@ -13,7 +13,7 @@ def packnsendTests = jsonSlurper.parseText(readFileFromWorkspace(
     './jenkins/test-pipeline-config.json')).packnsendTests
 
 
-use(extensions) {
+use(pyextensions) {
     view('PY_Tests', 'Test jobs',
          "(_PYTHON-AGENT-DOCKER-TESTS_)|(.*${testSuffix})|(oldstyle.*)")
 
@@ -61,6 +61,7 @@ use(extensions) {
                 branch('${GIT_REPOSITORY_BRANCH}')
 
                 configure {
+                    blockOn('.*-Reset-Nodes')
                     description(test.description)
                     logRotator { numToKeep(10) }
                     if (test.disabled == "true") {
@@ -101,6 +102,7 @@ use(extensions) {
             label('ec2-linux')
             description('Run the old style tests (i.e. ./tests.sh)')
             logRotator { numToKeep(10) }
+            blockOn('.*-Reset-Nodes')
 
             if (jobType == 'pullrequest') {
                 repositoryPR(repoFull)

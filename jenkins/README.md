@@ -11,21 +11,23 @@ Jobs are grouped into three views:
 ### Python Agent Deploy
 **deploy-to-pypi:** On demand job. Will upload the source distribution package to PyPI. By default, it will upload to Test PyPi.
 
+**deploy-to-s3:** On demand job. Will upload the source distribution package to our S3 bucket. By default, it will upload to the "testing" directory.
+
 **build-and-archive-package:** On demand job. Will build the source distribution package and upload it to Artifactory.
 
-
 ### Python Agent Tests
-**PYTHON-AGENT-DOCKER-TESTS:** Multijob run hourly on cron. Will run all tests currently configured in the `jenkins/test-pipeline-config.json` file. (See below for more details on adding new tests) The tests will all run in parallel in EC2 worker nodes.
+**\_PYTHON-AGENT-DOCKER-TESTS\_:** Multijob run hourly on cron. Will run all tests currently configured in the `jenkins/test-pipeline-config.json` file. (See below for more details on adding new tests) The tests will all run in parallel in EC2 worker nodes.
 
-**python-agent-test-*:** These tests are configured in the `jenkins/test-pipeline-config.json` file and are the subjobs to the PYTHON-AGENT-DOCKER-TESTS multijob. They will first pull packnsend images from dogestry. If the image was updated, any existing running containers that use that image will be stopped. Finally, it will make sure that all packnsend containers are running. It will *not* restart a container if the image has not changed.
+**\*__docker-test:** These tests are configured in the `jenkins/test-pipeline-config.json` file and are the subjobs to the PYTHON-AGENT-DOCKER-TESTS multijob. They will pull packnsend images from dogestry then start all containers. If a container is already running, the action is a noop. The consequence of this is if an image changes in dogestry, the jobs will not pick up this change automatically (see the Reset Nodes job).
 
-**python-agent-oldstyle-tests-*:** Run on push to master/deploy and on all pull requests. They run `./build.sh` then `./tests.sh`.
+**oldstyle-tests-*:** Run on push to master/deploy and on all pull requests. They run `./build.sh` then `./tests.sh`.
 
 ### Python Agent Tools
 **python-agent-tools-dsl-seed:** Job to run on every push to the develop branch. Will rebuild all jenkins jobs from DSL. Any files in the *jenkins* directory with extension `.groovy` will be read and sourced.
 
-**python-agent-tools-Packnsend-Build-and-Push:** On demand job. Will build all packnsend docker images (as currently found in the develop branch) then push them to dogestry.
+**python-agent-tools-Packnsend-Build-and-Push:** On demand job. Will build all packnsend docker images (as currently found in the develop branch) then push them to dogestry. Any pre-existing EC2 nodes will not start using these images until the images are restarted (see the Reset Nodes job). New EC2 nodes will automatically use these new images.
 
+**python-agent-tools-Reset-Nodes:** On demand job. Should be run after a change is made to a packnsend image. Will run on each EC2 node, powering the node on first if necessary. Executes two commands: `packnsend pull` then `packnsend restart`. Requires two parameters: 1) *NODE_NAME* is the label of the nodes to run the jobs on, do not change this from "ec2-linux", and 2) *GIT_BRANCH* is the branch the job will use to run the packnsend commands.
 
 ## EC2 Nodes
 EC2 nodes are provisioned on demand by Jenkins. When there are waiting jobs and no available node, Jenkins will first try to power on any offline nodes, then if none are available, it will create new ones. Jenkins will power off nodes when they have gone idle. This is a simple power off, not a deprovision. Thus, any docker containers will be stopped, but no images will be removed.
@@ -57,3 +59,11 @@ Adding new `tox` style tests is now super easy! Simply open the `jenkins/test-pi
 ```
 
 It is possible to disable a test by adding `"disable": "true"`.
+
+## Jenkins Plugins
+We have installed the following plugins on our JaaS instance:
++ envinject
++ jenkins-multijob-plugin
++ email-ext
++ nodelabelparameter
++ build-blocker-plugin

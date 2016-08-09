@@ -71,7 +71,8 @@ use(extensions) {
 
             parameters {
                 stringParam('GIT_BRANCH', 'develop',
-                    'The branch on which to find the scripts to reset the nodes.')
+                    'The branch on which to find the scripts to reset the ' +
+                    'nodes. Most likely you won\'t have to change this.')
                 labelParam('NODE_NAME') {
                     defaultValue('ec2-linux')
                     description('The label of the nodes to perform the reset. (hint: the ' +

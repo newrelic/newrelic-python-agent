@@ -1,4 +1,4 @@
-import pyextensions.pyextensions
+import newrelic.jenkins.extensions
 
 String organization = 'python-agent'
 String repoGHE = 'python_agent'
@@ -9,7 +9,7 @@ String slackChannel = '#python-agent'
 
 // Views for any tool-like jobs
 
-use(pyextensions) {
+use(extensions) {
     view('PY_Tools', 'A view for some tools', "${testPrefix}.*")
 
     projectSeedJob() {
@@ -72,10 +72,13 @@ use(pyextensions) {
             parameters {
                 stringParam('GIT_BRANCH', 'develop',
                     'The branch on which to find the scripts to reset the nodes.')
-                labelParam('NODE_NAME', 'ec2-linux',
-                    'The label of the nodes to perform the reset. (hint: the ' +
-                    'label of our ec2 nodes is \"ec2-linux\") This job will ' +
-                    'be run once on each node.')
+                labelParam('NODE_NAME') {
+                    defaultValue('ec2-linux')
+                    description('The label of the nodes to perform the reset. (hint: the ' +
+                        'label of our ec2 nodes is \"ec2-linux\") This job will ' +
+                        'be run once on each node.')
+                    allNodes('allCases', 'AllNodeEligibility')
+                }
             }
 
             steps {

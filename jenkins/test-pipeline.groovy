@@ -1,5 +1,5 @@
 import groovy.json.JsonSlurper
-import pyextensions.pyextensions
+import newrelic.jenkins.extensions
 
 String organization = 'python-agent'
 String repoGHE = 'python_agent'
@@ -13,7 +13,7 @@ def packnsendTests = jsonSlurper.parseText(readFileFromWorkspace(
     './jenkins/test-pipeline-config.json')).packnsendTests
 
 
-use(pyextensions) {
+use(extensions) {
     view('PY_Tests', 'Test jobs',
          "(_PYTHON-AGENT-DOCKER-TESTS_)|(.*${testSuffix})|(oldstyle.*)")
 

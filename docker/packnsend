@@ -442,11 +442,11 @@ start_application_services()
         if test -n "$STOPPED_ID"
         then
             echo "$STOPPED_ID was stopped. Now restarting."
-            docker start packnsend-$IMG
+            docker start packnsend-$IMG || exit 1
             continue
         fi
 
-        docker run -d --name packnsend-$IMG $IMG
+        docker run -d --name packnsend-$IMG $IMG || exit 1
 
     done
 

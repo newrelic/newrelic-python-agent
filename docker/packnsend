@@ -426,8 +426,8 @@ start_application_services()
         echo "Start: $IMG"
 
         # Is container already running?
-
-        RUNNING_ID=$(docker ps | grep packnsend-$IMG | awk '{print $1}')
+        DOCKER_OUTPUT=$(docker ps) || exit 1
+        RUNNING_ID=$(echo "$DOCKER_OUTPUT" | grep packnsend-$IMG | awk '{print $1}')
 
         if test -n "$RUNNING_ID"
         then
@@ -436,8 +436,8 @@ start_application_services()
         fi
 
         # Is container in stopped state?
-
-        STOPPED_ID=$(docker ps -a | grep packnsend-$IMG | awk '{print $1}')
+        DOCKER_OUTPUT=$(docker ps -a) || exit 1
+        STOPPED_ID=$(echo "$DOCKER_OUTPUT" | grep packnsend-$IMG | awk '{print $1}')
 
         if test -n "$STOPPED_ID"
         then
@@ -450,6 +450,7 @@ start_application_services()
 
     done
 
+    DOCKER_OUTPUT=""
     RUNNING_ID=""
     STOPPED_ID=""
 }
@@ -467,7 +468,8 @@ stop_application_services()
         echo
         echo "packnsend-$IMG"
 
-        SERVICE_ID=$(docker ps -a | grep packnsend-$IMG | awk '{print $1}')
+        DOCKER_OUTPUT=$(docker ps -a) || exit 1
+        SERVICE_ID=$(echo "$DOCKER_OUTPUT" | grep packnsend-$IMG | awk '{print $1}')
         test -n "$SERVICE_ID" && echo "$SERVICE_ID"
 
         if test -n "$SERVICE_ID"
@@ -479,6 +481,7 @@ stop_application_services()
 
     done
 
+    DOCKER_OUTPUT=""
     SERVICE_ID=""
 }
 

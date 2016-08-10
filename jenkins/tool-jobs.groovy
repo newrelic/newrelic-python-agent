@@ -15,11 +15,10 @@ use(extensions) {
     projectSeedJob() {
         repo(repoGHE)
         org(organization)
-        dslPath('./jenkins')
+        dslPath('jenkins')
 
         configure {
-            // this name method is deprecated but it still works
-            name("${testPrefix}-dsl-seed")
+            displayName("${testPrefix}-dsl-seed")
 
             // set repository a second time to ensure building from develop
             // branch instead of master
@@ -49,7 +48,7 @@ use(extensions) {
                     env('AWS_SECRET_ACCESS_KEY', '${NR_DOCKER_DEV_SECRET_ACCESS_KEY}')
                     env('DOCKER_HOST', 'unix:///var/run/docker.sock')
                 }
-                shell(readFileFromWorkspace('./jenkins/packnsend-buildnpush.sh'))
+                shell('./jenkins/packnsend-buildnpush.sh')
             }
 
             slackQuiet(slackChannel){

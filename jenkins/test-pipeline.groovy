@@ -124,7 +124,7 @@ use(extensions) {
 
             steps {
                 shell('./build.sh')
-                shell('./tests.sh')
+                shell('./docker/packnsend run /data/tests.sh')
             }
 
             slackQuiet(slackChannel) {

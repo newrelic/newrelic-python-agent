@@ -30,8 +30,10 @@ use(extensions) {
 
             wrappers {
                 credentialsBinding {
-                    string('PYPI_TEST_PASSWORD', 'put the password here!')
-                    string('PYPI_PRODUCTION_PASSWORD', 'put the password here!')
+                    string('PYPI_TEST_PASSWORD',
+                           '69637954-dd74-4407-a2f7-3f328d463a2b')
+                    string('PYPI_PRODUCTION_PASSWORD',
+                           '91421320-8a18-4b8e-99cf-bb12fc96522b')
                 }
             }
 

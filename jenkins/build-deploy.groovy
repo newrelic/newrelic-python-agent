@@ -10,7 +10,7 @@ String slackChannel = '#python-agent'
 
 use(extensions) {
     view('Python_Agent_Deploy', 'Deployment jobs',
-         '(deploy-to-pypi)|(build-and-archive-package)')
+         '(deploy-to-pypi)|(deploy-to-s3)|(build-and-archive-package)')
 
     baseJob('deploy-to-pypi') {
         label('ec2-linux')
@@ -30,13 +30,18 @@ use(extensions) {
 
             wrappers {
                 credentialsBinding {
-                    string('PYPI_TEST_PASSWORD', 'put the password here!')
-                    string('PYPI_PRODUCTION_PASSWORD', 'put the password here!')
+                    string('PYPI_TEST_PASSWORD',
+                           '69637954-dd74-4407-a2f7-3f328d463a2b')
+                    string('PYPI_PRODUCTION_PASSWORD',
+                           '91421320-8a18-4b8e-99cf-bb12fc96522b')
                 }
             }
 
             steps {
-                shell(readFileFromWorkspace('./deploy/deploy-to-pypi.sh'))
+                environmentVariables {
+                    env('PATH', '/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin')
+                }
+                shell('./deploy/deploy-to-pypi.sh')
             }
 
             slackQuiet(slackChannel){
@@ -71,6 +76,9 @@ use(extensions) {
             }
 
             steps {
+                environmentVariables {
+                    env('PATH', '/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin')
+                }
                 shell('./deploy/deploy-to-s3.sh')
             }
 
@@ -101,8 +109,11 @@ use(extensions) {
             }
 
             steps {
-                shell(readFileFromWorkspace('./build.sh'))
-                shell(readFileFromWorkspace('./deploy/upload-to-artifactory.sh'))
+                environmentVariables {
+                    env('PATH', '/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin')
+                }
+                shell('./build.sh')
+                shell('./deploy/upload-to-artifactory.sh')
             }
 
             publishers {

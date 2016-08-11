@@ -1,3 +1,6 @@
+// Grab will no longer be supported in jenkins-dsl 1.36, we currently use 1.35
+@Grab('org.yaml:snakeyaml:1.17')
+import org.yaml.snakeyaml.Yaml
 import newrelic.jenkins.extensions
 
 String organization = 'python-agent'
@@ -6,19 +9,24 @@ String repoFull = "${organization}/${repoGHE}"
 String testSuffix = "__docker-test"
 String slackChannel = '#python-agent'
 
+def yaml = new Yaml()
+List<String> disabledList = yaml.load(readFileFromWorkspace('jenkins/test-pipeline-config.yml')).disable
+
 def getPacknsendTests = {
     // Get list of lists. Each item represents a single test. For example:
-    // [framework_django_tox.ini__docker_test, tests/framework_django/tox.ini]
-    // Where the first item is the name of the test and the second is the path
-    // to the tox file relative to the job's workspace.
+    // [framework_django_tox.ini__docker_test, tests/framework_django/tox.ini, true]
+    // Where the first item is the name of the test, the second is the path to
+    // the tox file relative to the job's workspace, and the third is if the
+    // test is disabled or not.
     def packnsendTestsList = []
     new File("${WORKSPACE}/tests").eachDir() { dir ->
-        def dirName = dir.getName()
+        String dirName = dir.getName()
         dir.eachFileMatch(~/tox.*.ini/) { toxFile ->
-            def toxName = toxFile.getName()
-            def toxPath = "tests/${dirName}/${toxName}"
-            def testName = "${dirName}_${toxName}_${testSuffix}"
-            def test = [testName, toxPath]
+            String toxName = toxFile.getName()
+            String toxPath = "tests/${dirName}/${toxName}"
+            String testName = "${dirName}_${toxName}_${testSuffix}"
+            String disable = toxPath in disabledList
+            def test = [testName, toxPath, disable]
             packnsendTestsList.add(test)
         }
     }
@@ -27,6 +35,8 @@ def getPacknsendTests = {
 
 
 use(extensions) {
+    def packnsendTests = getPacknsendTests()
+
     view('PY_Tests', 'Test jobs',
          "(_PYTHON-AGENT-DOCKER-TESTS_)|(.*${testSuffix})|(oldstyle.*)")
 
@@ -50,7 +60,7 @@ use(extensions) {
 
         steps {
             phase('tox-tests', 'COMPLETED') {
-                for (test in getPacknsendTests()) {
+                for (test in packnsendTests) {
                     job(test[0]) {
                         killPhaseCondition('NEVER')
                     }
@@ -64,7 +74,7 @@ use(extensions) {
     }
 
     // create all packnsend base tests
-    getPacknsendTests().each { testName, toxPath ->
+    packnsendTests.each { testName, toxPath, disableTest ->
         baseJob(testName) {
             label('py-ec2-linux')
             repo(repoFull)

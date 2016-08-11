@@ -1,0 +1,4 @@
+# List of tox files to ignore, jobs will be created, but they will be disabled
+# example: tests/framework_django/tox-0110.ini
+disable:
+    - tests/framework_django/tox-0110.ini

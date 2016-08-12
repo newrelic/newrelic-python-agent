@@ -236,6 +236,7 @@
                     "./docker/packnsend run tox -c tests/framework_django/tox-0103.ini",
                     "./docker/packnsend run tox -c tests/framework_django/tox-0107.ini",
                     "./docker/packnsend run tox -c tests/framework_django/tox-0108.ini",
+                    "./docker/packnsend run tox -c tests/framework_django/tox-0109.ini",
                     "./docker/packnsend run tox -c tests/framework_django/tox.ini"
                 ]
             },
@@ -262,8 +263,7 @@
                 "description": "Python agent tests for Pyramid web framework.",
                 "commands": [
                     "./docker/packnsend run tox -c tests/framework_pyramid/tox-0104.ini",
-                    "./docker/packnsend run tox -c tests/framework_pyramid/tox-0103.ini",
-                    "./docker/packnsend run tox -c tests/framework_pyramid/tox-0102.ini"
+                    "./docker/packnsend run tox -c tests/framework_pyramid/tox-0103.ini"
                 ]
             },
             {

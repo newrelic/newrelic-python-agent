@@ -4,7 +4,7 @@ import newrelic.jenkins.extensions
 String organization = 'python-agent'
 String repoGHE = 'python_agent'
 String repoFull = "${organization}/${repoGHE}"
-String testPrefix = "${organization}-test"
+String testSuffix = "__docker-test"
 String slackChannel = '#python-agent'
 
 
@@ -14,9 +14,10 @@ def packnsendTests = jsonSlurper.parseText(readFileFromWorkspace(
 
 
 use(extensions) {
-    view('Python_Agent_Tests', 'Test jobs', "(PYTHON-AGENT-DOCKER-TESTS)|(${testPrefix}.*)")
+    view('PY_Tests', 'Test jobs',
+         "(_PYTHON-AGENT-DOCKER-TESTS_)|(.*${testSuffix})|(oldstyle.*)")
 
-    multiJob('PYTHON-AGENT-DOCKER-TESTS') {
+    multiJob('_PYTHON-AGENT-DOCKER-TESTS_') {
         description('Perform full suite of tests on Python Agent')
         logRotator { numToKeep(10) }
         triggers { cron('0 * * * *') }
@@ -38,7 +39,7 @@ use(extensions) {
             packnsendTests.each { phaseName, tests ->
                 phase(phaseName, 'COMPLETED') {
                     for (test in tests) {
-                        job("${testPrefix}-${test.name}") {
+                        job("${test.name}${testSuffix}") {
                             killPhaseCondition('NEVER')
                         }
                     }
@@ -54,16 +55,17 @@ use(extensions) {
     // create all packnsend base tests
     packnsendTests.each { phaseName, tests ->
         tests.each { test ->
-            baseJob("${testPrefix}-${test.name}") {
+            baseJob("${test.name}${testSuffix}") {
                 label('ec2-linux')
                 repo(repoFull)
                 branch('${GIT_REPOSITORY_BRANCH}')
 
                 configure {
+                    blockOnJobs('.*-Reset-Nodes')
                     description(test.description)
                     logRotator { numToKeep(10) }
                     if (test.disabled == "true") {
-                        println "Disabling test ${test.name}"
+                        println "    Disabling test ${test.name}"
                         disabled()
                     }
 
@@ -85,7 +87,7 @@ use(extensions) {
                             env('AWS_SECRET_ACCESS_KEY', '${NR_DOCKER_DEV_SECRET_ACCESS_KEY}')
                             env('DOCKER_HOST', 'unix:///var/run/docker.sock')
                         }
-                        shell(readFileFromWorkspace('./jenkins/setup_node.sh'))
+                        shell('./jenkins/prep_node_for_test.sh')
                         for (testCmd in test.commands) {
                             shell(testCmd)
                         }
@@ -96,10 +98,11 @@ use(extensions) {
     }
 
     ['develop', 'master', 'pullrequest'].each { jobType ->
-        jaasBaseJob("${testPrefix}-oldstyle-tests-${jobType}") {
+        jaasBaseJob("oldstyle-tests-${jobType}") {
             label('ec2-linux')
             description('Run the old style tests (i.e. ./tests.sh)')
             logRotator { numToKeep(10) }
+            blockOnJobs('.*-Reset-Nodes')
 
             if (jobType == 'pullrequest') {
                 repositoryPR(repoFull)

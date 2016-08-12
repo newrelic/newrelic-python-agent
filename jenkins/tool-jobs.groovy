@@ -10,16 +10,16 @@ String slackChannel = '#python-agent'
 // Views for any tool-like jobs
 
 use(extensions) {
-    view('Python_Agent_Tools', 'A view for some tools', "${testPrefix}.*")
+    view('PY_Tools', 'A view for some tools',
+         "(${testPrefix}.*)|(python_agent-dsl-seed)")
 
+    // python_agent-dsl-seed job
     projectSeedJob() {
         repo(repoGHE)
         org(organization)
         dslPath('jenkins')
 
         configure {
-            displayName("${testPrefix}-dsl-seed")
-
             // set repository a second time to ensure building from develop
             // branch instead of master
             repository(repoFull, 'develop')
@@ -32,7 +32,10 @@ use(extensions) {
         branch('${GIT_BRANCH}')
 
         configure {
-            description('A job to build packnsend images then push them to dogestry')
+            description('A job to build packnsend images then push them to ' +
+                    "dogestry. Once complete, consider running the ${testPrefix}-" +
+                    'Reset-Nodes job to reset all nodes. (They won\'t get the ' +
+                    'new images if you don\'t)')
 
             parameters {
                 stringParam('GIT_BRANCH', 'develop', '')
@@ -46,6 +49,48 @@ use(extensions) {
                     env('DOCKER_HOST', 'unix:///var/run/docker.sock')
                 }
                 shell('./jenkins/packnsend-buildnpush.sh')
+            }
+
+            slackQuiet(slackChannel){
+                notifySuccess true
+            }
+        }
+    }
+
+    baseJob("${testPrefix}-Reset-Nodes") {
+        repo(repoFull)
+        branch('${GIT_BRANCH}')
+
+        configure {
+            description('A job to reset all ec2 nodes. It will perform a ' +
+                        'packnsend pull then restart all containers. ' +
+                        '<h3>Don\'t forget to wake up all EC2 nodes before ' +
+                        'running this job!</h3>')
+
+            concurrentBuild true
+            logRotator { numToKeep(10) }
+
+            parameters {
+                stringParam('GIT_BRANCH', 'develop',
+                    'The branch on which to find the scripts to reset the ' +
+                    'nodes. Most likely you won\'t have to change this.')
+                labelParam('NODE_NAME') {
+                    defaultValue('ec2-linux')
+                    description('The label of the nodes to perform the reset. (hint: the ' +
+                        'label of our ec2 nodes is \"ec2-linux\") This job will ' +
+                        'be run once on each node.')
+                    allNodes('allCases', 'AllNodeEligibility')
+                }
+            }
+
+            steps {
+                environmentVariables {
+                    // dogestry creds
+                    env('AWS_ACCESS_KEY_ID', '${NR_DOCKER_DEV_ACCESS_KEY_ID}')
+                    env('AWS_SECRET_ACCESS_KEY', '${NR_DOCKER_DEV_SECRET_ACCESS_KEY}')
+                    env('DOCKER_HOST', 'unix:///var/run/docker.sock')
+                }
+                shell('./jenkins/refresh_docker_containers.sh')
             }
 
             slackQuiet(slackChannel){

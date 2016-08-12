@@ -63,7 +63,9 @@ use(extensions) {
 
         configure {
             description('A job to reset all ec2 nodes. It will perform a ' +
-                        'packnsend pull then restart all containers.')
+                        'packnsend pull then restart all containers. ' +
+                        '<h3>Don\'t forget to wake up all EC2 nodes before ' +
+                        'running this job!</h3>')
 
             concurrentBuild true
             logRotator { numToKeep(10) }

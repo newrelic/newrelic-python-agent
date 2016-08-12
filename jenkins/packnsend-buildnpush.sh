@@ -1,4 +1,4 @@
 #!/bin/bash -ex
 
-./docker/packnsend build
+./docker/packnsend build_nocache
 ./docker/packnsend push

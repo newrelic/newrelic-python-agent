@@ -3,6 +3,9 @@
 ROOT_DIRECTORY=$(git rev-parse --show-toplevel)
 WORK_DIRECTORY=".`pwd | sed -e s%$ROOT_DIRECTORY%%`"
 
+DOGESTRY_BUCKET=s3://nr-docker-images-dev/?region=us-west-2
+DOGESTRY_IMG_PATH=datanerd.us/python_agent
+
 TEST_IMAGE_NAME=python-base
 
 TMPDIR=${TMPDIR:-/tmp}
@@ -131,7 +134,7 @@ create_docker_test_image()
 
     DATA_IMAGE_NAME="packnsend-`date '+%Y%m%d%H%M%S'`-$$"
     (cd $DATA_DIRECTORY && docker build --rm -t $DATA_IMAGE_NAME .)
-    IMAGE_ID=$(docker inspect --format='{{.id}}' $DATA_IMAGE_NAME)
+    IMAGE_ID=$(docker inspect --format='{{.Id}}' $DATA_IMAGE_NAME)
 }
 
 set_docker_env_vars()
@@ -366,54 +369,6 @@ create_docker_base_images_nocache()
     done
 }
 
-query_push_pull_authorization()
-{
-    # Determine if we are authorized to push and pull to the docker
-    # repository by attempting to pull a non-existent image and checking
-    # the HTTP status code in the response.
-    #
-    #       If we are authorized, status code is 404.
-    #       If we are not authorized, status code is 403.
-    #
-    # Set IS_AUTHORIZED_TO_PUSH_PULL to 'true' or 'false', depending on
-    # the response
-
-    DOCKER_REPO=quay.io
-    NONEXISTENT_IMAGE=$DOCKER_REPO/newrelic/python-agent-nonexistent
-
-    # Stderr will contain HTTP status code of response. Since we are pulling
-    # a non-existent image, we'll always get an error code of some sort.
-
-    PULL_RESPONSE=$(docker pull $NONEXISTENT_IMAGE 2>&1 >/dev/null)
-
-    PULL_RESPONSE_HTTP_STATUS=$(echo "$PULL_RESPONSE" | \
-        sed "s/.*HTTP code://" | tr -d [:space:])
-
-    if test $PULL_RESPONSE_HTTP_STATUS == '404'
-    then
-        IS_AUTHORIZED_TO_PUSH_PULL='true'
-
-    elif test $PULL_RESPONSE_HTTP_STATUS == '403'
-    then
-        IS_AUTHORIZED_TO_PUSH_PULL='false'
-
-        echo "You are not authorized to push or pull to the docker repository."
-        echo "To become authorized, create an account, then run 'docker login'"
-        echo "to create a .dockercfg file."
-        echo
-
-    else
-        # Any HTTP response code except 403 or 404 most likely means push/pull
-        # won't work, so set to false and display response code.
-
-        IS_AUTHORIZED_TO_PUSH_PULL='false'
-
-        echo "Error connecting to Docker repository:"
-        echo "$PULL_RESPONSE"
-        echo
-    fi
-}
-
 push_docker_base_images()
 {
     IMAGE_LIST=${@:-$ALL_IMAGES}
@@ -422,28 +377,17 @@ push_docker_base_images()
     echo "Push docker base images."
     echo "$IMAGE_LIST"
 
-    query_push_pull_authorization
+    for IMG in $IMAGE_LIST
+    do
 
-    if test $IS_AUTHORIZED_TO_PUSH_PULL = 'true'
-    then
-
-
-        for IMG in $IMAGE_LIST
-        do
-
-            echo
-            echo "Push image: $IMG"
-            echo
-
-            docker tag $IMG quay.io/newrelic/python-agent-$IMG
-            docker push quay.io/newrelic/python-agent-$IMG
-
-        done
-
-    else
-        echo "Skipping docker push."
         echo
-    fi
+        echo "Push image: $IMG"
+        echo
+
+        docker tag -f $IMG $DOGESTRY_IMG_PATH/$IMG
+        dogestry push $DOGESTRY_BUCKET $DOGESTRY_IMG_PATH/$IMG
+
+    done
 }
 
 pull_docker_base_images()
@@ -454,30 +398,17 @@ pull_docker_base_images()
     echo "Pull docker base images."
     echo "$IMAGE_LIST"
 
-    query_push_pull_authorization
+    for IMG in $IMAGE_LIST
+    do
 
-    if test $IS_AUTHORIZED_TO_PUSH_PULL = 'true'
-    then
-
-        IMAGE_LIST=${@:-$ALL_IMAGES}
-        IMAGE_LIST=$(echo $IMAGE_LIST | sed 's/ \+/ /g')
-
-        for IMG in $IMAGE_LIST
-        do
-
-            echo
-            echo "Pull image: $IMG"
-            echo
-
-            docker pull quay.io/newrelic/python-agent-$IMG
-            docker tag quay.io/newrelic/python-agent-$IMG $IMG
-
-        done
-
-    else
-        echo "Skipping docker pull."
         echo
-    fi
+        echo "Pull image: $IMG"
+        echo
+
+        dogestry -disable-checks pull $DOGESTRY_BUCKET $DOGESTRY_IMG_PATH/$IMG > /dev/null
+        docker tag -f $DOGESTRY_IMG_PATH/$IMG $IMG
+
+    done
 }
 
 start_application_services()
@@ -485,6 +416,7 @@ start_application_services()
     IMAGE_LIST=${@:-$APP_SERVICE_IMAGES}
     IMAGE_LIST=$(echo $IMAGE_LIST | sed 's/ \+/ /g')
 
+    echo
     echo "Start application services."
 
     for IMG in $IMAGE_LIST
@@ -493,9 +425,34 @@ start_application_services()
         echo
         echo "Start: $IMG"
 
-        docker run -d --name packnsend-$IMG $IMG
+        # Is container already running?
+        DOCKER_OUTPUT=$(docker ps) || exit 1
+        RUNNING_ID=$(echo "$DOCKER_OUTPUT" | grep packnsend-$IMG | awk '{print $1}')
+
+        if test -n "$RUNNING_ID"
+        then
+            echo "$RUNNING_ID is already running."
+            continue
+        fi
+
+        # Is container in stopped state?
+        DOCKER_OUTPUT=$(docker ps -a) || exit 1
+        STOPPED_ID=$(echo "$DOCKER_OUTPUT" | grep packnsend-$IMG | awk '{print $1}')
+
+        if test -n "$STOPPED_ID"
+        then
+            echo "$STOPPED_ID was stopped. Now restarting."
+            docker start packnsend-$IMG || exit 1
+            continue
+        fi
+
+        docker run -d --name packnsend-$IMG $IMG || exit 1
 
     done
+
+    DOCKER_OUTPUT=""
+    RUNNING_ID=""
+    STOPPED_ID=""
 }
 
 stop_application_services()
@@ -508,31 +465,24 @@ stop_application_services()
 
     for IMG in $IMAGE_LIST
     do
+        echo
+        echo "packnsend-$IMG"
 
-        docker stop -t=0 packnsend-$IMG
+        DOCKER_OUTPUT=$(docker ps -a) || exit 1
+        SERVICE_ID=$(echo "$DOCKER_OUTPUT" | grep packnsend-$IMG | awk '{print $1}')
+        test -n "$SERVICE_ID" && echo "$SERVICE_ID"
 
-    done
-
-    echo
-    echo "Kill application services."
-
-    for IMG in $IMAGE_LIST
-    do
-
-        docker kill packnsend-$IMG
-
-    done
-
-    echo
-    echo "Remove application services."
-
-    for IMG in $IMAGE_LIST
-    do
-
-        docker rm packnsend-$IMG
+        if test -n "$SERVICE_ID"
+        then
+            docker stop -t=0 "$SERVICE_ID" > /dev/null || exit 1
+            docker kill "$SERVICE_ID" > /dev/null || exit 1
+            docker rm "$SERVICE_ID" > /dev/null || exit 1
+        fi
 
     done
 
+    DOCKER_OUTPUT=""
+    SERVICE_ID=""
 }
 
 delete_docker_base_images()
@@ -570,14 +520,15 @@ print_usage()
     echo "management commands. Otherwise, management commands operate"
     echo "on all images/containers."
     echo
-    echo "    init           Pull images, if authorized, else build."
-    echo "    build          Build base images."
-    echo "    build_nocache  Build base images, no cache."
-    echo "    push           Push base images."
-    echo "    pull           Pull base images."
-    echo "    start          Start base containers."
-    echo "    stop           Stop base containers."
-    echo "    cleanup        Delete base images."
+    echo "    init               Pull images, if authorized, else build."
+    echo "    build              Build base images."
+    echo "    build_nocache      Build base images, no cache."
+    echo "    push               Push base images."
+    echo "    pull               Pull base images."
+    echo "    start              Start base containers."
+    echo "    stop               Stop base containers."
+    echo "    restart            Stop, then start base containers."
+    echo "    cleanup            Delete base images."
     echo
     echo "Help commands:"
     echo "    list           List base images."
@@ -632,10 +583,6 @@ case "$COMMAND" in
 
     init)
         pull_docker_base_images "$@"
-        if test $IS_AUTHORIZED_TO_PUSH_PULL = 'false'
-        then
-            create_docker_base_images "$@"
-        fi
         ;;
 
     build)
@@ -660,6 +607,11 @@ case "$COMMAND" in
 
     stop)
         stop_application_services "$@"
+        ;;
+
+    restart)
+        stop_application_services "$@"
+        start_application_services "$@"
         ;;
 
     cleanup)

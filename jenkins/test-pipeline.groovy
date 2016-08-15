@@ -20,7 +20,7 @@ use(extensions) {
     multiJob('_PYTHON-AGENT-DOCKER-TESTS_') {
         description('Perform full suite of tests on Python Agent')
         logRotator { numToKeep(10) }
-        triggers { cron('15 10 * * *') }
+        triggers { cron('H 10 * * *') }
         label('ec2-linux')
         publishers {
             extendedEmail('python-agent-dev@newrelic.com')

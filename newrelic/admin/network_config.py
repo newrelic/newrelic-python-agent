@@ -41,7 +41,7 @@ def network_config(args):
 
     print('host = %r' % _settings.host)
     print('port = %r' % _settings.port)
-    print('proxy_scheme = %r' % _settings.proxy_host)
+    print('proxy_scheme = %r' % _settings.proxy_scheme)
     print('proxy_host = %r' % _settings.proxy_host)
     print('proxy_port = %r' % _settings.proxy_port)
     print('proxy_user = %r' % _settings.proxy_user)

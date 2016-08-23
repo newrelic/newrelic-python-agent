@@ -21,7 +21,7 @@ use(extensions) {
         description('Perform full suite of tests on Python Agent')
         logRotator { numToKeep(10) }
         triggers { cron('H 10 * * *') }
-        label('ec2-linux')
+        label('py-ec2-linux')
         publishers {
             extendedEmail('python-agent-dev@newrelic.com')
         }
@@ -56,7 +56,7 @@ use(extensions) {
     packnsendTests.each { phaseName, tests ->
         tests.each { test ->
             baseJob("${test.name}${testSuffix}") {
-                label('ec2-linux')
+                label('py-ec2-linux')
                 repo(repoFull)
                 branch('${GIT_REPOSITORY_BRANCH}')
 
@@ -99,7 +99,7 @@ use(extensions) {
 
     ['develop', 'master', 'pullrequest'].each { jobType ->
         jaasBaseJob("oldstyle-tests-${jobType}") {
-            label('ec2-linux')
+            label('py-ec2-linux')
             description('Run the old style tests (i.e. ./tests.sh)')
             logRotator { numToKeep(10) }
             blockOnJobs('.*-Reset-Nodes')

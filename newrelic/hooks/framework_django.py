@@ -648,7 +648,8 @@ def instrument_django_core_urlresolvers(module):
     # Wrap function for performing reverse URL lookup to strip any
     # instrumentation wrapper when view handler is passed in.
 
-    module.reverse = wrap_url_reverse(module.reverse)
+    if hasattr(module, 'reverse'):
+        module.reverse = wrap_url_reverse(module.reverse)
 
 def instrument_django_template(module):
 

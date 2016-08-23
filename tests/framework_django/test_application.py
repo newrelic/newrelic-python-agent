@@ -31,13 +31,20 @@ _test_django_pre_1_10_middleware_scoped_metrics = [
         ('Function/newrelic.hooks.framework_django:browser_timing_middleware', 1),
 ]
 
+_test_django_pre_1_10_url_resolver_scoped_metrics = [
+        ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 'present'),
+]
+
+_test_django_post_1_10_url_resolver_scoped_metrics = [
+        ('Function/django.urls.resolvers:RegexURLResolver.resolve', 'present'),
+]
+
 _test_application_index_scoped_metrics = [
         ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
         ('Python/WSGI/Application', 1),
         ('Python/WSGI/Response', 1),
         ('Python/WSGI/Finalize', 1),
         ('Function/views:index', 1),
-        ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 1),
 ]
 
 if DJANGO_VERSION >= (1, 5):
@@ -51,6 +58,11 @@ if DJANGO_VERSION >= (1, 5):
 if DJANGO_VERSION < (1, 10):
     _test_application_index_scoped_metrics.extend(
         _test_django_pre_1_10_middleware_scoped_metrics)
+    _test_application_index_scoped_metrics.extend(
+        _test_django_pre_1_10_url_resolver_scoped_metrics)
+else:
+    _test_application_index_scoped_metrics.extend(
+        _test_django_post_1_10_url_resolver_scoped_metrics)
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:index',
@@ -70,7 +82,6 @@ _test_application_not_found_scoped_metrics = [
         ('Python/WSGI/Application', 1),
         ('Python/WSGI/Response', 1),
         ('Python/WSGI/Finalize', 1),
-        ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 'present'),
 ]
 
 if DJANGO_VERSION >= (1, 5):
@@ -84,6 +95,11 @@ if DJANGO_VERSION >= (1, 5):
 if DJANGO_VERSION < (1, 10):
     _test_application_index_scoped_metrics.extend(
         _test_django_pre_1_10_middleware_scoped_metrics)
+    _test_application_index_scoped_metrics.extend(
+        _test_django_pre_1_10_url_resolver_scoped_metrics)
+else:
+    _test_application_index_scoped_metrics.extend(
+        _test_django_post_1_10_url_resolver_scoped_metrics)
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('django.views.debug:technical_404_response',
@@ -98,7 +114,6 @@ _test_application_cbv_scoped_metrics = [
         ('Python/WSGI/Finalize', 1),
         ('Function/views:MyView', 1),
         ('Function/views:MyView.get', 1),
-        ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 'present'),
 ]
 
 if DJANGO_VERSION >= (1, 5):
@@ -112,6 +127,11 @@ if DJANGO_VERSION >= (1, 5):
 if DJANGO_VERSION < (1, 10):
     _test_application_index_scoped_metrics.extend(
         _test_django_pre_1_10_middleware_scoped_metrics)
+    _test_application_index_scoped_metrics.extend(
+        _test_django_pre_1_10_url_resolver_scoped_metrics)
+else:
+    _test_application_index_scoped_metrics.extend(
+        _test_django_post_1_10_url_resolver_scoped_metrics)
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:MyView.get',
@@ -127,7 +147,6 @@ _test_application_deferred_cbv_scoped_metrics = [
         ('Python/WSGI/Finalize', 1),
         ('Function/views:deferred_cbv', 1),
         ('Function/views:MyView.get', 1),
-        ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 'present'),
 ]
 
 if DJANGO_VERSION >= (1, 5):
@@ -141,6 +160,11 @@ if DJANGO_VERSION >= (1, 5):
 if DJANGO_VERSION < (1, 10):
     _test_application_index_scoped_metrics.extend(
         _test_django_pre_1_10_middleware_scoped_metrics)
+    _test_application_index_scoped_metrics.extend(
+        _test_django_pre_1_10_url_resolver_scoped_metrics)
+else:
+    _test_application_index_scoped_metrics.extend(
+        _test_django_post_1_10_url_resolver_scoped_metrics)
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:deferred_cbv',
@@ -238,7 +262,6 @@ _test_application_inclusion_tag_scoped_metrics = [
         ('Python/WSGI/Finalize', 1),
         ('Function/views:inclusion_tag', 1),
         ('Template/Render/main.html', 1),
-        ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 'present'),
 ]
 
 if DJANGO_VERSION < (1, 9):
@@ -248,6 +271,11 @@ if DJANGO_VERSION < (1, 9):
 if DJANGO_VERSION < (1, 10):
     _test_application_index_scoped_metrics.extend(
         _test_django_pre_1_10_middleware_scoped_metrics)
+    _test_application_index_scoped_metrics.extend(
+        _test_django_pre_1_10_url_resolver_scoped_metrics)
+else:
+    _test_application_index_scoped_metrics.extend(
+        _test_django_post_1_10_url_resolver_scoped_metrics)
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:inclusion_tag',
@@ -263,7 +291,6 @@ _test_inclusion_tag_template_tags_scoped_metrics = [
         ('Python/WSGI/Finalize', 1),
         ('Function/views:inclusion_tag', 1),
         ('Template/Render/main.html', 1),
-        ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 'present'),
 ]
 
 if DJANGO_VERSION < (1, 9):
@@ -278,6 +305,11 @@ _test_inclusion_tag_settings = {
 if DJANGO_VERSION < (1, 10):
     _test_application_index_scoped_metrics.extend(
         _test_django_pre_1_10_middleware_scoped_metrics)
+    _test_application_index_scoped_metrics.extend(
+        _test_django_pre_1_10_url_resolver_scoped_metrics)
+else:
+    _test_application_index_scoped_metrics.extend(
+        _test_django_post_1_10_url_resolver_scoped_metrics)
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:inclusion_tag',

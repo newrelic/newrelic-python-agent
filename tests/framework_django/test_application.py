@@ -16,6 +16,9 @@ def target_application():
     from _target_application import _target_application
     return _target_application
 
+# The middleware scoped metrics are dependent on the MIDDLEWARE_CLASSES or
+# MIDDLEWARE defined in the version-specific Django settings.py file.
+
 _test_django_pre_1_10_middleware_scoped_metrics = [
         ('Function/django.middleware.common:CommonMiddleware.process_request', 1),
         ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_request', 1),
@@ -27,6 +30,16 @@ _test_django_pre_1_10_middleware_scoped_metrics = [
         ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_response', 1),
         ('Function/django.middleware.common:CommonMiddleware.process_response', 1),
         ('Function/newrelic.hooks.framework_django:browser_timing_middleware', 1),
+]
+
+_test_django_post_1_10_middleware_scoped_metrics = [
+        ('Function/django.middleware.security:SecurityMiddleware', 1),
+        ('Function/django.contrib.sessions.middleware:SessionMiddleware', 1),
+        ('Function/django.middleware.common:CommonMiddleware', 1),
+        ('Function/django.middleware.csrf:CsrfViewMiddleware', 1),
+        ('Function/django.contrib.auth.middleware:AuthenticationMiddleware', 1),
+        ('Function/django.contrib.messages.middleware:MessageMiddleware', 1),
+        ('Function/django.middleware.clickjacking:XFrameOptionsMiddleware', 1),
 ]
 
 _test_django_pre_1_10_url_resolver_scoped_metrics = [
@@ -59,6 +72,8 @@ if DJANGO_VERSION < (1, 10):
     _test_application_index_scoped_metrics.extend(
         _test_django_pre_1_10_url_resolver_scoped_metrics)
 else:
+    _test_application_index_scoped_metrics.extend(
+        _test_django_post_1_10_middleware_scoped_metrics)
     _test_application_index_scoped_metrics.extend(
         _test_django_post_1_10_url_resolver_scoped_metrics)
 
@@ -103,6 +118,8 @@ if DJANGO_VERSION < (1, 10):
         ('Function/django.middleware.csrf:CsrfViewMiddleware.process_view', 1))
 else:
     _test_application_not_found_scoped_metrics.extend(
+        _test_django_post_1_10_middleware_scoped_metrics)
+    _test_application_not_found_scoped_metrics.extend(
         _test_django_post_1_10_url_resolver_scoped_metrics)
 
 @validate_transaction_errors(errors=[])
@@ -135,6 +152,8 @@ if DJANGO_VERSION < (1, 10):
     _test_application_cbv_scoped_metrics.extend(
         _test_django_pre_1_10_url_resolver_scoped_metrics)
 else:
+    _test_application_cbv_scoped_metrics.extend(
+        _test_django_post_1_10_middleware_scoped_metrics)
     _test_application_cbv_scoped_metrics.extend(
         _test_django_post_1_10_url_resolver_scoped_metrics)
 
@@ -169,6 +188,8 @@ if DJANGO_VERSION < (1, 10):
     _test_application_deferred_cbv_scoped_metrics.extend(
         _test_django_pre_1_10_url_resolver_scoped_metrics)
 else:
+    _test_application_deferred_cbv_scoped_metrics.extend(
+        _test_django_post_1_10_middleware_scoped_metrics)
     _test_application_deferred_cbv_scoped_metrics.extend(
         _test_django_post_1_10_url_resolver_scoped_metrics)
 
@@ -289,6 +310,8 @@ if DJANGO_VERSION < (1, 10):
         _test_django_pre_1_10_url_resolver_scoped_metrics)
 else:
     _test_application_inclusion_tag_scoped_metrics.extend(
+        _test_django_post_1_10_middleware_scoped_metrics)
+    _test_application_inclusion_tag_scoped_metrics.extend(
         _test_django_post_1_10_url_resolver_scoped_metrics)
 
 @validate_transaction_errors(errors=[])
@@ -323,6 +346,8 @@ if DJANGO_VERSION < (1, 10):
     _test_inclusion_tag_template_tags_scoped_metrics.extend(
         _test_django_pre_1_10_url_resolver_scoped_metrics)
 else:
+    _test_inclusion_tag_template_tags_scoped_metrics.extend(
+        _test_django_post_1_10_middleware_scoped_metrics)
     _test_inclusion_tag_template_tags_scoped_metrics.extend(
         _test_django_post_1_10_url_resolver_scoped_metrics)
 

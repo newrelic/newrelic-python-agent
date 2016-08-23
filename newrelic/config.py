@@ -1884,6 +1884,9 @@ def _process_module_builtin_defaults():
     _process_module_definition('django.urls.base',
             'newrelic.hooks.framework_django',
             'instrument_django_urls_base')
+    _process_module_definition('django.core.handlers.exception',
+            'newrelic.hooks.framework_django',
+            'instrument_django_core_handlers_exception')
 
     _process_module_definition('flask.app',
             'newrelic.hooks.framework_flask',

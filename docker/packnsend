@@ -404,7 +404,7 @@ pull_docker_base_images()
         echo "Pull image: $IMG"
         echo
 
-        dogestry -disable-checks pull $DOGESTRY_BUCKET $DOGESTRY_IMG_PATH/$IMG > /dev/null
+        dogestry -disable-checks pull $DOGESTRY_BUCKET $DOGESTRY_IMG_PATH/$IMG
         docker tag $DOGESTRY_IMG_PATH/$IMG $IMG
 
     done

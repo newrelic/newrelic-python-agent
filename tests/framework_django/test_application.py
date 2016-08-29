@@ -93,12 +93,16 @@ if DJANGO_VERSION >= (1, 5):
                 ('Function/django.http.response:HttpResponseNotFound.close', 1)])
 
 if DJANGO_VERSION < (1, 10):
-    _test_application_index_scoped_metrics.extend(
+    _test_application_not_found_scoped_metrics.extend(
         _test_django_pre_1_10_middleware_scoped_metrics)
-    _test_application_index_scoped_metrics.extend(
+    _test_application_not_found_scoped_metrics.extend(
         _test_django_pre_1_10_url_resolver_scoped_metrics)
+
+    # The `CsrfViewMiddleware.process_view` isn't called for 404 Not Found.
+    _test_application_not_found_scoped_metrics.remove(
+        ('Function/django.middleware.csrf:CsrfViewMiddleware.process_view', 1))
 else:
-    _test_application_index_scoped_metrics.extend(
+    _test_application_not_found_scoped_metrics.extend(
         _test_django_post_1_10_url_resolver_scoped_metrics)
 
 @validate_transaction_errors(errors=[])
@@ -125,12 +129,12 @@ if DJANGO_VERSION >= (1, 5):
                 ('Function/django.http.response:HttpResponse.close', 1)])
 
 if DJANGO_VERSION < (1, 10):
-    _test_application_index_scoped_metrics.extend(
+    _test_application_cbv_scoped_metrics.extend(
         _test_django_pre_1_10_middleware_scoped_metrics)
-    _test_application_index_scoped_metrics.extend(
+    _test_application_cbv_scoped_metrics.extend(
         _test_django_pre_1_10_url_resolver_scoped_metrics)
 else:
-    _test_application_index_scoped_metrics.extend(
+    _test_application_cbv_scoped_metrics.extend(
         _test_django_post_1_10_url_resolver_scoped_metrics)
 
 @validate_transaction_errors(errors=[])
@@ -158,12 +162,12 @@ if DJANGO_VERSION >= (1, 5):
                 ('Function/django.http.response:HttpResponse.close', 1)])
 
 if DJANGO_VERSION < (1, 10):
-    _test_application_index_scoped_metrics.extend(
+    _test_application_deferred_cbv_scoped_metrics.extend(
         _test_django_pre_1_10_middleware_scoped_metrics)
-    _test_application_index_scoped_metrics.extend(
+    _test_application_deferred_cbv_scoped_metrics.extend(
         _test_django_pre_1_10_url_resolver_scoped_metrics)
 else:
-    _test_application_index_scoped_metrics.extend(
+    _test_application_deferred_cbv_scoped_metrics.extend(
         _test_django_post_1_10_url_resolver_scoped_metrics)
 
 @validate_transaction_errors(errors=[])
@@ -269,12 +273,12 @@ if DJANGO_VERSION < (1, 9):
             ('Template/Include/results.html', 1)])
 
 if DJANGO_VERSION < (1, 10):
-    _test_application_index_scoped_metrics.extend(
+    _test_application_inclusion_tag_scoped_metrics.extend(
         _test_django_pre_1_10_middleware_scoped_metrics)
-    _test_application_index_scoped_metrics.extend(
+    _test_application_inclusion_tag_scoped_metrics.extend(
         _test_django_pre_1_10_url_resolver_scoped_metrics)
 else:
-    _test_application_index_scoped_metrics.extend(
+    _test_application_inclusion_tag_scoped_metrics.extend(
         _test_django_post_1_10_url_resolver_scoped_metrics)
 
 @validate_transaction_errors(errors=[])
@@ -303,12 +307,12 @@ _test_inclusion_tag_settings = {
 }
 
 if DJANGO_VERSION < (1, 10):
-    _test_application_index_scoped_metrics.extend(
+    _test_inclusion_tag_template_tags_scoped_metrics.extend(
         _test_django_pre_1_10_middleware_scoped_metrics)
-    _test_application_index_scoped_metrics.extend(
+    _test_inclusion_tag_template_tags_scoped_metrics.extend(
         _test_django_pre_1_10_url_resolver_scoped_metrics)
 else:
-    _test_application_index_scoped_metrics.extend(
+    _test_inclusion_tag_template_tags_scoped_metrics.extend(
         _test_django_post_1_10_url_resolver_scoped_metrics)
 
 @validate_transaction_errors(errors=[])

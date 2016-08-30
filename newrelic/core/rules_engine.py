@@ -16,7 +16,7 @@ class NormalizationRule(_NormalizationRule):
         if self.replace_all:
             count = 0
 
-        return self.match_expression_re.sub(self.replacement, string, count)
+        return self.match_expression_re.subn(self.replacement, string, count)
 
 class RulesEngine(object):
 
@@ -71,15 +71,15 @@ class RulesEngine(object):
                     rule_segments = []
 
                 for segment in segments:
-                    rule_segment = rule.apply(segment)
-                    matched = matched or (rule_segment != segment)
+                    rule_segment, match_count = rule.apply(segment)
+                    matched = matched or (match_count > 0)
                     rule_segments.append(rule_segment)
 
                 if matched:
                     final_string = '/'.join(rule_segments)
             else:
-                rule_string = rule.apply(final_string)
-                matched = rule_string != final_string
+                rule_string, match_count = rule.apply(final_string)
+                matched = match_count > 0
                 final_string = rule_string
 
             if matched:

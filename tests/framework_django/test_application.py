@@ -18,23 +18,34 @@ DJANGO_VERSION = tuple(map(int, django.get_version().split('.')[:2]))
 
 test_application = webtest.TestApp(application)
 
+_test_django_pre_1_10_middleware_scoped_metrics = [
+        ('Function/django.middleware.common:CommonMiddleware.process_request', 1),
+        ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_request', 1),
+        ('Function/django.contrib.auth.middleware:AuthenticationMiddleware.process_request', 1),
+        ('Function/django.contrib.messages.middleware:MessageMiddleware.process_request', 1),
+        ('Function/django.middleware.csrf:CsrfViewMiddleware.process_view', 1),
+        ('Function/django.contrib.messages.middleware:MessageMiddleware.process_response', 1),
+        ('Function/django.middleware.csrf:CsrfViewMiddleware.process_response', 1),
+        ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_response', 1),
+        ('Function/django.middleware.common:CommonMiddleware.process_response', 1),
+        ('Function/newrelic.hooks.framework_django:browser_timing_middleware', 1),
+]
+
+_test_django_pre_1_10_url_resolver_scoped_metrics = [
+        ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 'present'),
+]
+
+_test_django_post_1_10_url_resolver_scoped_metrics = [
+        ('Function/django.urls.resolvers:RegexURLResolver.resolve', 'present'),
+]
+
 _test_application_index_scoped_metrics = [
         ('Function/django.core.handlers.wsgi:WSGIHandler.__call__', 1),
         ('Python/WSGI/Application', 1),
         ('Python/WSGI/Response', 1),
         ('Python/WSGI/Finalize', 1),
         ('Function/views:index', 1),
-        ('Function/django.middleware.common:CommonMiddleware.process_request', 1),
-        ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_request', 1),
-        ('Function/django.contrib.auth.middleware:AuthenticationMiddleware.process_request', 1),
-        ('Function/django.contrib.messages.middleware:MessageMiddleware.process_request', 1),
-        ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 1),
-        ('Function/django.middleware.csrf:CsrfViewMiddleware.process_view', 1),
-        ('Function/django.contrib.messages.middleware:MessageMiddleware.process_response', 1),
-        ('Function/django.middleware.csrf:CsrfViewMiddleware.process_response', 1),
-        ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_response', 1),
-        ('Function/django.middleware.common:CommonMiddleware.process_response', 1),
-        ('Function/newrelic.hooks.framework_django:browser_timing_middleware', 1)]
+]
 
 if DJANGO_VERSION >= (1, 5):
     if six.PY3:
@@ -43,6 +54,15 @@ if DJANGO_VERSION >= (1, 5):
     else:
         _test_application_index_scoped_metrics.extend([
                 ('Function/django.http.response:HttpResponse.close', 1)])
+
+if DJANGO_VERSION < (1, 10):
+    _test_application_index_scoped_metrics.extend(
+        _test_django_pre_1_10_middleware_scoped_metrics)
+    _test_application_index_scoped_metrics.extend(
+        _test_django_pre_1_10_url_resolver_scoped_metrics)
+else:
+    _test_application_index_scoped_metrics.extend(
+        _test_django_post_1_10_url_resolver_scoped_metrics)
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:index',
@@ -62,16 +82,7 @@ _test_application_not_found_scoped_metrics = [
         ('Python/WSGI/Application', 1),
         ('Python/WSGI/Response', 1),
         ('Python/WSGI/Finalize', 1),
-        ('Function/django.middleware.common:CommonMiddleware.process_request', 1),
-        ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_request', 1),
-        ('Function/django.contrib.auth.middleware:AuthenticationMiddleware.process_request', 1),
-        ('Function/django.contrib.messages.middleware:MessageMiddleware.process_request', 1),
-        ('Function/django.contrib.messages.middleware:MessageMiddleware.process_response', 1),
-        ('Function/django.middleware.csrf:CsrfViewMiddleware.process_response', 1),
-        ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_response', 1),
-        ('Function/django.middleware.common:CommonMiddleware.process_response', 1),
-        ('Function/newrelic.hooks.framework_django:browser_timing_middleware', 1),
-        ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 'present')]
+]
 
 if DJANGO_VERSION >= (1, 5):
     if six.PY3:
@@ -80,6 +91,19 @@ if DJANGO_VERSION >= (1, 5):
     else:
         _test_application_not_found_scoped_metrics.extend([
                 ('Function/django.http.response:HttpResponseNotFound.close', 1)])
+
+if DJANGO_VERSION < (1, 10):
+    _test_application_not_found_scoped_metrics.extend(
+        _test_django_pre_1_10_middleware_scoped_metrics)
+    _test_application_not_found_scoped_metrics.extend(
+        _test_django_pre_1_10_url_resolver_scoped_metrics)
+
+    # The `CsrfViewMiddleware.process_view` isn't called for 404 Not Found.
+    _test_application_not_found_scoped_metrics.remove(
+        ('Function/django.middleware.csrf:CsrfViewMiddleware.process_view', 1))
+else:
+    _test_application_not_found_scoped_metrics.extend(
+        _test_django_post_1_10_url_resolver_scoped_metrics)
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('django.views.debug:technical_404_response',
@@ -94,17 +118,7 @@ _test_application_cbv_scoped_metrics = [
         ('Python/WSGI/Finalize', 1),
         ('Function/views:MyView', 1),
         ('Function/views:MyView.get', 1),
-        ('Function/django.middleware.common:CommonMiddleware.process_request', 1),
-        ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_request', 1),
-        ('Function/django.contrib.auth.middleware:AuthenticationMiddleware.process_request', 1),
-        ('Function/django.contrib.messages.middleware:MessageMiddleware.process_request', 1),
-        ('Function/django.middleware.csrf:CsrfViewMiddleware.process_view', 1),
-        ('Function/django.contrib.messages.middleware:MessageMiddleware.process_response', 1),
-        ('Function/django.middleware.csrf:CsrfViewMiddleware.process_response', 1),
-        ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_response', 1),
-        ('Function/django.middleware.common:CommonMiddleware.process_response', 1),
-        ('Function/newrelic.hooks.framework_django:browser_timing_middleware', 1),
-        ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 'present')]
+]
 
 if DJANGO_VERSION >= (1, 5):
     if six.PY3:
@@ -113,6 +127,15 @@ if DJANGO_VERSION >= (1, 5):
     else:
         _test_application_cbv_scoped_metrics.extend([
                 ('Function/django.http.response:HttpResponse.close', 1)])
+
+if DJANGO_VERSION < (1, 10):
+    _test_application_cbv_scoped_metrics.extend(
+        _test_django_pre_1_10_middleware_scoped_metrics)
+    _test_application_cbv_scoped_metrics.extend(
+        _test_django_pre_1_10_url_resolver_scoped_metrics)
+else:
+    _test_application_cbv_scoped_metrics.extend(
+        _test_django_post_1_10_url_resolver_scoped_metrics)
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:MyView.get',
@@ -128,17 +151,7 @@ _test_application_deferred_cbv_scoped_metrics = [
         ('Python/WSGI/Finalize', 1),
         ('Function/views:deferred_cbv', 1),
         ('Function/views:MyView.get', 1),
-        ('Function/django.middleware.common:CommonMiddleware.process_request', 1),
-        ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_request', 1),
-        ('Function/django.contrib.auth.middleware:AuthenticationMiddleware.process_request', 1),
-        ('Function/django.contrib.messages.middleware:MessageMiddleware.process_request', 1),
-        ('Function/django.middleware.csrf:CsrfViewMiddleware.process_view', 1),
-        ('Function/django.contrib.messages.middleware:MessageMiddleware.process_response', 1),
-        ('Function/django.middleware.csrf:CsrfViewMiddleware.process_response', 1),
-        ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_response', 1),
-        ('Function/django.middleware.common:CommonMiddleware.process_response', 1),
-        ('Function/newrelic.hooks.framework_django:browser_timing_middleware', 1),
-        ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 'present')]
+]
 
 if DJANGO_VERSION >= (1, 5):
     if six.PY3:
@@ -147,6 +160,15 @@ if DJANGO_VERSION >= (1, 5):
     else:
         _test_application_deferred_cbv_scoped_metrics.extend([
                 ('Function/django.http.response:HttpResponse.close', 1)])
+
+if DJANGO_VERSION < (1, 10):
+    _test_application_deferred_cbv_scoped_metrics.extend(
+        _test_django_pre_1_10_middleware_scoped_metrics)
+    _test_application_deferred_cbv_scoped_metrics.extend(
+        _test_django_pre_1_10_url_resolver_scoped_metrics)
+else:
+    _test_application_deferred_cbv_scoped_metrics.extend(
+        _test_django_post_1_10_url_resolver_scoped_metrics)
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:deferred_cbv',
@@ -243,22 +265,21 @@ _test_application_inclusion_tag_scoped_metrics = [
         ('Python/WSGI/Response', 1),
         ('Python/WSGI/Finalize', 1),
         ('Function/views:inclusion_tag', 1),
-        ('Function/django.middleware.common:CommonMiddleware.process_request', 1),
-        ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_request', 1),
-        ('Function/django.contrib.auth.middleware:AuthenticationMiddleware.process_request', 1),
-        ('Function/django.contrib.messages.middleware:MessageMiddleware.process_request', 1),
-        ('Function/django.middleware.csrf:CsrfViewMiddleware.process_view', 1),
-        ('Function/django.contrib.messages.middleware:MessageMiddleware.process_response', 1),
-        ('Function/django.middleware.csrf:CsrfViewMiddleware.process_response', 1),
-        ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_response', 1),
-        ('Function/django.middleware.common:CommonMiddleware.process_response', 1),
-        ('Function/newrelic.hooks.framework_django:browser_timing_middleware', 1),
         ('Template/Render/main.html', 1),
-        ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 'present')]
+]
 
 if DJANGO_VERSION < (1, 9):
     _test_application_inclusion_tag_scoped_metrics.extend([
             ('Template/Include/results.html', 1)])
+
+if DJANGO_VERSION < (1, 10):
+    _test_application_inclusion_tag_scoped_metrics.extend(
+        _test_django_pre_1_10_middleware_scoped_metrics)
+    _test_application_inclusion_tag_scoped_metrics.extend(
+        _test_django_pre_1_10_url_resolver_scoped_metrics)
+else:
+    _test_application_inclusion_tag_scoped_metrics.extend(
+        _test_django_post_1_10_url_resolver_scoped_metrics)
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:inclusion_tag',
@@ -273,18 +294,8 @@ _test_inclusion_tag_template_tags_scoped_metrics = [
         ('Python/WSGI/Response', 1),
         ('Python/WSGI/Finalize', 1),
         ('Function/views:inclusion_tag', 1),
-        ('Function/django.middleware.common:CommonMiddleware.process_request', 1),
-        ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_request', 1),
-        ('Function/django.contrib.auth.middleware:AuthenticationMiddleware.process_request', 1),
-        ('Function/django.contrib.messages.middleware:MessageMiddleware.process_request', 1),
-        ('Function/django.middleware.csrf:CsrfViewMiddleware.process_view', 1),
-        ('Function/django.contrib.messages.middleware:MessageMiddleware.process_response', 1),
-        ('Function/django.middleware.csrf:CsrfViewMiddleware.process_response', 1),
-        ('Function/django.contrib.sessions.middleware:SessionMiddleware.process_response', 1),
-        ('Function/django.middleware.common:CommonMiddleware.process_response', 1),
-        ('Function/newrelic.hooks.framework_django:browser_timing_middleware', 1),
         ('Template/Render/main.html', 1),
-        ('Function/django.core.urlresolvers:RegexURLResolver.resolve', 'present')]
+]
 
 if DJANGO_VERSION < (1, 9):
     _test_inclusion_tag_template_tags_scoped_metrics.extend([
@@ -294,6 +305,15 @@ if DJANGO_VERSION < (1, 9):
 _test_inclusion_tag_settings = {
     'instrumentation.templates.inclusion_tag': '*'
 }
+
+if DJANGO_VERSION < (1, 10):
+    _test_inclusion_tag_template_tags_scoped_metrics.extend(
+        _test_django_pre_1_10_middleware_scoped_metrics)
+    _test_inclusion_tag_template_tags_scoped_metrics.extend(
+        _test_django_pre_1_10_url_resolver_scoped_metrics)
+else:
+    _test_inclusion_tag_template_tags_scoped_metrics.extend(
+        _test_django_post_1_10_url_resolver_scoped_metrics)
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:inclusion_tag',

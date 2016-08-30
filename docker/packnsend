@@ -35,7 +35,6 @@ cleanup_containers()
 
     echo "Removing test container."
 
-    test -n "$CONTAINER_ID" && docker kill $CONTAINER_ID
     test -n "$CONTAINER_ID" && docker rm --volumes $CONTAINER_ID
 
     echo "Removing test image."
@@ -384,7 +383,7 @@ push_docker_base_images()
         echo "Push image: $IMG"
         echo
 
-        docker tag -f $IMG $DOGESTRY_IMG_PATH/$IMG
+        docker tag $IMG $DOGESTRY_IMG_PATH/$IMG
         dogestry push $DOGESTRY_BUCKET $DOGESTRY_IMG_PATH/$IMG
 
     done
@@ -405,8 +404,9 @@ pull_docker_base_images()
         echo "Pull image: $IMG"
         echo
 
-        dogestry -disable-checks pull $DOGESTRY_BUCKET $DOGESTRY_IMG_PATH/$IMG > /dev/null
-        docker tag -f $DOGESTRY_IMG_PATH/$IMG $IMG
+        dogestry -disable-checks pull $DOGESTRY_BUCKET $DOGESTRY_IMG_PATH/$IMG
+        docker inspect $IMG > /dev/null 2>&1 && docker rmi $IMG
+        docker tag $DOGESTRY_IMG_PATH/$IMG $IMG || exit 1
 
     done
 }

@@ -13,7 +13,7 @@ use(extensions) {
          '(deploy-to-pypi)|(deploy-to-s3)|(build-and-archive-package)')
 
     baseJob('deploy-to-pypi') {
-        label('ec2-linux')
+        label('py-ec2-linux')
         repo(repoFull)
         branch('master')
 
@@ -51,7 +51,7 @@ use(extensions) {
     }
 
     baseJob('deploy-to-s3') {
-        label('ec2-linux')
+        label('py-ec2-linux')
         repo(repoFull)
         branch('master')
 
@@ -89,7 +89,7 @@ use(extensions) {
     }
 
     baseJob('build-and-archive-package') {
-        label('ec2-linux')
+        label('py-ec2-linux')
         repo(repoFull)
         branch('master')
 

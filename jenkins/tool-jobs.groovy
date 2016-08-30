@@ -27,7 +27,7 @@ use(extensions) {
     }
 
     baseJob("${testPrefix}-Packnsend-Build-and-Push") {
-        label('ec2-linux')
+        label('py-ec2-linux')
         repo(repoFull)
         branch('${GIT_BRANCH}')
 
@@ -75,9 +75,9 @@ use(extensions) {
                     'The branch on which to find the scripts to reset the ' +
                     'nodes. Most likely you won\'t have to change this.')
                 labelParam('NODE_NAME') {
-                    defaultValue('ec2-linux')
+                    defaultValue('py-ec2-linux')
                     description('The label of the nodes to perform the reset. (hint: the ' +
-                        'label of our ec2 nodes is \"ec2-linux\") This job will ' +
+                        'label of our ec2 nodes is \"py-ec2-linux\") This job will ' +
                         'be run once on each node.')
                     allNodes('allCases', 'AllNodeEligibility')
                 }

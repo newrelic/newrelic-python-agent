@@ -27,12 +27,14 @@ Jobs are grouped into three views:
 
 **python-agent-tools-Packnsend-Build-and-Push:** On demand job. Will build all packnsend docker images (as currently found in the develop branch) then push them to dogestry. Any pre-existing EC2 nodes will not start using these images until the images are restarted (see the Reset Nodes job). New EC2 nodes will automatically use these new images.
 
-**python-agent-tools-Reset-Nodes:** On demand job. Should be run after a change is made to a packnsend image. Will run on each EC2 node, powering the node on first if necessary. Executes two commands: `packnsend pull` then `packnsend restart`. Requires two parameters: 1) *NODE_NAME* is the label of the nodes to run the jobs on, do not change this from "ec2-linux", and 2) *GIT_BRANCH* is the branch the job will use to run the packnsend commands.
+**python-agent-tools-Reset-Nodes:** On demand job. Should be run after a change is made to a packnsend image. Will run on each EC2 node, powering the node on first if necessary. Executes two commands: `packnsend pull` then `packnsend restart`. Requires two parameters: 1) *NODE_NAME* is the label of the nodes to run the jobs on, do not change this from "py-ec2-linux", and 2) *GIT_BRANCH* is the branch the job will use to run the packnsend commands.
 
 ## EC2 Nodes
 EC2 nodes are provisioned on demand by Jenkins. When there are waiting jobs and no available node, Jenkins will first try to power on any offline nodes, then if none are available, it will create new ones. Jenkins will power off nodes when they have gone idle. This is a simple power off, not a deprovision. Thus, any docker containers will be stopped, but no images will be removed.
 
 The AWS keys needed to push and pull from dogestry along with the dogestry binary are pre-loaded onto the nodes. For this reason, it is advised that if you want to make changes to a packnsend docker image, do so from jenkins rather than a laptop.
+
+The nodes run Docker version 1.12 that is installed when the node is first created. This is done to prevent errors in removing containers when using `packnsend`, `btrfs`, and earlier versions of docker (see https://newrelic.atlassian.net/browse/PYTHON-2038). Configuration for the nodes is owned by the tools team and is detailed in the [tools/jenkins-admin-tools](https://source.datanerd.us/tools/jenkins-admin-tools/blob/master/config/hosts/python-agent-build.pdx.vm.datanerd.us.yaml) repo.
 
 ## Adding New Docker Tests
 

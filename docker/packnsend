@@ -475,7 +475,6 @@ stop_application_services()
         if test -n "$SERVICE_ID"
         then
             docker stop -t=0 "$SERVICE_ID" > /dev/null || exit 1
-            docker kill "$SERVICE_ID" > /dev/null || exit 1
             docker rm "$SERVICE_ID" > /dev/null || exit 1
         fi
 

@@ -3,8 +3,8 @@
 ROOT_DIRECTORY=$(git rev-parse --show-toplevel)
 WORK_DIRECTORY=".`pwd | sed -e s%$ROOT_DIRECTORY%%`"
 
-DOGESTRY_BUCKET=s3://nr-docker-images-dev/?region=us-west-2
-DOGESTRY_IMG_PATH=datanerd.us/python_agent
+NR_DOCKER_REPO=cf-registry.nr-ops.net
+PYTHON_AGENT_IMG_PATH=$NR_DOCKER_REPO/python-agent
 
 TEST_IMAGE_NAME=python-base
 
@@ -383,8 +383,8 @@ push_docker_base_images()
         echo "Push image: $IMG"
         echo
 
-        docker tag $IMG $DOGESTRY_IMG_PATH/$IMG
-        dogestry push $DOGESTRY_BUCKET $DOGESTRY_IMG_PATH/$IMG
+        docker tag $IMG $PYTHON_AGENT_IMG_PATH/$IMG
+        docker push $PYTHON_AGENT_IMG_PATH/$IMG
 
     done
 }
@@ -404,9 +404,9 @@ pull_docker_base_images()
         echo "Pull image: $IMG"
         echo
 
-        dogestry -disable-checks pull $DOGESTRY_BUCKET $DOGESTRY_IMG_PATH/$IMG
-        docker inspect $IMG > /dev/null 2>&1 && docker rmi $IMG
-        docker tag $DOGESTRY_IMG_PATH/$IMG $IMG || exit 1
+        docker pull $PYTHON_AGENT_IMG_PATH/$IMG
+        docker inspect $IMG > /dev/null 2>&1 && docker rmi $IMG > /dev/null 2>&1
+        docker tag $PYTHON_AGENT_IMG_PATH/$IMG $IMG || exit 1
 
     done
 }
@@ -475,7 +475,6 @@ stop_application_services()
         if test -n "$SERVICE_ID"
         then
             docker stop -t=0 "$SERVICE_ID" > /dev/null || exit 1
-            docker kill "$SERVICE_ID" > /dev/null || exit 1
             docker rm "$SERVICE_ID" > /dev/null || exit 1
         fi
 

@@ -82,9 +82,6 @@ use(extensions) {
                         environmentVariables {
                             env('NEW_RELIC_DEVELOPER_MODE', '${AGENT_FAKE_COLLECTOR}')
                             env('NEW_RELIC_PROXY_HOST', '${AGENT_PROXY_HOST}')
-                            // dogestry creds
-                            env('AWS_ACCESS_KEY_ID', '${NR_DOCKER_DEV_ACCESS_KEY_ID}')
-                            env('AWS_SECRET_ACCESS_KEY', '${NR_DOCKER_DEV_SECRET_ACCESS_KEY}')
                             env('DOCKER_HOST', 'unix:///var/run/docker.sock')
                         }
                         shell('./jenkins/prep_node_for_test.sh')
@@ -124,9 +121,6 @@ use(extensions) {
 
             steps {
                 environmentVariables {
-                    // dogestry creds
-                    env('AWS_ACCESS_KEY_ID', '${NR_DOCKER_DEV_ACCESS_KEY_ID}')
-                    env('AWS_SECRET_ACCESS_KEY', '${NR_DOCKER_DEV_SECRET_ACCESS_KEY}')
                     env('DOCKER_HOST', 'unix:///var/run/docker.sock')
                 }
                 shell('./jenkins/prep_node_for_test.sh')

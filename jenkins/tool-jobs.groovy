@@ -33,7 +33,7 @@ use(extensions) {
 
         configure {
             description('A job to build packnsend images then push them to ' +
-                    "dogestry. Once complete, consider running the ${testPrefix}-" +
+                    "the repo. Once complete, consider running the ${testPrefix}-" +
                     'Reset-Nodes job to reset all nodes. (They won\'t get the ' +
                     'new images if you don\'t)')
 
@@ -43,9 +43,6 @@ use(extensions) {
 
             steps {
                 environmentVariables {
-                    // dogestry creds
-                    env('AWS_ACCESS_KEY_ID', '${NR_DOCKER_DEV_ACCESS_KEY_ID}')
-                    env('AWS_SECRET_ACCESS_KEY', '${NR_DOCKER_DEV_SECRET_ACCESS_KEY}')
                     env('DOCKER_HOST', 'unix:///var/run/docker.sock')
                 }
                 shell('./jenkins/packnsend-buildnpush.sh')
@@ -85,9 +82,6 @@ use(extensions) {
 
             steps {
                 environmentVariables {
-                    // dogestry creds
-                    env('AWS_ACCESS_KEY_ID', '${NR_DOCKER_DEV_ACCESS_KEY_ID}')
-                    env('AWS_SECRET_ACCESS_KEY', '${NR_DOCKER_DEV_SECRET_ACCESS_KEY}')
                     env('DOCKER_HOST', 'unix:///var/run/docker.sock')
                 }
                 shell('./jenkins/refresh_docker_containers.sh')

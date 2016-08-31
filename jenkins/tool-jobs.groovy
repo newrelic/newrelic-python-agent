@@ -33,7 +33,7 @@ use(extensions) {
 
         configure {
             description('A job to build packnsend images then push them to ' +
-                    "dogestry. Once complete, consider running the ${testPrefix}-" +
+                    "the repo. Once complete, consider running the ${testPrefix}-" +
                     'Reset-Nodes job to reset all nodes. (They won\'t get the ' +
                     'new images if you don\'t)')
 

@@ -3,9 +3,6 @@
 ROOT_DIRECTORY=$(git rev-parse --show-toplevel)
 WORK_DIRECTORY=".`pwd | sed -e s%$ROOT_DIRECTORY%%`"
 
-DOGESTRY_BUCKET=s3://nr-docker-images-dev/?region=us-west-2
-DOGESTRY_IMG_PATH=datanerd.us/python_agent
-
 NR_DOCKER_REPO=cf-registry.nr-ops.net
 PYTHON_AGENT_IMG_PATH=$NR_DOCKER_REPO/python-agent
 

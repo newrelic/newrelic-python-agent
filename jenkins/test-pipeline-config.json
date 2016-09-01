@@ -237,7 +237,8 @@
                     "./docker/packnsend run tox -c tests/framework_django/tox-0107.ini",
                     "./docker/packnsend run tox -c tests/framework_django/tox-0108.ini",
                     "./docker/packnsend run tox -c tests/framework_django/tox-0109.ini",
-                    "./docker/packnsend run tox -c tests/framework_django/tox.ini"
+                    "./docker/packnsend run tox -c tests/framework_django/tox-0110-old-middleware.ini",
+                    "./docker/packnsend run tox -c tests/framework_django/tox-0110-new-middleware.ini"
                 ]
             },
             {

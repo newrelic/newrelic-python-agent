@@ -25,7 +25,7 @@ Jobs are grouped into three views:
 ### Python Agent Tools
 **python-agent-tools-dsl-seed:** Job to run on every push to the develop branch. Will rebuild all jenkins jobs from DSL. Any files in the *jenkins* directory with extension `.groovy` will be read and sourced.
 
-**python-agent-tools-Packnsend-Build-and-Push:** On demand job. Will build all packnsend docker images (as currently found in the develop branch) then push them to the New Relic docker repository (cf-registry.nr-ops.net). Any pre-existing EC2 nodes will not start using these images until the images are restarted (see the Reset Nodes job). New EC2 nodes will automatically use these new images.
+**python-agent-tools-Packnsend-Build-and-Push:** On demand job. Will build all packnsend docker images (as currently found in the develop branch) then push them to the [New Relic docker repository](https://source.datanerd.us/container-fabric/docs/blob/master/users-guide/docker.md) (cf-registry.nr-ops.net). Any pre-existing EC2 nodes will not start using these images until the images are restarted (see the Reset Nodes job). New EC2 nodes will automatically use these new images.
 
 **python-agent-tools-Reset-Nodes:** On demand job. Should be run after a change is made to a packnsend image. Will run on each EC2 node, powering the node on first if necessary. Executes two commands: `packnsend pull` then `packnsend restart`. Requires two parameters: 1) *NODE_NAME* is the label of the nodes to run the jobs on, do not change this from "py-ec2-linux", and 2) *GIT_BRANCH* is the branch the job will use to run the packnsend commands.
 

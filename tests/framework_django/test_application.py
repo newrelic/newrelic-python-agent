@@ -6,11 +6,13 @@ from newrelic.packages import six
 from newrelic.agent import application_settings
 from newrelic.hooks.framework_django import django_settings
 
+import os
 import json
 
 import django
 
 DJANGO_VERSION = tuple(map(int, django.get_version().split('.')[:2]))
+DJANGO_SETTINGS_MODULE = os.environ.get('DJANGO_SETTINGS_MODULE', None)
 
 def target_application():
     from _target_application import _target_application
@@ -68,14 +70,21 @@ if DJANGO_VERSION >= (1, 5):
 
 if DJANGO_VERSION < (1, 10):
     _test_application_index_scoped_metrics.extend(
-        _test_django_pre_1_10_middleware_scoped_metrics)
-    _test_application_index_scoped_metrics.extend(
         _test_django_pre_1_10_url_resolver_scoped_metrics)
 else:
     _test_application_index_scoped_metrics.extend(
-        _test_django_post_1_10_middleware_scoped_metrics)
-    _test_application_index_scoped_metrics.extend(
         _test_django_post_1_10_url_resolver_scoped_metrics)
+
+if DJANGO_SETTINGS_MODULE == 'settings_0110_old':
+    _test_application_index_scoped_metrics.extend(
+        _test_django_pre_1_10_middleware_scoped_metrics)
+elif DJANGO_SETTINGS_MODULE == 'settings_0110_new':
+    _test_application_index_scoped_metrics.extend(
+        _test_django_post_1_10_middleware_scoped_metrics)
+elif DJANGO_VERSION < (1, 10):
+    _test_application_index_scoped_metrics.extend(
+        _test_django_pre_1_10_middleware_scoped_metrics)
+
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:index',
@@ -109,18 +118,26 @@ if DJANGO_VERSION >= (1, 5):
 
 if DJANGO_VERSION < (1, 10):
     _test_application_not_found_scoped_metrics.extend(
-        _test_django_pre_1_10_middleware_scoped_metrics)
-    _test_application_not_found_scoped_metrics.extend(
         _test_django_pre_1_10_url_resolver_scoped_metrics)
+else:
+    _test_application_not_found_scoped_metrics.extend(
+        _test_django_post_1_10_url_resolver_scoped_metrics)
 
+if DJANGO_SETTINGS_MODULE == 'settings_0110_old':
+    _test_application_not_found_scoped_metrics.extend(
+        _test_django_pre_1_10_middleware_scoped_metrics)
     # The `CsrfViewMiddleware.process_view` isn't called for 404 Not Found.
     _test_application_not_found_scoped_metrics.remove(
         ('Function/django.middleware.csrf:CsrfViewMiddleware.process_view', 1))
-else:
+elif DJANGO_SETTINGS_MODULE == 'settings_0110_new':
     _test_application_not_found_scoped_metrics.extend(
         _test_django_post_1_10_middleware_scoped_metrics)
+elif DJANGO_VERSION < (1, 10):
     _test_application_not_found_scoped_metrics.extend(
-        _test_django_post_1_10_url_resolver_scoped_metrics)
+        _test_django_pre_1_10_middleware_scoped_metrics)
+    # The `CsrfViewMiddleware.process_view` isn't called for 404 Not Found.
+    _test_application_not_found_scoped_metrics.remove(
+        ('Function/django.middleware.csrf:CsrfViewMiddleware.process_view', 1))
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('django.views.debug:technical_404_response',
@@ -148,14 +165,20 @@ if DJANGO_VERSION >= (1, 5):
 
 if DJANGO_VERSION < (1, 10):
     _test_application_cbv_scoped_metrics.extend(
-        _test_django_pre_1_10_middleware_scoped_metrics)
-    _test_application_cbv_scoped_metrics.extend(
         _test_django_pre_1_10_url_resolver_scoped_metrics)
 else:
     _test_application_cbv_scoped_metrics.extend(
-        _test_django_post_1_10_middleware_scoped_metrics)
-    _test_application_cbv_scoped_metrics.extend(
         _test_django_post_1_10_url_resolver_scoped_metrics)
+
+if DJANGO_SETTINGS_MODULE == 'settings_0110_old':
+    _test_application_cbv_scoped_metrics.extend(
+        _test_django_pre_1_10_middleware_scoped_metrics)
+elif DJANGO_SETTINGS_MODULE == 'settings_0110_new':
+    _test_application_cbv_scoped_metrics.extend(
+        _test_django_post_1_10_middleware_scoped_metrics)
+elif DJANGO_VERSION < (1, 10):
+    _test_application_cbv_scoped_metrics.extend(
+        _test_django_pre_1_10_middleware_scoped_metrics)
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:MyView.get',
@@ -184,14 +207,20 @@ if DJANGO_VERSION >= (1, 5):
 
 if DJANGO_VERSION < (1, 10):
     _test_application_deferred_cbv_scoped_metrics.extend(
-        _test_django_pre_1_10_middleware_scoped_metrics)
-    _test_application_deferred_cbv_scoped_metrics.extend(
         _test_django_pre_1_10_url_resolver_scoped_metrics)
 else:
     _test_application_deferred_cbv_scoped_metrics.extend(
-        _test_django_post_1_10_middleware_scoped_metrics)
-    _test_application_deferred_cbv_scoped_metrics.extend(
         _test_django_post_1_10_url_resolver_scoped_metrics)
+
+if DJANGO_SETTINGS_MODULE == 'settings_0110_old':
+    _test_application_deferred_cbv_scoped_metrics.extend(
+        _test_django_pre_1_10_middleware_scoped_metrics)
+elif DJANGO_SETTINGS_MODULE == 'settings_0110_new':
+    _test_application_deferred_cbv_scoped_metrics.extend(
+        _test_django_post_1_10_middleware_scoped_metrics)
+elif DJANGO_VERSION < (1, 10):
+    _test_application_deferred_cbv_scoped_metrics.extend(
+        _test_django_pre_1_10_middleware_scoped_metrics)
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:deferred_cbv',
@@ -305,14 +334,20 @@ if DJANGO_VERSION < (1, 9):
 
 if DJANGO_VERSION < (1, 10):
     _test_application_inclusion_tag_scoped_metrics.extend(
-        _test_django_pre_1_10_middleware_scoped_metrics)
-    _test_application_inclusion_tag_scoped_metrics.extend(
         _test_django_pre_1_10_url_resolver_scoped_metrics)
 else:
     _test_application_inclusion_tag_scoped_metrics.extend(
-        _test_django_post_1_10_middleware_scoped_metrics)
-    _test_application_inclusion_tag_scoped_metrics.extend(
         _test_django_post_1_10_url_resolver_scoped_metrics)
+
+if DJANGO_SETTINGS_MODULE == 'settings_0110_old':
+    _test_application_inclusion_tag_scoped_metrics.extend(
+        _test_django_pre_1_10_middleware_scoped_metrics)
+elif DJANGO_SETTINGS_MODULE == 'settings_0110_new':
+    _test_application_inclusion_tag_scoped_metrics.extend(
+        _test_django_post_1_10_middleware_scoped_metrics)
+elif DJANGO_VERSION < (1, 10):
+    _test_application_inclusion_tag_scoped_metrics.extend(
+        _test_django_pre_1_10_middleware_scoped_metrics)
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:inclusion_tag',
@@ -342,14 +377,20 @@ _test_inclusion_tag_settings = {
 
 if DJANGO_VERSION < (1, 10):
     _test_inclusion_tag_template_tags_scoped_metrics.extend(
-        _test_django_pre_1_10_middleware_scoped_metrics)
-    _test_inclusion_tag_template_tags_scoped_metrics.extend(
         _test_django_pre_1_10_url_resolver_scoped_metrics)
 else:
     _test_inclusion_tag_template_tags_scoped_metrics.extend(
-        _test_django_post_1_10_middleware_scoped_metrics)
-    _test_inclusion_tag_template_tags_scoped_metrics.extend(
         _test_django_post_1_10_url_resolver_scoped_metrics)
+
+if DJANGO_SETTINGS_MODULE == 'settings_0110_old':
+    _test_inclusion_tag_template_tags_scoped_metrics.extend(
+        _test_django_pre_1_10_middleware_scoped_metrics)
+elif DJANGO_SETTINGS_MODULE == 'settings_0110_new':
+    _test_inclusion_tag_template_tags_scoped_metrics.extend(
+        _test_django_post_1_10_middleware_scoped_metrics)
+elif DJANGO_VERSION < (1, 10):
+    _test_inclusion_tag_template_tags_scoped_metrics.extend(
+        _test_django_pre_1_10_middleware_scoped_metrics)
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics('views:inclusion_tag',

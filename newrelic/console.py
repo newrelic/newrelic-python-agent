@@ -26,6 +26,18 @@ try:
 except ImportError:
     import builtins as __builtin__
 
+def _argspec_py2(func):
+    return inspect.getargspec(func)
+
+def _argspec_py3(func):
+    a = inspect.getfullargspec(func)
+    return (a.args, a.varargs, a.varkw, a.defaults)
+
+if hasattr(inspect, 'getfullargspec'):
+    _argspec = _argspec_py3
+else:
+    _argspec = _argspec_py2
+
 from newrelic.core.agent import agent_instance
 from newrelic.core.config import global_settings, flatten_settings
 from newrelic.api.transaction import Transaction
@@ -35,7 +47,7 @@ from newrelic.core.transaction_cache import transaction_cache
 _transaction_cache = transaction_cache()
 
 def shell_command(wrapped):
-    args, varargs, keywords, defaults = inspect.getargspec(wrapped)
+    args, varargs, keywords, defaults = _argspec(wrapped)
 
     parser = optparse.OptionParser()
     for name in args[1:]:

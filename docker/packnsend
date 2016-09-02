@@ -39,7 +39,7 @@ cleanup_containers()
 
     echo "Removing test image."
 
-    test -n "$IMAGE_ID" && docker rmi $IMAGE_ID
+    test -n "$DATA_IMAGE_NAME" && docker rmi $DATA_IMAGE_NAME
 
     echo "Removing data directory."
 

@@ -581,14 +581,14 @@ class ClientShell(cmd.Cmd):
                     if self.__log_object:
                         self.__log_object.write(c)
 
-                    client.sendall(c)
+                    client.sendall(c.encode('utf-8'))
                 except Exception:
                     break
 
         def read():
             while 1:
                 try:
-                    c = client.recv(1)
+                    c = client.recv(1).decode('utf-8')
 
                     if not c:
                         break

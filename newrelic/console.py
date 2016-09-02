@@ -588,7 +588,7 @@ class ClientShell(cmd.Cmd):
         def read():
             while 1:
                 try:
-                    c = str(client.recv(1).decode('utf-8'))
+                    c = client.recv(1).decode('utf-8')
 
                     if not c:
                         break

@@ -269,7 +269,7 @@ the tags to Github master.
 
     This will build and upload the package to artifactory
 
-[build]:https://python-agent-build.pdx.vm.datanerd.us/view/DEPLOYMENT/job/build-and-archive-package/
+[build]: https://python-agent-build.pdx.vm.datanerd.us/view/All/job/build-and-archive-package-ORIGINAL/
 [master]: https://pdx-hudson.datanerd.us/view/Python/job/Python_Agent-MASTER/
 
 15. Check Artifactory upload
@@ -287,7 +287,7 @@ the tags to Github master.
     4. Push the build button
     5. Go to PyPI and check that the version uploaded. Validate that ``pip install`` of package into a virtual environment works and that a ``newrelic-admin validate-config`` test runs okay
 
-[deploy-pypi]:https://python-agent-build.pdx.vm.datanerd.us/view/DEPLOYMENT/job/deploy-to-pypi/
+[deploy-pypi]: https://python-agent-build.pdx.vm.datanerd.us/view/All/job/deploy-to-pypi-ORIGINAL/
 
 17. Upload from Artifactory to the New Relic Download site.
 
@@ -307,7 +307,7 @@ transferring files across see: [Managing the Download Site][download-wiki].
 [download-release]: http://download.newrelic.com/python_agent/release/
 
 18. Update the ``python_agent_version`` configuration to ``A.B.C.D`` in APM
-systems configuration page at: https://rpm.newrelic.com/admin/system_configurations.
+systems configuration page at: https://rpm-admin.newrelic.com/admin/system_configurations.
 
     If we need to notify existing users to update their older agents, also
 update the ``min_python_agent_version`` to ``A.B.C.D``.

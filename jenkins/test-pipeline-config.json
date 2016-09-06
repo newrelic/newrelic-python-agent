@@ -1,0 +1,296 @@
+{
+    "packnsendTests": {
+        "phase": [
+            {
+                "name": "adapter_gevent",
+                "description": "Python agent tests for adapter for gevent WSGI server.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/adapter_gevent/tox.ini"
+                ]
+            },
+            {
+                "name": "agent_features",
+                "description": "Python agent tests for core agent features.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/agent_features/tox.ini"
+                ]
+            },
+            {
+                "name": "cross_agent",
+                "description": "Python cross agent tests.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/cross_agent/tox.ini"
+                ]
+            },
+            {
+                "name": "agent_unittests",
+                "description": "Python agent unit tests.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/agent_unittests/tox.ini"
+                ]
+            },
+            {
+                "name": "application_gearman",
+                "description": "Python agent tests for gearman task server.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/application_gearman/tox.ini"
+                ]
+            },
+            {
+                "name": "datastore_sqlite",
+                "description": "Python agent tests for SQLite.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/datastore_sqlite/tox.ini"
+                ]
+            },
+            {
+                "name": "datastore_pymongo",
+                "description": "Python agent tests for mongodb client instrumentation.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/datastore_pymongo/tox.ini"
+                ]
+            },
+            {
+                "name": "datastore_motor",
+                "description": "Python agent tests for motor client for MongoDB.",
+                "disabled": "true",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/datastore_motor/tox.ini"
+                ]
+            },
+            {
+                "name": "datastore_elasticsearch",
+                "description": "Python agent tests for elasticsearch.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/datastore_elasticsearch/tox.ini"
+                ]
+            },
+            {
+                "name": "datastore_pyelasticsearch",
+                "description": "Python agent tests for pyelasticsearch for Elasticsearch.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/datastore_pyelasticsearch/tox.ini"
+                ]
+            },
+            {
+                "name": "datastore_redis",
+                "description": "Python agent tests for redis client instrumentation.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/datastore_redis/tox.ini"
+                ]
+            },
+            {
+                "name": "datastore_bmemcached",
+                "description": "Python agent tests for bmemcached client module for Memcached.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/datastore_bmemcached/tox.ini"
+                ]
+            },
+            {
+                "name": "datastore_memcache",
+                "description": "Python agent tests for python-memcached client module for Memcached.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/datastore_memcache/tox.ini"
+                ]
+            },
+            {
+                "name": "datastore_pylibmc",
+                "description": "Python agent tests for pylibmc for Memcached.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/datastore_pylibmc/tox.ini"
+                ]
+            },
+            {
+                "name": "datastore_pymemcache",
+                "description": "Python agent tests for pymemcache for Memcached.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/datastore_pymemcache/tox.ini"
+                ]
+            },
+            {
+                "name": "datastore_umemcache",
+                "description": "Python agent tests for umemcache for Memcached.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/datastore_umemcache/tox.ini"
+                ]
+            },
+            {
+                "name": "datastore_mysql",
+                "description": "Python agent tests for mysql-connector-python client for MySQL.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/datastore_mysql/tox.ini"
+                ]
+            },
+            {
+                "name": "datastore_mysqldb",
+                "description": "Python agent tests for mysqldb client (MySQL-python) for MySQL.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/datastore_mysqldb/tox.ini"
+                ]
+            },
+            {
+                "name": "datastore_oursql",
+                "description": "Python agent tests for oursql client for MySQL.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/datastore_oursql/tox.ini"
+                ]
+            },
+            {
+                "name": "datastore_pymsql",
+                "description": "Python agent tests for PyMySQL for MySQL.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/datastore_pymysql/tox.ini"
+                ]
+            },
+            {
+                "name": "datastore_postgresql",
+                "description": "Python agent tests for py-postgresql for Postgresql.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/datastore_postgresql/tox.ini"
+                ]
+            },
+            {
+                "name": "datastore_proboscis",
+                "description": "Python agent tests for proboscis client for Postgresql.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/datastore_proboscis/tox.ini"
+                ]
+            },
+            {
+                "name": "datastore_psycopg2",
+                "description": "Python agent tests for psycopg2 for Postgresql.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/datastore_psycopg2/tox.ini"
+                ]
+            },
+            {
+                "name": "datastore_psycopg2cffi",
+                "description": "Python agent tests for psycopg2cffi for Postgresql.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/datastore_psycopg2cffi/tox.ini"
+                ]
+            },
+            {
+                "name": "datastore_psycopg2ct",
+                "description": "Python agent tests for psycopg2ct for Postgresql.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/datastore_psycopg2ct/tox.ini"
+                ]
+            },
+            {
+                "name": "external_httplib",
+                "description": "Python agent tests for external web service adapters based on httplib.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/external_httplib/tox.ini"
+                ]
+            },
+            {
+                "name": "external_urllib3",
+                "description": "Python agent tests for external web service adapters based on urllib3.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/external_urllib3/tox-0109.ini",
+                    "./docker/packnsend run tox -c tests/external_urllib3/tox-0108.ini",
+                    "./docker/packnsend run tox -c tests/external_urllib3/tox-0107.ini",
+                    "./docker/packnsend run tox -c tests/external_urllib3/tox-0106.ini"
+                ]
+            },
+            {
+                "name": "external_requests",
+                "description": "Python agent tests for external web service adapters based on requests.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/external_requests/tox-0203.ini",
+                    "./docker/packnsend run tox -c tests/external_requests/tox-0202.ini",
+                    "./docker/packnsend run tox -c tests/external_requests/tox-0102.ini",
+                    "./docker/packnsend run tox -c tests/external_requests/tox-0101.ini"
+                ]
+            },
+            {
+                "name": "framework_bottle",
+                "description": "Python agent tests for Bottle web framework.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/framework_bottle/tox-0012.ini",
+                    "./docker/packnsend run tox -c tests/framework_bottle/tox-0011.ini",
+                    "./docker/packnsend run tox -c tests/framework_bottle/tox-0010.ini",
+                    "./docker/packnsend run tox -c tests/framework_bottle/tox-0009.ini"
+                ]
+            },
+            {
+                "name": "framework_cherrypy",
+                "description": "Python agent tests for CherryPy web framework.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/framework_cherrypy/tox-0301.ini",
+                    "./docker/packnsend run tox -c tests/framework_cherrypy/tox-0302.ini",
+                    "./docker/packnsend run tox -c tests/framework_cherrypy/tox-0303.ini",
+                    "./docker/packnsend run tox -c tests/framework_cherrypy/tox-0304.ini",
+                    "./docker/packnsend run tox -c tests/framework_cherrypy/tox-0305.ini",
+                    "./docker/packnsend run tox -c tests/framework_cherrypy/tox-0306.ini"
+                ]
+            },
+            {
+                "name": "framework_django",
+                "description": "Python agent tests for Django web framework.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/framework_django/tox-0106.ini",
+                    "./docker/packnsend run tox -c tests/framework_django/tox-0105.ini",
+                    "./docker/packnsend run tox -c tests/framework_django/tox-0104.ini",
+                    "./docker/packnsend run tox -c tests/framework_django/tox-0103.ini",
+                    "./docker/packnsend run tox -c tests/framework_django/tox-0107.ini",
+                    "./docker/packnsend run tox -c tests/framework_django/tox-0108.ini",
+                    "./docker/packnsend run tox -c tests/framework_django/tox-0109.ini",
+                    "./docker/packnsend run tox -c tests/framework_django/tox-0110-old-middleware.ini",
+                    "./docker/packnsend run tox -c tests/framework_django/tox-0110-new-middleware.ini"
+                ]
+            },
+            {
+                "name": "component_djangorestframework",
+                "description": "Python agent tests for Django REST Framework for the Django web framework.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/component_djangorestframework/tox.ini"
+                ]
+            },
+            {
+                "name": "framework_flask",
+                "description": "Python agent tests for Flask web framework.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/framework_flask/tox-0010.ini",
+                    "./docker/packnsend run tox -c tests/framework_flask/tox-0009.ini",
+                    "./docker/packnsend run tox -c tests/framework_flask/tox-0008.ini",
+                    "./docker/packnsend run tox -c tests/framework_flask/tox-0007.ini",
+                    "./docker/packnsend run tox -c tests/framework_flask/tox-0006.ini"
+                ]
+            },
+            {
+                "name": "framework_pyramid",
+                "description": "Python agent tests for Pyramid web framework.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/framework_pyramid/tox-0104.ini",
+                    "./docker/packnsend run tox -c tests/framework_pyramid/tox-0103.ini"
+                ]
+            },
+            {
+                "name": "component_cornice",
+                "description": "Python agent tests for cornice component for the Pyramid web framework.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/component_cornice/tox-0016.ini"
+                ]
+            },
+            {
+                "name": "framework_tornado",
+                "description": "Python agent tests for Tornado web framework.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/framework_tornado/tox-0204.ini",
+                    "./docker/packnsend run tox -c tests/framework_tornado/tox-0300.ini",
+                    "./docker/packnsend run tox -c tests/framework_tornado/tox-0301.ini",
+                    "./docker/packnsend run tox -c tests/framework_tornado/tox-0302.ini"
+                ]
+            },
+            {
+                "name": "framework_web2py",
+                "description": "Python agent tests for Web2Py web framework.",
+                "commands": [
+                    "./docker/packnsend run tox -c tests/framework_web2py/tox-01098.ini"
+                ]
+            }
+        ]
+    }
+}

@@ -995,7 +995,7 @@ class Transaction(object):
             # Originally we used module.class but that was
             # inconsistent with everything else which used
             # module:name. So changed to use ':' as separator, but
-            # for backward compatability need to support '.' as
+            # for backward compatibility need to support '.' as
             # separator for time being. Check that with the ':'
             # last as we will use that name as the exception type.
 

@@ -17,7 +17,6 @@ class TestRulesEngine(unittest.TestCase):
 
         self.test_url = "/wallabies/ArticleDetails/tabid/1515/ArticleID/3773/Default.aspx"
 
-
     def test_rules_engine_should_initialize_with_multiple_rules(self):
         rule0 = self.rule
         rule1 = dict(match_expression = u"/something else/",
@@ -234,6 +233,52 @@ class TestRulesEngine(unittest.TestCase):
 
         self.assertEqual((u"/*/*/account/*/application", False),
                 rules_engine.normalize(u"/oh/dude/account/myacc/application"))
+
+    def test_match_does_not_change(self):
+        rule1 = dict(
+                match_expression = u'kangaroo',
+                replacement = u'kangaroo',
+                ignore = False,
+                eval_order = 0,
+                terminate_chain = True,
+                each_segment = False,
+                replace_all = True)
+        rule2 = dict(
+                match_expression = u'kangaroo',
+                replacement = u'rabbit',
+                ignore = False,
+                eval_order = 1,
+                terminate_chain = True,
+                each_segment = False,
+                replace_all = True)
+
+        rules_engine = RulesEngine([rule2, rule1])
+        self.assertEqual(
+                (u'kangaroo', False),
+                rules_engine.normalize(u'kangaroo'))
+
+    def test_segment_match_does_not_change(self):
+        rule1 = dict(
+                match_expression = u'kangaroo',
+                replacement = u'kangaroo',
+                ignore = False,
+                eval_order = 0,
+                terminate_chain = True,
+                each_segment = True,
+                replace_all = True)
+        rule2 = dict(
+                match_expression = u'kangaroo',
+                replacement = u'rabbit',
+                ignore = False,
+                eval_order = 1,
+                terminate_chain = True,
+                each_segment = True,
+                replace_all = True)
+
+        rules_engine = RulesEngine([rule2, rule1])
+        self.assertEqual(
+                (u'/kangaroo/kangaroo', False),
+                rules_engine.normalize(u'/kangaroo/kangaroo'))
 
 if __name__ == "__main__":
     unittest.main()

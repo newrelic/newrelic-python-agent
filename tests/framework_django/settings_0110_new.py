@@ -95,15 +95,16 @@ TEMPLATE_LOADERS = (
 #     'django.template.loaders.eggs.Loader',
 )
 
-MIDDLEWARE_CLASSES = (
-    'django.middleware.common.CommonMiddleware',
+# Default value created by `django-admin startproject`
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    # Uncomment the next line for simple clickjacking protection:
-    # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
-)
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
 
 ROOT_URLCONF = 'urls'
 
@@ -117,7 +118,7 @@ TEMPLATE_DIRS = (
     [os.path.join(BASE_DIR, 'templates')]
 )
 
-# For Django 1.10 compatibility because TEMPLATE_DIRS is deprecated
+# For Django 1.10 compatability because TEMPLATE_DIRS is deprecated
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',

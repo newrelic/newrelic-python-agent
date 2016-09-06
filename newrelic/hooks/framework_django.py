@@ -648,7 +648,16 @@ def instrument_django_core_urlresolvers(module):
     # Wrap function for performing reverse URL lookup to strip any
     # instrumentation wrapper when view handler is passed in.
 
-    module.reverse = wrap_url_reverse(module.reverse)
+    if hasattr(module, 'reverse'):
+        module.reverse = wrap_url_reverse(module.reverse)
+
+def instrument_django_urls_base(module):
+
+    # Wrap function for performing reverse URL lookup to strip any
+    # instrumentation wrapper when view handler is passed in.
+
+    if hasattr(module, 'reverse'):
+        module.reverse = wrap_url_reverse(module.reverse)
 
 def instrument_django_template(module):
 
@@ -1108,3 +1117,36 @@ def instrument_django_template_base(module):
 
             wrap_function_wrapper(module, 'Library.inclusion_tag',
                 _nr_wrapper_django_template_base_Library_inclusion_tag_)
+
+def _nr_wrap_converted_middleware_(middleware, name):
+
+    @function_wrapper
+    def _wrapper(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+
+        if transaction is None:
+            return wrapped(*args, **kwargs)
+
+        transaction.set_transaction_name(name, priority=2)
+
+        with FunctionTrace(transaction, name=name):
+            return wrapped(*args, **kwargs)
+
+    return _wrapper(middleware)
+
+def _nr_wrapper_convert_exception_to_response_(wrapped, instance, args, kwargs):
+
+    def _bind_params(original_middleware, *args, **kwargs):
+        return original_middleware
+
+    original_middleware = _bind_params(*args, **kwargs)
+    converted_middleware = wrapped(*args, **kwargs)
+    name = callable_name(original_middleware)
+
+    return _nr_wrap_converted_middleware_(converted_middleware, name)
+
+def instrument_django_core_handlers_exception(module):
+
+    if hasattr(module, 'convert_exception_to_response'):
+        wrap_function_wrapper(module, 'convert_exception_to_response',
+                _nr_wrapper_convert_exception_to_response_)

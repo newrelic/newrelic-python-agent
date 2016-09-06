@@ -22,4 +22,4 @@ RUN ln -s /usr/bin/python2.7 /usr/bin/python
 RUN wget https://bootstrap.pypa.io/get-pip.py
 RUN python3 get-pip.py
 
-RUN pip install twine
+RUN pip install twine awscli

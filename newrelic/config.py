@@ -1877,6 +1877,17 @@ def _process_module_builtin_defaults():
             'newrelic.hooks.framework_django',
             'instrument_django_template_base')
 
+    # New modules in Django 1.10
+    _process_module_definition('django.urls.resolvers',
+            'newrelic.hooks.framework_django',
+            'instrument_django_core_urlresolvers')
+    _process_module_definition('django.urls.base',
+            'newrelic.hooks.framework_django',
+            'instrument_django_urls_base')
+    _process_module_definition('django.core.handlers.exception',
+            'newrelic.hooks.framework_django',
+            'instrument_django_core_handlers_exception')
+
     _process_module_definition('flask.app',
             'newrelic.hooks.framework_flask',
             'instrument_flask_app')
@@ -2430,6 +2441,10 @@ def _process_module_builtin_defaults():
     _process_module_definition('gearman.worker',
             'newrelic.hooks.application_gearman',
             'instrument_gearman_worker')
+
+    _process_module_definition('botocore.endpoint',
+            'newrelic.hooks.external_botocore',
+            'instrument_botocore_endpoint')
 
 def _process_module_entry_points():
     try:

@@ -40,5 +40,6 @@ license_data
 license_reviewer.py
 ascii-check.py
 PROCESS.md
+jenkins
 
 .tox

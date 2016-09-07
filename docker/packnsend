@@ -10,7 +10,6 @@ TEST_IMAGE_NAME=python-base
 
 TMPDIR=${TMPDIR:-/tmp}
 
-IMAGE_ID=""
 CONTAINER_ID=""
 
 APP_SERVICE_IMAGES="
@@ -39,7 +38,7 @@ cleanup_containers()
 
     echo "Removing test image."
 
-    test -n "$IMAGE_ID" && docker rmi $IMAGE_ID
+    test -n "$DATA_IMAGE_NAME" && docker rmi $DATA_IMAGE_NAME
 
     echo "Removing data directory."
 
@@ -133,7 +132,6 @@ create_docker_test_image()
 
     DATA_IMAGE_NAME="packnsend-`date '+%Y%m%d%H%M%S'`-$$"
     (cd $DATA_DIRECTORY && docker build --rm -t $DATA_IMAGE_NAME .)
-    IMAGE_ID=$(docker inspect --format='{{.Id}}' $DATA_IMAGE_NAME)
 }
 
 set_docker_env_vars()

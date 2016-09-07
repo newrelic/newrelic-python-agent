@@ -93,18 +93,16 @@ Jenkins Build Jobs
 
 Although the ``build.sh`` script can be run on a local development system,
 only tar balls produced by the Jenkins build jobs should ever be handed
-out to customers. The two relevant Jenkins build jobs are:
+out to customers.
 
-* https://pdx-hudson.datanerd.us/view/Python/job/Python_Agent-MASTER
+The jenkins job [build-and-archive-package][build-and-archive] is used to
+produce the tar ball for an official release and upload it to Artifactory. It
+currently only builds from the master branch.
 
-    This is used to produce the tar ball for an official release.
+For more details on the Jenkins jobs and configuration, see the [Jenkins README][readme].
 
-* https://pdx-hudson.datanerd.us/view/Python/job/Python_Agent-DEVELOP
-
-    This is used to produce the tar balls for development versions. These
-    are internal versions and would not normally be handed out to customers
-    except in approved circumstance where a customer is needed to test a
-    change before an official release can be made.
+[build-and-archive]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Deploy/job/build-and-archive-package/
+[readme]: jenkins/README.md
 
 Downloadable Releases
 ---------------------
@@ -234,17 +232,22 @@ when trying to compare branches.
         git push origin develop
         git push origin master
 
-    This action will also trigger the Jenkins ``Python_Agent-MASTER`` and
-``Python_Agent-DEVELOP`` jobs. If the automatic trigger does not work, then
-run the tests manually in [Jenkins][Jenkins].
+    This action will also trigger the Jenkins
+    [`oldstyle-tests-develop`][test-develop] and
+    [`oldstyle-tests-master`][test-master] jobs. If the automatic trigger does
+    not work, then run the tests manually in [Jenkins][Jenkins].
 
-[Jenkins]: https://pdx-hudson.datanerd.us/view/Python/
+[Jenkins]: https://python-agent-build.pdx.vm.datanerd.us
 
-    In addition, run the `Python_Agent-DOCKER-NEW` tests manually for the
-`master` branch. Click `Build with parameters` and set the branch to `master`.
+    In addition, run the [`_PYTHON-AGENT-DOCKER-TESTS_`][docker-tests] tests
+    manually for the `master` branch. Click `Build with parameters` and set the
+    branch to `master`.
 
-12. Check that ``Python_Agent-MASTER-TESTS`` in Jenkins runs and all tests
-pass okay.
+12. Check that the [`oldstyle-tests-develop`][test-develop] and [`oldstyle-tests-master`][test-master] jobs in Jenkins run and all tests pass okay.
+
+[test-develop]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/oldstyle-tests-develop/
+[test-master]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/oldstyle-tests-master/
+[docker-tests]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Tests/job/_PYTHON-AGENT-DOCKER-TESTS_/
 
 13. Tag the release in the ``master`` branch on the GIT repo with tag of
 the form ``vA.B.C`` and ``vA.B.C.D``, where ``D`` is now the build number. Push
@@ -269,8 +272,7 @@ the tags to Github master.
 
     This will build and upload the package to artifactory
 
-[build]: https://python-agent-build.pdx.vm.datanerd.us/view/All/job/build-and-archive-package-ORIGINAL/
-[master]: https://pdx-hudson.datanerd.us/view/Python/job/Python_Agent-MASTER/
+[build]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Deploy/job/build-and-archive-package/
 
 15. Check Artifactory upload
 
@@ -287,7 +289,17 @@ the tags to Github master.
     4. Push the build button
     5. Go to PyPI and check that the version uploaded. Validate that ``pip install`` of package into a virtual environment works and that a ``newrelic-admin validate-config`` test runs okay
 
-[deploy-pypi]: https://python-agent-build.pdx.vm.datanerd.us/view/All/job/deploy-to-pypi-ORIGINAL/
+[deploy-pypi]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Deploy/job/deploy-to-pypi/
+
+17. Upload from Artifactory to Amazon S3
+
+  1. Go back to Jenkins, and select the other project, [deploy-to-s3][deploy-s3]
+  2. From the menu on the left select "Build with Parameters"
+  3. From the drop down menu `S3_RELEASE_TYPE`, select "release". Type in the version number, including the build in the `AGENT_VERSION` box.
+  4. Push the build button
+  5. Make sure the job finishes successfully
+
+[deploy-s3]: https://python-agent-build.pdx.vm.datanerd.us/view/PY_Deploy/job/deploy-to-s3/
 
 17. Upload from Artifactory to the New Relic Download site.
 

@@ -1,4 +1,15 @@
 # List of tox files to ignore, jobs will be created, but they will be disabled
 # example: tests/framework_django/tox-0110.ini
 disable:
-    - tests/framework_django/tox-0110.ini
+    - tests/database_mysql/tox.ini
+    - tests/database_mysqldb/tox.ini
+    - tests/database_oursql/tox.ini
+    - tests/database_postgresql/tox.ini
+    - tests/database_proboscis/tox.ini
+    - tests/database_psycopg2/tox.ini
+    - tests/database_psycopg2cffi/tox.ini
+    - tests/database_psycopg2ct/tox.ini
+    - tests/database_pymssql/tox.ini
+    - tests/database_pymysql/tox.ini
+    - tests/database_sqlite/tox.ini
+    - tests/datastore_motor/tox.ini

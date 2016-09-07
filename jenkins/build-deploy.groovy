@@ -104,7 +104,8 @@ use(extensions) {
 
             wrappers {
                 credentialsBinding {
-                    string('ARTIFACTORY_PASSWORD', 'put the password here!')
+                    string('ARTIFACTORY_PASSWORD',
+                           'febb789c-eac3-4251-9428-b540d3f2a8b3')
                 }
             }
 

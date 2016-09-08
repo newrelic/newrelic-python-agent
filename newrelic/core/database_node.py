@@ -62,68 +62,7 @@ class DatabaseNode(_DatabaseNode):
     def formatted(self):
         return self.statement.formatted(self.sql_format)
 
-    def time_metrics_r1(self, stats, root, parent):
-        """Return a generator yielding the timed metrics for this
-        database node as well as all the child nodes.
-
-        """
-
-        yield TimeMetric(name='Database/all', scope='',
-                duration=self.duration, exclusive=self.exclusive)
-
-        if root.type == 'WebTransaction':
-            yield TimeMetric(name='Database/allWeb', scope='',
-                    duration=self.duration, exclusive=self.exclusive)
-        else:
-            yield TimeMetric(name='Database/allOther', scope='',
-                    duration=self.duration, exclusive=self.exclusive)
-
-        # FIXME The follow is what PHP agent was doing, but it may
-        # not sync up with what is now actually required. As example,
-        # the 'show' operation in PHP agent doesn't generate a full
-        # path with a table name, yet get_table() in SQL parser
-        # does appear to generate one. Also, the SQL parser has
-        # special cases for 'set', 'create' and 'call' as well.
-
-        operation = self.operation
-
-        if operation in ('select', 'update', 'insert', 'delete'):
-            target = self.target
-
-            if target:
-                name = 'Database/%s/%s' % (self.target, operation)
-
-                yield TimeMetric(name=name, scope='', duration=self.duration,
-                        exclusive=self.exclusive)
-
-                yield TimeMetric(name=name, scope=root.path,
-                    duration=self.duration, exclusive=self.exclusive)
-
-            name = 'Database/%s' % operation
-
-            yield TimeMetric(name=name, scope='', duration=self.duration,
-                    exclusive=self.exclusive)
-
-        elif operation in ('show',):
-            name = 'Database/%s' % operation
-
-            yield TimeMetric(name=name, scope='', duration=self.duration,
-                    exclusive=self.exclusive)
-
-            yield TimeMetric(name=name, scope=root.path,
-                    duration=self.duration, exclusive=self.exclusive)
-
-        else:
-            yield TimeMetric(name='Database/other', scope='',
-                    duration=self.duration, exclusive=self.exclusive)
-
-            yield TimeMetric(name='Database/other/sql', scope='',
-                    duration=self.duration, exclusive=self.exclusive)
-
-            yield TimeMetric(name='Database/other/sql', scope=root.path,
-                    duration=self.duration, exclusive=self.exclusive)
-
-    def time_metrics_r2(self, stats, root, parent):
+    def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
         database node as well as all the child nodes.
 
@@ -172,14 +111,6 @@ class DatabaseNode(_DatabaseNode):
         if not target:
             yield TimeMetric(name=name, scope=root.path,
                     duration=self.duration, exclusive=self.exclusive)
-
-    def time_metrics(self, stats, root, parent):
-        settings = global_settings()
-
-        if 'database.instrumentation.r1' in settings.feature_flag:
-            return self.time_metrics_r1(stats, root, parent)
-
-        return self.time_metrics_r2(stats, root, parent)
 
     def slow_sql_node(self, stats, root):
         settings = global_settings()

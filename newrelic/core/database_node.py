@@ -151,22 +151,11 @@ class DatabaseNode(_DatabaseNode):
         operation = self.operation or 'other'
         target = self.target
 
-        if 'database.instrumentation.r1' in settings.feature_flag:
-            if operation in ('select', 'update', 'insert', 'delete'):
-                if target:
-                    name = 'Database/%s/%s' % (target, operation)
-                else:
-                    name = 'Database/%s' % operation
-            elif operation in ('show',):
-                name = 'Database/%s' % operation
-            else:
-                name = 'Database/other/sql'
+        if target:
+            name = 'Datastore/statement/%s/%s/%s' % (product, target,
+                    operation)
         else:
-            if target:
-                name = 'Datastore/statement/%s/%s/%s' % (product, target,
-                        operation)
-            else:
-                name = 'Datastore/operation/%s/%s' % (product, operation)
+            name = 'Datastore/operation/%s/%s' % (product, operation)
 
         name = root.string_table.cache(name)
 

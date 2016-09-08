@@ -24,6 +24,10 @@ def register_database_client(dbapi2_module, database_name,
     dbapi2_module._nr_explain_query = explain_query
     dbapi2_module._nr_explain_stmts = explain_stmts
     dbapi2_module._nr_instance_name = instance_name
+    dbapi2_module._nr_datastore_instance_feature_flag = False
+
+def enable_datastore_instance_feature(dbapi2_module):
+    dbapi2_module._nr_datastore_instance_feature_flag = True
 
 class DatabaseTrace(TimeTrace):
 

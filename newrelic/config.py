@@ -55,7 +55,7 @@ _FEATURE_FLAGS = set([
     'tornado.instrumentation.r2',
     'tornado.instrumentation.r3',
     'django.instrumentation.inclusion-tags.r1',
-    'database.instrumentation.r2',
+    'datastore.instances.r1'
 ])
 
 # Names of configuration file and deployment environment. This

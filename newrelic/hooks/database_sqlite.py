@@ -73,7 +73,7 @@ class ConnectionFactory(DBAPI2ConnectionFactory):
 
     __connection_wrapper__ = ConnectionWrapper
 
-def instance_name(args, kwargs):
+def instance_info(args, kwargs):
     def _bind_params(database, *args, **kwargs):
         return database
 
@@ -83,7 +83,7 @@ def instance_name(args, kwargs):
 
 def instrument_sqlite3_dbapi2(module):
     register_database_client(module, 'SQLite', 'single',
-            instance_name=instance_name)
+            instance_info=instance_info)
 
     wrap_object(module, 'connect', ConnectionFactory, (module,))
 
@@ -97,6 +97,6 @@ def instrument_sqlite3(module):
 
     if not isinstance(module.connect, ConnectionFactory):
         register_database_client(module, 'SQLite',
-                instance_name=instance_name)
+                instance_info=instance_info)
 
         wrap_object(module, 'connect', ConnectionFactory, (module,))

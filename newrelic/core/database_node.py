@@ -47,8 +47,8 @@ class DatabaseNode(_DatabaseNode):
     @property
     def instance(self):
         if (self.connect_params and
-                self.dbapi2_module._nr_instance_name is not None):
-            return self.dbapi2_module._nr_instance_name(*self.connect_params)
+                self.dbapi2_module._nr_instance_info is not None):
+            return self.dbapi2_module._nr_instance_info(*self.connect_params)
 
     @property
     def operation(self):

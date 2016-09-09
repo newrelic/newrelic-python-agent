@@ -2,7 +2,7 @@ from newrelic.agent import (wrap_object, register_database_client)
 
 from .database_dbapi2 import ConnectionFactory
 
-def instance_name(args, kwargs):
+def instance_info(args, kwargs):
     host = kwargs.get('host')
     port = kwargs.get('port')
 
@@ -14,7 +14,7 @@ def instance_name(args, kwargs):
 def instrument_mysql_connector(module):
     register_database_client(module, database_name='MySQL',
             quoting_style='single+double', explain_query='explain',
-            explain_stmts=('select',), instance_name=instance_name)
+            explain_stmts=('select',), instance_info=instance_info)
 
     wrap_object(module, 'connect', ConnectionFactory, (module,))
 

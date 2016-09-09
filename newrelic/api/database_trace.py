@@ -11,7 +11,7 @@ _logger = logging.getLogger(__name__)
 
 def register_database_client(dbapi2_module, database_name,
         quoting_style='single', explain_query=None, explain_stmts=[],
-        instance_name=None):
+        instance_info=None):
 
     _logger.debug('Registering database client module %r where database '
             'is %r, quoting style is %r, explain query statement is %r and '
@@ -23,7 +23,7 @@ def register_database_client(dbapi2_module, database_name,
     dbapi2_module._nr_quoting_style = quoting_style
     dbapi2_module._nr_explain_query = explain_query
     dbapi2_module._nr_explain_stmts = explain_stmts
-    dbapi2_module._nr_instance_name = instance_name
+    dbapi2_module._nr_instance_info = instance_info
     dbapi2_module._nr_datastore_instance_feature_flag = False
 
 def enable_datastore_instance_feature(dbapi2_module):

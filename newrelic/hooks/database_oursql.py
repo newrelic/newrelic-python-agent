@@ -9,10 +9,10 @@ def instance_info(args, kwargs):
 
     host, port = _bind_params(*args, **kwargs)
 
-    if host in ('localhost', None):
-        return 'localhost'
+    host = host or 'localhost'
+    port = port or '3306'
 
-    return '%s:%s' % (host, port or '3306')
+    return (host, port)
 
 def instrument_oursql(module):
     register_database_client(module, database_name='MySQL',

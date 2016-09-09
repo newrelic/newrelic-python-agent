@@ -41,13 +41,10 @@ class ConnectionFactory(DBAPI2ConnectionFactory):
 def instance_info(args, kwargs):
     d = args and dict([x.split('=', 2) for x in args[0].split()]) or kwargs
 
-    host = d.get('host')
-    port = d.get('port')
+    host = d.get('host') or 'localhost'
+    port = d.get('port') or '5432'
 
-    if host in ('localhost', None):
-        return 'localhost'
-    
-    return '%s:%s' % (host, port or '5432')
+    return (host, port)
 
 def instrument_psycopg2(module):
     register_database_client(module, database_name='Postgres',

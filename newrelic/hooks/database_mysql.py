@@ -3,13 +3,10 @@ from newrelic.agent import (wrap_object, register_database_client)
 from .database_dbapi2 import ConnectionFactory
 
 def instance_info(args, kwargs):
-    host = kwargs.get('host')
-    port = kwargs.get('port')
+    host = kwargs.get('host') or 'localhost'
+    port = kwargs.get('port') or '3306'
 
-    if host in ('localhost', None):
-        return 'localhost'
-    
-    return '%s:%s' % (host, port or '3306')
+    return (host, port)
 
 def instrument_mysql_connector(module):
     register_database_client(module, database_name='MySQL',

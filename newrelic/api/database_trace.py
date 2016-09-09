@@ -31,7 +31,8 @@ class DatabaseTrace(TimeTrace):
 
     def __init__(self, transaction, sql, dbapi2_module=None,
                  connect_params=None, cursor_params=None,
-                 sql_parameters=None, execute_params=None):
+                 sql_parameters=None, execute_params=None,
+                 host=None, port_path_or_id=None, database_name=None):
 
         super(DatabaseTrace, self).__init__(transaction)
 
@@ -46,6 +47,9 @@ class DatabaseTrace(TimeTrace):
         self.cursor_params = cursor_params
         self.sql_parameters = sql_parameters
         self.execute_params = execute_params
+        self.host = host
+        self.port_path_or_id = port_path_or_id
+        self.database_name = database_name
 
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, dict(

@@ -1468,7 +1468,8 @@ def validate_database_trace_inputs(sql_parameters_type):
     def _validate_database_trace_inputs(wrapped, instance, args, kwargs):
         def _bind_params(transaction, sql, dbapi2_module=None,
                 connect_params=None, cursor_params=None, sql_parameters=None,
-                execute_params=None):
+                execute_params=None, host=None, port_path_or_id=None,
+                database_name=None):
             return (transaction, sql, dbapi2_module, connect_params,
                     cursor_params, sql_parameters, execute_params)
 

@@ -134,7 +134,10 @@ class DatabaseTrace(TimeTrace):
                 sql_format=self.sql_format, connect_params=self.connect_params,
                 cursor_params=self.cursor_params,
                 sql_parameters=self.sql_parameters,
-                execute_params=self.execute_params)
+                execute_params=self.execute_params,
+                host=self.host,
+                port_path_or_id=self.port_path_or_id,
+                database_name=self.database_name)
 
     def terminal_node(self):
         return True

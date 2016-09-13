@@ -3,8 +3,8 @@ from newrelic.agent import (wrap_object, register_database_client)
 from .database_dbapi2 import ConnectionFactory
 
 def instance_info(args, kwargs):
-    host = kwargs.get('host') or 'localhost'
-    port = kwargs.get('port') or '3306'
+    host = kwargs.get('host')
+    port = kwargs.get('port')
 
     return (host, port)
 

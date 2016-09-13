@@ -44,9 +44,6 @@ def instance_info(args, kwargs):
 
     host, port = _bind_params(*args, **kwargs)
 
-    host = host or 'localhost'
-    port = port or '3306'
-
     return (host, port)
 
 def instrument_mysqldb(module):

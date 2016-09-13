@@ -14,10 +14,9 @@ List<String> disabledList = yaml.load(readFileFromWorkspace('jenkins/test-pipeli
 
 def getPacknsendTests = {
     // Get list of lists. Each item represents a single test. For example:
-    // [framework_django_tox.ini__docker_test, tests/framework_django/tox.ini, true]
-    // Where the first item is the name of the test, the second is the path to
-    // the tox file relative to the job's workspace, and the third is if the
-    // test is disabled or not.
+    // [framework_django_tox.ini__docker_test, tests/framework_django/tox.ini]
+    // Where the first item is the name of the test and the second is the path
+    // to the tox file relative to the job's workspace.
     def packnsendTestsList = []
     new File("${WORKSPACE}/tests").eachDir() { dir ->
         String dirName = dir.getName()
@@ -25,9 +24,11 @@ def getPacknsendTests = {
             String toxName = toxFile.getName()
             String toxPath = "tests/${dirName}/${toxName}"
             String testName = "${dirName}_${toxName}_${testSuffix}"
-            String disable = toxPath in disabledList
-            def test = [testName, toxPath, disable]
-            packnsendTestsList.add(test)
+
+            if (!disabledList.contains(toxPath)) {
+                def test = [testName, toxPath]
+                packnsendTestsList.add(test)
+            }
         }
     }
     packnsendTestsList
@@ -74,7 +75,7 @@ use(extensions) {
     }
 
     // create all packnsend base tests
-    packnsendTests.each { testName, toxPath, disableTest ->
+    packnsendTests.each { testName, toxPath ->
         baseJob(testName) {
             label('py-ec2-linux')
             repo(repoFull)

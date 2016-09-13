@@ -37,22 +37,19 @@ class ConnectionFactory(DBAPI2ConnectionFactory):
 
     __connection_wrapper__ = ConnectionWrapper
 
-def instance_name(args, kwargs):
+def instance_info(args, kwargs):
     def _bind_params(host=None, user=None, passwd=None, db=None,
             port=None, *args, **kwargs):
         return host, port
 
     host, port = _bind_params(*args, **kwargs)
 
-    if host in ('localhost', None):
-        return 'localhost'
-
-    return '%s:%s' % (host, port or '3306')
+    return (host, port)
 
 def instrument_mysqldb(module):
     register_database_client(module, database_name='MySQL',
             quoting_style='single+double', explain_query='explain',
-            explain_stmts=('select',), instance_name=instance_name)
+            explain_stmts=('select',), instance_info=instance_info)
 
     wrap_object(module, 'connect', ConnectionFactory, (module,))
 

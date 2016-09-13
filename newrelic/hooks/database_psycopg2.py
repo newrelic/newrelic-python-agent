@@ -38,22 +38,19 @@ class ConnectionFactory(DBAPI2ConnectionFactory):
 
     __connection_wrapper__ = ConnectionWrapper
 
-def instance_name(args, kwargs):
+def instance_info(args, kwargs):
     d = args and dict([x.split('=', 2) for x in args[0].split()]) or kwargs
 
     host = d.get('host')
     port = d.get('port')
 
-    if host in ('localhost', None):
-        return 'localhost'
-    
-    return '%s:%s' % (host, port or '5432')
+    return (host, port)
 
 def instrument_psycopg2(module):
     register_database_client(module, database_name='Postgres',
             quoting_style='single', explain_query='explain',
             explain_stmts=('select', 'insert', 'update', 'delete'),
-            instance_name=instance_name)
+            instance_info=instance_info)
 
     wrap_object(module, 'connect', ConnectionFactory, (module,))
 

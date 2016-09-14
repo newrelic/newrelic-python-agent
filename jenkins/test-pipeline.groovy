@@ -69,6 +69,15 @@ use(extensions) {
                         disabled()
                     }
 
+                    wrappers {
+                        timeout {
+                            // abort if time is > 500% of the average of the
+                            // last 3 builds, or 60 minutes
+                            elastic(500, 3, 60)
+                            abortBuild()
+                        }
+                    }
+
                     parameters {
                         stringParam('GIT_REPOSITORY_BRANCH', 'develop',
                                     'Branch in git repository to run test against.')
@@ -100,6 +109,15 @@ use(extensions) {
             description('Run the old style tests (i.e. ./tests.sh)')
             logRotator { numToKeep(10) }
             blockOnJobs('.*-Reset-Nodes')
+
+            wrappers {
+                timeout {
+                    // abort if time is > 500% of the average of the
+                    // last 3 builds, or 60 minutes
+                    elastic(500, 3, 60)
+                    abortBuild()
+                }
+            }
 
             if (jobType == 'pullrequest') {
                 repositoryPR(repoFull)

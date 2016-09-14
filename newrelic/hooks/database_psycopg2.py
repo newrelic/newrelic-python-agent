@@ -41,8 +41,8 @@ class ConnectionFactory(DBAPI2ConnectionFactory):
 def instance_info(args, kwargs):
     d = args and dict([x.split('=', 2) for x in args[0].split()]) or kwargs
 
-    host = d.get('host')
-    port = d.get('port')
+    host = d.get('host') and str(d.get('host'))
+    port = d.get('port') and str(d.get('port'))
 
     return (host, port)
 

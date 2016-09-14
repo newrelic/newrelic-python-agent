@@ -21,7 +21,18 @@ def test_missing_host():
     output = instance_info(*args_kwargs)
     assert output == (None, '5555')
 
+def test_missing_host_and_port():
+    args_kwargs = (("nothing=here",), {})
+    output = instance_info(*args_kwargs)
+    assert output == (None, None)
+
+def test_malformed_arg():
+    args_kwargs = (("this_is_malformed",), {})
+    output = instance_info(*args_kwargs)
+    assert output == ('unknown', 'unknown')
+
 def test_str_in_port():
     args_kwargs = (("port=foobar",), {})
     output = instance_info(*args_kwargs)
     assert output == (None, 'foobar')
+

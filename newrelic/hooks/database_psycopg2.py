@@ -39,10 +39,13 @@ class ConnectionFactory(DBAPI2ConnectionFactory):
     __connection_wrapper__ = ConnectionWrapper
 
 def instance_info(args, kwargs):
-    d = args and dict([x.split('=', 2) for x in args[0].split()]) or kwargs
-
-    host = d.get('host')
-    port = d.get('port')
+    try:
+        d = args and dict([x.split('=', 2) for x in args[0].split()]) or kwargs
+    except Exception:
+        host, port = ('unknown', 'unknown')
+    else:
+        host = d.get('host') and str(d.get('host'))
+        port = d.get('port') and str(d.get('port'))
 
     return (host, port)
 

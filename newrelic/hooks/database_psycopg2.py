@@ -41,11 +41,11 @@ class ConnectionFactory(DBAPI2ConnectionFactory):
 def instance_info(args, kwargs):
     try:
         d = args and dict([x.split('=', 2) for x in args[0].split()]) or kwargs
-
-        host = d.get('host') and str(d.get('host'))
-        port = d.get('port') and str(d.get('port'))
     except Exception:
         host, port = ('unknown', 'unknown')
+    else:
+        host = d.get('host') and str(d.get('host'))
+        port = d.get('port') and str(d.get('port'))
 
     return (host, port)
 

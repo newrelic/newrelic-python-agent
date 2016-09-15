@@ -62,8 +62,9 @@ It is possible to disable a test by adding `"disable": "true"`.
 
 ## Jenkins Plugins
 We have installed the following plugins on our JaaS instance:
++ build-blocker-plugin
++ build-timeout
++ email-ext
 + envinject
 + jenkins-multijob-plugin
-+ email-ext
 + nodelabelparameter
-+ build-blocker-plugin

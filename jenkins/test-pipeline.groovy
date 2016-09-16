@@ -6,7 +6,7 @@ import newrelic.jenkins.extensions
 String organization = 'python-agent'
 String repoGHE = 'python_agent'
 String repoFull = "${organization}/${repoGHE}"
-String testSuffix = "__docker-test"
+String testSuffix = "__integration-test"
 String slackChannel = '#python-agent'
 
 def yaml = new Yaml()
@@ -39,9 +39,9 @@ use(extensions) {
     def packnsendTests = getPacknsendTests()
 
     view('PY_Tests', 'Test jobs',
-         "(_PYTHON-AGENT-DOCKER-TESTS_)|(.*${testSuffix})|(_UNIT-TESTS.*)")
+         "(_INTEGRATION-TESTS_)|(.*${testSuffix})|(_UNIT-TESTS.*)")
 
-    multiJob('_PYTHON-AGENT-DOCKER-TESTS_') {
+    multiJob('_INTEGRATION-TESTS_') {
         description('Perform full suite of tests on Python Agent')
         logRotator { numToKeep(10) }
         triggers { cron('H 10 * * *') }

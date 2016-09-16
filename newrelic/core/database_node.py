@@ -10,7 +10,8 @@ from newrelic.core.config import global_settings
 _SlowSqlNode = namedtuple('_SlowSqlNode',
         ['duration', 'path', 'request_uri', 'sql', 'sql_format',
         'metric', 'dbapi2_module', 'stack_trace', 'connect_params',
-        'cursor_params', 'sql_parameters', 'execute_params'])
+        'cursor_params', 'sql_parameters', 'execute_params',
+        'instance', 'database_name'])
 
 class SlowSqlNode(_SlowSqlNode):
 
@@ -153,7 +154,9 @@ class DatabaseNode(_DatabaseNode):
                 connect_params=self.connect_params,
                 cursor_params=self.cursor_params,
                 sql_parameters=self.sql_parameters,
-                execute_params=self.execute_params)
+                execute_params=self.execute_params,
+                instance=self.instance,
+                database_name=self.database_name)
 
     def trace_node(self, stats, root, connections):
         settings = global_settings()

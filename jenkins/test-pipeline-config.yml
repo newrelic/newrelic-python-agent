@@ -1,0 +1,37 @@
+# List of tox files to ignore
+# example: tests/framework_django/tox-0110.ini
+disable:
+    - tests/database_mysql/tox.ini
+    - tests/database_mysqldb/tox.ini
+    - tests/database_oursql/tox.ini
+    - tests/database_postgresql/tox.ini
+    - tests/database_proboscis/tox.ini
+    - tests/database_psycopg2/tox.ini
+    - tests/database_psycopg2cffi/tox.ini
+    - tests/database_psycopg2ct/tox.ini
+    - tests/database_pymssql/tox.ini
+    - tests/database_pymysql/tox.ini
+    - tests/database_sqlite/tox.ini
+    - tests/datastore_motor/tox-0004.ini
+    - tests/datastore_motor/tox-0005.ini
+    - tests/datastore_motor/tox.ini
+    - tests/external_awscli/tox.ini
+    - tests/external_requests/tox-0007.ini
+    - tests/external_requests/tox-0008.ini
+    - tests/external_requests/tox-0009.ini
+    - tests/external_requests/tox-0010.ini
+    - tests/external_requests/tox-0011.ini
+    - tests/external_requests/tox-0012.ini
+    - tests/external_requests/tox-0013.ini
+    - tests/external_requests/tox-0014.ini
+    - tests/external_urllib3/tox-0100.ini
+    - tests/external_urllib3/tox-0101.ini
+    - tests/external_urllib3/tox-0102.ini
+    - tests/external_urllib3/tox-0103.ini
+    - tests/external_urllib3/tox-0104.ini
+    - tests/external_urllib3/tox-0105.ini
+    - tests/framework_tornado/tox-0400.ini
+    - tests/memcache_memcache/tox.ini
+    - tests/nosql_pymongo/tox.ini
+    - tests/nosql_redis/tox.ini
+    - tests/testing_support/tox.ini

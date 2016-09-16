@@ -39,7 +39,7 @@ use(extensions) {
     def packnsendTests = getPacknsendTests()
 
     view('PY_Tests', 'Test jobs',
-         "(_PYTHON-AGENT-DOCKER-TESTS_)|(.*${testSuffix})|(oldstyle.*)")
+         "(_PYTHON-AGENT-DOCKER-TESTS_)|(.*${testSuffix})|(_UNIT-TESTS.*)")
 
     multiJob('_PYTHON-AGENT-DOCKER-TESTS_') {
         description('Perform full suite of tests on Python Agent')
@@ -118,7 +118,7 @@ use(extensions) {
     }
 
     ['develop', 'master', 'pullrequest'].each { jobType ->
-        jaasBaseJob("oldstyle-tests-${jobType}") {
+        jaasBaseJob("_UNIT-TESTS-${jobType}") {
             label('py-ec2-linux')
             description('Run the old style tests (i.e. ./tests.sh)')
             logRotator { numToKeep(10) }

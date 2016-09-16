@@ -142,6 +142,7 @@ use(extensions) {
                         useGitHubHooks()
                     }
                 }
+                concurrentBuild true
             }
             else {
                 repository(repoFull, jobType)

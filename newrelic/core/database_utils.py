@@ -453,7 +453,7 @@ _obfuscate_explain_plan_table = {
 }
 
 def _obfuscate_explain_plan(database, columns, rows):
-    obfuscator = _obfuscate_explain_plan_table.get(database.name)
+    obfuscator = _obfuscate_explain_plan_table.get(database.product)
     if obfuscator:
         return obfuscator(columns, rows)
     return columns, rows
@@ -699,8 +699,8 @@ class SQLDatabase(object):
         return getattr(self.dbapi2_module, name)
 
     @property
-    def name(self):
-        return getattr(self.dbapi2_module, '_nr_database_name', None)
+    def product(self):
+        return getattr(self.dbapi2_module, '_nr_database_product', None)
 
     @property
     def client(self):

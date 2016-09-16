@@ -800,7 +800,7 @@ SQL_NORMALIZE_TESTS = [
 ]
 
 class DummySQLDatabase(object):
-    database_name = 'Postgres'
+    database_product = 'Postgres'
     quoting_style = 'single'
     explain_query = None
     explain_stmts = ()

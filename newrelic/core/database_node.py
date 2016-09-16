@@ -42,7 +42,7 @@ class DatabaseNode(_DatabaseNode):
 
     @property
     def product(self):
-        return self.dbapi2_module._nr_database_name
+        return self.dbapi2_module._nr_database_product
 
     @property
     def instance(self):

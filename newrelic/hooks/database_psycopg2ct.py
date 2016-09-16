@@ -4,7 +4,7 @@ from .database_dbapi2 import ConnectionFactory
 from .database_psycopg2 import instance_info, instrument_psycopg2_extensions
 
 def instrument_psycopg2ct(module):
-    register_database_client(module, database_name='Postgres',
+    register_database_client(module, database_product='Postgres',
             quoting_style='single', explain_query='explain',
             explain_stmts=('select', 'insert', 'update', 'delete'),
             instance_info=instance_info)

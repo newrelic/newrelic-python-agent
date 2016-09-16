@@ -30,6 +30,7 @@ disable:
     - tests/external_urllib3/tox-0103.ini
     - tests/external_urllib3/tox-0104.ini
     - tests/external_urllib3/tox-0105.ini
+    - tests/framework_tornado/tox-0400.ini
     - tests/memcache_memcache/tox.ini
     - tests/nosql_pymongo/tox.ini
     - tests/nosql_redis/tox.ini

@@ -9,7 +9,8 @@ import pytest
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_database_trace_inputs, validate_transaction_errors,
     validate_transaction_slow_sql_count,
-    validate_stats_engine_explain_plan_output_is_none)
+    validate_stats_engine_explain_plan_output_is_none,
+    validate_slow_sql_collector_json)
 
 from testing_support.settings import (postgresql_settings,
         postgresql_multiple_settings)
@@ -381,3 +382,26 @@ def test_multiple_databases():
             password=postgresql2['password'], host=postgresql2['host'],
             port=postgresql2['port']) as connection:
         pass
+
+slow_sql_json_required = set()
+slow_sql_json_forgone = set()
+if 'datastore.instances.r1' in settings.feature_flag:
+    # instance/database_name should be reported
+    slow_sql_json_required.add('instance')
+    slow_sql_json_required.add('database_name')
+else:
+    # instance/database_name should not be reported
+    slow_sql_json_forgone.add('instance')
+    slow_sql_json_forgone.add('database_name')
+@validate_slow_sql_collector_json(required_params=slow_sql_json_required,
+        forgone_params=slow_sql_json_forgone)
+@background_task()
+def test_slow_sql_json():
+    with psycopg2.connect(
+            database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
+            password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
+            port=DB_SETTINGS['port']) as connection:
+        cursor = connection.cursor()
+        cursor.execute("""SELECT setting from pg_settings where name=%s""",
+                ('server_version',))
+

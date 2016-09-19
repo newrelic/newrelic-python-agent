@@ -2,6 +2,8 @@ from newrelic.agent import (wrap_object, ObjectProxy, wrap_function_wrapper,
         register_database_client, FunctionTrace, callable_name,
         DatabaseTrace, current_transaction)
 
+from newrelic.api.database_trace import enable_datastore_instance_feature
+
 from .database_dbapi2 import (ConnectionWrapper as DBAPI2ConnectionWrapper,
         ConnectionFactory as DBAPI2ConnectionFactory)
 
@@ -27,11 +29,11 @@ class ConnectionWrapper(DBAPI2ConnectionWrapper):
         with FunctionTrace(transaction, name):
             if exc is None:
                 with DatabaseTrace(transaction, 'COMMIT',
-                        self._nr_dbapi2_module):
+                        self._nr_dbapi2_module, self._nr_connect_params):
                     return self.__wrapped__.__exit__(exc, value, tb)
             else:
                 with DatabaseTrace(transaction, 'ROLLBACK',
-                        self._nr_dbapi2_module):
+                        self._nr_dbapi2_module, self._nr_connect_params):
                     return self.__wrapped__.__exit__(exc, value, tb)
 
 class ConnectionFactory(DBAPI2ConnectionFactory):
@@ -54,6 +56,8 @@ def instrument_psycopg2(module):
             quoting_style='single', explain_query='explain',
             explain_stmts=('select', 'insert', 'update', 'delete'),
             instance_info=instance_info)
+
+    enable_datastore_instance_feature(module)
 
     wrap_object(module, 'connect', ConnectionFactory, (module,))
 

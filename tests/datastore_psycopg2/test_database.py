@@ -13,9 +13,10 @@ from testing_support.fixtures import (validate_transaction_metrics,
 
 from testing_support.settings import postgresql_settings
 
-from newrelic.agent import background_task
+from newrelic.agent import background_task, global_settings
 
 DB_SETTINGS = postgresql_settings()
+settings = global_settings()
 
 def _to_int(version_str):
     m = re.match(r'\d+', version_str)
@@ -81,6 +82,16 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/operation/Postgres/call', 2),
         ('Datastore/operation/Postgres/commit', 3),
         ('Datastore/operation/Postgres/rollback', 1)]
+
+# The feature flags are expected to be bound and set
+# through env vars at the time the test is imported
+if 'datastore.instances.r1' in settings.feature_flag:
+    _test_execute_via_cursor_scoped_metrics.append(
+            ('Datastore/instance/Postgres/%s:{%s}' % (
+            DB_SETTINGS['host'], DB_SETTINGS['port']), 12))
+    _test_execute_via_cursor_rollup_metrics.append(
+            ('Datastore/instance/Postgres/%s:{%s}' % (
+            DB_SETTINGS['host'], DB_SETTINGS['port']), 12))
 
 @validate_transaction_metrics('test_database:test_execute_via_cursor',
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
@@ -185,6 +196,16 @@ _test_rollback_on_exception_rollup_metrics = [
         ('Datastore/Postgres/allOther', 2),
         ('Datastore/operation/Postgres/rollback', 1)]
 
+# The feature flags are expected to be bound and set
+# through env vars at the time the test is imported
+if 'datastore.instances.r1' in settings.feature_flag:
+    _test_rollback_on_exception_scoped_metrics.append(
+            ('Datastore/instance/Postgres/%s:{%s}' % (
+            DB_SETTINGS['host'], DB_SETTINGS['port']), 1))
+    _test_rollback_on_exception_rollup_metrics.append(
+            ('Datastore/instance/Postgres/%s:{%s}' % (
+            DB_SETTINGS['host'], DB_SETTINGS['port']), 1))
+
 @validate_transaction_metrics('test_database:test_rollback_on_exception',
         scoped_metrics=_test_rollback_on_exception_scoped_metrics,
         rollup_metrics=_test_rollback_on_exception_rollup_metrics,
@@ -220,6 +241,16 @@ _test_async_mode_rollup_metrics = [
         ('Datastore/statement/Postgres/datastore_psycopg2/insert', 1),
         ('Datastore/operation/Postgres/drop', 1),
         ('Datastore/operation/Postgres/create', 1)]
+
+# The feature flags are expected to be bound and set
+# through env vars at the time the test is imported
+if 'datastore.instances.r1' in settings.feature_flag:
+    _test_async_mode_scoped_metrics.append(
+            ('Datastore/instance/Postgres/%s:{%s}' % 
+            (DB_SETTINGS['host'], DB_SETTINGS['port']), 4))
+    _test_async_mode_rollup_metrics.append(
+            ('Datastore/instance/Postgres/%s:{%s}' % (
+            DB_SETTINGS['host'], DB_SETTINGS['port']), 4))
 
 @validate_stats_engine_explain_plan_output_is_none()
 @validate_transaction_slow_sql_count(num_slow_sql=4)
@@ -310,3 +341,4 @@ def test_register_range():
                 psycopg2.extras.NumericRange, cursor)
 
         cursor.execute("DROP TYPE if exists floatrange")
+

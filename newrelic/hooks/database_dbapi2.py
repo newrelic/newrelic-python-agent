@@ -45,7 +45,7 @@ class CursorWrapper(ObjectProxy):
     def callproc(self, procname, parameters=DEFAULT):
         transaction = current_transaction()
         with DatabaseTrace(transaction, 'CALL %s' % procname,
-                self._nr_dbapi2_module):
+                self._nr_dbapi2_module, self._nr_connect_params):
             if parameters is not DEFAULT:
                 return self.__wrapped__.callproc(procname, parameters)
             else:
@@ -67,12 +67,14 @@ class ConnectionWrapper(ObjectProxy):
 
     def commit(self):
         transaction = current_transaction()
-        with DatabaseTrace(transaction, 'COMMIT', self._nr_dbapi2_module):
+        with DatabaseTrace(transaction, 'COMMIT', self._nr_dbapi2_module,
+                self._nr_connect_params):
             return self.__wrapped__.commit()
 
     def rollback(self):
         transaction = current_transaction()
-        with DatabaseTrace(transaction, 'ROLLBACK', self._nr_dbapi2_module):
+        with DatabaseTrace(transaction, 'ROLLBACK', self._nr_dbapi2_module,
+                self._nr_connect_params):
             return self.__wrapped__.rollback()
 
 class ConnectionFactory(ObjectProxy):

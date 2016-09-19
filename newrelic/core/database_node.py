@@ -46,9 +46,7 @@ class DatabaseNode(_DatabaseNode):
 
     @property
     def instance(self):
-        if (self.connect_params and
-                self.dbapi2_module._nr_instance_info is not None):
-            return self.dbapi2_module._nr_instance_info(*self.connect_params)
+        return "%s:{%s}" % (self.host, self.port_path_or_id)
 
     @property
     def operation(self):
@@ -109,6 +107,19 @@ class DatabaseNode(_DatabaseNode):
                 exclusive=self.exclusive)
 
         if not target:
+            yield TimeMetric(name=name, scope=root.path,
+                    duration=self.duration, exclusive=self.exclusive)
+
+        # Instance Metrics
+        settings = global_settings()
+        if (self.dbapi2_module and
+                self.dbapi2_module._nr_datastore_instance_feature_flag and
+                'datastore.instances.r1' in settings.feature_flag):
+            name = 'Datastore/instance/%s/%s' % (product, self.instance)
+
+            yield TimeMetric(name=name, scope='', duration=self.duration,
+                    exclusive=self.exclusive)
+
             yield TimeMetric(name=name, scope=root.path,
                     duration=self.duration, exclusive=self.exclusive)
 

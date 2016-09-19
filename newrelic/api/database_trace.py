@@ -86,10 +86,20 @@ class DatabaseTrace(TimeTrace):
         cursor_params = None
         sql_parameters = None
         execute_params = None
+        host = None
+        port_path_or_id = None
 
         settings = transaction.settings
         tt = settings.transaction_tracer
         agent_limits = settings.agent_limits
+
+        if (self.dbapi2_module and
+                self.dbapi2_module._nr_datastore_instance_feature_flag and
+                'datastore.instances.r1' in settings.feature_flag):
+            if (self.connect_params and
+                    self.dbapi2_module._nr_instance_info is not None):
+                host, port_path_or_id = self.dbapi2_module._nr_instance_info(
+                        *self.connect_params)
 
         if (tt.enabled and settings.collect_traces and
                 tt.record_sql != 'off'):
@@ -129,6 +139,8 @@ class DatabaseTrace(TimeTrace):
         self.cursor_params = cursor_params
         self.sql_parameters = sql_parameters
         self.execute_params = execute_params
+        self.host = host
+        self.port_path_or_id = port_path_or_id
 
     def create_node(self):
         return DatabaseNode(dbapi2_module=self.dbapi2_module, sql=self.sql,

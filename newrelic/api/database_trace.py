@@ -88,6 +88,7 @@ class DatabaseTrace(TimeTrace):
         execute_params = None
         host = None
         port_path_or_id = None
+        database_name = None
 
         settings = transaction.settings
         tt = settings.transaction_tracer
@@ -98,8 +99,9 @@ class DatabaseTrace(TimeTrace):
                 'datastore.instances.r1' in settings.feature_flag):
             if (self.connect_params and
                     self.dbapi2_module._nr_instance_info is not None):
-                host, port_path_or_id, db = self.dbapi2_module._nr_instance_info(
+                instance_info = self.dbapi2_module._nr_instance_info(
                         *self.connect_params)
+                host, port_path_or_id, database_name = instance_info
 
         if (tt.enabled and settings.collect_traces and
                 tt.record_sql != 'off'):
@@ -141,6 +143,7 @@ class DatabaseTrace(TimeTrace):
         self.execute_params = execute_params
         self.host = host
         self.port_path_or_id = port_path_or_id
+        self.database_name = database_name
 
     def create_node(self):
         return DatabaseNode(dbapi2_module=self.dbapi2_module, sql=self.sql,

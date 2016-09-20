@@ -86,6 +86,7 @@ def instance_info(args, kwargs):
         if scheme == 'postgresql' or scheme == 'postgres':
             netloc_and_port = authority.split('@')[-1].strip()
             netloc_and_port = unquote(netloc_and_port)
+            db = path.lstrip('/') or None
             host, port = (netloc_and_port, None)
             # IPV6 always ends with ] if there's no port
             if not netloc_and_port.endswith(']'):
@@ -97,20 +98,24 @@ def instance_info(args, kwargs):
             d = dict(parse_qsl(query))
             host = d.get('host') or host or None
             port = d.get('port') or port
+            db = d.get('dbname') or db
         elif args:
             arg_qsl = '&'.join(arg_str.split())
             d = dict(parse_qsl(arg_qsl, strict_parsing=True))
             host = d.get('host')
             port = d.get('port')
+            db = d.get('dbname')
         else:
             host = kwargs.get('host')
             port = kwargs.get('port')
+            db = kwargs.get('database')
             host = host and str(host)
             port = port and str(port)
+            db = db and str(db)
     except Exception:
-        host, port = ('unknown', 'unknown')
+        host, port, db = ('unknown', 'unknown', 'unknown')
 
-    return (host, port)
+    return (host, port, db)
 
 def _add_defaults(parsed_host, parsed_port):
     if parsed_host is None:

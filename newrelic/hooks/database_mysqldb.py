@@ -40,11 +40,11 @@ class ConnectionFactory(DBAPI2ConnectionFactory):
 def instance_info(args, kwargs):
     def _bind_params(host=None, user=None, passwd=None, db=None,
             port=None, *args, **kwargs):
-        return host, port
+        return host, port, db
 
-    host, port = _bind_params(*args, **kwargs)
+    host, port, db = _bind_params(*args, **kwargs)
 
-    return (host, port)
+    return (host, port, db)
 
 def instrument_mysqldb(module):
     register_database_client(module, database_product='MySQL',

@@ -79,8 +79,9 @@ def instance_info(args, kwargs):
 
     database = _bind_params(*args, **kwargs)
     host = 'localhost'
+    port = None
 
-    return (host, database)
+    return (host, port, database)
 
 def instrument_sqlite3_dbapi2(module):
     register_database_client(module, 'SQLite', 'single',

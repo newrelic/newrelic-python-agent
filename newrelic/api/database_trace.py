@@ -98,7 +98,7 @@ class DatabaseTrace(TimeTrace):
                 'datastore.instances.r1' in settings.feature_flag):
             if (self.connect_params and
                     self.dbapi2_module._nr_instance_info is not None):
-                host, port_path_or_id = self.dbapi2_module._nr_instance_info(
+                host, port_path_or_id, db = self.dbapi2_module._nr_instance_info(
                         *self.connect_params)
 
         if (tt.enabled and settings.collect_traces and

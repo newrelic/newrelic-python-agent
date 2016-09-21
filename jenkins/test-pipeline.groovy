@@ -28,13 +28,13 @@ def getPacknsendTests = {
     // it does not exist, this value is an empty string.
 
     def packnsendTestsList = []
+    String composeName = 'docker-compose.yml'
     new File("${WORKSPACE}/tests").eachDir() { dir ->
         String dirName = dir.getName()
 
         // Determine if there is an available docker-compose environment
         String composePath = ""
-        dir.eachFileMatch(~/^docker-compose.yml$/) { composeFile ->
-            String composeName = composeFile.getName()
+        dir.eachFileMatch(composeName) { composeFile ->
             composePath = "tests/${dirName}/${composeName}"
         }
 

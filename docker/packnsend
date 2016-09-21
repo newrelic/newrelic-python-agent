@@ -347,6 +347,32 @@ create_docker_base_images()
     done
 }
 
+docker_compose_run()
+{
+    COMPOSE_FILE=${@:0:1}
+    CMD=${@:2}
+
+    echo
+    echo "Using docker-compose file: $COMPOSE_FILE"
+    echo "Staring containers and running command: $CMD"
+    echo
+
+    time docker-compose --file $COMPOSE_FILE run --rm packnsend $CMD
+
+    STATUS=$?
+}
+
+docker_compose_down()
+{
+    COMPOSE_FILE=${@:0:1}
+
+    echo
+    echo "Cleaning up..."
+    echo
+
+    docker-compose --file $COMPOSE_FILE down
+}
+
 create_docker_base_images_nocache()
 {
     IMAGE_LIST=${@:-$ALL_IMAGES}
@@ -506,9 +532,10 @@ print_usage()
     echo "`basename $0`: COMMAND [arg...]"
     echo
     echo "Run Commands:"
-    echo "    run            Run command on test container."
-    echo "    run -i         Run command interactively."
-    echo "    shell          Launch a shell on test container."
+    echo "    run                    Run command on test container."
+    echo "    run -i                 Run command interactively."
+    echo "    run -c [compose-file]  Run command using docker-compose."
+    echo "    shell                  Launch a shell on test container."
     echo
     echo "Management Commands:"
     echo
@@ -552,19 +579,30 @@ then
 fi
 
 COMMAND=$1
+OPTION=$2
 
 shift
 
 case "$COMMAND" in
     run)
-        create_work_directory
-        export_git_repository
-        create_remote_launchers
-        create_docker_file
-        create_docker_test_image
-        launch_remote_command "$@"
-        cleanup_containers
-        exit `expr $STATUS`
+        case "$OPTION" in
+            -c | --compose)
+                docker_compose_run ${@:2}
+                docker_compose_down ${@:2}
+                exit `expr $STATUS`
+                ;;
+
+            *)
+                create_work_directory
+                export_git_repository
+                create_remote_launchers
+                create_docker_file
+                create_docker_test_image
+                launch_remote_command "$@"
+                cleanup_containers
+                exit `expr $STATUS`
+                ;;
+        esac
         ;;
 
     shell)

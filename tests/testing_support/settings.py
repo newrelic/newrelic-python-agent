@@ -43,6 +43,37 @@ def postgresql_settings():
 
     return settings
 
+def postgresql_multiple_settings():
+    """Return a list of dicts of settings for connecting to postgresql.
+
+    Will return the correct settings, depending on which of the
+    three environments it is running in. It attempts to set variables
+    in the following order, where later environments override earlier
+    ones.
+
+        1. Local
+        2. Tddium
+        3. Test Docker container
+        4. Test docker-compose container
+
+    """
+
+    db1 = postgresql_settings()
+
+    # When not using docker-compose, return immediately
+
+    if not _e('COMPOSE', False):
+        return [db1]
+
+    db2 = db1.copy()
+
+    # Update hostnames based on docker-compose env vars
+
+    db1['host'] = _e('COMPOSE_POSTGRESQL_HOST_1', db1['host'])
+    db2['host'] = _e('COMPOSE_POSTGRESQL_HOST_2', db2['host'])
+
+    return [db1, db2]
+
 def mysql_settings():
     """Return a dict of settings for connecting to mysql.
 

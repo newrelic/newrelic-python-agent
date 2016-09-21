@@ -1,0 +1,15 @@
+# Base settings for docker-compose containers
+
+version: '2'
+services:
+  packnsend:
+    image: python-base
+    volumes:
+      - ..:/data
+    working_dir: /data
+    environment:
+      # indicate this container uses docker-compose
+      COMPOSE: "True"
+
+      # sets postgres hosts, database names, users, and passwords
+      PACKNSEND_DB_USER: python_agent

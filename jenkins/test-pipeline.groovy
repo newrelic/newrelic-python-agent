@@ -13,20 +13,38 @@ def yaml = new Yaml()
 List<String> disabledList = yaml.load(readFileFromWorkspace('jenkins/test-pipeline-config.yml')).disable
 
 def getPacknsendTests = {
+
     // Get list of lists. Each item represents a single test. For example:
-    // [framework_django_tox.ini__docker_test, tests/framework_django/tox.ini]
-    // Where the first item is the name of the test and the second is the path
-    // to the tox file relative to the job's workspace.
+    //
+    // [
+    //     framework_django_tox.ini__docker_test,
+    //     tests/framework_django/tox.ini,
+    //     tests/framework_django/docker-compose.yml,
+    // ]
+    //
+    // Where the first item is the name of the test. The second is the path to
+    // the tox file relative to the job's workspace. The third is the path to
+    // the docker-compose file relative to the job's workspace if it exists, if
+    // it does not exist, this value is an empty string.
+
     def packnsendTestsList = []
+    String composeName = 'docker-compose.yml'
     new File("${WORKSPACE}/tests").eachDir() { dir ->
         String dirName = dir.getName()
+
+        // Determine if there is an available docker-compose environment
+        String composePath = ""
+        dir.eachFileMatch(composeName) { composeFile ->
+            composePath = "tests/${dirName}/${composeName}"
+        }
+
         dir.eachFileMatch(~/^tox.*.ini$/) { toxFile ->
             String toxName = toxFile.getName()
             String toxPath = "tests/${dirName}/${toxName}"
             String testName = "${dirName}_${toxName}_${testSuffix}"
 
             if (!disabledList.contains(toxPath)) {
-                def test = [testName, toxPath]
+                def test = [testName, toxPath, composePath]
                 packnsendTestsList.add(test)
             }
         }
@@ -75,7 +93,7 @@ use(extensions) {
     }
 
     // create all packnsend base tests
-    packnsendTests.each { testName, toxPath ->
+    packnsendTests.each { testName, toxPath, composePath ->
         baseJob(testName) {
             label('py-ec2-linux')
             repo(repoFull)
@@ -111,7 +129,12 @@ use(extensions) {
                         env('DOCKER_HOST', 'unix:///var/run/docker.sock')
                     }
                     shell('./jenkins/prep_node_for_test.sh')
-                    shell("./docker/packnsend run tox -c ${toxPath}")
+
+                    if (composePath != "") {
+                        shell("./docker/packnsend run -c ${composePath} tox -c ${toxPath}")
+                    } else {
+                        shell("./docker/packnsend run tox -c ${toxPath}")
+                    }
                 }
             }
         }

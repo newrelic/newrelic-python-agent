@@ -1,5 +1,5 @@
 import pytest
-from newrelic.hooks.database_psycopg2 import instance_info
+from newrelic.hooks.database_psycopg2 import instance_info, _add_defaults
 
 def test_kwargs():
     connect_params = ((), {'database': 'foo', 'host': '1.2.3.4', 'port': 1234})
@@ -99,3 +99,31 @@ def test_bad_uri():
     connect_params = (("blah:///foo",), {})
     output = instance_info(*connect_params)
     assert output == ('unknown', 'unknown')
+
+_test_add_defaults = [
+
+    # TCP/IP
+
+    [('otherhost.com', '8888'), ('otherhost.com', '8888')],
+    [('otherhost.com', None), ('otherhost.com', '5432')],
+    [('localhost', '8888'), ('localhost', '8888')],
+    [('localhost', None), ('localhost', '5432')],
+    [('127.0.0.1', '8888'), ('127.0.0.1', '8888')],
+    [('127.0.0.1', None), ('127.0.0.1', '5432')],
+    [('::1', '8888'), ('::1', '8888')],
+    [('::1', None), ('::1', '5432')],
+
+    # Unix Domain Socket
+
+    [(None, None), ('localhost', 'default')],
+    [(None, '5432'), ('localhost', 'default')],
+    [(None, '8888'), ('localhost', 'default')],
+    [('/tmp', None), ('localhost', '/tmp/.s.PGSQL.5432')],
+    [('/tmp', '5432'), ('localhost', '/tmp/.s.PGSQL.5432')],
+    [('/tmp', '8888'), ('localhost', '/tmp/.s.PGSQL.8888')],
+]
+
+@pytest.mark.parametrize('host_port,expected', _test_add_defaults)
+def test_add_defaults(host_port, expected):
+    actual = _add_defaults(*host_port)
+    assert actual == expected

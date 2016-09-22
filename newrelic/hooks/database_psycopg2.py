@@ -112,6 +112,19 @@ def instance_info(args, kwargs):
 
     return (host, port)
 
+def _add_defaults(parsed_host, parsed_port):
+    if parsed_host is None:
+        host = 'localhost'
+        port = 'default'
+    elif parsed_host.startswith('/'):
+        host = 'localhost'
+        port = '%s/.s.PGSQL.%s' % (parsed_host, parsed_port or '5432')
+    else:
+        host = parsed_host
+        port = parsed_port or '5432'
+
+    return (host, port)
+
 def instrument_psycopg2(module):
     register_database_client(module, database_product='Postgres',
             quoting_style='single', explain_query='explain',

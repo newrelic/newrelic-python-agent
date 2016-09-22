@@ -90,6 +90,8 @@ def test_str_in_port_arg_str():
         ('bar', '1234', 'dbname')),
     ((('postgresql://%2Ftmp:1234',), {}),
         ('/tmp', '1234', None)),
+    ((('postgresql:///foo?dbname=bar',), {}),
+        (None, None, 'bar')),
 ])
 def test_uri(connect_params, expected):
     output = instance_info(*connect_params)

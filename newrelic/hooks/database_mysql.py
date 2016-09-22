@@ -9,7 +9,7 @@ def instance_info(args, kwargs):
     return (host, port)
 
 def instrument_mysql_connector(module):
-    register_database_client(module, database_name='MySQL',
+    register_database_client(module, database_product='MySQL',
             quoting_style='single+double', explain_query='explain',
             explain_stmts=('select',), instance_info=instance_info)
 

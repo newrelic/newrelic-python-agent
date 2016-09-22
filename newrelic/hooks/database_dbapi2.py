@@ -93,7 +93,7 @@ class ConnectionFactory(ObjectProxy):
         rollup = []
         rollup.append('Datastore/all')
         rollup.append('Datastore/%s/all' %
-                self._nr_dbapi2_module._nr_database_name)
+                self._nr_dbapi2_module._nr_database_product)
 
         with FunctionTrace(transaction, callable_name(self.__wrapped__),
                 terminal=True, rollup=rollup):

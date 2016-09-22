@@ -5,8 +5,9 @@ from .database_dbapi2 import ConnectionFactory
 def instance_info(args, kwargs):
     host = kwargs.get('host')
     port = kwargs.get('port')
+    db = kwargs.get('db')
 
-    return (host, port)
+    return (host, port, db)
 
 def instrument_mysql_connector(module):
     register_database_client(module, database_product='MySQL',

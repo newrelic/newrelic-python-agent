@@ -1026,6 +1026,11 @@ class StatsEngine(object):
             if explain_plan_data:
                 params['explain_plan'] = explain_plan_data
 
+            if (slow_sql_node.dbapi2_module._nr_datastore_instance_feature_flag and
+                    'datastore.instances.r1' in self.__settings.feature_flag):
+                params['instance'] = slow_sql_node.instance
+                params['database_name'] = slow_sql_node.database_name
+
             json_data = json_encode(params)
 
             level = self.__settings.agent_limits.data_compression_level

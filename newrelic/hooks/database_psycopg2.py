@@ -1,4 +1,3 @@
-import re
 from newrelic.agent import (wrap_object, ObjectProxy, wrap_function_wrapper,
         register_database_client, FunctionTrace, callable_name,
         DatabaseTrace, current_transaction)
@@ -16,6 +15,8 @@ try:
     from urlparse import parse_qsl
 except ImportError:
     from urllib.parse import parse_qsl
+
+from newrelic.packages.requests.packages.urllib3 import util as ul3_util
 
 class ConnectionWrapper(DBAPI2ConnectionWrapper):
 
@@ -50,50 +51,30 @@ class ConnectionFactory(DBAPI2ConnectionFactory):
 
     __connection_wrapper__ = ConnectionWrapper
 
-# This URI parsing is directly from RFC 3896 Appendix B
-# http://www.ietf.org/rfc/rfc3986.txt
-#
-# The reason for this RE is urlparse appears to be broken in some earlier
-# versions of Python 2.7 (2.7.3 for example).
-# Related Python bug: https://bugs.python.org/issue9374
-#
-# According to PGSQL, connect URIs are in the format of RFC 3896
-# See: https://www.postgresql.org/docs/9.5/static/libpq-connect.html#LIBPQ-CONNSTRING
-#
-URI_RE = re.compile(
-        r'^(?:(?P<scheme>[^:/?#]+):)?'
-        r'(?://(?P<authority>[^/?#]*))?'
-        r'(?P<path>[^?#]*)'
-        r'(?:\?(?P<query>[^#]*))?'
-        r'(?:#(?P<fragment>.*))?'
-)
-
 def instance_info(args, kwargs):
-    try:
-        arg_str = args and args[0] or ''
 
+    try:
         # Attempt URI parse
+        #
+        # According to PGSQL, connect URIs are in the format of RFC 3896
+        # https://www.postgresql.org/docs/9.5/static/libpq-connect.html
+
+        arg_str = args and args[0].strip() or ''
+        parsed_uri = ul3_util.parse_url(arg_str)
+
         scheme = ''
-        parsed_uri = URI_RE.match(arg_str)
         if parsed_uri:
-            uri_info = parsed_uri.groupdict()
-            scheme = uri_info['scheme'] or ''
-            authority = uri_info['authority'] or ''
-            path = uri_info['path'] or ''
-            query = uri_info['query'] or ''
+            scheme = parsed_uri.scheme or ''
+            path = parsed_uri.path or ''
+            query = parsed_uri.query or ''
+            port = parsed_uri.port
+            host = parsed_uri.hostname or ''
+            port = port and str(port)
 
         # if URI scheme is postgresql or postgres, parse as valid URI
         if scheme == 'postgresql' or scheme == 'postgres':
-            netloc_and_port = authority.split('@')[-1].strip()
-            netloc_and_port = unquote(netloc_and_port)
+            host = unquote(host)
             db = path.lstrip('/') or None
-            host, port = (netloc_and_port, None)
-            # IPV6 always ends with ] if there's no port
-            if not netloc_and_port.endswith(']'):
-                # rsplit handles both ipv6 and ipv4
-                host_port = netloc_and_port.rsplit(':', 1)
-                if len(host_port)==2:
-                    host, port = host_port
             # query params always override everything
             d = dict(parse_qsl(query))
             host = d.get('host') or host or None

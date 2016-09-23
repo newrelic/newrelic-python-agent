@@ -47,6 +47,13 @@ def _environ_as_bool(name, default=False):
             pass
     return flag
 
+def _lookup_string_table(name, string_table, default=None):
+    try:
+        index = int(name.lstrip('`'))
+        return string_table[index]
+    except ValueError:
+        return default
+
 _fake_collector_responses = {
     'get_redirect_host': u'fake-collector.newrelic.com',
 
@@ -814,7 +821,7 @@ def validate_synthetics_transaction_trace(required_params={},
     return _validate_synthetics_transaction_trace
 
 def validate_tt_collector_json(required_params={},
-        forgone_params={}, should_exist=True):
+        forgone_params={}, should_exist=True, datastore_params={}):
     '''make assertions based off the cross-agent spec on transaction traces'''
 
     @transient_function_wrapper('newrelic.core.stats_engine',
@@ -836,7 +843,8 @@ def validate_tt_collector_json(required_params={},
             assert isinstance(trace[0], (int, float)) # start time (ms)
             assert isinstance(trace[1], (int, float)) # duration (ms)
             assert isinstance(trace[2], six.string_types) # transaction name
-            assert isinstance(trace[3], six.string_types) # request url
+            if trace[2].startswith('WebTransaction'):
+                assert isinstance(trace[3], six.string_types) # request url
 
             # trace details -- python agent always uses condensed trace array
 
@@ -874,6 +882,20 @@ def validate_tt_collector_json(required_params={},
             assert isinstance(trace_segment[2], six.string_types) # scope
             assert isinstance(trace_segment[3], dict) # request params
             assert isinstance(trace_segment[4], list) # children
+
+            def _check_datastore_instance_params(node):
+                children = node[4]
+                for child in children:
+                    _check_datastore_instance_params(child)
+
+                segment_name = _lookup_string_table(node[2], string_table,
+                        default=node[2])
+                if segment_name.startswith('Datastore'):
+                    params = node[3]
+                    for key in datastore_params.keys():
+                        assert params[key] == datastore_params[key]
+
+            _check_datastore_instance_params(root_node)
 
             attributes = trace_details[4]
 

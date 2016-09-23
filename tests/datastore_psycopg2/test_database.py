@@ -10,7 +10,8 @@ from testing_support.fixtures import (validate_transaction_metrics,
     validate_database_trace_inputs, validate_transaction_errors,
     validate_transaction_slow_sql_count,
     validate_stats_engine_explain_plan_output_is_none,
-    validate_slow_sql_collector_json)
+    validate_slow_sql_collector_json,
+    validate_tt_collector_json, override_application_settings)
 
 from testing_support.settings import (postgresql_settings,
         postgresql_multiple_settings)
@@ -405,3 +406,19 @@ def test_slow_sql_json():
         cursor.execute("""SELECT setting from pg_settings where name=%s""",
                 ('server_version',))
 
+if 'datastore.instances.r1' in settings.feature_flag:
+    _test_trace_node_datastore_params = {
+        'instance': '%s:{%s}' % (DB_SETTINGS['host'], DB_SETTINGS['port']),
+        'database_name': DB_SETTINGS['name'],
+    }
+else:
+    _test_trace_node_datastore_params = {}
+
+@validate_tt_collector_json(datastore_params=_test_trace_node_datastore_params)
+@background_task()
+def test_trace_node_datastore_params():
+    with psycopg2.connect(
+            database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
+            password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
+            port=DB_SETTINGS['port']) as connection:
+        pass

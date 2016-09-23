@@ -349,7 +349,7 @@ create_docker_base_images()
 
 docker_compose_run()
 {
-    COMPOSE_FILE=${@:0:1}
+    COMPOSE_FILE=$(echo $@ | tr -s " " | cut -f1 -d" ")
     CMD=${@:2}
 
     echo
@@ -364,7 +364,7 @@ docker_compose_run()
 
 docker_compose_down()
 {
-    COMPOSE_FILE=${@:0:1}
+    COMPOSE_FILE=$(echo $@ | tr -s " " | cut -f1 -d" ")
 
     echo
     echo "Cleaning up..."

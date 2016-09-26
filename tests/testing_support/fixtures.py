@@ -821,7 +821,8 @@ def validate_synthetics_transaction_trace(required_params={},
     return _validate_synthetics_transaction_trace
 
 def validate_tt_collector_json(required_params={},
-        forgone_params={}, should_exist=True, datastore_params={}):
+        forgone_params={}, should_exist=True, datastore_params={},
+        datastore_forgone_params={}):
     '''make assertions based off the cross-agent spec on transaction traces'''
 
     @transient_function_wrapper('newrelic.core.stats_engine',
@@ -892,8 +893,10 @@ def validate_tt_collector_json(required_params={},
                         default=node[2])
                 if segment_name.startswith('Datastore'):
                     params = node[3]
-                    for key in datastore_params.keys():
+                    for key in datastore_params:
                         assert params[key] == datastore_params[key]
+                    for key in datastore_forgone_params:
+                        assert key not in params
 
             _check_datastore_instance_params(root_node)
 

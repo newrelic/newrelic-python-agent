@@ -51,6 +51,16 @@ def test_str_in_port_arg_str():
     output = instance_info(*connect_params)
     assert output == (None, 'foobar', None)
 
+def test_hostaddr_in_arg_str():
+    connect_params = (("host=foobar hostaddr=1.2.3.4",), {})
+    output = instance_info(*connect_params)
+    assert output == ('1.2.3.4', None, None)
+
+def test_hostaddr_in_kwarg():
+    connect_params = ((), {'host':'foobar', 'hostaddr':'1.2.3.4'})
+    output = instance_info(*connect_params)
+    assert output == ('1.2.3.4', None, None)
+
 @pytest.mark.parametrize('connect_params,expected', [
     ((('postgresql://',), {}),
         (None, None, None)),

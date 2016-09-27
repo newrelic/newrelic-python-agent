@@ -935,6 +935,12 @@
             "New Relic"
         ]
     },
+    "newrelic/core/tests/test_database_node.py": {
+        "hash": "n/a",
+        "libraries": [
+            "New Relic"
+        ]
+    },
     "newrelic/core/tests/test_database_utils.py": {
         "hash": "n/a",
         "libraries": [

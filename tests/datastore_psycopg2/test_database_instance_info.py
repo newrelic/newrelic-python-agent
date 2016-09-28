@@ -54,12 +54,12 @@ def test_str_in_port_arg_str():
 def test_host_and_hostaddr_in_arg_str():
     connect_params = (("host=foobar hostaddr=1.2.3.4",), {})
     output = instance_info(*connect_params)
-    assert output == ('foobar', None, None)
+    assert output == ('1.2.3.4', None, None)
 
 def test_host_and_hostaddr_in_kwarg():
     connect_params = ((), {'host':'foobar', 'hostaddr':'1.2.3.4'})
     output = instance_info(*connect_params)
-    assert output == ('foobar', None, None)
+    assert output == ('1.2.3.4', None, None)
 
 def test_only_hostaddr_in_kwarg():
     connect_params = ((), {'hostaddr':'1.2.3.4'})

@@ -1,3 +1,5 @@
+import os
+
 from newrelic.agent import (wrap_object, ObjectProxy, wrap_function_wrapper,
         register_database_client, FunctionTrace, callable_name,
         DatabaseTrace, current_transaction)
@@ -114,7 +116,14 @@ def instance_info(args, kwargs):
 
     return (host, port, db_name)
 
-def _add_defaults(parsed_host, parsed_port):
+def _add_defaults(parsed_host, parsed_port, parsed_database):
+
+    # ENV variables set the default values
+
+    parsed_host = parsed_host or os.environ.get('PGHOST')
+    parsed_port = parsed_port or os.environ.get('PGPORT')
+    database = parsed_database or os.environ.get('PGDATABASE')
+
     if parsed_host is None:
         host = 'localhost'
         port = 'default'
@@ -125,7 +134,7 @@ def _add_defaults(parsed_host, parsed_port):
         host = parsed_host
         port = parsed_port or '5432'
 
-    return (host, port)
+    return (host, port, database)
 
 def instrument_psycopg2(module):
     register_database_client(module, database_product='Postgres',

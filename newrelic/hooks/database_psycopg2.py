@@ -102,11 +102,11 @@ def instance_info(args, kwargs):
         elif args:
             arg_qsl = '&'.join(arg_str.split())
             d = dict(parse_qsl(arg_qsl, strict_parsing=True))
-            host = d.get('host') or d.get('hostaddr')
+            host = d.get('hostaddr') or d.get('host')
             port = d.get('port')
             db = d.get('dbname')
         else:
-            host = kwargs.get('host') or kwargs.get('hostaddr')
+            host = kwargs.get('hostaddr') or kwargs.get('host')
             port = kwargs.get('port')
             db = kwargs.get('database')
             host = host and str(host)

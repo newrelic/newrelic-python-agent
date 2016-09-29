@@ -116,8 +116,8 @@ create_docker_file()
     cat > $DATA_DIRECTORY/Dockerfile << EOF
 FROM $TEST_IMAGE_NAME
 ADD . /data
-RUN chown -R guest.users /data
-RUN chmod 0755 /data
+RUN chown -R guest.users /data && \
+    chmod 0755 /data
 USER guest
 ENV HOME /home/guest
 VOLUME /data

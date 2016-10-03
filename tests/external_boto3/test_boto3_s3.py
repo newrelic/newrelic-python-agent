@@ -8,8 +8,8 @@ from testing_support.fixtures import validate_transaction_metrics
 
 AWS_ACCESS_KEY_ID = 'AAAAAAAAAAAACCESSKEY'
 AWS_SECRET_ACCESS_KEY = 'AAAAAASECRETKEY'
+AWS_REGION_NAME = 'us-west-2'
 
-TEST_USER = 'python-agent-test-%s' % uuid.uuid4()
 TEST_BUCKET = 'python-agent-test-%s' % uuid.uuid4()
 
 _s3_scoped_metrics = [
@@ -39,6 +39,7 @@ def test_s3():
             's3',
             aws_access_key_id=AWS_ACCESS_KEY_ID,
             aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+            region_name=AWS_REGION_NAME,
     )
 
     # Create bucket

@@ -140,14 +140,6 @@ that they can plan to release the new documentation immediately after we release
     Getting to "final copy" on the documentation can take a bit of back and forth,
 so the earlier this step can be done, the better.
 
-2.  Schedule the release with the [CAB Tool](https://upboard.datanerd.us/changes).
-Ideally, this should be done at least a day in advance. The key pieces of information that
-you'll need to fill out the release form are:
-
-  1. Link to the release notes (draft version is OK.)
-  2. Risk level assessment (Low, Medium or High)
-  3. Brief description of feature(s) in release
-
 2.  Draft the release notes. These are
 hosted at: https://docs.newrelic.com/docs/release-notes/agent-release-notes/python-release-notes.
 

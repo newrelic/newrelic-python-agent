@@ -44,7 +44,7 @@ wait_for_ready() {
 
             if [[ $result -eq 0 ]]; then
                 end=$(date +"%s.%6N")
-                total_time=`python -c "print $end - $start"`
+                total_time=`python2.7 -c "print $end - $start"`
                 echo
                 echo "$HOST available after $total_time seconds"
                 break
@@ -59,7 +59,7 @@ wait_for_ready() {
         if [[ $result != 0 ]]
         then
             echo
-            echo "Timeout waiting for $HOST to be ready!"
+            echo "Unable to connect to $HOST after $TIMEOUT seconds!"
             exit $result
         fi
 

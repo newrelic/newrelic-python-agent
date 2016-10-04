@@ -12,8 +12,7 @@ from newrelic.packages import six
 from newrelic.agent import (initialize, register_application,
         global_settings, shutdown_agent, application as application_instance,
         transient_function_wrapper, function_wrapper, application_settings,
-        wrap_function_wrapper, ObjectProxy, application, callable_name,
-        get_browser_timing_footer)
+        wrap_function_wrapper, ObjectProxy, application, callable_name)
 
 from newrelic.common import certs
 from newrelic.common.encoding_utils import (unpack_field, json_encode,
@@ -25,8 +24,9 @@ from newrelic.core.database_utils import SQLConnections
 from newrelic.network.addresses import proxy_details
 from newrelic.packages import requests
 
-from newrelic.core.agent import agent_instance
-from newrelic.core.attribute_filter import AttributeFilter
+from newrelic.core.attribute_filter import (AttributeFilter, DST_ERROR_COLLECTOR,
+        DST_TRANSACTION_TRACER)
+from newrelic.core.attribute import create_attributes
 
 from testing_support.sample_applications import (user_attributes_added,
         error_user_params_added)
@@ -249,7 +249,7 @@ def collector_agent_registration_fixture(app_name=None, default_settings={},
         if not use_fake_collector and not use_developer_mode:
             try:
                 _logger.debug("Record deployment marker at %s" % url)
-                r = requests.post(url, proxies=proxies, headers=headers,
+                requests.post(url, proxies=proxies, headers=headers,
                         timeout=timeout, data=data, verify=cert_loc)
             except Exception:
                 _logger.exception("Unable to record deployment marker.")
@@ -573,7 +573,7 @@ def validate_synthetics_event(required_attrs=[], forgone_attrs=[],
                 flat_event = _flatten(event)
 
                 assert 'nr.guid' in flat_event, ('name=%r, event=%r' %
-                            (name, flat_event))
+                            ('nr.guid', flat_event))
 
                 for name, value in required_attrs:
                     assert name in flat_event, ('name=%r, event=%r' %
@@ -810,7 +810,7 @@ def validate_synthetics_transaction_trace(required_params={},
                         'intrinsics=%r' % (name, tt_intrinsics))
                 assert tt_intrinsics[name] == required_params[name], (
                         'name=%r, value=%r, intrinsics=%r' %
-                        (name, required_params[name], intrinsics))
+                        (name, required_params[name], tt_intrinsics))
 
             for name in forgone_params:
                 assert name not in tt_intrinsics, ('name=%r, '
@@ -1107,6 +1107,8 @@ def validate_error_trace_collector_json():
             for field in parameter_fields:
                 assert field in parameters
 
+        return result
+
     return _validate_error_trace_collector_json
 
 def validate_error_event_collector_json(num_errors=1):
@@ -1348,6 +1350,8 @@ def validate_error_event_attributes(required_params={}, forgone_params={}):
 
             check_event_attributes(event_data, required_params, forgone_params)
 
+        return result
+
     return _validate_error_event_attributes
 
 def validate_error_trace_attributes_outside_transaction(err_name,
@@ -1366,6 +1370,8 @@ def validate_error_trace_attributes_outside_transaction(err_name,
             check_error_attributes(target_error.parameters, required_params,
                     forgone_params, is_transaction=False)
 
+        return result
+
     return _validate_error_trace_attributes_outside_transaction
 
 def validate_error_event_attributes_outside_transaction(required_params={},
@@ -1383,6 +1389,8 @@ def validate_error_event_attributes_outside_transaction(required_params={},
             event_data = instance.error_events
 
             check_event_attributes(event_data, required_params, forgone_params)
+
+        return result
 
     return _validate_error_event_attributes_outside_transaction
 
@@ -1902,6 +1910,8 @@ def validate_custom_event_in_application_stats_engine(required_event):
             custom_event = stats.custom_events.samples[0]
             _validate_custom_event(custom_event, required_event)
 
+        return result
+
     return _validate_custom_event_in_application_stats_engine
 
 def validate_custom_event_count(count):
@@ -1914,6 +1924,8 @@ def validate_custom_event_count(count):
         else:
             stats = core_application_stats_engine(None)
             assert stats.custom_events.num_samples == count
+
+        return result
     return _validate_custom_event_count
 
 def override_application_name(app_name):

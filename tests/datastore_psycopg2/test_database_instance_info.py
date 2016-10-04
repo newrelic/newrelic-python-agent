@@ -11,6 +11,16 @@ def test_arg_str():
     output = instance_info(*connect_params)
     assert output == ('foobar', '9876', None)
 
+def test_bind_dsn():
+    connect_params = ((), {'dsn': 'host=foobar port=9876'})
+    output = instance_info(*connect_params)
+    assert output == ('foobar', '9876', None)
+
+def test_bind_dsn_ignore_kwargs():
+    connect_params = ((), {'dsn': "host=foobar", 'port': 1234})
+    output = instance_info(*connect_params)
+    assert output == ('foobar', None, None)
+
 def test_kwargs_str_for_port():
     connect_params = ((), {'database': 'foo', 'host': '1.2.3.4', 'port': '1234'})
     output = instance_info(*connect_params)

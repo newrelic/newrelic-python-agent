@@ -53,50 +53,66 @@ class ConnectionFactory(DBAPI2ConnectionFactory):
 
 def instance_info(args, kwargs):
 
+    def _bind_params(dsn=None, *args, **kwargs):
+        return dsn
+
+    dsn = _bind_params(*args, **kwargs)
+
     try:
-        # Attempt URI parse
-        #
-        # According to PGSQL, connect URIs are in the format of RFC 3896
-        # https://www.postgresql.org/docs/9.5/static/libpq-connect.html
+        if dsn and (dsn.startswith('postgres://')
+                or dsn.startswith('postgresql://')):
 
-        arg_str = args and args[0].strip() or ''
-        parsed_uri = ul3_util.parse_url(arg_str)
+            # Parse dsn as URI
+            #
+            # According to PGSQL, connect URIs are in the format of RFC 3896
+            # https://www.postgresql.org/docs/9.5/static/libpq-connect.html
 
-        scheme = ''
-        if parsed_uri:
-            scheme = parsed_uri.scheme or ''
-            path = parsed_uri.path or ''
-            query = parsed_uri.query or ''
+            parsed_uri = ul3_util.parse_url(dsn)
+
+            host = parsed_uri.hostname or None
+            host = host and unquote(host)
+
             port = parsed_uri.port
-            host = parsed_uri.hostname or ''
-            port = port and str(port)
 
-        # if URI scheme is postgresql or postgres, parse as valid URI
-        if scheme == 'postgresql' or scheme == 'postgres':
-            host = unquote(host)
-            db = path.lstrip('/') or None
-            # query params always override everything
-            d = dict(parse_qsl(query))
-            host = d.get('hostaddr') or d.get('host') or host or None
-            port = d.get('port') or port
-            db = d.get('dbname') or db
-        elif args:
-            arg_qsl = '&'.join(arg_str.split())
-            d = dict(parse_qsl(arg_qsl, strict_parsing=True))
-            host = d.get('hostaddr') or d.get('host')
-            port = d.get('port')
-            db = d.get('dbname')
+            db_name = parsed_uri.path
+            db_name = db_name and db_name.lstrip('/')
+            db_name = db_name or None
+
+            query = parsed_uri.query or ''
+            qp = dict(parse_qsl(query))
+
+            # Query parameters override hierarchical values in URI.
+
+            host = qp.get('hostaddr') or qp.get('host') or host or None
+            port = qp.get('port') or port
+            db_name = qp.get('dbname') or db_name
+
+        elif dsn:
+
+            # Parse dsn as a key-value connection string
+
+            kv = dict([pair.split('=', 2) for pair in dsn.split()])
+            host = kv.get('hostaddr') or kv.get('host')
+            port = kv.get('port')
+            db_name = kv.get('dbname')
+
         else:
+
+            # No dsn, so get the instance info from keyword arguments.
+
             host = kwargs.get('hostaddr') or kwargs.get('host')
             port = kwargs.get('port')
-            db = kwargs.get('database')
-            host = host and str(host)
-            port = port and str(port)
-            db = db and str(db)
-    except Exception:
-        host, port, db = ('unknown', 'unknown', 'unknown')
+            db_name = kwargs.get('database')
 
-    return (host, port, db)
+        # Ensure non-None values are strings.
+
+        (host, port, db_name) = [str(s) if s is not None else s
+                for s in (host, port, db_name)]
+
+    except Exception:
+        host, port, db_name = ('unknown', 'unknown', 'unknown')
+
+    return (host, port, db_name)
 
 def _add_defaults(parsed_host, parsed_port):
     if parsed_host is None:

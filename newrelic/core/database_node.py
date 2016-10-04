@@ -125,8 +125,6 @@ class DatabaseNode(_DatabaseNode):
                     duration=self.duration, exclusive=self.exclusive)
 
     def slow_sql_node(self, stats, root):
-        settings = global_settings()
-
         product = self.product
         operation = self.operation or 'other'
         target = self.target

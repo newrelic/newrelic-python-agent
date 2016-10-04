@@ -47,7 +47,7 @@ class DatabaseNode(_DatabaseNode):
 
     @property
     def instance(self):
-        return "%s:{%s}" % (self.host, self.port_path_or_id)
+        return "%s/%s" % (self.host, self.port_path_or_id)
 
     @property
     def operation(self):

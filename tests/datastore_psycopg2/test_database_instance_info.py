@@ -117,6 +117,22 @@ def test_uri(connect_params, expected):
     output = instance_info(*connect_params)
     assert output == expected
 
+@pytest.mark.parametrize('connect_params,expected', [
+    ((('postgresql://user:password@/?dbname=bar',), {}),
+        (None, None, 'bar')),
+    ((('postgresql://user:pass@host/?dbname=bar',), {}),
+        ('host', None, 'bar')),
+    ((('postgresql://user:password@@/?dbname=bar',), {}),
+        (None, None, 'bar')),
+    ((('postgresql://@',), {}),
+        (None, None, None)),
+    ((('postgresql://@@localhost',), {}),
+        ('localhost', None, None)),
+])
+def test_security_sensitive_uri(connect_params, expected):
+    output = instance_info(*connect_params)
+    assert output == expected
+
 def test_bad_uri():
     connect_params = (("blah:///foo",), {})
     output = instance_info(*connect_params)

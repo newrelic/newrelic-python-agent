@@ -26,7 +26,7 @@ def _to_int(version_str):
     m = re.match(r'\d+', version_str)
     return int(m.group(0)) if m else 0
 
-def version2tuple(version_str):
+def version2tuple(version_str, parts_count=2):
     """Convert version, even if it contains non-numeric chars.
 
     >>> version2tuple('9.4rc1.1')
@@ -34,7 +34,7 @@ def version2tuple(version_str):
 
     """
 
-    parts = version_str.split('.')[:2]
+    parts = version_str.split('.')[:parts_count]
     return tuple(map(_to_int, parts))
 
 def postgresql_version():
@@ -52,6 +52,7 @@ def postgresql_version():
     return value
 
 POSTGRESQL_VERSION = version2tuple(postgresql_version()[0])
+PSYCOPG2_VERSION = version2tuple(psycopg2.__version__, parts_count=3)
 
 _test_execute_via_cursor_scoped_metrics = [
         ('Datastore/statement/Postgres/datastore_psycopg2/select', 1),
@@ -95,6 +96,13 @@ if 'datastore.instances.r1' in settings.feature_flag:
     _test_execute_via_cursor_rollup_metrics.append(
             ('Datastore/instance/Postgres/%s/%s' % (
             DB_SETTINGS['host'], DB_SETTINGS['port']), 11))
+
+if PSYCOPG2_VERSION > (2, 4):
+    _test_execute_via_cursor_scoped_metrics.append(
+            ('Function/psycopg2:connect', 1))
+else:
+    _test_execute_via_cursor_scoped_metrics.append(
+            ('Function/psycopg2._psycopg:connect', 1))
 
 @validate_transaction_metrics('test_database:test_execute_via_cursor',
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
@@ -211,6 +219,8 @@ if 'datastore.instances.r1' in settings.feature_flag:
             ('Datastore/instance/Postgres/%s/%s' % (
             DB_SETTINGS['host'], DB_SETTINGS['port']), 1))
 
+@pytest.mark.skipif(PSYCOPG2_VERSION < (2, 5),
+        reason='Context manager support introduced in psycopg2 version 2.5')
 @validate_transaction_metrics('test_database:test_rollback_on_exception',
         scoped_metrics=_test_rollback_on_exception_scoped_metrics,
         rollup_metrics=_test_rollback_on_exception_rollup_metrics,
@@ -229,7 +239,6 @@ def test_rollback_on_exception():
         pass
 
 _test_async_mode_scoped_metrics = [
-        ('Function/psycopg2:connect', 1),
         ('Datastore/statement/Postgres/datastore_psycopg2/select', 1),
         ('Datastore/statement/Postgres/datastore_psycopg2/insert', 1),
         ('Datastore/operation/Postgres/drop', 1),
@@ -257,6 +266,15 @@ if 'datastore.instances.r1' in settings.feature_flag:
             ('Datastore/instance/Postgres/%s/%s' % (
             DB_SETTINGS['host'], DB_SETTINGS['port']), 4))
 
+if PSYCOPG2_VERSION > (2, 4):
+    _test_async_mode_scoped_metrics.append(
+            ('Function/psycopg2:connect', 1))
+else:
+    _test_async_mode_scoped_metrics.append(
+            ('Function/psycopg2._psycopg:connect', 1))
+
+@pytest.mark.skipif(PSYCOPG2_VERSION < (2, 2),
+        reason='Async mode not implemented in this version of psycopg2')
 @validate_stats_engine_explain_plan_output_is_none()
 @validate_transaction_slow_sql_count(num_slow_sql=4)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
@@ -297,6 +315,8 @@ def test_async_mode():
 
     async_conn.close()
 
+@pytest.mark.skipif(PSYCOPG2_VERSION < (2, 5),
+        reason='Register json not implemented in this version of psycopg2')
 @pytest.mark.skipif(POSTGRESQL_VERSION < (9, 2),
         reason="JSON data type was introduced in Postgres 9.2")
 @validate_transaction_metrics('test_database:test_register_json',
@@ -317,6 +337,8 @@ def test_register_json():
 
     connection.close()
 
+@pytest.mark.skipif(PSYCOPG2_VERSION < (2, 5),
+        reason='Register range not implemented in this version of psycopg2')
 @pytest.mark.skipif(POSTGRESQL_VERSION < (9, 2),
         reason="Range types were introduced in Postgres 9.2")
 @validate_transaction_metrics('test_database:test_register_range',
@@ -355,12 +377,21 @@ _test_multiple_databases_scoped_metrics = [
         ('Function/psycopg2:connect', 2),
 ]
 
+_test_multiple_databases_scoped_metrics = []
+
 _test_multiple_databases_rollup_metrics = [
         ('Datastore/all', 4),
         ('Datastore/allOther', 4),
         ('Datastore/Postgres/all', 4),
         ('Datastore/Postgres/allOther', 4),
 ]
+
+if PSYCOPG2_VERSION > (2, 4):
+    _test_multiple_databases_scoped_metrics.append(
+            ('Function/psycopg2:connect', 1))
+else:
+    _test_multiple_databases_scoped_metrics.append(
+            ('Function/psycopg2._psycopg:connect', 1))
 
 @pytest.mark.skipif(len(DB_MULTIPLE_SETTINGS) < 2,
         reason='Test environment not configured with multiple databases.')

@@ -38,23 +38,22 @@ def version2tuple(version_str):
     return tuple(map(_to_int, parts))
 
 def postgresql_version():
-    with psycopg2.connect(
+    connection = psycopg2.connect(
             database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
             password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
-            port=DB_SETTINGS['port']) as connection:
+            port=DB_SETTINGS['port'])
 
-        cursor = connection.cursor()
-        cursor.execute("""SELECT setting from pg_settings where name=%s""",
-                ('server_version',))
+    cursor = connection.cursor()
+    cursor.execute("""SELECT setting from pg_settings where name=%s""",
+            ('server_version',))
 
-        return cursor.fetchone()
+    value = cursor.fetchone()
+    connection.close()
+    return value
 
 POSTGRESQL_VERSION = version2tuple(postgresql_version()[0])
 
 _test_execute_via_cursor_scoped_metrics = [
-        ('Function/psycopg2:connect', 1),
-        ('Function/psycopg2.extensions:connection.__enter__', 1),
-        ('Function/psycopg2.extensions:connection.__exit__', 1),
         ('Datastore/statement/Postgres/datastore_psycopg2/select', 1),
         ('Datastore/statement/Postgres/datastore_psycopg2/insert', 1),
         ('Datastore/statement/Postgres/datastore_psycopg2/update', 1),
@@ -63,14 +62,14 @@ _test_execute_via_cursor_scoped_metrics = [
         ('Datastore/statement/Postgres/pg_sleep/call', 1),
         ('Datastore/operation/Postgres/drop', 1),
         ('Datastore/operation/Postgres/create', 1),
-        ('Datastore/operation/Postgres/commit', 3),
+        ('Datastore/operation/Postgres/commit', 2),
         ('Datastore/operation/Postgres/rollback', 1)]
 
 _test_execute_via_cursor_rollup_metrics = [
-        ('Datastore/all', 13),
-        ('Datastore/allOther', 13),
-        ('Datastore/Postgres/all', 13),
-        ('Datastore/Postgres/allOther', 13),
+        ('Datastore/all', 12),
+        ('Datastore/allOther', 12),
+        ('Datastore/Postgres/all', 12),
+        ('Datastore/Postgres/allOther', 12),
         ('Datastore/operation/Postgres/select', 1),
         ('Datastore/statement/Postgres/datastore_psycopg2/select', 1),
         ('Datastore/operation/Postgres/insert', 1),
@@ -84,7 +83,7 @@ _test_execute_via_cursor_rollup_metrics = [
         ('Datastore/statement/Postgres/now/call', 1),
         ('Datastore/statement/Postgres/pg_sleep/call', 1),
         ('Datastore/operation/Postgres/call', 2),
-        ('Datastore/operation/Postgres/commit', 3),
+        ('Datastore/operation/Postgres/commit', 2),
         ('Datastore/operation/Postgres/rollback', 1)]
 
 # The feature flags are expected to be bound and set
@@ -92,10 +91,10 @@ _test_execute_via_cursor_rollup_metrics = [
 if 'datastore.instances.r1' in settings.feature_flag:
     _test_execute_via_cursor_scoped_metrics.append(
             ('Datastore/instance/Postgres/%s/%s' % (
-            DB_SETTINGS['host'], DB_SETTINGS['port']), 12))
+            DB_SETTINGS['host'], DB_SETTINGS['port']), 11))
     _test_execute_via_cursor_rollup_metrics.append(
             ('Datastore/instance/Postgres/%s/%s' % (
-            DB_SETTINGS['host'], DB_SETTINGS['port']), 12))
+            DB_SETTINGS['host'], DB_SETTINGS['port']), 11))
 
 @validate_transaction_metrics('test_database:test_execute_via_cursor',
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
@@ -104,43 +103,45 @@ if 'datastore.instances.r1' in settings.feature_flag:
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_execute_via_cursor():
-    with psycopg2.connect(
+    connection = psycopg2.connect(
             database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
             password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
-            port=DB_SETTINGS['port']) as connection:
+            port=DB_SETTINGS['port'])
 
-        cursor = connection.cursor()
+    cursor = connection.cursor()
 
-        psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
-        psycopg2.extensions.register_type(psycopg2.extensions.UNICODE, connection)
-        psycopg2.extensions.register_type(psycopg2.extensions.UNICODE, cursor)
+    psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
+    psycopg2.extensions.register_type(psycopg2.extensions.UNICODE, connection)
+    psycopg2.extensions.register_type(psycopg2.extensions.UNICODE, cursor)
 
-        cursor.execute("""drop table if exists datastore_psycopg2""")
+    cursor.execute("""drop table if exists datastore_psycopg2""")
 
-        cursor.execute("""create table datastore_psycopg2 """
-                """(a integer, b real, c text)""")
+    cursor.execute("""create table datastore_psycopg2 """
+            """(a integer, b real, c text)""")
 
-        cursor.executemany("""insert into datastore_psycopg2 """
-                """values (%s, %s, %s)""", [(1, 1.0, '1.0'),
-                (2, 2.2, '2.2'), (3, 3.3, '3.3')])
+    cursor.executemany("""insert into datastore_psycopg2 """
+            """values (%s, %s, %s)""", [(1, 1.0, '1.0'),
+            (2, 2.2, '2.2'), (3, 3.3, '3.3')])
 
-        cursor.execute("""select * from datastore_psycopg2""")
+    cursor.execute("""select * from datastore_psycopg2""")
 
-        for row in cursor:
-            assert isinstance(row, tuple)
+    for row in cursor:
+        assert isinstance(row, tuple)
 
-        cursor.execute("""update datastore_psycopg2 set a=%s, b=%s, """
-                """c=%s where a=%s""", (4, 4.0, '4.0', 1))
+    cursor.execute("""update datastore_psycopg2 set a=%s, b=%s, """
+            """c=%s where a=%s""", (4, 4.0, '4.0', 1))
 
-        cursor.execute("""delete from datastore_psycopg2 where a=2""")
+    cursor.execute("""delete from datastore_psycopg2 where a=2""")
 
-        connection.commit()
+    connection.commit()
 
-        cursor.callproc('now')
-        cursor.callproc('pg_sleep', (0.25,))
+    cursor.callproc('now')
+    cursor.callproc('pg_sleep', (0.25,))
 
-        connection.rollback()
-        connection.commit()
+    connection.rollback()
+    connection.commit()
+
+    connection.close()
 
 @validate_transaction_metrics('test_database:test_execute_via_cursor_dict',
         scoped_metrics=_test_execute_via_cursor_scoped_metrics,
@@ -149,48 +150,48 @@ def test_execute_via_cursor():
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_execute_via_cursor_dict():
-    with psycopg2.connect(
+    connection = psycopg2.connect(
             database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
             password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
-            port=DB_SETTINGS['port']) as connection:
+            port=DB_SETTINGS['port'])
 
-        cursor = connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cursor = connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-        psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
-        psycopg2.extensions.register_type(psycopg2.extensions.UNICODE, connection)
-        psycopg2.extensions.register_type(psycopg2.extensions.UNICODE, cursor)
+    psycopg2.extensions.register_type(psycopg2.extensions.UNICODE)
+    psycopg2.extensions.register_type(psycopg2.extensions.UNICODE, connection)
+    psycopg2.extensions.register_type(psycopg2.extensions.UNICODE, cursor)
 
-        cursor.execute("""drop table if exists datastore_psycopg2""")
+    cursor.execute("""drop table if exists datastore_psycopg2""")
 
-        cursor.execute("""create table datastore_psycopg2 """
-                """(a integer, b real, c text)""")
+    cursor.execute("""create table datastore_psycopg2 """
+            """(a integer, b real, c text)""")
 
-        cursor.executemany("""insert into datastore_psycopg2 """
-                """values (%s, %s, %s)""", [(1, 1.0, '1.0'),
-                (2, 2.2, '2.2'), (3, 3.3, '3.3')])
+    cursor.executemany("""insert into datastore_psycopg2 """
+            """values (%s, %s, %s)""", [(1, 1.0, '1.0'),
+            (2, 2.2, '2.2'), (3, 3.3, '3.3')])
 
-        cursor.execute("""select * from datastore_psycopg2""")
+    cursor.execute("""select * from datastore_psycopg2""")
 
-        for row in cursor:
-            assert isinstance(row, dict)
+    for row in cursor:
+        assert isinstance(row, dict)
 
-        cursor.execute("""update datastore_psycopg2 set a=%s, b=%s, """
-                """c=%s where a=%s""", (4, 4.0, '4.0', 1))
+    cursor.execute("""update datastore_psycopg2 set a=%s, b=%s, """
+            """c=%s where a=%s""", (4, 4.0, '4.0', 1))
 
-        cursor.execute("""delete from datastore_psycopg2 where a=2""")
+    cursor.execute("""delete from datastore_psycopg2 where a=2""")
 
-        connection.commit()
+    connection.commit()
 
-        cursor.callproc('now')
-        cursor.callproc('pg_sleep', (0.25,))
+    cursor.callproc('now')
+    cursor.callproc('pg_sleep', (0.25,))
 
-        connection.rollback()
-        connection.commit()
+    connection.rollback()
+    connection.commit()
+
+    connection.close()
 
 _test_rollback_on_exception_scoped_metrics = [
         ('Function/psycopg2:connect', 1),
-        ('Function/psycopg2.extensions:connection.__enter__', 1),
-        ('Function/psycopg2.extensions:connection.__exit__', 1),
         ('Datastore/operation/Postgres/rollback', 1)]
 
 _test_rollback_on_exception_rollup_metrics = [
@@ -303,16 +304,18 @@ def test_async_mode():
 @validate_transaction_errors(errors=[])
 @background_task()
 def test_register_json():
-    with psycopg2.connect(
+    connection = psycopg2.connect(
             database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
             password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
-            port=DB_SETTINGS['port']) as connection:
+            port=DB_SETTINGS['port'])
 
-        cursor = connection.cursor()
+    cursor = connection.cursor()
 
-        loads = lambda x: json.loads(x, parse_float=decimal.Decimal)
-        psycopg2.extras.register_json(connection, loads=loads)
-        psycopg2.extras.register_json(cursor, loads=loads)
+    loads = lambda x: json.loads(x, parse_float=decimal.Decimal)
+    psycopg2.extras.register_json(connection, loads=loads)
+    psycopg2.extras.register_json(cursor, loads=loads)
+
+    connection.close()
 
 @pytest.mark.skipif(POSTGRESQL_VERSION < (9, 2),
         reason="Range types were introduced in Postgres 9.2")
@@ -321,35 +324,35 @@ def test_register_json():
 @validate_transaction_errors(errors=[])
 @background_task()
 def test_register_range():
-    with psycopg2.connect(
+    connection = psycopg2.connect(
             database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
             password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
-            port=DB_SETTINGS['port']) as connection:
+            port=DB_SETTINGS['port'])
 
-        create_sql = ('CREATE TYPE floatrange AS RANGE ('
-                      'subtype = float8,'
-                      'subtype_diff = float8mi)')
+    create_sql = ('CREATE TYPE floatrange AS RANGE ('
+                  'subtype = float8,'
+                  'subtype_diff = float8mi)')
 
-        cursor = connection.cursor()
+    cursor = connection.cursor()
 
-        cursor.execute("DROP TYPE if exists floatrange")
-        cursor.execute(create_sql)
+    cursor.execute("DROP TYPE if exists floatrange")
+    cursor.execute(create_sql)
 
-        psycopg2.extras.register_range('floatrange',
-                psycopg2.extras.NumericRange, connection)
+    psycopg2.extras.register_range('floatrange',
+            psycopg2.extras.NumericRange, connection)
 
-        cursor.execute("DROP TYPE if exists floatrange")
-        cursor.execute(create_sql)
+    cursor.execute("DROP TYPE if exists floatrange")
+    cursor.execute(create_sql)
 
-        psycopg2.extras.register_range('floatrange',
-                psycopg2.extras.NumericRange, cursor)
+    psycopg2.extras.register_range('floatrange',
+            psycopg2.extras.NumericRange, cursor)
 
-        cursor.execute("DROP TYPE if exists floatrange")
+    cursor.execute("DROP TYPE if exists floatrange")
+
+    connection.close()
 
 _test_multiple_databases_scoped_metrics = [
         ('Function/psycopg2:connect', 2),
-        ('Function/psycopg2.extensions:connection.__enter__', 2),
-        ('Function/psycopg2.extensions:connection.__exit__', 2),
 ]
 
 _test_multiple_databases_rollup_metrics = [
@@ -372,17 +375,17 @@ def test_multiple_databases():
     postgresql1 = DB_MULTIPLE_SETTINGS[0]
     postgresql2 = DB_MULTIPLE_SETTINGS[1]
 
-    with psycopg2.connect(
+    connection = psycopg2.connect(
             database=postgresql1['name'], user=postgresql1['user'],
             password=postgresql1['password'], host=postgresql1['host'],
-            port=postgresql1['port']):
-        pass
+            port=postgresql1['port'])
+    connection.close()
 
-    with psycopg2.connect(
+    connection = psycopg2.connect(
             database=postgresql2['name'], user=postgresql2['user'],
             password=postgresql2['password'], host=postgresql2['host'],
-            port=postgresql2['port']):
-        pass
+            port=postgresql2['port'])
+    connection.close()
 
 slow_sql_json_required = set()
 slow_sql_json_forgone = set()
@@ -400,13 +403,14 @@ else:
         forgone_params=slow_sql_json_forgone)
 @background_task()
 def test_slow_sql_json():
-    with psycopg2.connect(
+    connection = psycopg2.connect(
             database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
             password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
-            port=DB_SETTINGS['port']) as connection:
-        cursor = connection.cursor()
-        cursor.execute("""SELECT setting from pg_settings where name=%s""",
-                ('server_version',))
+            port=DB_SETTINGS['port'])
+    cursor = connection.cursor()
+    cursor.execute("""SELECT setting from pg_settings where name=%s""",
+            ('server_version',))
+    connection.close()
 
 if 'datastore.instances.r1' in settings.feature_flag:
     _test_trace_node_datastore_params = {
@@ -427,10 +431,11 @@ else:
         datastore_forgone_params=_test_trace_node_datastore_forgone_params)
 @background_task()
 def test_trace_node_datastore_params():
-    with psycopg2.connect(
+    connection = psycopg2.connect(
             database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
             password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
-            port=DB_SETTINGS['port']) as connection:
-        cursor = connection.cursor()
-        cursor.execute("""SELECT setting from pg_settings where name=%s""",
-                ('server_version',))
+            port=DB_SETTINGS['port'])
+    cursor = connection.cursor()
+    cursor.execute("""SELECT setting from pg_settings where name=%s""",
+            ('server_version',))
+    connection.close()

@@ -185,7 +185,8 @@ class DatabaseNode(_DatabaseNode):
 
         if (self.dbapi2_module._nr_datastore_instance_feature_flag
                 and 'datastore.instances.r1' in settings.feature_flag):
-            params['instance'] = self.instance
+            params['host'] = self.host
+            params['port_path_or_id'] = self.port_path_or_id
             params['database_name'] = self.database_name
 
         sql = self.formatted

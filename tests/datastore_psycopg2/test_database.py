@@ -410,14 +410,16 @@ def test_slow_sql_json():
 
 if 'datastore.instances.r1' in settings.feature_flag:
     _test_trace_node_datastore_params = {
-        'instance': '%s:{%s}' % (DB_SETTINGS['host'], DB_SETTINGS['port']),
+        'host': DB_SETTINGS['host'],
+        'port_path_or_id': str(DB_SETTINGS['port']),
         'database_name': DB_SETTINGS['name'],
     }
     _test_trace_node_datastore_forgone_params = {}
 else:
     _test_trace_node_datastore_params = {}
     _test_trace_node_datastore_forgone_params = {
-        'instance': '%s:{%s}' % (DB_SETTINGS['host'], DB_SETTINGS['port']),
+        'host': DB_SETTINGS['host'],
+        'port_path_or_id': str(DB_SETTINGS['port']),
         'database_name': DB_SETTINGS['name'],
     }
 

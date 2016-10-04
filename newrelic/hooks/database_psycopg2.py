@@ -77,7 +77,7 @@ def instance_info(args, kwargs):
             db = path.lstrip('/') or None
             # query params always override everything
             d = dict(parse_qsl(query))
-            host = d.get('host') or host or None
+            host = d.get('hostaddr') or d.get('host') or host or None
             port = d.get('port') or port
             db = d.get('dbname') or db
         elif args:

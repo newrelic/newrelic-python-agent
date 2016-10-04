@@ -112,6 +112,8 @@ def test_only_hostaddr_in_arg_str():
         ('/tmp', '1234', None)),
     ((('postgresql:///foo?dbname=bar',), {}),
         (None, None, 'bar')),
+    ((('postgresql://example.com/foo?hostaddr=1.2.3.4&host=bar',), {}),
+        ('1.2.3.4', None, 'foo')),
 ])
 def test_uri(connect_params, expected):
     output = instance_info(*connect_params)

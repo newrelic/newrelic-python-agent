@@ -388,11 +388,13 @@ slow_sql_json_required = set()
 slow_sql_json_forgone = set()
 if 'datastore.instances.r1' in settings.feature_flag:
     # instance/database_name should be reported
-    slow_sql_json_required.add('instance')
+    slow_sql_json_required.add('host')
+    slow_sql_json_required.add('port_path_or_id')
     slow_sql_json_required.add('database_name')
 else:
     # instance/database_name should not be reported
-    slow_sql_json_forgone.add('instance')
+    slow_sql_json_forgone.add('host')
+    slow_sql_json_forgone.add('port_path_or_id')
     slow_sql_json_forgone.add('database_name')
 @validate_slow_sql_collector_json(required_params=slow_sql_json_required,
         forgone_params=slow_sql_json_forgone)

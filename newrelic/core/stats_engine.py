@@ -1028,7 +1028,8 @@ class StatsEngine(object):
 
             if (slow_sql_node.dbapi2_module._nr_datastore_instance_feature_flag and
                     'datastore.instances.r1' in self.__settings.feature_flag):
-                params['instance'] = slow_sql_node.instance
+                params['host'] = slow_sql_node.host
+                params['port_path_or_id'] = slow_sql_node.port_path_or_id
                 params['database_name'] = slow_sql_node.database_name
 
             json_data = json_encode(params)

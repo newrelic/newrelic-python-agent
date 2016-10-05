@@ -55,6 +55,13 @@ class ConnectionFactory(DBAPI2ConnectionFactory):
 
 def instance_info(args, kwargs):
 
+    p_host, p_hostaddr, p_port, p_dbname = _parse_connect_params(args, kwargs)
+    host, port, db_name = _add_defaults(p_host, p_hostaddr, p_port, p_dbname)
+
+    return (host, port, db_name)
+
+def _parse_connect_params(args, kwargs):
+
     def _bind_params(dsn=None, *args, **kwargs):
         return dsn
 

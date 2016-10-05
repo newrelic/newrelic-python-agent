@@ -47,7 +47,7 @@ class DatabaseNode(_DatabaseNode):
 
     @property
     def instance(self):
-        return "%s:{%s}" % (self.host, self.port_path_or_id)
+        return "%s/%s" % (self.host, self.port_path_or_id)
 
     @property
     def operation(self):
@@ -116,7 +116,8 @@ class DatabaseNode(_DatabaseNode):
         if (self.dbapi2_module and
                 self.dbapi2_module._nr_datastore_instance_feature_flag and
                 'datastore.instances.r1' in settings.feature_flag):
-            name = 'Datastore/instance/%s/%s' % (product, self.instance)
+            name = 'Datastore/instance/%s/%s/%s' % (product, self.host,
+                    self.port_path_or_id)
 
             yield TimeMetric(name=name, scope='', duration=self.duration,
                     exclusive=self.exclusive)

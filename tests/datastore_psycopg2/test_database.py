@@ -91,10 +91,10 @@ _test_execute_via_cursor_rollup_metrics = [
 # through env vars at the time the test is imported
 if 'datastore.instances.r1' in settings.feature_flag:
     _test_execute_via_cursor_scoped_metrics.append(
-            ('Datastore/instance/Postgres/%s:{%s}' % (
+            ('Datastore/instance/Postgres/%s/%s' % (
             DB_SETTINGS['host'], DB_SETTINGS['port']), 12))
     _test_execute_via_cursor_rollup_metrics.append(
-            ('Datastore/instance/Postgres/%s:{%s}' % (
+            ('Datastore/instance/Postgres/%s/%s' % (
             DB_SETTINGS['host'], DB_SETTINGS['port']), 12))
 
 @validate_transaction_metrics('test_database:test_execute_via_cursor',
@@ -204,10 +204,10 @@ _test_rollback_on_exception_rollup_metrics = [
 # through env vars at the time the test is imported
 if 'datastore.instances.r1' in settings.feature_flag:
     _test_rollback_on_exception_scoped_metrics.append(
-            ('Datastore/instance/Postgres/%s:{%s}' % (
+            ('Datastore/instance/Postgres/%s/%s' % (
             DB_SETTINGS['host'], DB_SETTINGS['port']), 1))
     _test_rollback_on_exception_rollup_metrics.append(
-            ('Datastore/instance/Postgres/%s:{%s}' % (
+            ('Datastore/instance/Postgres/%s/%s' % (
             DB_SETTINGS['host'], DB_SETTINGS['port']), 1))
 
 @validate_transaction_metrics('test_database:test_rollback_on_exception',
@@ -250,10 +250,10 @@ _test_async_mode_rollup_metrics = [
 # through env vars at the time the test is imported
 if 'datastore.instances.r1' in settings.feature_flag:
     _test_async_mode_scoped_metrics.append(
-            ('Datastore/instance/Postgres/%s:{%s}' % 
+            ('Datastore/instance/Postgres/%s/%s' % 
             (DB_SETTINGS['host'], DB_SETTINGS['port']), 4))
     _test_async_mode_rollup_metrics.append(
-            ('Datastore/instance/Postgres/%s:{%s}' % (
+            ('Datastore/instance/Postgres/%s/%s' % (
             DB_SETTINGS['host'], DB_SETTINGS['port']), 4))
 
 @validate_stats_engine_explain_plan_output_is_none()

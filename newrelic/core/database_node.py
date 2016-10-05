@@ -2,6 +2,8 @@ from collections import namedtuple
 
 import newrelic.core.trace_node
 
+from newrelic.common import system_info
+
 from newrelic.core.metric import TimeMetric
 from newrelic.core.database_utils import sql_statement, explain_plan
 
@@ -48,6 +50,23 @@ class DatabaseNode(_DatabaseNode):
     @property
     def instance(self):
         return "%s/%s" % (self.host, self.port_path_or_id)
+
+    @property
+    def instance_hostname(self):
+        localhost_equivalents = set([
+            'localhost',
+            '127.0.0.1',
+            '0.0.0.0',
+            '0:0:0:0:0:0:0:0',
+            '0:0:0:0:0:0:0:1',
+            '::1',
+            '::',
+        ])
+        if self.host in localhost_equivalents:
+            hostname = system_info.gethostname()
+        else:
+            hostname = self.host
+        return hostname
 
     @property
     def operation(self):
@@ -116,8 +135,8 @@ class DatabaseNode(_DatabaseNode):
         if (self.dbapi2_module and
                 self.dbapi2_module._nr_datastore_instance_feature_flag and
                 'datastore.instances.r1' in settings.feature_flag):
-            name = 'Datastore/instance/%s/%s/%s' % (product, self.host,
-                    self.port_path_or_id)
+            name = 'Datastore/instance/%s/%s/%s' % (product,
+                    self.instance_hostname, self.port_path_or_id)
 
             yield TimeMetric(name=name, scope='', duration=self.duration,
                     exclusive=self.exclusive)

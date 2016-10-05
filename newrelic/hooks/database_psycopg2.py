@@ -89,7 +89,8 @@ def instance_info(args, kwargs):
 
             # Query parameters override hierarchical values in URI.
 
-            host = qp.get('hostaddr') or qp.get('host') or host or None
+            host = qp.get('host') or host or None
+            hostaddr = qp.get('hostaddr')
             port = qp.get('port') or port
             db_name = qp.get('dbname') or db_name
 
@@ -98,7 +99,8 @@ def instance_info(args, kwargs):
             # Parse dsn as a key-value connection string
 
             kv = dict([pair.split('=', 2) for pair in dsn.split()])
-            host = kv.get('hostaddr') or kv.get('host')
+            host = kv.get('host')
+            hostaddr = kv.get('hostaddr')
             port = kv.get('port')
             db_name = kv.get('dbname')
 
@@ -106,19 +108,23 @@ def instance_info(args, kwargs):
 
             # No dsn, so get the instance info from keyword arguments.
 
-            host = kwargs.get('hostaddr') or kwargs.get('host')
+            host = kwargs.get('host')
+            hostaddr = kwargs.get('hostaddr')
             port = kwargs.get('port')
             db_name = kwargs.get('database')
 
         # Ensure non-None values are strings.
 
-        (host, port, db_name) = [str(s) if s is not None else s
-                for s in (host, port, db_name)]
+        (host, hostaddr, port, db_name) = [str(s) if s is not None else s
+                for s in (host, hostaddr, port, db_name)]
 
     except Exception:
-        host, port, db_name = ('unknown', 'unknown', 'unknown')
+        host = 'unknown'
+        hostaddr = 'unknown'
+        port = 'unknown'
+        db_name = 'unknown'
 
-    return (host, port, db_name)
+    return (host, hostaddr, port, db_name)
 
 def _add_defaults(parsed_host, parsed_hostaddr, parsed_port, parsed_database):
 

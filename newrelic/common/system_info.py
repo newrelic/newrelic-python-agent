@@ -5,10 +5,12 @@ system or for the specific process the code is running in.
 
 import logging
 import os
+import socket
 import sys
 import re
 import multiprocessing
 import subprocess
+import threading
 
 from newrelic.core.internal_metrics import internal_metric
 
@@ -405,3 +407,28 @@ def _validate_docker_container_id(container_id):
 
     # Container id is not valid
     return False
+
+
+_nr_cached_hostname = None
+_nr_cached_hostname_lock = threading.Lock()
+
+def gethostname():
+    """Cache the output of socket.gethostname().
+
+    Keeps the reported hostname consistent throughout an agent run.
+
+    """
+
+    global _nr_cached_hostname
+    global _nr_cached_hostname_lock
+
+    if _nr_cached_hostname:
+        return _nr_cached_hostname
+
+    # Only lock for the one-time write.
+
+    with _nr_cached_hostname_lock:
+        if _nr_cached_hostname is None:
+            _nr_cached_hostname = socket.gethostname()
+
+    return _nr_cached_hostname

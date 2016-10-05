@@ -116,7 +116,7 @@ def test_utilization_settings_from_env_vars(test):
             test.get('input_logical_processors'))
     dc.total_physical_memory = _mock_total_physical_memory(
             test.get('input_total_ram_mib'))
-    dc.socket.gethostname = _mock_gethostname(
+    dc.system_info.gethostname = _mock_gethostname(
             test.get('input_hostname'))
 
     with UpdatedSettings(test) as settings:

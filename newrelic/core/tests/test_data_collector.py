@@ -1,5 +1,5 @@
 import os
-import socket
+
 import newrelic.core.data_collector
 
 from newrelic.core.data_collector import ApplicationSession
@@ -29,7 +29,7 @@ RECORD_SQL = 'record_sql'
 def setup_module(module):
     def gethostname():
         return HOST
-    socket.gethostname = gethostname
+    newrelic.common.system_info.gethostname = gethostname
 
     def getpid():
         return PID

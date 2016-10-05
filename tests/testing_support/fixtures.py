@@ -995,7 +995,8 @@ def validate_slow_sql_collector_json(required_params=set(),
         legal_param_keys = set([
             'explain_plan',
             'backtrace',
-            'instance',
+            'host',
+            'port_path_or_id',
             'database_name'
         ])
         try:

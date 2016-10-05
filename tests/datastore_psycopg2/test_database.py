@@ -5,16 +5,16 @@ import psycopg2
 import psycopg2.extensions
 import psycopg2.extras
 import pytest
+import decimal
 
 from testing_support.fixtures import (validate_transaction_metrics,
     validate_database_trace_inputs, validate_transaction_errors,
     validate_transaction_slow_sql_count,
     validate_stats_engine_explain_plan_output_is_none,
     validate_slow_sql_collector_json,
-    validate_tt_collector_json, override_application_settings)
+    validate_tt_collector_json)
 
-from testing_support.settings import (postgresql_settings,
-        postgresql_multiple_settings)
+from testing_support.settings import postgresql_multiple_settings
 
 from newrelic.agent import background_task, global_settings
 
@@ -221,7 +221,7 @@ def test_rollback_on_exception():
         with psycopg2.connect(
                 database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
                 password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
-                port=DB_SETTINGS['port']) as connection:
+                port=DB_SETTINGS['port']):
 
             raise RuntimeError('error')
     except RuntimeError:
@@ -310,7 +310,7 @@ def test_register_json():
 
         cursor = connection.cursor()
 
-        loads = lambda x: json.loads(x, parse_float=Decimal)
+        loads = lambda x: json.loads(x, parse_float=decimal.Decimal)
         psycopg2.extras.register_json(connection, loads=loads)
         psycopg2.extras.register_json(cursor, loads=loads)
 
@@ -375,24 +375,26 @@ def test_multiple_databases():
     with psycopg2.connect(
             database=postgresql1['name'], user=postgresql1['user'],
             password=postgresql1['password'], host=postgresql1['host'],
-            port=postgresql1['port']) as connection:
+            port=postgresql1['port']):
         pass
 
     with psycopg2.connect(
             database=postgresql2['name'], user=postgresql2['user'],
             password=postgresql2['password'], host=postgresql2['host'],
-            port=postgresql2['port']) as connection:
+            port=postgresql2['port']):
         pass
 
 slow_sql_json_required = set()
 slow_sql_json_forgone = set()
 if 'datastore.instances.r1' in settings.feature_flag:
     # instance/database_name should be reported
-    slow_sql_json_required.add('instance')
+    slow_sql_json_required.add('host')
+    slow_sql_json_required.add('port_path_or_id')
     slow_sql_json_required.add('database_name')
 else:
     # instance/database_name should not be reported
-    slow_sql_json_forgone.add('instance')
+    slow_sql_json_forgone.add('host')
+    slow_sql_json_forgone.add('port_path_or_id')
     slow_sql_json_forgone.add('database_name')
 @validate_slow_sql_collector_json(required_params=slow_sql_json_required,
         forgone_params=slow_sql_json_forgone)
@@ -408,14 +410,16 @@ def test_slow_sql_json():
 
 if 'datastore.instances.r1' in settings.feature_flag:
     _test_trace_node_datastore_params = {
-        'instance': '%s:{%s}' % (DB_SETTINGS['host'], DB_SETTINGS['port']),
+        'host': DB_SETTINGS['host'],
+        'port_path_or_id': str(DB_SETTINGS['port']),
         'database_name': DB_SETTINGS['name'],
     }
     _test_trace_node_datastore_forgone_params = {}
 else:
     _test_trace_node_datastore_params = {}
     _test_trace_node_datastore_forgone_params = {
-        'instance': '%s:{%s}' % (DB_SETTINGS['host'], DB_SETTINGS['port']),
+        'host': DB_SETTINGS['host'],
+        'port_path_or_id': str(DB_SETTINGS['port']),
         'database_name': DB_SETTINGS['name'],
     }
 

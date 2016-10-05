@@ -11,7 +11,7 @@ _SlowSqlNode = namedtuple('_SlowSqlNode',
         ['duration', 'path', 'request_uri', 'sql', 'sql_format',
         'metric', 'dbapi2_module', 'stack_trace', 'connect_params',
         'cursor_params', 'sql_parameters', 'execute_params',
-        'instance', 'database_name'])
+        'host', 'port_path_or_id', 'database_name'])
 
 class SlowSqlNode(_SlowSqlNode):
 
@@ -125,8 +125,6 @@ class DatabaseNode(_DatabaseNode):
                     duration=self.duration, exclusive=self.exclusive)
 
     def slow_sql_node(self, stats, root):
-        settings = global_settings()
-
         product = self.product
         operation = self.operation or 'other'
         target = self.target
@@ -155,7 +153,8 @@ class DatabaseNode(_DatabaseNode):
                 cursor_params=self.cursor_params,
                 sql_parameters=self.sql_parameters,
                 execute_params=self.execute_params,
-                instance=self.instance,
+                host=self.host,
+                port_path_or_id=self.port_path_or_id,
                 database_name=self.database_name)
 
     def trace_node(self, stats, root, connections):
@@ -184,7 +183,8 @@ class DatabaseNode(_DatabaseNode):
 
         if (self.dbapi2_module._nr_datastore_instance_feature_flag
                 and 'datastore.instances.r1' in settings.feature_flag):
-            params['instance'] = self.instance
+            params['host'] = self.host
+            params['port_path_or_id'] = self.port_path_or_id
             params['database_name'] = self.database_name
 
         sql = self.formatted

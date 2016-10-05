@@ -74,6 +74,10 @@ def instance_info(args, kwargs):
             host = parsed_uri.hostname or None
             host = host and unquote(host)
 
+            # ipv6 brackets [] are contained in the URI hostname
+            # and should be removed
+            host = host and host.strip('[]')
+
             port = parsed_uri.port
 
             db_name = parsed_uri.path

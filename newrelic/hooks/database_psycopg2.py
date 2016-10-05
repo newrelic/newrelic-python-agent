@@ -116,13 +116,18 @@ def instance_info(args, kwargs):
 
     return (host, port, db_name)
 
-def _add_defaults(parsed_host, parsed_port, parsed_database):
+def _add_defaults(parsed_host, parsed_hostaddr, parsed_port, parsed_database):
 
     # ENV variables set the default values
 
     parsed_host = parsed_host or os.environ.get('PGHOST')
+    parsed_hostaddr = parsed_hostaddr or os.environ.get('PGHOSTADDR')
     parsed_port = parsed_port or os.environ.get('PGPORT')
     database = parsed_database or os.environ.get('PGDATABASE')
+
+    # If hostaddr is present, we use that, since host is used for auth only.
+
+    parsed_host = parsed_hostaddr or parsed_host
 
     if parsed_host is None:
         host = 'localhost'

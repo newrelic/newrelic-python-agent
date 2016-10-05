@@ -349,8 +349,8 @@ create_docker_base_images()
 
 docker_compose_run()
 {
-    COMPOSE_FILE=${@:0:1}
-    CMD=${@:2}
+    COMPOSE_FILE=$(echo $@ | tr -s " " | cut -f1 -d" ")
+    CMD=$(echo $@ | tr -s " " | cut -f2- -d" ")
 
     echo
     echo "Using docker-compose file: $COMPOSE_FILE"
@@ -364,7 +364,7 @@ docker_compose_run()
 
 docker_compose_down()
 {
-    COMPOSE_FILE=${@:0:1}
+    COMPOSE_FILE=$(echo $@ | tr -s " " | cut -f1 -d" ")
 
     echo
     echo "Cleaning up..."
@@ -587,8 +587,9 @@ case "$COMMAND" in
     run)
         case "$OPTION" in
             -c | --compose)
-                docker_compose_run ${@:2}
-                docker_compose_down ${@:2}
+                COMMAND_INFO=$(echo $@ | tr -s " " | cut -f2- -d" ")
+                docker_compose_run $COMMAND_INFO
+                docker_compose_down $COMMAND_INFO
                 exit `expr $STATUS`
                 ;;
 

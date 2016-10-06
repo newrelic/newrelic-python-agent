@@ -130,18 +130,11 @@ use(extensions) {
                     }
                     shell('./jenkins/prep_node_for_test.sh')
 
-                    // Re-enable automatic creation of docker-compose tests once
-                    // we've worked through all docker-compose issues.
-                    //
-                    // if (composePath != "") {
-                    //     shell("./docker/packnsend run -c ${composePath} tox -c ${toxPath}")
-                    // } else {
-                    //     shell("./docker/packnsend run tox -c ${toxPath}")
-                    // }
-
-                    // Always create the original tox test commands for now
-                    shell("./docker/packnsend run tox -c ${toxPath}")
-
+                    if (composePath != "") {
+                        shell("./docker/packnsend run -c ${composePath} tox -c ${toxPath}")
+                    } else {
+                        shell("./docker/packnsend run tox -c ${toxPath}")
+                    }
                 }
             }
         }

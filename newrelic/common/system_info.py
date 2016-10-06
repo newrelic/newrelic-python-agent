@@ -4,12 +4,12 @@ system or for the specific process the code is running in.
 """
 
 import logging
-import os
-import socket
-import sys
-import re
 import multiprocessing
+import os
+import re
+import socket
 import subprocess
+import sys
 import threading
 
 from newrelic.core.internal_metrics import internal_metric

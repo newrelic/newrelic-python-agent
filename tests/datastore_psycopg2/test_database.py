@@ -376,25 +376,21 @@ def test_register_range():
     finally:
         connection.close()
 
-_test_multiple_databases_scoped_metrics = [
-        ('Function/psycopg2:connect', 2),
-]
-
 _test_multiple_databases_scoped_metrics = []
 
 _test_multiple_databases_rollup_metrics = [
-        ('Datastore/all', 4),
-        ('Datastore/allOther', 4),
-        ('Datastore/Postgres/all', 4),
-        ('Datastore/Postgres/allOther', 4),
+        ('Datastore/all', 2),
+        ('Datastore/allOther', 2),
+        ('Datastore/Postgres/all', 2),
+        ('Datastore/Postgres/allOther', 2),
 ]
 
 if PSYCOPG2_VERSION > (2, 4):
     _test_multiple_databases_scoped_metrics.append(
-            ('Function/psycopg2:connect', 1))
+            ('Function/psycopg2:connect', 2))
 else:
     _test_multiple_databases_scoped_metrics.append(
-            ('Function/psycopg2._psycopg:connect', 1))
+            ('Function/psycopg2._psycopg:connect', 2))
 
 @pytest.mark.skipif(len(DB_MULTIPLE_SETTINGS) < 2,
         reason='Test environment not configured with multiple databases.')

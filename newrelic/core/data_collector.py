@@ -6,7 +6,6 @@ from __future__ import print_function
 
 import logging
 import os
-import socket
 import sys
 import time
 import zlib
@@ -19,7 +18,7 @@ import newrelic.packages.six as six
 
 import newrelic.packages.requests as requests
 
-from newrelic.common import certs
+from newrelic.common import certs, system_info
 
 from newrelic import version
 from newrelic.core.config import (global_settings, global_settings_dump,
@@ -1131,7 +1130,7 @@ class ApplicationSession(object):
 
         app_names = [app_name] + linked_applications
 
-        hostname = socket.gethostname()
+        hostname = system_info.gethostname()
 
         connect_settings = {}
         connect_settings['browser_monitoring.loader'] = (

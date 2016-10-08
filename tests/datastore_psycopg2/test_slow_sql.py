@@ -1,7 +1,7 @@
 import psycopg2
 
 from testing_support.fixtures import validate_slow_sql_collector_json
-from utils import DB_SETTINGS, POSTGRESQL_VERSION
+from utils import DB_SETTINGS
 
 from newrelic.agent import background_task, global_settings
 

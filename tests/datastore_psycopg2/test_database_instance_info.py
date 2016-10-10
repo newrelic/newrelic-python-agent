@@ -104,17 +104,17 @@ def test_env_var_default_port(monkeypatch):
 
 @pytest.mark.parametrize('connect_params,expected', [
     ((('postgresql://',), {}),
-        ('localhost', 'default', None)),
+        ('localhost', 'default', 'default')),
     ((('postgresql://localhost',), {}),
-        ('localhost', '5432', None)),
+        ('localhost', '5432', 'default')),
     ((('postgresql://localhost:5433',), {}),
-        ('localhost', '5433', None)),
+        ('localhost', '5433', 'default')),
     ((('postgresql://localhost/mydb',), {}),
         ('localhost', '5432', 'mydb')),
     ((('postgresql://user@localhost',), {}),
-        ('localhost', '5432', None)),
+        ('localhost', '5432', 'default')),
     ((('postgresql://user:secret@localhost',), {}),
-        ('localhost', '5432', None)),
+        ('localhost', '5432', 'default')),
     ((('postgresql://[2001:db8::1234]/database',), {}),
         ('2001:db8::1234', '5432', 'database')),
     ((('postgresql://[2001:db8::1234]:2222/database',), {}),
@@ -126,7 +126,7 @@ def test_env_var_default_port(monkeypatch):
     ((('postgresql://other@localhost/otherdb?c=10&a=myapp',), {}),
         ('localhost', '5432', 'otherdb')),
     ((('postgresql:///',), {}),
-        ('localhost', 'default', None)),
+        ('localhost', 'default', 'default')),
     ((('postgresql:///dbname?host=foo',), {}),
         ('foo', '5432', 'dbname')),
     ((('postgresql:///dbname?port=1234',), {}),
@@ -140,7 +140,7 @@ def test_env_var_default_port(monkeypatch):
     ((('postgresql:///dbname?host=foo&port=1234&host=bar',), {}),
         ('bar', '1234', 'dbname')),
     ((('postgresql://%2Ftmp:1234',), {}),
-        ('localhost', '/tmp/.s.PGSQL.1234', None)),
+        ('localhost', '/tmp/.s.PGSQL.1234', 'default')),
     ((('postgresql:///foo?dbname=bar',), {}),
         ('localhost', 'default', 'bar')),
     ((('postgresql://example.com/foo?hostaddr=1.2.3.4&host=bar',), {}),
@@ -158,9 +158,9 @@ def test_uri(connect_params, expected):
     ((('postgresql://user:password@@/?dbname=bar',), {}),
         ('localhost', 'default', 'bar')),
     ((('postgresql://@',), {}),
-        ('localhost', 'default', None)),
+        ('localhost', 'default', 'default')),
     ((('postgresql://@@localhost',), {}),
-        ('localhost', '5432', None)),
+        ('localhost', '5432', 'default')),
 ])
 def test_security_sensitive_uri(connect_params, expected):
     output = instance_info(*connect_params)
@@ -175,23 +175,23 @@ _test_add_defaults = [
 
     # TCP/IP
 
-    [('otherhost.com', None, '8888', None), ('otherhost.com', '8888', None)],
-    [('otherhost.com', None, None, None), ('otherhost.com', '5432', None)],
-    [('localhost', None, '8888', None), ('localhost', '8888', None)],
-    [('localhost', None, None, None), ('localhost', '5432', None)],
-    [('127.0.0.1', None, '8888', None), ('127.0.0.1', '8888', None)],
-    [('127.0.0.1', None, None, None), ('127.0.0.1', '5432', None)],
-    [('::1', None, '8888', None), ('::1', '8888', None)],
-    [('::1', None, None, None), ('::1', '5432', None)],
+    [('otherhost.com', None, '8888', 'foobar'), ('otherhost.com', '8888', 'foobar')],
+    [('otherhost.com', None, None, 'foobar'), ('otherhost.com', '5432', 'foobar')],
+    [('localhost', None, '8888', 'foobar'), ('localhost', '8888', 'foobar')],
+    [('localhost', None, None, 'foobar'), ('localhost', '5432', 'foobar')],
+    [('127.0.0.1', None, '8888', 'foobar'), ('127.0.0.1', '8888', 'foobar')],
+    [('127.0.0.1', None, None, 'foobar'), ('127.0.0.1', '5432', 'foobar')],
+    [('::1', None, '8888', None), ('::1', '8888', 'default')],
+    [('::1', None, None, None), ('::1', '5432', 'default')],
 
     # Unix Domain Socket
 
-    [(None, None, None, None), ('localhost', 'default', None)],
-    [(None, None, '5432', None), ('localhost', 'default', None)],
-    [(None, None, '8888', None), ('localhost', 'default', None)],
-    [('/tmp', None, None, None), ('localhost', '/tmp/.s.PGSQL.5432', None)],
-    [('/tmp', None, '5432', None), ('localhost', '/tmp/.s.PGSQL.5432', None)],
-    [('/tmp', None, '8888', None), ('localhost', '/tmp/.s.PGSQL.8888', None)],
+    [(None, None, None, None), ('localhost', 'default', 'default')],
+    [(None, None, '5432', None), ('localhost', 'default', 'default')],
+    [(None, None, '8888', None), ('localhost', 'default', 'default')],
+    [('/tmp', None, None, 'cat'), ('localhost', '/tmp/.s.PGSQL.5432', 'cat')],
+    [('/tmp', None, '5432', 'dog'), ('localhost', '/tmp/.s.PGSQL.5432', 'dog')],
+    [('/tmp', None, '8888', 'db'), ('localhost', '/tmp/.s.PGSQL.8888', 'db')],
 ]
 
 @pytest.mark.parametrize('host_port,expected', _test_add_defaults)

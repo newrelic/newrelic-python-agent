@@ -39,13 +39,24 @@ def getPacknsendTests = {
         }
 
         dir.eachFileMatch(~/^tox.*.ini$/) { toxFile ->
-            String toxName = toxFile.getName()
-            String toxPath = "tests/${dirName}/${toxName}"
-            String testName = "${dirName}_${toxName}_${testSuffix}"
+            File canonicalFile = toxFile.getCanonicalFile()
+            String canonicalName = canonicalFile.getPath()
+            String absoluteName = toxFile.getAbsolutePath()
 
-            if (!disabledList.contains(toxPath)) {
-                def test = [testName, toxPath, composePath]
-                packnsendTestsList.add(test)
+            // If this is not a symlink
+            //   or if it's a symlink that doesn't match tox.ini
+            // -> add it to tests
+            if ((canonicalName == absoluteName) ||
+                !canonicalFile.getName().matches(~/^tox.*.ini$/)) {
+
+                String toxName = toxFile.getName()
+                String toxPath = "tests/${dirName}/${toxName}"
+                String testName = "${dirName}_${toxName}_${testSuffix}"
+
+                if (!disabledList.contains(toxPath)) {
+                    def test = [testName, toxPath, composePath]
+                    packnsendTestsList.add(test)
+                }
             }
         }
     }

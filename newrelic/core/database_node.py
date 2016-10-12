@@ -170,7 +170,7 @@ class DatabaseNode(_DatabaseNode):
                 cursor_params=self.cursor_params,
                 sql_parameters=self.sql_parameters,
                 execute_params=self.execute_params,
-                host=self.host,
+                host=self.instance_hostname,
                 port_path_or_id=self.port_path_or_id,
                 database_name=self.database_name)
 
@@ -199,7 +199,7 @@ class DatabaseNode(_DatabaseNode):
         # Only send datastore instance params if not empty.
 
         if self.host:
-            params['host'] = self.host
+            params['host'] = self.instance_hostname
 
         if self.port_path_or_id:
             params['port_path_or_id'] = self.port_path_or_id
